@@ -318,6 +318,7 @@ libclamav_la_SOURCES = \
 	pe.h \
 	pe_icons.c \
 	pe_icons.h \
+	pe_structs.h \
 	disasm.c \
 	disasm.h \
 	disasm-common.h \
@@ -391,6 +392,7 @@ libclamav_la_SOURCES = \
 	elf.c \
 	elf.h \
 	execs.h \
+	execs.c \
 	sis.c \
 	sis.h \
 	uuencode.c \

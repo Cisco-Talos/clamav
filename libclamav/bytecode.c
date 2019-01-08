@@ -45,7 +45,9 @@
 #include "json.h"
 #endif
 
+#ifndef MAX_BC
 #define MAX_BC 64
+#endif
 #define BC_EVENTS_PER_SIG 2
 #define MAX_BC_SIGEVENT_ID MAX_BC *BC_EVENTS_PER_SIG
 
@@ -2776,7 +2778,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     cli_bytecode_context_setctx(&ctx, cctx);
     cli_bytecode_context_setfile(&ctx, map);
     if (tinfo && tinfo->status == 1) {
-        ctx.sections = tinfo->exeinfo.section;
+        ctx.sections = tinfo->exeinfo.sections;
         memset(&pehookdata, 0, sizeof(pehookdata));
         pehookdata.offset    = tinfo->exeinfo.offset;
         pehookdata.ep        = tinfo->exeinfo.ep;

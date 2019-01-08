@@ -35,6 +35,9 @@ struct cli_target_info {
     int status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
+void cli_targetinfo_init(struct cli_target_info *info);
+void cli_targetinfo_destroy(struct cli_target_info *info);
+
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher-hash.h"

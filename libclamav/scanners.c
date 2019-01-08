@@ -109,6 +109,7 @@
 #include "tiff.h"
 #include "hwp.h"
 #include "msdoc.h"
+#include "execs.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1528,6 +1529,9 @@ static int cli_scanscript(cli_ctx *ctx)
     troot     = ctx->engine->root[7];
     maxpatlen = troot ? troot->maxpatlen : 0;
 
+    // Initialize info so it's safe to pass to destroy later
+    cli_targetinfo_init(&info);
+
     cli_dbgmsg("in cli_scanscript()\n");
 
     /* CL_ENGINE_MAX_SCRIPTNORMALIZE */
@@ -1657,6 +1661,7 @@ static int cli_scanscript(cli_ctx *ctx)
     }
 
 done:
+    cli_targetinfo_destroy(&info);
     free(normalized);
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
@@ -2604,14 +2609,15 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                                 break;
                             }
                             cli_set_container(ctx, CL_TYPE_MSEXE, csize);
-                            memset(&peinfo, 0, sizeof(struct cli_exe_info));
-                            peinfo.offset = fpt->offset;
-                            if (cli_peheader(map, &peinfo) == 0) {
+
+                            cli_exe_info_init(&peinfo, fpt->offset);
+                            // TODO We could probably substitute in a quicker
+                            // method of determining whether a PE file exists
+                            // at this offset.
+                            if (cli_peheader(map, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) == 0) {
                                 cli_dbgmsg("*** Detected embedded PE file at %u ***\n",
                                            (unsigned int)fpt->offset);
-                                if (peinfo.section)
-                                    free(peinfo.section);
-                                cli_hashset_destroy(&peinfo.vinfo);
+                                cli_exe_info_destroy(&peinfo);
 
                                 nret       = cli_scanembpe(ctx, fpt->offset);
                                 break_loop = 1; /* we can stop here and other

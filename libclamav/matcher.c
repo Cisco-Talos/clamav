@@ -445,8 +445,12 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
         *offset_min = CLI_OFF_NONE;
         if (offset_max)
             *offset_max = CLI_OFF_NONE;
-        if (info->status == -1)
+        if (info->status == -1) {
+            // TODO I wonder if this means that sigs with these types won't
+            // work (which kinda makes sense).  Warn the user of this for now
+            cli_dbgmsg("cli_caloff: cli_target_info is invalid - unable to determine offsets for ndb/ldb subsigs using EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n\n");
             return CL_SUCCESS;
+        }
 
         switch (offdata[0]) {
             case CLI_OFF_EOF_MINUS:
@@ -462,23 +466,26 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
                 break;
 
             case CLI_OFF_SL_PLUS:
-                *offset_min = info->exeinfo.section[info->exeinfo.nsections - 1].raw + offdata[1];
+                *offset_min = info->exeinfo.sections[info->exeinfo.nsections - 1].raw + offdata[1];
                 break;
 
             case CLI_OFF_SX_PLUS:
                 if (offdata[3] >= info->exeinfo.nsections)
                     *offset_min = CLI_OFF_NONE;
                 else
-                    *offset_min = info->exeinfo.section[offdata[3]].raw + offdata[1];
+                    *offset_min = info->exeinfo.sections[offdata[3]].raw + offdata[1];
                 break;
 
             case CLI_OFF_SE:
                 if (offdata[3] >= info->exeinfo.nsections) {
                     *offset_min = CLI_OFF_NONE;
                 } else {
-                    *offset_min = info->exeinfo.section[offdata[3]].raw;
+                    *offset_min = info->exeinfo.sections[offdata[3]].raw;
                     if (offset_max)
-                        *offset_max = *offset_min + info->exeinfo.section[offdata[3]].rsz + offdata[2];
+                        *offset_max = *offset_min + info->exeinfo.sections[offdata[3]].rsz + offdata[2];
+                    // TODO offdata[2] == MaxShift. Won't this make offset_max
+                    // extend beyond the end of the section?  This doesn't seem like
+                    // what we want...
                 }
                 break;
 
@@ -498,16 +505,31 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
     return CL_SUCCESS;
 }
 
+void cli_targetinfo_init(struct cli_target_info *info)
+{
+
+    if (NULL == info) {
+        return;
+    }
+    // Things that must be initialized here:
+    // - status (set to 0)
+    // - vinfo
+    // Maybe other things.
+    // TODO Consider replacing with just the required member assignments
+    // for performance
+    memset(info, 0, sizeof(struct cli_target_info));
+
+    cli_hashset_init_noalloc(&info->exeinfo.vinfo);
+}
+
 void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
 {
     int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
 
-    memset(info, 0, sizeof(struct cli_target_info));
     info->fsize = map->len;
-    cli_hashset_init_noalloc(&info->exeinfo.vinfo);
 
     if (target == 1)
-        einfo = cli_peheader;
+        einfo = cli_pe_targetinfo;
     else if (target == 6)
         einfo = cli_elfheader;
     else if (target == 9)
@@ -519,6 +541,16 @@ void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *m
         info->status = -1;
     else
         info->status = 1;
+}
+
+void cli_targetinfo_destroy(struct cli_target_info *info)
+{
+
+    if (NULL == info || info->status != 1) {
+        return;
+    }
+
+    cli_exe_info_destroy(&(info->exeinfo));
 }
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
@@ -667,7 +699,7 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
     cli_icongroupset_init(&iconset);
     cli_icongroupset_add(grp1 ? grp1 : "*", &iconset, 0, ctx);
     cli_icongroupset_add(grp2 ? grp2 : "*", &iconset, 1, ctx);
-    return cli_scanicon(&iconset, exeinfo->res_addr, ctx, exeinfo->section, exeinfo->nsections, exeinfo->hdr_size);
+    return cli_scanicon(&iconset, ctx, exeinfo);
 }
 
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t grp1len,
@@ -700,7 +732,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
             info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
     } else
         info.res_addr = ctx->resaddr; /* from target_info */
-    info.section   = (struct cli_exe_section *)ctx->sections;
+    info.sections  = (struct cli_exe_section *)ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
     info.hdr_size  = ctx->hooks.pedata->hdr_size;
     cli_dbgmsg("bytecode matchicon %s %s\n", group1, group2);
@@ -939,14 +971,12 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             maxpatlen = groot->maxpatlen;
     }
 
+    cli_targetinfo_init(&info);
     cli_targetinfo(&info, i, map);
 
     if (!ftonly) {
         if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
-            if (info.exeinfo.section)
-                free(info.exeinfo.section);
-
-            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
             cl_hash_destroy(sha256ctx);
@@ -954,10 +984,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         }
         if ((ret = cli_pcre_recaloff(groot, &gpoff, &info, ctx))) {
             cli_ac_freedata(&gdata);
-            if (info.exeinfo.section)
-                free(info.exeinfo.section);
-
-            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
             cl_hash_destroy(sha256ctx);
@@ -971,10 +998,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
             }
-            if (info.exeinfo.section)
-                free(info.exeinfo.section);
-
-            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
             cl_hash_destroy(sha256ctx);
@@ -989,10 +1013,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     }
 
                     cli_ac_freedata(&tdata);
-                    if (info.exeinfo.section)
-                        free(info.exeinfo.section);
-
-                    cli_hashset_destroy(&info.exeinfo.vinfo);
+                    cli_targetinfo_destroy(&info);
                     cl_hash_destroy(md5ctx);
                     cl_hash_destroy(sha1ctx);
                     cl_hash_destroy(sha256ctx);
@@ -1011,10 +1032,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             cli_ac_freedata(&tdata);
             if (bm_offmode)
                 cli_bm_freeoff(&toff);
-            if (info.exeinfo.section)
-                free(info.exeinfo.section);
-
-            cli_hashset_destroy(&info.exeinfo.vinfo);
+            cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
             cl_hash_destroy(sha256ctx);
@@ -1076,10 +1094,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     cli_bm_freeoff(&toff);
                 cli_pcre_freeoff(&tpoff);
 
-                if (info.exeinfo.section)
-                    free(info.exeinfo.section);
-
-                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cli_targetinfo_destroy(&info);
                 cl_hash_destroy(md5ctx);
                 cl_hash_destroy(sha1ctx);
                 cl_hash_destroy(sha256ctx);
@@ -1105,10 +1120,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                     cli_pcre_freeoff(&tpoff);
                 }
 
-                if (info.exeinfo.section)
-                    free(info.exeinfo.section);
-
-                cli_hashset_destroy(&info.exeinfo.vinfo);
+                cli_targetinfo_destroy(&info);
                 cl_hash_destroy(md5ctx);
                 cl_hash_destroy(sha1ctx);
                 cl_hash_destroy(sha256ctx);
@@ -1233,10 +1245,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         cli_pcre_freeoff(&gpoff);
     }
 
-    if (info.exeinfo.section)
-        free(info.exeinfo.section);
-
-    cli_hashset_destroy(&info.exeinfo.vinfo);
+    cli_targetinfo_destroy(&info);
 
     if (SCAN_ALLMATCHES && viruses_found) {
         return CL_VIRUS;

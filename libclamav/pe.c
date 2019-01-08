@@ -94,9 +94,7 @@
 #define PE_IMAGE_NT_SIGNATURE 0x00004550
 #define PE32_SIGNATURE 0x010b
 #define PE32P_SIGNATURE 0x020b
-
-#define optional_hdr64 pe_opt.opt64
-#define optional_hdr32 pe_opt.opt32
+#define OPT_HDR_SIZE_DIFF (sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32))
 
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
@@ -119,20 +117,23 @@
 #define PEALIGN(o, a) (((a)) ? (((o) / (a)) * (a)) : (o))
 #define PESALIGN(o, a) (((a)) ? (((o) / (a) + ((o) % (a) != 0)) * (a)) : (o))
 
+// TODO Replace all of these with static inline functions
 #define CLI_UNPSIZELIMITS(NAME, CHK)                           \
     if (cli_checklimits(NAME, ctx, (CHK), 0, 0) != CL_CLEAN) { \
-        free(exe_sections);                                    \
+        cli_exe_info_destroy(peinfo);                          \
         return CL_CLEAN;                                       \
     }
 
 #define CLI_UNPTEMP(NAME, FREEME)                                                       \
     if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {                               \
+        cli_exe_info_destroy(peinfo);                                                   \
         cli_multifree FREEME;                                                           \
         return CL_EMEM;                                                                 \
     }                                                                                   \
     if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) { \
         cli_dbgmsg(NAME ": Can't create file %s\n", tempfile);                          \
         free(tempfile);                                                                 \
+        cli_exe_info_destroy(peinfo);                                                   \
         cli_multifree FREEME;                                                           \
         return CL_ECREAT;                                                               \
     }
@@ -168,7 +169,7 @@
         cli_dbgmsg(NAME ": Successfully decompressed\n"); \
         close(ndesc);                                     \
         if (cli_unlink(tempfile)) {                       \
-            free(exe_sections);                           \
+            cli_exe_info_destroy(peinfo);                 \
             free(tempfile);                               \
             FREESEC;                                      \
             return CL_EUNLINK;                            \
@@ -179,17 +180,17 @@
         upx_success = 1;                                  \
         break; /* FSG ONLY! - scan raw data after upx block */
 
-#define SPINCASE()                             \
-    case 2:                                    \
-        free(spinned);                         \
-        close(ndesc);                          \
-        if (cli_unlink(tempfile)) {            \
-            free(exe_sections);                \
-            free(tempfile);                    \
-            return CL_EUNLINK;                 \
-        }                                      \
-        cli_dbgmsg("PESpin: Size exceeded\n"); \
-        free(tempfile);                        \
+#define SPINCASE()                                         \
+    case 2:                                                \
+        free(spinned);                                     \
+        close(ndesc);                                      \
+        if (cli_unlink(tempfile)) {                        \
+            cli_exe_info_destroy(peinfo);                  \
+            free(tempfile);                                \
+            return CL_EUNLINK;                             \
+        }                                                  \
+        cli_dbgmsg("cli_scanpe: PESpin: Size exceeded\n"); \
+        free(tempfile);                                    \
         break;
 
 #define CLI_UNPRESULTS_(NAME, FSGSTUFF, EXPR, GOOD, FREEME)                                   \
@@ -200,15 +201,15 @@
             else                                                                              \
                 cli_dbgmsg(NAME ": Unpacked and rebuilt executable\n");                       \
             cli_multifree FREEME;                                                             \
-            free(exe_sections);                                                               \
+            cli_exe_info_destroy(peinfo);                                                     \
             lseek(ndesc, 0, SEEK_SET);                                                        \
             cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                             \
             SHA_OFF;                                                                          \
             if (cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) {                       \
                 close(ndesc);                                                                 \
+                SHA_RESET;                                                                    \
                 CLI_TMPUNLK();                                                                \
                 free(tempfile);                                                               \
-                SHA_RESET;                                                                    \
                 return CL_VIRUS;                                                              \
             }                                                                                 \
             SHA_RESET;                                                                        \
@@ -223,7 +224,7 @@
             cli_dbgmsg(NAME ": Unpacking failed\n");                                          \
             close(ndesc);                                                                     \
             if (cli_unlink(tempfile)) {                                                       \
-                free(exe_sections);                                                           \
+                cli_exe_info_destroy(peinfo);                                                 \
                 free(tempfile);                                                               \
                 cli_multifree FREEME;                                                         \
                 return CL_EUNLINK;                                                            \
@@ -233,6 +234,9 @@
     }
 
 #define CLI_UNPRESULTS(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, (void)0, EXPR, GOOD, FREEME)
+// TODO The second argument to FSGCASE below should match what gets freed as
+// indicated by FREEME, otherwise a memory leak can occur (as currently used,
+// it looks like dest can get leaked by these macros).
 #define CLI_UNPRESULTSFSG1(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, FSGCASE(NAME, free(sections)), EXPR, GOOD, FREEME)
 #define CLI_UNPRESULTSFSG2(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, FSGCASE(NAME, (void)0), EXPR, GOOD, FREEME)
 
@@ -308,6 +312,8 @@ static int versioninfo_cb(void *opaque, uint32_t type, uint32_t name, uint32_t l
     return 0;
 }
 
+/* Given an RVA (relative to the ImageBase), return the file offset of the
+ * corresponding data */
 uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t nos, unsigned int *err, size_t fsize, uint32_t hdr_size)
 {
     int i, found = 0;
@@ -324,7 +330,7 @@ uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t n
     }
 
     for (i = nos - 1; i >= 0; i--) {
-        if (shp[i].rsz && shp[i].rva <= rva && shp[i].rsz > rva - shp[i].rva) {
+        if (shp[i].rsz && shp[i].rva <= rva && shp[i].rsz > (rva - shp[i].rva)) {
             found = 1;
             break;
         }
@@ -335,19 +341,19 @@ uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t n
         return 0;
     }
 
-    ret  = rva - shp[i].rva + shp[i].raw;
+    ret  = (rva - shp[i].rva) + shp[i].raw;
     *err = 0;
     return ret;
 }
 
 /* 
-   void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
+   void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_info *peinfo, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
    callback based res lookup
 
    by_type: lookup type
    by_name: lookup name or (unsigned)-1 to look for any name
    res_rva: base resource rva (i.e. dirs[2].VirtualAddress)
-   ctx, exe_sections, nsections, hdr_size: same as in scanpe
+   map, peinfo: same as in scanpe
    cb: the callback function executed on each successful match
    opaque: an opaque pointer passed to the callback
 
@@ -355,14 +361,21 @@ uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t n
    int pe_res_cballback (void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva);
    the callback shall return 0 to continue the lookup or 1 to abort
 */
-void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
+void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_info *peinfo, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
 {
     unsigned int err = 0;
     uint32_t type, type_offs, name, name_offs, lang, lang_offs;
     const uint8_t *resdir, *type_entry, *name_entry, *lang_entry;
     uint16_t type_cnt, name_cnt, lang_cnt;
+    uint32_t res_rva;
 
-    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+    if (NULL == peinfo || peinfo->ndatadirs < 3) {
+        return;
+    }
+
+    res_rva = EC32(peinfo->dirs[2].VirtualAddress);
+
+    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
         return;
 
     type_cnt   = (uint16_t)cli_readint16(resdir + 12);
@@ -379,7 +392,7 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
         type_offs = cli_readint32(type_entry + 4);
         if (type == by_type && (type_offs >> 31)) {
             type_offs &= 0x7fffffff;
-            if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+            if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
                 return;
 
             name_cnt   = (uint16_t)cli_readint16(resdir + 12);
@@ -397,7 +410,7 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
                 name_offs = cli_readint32(name_entry + 4);
                 if ((by_name == 0xffffffff || name == by_name) && (name_offs >> 31)) {
                     name_offs &= 0x7fffffff;
-                    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+                    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
                         return;
 
                     lang_cnt   = (uint16_t)cli_readint16(resdir + 12) + (uint16_t)cli_readint16(resdir + 14);
@@ -422,13 +435,13 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
     }
 }
 
-static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats)
+static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struct cli_exe_info *peinfo, size_t fsize, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats)
 {
     unsigned int err = 0, i;
     const uint8_t *resdir;
     const uint8_t *entry, *oentry;
     uint16_t named, unnamed;
-    uint32_t rawaddr = cli_rawaddr(rva, exe_sections, nsections, &err, fsize, hdr_size);
+    uint32_t rawaddr = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     uint32_t entries;
 
     if (level > 2 || !*maxres) return;
@@ -453,7 +466,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
         id = cli_readint32(entry);
         offs = cli_readint32(entry+4);
         if(offs>>31)
-            cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+            cli_parseres( base, base + (offs&0x7fffffff), srcfd, peinfo, fsize, level+1, type, maxres, stats);
         entry+=8;
     }*/
     for (i = 0; i < unnamed; i++, entry += 8) {
@@ -489,14 +502,14 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
         }
         offs = cli_readint32(entry + 4);
         if (offs >> 31)
-            cli_parseres_special(base, base + (offs & 0x7fffffff), map, exe_sections, nsections, fsize, hdr_size, level + 1, type, maxres, stats);
+            cli_parseres_special(base, base + (offs & 0x7fffffff), map, peinfo, fsize, level + 1, type, maxres, stats);
         else {
             offs    = cli_readint32(entry + 4);
-            rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
+            rawaddr = cli_rawaddr(base + offs, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
                 uint32_t isz = cli_readint32(resdir + 4);
                 const uint8_t *str;
-                rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
+                rawaddr = cli_rawaddr(cli_readint32(resdir), peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
                 if (err || !isz || isz >= fsize || rawaddr + isz >= fsize) {
                     cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n",
                                (unsigned long)rawaddr,
@@ -558,7 +571,7 @@ static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
         if (foundsize[type] || foundwild[type]) {
             hashset[type] = cli_malloc(hashlen[type]);
             if (!hashset[type]) {
-                cli_errmsg("scan_pe: cli_malloc failed!\n");
+                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
                 for (; type > 0;)
                     free(hashset[--type]);
                 return CL_EMEM;
@@ -2228,7 +2241,7 @@ static int validate_impname(const char *name, uint32_t length, int dll)
     return 1;
 }
 
-static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, struct pe_image_import_descriptor *image, const char *dllname, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus, int *first)
+static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, struct pe_image_import_descriptor *image, const char *dllname, struct cli_exe_info *peinfo, int *first)
 {
     uint32_t thuoff = 0, offset;
     fmap_t *map     = *ctx->fmap;
@@ -2244,9 +2257,9 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 #endif
 
     if (image->u.OriginalFirstThunk)
-        thuoff = cli_rawaddr(image->u.OriginalFirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
+        thuoff = cli_rawaddr(image->u.OriginalFirstThunk, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     if (err || thuoff == 0)
-        thuoff = cli_rawaddr(image->FirstThunk, exe_sections, nsections, &err, fsize, hdr_size);
+        thuoff = cli_rawaddr(image->FirstThunk, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     if (err) {
         cli_dbgmsg("scan_pe: invalid rva for image first thunk\n");
         return CL_EFORMAT;
@@ -2316,7 +2329,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
         }                                                                           \
     } while (0)
 
-    if (!pe_plus) {
+    if (!peinfo->is_pe32plus) {
         struct pe_image_thunk32 thunk32;
 
         while ((num_fns < PE_MAXIMPORTS) && (fmap_readn(map, &thunk32, thuoff, sizeof(struct pe_image_thunk32)) == sizeof(struct pe_image_thunk32)) && (thunk32.u.Ordinal != 0)) {
@@ -2326,7 +2339,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
             thunk32.u.Ordinal = EC32(thunk32.u.Ordinal);
 
             if (!(thunk32.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG32)) {
-                offset = cli_rawaddr(thunk32.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
+                offset = cli_rawaddr(thunk32.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
 
                 if (!ret) {
                     /* Hint field is a uint16_t and precedes the Name field */
@@ -2362,7 +2375,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
             thunk64.u.Ordinal = EC64(thunk64.u.Ordinal);
 
             if (!(thunk64.u.Ordinal & PE_IMAGEDIR_ORDINAL_FLAG64)) {
-                offset = cli_rawaddr(thunk64.u.Function, exe_sections, nsections, &err, fsize, hdr_size);
+                offset = cli_rawaddr(thunk64.u.Function, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
 
                 if (!err) {
                     /* Hint field is a uint16_t and precedes the Name field */
@@ -2393,7 +2406,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     return CL_SUCCESS;
 }
 
-static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct pe_image_data_dir *datadir, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus)
+static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct cli_exe_info *peinfo)
 {
     struct pe_image_import_descriptor *image;
     fmap_t *map = *ctx->fmap;
@@ -2406,43 +2419,45 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     unsigned int err;
     int first = 1;
 
-    if (datadir->VirtualAddress == 0 || datadir->Size == 0) {
+    if (peinfo->dirs[1].VirtualAddress == 0 || peinfo->dirs[1].Size == 0) {
         cli_errmsg("scan_pe: import table data directory does not exist\n");
         return CL_SUCCESS;
     }
 
-    impoff = cli_rawaddr(datadir->VirtualAddress, exe_sections, nsections, &err, fsize, hdr_size);
-    if (err || impoff + datadir->Size > fsize) {
+    // TODO Add EC32 wrappers
+    impoff = cli_rawaddr(peinfo->dirs[1].VirtualAddress, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
+    if (err || impoff + peinfo->dirs[1].Size > fsize) {
         cli_dbgmsg("scan_pe: invalid rva for import table data\n");
         return CL_SUCCESS;
     }
 
-    impdes = fmap_need_off(map, impoff, datadir->Size);
+    // TODO Add EC32 wrapper
+    impdes = fmap_need_off(map, impoff, peinfo->dirs[1].Size);
     if (impdes == NULL) {
         cli_dbgmsg("scan_pe: failed to acquire fmap buffer\n");
         return CL_EREAD;
     }
-    left = datadir->Size;
+    left = peinfo->dirs[1].Size;
 
     memset(hashctx, 0, sizeof(hashctx));
     if (genhash[CLI_HASH_MD5]) {
         hashctx[CLI_HASH_MD5] = cl_hash_init("md5");
         if (hashctx[CLI_HASH_MD5] == NULL) {
-            fmap_unneed_off(map, impoff, datadir->Size);
+            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
             return CL_EMEM;
         }
     }
     if (genhash[CLI_HASH_SHA1]) {
         hashctx[CLI_HASH_SHA1] = cl_hash_init("sha1");
         if (hashctx[CLI_HASH_SHA1] == NULL) {
-            fmap_unneed_off(map, impoff, datadir->Size);
+            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
             return CL_EMEM;
         }
     }
     if (genhash[CLI_HASH_SHA256]) {
         hashctx[CLI_HASH_SHA256] = cl_hash_init("sha256");
         if (hashctx[CLI_HASH_SHA256] == NULL) {
-            fmap_unneed_off(map, impoff, datadir->Size);
+            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
             return CL_EMEM;
         }
     }
@@ -2462,7 +2477,7 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
         image->FirstThunk           = EC32(image->FirstThunk);
 
         /* DLL name acquisition */
-        offset = cli_rawaddr(image->Name, exe_sections, nsections, &err, fsize, hdr_size);
+        offset = cli_rawaddr(image->Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
         if (err || offset > fsize) {
             cli_dbgmsg("scan_pe: invalid rva for dll name\n");
             /* TODO: ignore or return? */
@@ -2495,7 +2510,7 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
         }
 
         /* DLL function handling - inline function */
-        ret = hash_impfns(ctx, hashctx, impsz, image, dllname, exe_sections, nsections, hdr_size, pe_plus, &first);
+        ret = hash_impfns(ctx, hashctx, impsz, image, dllname, peinfo, &first);
         free(dllname);
         dllname = NULL;
         if (ret != CL_SUCCESS)
@@ -2505,13 +2520,13 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     }
 
 hash_imptbl_end:
-    fmap_unneed_off(map, impoff, datadir->Size);
+    fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
         cl_finish_hash(hashctx[type], digest[type]);
     return ret;
 }
 
-static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int pe_plus)
+static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     struct cli_matcher *imp = ctx->engine->hm_imp;
     unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
@@ -2554,7 +2569,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
     }
 
     /* Generate hashes */
-    ret = hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
+    ret = hash_imptbl(ctx, hashset, &impsz, genhash, peinfo);
     if (ret != CL_SUCCESS) {
         for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
             free(hashset[type]);
@@ -2719,44 +2734,27 @@ static void add_section_info(cli_ctx *ctx, struct cli_exe_section *s)
 
 int cli_scanpe(cli_ctx *ctx)
 {
-    uint16_t e_magic; /* DOS signature ("MZ") */
-    uint16_t nsections;
-    uint32_t e_lfanew; /* address of new exe header */
-    uint32_t ep, vep;  /* entry point (raw, virtual) */
     uint8_t polipos = 0;
-    time_t timestamp;
-    struct pe_image_file_hdr file_hdr;
-    union {
-        struct pe_image_optional_hdr64 opt64;
-        struct pe_image_optional_hdr32 opt32;
-    } pe_opt;
-    struct pe_image_section_hdr *section_hdr;
-    char sname[9], epbuff[4096], *tempfile;
+    char epbuff[4096], *tempfile;
     uint32_t epsize;
-    ssize_t bytes, at;
-    unsigned int i, j, found, upx_success = 0, min = 0, max = 0, err, overlays = 0, rescan = 1;
-    unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0, corrupted_cur;
+    ssize_t bytes;
+    unsigned int i, j, found, upx_success = 0, err;
+    unsigned int ssize = 0, dsize = 0, corrupted_cur;
     int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
     const char *src                                                                        = NULL;
     char *dest                                                                             = NULL;
-    int ndesc, ret = CL_CLEAN, upack = 0, native = 0;
+    int ndesc, ret = CL_CLEAN, upack = 0;
     size_t fsize;
-    uint32_t valign, falign, hdr_size;
-    struct cli_exe_section *exe_sections;
-    char timestr[32];
-    struct pe_image_data_dir *dirs;
     struct cli_bc_ctx *bc_ctx;
     fmap_t *map;
     struct cli_pe_hook_data pedata;
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     int sha_collect = ctx->sha_collect;
 #endif
-    const char *archtype = NULL, *subsystem = NULL;
     uint32_t viruses_found = 0;
 #if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
-    char jsonbuf[128];
 #endif
 
     if (!ctx) {
@@ -2773,371 +2771,2162 @@ int cli_scanpe(cli_ctx *ctx)
         pe_json = get_pe_property(ctx);
     }
 #endif
-    map = *ctx->fmap;
-    if (fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic)) {
-        cli_dbgmsg("Can't read DOS signature\n");
-        return CL_CLEAN;
+    map   = *ctx->fmap;
+    fsize = map->len;
+
+    struct cli_exe_info _peinfo;
+    struct cli_exe_info *peinfo = &_peinfo;
+
+    uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO;
+    ;
+
+#if HAVE_JSON
+    if (SCAN_COLLECT_METADATA) {
+        opts |= CLI_PEHEADER_OPT_COLLECT_JSON;
+    }
+#endif
+
+    if (DETECT_BROKEN_PE) {
+        opts |= CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS;
     }
 
-    if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
-        cli_dbgmsg("Invalid DOS signature\n");
-        return CL_CLEAN;
-    }
+    cli_exe_info_init(peinfo, 0);
 
-    if (fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew)) {
-        cli_dbgmsg("Can't read new header address\n");
-        /* truncated header? */
+    ret = cli_peheader(map, peinfo, opts, ctx);
+
+    // Warn the user if PE header parsing failed - if it's a binary that runs
+    // successfully on Windows, we need to relax our PE parsing standards so
+    // that we make sure the executable gets scanned appropriately
+
+#define PE_HDR_PARSE_FAIL_CONSEQUENCE "won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n"
+
+    if (CLI_PEHEADER_RET_BROKEN_PE == ret) {
         if (DETECT_BROKEN_PE) {
+            // TODO Handle allmatch
             ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
             return ret;
         }
+        cli_dbgmsg("cli_scanpe: PE header appears broken - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
+        return CL_CLEAN;
 
+    } else if (CLI_PEHEADER_RET_JSON_TIMEOUT == ret) {
+        cli_dbgmsg("cli_scanpe: JSON creation timed out - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
+        return CL_ETIMEOUT;
+    } else if (CLI_PEHEADER_RET_GENERIC_ERROR == ret) {
+        cli_dbgmsg("cli_scanpe: An error occurred when parsing the PE header - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
         return CL_CLEAN;
     }
 
-    e_lfanew = EC32(e_lfanew);
-    cli_dbgmsg("e_lfanew == %d\n", e_lfanew);
-    if (!e_lfanew) {
-        cli_dbgmsg("Not a PE file\n");
+    if (!peinfo->is_pe32plus) { /* PE */
+        if (DCONF & PE_CONF_UPACK)
+            upack = (EC16(peinfo->file_hdr.SizeOfOptionalHeader) == 0x148);
+    }
+    for (i = 0; i < peinfo->nsections; i++) {
+
+        if (peinfo->sections[i].rsz) { /* Don't bother with virtual only sections */
+            // TODO Regarding the commented out check below:
+            // This used to check that the section name was NULL, but now that
+            // header parsing is done in cli_peheader (and since we don't yet
+            // make the section name availabe via peinfo->sections[]) it would
+            // be a pain to fetch the name here.  Since this is the only place
+            // in cli_scanpe that needs the section name, and since I verified
+            // that detection still occurs for Polipos without this check,
+            // let's leave it commented out for now.
+            if (SCAN_HEURISTICS && (DCONF & PE_CONF_POLIPOS) && /*!*peinfo->sections[i].sname &&*/ peinfo->sections[i].vsz > 40000 && peinfo->sections[i].vsz < 70000 && peinfo->sections[i].chr == 0xe0000060) polipos = i;
+
+            /* check hash section sigs */
+            if ((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
+                ret = scan_pe_mdb(ctx, &(peinfo->sections[i]));
+                if (ret != CL_CLEAN) {
+                    // TODO Handle allmatch
+                    if (ret != CL_VIRUS)
+                        cli_errmsg("cli_scanpe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
+
+                    cli_dbgmsg("------------------------------------\n");
+                    cli_exe_info_destroy(peinfo);
+                    return ret;
+                }
+            }
+        }
+    }
+
+    // TODO Don't bail out here
+    if (peinfo->is_pe32plus) { /* Do not continue for PE32+ files */
+        cli_exe_info_destroy(peinfo);
         return CL_CLEAN;
     }
 
-    if (fmap_readn(map, &file_hdr, e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
-        /* bad information in e_lfanew - probably not a PE file */
-        cli_dbgmsg("cli_scanpe: Can't read file header\n");
+    epsize = fmap_readn(map, epbuff, peinfo->ep, 4096);
+
+    /* Disasm scan disabled since it's now handled by the bytecode */
+
+    /* CLI_UNPTEMP("cli_scanpe: DISASM",(peinfo->sections,0)); */
+    /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
+    /*  ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /* close(ndesc); */
+    /* if(ret == CL_VIRUS) { */
+    /*  cli_exe_info_destroy(peinfo); */
+    /*  CLI_TMPUNLK(); */
+    /*  free(tempfile); */
+    /*  return ret; */
+    /* } */
+    /* CLI_TMPUNLK(); */
+    /* free(tempfile); */
+
+    if (peinfo->overlay_start && peinfo->overlay_size > 0) {
+        ret = cli_scanishield(ctx, peinfo->overlay_start, peinfo->overlay_size);
+        if (ret != CL_CLEAN) {
+            // TODO Handle allmatch
+            cli_exe_info_destroy(peinfo);
+            return ret;
+        }
+    }
+
+    pedata.nsections = peinfo->nsections;
+    pedata.ep        = peinfo->ep;
+    pedata.offset    = 0;
+    memcpy(&pedata.file_hdr, &(peinfo->file_hdr), sizeof(peinfo->file_hdr));
+    // TODO no need to copy both of these for each binary
+    memcpy(&pedata.opt32, &(peinfo->pe_opt.opt32), sizeof(peinfo->pe_opt.opt32));
+    memcpy(&pedata.opt64, &(peinfo->pe_opt.opt64), sizeof(peinfo->pe_opt.opt64));
+    memcpy(&pedata.dirs, &(peinfo->dirs), sizeof(peinfo->dirs));
+    // Gross
+    memcpy(&pedata.opt32_dirs, &(peinfo->dirs), sizeof(peinfo->dirs));
+    memcpy(&pedata.opt64_dirs, &(peinfo->dirs), sizeof(peinfo->dirs));
+    pedata.e_lfanew    = peinfo->e_lfanew;
+    pedata.overlays    = peinfo->overlay_start;
+    pedata.overlays_sz = peinfo->overlay_size;
+    pedata.hdr_size    = peinfo->hdr_size;
+
+    /* Bytecode BC_PE_ALL hook */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+        cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+        cli_exe_info_destroy(peinfo);
+        return CL_EMEM;
+    }
+
+    cli_bytecode_context_setpe(bc_ctx, &pedata, peinfo->sections);
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_ALL, map);
+    switch (ret) {
+        case CL_ENULLARG:
+            cli_warnmsg("cli_scanpe: NULL argument supplied\n");
+            break;
+        case CL_VIRUS:
+        case CL_BREAK:
+            // TODO Handle allmatch
+            cli_exe_info_destroy(peinfo);
+            cli_bytecode_context_destroy(bc_ctx);
+            return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+    }
+    cli_bytecode_context_destroy(bc_ctx);
+
+    /* Attempt to run scans on import table */
+    /* Run if there are existing signatures and/or preclassing */
+#if HAVE_JSON
+    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->wrkproperty)) {
+#else
+    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_imp) {
+#endif
+        ret = scan_pe_imp(ctx, peinfo);
+        switch (ret) {
+            case CL_SUCCESS:
+                break;
+            case CL_ENULLARG:
+                cli_warnmsg("cli_scanpe: NULL argument supplied\n");
+                break;
+            case CL_VIRUS:
+                if (SCAN_ALLMATCHES)
+                    break;
+                /* intentional fall-through */
+            case CL_BREAK:
+                cli_exe_info_destroy(peinfo);
+                return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+            default:
+                cli_exe_info_destroy(peinfo);
+                return ret;
+        }
+    }
+    /* Attempt to detect some popular polymorphic viruses */
+
+    /* W32.Parite.B */
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_PARITE) && !peinfo->is_dll && epsize == 4096 && peinfo->ep == peinfo->sections[peinfo->nsections - 1].raw) {
+        const char *pt = cli_memstr(epbuff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
+        if (pt) {
+            pt += 15;
+            if ((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
+                ret = cli_append_virus(ctx, "Heuristics.W32.Parite.B");
+                if (ret != CL_CLEAN) {
+                    if (ret == CL_VIRUS) {
+                        if (!SCAN_ALLMATCHES) {
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
+                        } else
+                            viruses_found++;
+                    } else {
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Kriz */
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(peinfo->sections[peinfo->nsections - 1].raw, peinfo->sections[peinfo->nsections - 1].rsz, peinfo->ep, 0x0fd2) && epbuff[1] == '\x9c' && epbuff[2] == '\x60') {
+        enum { KZSTRASH,
+               KZSCDELTA,
+               KZSPDELTA,
+               KZSGETSIZE,
+               KZSXORPRFX,
+               KZSXOR,
+               KZSDDELTA,
+               KZSLOOP,
+               KZSTOP };
+        uint8_t kzs[]    = {KZSTRASH, KZSCDELTA, KZSPDELTA, KZSGETSIZE, KZSTRASH, KZSXORPRFX, KZSXOR, KZSTRASH, KZSDDELTA, KZSTRASH, KZSLOOP, KZSTOP};
+        uint8_t *kzstate = kzs;
+        uint8_t *kzcode  = (uint8_t *)epbuff + 3;
+        uint8_t kzdptr = 0xff, kzdsize = 0xff;
+        int kzlen = 197, kzinitlen = 0xffff, kzxorlen = -1;
+        cli_dbgmsg("cli_scanpe: in kriz\n");
+
+        while (*kzstate != KZSTOP) {
+            uint8_t op;
+            if (kzlen <= 6)
+                break;
+
+            op = *kzcode++;
+            kzlen--;
+
+            switch (*kzstate) {
+                case KZSTRASH:
+                case KZSGETSIZE: {
+                    int opsz = 0;
+                    switch (op) {
+                        case 0x81:
+                            kzcode += 5;
+                            kzlen -= 5;
+                            break;
+                        case 0xb8:
+                        case 0xb9:
+                        case 0xba:
+                        case 0xbb:
+                        case 0xbd:
+                        case 0xbe:
+                        case 0xbf:
+                            if (*kzstate == KZSGETSIZE && cli_readint32(kzcode) == 0x0fd2) {
+                                kzinitlen = kzlen - 5;
+                                kzdsize   = op - 0xb8;
+                                kzstate++;
+                                op = 4; /* fake the register to avoid breaking out */
+
+                                cli_dbgmsg("cli_scanpe: kriz: using #%d as size counter\n", kzdsize);
+                            }
+                            opsz = 4;
+                        case 0x48:
+                        case 0x49:
+                        case 0x4a:
+                        case 0x4b:
+                        case 0x4d:
+                        case 0x4e:
+                        case 0x4f:
+                            op &= 7;
+                            if (op != kzdptr && op != kzdsize) {
+                                kzcode += opsz;
+                                kzlen -= opsz;
+                                break;
+                            }
+                        default:
+                            kzcode--;
+                            kzlen++;
+                            kzstate++;
+                    }
+
+                    break;
+                }
+                case KZSCDELTA:
+                    if (op == 0xe8 && (uint32_t)cli_readint32(kzcode) < 0xff) {
+                        kzlen -= *kzcode + 4;
+                        kzcode += *kzcode + 4;
+                        kzstate++;
+                    } else {
+                        *kzstate = KZSTOP;
+                    }
+
+                    break;
+                case KZSPDELTA:
+                    if ((op & 0xf8) == 0x58 && (kzdptr = op - 0x58) != 4) {
+                        kzstate++;
+                        cli_dbgmsg("cli_scanpe: kriz: using #%d as pointer\n", kzdptr);
+                    } else {
+                        *kzstate = KZSTOP;
+                    }
+
+                    break;
+                case KZSXORPRFX:
+                    kzstate++;
+                    if (op == 0x3e)
+                        break;
+                case KZSXOR:
+                    if (op == 0x80 && *kzcode == kzdptr + 0xb0) {
+                        kzxorlen = kzlen;
+                        kzcode += +6;
+                        kzlen -= +6;
+                        kzstate++;
+                    } else {
+                        *kzstate = KZSTOP;
+                    }
+
+                    break;
+                case KZSDDELTA:
+                    if (op == kzdptr + 0x48)
+                        kzstate++;
+                    else
+                        *kzstate = KZSTOP;
+
+                    break;
+                case KZSLOOP:
+                    if (op == kzdsize + 0x48 && *kzcode == 0x75 && kzlen - (int8_t)kzcode[1] - 3 <= kzinitlen && kzlen - (int8_t)kzcode[1] >= kzxorlen) {
+                        ret = cli_append_virus(ctx, "Heuristics.W32.Kriz");
+                        if (ret != CL_CLEAN) {
+                            if (ret == CL_VIRUS) {
+                                if (!SCAN_ALLMATCHES) {
+                                    cli_exe_info_destroy(peinfo);
+                                    return ret;
+                                } else
+                                    viruses_found++;
+                            } else {
+                                cli_exe_info_destroy(peinfo);
+                                return ret;
+                            }
+                        }
+                    }
+                    cli_dbgmsg("cli_scanpe: kriz: loop out of bounds, corrupted sample?\n");
+                    kzstate++;
+            }
+        }
+    }
+
+    /* W32.Magistr.A/B */
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_MAGISTR) && !peinfo->is_dll && (peinfo->nsections > 1) && (peinfo->sections[peinfo->nsections - 1].chr & 0x80000000)) {
+        uint32_t rsize, vsize, dam = 0;
+
+        vsize = peinfo->sections[peinfo->nsections - 1].uvsz;
+        rsize = peinfo->sections[peinfo->nsections - 1].rsz;
+        if (rsize < peinfo->sections[peinfo->nsections - 1].ursz) {
+            rsize = peinfo->sections[peinfo->nsections - 1].ursz;
+            dam   = 1;
+        }
+
+        if (vsize >= 0x612c && rsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
+            int bw = rsize < 0x7000 ? rsize : 0x7000;
+            const char *tbuff;
+
+            if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
+                if (cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
+                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
+                    if (ret != CL_CLEAN) {
+                        if (ret == CL_VIRUS) {
+                            if (!SCAN_ALLMATCHES) {
+                                cli_exe_info_destroy(peinfo);
+                                return ret;
+                            } else
+                                viruses_found++;
+                        } else {
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
+                        }
+                    }
+                }
+            }
+        } else if (rsize >= 0x7000 && vsize >= 0x7000 && ((vsize & 0xff) == 0xed)) {
+            int bw = rsize < 0x8000 ? rsize : 0x8000;
+            const char *tbuff;
+
+            if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
+                if (cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
+                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
+                    if (ret != CL_CLEAN) {
+                        if (ret == CL_VIRUS) {
+                            if (!SCAN_ALLMATCHES) {
+                                cli_exe_info_destroy(peinfo);
+                                return ret;
+                            } else
+                                viruses_found++;
+                        } else {
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* W32.Polipos.A */
+    // TODO Add endianness correction to SizeOfStackReserve access
+    while (polipos && !peinfo->is_dll && peinfo->nsections > 2 && peinfo->nsections < 13 && peinfo->e_lfanew <= 0x800 && (EC16(peinfo->pe_opt.opt32.Subsystem) == 2 || EC16(peinfo->pe_opt.opt32.Subsystem) == 3) && EC16(peinfo->file_hdr.Machine) == 0x14c && peinfo->pe_opt.opt32.SizeOfStackReserve >= 0x80000) {
+        uint32_t jump, jold, *jumps = NULL;
+        const uint8_t *code;
+        unsigned int xsjs = 0;
+
+        if (peinfo->sections[0].rsz > CLI_MAX_ALLOCATION)
+            break;
+        if (peinfo->sections[0].rsz < 5)
+            break;
+        if (!(code = fmap_need_off_once(map, peinfo->sections[0].raw, peinfo->sections[0].rsz)))
+            break;
+
+        for (i = 0; i < peinfo->sections[0].rsz - 5; i++) {
+            if ((uint8_t)(code[i] - 0xe8) > 1)
+                continue;
+
+            jump = cli_rawaddr(peinfo->sections[0].rva + i + 5 + cli_readint32(&code[i + 1]), peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
+            if (err || !CLI_ISCONTAINED(peinfo->sections[polipos].raw, peinfo->sections[polipos].rsz, jump, 9))
+                continue;
+
+            if (xsjs % 128 == 0) {
+                if (xsjs == 1280)
+                    break;
+
+                if (!(jumps = (uint32_t *)cli_realloc2(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
+                    cli_exe_info_destroy(peinfo);
+                    return CL_EMEM;
+                }
+            }
+
+            j = 0;
+            for (; j < xsjs; j++) {
+                if (jumps[j] < jump)
+                    continue;
+                if (jumps[j] == jump) {
+                    xsjs--;
+                    break;
+                }
+
+                jold     = jumps[j];
+                jumps[j] = jump;
+                jump     = jold;
+            }
+
+            jumps[j] = jump;
+            xsjs++;
+        }
+
+        if (!xsjs)
+            break;
+
+        cli_dbgmsg("cli_scanpe: Polipos: Checking %d xsect jump(s)\n", xsjs);
+        for (i = 0; i < xsjs; i++) {
+            if (!(code = fmap_need_off_once(map, jumps[i], 9)))
+                continue;
+
+            if ((jump = cli_readint32(code)) == 0x60ec8b55 || (code[4] == 0x0ec && ((jump == 0x83ec8b55 && code[6] == 0x60) || (jump == 0x81ec8b55 && !code[7] && !code[8])))) {
+                ret = cli_append_virus(ctx, "Heuristics.W32.Polipos.A");
+                if (ret != CL_CLEAN) {
+                    if (ret == CL_VIRUS) {
+                        if (!SCAN_ALLMATCHES) {
+                            free(jumps);
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
+                        } else
+                            viruses_found++;
+                    } else {
+                        free(jumps);
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
+                    }
+                }
+            }
+        }
+
+        free(jumps);
+        break;
+    }
+
+    /* Trojan.Swizzor.Gen */
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && peinfo->nsections > 1 && fsize > 64 * 1024 && fsize < 4 * 1024 * 1024) {
+        if (peinfo->dirs[2].Size) {
+            struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
+            unsigned int m            = 1000;
+            ret                       = CL_CLEAN;
+
+            if (!stats) {
+                cli_exe_info_destroy(peinfo);
+                return CL_EMEM;
+            } else {
+                cli_parseres_special(EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].VirtualAddress), map, peinfo, fsize, 0, 0, &m, stats);
+                if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
+                    ret = cli_append_virus(ctx, "Heuristics.Trojan.Swizzor.Gen");
+                    if (ret != CL_CLEAN) {
+                        if (ret == CL_VIRUS) {
+                            if (!SCAN_ALLMATCHES) {
+                                free(stats);
+                                cli_exe_info_destroy(peinfo);
+                                return ret;
+                            } else
+                                viruses_found++;
+                        } else {
+                            free(stats);
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* !!!!!!!!!!!!!!    PACKERS START HERE    !!!!!!!!!!!!!! */
+    corrupted_cur        = ctx->corrupted_input;
+    ctx->corrupted_input = 2; /* caller will reset on return */
+
+    /* UPX, FSG, MEW support */
+
+    /* try to find the first section with physical size == 0 */
+    found = 0;
+    if (DCONF & (PE_CONF_UPX | PE_CONF_FSG | PE_CONF_MEW)) {
+        for (i = 0; i < (unsigned int)peinfo->nsections - 1; i++) {
+            if (!peinfo->sections[i].rsz && peinfo->sections[i].vsz && peinfo->sections[i + 1].rsz && peinfo->sections[i + 1].vsz) {
+                found = 1;
+                cli_dbgmsg("cli_scanpe: UPX/FSG/MEW: empty section found - assuming compression\n");
+#if HAVE_JSON
+                if (pe_json != NULL)
+                    cli_jsonbool(pe_json, "HasEmptySection", 1);
+#endif
+                break;
+            }
+        }
+    }
+
+    /* MEW support */
+    if (found && (DCONF & PE_CONF_MEW) && epsize >= 16 && epbuff[0] == '\xe9') {
+        uint32_t fileoffset;
+        const char *tbuff;
+
+        fileoffset = (peinfo->vep + cli_readint32(epbuff + 1) + 5);
+        while (fileoffset == 0x154 || fileoffset == 0x158) {
+            char *src;
+            uint32_t offdiff, uselzma;
+
+            cli_dbgmsg("cli_scanpe: MEW: found MEW characteristics %08X + %08X + 5 = %08X\n",
+                       cli_readint32(epbuff + 1), peinfo->vep, cli_readint32(epbuff + 1) + peinfo->vep + 5);
+
+            if (!(tbuff = fmap_need_off_once(map, fileoffset, 0xb0)))
+                break;
+
+            if (fileoffset == 0x154)
+                cli_dbgmsg("cli_scanpe: MEW: Win9x compatibility was set!\n");
+            else
+                cli_dbgmsg("cli_scanpe: MEW: Win9x compatibility was NOT set!\n");
+
+            offdiff = cli_readint32(tbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase);
+            if ((offdiff <= peinfo->sections[i + 1].rva) ||
+                (offdiff >= peinfo->sections[i + 1].rva + peinfo->sections[i + 1].raw - 4)) {
+                cli_dbgmsg("cli_scanpe: MEW: ESI is not in proper section\n");
+                break;
+            }
+
+            offdiff -= peinfo->sections[i + 1].rva;
+
+            if (!peinfo->sections[i + 1].rsz) {
+                cli_dbgmsg("cli_scanpe: MEW: mew section is empty\n");
+                break;
+            }
+
+            ssize = peinfo->sections[i + 1].vsz;
+            dsize = peinfo->sections[i].vsz;
+
+            /* Guard against integer overflow */
+            if ((ssize + dsize < ssize) || (ssize + dsize < dsize)) {
+                cli_dbgmsg("cli_scanpe: MEW: section size (%08x) + diff size (%08x) exceeds max size of unsigned int (%08x)\n", ssize, dsize, UINT32_MAX);
+                break;
+            }
+
+            /* Verify that offdiff does not exceed the ssize + sdiff */
+            if (offdiff >= ssize + dsize) {
+                cli_dbgmsg("cli_scanpe: MEW: offdiff (%08x) exceeds section size + diff size (%08x)\n", offdiff, ssize + dsize);
+                break;
+            }
+
+            cli_dbgmsg("cli_scanpe: MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
+
+            CLI_UNPSIZELIMITS("cli_scanpe: MEW", MAX(ssize, dsize));
+            CLI_UNPSIZELIMITS("cli_scanpe: MEW", MAX(ssize + dsize, peinfo->sections[i + 1].rsz));
+
+            if (peinfo->sections[i + 1].rsz < offdiff + 12 || peinfo->sections[i + 1].rsz > ssize) {
+                cli_dbgmsg("cli_scanpe: MEW: Size mismatch: %08x\n", peinfo->sections[i + 1].rsz);
+                break;
+            }
+
+            /* allocate needed buffer */
+            if (!(src = cli_calloc(ssize + dsize, sizeof(char)))) {
+                cli_exe_info_destroy(peinfo);
+                return CL_EMEM;
+            }
+
+            if ((bytes = fmap_readn(map, src + dsize, peinfo->sections[i + 1].raw, peinfo->sections[i + 1].rsz)) != peinfo->sections[i + 1].rsz) {
+                cli_dbgmsg("cli_scanpe: MEW: Can't read %d bytes [read: %lu]\n", peinfo->sections[i + 1].rsz, (unsigned long)bytes);
+                cli_exe_info_destroy(peinfo);
+                free(src);
+                return CL_EREAD;
+            }
+
+            cli_dbgmsg("cli_scanpe: MEW: %u (%08x) bytes read\n", (unsigned int)bytes, (unsigned int)bytes);
+
+            /* count offset to lzma proc, if lzma used, 0xe8 -> call */
+            if (tbuff[0x7b] == '\xe8') {
+                if (!CLI_ISCONTAINED(peinfo->sections[1].rva, peinfo->sections[1].vsz, cli_readint32(tbuff + 0x7c) + fileoffset + 0x80, 4)) {
+                    cli_dbgmsg("cli_scanpe: MEW: lzma proc out of bounds!\n");
+                    free(src);
+                    break; /* to next unpacker in chain */
+                }
+
+                uselzma = cli_readint32(tbuff + 0x7c) - (peinfo->sections[0].rva - fileoffset - 0x80);
+            } else {
+                uselzma = 0;
+            }
+
+#if HAVE_JSON
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "MEW");
+#endif
+
+            CLI_UNPTEMP("cli_scanpe: MEW", (src, 0));
+            CLI_UNPRESULTS("cli_scanpe: MEW", (unmew11(src, offdiff, ssize, dsize, EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->sections[0].rva, uselzma, ndesc)), 1, (src, 0));
+            break;
+        }
+    }
+
+    // TODO Why do we bail here
+    if (epsize < 168) {
+        cli_exe_info_destroy(peinfo);
         return CL_CLEAN;
     }
 
-    if (EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE) {
-        cli_dbgmsg("Invalid PE signature (probably NE file)\n");
-        return CL_CLEAN;
+    if (found || upack) {
+        /* Check EP for UPX vs. FSG vs. Upack */
+
+        /* Upack 0.39 produces 2 types of executables
+         * 3 sections:           | 2 sections (one empty, I don't check found if !upack, since it's in OR above):
+         *   mov esi, value      |   pusha
+         *   lodsd               |   call $+0x9
+         *   push eax            |
+         *
+         * Upack 1.1/1.2 Beta produces [based on 2 samples (sUx) provided by aCaB]:
+         * 2 sections
+         *   mov esi, value
+         *   loads
+         *   mov edi, eax
+         *
+         * Upack unknown [sample 0297729]
+         * 3 sections
+         *   mov esi, value
+         *   push [esi]
+         *   jmp
+         * 
+         */
+        /* upack 0.39-3s + sample 0151477*/
+        while (((upack && peinfo->nsections == 3) && /* 3 sections */
+                ((
+                     epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) > peinfo->min && /* mov esi */
+                     epbuff[5] == '\xad' && epbuff[6] == '\x50'                                                               /* lodsd; push eax */
+                     ) ||
+                 /* based on 0297729 sample from aCaB */
+                 (epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) > peinfo->min && /* mov esi */
+                  epbuff[5] == '\xff' && epbuff[6] == '\x36'                                                               /* push [esi] */
+                  ))) ||
+               ((!upack && peinfo->nsections == 2) &&                                            /* 2 sections */
+                ((                                                                               /* upack 0.39-2s */
+                  epbuff[0] == '\x60' && epbuff[1] == '\xe8' && cli_readint32(epbuff + 2) == 0x9 /* pusha; call+9 */
+                  ) ||
+                 (                                                                                                         /* upack 1.1/1.2, based on 2 samples */
+                  epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) < peinfo->min && /* mov esi */
+                  cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) > 0 &&
+                  epbuff[5] == '\xad' && epbuff[6] == '\x8b' && epbuff[7] == '\xf8' /* loads;  mov edi, eax */
+                  )))) {
+            uint32_t vma, off;
+            int a, b, c;
+
+            cli_dbgmsg("cli_scanpe: Upack characteristics found.\n");
+            a = peinfo->sections[0].vsz;
+            b = peinfo->sections[1].vsz;
+            if (upack) {
+                cli_dbgmsg("cli_scanpe: Upack: var set\n");
+
+                c     = peinfo->sections[2].vsz;
+                ssize = peinfo->sections[0].ursz + peinfo->sections[0].uraw;
+                off   = peinfo->sections[0].rva;
+                vma   = EC32(peinfo->pe_opt.opt32.ImageBase) + peinfo->sections[0].rva;
+            } else {
+                cli_dbgmsg("cli_scanpe: Upack: var NOT set\n");
+                c     = peinfo->sections[1].rva;
+                ssize = peinfo->sections[1].uraw;
+                off   = 0;
+                vma   = peinfo->sections[1].rva - peinfo->sections[1].uraw;
+            }
+
+            dsize = a + b + c;
+
+            CLI_UNPSIZELIMITS("cli_scanpe: Upack", MAX(MAX(dsize, ssize), peinfo->sections[1].ursz));
+
+            if (!CLI_ISCONTAINED(0, dsize, peinfo->sections[1].rva - off, peinfo->sections[1].ursz) || (upack && !CLI_ISCONTAINED(0, dsize, peinfo->sections[2].rva - peinfo->sections[0].rva, ssize)) || ssize > dsize) {
+                cli_dbgmsg("cli_scanpe: Upack: probably malformed pe-header, skipping to next unpacker\n");
+                break;
+            }
+
+            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+                cli_exe_info_destroy(peinfo);
+                return CL_EMEM;
+            }
+
+            if ((unsigned int)fmap_readn(map, dest, 0, ssize) != ssize) {
+                cli_dbgmsg("cli_scanpe: Upack: Can't read raw data of section 0\n");
+                free(dest);
+                break;
+            }
+
+            if (upack)
+                memmove(dest + peinfo->sections[2].rva - peinfo->sections[0].rva, dest, ssize);
+
+            if ((unsigned int)fmap_readn(map, dest + peinfo->sections[1].rva - off, peinfo->sections[1].uraw, peinfo->sections[1].ursz) != peinfo->sections[1].ursz) {
+                cli_dbgmsg("cli_scanpe: Upack: Can't read raw data of section 1\n");
+                free(dest);
+                break;
+            }
+
+#if HAVE_JSON
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "Upack");
+#endif
+
+            CLI_UNPTEMP("cli_scanpe: Upack", (dest, 0));
+            CLI_UNPRESULTS("cli_scanpe: Upack", (unupack(upack, dest, dsize, epbuff, vma, peinfo->ep, EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->sections[0].rva, ndesc)), 1, (dest, 0));
+
+            break;
+        }
     }
 
-    if (EC16(file_hdr.Characteristics) & 0x2000) {
+    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\x87' && epbuff[1] == '\x25') {
+        const char *dst;
+        uint32_t newesi, newedi, newebx, newedx;
+
+        /* FSG v2.0 support - thanks to aCaB ! */
+
+        ssize = peinfo->sections[i + 1].rsz;
+        dsize = peinfo->sections[i].vsz;
+
+        CLI_UNPSIZELIMITS("cli_scanpe: FSG", MAX(dsize, ssize));
+
+        if (ssize <= 0x19 || dsize <= ssize) {
+            cli_dbgmsg("cli_scanpe: FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+            cli_exe_info_destroy(peinfo);
+            return CL_CLEAN;
+        }
+
+        newedx = cli_readint32(epbuff + 2) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        if (!CLI_ISCONTAINED(peinfo->sections[i + 1].rva, peinfo->sections[i + 1].rsz, newedx, 4)) {
+            cli_dbgmsg("cli_scanpe: FSG: xchg out of bounds (%x), giving up\n", newedx);
+            break;
+        }
+
+        if (!peinfo->sections[i + 1].rsz || !(src = fmap_need_off_once(map, peinfo->sections[i + 1].raw, ssize))) {
+            cli_dbgmsg("cli_scanpe: Can't read raw data of section %d\n", i + 1);
+            cli_exe_info_destroy(peinfo);
+            return CL_ESEEK;
+        }
+
+        dst = src + newedx - peinfo->sections[i + 1].rva;
+        if (newedx < peinfo->sections[i + 1].rva || !CLI_ISCONTAINED(src, ssize, dst, 4)) {
+            cli_dbgmsg("cli_scanpe: FSG: New ESP out of bounds\n");
+            break;
+        }
+
+        newedx = cli_readint32(dst) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        if (!CLI_ISCONTAINED(peinfo->sections[i + 1].rva, peinfo->sections[i + 1].rsz, newedx, 4)) {
+            cli_dbgmsg("cli_scanpe: FSG: New ESP (%x) is wrong\n", newedx);
+            break;
+        }
+
+        dst = src + newedx - peinfo->sections[i + 1].rva;
+        if (!CLI_ISCONTAINED(src, ssize, dst, 32)) {
+            cli_dbgmsg("cli_scanpe: FSG: New stack out of bounds\n");
+            break;
+        }
+
+        newedi = cli_readint32(dst) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        newesi = cli_readint32(dst + 4) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        newebx = cli_readint32(dst + 16) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        newedx = cli_readint32(dst + 20);
+
+        if (newedi != peinfo->sections[i].rva) {
+            cli_dbgmsg("cli_scanpe: FSG: Bad destination buffer (edi is %x should be %x)\n", newedi, peinfo->sections[i].rva);
+            break;
+        }
+
+        if (newesi < peinfo->sections[i + 1].rva || newesi - peinfo->sections[i + 1].rva >= peinfo->sections[i + 1].rsz) {
+            cli_dbgmsg("cli_scanpe: FSG: Source buffer out of section bounds\n");
+            break;
+        }
+
+        if (!CLI_ISCONTAINED(peinfo->sections[i + 1].rva, peinfo->sections[i + 1].rsz, newebx, 16)) {
+            cli_dbgmsg("cli_scanpe: FSG: Array of functions out of bounds\n");
+            break;
+        }
+
+        newedx = cli_readint32(newebx + 12 - peinfo->sections[i + 1].rva + src) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", newedx);
+
+        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
 #if HAVE_JSON
         if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Type", "DLL");
+            cli_jsonstr(pe_json, "Packer", "FSG");
 #endif
-        cli_dbgmsg("File type: DLL\n");
-        dll = 1;
-    } else if (EC16(file_hdr.Characteristics) & 0x01) {
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Type", "EXE");
-#endif
-        cli_dbgmsg("File type: Executable\n");
+
+        CLI_UNPTEMP("cli_scanpe: FSG", (dest, 0));
+        CLI_UNPRESULTSFSG2("cli_scanpe: FSG", (unfsg_200(newesi - peinfo->sections[i + 1].rva + src, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, newedi, EC32(peinfo->pe_opt.opt32.ImageBase), newedx, ndesc)), 1, (dest, 0));
+        break;
     }
 
-    switch (EC16(file_hdr.Machine)) {
-        case 0x0:
-            archtype = "Unknown";
+    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) < peinfo->min) {
+        int sectcnt = 0;
+        const char *support;
+        uint32_t newesi, newedi, oldep, gp, t;
+        struct cli_exe_section *sections;
+
+        /* FSG support - v. 1.33 (thx trog for the many samples) */
+
+        ssize = peinfo->sections[i + 1].rsz;
+        dsize = peinfo->sections[i].vsz;
+
+        CLI_UNPSIZELIMITS("cli_scanpe: FSG", MAX(dsize, ssize));
+
+        if (ssize <= 0x19 || dsize <= ssize) {
+            cli_dbgmsg("cli_scanpe: FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+            cli_exe_info_destroy(peinfo);
+            return CL_CLEAN;
+        }
+
+        if (!(t = cli_rawaddr(cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase), NULL, 0, &err, fsize, peinfo->hdr_size)) && err) {
+            cli_dbgmsg("cli_scanpe: FSG: Support data out of padding area\n");
             break;
-        case 0x14c:
-            archtype = "80386";
+        }
+
+        gp = peinfo->sections[i + 1].raw - t;
+
+        CLI_UNPSIZELIMITS("cli_scanpe: FSG", gp);
+
+        if (!(support = fmap_need_off_once(map, t, gp))) {
+            cli_dbgmsg("cli_scanpe: Can't read %d bytes from padding area\n", gp);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+        /* newebx = cli_readint32(support) - EC32(peinfo->pe_opt.opt32.ImageBase);  Unused */
+        newedi = cli_readint32(support + 4) - EC32(peinfo->pe_opt.opt32.ImageBase); /* 1st dest */
+        newesi = cli_readint32(support + 8) - EC32(peinfo->pe_opt.opt32.ImageBase); /* Source */
+
+        if (newesi < peinfo->sections[i + 1].rva || newesi - peinfo->sections[i + 1].rva >= peinfo->sections[i + 1].rsz) {
+            cli_dbgmsg("cli_scanpe: FSG: Source buffer out of section bounds\n");
             break;
-        case 0x14d:
-            archtype = "80486";
+        }
+
+        if (newedi != peinfo->sections[i].rva) {
+            cli_dbgmsg("cli_scanpe: FSG: Bad destination (is %x should be %x)\n", newedi, peinfo->sections[i].rva);
             break;
-        case 0x14e:
-            archtype = "80586";
+        }
+
+        /* Counting original sections */
+        for (t = 12; t < gp - 4; t += 4) {
+            uint32_t rva = cli_readint32(support + t);
+
+            if (!rva)
+                break;
+
+            rva -= EC32(peinfo->pe_opt.opt32.ImageBase) + 1;
+            sectcnt++;
+
+            if (rva % 0x1000)
+                cli_dbgmsg("cli_scanpe: FSG: Original section %d is misaligned\n", sectcnt);
+
+            if (rva < peinfo->sections[i].rva || rva - peinfo->sections[i].rva >= peinfo->sections[i].vsz) {
+                cli_dbgmsg("cli_scanpe: FSG: Original section %d is out of bounds\n", sectcnt);
+                break;
+            }
+        }
+
+        if (t >= gp - 4 || cli_readint32(support + t)) {
             break;
-        case 0x160:
-            archtype = "R30000 (big-endian)";
+        }
+
+        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+            cli_errmsg("cli_scanpe: FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        sections[0].rva = newedi;
+        for (t = 1; t <= (uint32_t)sectcnt; t++)
+            sections[t].rva = cli_readint32(support + 8 + t * 4) - 1 - EC32(peinfo->pe_opt.opt32.ImageBase);
+
+        if (!peinfo->sections[i + 1].rsz || !(src = fmap_need_off_once(map, peinfo->sections[i + 1].raw, ssize))) {
+            cli_dbgmsg("cli_scanpe: Can't read raw data of section %d\n", i);
+            cli_exe_info_destroy(peinfo);
+            free(sections);
+            return CL_EREAD;
+        }
+
+        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+            cli_exe_info_destroy(peinfo);
+            free(sections);
+            return CL_EMEM;
+        }
+
+        oldep = peinfo->vep + 161 + 6 + cli_readint32(epbuff + 163);
+        cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", oldep);
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "FSG");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: FSG", (dest, sections, 0));
+        CLI_UNPRESULTSFSG1("cli_scanpe: FSG", (unfsg_133(src + newesi - peinfo->sections[i + 1].rva, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(peinfo->pe_opt.opt32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
+        break; /* were done with 1.33 */
+    }
+
+    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\xbb' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) < peinfo->min && epbuff[5] == '\xbf' && epbuff[10] == '\xbe' && peinfo->vep >= peinfo->sections[i + 1].rva && peinfo->vep - peinfo->sections[i + 1].rva > peinfo->sections[i + 1].rva - 0xe0) {
+        int sectcnt = 0;
+        uint32_t gp, t = cli_rawaddr(cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase), NULL, 0, &err, fsize, peinfo->hdr_size);
+        const char *support;
+        uint32_t newesi = cli_readint32(epbuff + 11) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        uint32_t newedi = cli_readint32(epbuff + 6) - EC32(peinfo->pe_opt.opt32.ImageBase);
+        uint32_t oldep  = peinfo->vep - peinfo->sections[i + 1].rva;
+        struct cli_exe_section *sections;
+
+        /* FSG support - v. 1.31 */
+
+        ssize = peinfo->sections[i + 1].rsz;
+        dsize = peinfo->sections[i].vsz;
+
+        if (err) {
+            cli_dbgmsg("cli_scanpe: FSG: Support data out of padding area\n");
             break;
-        case 0x162:
-            archtype = "R3000";
+        }
+
+        if (newesi < peinfo->sections[i + 1].rva || newesi - peinfo->sections[i + 1].rva >= peinfo->sections[i + 1].raw) {
+            cli_dbgmsg("cli_scanpe: FSG: Source buffer out of section bounds\n");
             break;
-        case 0x166:
-            archtype = "R4000";
+        }
+
+        if (newedi != peinfo->sections[i].rva) {
+            cli_dbgmsg("cli_scanpe: FSG: Bad destination (is %x should be %x)\n", newedi, peinfo->sections[i].rva);
             break;
-        case 0x168:
-            archtype = "R10000";
+        }
+
+        CLI_UNPSIZELIMITS("cli_scanpe: FSG", MAX(dsize, ssize));
+
+        if (ssize <= 0x19 || dsize <= ssize) {
+            cli_dbgmsg("cli_scanpe: FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
+            cli_exe_info_destroy(peinfo);
+            return CL_CLEAN;
+        }
+
+        gp = peinfo->sections[i + 1].raw - t;
+
+        CLI_UNPSIZELIMITS("cli_scanpe: FSG", gp)
+
+        if (!(support = fmap_need_off_once(map, t, gp))) {
+            cli_dbgmsg("cli_scanpe: Can't read %d bytes from padding area\n", gp);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+        /* Counting original sections */
+        for (t = 0; t < gp - 2; t += 2) {
+            uint32_t rva = support[t] | (support[t + 1] << 8);
+
+            if (rva == 2 || rva == 1)
+                break;
+
+            rva = ((rva - 2) << 12) - EC32(peinfo->pe_opt.opt32.ImageBase);
+            sectcnt++;
+
+            if (rva < peinfo->sections[i].rva || rva - peinfo->sections[i].rva >= peinfo->sections[i].vsz) {
+                cli_dbgmsg("cli_scanpe: FSG: Original section %d is out of bounds\n", sectcnt);
+                break;
+            }
+        }
+
+        if (t >= gp - 10 || cli_readint32(support + t + 6) != 2)
             break;
-        case 0x184:
-            archtype = "DEC Alpha AXP";
+
+        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
+            cli_errmsg("cli_scanpe: FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        sections[0].rva = newedi;
+        for (t = 0; t <= (uint32_t)sectcnt - 1; t++)
+            sections[t + 1].rva = (((support[t * 2] | (support[t * 2 + 1] << 8)) - 2) << 12) - EC32(peinfo->pe_opt.opt32.ImageBase);
+
+        if (!peinfo->sections[i + 1].rsz || !(src = fmap_need_off_once(map, peinfo->sections[i + 1].raw, ssize))) {
+            cli_dbgmsg("cli_scanpe: FSG: Can't read raw data of section %d\n", i);
+            cli_exe_info_destroy(peinfo);
+            free(sections);
+            return CL_EREAD;
+        }
+
+        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+            cli_exe_info_destroy(peinfo);
+            free(sections);
+            return CL_EMEM;
+        }
+
+        gp    = 0xda + 6 * (epbuff[16] == '\xe8');
+        oldep = peinfo->vep + gp + 6 + cli_readint32(src + gp + 2 + oldep);
+        cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", oldep);
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "FSG");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: FSG", (dest, sections, 0));
+        CLI_UNPRESULTSFSG1("cli_scanpe: FSG", (unfsg_133(src + newesi - peinfo->sections[i + 1].rva, dest, ssize + peinfo->sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(peinfo->pe_opt.opt32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
+
+        break; /* were done with 1.31 */
+    }
+
+    if (found && (DCONF & PE_CONF_UPX)) {
+        ssize = peinfo->sections[i + 1].rsz;
+        dsize = peinfo->sections[i].vsz + peinfo->sections[i + 1].vsz;
+
+        /* 
+         * UPX support
+         * we assume (i + 1) is UPX1
+         */
+
+        /* cli_dbgmsg("UPX: ssize %u dsize %u\n", ssize, dsize); */
+
+        CLI_UNPSIZELIMITS("cli_scanpe: UPX", MAX(dsize, ssize));
+
+        if (ssize <= 0x19 || dsize <= ssize || dsize > CLI_MAX_ALLOCATION) {
+            cli_dbgmsg("cli_scanpe: UPX: Size mismatch or dsize too big (ssize: %d, dsize: %d)\n", ssize, dsize);
+            cli_exe_info_destroy(peinfo);
+            return CL_CLEAN;
+        }
+
+        if (!peinfo->sections[i + 1].rsz || !(src = fmap_need_off_once(map, peinfo->sections[i + 1].raw, ssize))) {
+            cli_dbgmsg("cli_scanpe: UPX: Can't read raw data of section %d\n", i + 1);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+        if ((dest = (char *)cli_calloc(dsize + 8192, sizeof(char))) == NULL) {
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        /* try to detect UPX code */
+        if (cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
+            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2B decompression routine\n");
+            upxfn = upx_inflate2b;
+        } else if (cli_memstr(UPX_NRV2D, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, epbuff + 0x69 + 8, 13)) {
+            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2D decompression routine\n");
+            upxfn = upx_inflate2d;
+        } else if (cli_memstr(UPX_NRV2E, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, epbuff + 0x69 + 8, 13)) {
+            cli_dbgmsg("cli_scanpe: UPX: Looks like a NRV2E decompression routine\n");
+            upxfn = upx_inflate2e;
+        }
+
+        if (upxfn) {
+            int skew = cli_readint32(epbuff + 2) - EC32(peinfo->pe_opt.opt32.ImageBase) - peinfo->sections[i + 1].rva;
+
+            if (epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) {
+                /* FIXME: legit skews?? */
+                skew = 0;
+            } else if ((unsigned int)skew > ssize) {
+                /* Ignore suggested skew larger than section size */
+                skew = 0;
+            } else {
+                cli_dbgmsg("cli_scanpe: UPX: UPX1 seems skewed by %d bytes\n", skew);
+            }
+
+            /* Try skewed first (skew may be zero) */
+            if (upxfn(src + skew, ssize - skew, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - skew) >= 0) {
+                upx_success = 1;
+            }
+            /* If skew not successful and non-zero, try no skew */
+            else if (skew && (upxfn(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) >= 0)) {
+                upx_success = 1;
+            }
+
+            if (upx_success)
+                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed\n");
+            else
+                cli_dbgmsg("cli_scanpe: UPX: Preferred decompressor failed\n");
+        }
+
+        if (!upx_success && upxfn != upx_inflate2b) {
+            if (upx_inflate2b(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+
+                cli_dbgmsg("cli_scanpe: UPX: NRV2B decompressor failed\n");
+            } else {
+                upx_success = 1;
+                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2B\n");
+            }
+        }
+
+        if (!upx_success && upxfn != upx_inflate2d) {
+            if (upx_inflate2d(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+
+                cli_dbgmsg("cli_scanpe: UPX: NRV2D decompressor failed\n");
+            } else {
+                upx_success = 1;
+                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2D\n");
+            }
+        }
+
+        if (!upx_success && upxfn != upx_inflate2e) {
+            if (upx_inflate2e(src, ssize, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep - 0x15) == -1) {
+                cli_dbgmsg("cli_scanpe: UPX: NRV2E decompressor failed\n");
+            } else {
+                upx_success = 1;
+                cli_dbgmsg("cli_scanpe: UPX: Successfully decompressed with NRV2E\n");
+            }
+        }
+
+        if (cli_memstr(UPX_LZMA2, 20, epbuff + 0x2f, 20)) {
+            uint32_t strictdsize = cli_readint32(epbuff + 0x21), skew = 0;
+            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
+                // TODO Add EC32
+                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
+                if (skew != 0x15)
+                    skew = 0;
+            }
+
+            if (strictdsize <= dsize)
+                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, 0x20003) >= 0;
+        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
+            uint32_t strictdsize = cli_readint32(epbuff + 0x2b), skew = 0;
+            uint32_t properties = cli_readint32(epbuff + 0x41);
+            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
+                // TODO Add EC32
+                skew = cli_readint32(epbuff + 2) - peinfo->sections[i + 1].rva - peinfo->pe_opt.opt32.ImageBase;
+                if (skew != 0x15)
+                    skew = 0;
+            }
+
+            if (strictdsize <= dsize)
+                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, peinfo->sections[i].rva, peinfo->sections[i + 1].rva, peinfo->vep, properties) >= 0;
+        }
+
+        if (!upx_success) {
+            cli_dbgmsg("cli_scanpe: UPX: All decompressors failed\n");
+            free(dest);
+        }
+    }
+
+    if (upx_success) {
+        cli_exe_info_destroy(peinfo);
+
+        CLI_UNPTEMP("cli_scanpe: UPX/FSG", (dest, 0));
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "UPX");
+#endif
+
+        if ((unsigned int)write(ndesc, dest, dsize) != dsize) {
+            cli_dbgmsg("cli_scanpe: UPX/FSG: Can't write %d bytes\n", dsize);
+            free(tempfile);
+            free(dest);
+            close(ndesc);
+            return CL_EWRITE;
+        }
+
+        free(dest);
+        if (lseek(ndesc, 0, SEEK_SET) == -1) {
+            cli_dbgmsg("cli_scanpe: UPX/FSG: lseek() failed\n");
+            close(ndesc);
+            SHA_RESET;
+            CLI_TMPUNLK();
+            free(tempfile);
+            return CL_ESEEK;
+        }
+
+        if (ctx->engine->keeptmp)
+            cli_dbgmsg("cli_scanpe: UPX/FSG: Decompressed data saved in %s\n", tempfile);
+
+        cli_dbgmsg("***** Scanning decompressed file *****\n");
+        SHA_OFF;
+        if ((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
+            close(ndesc);
+            SHA_RESET;
+            CLI_TMPUNLK();
+            free(tempfile);
+            return CL_VIRUS;
+        }
+
+        SHA_RESET;
+        close(ndesc);
+        CLI_TMPUNLK();
+        free(tempfile);
+        return ret;
+    }
+
+    /* Petite */
+
+    if (epsize < 200) {
+        cli_exe_info_destroy(peinfo);
+        return CL_CLEAN;
+    }
+
+    found = 2;
+
+    if (epbuff[0] != '\xb8' || (uint32_t)cli_readint32(epbuff + 1) != peinfo->sections[peinfo->nsections - 1].rva + EC32(peinfo->pe_opt.opt32.ImageBase)) {
+        if (peinfo->nsections < 2 || epbuff[0] != '\xb8' || (uint32_t)cli_readint32(epbuff + 1) != peinfo->sections[peinfo->nsections - 2].rva + EC32(peinfo->pe_opt.opt32.ImageBase))
+            found = 0;
+        else
+            found = 1;
+    }
+
+    if (found && (DCONF & PE_CONF_PETITE)) {
+        cli_dbgmsg("cli_scanpe: Petite: v2.%d compression detected\n", found);
+
+        if (cli_readint32(epbuff + 0x80) == 0x163c988d) {
+            cli_dbgmsg("cli_scanpe: Petite: level zero compression is not supported yet\n");
+        } else {
+            dsize = peinfo->max - peinfo->min;
+
+            CLI_UNPSIZELIMITS("cli_scanpe: Petite", dsize);
+
+            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
+                cli_dbgmsg("cli_scanpe: Petite: Can't allocate %d bytes\n", dsize);
+                cli_exe_info_destroy(peinfo);
+                return CL_EMEM;
+            }
+
+            for (i = 0; i < peinfo->nsections; i++) {
+                if (peinfo->sections[i].raw) {
+                    unsigned int r_ret;
+
+                    if (!peinfo->sections[i].rsz)
+                        goto out_no_petite;
+
+                    if (!CLI_ISCONTAINED(dest, dsize,
+                                         dest + peinfo->sections[i].rva - peinfo->min,
+                                         peinfo->sections[i].ursz))
+                        goto out_no_petite;
+
+                    r_ret = fmap_readn(map, dest + peinfo->sections[i].rva - peinfo->min,
+                                       peinfo->sections[i].raw,
+                                       peinfo->sections[i].ursz);
+                    if (r_ret != peinfo->sections[i].ursz) {
+                    out_no_petite:
+                        cli_exe_info_destroy(peinfo);
+                        free(dest);
+                        return CL_CLEAN;
+                    }
+                }
+            }
+
+#if HAVE_JSON
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "Petite");
+#endif
+
+            CLI_UNPTEMP("cli_scanpe: Petite", (dest, 0));
+            CLI_UNPRESULTS("Petite", (petite_inflate2x_1to9(dest, peinfo->min, peinfo->max - peinfo->min, peinfo->sections, peinfo->nsections - (found == 1 ? 1 : 0), EC32(peinfo->pe_opt.opt32.ImageBase), peinfo->vep, ndesc, found, EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].Size))), 0, (dest, 0));
+        }
+    }
+
+    /* PESpin 1.1 */
+
+    if ((DCONF & PE_CONF_PESPIN) && peinfo->nsections > 1 &&
+        peinfo->vep >= peinfo->sections[peinfo->nsections - 1].rva &&
+        0x3217 - 4 <= peinfo->sections[peinfo->nsections - 1].rva + peinfo->sections[peinfo->nsections - 1].rsz &&
+        peinfo->vep < peinfo->sections[peinfo->nsections - 1].rva + peinfo->sections[peinfo->nsections - 1].rsz - 0x3217 - 4 &&
+        memcmp(epbuff + 4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0) {
+
+        char *spinned;
+
+        CLI_UNPSIZELIMITS("cli_scanpe: PEspin", fsize);
+
+        if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
+            cli_errmsg("cli_scanpe: PESping: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
+            cli_dbgmsg("cli_scanpe: PESpin: Can't read %lu bytes\n", (unsigned long)fsize);
+            free(spinned);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "PEspin");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: PESpin", (spinned, 0));
+        CLI_UNPRESULTS_("cli_scanpe: PEspin", SPINCASE(), (unspin(spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->vep, ndesc, ctx)), 0, (spinned, 0));
+    }
+
+    /* yC 1.3 & variants */
+    if ((DCONF & PE_CONF_YC) && peinfo->nsections > 1 &&
+        (EC32(peinfo->pe_opt.opt32.AddressOfEntryPoint) == peinfo->sections[peinfo->nsections - 1].rva + 0x60)) {
+
+        uint32_t ecx = 0;
+        int16_t offset;
+
+        /* yC 1.3 */
+        if (!memcmp(epbuff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED", 15) &&
+            !memcmp(epbuff + 0x26, "\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 13) &&
+            ((uint8_t)epbuff[0x13] == 0xB9) &&
+            ((uint16_t)(cli_readint16(epbuff + 0x18)) == 0xE981) &&
+            !memcmp(epbuff + 0x1e, "\x8B\xD5\x81\xC2", 4)) {
+
+            offset = 0;
+            if (0x6c - cli_readint32(epbuff + 0xf) + cli_readint32(epbuff + 0x22) == 0xC6)
+                ecx = cli_readint32(epbuff + 0x14) - cli_readint32(epbuff + 0x1a);
+        }
+
+        /* yC 1.3 variant */
+        if (!ecx && !memcmp(epbuff, "\x55\x8B\xEC\x83\xEC\x40\x53\x56\x57", 9) &&
+            !memcmp(epbuff + 0x17, "\xe8\x00\x00\x00\x00\x5d\x81\xed", 8) &&
+            ((uint8_t)epbuff[0x23] == 0xB9)) {
+
+            offset = 0x10;
+            if (0x6c - cli_readint32(epbuff + 0x1f) + cli_readint32(epbuff + 0x32) == 0xC6)
+                ecx = cli_readint32(epbuff + 0x24) - cli_readint32(epbuff + 0x2a);
+        }
+
+        /* yC 1.x/modified */
+        if (!ecx && !memcmp(epbuff, "\x60\xe8\x00\x00\x00\x00\x5d\x81\xed", 9) &&
+            ((uint8_t)epbuff[0xd] == 0xb9) &&
+            ((uint16_t)cli_readint16(epbuff + 0x12) == 0xbd8d) &&
+            !memcmp(epbuff + 0x18, "\x8b\xf7\xac", 3)) {
+
+            offset = -0x18;
+            if (0x66 - cli_readint32(epbuff + 0x9) + cli_readint32(epbuff + 0x14) == 0xae)
+                ecx = cli_readint32(epbuff + 0xe);
+        }
+
+        if (ecx > 0x800 && ecx < 0x2000 &&
+            !memcmp(epbuff + 0x63 + offset, "\xaa\xe2\xcc", 3) &&
+            (fsize >= peinfo->sections[peinfo->nsections - 1].raw + 0xC6 + ecx + offset)) {
+
+            char *spinned;
+
+            if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
+                cli_errmsg("cli_scanpe: yC: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
+                cli_exe_info_destroy(peinfo);
+                return CL_EMEM;
+            }
+
+            if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
+                cli_dbgmsg("cli_scanpe: yC: Can't read %lu bytes\n", (unsigned long)fsize);
+                free(spinned);
+                cli_exe_info_destroy(peinfo);
+                return CL_EREAD;
+            }
+
+#if HAVE_JSON
+            if (pe_json != NULL)
+                cli_jsonstr(pe_json, "Packer", "yC");
+#endif
+
+            do {
+                unsigned int yc_unp_num_viruses = ctx->num_viruses;
+                const char *yc_unp_virname      = NULL;
+
+                if (ctx->virname)
+                    yc_unp_virname = ctx->virname[0];
+
+                cli_dbgmsg("%d,%d,%d,%d\n", peinfo->nsections - 1, peinfo->e_lfanew, ecx, offset);
+                CLI_UNPTEMP("cli_scanpe: yC", (spinned, 0));
+                CLI_UNPRESULTS("cli_scanpe: yC", (yc_decrypt(ctx, spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc, ecx, offset)), 0, (spinned, 0));
+
+                if (SCAN_ALLMATCHES && yc_unp_num_viruses != ctx->num_viruses) {
+                    cli_exe_info_destroy(peinfo);
+                    return CL_VIRUS;
+                } else if (ctx->virname && yc_unp_virname != ctx->virname[0]) {
+                    cli_exe_info_destroy(peinfo);
+                    return CL_VIRUS;
+                }
+            } while (0);
+        }
+    }
+
+    /* WWPack */
+
+    while ((DCONF & PE_CONF_WWPACK) && peinfo->nsections > 1 &&
+           peinfo->vep == peinfo->sections[peinfo->nsections - 1].rva &&
+           memcmp(epbuff, "\x53\x55\x8b\xe8\x33\xdb\xeb", 7) == 0 &&
+           memcmp(epbuff + 0x68, "\xe8\x00\x00\x00\x00\x58\x2d\x6d\x00\x00\x00\x50\x60\x33\xc9\x50\x58\x50\x50", 19) == 0) {
+        uint32_t head = peinfo->sections[peinfo->nsections - 1].raw;
+        uint8_t *packer;
+        char *src;
+
+        ssize = 0;
+        for (i = 0;; i++) {
+            if (peinfo->sections[i].raw < head)
+                head = peinfo->sections[i].raw;
+
+            if (i + 1 == peinfo->nsections)
+                break;
+
+            if (ssize < peinfo->sections[i].rva + peinfo->sections[i].vsz)
+                ssize = peinfo->sections[i].rva + peinfo->sections[i].vsz;
+        }
+
+        if (!head || !ssize || head > ssize)
             break;
-        case 0x284:
-            archtype = "DEC Alpha AXP 64bit";
+
+        CLI_UNPSIZELIMITS("cli_scanpe: WWPack", ssize);
+
+        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        if ((size_t)fmap_readn(map, src, 0, head) != head) {
+            cli_dbgmsg("cli_scanpe: WWPack: Can't read %d bytes from headers\n", head);
+            free(src);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+        for (i = 0; i < (unsigned int)peinfo->nsections - 1; i++) {
+            if (!peinfo->sections[i].rsz)
+                continue;
+
+            if (!CLI_ISCONTAINED(src, ssize, src + peinfo->sections[i].rva, peinfo->sections[i].rsz))
+                break;
+
+            if ((unsigned int)fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
+                break;
+        }
+
+        if (i + 1 != peinfo->nsections) {
+            cli_dbgmsg("cli_scanpe: WWpack: Probably hacked/damaged file.\n");
+            free(src);
             break;
-        case 0x1f0:
-            archtype = "PowerPC";
+        }
+
+        if ((packer = (uint8_t *)cli_calloc(peinfo->sections[peinfo->nsections - 1].rsz, sizeof(char))) == NULL) {
+            free(src);
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+
+        if (!peinfo->sections[peinfo->nsections - 1].rsz || (size_t)fmap_readn(map, packer, peinfo->sections[peinfo->nsections - 1].raw, peinfo->sections[peinfo->nsections - 1].rsz) != peinfo->sections[peinfo->nsections - 1].rsz) {
+            cli_dbgmsg("cli_scanpe: WWPack: Can't read %d bytes from wwpack sect\n", peinfo->sections[peinfo->nsections - 1].rsz);
+            free(src);
+            free(packer);
+            cli_exe_info_destroy(peinfo);
+            return CL_EREAD;
+        }
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "WWPack");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: WWPack", (src, packer, 0));
+        CLI_UNPRESULTS("cli_scanpe: WWPack", (wwunpack((uint8_t *)src, ssize, packer, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc)), 0, (src, packer, 0));
+        break;
+    }
+
+    /* ASPACK support */
+    while ((DCONF & PE_CONF_ASPACK) &&
+           ((peinfo->ep + ASPACK_EP_OFFSET_212 < fsize) ||
+            (peinfo->ep + ASPACK_EP_OFFSET_OTHER < fsize) ||
+            (peinfo->ep + ASPACK_EP_OFFSET_242 < fsize)) &&
+           (!memcmp(epbuff, "\x60\xe8\x03\x00\x00\x00\xe9\xeb", 8))) {
+        char *src;
+        aspack_version_t aspack_ver = ASPACK_VER_NONE;
+
+        if (epsize < 0x3bf)
             break;
-        case 0x200:
-            archtype = "IA64";
+
+        if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_212, "\x68\x00\x00\x00\x00\xc3", 6)) {
+            aspack_ver = ASPACK_VER_212;
+        } else if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_OTHER, "\x68\x00\x00\x00\x00\xc3", 6)) {
+            aspack_ver = ASPACK_VER_OTHER;
+        } else if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_242, "\x68\x00\x00\x00\x00\xc3", 6)) {
+            aspack_ver = ASPACK_VER_242;
+        } else {
             break;
-        case 0x268:
-            archtype = "M68k";
+        }
+        ssize = 0;
+        for (i = 0; i < peinfo->nsections; i++)
+            if (ssize < peinfo->sections[i].rva + peinfo->sections[i].vsz)
+                ssize = peinfo->sections[i].rva + peinfo->sections[i].vsz;
+
+        if (!ssize)
             break;
-        case 0x266:
-            archtype = "MIPS16";
+
+        CLI_UNPSIZELIMITS("cli_scanpe: Aspack", ssize);
+
+        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
+            cli_exe_info_destroy(peinfo);
+            return CL_EMEM;
+        }
+        for (i = 0; i < (unsigned int)peinfo->nsections; i++) {
+            if (!peinfo->sections[i].rsz)
+                continue;
+
+            if (!CLI_ISCONTAINED(src, ssize, src + peinfo->sections[i].rva, peinfo->sections[i].rsz))
+                break;
+
+            if ((unsigned int)fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
+                break;
+        }
+
+        if (i != peinfo->nsections) {
+            cli_dbgmsg("cli_scanpe: Aspack: Probably hacked/damaged Aspack file.\n");
+            free(src);
             break;
-        case 0x366:
-            archtype = "MIPS+FPU";
+        }
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "Aspack");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: Aspack", (src, 0));
+        CLI_UNPRESULTS("cli_scanpe: Aspack", (unaspack((uint8_t *)src, ssize, peinfo->sections, peinfo->nsections, peinfo->vep - 1, EC32(peinfo->pe_opt.opt32.ImageBase), ndesc, aspack_ver)), 1, (src, 0));
+        break;
+    }
+
+    /* NsPack */
+
+    while (DCONF & PE_CONF_NSPACK) {
+        uint32_t eprva = peinfo->vep;
+        uint32_t start_of_stuff, rep = peinfo->ep;
+        unsigned int nowinldr;
+        const char *nbuff;
+
+        src = epbuff;
+        if (*epbuff == '\xe9') { /* bitched headers */
+            eprva = cli_readint32(epbuff + 1) + peinfo->vep + 5;
+            if (!(rep = cli_rawaddr(eprva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size)) && err)
+                break;
+
+            if (!(nbuff = fmap_need_off_once(map, rep, 24)))
+                break;
+
+            src = nbuff;
+        }
+
+        if (memcmp(src, "\x9c\x60\xe8\x00\x00\x00\x00\x5d\xb8\x07\x00\x00\x00", 13))
             break;
-        case 0x466:
-            archtype = "MIPS16+FPU";
+
+        nowinldr = 0x54 - cli_readint32(src + 17);
+        cli_dbgmsg("cli_scanpe: NsPack: Found *start_of_stuff @delta-%x\n", nowinldr);
+
+        if (!(nbuff = fmap_need_off_once(map, rep - nowinldr, 4)))
             break;
-        case 0x1a2:
-            archtype = "Hitachi SH3";
+
+        start_of_stuff = rep + cli_readint32(nbuff);
+        if (!(nbuff = fmap_need_off_once(map, start_of_stuff, 20)))
             break;
-        case 0x1a3:
-            archtype = "Hitachi SH3-DSP";
+
+        src = nbuff;
+        if (!cli_readint32(nbuff)) {
+            start_of_stuff += 4; /* FIXME: more to do */
+            src += 4;
+        }
+
+        ssize = cli_readint32(src + 5) | 0xff;
+        dsize = cli_readint32(src + 9);
+
+        CLI_UNPSIZELIMITS("cli_scanpe: NsPack", MAX(ssize, dsize));
+
+        if (!ssize || !dsize || dsize != peinfo->sections[0].vsz)
             break;
-        case 0x1a4:
-            archtype = "Hitachi SH3-E";
+
+        if (!(dest = cli_malloc(dsize))) {
+            cli_errmsg("cli_scanpe: NsPack: Unable to allocate memory for dest %u\n", dsize);
             break;
-        case 0x1a6:
-            archtype = "Hitachi SH4";
+        }
+        /* memset(dest, 0xfc, dsize); */
+
+        if (!(src = fmap_need_off(map, start_of_stuff, ssize))) {
+            free(dest);
             break;
-        case 0x1a8:
-            archtype = "Hitachi SH5";
+        }
+        /* memset(src, 0x00, ssize); */
+
+        eprva += 0x27a;
+        if (!(rep = cli_rawaddr(eprva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size)) && err) {
+            free(dest);
             break;
-        case 0x1c0:
-            archtype = "ARM";
+        }
+
+        if (!(nbuff = fmap_need_off_once(map, rep, 5))) {
+            free(dest);
             break;
-        case 0x1c2:
-            archtype = "THUMB";
-            break;
-        case 0x1d3:
-            archtype = "AM33";
-            break;
-        case 0x520:
-            archtype = "Infineon TriCore";
-            break;
-        case 0xcef:
-            archtype = "CEF";
-            break;
-        case 0xebc:
-            archtype = "EFI Byte Code";
-            break;
-        case 0x9041:
-            archtype = "M32R";
-            break;
-        case 0xc0ee:
-            archtype = "CEEE";
-            break;
-        case 0x8664:
-            archtype = "AMD64";
+        }
+
+        fmap_unneed_off(map, start_of_stuff, ssize);
+        eprva = eprva + 5 + cli_readint32(nbuff + 1);
+        cli_dbgmsg("cli_scanpe: NsPack: OEP = %08x\n", eprva);
+
+#if HAVE_JSON
+        if (pe_json != NULL)
+            cli_jsonstr(pe_json, "Packer", "NsPack");
+#endif
+
+        CLI_UNPTEMP("cli_scanpe: NsPack", (dest, 0));
+        CLI_UNPRESULTS("cli_scanpe: NsPack", (unspack(src, dest, ctx, peinfo->sections[0].rva, EC32(peinfo->pe_opt.opt32.ImageBase), eprva, ndesc)), 0, (dest, 0));
+        break;
+    }
+
+    /* to be continued ... */
+
+    /* !!!!!!!!!!!!!!    PACKERS END HERE    !!!!!!!!!!!!!! */
+    ctx->corrupted_input = corrupted_cur;
+
+    /* Bytecode BC_PE_UNPACKER hook */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+        cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+        return CL_EMEM;
+    }
+
+    cli_bytecode_context_setpe(bc_ctx, &pedata, peinfo->sections);
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_UNPACKER, map);
+    switch (ret) {
+        case CL_VIRUS:
+            cli_exe_info_destroy(peinfo);
+            cli_bytecode_context_destroy(bc_ctx);
+            // TODO Handle allmatch
+            return CL_VIRUS;
+        case CL_SUCCESS:
+            ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+            cli_bytecode_context_destroy(bc_ctx);
+            if (ndesc != -1 && tempfile) {
+                CLI_UNPRESULTS("cli_scanpe: bytecode PE hook", 1, 1, (0));
+            }
+
             break;
         default:
-            archtype = "Unknown";
+            cli_bytecode_context_destroy(bc_ctx);
     }
 
-    if ((archtype)) {
-        cli_dbgmsg("Machine type: %s\n", archtype);
+    cli_exe_info_destroy(peinfo);
+
 #if HAVE_JSON
-        if (pe_json != NULL)
+    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS)
+        return CL_ETIMEOUT;
+#endif
+
+    if (SCAN_ALLMATCHES && viruses_found)
+        return CL_VIRUS;
+
+    return CL_CLEAN;
+}
+
+int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
+{
+    return cli_peheader(map, peinfo, CLI_PEHEADER_OPT_EXTRACT_VINFO, NULL);
+}
+
+/** Parse the PE header and, if successful, populate peinfo
+ *
+ * @param map The fmap_t backing the file being scanned
+ * @param peinfo A structure to populate with info from the PE header. This
+ *               MUST be initialized via cli_exe_info_init prior to calling
+ *               being passed in.
+ * @param opts A bitfield indicating various options related to PE header
+ *             parsing.  The options are (prefixed with CLI_PEHEADER_OPT_):
+ *              - NONE - Do default parsing
+ *              - COLLECT_JSON - Populate ctx's json obj with PE header
+ *                                   info
+ *              - DBG_PRINT_INFO - Print debug information about the
+ *                                 PE file. Right now, cli_peheader is
+ *                                 called multiple times for a given PE,
+ *                                 so you don't want to print out the
+ *                                 same info each time.
+ *              - EXTRACT_VINFO - Parse the PEs VERSION_INFO metadata
+ *                                and store it in peinfo->vinfo
+ *              - STRICT_ON_PE_ERRORS - If specified, some cases that
+ *                                      might be considered a broken
+ *                                      executable cause RET_BROKEN_PE
+ *                                      to be returned, but otherwise
+ *                                      these will be tolerated.
+ * @param ctx The overaching cli_ctx.  This is required with certain opts, but
+ *            optional otherwise.
+ * @return If the PE header is parsed successfully, CLI_PEHEADER_RET_SUCCESS
+ *         is returned. If it seems like the PE is broken,
+ *         CLI_PEHEADER_RET_BROKEN_PE is returned.  Otherwise, one of the
+ *         other error codes is returned.
+ *         If CLI_PEHEADER_RET_SUCCESS is returned, it is the caller's
+ *         responsibility to destroy peinfo.  Otherwise, it's safe to do
+ *         so but not required.
+ *
+ * TODO What constitutes a "broken PE" seems somewhat arbitrary in places.
+ * I think a PE should only be considered broken if it will not run on
+ * any version of Windows.  We should invest more time to ensure that our
+ * broken PE detection more closely aligns with this.
+ *
+ * TODO Simplify and get rid of CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS if
+ * possible.  We should either fail always or ignore always, IMO.
+ *
+ * TODO Consolidate when information about the PE is printed (after successful
+ * PE parsing).  This will allow us to simplify the code.  Some fail cases,
+ * then, will cause PE info to not be printed at all, but I think this is
+ * acceptable.  The debug messages generated in the fail cases should point to
+ * what happened, and that's enough to track down the cause of any issues.
+ *
+ * TODO Same as above but with JSON creation
+ */
+int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
+{
+    uint16_t e_magic; /* DOS signature ("MZ") */
+    const char *archtype = NULL, *subsystem = NULL;
+    time_t timestamp;
+    char timestr[32];
+    uint32_t data_dirs_size;
+    uint16_t opt_hdr_size;
+    uint32_t stored_opt_hdr_size;
+    struct pe_image_file_hdr *file_hdr;
+    struct pe_image_optional_hdr32 *opt32;
+    struct pe_image_optional_hdr64 *opt64;
+    struct pe_image_section_hdr *section_hdrs;
+    unsigned int i, j, section_pe_idx;
+    unsigned int err;
+    uint32_t salign, falign;
+    size_t fsize;
+    ssize_t at;
+    uint32_t is_dll = 0;
+    uint32_t is_exe = 0;
+    int native      = 0;
+    int read;
+#if HAVE_JSON
+    int toval                   = 0;
+    struct json_object *pe_json = NULL;
+    char jsonbuf[128];
+#endif
+
+    if (ctx == NULL &&
+        (opts & CLI_PEHEADER_OPT_COLLECT_JSON ||
+         opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO)) {
+        cli_errmsg("cli_peheader: ctx can't be NULL for options specified\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+#if HAVE_JSON
+    if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+        pe_json = get_pe_property(ctx);
+    }
+#endif
+
+    fsize = map->len - peinfo->offset;
+    if (fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
+        cli_dbgmsg("cli_peheader: Can't read DOS signature\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
+        cli_dbgmsg("cli_peheader: Invalid DOS signature\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    if (fmap_readn(map, &(peinfo->e_lfanew), peinfo->offset + 58 + sizeof(e_magic), sizeof(peinfo->e_lfanew)) != sizeof(peinfo->e_lfanew)) {
+        /* truncated header? */
+        cli_dbgmsg("cli_peheader: Unable to read e_lfanew - truncated header?\n");
+        return CLI_PEHEADER_RET_BROKEN_PE;
+    }
+
+    peinfo->e_lfanew = EC32(peinfo->e_lfanew);
+    if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+        cli_dbgmsg("e_lfanew == %d\n", peinfo->e_lfanew);
+    }
+    if (!peinfo->e_lfanew) {
+        cli_dbgmsg("cli_peheader: Not a PE file - e_lfanew == 0\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    if (fmap_readn(map, &(peinfo->file_hdr), peinfo->offset + peinfo->e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+        /* bad information in e_lfanew - probably not a PE file */
+        cli_dbgmsg("cli_peheader: Can't read file header\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    file_hdr = &(peinfo->file_hdr);
+
+    if (EC32(file_hdr->Magic) != PE_IMAGE_NT_SIGNATURE) {
+        cli_dbgmsg("cli_peheader: Invalid PE signature (probably NE file)\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    if (EC16(file_hdr->Characteristics) & 0x2000) {
+
+#if HAVE_JSON
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
+            cli_jsonstr(pe_json, "Type", "DLL");
+#endif
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+            cli_dbgmsg("File type: DLL\n");
+        }
+
+        is_dll = 1;
+    } else if (EC16(file_hdr->Characteristics) & 0x0002) {
+
+#if HAVE_JSON
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
+            cli_jsonstr(pe_json, "Type", "EXE");
+#endif
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+            cli_dbgmsg("File type: Executable\n");
+        }
+
+        is_exe = 1;
+    }
+
+    if (!is_dll && !is_exe) {
+        cli_dbgmsg("cli_peheader: Assumption Violated: PE is not a DLL or EXE\n");
+        // TODO Don't continue if not an exe or dll?
+    }
+
+    peinfo->is_dll = is_dll;
+
+    if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO ||
+        opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+        switch (EC16(file_hdr->Machine)) {
+            case 0x0:
+                archtype = "Unknown";
+                break;
+            case 0x1:
+                // New as of Windows 10, version 1607 and Windows Server 2016
+                archtype = "Target Host";
+                break;
+            case 0x14c:
+                archtype = "80386";
+                break;
+            case 0x14d:
+                archtype = "80486";
+                break;
+            case 0x14e:
+                archtype = "80586";
+                break;
+            case 0x160:
+                archtype = "R3000 MIPS BE";
+                break;
+            case 0x162:
+                archtype = "R3000 MIPS LE";
+                break;
+            case 0x166:
+                archtype = "R4000 MIPS LE";
+                break;
+            case 0x168:
+                archtype = "R10000 MIPS LE";
+                break;
+            case 0x169:
+                archtype = "WCE MIPS LE";
+                break;
+            case 0x184:
+                archtype = "DEC Alpha AXP";
+                break;
+            case 0x1a2:
+                archtype = "Hitachi SH3 LE";
+                break;
+            case 0x1a3:
+                archtype = "Hitachi SH3-DSP";
+                break;
+            case 0x1a4:
+                archtype = "Hitachi SH3-E LE";
+                break;
+            case 0x1a6:
+                archtype = "Hitachi SH4 LE";
+                break;
+            case 0x1a8:
+                archtype = "Hitachi SH5";
+                break;
+            case 0x1c0:
+                archtype = "ARM LE";
+                break;
+            case 0x1c2:
+                archtype = "ARM Thumb/Thumb-2 LE";
+                break;
+            case 0x1c4:
+                archtype = "ARM Thumb-2 LE";
+                break;
+            case 0x1d3:
+                archtype = "AM33";
+                break;
+            case 0x1f0:
+                archtype = "PowerPC LE";
+                break;
+            case 0x1f1:
+                archtype = "PowerPC FP";
+                break;
+            case 0x200:
+                archtype = "IA64";
+                break;
+            case 0x266:
+                archtype = "MIPS16";
+                break;
+            case 0x268:
+                archtype = "M68k";
+                break;
+            case 0x284:
+                archtype = "DEC Alpha AXP 64bit";
+                break;
+            case 0x366:
+                archtype = "MIPS+FPU";
+                break;
+            case 0x466:
+                archtype = "MIPS16+FPU";
+                break;
+            case 0x520:
+                archtype = "Infineon TriCore";
+                break;
+            case 0xcef:
+                archtype = "CEF";
+                break;
+            case 0xebc:
+                archtype = "EFI Byte Code";
+                break;
+            case 0x8664:
+                archtype = "AMD64";
+                break;
+            case 0x9041:
+                archtype = "M32R";
+                break;
+            case 0xaa64:
+                archtype = "ARM64 LE";
+                break;
+            case 0xc0ee:
+                archtype = "CEE";
+                break;
+            default:
+                archtype = "Unknown";
+        }
+
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO)
+            cli_dbgmsg("Machine type: %s\n", archtype);
+
+#if HAVE_JSON
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
             cli_jsonstr(pe_json, "ArchType", archtype);
 #endif
     }
 
-    nsections = EC16(file_hdr.NumberOfSections);
-    if (nsections < 1 || nsections > PE_MAXSECTIONS) {
+    peinfo->nsections = EC16(file_hdr->NumberOfSections);
+    if (peinfo->nsections == 0 || peinfo->nsections > PE_MAXSECTIONS) {
+
 #if HAVE_JSON
-        pe_add_heuristic_property(ctx, "BadNumberOfSections");
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+            pe_add_heuristic_property(ctx, "BadNumberOfSections");
+        }
 #endif
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            return ret;
+        // TODO Investigate how corrupted_input is set and whether this
+        // check is needed
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO &&
+            !ctx->corrupted_input) {
+            if (peinfo->nsections == 0) {
+                cli_dbgmsg("cli_peheader: Invalid NumberOfSections (0)\n");
+            } else {
+                cli_dbgmsg("cli_peheader: Invalid NumberOfSections (>%d)\n", PE_MAXSECTIONS);
+            }
         }
-
-        if (!ctx->corrupted_input) {
-            if (nsections)
-                cli_warnmsg("PE file contains %d sections\n", nsections);
-            else
-                cli_warnmsg("PE file contains no sections\n");
-        }
-
-        return CL_CLEAN;
+        return CLI_PEHEADER_RET_BROKEN_PE;
     }
 
-    cli_dbgmsg("NumberOfSections: %d\n", nsections);
+    timestamp    = (time_t)EC32(file_hdr->TimeDateStamp);
+    opt_hdr_size = EC16(file_hdr->SizeOfOptionalHeader);
 
-    timestamp = (time_t)EC32(file_hdr.TimeDateStamp);
-    cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+    if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+        cli_dbgmsg("NumberOfSections: %d\n", peinfo->nsections);
+        cli_dbgmsg("TimeDateStamp: %s\n", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+        cli_dbgmsg("SizeOfOptionalHeader: 0x%x\n", opt_hdr_size);
+    }
 
 #if HAVE_JSON
-    if (pe_json != NULL)
+    if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+        cli_jsonint(pe_json, "NumberOfSections", peinfo->nsections);
         cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+        cli_jsonint(pe_json, "SizeOfOptionalHeader", opt_hdr_size);
+    }
 #endif
 
-    cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
+    // Ensure there are enough bytes to cover the full optional header,
+    // not including the data directory entries (which aren't all gauranteed
+    // to be there)
+    if (opt_hdr_size < sizeof(struct pe_image_optional_hdr32)) {
+        cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small\n");
 
 #if HAVE_JSON
-    if (pe_json != NULL)
-        cli_jsonint(pe_json, "SizeOfOptionalHeader", EC16(file_hdr.SizeOfOptionalHeader));
-#endif
-
-    if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
-#if HAVE_JSON
-        pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
-#endif
-        cli_dbgmsg("SizeOfOptionalHeader too small\n");
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            return ret;
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+            pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
         }
-
-        return CL_CLEAN;
+#endif
+        return CLI_PEHEADER_RET_BROKEN_PE;
     }
 
-    at = e_lfanew + sizeof(struct pe_image_file_hdr);
-    if (fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
-        cli_dbgmsg("Can't read optional file header\n");
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            return ret;
-        }
-
-        return CL_CLEAN;
+    at = peinfo->offset + peinfo->e_lfanew + sizeof(struct pe_image_file_hdr);
+    if (fmap_readn(map, &(peinfo->pe_opt.opt32), at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+        cli_dbgmsg("cli_peheader: Can't read optional file header\n");
+        return CLI_PEHEADER_RET_BROKEN_PE;
     }
-    at += sizeof(struct pe_image_optional_hdr32);
+    stored_opt_hdr_size = sizeof(struct pe_image_optional_hdr32);
+    at += stored_opt_hdr_size;
 
-    /* This will be a chicken and egg problem until we drop 9x */
-    if (EC16(optional_hdr64.Magic) == PE32P_SIGNATURE) {
+    opt32 = &(peinfo->pe_opt.opt32);
+
+    if (EC16(opt32->Magic) == PE32P_SIGNATURE) { /* PE+ */
+        // The PE32+ optional header is bigger by 16 bytes, so map in the
+        // additional bytes here
+
+        if (opt_hdr_size < sizeof(struct pe_image_optional_hdr64)) {
+            cli_dbgmsg("cli_peheader: Incorrect SizeOfOptionalHeader for PE32+\n");
 #if HAVE_JSON
-        pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
-#endif
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr64)) {
-            /* FIXME: need to play around a bit more with xp64 */
-            cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
-
-            if (DETECT_BROKEN_PE) {
-                ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                return ret;
+            if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+                pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
             }
-
-            return CL_CLEAN;
-        }
-        pe_plus = 1;
-    }
-
-    if (!pe_plus) { /* PE */
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
-            /* Seek to the end of the long header */
-            at += EC16(file_hdr.SizeOfOptionalHeader) - sizeof(struct pe_image_optional_hdr32);
-        }
-
-        if (DCONF & PE_CONF_UPACK)
-            upack = (EC16(file_hdr.SizeOfOptionalHeader) == 0x148);
-
-        vep      = EC32(optional_hdr32.AddressOfEntryPoint);
-        hdr_size = EC32(optional_hdr32.SizeOfHeaders);
-        cli_dbgmsg("File format: PE\n");
-
-        cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr32.MajorLinkerVersion);
-        cli_dbgmsg("MinorLinkerVersion: %d\n", optional_hdr32.MinorLinkerVersion);
-        cli_dbgmsg("SizeOfCode: 0x%x\n", EC32(optional_hdr32.SizeOfCode));
-        cli_dbgmsg("SizeOfInitializedData: 0x%x\n", EC32(optional_hdr32.SizeOfInitializedData));
-        cli_dbgmsg("SizeOfUninitializedData: 0x%x\n", EC32(optional_hdr32.SizeOfUninitializedData));
-        cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", vep);
-        cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(optional_hdr32.BaseOfCode));
-        cli_dbgmsg("SectionAlignment: 0x%x\n", EC32(optional_hdr32.SectionAlignment));
-        cli_dbgmsg("FileAlignment: 0x%x\n", EC32(optional_hdr32.FileAlignment));
-        cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr32.MajorSubsystemVersion));
-        cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr32.MinorSubsystemVersion));
-        cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr32.SizeOfImage));
-        cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
-        cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
-        dirs = optional_hdr32.DataDirectory;
-#if HAVE_JSON
-        if (pe_json != NULL) {
-            cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr32.MajorLinkerVersion);
-            cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr32.MinorLinkerVersion);
-            cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr32.SizeOfCode));
-            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr32.SizeOfInitializedData));
-            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr32.SizeOfUninitializedData));
-            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr32.NumberOfRvaAndSizes));
-            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr32.MajorSubsystemVersion));
-            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr32.MinorSubsystemVersion));
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.BaseOfCode));
-            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SectionAlignment));
-            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.FileAlignment));
-            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr32.SizeOfImage));
-            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
-            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
-        }
 #endif
-
-    } else { /* PE+ */
-        /* read the remaining part of the header */
-        if (fmap_readn(map, &optional_hdr32 + 1, at, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
-            cli_dbgmsg("Can't read optional file header\n");
-            if (DETECT_BROKEN_PE) {
-                ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                return ret;
-            }
-
-            return CL_CLEAN;
+            return CLI_PEHEADER_RET_BROKEN_PE;
         }
 
-        at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        vep      = EC32(optional_hdr64.AddressOfEntryPoint);
-        hdr_size = EC32(optional_hdr64.SizeOfHeaders);
-        cli_dbgmsg("File format: PE32+\n");
-
-        cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr64.MajorLinkerVersion);
-        cli_dbgmsg("MinorLinkerVersion: %d\n", optional_hdr64.MinorLinkerVersion);
-        cli_dbgmsg("SizeOfCode: 0x%x\n", EC32(optional_hdr64.SizeOfCode));
-        cli_dbgmsg("SizeOfInitializedData: 0x%x\n", EC32(optional_hdr64.SizeOfInitializedData));
-        cli_dbgmsg("SizeOfUninitializedData: 0x%x\n", EC32(optional_hdr64.SizeOfUninitializedData));
-        cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", vep);
-        cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(optional_hdr64.BaseOfCode));
-        cli_dbgmsg("SectionAlignment: 0x%x\n", EC32(optional_hdr64.SectionAlignment));
-        cli_dbgmsg("FileAlignment: 0x%x\n", EC32(optional_hdr64.FileAlignment));
-        cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr64.MajorSubsystemVersion));
-        cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr64.MinorSubsystemVersion));
-        cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr64.SizeOfImage));
-        cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
-        cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
-        dirs = optional_hdr64.DataDirectory;
-#if HAVE_JSON
-        if (pe_json != NULL) {
-            cli_jsonint(pe_json, "MajorLinkerVersion", optional_hdr64.MajorLinkerVersion);
-            cli_jsonint(pe_json, "MinorLinkerVersion", optional_hdr64.MinorLinkerVersion);
-            cli_jsonint(pe_json, "SizeOfCode", EC32(optional_hdr64.SizeOfCode));
-            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(optional_hdr64.SizeOfInitializedData));
-            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(optional_hdr64.SizeOfUninitializedData));
-            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(optional_hdr64.NumberOfRvaAndSizes));
-            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(optional_hdr64.MajorSubsystemVersion));
-            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(optional_hdr64.MinorSubsystemVersion));
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.BaseOfCode));
-            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SectionAlignment));
-            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.FileAlignment));
-            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(optional_hdr64.SizeOfImage));
-            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
-
-            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", hdr_size);
-            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+        if (fmap_readn(map, (void *)(((size_t) & (peinfo->pe_opt.opt64)) + sizeof(struct pe_image_optional_hdr32)), at, OPT_HDR_SIZE_DIFF) != OPT_HDR_SIZE_DIFF) {
+            cli_dbgmsg("cli_peheader: Can't read additional optional file header bytes\n");
+            return CLI_PEHEADER_RET_BROKEN_PE;
         }
-#endif
-    }
+
+        stored_opt_hdr_size += OPT_HDR_SIZE_DIFF;
+        at += OPT_HDR_SIZE_DIFF;
+        peinfo->is_pe32plus = 1;
+
+        opt64 = &(peinfo->pe_opt.opt64);
+
+        peinfo->vep       = EC32(opt64->AddressOfEntryPoint);
+        peinfo->hdr_size  = EC32(opt64->SizeOfHeaders);
+        peinfo->ndatadirs = EC32(opt64->NumberOfRvaAndSizes);
+
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+            cli_dbgmsg("File format: PE32+\n");
+            cli_dbgmsg("MajorLinkerVersion: %d\n", opt64->MajorLinkerVersion);
+            cli_dbgmsg("MinorLinkerVersion: %d\n", opt64->MinorLinkerVersion);
+            cli_dbgmsg("SizeOfCode: 0x%x\n", EC32(opt64->SizeOfCode));
+            cli_dbgmsg("SizeOfInitializedData: 0x%x\n", EC32(opt64->SizeOfInitializedData));
+            cli_dbgmsg("SizeOfUninitializedData: 0x%x\n", EC32(opt64->SizeOfUninitializedData));
+            cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", peinfo->vep);
+            cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(opt64->BaseOfCode));
+            cli_dbgmsg("SectionAlignment: 0x%x\n", EC32(opt64->SectionAlignment));
+            cli_dbgmsg("FileAlignment: 0x%x\n", EC32(opt64->FileAlignment));
+            cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(opt64->MajorSubsystemVersion));
+            cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(opt64->MinorSubsystemVersion));
+            cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(opt64->SizeOfImage));
+            cli_dbgmsg("SizeOfHeaders: 0x%x\n", peinfo->hdr_size);
+            cli_dbgmsg("NumberOfRvaAndSizes: %u\n", peinfo->ndatadirs);
+        }
 
 #if HAVE_JSON
-    if (SCAN_COLLECT_METADATA) {
-        snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", vep);
-        if (pe_json != NULL)
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+            cli_jsonint(pe_json, "MajorLinkerVersion", opt64->MajorLinkerVersion);
+            cli_jsonint(pe_json, "MinorLinkerVersion", opt64->MinorLinkerVersion);
+            cli_jsonint(pe_json, "SizeOfCode", EC32(opt64->SizeOfCode));
+            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(opt64->SizeOfInitializedData));
+            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(opt64->SizeOfUninitializedData));
+            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(opt64->NumberOfRvaAndSizes));
+            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(opt64->MajorSubsystemVersion));
+            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(opt64->MinorSubsystemVersion));
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->vep);
             cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
-    }
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt64->BaseOfCode));
+            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt64->SectionAlignment));
+            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt64->FileAlignment));
+            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt64->SizeOfImage));
+            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->hdr_size);
+            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+        }
 #endif
 
-    switch (pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem)) {
+    } else { /* PE */
+        peinfo->is_pe32plus = 0;
+        peinfo->vep         = EC32(opt32->AddressOfEntryPoint);
+        peinfo->hdr_size    = EC32(opt32->SizeOfHeaders);
+        peinfo->ndatadirs   = EC32(opt32->NumberOfRvaAndSizes);
+
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+            cli_dbgmsg("File format: PE\n");
+            cli_dbgmsg("MajorLinkerVersion: %d\n", opt32->MajorLinkerVersion);
+            cli_dbgmsg("MinorLinkerVersion: %d\n", opt32->MinorLinkerVersion);
+            cli_dbgmsg("SizeOfCode: 0x%x\n", EC32(opt32->SizeOfCode));
+            cli_dbgmsg("SizeOfInitializedData: 0x%x\n", EC32(opt32->SizeOfInitializedData));
+            cli_dbgmsg("SizeOfUninitializedData: 0x%x\n", EC32(opt32->SizeOfUninitializedData));
+            cli_dbgmsg("AddressOfEntryPoint: 0x%x\n", peinfo->vep);
+            cli_dbgmsg("BaseOfCode: 0x%x\n", EC32(opt32->BaseOfCode));
+            cli_dbgmsg("SectionAlignment: 0x%x\n", EC32(opt32->SectionAlignment));
+            cli_dbgmsg("FileAlignment: 0x%x\n", EC32(opt32->FileAlignment));
+            cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(opt32->MajorSubsystemVersion));
+            cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(opt32->MinorSubsystemVersion));
+            cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(opt32->SizeOfImage));
+            cli_dbgmsg("SizeOfHeaders: 0x%x\n", peinfo->hdr_size);
+            cli_dbgmsg("NumberOfRvaAndSizes: %u\n", peinfo->ndatadirs);
+        }
+
+#if HAVE_JSON
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+            cli_jsonint(pe_json, "MajorLinkerVersion", opt32->MajorLinkerVersion);
+            cli_jsonint(pe_json, "MinorLinkerVersion", opt32->MinorLinkerVersion);
+            cli_jsonint(pe_json, "SizeOfCode", EC32(opt32->SizeOfCode));
+            cli_jsonint(pe_json, "SizeOfInitializedData", EC32(opt32->SizeOfInitializedData));
+            cli_jsonint(pe_json, "SizeOfUninitializedData", EC32(opt32->SizeOfUninitializedData));
+            cli_jsonint(pe_json, "NumberOfRvaAndSizes", EC32(opt32->NumberOfRvaAndSizes));
+            cli_jsonint(pe_json, "MajorSubsystemVersion", EC16(opt32->MajorSubsystemVersion));
+            cli_jsonint(pe_json, "MinorSubsystemVersion", EC16(opt32->MinorSubsystemVersion));
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->vep);
+            cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt32->BaseOfCode));
+            cli_jsonstr(pe_json, "BaseOfCode", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt32->SectionAlignment));
+            cli_jsonstr(pe_json, "SectionAlignment", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt32->FileAlignment));
+            cli_jsonstr(pe_json, "FileAlignment", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", EC32(opt32->SizeOfImage));
+            cli_jsonstr(pe_json, "SizeOfImage", jsonbuf);
+
+            snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", peinfo->hdr_size);
+            cli_jsonstr(pe_json, "SizeOfHeaders", jsonbuf);
+        }
+#endif
+    }
+
+    salign = (peinfo->is_pe32plus) ? EC32(opt64->SectionAlignment) : EC32(opt32->SectionAlignment);
+    falign = (peinfo->is_pe32plus) ? EC32(opt64->FileAlignment) : EC32(opt32->FileAlignment);
+
+    switch (peinfo->is_pe32plus ? EC16(opt64->Subsystem) : EC16(opt32->Subsystem)) {
         case 0:
             subsystem = "Unknown";
             break;
@@ -3185,2030 +4974,354 @@ int cli_scanpe(cli_ctx *ctx)
             subsystem = "Unknown";
     }
 
-    cli_dbgmsg("Subsystem: %s\n", subsystem);
+    if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+        cli_dbgmsg("Subsystem: %s\n", subsystem);
+        cli_dbgmsg("------------------------------------\n");
+    }
 
 #if HAVE_JSON
-    if (pe_json != NULL)
+    if (opts & CLI_PEHEADER_OPT_COLLECT_JSON)
         cli_jsonstr(pe_json, "Subsystem", subsystem);
 #endif
 
-    cli_dbgmsg("------------------------------------\n");
-
-    if (DETECT_BROKEN_PE && !native && (!(pe_plus ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment)) || (pe_plus ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment)) % 0x1000)) {
-        cli_dbgmsg("Bad virtual alignment\n");
-        ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-        return ret;
-    }
-
-    if (DETECT_BROKEN_PE && !native && (!(pe_plus ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment)) || (pe_plus ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment)) % 0x200)) {
-        cli_dbgmsg("Bad file alignment\n");
-        ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-        return ret;
-    }
-
-    fsize = map->len;
-
-    section_hdr = (struct pe_image_section_hdr *)cli_calloc(nsections, sizeof(struct pe_image_section_hdr));
-
-    if (!section_hdr) {
-        cli_dbgmsg("Can't allocate memory for section headers\n");
-        return CL_EMEM;
-    }
-
-    exe_sections = (struct cli_exe_section *)cli_calloc(nsections, sizeof(struct cli_exe_section));
-
-    if (!exe_sections) {
-        cli_dbgmsg("Can't allocate memory for section headers\n");
-        free(section_hdr);
-        return CL_EMEM;
-    }
-
-    valign = (pe_plus) ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment);
-    falign = (pe_plus) ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment);
-
-    if (fmap_readn(map, section_hdr, at, sizeof(struct pe_image_section_hdr) * nsections) != (int)(nsections * sizeof(struct pe_image_section_hdr))) {
-        cli_dbgmsg("Can't read section header\n");
-        cli_dbgmsg("Possibly broken PE file\n");
-
-        free(section_hdr);
-        free(exe_sections);
-
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            return ret;
+    if (!native && (!salign || (salign % 0x1000))) {
+        cli_dbgmsg("cli_peheader: Bad section alignment\n");
+        if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
+            return CLI_PEHEADER_RET_BROKEN_PE;
         }
-
-        return CL_CLEAN;
     }
 
-    at += sizeof(struct pe_image_section_hdr) * nsections;
+    if (!native && (!falign || (falign % 0x200))) {
+        cli_dbgmsg("cli_peheader: Bad file alignment\n");
+        if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
+            return CLI_PEHEADER_RET_BROKEN_PE;
+        }
+    }
 
-    for (i = 0; falign != 0x200 && i < nsections; i++) {
+    // Map in the optional header data directories.  The spec defines 16
+    // directory entries, but NumberOfRvaAndSizes can be less than that
+    // and the Windows loader will pretend that the data directory does
+    // not exist. NumberOfRvaAndSizes can be larger than that too, which
+    // the Windows loader is OK with.  To populate peinfo->dirs, we will
+    // copy in as many data dirs are specified but for a max of 16 (and
+    // adjust peinfo->ndatadirs accordingly)
+
+    if (peinfo->ndatadirs > 0x10) {
+        cli_dbgmsg("cli_peheader: Encountered NumberOfRvaAndSizes > 16 (suspicious)\n");
+    }
+
+    // In the case where we won't fully populate dirs with file data,
+    // ensure that the underlying memory is zero so that existing code
+    // can interact with peinfo->dirs without using peinfo->ndatadirs
+    if (peinfo->ndatadirs < sizeof(peinfo->dirs) / sizeof(peinfo->dirs[0])) {
+        memset(&(peinfo->dirs), '\0', sizeof(peinfo->dirs));
+    }
+
+    peinfo->ndatadirs = MIN(peinfo->ndatadirs, sizeof(peinfo->dirs) / sizeof(peinfo->dirs[0]));
+
+    data_dirs_size = sizeof(struct pe_image_data_dir) * peinfo->ndatadirs;
+
+    if (opt_hdr_size < (stored_opt_hdr_size + data_dirs_size)) {
+        cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small (doesn't include data dir size)\n");
+        return CLI_PEHEADER_RET_BROKEN_PE;
+    }
+
+    read = fmap_readn(map, peinfo->dirs, at, data_dirs_size);
+    if (read < 0 || (uint32_t)read != data_dirs_size) {
+        cli_dbgmsg("cli_peheader: Can't read optional file header data dirs\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+    at += data_dirs_size;
+
+    if (opt_hdr_size != (stored_opt_hdr_size + data_dirs_size)) {
+        /* Seek to the end of the long header */
+        cli_dbgmsg("cli_peheader: Encountered case where SizeOfOptionalHeader appears bigger than required\n");
+        at += opt_hdr_size - (stored_opt_hdr_size + data_dirs_size);
+    }
+
+    // TODO This level of processing might not be needed in all cases
+
+    // Sanity checks
+    // TODO Also check that salign >= falign
+    if (peinfo->hdr_size != PESALIGN(peinfo->hdr_size, salign)) {
+        cli_dbgmsg("cli_peheader: SizeOfHeader is not aligned to the SectionAlignment\n");
+    }
+    if (peinfo->hdr_size != PESALIGN(peinfo->hdr_size, falign)) {
+        cli_dbgmsg("cli_peheader: SizeOfHeader is not aligned to the FileAlignment\n");
+    }
+
+    // TODO Why align here? -- /* Aligned headers virtual size */
+    // hdr_size should already be rounded up
+    // to a multiple of the file alignment.
+    // TODO in cli_checkpe_fp this aligned to falign, elsewhere it aligned to salign
+    peinfo->hdr_size = PESALIGN(peinfo->hdr_size, salign);
+
+    peinfo->sections = (struct cli_exe_section *)cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
+
+    if (!peinfo->sections) {
+        cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    section_hdrs = (struct pe_image_section_hdr *)cli_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
+
+    if (!section_hdrs) {
+        cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
+        free(peinfo->sections);
+        peinfo->sections = NULL;
+        return CLI_PEHEADER_RET_GENERIC_ERROR;
+    }
+
+    read = fmap_readn(map, section_hdrs, at, peinfo->nsections * sizeof(struct pe_image_section_hdr));
+    if (read < 0 || (uint32_t)read != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
+        cli_dbgmsg("cli_peheader: Can't read section header - possibly broken PE file\n");
+        free(section_hdrs);
+        free(peinfo->sections);
+        peinfo->sections = NULL;
+        return CLI_PEHEADER_RET_BROKEN_PE;
+    }
+    at += sizeof(struct pe_image_section_hdr) * peinfo->nsections;
+
+    // TODO Verify that this performs correctly
+    // TODO I'm not sure why this is necessary since the specification says
+    // that PointerToRawData is expected to be a multiple of the file
+    // alignment.  Should we report this is as a PE with an error?
+
+    for (i = 0; falign != 0x200 && i < peinfo->nsections; i++) {
         /* file alignment fallback mode - blah */
-        if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData) % falign && !(EC32(section_hdr[i].PointerToRawData) % 0x200)) {
-            cli_dbgmsg("Found misaligned section, using 0x200\n");
+        if (falign && section_hdrs[i].SizeOfRawData && EC32(section_hdrs[i].PointerToRawData) % falign && !(EC32(section_hdrs[i].PointerToRawData) % 0x200)) {
+            cli_dbgmsg("cli_peheader: Encountered section with unexpected alignment - triggering fallback mode\n");
             falign = 0x200;
         }
     }
 
-    hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
+    fsize = (map->len - peinfo->offset);
 
-#if HAVE_JSON
-    if (pe_json != NULL)
-        cli_jsonint(pe_json, "NumberOfSections", nsections);
-#endif
+    // TODO Why do we fix up these alignments?  This shouldn't be needed?
+    for (i = 0, section_pe_idx = 0; i < peinfo->nsections; i++, section_pe_idx++) {
 
-    while (rescan == 1) {
-        rescan = 0;
-        for (i = 0; i < nsections; i++) {
-            exe_sections[i].rva  = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
-            exe_sections[i].vsz  = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
-            exe_sections[i].raw  = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
-            exe_sections[i].rsz  = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
-            exe_sections[i].chr  = EC32(section_hdr[i].Characteristics);
-            exe_sections[i].urva = EC32(section_hdr[i].VirtualAddress); /* Just in case */
-            exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
-            exe_sections[i].uraw = EC32(section_hdr[i].PointerToRawData);
-            exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
+        struct cli_exe_section *section          = &(peinfo->sections[i]);
+        struct pe_image_section_hdr *section_hdr = &(section_hdrs[i]);
+        char sname[9];
 
-            if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
-                if (exe_sections[i].raw >= fsize || exe_sections[i].uraw > fsize) {
-                    cli_dbgmsg("Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
-                    if (nsections == 1) {
-                        free(section_hdr);
-                        free(exe_sections);
+        // TODO I don't see any documentation that says VirtualAddress and VirtualSize must be aligned
+        section->rva  = PEALIGN(EC32(section_hdr->VirtualAddress), salign);
+        section->vsz  = PESALIGN(EC32(section_hdr->VirtualSize), salign);
+        section->raw  = PEALIGN(EC32(section_hdr->PointerToRawData), falign);
+        section->rsz  = PESALIGN(EC32(section_hdr->SizeOfRawData), falign);
+        section->chr  = EC32(section_hdr->Characteristics);
+        section->urva = EC32(section_hdr->VirtualAddress); /* Just in case */
+        section->uvsz = EC32(section_hdr->VirtualSize);
+        section->uraw = EC32(section_hdr->PointerToRawData);
+        section->ursz = EC32(section_hdr->SizeOfRawData);
 
-                        if (DETECT_BROKEN_PE) {
-                            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                            return ret;
-                        }
-
-                        return CL_CLEAN; /* no ninjas to see here! move along! */
-                    }
-
-                    for (j = i; j < nsections - 1; j++)
-                        memcpy(&exe_sections[j], &exe_sections[j + 1], sizeof(struct cli_exe_section));
-
-                    for (j = i; j < nsections - 1; j++)
-                        memcpy(&section_hdr[j], &section_hdr[j + 1], sizeof(struct pe_image_section_hdr));
-
-                    nsections--;
-                    rescan = 1;
-                    break;
+        // First, if a section exists totally outside of a file, remove the
+        // section from the list.
+        // TODO Document that this happens in the function documentation
+        if (section->rsz) { /* Don't bother with virtual only sections */
+            if (section->raw >= fsize || section->uraw >= fsize) {
+                cli_dbgmsg("cli_peheader: Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
+                if (peinfo->nsections == 1) {
+                    free(section_hdrs);
+                    free(peinfo->sections);
+                    peinfo->sections = NULL;
+                    return CLI_PEHEADER_RET_BROKEN_PE;
                 }
 
-                if (!CLI_ISCONTAINED(0, (uint32_t)fsize, exe_sections[i].raw, exe_sections[i].rsz))
-                    exe_sections[i].rsz = fsize - exe_sections[i].raw;
+                for (j = i; j < peinfo->nsections - 1; j++)
+                    memcpy(&(peinfo->sections[j]), &(peinfo->sections[j + 1]), sizeof(struct cli_exe_section));
 
-                if (!CLI_ISCONTAINED(0, fsize, exe_sections[i].uraw, exe_sections[i].ursz))
-                    exe_sections[i].ursz = fsize - exe_sections[i].uraw;
+                for (j = i; j < peinfo->nsections - 1; j++)
+                    memcpy(&section_hdrs[j], &section_hdrs[j + 1], sizeof(struct pe_image_section_hdr));
+
+                peinfo->nsections--;
+
+                // Adjust i since we removed a section and continue on
+                i--;
+                continue;
+            }
+
+            // Verify that the section is fully contained within the file
+            if (!CLI_ISCONTAINED(0, fsize, section->raw, section->rsz)) {
+                cli_dbgmsg("cli_peheader: PE Section %d raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
+                section->rsz = fsize - section->raw;
+            }
+
+            if (!CLI_ISCONTAINED(0, fsize, section->uraw, section->ursz)) {
+                cli_dbgmsg("cli_peheader: PE Section %d uraw+ursz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->uraw + section->ursz) - fsize);
+                section->ursz = fsize - section->uraw;
             }
         }
-    }
 
-    for (i = 0; i < nsections; i++) {
-        strncpy(sname, (char *)section_hdr[i].Name, 8);
-        sname[8] = 0;
+        strncpy(sname, (char *)section_hdr->Name, 8);
+        sname[8] = '\0';
 
 #if HAVE_JSON
-        add_section_info(ctx, &exe_sections[i]);
+        if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+            add_section_info(ctx, &peinfo->sections[i]);
 
-        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-            free(section_hdr);
-            free(exe_sections);
-            return CL_ETIMEOUT;
+            if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+                free(section_hdrs);
+                free(peinfo->sections);
+                peinfo->sections = NULL;
+                return CLI_PEHEADER_RET_JSON_TIMEOUT;
+            }
         }
 #endif
 
-        if (!exe_sections[i].vsz && exe_sections[i].rsz)
-            exe_sections[i].vsz = PESALIGN(exe_sections[i].ursz, valign);
+        // TODO Why do we do this
+        // TODO Should this be done before we dump the json
+        if (!section->vsz && section->rsz)
+            section->vsz = PESALIGN(section->ursz, salign);
 
-        cli_dbgmsg("Section %d\n", i);
-        cli_dbgmsg("Section name: %s\n", sname);
-        cli_dbgmsg("Section data (from headers - in memory)\n");
-        cli_dbgmsg("VirtualSize: 0x%x 0x%x\n", exe_sections[i].uvsz, exe_sections[i].vsz);
-        cli_dbgmsg("VirtualAddress: 0x%x 0x%x\n", exe_sections[i].urva, exe_sections[i].rva);
-        cli_dbgmsg("SizeOfRawData: 0x%x 0x%x\n", exe_sections[i].ursz, exe_sections[i].rsz);
-        cli_dbgmsg("PointerToRawData: 0x%x 0x%x\n", exe_sections[i].uraw, exe_sections[i].raw);
+        if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+            cli_dbgmsg("Section %d\n", section_pe_idx);
+            cli_dbgmsg("Section name: %s\n", sname);
+            cli_dbgmsg("Section data (from headers - in memory)\n");
+            cli_dbgmsg("VirtualSize: 0x%x 0x%x\n", section->uvsz, section->vsz);
+            cli_dbgmsg("VirtualAddress: 0x%x 0x%x\n", section->urva, section->rva);
+            cli_dbgmsg("SizeOfRawData: 0x%x 0x%x\n", section->ursz, section->rsz);
+            cli_dbgmsg("PointerToRawData: 0x%x 0x%x\n", section->uraw, section->raw);
 
-        if (exe_sections[i].chr & 0x20) {
-            cli_dbgmsg("Section contains executable code\n");
+            if (section->chr & 0x20) {
+                cli_dbgmsg("Section contains executable code\n");
+            }
 
-            if (exe_sections[i].vsz < exe_sections[i].rsz) {
+            if (section->vsz < section->rsz) {
                 cli_dbgmsg("Section contains free space\n");
                 /*
                 cli_dbgmsg("Dumping %d bytes\n", section_hdr.SizeOfRawData - section_hdr.VirtualSize);
                 ddump(desc, section_hdr.PointerToRawData + section_hdr.VirtualSize, section_hdr.SizeOfRawData - section_hdr.VirtualSize, cli_gentemp(NULL));
                 */
             }
-        }
 
-        if (exe_sections[i].chr & 0x20000000)
-            cli_dbgmsg("Section's memory is executable\n");
+            if (section->chr & 0x20000000)
+                cli_dbgmsg("Section's memory is executable\n");
 
-        if (exe_sections[i].chr & 0x80000000)
-            cli_dbgmsg("Section's memory is writeable\n");
+            if (section->chr & 0x80000000)
+                cli_dbgmsg("Section's memory is writeable\n");
 
-        if (DETECT_BROKEN_PE && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
-            cli_dbgmsg("VirtualAddress is misaligned\n");
             cli_dbgmsg("------------------------------------\n");
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            free(section_hdr);
-            free(exe_sections);
-            return ret;
         }
 
-        if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
-            if (SCAN_HEURISTICS && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
-
-            /* check hash section sigs */
-            if ((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
-                ret = scan_pe_mdb(ctx, &exe_sections[i]);
-                if (ret != CL_CLEAN) {
-                    if (ret != CL_VIRUS)
-                        cli_errmsg("scan_pe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
-
-                    cli_dbgmsg("------------------------------------\n");
-                    free(section_hdr);
-                    free(exe_sections);
-                    return ret;
-                }
+        if (!salign || (section->urva % salign)) { /* Bad section alignment */
+            cli_dbgmsg("cli_peheader: Broken PE - section's VirtualAddress is misaligned\n");
+            if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
+                free(section_hdrs);
+                free(peinfo->sections);
+                peinfo->sections = NULL;
+                return CLI_PEHEADER_RET_BROKEN_PE;
             }
         }
-        cli_dbgmsg("------------------------------------\n");
 
-        if (exe_sections[i].urva >> 31 || exe_sections[i].uvsz >> 31 || (exe_sections[i].rsz && exe_sections[i].uraw >> 31) || exe_sections[i].ursz >> 31) {
-            cli_dbgmsg("Found PE values with sign bit set\n");
+        // TODO should we skip all of these checks if it's an empty
+        // section? Why the exception for uraw?
+        if (section->urva >> 31 || section->uvsz >> 31 || (section->rsz && section->uraw >> 31) || peinfo->sections[i].ursz >> 31) {
+            cli_dbgmsg("cli_peheader: Found PE values with sign bit set\n");
 
-            free(section_hdr);
-            free(exe_sections);
-            if (DETECT_BROKEN_PE) {
-                ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                return ret;
-            }
+            free(section_hdrs);
+            free(peinfo->sections);
+            peinfo->sections = NULL;
 
-            return CL_CLEAN;
+            return CLI_PEHEADER_RET_BROKEN_PE;
         }
 
         if (!i) {
-            if (DETECT_BROKEN_PE && exe_sections[i].urva != hdr_size) { /* Bad first section RVA */
-                cli_dbgmsg("First section is in the wrong place\n");
-                ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                free(section_hdr);
-                free(exe_sections);
-                return ret;
+            if (section->urva != peinfo->hdr_size) { /* Bad first section RVA */
+                cli_dbgmsg("cli_peheader: First section doesn't start immediately after the header\n");
+                if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
+                    free(section_hdrs);
+                    free(peinfo->sections);
+                    peinfo->sections = NULL;
+                    return CLI_PEHEADER_RET_BROKEN_PE;
+                }
             }
 
-            min = exe_sections[i].rva;
-            max = exe_sections[i].rva + exe_sections[i].rsz;
+            peinfo->min = section->rva;
+            peinfo->max = section->rva + section->rsz;
         } else {
-            if (DETECT_BROKEN_PE && exe_sections[i].urva - exe_sections[i - 1].urva != exe_sections[i - 1].vsz) { /* No holes, no overlapping, no virtual disorder */
-                cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
-                ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-                free(section_hdr);
-                free(exe_sections);
-                return ret;
-            }
-
-            if (exe_sections[i].rva < min)
-                min = exe_sections[i].rva;
-
-            if (exe_sections[i].rva + exe_sections[i].rsz > max) {
-                max      = exe_sections[i].rva + exe_sections[i].rsz;
-                overlays = exe_sections[i].raw + exe_sections[i].rsz;
-            }
-        }
-    }
-
-    free(section_hdr);
-
-    if (!(ep = cli_rawaddr(vep, exe_sections, nsections, &err, fsize, hdr_size)) && err) {
-        cli_dbgmsg("EntryPoint out of file\n");
-        free(exe_sections);
-        if (DETECT_BROKEN_PE) {
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
-            return ret;
-        }
-
-        return CL_CLEAN;
-    }
-
-#if HAVE_JSON
-    if (pe_json != NULL)
-        cli_jsonint(pe_json, "EntryPointOffset", ep);
-
-    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-        return CL_ETIMEOUT;
-    }
-#endif
-
-    cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
-
-    if (pe_plus) { /* Do not continue for PE32+ files */
-        free(exe_sections);
-        return CL_CLEAN;
-    }
-
-    epsize = fmap_readn(map, epbuff, ep, 4096);
-
-    /* Disasm scan disabled since it's now handled by the bytecode */
-
-    /* CLI_UNPTEMP("DISASM",(exe_sections,0)); */
-    /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /*  ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
-    /* close(ndesc); */
-    /* CLI_TMPUNLK(); */
-    /* free(tempfile); */
-    /* if(ret == CL_VIRUS) { */
-    /*  free(exe_sections); */
-    /*  return ret; */
-    /* } */
-
-    if (overlays) {
-        int overlays_sz = fsize - overlays;
-        if (overlays_sz > 0) {
-            ret = cli_scanishield(ctx, overlays, overlays_sz);
-            if (ret != CL_CLEAN) {
-                free(exe_sections);
-                return ret;
-            }
-        }
-    }
-
-    pedata.nsections = nsections;
-    pedata.ep        = ep;
-    pedata.offset    = 0;
-    memcpy(&pedata.file_hdr, &file_hdr, sizeof(file_hdr));
-    memcpy(&pedata.opt32, &pe_opt.opt32, sizeof(pe_opt.opt32));
-    memcpy(&pedata.opt64, &pe_opt.opt64, sizeof(pe_opt.opt64));
-    memcpy(&pedata.dirs, dirs, sizeof(pedata.dirs));
-    pedata.e_lfanew    = e_lfanew;
-    pedata.overlays    = overlays;
-    pedata.overlays_sz = fsize - overlays;
-    pedata.hdr_size    = hdr_size;
-
-    /* Bytecode BC_PE_ALL hook */
-    bc_ctx = cli_bytecode_context_alloc();
-    if (!bc_ctx) {
-        cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
-        free(exe_sections);
-        return CL_EMEM;
-    }
-
-    cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
-    cli_bytecode_context_setctx(bc_ctx, ctx);
-    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_ALL, map);
-    switch (ret) {
-        case CL_ENULLARG:
-            cli_warnmsg("cli_scanpe: NULL argument supplied\n");
-            break;
-        case CL_VIRUS:
-        case CL_BREAK:
-            free(exe_sections);
-            cli_bytecode_context_destroy(bc_ctx);
-            return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
-    }
-    cli_bytecode_context_destroy(bc_ctx);
-
-    /* Attempt to run scans on import table */
-    /* Run if there are existing signatures and/or preclassing */
-#if HAVE_JSON
-    if (DCONF & PE_CONF_IMPTBL && (ctx->engine->hm_imp || ctx->wrkproperty)) {
-#else
-    if (DCONF & PE_CONF_IMPTBL && ctx->engine->hm_imp) {
-#endif
-        ret = scan_pe_imp(ctx, dirs, exe_sections, nsections, hdr_size, pe_plus);
-        switch (ret) {
-            case CL_SUCCESS:
-                break;
-            case CL_ENULLARG:
-                cli_warnmsg("cli_scanpe: NULL argument supplied\n");
-                break;
-            case CL_VIRUS:
-                if (SCAN_ALLMATCHES)
-                    break;
-                /* intentional fall-through */
-            case CL_BREAK:
-                free(exe_sections);
-                return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
-            default:
-                free(exe_sections);
-                return ret;
-        }
-    }
-    /* Attempt to detect some popular polymorphic viruses */
-
-    /* W32.Parite.B */
-    if (SCAN_HEURISTICS && (DCONF & PE_CONF_PARITE) && !dll && epsize == 4096 && ep == exe_sections[nsections - 1].raw) {
-        const char *pt = cli_memstr(epbuff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
-        if (pt) {
-            pt += 15;
-            if ((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
-                ret = cli_append_virus(ctx, "Heuristics.W32.Parite.B");
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS) {
-                        if (!SCAN_ALLMATCHES) {
-                            free(exe_sections);
-                            return ret;
-                        } else
-                            viruses_found++;
-                    } else {
-                        free(exe_sections);
-                        return ret;
-                    }
-                }
-            }
-        }
-    }
-
-    /* Kriz */
-    if (SCAN_HEURISTICS && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1] == '\x9c' && epbuff[2] == '\x60') {
-        enum { KZSTRASH,
-               KZSCDELTA,
-               KZSPDELTA,
-               KZSGETSIZE,
-               KZSXORPRFX,
-               KZSXOR,
-               KZSDDELTA,
-               KZSLOOP,
-               KZSTOP };
-        uint8_t kzs[]    = {KZSTRASH, KZSCDELTA, KZSPDELTA, KZSGETSIZE, KZSTRASH, KZSXORPRFX, KZSXOR, KZSTRASH, KZSDDELTA, KZSTRASH, KZSLOOP, KZSTOP};
-        uint8_t *kzstate = kzs;
-        uint8_t *kzcode  = (uint8_t *)epbuff + 3;
-        uint8_t kzdptr = 0xff, kzdsize = 0xff;
-        int kzlen = 197, kzinitlen = 0xffff, kzxorlen = -1;
-        cli_dbgmsg("in kriz\n");
-
-        while (*kzstate != KZSTOP) {
-            uint8_t op;
-            if (kzlen <= 6)
-                break;
-
-            op = *kzcode++;
-            kzlen--;
-
-            switch (*kzstate) {
-                case KZSTRASH:
-                case KZSGETSIZE: {
-                    int opsz = 0;
-                    switch (op) {
-                        case 0x81:
-                            kzcode += 5;
-                            kzlen -= 5;
-                            break;
-                        case 0xb8:
-                        case 0xb9:
-                        case 0xba:
-                        case 0xbb:
-                        case 0xbd:
-                        case 0xbe:
-                        case 0xbf:
-                            if (*kzstate == KZSGETSIZE && cli_readint32(kzcode) == 0x0fd2) {
-                                kzinitlen = kzlen - 5;
-                                kzdsize   = op - 0xb8;
-                                kzstate++;
-                                op = 4; /* fake the register to avoid breaking out */
-
-                                cli_dbgmsg("kriz: using #%d as size counter\n", kzdsize);
-                            }
-                            opsz = 4;
-                        case 0x48:
-                        case 0x49:
-                        case 0x4a:
-                        case 0x4b:
-                        case 0x4d:
-                        case 0x4e:
-                        case 0x4f:
-                            op &= 7;
-                            if (op != kzdptr && op != kzdsize) {
-                                kzcode += opsz;
-                                kzlen -= opsz;
-                                break;
-                            }
-                        default:
-                            kzcode--;
-                            kzlen++;
-                            kzstate++;
-                    }
-
-                    break;
-                }
-                case KZSCDELTA:
-                    if (op == 0xe8 && (uint32_t)cli_readint32(kzcode) < 0xff) {
-                        kzlen -= *kzcode + 4;
-                        kzcode += *kzcode + 4;
-                        kzstate++;
-                    } else {
-                        *kzstate = KZSTOP;
-                    }
-
-                    break;
-                case KZSPDELTA:
-                    if ((op & 0xf8) == 0x58 && (kzdptr = op - 0x58) != 4) {
-                        kzstate++;
-                        cli_dbgmsg("kriz: using #%d as pointer\n", kzdptr);
-                    } else {
-                        *kzstate = KZSTOP;
-                    }
-
-                    break;
-                case KZSXORPRFX:
-                    kzstate++;
-                    if (op == 0x3e)
-                        break;
-                case KZSXOR:
-                    if (op == 0x80 && *kzcode == kzdptr + 0xb0) {
-                        kzxorlen = kzlen;
-                        kzcode += +6;
-                        kzlen -= +6;
-                        kzstate++;
-                    } else {
-                        *kzstate = KZSTOP;
-                    }
-
-                    break;
-                case KZSDDELTA:
-                    if (op == kzdptr + 0x48)
-                        kzstate++;
-                    else
-                        *kzstate = KZSTOP;
-
-                    break;
-                case KZSLOOP:
-                    if (op == kzdsize + 0x48 && *kzcode == 0x75 && kzlen - (int8_t)kzcode[1] - 3 <= kzinitlen && kzlen - (int8_t)kzcode[1] >= kzxorlen) {
-                        ret = cli_append_virus(ctx, "Heuristics.W32.Kriz");
-                        if (ret != CL_CLEAN) {
-                            if (ret == CL_VIRUS) {
-                                if (!SCAN_ALLMATCHES) {
-                                    free(exe_sections);
-                                    return ret;
-                                } else
-                                    viruses_found++;
-                            } else {
-                                free(exe_sections);
-                                return ret;
-                            }
-                        }
-                    }
-                    cli_dbgmsg("kriz: loop out of bounds, corrupted sample?\n");
-                    kzstate++;
-            }
-        }
-    }
-
-    /* W32.Magistr.A/B */
-    if (SCAN_HEURISTICS && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections > 1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
-        uint32_t rsize, vsize, dam = 0;
-
-        vsize = exe_sections[nsections - 1].uvsz;
-        rsize = exe_sections[nsections - 1].rsz;
-        if (rsize < exe_sections[nsections - 1].ursz) {
-            rsize = exe_sections[nsections - 1].ursz;
-            dam   = 1;
-        }
-
-        if (vsize >= 0x612c && rsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
-            int bw = rsize < 0x7000 ? rsize : 0x7000;
-            const char *tbuff;
-
-            if ((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
-                if (cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
-                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                free(exe_sections);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            free(exe_sections);
-                            return ret;
-                        }
-                    }
-                }
-            }
-        } else if (rsize >= 0x7000 && vsize >= 0x7000 && ((vsize & 0xff) == 0xed)) {
-            int bw = rsize < 0x8000 ? rsize : 0x8000;
-            const char *tbuff;
-
-            if ((tbuff = fmap_need_off_once(map, exe_sections[nsections - 1].raw + rsize - bw, 4096))) {
-                if (cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
-                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                free(exe_sections);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            free(exe_sections);
-                            return ret;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /* W32.Polipos.A */
-    while (polipos && !dll && nsections > 2 && nsections < 13 && e_lfanew <= 0x800 && (EC16(optional_hdr32.Subsystem) == 2 || EC16(optional_hdr32.Subsystem) == 3) && EC16(file_hdr.Machine) == 0x14c && optional_hdr32.SizeOfStackReserve >= 0x80000) {
-        uint32_t jump, jold, *jumps = NULL;
-        const uint8_t *code;
-        unsigned int xsjs = 0;
-
-        if (exe_sections[0].rsz > CLI_MAX_ALLOCATION)
-            break;
-        if (exe_sections[0].rsz < 5)
-            break;
-        if (!(code = fmap_need_off_once(map, exe_sections[0].raw, exe_sections[0].rsz)))
-            break;
-
-        for (i = 0; i < exe_sections[0].rsz - 5; i++) {
-            if ((uint8_t)(code[i] - 0xe8) > 1)
-                continue;
-
-            jump = cli_rawaddr(exe_sections[0].rva + i + 5 + cli_readint32(&code[i + 1]), exe_sections, nsections, &err, fsize, hdr_size);
-            if (err || !CLI_ISCONTAINED(exe_sections[polipos].raw, exe_sections[polipos].rsz, jump, 9))
-                continue;
-
-            if (xsjs % 128 == 0) {
-                if (xsjs == 1280)
-                    break;
-
-                if (!(jumps = (uint32_t *)cli_realloc2(jumps, (xsjs + 128) * sizeof(uint32_t)))) {
-                    free(exe_sections);
-                    return CL_EMEM;
+            if (section->urva - peinfo->sections[i - 1].urva != peinfo->sections[i - 1].vsz) { /* No holes, no overlapping, no virtual disorder */
+                cli_dbgmsg("cli_peheader: Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
+                if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
+                    free(section_hdrs);
+                    free(peinfo->sections);
+                    peinfo->sections = NULL;
+                    return CLI_PEHEADER_RET_BROKEN_PE;
                 }
             }
 
-            j = 0;
-            for (; j < xsjs; j++) {
-                if (jumps[j] < jump)
-                    continue;
-                if (jumps[j] == jump) {
-                    xsjs--;
-                    break;
-                }
+            if (section->rva < peinfo->min)
+                peinfo->min = section->rva;
 
-                jold     = jumps[j];
-                jumps[j] = jump;
-                jump     = jold;
+            if (section->rva + section->rsz > peinfo->max) {
+                peinfo->max           = section->rva + section->rsz;
+                peinfo->overlay_start = section->raw + section->rsz;
             }
 
-            jumps[j] = jump;
-            xsjs++;
-        }
-
-        if (!xsjs)
-            break;
-
-        cli_dbgmsg("Polipos: Checking %d xsect jump(s)\n", xsjs);
-        for (i = 0; i < xsjs; i++) {
-            if (!(code = fmap_need_off_once(map, jumps[i], 9)))
-                continue;
-
-            if ((jump = cli_readint32(code)) == 0x60ec8b55 || (code[4] == 0x0ec && ((jump == 0x83ec8b55 && code[6] == 0x60) || (jump == 0x81ec8b55 && !code[7] && !code[8])))) {
-                ret = cli_append_virus(ctx, "Heuristics.W32.Polipos.A");
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS) {
-                        if (!SCAN_ALLMATCHES) {
-                            free(jumps);
-                            free(exe_sections);
-                            return ret;
-                        } else
-                            viruses_found++;
-                    } else {
-                        free(jumps);
-                        free(exe_sections);
-                        return ret;
-                    }
-                }
-            }
-        }
-
-        free(jumps);
-        break;
-    }
-
-    /* Trojan.Swizzor.Gen */
-    if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64 * 1024 && fsize < 4 * 1024 * 1024) {
-        if (dirs[2].Size) {
-            struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
-            unsigned int m            = 1000;
-            ret                       = CL_CLEAN;
-
-            if (!stats) {
-                free(exe_sections);
-                return CL_EMEM;
-            } else {
-                cli_parseres_special(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), map, exe_sections, nsections, fsize, hdr_size, 0, 0, &m, stats);
-                if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
-                    ret = cli_append_virus(ctx, "Heuristics.Trojan.Swizzor.Gen");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                free(stats);
-                                free(exe_sections);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            free(stats);
-                            free(exe_sections);
-                            return ret;
-                        }
-                    }
-                }
+            // TODO This case might be possible, which would lead to us
+            // mislabelling the overlay
+            if (section->raw + section->rsz > peinfo->max) {
+                cli_dbgmsg("cli_peheader: Assumption Violated: Last section end RVA isn't tied to the last section\n");
             }
         }
     }
 
-    /* !!!!!!!!!!!!!!    PACKERS START HERE    !!!!!!!!!!!!!! */
-    corrupted_cur        = ctx->corrupted_input;
-    ctx->corrupted_input = 2; /* caller will reset on return */
+    peinfo->overlay_size = fsize - peinfo->overlay_start;
 
-    /* UPX, FSG, MEW support */
+    free(section_hdrs);
 
-    /* try to find the first section with physical size == 0 */
-    found = 0;
-    if (DCONF & (PE_CONF_UPX | PE_CONF_FSG | PE_CONF_MEW)) {
-        for (i = 0; i < (unsigned int)nsections - 1; i++) {
-            if (!exe_sections[i].rsz && exe_sections[i].vsz && exe_sections[i + 1].rsz && exe_sections[i + 1].vsz) {
-                found = 1;
-                cli_dbgmsg("UPX/FSG/MEW: empty section found - assuming compression\n");
-#if HAVE_JSON
-                if (pe_json != NULL)
-                    cli_jsonbool(pe_json, "HasEmptySection", 1);
-#endif
-                break;
-            }
-        }
+    // NOTE: For DLLs the entrypoint is likely to be zero
+    // TODO ^^^ Does this mean this doesn't work for DLLs?
+    if (!(peinfo->ep = cli_rawaddr(peinfo->vep, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size)) && err) {
+        cli_dbgmsg("cli_peheader: Broken PE file - Can't map EntryPoint to a file offset\n");
+        free(peinfo->sections);
+        peinfo->sections = NULL;
+        return CLI_PEHEADER_RET_BROKEN_PE;
     }
-
-    /* MEW support */
-    if (found && (DCONF & PE_CONF_MEW) && epsize >= 16 && epbuff[0] == '\xe9') {
-        uint32_t fileoffset;
-        const char *tbuff;
-
-        fileoffset = (vep + cli_readint32(epbuff + 1) + 5);
-        while (fileoffset == 0x154 || fileoffset == 0x158) {
-            char *src;
-            uint32_t offdiff, uselzma;
-
-            cli_dbgmsg("MEW: found MEW characteristics %08X + %08X + 5 = %08X\n",
-                       cli_readint32(epbuff + 1), vep, cli_readint32(epbuff + 1) + vep + 5);
-
-            if (!(tbuff = fmap_need_off_once(map, fileoffset, 0xb0)))
-                break;
-
-            if (fileoffset == 0x154)
-                cli_dbgmsg("MEW: Win9x compatibility was set!\n");
-            else
-                cli_dbgmsg("MEW: Win9x compatibility was NOT set!\n");
-
-            offdiff = cli_readint32(tbuff + 1) - EC32(optional_hdr32.ImageBase);
-            if ((offdiff <= exe_sections[i + 1].rva) ||
-                (offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4)) {
-                cli_dbgmsg("MEW: ESI is not in proper section\n");
-                break;
-            }
-
-            offdiff -= exe_sections[i + 1].rva;
-
-            if (!exe_sections[i + 1].rsz) {
-                cli_dbgmsg("MEW: mew section is empty\n");
-                break;
-            }
-
-            ssize = exe_sections[i + 1].vsz;
-            dsize = exe_sections[i].vsz;
-
-            /* Guard against integer overflow */
-            if ((ssize + dsize < ssize) || (ssize + dsize < dsize)) {
-                cli_dbgmsg("MEW: section size (%08x) + diff size (%08x) exceeds max size of unsigned int (%08x)\n", ssize, dsize, UINT32_MAX);
-                break;
-            }
-
-            /* Verify that offdiff does not exceed the ssize + sdiff */
-            if (offdiff >= ssize + dsize) {
-                cli_dbgmsg("MEW: offdiff (%08x) exceeds section size + diff size (%08x)\n", offdiff, ssize + dsize);
-                break;
-            }
-
-            cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
-
-            CLI_UNPSIZELIMITS("MEW", MAX(ssize, dsize));
-            CLI_UNPSIZELIMITS("MEW", MAX(ssize + dsize, exe_sections[i + 1].rsz));
-
-            if (exe_sections[i + 1].rsz < offdiff + 12 || exe_sections[i + 1].rsz > ssize) {
-                cli_dbgmsg("MEW: Size mismatch: %08x\n", exe_sections[i + 1].rsz);
-                break;
-            }
-
-            /* allocate needed buffer */
-            if (!(src = cli_calloc(ssize + dsize, sizeof(char)))) {
-                free(exe_sections);
-                return CL_EMEM;
-            }
-
-            if ((bytes = fmap_readn(map, src + dsize, exe_sections[i + 1].raw, exe_sections[i + 1].rsz)) != exe_sections[i + 1].rsz) {
-                cli_dbgmsg("MEW: Can't read %d bytes [read: %lu]\n", exe_sections[i + 1].rsz, (unsigned long)bytes);
-                free(exe_sections);
-                free(src);
-                return CL_EREAD;
-            }
-
-            cli_dbgmsg("MEW: %u (%08x) bytes read\n", (unsigned int)bytes, (unsigned int)bytes);
-
-            /* count offset to lzma proc, if lzma used, 0xe8 -> call */
-            if (tbuff[0x7b] == '\xe8') {
-                if (!CLI_ISCONTAINED(exe_sections[1].rva, exe_sections[1].vsz, cli_readint32(tbuff + 0x7c) + fileoffset + 0x80, 4)) {
-                    cli_dbgmsg("MEW: lzma proc out of bounds!\n");
-                    free(src);
-                    break; /* to next unpacker in chain */
-                }
-
-                uselzma = cli_readint32(tbuff + 0x7c) - (exe_sections[0].rva - fileoffset - 0x80);
-            } else {
-                uselzma = 0;
-            }
 
 #if HAVE_JSON
-            if (pe_json != NULL)
-                cli_jsonstr(pe_json, "Packer", "MEW");
+    if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
+        cli_jsonint(pe_json, "EntryPointOffset", peinfo->ep);
+
+        if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
+            free(peinfo->sections);
+            peinfo->sections = NULL;
+            return CLI_PEHEADER_RET_JSON_TIMEOUT;
+        }
+    }
 #endif
 
-            CLI_UNPTEMP("MEW", (src, exe_sections, 0));
-            CLI_UNPRESULTS("MEW", (unmew11(src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, ndesc)), 1, (src, 0));
-            break;
-        }
+    if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
+        cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", peinfo->ep, peinfo->ep);
     }
 
-    if (epsize < 168) {
-        free(exe_sections);
-        return CL_CLEAN;
-    }
-
-    if (found || upack) {
-        /* Check EP for UPX vs. FSG vs. Upack */
-
-        /* Upack 0.39 produces 2 types of executables
-         * 3 sections:           | 2 sections (one empty, I don't check found if !upack, since it's in OR above):
-         *   mov esi, value      |   pusha
-         *   lodsd               |   call $+0x9
-         *   push eax            |
-         *
-         * Upack 1.1/1.2 Beta produces [based on 2 samples (sUx) provided by aCaB]:
-         * 2 sections
-         *   mov esi, value
-         *   loads
-         *   mov edi, eax
-         *
-         * Upack unknown [sample 0297729]
-         * 3 sections
-         *   mov esi, value
-         *   push [esi]
-         *   jmp
-         * 
-         */
-        /* upack 0.39-3s + sample 0151477*/
-        while (((upack && nsections == 3) && /* 3 sections */
-                ((
-                     epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
-                     epbuff[5] == '\xad' && epbuff[6] == '\x50'                                                 /* lodsd; push eax */
-                     ) ||
-                 /* based on 0297729 sample from aCaB */
-                 (epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
-                  epbuff[5] == '\xff' && epbuff[6] == '\x36'                                                 /* push [esi] */
-                  ))) ||
-               ((!upack && nsections == 2) &&                                                    /* 2 sections */
-                ((                                                                               /* upack 0.39-2s */
-                  epbuff[0] == '\x60' && epbuff[1] == '\xe8' && cli_readint32(epbuff + 2) == 0x9 /* pusha; call+9 */
-                  ) ||
-                 (                                                                                           /* upack 1.1/1.2, based on 2 samples */
-                  epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) < min && /* mov esi */
-                  cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > 0 &&
-                  epbuff[5] == '\xad' && epbuff[6] == '\x8b' && epbuff[7] == '\xf8' /* loads;  mov edi, eax */
-                  )))) {
-            uint32_t vma, off;
-            int a, b, c;
-
-            cli_dbgmsg("Upack characteristics found.\n");
-            a = exe_sections[0].vsz;
-            b = exe_sections[1].vsz;
-            if (upack) {
-                cli_dbgmsg("Upack: var set\n");
-
-                c     = exe_sections[2].vsz;
-                ssize = exe_sections[0].ursz + exe_sections[0].uraw;
-                off   = exe_sections[0].rva;
-                vma   = EC32(optional_hdr32.ImageBase) + exe_sections[0].rva;
-            } else {
-                cli_dbgmsg("Upack: var NOT set\n");
-                c     = exe_sections[1].rva;
-                ssize = exe_sections[1].uraw;
-                off   = 0;
-                vma   = exe_sections[1].rva - exe_sections[1].uraw;
-            }
-
-            dsize = a + b + c;
-
-            CLI_UNPSIZELIMITS("Upack", MAX(MAX(dsize, ssize), exe_sections[1].ursz));
-
-            if (!CLI_ISCONTAINED(0, dsize, exe_sections[1].rva - off, exe_sections[1].ursz) || (upack && !CLI_ISCONTAINED(0, dsize, exe_sections[2].rva - exe_sections[0].rva, ssize)) || ssize > dsize) {
-                cli_dbgmsg("Upack: probably malformed pe-header, skipping to next unpacker\n");
-                break;
-            }
-
-            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
-                free(exe_sections);
-                return CL_EMEM;
-            }
-
-            if ((unsigned int)fmap_readn(map, dest, 0, ssize) != ssize) {
-                cli_dbgmsg("Upack: Can't read raw data of section 0\n");
-                free(dest);
-                break;
-            }
-
-            if (upack)
-                memmove(dest + exe_sections[2].rva - exe_sections[0].rva, dest, ssize);
-
-            if ((unsigned int)fmap_readn(map, dest + exe_sections[1].rva - off, exe_sections[1].uraw, exe_sections[1].ursz) != exe_sections[1].ursz) {
-                cli_dbgmsg("Upack: Can't read raw data of section 1\n");
-                free(dest);
-                break;
-            }
-
-#if HAVE_JSON
-            if (pe_json != NULL)
-                cli_jsonstr(pe_json, "Packer", "Upack");
-#endif
-
-            CLI_UNPTEMP("Upack", (dest, exe_sections, 0));
-            CLI_UNPRESULTS("Upack", (unupack(upack, dest, dsize, epbuff, vma, ep, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, ndesc)), 1, (dest, 0));
-
-            break;
-        }
-    }
-
-    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\x87' && epbuff[1] == '\x25') {
-        const char *dst;
-        uint32_t newesi, newedi, newebx, newedx;
-
-        /* FSG v2.0 support - thanks to aCaB ! */
-
-        ssize = exe_sections[i + 1].rsz;
-        dsize = exe_sections[i].vsz;
-
-        CLI_UNPSIZELIMITS("FSG", MAX(dsize, ssize));
-
-        if (ssize <= 0x19 || dsize <= ssize) {
-            cli_dbgmsg("FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
-            free(exe_sections);
-            return CL_CLEAN;
-        }
-
-        newedx = cli_readint32(epbuff + 2) - EC32(optional_hdr32.ImageBase);
-        if (!CLI_ISCONTAINED(exe_sections[i + 1].rva, exe_sections[i + 1].rsz, newedx, 4)) {
-            cli_dbgmsg("FSG: xchg out of bounds (%x), giving up\n", newedx);
-            break;
-        }
-
-        if (!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
-            cli_dbgmsg("Can't read raw data of section %d\n", i + 1);
-            free(exe_sections);
-            return CL_ESEEK;
-        }
-
-        dst = src + newedx - exe_sections[i + 1].rva;
-        if (newedx < exe_sections[i + 1].rva || !CLI_ISCONTAINED(src, ssize, dst, 4)) {
-            cli_dbgmsg("FSG: New ESP out of bounds\n");
-            break;
-        }
-
-        newedx = cli_readint32(dst) - EC32(optional_hdr32.ImageBase);
-        if (!CLI_ISCONTAINED(exe_sections[i + 1].rva, exe_sections[i + 1].rsz, newedx, 4)) {
-            cli_dbgmsg("FSG: New ESP (%x) is wrong\n", newedx);
-            break;
-        }
-
-        dst = src + newedx - exe_sections[i + 1].rva;
-        if (!CLI_ISCONTAINED(src, ssize, dst, 32)) {
-            cli_dbgmsg("FSG: New stack out of bounds\n");
-            break;
-        }
-
-        newedi = cli_readint32(dst) - EC32(optional_hdr32.ImageBase);
-        newesi = cli_readint32(dst + 4) - EC32(optional_hdr32.ImageBase);
-        newebx = cli_readint32(dst + 16) - EC32(optional_hdr32.ImageBase);
-        newedx = cli_readint32(dst + 20);
-
-        if (newedi != exe_sections[i].rva) {
-            cli_dbgmsg("FSG: Bad destination buffer (edi is %x should be %x)\n", newedi, exe_sections[i].rva);
-            break;
-        }
-
-        if (newesi < exe_sections[i + 1].rva || newesi - exe_sections[i + 1].rva >= exe_sections[i + 1].rsz) {
-            cli_dbgmsg("FSG: Source buffer out of section bounds\n");
-            break;
-        }
-
-        if (!CLI_ISCONTAINED(exe_sections[i + 1].rva, exe_sections[i + 1].rsz, newebx, 16)) {
-            cli_dbgmsg("FSG: Array of functions out of bounds\n");
-            break;
-        }
-
-        newedx = cli_readint32(newebx + 12 - exe_sections[i + 1].rva + src) - EC32(optional_hdr32.ImageBase);
-        cli_dbgmsg("FSG: found old EP @%x\n", newedx);
-
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
-
-        CLI_UNPTEMP("FSG", (dest, exe_sections, 0));
-        CLI_UNPRESULTSFSG2("FSG", (unfsg_200(newesi - exe_sections[i + 1].rva + src, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, newedi, EC32(optional_hdr32.ImageBase), newedx, ndesc)), 1, (dest, 0));
-        break;
-    }
-
-    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) < min) {
-        int sectcnt = 0;
-        const char *support;
-        uint32_t newesi, newedi, oldep, gp, t;
-        struct cli_exe_section *sections;
-
-        /* FSG support - v. 1.33 (thx trog for the many samples) */
-
-        ssize = exe_sections[i + 1].rsz;
-        dsize = exe_sections[i].vsz;
-
-        CLI_UNPSIZELIMITS("FSG", MAX(dsize, ssize));
-
-        if (ssize <= 0x19 || dsize <= ssize) {
-            cli_dbgmsg("FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
-            free(exe_sections);
-            return CL_CLEAN;
-        }
-
-        if (!(t = cli_rawaddr(cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase), NULL, 0, &err, fsize, hdr_size)) && err) {
-            cli_dbgmsg("FSG: Support data out of padding area\n");
-            break;
-        }
-
-        gp = exe_sections[i + 1].raw - t;
-
-        CLI_UNPSIZELIMITS("FSG", gp);
-
-        if (!(support = fmap_need_off_once(map, t, gp))) {
-            cli_dbgmsg("Can't read %d bytes from padding area\n", gp);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-        /* newebx = cli_readint32(support) - EC32(optional_hdr32.ImageBase);  Unused */
-        newedi = cli_readint32(support + 4) - EC32(optional_hdr32.ImageBase); /* 1st dest */
-        newesi = cli_readint32(support + 8) - EC32(optional_hdr32.ImageBase); /* Source */
-
-        if (newesi < exe_sections[i + 1].rva || newesi - exe_sections[i + 1].rva >= exe_sections[i + 1].rsz) {
-            cli_dbgmsg("FSG: Source buffer out of section bounds\n");
-            break;
-        }
-
-        if (newedi != exe_sections[i].rva) {
-            cli_dbgmsg("FSG: Bad destination (is %x should be %x)\n", newedi, exe_sections[i].rva);
-            break;
-        }
-
-        /* Counting original sections */
-        for (t = 12; t < gp - 4; t += 4) {
-            uint32_t rva = cli_readint32(support + t);
-
-            if (!rva)
-                break;
-
-            rva -= EC32(optional_hdr32.ImageBase) + 1;
-            sectcnt++;
-
-            if (rva % 0x1000)
-                cli_dbgmsg("FSG: Original section %d is misaligned\n", sectcnt);
-
-            if (rva < exe_sections[i].rva || rva - exe_sections[i].rva >= exe_sections[i].vsz) {
-                cli_dbgmsg("FSG: Original section %d is out of bounds\n", sectcnt);
-                break;
-            }
-        }
-
-        if (t >= gp - 4 || cli_readint32(support + t)) {
-            break;
-        }
-
-        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-            cli_errmsg("FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        sections[0].rva = newedi;
-        for (t = 1; t <= (uint32_t)sectcnt; t++)
-            sections[t].rva = cli_readint32(support + 8 + t * 4) - 1 - EC32(optional_hdr32.ImageBase);
-
-        if (!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
-            cli_dbgmsg("Can't read raw data of section %d\n", i);
-            free(exe_sections);
-            free(sections);
-            return CL_EREAD;
-        }
-
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
-            free(exe_sections);
-            free(sections);
-            return CL_EMEM;
-        }
-
-        oldep = vep + 161 + 6 + cli_readint32(epbuff + 163);
-        cli_dbgmsg("FSG: found old EP @%x\n", oldep);
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
-
-        CLI_UNPTEMP("FSG", (dest, sections, exe_sections, 0));
-        CLI_UNPRESULTSFSG1("FSG", (unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
-        break; /* were done with 1.33 */
-    }
-
-    while (found && (DCONF & PE_CONF_FSG) && epbuff[0] == '\xbb' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) < min && epbuff[5] == '\xbf' && epbuff[10] == '\xbe' && vep >= exe_sections[i + 1].rva && vep - exe_sections[i + 1].rva > exe_sections[i + 1].rva - 0xe0) {
-        int sectcnt = 0;
-        uint32_t gp, t = cli_rawaddr(cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase), NULL, 0, &err, fsize, hdr_size);
-        const char *support;
-        uint32_t newesi = cli_readint32(epbuff + 11) - EC32(optional_hdr32.ImageBase);
-        uint32_t newedi = cli_readint32(epbuff + 6) - EC32(optional_hdr32.ImageBase);
-        uint32_t oldep  = vep - exe_sections[i + 1].rva;
-        struct cli_exe_section *sections;
-
-        /* FSG support - v. 1.31 */
-
-        ssize = exe_sections[i + 1].rsz;
-        dsize = exe_sections[i].vsz;
-
-        if (err) {
-            cli_dbgmsg("FSG: Support data out of padding area\n");
-            break;
-        }
-
-        if (newesi < exe_sections[i + 1].rva || newesi - exe_sections[i + 1].rva >= exe_sections[i + 1].raw) {
-            cli_dbgmsg("FSG: Source buffer out of section bounds\n");
-            break;
-        }
-
-        if (newedi != exe_sections[i].rva) {
-            cli_dbgmsg("FSG: Bad destination (is %x should be %x)\n", newedi, exe_sections[i].rva);
-            break;
-        }
-
-        CLI_UNPSIZELIMITS("FSG", MAX(dsize, ssize));
-
-        if (ssize <= 0x19 || dsize <= ssize) {
-            cli_dbgmsg("FSG: Size mismatch (ssize: %d, dsize: %d)\n", ssize, dsize);
-            free(exe_sections);
-            return CL_CLEAN;
-        }
-
-        gp = exe_sections[i + 1].raw - t;
-
-        CLI_UNPSIZELIMITS("FSG", gp)
-
-        if (!(support = fmap_need_off_once(map, t, gp))) {
-            cli_dbgmsg("Can't read %d bytes from padding area\n", gp);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-        /* Counting original sections */
-        for (t = 0; t < gp - 2; t += 2) {
-            uint32_t rva = support[t] | (support[t + 1] << 8);
-
-            if (rva == 2 || rva == 1)
-                break;
-
-            rva = ((rva - 2) << 12) - EC32(optional_hdr32.ImageBase);
-            sectcnt++;
-
-            if (rva < exe_sections[i].rva || rva - exe_sections[i].rva >= exe_sections[i].vsz) {
-                cli_dbgmsg("FSG: Original section %d is out of bounds\n", sectcnt);
-                break;
-            }
-        }
-
-        if (t >= gp - 10 || cli_readint32(support + t + 6) != 2)
-            break;
-
-        if ((sections = (struct cli_exe_section *)cli_malloc((sectcnt + 1) * sizeof(struct cli_exe_section))) == NULL) {
-            cli_errmsg("FSG: Unable to allocate memory for sections %llu\n", (long long unsigned)((sectcnt + 1) * sizeof(struct cli_exe_section)));
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        sections[0].rva = newedi;
-        for (t = 0; t <= (uint32_t)sectcnt - 1; t++)
-            sections[t + 1].rva = (((support[t * 2] | (support[t * 2 + 1] << 8)) - 2) << 12) - EC32(optional_hdr32.ImageBase);
-
-        if (!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
-            cli_dbgmsg("FSG: Can't read raw data of section %d\n", i);
-            free(exe_sections);
-            free(sections);
-            return CL_EREAD;
-        }
-
-        if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
-            free(exe_sections);
-            free(sections);
-            return CL_EMEM;
-        }
-
-        gp    = 0xda + 6 * (epbuff[16] == '\xe8');
-        oldep = vep + gp + 6 + cli_readint32(src + gp + 2 + oldep);
-        cli_dbgmsg("FSG: found old EP @%x\n", oldep);
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "FSG");
-#endif
-
-        CLI_UNPTEMP("FSG", (dest, sections, exe_sections, 0));
-        CLI_UNPRESULTSFSG1("FSG", (unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)), 1, (dest, sections, 0));
-
-        break; /* were done with 1.31 */
-    }
-
-    if (found && (DCONF & PE_CONF_UPX)) {
-        ssize = exe_sections[i + 1].rsz;
-        dsize = exe_sections[i].vsz + exe_sections[i + 1].vsz;
-
-        /* 
-         * UPX support
-         * we assume (i + 1) is UPX1
-         */
-
-        /* cli_dbgmsg("UPX: ssize %u dsize %u\n", ssize, dsize); */
-
-        CLI_UNPSIZELIMITS("UPX", MAX(dsize, ssize));
-
-        if (ssize <= 0x19 || dsize <= ssize || dsize > CLI_MAX_ALLOCATION) {
-            cli_dbgmsg("UPX: Size mismatch or dsize too big (ssize: %d, dsize: %d)\n", ssize, dsize);
-            free(exe_sections);
-            return CL_CLEAN;
-        }
-
-        if (!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
-            cli_dbgmsg("UPX: Can't read raw data of section %d\n", i + 1);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-        if ((dest = (char *)cli_calloc(dsize + 8192, sizeof(char))) == NULL) {
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        /* try to detect UPX code */
-        if (cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("UPX: Looks like a NRV2B decompression routine\n");
-            upxfn = upx_inflate2b;
-        } else if (cli_memstr(UPX_NRV2D, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2D, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("UPX: Looks like a NRV2D decompression routine\n");
-            upxfn = upx_inflate2d;
-        } else if (cli_memstr(UPX_NRV2E, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2E, 24, epbuff + 0x69 + 8, 13)) {
-            cli_dbgmsg("UPX: Looks like a NRV2E decompression routine\n");
-            upxfn = upx_inflate2e;
-        }
-
-        if (upxfn) {
-            int skew = cli_readint32(epbuff + 2) - EC32(optional_hdr32.ImageBase) - exe_sections[i + 1].rva;
-
-            if (epbuff[1] != '\xbe' || skew <= 0 || skew > 0xfff) {
-                /* FIXME: legit skews?? */
-                skew = 0;
-            } else if ((unsigned int)skew > ssize) {
-                /* Ignore suggested skew larger than section size */
-                skew = 0;
-            } else {
-                cli_dbgmsg("UPX: UPX1 seems skewed by %d bytes\n", skew);
-            }
-
-            /* Try skewed first (skew may be zero) */
-            if (upxfn(src + skew, ssize - skew, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep - skew) >= 0) {
-                upx_success = 1;
-            }
-            /* If skew not successful and non-zero, try no skew */
-            else if (skew && (upxfn(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) >= 0)) {
-                upx_success = 1;
-            }
-
-            if (upx_success)
-                cli_dbgmsg("UPX: Successfully decompressed\n");
-            else
-                cli_dbgmsg("UPX: Preferred decompressor failed\n");
-        }
-
-        if (!upx_success && upxfn != upx_inflate2b) {
-            if (upx_inflate2b(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) == -1 && upx_inflate2b(src + 0x15, ssize - 0x15, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep - 0x15) == -1) {
-
-                cli_dbgmsg("UPX: NRV2B decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("UPX: Successfully decompressed with NRV2B\n");
-            }
-        }
-
-        if (!upx_success && upxfn != upx_inflate2d) {
-            if (upx_inflate2d(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) == -1 && upx_inflate2d(src + 0x15, ssize - 0x15, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep - 0x15) == -1) {
-
-                cli_dbgmsg("UPX: NRV2D decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("UPX: Successfully decompressed with NRV2D\n");
-            }
-        }
-
-        if (!upx_success && upxfn != upx_inflate2e) {
-            if (upx_inflate2e(src, ssize, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep) == -1 && upx_inflate2e(src + 0x15, ssize - 0x15, dest, &dsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep - 0x15) == -1) {
-                cli_dbgmsg("UPX: NRV2E decompressor failed\n");
-            } else {
-                upx_success = 1;
-                cli_dbgmsg("UPX: Successfully decompressed with NRV2E\n");
-            }
-        }
-
-        if (cli_memstr(UPX_LZMA2, 20, epbuff + 0x2f, 20)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x21), skew = 0;
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                skew = cli_readint32(epbuff + 2) - exe_sections[i + 1].rva - optional_hdr32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep, 0x20003) >= 0;
-        } else if (cli_memstr(UPX_LZMA1_FIRST, 8, epbuff + 0x39, 8) && cli_memstr(UPX_LZMA1_SECOND, 8, epbuff + 0x45, 8)) {
-            uint32_t strictdsize = cli_readint32(epbuff + 0x2b), skew = 0;
-            uint32_t properties = cli_readint32(epbuff + 0x41);
-            if (ssize > 0x15 && epbuff[0] == '\x60' && epbuff[1] == '\xbe') {
-                skew = cli_readint32(epbuff + 2) - exe_sections[i + 1].rva - optional_hdr32.ImageBase;
-                if (skew != 0x15)
-                    skew = 0;
-            }
-
-            if (strictdsize <= dsize)
-                upx_success = upx_inflatelzma(src + skew, ssize - skew, dest, &strictdsize, exe_sections[i].rva, exe_sections[i + 1].rva, vep, properties) >= 0;
-        }
-
-        if (!upx_success) {
-            cli_dbgmsg("UPX: All decompressors failed\n");
-            free(dest);
-        }
-    }
-
-    if (upx_success) {
-        free(exe_sections);
-
-        CLI_UNPTEMP("UPX/FSG", (dest, 0));
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "UPX");
-#endif
-
-        if ((unsigned int)write(ndesc, dest, dsize) != dsize) {
-            cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
-            free(tempfile);
-            free(dest);
-            close(ndesc);
-            return CL_EWRITE;
-        }
-
-        free(dest);
-        if (lseek(ndesc, 0, SEEK_SET) == -1) {
-            cli_dbgmsg("UPX/FSG: lseek() failed\n");
-            close(ndesc);
-            CLI_TMPUNLK();
-            free(tempfile);
-            SHA_RESET;
-            return CL_ESEEK;
-        }
-
-        if (ctx->engine->keeptmp)
-            cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
-
-        cli_dbgmsg("***** Scanning decompressed file *****\n");
-        SHA_OFF;
-        if ((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
-            close(ndesc);
-            CLI_TMPUNLK();
-            free(tempfile);
-            SHA_RESET;
-            return CL_VIRUS;
-        }
-
-        SHA_RESET;
-        close(ndesc);
-        CLI_TMPUNLK();
-        free(tempfile);
-        return ret;
-    }
-
-    /* Petite */
-
-    if (epsize < 200) {
-        free(exe_sections);
-        return CL_CLEAN;
-    }
-
-    found = 2;
-
-    if (epbuff[0] != '\xb8' || (uint32_t)cli_readint32(epbuff + 1) != exe_sections[nsections - 1].rva + EC32(optional_hdr32.ImageBase)) {
-        if (nsections < 2 || epbuff[0] != '\xb8' || (uint32_t)cli_readint32(epbuff + 1) != exe_sections[nsections - 2].rva + EC32(optional_hdr32.ImageBase))
-            found = 0;
-        else
-            found = 1;
-    }
-
-    if (found && (DCONF & PE_CONF_PETITE)) {
-        cli_dbgmsg("Petite: v2.%d compression detected\n", found);
-
-        if (cli_readint32(epbuff + 0x80) == 0x163c988d) {
-            cli_dbgmsg("Petite: level zero compression is not supported yet\n");
-        } else {
-            dsize = max - min;
-
-            CLI_UNPSIZELIMITS("Petite", dsize);
-
-            if ((dest = (char *)cli_calloc(dsize, sizeof(char))) == NULL) {
-                cli_dbgmsg("Petite: Can't allocate %d bytes\n", dsize);
-                free(exe_sections);
-                return CL_EMEM;
-            }
-
-            for (i = 0; i < nsections; i++) {
-                if (exe_sections[i].raw) {
-                    unsigned int r_ret;
-
-                    if (!exe_sections[i].rsz)
-                        goto out_no_petite;
-
-                    if (!CLI_ISCONTAINED(dest, dsize,
-                                         dest + exe_sections[i].rva - min,
-                                         exe_sections[i].ursz))
-                        goto out_no_petite;
-
-                    r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
-                                       exe_sections[i].raw,
-                                       exe_sections[i].ursz);
-                    if (r_ret != exe_sections[i].ursz) {
-                    out_no_petite:
-                        free(exe_sections);
-                        free(dest);
-                        return CL_CLEAN;
-                    }
-                }
-            }
-
-#if HAVE_JSON
-            if (pe_json != NULL)
-                cli_jsonstr(pe_json, "Packer", "Petite");
-#endif
-
-            CLI_UNPTEMP("Petite", (dest, exe_sections, 0));
-            CLI_UNPRESULTS("Petite", (petite_inflate2x_1to9(dest, min, max - min, exe_sections, nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase), vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress), EC32(optional_hdr32.DataDirectory[2].Size))), 0, (dest, 0));
-        }
-    }
-
-    /* PESpin 1.1 */
-
-    if ((DCONF & PE_CONF_PESPIN) && nsections > 1 &&
-        vep >= exe_sections[nsections - 1].rva &&
-        0x3217 - 4 <= exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz &&
-        vep < exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz - 0x3217 - 4 &&
-        memcmp(epbuff + 4, "\xe8\x00\x00\x00\x00\x8b\x1c\x24\x83\xc3", 10) == 0) {
-
-        char *spinned;
-
-        CLI_UNPSIZELIMITS("PEspin", fsize);
-
-        if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
-            cli_errmsg("PESping: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
-            cli_dbgmsg("PESpin: Can't read %lu bytes\n", (unsigned long)fsize);
-            free(spinned);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "PEspin");
-#endif
-
-        CLI_UNPTEMP("PESpin", (spinned, exe_sections, 0));
-        CLI_UNPRESULTS_("PEspin", SPINCASE(), (unspin(spinned, fsize, exe_sections, nsections - 1, vep, ndesc, ctx)), 0, (spinned, 0));
-    }
-
-    /* yC 1.3 & variants */
-    if ((DCONF & PE_CONF_YC) && nsections > 1 &&
-        (EC32(optional_hdr32.AddressOfEntryPoint) == exe_sections[nsections - 1].rva + 0x60)) {
-
-        uint32_t ecx = 0;
-        int16_t offset;
-
-        /* yC 1.3 */
-        if (!memcmp(epbuff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED", 15) &&
-            !memcmp(epbuff + 0x26, "\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 13) &&
-            ((uint8_t)epbuff[0x13] == 0xB9) &&
-            ((uint16_t)(cli_readint16(epbuff + 0x18)) == 0xE981) &&
-            !memcmp(epbuff + 0x1e, "\x8B\xD5\x81\xC2", 4)) {
-
-            offset = 0;
-            if (0x6c - cli_readint32(epbuff + 0xf) + cli_readint32(epbuff + 0x22) == 0xC6)
-                ecx = cli_readint32(epbuff + 0x14) - cli_readint32(epbuff + 0x1a);
-        }
-
-        /* yC 1.3 variant */
-        if (!ecx && !memcmp(epbuff, "\x55\x8B\xEC\x83\xEC\x40\x53\x56\x57", 9) &&
-            !memcmp(epbuff + 0x17, "\xe8\x00\x00\x00\x00\x5d\x81\xed", 8) &&
-            ((uint8_t)epbuff[0x23] == 0xB9)) {
-
-            offset = 0x10;
-            if (0x6c - cli_readint32(epbuff + 0x1f) + cli_readint32(epbuff + 0x32) == 0xC6)
-                ecx = cli_readint32(epbuff + 0x24) - cli_readint32(epbuff + 0x2a);
-        }
-
-        /* yC 1.x/modified */
-        if (!ecx && !memcmp(epbuff, "\x60\xe8\x00\x00\x00\x00\x5d\x81\xed", 9) &&
-            ((uint8_t)epbuff[0xd] == 0xb9) &&
-            ((uint16_t)cli_readint16(epbuff + 0x12) == 0xbd8d) &&
-            !memcmp(epbuff + 0x18, "\x8b\xf7\xac", 3)) {
-
-            offset = -0x18;
-            if (0x66 - cli_readint32(epbuff + 0x9) + cli_readint32(epbuff + 0x14) == 0xae)
-                ecx = cli_readint32(epbuff + 0xe);
-        }
-
-        if (ecx > 0x800 && ecx < 0x2000 &&
-            !memcmp(epbuff + 0x63 + offset, "\xaa\xe2\xcc", 3) &&
-            (fsize >= exe_sections[nsections - 1].raw + 0xC6 + ecx + offset)) {
-
-            char *spinned;
-
-            if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
-                cli_errmsg("yC: Unable to allocate memory for spinned %lu\n", (unsigned long)fsize);
-                free(exe_sections);
-                return CL_EMEM;
-            }
-
-            if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
-                cli_dbgmsg("yC: Can't read %lu bytes\n", (unsigned long)fsize);
-                free(spinned);
-                free(exe_sections);
-                return CL_EREAD;
-            }
-
-#if HAVE_JSON
-            if (pe_json != NULL)
-                cli_jsonstr(pe_json, "Packer", "yC");
-#endif
-
-            do {
-                unsigned int yc_unp_num_viruses = ctx->num_viruses;
-                const char *yc_unp_virname      = NULL;
-
-                if (ctx->virname)
-                    yc_unp_virname = ctx->virname[0];
-
-                cli_dbgmsg("%d,%d,%d,%d\n", nsections - 1, e_lfanew, ecx, offset);
-                CLI_UNPTEMP("yC", (spinned, exe_sections, 0));
-                CLI_UNPRESULTS("yC", (yc_decrypt(ctx, spinned, fsize, exe_sections, nsections - 1, e_lfanew, ndesc, ecx, offset)), 0, (spinned, 0));
-
-                if (SCAN_ALLMATCHES && yc_unp_num_viruses != ctx->num_viruses) {
-                    free(exe_sections);
-                    return CL_VIRUS;
-                } else if (ctx->virname && yc_unp_virname != ctx->virname[0]) {
-                    free(exe_sections);
-                    return CL_VIRUS;
-                }
-            } while (0);
-        }
-    }
-
-    /* WWPack */
-
-    while ((DCONF & PE_CONF_WWPACK) && nsections > 1 &&
-           vep == exe_sections[nsections - 1].rva &&
-           memcmp(epbuff, "\x53\x55\x8b\xe8\x33\xdb\xeb", 7) == 0 &&
-           memcmp(epbuff + 0x68, "\xe8\x00\x00\x00\x00\x58\x2d\x6d\x00\x00\x00\x50\x60\x33\xc9\x50\x58\x50\x50", 19) == 0) {
-        uint32_t head = exe_sections[nsections - 1].raw;
-        uint8_t *packer;
-        char *src;
-
-        ssize = 0;
-        for (i = 0;; i++) {
-            if (exe_sections[i].raw < head)
-                head = exe_sections[i].raw;
-
-            if (i + 1 == nsections)
-                break;
-
-            if (ssize < exe_sections[i].rva + exe_sections[i].vsz)
-                ssize = exe_sections[i].rva + exe_sections[i].vsz;
-        }
-
-        if (!head || !ssize || head > ssize)
-            break;
-
-        CLI_UNPSIZELIMITS("WWPack", ssize);
-
-        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        if ((size_t)fmap_readn(map, src, 0, head) != head) {
-            cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", head);
-            free(src);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-        for (i = 0; i < (unsigned int)nsections - 1; i++) {
-            if (!exe_sections[i].rsz)
-                continue;
-
-            if (!CLI_ISCONTAINED(src, ssize, src + exe_sections[i].rva, exe_sections[i].rsz))
-                break;
-
-            if ((unsigned int)fmap_readn(map, src + exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz) != exe_sections[i].rsz)
-                break;
-        }
-
-        if (i + 1 != nsections) {
-            cli_dbgmsg("WWpack: Probably hacked/damaged file.\n");
-            free(src);
-            break;
-        }
-
-        if ((packer = (uint8_t *)cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
-            free(src);
-            free(exe_sections);
-            return CL_EMEM;
-        }
-
-        if (!exe_sections[nsections - 1].rsz || (size_t)fmap_readn(map, packer, exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz) != exe_sections[nsections - 1].rsz) {
-            cli_dbgmsg("WWPack: Can't read %d bytes from wwpack sect\n", exe_sections[nsections - 1].rsz);
-            free(src);
-            free(packer);
-            free(exe_sections);
-            return CL_EREAD;
-        }
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "WWPack");
-#endif
-
-        CLI_UNPTEMP("WWPack", (src, packer, exe_sections, 0));
-        CLI_UNPRESULTS("WWPack", (wwunpack((uint8_t *)src, ssize, packer, exe_sections, nsections - 1, e_lfanew, ndesc)), 0, (src, packer, 0));
-        break;
-    }
-
-    /* ASPACK support */
-    while ((DCONF & PE_CONF_ASPACK) &&
-           ((ep + ASPACK_EP_OFFSET_212 < fsize) ||
-            (ep + ASPACK_EP_OFFSET_OTHER < fsize) ||
-            (ep + ASPACK_EP_OFFSET_242 < fsize)) &&
-           (!memcmp(epbuff, "\x60\xe8\x03\x00\x00\x00\xe9\xeb", 8))) {
-        char *src;
-        aspack_version_t aspack_ver = ASPACK_VER_NONE;
-
-        if (epsize < 0x3bf)
-            break;
-
-        if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_212, "\x68\x00\x00\x00\x00\xc3", 6)) {
-            aspack_ver = ASPACK_VER_212;
-        } else if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_OTHER, "\x68\x00\x00\x00\x00\xc3", 6)) {
-            aspack_ver = ASPACK_VER_OTHER;
-        } else if (0 == memcmp(epbuff + ASPACK_EPBUFF_OFFSET_242, "\x68\x00\x00\x00\x00\xc3", 6)) {
-            aspack_ver = ASPACK_VER_242;
-        } else {
-            break;
-        }
-        ssize = 0;
-        for (i = 0; i < nsections; i++)
-            if (ssize < exe_sections[i].rva + exe_sections[i].vsz)
-                ssize = exe_sections[i].rva + exe_sections[i].vsz;
-
-        if (!ssize)
-            break;
-
-        CLI_UNPSIZELIMITS("Aspack", ssize);
-
-        if (!(src = (char *)cli_calloc(ssize, sizeof(char)))) {
-            free(exe_sections);
-            return CL_EMEM;
-        }
-        for (i = 0; i < (unsigned int)nsections; i++) {
-            if (!exe_sections[i].rsz)
-                continue;
-
-            if (!CLI_ISCONTAINED(src, ssize, src + exe_sections[i].rva, exe_sections[i].rsz))
-                break;
-
-            if ((unsigned int)fmap_readn(map, src + exe_sections[i].rva, exe_sections[i].raw, exe_sections[i].rsz) != exe_sections[i].rsz)
-                break;
-        }
-
-        if (i != nsections) {
-            cli_dbgmsg("Aspack: Probably hacked/damaged Aspack file.\n");
-            free(src);
-            break;
-        }
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "Aspack");
-#endif
-
-        CLI_UNPTEMP("Aspack", (src, exe_sections, 0));
-        CLI_UNPRESULTS("Aspack", (unaspack((uint8_t *)src, ssize, exe_sections, nsections, vep - 1, EC32(optional_hdr32.ImageBase), ndesc, aspack_ver)), 1, (src, 0));
-        break;
-    }
-
-    /* NsPack */
-
-    while (DCONF & PE_CONF_NSPACK) {
-        uint32_t eprva = vep;
-        uint32_t start_of_stuff, rep = ep;
-        unsigned int nowinldr;
-        const char *nbuff;
-
-        src = epbuff;
-        if (*epbuff == '\xe9') { /* bitched headers */
-            eprva = cli_readint32(epbuff + 1) + vep + 5;
-            if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize, hdr_size)) && err)
-                break;
-
-            if (!(nbuff = fmap_need_off_once(map, rep, 24)))
-                break;
-
-            src = nbuff;
-        }
-
-        if (memcmp(src, "\x9c\x60\xe8\x00\x00\x00\x00\x5d\xb8\x07\x00\x00\x00", 13))
-            break;
-
-        nowinldr = 0x54 - cli_readint32(src + 17);
-        cli_dbgmsg("NsPack: Found *start_of_stuff @delta-%x\n", nowinldr);
-
-        if (!(nbuff = fmap_need_off_once(map, rep - nowinldr, 4)))
-            break;
-
-        start_of_stuff = rep + cli_readint32(nbuff);
-        if (!(nbuff = fmap_need_off_once(map, start_of_stuff, 20)))
-            break;
-
-        src = nbuff;
-        if (!cli_readint32(nbuff)) {
-            start_of_stuff += 4; /* FIXME: more to do */
-            src += 4;
-        }
-
-        ssize = cli_readint32(src + 5) | 0xff;
-        dsize = cli_readint32(src + 9);
-
-        CLI_UNPSIZELIMITS("NsPack", MAX(ssize, dsize));
-
-        if (!ssize || !dsize || dsize != exe_sections[0].vsz)
-            break;
-
-        if (!(dest = cli_malloc(dsize))) {
-            cli_errmsg("NsPack: Unable to allocate memory for dest %u\n", dsize);
-            break;
-        }
-        /* memset(dest, 0xfc, dsize); */
-
-        if (!(src = fmap_need_off(map, start_of_stuff, ssize))) {
-            free(dest);
-            break;
-        }
-        /* memset(src, 0x00, ssize); */
-
-        eprva += 0x27a;
-        if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize, hdr_size)) && err) {
-            free(dest);
-            break;
-        }
-
-        if (!(nbuff = fmap_need_off_once(map, rep, 5))) {
-            free(dest);
-            break;
-        }
-
-        fmap_unneed_off(map, start_of_stuff, ssize);
-        eprva = eprva + 5 + cli_readint32(nbuff + 1);
-        cli_dbgmsg("NsPack: OEP = %08x\n", eprva);
-
-#if HAVE_JSON
-        if (pe_json != NULL)
-            cli_jsonstr(pe_json, "Packer", "NsPack");
-#endif
-
-        CLI_UNPTEMP("NsPack", (dest, exe_sections, 0));
-        CLI_UNPRESULTS("NsPack", (unspack(src, dest, ctx, exe_sections[0].rva, EC32(optional_hdr32.ImageBase), eprva, ndesc)), 0, (dest, 0));
-        break;
-    }
-
-    /* to be continued ... */
-
-    /* !!!!!!!!!!!!!!    PACKERS END HERE    !!!!!!!!!!!!!! */
-    ctx->corrupted_input = corrupted_cur;
-
-    /* Bytecode BC_PE_UNPACKER hook */
-    bc_ctx = cli_bytecode_context_alloc();
-    if (!bc_ctx) {
-        cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
-        return CL_EMEM;
-    }
-
-    cli_bytecode_context_setpe(bc_ctx, &pedata, exe_sections);
-    cli_bytecode_context_setctx(bc_ctx, ctx);
-
-    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_PE_UNPACKER, map);
-    switch (ret) {
-        case CL_VIRUS:
-            free(exe_sections);
-            cli_bytecode_context_destroy(bc_ctx);
-            return CL_VIRUS;
-        case CL_SUCCESS:
-            ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
-            cli_bytecode_context_destroy(bc_ctx);
-            if (ndesc != -1 && tempfile) {
-                CLI_UNPRESULTS("bytecode PE hook", 1, 1, (0));
-            }
-
-            break;
-        default:
-            cli_bytecode_context_destroy(bc_ctx);
-    }
-
-    free(exe_sections);
-
-#if HAVE_JSON
-    if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS)
-        return CL_ETIMEOUT;
-#endif
-
-    if (SCAN_ALLMATCHES && viruses_found)
-        return CL_VIRUS;
-
-    return CL_CLEAN;
-}
-
-int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
-{
-    uint16_t e_magic;  /* DOS signature ("MZ") */
-    uint32_t e_lfanew; /* address of new exe header */
-    /* Obsolete - see below
-      uint32_t min = 0, max = 0;
-    */
-    struct pe_image_file_hdr file_hdr;
-    union {
-        struct pe_image_optional_hdr64 opt64;
-        struct pe_image_optional_hdr32 opt32;
-    } pe_opt;
-    struct pe_image_section_hdr *section_hdr;
-    unsigned int i;
-    unsigned int err, pe_plus = 0;
-    uint32_t valign, falign, hdr_size;
-    size_t fsize;
-    ssize_t at;
-    struct pe_image_data_dir *dirs;
-
-    cli_dbgmsg("in cli_peheader\n");
-
-    fsize = map->len - peinfo->offset;
-    if (fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
-        cli_dbgmsg("Can't read DOS signature\n");
-        return -1;
-    }
-
-    if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
-        cli_dbgmsg("Invalid DOS signature\n");
-        return -1;
-    }
-
-    if (fmap_readn(map, &e_lfanew, peinfo->offset + 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew)) {
-        /* truncated header? */
-        return -1;
-    }
-
-    e_lfanew = EC32(e_lfanew);
-    if (!e_lfanew) {
-        cli_dbgmsg("Not a PE file\n");
-        return -1;
-    }
-
-    if (fmap_readn(map, &file_hdr, peinfo->offset + e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
-        /* bad information in e_lfanew - probably not a PE file */
-        cli_dbgmsg("cli_peheader: Can't read file header\n");
-        return -1;
-    }
-
-    if (EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE) {
-        cli_dbgmsg("Invalid PE signature (probably NE file)\n");
-        return -1;
-    }
-
-    if ((peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > PE_MAXSECTIONS) return -1;
-
-    if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
-        cli_dbgmsg("SizeOfOptionalHeader too small\n");
-        return -1;
-    }
-
-    at = peinfo->offset + e_lfanew + sizeof(struct pe_image_file_hdr);
-    if (fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
-        cli_dbgmsg("Can't read optional file header\n");
-        return -1;
-    }
-    at += sizeof(struct pe_image_optional_hdr32);
-
-    if (EC16(optional_hdr64.Magic) == PE32P_SIGNATURE) { /* PE+ */
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr64)) {
-            cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
-            return -1;
-        }
-
-        if (fmap_readn(map, &optional_hdr32 + 1, at, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
-            cli_dbgmsg("Can't read optional file header\n");
-            return -1;
-        }
-
-        at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        hdr_size = EC32(optional_hdr64.SizeOfHeaders);
-        pe_plus  = 1;
-    } else { /* PE */
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
-            /* Seek to the end of the long header */
-            at += EC16(file_hdr.SizeOfOptionalHeader) - sizeof(struct pe_image_optional_hdr32);
-        }
-
-        hdr_size = EC32(optional_hdr32.SizeOfHeaders);
-    }
-
-    valign = (pe_plus) ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment);
-    falign = (pe_plus) ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment);
-
-    peinfo->hdr_size = hdr_size = PESALIGN(hdr_size, valign);
-
-    peinfo->section = (struct cli_exe_section *)cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
-
-    if (!peinfo->section) {
-        cli_dbgmsg("Can't allocate memory for section headers\n");
-        return -1;
-    }
-
-    section_hdr = (struct pe_image_section_hdr *)cli_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
-
-    if (!section_hdr) {
-        cli_dbgmsg("Can't allocate memory for section headers\n");
-        free(peinfo->section);
-        peinfo->section = NULL;
-        return -1;
-    }
-
-    if (fmap_readn(map, section_hdr, at, peinfo->nsections * sizeof(struct pe_image_section_hdr)) != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
-        cli_dbgmsg("Can't read section header\n");
-        cli_dbgmsg("Possibly broken PE file\n");
-        free(section_hdr);
-        free(peinfo->section);
-        peinfo->section = NULL;
-        return -1;
-    }
-    at += sizeof(struct pe_image_section_hdr) * peinfo->nsections;
-
-    for (i = 0; falign != 0x200 && i < peinfo->nsections; i++) {
-        /* file alignment fallback mode - blah */
-        if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData) % falign && !(EC32(section_hdr[i].PointerToRawData) % 0x200)) {
-            falign = 0x200;
-        }
-    }
-
-    for (i = 0; i < peinfo->nsections; i++) {
-        peinfo->section[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
-        peinfo->section[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
-        peinfo->section[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
-        peinfo->section[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
-
-        if (!peinfo->section[i].vsz && peinfo->section[i].rsz)
-            peinfo->section[i].vsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), valign);
-
-        if (peinfo->section[i].rsz && !CLI_ISCONTAINED(0, (uint32_t)fsize, peinfo->section[i].raw, peinfo->section[i].rsz))
-            peinfo->section[i].rsz = (fsize - peinfo->section[i].raw) * (fsize > peinfo->section[i].raw);
-    }
-
-    if (pe_plus) {
-        peinfo->ep = EC32(optional_hdr64.AddressOfEntryPoint);
-        dirs       = optional_hdr64.DataDirectory;
-    } else {
-        peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
-        dirs       = optional_hdr32.DataDirectory;
-    }
-
-    if (!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize, hdr_size)) && err) {
-        cli_dbgmsg("Broken PE file\n");
-        free(section_hdr);
-        free(peinfo->section);
-        peinfo->section = NULL;
-        return -1;
-    }
-
-    if (EC16(file_hdr.Characteristics) & 0x2000 || !dirs[2].Size)
+    if (is_dll || peinfo->ndatadirs < 3 || !peinfo->dirs[2].Size)
         peinfo->res_addr = 0;
     else
-        peinfo->res_addr = EC32(dirs[2].VirtualAddress);
+        peinfo->res_addr = EC32(peinfo->dirs[2].VirtualAddress);
 
-    while (dirs[2].Size) {
+    while (opts & CLI_PEHEADER_OPT_EXTRACT_VINFO &&
+           peinfo->ndatadirs >= 3 && peinfo->dirs[2].Size) {
         struct vinfo_list vlist;
         const uint8_t *vptr, *baseptr;
         uint32_t rva, res_sz;
 
         memset(&vlist, 0, sizeof(vlist));
-        findres(0x10, 0xffffffff, EC32(dirs[2].VirtualAddress), map, peinfo->section, peinfo->nsections, hdr_size, versioninfo_cb, &vlist);
+        findres(0x10, 0xffffffff, map, peinfo, versioninfo_cb, &vlist);
         if (!vlist.count)
             break; /* No version_information */
 
         if (cli_hashset_init(&peinfo->vinfo, 32, 80)) {
             cli_errmsg("cli_peheader: Unable to init vinfo hashset\n");
-            free(section_hdr);
-            free(peinfo->section);
-            peinfo->section = NULL;
-            return -1;
+            free(peinfo->sections);
+            peinfo->sections = NULL;
+            return CLI_PEHEADER_RET_GENERIC_ERROR;
         }
 
         err = 0;
         for (i = 0; i < vlist.count; i++) { /* enum all version_information res - RESUMABLE */
             cli_dbgmsg("cli_peheader: parsing version info @ rva %x (%u/%u)\n", vlist.rvas[i], i + 1, vlist.count);
-            rva = cli_rawaddr(vlist.rvas[i], peinfo->section, peinfo->nsections, &err, fsize, hdr_size);
+            rva = cli_rawaddr(vlist.rvas[i], peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (err)
                 continue;
 
@@ -5219,7 +5332,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
             /* parse resource */
             rva    = cli_readint32(vptr);     /* ptr to version_info */
             res_sz = cli_readint32(vptr + 4); /* sizeof(resource) */
-            rva    = cli_rawaddr(rva, peinfo->section, peinfo->nsections, &err, fsize, hdr_size);
+            rva    = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (err)
                 continue;
             if (!(vptr = fmap_need_off_once(map, rva, res_sz)))
@@ -5334,10 +5447,9 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
                             if (cli_hashset_addkey(&peinfo->vinfo, (uint32_t)(vptr - baseptr + 6))) {
                                 cli_errmsg("cli_peheader: Unable to add rva to vinfo hashset\n");
                                 cli_hashset_destroy(&peinfo->vinfo);
-                                free(section_hdr);
-                                free(peinfo->section);
-                                peinfo->section = NULL;
-                                return -1;
+                                free(peinfo->sections);
+                                peinfo->sections = NULL;
+                                return CLI_PEHEADER_RET_GENERIC_ERROR;
                             }
 
                             if (cli_debug_flag) {
@@ -5372,10 +5484,15 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
         break;
     } /* while(dirs[2].Size) */
 
-    free(section_hdr);
-    return 0;
+    // Do final preperations for peinfo to be passed back
+    peinfo->is_dll = is_dll;
+
+    return CLI_PEHEADER_RET_SUCCESS;
 }
 
+// TODO We should sort based on VirtualAddress instead, since PointerToRawData
+// will be zero for sections where SizeOfRawData is zero.  This also aligns
+// with what tools like pefile do.
 static int sort_sects(const void *first, const void *second)
 {
     const struct cli_exe_section *a = first, *b = second;
@@ -5415,21 +5532,9 @@ static int sort_sects(const void *first, const void *second)
  *    sections? */
 cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
 {
-    uint16_t e_magic; /* DOS signature ("MZ") */
-    uint16_t nsections;
-    uint32_t e_lfanew; /* address of new exe header */
-    struct pe_image_file_hdr file_hdr;
-    union {
-        struct pe_image_optional_hdr64 opt64;
-        struct pe_image_optional_hdr32 opt32;
-    } pe_opt;
-    const struct pe_image_section_hdr *section_hdr;
-    ssize_t at;
-    unsigned int i, pe_plus = 0, hlen;
+    size_t at;
+    unsigned int i, hlen;
     size_t fsize;
-    uint32_t valign, falign, hdr_size;
-    struct cli_exe_section *exe_sections;
-    struct pe_image_data_dir *dirs;
     fmap_t *map   = *ctx->fmap;
     void *hashctx = NULL;
     struct pe_certificate_hdr cert_hdr;
@@ -5439,6 +5544,15 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     uint8_t authsha1[SHA1_HASH_SIZE];
     uint32_t sec_dir_offset;
     uint32_t sec_dir_size;
+    struct cli_exe_info _peinfo;
+    struct cli_exe_info *peinfo = &_peinfo;
+
+    // If Authenticode parsing has been disabled via DCONF, then don't
+    // continue on.
+    // TODO This should probably be named PE_CONF_AUTHENTICODE instead
+    // of PE_CONF_CATALOG
+    if (!(DCONF & PE_CONF_CATALOG))
+        return CL_EFORMAT;
 
     if (flags == CL_CHECKFP_PE_FLAG_NONE)
         return CL_BREAK;
@@ -5449,77 +5563,16 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
         hashes->sections = NULL;
     }
 
-    // TODO What does this do?
-    if (!(DCONF & PE_CONF_CATALOG))
-        return CL_EFORMAT;
+    // TODO see if peinfo can be passed in (or lives in ctx or something) and
+    // if so, use that to avoid having to re-parse the header
+    cli_exe_info_init(peinfo, 0);
 
-    if (fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic))
-        return CL_EFORMAT;
-
-    if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD)
-        return CL_EFORMAT;
-
-    if (fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew))
-        return CL_EFORMAT;
-
-    e_lfanew = EC32(e_lfanew);
-    if (!e_lfanew)
-        return CL_EFORMAT;
-
-    if (fmap_readn(map, &file_hdr, e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr))
-        return CL_EFORMAT;
-
-    if (EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE)
-        return CL_EFORMAT;
-
-    nsections = EC16(file_hdr.NumberOfSections);
-    if (nsections < 1 || nsections > PE_MAXSECTIONS)
-        return CL_EFORMAT;
-
-    // TODO the pe_image_optional_hdr32 structure includes space for all 16
-    // data directories, but these might not all exist in a given binary.
-    // We need to check NumberOfRvaAndSizes instead, and allow through any
-    // with at least 5 (the security DataDirectory)
-    if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
-        cli_dbgmsg("cli_checkfp_pe: SizeOfOptionalHeader < less than the size expected (%lu)\n", sizeof(struct pe_image_optional_hdr32));
+    if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
         return CL_EFORMAT;
     }
 
-    at = e_lfanew + sizeof(struct pe_image_file_hdr);
-    if (fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32))
-        return CL_EFORMAT;
-
-    at += sizeof(struct pe_image_optional_hdr32);
-
-    /* This will be a chicken and egg problem until we drop 9x */
-    if (EC16(optional_hdr64.Magic) == PE32P_SIGNATURE) {
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr64))
-            return CL_EFORMAT;
-
-        pe_plus = 1;
-    }
-
-    if (!pe_plus) { /* PE */
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
-            /* Seek to the end of the long header */
-            at += EC16(file_hdr.SizeOfOptionalHeader) - sizeof(struct pe_image_optional_hdr32);
-        }
-
-        hdr_size = EC32(optional_hdr32.SizeOfHeaders);
-        dirs     = optional_hdr32.DataDirectory;
-    } else { /* PE+ */
-        size_t readlen = sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        /* read the remaining part of the header */
-        if ((size_t)fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
-            return CL_EFORMAT;
-
-        at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        hdr_size = EC32(optional_hdr64.SizeOfHeaders);
-        dirs     = optional_hdr64.DataDirectory;
-    }
-
-    sec_dir_offset = EC32(dirs[4].VirtualAddress);
-    sec_dir_size   = EC32(dirs[4].Size);
+    sec_dir_offset = EC32(peinfo->dirs[4].VirtualAddress);
+    sec_dir_size   = EC32(peinfo->dirs[4].Size);
 
     // As an optimization, check the security DataDirectory here and if
     // it's less than 8-bytes (and we aren't relying on this code to compute
@@ -5530,42 +5583,18 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
             /* If stats is enabled, continue parsing the sample */
             flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
         } else {
+            cli_exe_info_destroy(peinfo);
             return CL_BREAK;
         }
     }
     fsize = map->len;
 
-    valign = (pe_plus) ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment);
-    falign = (pe_plus) ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment);
-
-    section_hdr = fmap_need_off_once(map, at, sizeof(*section_hdr) * nsections);
-    if (!section_hdr)
-        return CL_EFORMAT;
-
-    at += sizeof(*section_hdr) * nsections;
-
-    exe_sections = (struct cli_exe_section *)cli_calloc(nsections, sizeof(struct cli_exe_section));
-    if (!exe_sections)
-        return CL_EMEM;
-
-    // TODO I'm not sure why this is necessary since the specification says
-    // that PointerToRawData is expected to be a multiple of the file
-    // alignment.  Should we report this is as a PE with an error?
-    for (i = 0; falign != 0x200 && i < nsections; i++) {
-        /* file alignment fallback mode - blah */
-        if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData) % falign && !(EC32(section_hdr[i].PointerToRawData) % 0x200))
-            falign = 0x200;
-    }
-
-    // TODO Why is this needed?  hdr_size should already be rounded up
-    // to a multiple of the file alignment.
-    hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
-
     if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-        hashes->nsections = nsections;
-        hashes->sections  = cli_calloc(nsections, sizeof(struct cli_section_hash));
+        hashes->nsections = peinfo->nsections;
+        hashes->sections  = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
+        ;
         if (!(hashes->sections)) {
-            free(exe_sections);
+            cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
     }
@@ -5578,64 +5607,29 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
         }                                       \
     } while (0)
 
-    // TODO Why do we fix up these alignments?  This shouldn't be needed?
-    for (i = 0; i < nsections; i++) {
-        exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
-        exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
-        exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
-        exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
-
-        // TODO exe_sections[i].ursz is not assigned to (will always be 0)
-        // Figure out what this is meant to do and ensure that happens
-        if (!exe_sections[i].vsz && exe_sections[i].rsz)
-            exe_sections[i].vsz = PESALIGN(exe_sections[i].ursz, valign);
-
-        if (exe_sections[i].rsz && fsize > exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t)fsize, exe_sections[i].raw, exe_sections[i].rsz)) {
-            cli_dbgmsg("cli_checkfp_pe: encountered section not fully contained within the file\n");
-            free(exe_sections);
-            free_section_hashes();
-            return CL_EFORMAT;
-        }
-
-        if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
-            cli_dbgmsg("cli_checkfp_pe: encountered section that doesn't exist within the file\n");
-            free(exe_sections);
-            free_section_hashes();
-            return CL_EFORMAT;
-        }
-
-        // TODO These checks aren't needed because the u vars are never assigned (always 0)
-        // Figure out what this is meant to do and ensure that happens
-        if (exe_sections[i].urva >> 31 || exe_sections[i].uvsz >> 31 || (exe_sections[i].rsz && exe_sections[i].uraw >> 31) || exe_sections[i].ursz >> 31) {
-            free(exe_sections);
-            free_section_hashes();
-            return CL_EFORMAT;
-        }
-    }
-
     // TODO This likely isn't needed anymore, since we no longer compute
     // the authenticode hash like the 2008 spec doc says (sort sections
     // and use the section info to compute the hash)
-    cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
+    cli_qsort(peinfo->sections, peinfo->nsections, sizeof(*peinfo->sections), sort_sects);
 
     /* Hash the sections */
     if (flags & CL_CHECKFP_PE_FLAG_STATS) {
 
-        for (i = 0; i < nsections; i++) {
+        for (i = 0; i < peinfo->nsections; i++) {
             const uint8_t *hptr;
             void *md5ctx;
 
-            if (!exe_sections[i].rsz)
+            if (!peinfo->sections[i].rsz)
                 continue;
 
-            if (!(hptr = fmap_need_off_once(map, exe_sections[i].raw, exe_sections[i].rsz))) {
-                free(exe_sections);
+            if (!(hptr = fmap_need_off_once(map, peinfo->sections[i].raw, peinfo->sections[i].rsz))) {
+                cli_exe_info_destroy(peinfo);
                 free_section_hashes();
                 return CL_EFORMAT;
             }
             md5ctx = cl_hash_init("md5");
             if (md5ctx) {
-                cl_update_hash(md5ctx, (void *)hptr, exe_sections[i].rsz);
+                cl_update_hash(md5ctx, (void *)hptr, peinfo->sections[i].rsz);
                 cl_finish_hash(md5ctx, hashes->sections[i].md5);
             }
         }
@@ -5644,7 +5638,6 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     /* After this point it's the caller's responsibility to free
      * hashes->sections. Also, in the case where we are just computing the
      * stats, we are finished */
-    free(exe_sections);
 
     while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
 
@@ -5653,6 +5646,7 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
         // specified in the PKCS7 structure).  We need to hash up to 4 regions
         regions = (struct cli_mapped_region *)cli_calloc(4, sizeof(struct cli_mapped_region));
         if (!regions) {
+            cli_exe_info_destroy(peinfo);
             return CL_EMEM;
         }
         nregions = 0;
@@ -5671,24 +5665,26 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
 
         /* MZ to checksum */
         at   = 0;
-        hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
+        hlen = peinfo->e_lfanew + sizeof(struct pe_image_file_hdr) + (peinfo->is_pe32plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
         add_chunk_to_hash_list(0, hlen);
         at = hlen + 4;
 
         /* Checksum to security */
-        if (pe_plus)
-            hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
+        if (peinfo->is_pe32plus)
+            hlen = sizeof(struct pe_image_optional_hdr64) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
         else
-            hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
+            hlen = sizeof(struct pe_image_optional_hdr32) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
+
+        hlen += sizeof(struct pe_image_data_dir) * 4;
         add_chunk_to_hash_list(at, hlen);
         at += hlen + 8;
 
-        if (at > hdr_size) {
+        if (at > peinfo->hdr_size) {
             break;
         }
 
         /* Security to End of header */
-        hlen = hdr_size - at;
+        hlen = peinfo->hdr_size - at;
         add_chunk_to_hash_list(at, hlen);
         at += hlen;
 
@@ -5815,27 +5811,16 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     if (NULL != regions) {
         free(regions);
     }
+
+    cli_exe_info_destroy(peinfo);
     return ret;
 }
 
 int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
 {
-    uint16_t e_magic; /* DOS signature ("MZ") */
-    uint16_t nsections;
-    uint32_t e_lfanew; /* address of new exe header */
-    union {
-        struct pe_image_optional_hdr64 opt64;
-        struct pe_image_optional_hdr32 opt32;
-    } pe_opt;
-    const struct pe_image_section_hdr *section_hdr;
-    ssize_t at;
-    unsigned int i, pe_plus = 0;
-    size_t fsize;
-    uint32_t valign, falign, hdr_size;
-    struct pe_image_file_hdr file_hdr;
-    struct cli_exe_section *exe_sections;
-    struct pe_image_data_dir *dirs;
-    fmap_t *map = *ctx->fmap;
+    unsigned int i;
+    struct cli_exe_info _peinfo;
+    struct cli_exe_info *peinfo = &_peinfo;
 
     unsigned char *hash, *hashset[CLI_HASH_AVAIL_TYPES];
     int genhash[CLI_HASH_AVAIL_TYPES];
@@ -5844,112 +5829,13 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     if (class >= CL_GENHASH_PE_CLASS_LAST)
         return CL_EARG;
 
-    if (fmap_readn(map, &e_magic, 0, sizeof(e_magic)) != sizeof(e_magic))
+    cli_exe_info_init(peinfo, 0);
+
+    if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
         return CL_EFORMAT;
-
-    if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD)
-        return CL_EFORMAT;
-
-    if (fmap_readn(map, &e_lfanew, 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew))
-        return CL_EFORMAT;
-
-    e_lfanew = EC32(e_lfanew);
-    if (!e_lfanew)
-        return CL_EFORMAT;
-
-    if (fmap_readn(map, &file_hdr, e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr))
-        return CL_EFORMAT;
-
-    if (EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE)
-        return CL_EFORMAT;
-
-    nsections = EC16(file_hdr.NumberOfSections);
-    if (nsections < 1 || nsections > PE_MAXSECTIONS)
-        return CL_EFORMAT;
-
-    if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))
-        return CL_EFORMAT;
-
-    at = e_lfanew + sizeof(struct pe_image_file_hdr);
-    if (fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32))
-        return CL_EFORMAT;
-
-    at += sizeof(struct pe_image_optional_hdr32);
-
-    /* This will be a chicken and egg problem until we drop 9x */
-    if (EC16(optional_hdr64.Magic) == PE32P_SIGNATURE) {
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr64))
-            return CL_EFORMAT;
-
-        pe_plus = 1;
     }
 
-    if (!pe_plus) { /* PE */
-        if (EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr32)) {
-            /* Seek to the end of the long header */
-            at += EC16(file_hdr.SizeOfOptionalHeader) - sizeof(struct pe_image_optional_hdr32);
-        }
-
-        hdr_size = EC32(optional_hdr32.SizeOfHeaders);
-        dirs     = optional_hdr32.DataDirectory;
-    } else { /* PE+ */
-        size_t readlen = sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        /* read the remaining part of the header */
-        if ((size_t)fmap_readn(map, &optional_hdr32 + 1, at, readlen) != readlen)
-            return CL_EFORMAT;
-
-        at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
-        hdr_size = EC32(optional_hdr64.SizeOfHeaders);
-        dirs     = optional_hdr64.DataDirectory;
-    }
-
-    fsize = map->len;
-
-    valign = (pe_plus) ? EC32(optional_hdr64.SectionAlignment) : EC32(optional_hdr32.SectionAlignment);
-    falign = (pe_plus) ? EC32(optional_hdr64.FileAlignment) : EC32(optional_hdr32.FileAlignment);
-
-    section_hdr = fmap_need_off_once(map, at, sizeof(*section_hdr) * nsections);
-    if (!section_hdr)
-        return CL_EFORMAT;
-
-    at += sizeof(*section_hdr) * nsections;
-
-    exe_sections = (struct cli_exe_section *)cli_calloc(nsections, sizeof(struct cli_exe_section));
-    if (!exe_sections)
-        return CL_EMEM;
-
-    for (i = 0; falign != 0x200 && i < nsections; i++) {
-        /* file alignment fallback mode - blah */
-        if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData) % falign && !(EC32(section_hdr[i].PointerToRawData) % 0x200))
-            falign = 0x200;
-    }
-
-    hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
-
-    for (i = 0; i < nsections; i++) {
-        exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
-        exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
-        exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
-        exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
-
-        if (!exe_sections[i].vsz && exe_sections[i].rsz)
-            exe_sections[i].vsz = PESALIGN(exe_sections[i].ursz, valign);
-
-        if (exe_sections[i].rsz && fsize > exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t)fsize, exe_sections[i].raw, exe_sections[i].rsz))
-            exe_sections[i].rsz = fsize - exe_sections[i].raw;
-
-        if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
-            free(exe_sections);
-            return CL_EFORMAT;
-        }
-
-        if (exe_sections[i].urva >> 31 || exe_sections[i].uvsz >> 31 || (exe_sections[i].rsz && exe_sections[i].uraw >> 31) || exe_sections[i].ursz >> 31) {
-            free(exe_sections);
-            return CL_EFORMAT;
-        }
-    }
-
-    cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
+    cli_qsort(peinfo->sections, peinfo->nsections, sizeof(*(peinfo->sections)), sort_sects);
 
     /* pick hashtypes to generate */
     memset(genhash, 0, sizeof(genhash));
@@ -5974,18 +5860,18 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
 
     if (!hash) {
         cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
-        free(exe_sections);
+        cli_exe_info_destroy(peinfo);
         return CL_EMEM;
     }
 
     if (class == CL_GENHASH_PE_CLASS_SECTION) {
         char *dstr = NULL;
 
-        for (i = 0; i < nsections; i++) {
+        for (i = 0; i < peinfo->nsections; i++) {
             /* Generate hashes */
-            if (cli_hashsect(*ctx->fmap, &exe_sections[i], hashset, genhash, genhash) == 1) {
+            if (cli_hashsect(*ctx->fmap, &peinfo->sections[i], hashset, genhash, genhash) == 1) {
                 dstr = cli_str2hex((char *)hash, hlen);
-                cli_dbgmsg("Section{%u}: %u:%s\n", i, exe_sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
+                cli_dbgmsg("Section{%u}: %u:%s\n", i, peinfo->sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
                 if (dstr != NULL) {
                     free(dstr);
                     dstr = NULL;
@@ -6000,7 +5886,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         int ret;
 
         /* Generate hash */
-        ret = hash_imptbl(ctx, hashset, &impsz, genhash, &dirs[1], exe_sections, nsections, hdr_size, pe_plus);
+        ret = hash_imptbl(ctx, hashset, &impsz, genhash, peinfo);
         if (ret == CL_SUCCESS) {
             dstr = cli_str2hex((char *)hash, hlen);
             cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
@@ -6017,6 +5903,6 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
 
     if (hash)
         free(hash);
-    free(exe_sections);
+    cli_exe_info_destroy(peinfo);
     return CL_SUCCESS;
 }

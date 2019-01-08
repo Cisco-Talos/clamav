@@ -483,7 +483,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     if (matcher) {
         fileinfo->ep        = ep;
         fileinfo->nsections = sect;
-        fileinfo->section   = sections;
+        fileinfo->sections  = sections;
         return 0;
     } else {
         free(sections);

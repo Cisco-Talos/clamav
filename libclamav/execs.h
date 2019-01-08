@@ -25,10 +25,25 @@
 #include "clamav-types.h"
 #include "hashtab.h"
 #include "bcfeatures.h"
+#include "pe_structs.h"
 
 /** @file */
 /** Section of executable file.
   \group_pe
+ *  NOTE: This is used to store PE, MachO, and ELF section information. Not
+ *  all members are populated by the respective parsing functions.
+ *
+ *  NOTE: This structure MUST stay in-sync with the ones defined within the
+ *  clamav-bytecode-compiler source at:
+ *  - clang/lib/Headers/bytecode_execs.h
+ *  - llvm/tools/clang/lib/Headers/bytecode_execs.h
+ *  We allocate space for an array of these and pass it directly to the
+ *  bytecode sig runtime for use.
+ *
+ *  TODO Next time we are making changes to the clamav-bytecode-compiler
+ *  source, modify this structure to also include the section name (here and
+ *  there).  Then, populate this field in the PE/MachO/ELF header parsing
+ *  functions.  Choose a length that's reasonable for all platforms
 */
 struct cli_exe_section {
     uint32_t rva;  /**< Relative VirtualAddress */
@@ -43,25 +58,111 @@ struct cli_exe_section {
 };
 
 /** Executable file information
-  \group_pe
+ *  NOTE: This is used to store PE, MachO, and ELF executable information,
+ *  but it predominantly has fields for PE info.  Not all members are
+ *  populated by the respective parsing functions.
+ * 
+ *  TODO: Document which fields are PE only (maybe put those into a union of
+ *  structs containing the various type-specific members)
+
+ *  NOTE: This structure is also defined in the clamav-bytecode-compiler
+ *  source at:
+ *  - clang/lib/Headers/bytecode_execs.h
+ *  - llvm/tools/clang/lib/Headers/bytecode_execs.h
+ *  Based on how we use it, though, it doesn't need to stay in-sync
+ *
+ *  TODO Next time we are making changes to the clamav-bytecode-compiler
+ *  source, remove this structure definition there so it's not confusing
 */
 struct cli_exe_info {
     /** Information about all the sections of this file. 
      * This array has \p nsection elements */
-    struct cli_exe_section *section;
-    /** Offset where this executable start in file (nonzero if embedded) */
+    struct cli_exe_section *sections;
+
+    /** Offset where this executable starts in file (nonzero if embedded) */
     uint32_t offset;
-    /** Entrypoint of executable */
+
+    /** File offset to the entrypoint of the executable. */
     uint32_t ep;
-    /** Number of sections*/
+
+    /** Number of sections.
+     *  NOTE: If a section is determined to be invalid (exists outside of the
+     *  file) then it will not be included in this count (at least for PE).
+     */
     uint16_t nsections;
+
+    // TODO Remove - not required
     void *dummy; /* for compat - preserve offset */
+
     /** Resources RVA - PE ONLY */
+    // TODO Maybe get rid of this - it looks like it's only used by the
+    // icon matching code (and maybe the bytecode API more broadly?)
     uint32_t res_addr;
-    /** Address size - PE ONLY */
+
+    /** Size of the  header (aligned) - PE ONLY. This corresponds to
+     *  SizeOfHeaders in the optional header
+    */
     uint32_t hdr_size;
+
     /** Hashset for versioninfo matching */
     struct cli_hashset vinfo;
+
+    /** Entry point RVA */
+    uint32_t vep;
+
+    /** Number of data directory entries at the end of the optional header.
+     *  This also corresponds to the number of entries in dirs that has
+     *  been populated with information.
+     */
+    uint32_t ndatadirs;
+
+    /** Whether this file is a DLL */
+    uint32_t is_dll;
+
+    /** Whether this file is a PE32+ exe (64-bit) */
+    uint32_t is_pe32plus;
+
+    /**< address of new exe header */
+    uint32_t e_lfanew;
+
+    /** The lowest section RVA */
+    uint32_t min;
+
+    /** The RVA of the highest byte contained within a section */
+    uint32_t max;
+
+    /** Offset of any file overlays, as determined by parsing the PE header */
+    uint32_t overlay_start;
+
+    /**< size of overlay */
+    uint32_t overlay_size;
+
+    /* Raw data copied in from the EXE directly.
+     *
+     * NOTE: The data in the members below haven't been converted to host
+     * endianness, so all field accesses most account for this to ensure
+     * proper functionality on big endian systems (the PE header is always
+     * little-endian)
+     */
+
+    /** Image File Header for this PE file */
+    struct pe_image_file_hdr file_hdr;
+
+    /** PE optional header. Use is_pe32plus to determine whether the 32-bit
+     *  or 64-bit union member should be used. */
+    union {
+        struct pe_image_optional_hdr64 opt64;
+        struct pe_image_optional_hdr32 opt32;
+    } pe_opt;
+
+    /**< PE data directory header. If ndatadirs is less than 16,
+     * the unpopulated entries will be memset'd to zero.
+     */
+    struct pe_image_data_dir dirs[16];
 };
+
+// TODO Document
+void cli_exe_info_init(struct cli_exe_info *exeinfo, uint32_t offset);
+void cli_exe_info_destroy(struct cli_exe_info *exeinfo);
 
 #endif
