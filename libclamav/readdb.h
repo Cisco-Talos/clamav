@@ -28,6 +28,13 @@
 #include "str.h"
 #include "cvd.h"
 
+// TODO Is it safe to remove .db2 and .db3 from here?  These strings aren't
+// referenced anywhere else in the source.
+
+// NOTE: We don't include .info in CLI_DBEXT because they are only used for
+// one specific purpose - verifying the contents of database container files.
+// This list is geared towards file extensions of files that users can provide
+// to ClamAV directly.
 #ifdef HAVE_YARA
 #define CLI_DBEXT(ext)                   \
     (                                    \
@@ -67,7 +74,10 @@
         cli_strbcasestr(ext, ".ioc") ||  \
         cli_strbcasestr(ext, ".yar") ||  \
         cli_strbcasestr(ext, ".yara") || \
-        cli_strbcasestr(ext, ".pwdb"))
+        cli_strbcasestr(ext, ".pwdb") || \
+        cli_strbcasestr(ext, ".ign") ||  \
+        cli_strbcasestr(ext, ".ign2") || \
+        cli_strbcasestr(ext, ".imp"))
 #else
 #define CLI_DBEXT(ext)                  \
     (                                   \
@@ -104,7 +114,11 @@
         cli_strbcasestr(ext, ".cat") || \
         cli_strbcasestr(ext, ".crb") || \
         cli_strbcasestr(ext, ".idb") || \
-        cli_strbcasestr(ext, ".ioc"))
+        cli_strbcasestr(ext, ".ioc") ||  \
+        cli_strbcasestr(ext, ".pwdb") || \
+        cli_strbcasestr(ext, ".ign") ||  \
+        cli_strbcasestr(ext, ".ign2") || \
+        cli_strbcasestr(ext, ".imp"))
 #endif
 
 char *cli_virname(const char *virname, unsigned int official);

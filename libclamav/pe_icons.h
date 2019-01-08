@@ -23,7 +23,7 @@
 #define __PE_ICONS_H
 #include "pe.h"
 
-int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size);
+int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo);
 
 void cli_icongroupset_add(const char *groupname, icon_groupset *set, unsigned int type, cli_ctx *ctx);
 static inline void cli_icongroupset_init(icon_groupset *set)

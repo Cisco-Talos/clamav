@@ -444,8 +444,8 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
 
     if (elfinfo) {
-        elfinfo->section = (struct cli_exe_section *)cli_calloc(shnum, sizeof(struct cli_exe_section));
-        if (!elfinfo->section) {
+        elfinfo->sections = (struct cli_exe_section *)cli_calloc(shnum, sizeof(struct cli_exe_section));
+        if (!elfinfo->sections) {
             cli_dbgmsg("ELF: Can't allocate memory for section headers\n");
             return CL_EMEM;
         }
@@ -455,10 +455,7 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         section_hdr = (struct elf_section_hdr32 *)cli_calloc(shnum, shentsize);
         if (!section_hdr) {
             cli_errmsg("ELF: Can't allocate memory for section headers\n");
-            if (elfinfo) {
-                free(elfinfo->section);
-                elfinfo->section = NULL;
-            }
+            cli_exe_info_destroy(elfinfo);
             return CL_EMEM;
         }
         if (ctx) {
@@ -476,10 +473,7 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
                 cli_dbgmsg("ELF: Possibly broken ELF file\n");
             }
             free(section_hdr);
-            if (elfinfo) {
-                free(elfinfo->section);
-                elfinfo->section = NULL;
-            }
+            cli_exe_info_destroy(elfinfo);
             if (ctx && SCAN_HEURISTIC_BROKEN) {
                 cli_append_virus(ctx, "Heuristics.Broken.Executable");
                 return CL_VIRUS;
@@ -490,9 +484,9 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         shoff += sizeof(struct elf_section_hdr32);
 
         if (elfinfo) {
-            elfinfo->section[i].rva = EC32(section_hdr[i].sh_addr, conv);
-            elfinfo->section[i].raw = EC32(section_hdr[i].sh_offset, conv);
-            elfinfo->section[i].rsz = EC32(section_hdr[i].sh_size, conv);
+            elfinfo->sections[i].rva = EC32(section_hdr[i].sh_addr, conv);
+            elfinfo->sections[i].raw = EC32(section_hdr[i].sh_offset, conv);
+            elfinfo->sections[i].rsz = EC32(section_hdr[i].sh_size, conv);
         }
         if (ctx) {
             cli_dbgmsg("ELF: Section %u\n", i);
@@ -553,8 +547,8 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         cli_dbgmsg("ELF: Section header table offset: " STDu64 "\n", shoff);
 
     if (elfinfo) {
-        elfinfo->section = (struct cli_exe_section *)cli_calloc(shnum, sizeof(struct cli_exe_section));
-        if (!elfinfo->section) {
+        elfinfo->sections = (struct cli_exe_section *)cli_calloc(shnum, sizeof(struct cli_exe_section));
+        if (!elfinfo->sections) {
             cli_dbgmsg("ELF: Can't allocate memory for section headers\n");
             return CL_EMEM;
         }
@@ -564,10 +558,7 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         section_hdr = (struct elf_section_hdr64 *)cli_calloc(shnum, shentsize);
         if (!section_hdr) {
             cli_errmsg("ELF: Can't allocate memory for section headers\n");
-            if (elfinfo) {
-                free(elfinfo->section);
-                elfinfo->section = NULL;
-            }
+            cli_exe_info_destroy(elfinfo);
             return CL_EMEM;
         }
         if (ctx) {
@@ -585,10 +576,7 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
                 cli_dbgmsg("ELF: Possibly broken ELF file\n");
             }
             free(section_hdr);
-            if (elfinfo) {
-                free(elfinfo->section);
-                elfinfo->section = NULL;
-            }
+            cli_exe_info_destroy(elfinfo);
             if (ctx && SCAN_HEURISTIC_BROKEN) {
                 cli_append_virus(ctx, "Heuristics.Broken.Executable");
                 return CL_VIRUS;
@@ -599,9 +587,9 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         shoff += sizeof(struct elf_section_hdr64);
 
         if (elfinfo) {
-            elfinfo->section[i].rva = EC64(section_hdr[i].sh_addr, conv);
-            elfinfo->section[i].raw = EC64(section_hdr[i].sh_offset, conv);
-            elfinfo->section[i].rsz = EC64(section_hdr[i].sh_size, conv);
+            elfinfo->sections[i].rva = EC64(section_hdr[i].sh_addr, conv);
+            elfinfo->sections[i].raw = EC64(section_hdr[i].sh_offset, conv);
+            elfinfo->sections[i].rsz = EC64(section_hdr[i].sh_size, conv);
         }
         if (ctx) {
             cli_dbgmsg("ELF: Section " STDu32 "\n", (uint32_t)i);

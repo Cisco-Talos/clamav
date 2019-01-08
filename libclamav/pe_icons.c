@@ -49,10 +49,7 @@ struct ICON_ENV {
     int result;
 
     icon_groupset *set;
-    uint32_t resdir_rva;
-    struct cli_exe_section *exe_sections;
-    uint16_t nsections;
-    uint32_t hdr_size;
+    struct cli_exe_info *peinfo;
 
     uint32_t icnt; /* number of icon entries parsed, declared images */
     uint32_t max_icons;
@@ -110,7 +107,7 @@ static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, 
     return 0;
 }
 
-int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size)
+int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     struct ICON_ENV icon_env;
     fmap_t *map        = *ctx->fmap;
@@ -124,10 +121,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     icon_env.result = CL_CLEAN;
 
     icon_env.set          = set;
-    icon_env.resdir_rva   = resdir_rva;
-    icon_env.exe_sections = exe_sections;
-    icon_env.nsections    = nsections;
-    icon_env.hdr_size     = hdr_size;
+    icon_env.peinfo = peinfo;
 
     icon_env.max_icons = ctx->engine->maxiconspe;
 
@@ -138,7 +132,7 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
     icon_env.err_insl  = 0;
 
     /* icon group scan callback --> groupicon_scan_cb() */
-    findres(14, 0xffffffff, resdir_rva, map, exe_sections, nsections, hdr_size, groupicon_scan_cb, &icon_env);
+    findres(14, 0xffffffff, map, peinfo, groupicon_scan_cb, &icon_env);
 
     /* CL_EMAXSIZE is used to track the icon limit */
     if (icon_env.result == CL_EMAXSIZE)
@@ -173,15 +167,12 @@ int cli_scanicon(icon_groupset *set, uint32_t resdir_rva, cli_ctx *ctx, struct c
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 {
     /* import environment */
-    uint32_t resdir_rva                  = icon_env->resdir_rva;
     cli_ctx *ctx                         = icon_env->ctx;
-    struct cli_exe_section *exe_sections = icon_env->exe_sections;
-    uint16_t nsections                   = icon_env->nsections;
-    uint32_t hdr_size                    = icon_env->hdr_size;
+    struct cli_exe_info *peinfo = icon_env->peinfo;
 
     int err            = 0;
     fmap_t *map        = *ctx->fmap;
-    const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size), 16);
+    const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size), 16);
 
     if (grp && !err) {
         uint32_t gsz = cli_readint32(grp + 4);
@@ -199,7 +190,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                 uint16_t id;
             } * dir;
 
-            raddr = cli_rawaddr(cli_readint32(grp), exe_sections, nsections, (unsigned int *)(&err), map->len, hdr_size);
+            raddr = cli_rawaddr(cli_readint32(grp), peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size);
             cli_dbgmsg("cli_scanicon: icon group @%x\n", raddr);
             grp = fmap_need_off_once(map, raddr, gsz);
             if (grp && !err) {
@@ -215,7 +206,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
                     cli_dbgmsg("cli_scanicon: Icongrp @%x - %ux%ux%u - (id=%x, rsvd=%u, planes=%u, palcnt=%u, sz=%x)\n", rva, dir->w, dir->h, cli_readint16(&dir->depth), cli_readint16(&dir->id), cli_readint16(&dir->planes), dir->palcnt, dir->rsvd, cli_readint32(&dir->sz));
 
                     /* icon scan callback --> icon_scan_cb() */
-                    findres(3, cli_readint16(&dir->id), resdir_rva, map, exe_sections, nsections, hdr_size, icon_scan_cb, icon_env);
+                    findres(3, cli_readint16(&dir->id), map, peinfo, icon_scan_cb, icon_env);
                     if (icon_env->result != CL_CLEAN)
                         return icon_env->result;
 
@@ -1345,9 +1336,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 {
     icon_groupset *set                   = icon_env->set;
     cli_ctx *ctx                         = icon_env->ctx;
-    struct cli_exe_section *exe_sections = icon_env->exe_sections;
-    uint16_t nsections                   = icon_env->nsections;
-    uint32_t hdr_size                    = icon_env->hdr_size;
+    struct cli_exe_info *peinfo = icon_env->peinfo;
 
     struct
     {
@@ -1381,7 +1370,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
         return CL_SUCCESS;
     map   = *ctx->fmap;
     tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->engine->tmpdir ? ctx->engine->tmpdir : cli_gettmpdir()) : NULL;
-    icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
 
     /* read the bitmap header */
     if (err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
@@ -1391,7 +1380,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     }
 
     rva   = cli_readint32(rawimage);
-    icoff = cli_rawaddr(rva, exe_sections, nsections, &err, map->len, hdr_size);
+    icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
     if (err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
         icon_env->err_bhoof++;
         //cli_dbgmsg("parseicon: bmp header is out of file\n");

@@ -2513,7 +2513,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             }
         }
 
-        if ((mode == MD5_MDB) || strcmp(tokens[size_field], "*")) {
+        if (strcmp(tokens[size_field], "*")) {
             size = strtoul(tokens[size_field], (char **)&pt, 10);
             if (*pt || !size || size >= 0xffffffff) {
                 cli_errmsg("cli_loadhash: Invalid value for the size field\n");
@@ -2522,7 +2522,12 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             }
         } else {
             size = 0;
-            if ((tokens_count < MD5_TOKENS - 1) || (req_fl < 73)) {
+            // The wildcard feature was added in FLEVEL 73, so for backwards
+            // compatibility with older clients, ensure that a minimum FLEVEL
+            // is specified.  This check doesn't apply to .imp rules, though,
+            // since this rule category wasn't introduced until FLEVEL 90, and
+            // has always supported wildcard usage in rules.
+            if (mode != MD5_IMP && ((tokens_count < MD5_TOKENS - 1) || (req_fl < 73))) {
                 cli_errmsg("cli_loadhash: Minimum FLEVEL field must be at least 73 for wildcard size hash signatures."
                            " For reference, running FLEVEL is %d\n",
                            cl_retflevel());
@@ -4600,7 +4605,16 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     while ((dent = readdir(dd))) {
 #endif
         if (dent->d_ino) {
-            if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.cfg") && CLI_DBEXT(dent->d_name)) {
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
+                continue;
+            }
+
+            /* Skip everything that's already been loaded in or ignored */
+            if (cli_strbcasestr(dent->d_name, ".ign") || cli_strbcasestr(dent->d_name, ".ign2") || !strcmp(dent->d_name, "daily.cvd") || !strcmp(dent->d_name, "daily.cld") || !strcmp(dent->d_name, "local.gdb") || !strcmp(dent->d_name, "daily.cfg")) {
+                continue;
+            }
+
+            if (CLI_DBEXT(dent->d_name)) {
                 if ((options & CL_DB_OFFICIAL_ONLY) && !strstr(dirname, "clamav-") && !cli_strbcasestr(dent->d_name, ".cld") && !cli_strbcasestr(dent->d_name, ".cvd")) {
                     cli_dbgmsg("Skipping unofficial database %s\n", dent->d_name);
                     continue;
@@ -5286,13 +5300,30 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
             *sigs += cvd->sigs;
             cl_cvdfree(cvd);
         }
+    } else if ((cli_strbcasestr(dbname, ".cud"))) {
+        if (options & CL_COUNTSIGS_UNOFFICIAL) {
+            struct cl_cvd *cvd = cl_cvdhead(dbname);
+            if (!cvd) {
+                cli_errmsg("countsigs: Can't parse %s\n", dbname);
+                return CL_ECVD;
+            }
+            *sigs += cvd->sigs;
+            cl_cvdfree(cvd);
+        }
     } else if (cli_strbcasestr(dbname, ".cbc")) {
         if (options & CL_COUNTSIGS_UNOFFICIAL)
             (*sigs)++;
 
-    } else if (cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg") || cli_strbcasestr(dbname, ".cat")) {
-        /* ignore */
+    } else if (cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp") || cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg") || cli_strbcasestr(dbname, ".cat")) {
+        /* ignore whitelist/FP signatures and metadata files */
 
+        // TODO .crb sigs can contain both whitelist and blacklist signatures.
+        // For now we will just include both in the count by not excluding this
+        // sig type here, but in the future we could extract just the number of
+        // blacklist rules manually so that the count is more accurate.
+
+        // NOTE: We implicitly ignore .info files because they aren't currently
+        // in the list of ones checked for by CLI_DBEXT
     } else if ((options & CL_COUNTSIGS_UNOFFICIAL) && CLI_DBEXT(dbname)) {
         return countentries(dbname, sigs);
     }
