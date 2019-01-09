@@ -79,41 +79,41 @@
         cli_strbcasestr(ext, ".ign2") || \
         cli_strbcasestr(ext, ".imp"))
 #else
-#define CLI_DBEXT(ext)                  \
-    (                                   \
-        cli_strbcasestr(ext, ".db") ||  \
-        cli_strbcasestr(ext, ".db2") || \
-        cli_strbcasestr(ext, ".db3") || \
-        cli_strbcasestr(ext, ".hdb") || \
-        cli_strbcasestr(ext, ".hdu") || \
-        cli_strbcasestr(ext, ".fp") ||  \
-        cli_strbcasestr(ext, ".mdb") || \
-        cli_strbcasestr(ext, ".mdu") || \
-        cli_strbcasestr(ext, ".hsb") || \
-        cli_strbcasestr(ext, ".hsu") || \
-        cli_strbcasestr(ext, ".sfp") || \
-        cli_strbcasestr(ext, ".msb") || \
-        cli_strbcasestr(ext, ".msu") || \
-        cli_strbcasestr(ext, ".ndb") || \
-        cli_strbcasestr(ext, ".ndu") || \
-        cli_strbcasestr(ext, ".ldb") || \
-        cli_strbcasestr(ext, ".ldu") || \
-        cli_strbcasestr(ext, ".sdb") || \
-        cli_strbcasestr(ext, ".zmd") || \
-        cli_strbcasestr(ext, ".rmd") || \
-        cli_strbcasestr(ext, ".pdb") || \
-        cli_strbcasestr(ext, ".gdb") || \
-        cli_strbcasestr(ext, ".wdb") || \
-        cli_strbcasestr(ext, ".cbc") || \
-        cli_strbcasestr(ext, ".ftm") || \
-        cli_strbcasestr(ext, ".cfg") || \
-        cli_strbcasestr(ext, ".cvd") || \
-        cli_strbcasestr(ext, ".cld") || \
-        cli_strbcasestr(ext, ".cud") || \
-        cli_strbcasestr(ext, ".cdb") || \
-        cli_strbcasestr(ext, ".cat") || \
-        cli_strbcasestr(ext, ".crb") || \
-        cli_strbcasestr(ext, ".idb") || \
+#define CLI_DBEXT(ext)                   \
+    (                                    \
+        cli_strbcasestr(ext, ".db") ||   \
+        cli_strbcasestr(ext, ".db2") ||  \
+        cli_strbcasestr(ext, ".db3") ||  \
+        cli_strbcasestr(ext, ".hdb") ||  \
+        cli_strbcasestr(ext, ".hdu") ||  \
+        cli_strbcasestr(ext, ".fp") ||   \
+        cli_strbcasestr(ext, ".mdb") ||  \
+        cli_strbcasestr(ext, ".mdu") ||  \
+        cli_strbcasestr(ext, ".hsb") ||  \
+        cli_strbcasestr(ext, ".hsu") ||  \
+        cli_strbcasestr(ext, ".sfp") ||  \
+        cli_strbcasestr(ext, ".msb") ||  \
+        cli_strbcasestr(ext, ".msu") ||  \
+        cli_strbcasestr(ext, ".ndb") ||  \
+        cli_strbcasestr(ext, ".ndu") ||  \
+        cli_strbcasestr(ext, ".ldb") ||  \
+        cli_strbcasestr(ext, ".ldu") ||  \
+        cli_strbcasestr(ext, ".sdb") ||  \
+        cli_strbcasestr(ext, ".zmd") ||  \
+        cli_strbcasestr(ext, ".rmd") ||  \
+        cli_strbcasestr(ext, ".pdb") ||  \
+        cli_strbcasestr(ext, ".gdb") ||  \
+        cli_strbcasestr(ext, ".wdb") ||  \
+        cli_strbcasestr(ext, ".cbc") ||  \
+        cli_strbcasestr(ext, ".ftm") ||  \
+        cli_strbcasestr(ext, ".cfg") ||  \
+        cli_strbcasestr(ext, ".cvd") ||  \
+        cli_strbcasestr(ext, ".cld") ||  \
+        cli_strbcasestr(ext, ".cud") ||  \
+        cli_strbcasestr(ext, ".cdb") ||  \
+        cli_strbcasestr(ext, ".cat") ||  \
+        cli_strbcasestr(ext, ".crb") ||  \
+        cli_strbcasestr(ext, ".idb") ||  \
         cli_strbcasestr(ext, ".ioc") ||  \
         cli_strbcasestr(ext, ".pwdb") || \
         cli_strbcasestr(ext, ".ign") ||  \

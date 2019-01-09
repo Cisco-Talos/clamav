@@ -120,7 +120,7 @@ int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
     icon_env.lastg  = 0;
     icon_env.result = CL_CLEAN;
 
-    icon_env.set          = set;
+    icon_env.set    = set;
     icon_env.peinfo = peinfo;
 
     icon_env.max_icons = ctx->engine->maxiconspe;
@@ -167,7 +167,7 @@ int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 {
     /* import environment */
-    cli_ctx *ctx                         = icon_env->ctx;
+    cli_ctx *ctx                = icon_env->ctx;
     struct cli_exe_info *peinfo = icon_env->peinfo;
 
     int err            = 0;
@@ -1334,8 +1334,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
 static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 {
-    icon_groupset *set                   = icon_env->set;
-    cli_ctx *ctx                         = icon_env->ctx;
+    icon_groupset *set          = icon_env->set;
+    cli_ctx *ctx                = icon_env->ctx;
     struct cli_exe_info *peinfo = icon_env->peinfo;
 
     struct
