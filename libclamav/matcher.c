@@ -446,9 +446,8 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
         if (offset_max)
             *offset_max = CLI_OFF_NONE;
         if (info->status == -1) {
-            // TODO I wonder if this means that sigs with these types won't
-            // work (which kinda makes sense).  Warn the user of this for now
-            cli_dbgmsg("cli_caloff: cli_target_info is invalid - unable to determine offsets for ndb/ldb subsigs using EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n\n");
+            // If the executable headers weren't parsed successfully then we
+            // can't process any ndb/ldb EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n subsigs
             return CL_SUCCESS;
         }
 
@@ -973,6 +972,15 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     cli_targetinfo_init(&info);
     cli_targetinfo(&info, i, map);
+
+    if (-1 == info.status) {
+        cli_dbgmsg("cli_fmap_scandesc: Failed to successfully parse the executable header. "
+                   "Scan features will be disabled, such as "
+                   "NDB/LDB subsigs using EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n, "
+                   "fuzzy icon matching, "
+                   "MDB/IMP sigs, "
+                   "and bytecode sigs that require exe metadata\n");
+    }
 
     if (!ftonly) {
         if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
