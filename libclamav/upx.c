@@ -317,6 +317,8 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     while (1) {
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
+            if (backbytes + oob > INT32_MAX / 2)
+                return -1;
       backbytes = backbytes*2+oob;
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
 	return -1;
@@ -330,6 +332,8 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
       if (scur>=ssize)
 	return -1;
+            if (backbytes & 0xff000000)
+                return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
       backbytes^=0xffffffff;
@@ -343,16 +347,22 @@ int upx_inflate2b(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
       return -1;
     if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
       return -1;
+        if (backsize + oob > UINT32_MAX / 2)
+            return -1;
     backsize = backsize*2 + oob;
     if (!backsize) {
       backsize++;
       do {
         if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
           return -1;
+                if (backsize + oob > UINT32_MAX / 2)
+                    return -1;
 	backsize = backsize*2 + oob;
       } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
       if ( oob == -1 )
         return -1;
+            if (backsize + 2 > UINT32_MAX)
+                return -1;
       backsize+=2;
     }
 
@@ -392,6 +402,8 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     while (1) {
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
+            if (backbytes + oob > INT32_MAX / 2)
+                return -1;
       backbytes = backbytes*2+oob;
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
@@ -410,6 +422,8 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
       if (scur>=ssize)
 	return -1;
+            if (backbytes & 0xff000000)
+                return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
       backbytes^=0xffffffff;
@@ -426,16 +440,22 @@ int upx_inflate2d(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
     if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
       return -1;
+        if (backsize + oob > UINT32_MAX / 2)
+            return -1;
     backsize = backsize*2 + oob;
     if (!backsize) {
       backsize++;
       do {
         if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
           return -1;
+                if (backsize + oob > UINT32_MAX / 2)
+                    return -1;
 	backsize = backsize*2 + oob;
       } while ( (oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
       if ( oob == -1 )
         return -1;
+            if (backsize + 2 > UINT32_MAX)
+                return -1;
       backsize+=2;
     }
 
@@ -473,6 +493,8 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     for(;;) {
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
+            if (backbytes + oob > INT32_MAX / 2)
+                return -1;
       backbytes = backbytes*2+oob;
       if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1 )
         return -1;
@@ -490,6 +512,8 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
 
       if (scur>=ssize)
 	return -1;
+            if (backbytes & 0xff000000)
+                return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
       backbytes^=0xffffffff;
@@ -514,15 +538,21 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
       if (oob) {
 	if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
 	  return -1;
+                if (backsize + oob > UINT32_MAX / 2)
+                    return -1;
 	  backsize = 2 + oob;
 	} else {
 	  do {
 	    if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
 	      return -1;
+                    if (backsize + oob > UINT32_MAX / 2)
+                        return -1;
 	    backsize = backsize * 2 + oob;
 	  } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
 	  if (oob == -1)
 	    return -1;
+                if (backsize + 2 > UINT32_MAX)
+                    return -1;
 	  backsize+=2;
 	}
     }
@@ -530,6 +560,8 @@ int upx_inflate2e(const char *src, uint32_t ssize, char *dst, uint32_t *dsize, u
     if ( (uint32_t)unp_offset < 0xfffffb00 )
       backsize++;
 
+        if (backsize + 2 > UINT32_MAX)
+            return -1;
     backsize+=2;
 
     if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0 )
