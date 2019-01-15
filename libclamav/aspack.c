@@ -43,6 +43,10 @@
 #define ASPACK_WRKBUF_OFFSET_OTHER 0x13a
 #define ASPACK_WRKBUF_OFFSET_242 0x148
 
+#define ASPACK_OEP_OFFSET_212 0x39b
+#define ASPACK_OEP_OFFSET_OTHER 0x401
+#define ASPACK_OEP_OFFSET_242 0x40d
+
 struct DICT_HELPER {
     uint32_t *starts;
     uint8_t *ends;
@@ -358,7 +362,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
     uint32_t block_rva = 1, block_size;
     struct cli_exe_section *outsects;
 
-    uint32_t blocks_offset, stream_init_multiplier_offset, comp_block_offset, wrkbuf_offset;
+    uint32_t blocks_offset, stream_init_multiplier_offset, comp_block_offset, wrkbuf_offset, oep_offset;
 
     switch (version) {
         case ASPACK_VER_212:
@@ -367,6 +371,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_212;
             comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_212;
             wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_212;
+            oep_offset                    = ASPACK_OEP_OFFSET_212;
             break;
         case ASPACK_VER_OTHER:
             cli_dbgmsg("Aspack: Attempting to unpack Aspack >2.12, <2.42.\n");
@@ -374,6 +379,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_OTHER;
             comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_OTHER;
             wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_OTHER;
+            oep_offset                    = ASPACK_OEP_OFFSET_OTHER;
             break;
         case ASPACK_VER_242:
             cli_dbgmsg("Aspack: Attempting to unpack Aspack 2.42.\n");
@@ -381,6 +387,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_242;
             comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_242;
             wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_242;
+            oep_offset                    = ASPACK_OEP_OFFSET_242;
             break;
         default:
             cli_dbgmsg("Aspack: Unexpected/Unknown version number.\n");
@@ -484,7 +491,8 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
         outsects[i].raw = outsects[i].rva;
         outsects[i].rsz = outsects[i].vsz;
     }
-    if (!cli_rebuildpe((char *)image, outsects, sectcount, base, cli_readint32(image + ep + 0x39b), 0, 0, f)) {
+
+    if (!cli_rebuildpe((char *)image, outsects, sectcount, base, cli_readint32(image + ep + oep_offset), 0, 0, f)) {
         cli_dbgmsg("Aspack: rebuild failed\n");
         cli_writen(f, image, size);
     } else {
