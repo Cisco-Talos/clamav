@@ -907,12 +907,14 @@ char *cli_unescape(const char *str)
 			if(k+5 >= len || str[k+1] != 'u' || !isxdigit(str[k+2]) || !isxdigit(str[k+3])
 						|| !isxdigit(str[k+4]) || !isxdigit(str[k+5])) {
 				if(k+2 < len && isxdigit(str[k+1]) && isxdigit(str[k+2])) {
-					c = (cli_hex2int(str[k+1])<<4) | cli_hex2int(str[k+2]);
+                    c = ((cli_hex2int(str[k + 1]) < 0 ? 0 : cli_hex2int(str[k + 1])) << 4) | cli_hex2int(str[k + 2]);
 					k += 2;
 				}
 			} else {
-				uint16_t u = (cli_hex2int(str[k+2])<<12) | (cli_hex2int(str[k+3])<<8) |
-					(cli_hex2int(str[k+4])<<4) | cli_hex2int(str[k+5]);
+                uint16_t u = ((cli_hex2int(str[k + 2]) < 0 ? 0 : cli_hex2int(str[k + 2])) << 12) |
+                             ((cli_hex2int(str[k + 3]) < 0 ? 0 : cli_hex2int(str[k + 3])) << 8)  |
+                             ((cli_hex2int(str[k + 4]) < 0 ? 0 : cli_hex2int(str[k + 4])) << 4)  |
+                               cli_hex2int(str[k + 5]);
 				i += output_utf8(u, (unsigned char*)&R[i]);
 				k += 5;
 				continue;
@@ -958,13 +960,15 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, si
 					break;
 				case 'x':
 					if(i+2 < len)
-						c = (cli_hex2int(str[i+1])<<4)|cli_hex2int(str[i+2]);
+                        c = ((cli_hex2int(str[i + 1]) < 0 ? 0 : cli_hex2int(str[i + 1])) << 4) | cli_hex2int(str[i + 2]);
 					i += 2;
 					break;
 				case 'u':
 					if(i+4 < len) {
-						uint16_t u = (cli_hex2int(str[i+1])<<12) | (cli_hex2int(str[i+2])<<8) |
-							(cli_hex2int(str[i+3])<<4) | cli_hex2int(str[i+4]);
+                        uint16_t u = ((cli_hex2int(str[i + 1]) < 0 ? 0 : cli_hex2int(str[i + 1])) << 12) |
+                                     ((cli_hex2int(str[i + 2]) < 0 ? 0 : cli_hex2int(str[i + 2])) << 8)  |
+                                     ((cli_hex2int(str[i + 3]) < 0 ? 0 : cli_hex2int(str[i + 3])) << 4)  | 
+                                       cli_hex2int(str[i + 4]);
 						if(textbuffer_ensure_capacity(buf, 4) == -1)
 							return -1;
 						buf->pos += output_utf8(u, (unsigned char*)&buf->data[buf->pos]);
