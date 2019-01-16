@@ -1,0 +1,10 @@
+test/valid/dtds/766956.dtd:2: parser error : PEReference: expecting ';'
+%ä%ent;
+   ^
+test/valid/dtds/766956.dtd:2: parser error : Content error in the external subset
+%ä%ent;
+        ^
+Entity: line 1: 
+value
+^
+./test/valid/766956.xml : failed to parse

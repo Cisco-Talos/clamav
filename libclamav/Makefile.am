@@ -22,10 +22,11 @@ AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
 COMMON_CLEANFILES =
-EXTRA_DIST = c++/Makefile.nollvm.in libmspack-0.5alpha/Makefile.intmspack.in
+EXTRA_DIST = c++/Makefile.nollvm.in
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
+libclamunrar_la_CXXFLAGS = $(AM_CPPFLAGS) -DRARDLL -Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else
 libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -33,23 +34,56 @@ libclamunrar_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar/lib
 endif
 
 libclamunrar_la_SOURCES = \
-	../libclamunrar/unrar15.c \
-	../libclamunrar/unrar20.h \
-	../libclamunrar/unrar.h \
-	../libclamunrar/unrar15.h \
-	../libclamunrar/unrar.c \
-	../libclamunrar/unrar20.c \
-	../libclamunrar/unrarcmd.h \
-	../libclamunrar/unrarfilter.h \
-	../libclamunrar/unrarppm.c \
-	../libclamunrar/unrarvm.c \
-	../libclamunrar/unrarcmd.c \
-	../libclamunrar/unrarfilter.c \
-	../libclamunrar/unrar.h \
-	../libclamunrar/unrarppm.h \
-	../libclamunrar/unrarvm.h \
-	../libclamunrar/unrarhlp.c \
-	../libclamunrar/unrarhlp.h
+	../libclamunrar/archive.cpp \
+	../libclamunrar/arcread.cpp \
+	../libclamunrar/blake2s.cpp \
+	../libclamunrar/cmddata.cpp \
+	../libclamunrar/consio.cpp \
+	../libclamunrar/crc.cpp \
+	../libclamunrar/crypt.cpp \
+	../libclamunrar/dll.cpp \
+	../libclamunrar/encname.cpp \
+	../libclamunrar/errhnd.cpp \
+	../libclamunrar/extinfo.cpp \
+	../libclamunrar/extract.cpp \
+	../libclamunrar/filcreat.cpp \
+	../libclamunrar/file.cpp \
+	../libclamunrar/filefn.cpp \
+	../libclamunrar/filestr.cpp \
+	../libclamunrar/find.cpp \
+	../libclamunrar/getbits.cpp \
+	../libclamunrar/global.cpp \
+	../libclamunrar/hash.cpp \
+	../libclamunrar/headers.cpp \
+	../libclamunrar/isnt.cpp \
+	../libclamunrar/list.cpp \
+	../libclamunrar/match.cpp \
+	../libclamunrar/options.cpp \
+	../libclamunrar/pathfn.cpp \
+	../libclamunrar/qopen.cpp \
+	../libclamunrar/rar.cpp \
+	../libclamunrar/rarvm.cpp \
+	../libclamunrar/rawread.cpp \
+	../libclamunrar/rdwrfn.cpp \
+	../libclamunrar/recvol.cpp \
+	../libclamunrar/resource.cpp \
+	../libclamunrar/rijndael.cpp \
+	../libclamunrar/rs.cpp \
+	../libclamunrar/rs16.cpp \
+	../libclamunrar/scantree.cpp \
+	../libclamunrar/secpassword.cpp \
+	../libclamunrar/sha1.cpp \
+	../libclamunrar/sha256.cpp \
+	../libclamunrar/smallfn.cpp \
+	../libclamunrar/strfn.cpp \
+	../libclamunrar/strlist.cpp \
+	../libclamunrar/system.cpp \
+	../libclamunrar/threadpool.cpp \
+	../libclamunrar/timefn.cpp \
+	../libclamunrar/ui.cpp \
+	../libclamunrar/unicode.cpp \
+	../libclamunrar/unpack.cpp \
+	../libclamunrar/volume.cpp
 
 lib_LTLIBRARIES += libclamunrar.la
 EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map
@@ -63,7 +97,7 @@ libclamunrar_iface_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunr
 endif
 
 libclamunrar_iface_la_SOURCES = \
-	../libclamunrar_iface/unrar_iface.c \
+	../libclamunrar_iface/unrar_iface.cpp \
 	../libclamunrar_iface/unrar_iface.h
 
 lib_LTLIBRARIES += libclamunrar_iface.la
@@ -97,7 +131,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 					strlcat.c
 
 libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
-libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
@@ -140,6 +174,85 @@ c++/Makefile: c++/Makefile.nollvm.in
 distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 endif
 
+if USE_INTERNAL_MSPACK
+# libmspack version: 0.8alpha (1:0:1)
+LIBMSPACK_VERSION = 1:0:1
+
+libclammspack_la_CFLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -Wno-unused-parameter -I@top_srcdir@/libclammspack/mspack
+libclammspack_la_LDFLAGS = -version-info $(LIBMSPACK_VERSION) -no-undefined -export-symbols-regex '^mspack_'
+
+# if VERSIONSCRIPT
+# libclammspack_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclammspack/libclammspack.map
+# endif
+
+libclammspack_la_SOURCES = \
+	../libclammspack/mspack/cab.h \
+	../libclammspack/mspack/cabc.c \
+	../libclammspack/mspack/cabd.c \
+	../libclammspack/mspack/chm.h \
+	../libclammspack/mspack/chmc.c \
+	../libclammspack/mspack/chmd.c \
+	../libclammspack/mspack/crc32.c \
+	../libclammspack/mspack/crc32.h \
+	../libclammspack/mspack/des.h \
+	../libclammspack/mspack/hlp.h \
+	../libclammspack/mspack/hlpc.c \
+	../libclammspack/mspack/hlpd.c \
+	../libclammspack/mspack/kwaj.h \
+	../libclammspack/mspack/kwajc.c \
+	../libclammspack/mspack/kwajd.c \
+	../libclammspack/mspack/lit.h \
+	../libclammspack/mspack/litc.c \
+	../libclammspack/mspack/litd.c \
+	../libclammspack/mspack/lzss.h \
+	../libclammspack/mspack/lzssd.c \
+	../libclammspack/mspack/lzx.h \
+	../libclammspack/mspack/lzxc.c \
+	../libclammspack/mspack/lzxd.c \
+	../libclammspack/mspack/mspack.h \
+	../libclammspack/mspack/mszip.h \
+	../libclammspack/mspack/mszipc.c \
+	../libclammspack/mspack/mszipd.c \
+	../libclammspack/mspack/oab.h \
+	../libclammspack/mspack/oabc.c \
+	../libclammspack/mspack/oabd.c \
+	../libclammspack/mspack/qtm.h \
+	../libclammspack/mspack/qtmd.c \
+	../libclammspack/mspack/readbits.h \
+	../libclammspack/mspack/readhuff.h \
+	../libclammspack/mspack/sha.h \
+	../libclammspack/mspack/system.c \
+	../libclammspack/mspack/system.h \
+	../libclammspack/mspack/szdd.h \
+	../libclammspack/mspack/szddc.c \
+	../libclammspack/mspack/szddd.c
+
+lib_LTLIBRARIES += libclammspack.la
+# EXTRA_DIST += @top_srcdir@/libclammspack/libclammspack.map
+
+MSPACK_CFLAGS = -I@top_srcdir@/libclammspack/mspack -DHAVE_INTERNAL_MSPACK
+MSPACKLIBADD = -lclammspack
+MSPACKDEP = libclammspack.la
+
+else
+MSPACK_CFLAGS = $(LIBMSPACK_CFLAGS)
+MSPACKLIBADD = $(LIBMSPACK_LIBS)
+MSPACKDEP =
+
+libmspack/Makefile: 
+.PHONY: distdir distclean maintainer-clean
+distdir:
+	echo "make distdir requires --with-system-libmspack=no"
+	exit 1
+
+# nothing to do here, rules must exist for distclean to succeed
+distclean:
+	-rm -f Makefile
+maintainer-clean:
+
+distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
+endif
+
 if ENABLE_YARA
 YARA_CFLAGS=-DHAVE_YARA
 endif
@@ -147,26 +260,13 @@ endif
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
-libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS =$(AM_CFLAGS) $(XML_CPPFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
+libclamav_la_CFLAGS = $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
 libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
-endif
-
-if USE_INTERNAL_MSPACK
-SUBDIRS += libmspack-0.5alpha
-libclamav_la_CFLAGS := -I@top_srcdir@/libclamav/libmspack-0.5alpha/mspack $(libclamav_la_CFLAGS)
-libclamav_la_LIBADD += libmspack-0.5alpha/libclammspack.la
-else
-libclamav_la_CFLAGS += $(LIBMSPACK_CFLAGS)
-libclamav_la_LDFLAGS += $(LIBMSPACK_LIBS)
-EXTRA_DIST += libmspack-0.5alpha
-libmspack-0.5alpha/Makefile: libmspack-0.5alpha/Makefile.intmspack.in
-	$(AM_V_at) cp $< $@
-distclean-recursive distdir maintainer-clean-recursive: libmspack-0.5alpha/Makefile
 endif
 
 include_HEADERS = clamav.h
@@ -477,7 +577,9 @@ libclamav_la_SOURCES = \
 	hwp.c \
 	hwp.h \
 	lzw/lzwdec.c \
-	lzw/lzwdec.h
+	lzw/lzwdec.h \
+	matcher-byte-comp.c \
+	matcher-byte-comp.h
 
 if ENABLE_YARA
 libclamav_la_SOURCES += yara_arena.c \

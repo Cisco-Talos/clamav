@@ -1,0 +1,17 @@
+SAX.setDocumentLocator()
+SAX.startDocument()
+SAX.error: Comment not terminated 
+<!--
+SAX.error: Invalid char in CDATA 0xC
+SAX.startElement(html)
+SAX.startElement(body)
+SAX.startElement(p)
+SAX.characters(&#145;, 2)
+SAX.error: Misplaced DOCTYPE declaration
+SAX.error: htmlParseDocTypeDecl : no DOCTYPE name !
+SAX.error: DOCTYPE improperly terminated
+SAX.internalSubset((null), , )
+SAX.endElement(p)
+SAX.endElement(body)
+SAX.endElement(html)
+SAX.endDocument()

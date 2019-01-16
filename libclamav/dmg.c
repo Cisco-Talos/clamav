@@ -239,7 +239,7 @@ int cli_scandmg(cli_ctx *ctx)
             if (depth < 0) {
                 break;
             }
-            if ((depth > 50) && SCAN_ALGO) {
+            if ((depth > 50) && SCAN_HEURISTICS) {
                 // Possible heuristic, should limit runaway
                 cli_dbgmsg("cli_scandmg: Excessive nesting in DMG TOC.\n");
                 break;
@@ -1117,7 +1117,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
 
     /* If okay so far, scan rebuilt partition */
     if (ret == CL_CLEAN) {
-        ret = cli_partition_scandesc(ofd, ctx);
+        ret = cli_partition_scandesc(ofd, outfile, ctx);
     }
 
     close(ofd);

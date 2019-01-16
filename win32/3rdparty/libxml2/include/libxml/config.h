@@ -5,23 +5,18 @@
 #define HAVE_STDARG_H
 #define HAVE_MALLOC_H
 #define HAVE_ERRNO_H
+#define SEND_ARG2_CAST
+#define GETHOSTBYNAME_ARG_CAST
 
 #if defined(_WIN32_WCE)
 #undef HAVE_ERRNO_H
-#include <windows.h>
 #include "wincecompat.h"
 #else
 #define HAVE_SYS_STAT_H
-#define HAVE__STAT
 #define HAVE_STAT
 #define HAVE_STDLIB_H
 #define HAVE_TIME_H
 #define HAVE_FCNTL_H
-/* The following features are enabled for the clamav partial libxml2 port */
-#define LIBXML_OUTPUT_ENABLED 1
-#define LIBXML_PUSH_ENABLED 1
-#define LIBXML_WRITER_ENABLED 1
-#define LIBXML_TREE_ENABLED 1
 #include <io.h>
 #include <direct.h>
 #endif
@@ -32,13 +27,9 @@
 #define ICONV_CONST const
 #endif
 
-#ifdef NEED_SOCKETS
-#include <wsockcompat.h>
-#endif
-
 /*
- * Windows platforms may define except 
- */
+* Windows platforms may define except
+*/
 #undef except
 
 #define HAVE_ISINF
@@ -46,13 +37,13 @@
 #include <math.h>
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 /* MS C-runtime has functions which can be used in order to determine if
-   a given floating-point variable contains NaN, (+-)INF. These are 
-   preferred, because floating-point technology is considered propriatary
-   by MS and we can assume that their functions know more about their 
-   oddities than we do. */
+a given floating-point variable contains NaN, (+-)INF. These are
+preferred, because floating-point technology is considered propriatary
+by MS and we can assume that their functions know more about their
+oddities than we do. */
 #include <float.h>
 /* Bjorn Reese figured a quite nice construct for isinf() using the _fpclass
-   function. */
+function. */
 #ifndef isinf
 #define isinf(d) ((_fpclass(d) == _FPCLASS_PINF) ? 1 \
 	: ((_fpclass(d) == _FPCLASS_NINF) ? -1 : 0))
@@ -63,37 +54,43 @@
 #endif
 #else /* _MSC_VER */
 #ifndef isinf
-static int isinf (double d) {
-    int expon = 0;
-    double val = frexp (d, &expon);
-    if (expon == 1025) {
-        if (val == 0.5) {
-            return 1;
-        } else if (val == -0.5) {
-            return -1;
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
-    }
+static int isinf(double d) {
+	int expon = 0;
+	double val = frexp(d, &expon);
+	if (expon == 1025) {
+		if (val == 0.5) {
+			return 1;
+		}
+		else if (val == -0.5) {
+			return -1;
+		}
+		else {
+			return 0;
+		}
+	}
+	else {
+		return 0;
+	}
 }
 #endif
 #ifndef isnan
-static int isnan (double d) {
-    int expon = 0;
-    double val = frexp (d, &expon);
-    if (expon == 1025) {
-        if (val == 0.5) {
-            return 0;
-        } else if (val == -0.5) {
-            return 0;
-        } else {
-            return 1;
-        }
-    } else {
-        return 0;
-    }
+static int isnan(double d) {
+	int expon = 0;
+	double val = frexp(d, &expon);
+	if (expon == 1025) {
+		if (val == 0.5) {
+			return 0;
+		}
+		else if (val == -0.5) {
+			return 0;
+		}
+		else {
+			return 1;
+		}
+	}
+	else {
+		return 0;
+	}
 }
 #endif
 #endif /* _MSC_VER */
@@ -111,7 +108,7 @@ static int isnan (double d) {
 #endif
 
 /* Threading API to use should be specified here for compatibility reasons.
-   This is however best specified on the compiler's command-line. */
+This is however best specified on the compiler's command-line. */
 #if defined(LIBXML_THREAD_ENABLED)
 #if !defined(HAVE_PTHREAD_H) && !defined(HAVE_WIN32_THREADS) && !defined(_WIN32_WCE)
 #define HAVE_WIN32_THREADS
@@ -119,7 +116,7 @@ static int isnan (double d) {
 #endif
 
 /* Some third-party libraries far from our control assume the following
-   is defined, which it is not if we don't include windows.h. */
+is defined, which it is not if we don't include windows.h. */
 #if !defined(FALSE)
 #define FALSE 0
 #endif

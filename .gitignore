@@ -11,7 +11,6 @@ libclamav.pc
 .libs
 libtool
 *.l[oa]
-Makefile
 *.[oa]
 platform.h
 stamp-h1
@@ -62,4 +61,5 @@ libclamav/c++/llvm/tools/llvmc/plugins/Base/Base.td
 *.obj
 *.opendb
 .vscode
-libclamav/libmspack-0.5alpha/autom4te.cache/
+install/*
+build/*

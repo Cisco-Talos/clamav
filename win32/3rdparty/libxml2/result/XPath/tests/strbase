@@ -1,0 +1,13 @@
+
+========================
+Expression: //p[.='abc']
+Object is a Node Set :
+Set contains 2 nodes:
+1  ELEMENT p
+    ATTRIBUTE id
+      TEXT
+        content=1
+2  ELEMENT p
+    ATTRIBUTE id
+      TEXT
+        content=2

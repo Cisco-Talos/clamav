@@ -72,7 +72,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 100
+#define CL_FLEVEL 101
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -154,13 +154,15 @@ typedef struct cli_ctx_container_tag {
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
+    char *target_filepath;
+    const char *sub_filepath;
     const char **virname;
     unsigned int num_viruses;
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     unsigned long scansize;
-    unsigned int options;
+    struct cl_scan_options *options;
     unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
@@ -174,7 +176,6 @@ typedef struct cli_ctx_tag {
     void *cb_ctx;
     cli_events_t* perf;
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    char entry_filename[2048];
     int sha_collect;
 #endif
 #ifdef HAVE_JSON
@@ -484,30 +485,46 @@ struct cl_settings {
     uint64_t pcre_max_filesize;
 };
 
-extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
-extern int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
-extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
-extern void (*cli_unrar_close)(unrar_state_t *state);
+extern cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
+extern cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);
+extern cl_unrar_error_t (*cli_unrar_extract_file)(void* hArchive, const char* destPath, char *outputBuffer);
+extern cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
+extern void (*cli_unrar_close)(void *hArchive);
+
 extern int have_rar;
 
-#define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
-#define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)
-#define SCAN_OLE2	    (ctx->options & CL_SCAN_OLE2)
-#define SCAN_PDF	    (ctx->options & CL_SCAN_PDF)
-#define SCAN_HTML	    (ctx->options & CL_SCAN_HTML)
-#define SCAN_PE		    (ctx->options & CL_SCAN_PE)
-#define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
-#define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
-#define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
-#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
-#define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
-#define BLOCK_MACROS	    (ctx->options & CL_SCAN_BLOCKMACROS)
-#define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
-#define SCAN_ALL            (ctx->options & CL_SCAN_ALLMATCHES)
-#define SCAN_SWF            (ctx->options & CL_SCAN_SWF)
-#define SCAN_PROPERTIES     (ctx->options & CL_SCAN_FILE_PROPERTIES)
-#define SCAN_XMLDOCS        (ctx->options & CL_SCAN_XMLDOCS)
-#define SCAN_HWP3           (ctx->options & CL_SCAN_HWP3)
+#define SCAN_ALLMATCHES                         (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
+#define SCAN_COLLECT_METADATA                   (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)
+#define SCAN_HEURISTICS                         (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS)
+#define SCAN_HEURISTIC_PRECEDENCE               (ctx->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE)
+
+#define SCAN_PARSE_ARCHIVE                      (ctx->options->parse & CL_SCAN_PARSE_ARCHIVE)
+#define SCAN_PARSE_ELF                          (ctx->options->parse & CL_SCAN_PARSE_ELF)
+#define SCAN_PARSE_PDF                          (ctx->options->parse & CL_SCAN_PARSE_PDF)
+#define SCAN_PARSE_SWF                          (ctx->options->parse & CL_SCAN_PARSE_SWF)
+#define SCAN_PARSE_HWP3                         (ctx->options->parse & CL_SCAN_PARSE_HWP3)
+#define SCAN_PARSE_XMLDOCS                      (ctx->options->parse & CL_SCAN_PARSE_XMLDOCS)
+#define SCAN_PARSE_MAIL                         (ctx->options->parse & CL_SCAN_PARSE_MAIL)
+#define SCAN_PARSE_OLE2                         (ctx->options->parse & CL_SCAN_PARSE_OLE2)
+#define SCAN_PARSE_HTML                         (ctx->options->parse & CL_SCAN_PARSE_HTML)
+#define SCAN_PARSE_PE                           (ctx->options->parse & CL_SCAN_PARSE_PE)
+
+#define SCAN_HEURISTIC_BROKEN                   (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
+#define SCAN_HEURISTIC_EXCEEDS_MAX              (ctx->options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX)
+#define SCAN_HEURISTIC_PHISHING_SSL_MISMATCH    (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH)
+#define SCAN_HEURISTIC_PHISHING_CLOAK           (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_CLOAK)
+#define SCAN_HEURISTIC_MACROS                   (ctx->options->heuristic & CL_SCAN_HEURISTIC_MACROS)
+#define SCAN_HEURISTIC_ENCRYPTED_ARCHIVE        (ctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE)
+#define SCAN_HEURISTIC_ENCRYPTED_DOC            (ctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC)
+#define SCAN_HEURISTIC_PARTITION_INTXN          (ctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN)
+#define SCAN_HEURISTIC_STRUCTURED               (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED)
+#define SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL    (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL)
+#define SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED  (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_SSN_STRIPPED)
+
+#define SCAN_MAIL_PARTIAL_MESSAGE               (ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE)
+
+#define SCAN_DEV_COLLECT_SHA                    (ctx->options->dev & CL_SCAN_DEV_COLLECT_SHA)
+#define SCAN_DEV_COLLECT_PERF_INFO              (ctx->options->dev & CL_SCAN_DEV_COLLECT_PERFORMANCE_INFO)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
@@ -732,8 +749,57 @@ int cli_unlink(const char *pathname);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
 const char *cli_gettmpdir(void);
+
+/**
+ * @brief Generate tempfile filename (no path) with a random MD5 hash.
+ * 
+ * Caller is responsible for freeing the filename.
+ * 
+ * @return char* filename or NULL.
+ */
+char *cli_genfname(const char *prefix);
+
+/**
+ * @brief Generate a full tempfile filepath with a random MD5 hash and prefix the name, if provided.
+ * 
+ * Caller is responsible for freeing the filename.
+ * 
+ * @param dir 	 Alternative temp directory. (optional)
+ * @return char* filename or NULL.
+ */
+char* cli_gentemp_with_prefix(const char* dir, const char* prefix);
+
+/**
+ * @brief Generate a full tempfile filepath with a random MD5 hash.
+ * 
+ * Caller is responsible for freeing the filename.
+ * 
+ * @param dir 	 Alternative temp directory. (optional)
+ * @return char* filename or NULL.
+ */
 char *cli_gentemp(const char *dir);
-int cli_gentempfd(const char *dir, char **name, int *fd);
+
+/**
+ * @brief Create a temp filename, create the file, open it, and pass back the filepath and open file descriptor.
+ *
+ * @param dir        Alternative temp directory (optional).
+ * @param[out] name  Allocated filepath, must be freed by caller.
+ * @param[out] fd    File descriptor of open temp file.
+ * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM. 
+ */
+cl_error_t cli_gentempfd(const char *dir, char **name, int *fd);
+
+/**
+ * @brief Create a temp filename, create the file, open it, and pass back the filepath and open file descriptor.
+ * 
+ * @param dir        Alternative temp directory (optional).
+ * @param prefix  	 (Optional) Prefix for new file tempfile.
+ * @param[out] name  Allocated filepath, must be freed by caller.
+ * @param[out] fd    File descriptor of open temp file.
+ * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM. 
+ */
+cl_error_t cli_gentempfd_with_prefix(const char* dir, char* prefix, char** name, int* fd);
+
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
 int cli_mapscan(fmap_t *map, off_t offset, size_t size, cli_ctx *ctx, cli_file_t type);
@@ -812,4 +878,17 @@ typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
 int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 
 const char *cli_strerror(int errnum, char* buf, size_t len);
+
+/**
+ * @brief   Attempt to get a filename from an open file descriptor.
+ * 
+ * Caller is responsible for free'ing the filename.
+ * Should work on Linux, macOS, Windows.
+ * 
+ * @param desc           File descriptor
+ * @param[out] filepath  Will be set to file path if found, or NULL.
+ * @return cl_error_t    CL_SUCCESS if found, else an error code.
+ */
+cl_error_t cli_get_filepath_from_filedesc(int desc, char** filepath);
+
 #endif

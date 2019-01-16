@@ -15,126 +15,126 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cabc.c">
+    <ClCompile Include="..\libclammspack\mspack\cabc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cabd.c">
+    <ClCompile Include="..\libclammspack\mspack\cabd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="chmc.c">
+    <ClCompile Include="..\libclammspack\mspack\chmc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="chmd.c">
+    <ClCompile Include="..\libclammspack\mspack\chmd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="crc32.c">
+    <ClCompile Include="..\libclammspack\mspack\crc32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hlpc.c">
+    <ClCompile Include="..\libclammspack\mspack\hlpc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="hlpd.c">
+    <ClCompile Include="..\libclammspack\mspack\hlpd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kwajc.c">
+    <ClCompile Include="..\libclammspack\mspack\kwajc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="kwajd.c">
+    <ClCompile Include="..\libclammspack\mspack\kwajd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="litc.c">
+    <ClCompile Include="..\libclammspack\mspack\litc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="litd.c">
+    <ClCompile Include="..\libclammspack\mspack\litd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lzssd.c">
+    <ClCompile Include="..\libclammspack\mspack\lzssd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lzxc.c">
+    <ClCompile Include="..\libclammspack\mspack\lzxc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lzxd.c">
+    <ClCompile Include="..\libclammspack\mspack\lzxd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mszipc.c">
+    <ClCompile Include="..\libclammspack\mspack\mszipc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mszipd.c">
+    <ClCompile Include="..\libclammspack\mspack\mszipd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="oabc.c">
+    <ClCompile Include="..\libclammspack\mspack\oabc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="oabd.c">
+    <ClCompile Include="..\libclammspack\mspack\oabd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="qtmd.c">
+    <ClCompile Include="..\libclammspack\mspack\qtmd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="system.c">
+    <ClCompile Include="..\libclammspack\mspack\system.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="szddc.c">
+    <ClCompile Include="..\libclammspack\mspack\szddc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="szddd.c">
+    <ClCompile Include="..\libclammspack\mspack\szddd.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cab.h">
+    <ClInclude Include="..\libclammspack\mspack\cab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="chm.h">
+    <ClInclude Include="..\libclammspack\mspack\chm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="crc32.h">
+    <ClInclude Include="..\libclammspack\mspack\crc32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="des.h">
+    <ClInclude Include="..\libclammspack\mspack\des.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="hlp.h">
+    <ClInclude Include="..\libclammspack\mspack\hlp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="kwaj.h">
+    <ClInclude Include="..\libclammspack\mspack\kwaj.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lit.h">
+    <ClInclude Include="..\libclammspack\mspack\lit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lzss.h">
+    <ClInclude Include="..\libclammspack\mspack\lzss.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lzx.h">
+    <ClInclude Include="..\libclammspack\mspack\lzx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mspack.h">
+    <ClInclude Include="..\libclammspack\mspack\mspack.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mszip.h">
+    <ClInclude Include="..\libclammspack\mspack\mszip.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="oab.h">
+    <ClInclude Include="..\libclammspack\mspack\oab.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="qtm.h">
+    <ClInclude Include="..\libclammspack\mspack\qtm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="readbits.h">
+    <ClInclude Include="..\libclammspack\mspack\readbits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="readhuff.h">
+    <ClInclude Include="..\libclammspack\mspack\readhuff.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="sha.h">
+    <ClInclude Include="..\libclammspack\mspack\sha.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="system.h">
+    <ClInclude Include="..\libclammspack\mspack\system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="szdd.h">
+    <ClInclude Include="..\libclammspack\mspack\szdd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

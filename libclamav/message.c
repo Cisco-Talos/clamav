@@ -538,10 +538,10 @@ messageAddArguments(message *m, const char *s)
 		while(isspace(*string) && (*string != '\0'))
 			string++;
 
-		cptr = string++;
+		cptr = string;
 
-		if(strlen(key) == 0)
-			continue;
+		if (*string)
+			string++;
 
 		if(*cptr == '"') {
 			char *ptr, *kcopy;
@@ -582,7 +582,14 @@ messageAddArguments(message *m, const char *s)
 
 			data = cli_strdup(cptr);
 
-			ptr = (data) ? strchr(data, '"') : NULL;
+			if (!data) {
+				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a missed virus, report it to bugs@clamav.net\n", s);
+				free((char *)key);
+				return;
+				}
+
+			ptr = strchr(data, '"');
+
 			if(ptr == NULL) {
 				/*
 				 * Weird e-mail header such as:
@@ -592,17 +599,11 @@ messageAddArguments(message *m, const char *s)
 				 * Content-Disposition: attachment; filename="
 				 * "
 				 *
-				 * TODO: the file should still be saved and
-				 * virus checked
+				 * Use the end of line as data.
 				 */
-				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", s);
-				if(data)
-					free(data);
-				free(kcopy);
-				return;
-			}
-
-			*ptr = '\0';
+				}
+			else
+				*ptr = '\0';
 
             datasz = strlen(kcopy) + strlen(data) + 2;
 			field = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);

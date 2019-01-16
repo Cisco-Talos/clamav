@@ -22,10 +22,13 @@ dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [0.101.0], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
+dnl enable C++
+AC_PROG_CXX()
+
 AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_HEADER([clamav-config.h])
+AC_CONFIG_HEADERS([clamav-config.h libclammspack/config.h:libclammspack/config.h.in])
 
 dnl safety check, this used to be a parameter to AC_INIT
 AC_CONFIG_SRCDIR([clamscan/clamscan.c])
@@ -36,6 +39,8 @@ dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
 AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
+
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
@@ -83,6 +88,11 @@ m4_include([m4/reorganization/libs/xml.m4])
 m4_include([m4/reorganization/libs/openssl.m4])
 m4_include([m4/reorganization/libs/json.m4])
 m4_include([m4/reorganization/libs/pcre.m4])
+m4_include([m4/reorganization/libs/libmspack.m4])
+
+if test "x$use_internal_mspack" = "xno"; then
+    mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
+fi
 
 AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
@@ -134,17 +144,14 @@ m4_include([m4/reorganization/bsd.m4])
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
-m4_include([m4/reorganization/libmspack.m4])
 m4_include([m4/reorganization/strni.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
-    AC_CONFIG_SUBDIRS([libclamav/libmspack-0.5alpha])
     AC_SYS_LARGEFILE
 else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
-
 
 AC_CONFIG_FILES([
 clamscan/Makefile

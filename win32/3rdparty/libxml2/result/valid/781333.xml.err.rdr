@@ -1,0 +1,6 @@
+./test/valid/781333.xml:4: element a: validity error : Element a content does not follow the DTD, expecting ( ..., got 
+<a/>
+    ^
+./test/valid/781333.xml:5: element a: validity error : Element a content does not follow the DTD, Expecting more child
+
+^

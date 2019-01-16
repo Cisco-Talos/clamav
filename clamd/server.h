@@ -32,19 +32,9 @@
 #include "session.h"
 struct thrarg {
     int sid;
-    int options;
+    struct cl_scan_options *options;
     const struct optstruct *opts;
     const struct cl_engine *engine;
-    const struct cl_limits *limits;
-};
-
-/* thread watcher arguments */
-struct thrwarg {
-    int socketd;
-    struct cl_engine **engine;
-    const struct optstruct *opts;
-    const struct cl_limits *limits;
-    unsigned int options;
 };
 
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);

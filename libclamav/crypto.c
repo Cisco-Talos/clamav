@@ -120,6 +120,16 @@ time_t timegm(struct tm *t)
 }
 #endif
 
+
+/**
+ * @brief This function initializes the openssl crypto system
+ *
+ * Called by cl_init() and does not need to be cleaned up as de-init
+ * is handled automatically by openssl 1.0.2.h and 1.1.0
+ *
+ * @return Always returns 0
+ *
+ */
 int cl_initialize_crypto(void)
 {
     SSL_load_error_strings();
@@ -132,9 +142,16 @@ int cl_initialize_crypto(void)
     return 0;
 }
 
+/**
+ * @brief This is a deprecated function that used to clean up ssl crypto inits
+ * 
+ * Call to EVP_cleanup() has been removed since cleanup is now handled by 
+ * auto-deinit as of openssl 1.0.2h and 1.1.0 
+ *
+ */
 void cl_cleanup_crypto(void)
 {
-    EVP_cleanup();
+    return;
 }
 
 unsigned char *cl_hash_data(const char *alg, const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
@@ -341,6 +358,16 @@ unsigned char *cl_hash_file_fd_ctx(EVP_MD_CTX *ctx, int fd, unsigned int *olen)
 unsigned char *cl_hash_file_fp(FILE *fp, const char *alg, unsigned int *olen)
 {
     return cl_hash_file_fd(fileno(fp), alg, olen);
+}
+
+unsigned char *cl_sha512(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
+{
+    return cl_hash_data("sha512", buf, len, obuf, olen);
+}
+
+unsigned char *cl_sha384(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)
+{
+    return cl_hash_data("sha384", buf, len, obuf, olen);
 }
 
 unsigned char *cl_sha256(const void *buf, size_t len, unsigned char *obuf, unsigned int *olen)

@@ -22,19 +22,24 @@
 #ifndef __ONAS_IN_H
 #define __ONAS_IN_H
 
-#define ONAS_IN 0x01
-#define ONAS_FAN 0x02
+#include "shared/optparser.h"
+#include "libclamav/clamav.h"
+
+/*
+ * Extra options for onas_scan_th(). 
+ */
+#define ONAS_IN 	0x01
+#define ONAS_FAN 	0x02
 
 #define MAX_WATCH_LEN 7
 
 struct ddd_thrarg {
 	int sid;
-	int options;
+	struct cl_scan_options *options;
 	int fan_fd;
 	uint64_t fan_mask;
 	const struct optstruct *opts;
 	const struct cl_engine *engine;
-	const struct cl_limits *limits;
 };
 
 

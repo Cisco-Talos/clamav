@@ -244,7 +244,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 		ret = cli_scan_ole10(data->fd, ctx);
 	}
 	else if(data->fd > 0)
-		ret = cli_magic_scandesc(data->fd,ctx);
+		ret = cli_magic_scandesc(data->fd, data->name, ctx);
 	if(data->fd > 0)
 	close(data->fd);
 	data->fd = -1;

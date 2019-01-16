@@ -1,0 +1,12 @@
+SAX.setDocumentLocator()
+SAX.startDocument()
+SAX.error: htmlParseEntityRef: expecting ';'
+SAX.startElement(html)
+SAX.startElement(body)
+SAX.startElement(p)
+SAX.characters(&amp;, 1)
+SAX.characters(&Ugrave;, 2)
+SAX.endElement(p)
+SAX.endElement(body)
+SAX.endElement(html)
+SAX.endDocument()

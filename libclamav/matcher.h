@@ -40,6 +40,7 @@ struct cli_target_info {
 #include "matcher-bm.h"
 #include "matcher-hash.h"
 #include "matcher-pcre.h"
+#include "matcher-byte-comp.h"
 #include "regex_pcre.h"
 #include "fmap.h"
 #include "mpool.h"
@@ -132,6 +133,10 @@ struct cli_matcher {
     struct cli_pcre_meta **pcre_metatable;
     uint32_t pcre_reloff_num, pcre_absoff_num;
 #endif
+
+    /* Byte Compare */
+    uint32_t bcomp_metas;
+    struct cli_bcomp_meta **bcomp_metatable;
 
     /* Bytecode Tracker */
     uint32_t linked_bcs;

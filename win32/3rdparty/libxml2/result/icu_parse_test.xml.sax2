@@ -1,0 +1,9 @@
+SAX.setDocumentLocator()
+SAX.startDocument()
+SAX.startElementNs(foo, NULL, NULL, 0, 0, 0)
+SAX.characters(
+Text with EUC-JP chars at pos, 170)
+SAX.characters(駪槗___
+_, 11)
+SAX.endElementNs(foo, NULL, NULL)
+SAX.endDocument()

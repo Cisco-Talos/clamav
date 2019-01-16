@@ -1,0 +1,14 @@
+DOCS =	annotated.html classes.html dir_*.html doxygen.* dynsections.js \
+	files.html functions*.html globals*.html graph_legend.html index.html \
+	jquery.js mspack*.html search struct*.html tab* *.map *.md5 *.png
+
+all: index.html
+
+clean:
+	-rm -rf $(DOCS) installdox
+
+index.html: ../mspack/mspack.h Doxyfile
+	doxygen
+
+mspack_docs.zip: index.html
+	zip -9r $@ $(DOCS) szdd_kwaj_format.html

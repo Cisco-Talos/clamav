@@ -29,6 +29,22 @@
 #include "aspack.h"
 
 
+#define ASPACK_BLOCKS_OFFSET_212          0x57c
+#define ASPACK_BLOCKS_OFFSET_OTHER        0x5d8
+#define ASPACK_BLOCKS_OFFSET_242          0x5e4
+
+#define ASPACK_STR_INIT_MLT_OFFSET_212    0x70e
+#define ASPACK_STR_INIT_MLT_OFFSET_OTHER  0x76a
+#define ASPACK_STR_INIT_MLT_OFFSET_242    0x776
+
+#define ASPACK_COMP_BLOCK_OFFSET_212      0x6d6
+#define ASPACK_COMP_BLOCK_OFFSET_OTHER    0x732
+#define ASPACK_COMP_BLOCK_OFFSET_242      0x73e
+
+#define ASPACK_WRKBUF_OFFSET_212          0x148
+#define ASPACK_WRKBUF_OFFSET_OTHER        0x13a
+#define ASPACK_WRKBUF_OFFSET_242          0x148
+
 struct DICT_HELPER {
   uint32_t *starts;
   uint8_t *ends;
@@ -245,6 +261,7 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
   uint32_t hist[4]={0,0,0,0};
   int oob;
 
+  cli_dbgmsg("Aspack: decrypt size:%x\n", size);
   while (counter < size) {
     gen = getdec(stream, 0, &oob);
     if (oob) return 0;
@@ -325,12 +342,44 @@ static int decomp_block(struct ASPK *stream, uint32_t size, uint8_t *stuff, uint
   stream.dict_helper[n].size = sz;				\
   wrkbuf = &wrkbuf[sz * sizeof(uint32_t) + 0x100];
 
-int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *sections, uint16_t sectcount, uint32_t ep, uint32_t base, int f) {
+int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections, uint16_t sectcount, uint32_t ep, uint32_t base, int f, aspack_version_t version)
+{
   struct ASPK stream;
   uint32_t i=0, j=0;
-  uint8_t *blocks = image+ep+0x57c, *wrkbuf;
+  uint8_t *blocks = NULL, *wrkbuf;
   uint32_t block_rva = 1, block_size;
   struct cli_exe_section *outsects;
+
+  uint32_t blocks_offset, stream_init_multiplier_offset, comp_block_offset, wrkbuf_offset;
+
+  switch (version) {
+    case ASPACK_VER_212:
+      cli_dbgmsg("Aspack: Attempting to unpack Aspack 2.12.\n");
+      blocks_offset = ASPACK_BLOCKS_OFFSET_212;
+      stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_212;
+      comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_212;
+      wrkbuf_offset = ASPACK_WRKBUF_OFFSET_212;
+      break;
+    case ASPACK_VER_OTHER:
+      cli_dbgmsg("Aspack: Attempting to unpack Aspack >2.12, <2.42.\n");
+      blocks_offset = ASPACK_BLOCKS_OFFSET_OTHER;
+      stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_OTHER;
+      comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_OTHER;
+      wrkbuf_offset = ASPACK_WRKBUF_OFFSET_OTHER;
+      break;
+    case ASPACK_VER_242:
+      cli_dbgmsg("Aspack: Attempting to unpack Aspack 2.42.\n");
+      blocks_offset = ASPACK_BLOCKS_OFFSET_242;
+      stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_242;
+      comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_242;
+      wrkbuf_offset = ASPACK_WRKBUF_OFFSET_242;
+      break;
+    default:
+      cli_dbgmsg("Aspack: Unexpected/Unknown version number.\n");
+      return 0;
+  }
+
+  blocks = image+ep+blocks_offset;
 
   if (!(wrkbuf = cli_calloc(0x1800, sizeof(uint8_t)))) {
     cli_dbgmsg("Aspack: Unable to allocate dictionary\n");
@@ -347,7 +396,7 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
 
   for (i = 0; i < 58; i++) {
     stream.init_array[i] = j;
-    j += ( 1 << image[ep+i+0x70e]); /* boundchecked in pe.c */
+    j += ( 1 << image[ep+i+stream_init_multiplier_offset]); /* boundchecked in pe.c */
   }
 
   memset(stream.array1,0,sizeof(stream.array1));
@@ -355,40 +404,59 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
 
   i=0;
   while (CLI_ISCONTAINED(image, size, blocks, 8) && (block_rva = cli_readint32(blocks)) && (block_size = cli_readint32(blocks+4)) && CLI_ISCONTAINED(image, size, image+block_rva, block_size)) {
-    wrkbuf = (uint8_t *)cli_calloc(block_size+0x10e, sizeof(uint8_t));
-    if (!wrkbuf) break;
 
+    cli_dbgmsg("Aspack: unpacking block rva:%x - sz:%x\n", block_rva, block_size);
+    wrkbuf = (uint8_t *)cli_calloc(block_size+0x10e, sizeof(uint8_t));
+
+    if (!wrkbuf) {
+      cli_dbgmsg("Aspack: Null work buff\n");
+      break;
+    }
     stream.input = wrkbuf;
     stream.iend = &wrkbuf[block_size+0x10e];
 
     memcpy(wrkbuf, image + block_rva, block_size);
 
-    cli_dbgmsg("Aspack: unpacking block rva:%x - sz:%x\n", block_rva, block_size);
-    if (!decomp_block(&stream, block_size, &image[ep+0x6d6], image + block_rva)) {
+    if (!decomp_block(&stream, block_size, &image[ep+comp_block_offset], image + block_rva)) {
+      cli_dbgmsg("Aspack: decomp_block failed\n");
       free(wrkbuf);
       break;
     }
+    else
+      cli_dbgmsg("Aspack: decomp block succeed\n");
 
     free(wrkbuf);
     
     if (i==0 && block_size>7) { /* first sect j/c unrolling */
       while (i < block_size - 6) {
-	uint8_t curbyte = image[block_rva+i];
-	if (curbyte == 0xe8 || curbyte == 0xe9) {
-	  wrkbuf = &image[block_rva+i+1];
-	  if (*wrkbuf == image[ep+0x148]) {
-	    uint32_t target = cli_readint32(wrkbuf) & 0xffffff00;
-	    CLI_ROL(target, 0x18);
-	    cli_writeint32(wrkbuf, target - i);
-	    i+=4;
-	  }
-	}
-	i++;
+        uint8_t curbyte = image[block_rva+i];
+        if (curbyte == 0xe8 || curbyte == 0xe9) {
+          wrkbuf = &image[block_rva+i+1];
+          if (*wrkbuf == image[ep+wrkbuf_offset]) {
+            uint32_t target = cli_readint32(wrkbuf) & 0xffffff00;
+            CLI_ROL(target, 0x18);
+            cli_writeint32(wrkbuf, target - i);
+            i+=4;
+          }
+        }
+        i++;
       }
     }
-    blocks+=8;
+    if (version == ASPACK_VER_212) {
+      blocks+=8;
+    } else {
+      blocks += 12;
+      block_size = cli_readint32(blocks+4);
+      while (!((block_size +0x10e) & 0xffffffff))
+      {	
+        blocks += 12;
+        block_size = cli_readint32(blocks+4);
+      }
+    }
   }
-  
+
+  cli_dbgmsg("Aspack: leaving loop all uncompressed\n");
+
   free(stream.dict_helper[0].starts);
   if (block_rva) {
     cli_dbgmsg("Aspack: unpacking failure\n");

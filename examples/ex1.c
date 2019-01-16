@@ -44,12 +44,16 @@ int main(int argc, char **argv)
 	unsigned int sigs = 0;
 	long double mb;
 	const char *virname;
+    const char *filename;
 	struct cl_engine *engine;
+    struct cl_scan_options options;
 
     if(argc != 2) {
 	printf("Usage: %s file\n", argv[0]);
 	return 2;
     }
+
+    filename = argv[1];
 
     if((fd = open(argv[1], O_RDONLY)) == -1) {
 	printf("Can't open file %s\n", argv[1]);
@@ -85,7 +89,11 @@ int main(int argc, char **argv)
     }
 
     /* scan file descriptor */
-    if((ret = cl_scandesc(fd, &virname, &size, engine, CL_SCAN_STDOPT)) == CL_VIRUS) {
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    options.parse |= ~0; /* enable all parsers */
+    options.general |= CL_SCAN_GENERAL_HEURISTICS; /* enable heuristic alert options */
+
+    if((ret = cl_scandesc(fd, filename, &virname, &size, engine, &options)) == CL_VIRUS) {
 	printf("Virus detected: %s\n", virname);
     } else {
 	if(ret == CL_CLEAN) {

@@ -1,0 +1,4 @@
+./test/errors/759573.xml:1: parser error : Extra content at the end of the document
+<?h?><!DOCTYPEt[<!ELEMENT t (A)><!ENTITY % xx '&#37;<![INCLUDE[000&#37;&#3000;00
+               ^
+./test/errors/759573.xml : failed to parse

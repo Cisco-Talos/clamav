@@ -81,10 +81,12 @@
 #include "readdb.h"
 #include "stats.h"
 
-int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
-int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
-int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
-void (*cli_unrar_close)(unrar_state_t *state);
+cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
+cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);
+cl_unrar_error_t (*cli_unrar_extract_file)(void* hArchive, const char* destPath, char *outputBuffer);
+cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
+void (*cli_unrar_close)(void *hArchive);
+
 int have_rar = 0;
 static int is_rar_inited = 0;
 
@@ -176,14 +178,17 @@ static void cli_rarload(void) {
     if(is_rar_inited) return;
     is_rar_inited = 1;
 
+    if(have_rar) return;
+
     rhandle = lt_dlfind("libclamunrar_iface", "unrar");
     if (!rhandle)
 	return;
 
-    if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_open")) ||
-	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_next_prepare")) ||
-	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_next")) ||
-	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_close"))
+    if (!(cli_unrar_open = (cl_unrar_error_t(*)(const char *, void **, char **, uint32_t *, uint8_t))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_open")) ||
+		!(cli_unrar_peek_file_header = (cl_unrar_error_t(*)(void *, unrar_metadata_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header")) ||
+		!(cli_unrar_extract_file = (cl_unrar_error_t(*)(void*, const char*, char*))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_file")) ||
+		!(cli_unrar_skip_file = (cl_unrar_error_t(*)(void *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_skip_file")) ||
+		!(cli_unrar_close = (void(*)(void *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_close"))
 	) {
 	/* ideally we should never land here, we'd better warn so */
         cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
@@ -293,14 +298,6 @@ int cl_init(unsigned int initoptions)
 
     cl_initialize_crypto();
 
-    {
-	unrar_main_header_t x;
-	if (((char*)&x.flags - (char*)&x) != 3) {
-	    cli_errmsg("Structure packing not working, got %u offset, expected %u\n",
-		       (unsigned)((char*)&x.flags - (char*)&x), 3);
-	    return CL_EARG;
-	}
-    }
     /* put dlopen() stuff here, etc. */
     if (lt_init() == 0) {
 	cli_rarload();
@@ -936,8 +933,8 @@ int cl_engine_settings_free(struct cl_settings *settings)
 
 void cli_check_blockmax(cli_ctx *ctx, int rc)
 {
-    if (BLOCKMAX && !ctx->limit_exceeded) {
-        cli_append_virus (ctx, "Heuristic.Limits.Exceeded");
+    if (SCAN_HEURISTIC_EXCEEDS_MAX && !ctx->limit_exceeded) {
+        cli_append_virus (ctx, "Heuristics.Limits.Exceeded");
         ctx->limit_exceeded = 1;
         cli_dbgmsg ("Limit %s Exceeded: scanning may be incomplete and additional analysis needed for this file.\n",
             cl_strerror(rc));
@@ -1078,14 +1075,29 @@ char *cli_hashfile(const char *filename, int type)
 /* Function: unlink
         unlink() with error checking
 */
-int cli_unlink(const char *pathname)
+int cli_unlink(const char* pathname)
 {
-	if (unlink(pathname)==-1) {
-	    char err[128];
-	    cli_warnmsg("cli_unlink: failure - %s\n", cli_strerror(errno, err, sizeof(err)));
-	    return 1;
-	}
-	return 0;
+    if (unlink(pathname) == -1) {
+#ifdef _WIN32
+        /* Windows may fail to unlink a file if it is marked read-only, 
+		 * even if the user has permissions to delete the file. */
+        if (-1 == _chmod(pathname, _S_IWRITE)) {
+            char err[128];
+            cli_warnmsg("cli_unlink: _chmod failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+            return 1;
+        } else if (unlink(pathname) == -1) {
+            char err[128];
+            cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+            return 1;
+        }
+        return 0;
+#else
+        char err[128];
+        cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+        return 1;
+#endif
+    }
+    return 0;
 }
 
 void cli_virus_found_cb(cli_ctx * ctx)
@@ -1096,9 +1108,9 @@ void cli_virus_found_cb(cli_ctx * ctx)
 
 int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname)
 {
-    if (SCAN_ALL)
+    if (SCAN_ALLMATCHES)
         return cli_append_virus(ctx, virname);
-    else if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+    else if (SCAN_HEURISTIC_PRECEDENCE)
         return cli_append_virus(ctx, virname);
     else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
         ctx->found_possibly_unwanted = 1;
@@ -1114,16 +1126,16 @@ int cli_append_virus(cli_ctx * ctx, const char * virname)
         return CL_CLEAN;
     if (ctx->fmap != NULL && (*ctx->fmap) != NULL && CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))
         return CL_CLEAN;
-    if (!SCAN_ALL && ctx->num_viruses != 0)
-        if (ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE)
+    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0)
+        if (SCAN_HEURISTIC_PRECEDENCE)
             return CL_CLEAN;
-    if (ctx->limit_exceeded == 0 || SCAN_ALL) { 
+    if (ctx->limit_exceeded == 0 || SCAN_ALLMATCHES) { 
         ctx->num_viruses++;
         *ctx->virname = virname;
         cli_virus_found_cb(ctx);
     }
 #if HAVE_JSON
-    if (SCAN_PROPERTIES && ctx->wrkproperty) {
+    if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
         if (!json_object_object_get_ex(ctx->wrkproperty, "Viruses", &arrobj)) {
             arrobj = json_object_new_array();

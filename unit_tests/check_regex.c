@@ -367,11 +367,14 @@ static void do_phishing_test(const struct rtest *rtest)
 {
 	char *realurl;
 	cli_ctx ctx;
+	struct cl_scan_options options;
 	const char *virname = NULL;
 	tag_arguments_t hrefs;
 	int rc;
 
 	memset(&ctx, 0, sizeof(ctx));
+	memset(&options, 0, sizeof(struct cl_scan_options));
+	ctx.options = &options;
 
 	realurl = cli_strdup(rtest->realurl);
 	fail_unless(!!realurl, "cli_strdup");
@@ -434,8 +437,11 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 	const char *virname = NULL;
 	tag_arguments_t hrefs;
 	int rc;
+    struct cl_scan_options options;
 
 	memset(&ctx, 0, sizeof(ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    ctx.options = &options;
 
 	realurl = cli_strdup(rtest->realurl);
 	fail_unless(!!realurl, "cli_strdup");
@@ -453,7 +459,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
 
 	ctx.engine = engine;
 	ctx.virname = &virname;
-	ctx.options |= CL_SCAN_ALLMATCHES;
+	ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
 
 	rc = phishingScan(&ctx, &hrefs);
 

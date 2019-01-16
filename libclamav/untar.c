@@ -171,12 +171,12 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
 			if(fout>=0) {
 				lseek(fout, 0, SEEK_SET);
-				ret = cli_magic_scandesc(fout, ctx);
+				ret = cli_magic_scandesc(fout, fullname, ctx);
 				close(fout);
 				if (!ctx->engine->keeptmp)
 					if (cli_unlink(fullname)) return CL_EUNLINK;
 				if (ret==CL_VIRUS) {
-				    if (!SCAN_ALL)
+				    if (!SCAN_ALLMATCHES)
 					return CL_VIRUS;
 				    else
 					num_viruses++;
@@ -300,7 +300,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 			strncpy(name, block, 100);
 			name[100] = '\0';
 			if(cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS) {
-			    if (!SCAN_ALL)
+			    if (!SCAN_ALLMATCHES)
 				return CL_VIRUS;
 			    else
 				num_viruses++;
@@ -360,7 +360,7 @@ cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
         }
 	if(fout>=0) {
 		lseek(fout, 0, SEEK_SET);
-		ret = cli_magic_scandesc(fout, ctx);
+		ret = cli_magic_scandesc(fout, fullname, ctx);
 		close(fout);
 		if (!ctx->engine->keeptmp)
 			if (cli_unlink(fullname)) return CL_EUNLINK;

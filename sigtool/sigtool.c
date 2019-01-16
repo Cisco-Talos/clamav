@@ -171,6 +171,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     const char *fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
+    struct cl_scan_options options;
     int fd, ret;
 
     /* build engine */
@@ -200,8 +201,10 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options = &options;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);
@@ -2207,7 +2210,9 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	STATBUF sb;
 	unsigned int matches = 0;
 	cli_ctx ctx;
+	struct cl_scan_options options;
 	int ret;
+
 
     mprintf("SUBSIG: %s\n", sig);
 
@@ -2235,8 +2240,10 @@ static void matchsig(const char *sig, const char *offset, int fd)
 	return;
     }
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options = &options;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);
@@ -3385,11 +3392,11 @@ static int dumpcerts(const struct optstruct *opts)
 {
     char * filename = NULL;
     STATBUF sb;
-    const char * fmptr;
     struct cl_engine *engine;
     cli_ctx ctx;
-    int fd, ret;
-    uint8_t shash1[SHA1_HASH_SIZE];
+    struct cl_scan_options options;
+    int fd;
+    cl_error_t ret;
 
     logg_file = NULL;
 
@@ -3429,8 +3436,10 @@ static int dumpcerts(const struct optstruct *opts)
 
     /* prepare context */
     memset(&ctx, '\0', sizeof(cli_ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine = engine;
-    ctx.options = CL_SCAN_STDOPT;
+    ctx.options = &options;
+    ctx.options->parse = ~0;
     ctx.containers = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
     if(!ctx.containers) {
 	cl_engine_free(engine);
@@ -3464,20 +3473,7 @@ static int dumpcerts(const struct optstruct *opts)
 	return -1;
     }
 
-    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
-    if(!fmptr) {
-        mprintf("!dumpcerts: fmap_need_off_once failed!\n");
-        free(ctx.containers);
-        free(ctx.fmap);
-        close(fd);
-        cl_engine_free(engine);
-	return -1;
-    }
-
-    /* Generate SHA1 */
-    cl_sha1(fmptr, sb.st_size, shash1, NULL);
-
-    ret = cli_checkfp_pe(&ctx, shash1, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
+    ret = cli_checkfp_pe(&ctx, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
     
     switch(ret) {
         case CL_CLEAN:
@@ -3490,7 +3486,7 @@ static int dumpcerts(const struct optstruct *opts)
             mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
             break;
         case CL_EFORMAT:
-            mprintf("!dumpcerts: Not a valid PE file!\n");
+            mprintf("!dumpcerts: An error occurred when parsing the file\n");
             break;
         default:
             mprintf("!dumpcerts: Other error %d inside cli_checkfp_pe.\n", ret);

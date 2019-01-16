@@ -154,7 +154,7 @@ static inline int matcher_run(const struct cli_matcher *root,
 		return ret;
 
 	    /* else (ret == CL_VIRUS) */
-	    if (SCAN_ALL)
+	    if (SCAN_ALLMATCHES)
 		viruses_found = 1;
 	    else {
 		ret = cli_append_virus(ctx, *virname);
@@ -167,7 +167,7 @@ static inline int matcher_run(const struct cli_matcher *root,
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
     if (ret != CL_CLEAN) {
         if (ret == CL_VIRUS) {
-            if (SCAN_ALL)
+            if (SCAN_ALLMATCHES)
                 viruses_found = 1;
             else {
                 ret = cli_append_virus(ctx, *virname);
@@ -178,6 +178,24 @@ static inline int matcher_run(const struct cli_matcher *root,
             saved_ret = ret;
         else
             return ret;
+    }
+
+    if (root->bcomp_metas) {
+        ret = cli_bcomp_scanbuf(orig_buffer, orig_length, virname, acres, root, mdata, ctx);
+        if (ret != CL_CLEAN) {
+            if (ret == CL_VIRUS) {
+                if (SCAN_ALLMATCHES)
+                    viruses_found = 1;
+                else {
+                    ret = cli_append_virus(ctx, *virname);
+                    if (ret != CL_CLEAN)
+                        return ret;
+                }
+            } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+                saved_ret = ret;
+            else
+                return ret;
+        }
     }
 
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
@@ -228,13 +246,16 @@ static inline int matcher_run(const struct cli_matcher *root,
 #endif /* HAVE_PCRE */
     /* end experimental fragment */
 
-    if (ctx && !SCAN_ALL && ret == CL_VIRUS)
+    if (ctx && !SCAN_ALLMATCHES && ret == CL_VIRUS) {
         return cli_append_virus(ctx, *virname);
-    if (ctx && SCAN_ALL && viruses_found)
+    }
+    if (ctx && SCAN_ALLMATCHES && viruses_found) {
         return CL_VIRUS;
-
-    if (saved_ret && ret == CL_CLEAN)
+    }
+    if (saved_ret && ret == CL_CLEAN) {
         return saved_ret;
+    }
+
     return ret;
 }
 
@@ -280,7 +301,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	    return ret;
 	if(ret == CL_VIRUS) {
 	    viruses_found = 1;
-	    if(ctx && !SCAN_ALL) {
+	    if(ctx && !SCAN_ALLMATCHES) {
 		return ret;
 	    }
 	}
@@ -579,7 +600,7 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    if((ctx->options & CL_SCAN_INTERNAL_COLLECT_SHA) && ctx->sha_collect>0) {
+    if(SCAN_DEV_COLLECT_SHA && (ctx->sha_collect > 0)) {
         if((ptr = fmap_need_off_once(map, 0, size))) {
             if(!have_sha256)
                 cl_sha256(ptr, size, shash256+SHA256_HASH_SIZE, NULL);
@@ -593,7 +614,11 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
             for(i=0; i<SHA1_HASH_SIZE; i++)
                 sprintf((char *)shash1+i*2, "%02x", shash1[SHA1_HASH_SIZE+i]);
 
-            cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", ctx->entry_filename);
+            if (NULL == ctx->target_filepath) {
+                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", "NO_IDEA");
+            } else {
+                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname?vname:"noname", ctx->target_filepath);
+            }
         } else
             cli_errmsg("can't compute sha\n!");
 
@@ -607,16 +632,14 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
         if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) && !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
             flags |= CL_CHECKFP_PE_FLAG_STATS;
 
-        switch(cli_checkfp_pe(ctx, shash1, &sections, flags)) {
+        switch(cli_checkfp_pe(ctx, &sections, flags)) {
         case CL_CLEAN:
-            cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid embedded digital signature\n");
+            cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid digital signature\n");
+            if (sections.sections)
+                free(sections.sections);
             return CL_CLEAN;
-        case CL_VIRUS:
-            if(cli_hm_scan(shash1, 2, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                cli_dbgmsg("cli_checkfp(pe): PE file whitelisted by catalog file\n");
-
-                return CL_CLEAN;
-            }
+        default:
+            break;
         }
     }
 
@@ -842,7 +865,7 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
 #endif
         if (rc == CL_VIRUS) {
             viruses_found = 1;
-            if (SCAN_ALL)
+            if (SCAN_ALLMATCHES)
                 continue;
             break;
         }
@@ -1053,7 +1076,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 /* virname already appended by matcher_run */
                 viruses_found = 1;
             }
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+            if((ret == CL_VIRUS && !SCAN_ALLMATCHES) || ret == CL_EMEM) {
                 if(!ftonly) {
                     cli_ac_freedata(&gdata);
                     cli_pcre_freeoff(&gpoff);
@@ -1083,7 +1106,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                 /* virname already appended by matcher_run */
                 viruses_found = 1;
             }
-            if((ret == CL_VIRUS && !SCAN_ALL) || ret == CL_EMEM) {
+            if((ret == CL_VIRUS && !SCAN_ALLMATCHES) || ret == CL_EMEM) {
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
                 if(troot) {
@@ -1158,7 +1181,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if((ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
                 found += 1;
             }
-            if(!found || SCAN_ALL) {
+            if(!found || SCAN_ALLMATCHES) {
                 if ((ret = cli_hm_scan_wild(digest[hashtype], &virname_w, hdb, hashtype)) == CL_VIRUS)
                     found += 2;
             }
@@ -1185,7 +1208,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if (found % 2) {
                 viruses_found = 1;
                 ret = cli_append_virus(ctx, virname);
-                if (!SCAN_ALL || ret != CL_CLEAN)
+                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
                     break;
                 virname = NULL;
             }
@@ -1193,7 +1216,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
             if (found > 1) {
                 viruses_found = 1;
                 ret = cli_append_virus(ctx, virname_w);
-                if (!SCAN_ALL || ret != CL_CLEAN)
+                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
                     break;
              }
         }
@@ -1204,7 +1227,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     cl_hash_destroy(sha256ctx);
 
     if(troot) {
-        if(ret != CL_VIRUS || SCAN_ALL)
+        if(ret != CL_VIRUS || SCAN_ALLMATCHES)
             ret = cli_exp_eval(ctx, troot, &tdata, &info, (const char *)refhash);
         if (ret == CL_VIRUS)
             viruses_found++;
@@ -1213,10 +1236,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
         if(bm_offmode)
             cli_bm_freeoff(&toff);
         cli_pcre_freeoff(&tpoff);
+
     }
 
     if(groot) {
-        if(ret != CL_VIRUS || SCAN_ALL)
+        if(ret != CL_VIRUS || SCAN_ALLMATCHES)
             ret = cli_exp_eval(ctx, groot, &gdata, &info, (const char *)refhash);
         cli_ac_freedata(&gdata);
         cli_pcre_freeoff(&gpoff);
@@ -1227,10 +1251,12 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 
     cli_hashset_destroy(&info.exeinfo.vinfo);
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found) {
         return CL_VIRUS;
-    if(ret == CL_VIRUS)
+    }
+    if(ret == CL_VIRUS) {
         return CL_VIRUS;
+    }
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
@@ -1251,7 +1277,7 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 
 	    ret = cli_append_virus(ctx, "Detected.By.Callback");
 	    viruses_found++;
-	    if(!SCAN_ALL || ret != CL_CLEAN)
+	    if(!SCAN_ALLMATCHES || ret != CL_CLEAN)
 		return ret;
 	}
 
@@ -1288,12 +1314,12 @@ int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer,
 
 	ret = cli_append_virus(ctx, cdb->virname);
 	viruses_found++;
-	if(!SCAN_ALL || ret != CL_CLEAN)
+	if(!SCAN_ALLMATCHES || ret != CL_CLEAN)
 	    return ret;
 
     } while((cdb = cdb->next));
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
 	return CL_VIRUS;
     return CL_CLEAN;
 }

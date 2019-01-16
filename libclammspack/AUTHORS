@@ -1,0 +1,13 @@
+Principal author: Stuart Caie
+
+Based on specification documents from Microsoft Corporation and PKWARE.
+
+Contributors:
+- LZX compressor by Matthew Russotto
+- Quantum decompressor by Matthew Russotto
+- old inflate decompressor by Dirk Stoecker / InfoZIP team
+- Huffman table builder adapted from unlzx by Dave Tritscher
+- LZX decompressor fixes by Jae Jung and Igor Glucksmann
+- Debianisation by Markus Sinner
+- Quantum decompressor fix by Larry Frieson
+- OAB decompressor by David Woodhouse

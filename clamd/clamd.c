@@ -90,6 +90,7 @@ static void help(void)
     printf("\n");
     printf("    --help                   -h             Show this help\n");
     printf("    --version                -V             Show version number\n");
+    printf("    --foreground             -F             Run in foreground; do not daemonize\n");
     printf("    --debug                                 Enable debug mode\n");
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE\n");
     printf("\n");
@@ -368,6 +369,15 @@ int main(int argc, char **argv)
             logg("!Invalid StreamMinPort/StreamMaxPort: %d, %d\n", min_port, max_port);
             ret = 1;
             break;
+        }
+
+        /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+        if(optget(opts, "OnAccessExtraScanning")->enabled) {
+            logg("*ScanOnAccess: OnAccessExtraScanning was requested, but has "
+                 "been disabled due to a known issue with thread resource "
+                 "cleanup. The OnAccessExtraScanning feature will be "
+                 "re-enabled in a future release when the issue is resolved. "
+                 "For details, see: https://bugzilla.clamav.net/show_bug.cgi?id=12048\n");
         }
 
         if(!(engine = cl_engine_new())) {

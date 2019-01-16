@@ -1,0 +1,3077 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:iana="http://www.iana.org/assignments">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ASCII" />
+    <link rel="stylesheet" href="../_support/iana-registry.css" type="text/css" />
+    <script type="text/javascript" src="../_support/jquery.js"></script>
+    <script type="text/javascript" src="../_support/sort.js"></script>
+    <title>Character Sets</title>
+  </head>
+  <body>
+    <h1>Character Sets</h1>
+    <dl>
+      <dt>Last Updated</dt>
+      <dd>2013-01-23</dd>
+      <dt>Registration Procedure(s)</dt>
+      <dd>
+        <pre>Expert Review</pre>
+      </dd>
+      <dt>Expert(s)</dt>
+      <dd>
+        <pre>Primary Expert Ned Freed and Secondary Expert Martin D&#252;rst</pre>
+      </dd>
+      <dt>Reference</dt>
+      <dd>[<a href="http://www.iana.org/go/rfc2978">RFC2978</a>]</dd>
+      <dt>Note</dt>
+      <dd>
+        <pre>These are the official names for character sets that may be used in
+the Internet and may be referred to in Internet documentation.  These
+names are expressed in ANSI_X3.4-1968 which is commonly called
+US-ASCII or simply ASCII.  The character set most commonly use in the
+Internet and used especially in protocol standards is US-ASCII, this
+is strongly encouraged.  The use of the name US-ASCII is also
+encouraged.
+
+The character set names may be up to 40 characters taken from the
+printable characters of US-ASCII.  However, no distinction is made
+between use of upper and lower case letters.
+
+The MIBenum value is a unique value for use in MIBs to identify coded
+character sets.
+
+The value space for MIBenum values has been divided into three
+regions. The first region (3-999) consists of coded character sets
+that have been standardized by some standard setting organization.
+This region is intended for standards that do not have subset
+implementations. The second region (1000-1999) is for the Unicode and
+ISO/IEC 10646 coded character sets together with a specification of a
+(set of) sub-repertoires that may occur.  The third region (&gt;1999) is
+intended for vendor specific coded character sets.
+
+        Assigned MIB enum Numbers
+        -------------------------
+        0-2             Reserved
+        3-999           Set By Standards Organizations
+        1000-1999       Unicode / 10646
+        2000-2999       Vendor
+
+The aliases that start with "cs" have been added for use with the
+IANA-CHARSET-MIB as originally defined in [<a href="http://www.iana.org/go/rfc3808">RFC3808</a>], and as currently
+maintained by IANA at [<a href="http://www.iana.org/assignments/ianacharset-mib">IANA registry <i>ianacharset-mib</i></a>].
+Note that the ianacharset-mib needs to be kept in sync with this
+registry.  These aliases that start with "cs" contain the standard
+numbers along with suggestive names in order to facilitate applications
+that want to display the names in user interfaces.  The "cs" stands
+for character set and is provided for applications that need a lower
+case first letter but want to use mixed case thereafter that cannot
+contain any special characters, such as underbar ("_") and dash ("-").
+
+If the character set is from an ISO standard, its cs alias is the ISO
+standard number or name.  If the character set is not from an ISO
+standard, but is registered with ISO (IPSJ/ITSCJ is the current ISO
+Registration Authority), the ISO Registry number is specified as
+ISOnnn followed by letters suggestive of the name or standards number
+of the code set.  When a national or international standard is
+revised, the year of revision is added to the cs alias of the new
+character set entry in the IANA Registry in order to distinguish the
+revised character set from the original character set.</pre>
+      </dd>
+      <dt>Alternative Formats</dt>
+      <dd>
+        <a class="altformat" href="character-sets.txt"><img src="/_img/icons/text-plain.png" /><br />Plain text</a>
+      </dd>
+    </dl>
+    <dl>
+      <dt>Alternative Formats</dt>
+      <dd>
+        <a class="altformat" href="character-sets-1.csv"><img src="/_img/icons/text-csv.png" /><br />CSV</a>
+      </dd>
+    </dl>
+    <table id="table-character-sets-1" class="sortable">
+      <thead>
+        <tr>
+          <th>Preferred MIME Name</th>
+          <th>Name</th>
+          <th>MIBenum</th>
+          <th>Source</th>
+          <th>Reference</th>
+          <th>Aliases</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>US-ASCII</td>
+          <td>US-ASCII</td>
+          <td>3</td>
+          <td>ANSI X3.4-1986</td>
+          <td>[<a href="http://www.iana.org/go/rfc2046">RFC2046</a>]</td>
+          <td>iso-ir-6<br />ANSI_X3.4-1968<br />ANSI_X3.4-1986<br />ISO_646.irv:1991<br />ISO646-US<br />US-ASCII<br />us<br />IBM367<br />cp367<br />csASCII</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-1</td>
+          <td>ISO_8859-1:1987</td>
+          <td>4</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-100<br />ISO_8859-1<br />ISO-8859-1<br />latin1<br />l1<br />IBM819<br />CP819<br />csISOLatin1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-2</td>
+          <td>ISO_8859-2:1987</td>
+          <td>5</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-101<br />ISO_8859-2<br />ISO-8859-2<br />latin2<br />l2<br />csISOLatin2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-3</td>
+          <td>ISO_8859-3:1988</td>
+          <td>6</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-109<br />ISO_8859-3<br />ISO-8859-3<br />latin3<br />l3<br />csISOLatin3</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-4</td>
+          <td>ISO_8859-4:1988</td>
+          <td>7</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-110<br />ISO_8859-4<br />ISO-8859-4<br />latin4<br />l4<br />csISOLatin4</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-5</td>
+          <td>ISO_8859-5:1988</td>
+          <td>8</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-144<br />ISO_8859-5<br />ISO-8859-5<br />cyrillic<br />csISOLatinCyrillic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-6</td>
+          <td>ISO_8859-6:1987</td>
+          <td>9</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-127<br />ISO_8859-6<br />ISO-8859-6<br />ECMA-114<br />ASMO-708<br />arabic<br />csISOLatinArabic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-7</td>
+          <td>ISO_8859-7:1987</td>
+          <td>10</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1947">RFC1947</a>][<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-126<br />ISO_8859-7<br />ISO-8859-7<br />ELOT_928<br />ECMA-118<br />greek<br />greek8<br />csISOLatinGreek</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-8</td>
+          <td>ISO_8859-8:1988</td>
+          <td>11</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-138<br />ISO_8859-8<br />ISO-8859-8<br />hebrew<br />csISOLatinHebrew</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-9</td>
+          <td>ISO_8859-9:1989</td>
+          <td>12</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-148<br />ISO_8859-9<br />ISO-8859-9<br />latin5<br />l5<br />csISOLatin5</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-10</td>
+          <td>ISO-8859-10</td>
+          <td>13</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-157<br />l6<br />ISO_8859-10:1992<br />csISOLatin6<br />latin6</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_6937-2-add</td>
+          <td>14</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>] and ISO 6937-2:1983<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-142<br />csISOTextComm</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_X0201</td>
+          <td>15</td>
+          <td>JIS X 0201-1976.   One byte only, this is equivalent to
+JIS/Roman (similar to ASCII) plus eight-bit half-width
+Katakana</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>X0201<br />csHalfWidthKatakana</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_Encoding</td>
+          <td>16</td>
+          <td>JIS X 0202-1991.  Uses ISO 2022 escape sequences to
+shift code sets as documented in JIS X 0202-1991.</td>
+          <td></td>
+          <td>csJISEncoding</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Shift_JIS</td>
+          <td>Shift_JIS</td>
+          <td>17</td>
+          <td>This charset is an extension of csHalfWidthKatakana by
+adding graphic characters in JIS X 0208.  The CCS's are
+JIS X0201:1997 and JIS X0208:1997.  The
+complete definition is shown in Appendix 1 of JIS
+X0208:1997.
+This charset can be used for the top-level media type "text".</td>
+          <td></td>
+          <td>MS_Kanji<br />csShiftJIS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>EUC-JP</td>
+          <td>Extended_UNIX_Code_Packed_Format_for_Japanese</td>
+          <td>18</td>
+          <td>Standardized by OSF, UNIX International, and UNIX Systems
+Laboratories Pacific.  Uses ISO 2022 rules to select
+code set 0: US-ASCII (a single 7-bit byte set)
+code set 1: JIS X0208-1990 (a double 8-bit byte set)
+restricted to A0-FF in both bytes
+code set 2: Half Width Katakana (a single 7-bit byte set)
+requiring SS2 as the character prefix
+code set 3: JIS X0212-1990 (a double 7-bit byte set)
+restricted to A0-FF in both bytes
+requiring SS3 as the character prefix</td>
+          <td></td>
+          <td>csEUCPkdFmtJapanese<br />EUC-JP</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Extended_UNIX_Code_Fixed_Width_for_Japanese</td>
+          <td>19</td>
+          <td>Used in Japan.  Each character is 2 octets.
+code set 0: US-ASCII (a single 7-bit byte set)
+1st byte = 00
+2nd byte = 20-7E
+code set 1: JIS X0208-1990 (a double 7-bit byte set)
+restricted  to A0-FF in both bytes
+code set 2: Half Width Katakana (a single 7-bit byte set)
+1st byte = 00
+2nd byte = A0-FF
+code set 3: JIS X0212-1990 (a double 7-bit byte set)
+restricted to A0-FF in
+the first byte
+and 21-7E in the second byte</td>
+          <td></td>
+          <td>csEUCFixWidJapanese</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>BS_4730</td>
+          <td>20</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-4<br />ISO646-GB<br />gb<br />uk<br />csISO4UnitedKingdom</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>SEN_850200_C</td>
+          <td>21</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-11<br />ISO646-SE2<br />se2<br />csISO11SwedishForNames</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IT</td>
+          <td>22</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-15<br />ISO646-IT<br />csISO15Italian</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ES</td>
+          <td>23</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-17<br />ISO646-ES<br />csISO17Spanish</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>DIN_66003</td>
+          <td>24</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-21<br />de<br />ISO646-DE<br />csISO21German</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NS_4551-1</td>
+          <td>25</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-60<br />ISO646-NO<br />no<br />csISO60DanishNorwegian<br />csISO60Norwegian1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NF_Z_62-010</td>
+          <td>26</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-69<br />ISO646-FR<br />fr<br />csISO69French</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-UTF-1</td>
+          <td>27</td>
+          <td>Universal Transfer Format (1), this is the multibyte
+encoding, that subsets ASCII-7. It does not have byte
+ordering issues.</td>
+          <td></td>
+          <td>csISO10646UTF1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_646.basic:1983</td>
+          <td>28</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>ref<br />csISO646basic1983</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>INVARIANT</td>
+          <td>29</td>
+          <td></td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csINVARIANT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_646.irv:1983</td>
+          <td>30</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-2<br />irv<br />csISO2IntlRefVersion</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NATS-SEFI</td>
+          <td>31</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-8-1<br />csNATSSEFI</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NATS-SEFI-ADD</td>
+          <td>32</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-8-2<br />csNATSSEFIADD</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NATS-DANO</td>
+          <td>33</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-9-1<br />csNATSDANO</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NATS-DANO-ADD</td>
+          <td>34</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-9-2<br />csNATSDANOADD</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>SEN_850200_B</td>
+          <td>35</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-10<br />FI<br />ISO646-FI<br />ISO646-SE<br />se<br />csISO10Swedish</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>KS_C_5601-1987</td>
+          <td>36</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-149<br />KS_C_5601-1989<br />KSC_5601<br />korean<br />csKSC56011987</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-2022-KR</td>
+          <td>ISO-2022-KR</td>
+          <td>37</td>
+          <td>[<a href="http://www.iana.org/go/rfc1557">RFC1557</a>] (see also KS_C_5601-1987)</td>
+          <td>[<a href="http://www.iana.org/go/rfc1557">RFC1557</a>][<a href="#Woohyong_Choi">Woohyong_Choi</a>]</td>
+          <td>csISO2022KR</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>EUC-KR</td>
+          <td>EUC-KR</td>
+          <td>38</td>
+          <td>[<a href="http://www.iana.org/go/rfc1557">RFC1557</a>] (see also KS_C_5861-1992)</td>
+          <td>[<a href="http://www.iana.org/go/rfc1557">RFC1557</a>][<a href="#Woohyong_Choi">Woohyong_Choi</a>]</td>
+          <td>csEUCKR</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-2022-JP</td>
+          <td>ISO-2022-JP</td>
+          <td>39</td>
+          <td>[<a href="http://www.iana.org/go/rfc1468">RFC1468</a>] (see also [<a href="http://www.iana.org/go/rfc2237">RFC2237</a>])</td>
+          <td>[<a href="http://www.iana.org/go/rfc1468">RFC1468</a>][<a href="#Jun_Murai">Jun_Murai</a>]</td>
+          <td>csISO2022JP</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-2022-JP-2</td>
+          <td>ISO-2022-JP-2</td>
+          <td>40</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1554">RFC1554</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1554">RFC1554</a>][<a href="#Masataka_Ohta">Masataka_Ohta</a>]</td>
+          <td>csISO2022JP2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6220-1969-jp</td>
+          <td>41</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>JIS_C6220-1969<br />iso-ir-13<br />katakana<br />x0201-7<br />csISO13JISC6220jp</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6220-1969-ro</td>
+          <td>42</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-14<br />jp<br />ISO646-JP<br />csISO14JISC6220ro</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PT</td>
+          <td>43</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-16<br />ISO646-PT<br />csISO16Portuguese</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>greek7-old</td>
+          <td>44</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-18<br />csISO18Greek7Old</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>latin-greek</td>
+          <td>45</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-19<br />csISO19LatinGreek</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NF_Z_62-010_(1973)</td>
+          <td>46</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-25<br />ISO646-FR1<br />csISO25French</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Latin-greek-1</td>
+          <td>47</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-27<br />csISO27LatinGreek1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_5427</td>
+          <td>48</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-37<br />csISO5427Cyrillic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6226-1978</td>
+          <td>49</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-42<br />csISO42JISC62261978</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>BS_viewdata</td>
+          <td>50</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-47<br />csISO47BSViewdata</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>INIS</td>
+          <td>51</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-49<br />csISO49INIS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>INIS-8</td>
+          <td>52</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-50<br />csISO50INIS8</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>INIS-cyrillic</td>
+          <td>53</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-51<br />csISO51INISCyrillic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_5427:1981</td>
+          <td>54</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-54<br />ISO5427Cyrillic1981<br />csISO54271981</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_5428:1980</td>
+          <td>55</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-55<br />csISO5428Greek</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GB_1988-80</td>
+          <td>56</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-57<br />cn<br />ISO646-CN<br />csISO57GB1988</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GB_2312-80</td>
+          <td>57</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-58<br />chinese<br />csISO58GB231280</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NS_4551-2</td>
+          <td>58</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>ISO646-NO2<br />iso-ir-61<br />no2<br />csISO61Norwegian2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>videotex-suppl</td>
+          <td>59</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-70<br />csISO70VideotexSupp1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PT2</td>
+          <td>60</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-84<br />ISO646-PT2<br />csISO84Portuguese2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ES2</td>
+          <td>61</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-85<br />ISO646-ES2<br />csISO85Spanish2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>MSZ_7795.3</td>
+          <td>62</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-86<br />ISO646-HU<br />hu<br />csISO86Hungarian</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6226-1983</td>
+          <td>63</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-87<br />x0208<br />JIS_X0208-1983<br />csISO87JISX0208</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>greek7</td>
+          <td>64</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-88<br />csISO88Greek7</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ASMO_449</td>
+          <td>65</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>ISO_9036<br />arabic7<br />iso-ir-89<br />csISO89ASMO449</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>iso-ir-90</td>
+          <td>66</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csISO90</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-a</td>
+          <td>67</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-91<br />jp-ocr-a<br />csISO91JISC62291984a</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-b</td>
+          <td>68</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-92<br />ISO646-JP-OCR-B<br />jp-ocr-b<br />csISO92JISC62991984b</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-b-add</td>
+          <td>69</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-93<br />jp-ocr-b-add<br />csISO93JIS62291984badd</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-hand</td>
+          <td>70</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-94<br />jp-ocr-hand<br />csISO94JIS62291984hand</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-hand-add</td>
+          <td>71</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-95<br />jp-ocr-hand-add<br />csISO95JIS62291984handadd</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_C6229-1984-kana</td>
+          <td>72</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-96<br />csISO96JISC62291984kana</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_2033-1983</td>
+          <td>73</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-98<br />e13b<br />csISO2033</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ANSI_X3.110-1983</td>
+          <td>74</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-99<br />CSA_T500-1983<br />NAPLPS<br />csISO99NAPLPS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>T.61-7bit</td>
+          <td>75</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-102<br />csISO102T617bit</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>T.61-8bit</td>
+          <td>76</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>T.61<br />iso-ir-103<br />csISO103T618bit</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ECMA-cyrillic</td>
+          <td>77</td>
+          <td>[<a href="http://www.itscj.ipsj.or.jp/ISO-IR/111.pdf">ISO registry</a>]
+        (formerly [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ECMA
+          registry</a>])</td>
+          <td></td>
+          <td>iso-ir-111<br />KOI8-E<br />csISO111ECMACyrillic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CSA_Z243.4-1985-1</td>
+          <td>78</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-121<br />ISO646-CA<br />csa7-1<br />csa71<br />ca<br />csISO121Canadian1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CSA_Z243.4-1985-2</td>
+          <td>79</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-122<br />ISO646-CA2<br />csa7-2<br />csa72<br />csISO122Canadian2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CSA_Z243.4-1985-gr</td>
+          <td>80</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-123<br />csISO123CSAZ24341985gr</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-6-E</td>
+          <td>ISO_8859-6-E</td>
+          <td>81</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1556">RFC1556</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1556">RFC1556</a>][<a href="#IANA">IANA</a>]</td>
+          <td>csISO88596E<br />ISO-8859-6-E</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-6-I</td>
+          <td>ISO_8859-6-I</td>
+          <td>82</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1556">RFC1556</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1556">RFC1556</a>][<a href="#IANA">IANA</a>]</td>
+          <td>csISO88596I<br />ISO-8859-6-I</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>T.101-G2</td>
+          <td>83</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-128<br />csISO128T101G2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-8-E</td>
+          <td>ISO_8859-8-E</td>
+          <td>84</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1556">RFC1556</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1556">RFC1556</a>][<a href="#Hank_Nussbacher">Hank_Nussbacher</a>]</td>
+          <td>csISO88598E<br />ISO-8859-8-E</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>ISO-8859-8-I</td>
+          <td>ISO_8859-8-I</td>
+          <td>85</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1556">RFC1556</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1556">RFC1556</a>][<a href="#Hank_Nussbacher">Hank_Nussbacher</a>]</td>
+          <td>csISO88598I<br />ISO-8859-8-I</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CSN_369103</td>
+          <td>86</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-139<br />csISO139CSN369103</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JUS_I.B1.002</td>
+          <td>87</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-141<br />ISO646-YU<br />js<br />yu<br />csISO141JUSIB1002</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IEC_P27-1</td>
+          <td>88</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-143<br />csISO143IECP271</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JUS_I.B1.003-serb</td>
+          <td>89</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-146<br />serbian<br />csISO146Serbian</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JUS_I.B1.003-mac</td>
+          <td>90</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>macedonian<br />iso-ir-147<br />csISO147Macedonian</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>greek-ccitt</td>
+          <td>91</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-150<br />csISO150<br />csISO150GreekCCITT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>NC_NC00-10:81</td>
+          <td>92</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cuba<br />iso-ir-151<br />ISO646-CU<br />csISO151Cuba</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_6937-2-25</td>
+          <td>93</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-152<br />csISO6937Add</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GOST_19768-74</td>
+          <td>94</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>ST_SEV_358-88<br />iso-ir-153<br />csISO153GOST1976874</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_8859-supp</td>
+          <td>95</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-154<br />latin1-2-5<br />csISO8859Supp</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO_10367-box</td>
+          <td>96</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>iso-ir-155<br />csISO10367Box</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>latin-lap</td>
+          <td>97</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>lap<br />iso-ir-158<br />csISO158Lap</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>JIS_X0212-1990</td>
+          <td>98</td>
+          <td>
+        [<a href="http://www.itscj.ipsj.or.jp/ISO-IR/">ISO-IR: International Register of Escape Sequences</a>]<br />
+        Note: The current registration authority is IPSJ/ITSCJ, Japan.
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>x0212<br />iso-ir-159<br />csISO159JISX02121990</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>DS_2089</td>
+          <td>99</td>
+          <td>Danish Standard, DS 2089, February 1974</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>DS2089<br />ISO646-DK<br />dk<br />csISO646Danish</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>us-dk</td>
+          <td>100</td>
+          <td></td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csUSDK</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>dk-us</td>
+          <td>101</td>
+          <td></td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csDKUS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>KSC5636</td>
+          <td>102</td>
+          <td></td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>ISO646-KR<br />csKSC5636</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UNICODE-1-1-UTF-7</td>
+          <td>103</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1642">RFC1642</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1642">RFC1642</a>]</td>
+          <td>csUnicode11UTF7</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-2022-CN</td>
+          <td>104</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1922">RFC1922</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1922">RFC1922</a>]</td>
+          <td>csISO2022CN</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-2022-CN-EXT</td>
+          <td>105</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1922">RFC1922</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1922">RFC1922</a>]</td>
+          <td>csISO2022CNEXT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-8</td>
+          <td>106</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc3629">RFC3629</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc3629">RFC3629</a>]</td>
+          <td>csUTF8</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-13</td>
+          <td>109</td>
+          <td>ISO See [<a href="http://www.iana.org/assignments/charset-reg/ISO-8859-13">http://www.iana.org/assignments/charset-reg/ISO-8859-13</a>][<a href="#Vladas_Tumasonis">Vladas_Tumasonis</a>]</td>
+          <td></td>
+          <td>csISO885913</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-14</td>
+          <td>110</td>
+          <td>ISO See [<a href="http://www.iana.org/assignments/charset-reg/ISO-8859-14">http://www.iana.org/assignments/charset-reg/ISO-8859-14</a>] [<a href="#Keld_Simonsen_2">Keld_Simonsen_2</a>]</td>
+          <td></td>
+          <td>iso-ir-199<br />ISO_8859-14:1998<br />ISO_8859-14<br />latin8<br />iso-celtic<br />l8<br />csISO885914</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-15</td>
+          <td>111</td>
+          <td>ISO
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/ISO-8859-15">http://www.iana.org/assignments/charset-reg/ISO-8859-15</a>]</td>
+          <td></td>
+          <td>ISO_8859-15<br />Latin-9<br />csISO885915</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-16</td>
+          <td>112</td>
+          <td>ISO</td>
+          <td></td>
+          <td>iso-ir-226<br />ISO_8859-16:2001<br />ISO_8859-16<br />latin10<br />l10<br />csISO885916</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GBK</td>
+          <td>113</td>
+          <td>Chinese IT Standardization Technical Committee
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/GBK">http://www.iana.org/assignments/charset-reg/GBK</a>]</td>
+          <td></td>
+          <td>CP936<br />MS936<br />windows-936<br />csGBK</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>GB18030</td>
+          <td>114</td>
+          <td>Chinese IT Standardization Technical Committee
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/GB18030">http://www.iana.org/assignments/charset-reg/GB18030</a>]</td>
+          <td></td>
+          <td>csGB18030</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>OSD_EBCDIC_DF04_15</td>
+          <td>115</td>
+          <td>Fujitsu-Siemens standard mainframe EBCDIC encoding
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF04-15">http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF04-15</a>]</td>
+          <td></td>
+          <td>csOSDEBCDICDF0415</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>OSD_EBCDIC_DF03_IRV</td>
+          <td>116</td>
+          <td>Fujitsu-Siemens standard mainframe EBCDIC encoding
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF03-IRV">http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF03-IRV</a>]</td>
+          <td></td>
+          <td>csOSDEBCDICDF03IRV</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>OSD_EBCDIC_DF04_1</td>
+          <td>117</td>
+          <td>Fujitsu-Siemens standard mainframe EBCDIC encoding
+Please see: [<a href="http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF04-1">http://www.iana.org/assignments/charset-reg/OSD-EBCDIC-DF04-1</a>]</td>
+          <td></td>
+          <td>csOSDEBCDICDF041</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-11548-1</td>
+          <td>118</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/ISO-11548-1">http://www.iana.org/assignments/charset-reg/ISO-11548-1</a>]            [<a href="#Samuel_Thibault">Samuel_Thibault</a>]</td>
+          <td></td>
+          <td>ISO_11548-1<br />ISO_TR_11548-1<br />csISO115481</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>KZ-1048</td>
+          <td>119</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/KZ-1048">http://www.iana.org/assignments/charset-reg/KZ-1048</a>]      [<a href="#Sairan_M_Kikkarin">Sairan_M_Kikkarin</a>][<a href="#Alexei_Veremeev">Alexei_Veremeev</a>]</td>
+          <td></td>
+          <td>STRK1048-2002<br />RK1048<br />csKZ1048</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-UCS-2</td>
+          <td>1000</td>
+          <td>the 2-octet Basic Multilingual Plane, aka Unicode
+this needs to specify network byte order: the standard
+does not specify (it is a 16-bit integer space)</td>
+          <td></td>
+          <td>csUnicode</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-UCS-4</td>
+          <td>1001</td>
+          <td>the full code space. (same comment about byte order,
+these are 31-bit numbers.</td>
+          <td></td>
+          <td>csUCS4</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-UCS-Basic</td>
+          <td>1002</td>
+          <td>ASCII subset of Unicode.  Basic Latin = collection 1
+See ISO 10646, Appendix A</td>
+          <td></td>
+          <td>csUnicodeASCII</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-Unicode-Latin1</td>
+          <td>1003</td>
+          <td>ISO Latin-1 subset of Unicode. Basic Latin and Latin-1
+Supplement  = collections 1 and 2.  See ISO 10646,
+Appendix A.  See [<a href="http://www.iana.org/go/rfc1815">RFC1815</a>].</td>
+          <td></td>
+          <td>csUnicodeLatin1<br />ISO-10646</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-10646-J-1</td>
+          <td>1004</td>
+          <td>ISO 10646 Japanese, see [<a href="http://www.iana.org/go/rfc1815">RFC1815</a>].</td>
+          <td></td>
+          <td>csUnicodeJapanese</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-Unicode-IBM-1261</td>
+          <td>1005</td>
+          <td>IBM Latin-2, -3, -5, Extended Presentation Set, GCSGID: 1261</td>
+          <td></td>
+          <td>csUnicodeIBM1261</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-Unicode-IBM-1268</td>
+          <td>1006</td>
+          <td>IBM Latin-4 Extended Presentation Set, GCSGID: 1268</td>
+          <td></td>
+          <td>csUnicodeIBM1268</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-Unicode-IBM-1276</td>
+          <td>1007</td>
+          <td>IBM Cyrillic Greek Extended Presentation Set, GCSGID: 1276</td>
+          <td></td>
+          <td>csUnicodeIBM1276</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-Unicode-IBM-1264</td>
+          <td>1008</td>
+          <td>IBM Arabic Presentation Set, GCSGID: 1264</td>
+          <td></td>
+          <td>csUnicodeIBM1264</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-Unicode-IBM-1265</td>
+          <td>1009</td>
+          <td>IBM Hebrew Presentation Set, GCSGID: 1265</td>
+          <td></td>
+          <td>csUnicodeIBM1265</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UNICODE-1-1</td>
+          <td>1010</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1641">RFC1641</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1641">RFC1641</a>]</td>
+          <td>csUnicode11</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>SCSU</td>
+          <td>1011</td>
+          <td>SCSU See [<a href="http://www.iana.org/assignments/charset-reg/SCSU">http://www.iana.org/assignments/charset-reg/SCSU</a>]     [<a href="#Markus_Scherer">Markus_Scherer</a>]</td>
+          <td></td>
+          <td>csSCSU</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-7</td>
+          <td>1012</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc2152">RFC2152</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc2152">RFC2152</a>]</td>
+          <td>csUTF7</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-16BE</td>
+          <td>1013</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]</td>
+          <td>csUTF16BE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-16LE</td>
+          <td>1014</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]</td>
+          <td>csUTF16LE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-16</td>
+          <td>1015</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc2781">RFC2781</a>]</td>
+          <td>csUTF16</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CESU-8</td>
+          <td>1016</td>
+          <td>
+        [<a href="http://www.unicode.org/unicode/reports/tr26">http://www.unicode.org/unicode/reports/tr26</a>]
+      </td>
+          <td>[<a href="#Toby_Phipps">Toby_Phipps</a>]</td>
+          <td>csCESU8<br />csCESU-8</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-32</td>
+          <td>1017</td>
+          <td>
+        [<a href="http://www.unicode.org/unicode/reports/tr19/">http://www.unicode.org/unicode/reports/tr19/</a>]
+      </td>
+          <td>[<a href="#Mark_Davis">Mark_Davis</a>]</td>
+          <td>csUTF32</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-32BE</td>
+          <td>1018</td>
+          <td>
+        [<a href="http://www.unicode.org/unicode/reports/tr19/">http://www.unicode.org/unicode/reports/tr19/</a>]
+      </td>
+          <td>[<a href="#Mark_Davis">Mark_Davis</a>]</td>
+          <td>csUTF32BE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UTF-32LE</td>
+          <td>1019</td>
+          <td>
+        [<a href="http://www.unicode.org/unicode/reports/tr19/">http://www.unicode.org/unicode/reports/tr19/</a>]
+      </td>
+          <td>[<a href="#Mark_Davis">Mark_Davis</a>]</td>
+          <td>csUTF32LE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>BOCU-1</td>
+          <td>1020</td>
+          <td>
+        [<a href="http://www.unicode.org/notes/tn6/">http://www.unicode.org/notes/tn6/</a>]
+      </td>
+          <td>[<a href="#Markus_Scherer">Markus_Scherer</a>]</td>
+          <td>csBOCU1<br />csBOCU-1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-1-Windows-3.0-Latin-1</td>
+          <td>2000</td>
+          <td>Extended ISO 8859-1 Latin-1 for Windows 3.0.
+PCL Symbol Set id: 9U</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csWindows30Latin1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-1-Windows-3.1-Latin-1</td>
+          <td>2001</td>
+          <td>Extended ISO 8859-1 Latin-1 for Windows 3.1.
+PCL Symbol Set id: 19U</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csWindows31Latin1</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-2-Windows-Latin-2</td>
+          <td>2002</td>
+          <td>Extended ISO 8859-2.  Latin-2 for Windows 3.1.
+PCL Symbol Set id: 9E</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csWindows31Latin2</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>ISO-8859-9-Windows-Latin-5</td>
+          <td>2003</td>
+          <td>Extended ISO 8859-9.  Latin-5 for Windows 3.1
+PCL Symbol Set id: 5T</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csWindows31Latin5</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>hp-roman8</td>
+          <td>2004</td>
+          <td>LaserJet IIP Printer User's Manual,
+HP part no 33471-90901, Hewlet-Packard, June 1989.</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.][<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>roman8<br />r8<br />csHPRoman8</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Adobe-Standard-Encoding</td>
+          <td>2005</td>
+          <td>PostScript Language Reference Manual
+PCL Symbol Set id: 10J</td>
+          <td>[Adobe Systems Incorporated, PostScript Language Reference
+Manual, second edition, Addison-Wesley Publishing Company,
+Inc., 1990.]</td>
+          <td>csAdobeStandardEncoding</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Ventura-US</td>
+          <td>2006</td>
+          <td>Ventura US.  ASCII plus characters typically used in
+publishing, like pilcrow, copyright, registered, trade mark,
+section, dagger, and double dagger in the range A0 (hex)
+to FF (hex).
+PCL Symbol Set id: 14J</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csVenturaUS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Ventura-International</td>
+          <td>2007</td>
+          <td>Ventura International.  ASCII plus coded characters similar
+to Roman8.
+PCL Symbol Set id: 13J</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csVenturaInternational</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>DEC-MCS</td>
+          <td>2008</td>
+          <td>VAX/VMS User's Manual,
+Order Number: AI-Y517A-TE, April 1986.</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>dec<br />csDECMCS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM850</td>
+          <td>2009</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp850<br />850<br />csPC850Multilingual</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PC8-Danish-Norwegian</td>
+          <td>2012</td>
+          <td>PC Danish Norwegian
+8-bit PC set for Danish Norwegian
+PCL Symbol Set id: 11U</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csPC8DanishNorwegian</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM862</td>
+          <td>2013</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp862<br />862<br />csPC862LatinHebrew</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PC8-Turkish</td>
+          <td>2014</td>
+          <td>PC Latin Turkish.  PCL Symbol Set id: 9T</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csPC8Turkish</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM-Symbols</td>
+          <td>2015</td>
+          <td>Presentation Set, CPGID: 259</td>
+          <td>[IBM Corporation, "ABOUT TYPE: IBM's Technical Reference
+for Core Interchange Digitized Type", Publication number
+S544-3708-01]</td>
+          <td>csIBMSymbols</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM-Thai</td>
+          <td>2016</td>
+          <td>Presentation Set, CPGID: 838</td>
+          <td>[IBM Corporation, "ABOUT TYPE: IBM's Technical Reference
+for Core Interchange Digitized Type", Publication number
+S544-3708-01]</td>
+          <td>csIBMThai</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>HP-Legal</td>
+          <td>2017</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 1U</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csHPLegal</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>HP-Pi-font</td>
+          <td>2018</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 15U</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csHPPiFont</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>HP-Math8</td>
+          <td>2019</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 8M</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csHPMath8</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Adobe-Symbol-Encoding</td>
+          <td>2020</td>
+          <td>PostScript Language Reference Manual
+PCL Symbol Set id: 5M</td>
+          <td>[Adobe Systems Incorporated, PostScript Language Reference
+Manual, second edition, Addison-Wesley Publishing Company,
+Inc., 1990.]</td>
+          <td>csHPPSMath</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>HP-DeskTop</td>
+          <td>2021</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 7J</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csHPDesktop</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Ventura-Math</td>
+          <td>2022</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 6M</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csVenturaMath</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Microsoft-Publishing</td>
+          <td>2023</td>
+          <td>PCL 5 Comparison Guide, Hewlett-Packard,
+HP part number 5961-0510, October 1992
+PCL Symbol Set id: 6J</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>csMicrosoftPublishing</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Windows-31J</td>
+          <td>2024</td>
+          <td>Windows Japanese.  A further extension of Shift_JIS
+to include NEC special characters (Row 13), NEC
+selection of IBM extensions (Rows 89 to 92), and IBM
+extensions (Rows 115 to 119).  The CCS's are
+JIS X0201:1997, JIS X0208:1997, and these extensions.
+This charset can be used for the top-level media type "text",
+but it is of limited or specialized use (see [<a href="http://www.iana.org/go/rfc2278">RFC2278</a>]).
+PCL Symbol Set id: 19K</td>
+          <td></td>
+          <td>csWindows31J</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>GB2312</td>
+          <td>GB2312</td>
+          <td>2025</td>
+          <td>Chinese for People's Republic of China (PRC) mixed one byte,
+two byte set:
+20-7E = one byte ASCII
+A1-FE = two byte PRC Kanji
+See GB 2312-80
+PCL Symbol Set Id: 18C</td>
+          <td></td>
+          <td>csGB2312</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Big5</td>
+          <td>Big5</td>
+          <td>2026</td>
+          <td>Chinese for Taiwan Multi-byte set.
+PCL Symbol Set Id: 18T</td>
+          <td></td>
+          <td>csBig5</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>macintosh</td>
+          <td>2027</td>
+          <td>The Unicode Standard ver1.0, ISBN 0-201-56788-1, Oct 1991</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>mac<br />csMacintosh</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM037</td>
+          <td>2028</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp037<br />ebcdic-cp-us<br />ebcdic-cp-ca<br />ebcdic-cp-wt<br />ebcdic-cp-nl<br />csIBM037</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM038</td>
+          <td>2029</td>
+          <td>IBM 3174 Character Set Ref, GA27-3831-02, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>EBCDIC-INT<br />cp038<br />csIBM038</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM273</td>
+          <td>2030</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP273<br />csIBM273</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM274</td>
+          <td>2031</td>
+          <td>IBM 3174 Character Set Ref, GA27-3831-02, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>EBCDIC-BE<br />CP274<br />csIBM274</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM275</td>
+          <td>2032</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>EBCDIC-BR<br />cp275<br />csIBM275</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM277</td>
+          <td>2033</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>EBCDIC-CP-DK<br />EBCDIC-CP-NO<br />csIBM277</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM278</td>
+          <td>2034</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP278<br />ebcdic-cp-fi<br />ebcdic-cp-se<br />csIBM278</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM280</td>
+          <td>2035</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP280<br />ebcdic-cp-it<br />csIBM280</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM281</td>
+          <td>2036</td>
+          <td>IBM 3174 Character Set Ref, GA27-3831-02, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>EBCDIC-JP-E<br />cp281<br />csIBM281</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM284</td>
+          <td>2037</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP284<br />ebcdic-cp-es<br />csIBM284</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM285</td>
+          <td>2038</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP285<br />ebcdic-cp-gb<br />csIBM285</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM290</td>
+          <td>2039</td>
+          <td>IBM 3174 Character Set Ref, GA27-3831-02, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp290<br />EBCDIC-JP-kana<br />csIBM290</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM297</td>
+          <td>2040</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp297<br />ebcdic-cp-fr<br />csIBM297</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM420</td>
+          <td>2041</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990,
+IBM NLS RM p 11-11</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp420<br />ebcdic-cp-ar1<br />csIBM420</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM423</td>
+          <td>2042</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp423<br />ebcdic-cp-gr<br />csIBM423</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM424</td>
+          <td>2043</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp424<br />ebcdic-cp-he<br />csIBM424</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM437</td>
+          <td>2011</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp437<br />437<br />csPC8CodePage437</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM500</td>
+          <td>2044</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP500<br />ebcdic-cp-be<br />ebcdic-cp-ch<br />csIBM500</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM851</td>
+          <td>2045</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp851<br />851<br />csIBM851</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM852</td>
+          <td>2010</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp852<br />852<br />csPCp852</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM855</td>
+          <td>2046</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp855<br />855<br />csIBM855</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM857</td>
+          <td>2047</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp857<br />857<br />csIBM857</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM860</td>
+          <td>2048</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp860<br />860<br />csIBM860</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM861</td>
+          <td>2049</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp861<br />861<br />cp-is<br />csIBM861</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM863</td>
+          <td>2050</td>
+          <td>IBM Keyboard layouts and code pages, PN 07G4586 June 1991</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp863<br />863<br />csIBM863</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM864</td>
+          <td>2051</td>
+          <td>IBM Keyboard layouts and code pages, PN 07G4586 June 1991</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp864<br />csIBM864</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM865</td>
+          <td>2052</td>
+          <td>IBM DOS 3.3 Ref (Abridged), 94X9575 (Feb 1987)</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp865<br />865<br />csIBM865</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM868</td>
+          <td>2053</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP868<br />cp-ar<br />csIBM868</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM869</td>
+          <td>2054</td>
+          <td>IBM Keyboard layouts and code pages, PN 07G4586 June 1991</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp869<br />869<br />cp-gr<br />csIBM869</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM870</td>
+          <td>2055</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP870<br />ebcdic-cp-roece<br />ebcdic-cp-yu<br />csIBM870</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM871</td>
+          <td>2056</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP871<br />ebcdic-cp-is<br />csIBM871</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM880</td>
+          <td>2057</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp880<br />EBCDIC-Cyrillic<br />csIBM880</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM891</td>
+          <td>2058</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp891<br />csIBM891</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM903</td>
+          <td>2059</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp903<br />csIBM903</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM904</td>
+          <td>2060</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>cp904<br />904<br />csIBBM904</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM905</td>
+          <td>2061</td>
+          <td>IBM 3174 Character Set Ref, GA27-3831-02, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP905<br />ebcdic-cp-tr<br />csIBM905</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM918</td>
+          <td>2062</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP918<br />ebcdic-cp-ar2<br />csIBM918</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM1026</td>
+          <td>2063</td>
+          <td>IBM NLS RM Vol2 SE09-8002-01, March 1990</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>CP1026<br />csIBM1026</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-AT-DE</td>
+          <td>2064</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csIBMEBCDICATDE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-AT-DE-A</td>
+          <td>2065</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICATDEA</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-CA-FR</td>
+          <td>2066</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICCAFR</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-DK-NO</td>
+          <td>2067</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICDKNO</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-DK-NO-A</td>
+          <td>2068</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICDKNOA</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-FI-SE</td>
+          <td>2069</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICFISE</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-FI-SE-A</td>
+          <td>2070</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICFISEA</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-FR</td>
+          <td>2071</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICFR</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-IT</td>
+          <td>2072</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICIT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-PT</td>
+          <td>2073</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICPT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-ES</td>
+          <td>2074</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICES</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-ES-A</td>
+          <td>2075</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICESA</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-ES-S</td>
+          <td>2076</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICESS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-UK</td>
+          <td>2077</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICUK</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>EBCDIC-US</td>
+          <td>2078</td>
+          <td>IBM 3270 Char Set Ref Ch 10, GA27-2837-9, April 1987</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csEBCDICUS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>UNKNOWN-8BIT</td>
+          <td>2079</td>
+          <td></td>
+          <td>[<a href="http://www.iana.org/go/rfc1428">RFC1428</a>]</td>
+          <td>csUnknown8BiT</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>MNEMONIC</td>
+          <td>2080</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>], also known as "mnemonic+ascii+38"</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csMnemonic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>MNEM</td>
+          <td>2081</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>], also known as "mnemonic+ascii+8200"</td>
+          <td>[<a href="http://www.iana.org/go/rfc1345">RFC1345</a>][<a href="#Keld_Simonsen">Keld_Simonsen</a>]</td>
+          <td>csMnem</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>VISCII</td>
+          <td>2082</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1456">RFC1456</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1456">RFC1456</a>]</td>
+          <td>csVISCII</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>VIQR</td>
+          <td>2083</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc1456">RFC1456</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc1456">RFC1456</a>]</td>
+          <td>csVIQR</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>KOI8-R</td>
+          <td>KOI8-R</td>
+          <td>2084</td>
+          <td>[<a href="http://www.iana.org/go/rfc1489">RFC1489</a>], based on GOST-19768-74, ISO-6937/8,
+INIS-Cyrillic, ISO-5427.</td>
+          <td>[<a href="http://www.iana.org/go/rfc1489">RFC1489</a>]</td>
+          <td>csKOI8R</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>HZ-GB-2312</td>
+          <td>2085</td>
+          <td>[<a href="http://www.iana.org/go/rfc1842">RFC1842</a>], [<a href="http://www.iana.org/go/rfc1843">RFC1843</a>][<a href="http://www.iana.org/go/rfc1843">RFC1843</a>][<a href="http://www.iana.org/go/rfc1842">RFC1842</a>]</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM866</td>
+          <td>2086</td>
+          <td>IBM NLDG Volume 2 (SE09-8002-03) August 1994</td>
+          <td>[<a href="#Rick_Pond">Rick_Pond</a>]</td>
+          <td>cp866<br />866<br />csIBM866</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM775</td>
+          <td>2087</td>
+          <td>HP PCL 5 Comparison Guide (P/N 5021-0329) pp B-13, 1996</td>
+          <td>[Hewlett-Packard Company, "HP PCL 5 Comparison Guide",
+(P/N 5021-0329) pp B-13, 1996.]</td>
+          <td>cp775<br />csPC775Baltic</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>KOI8-U</td>
+          <td>2088</td>
+          <td>
+        [<a href="http://www.iana.org/go/rfc2319">RFC2319</a>]
+      </td>
+          <td>[<a href="http://www.iana.org/go/rfc2319">RFC2319</a>]</td>
+          <td>csKOI8U</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM00858</td>
+          <td>2089</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM00858">http://www.iana.org/assignments/charset-reg/IBM00858</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID00858<br />CP00858<br />PC-Multilingual-850+euro<br />csIBM00858</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM00924</td>
+          <td>2090</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM00924">http://www.iana.org/assignments/charset-reg/IBM00924</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID00924<br />CP00924<br />ebcdic-Latin9--euro<br />csIBM00924</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01140</td>
+          <td>2091</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01140">http://www.iana.org/assignments/charset-reg/IBM01140</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01140<br />CP01140<br />ebcdic-us-37+euro<br />csIBM01140</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01141</td>
+          <td>2092</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01141">http://www.iana.org/assignments/charset-reg/IBM01141</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01141<br />CP01141<br />ebcdic-de-273+euro<br />csIBM01141</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01142</td>
+          <td>2093</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01142">http://www.iana.org/assignments/charset-reg/IBM01142</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01142<br />CP01142<br />ebcdic-dk-277+euro<br />ebcdic-no-277+euro<br />csIBM01142</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01143</td>
+          <td>2094</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01143">http://www.iana.org/assignments/charset-reg/IBM01143</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01143<br />CP01143<br />ebcdic-fi-278+euro<br />ebcdic-se-278+euro<br />csIBM01143</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01144</td>
+          <td>2095</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01144">http://www.iana.org/assignments/charset-reg/IBM01144</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01144<br />CP01144<br />ebcdic-it-280+euro<br />csIBM01144</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01145</td>
+          <td>2096</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01145">http://www.iana.org/assignments/charset-reg/IBM01145</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01145<br />CP01145<br />ebcdic-es-284+euro<br />csIBM01145</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01146</td>
+          <td>2097</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01146">http://www.iana.org/assignments/charset-reg/IBM01146</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01146<br />CP01146<br />ebcdic-gb-285+euro<br />csIBM01146</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01147</td>
+          <td>2098</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01147">http://www.iana.org/assignments/charset-reg/IBM01147</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01147<br />CP01147<br />ebcdic-fr-297+euro<br />csIBM01147</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01148</td>
+          <td>2099</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01148">http://www.iana.org/assignments/charset-reg/IBM01148</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01148<br />CP01148<br />ebcdic-international-500+euro<br />csIBM01148</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM01149</td>
+          <td>2100</td>
+          <td>IBM See [<a href="http://www.iana.org/assignments/charset-reg/IBM01149">http://www.iana.org/assignments/charset-reg/IBM01149</a>]    [<a href="#Tamer_Mahdi">Tamer_Mahdi</a>]</td>
+          <td></td>
+          <td>CCSID01149<br />CP01149<br />ebcdic-is-871+euro<br />csIBM01149</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Big5-HKSCS</td>
+          <td>2101</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/Big5-HKSCS">http://www.iana.org/assignments/charset-reg/Big5-HKSCS</a>]</td>
+          <td>[<a href="#Nicky_Yick">Nicky_Yick</a>]</td>
+          <td>csBig5HKSCS</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>IBM1047</td>
+          <td>2102</td>
+          <td>IBM1047 (EBCDIC Latin 1/Open Systems)
+[<a href="http://www-1.ibm.com/servers/eserver/iseries/software/globalization/pdf/cp01047z.pdf">http://www-1.ibm.com/servers/eserver/iseries/software/globalization/pdf/cp01047z.pdf</a>]</td>
+          <td>[<a href="#Reuel_Robrigado">Reuel_Robrigado</a>]</td>
+          <td>IBM-1047<br />csIBM1047</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>PTCP154</td>
+          <td>2103</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/PTCP154">http://www.iana.org/assignments/charset-reg/PTCP154</a>]</td>
+          <td>[<a href="#Alexander_Uskov">Alexander_Uskov</a>]</td>
+          <td>csPTCP154<br />PT154<br />CP154<br />Cyrillic-Asian<br />csPTCP154</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>Amiga-1251</td>
+          <td>2104</td>
+          <td>See [<a href="http://www.amiga.ultranet.ru/Amiga-1251.html">http://www.amiga.ultranet.ru/Amiga-1251.html</a>]</td>
+          <td></td>
+          <td>Ami1251<br />Amiga1251<br />Ami-1251<br />csAmiga1251
+(Aliases are provided for historical reasons and should not be used) [Malyshev]</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>KOI7-switched</td>
+          <td>2105</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/KOI7-switched">http://www.iana.org/assignments/charset-reg/KOI7-switched</a>]</td>
+          <td></td>
+          <td>csKOI7switched</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>BRF</td>
+          <td>2106</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/BRF">http://www.iana.org/assignments/charset-reg/BRF</a>]                    [<a href="#Samuel_Thibault">Samuel_Thibault</a>]</td>
+          <td></td>
+          <td>csBRF</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>TSCII</td>
+          <td>2107</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/TSCII">http://www.iana.org/assignments/charset-reg/TSCII</a>]           [<a href="#Kuppuswamy_Kalyanasu">Kuppuswamy_Kalyanasu</a>]</td>
+          <td></td>
+          <td>csTSCII</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CP51932</td>
+          <td>2108</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/CP51932">http://www.iana.org/assignments/charset-reg/CP51932</a>]                  [<a href="#Yui_Naruse">Yui_Naruse</a>]</td>
+          <td></td>
+          <td>csCP51932</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-874</td>
+          <td>2109</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/windows-874">http://www.iana.org/assignments/charset-reg/windows-874</a>]              [<a href="#Shawn_Steele">Shawn_Steele</a>]</td>
+          <td></td>
+          <td>cswindows874</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1250</td>
+          <td>2250</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1250">http://www.iana.org/assignments/charset-reg/windows-1250</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1250</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1251</td>
+          <td>2251</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1251">http://www.iana.org/assignments/charset-reg/windows-1251</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1251</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1252</td>
+          <td>2252</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1252">http://www.iana.org/assignments/charset-reg/windows-1252</a>]       [<a href="#Chris_Wendt">Chris_Wendt</a>]</td>
+          <td></td>
+          <td>cswindows1252</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1253</td>
+          <td>2253</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1253">http://www.iana.org/assignments/charset-reg/windows-1253</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1253</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1254</td>
+          <td>2254</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1254">http://www.iana.org/assignments/charset-reg/windows-1254</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1254</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1255</td>
+          <td>2255</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1255">http://www.iana.org/assignments/charset-reg/windows-1255</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1255</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1256</td>
+          <td>2256</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1256">http://www.iana.org/assignments/charset-reg/windows-1256</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1256</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1257</td>
+          <td>2257</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1257">http://www.iana.org/assignments/charset-reg/windows-1257</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1257</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>windows-1258</td>
+          <td>2258</td>
+          <td>Microsoft  [<a href="http://www.iana.org/assignments/charset-reg/windows-1258">http://www.iana.org/assignments/charset-reg/windows-1258</a>] [<a href="#Katya_Lazhintseva">Katya_Lazhintseva</a>]</td>
+          <td></td>
+          <td>cswindows1258</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>TIS-620</td>
+          <td>2259</td>
+          <td>Thai Industrial Standards Institute (TISI)                             [<a href="#Trin_Tantsetthi">Trin_Tantsetthi</a>]</td>
+          <td></td>
+          <td>csTIS620</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>CP50220</td>
+          <td>2260</td>
+          <td>See [<a href="http://www.iana.org/assignments/charset-reg/CP50220">http://www.iana.org/assignments/charset-reg/CP50220</a>]                  [<a href="#Yui_Naruse">Yui_Naruse</a>]</td>
+          <td></td>
+          <td>csCP50220</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+    <h1 class="people">People</h1>
+    <table class="sortable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Contact URI</th>
+          <th>Last Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <a name="Alexander_Uskov" id="Alexander_Uskov">[Alexander_Uskov]</a>
+          </td>
+          <td>Alexander Uskov</td>
+          <td>
+            <a href="mailto:auskov&amp;idc.kz">mailto:auskov&amp;idc.kz</a>
+          </td>
+          <td>2002-09</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Alexei_Veremeev" id="Alexei_Veremeev">[Alexei_Veremeev]</a>
+          </td>
+          <td>Alexei Veremeev</td>
+          <td>
+            <a href="mailto:Alexey.Veremeev&amp;oracle.com">mailto:Alexey.Veremeev&amp;oracle.com</a>
+          </td>
+          <td>2006-12-07</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Chris_Wendt" id="Chris_Wendt">[Chris_Wendt]</a>
+          </td>
+          <td>Chris Wendt</td>
+          <td>
+            <a href="mailto:christw&amp;microsoft.com">mailto:christw&amp;microsoft.com</a>
+          </td>
+          <td>1999-12</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Hank_Nussbacher" id="Hank_Nussbacher">[Hank_Nussbacher]</a>
+          </td>
+          <td>Hank Nussbacher</td>
+          <td>
+            <a href="mailto:hank&amp;vm.tau.ac.il">mailto:hank&amp;vm.tau.ac.il</a>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>
+            <a name="IANA" id="IANA">[IANA]</a>
+          </td>
+          <td>Internet Assigned Numbers Authority</td>
+          <td>
+            <a href="mailto:iana&amp;iana.org">mailto:iana&amp;iana.org</a>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Jun_Murai" id="Jun_Murai">[Jun_Murai]</a>
+          </td>
+          <td>Jun Murai</td>
+          <td>
+            <a href="mailto:jun&amp;wide.ad.jp">mailto:jun&amp;wide.ad.jp</a>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Katya_Lazhintseva" id="Katya_Lazhintseva">[Katya_Lazhintseva]</a>
+          </td>
+          <td>Katya Lazhintseva</td>
+          <td>
+            <a href="mailto:katyal&amp;microsoft.com">mailto:katyal&amp;microsoft.com</a>
+          </td>
+          <td>1996-05</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Keld_Simonsen" id="Keld_Simonsen">[Keld_Simonsen]</a>
+          </td>
+          <td>Keld Simonsen</td>
+          <td>
+            <a href="mailto:Keld.Simonsen&amp;dkuug.dk">mailto:Keld.Simonsen&amp;dkuug.dk</a>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Keld_Simonsen_2" id="Keld_Simonsen_2">[Keld_Simonsen_2]</a>
+          </td>
+          <td>Keld Simonsen</td>
+          <td>
+            <a href="mailto:Keld.Simonsen&amp;rap.dk">mailto:Keld.Simonsen&amp;rap.dk</a>
+          </td>
+          <td>2000-08</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Kuppuswamy_Kalyanasu" id="Kuppuswamy_Kalyanasu">[Kuppuswamy_Kalyanasu]</a>
+          </td>
+          <td>Kuppuswamy Kalyanasundaram</td>
+          <td>
+            <a href="mailto:kalyan.geo&amp;yahoo.com">mailto:kalyan.geo&amp;yahoo.com</a>
+          </td>
+          <td>2007-05-14</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Mark_Davis" id="Mark_Davis">[Mark_Davis]</a>
+          </td>
+          <td>Mark Davis</td>
+          <td>
+            <a href="mailto:mark&amp;unicode.org">mailto:mark&amp;unicode.org</a>
+          </td>
+          <td>2002-04</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Markus_Scherer" id="Markus_Scherer">[Markus_Scherer]</a>
+          </td>
+          <td>Markus Scherer</td>
+          <td>
+            <a href="mailto:markus.scherer&amp;jtcsv.com">mailto:markus.scherer&amp;jtcsv.com</a>
+          </td>
+          <td>2002-09</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Masataka_Ohta" id="Masataka_Ohta">[Masataka_Ohta]</a>
+          </td>
+          <td>Masataka Ohta</td>
+          <td>
+            <a href="mailto:mohta&amp;cc.titech.ac.jp">mailto:mohta&amp;cc.titech.ac.jp</a>
+          </td>
+          <td>1995-07</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Nicky_Yick" id="Nicky_Yick">[Nicky_Yick]</a>
+          </td>
+          <td>Nicky Yick</td>
+          <td>
+            <a href="mailto:cliac&amp;itsd.gcn.gov.hk">mailto:cliac&amp;itsd.gcn.gov.hk</a>
+          </td>
+          <td>2000-10</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Reuel_Robrigado" id="Reuel_Robrigado">[Reuel_Robrigado]</a>
+          </td>
+          <td>Reuel Robrigado</td>
+          <td>
+            <a href="mailto:reuelr&amp;ca.ibm.com">mailto:reuelr&amp;ca.ibm.com</a>
+          </td>
+          <td>2002-09</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Rick_Pond" id="Rick_Pond">[Rick_Pond]</a>
+          </td>
+          <td>Rick Pond</td>
+          <td>
+            <a href="mailto:rickpond&amp;vnet.ibm.com">mailto:rickpond&amp;vnet.ibm.com</a>
+          </td>
+          <td>1997-03</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Sairan_M_Kikkarin" id="Sairan_M_Kikkarin">[Sairan_M_Kikkarin]</a>
+          </td>
+          <td>Sairan M. Kikkarin</td>
+          <td>
+            <a href="mailto:sairan&amp;sci.kz">mailto:sairan&amp;sci.kz</a>
+          </td>
+          <td>2006-12-07</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Samuel_Thibault" id="Samuel_Thibault">[Samuel_Thibault]</a>
+          </td>
+          <td>Samuel Thibault</td>
+          <td>
+            <a href="mailto:samuel.thibault&amp;ens-lyon.org">mailto:samuel.thibault&amp;ens-lyon.org</a>
+          </td>
+          <td>2006-12-07</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Shawn_Steele" id="Shawn_Steele">[Shawn_Steele]</a>
+          </td>
+          <td>Shawn Steele</td>
+          <td>
+            <a href="mailto:Shawn.Steele&amp;microsoft.com">mailto:Shawn.Steele&amp;microsoft.com</a>
+          </td>
+          <td>2010-11-04</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Tamer_Mahdi" id="Tamer_Mahdi">[Tamer_Mahdi]</a>
+          </td>
+          <td>Tamer Mahdi</td>
+          <td>
+            <a href="mailto:tamer&amp;ca.ibm.com">mailto:tamer&amp;ca.ibm.com</a>
+          </td>
+          <td>2000-08</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Toby_Phipps" id="Toby_Phipps">[Toby_Phipps]</a>
+          </td>
+          <td>Toby Phipps</td>
+          <td>
+            <a href="mailto:tphipps&amp;peoplesoft.com">mailto:tphipps&amp;peoplesoft.com</a>
+          </td>
+          <td>2002-03</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Trin_Tantsetthi" id="Trin_Tantsetthi">[Trin_Tantsetthi]</a>
+          </td>
+          <td>Trin Tantsetthi</td>
+          <td>
+            <a href="mailto:trin&amp;mozart.inet.co.th">mailto:trin&amp;mozart.inet.co.th</a>
+          </td>
+          <td>1998-09</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Vladas_Tumasonis" id="Vladas_Tumasonis">[Vladas_Tumasonis]</a>
+          </td>
+          <td>Vladas Tumasonis</td>
+          <td>
+            <a href="mailto:vladas.tumasonis&amp;maf.vu.lt">mailto:vladas.tumasonis&amp;maf.vu.lt</a>
+          </td>
+          <td>2000-08</td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Woohyong_Choi" id="Woohyong_Choi">[Woohyong_Choi]</a>
+          </td>
+          <td>Woohyong Choi</td>
+          <td>
+            <a href="mailto:whchoi&amp;cosmos.kaist.ac.kr">mailto:whchoi&amp;cosmos.kaist.ac.kr</a>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>
+            <a name="Yui_Naruse" id="Yui_Naruse">[Yui_Naruse]</a>
+          </td>
+          <td>Yui Naruse</td>
+          <td>
+            <a href="mailto:naruse&amp;airemix.jp">mailto:naruse&amp;airemix.jp</a>
+          </td>
+          <td>2011-09-23</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

@@ -36,11 +36,6 @@
 #include "msxml_parser.h"
 
 #if HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlreader.h>
 
 #define MSXML_VERBIOSE 0
@@ -378,9 +373,9 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             switch (node_type) {
             case XML_READER_TYPE_ELEMENT:
                 ret = msxml_parse_element(mxctx, reader, rlvl+1, thisjobj ? thisjobj : parent);
-                if (ret != CL_SUCCESS || (!SCAN_ALL && ret == CL_VIRUS)) {
+                if (ret != CL_SUCCESS || (!SCAN_ALLMATCHES && ret == CL_VIRUS)) {
                     return ret;
-                } else if (SCAN_ALL && ret == CL_VIRUS) {
+                } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
                     virus = 1;
                 }
                 break;
@@ -424,14 +419,14 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                    ret = mxctx->scan_cb(of, ctx, num_attribs, attribs, mxctx->scan_data);
+                    ret = mxctx->scan_cb(of, tempfile, ctx, num_attribs, attribs, mxctx->scan_data);
                     close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
-                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALL && ret == CL_VIRUS))) {
+                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
                         return ret;
-                    } else if (SCAN_ALL && ret == CL_VIRUS) {
+                    } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
                         virus = 1;
                     }
                 }
@@ -471,14 +466,14 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                     cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                    ret = cli_magic_scandesc(of, ctx);
+                    ret = cli_magic_scandesc(of, tempfile, ctx);
                     close(of);
                     if (!(ctx->engine->keeptmp))
                         cli_unlink(tempfile);
                     free(tempfile);
-                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALL && ret == CL_VIRUS))) {
+                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
                         return ret;
-                    } else if (SCAN_ALL && ret == CL_VIRUS) {
+                    } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
                         virus = 1;
                     }
                 }
@@ -500,9 +495,9 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 #else
                     ret = mxctx->comment_cb((const char *)node_value, ctx, NULL, mxctx->comment_data);
 #endif
-                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALL && ret == CL_VIRUS))) {
+                    if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
                         return ret;
-                    } else if (SCAN_ALL && ret == CL_VIRUS) {
+                    } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
                         virus = 1;
                     }
 
@@ -615,7 +610,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
         ret = msxml_parse_element(mxctx, reader, 0, NULL);
 #endif
         if (ret == CL_SUCCESS);
-        else if (SCAN_ALL && ret == CL_VIRUS) {
+        else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
             /* non-allmatch simply propagates it down to return through ret */
             virus = 1;
         } else if (ret == CL_VIRUS || ret == CL_ETIMEOUT || ret == CL_BREAK) {

@@ -529,7 +529,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset) {
 	  if(nsist.fno == 1)
 	    ret=cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	  else
-	    ret=cli_magic_scandesc(nsist.ofd, ctx);
+	    ret=cli_magic_scandesc(nsist.ofd, nsist.ofn, ctx);
 	  close(nsist.ofd);
 	  if(!ctx->engine->keeptmp)
 	    if(cli_unlink(nsist.ofn)) ret = CL_EUNLINK;

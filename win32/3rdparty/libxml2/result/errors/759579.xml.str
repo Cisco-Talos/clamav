@@ -1,0 +1,7 @@
+Entity: line 2: parser error : Detected an entity reference loop
+        %z; %z; %z; %z; %z;
+           ^
+Entity: line 2: 
+        %z; %z; %z; %z; %z;
+           ^
+./test/errors/759579.xml : failed to parse

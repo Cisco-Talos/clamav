@@ -155,6 +155,8 @@ static const struct pcre_testdata_s {
 #endif /* HAVE_PCRE */
 
 static cli_ctx ctx;
+static struct cl_scan_options options;
+
 static fmap_t *thefmap = NULL;
 static const char *virname = NULL;
 static void setup(void)
@@ -162,6 +164,11 @@ static void setup(void)
 	struct cli_matcher *root;
 	virname = NULL;
 	thefmap = NULL;
+
+    memset(&ctx, 0, sizeof(ctx));
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    ctx.options = &options;
+
 	ctx.virname = &virname;
 	ctx.fmap = &thefmap;
 	ctx.engine = cl_engine_new();
@@ -208,6 +215,7 @@ START_TEST (test_ac_scanbuff) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
+    ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for(i = 0; ac_testdata[i].data; i++) {
 	ret = cli_ac_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
@@ -250,7 +258,7 @@ START_TEST (test_ac_scanbuff_allscan) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
-    ctx.options |= CL_SCAN_ALLMATCHES;
+    ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for(i = 0; ac_testdata[i].data; i++) {
 	ret = cli_ac_scanbuff((const unsigned char*)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
@@ -294,6 +302,7 @@ START_TEST (test_ac_scanbuff_ex) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
 
+    ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for(i = 0; ac_sigopts_testdata[i].data; i++) {
 	ret = cli_ac_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
@@ -335,7 +344,7 @@ START_TEST (test_ac_scanbuff_allscan_ex) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
 
-    ctx.options |= CL_SCAN_ALLMATCHES;
+    ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for(i = 0; ac_sigopts_testdata[i].data; i++) {
 	ret = cli_ac_scanbuff((const unsigned char*)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
 	fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
@@ -374,6 +383,7 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
+    ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
@@ -402,6 +412,7 @@ START_TEST (test_bm_scanbuff_allscan) {
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
+    ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     ret = cli_bm_scanbuff((const unsigned char*)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
@@ -448,6 +459,7 @@ START_TEST (test_pcre_scanbuff) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
+    ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for(i = 0; pcre_testdata[i].data; i++) {
 	ret = cli_pcre_scanbuf((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
 	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
@@ -500,7 +512,7 @@ START_TEST (test_pcre_scanbuff_allscan) {
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
-    ctx.options |= CL_SCAN_ALLMATCHES;
+    ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for(i = 0; pcre_testdata[i].data; i++) {
 	ret = cli_pcre_scanbuf((const unsigned char*)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
 	fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);

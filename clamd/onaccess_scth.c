@@ -36,8 +36,9 @@
 
 #include "others.h"
 #include "priv_fts.h"
-
+#include "onaccess_others.h"
 #include "onaccess_scth.h"
+#include "onaccess_others.h"
 
 #include "libclamav/clamav.h"
 
@@ -57,7 +58,7 @@ static void onas_scth_exit(int sig) {
 static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct scth_thrarg *tharg)
 {
     int ret = 0;
-    const char *virname;
+    const char *virname = NULL;
 
     return onas_scan(fname, fd, &virname, tharg->engine, tharg->options, extinfo);
 }
@@ -132,16 +133,31 @@ void *onas_scan_th(void *arg) {
 	sigaction(SIGUSR1, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
-	if (tharg->options & ONAS_SCTH_ISDIR) {
-		logg("ScanOnAccess: Performing additional scanning on directory '%s'\n", tharg->pathname);
+	if (NULL == tharg || NULL == tharg->pathname || NULL == tharg->opts || NULL == tharg->engine) {
+		logg("ScanOnAccess: Invalid thread arguments for extra scanning\n");
+		goto done;
+	}
+
+	if (tharg->extra_options & ONAS_SCTH_ISDIR) {
+		logg("*ScanOnAccess: Performing additional scanning on directory '%s'\n", tharg->pathname);
 		onas_scth_handle_dir(tharg->pathname, tharg);
-	} else if (tharg->options & ONAS_SCTH_ISFILE) {
-		logg("ScanOnAccess: Performing additional scanning on file '%s'\n", tharg->pathname);
+	} else if (tharg->extra_options & ONAS_SCTH_ISFILE) {
+		logg("*ScanOnAccess: Performing additional scanning on file '%s'\n", tharg->pathname);
 		onas_scth_handle_file(tharg->pathname, tharg);
 	}
 
-	free(tharg->pathname);
-	tharg->pathname = NULL;
+done:
+	if (NULL != tharg->pathname){
+		free(tharg->pathname);
+		tharg->pathname = NULL;
+	}
+	if (NULL != tharg->options) {
+		free(tharg->options);
+		tharg->options = NULL;
+	}
+	if (NULL != tharg) {
+		free(tharg);
+	}
 
 	return NULL;
 }

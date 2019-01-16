@@ -49,7 +49,7 @@ int cli_scanhwpole2(cli_ctx *ctx);
 
 /* HWP 5.0 - OLE2 */
 int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5);
-int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd);
+int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath);
 
 /* HWP 3.0 - UNIQUE FORMAT */
 int cli_scanhwp3(cli_ctx *ctx);

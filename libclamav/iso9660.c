@@ -81,7 +81,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     }
 
     if (!len)
-        ret = cli_magic_scandesc(fd, iso->ctx);
+        ret = cli_magic_scandesc(fd, tmpf, iso->ctx);
 
     close(fd);
     if(!iso->ctx->engine->keeptmp) {
@@ -187,7 +187,7 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
             ret = cli_matchmeta(ctx, iso->buf, filesz, filesz, 0, 0, 0, NULL);
             if (ret == CL_VIRUS) {
                 viruses_found = 1;
-                if (!SCAN_ALL)
+                if (!SCAN_ALLMATCHES)
                     break;
                 ret = CL_CLEAN;
             }
@@ -206,7 +206,7 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len) {
 		}
                 if (ret == CL_VIRUS) {
                     viruses_found = 1;
-                    if (!SCAN_ALL)
+                    if (!SCAN_ALLMATCHES)
                         break;
                     ret = CL_CLEAN;
                 }

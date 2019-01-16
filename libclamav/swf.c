@@ -286,7 +286,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, (long long unsigned)outsize);
     }
 
-    ret = cli_magic_scandesc(fd, ctx);
+    ret = cli_magic_scandesc(fd, tmpname, ctx);
 
     close(fd);
     if (!(ctx->engine->keeptmp)) {
@@ -417,7 +417,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, (long long unsigned)outsize);
     }
 
-    ret = cli_magic_scandesc(fd, ctx);
+    ret = cli_magic_scandesc(fd, tmpname, ctx);
 
     close(fd);
     if(!ctx->engine->keeptmp) {

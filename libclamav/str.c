@@ -43,6 +43,7 @@
 #include "matcher.h"
 #include "cltypes.h"
 #include "jsparse/textbuf.h"
+#include "platform.h"
 
 static const int hex_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
@@ -538,7 +539,7 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
  *                      between 2 and 36 inclusive, or be the special value 0.
  * @return long         The signed long value.
  */
-static long cli_strntol(const char* nptr, size_t n, char** endptr, register int base)
+long cli_strntol(const char* nptr, size_t n, char** endptr, register int base)
 {
     register const char* s = nptr;
     register unsigned long acc = 0;
@@ -576,7 +577,7 @@ static long cli_strntol(const char* nptr, size_t n, char** endptr, register int 
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (*s == 'x' || *s == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) && (*(s+1) == 'x' || *(s+1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }
@@ -661,7 +662,7 @@ done:
  *                      between 2 and 36 inclusive, or be the special value 0.
  * @return unsigned long The unsigned long value.
  */
-static unsigned long
+unsigned long
 cli_strntoul(const char* nptr, size_t n, char** endptr, register int base)
 {
     register const char* s = nptr;
@@ -695,7 +696,7 @@ cli_strntoul(const char* nptr, size_t n, char** endptr, register int base)
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (*s == 'x' || *s == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) && (*(s+1) == 'x' || *(s+1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }
@@ -755,7 +756,7 @@ done:
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
+cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
 {
     char *endptr = NULL;
     long num;
@@ -798,7 +799,7 @@ int cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-int cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result)
+cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result)
 {
     char *endptr = NULL;
     long num;
@@ -1109,4 +1110,42 @@ int cli_isutf8(const char *buf, unsigned int len)
     }
 
     return 1;
+}
+
+cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **filebase)
+{
+    cl_error_t status = CL_EARG;
+    const char *index = NULL;
+    
+    if (NULL == filepath || NULL == filebase || filepath_len == 0) {
+        cli_dbgmsg("cli_basename: Invalid arguments.\n");
+        goto done;
+    }
+
+    index = filepath + filepath_len - 1;
+
+    while (index > filepath) {
+        if (index[0] == PATHSEP[0]) break;
+        index--;
+    }
+    if ((index != filepath) || (index[0] == PATHSEP[0]))
+        index++;
+
+    if (0 == cli_strnlen(index, filepath_len - (index - filepath))) {
+        cli_dbgmsg("cli_basename: Provided path does not include a file name.\n");
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    *filebase = cli_strndup(index, filepath_len - (index - filepath));
+    if (NULL == *filebase) {
+        cli_errmsg("cli_basename: Failed to allocate memory for file basename.\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
 }

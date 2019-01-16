@@ -341,7 +341,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 	if (fd < 0)
 		return ret;
 
-	ret = cli_magic_scandesc(fd, ctx);
+	ret = cli_magic_scandesc(fd, filename, ctx);
 
 	close(fd);
 	return ret;
@@ -369,6 +369,11 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		return CL_EUNPACK;
 	}
 
+	cab_d->set_param(cab_d, MSCABD_PARAM_FIXMSZIP, 1);
+#if MSCABD_PARAM_SALVAGE
+	cab_d->set_param(cab_d, MSCABD_PARAM_SALVAGE, 1);
+#endif
+
 	cab_h = cab_d->open(cab_d, (char *)&mspack_fmap);
 	if (!cab_h) {
 		ret = CL_EFORMAT;
@@ -385,7 +390,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		if (ret) {
 			if (ret == CL_VIRUS) {
 				virus_num++;
-				if (!SCAN_ALL)
+				if (!SCAN_ALLMATCHES)
 					break;
 			}
 			goto out_close;
@@ -434,7 +439,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 		}
 		free(tmp_fname);
 		files++;
-		if (ret == CL_VIRUS && SCAN_ALL)
+		if (ret == CL_VIRUS && SCAN_ALLMATCHES)
 			continue;
 		if (ret)
 			break;
@@ -486,7 +491,7 @@ int cli_scanmschm(cli_ctx *ctx)
 		if (ret) {
 			if (ret == CL_VIRUS) {
 				virus_num++;
-				if (!SCAN_ALL)
+				if (!SCAN_ALLMATCHES)
 					break;
 			}
 			goto out_close;
@@ -536,7 +541,7 @@ int cli_scanmschm(cli_ctx *ctx)
 		}
 		free(tmp_fname);
 		files++;
-		if (ret == CL_VIRUS && SCAN_ALL)
+		if (ret == CL_VIRUS && SCAN_ALLMATCHES)
 			continue;
 		if (ret)
 			break;

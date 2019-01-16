@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!DOCTYPE xsa PUBLIC "-//LM Garshol//DTD XML Software Autoupdate 1.0//EN//XML" "http://www.garshol.priv.no/download/xsa/xsa.dtd">
+<xsa>
+  <vendor>
+    <name>Daniel Veillard</name>
+    <email>daniel@veillard.com</email>
+    <url>http://veillard.com/</url>
+  </vendor>
+  <product id="libxml2">
+    <name>libxml2</name>
+    <version>2.9.7</version>
+    <last-release> Nov 02 2017</last-release>
+    <info-url>http://xmlsoft.org/</info-url>
+    <changes>   - Documentation:
+  xmlcatalog: refresh man page wrt. quering system catalog easily (Jan Pokorný)
+  
+   - Portability:
+  Fix deprecated Travis compiler flag (Nick Wellnhofer),
+  Add declaration for DllMain (J. Peter Mugaas),
+  Fix preprocessor conditional in threads.h (J. Peter Mugaas),
+  Fix pointer comparison warnings on 64-bit Windows (J. Peter Mugaas),
+  Fix macro redefinition warning (J. Peter Mugaas),
+  Default to native threads on MinGW-w64 (Nick Wellnhofer),
+  Simplify Windows IO functions (Nick Wellnhofer),
+  Fix runtest on Windows (Nick Wellnhofer),
+  socklen_t is always int on Windows (Nick Wellnhofer),
+  Don't redefine socket error codes on Windows (Nick Wellnhofer),
+  Fix pointer/int cast warnings on 64-bit Windows (Nick Wellnhofer),
+  Fix Windows compiler warnings in xmlCanonicPath (Nick Wellnhofer)
+  
+   - Bug Fixes:
+  xmlcatalog: restore ability to query system catalog easily (Jan Pokorný),
+  Fix comparison of nodesets to strings (Nick Wellnhofer)
+  
+   - Improvements:
+  Add Makefile rules to rebuild HTML man pages (Nick Wellnhofer),
+  Fix mixed decls and code in timsort.h (Nick Wellnhofer),
+  Rework handling of return values in thread tests (Nick Wellnhofer),
+  Fix unused variable warnings in testrecurse (Nick Wellnhofer),
+  Fix -Wimplicit-fallthrough warnings (J. Peter Mugaas),
+  Upgrade timsort.h to latest revision (Nick Wellnhofer),
+  Increase warning level to /W3 under MSVC (Nick Wellnhofer),
+  Fix a couple of warnings in dict.c and threads.c (Nick Wellnhofer),
+  Update .gitignore for Windows (Nick Wellnhofer),
+  Fix unused variable warnings in nanohttp.c (Nick Wellnhofer),
+  Fix the Windows header mess (Nick Wellnhofer),
+  Don't include winsock2.h in xmllint.c (Nick Wellnhofer),
+  Remove generated file python/setup.py from version control (Nick Wellnhofer),
+  Use __linux__ macro in generated code (Nick Wellnhofer)
+  
+
+</changes>
+  </product>
+</xsa>

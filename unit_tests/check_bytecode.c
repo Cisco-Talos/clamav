@@ -62,9 +62,13 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     int fdin = -1;
     char filestr[512];
     const char * virname = NULL;
+    struct cl_scan_options options;
 
     memset(&cctx, 0, sizeof(cctx));
-    cctx.options |= CL_SCAN_ALLMATCHES;
+    memset(&options, 0, sizeof(struct cl_scan_options));
+    cctx.options = &options;
+
+    cctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
     cctx.virname = &virname;
     cctx.engine = engine = cl_engine_new();
     fail_unless(!!cctx.engine, "cannot create engine");

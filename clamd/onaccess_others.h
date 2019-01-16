@@ -22,6 +22,7 @@
 #define __CLAMD_ONAS_OTHERS_H
 
 #include "shared/optparser.h"
+#include "libclamav/clamav.h"
 
 typedef enum {
     CHK_CLEAN,
@@ -30,6 +31,6 @@ typedef enum {
 } cli_check_t;
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts);
-int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, int options, int extinfo);
+int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, struct cl_scan_options *options, int extinfo);
 
 #endif

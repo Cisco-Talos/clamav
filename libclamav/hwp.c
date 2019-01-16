@@ -24,11 +24,6 @@
 #endif
 
 #if HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlreader.h>
 #endif
 
@@ -77,7 +72,7 @@
 #define hwpml_debug(...) ;
 #endif
 
-typedef int (*hwp_cb )(void *cbdata, int fd, cli_ctx *ctx);
+typedef int (*hwp_cb )(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
 static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
     int zret, ofd, in, ret = CL_SUCCESS;
@@ -173,10 +168,10 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
             cli_infomsg(ctx, "%s: Error decompressing stream. Not all requested input was converted\n", parent);
 
         /* scanning inflated stream */
-        ret = cb(cbdata, ofd, ctx);
+        ret = cb(cbdata, ofd, tmpname, ctx);
     } else {
         /* default to scanning what we got */
-        ret = cli_magic_scandesc(ofd, ctx);
+        ret = cli_magic_scandesc(ofd, tmpname, ctx);
     }
 
     /* clean-up */
@@ -306,7 +301,7 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
         return CL_ENULLARG;
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
 
         header = cli_jsonobj(ctx->wrkproperty, "Hwp5Header");
@@ -371,15 +366,15 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
     return CL_SUCCESS;
 }
 
-static int hwp5_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwp5_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
+int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath)
 {
     hwp5_debug("HWP5.x: NAME: %s\n", name ? name : "(NULL)");
 
@@ -396,7 +391,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 
             if (hwp5->flags & HWP5_PASSWORD) {
                 cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
-                return cli_magic_scandesc(fd, ctx);
+                return cli_magic_scandesc(fd, filepath, ctx);
             }
 
             if (hwp5->flags & HWP5_COMPRESSED) {
@@ -426,7 +421,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
 
 #if HAVE_JSON
         /* JSON Output Summary Information */
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->properties != NULL) {
+        if (SCAN_COLLECT_METADATA && ctx->properties != NULL) {
             if (name && !strncmp(name, "_5_hwpsummaryinformation", 24)) {
                 cli_dbgmsg("HWP5.x: Detected a '_5_hwpsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
@@ -439,7 +434,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd)
     }
 
     /* normal streams */
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
 /*** HWP3 ***/
@@ -539,7 +534,7 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
     hwp3_debug("HWP3.x: di_infoblksize: %u\n", docinfo->di_infoblksize);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         json_object *header, *flags;
         char *str;
 
@@ -605,7 +600,7 @@ static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
     int i, iret, ret;
     json_object *summary;
 
-    if (!(ctx->options & CL_SCAN_FILE_PROPERTIES))
+    if (!SCAN_COLLECT_METADATA)
         return CL_SUCCESS;
 
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
@@ -783,7 +778,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 #else
     new_offset = offset + (nlines * HWP3_LINEINFO_SIZE);
     if ((new_offset < offset) || (new_offset >= map->len)) {
-        cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, nlines);
+        cli_errmsg("HWP3.x: Paragraph[%d, %d]: nlines value is too high, invalid. %u\n", level, p, nlines);
         return CL_EPARSE;
     }
     offset = new_offset;
@@ -882,7 +877,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
@@ -915,7 +910,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
@@ -1460,7 +1455,7 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
 
                     length = le32_to_host(length);
                     new_offset = offset + (8 + length);
-                    if ((new_offset <= offset) || (new_offset >= map->len)) {
+                    if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%d, %d]: length value is too high, invalid. %u\n", level, p, length);
                         return CL_EPARSE;
                     }
@@ -1537,7 +1532,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     hwp3_debug("HWP3.x: Information Block @ offset %llu\n", infoloc);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         infoblk_1 = cli_jsonobj(ctx->wrkproperty, "InfoBlk_1");
         if (!infoblk_1) {
             cli_errmsg("HWP5.x: No memory for information block object\n");
@@ -1568,7 +1563,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     infoid = le32_to_host(infoid);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         entry = cli_jsonobj(contents, NULL);
         if (!entry) {
             cli_errmsg("HWP5.x: No memory for information block entry object\n");
@@ -1584,7 +1579,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     if (infoid == 5) {
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Booking Information");
 #endif
         return CL_SUCCESS;
@@ -1599,7 +1594,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     infolen = le32_to_host(infolen);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         cli_jsonint64(entry, "Offset", infoloc);
         cli_jsonint(entry, "Length", infolen);
     }
@@ -1619,7 +1614,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         if (infolen == 0) {
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Terminating Entry\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Terminating Entry");
 #endif
             if (last) *last = 1;
@@ -1631,7 +1626,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 1: /* Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Image Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Image Data");
 #endif
 #if HWP3_DEBUG /* additional fields can be added */
@@ -1658,7 +1653,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 2: /* OLE2 Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "OLE2 Data");
 #endif
         if (infolen > 0)
@@ -1674,7 +1669,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         count = (infolen / 617);
         hwp3_debug("HWP3.x: Information Block[%llu]: COUNT: %d entries\n", infoloc, count);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonstr(entry, "Type", "Hypertext/Hyperlink Information");
             cli_jsonint(entry, "Count", count);
         }
@@ -1697,7 +1692,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 4: /* Presentation Information */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Presentation Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Presentation Information");
 #endif
         /* contains nothing of interest to scan */
@@ -1706,14 +1701,14 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
         /* should never run this as it is short-circuited above */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Booking Information\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Booking Information");
 #endif
         break;
     case 6: /* Background Image Data */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Background Image Data\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+        if (SCAN_COLLECT_METADATA) {
             cli_jsonstr(entry, "Type", "Background Image Data");
             cli_jsonint(entry, "ImageSize", infolen-324);
         }
@@ -1734,7 +1729,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 0x100: /* Table Extension */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Table Extension\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Table Extension");
 #endif
         /* contains nothing of interest to scan */
@@ -1742,7 +1737,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     case 0x101: /* Press Frame Information Field Name */
         hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Press Frame Information Field Name\n", infoloc);
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonstr(entry, "Type", "Press Frame Information Field Name");
 #endif
         /* contains nothing of interest to scan */
@@ -1757,7 +1752,7 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     return ret;
 }
 
-static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwp3_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     fmap_t *map, *dmap;
     off_t offset, start, new_offset;
@@ -1796,7 +1791,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
 
     /* Fonts - 7 entries of 2 + (n x 40) bytes where n is the first 2 bytes of the entry */
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         fonts = cli_jsonarray(ctx->wrkproperty, "FontCounts");
 #endif
     for (i = 0; i < 7; i++) {
@@ -1810,7 +1805,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         nfonts = le16_to_host(nfonts);
 
 #if HAVE_JSON
-        if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+        if (SCAN_COLLECT_METADATA)
             cli_jsonint(fonts, NULL, nfonts);
 #endif
         hwp3_debug("HWP3.x: Font Entry %d with %u entries @ offset %llu\n", i+1, nfonts, (long long unsigned)offset);
@@ -1831,7 +1826,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     nstyles = le16_to_host(nstyles);
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         cli_jsonint(ctx->wrkproperty, "StyleCount", nstyles);
 #endif
     hwp3_debug("HWP3.x: %u Styles @ offset %llu\n", nstyles, (long long unsigned)offset);
@@ -1853,7 +1848,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
         return ret;
     }
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES)
+    if (SCAN_COLLECT_METADATA)
         cli_jsonint(ctx->wrkproperty, "ParagraphCount", p);
 #endif
 
@@ -1862,7 +1857,7 @@ static int hwp3_cb(void *cbdata, int fd, cli_ctx *ctx)
     while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS));
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
-    if ((ret == CL_SUCCESS) || ((SCAN_ALL) && (ret == CL_VIRUS))) {
+    if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
         int subret = ret;
         size_t dlen = offset - start;
 
@@ -1925,7 +1920,7 @@ int cli_scanhwp3(cli_ctx *ctx)
     if (docinfo.di_compressed)
         ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
     else
-        ret = hwp3_cb(&offset, 0, ctx);
+        ret = hwp3_cb(&offset, 0, ctx->sub_filepath, ctx);
 
     if (ret != CL_SUCCESS)
         return ret;
@@ -1974,15 +1969,15 @@ static const struct key_entry hwpml_keys[] = {
 static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
 
 /* binary streams needs to be base64-decoded then decompressed if fields are set */
-static int hwpml_scan_cb(void *cbdata, int fd, cli_ctx *ctx)
+static int hwpml_scan_cb(void *cbdata, int fd, const char* filepath, cli_ctx *ctx)
 {
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, ctx);
+    return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
+static int hwpml_binary_cb(int fd, const char* filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
 {
     int i, ret, df = 0, com = 0, enc = 0;
     char *tempfile;
@@ -2013,7 +2008,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
     /* decode the binary data if needed - base64 */
     if (enc < 0) {
         cli_errmsg("HWPML: Unrecognized encoding method\n");
-        return cli_magic_scandesc(fd, ctx);
+        return cli_magic_scandesc(fd, filepath, ctx);
     } else if (enc == 1) {
         STATBUF statbuf;
         fmap_t *input;
@@ -2045,7 +2040,7 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
         funmap(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");
-            return cli_magic_scandesc(fd, ctx);
+            return cli_magic_scandesc(fd, filepath, ctx);
         }
 
         /* open file for writing and scanning */
@@ -2090,7 +2085,11 @@ static int hwpml_binary_cb(int fd, cli_ctx *ctx, int num_attribs, struct attrib_
         ret = decompress_and_callback(ctx, input, 0, 0, "HWPML", hwpml_scan_cb, NULL);
         funmap(input);
     } else {
-        ret = hwpml_scan_cb(NULL, fd, ctx);
+        if (fd == df) { /* fd is a decoded tempfile */
+            ret = hwpml_scan_cb(NULL, fd, tempfile, ctx);
+        } else {        /* fd is the original filepath, no decoding necessary */
+            ret = hwpml_scan_cb(NULL, fd, filepath, ctx);
+        }
     }
 
     /* close decoded file descriptor if used */

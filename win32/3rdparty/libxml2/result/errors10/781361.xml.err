@@ -1,0 +1,13 @@
+./test/errors10/781361.xml:4: parser error : xmlParseElementDecl: 'EMPTY', 'ANY' or '(' expected
+
+^
+./test/errors10/781361.xml:4: parser error : internal error: xmlParseInternalSubset: error detected in Markup declaration
+
+
+^
+./test/errors10/781361.xml:4: parser error : DOCTYPE improperly terminated
+
+^
+./test/errors10/781361.xml:4: parser error : Start tag expected, '<' not found
+
+^

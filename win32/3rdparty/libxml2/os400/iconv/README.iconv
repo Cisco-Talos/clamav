@@ -1,0 +1,47 @@
+IBM OS/400 implements iconv in an odd way:
+- Type iconv_t is a structure: therefore objects of this type cannot be
+  compared to (iconv_t) -1.
+- Supported character sets names are all of the form IBMCCSIDccsid..., where
+  ccsid is a decimal 5-digit integer identifying an IBM coded character set.
+  In addition, character set names have to be given in EBCDIC.
+  Standard character set names like "UTF-8" are NOT recognized.
+- The prototype of iconv_open() does not declare parameters as const, although
+  they are not altered.
+
+ Since libiconv does not support EBCDIC, use of this package here as a
+replacement is not a solution.
+
+ For these reasons, the code in this directory implements a wrapper to the
+OS/400 iconv implementation. The wrapper performs the following transformations:
+- Type iconv_t is an pointer. Although OS/400 pointers are odd, comparing
+  with (iconv_t) -1 is OK.
+- All IANA character set names are recognized in a coding- and case-insensitive
+  way, providing an equivalent CCSID exists. see
+  http://www.iana.org/assignments/character-sets/character-sets.xhtml
+- All CCSIDs from the association file can be expressed as IBMCCSIDxxxxx where
+  xxxxx is the 5 digit CCSID; no null terminator is required. Alternate codes
+  are of the form ibm-xxx (null-terminated), where xxx is the integer CCSID with
+  leading zeroes stripped.
+- If a IANA BIBenum is defined for a CCSID, the name iana-xxx can be used,
+  where xxx is the integer MIBenum without leading zeroes.
+- In addition, some aliases are also taken from the association file. Examples
+  are: ASCII, EBCDIC, UTF8.
+- Prototype of iconv_open() has const parameters.
+- Character code names can be given in any code.
+
+Character set names to CCSID conversion.
+- http://www.iana.org/assignments/character-sets/character-sets.xhtml provides
+  all IANA registered character set names and aliases associated with a
+  MIBenum, that is a unique character set identifier.
+- A hand-maintained file ccsid_mibenum.xml associates IBM CCSIDs to
+  IANA MBenums.
+- An OS/400 C program (in subdirectory bldcsndfa) generates a deterministic
+  finite automaton from the files mentioned above into a C file for all
+  possible character set name and associating each of them with its
+  corresponding CCSID. This program can only be run on OS/400 since it uses
+  the native iconv support for EBCDIC.
+- Since these operations are tedious and the table generation needs bootstraping
+  with libxml2, the generated automaton is stored within sources and need not
+  be rebuilt at each compilation. However, source is provided here to allow
+  new table generation with conversion tables that were not available at the
+  time of original generation.

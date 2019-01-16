@@ -47,6 +47,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #if HAVE_STRING_H
 #include <string.h>
@@ -89,11 +90,11 @@
 
 #define DCONF ctx->dconf->pe
 
-#define PE_IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
+#define PE_IMAGE_DOS_SIGNATURE      0x5a4d          /* MZ */
 #define PE_IMAGE_DOS_SIGNATURE_OLD  0x4d5a          /* ZM */
-#define PE_IMAGE_NT_SIGNATURE	    0x00004550
-#define PE32_SIGNATURE		    0x010b
-#define PE32P_SIGNATURE		    0x020b
+#define PE_IMAGE_NT_SIGNATURE       0x00004550
+#define PE32_SIGNATURE              0x010b
+#define PE32P_SIGNATURE             0x020b
 
 #define optional_hdr64 pe_opt.opt64
 #define optional_hdr32 pe_opt.opt32
@@ -108,6 +109,9 @@
 
 #define PE_MAXNAMESIZE 256
 #define PE_MAXIMPORTS  1024
+// TODO On Vista and above, up to 65535 sections are allowed.  Make sure
+// that using this lower limit from XP is acceptable in all cases
+#define PE_MAXSECTIONS  96
 
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
@@ -117,9 +121,9 @@
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
 #define CLI_UNPSIZELIMITS(NAME,CHK) \
-if(cli_checklimits(NAME, ctx, (CHK), 0, 0)!=CL_CLEAN) {	\
-    free(exe_sections);					\
-    return CL_CLEAN;					\
+if(cli_checklimits(NAME, ctx, (CHK), 0, 0)!=CL_CLEAN) { \
+    free(exe_sections);                                 \
+    return CL_CLEAN;                                    \
 }
 
 #define CLI_UNPTEMP(NAME,FREEME) \
@@ -190,7 +194,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
         lseek(ndesc, 0, SEEK_SET); \
         cli_dbgmsg("***** Scanning rebuilt PE file *****\n"); \
         SHA_OFF; \
-        if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) { \
+        if(cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) { \
             close(ndesc); \
             CLI_TMPUNLK(); \
             free(tempfile); \
@@ -223,7 +227,7 @@ FSGSTUFF; \
 #define CLI_UNPRESULTSFSG1(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,free(sections)),EXPR,GOOD,FREEME)
 #define CLI_UNPRESULTSFSG2(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,(void)0),EXPR,GOOD,FREEME)
 
-#define DETECT_BROKEN_PE (DETECT_BROKEN && !ctx->corrupted_input)
+#define DETECT_BROKEN_PE (SCAN_HEURISTIC_BROKEN && !ctx->corrupted_input)
 
 extern const unsigned int hashlen[];
 
@@ -348,62 +352,62 @@ void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, fmap_t *map, 
     uint16_t type_cnt, name_cnt, lang_cnt;
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-	return;
+        return;
 
     type_cnt = (uint16_t)cli_readint16(resdir+12);
     type_entry = resdir+16;
     if(!(by_type>>31)) {
-	type_entry += type_cnt * 8;
-	type_cnt = (uint16_t)cli_readint16(resdir+14);
+        type_entry += type_cnt * 8;
+        type_cnt = (uint16_t)cli_readint16(resdir+14);
     }
 
     while(type_cnt--) {
-	if(!fmap_need_ptr_once(map, type_entry, 8))
-	    return;
-	type = cli_readint32(type_entry);
-	type_offs = cli_readint32(type_entry+4);
-	if(type == by_type && (type_offs>>31)) {
-	    type_offs &= 0x7fffffff;
-	    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-		return;
+        if(!fmap_need_ptr_once(map, type_entry, 8))
+            return;
+        type = cli_readint32(type_entry);
+        type_offs = cli_readint32(type_entry+4);
+        if(type == by_type && (type_offs>>31)) {
+            type_offs &= 0x7fffffff;
+            if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+                return;
 
-	    name_cnt = (uint16_t)cli_readint16(resdir+12);
-	    name_entry = resdir+16;
-	    if(by_name == 0xffffffff)
-		name_cnt += (uint16_t)cli_readint16(resdir+14);
-	    else if(!(by_name>>31)) {
-		name_entry += name_cnt * 8;
-		name_cnt = (uint16_t)cli_readint16(resdir+14);
-	    }
-	    while(name_cnt--) {
-		if(!fmap_need_ptr_once(map, name_entry, 8))
-		    return;
-		name = cli_readint32(name_entry);
-		name_offs = cli_readint32(name_entry+4);
-		if((by_name == 0xffffffff || name == by_name) && (name_offs>>31)) {
-		    name_offs &= 0x7fffffff;
-		    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
-			return;
-		    
-		    lang_cnt = (uint16_t)cli_readint16(resdir+12) + (uint16_t)cli_readint16(resdir+14);
-		    lang_entry = resdir+16;
-		    while(lang_cnt--) {
-			if(!fmap_need_ptr_once(map, lang_entry, 8))
-			    return;
-			lang = cli_readint32(lang_entry);
-			lang_offs = cli_readint32(lang_entry+4);
-			if(!(lang_offs >>31)) {
-			    if(cb(opaque, type, name, lang, res_rva + lang_offs))
-				return;
-			}
-			lang_entry += 8;
-		    }
-		}
-		name_entry += 8;
-	    }
-	    return; /* FIXME: unless we want to find ALL types */
-	}
-	type_entry += 8;
+            name_cnt = (uint16_t)cli_readint16(resdir+12);
+            name_entry = resdir+16;
+            if(by_name == 0xffffffff)
+                name_cnt += (uint16_t)cli_readint16(resdir+14);
+            else if(!(by_name>>31)) {
+                name_entry += name_cnt * 8;
+                name_cnt = (uint16_t)cli_readint16(resdir+14);
+            }
+            while(name_cnt--) {
+                if(!fmap_need_ptr_once(map, name_entry, 8))
+                    return;
+                name = cli_readint32(name_entry);
+                name_offs = cli_readint32(name_entry+4);
+                if((by_name == 0xffffffff || name == by_name) && (name_offs>>31)) {
+                    name_offs &= 0x7fffffff;
+                    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+                        return;
+
+                    lang_cnt = (uint16_t)cli_readint16(resdir+12) + (uint16_t)cli_readint16(resdir+14);
+                    lang_entry = resdir+16;
+                    while(lang_cnt--) {
+                        if(!fmap_need_ptr_once(map, lang_entry, 8))
+                            return;
+                        lang = cli_readint32(lang_entry);
+                        lang_offs = cli_readint32(lang_entry+4);
+                        if(!(lang_offs >>31)) {
+                            if(cb(opaque, type, name, lang, res_rva + lang_offs))
+                                return;
+                        }
+                        lang_entry += 8;
+                    }
+                }
+                name_entry += 8;
+            }
+            return; /* FIXME: unless we want to find ALL types */
+        }
+        type_entry += 8;
     }
 }
 
@@ -418,82 +422,82 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     if(level>2 || !*maxres) return;
     *maxres-=1;
     if(err || !(resdir = fmap_need_off_once(map, rawaddr, 16)))
-	    return;
+            return;
     named = (uint16_t)cli_readint16(resdir+12);
     unnamed = (uint16_t)cli_readint16(resdir+14);
 
     entries = /*named+*/unnamed;
     if (!entries)
-	    return;
+            return;
     rawaddr += named*8; /* skip named */
     /* this is just used in a heuristic detection, so don't give error on failure */
     if(!(entry = fmap_need_off(map, rawaddr+16, entries*8))) {
-	    cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
-	    return;
+            cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
+            return;
     }
     oentry = entry;
     /*for (i=0; i<named; i++) {
-	uint32_t id, offs;
-	id = cli_readint32(entry);
-	offs = cli_readint32(entry+4);
-	if(offs>>31)
-	    cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
-	entry+=8;
+        uint32_t id, offs;
+        id = cli_readint32(entry);
+        offs = cli_readint32(entry+4);
+        if(offs>>31)
+            cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+        entry+=8;
     }*/
     for (i=0; i<unnamed; i++, entry += 8) {
-	uint32_t id, offs;
-	if (stats->errors >= SWIZZ_MAXERRORS) {
-	    cli_dbgmsg("cli_parseres_special: resources broken, ignoring\n");
-	    return;
-	}
-	id = cli_readint32(entry)&0x7fffffff;
-	if(level==0) {
-		type = 0;
-		switch(id) {
-			case 4: /* menu */
-			case 5: /* dialog */
-			case 6: /* string */
-			case 11:/* msgtable */
-				type = id;
-				break;
-			case 16:
-				type = id;
-				/* 14: version */
-				stats->has_version = 1;
-				break;
-			case 24: /* manifest */
-				stats->has_manifest = 1;
-				break;
-			/* otherwise keep it 0, we don't want it */
-		}
-	}
-	if (!type) {
-		/* if we are not interested in this type, skip */
-		continue;
-	}
-	offs = cli_readint32(entry+4);
-	if(offs>>31)
-		cli_parseres_special(base, base + (offs&0x7fffffff), map, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
-	else {
-			offs = cli_readint32(entry+4);
-			rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
-			if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
-				uint32_t isz = cli_readint32(resdir+4);
-				const uint8_t *str;
-				rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
-				if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
-					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
-							(unsigned long)rawaddr, 
-							(unsigned long)isz);
-					stats->errors++;
-					continue;
-				}
-				if ((id&0xff) != 0x09) /* english res only */
-				    continue;
-				if((str = fmap_need_off_once(map, rawaddr, isz)))
-					cli_detect_swizz_str(str, isz, stats, type);
-			}
-	}
+        uint32_t id, offs;
+        if (stats->errors >= SWIZZ_MAXERRORS) {
+            cli_dbgmsg("cli_parseres_special: resources broken, ignoring\n");
+            return;
+        }
+        id = cli_readint32(entry)&0x7fffffff;
+        if(level==0) {
+                type = 0;
+                switch(id) {
+                        case 4: /* menu */
+                        case 5: /* dialog */
+                        case 6: /* string */
+                        case 11:/* msgtable */
+                                type = id;
+                                break;
+                        case 16:
+                                type = id;
+                                /* 14: version */
+                                stats->has_version = 1;
+                                break;
+                        case 24: /* manifest */
+                                stats->has_manifest = 1;
+                                break;
+                        /* otherwise keep it 0, we don't want it */
+                }
+        }
+        if (!type) {
+                /* if we are not interested in this type, skip */
+                continue;
+        }
+        offs = cli_readint32(entry+4);
+        if(offs>>31)
+                cli_parseres_special(base, base + (offs&0x7fffffff), map, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+        else {
+                        offs = cli_readint32(entry+4);
+                        rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
+                        if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
+                                uint32_t isz = cli_readint32(resdir+4);
+                                const uint8_t *str;
+                                rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
+                                if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
+                                        cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
+                                                        (unsigned long)rawaddr, 
+                                                        (unsigned long)isz);
+                                        stats->errors++;
+                                        continue;
+                                }
+                                if ((id&0xff) != 0x09) /* english res only */
+                                    continue;
+                                if((str = fmap_need_off_once(map, rawaddr, isz)))
+                                        cli_detect_swizz_str(str, isz, stats, type);
+                        }
+        }
     }
     fmap_unneed_ptr(map, oentry, entries*8);
 }
@@ -598,7 +602,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -607,7 +611,7 @@ static int scan_pe_mdb (cli_ctx * ctx, struct cli_exe_section *exe_section)
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -2573,7 +2577,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
         }
@@ -2582,7 +2586,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct pe_image_data_dir *dirs, struct cli_
             if (ret != CL_CLEAN) {
                 if (ret != CL_VIRUS)
                     break;
-                else if (!SCAN_ALL)
+                else if (!SCAN_ALLMATCHES)
                     break;
             }
        }
@@ -2758,7 +2762,7 @@ int cli_scanpe(cli_ctx *ctx)
         return CL_ETIMEOUT;
     }
 
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         pe_json = get_pe_property(ctx);
     }
 #endif
@@ -2921,7 +2925,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96) {
+    if(nsections < 1 || nsections > PE_MAXSECTIONS) {
 #if HAVE_JSON
         pe_add_heuristic_property(ctx, "BadNumberOfSections");
 #endif
@@ -3119,7 +3123,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
 #if HAVE_JSON
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES) {
+    if (SCAN_COLLECT_METADATA) {
         snprintf(jsonbuf, sizeof(jsonbuf), "0x%x", vep);
         if (pe_json != NULL)
             cli_jsonstr(pe_json, "EntryPoint", jsonbuf);
@@ -3349,7 +3353,7 @@ int cli_scanpe(cli_ctx *ctx)
         }
 
         if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
-            if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
+            if(SCAN_HEURISTICS && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
 
             /* check hash section sigs */
             if((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
@@ -3446,13 +3450,13 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* CLI_UNPTEMP("DISASM",(exe_sections,0)); */
     /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /* 	ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /*  ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
     /* close(ndesc); */
     /* CLI_TMPUNLK(); */
     /* free(tempfile); */
     /* if(ret == CL_VIRUS) { */
-    /* 	free(exe_sections); */
-    /* 	return ret; */
+    /*  free(exe_sections); */
+    /*  return ret; */
     /* } */
 
     if(overlays) {
@@ -3516,7 +3520,7 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_warnmsg("cli_scanpe: NULL argument supplied\n");
                 break;
             case CL_VIRUS:
-                if (SCAN_ALL)
+                if (SCAN_ALLMATCHES)
                     break;
                 /* intentional fall-through */
             case CL_BREAK:
@@ -3530,7 +3534,7 @@ int cli_scanpe(cli_ctx *ctx)
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
-    if(SCAN_ALGO && (DCONF & PE_CONF_PARITE) && !dll && epsize == 4096 && ep == exe_sections[nsections - 1].raw) {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_PARITE) && !dll && epsize == 4096 && ep == exe_sections[nsections - 1].raw) {
         const char *pt = cli_memstr(epbuff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
         if(pt) {
             pt += 15;
@@ -3538,7 +3542,7 @@ int cli_scanpe(cli_ctx *ctx)
                 ret = cli_append_virus(ctx,"Heuristics.W32.Parite.B");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
-                        if (!SCAN_ALL) {
+                        if (!SCAN_ALLMATCHES) {
                             free(exe_sections);
                             return ret;
                         }
@@ -3554,7 +3558,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* Kriz */
-    if(SCAN_ALGO && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' && epbuff[2]=='\x60') {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' && epbuff[2]=='\x60') {
         enum {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSXORPRFX,KZSXOR,KZSDDELTA,KZSLOOP,KZSTOP};
         uint8_t kzs[] = {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSTRASH,KZSXORPRFX,KZSXOR,KZSTRASH,KZSDDELTA,KZSTRASH,KZSLOOP,KZSTOP};
         uint8_t *kzstate = kzs;
@@ -3663,7 +3667,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,"Heuristics.W32.Kriz");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3682,7 +3686,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* W32.Magistr.A/B */
-    if(SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
+    if(SCAN_HEURISTICS && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
         uint32_t rsize, vsize, dam = 0;
 
         vsize = exe_sections[nsections - 1].uvsz;
@@ -3701,7 +3705,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3723,7 +3727,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(exe_sections);
                                 return ret;
                             }
@@ -3800,7 +3804,7 @@ int cli_scanpe(cli_ctx *ctx)
                 ret = cli_append_virus(ctx,"Heuristics.W32.Polipos.A");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
-                        if (!SCAN_ALL) {
+                        if (!SCAN_ALLMATCHES) {
                             free(jumps);
                             free(exe_sections);
                             return ret;
@@ -3821,7 +3825,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* Trojan.Swizzor.Gen */
-    if (SCAN_ALGO && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
+    if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
         if(dirs[2].Size) {
             struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
             unsigned int m = 1000;
@@ -3836,7 +3840,7 @@ int cli_scanpe(cli_ctx *ctx)
                     ret = cli_append_virus(ctx,"Heuristics.Trojan.Swizzor.Gen");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
-                            if (!SCAN_ALL) {
+                            if (!SCAN_ALLMATCHES) {
                                 free(stats);
                                 free(exe_sections);
                                 return ret;
@@ -3899,7 +3903,10 @@ int cli_scanpe(cli_ctx *ctx)
             else
                 cli_dbgmsg("MEW: Win9x compatibility was NOT set!\n");
 
-            if((offdiff = cli_readint32(tbuff+1) - EC32(optional_hdr32.ImageBase)) <= exe_sections[i + 1].rva || offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4) {
+            offdiff = cli_readint32(tbuff+1) - EC32(optional_hdr32.ImageBase);
+            if ((offdiff <= exe_sections[i + 1].rva) || 
+                (offdiff >= exe_sections[i + 1].rva + exe_sections[i + 1].raw - 4))
+            {
                 cli_dbgmsg("MEW: ESI is not in proper section\n");
                 break;
             }
@@ -3913,6 +3920,18 @@ int cli_scanpe(cli_ctx *ctx)
 
             ssize = exe_sections[i + 1].vsz;
             dsize = exe_sections[i].vsz;
+
+            /* Guard against integer overflow */
+            if ((ssize + dsize < ssize) || (ssize + dsize < dsize)) {
+                cli_dbgmsg("MEW: section size (%08x) + diff size (%08x) exceeds max size of unsigned int (%08x)\n", ssize, dsize, UINT32_MAX);
+                break;
+            }
+
+            /* Verify that offdiff does not exceed the ssize + sdiff */
+            if (offdiff >= ssize + dsize) {
+                cli_dbgmsg("MEW: offdiff (%08x) exceeds section size + diff size (%08x)\n", offdiff, ssize + dsize);
+                break;
+            }
 
             cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
 
@@ -4535,7 +4554,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if((ret = cli_magic_scandesc(ndesc, ctx)) == CL_VIRUS) {
+        if((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
             close(ndesc);
             CLI_TMPUNLK();
             free(tempfile);
@@ -4585,20 +4604,20 @@ int cli_scanpe(cli_ctx *ctx)
 
             for(i = 0 ; i < nsections; i++) {
                 if(exe_sections[i].raw) {
-			unsigned int r_ret;
+                        unsigned int r_ret;
 
-			if (!exe_sections[i].rsz)
-				goto out_no_petite;
+                        if (!exe_sections[i].rsz)
+                                goto out_no_petite;
 
-			if (!CLI_ISCONTAINED(dest, dsize,
-					     dest + exe_sections[i].rva - min,
-					     exe_sections[i].ursz))
-				goto out_no_petite;
+                        if (!CLI_ISCONTAINED(dest, dsize,
+                                             dest + exe_sections[i].rva - min,
+                                             exe_sections[i].ursz))
+                                goto out_no_petite;
 
-			r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
-					exe_sections[i].raw,
-					exe_sections[i].ursz);
-		    if (r_ret != exe_sections[i].ursz) {
+                        r_ret = fmap_readn(map, dest + exe_sections[i].rva - min,
+                                        exe_sections[i].raw,
+                                        exe_sections[i].ursz);
+                    if (r_ret != exe_sections[i].ursz) {
 out_no_petite:
                         free(exe_sections);
                         free(dest);
@@ -4727,7 +4746,7 @@ out_no_petite:
                 CLI_UNPTEMP("yC",(spinned,exe_sections,0));
                 CLI_UNPRESULTS("yC",(yc_decrypt(ctx, spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
 
-                if (SCAN_ALL && yc_unp_num_viruses != ctx->num_viruses) {
+                if (SCAN_ALLMATCHES && yc_unp_num_viruses != ctx->num_viruses) {
                     free(exe_sections);
                     return CL_VIRUS;
                 }
@@ -4821,11 +4840,26 @@ out_no_petite:
 
 
     /* ASPACK support */
-    while((DCONF & PE_CONF_ASPACK) && ep+58+0x70e < fsize && !memcmp(epbuff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
+    while((DCONF & PE_CONF_ASPACK) && 
+          ((ep+ASPACK_EP_OFFSET_212 < fsize) || 
+           (ep+ASPACK_EP_OFFSET_OTHER < fsize) || 
+           (ep+ASPACK_EP_OFFSET_242 < fsize)) && 
+          (!memcmp(epbuff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8))) {
         char *src;
+        aspack_version_t aspack_ver = ASPACK_VER_NONE;
 
-        if(epsize<0x3bf || memcmp(epbuff+0x3b9, "\x68\x00\x00\x00\x00\xc3",6))
+        if(epsize<0x3bf)
             break;
+        
+        if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_212, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_212;
+        } else if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_OTHER, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_OTHER;
+        } else if ( 0 == memcmp(epbuff+ASPACK_EPBUFF_OFFSET_242, "\x68\x00\x00\x00\x00\xc3",6)) {
+            aspack_ver = ASPACK_VER_242;
+        } else {
+            break;
+        }
         ssize = 0;
         for(i=0 ; i< nsections ; i++)
             if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
@@ -4863,7 +4897,7 @@ out_no_petite:
 #endif
 
         CLI_UNPTEMP("Aspack",(src,exe_sections,0));
-        CLI_UNPRESULTS("Aspack",(unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)),1,(src,0));
+        CLI_UNPRESULTS("Aspack",(unaspack((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc, aspack_ver)),1,(src,0));
         break;
     }
 
@@ -4991,7 +5025,7 @@ out_no_petite:
         return CL_ETIMEOUT;
 #endif
 
-    if (SCAN_ALL && viruses_found)
+    if (SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
 
     return CL_CLEAN;
@@ -5052,7 +5086,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
         return -1;
     }
 
-    if ( (peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > 96 ) return -1;
+    if ( (peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > PE_MAXSECTIONS ) return -1;
 
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
@@ -5356,7 +5390,38 @@ static int sort_sects(const void *first, const void *second) {
     return (a->raw - b->raw);
 }
 
-int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uint32_t flags) {
+/* Check the given PE file for an authenticode signature and return CL_CLEAN if
+ * the signature is valid.  There are two cases that this function should
+ * handle:
+ * - A PE file has an embedded Authenticode section
+ * - The PE file has no embedded Authenticode section but is covered by a
+ *   catalog file that was loaded in via a -d 
+ * CL_CLEAN will be returned if the file was whitelisted based on its
+ * signature.  CL_VIRUS will be returned if the file was blacklisted based on
+ * its signature.  Otherwise, an cl_error_t error value will be returned.
+ * 
+ * Also, this function computes the hashes of each section (sorted based on the
+ * RVAs of the sections) if the CL_CHECKFP_PE_FLAG_STATS flag exists in flags
+ *
+ * TODO The code to compute the section hashes is copied from
+ * cli_genhash_pe - we should use that function instead where this
+ * functionality is needed, since we no longer need to compute the section
+ * hashes as part of the authenticode hash calculation.
+ * 
+ * If the section hashes are to be computed and returned, this function
+ * allocates memory for the section hashes, and it's up to the caller to free
+ * it.  hashes->sections will be initialized to NULL at the beginning of the
+ * function, and if after the call it's value is non-NULL, the memory should be
+ * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
+ * to be valid regardless of the return code.
+ *
+ * Also, a few other notes:
+ *  - If a section has a virtual size of zero, it's corresponding hash value
+ *    will not be computed and the hash contents will be all zeroes.
+ *  - TODO Instead of not providing back any hashes when an invalid section is
+ *    encountered, would it be better to still compute hashes for the valid
+ *    sections? */
+cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags) {
     uint16_t e_magic; /* DOS signature ("MZ") */
     uint16_t nsections;
     uint32_t e_lfanew; /* address of new exe header */
@@ -5374,14 +5439,24 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     struct pe_image_data_dir *dirs;
     fmap_t *map = *ctx->fmap;
     void *hashctx=NULL;
-
-    if (flags & CL_CHECKFP_PE_FLAG_STATS)
-        if (!(hashes))
-            return CL_EFORMAT;
+    struct pe_certificate_hdr cert_hdr;
+    struct cli_mapped_region *regions = NULL;
+    unsigned int nregions;
+    cl_error_t ret = CL_EVERIFY;
+    uint8_t authsha1[SHA1_HASH_SIZE];
+    uint32_t sec_dir_offset;
+    uint32_t sec_dir_size;
 
     if (flags == CL_CHECKFP_PE_FLAG_NONE)
-        return CL_VIRUS;
+        return CL_BREAK;
 
+    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+        if (!(hashes))
+            return CL_ENULLARG;
+        hashes->sections = NULL;
+    }
+
+    // TODO What does this do?
     if(!(DCONF & PE_CONF_CATALOG))
         return CL_EFORMAT;
 
@@ -5405,11 +5480,17 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         return CL_EFORMAT;
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96)
+    if(nsections < 1 || nsections > PE_MAXSECTIONS)
         return CL_EFORMAT;
 
-    if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))
+    // TODO the pe_image_optional_hdr32 structure includes space for all 16
+    // data directories, but these might not all exist in a given binary.
+    // We need to check NumberOfRvaAndSizes instead, and allow through any
+    // with at least 5 (the security DataDirectory)
+    if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
+        cli_dbgmsg("cli_checkfp_pe: SizeOfOptionalHeader < less than the size expected (%lu)\n", sizeof(struct pe_image_optional_hdr32));
         return CL_EFORMAT;
+    }
 
     at = e_lfanew + sizeof(struct pe_image_file_hdr);
     if(fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32))
@@ -5444,6 +5525,21 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         dirs = optional_hdr64.DataDirectory;
     }
 
+    sec_dir_offset = EC32(dirs[4].VirtualAddress);
+    sec_dir_size = EC32(dirs[4].Size);
+
+    // As an optimization, check the security DataDirectory here and if
+    // it's less than 8-bytes (and we aren't relying on this code to compute
+    // the section hashes), bail out if we don't have any Authenticode hashes
+    // loaded from .cat files
+    if (sec_dir_size < 8 && !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2)) {
+        if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+            /* If stats is enabled, continue parsing the sample */
+            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
+        } else {
+            return CL_BREAK;
+        }
+    }
     fsize = map->len;
 
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
@@ -5459,12 +5555,17 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
     if(!exe_sections)
         return CL_EMEM;
 
+    // TODO I'm not sure why this is necessary since the specification says
+    // that PointerToRawData is expected to be a multiple of the file
+    // alignment.  Should we report this is as a PE with an error?
     for(i = 0; falign!=0x200 && i<nsections; i++) {
         /* file alignment fallback mode - blah */
         if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200))
             falign = 0x200;
     }
 
+    // TODO Why is this needed?  hdr_size should already be rounded up
+    // to a multiple of the file alignment.
     hdr_size = PESALIGN(hdr_size, falign); /* Aligned headers virtual size */
 
     if (flags & CL_CHECKFP_PE_FLAG_STATS) {
@@ -5476,77 +5577,110 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
         }
     }
 
+#define free_section_hashes() \
+    do { \
+        if (flags & CL_CHECKFP_PE_FLAG_STATS) { \
+            free(hashes->sections); \
+            hashes->sections = NULL; \
+        } \
+    } while(0)
+
+
+    // TODO Why do we fix up these alignments?  This shouldn't be needed?
     for(i = 0; i < nsections; i++) {
         exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
         exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
         exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
         exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
 
+        // TODO exe_sections[i].ursz is not assigned to (will always be 0)
+        // Figure out what this is meant to do and ensure that happens
         if (!exe_sections[i].vsz && exe_sections[i].rsz)
             exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
 
-        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
-            exe_sections[i].rsz = fsize - exe_sections[i].raw;
+        if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz)) {
+            cli_dbgmsg("cli_checkfp_pe: encountered section not fully contained within the file\n");
+            free(exe_sections);
+            free_section_hashes();
+            return CL_EFORMAT;
+        }
 
         if (exe_sections[i].rsz && exe_sections[i].raw >= fsize) {
+            cli_dbgmsg("cli_checkfp_pe: encountered section that doesn't exist within the file\n");
             free(exe_sections);
+            free_section_hashes();
             return CL_EFORMAT;
         }
 
+        // TODO These checks aren't needed because the u vars are never assigned (always 0)
+        // Figure out what this is meant to do and ensure that happens
         if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
             free(exe_sections);
+            free_section_hashes();
             return CL_EFORMAT;
         }
     }
 
+    // TODO This likely isn't needed anymore, since we no longer compute
+    // the authenticode hash like the 2008 spec doc says (sort sections
+    // and use the section info to compute the hash)
     cli_qsort(exe_sections, nsections, sizeof(*exe_sections), sort_sects);
-    hashctx = cl_hash_init("sha1");
-    if (!(hashctx)) {
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
-            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-    }
 
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        /* Check to see if we have a security section. */
-        if(!cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && dirs[4].Size < 8) {
-            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                /* If stats is enabled, continue parsing the sample */
-                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-            } else {
-                if (hashctx)
-                    cl_hash_destroy(hashctx);
-                return CL_BREAK;
+    /* Hash the sections */
+    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
+
+        for(i = 0; i < nsections; i++) {
+            const uint8_t *hptr;
+            void *md5ctx;
+
+            if(!exe_sections[i].rsz)
+                continue;
+
+            if(!(hptr = fmap_need_off_once(map, exe_sections[i].raw, exe_sections[i].rsz))){
+                free(exe_sections);
+                free_section_hashes();
+                return CL_EFORMAT;
+            }
+            md5ctx = cl_hash_init("md5");
+            if (md5ctx) {
+                cl_update_hash(md5ctx, (void *)hptr, exe_sections[i].rsz);
+                cl_finish_hash(md5ctx, hashes->sections[i].md5);
             }
         }
     }
 
-#define hash_chunk(where, size, isStatAble, section) \
+    /* After this point it's the caller's responsibility to free
+     * hashes->sections. Also, in the case where we are just computing the
+     * stats, we are finished */
+    free(exe_sections);
+
+    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+
+        // We'll build a list of the regions that need to be hashed and pass it to
+        // asn1_check_mscat to do hash verification there (the hash algorithm is
+        // specified in the PKCS7 structure).  We need to hash up to 4 regions
+        regions = (struct cli_mapped_region *) cli_calloc(4, sizeof(struct cli_mapped_region));
+        if(!regions) {
+            return CL_EMEM;
+        }
+        nregions = 0;
+
+#define add_chunk_to_hash_list(_offset, _size) \
     do { \
-        const uint8_t *hptr; \
-        if(!(size)) break; \
-        if(!(hptr = fmap_need_off_once(map, where, size))){ \
-            free(exe_sections); \
-            if (hashctx) \
-                cl_hash_destroy(hashctx); \
-            return CL_EFORMAT; \
-        } \
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) \
-            cl_update_hash(hashctx, (void *)hptr, size); \
-        if (isStatAble && flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            void *md5ctx; \
-            md5ctx = cl_hash_init("md5"); \
-            if (md5ctx) { \
-                cl_update_hash(md5ctx, (void *)hptr, size); \
-                cl_finish_hash(md5ctx, hashes->sections[section].md5); \
-            } \
+        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) { \
+            regions[nregions].offset = (_offset); \
+            regions[nregions].size = (_size); \
+            nregions++; \
         } \
     } while(0)
 
-    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
+        // Pretty much every case below should return CL_EFORMAT
+        ret = CL_EFORMAT;
+
         /* MZ to checksum */
         at = 0;
         hlen = e_lfanew + sizeof(struct pe_image_file_hdr) + (pe_plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-        hash_chunk(0, hlen, 0, 0);
+        add_chunk_to_hash_list(0, hlen);
         at = hlen + 4;
 
         /* Checksum to security */
@@ -5554,86 +5688,142 @@ int cli_checkfp_pe(cli_ctx *ctx, uint8_t *authsha1, stats_section_t *hashes, uin
             hlen = offsetof(struct pe_image_optional_hdr64, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
         else
             hlen = offsetof(struct pe_image_optional_hdr32, DataDirectory[4]) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
-        hash_chunk(at, hlen, 0, 0);
+        add_chunk_to_hash_list(at, hlen);
         at += hlen + 8;
 
         if(at > hdr_size) {
-            if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-                break;
-            } else {
-                free(exe_sections);
-                if (hashctx)
-                    cl_hash_destroy(hashctx);
-                return CL_EFORMAT;
-            }
+            break;
         }
 
         /* Security to End of header */
         hlen = hdr_size - at;
-        hash_chunk(at, hlen, 0, 0);
+        add_chunk_to_hash_list(at, hlen);
+        at += hlen;
 
-        at = hdr_size;
-        break;
-    }
+        if (sec_dir_offset) {
 
-    /* Hash the sections */
-    for(i = 0; i < nsections; i++) {
-        if(!exe_sections[i].rsz)
-            continue;
-
-        hash_chunk(exe_sections[i].raw, exe_sections[i].rsz, 1, i);
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE)
-            at += exe_sections[i].rsz;
-    }
-
-    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-        if((size_t)at < fsize) {
-            hlen = fsize - at;
-            if(dirs[4].Size > hlen) {
-                if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-                    flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-                    break;
-                } else {
-                    free(exe_sections);
-                    if (hashctx)
-                        cl_hash_destroy(hashctx);
-                    return CL_EFORMAT;
-                }
+            // Verify that we have all the bytes we expect in the authenticode sig
+            // and that the certificate table is the last thing in the file
+            // (according to the MS13-098 bulletin, this is a requirement)
+            if (fsize != sec_dir_size + sec_dir_offset) {
+                cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
+                break;
             }
 
-            hlen -= dirs[4].Size;
-            hash_chunk(at, hlen, 0, 0);
-            at += hlen;
+            // Hash everything from the end of the header to the start of the
+            // security section
+            if (at < sec_dir_offset) {
+                hlen = sec_dir_offset - at;
+                add_chunk_to_hash_list(at, hlen);
+            } else {
+                cli_dbgmsg("cli_checkfp_pe: security directory offset appears to overlap with the PE header\n");
+                break;
+            }
+
+            // Parse the security directory header
+
+            if(fmap_readn(map, &cert_hdr, sec_dir_offset, sizeof(cert_hdr)) != sizeof(cert_hdr)) {
+                break;
+            }
+
+            if (EC16(cert_hdr.revision) != WIN_CERT_REV_2) {
+                cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data revision\n");
+                break;
+            }
+
+            if (EC16(cert_hdr.type) != WIN_CERT_TYPE_PKCS7) {
+                cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data type\n");
+                break;
+            }
+
+            hlen = sec_dir_size;
+
+            if (EC32(cert_hdr.length) != hlen) {
+                /* This is the case that MS13-098 aimed to address, but it got
+                 * pushback to where the fix (not allowing additional, non-zero
+                 * bytes in the security directory) is now opt-in via a registry
+                 * key.  Given that most machines will treat these binaries as
+                 * valid, we'll still parse the signature and just trust that
+                 * our whitelist signatures are tailored enough to where any
+                 * instances of this are reasonable (for instance, I saw one
+                 * binary that appeared to use this to embed a license key.) */
+                cli_dbgmsg("cli_checkfp_pe: MS13-098 violation detected, but continuing on to verify certificate\n");
+            }
+
+            at = sec_dir_offset + sizeof(cert_hdr);
+            hlen -= sizeof(cert_hdr);
+
+            ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions);
+
+            if (CL_CLEAN == ret) {
+                // We validated the embedded signature.  Hooray!
+                break;
+            } else if(CL_VIRUS == ret) {
+                // A blacklist rule hit - don't continue on to check hm_fp for a match
+                break;
+            }
+
+            // Otherwise, we still need to check to see whether this file is
+            // covered by a .cat file (it's common these days for driver files
+            // to have .cat files covering PEs with embedded signatures)
+
+        } else {
+
+            // Hash everything from the end of the header to the end of the
+            // file
+            if (at < fsize) {
+                hlen = fsize - at;
+                add_chunk_to_hash_list(at, hlen);
+            }
         }
 
-        break;
-    } while (0);
+        // At this point we should compute the SHA1 authenticode hash to see
+        // whether we've had any hashes added from external catalog files
+        // TODO Is it gauranteed that the hashing algorithm will be SHA1?  If
+        // not, figure out how to handle that case
+        hashctx = cl_hash_init("sha1");
+        if (NULL == hashctx) {
+            ret = CL_EMEM;
+            break;
+        }
 
-    free(exe_sections);
+        for(i = 0; i < nregions; i++) {
+            const uint8_t *hptr;
+            if (0 == regions[i].size) {
+                continue;
+            }
+            if(!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))){
+                break;
+            }
 
-    if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE && hashctx) {
+            cl_update_hash(hashctx, hptr, regions[i].size);
+        }
+
+        if (i != nregions) {
+            break;
+        }
+
         cl_finish_hash(hashctx, authsha1);
+        hashctx = NULL;
 
-        if(cli_debug_flag) {
-            char shatxt[SHA1_HASH_SIZE*2+1];
-            for(i=0; i<SHA1_HASH_SIZE; i++)
-                sprintf(&shatxt[i*2], "%02x", authsha1[i]);
-            cli_dbgmsg("Authenticode: %s\n", shatxt);
+        if(cli_hm_scan(authsha1, 2, NULL, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+            cli_dbgmsg("cli_checkfp_pe: PE file whitelisted by catalog file\n");
+            ret = CL_CLEAN;
+            break;
         }
 
-        hlen = dirs[4].Size;
-        if(hlen < 8)
-            return CL_VIRUS;
+        ret = CL_EVERIFY;
+        break;
+    } /* while(flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) */
 
-        hlen -= 8;
-
-        return asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at + 8, hlen, authsha1);
-    } else {
-        if (hashctx)
-            cl_hash_destroy(hashctx);
-        return CL_VIRUS;
+    if (NULL != hashctx) {
+        cl_hash_destroy(hashctx);
     }
+
+    if (NULL != regions) {
+        free(regions);
+    }
+    return ret;
 }
 
 int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
@@ -5682,7 +5872,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         return CL_EFORMAT;
 
     nsections = EC16(file_hdr.NumberOfSections);
-    if(nsections < 1 || nsections > 96)
+    if(nsections < 1 || nsections > PE_MAXSECTIONS)
         return CL_EFORMAT;
 
     if(EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32))

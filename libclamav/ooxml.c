@@ -36,11 +36,6 @@
 #include "ooxml.h"
 
 #if HAVE_LIBXML2
-#ifdef _WIN32
-#ifndef LIBXML_WRITER_ENABLED
-#define LIBXML_WRITER_ENABLED 1
-#endif
-#endif
 #include <libxml/xmlreader.h>
 #endif
 
@@ -138,7 +133,7 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_core_cb(int fd, cli_ctx *ctx)
+static int ooxml_core_cb(int fd, const char* filepath, cli_ctx *ctx)
 {
     int ret;
 
@@ -152,7 +147,7 @@ static int ooxml_core_cb(int fd, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_extn_cb(int fd, cli_ctx *ctx)
+static int ooxml_extn_cb(int fd, const char* filepath, cli_ctx *ctx)
 {
     int ret;
 
@@ -166,7 +161,7 @@ static int ooxml_extn_cb(int fd, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_content_cb(int fd, cli_ctx *ctx)
+static int ooxml_content_cb(int fd, const char* filepath, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS, tmp, toval = 0, state;
     int core=0, extn=0, cust=0, dsig=0;
@@ -357,7 +352,7 @@ static const struct key_entry ooxml_hwp_keys[] = {
 };
 static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_entry);
 
-static int ooxml_hwp_cb(int fd, cli_ctx *ctx)
+static int ooxml_hwp_cb(int fd, const char* filepath, cli_ctx *ctx)
 {
     int ret = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;

@@ -68,7 +68,7 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg, const char *pa
 static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
 static void onas_ddd_handle_in_moved_from(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
 static void onas_ddd_handle_in_delete(struct ddd_thrarg *tharg, const char *path, const char *child_path, const struct inotify_event *event, int wd);
-static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int options);
+static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int extra_options);
 
 static void onas_ddd_exit(int sig);
 
@@ -385,9 +385,12 @@ void *onas_ddd_th(void *arg) {
 		}
 	}
 
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if(optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		logg("ScanOnAccess: Extra scanning and notifications enabled.\n");
-	}
+}
+	#endif
 
 
 	FD_ZERO(&rfds);
@@ -476,6 +479,9 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
 	struct stat s;
+
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
@@ -487,8 +493,10 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
 
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
 		}
-	} else {
-
+	}
+	else
+#endif
+	{
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
 		if(!(event->mask & IN_ISDIR)) return;
 
@@ -504,6 +512,8 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
 	struct stat s;
+	/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
+#if 0
 	if (optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
@@ -515,7 +525,10 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISDIR);
 		}
-	} else {
+	}
+	else
+#endif
+	{
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
 		if(!(event->mask & IN_ISDIR)) return;
 
@@ -527,8 +540,9 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 	return;
 }
 
-static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int options) {
+static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char *pathname, int extra_options) {
 
+	int thread_started = 1;
 	struct scth_thrarg *scth_tharg = NULL;
 	pthread_attr_t scth_attr;
 	pthread_t scth_pid = 0;
@@ -537,20 +551,37 @@ static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char 
 		if (pthread_attr_init(&scth_attr)) break;
 		pthread_attr_setdetachstate(&scth_attr, PTHREAD_CREATE_JOINABLE);
 
-		if (!(scth_tharg = (struct scth_thrarg *) malloc(sizeof(struct scth_thrarg)))) break;
+		/* Allocate memory for arguments. Thread is responsible for freeing it. */
+		if (!(scth_tharg = (struct scth_thrarg *) calloc(sizeof(struct scth_thrarg), 1))) break;
+		if (!(scth_tharg->options = (struct cl_scan_options *) calloc(sizeof(struct cl_scan_options), 1))) break;
 
-		scth_tharg->options = options;
+		(void) memcpy(scth_tharg->options, tharg->options, sizeof(struct cl_scan_options));
+
+		scth_tharg->extra_options = extra_options;
 		scth_tharg->opts = tharg->opts;
 		scth_tharg->pathname = strdup(pathname);
 		scth_tharg->engine = tharg->engine;
 
-		if (!pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg)) break;
-
-		free(scth_tharg);
-		scth_tharg = NULL;
+		thread_started = pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg);
 	} while(0);
-	if (!scth_tharg) logg("!ScanOnAccess: Unable to kick off extra scanning.\n");
 
+	if (0 != thread_started) {
+		/* Failed to create thread. Free anything we may have allocated. */
+		logg("!ScanOnAccess: Unable to kick off extra scanning.\n");
+		if (NULL != scth_tharg) {
+			if (NULL != scth_tharg->pathname){
+				free(scth_tharg->pathname);
+				scth_tharg->pathname = NULL;
+			}
+			if (NULL != scth_tharg->options) {
+				free(scth_tharg->options);
+				scth_tharg->options = NULL;
+			}
+			free(scth_tharg);
+			scth_tharg = NULL;
+		}
+	}
+	
 	return;
 }
 
