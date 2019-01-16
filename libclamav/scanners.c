@@ -2259,7 +2259,7 @@ static int cli_scan_structured(cli_ctx *ctx)
     while (!done && ((result = fmap_readn(map, buf, pos, 8191)) > 0))
     {
         pos += result;
-        if ((cc_count += ccfunc((const unsigned char *)buf, result, (ctx->options & CL_SCAN_HEURISTIC_STRUCTURED_CC)?1:0)) >= ctx->engine->min_cc_count)
+        if ((cc_count += ccfunc((const unsigned char *)buf, result, (ctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED_CC)?1:0)) >= ctx->engine->min_cc_count)
         {
             done = 1;
         }

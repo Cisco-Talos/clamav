@@ -1154,7 +1154,7 @@ int scanmanager(const struct optstruct *opts)
                 case 0:
                     break;
                 case 1:
-                    options |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
+                    options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
                     break;
                 default:
                     logg("!Invalid argument for --structured-cc-mode\n");

@@ -1127,7 +1127,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val);
 
     if(optget(opts, "StructuredCCOnly")->enabled)
-        options |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
+        options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
 
 	if((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
 	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
