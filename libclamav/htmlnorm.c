@@ -647,7 +647,7 @@ static void js_process(struct parser_state *js_state, const unsigned char *js_be
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	int fd_tmp, tag_length = 0, tag_arg_length = 0, binary;
-	int retval=FALSE, escape=FALSE, value = 0, hex=FALSE, tag_val_length=0;
+    int64_t retval = FALSE, escape = FALSE, value = 0, hex = FALSE, tag_val_length = 0;
 	int look_for_screnc=FALSE, in_screnc=FALSE,in_script=FALSE, text_space_written=FALSE;
 	FILE *stream_in = NULL;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE, saved_next_state=HTML_BAD_STATE;
@@ -1459,10 +1459,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_BAD_STATE;
 					ptr++;
 				} else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
-					if (hex) {
+                        if (hex && (value >> 32) * 16 < INT32_MAX) {
 						value *= 16;
-					} else {
+                        } else if ((value >> 32) * 10 < INT32_MAX) {
 						value *= 10;
+                        } else {
+                            html_output_c(file_buff_o2, value);
+                            state      = next_state;
+                            next_state = HTML_BAD_STATE;
+                            ptr++;
+                            break;
 					}
 					if (isdigit(*ptr)) {
 						value += (*ptr - '0');
@@ -1709,7 +1715,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				state = HTML_RFC2397_DATA;
 				break;
 			case HTML_ESCAPE_CHAR:
+                    if ((value >> 32) * 16 < INT32_MAX) {
 				value *= 16;
+                    } else {
+                        state = next_state;
+                        next_state = HTML_BAD_STATE;
+                        ptr++;
+                        break;
+                    }
 				length++;
 				if (isxdigit(*ptr)) {
 					if (isdigit(*ptr)) {
