@@ -163,7 +163,9 @@ static int fill_buf(arj_decode_t *decode_data, int n)
 {
         if (decode_data->status == CL_EFORMAT)
 	    return CL_EFORMAT;
-	decode_data->bit_buf = (decode_data->bit_buf << n) & 0xFFFF;
+    if (((uint64_t) decode_data->bit_buf) * (n > 0 ? 2 << (n - 1) : 0) > UINT32_MAX)
+        return CL_EFORMAT;
+    decode_data->bit_buf = (((uint64_t) decode_data->bit_buf) << n) & 0xFFFF;
 	while (n > decode_data->bit_count) {
 		decode_data->bit_buf |= decode_data->sub_bit_buf << (n -= decode_data->bit_count);
 		if (decode_data->comp_size != 0) {
@@ -623,10 +625,34 @@ static int decode(arj_metadata_t *metadata)
 	return CL_SUCCESS;
 }
 
-#define ARJ_BFIL(dd) {dd->getbuf|=dd->bit_buf>>dd->getlen;fill_buf(dd,CODE_BIT-dd->getlen);dd->getlen=CODE_BIT;}
-#define ARJ_GETBIT(dd,c) {if(dd->getlen<=0)ARJ_BFIL(dd) c=(dd->getbuf&0x8000)!=0;dd->getbuf<<=1;dd->getlen--;}
-#define ARJ_BPUL(dd,l) {dd->getbuf<<=l;dd->getlen-=l;}
-#define ARJ_GETBITS(dd,c,l) {if(dd->getlen<l)ARJ_BFIL(dd) c=(uint16_t)dd->getbuf>>(CODE_BIT-l);ARJ_BPUL(dd,l)}
+#define ARJ_BFIL(dd)                             \
+    {                                            \
+        dd->getbuf |= dd->bit_buf >> dd->getlen; \
+        fill_buf(dd, CODE_BIT - dd->getlen);     \
+        dd->getlen = CODE_BIT;                   \
+    }
+#define ARJ_GETBIT(dd, c)                                    \
+    {                                                        \
+        if (dd->getlen <= 0) ARJ_BFIL(dd)                    \
+                             c = (dd->getbuf & 0x8000) != 0; \
+        dd->getbuf *= 2;                                    \
+        dd->getlen--;                                        \
+    }
+#define ARJ_BPUL(dd, l)           \
+    do {                          \
+        int i;                    \
+        int j = l;                \
+        for (i = 0; i < j; i++) { \
+            dd->getbuf *= 2;      \
+        }                         \
+        dd->getlen -= l;          \
+    } while(0)
+#define ARJ_GETBITS(dd, c, l)                                           \
+    {                                                                   \
+        if (dd->getlen < l) ARJ_BFIL(dd)                                \
+                            c = (uint16_t)dd->getbuf >> (CODE_BIT - l); \
+        ARJ_BPUL(dd, l);                                                 \
+    }
 
 static uint16_t decode_ptr(arj_decode_t *decode_data)
 {
