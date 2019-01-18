@@ -347,7 +347,9 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
 
   for (i = 0; i < 58; i++) {
     stream.init_array[i] = j;
-    j += ( 1 << image[ep+i+0x70e]); /* boundchecked in pe.c */
+    if (ep + i + 0x70e < size) {
+      j += (1 << image[ep+i+0x70e]);
+    }
   }
 
   memset(stream.array1,0,sizeof(stream.array1));
