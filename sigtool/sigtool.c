@@ -112,7 +112,7 @@ static const struct dblist_s {
     {"zmd", 1},
     {"rmd", 1},
     {"idb", 0},
-    {"fp", 1},
+    {"fp", 1}, // TODO Should count be 0 here?  We don't count others like this
     {"sfp", 0},
     {"gdb", 1},
     {"pdb", 1},
@@ -120,6 +120,9 @@ static const struct dblist_s {
     {"crb", 1},
     {"cdb", 1},
     {"imp", 1},
+    // TODO Should we add .ioc, .yar, .yara, and .pwdb so that sigtool will
+    // include these sigs in a build (just in case we need this functionality
+    // in the future?)
 
     {NULL, 0}};
 
