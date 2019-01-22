@@ -179,6 +179,7 @@ EXPORTS cli_hwp5header @44381 NONAME
 EXPORTS cli_scanhwp5_stream @44382 NONAME
 EXPORTS cli_scanhwp3 @44383 NONAME
 EXPORTS cli_genhash_pe @44384 NONAME
+EXPORTS cli_free_vba_project @44385 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

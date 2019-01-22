@@ -62,8 +62,8 @@ CLAMAV_PUBLIC {
 };
 CLAMAV_PRIVATE {
   global:
-    cli_sigperf_print; 
-    cli_sigperf_events_destroy; 
+    cli_sigperf_print;
+    cli_sigperf_events_destroy;
     cli_pcre_perf_print;
     cli_pcre_perf_events_destroy;
     cli_pcre_init;
@@ -101,6 +101,7 @@ CLAMAV_PRIVATE {
     cli_ppt_vba_read;
     cli_wm_readdir;
     cli_wm_decrypt_macro;
+    cli_free_vba_project;
     cli_readn;
     cli_str2hex;
     cli_hashfile;

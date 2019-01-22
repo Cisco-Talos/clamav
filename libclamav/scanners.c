@@ -205,10 +205,10 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 
 /**
  * @brief  Scan the metadata using cli_matchmeta()
- * 
+ *
  * @param metadata  unrar metadata structure
  * @param ctx       scanning context structure
- * @param files     
+ * @param files
  * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
  */
 static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files)
@@ -340,7 +340,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
     /*
      * Read & scan each file header.
      * Extract & scan each file.
-     * 
+     *
      * Skip files if they will exceed max filesize or max scansize.
      * Count the number of encrypted file headers and encrypted files.
      *  - Alert if there are encrypted files,
@@ -406,7 +406,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
                     break;
                 }
             } else if (cli_checklimits("RAR", ctx, metadata.unpack_size, 0, 0)) {
-                /* File size exceeds maxfilesize, must skip extraction. 
+                /* File size exceeds maxfilesize, must skip extraction.
                 * Although we may be able to scan the metadata */
                 nTooLargeFilesFound += 1;
 
@@ -441,12 +441,12 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
 
                 unrar_ret = cli_unrar_extract_file(hArchive, extract_fullpath, NULL);
                 if (unrar_ret != UNRAR_OK) {
-                    /* 
+                    /*
                      * Some other error extracting the file
                      */
                     cli_dbgmsg("RAR: Error extracting file: %s\n", metadata.filename);
 
-                    /* TODO: 
+                    /* TODO:
                      *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
                      */
                 } else {
@@ -1124,7 +1124,8 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, j, fd, data_len, hasmacros = 0;
+    cl_error_t ret = CL_CLEAN;
+    int i, j, fd, data_len, hasmacros = 0;
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
@@ -1138,22 +1139,28 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     char *fullname, vbaname[1024];
     unsigned char *data;
     char *hash;
-    uint32_t hashcnt;
+    uint32_t hashcnt           = 0;
     unsigned int viruses_found = 0;
 
     cli_dbgmsg("VBADir: %s\n", dirname);
-    hashcnt = uniq_get(U, "_vba_project", 12, NULL);
-    while (hashcnt--) {
-        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt)))
+    if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
+        cli_dbgmsg("VBADir: uniq_get('_vba_project') failed with ret code (%d)!\n", ret);
+        return ret;
+    }
+    while (hashcnt) {
+        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) {
+            hashcnt--;
             continue;
+        }
 
         for (i = 0; i < vba_project->count; i++) {
-            for (j = 0; (unsigned int)j < vba_project->colls[i]; j++) {
+            for (j = 1; (unsigned int)j <= vba_project->colls[i]; j++) {
                 snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", vba_project->dir, vba_project->name[i], j);
                 vbaname[sizeof(vbaname) - 1] = '\0';
                 fd                           = open(vbaname, O_RDONLY | O_BINARY);
-                if (fd == -1)
+                if (fd == -1) {
                     continue;
+                }
                 cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
                 data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
                 close(fd);
@@ -1197,23 +1204,28 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             }
         }
 
-        free(vba_project->name);
-        free(vba_project->colls);
-        free(vba_project->dir);
-        free(vba_project->offset);
-        free(vba_project);
+        cli_free_vba_project(vba_project);
+        vba_project = NULL;
+
         if (ret == CL_VIRUS && !SCAN_ALLMATCHES)
             break;
+
+        hashcnt--;
     }
 
-    if ((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) &&
-        (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
-        while (hashcnt--) {
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('powerpoint document') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
             fd                           = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd == -1)
+            if (fd == -1) {
+                hashcnt--;
                 continue;
+            }
             if ((fullname = cli_ppt_vba_read(fd, ctx))) {
                 if (cli_scandir(fullname, ctx) == CL_VIRUS) {
                     ret = CL_VIRUS;
@@ -1224,20 +1236,27 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 free(fullname);
             }
             close(fd);
+            hashcnt--;
         }
     }
 
-    if ((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) &&
-        (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
-        while (hashcnt--) {
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('worddocument') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
             fd                           = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd == -1)
+            if (fd == -1) {
+                hashcnt--;
                 continue;
+            }
 
             if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd))) {
                 close(fd);
+                hashcnt--;
                 continue;
             }
 
@@ -1264,19 +1283,16 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             }
 
             close(fd);
-            free(vba_project->name);
-            free(vba_project->colls);
-            free(vba_project->dir);
-            free(vba_project->offset);
-            free(vba_project->key);
-            free(vba_project->length);
-            free(vba_project);
+            cli_free_vba_project(vba_project);
+            vba_project = NULL;
+
             if (ret == CL_VIRUS) {
                 if (SCAN_ALLMATCHES)
                     viruses_found++;
                 else
                     break;
             }
+            hashcnt--;
         }
     }
 
@@ -1286,8 +1302,11 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 #if HAVE_JSON
     /* JSON Output Summary Information */
     if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-        hashcnt = uniq_get(U, "_5_summaryinformation", 21, &hash);
-        while (hashcnt--) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "_5_summaryinformation", 21, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('_5_summaryinformation') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1298,10 +1317,14 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 cli_ole2_summary_json(ctx, fd, 0);
                 close(fd);
             }
+            hashcnt--;
         }
 
-        hashcnt = uniq_get(U, "_5_documentsummaryinformation", 29, &hash);
-        while (hashcnt--) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "_5_documentsummaryinformation", 29, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('_5_documentsummaryinformation') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1312,13 +1335,17 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 cli_ole2_summary_json(ctx, fd, 1);
                 close(fd);
             }
+            hashcnt--;
         }
     }
 #endif
 
     /* Check directory for embedded OLE objects */
-    hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
-    while (hashcnt--) {
+    if (CL_SUCCESS != (ret = uniq_get(U, "_1_ole10native", 14, &hash, &hashcnt))) {
+        cli_dbgmsg("VBADir: uniq_get('_1_ole10native') failed with ret code (%d)!\n", ret);
+        return ret;
+    }
+    while (hashcnt) {
         snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
         vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1329,6 +1356,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             if (ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALLMATCHES))
                 return ret;
         }
+        hashcnt--;
     }
 
     /* ACAB: since we now hash filenames and handle collisions we
@@ -3667,8 +3695,8 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
 }
 
 /**
- * @brief   The main function to initiate a scan, that may be invoked with a file descriptor or a file map. 
- * 
+ * @brief   The main function to initiate a scan, that may be invoked with a file descriptor or a file map.
+ *
  * @param desc              File descriptor of an open file. The caller must provide this or the map.
  * @param map               File map. The caller must provide this or the desc.
  * @param filepath          (optional, recommended) filepath of the open file descriptor or file map.
@@ -3735,7 +3763,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         }
     }
 
-    /* Best effort to determine the filename if not provided. 
+    /* Best effort to determine the filename if not provided.
      * May still be NULL if filename could not be determined. */
     if (filepath == NULL) {
         char *fpath = NULL;
@@ -3894,8 +3922,8 @@ int cli_found_possibly_unwanted(cli_ctx *ctx)
             return CL_VIRUS;
         }
         /* heuristic scan isn't taking precedence, keep scanning.
-     * If this is part of an archive, and 
-     * we find a real malware we report that instead of the 
+     * If this is part of an archive, and
+     * we find a real malware we report that instead of the
      * heuristic match */
         ctx->found_possibly_unwanted = 1;
     } else {
