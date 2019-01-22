@@ -299,6 +299,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     cl_error_t status = CL_EPARSE;
     struct pdf_obj *obj = NULL;
     unsigned long objid = 0, objsize = 0, objoff = 0;
+    long temp_long         = 0;
     const char *index = NULL;
     size_t bytes_remaining = 0;
 
@@ -323,12 +324,17 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     obj->objstm = objstm;
 
     /* objstm->current_pair points directly to the obj id */
-    if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &objid)) {
+    if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
         /* Failed to find objid */
         cli_dbgmsg("pdf_findobj_in_objstm: Failed to find objid for obj in object stream\n");
         status = CL_EPARSE;
         goto done;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative objid (%ld).\n", temp_long);
+        status = CL_EPARSE;
+        goto done;
     }
+    objid = (unsigned long)temp_long;
 
     /* Find the obj offset that appears just after the obj id*/
     while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
@@ -338,12 +344,17 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     index = findNextNonWS(index, objstm->streambuf + objstm->first);
     bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &objoff)) {
+    if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
         /* Failed to find obj offset */
         cli_dbgmsg("pdf_findobj_in_objstm: Failed to find obj offset for obj in object stream\n");
         status = CL_EPARSE;
         goto done;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative obj offset (%ld).\n", temp_long);
+        status = CL_EPARSE;
+        goto done;
     }
+    objoff = (unsigned long)temp_long;
 
     if ((size_t)objstm->first + (size_t)objoff > objstm->streambuf_len) {
         /* Alleged obj location is further than the length of the stream */
@@ -382,12 +393,17 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         index = objstm->streambuf + objstm->current_pair;
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
-        if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &next_objid)) {
+        if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
             /* Failed to find objid for next obj */
             cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next objid for obj in object stream though there should be {%u} more.\n", objstm->n - objstm->nobjs_found);
             status = CL_EPARSE;
             goto done;
+        } else if (temp_long < 0) {
+            cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative objid (%ld).\n", temp_long);
+            status = CL_EPARSE;
+            goto done;
         }
+        next_objid = (unsigned long)temp_long;
 
         /* Find the obj offset that appears just after the obj id*/
         while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
@@ -397,13 +413,19 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         index = findNextNonWS(index, objstm->streambuf + objstm->first);
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
-        if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &next_objoff)) {
+        if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
             /* Failed to find obj offset for next obj */
             cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next obj offset for obj in object stream though there should be {%u} more.\n", objstm->n - objstm->nobjs_found);
             status = CL_EPARSE;
             goto done;
+        } else if (temp_long < 0) {
+            cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative obj offset (%ld).\n", temp_long);
+            status = CL_EPARSE;
+            goto done;
         }
-        else if (next_objoff <= objoff) {
+        next_objoff = (unsigned long)temp_long;
+
+        if (next_objoff <= objoff) {
             /* Failed to find obj offset for next obj */
             cli_dbgmsg("pdf_findobj_in_objstm: Found next obj offset for obj in object stream but it's less than or equal to the current one!\n");
             status = CL_EPARSE;
@@ -481,6 +503,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     struct pdf_obj *obj = NULL;
     off_t bytesleft;
     unsigned long genid, objid;
+    long temp_long;
 
     pdf->nobjs++;
     pdf->objs = cli_realloc2(pdf->objs, sizeof(struct pdf_obj*) * pdf->nobjs);
@@ -539,20 +562,26 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     while (q > start && isdigit(*q))
         q--;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &genid)) {
+    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
         cli_dbgmsg("pdf_findobj: Failed to parse object genid (# objects found: %u)\n", pdf->nobjs);
         /* Failed to parse, probably not a real object.  Skip past the "obj" thing, and continue. */
         pdf->offset = q2 + 4 - pdf->map;
         status = CL_EPARSE;
         goto done;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_findobj: Encountered invalid negative obj genid (%ld).\n", temp_long);
+        pdf->offset = q2 + 4 - pdf->map;
+        status      = CL_EPARSE;
+        goto done;
     }
+    genid = (unsigned long)temp_long;
 
     /* Find the object id (objid) that appers before the genid */
     q = findNextNonWSBack(q-1,start);
     while (q > start && isdigit(*q))
         q--;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &objid)) {
+    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
         /*
          * PDFs with multiple revisions will have %%EOF before the end of the file, 
          * followed by the next revision of the PDF.  If this is the case, we can 
@@ -581,15 +610,27 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
             goto done;
         }
         /* Try again, with offset slightly adjusted */
-        if (CL_SUCCESS != cli_strntoul_wrap(q, (size_t)(bytesleft + (q2-q)), 0, 10, &objid)) {
+        if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
             /* Still failed... Probably not a real object.  Skip past the "obj" thing, and continue. */
             pdf->offset = q2 + 4 - pdf->map;
             status = CL_EPARSE;
             goto done;
+        } else if (temp_long < 0) {
+            cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
+            pdf->offset = q2 + 4 - pdf->map;
+            status      = CL_EPARSE;
+            goto done;
         }
+
         cli_dbgmsg("pdf_findobj: There appears to be an additional revision. Continuing to parse...\n");
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
+        pdf->offset = q2 + 4 - pdf->map;
+        status      = CL_EPARSE;
+        goto done;
     }
+    objid = (unsigned long)temp_long;
 
     /*
      * Ok so we have the objid, genid, and "obj" string.
@@ -845,7 +886,7 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     size_t length = 0;
     const char *obj_start = dict_start;
     size_t bytes_remaining = dict_len;
-    unsigned long length_ul = 0;
+    long temp_long         = 0;
     const char *index;
 
     if (bytes_remaining < 8) {
@@ -881,11 +922,14 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     
     /* Read the value.  This could either be the direct length value,
        or the object id of the indirect object that has the length */
-    if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &length_ul)) {
-        cli_dbgmsg("find_length: failed to parse object length\n");
+    if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
+        cli_dbgmsg("find_length: failed to parse object length or objid\n");
+        return 0;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("find_length: Encountered invalid negative object length or objid (%ld).\n", temp_long);
         return 0;
     }
-    length = length_ul; /* length or maybe object id */
+    length = (size_t)temp_long; /* length or maybe object id */
 
     /* 
      * Keep parsing, skipping past the first integer that might have been what we wanted. 
@@ -903,10 +947,14 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         index++;
         bytes_remaining--;
 
-        if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &genid)) {
+        if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
             cli_dbgmsg("find_length: failed to parse object genid\n");
             return 0;
+        } else if (temp_long < 0) {
+            cli_dbgmsg("find_length: Encountered invalid negative object genid (%ld).\n", temp_long);
+            return 0;
         }
+        genid = (unsigned long)temp_long;
 
         while((bytes_remaining > 0) && isdigit(*index)) {
             index++;
@@ -949,11 +997,15 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
             }
             bytes_remaining -= index - indirect_obj_start;
 
-            /* Found the value, so lets parse it as an unsigned long */
-            if (CL_SUCCESS != cli_strntoul_wrap(index, bytes_remaining, 0, 10, &length)) {
+            /* Found the value, so lets parse it as a long, but prohibit negative lengths. */
+            if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
                 cli_dbgmsg("find_length: failed to parse object length from indirect object\n");
                 return 0;
+            } else if (temp_long < 0) {
+                cli_dbgmsg("find_length: Encountered invalid negative obj length (%ld).\n", temp_long);
+                return 0;
             }
+            length = (size_t)temp_long;
         }
     }
 
@@ -1983,6 +2035,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     const char *q, *q2;
     unsigned long objid;
     unsigned long genid;
+    long temp_long;
 
     if (len >= 16 && !strncmp(enc, "/EncryptMetadata", 16)) {
         q = cli_memstr(enc+16, len-16, "/Encrypt", 8);
@@ -2001,10 +2054,15 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     len -= q2 - q;
     q = q2;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)len, 0, 10, &objid)) {
+    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)len, 0, 10, &temp_long)) {
         cli_dbgmsg("pdf_parse_encrypt: Found Encrypt dictionary but failed to parse objid\n");
         return;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_parse_encrypt: Encountered invalid negative objid (%ld).\n", temp_long);
+        return;
     }
+    objid = (unsigned long)temp_long;
+
     objid = objid << 8;
     q2 = pdf_nextobject(q, len);
     if (!q2 || !isdigit(*q2))
@@ -2012,10 +2070,15 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     len -= q2 - q;
     q = q2;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)len, 0, 10, &genid)) {
+    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)len, 0, 10, &temp_long)) {
         cli_dbgmsg("pdf_parse_encrypt: Found Encrypt dictionary but failed to parse genid\n");
         return;
+    } else if (temp_long < 0) {
+        cli_dbgmsg("pdf_parse_encrypt: Encountered invalid negative genid (%ld).\n", temp_long);
+        return;
     }
+    genid = (unsigned long)temp_long;
+
     objid |= genid & 0xff; 
     q2 = pdf_nextobject(q, len);
     if (!q2 || *q2 != 'R')
@@ -2060,6 +2123,11 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 #if HAVE_JSON
     json_object *pdfobj=NULL, *jsonobj=NULL;
 #endif
+
+    if (NULL == pdf || NULL == obj) {
+        cli_warnmsg("pdf_parseobj: invalid arguments\n");
+        return;
+    }
 
     if (obj->objstm) {
         if ((size_t)obj->start > obj->objstm->streambuf_len) {
@@ -2112,7 +2180,23 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             return;
         }
 
+        /*
+         * Opening `<` for object's dictionary may be back 1 character,
+         * provided q is not at the start of the buffer (it shouldn't be).
+         */
+        if (obj->objstm) {
+            if (obj->objstm->streambuf == q) {
+                q3 = memchr(q, '<', nextobj - q);
+            } else {
         q3 = memchr(q-1, '<', nextobj-q+1);
+            }
+        } else {
+            if (pdf->map == q) {
+                q3 = memchr(q, '<', nextobj - q);
+            } else {
+                q3 = memchr(q - 1, '<', nextobj - q + 1);
+            }
+        }
         nextobj++;
         bytesleft--;
         q = nextobj;
@@ -2297,13 +2381,19 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 const char * q2_old = NULL;
                 unsigned long objid;
                 unsigned long genid;
+                long temp_long;
 
                 dict_remaining -= (off_t)(q2 - q);
 
-                if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)dict_remaining, 0, 10, &objid)) {
+                if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)dict_remaining, 0, 10, &temp_long)) {
                     cli_dbgmsg("pdf_parseobj: failed to parse object objid\n");
                     return;
+                } else if (temp_long < 0) {
+                    cli_dbgmsg("pdf_parseobj: Encountered invalid negative genid (%ld).\n", temp_long);
+                    return;
                 }
+                objid = (unsigned long)temp_long;
+
                 objid = objid << 8;
 
                 while (isdigit(*q2))
@@ -2313,10 +2403,15 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 q2 = pdf_nextobject(q2, dict_remaining);
                 if (q2 && isdigit(*q2)) {
                     dict_remaining -= (off_t)(q2 - q2_old);
-                    if (CL_SUCCESS != cli_strntoul_wrap(q2, (size_t)dict_remaining, 0, 10, &genid)) {
+                    if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)dict_remaining, 0, 10, &temp_long)) {
                         cli_dbgmsg("pdf_parseobj: failed to parse object genid\n");
                         return;
+                    } else if (temp_long < 0) {
+                        cli_dbgmsg("pdf_parseobj: Encountered invalid negative genid (%ld).\n", temp_long);
+                        return;
                     }
+                    genid = (unsigned long)temp_long;
+
                     objid |= genid & 0xff;
 
                     q2 = pdf_nextobject(q2, dict_remaining);
@@ -3045,6 +3140,11 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
 
     struct pdf_obj* obj = NULL;
 
+    if ((NULL == objstm) || (NULL == objstm->streambuf)) {
+        status = CL_EARG;
+        goto done;
+    }
+
     char* current_pair = objstm->streambuf;
     char* current_obj = objstm->streambuf + objstm->first;
 
@@ -3242,6 +3342,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     off_t versize = size > 1032 ? 1032 : size;
     off_t map_off, bytesleft;
     unsigned long xref;
+    long temp_long;
     const char *pdfver, *tmp, *start, *eofmap, *q, *eof;
     unsigned i, alerts = 0;
     unsigned int objs_found = 0;
@@ -3383,11 +3484,14 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
             while (q < eof && (*q == ' ' || *q == '\n' || *q == '\r')) { q++; }
 
-            if (CL_SUCCESS != cli_strntoul_wrap(q, q - eofmap + map_off, 0, 10, &xref)) {
+            if (CL_SUCCESS != cli_strntol_wrap(q, q - eofmap + map_off, 0, 10, &temp_long)) {
                 cli_dbgmsg("cli_pdf: failed to parse PDF trailer xref\n");
                 pdf.flags |= 1 << BAD_PDF_TRAILER;
-            }
-            else {
+            } else if (temp_long < 0) {
+                cli_dbgmsg("cli_pdf: Encountered invalid negative PDF trailer xref (%ld).\n", temp_long);
+                pdf.flags |= 1 << BAD_PDF_TRAILER;
+            } else {
+                xref      = (unsigned long)temp_long;
                 bytesleft = map->len - offset - xref;
                 if (bytesleft > 4096)
                     bytesleft = 4096;
@@ -4133,6 +4237,7 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     const char *begin;
     unsigned int objsize;
     unsigned long npages=0, count;
+    long temp_long;
     struct pdf_array_node *node;
     json_object *pdfobj;
     size_t countsize = 0;
@@ -4185,9 +4290,15 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     countsize = (obj->objstm) ? (size_t)(obj->start + obj->objstm->streambuf + objsize - begin)
                               : (size_t)(obj->start + pdf->map + objsize - begin);
 
-    if ((CL_SUCCESS != cli_strntoul_wrap(begin, countsize, 0, 10, &count)) ||
-        (count != npages)) {
+    if (CL_SUCCESS != cli_strntol_wrap(begin, countsize, 0, 10, &temp_long)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
+    } else if (temp_long < 0) {
+        cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
+    } else {
+        count = (unsigned long)temp_long;
+        if (count != npages) {
+        cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
+    }
     }
 
 cleanup:
@@ -4201,6 +4312,7 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     cli_ctx *ctx = pdf->ctx;
     json_object *colorsobj, *pdfobj;
     unsigned long ncolors;
+    long temp_long;
     char *p1;
     const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                          : (const char *)(obj->start + pdf->map);
@@ -4232,8 +4344,12 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if ((size_t)(p1 - objstart) == objsize)
         return;
 
-    if (CL_SUCCESS != cli_strntoul_wrap(p1, (size_t)((p1 - objstart) - objsize), 0, 10, &ncolors))
+    if (CL_SUCCESS != cli_strntol_wrap(p1, (size_t)((p1 - objstart) - objsize), 0, 10, &temp_long)) {
         return;
+    } else if (temp_long < 0) {
+        return;
+    }
+    ncolors = (unsigned long)temp_long;
 
     /* We only care if the number of colors > 2**24 */
     if (ncolors < 1<<24)
