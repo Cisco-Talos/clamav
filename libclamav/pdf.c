@@ -245,9 +245,8 @@ static int find_stream_bounds(
         q = q2;
         q2 = cli_memstr(q, bytesleft2, "endstream", 9);
         if (!q2) {
-            /* Couldn't find "endstream", but that's ok --
-             * -- we'll just count the data we have until EOF. */
-            q2 = q + bytesleft2-9; /* till EOF */
+            /* Couldn't find "endstream" */
+            return 0;
         }
 
         *endstream = q2 - start;
