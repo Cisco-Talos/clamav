@@ -2109,14 +2109,14 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     if (obj->objstm) {
         if ((size_t)obj->start > obj->objstm->streambuf_len) {
             cli_dbgmsg("pdf_parseobj: %u %u obj: obj start (%u) is greater than size of object stream (%zu).\n",
-                obj->id >> 8, obj->id & 0xff, obj->start, obj->objstm->streambuf_len);
+                       obj->id >> 8, obj->id & 0xff, obj->start, obj->objstm->streambuf_len);
             return;
         }
         q = (const char *)(obj->start + obj->objstm->streambuf);
     } else {
         if ((size_t)obj->start > pdf->size) {
             cli_dbgmsg("pdf_parseobj: %u %u obj: obj start (%u) is greater than size of PDF (%lld).\n",
-                obj->id >> 8, obj->id & 0xff, obj->start, (long long)pdf->size);
+                       obj->id >> 8, obj->id & 0xff, obj->start, (long long)pdf->size);
             return;
         }
         q = (const char *)(obj->start + pdf->map);
@@ -2370,8 +2370,10 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
 
                 objid = objid << 8;
 
-                while (isdigit(*q2))
+                while ((dict_remaining > 0) && isdigit(*q2)) {
                     q2++;
+                    dict_remaining--;
+                }
 
                 q2_old = q2;
                 q2     = pdf_nextobject(q2, dict_remaining);
@@ -3612,6 +3614,11 @@ done:
 static const char *
 pdf_nextlinestart(const char *ptr, size_t len)
 {
+    if (!ptr || (0 == len)) {
+        /* Invalid args */
+        return NULL;
+    }
+
     while (strchr("\r\n", *ptr) == NULL) {
         if (--len == 0L)
             return NULL;
