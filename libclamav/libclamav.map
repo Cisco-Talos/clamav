@@ -101,6 +101,7 @@ CLAMAV_PRIVATE {
     cli_ppt_vba_read;
     cli_wm_readdir;
     cli_wm_decrypt_macro;
+    cli_free_vba_project;
     cli_readn;
     cli_str2hex;
     cli_hashfile;

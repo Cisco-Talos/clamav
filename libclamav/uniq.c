@@ -46,6 +46,7 @@ struct uniq *uniq_init(uint32_t count) {
     uniq_free(U);
     return NULL;
   }
+    U->max_unique_items = count;
 
   return U;
 }
@@ -55,18 +56,39 @@ void uniq_free(struct uniq *U) {
   free(U);
 }
 
-uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, char **rhash) {
+cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **rhash, uint32_t *count)
+{
+  cl_error_t status = CL_EARG;
   unsigned int i;
   uint8_t digest[16];
   struct UNIQMD5 *m = NULL;
 
-  cl_hash_data("md5", key, key_len, digest, NULL);
+    if (!U) {
+        /* Invalid args */
+        goto done;
+    }
 
+    /* Uniq adds are limited by the maximum allocated in uniq_init(). */
+    if (U->cur_unique_items >= U->max_unique_items) {
+        /* Attempted to add more uniq items than may be stored. */
+        status = CL_EMAXSIZE;
+        goto done;
+    }
+
+    /* Make a hash of the item string */
+    if (NULL == cl_hash_data("md5", item, item_len, digest, NULL)) {
+        /* Failed to create hash of item. */
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    /* Check for md5 digest match in md5 collection */
   if(U->items && U->md5s[U->idx[*digest]].md5[0]==*digest)
     for(m=&U->md5s[U->idx[*digest]]; m; m=m->next)
       if(!memcmp(&digest[1], &m->md5[1], 15)) break;
   
   if(!m) {
+        /* No match. Add new md5 to list */
     const char HEX[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     m = &U->md5s[U->items];
@@ -85,27 +107,85 @@ uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, char **rhas
       m->md5[i] = digest[i];
     }
     m->name[32] = '\0';
+
+        /* Increment # of unique items. */
+        U->cur_unique_items++;
   }
 
+    /* Increment total # of items. */
   U->items++;
+
+    /* Increment # items matching this md5 digest (probably just this 1). */
+    m->count++;
+
+    /* Pass back the ascii hash, if requested. */
   if(rhash) *rhash = m->name;
-  return m->count++;
+
+    /* Pass back the count, if requested. */
+    if (count) *count = m->count;
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
 }
 
-uint32_t uniq_get(struct uniq *U, const char *key, uint32_t key_len, char **rhash) {
+cl_error_t uniq_get(struct uniq *U, const char *item, uint32_t item_len, char **rhash, uint32_t *count)
+{
+  cl_error_t status = CL_EARG;
   uint8_t digest[16];
   struct UNIQMD5 *m = NULL;
+    uint32_t idx      = 0;
 
-  cl_hash_data("md5", key, key_len, digest, NULL);
+    if (!U || !count) {
+        /* Invalid args */
+        goto done;
+    }
 
-  if(!U->items || U->md5s[U->idx[*digest]].md5[0]!=*digest)
-    return 0;
+    *count = 0;
 
-  for(m=&U->md5s[U->idx[*digest]]; m; m=m->next) {
-    if(memcmp(&digest[1], &m->md5[1], 15)) continue;
-    if(rhash) *rhash = m->name;
-    return m->count;
+    if (!U->items) {
+        goto not_found;
+    }
+
+    /* Make a hash of the item string */
+    if (NULL == cl_hash_data("md5", item, item_len, digest, NULL)) {
+        /* Failed to create hash of item. */
+        status = CL_EFORMAT;
+        goto done;
+    }
+
+    /* Get the md5s array index for the bucket list head. */
+    idx = U->idx[*digest];
+    m   = &U->md5s[idx];
+
+    if (m->md5[0] != *digest) {
+        /*
+         * If the first two bytes in the digest doesn't actually match,
+         * then the item has never been added.
+         * This is a common scenario because the idx table is initialized
+         * to 0's.
+         */
+        goto not_found;
+    }
+
+    do {
+        if (0 == memcmp(&digest[1], &m->md5[1], 15)) {
+            /* The item-hash matched.
+             * Pass back the ascii hash value (if requested).
+             * Return the count of matching items (will be 1+).
+             */
+            if (rhash)
+                *rhash = m->name;
+            *count = m->count;
+            break;
   }
+        m = m->next;
+    } while (NULL != m);
 
-  return 0;
+not_found:
+    status = CL_SUCCESS;
+
+done:
+    return status;
 }

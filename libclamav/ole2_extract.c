@@ -3,9 +3,9 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
- * 
+ *
  *  Summary: Extract component parts of OLE2 files (e.g. MS Office Documents).
- * 
+ *
  *  Acknowledgements: Some ideas and algorithms were based upon OpenOffice and libgsf.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -822,10 +822,18 @@ handler_writefile(ole2_header_t * hdr, property_t * prop, const char *dir, cli_c
         return CL_SUCCESS;
     }
     name = get_property_name2(prop->name, prop->name_size);
-    if (name)
-        cnt = uniq_add(hdr->U, name, strlen(name), &hash);
-    else
-        cnt = uniq_add(hdr->U, NULL, 0, &hash);
+    if (name) {
+        if (CL_SUCCESS != uniq_add(hdr->U, name, strlen(name), &hash, &cnt)) {
+            free(name);
+            cli_dbgmsg("OLE2 [handler_writefile]: too many property names added to uniq store.\n");
+            return CL_BREAK;
+        }
+    } else {
+        if (CL_SUCCESS != uniq_add(hdr->U, NULL, 0, &hash, &cnt)) {
+            cli_dbgmsg("OLE2 [handler_writefile]: too many property names added to uniq store.\n");
+            return CL_BREAK;
+        }
+    }
     snprintf(newname, sizeof(newname), "%s" PATHSEP "%s_%u", dir, hash, cnt);
     newname[sizeof(newname) - 1] = '\0';
     cli_dbgmsg("OLE2 [handler_writefile]: Dumping '%s' to '%s'\n", name ? name : "<empty>", newname);
