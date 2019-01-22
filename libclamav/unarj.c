@@ -715,6 +715,7 @@ static int decode_f(arj_metadata_t *metadata)
 	decode_data.comp_size = metadata->comp_size;
 	ret = init_getbits(&decode_data);
 	if (ret != CL_SUCCESS) {
+        free(decode_data.text);
 	        metadata->offset = decode_data.offset;
 		return ret;
 	}
