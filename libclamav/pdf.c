@@ -345,6 +345,13 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         goto done;
     }
 
+    if ((size_t)objstm->first + (size_t)objoff > objstm->streambuf_len) {
+        /* Alleged obj location is further than the length of the stream */
+        cli_dbgmsg("pdf_findobj_in_objstm: obj offset found is greater than the length of the stream.\n");
+        status = CL_EPARSE;
+        goto done;
+    }
+
     objstm->current = objstm->first + objoff;
 
     obj->id = (objid << 8) | (0 & 0xff);
@@ -2054,16 +2061,32 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     json_object *pdfobj=NULL, *jsonobj=NULL;
 #endif
 
-    q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                      : (const char *)(obj->start + pdf->map);
+    if (obj->objstm) {
+        if ((size_t)obj->start > obj->objstm->streambuf_len) {
+            cli_dbgmsg("pdf_parseobj: %u %u obj: obj start (%u) is greater than size of object stream (%zu).\n",
+                obj->id >> 8, obj->id & 0xff, obj->start, obj->objstm->streambuf_len);
+            return;
+        }
+        q = (const char *)(obj->start + obj->objstm->streambuf);
+    } else {
+        if ((size_t)obj->start > pdf->size) {
+            cli_dbgmsg("pdf_parseobj: %u %u obj: obj start (%u) is greater than size of PDF (%lld).\n",
+                obj->id >> 8, obj->id & 0xff, obj->start, (long long)pdf->size);
+            return;
+        }
+        q = (const char *)(obj->start + pdf->map);
+    }
+    start = q;
 
     objsize = obj_size(pdf, obj, 1);
-
     if (objsize < 0)
         return;
 
-    start = q;
-    bytesleft = objsize;
+    if (obj->objstm) {
+        bytesleft = MIN(objsize, obj->objstm->streambuf_len - obj->start);
+    } else {
+        bytesleft = MIN(objsize, pdf->size - obj->start);
+    }
 
     /* find start of dictionary */
     do {
