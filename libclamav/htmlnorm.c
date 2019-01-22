@@ -1609,6 +1609,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_RFC2397_INIT:
 				if (dirname) {
+                        if (NULL != file_tmp_o1) {
+                            if (file_tmp_o1->fd != -1) {
+                                html_output_flush(file_tmp_o1);
+                                close(file_tmp_o1->fd);
+                                file_tmp_o1->fd = -1;
+                            }
+                            free(file_tmp_o1);
+                        }
+
 					file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 					if (!file_tmp_o1) {
                         cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
@@ -1692,8 +1701,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_RFC2397_FINISH:
 				if(file_tmp_o1) {
+                        if (file_tmp_o1->fd != -1) {
 					html_output_flush(file_tmp_o1);
 					close(file_tmp_o1->fd);
+                            file_tmp_o1->fd = -1;
+                        }
 					free(file_tmp_o1);
 					file_tmp_o1 = NULL;
 				}
@@ -1830,9 +1842,10 @@ abort:
         file_buff_text=NULL;
 	}
 	if(file_tmp_o1) {
+        if (file_tmp_o1->fd != -1) {
 		html_output_flush(file_tmp_o1);
-		if(file_tmp_o1 && file_tmp_o1->fd != -1)
 			close(file_tmp_o1->fd);
+        }
 		free(file_tmp_o1);
 	}
 	return retval;
