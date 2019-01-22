@@ -767,10 +767,16 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
                     }
                     else {
                         ole2_list_delete(&node_list);
+                            if (dirname)
+                                free(dirname);
                         return ret;
                     }
                 }
             }
+                if (dirname) {
+                    free(dirname);
+                    dirname = NULL;
+                }
             if ((int)(prop_block[idx].prev) != -1) {
 	        if ((ret=ole2_list_push(&node_list, prop_block[idx].prev)) != CL_SUCCESS) {
 		    ole2_list_delete(&node_list);
@@ -783,8 +789,6 @@ ole2_walk_property_tree(ole2_header_t * hdr, const char *dir, int32_t prop_index
 		    return ret;
 		}
             }
-            if (dirname)
-                free(dirname);
             break;
         default:
             cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[idx].type);
