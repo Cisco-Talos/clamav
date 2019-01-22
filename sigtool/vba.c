@@ -1108,8 +1108,10 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, fd, data_len;
-    vba_project_t *vba_project;
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret;
+    int i, fd, data_len;
+    vba_project_t *vba_project = NULL;
     DIR *dd;
     struct dirent *dent;
     STATBUF statbuf;
@@ -1118,14 +1120,22 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
     uint32_t hashcnt;
     unsigned int j;
 
-    hashcnt = uniq_get(U, "_vba_project", 12, NULL);
-    while(hashcnt--) {
-	if(!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) continue;
+    if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
+        logg("!ScanDir -> uniq_get('_vba_project') failed.\n");
+        return ret;
+    }
+
+    while (hashcnt) {
+        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) {
+            hashcnt--;
+            continue;
+        }
 
 	for(i = 0; i < vba_project->count; i++) {
 	    for(j = 0; j < vba_project->colls[i]; j++) {
 		snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
+
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
 		data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
@@ -1140,39 +1150,53 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    }
 	}
 
-	free(vba_project->name);
-	free(vba_project->colls);
-	free(vba_project->dir);
-	free(vba_project->offset);
-	free(vba_project);
+        cli_free_vba_project(vba_project);
+        vba_project = NULL;
+
+        hashcnt--;
     }
 
+    if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
+        logg("!ScanDir -> uniq_get('powerpoint document') failed.\n");
+        return ret;
+    }
 
-    if((hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
-	while(hashcnt--) {
+    while (hashcnt) {
 	    snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
+
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
-	    if (fd == -1) continue;
+        if (fd == -1) {
+            hashcnt--;
+            continue;
+        }
 	    if ((fullname = cli_ppt_vba_read(fd, NULL))) {
 	      sigtool_scandir(fullname, hex_output);
 	      cli_rmdirs(fullname);
 	      free(fullname);
 	    }
 	    close(fd);
+        hashcnt--;
 	}
+
+    if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
+        logg("!ScanDir -> uniq_get('worddocument') failed.\n");
+        return ret;
     }
 
-
-    if ((hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
-	while(hashcnt--) {
+    while (hashcnt) {
 	    snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
+
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
-	    if (fd == -1) continue;
+        if (fd == -1) {
+            hashcnt--;
+            continue;
+        }
 	    
 	    if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd))) {
 		close(fd);
+            hashcnt--;
 		continue;
 	    }
 
@@ -1188,14 +1212,9 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    }
 
 	    close(fd);
-	    free(vba_project->name);
-	    free(vba_project->colls);
-	    free(vba_project->dir);
-	    free(vba_project->offset);
-	    free(vba_project->key);
-	    free(vba_project->length);
-	    free(vba_project);
-	}
+        cli_free_vba_project(vba_project);
+        vba_project = NULL;
+        hashcnt--;
     }
 
     if ((dd = opendir (dirname)) != NULL) {
@@ -1222,5 +1241,5 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
 
     closedir (dd);
-    return ret;
+    return status;
 }

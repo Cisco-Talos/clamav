@@ -1041,7 +1041,8 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
 
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, j, fd, data_len, hasmacros = 0;
+    cl_error_t ret = CL_CLEAN;
+    int i, j, fd, data_len, hasmacros = 0;
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
@@ -1055,15 +1056,19 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     char *fullname, vbaname[1024];
     unsigned char *data;
     char *hash;
-    uint32_t hashcnt;
+    uint32_t hashcnt           = 0;
     unsigned int viruses_found = 0;
 
     cli_dbgmsg("VBADir: %s\n", dirname);
-    hashcnt = uniq_get(U, "_vba_project", 12, NULL);
-    while (hashcnt--)
-    {
-        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt)))
+    if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
+        cli_dbgmsg("VBADir: uniq_get('_vba_project') failed with ret code (%d)!\n", ret);
+        return ret;
+    }
+    while (hashcnt) {
+        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) {
+            hashcnt--;
             continue;
+        }
 
         for (i = 0; i < vba_project->count; i++)
         {
@@ -1072,8 +1077,10 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", vba_project->dir, vba_project->name[i], j);
                 vbaname[sizeof(vbaname) - 1] = '\0';
                 fd = open(vbaname, O_RDONLY | O_BINARY);
-                if (fd == -1)
+                if (fd == -1) {
+                    hashcnt--;
                     continue;
+                }
                 cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
                 data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
                 close(fd);
@@ -1125,29 +1132,30 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             }
         }
 
-        free(vba_project->name);
-        free(vba_project->colls);
-        free(vba_project->dir);
-        free(vba_project->offset);
-        free(vba_project);
+        cli_free_vba_project(vba_project);
+        vba_project = NULL;
+
         if (ret == CL_VIRUS && !SCAN_ALL)
             break;
+
+        hashcnt--;
     }
 
-    if ((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) &&
-        (hashcnt = uniq_get(U, "powerpoint document", 19, &hash)))
-    {
-        while (hashcnt--)
-        {
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('powerpoint document') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
             fd = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd == -1)
+            if (fd == -1) {
+                hashcnt--;
                 continue;
-            if ((fullname = cli_ppt_vba_read(fd, ctx)))
-            {
-                if (cli_scandir(fullname, ctx) == CL_VIRUS)
-                {
+            }
+            if ((fullname = cli_ppt_vba_read(fd, ctx))) {
+                if (cli_scandir(fullname, ctx) == CL_VIRUS) {
                     ret = CL_VIRUS;
                     viruses_found++;
                 }
@@ -1156,23 +1164,28 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 free(fullname);
             }
             close(fd);
+            hashcnt--;
         }
     }
 
-    if ((ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) &&
-        (hashcnt = uniq_get(U, "worddocument", 12, &hash)))
-    {
-        while (hashcnt--)
-        {
+    if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALL)) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('worddocument') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
             fd = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd == -1)
+            if (fd == -1) {
+                hashcnt--;
                 continue;
+            }
 
             if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd)))
             {
                 close(fd);
+                hashcnt--;
                 continue;
             }
 
@@ -1205,20 +1218,16 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             }
 
             close(fd);
-            free(vba_project->name);
-            free(vba_project->colls);
-            free(vba_project->dir);
-            free(vba_project->offset);
-            free(vba_project->key);
-            free(vba_project->length);
-            free(vba_project);
-            if (ret == CL_VIRUS)
-            {
+            cli_free_vba_project(vba_project);
+            vba_project = NULL;
+
+            if (ret == CL_VIRUS) {
                 if (SCAN_ALL)
                     viruses_found++;
                 else
                     break;
             }
+            hashcnt--;
         }
     }
 
@@ -1227,11 +1236,12 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
 #if HAVE_JSON
     /* JSON Output Summary Information */
-    if (ctx->options & CL_SCAN_FILE_PROPERTIES && ctx->wrkproperty != NULL)
-    {
-        hashcnt = uniq_get(U, "_5_summaryinformation", 21, &hash);
-        while (hashcnt--)
-        {
+    if ((ctx->options & CL_SCAN_FILE_PROPERTIES) && (ctx->wrkproperty != NULL)) {
+        if (CL_SUCCESS != (ret = uniq_get(U, "_5_summaryinformation", 21, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('_5_summaryinformation') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1243,11 +1253,14 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 cli_ole2_summary_json(ctx, fd, 0);
                 close(fd);
             }
+            hashcnt--;
         }
 
-        hashcnt = uniq_get(U, "_5_documentsummaryinformation", 29, &hash);
-        while (hashcnt--)
-        {
+        if (CL_SUCCESS != (ret = uniq_get(U, "_5_documentsummaryinformation", 29, &hash, &hashcnt))) {
+            cli_dbgmsg("VBADir: uniq_get('_5_documentsummaryinformation') failed with ret code (%d)!\n", ret);
+            return ret;
+        }
+        while (hashcnt) {
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1259,14 +1272,17 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
                 cli_ole2_summary_json(ctx, fd, 1);
                 close(fd);
             }
+            hashcnt--;
         }
     }
 #endif
 
     /* Check directory for embedded OLE objects */
-    hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
-    while (hashcnt--)
-    {
+    if (CL_SUCCESS != (ret = uniq_get(U, "_1_ole10native", 14, &hash, &hashcnt))) {
+        cli_dbgmsg("VBADir: uniq_get('_1_ole10native') failed with ret code (%d)!\n", ret);
+        return ret;
+    }
+    while (hashcnt) {
         snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
         vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1278,6 +1294,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
             if (ret != CL_CLEAN && !(ret == CL_VIRUS && SCAN_ALL))
                 return ret;
         }
+        hashcnt--;
     }
 
     /* ACAB: since we now hash filenames and handle collisions we

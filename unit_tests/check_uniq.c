@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../libclamav/clamav.h"
 #include "../libclamav/uniq.h"
 #include "checks.h"
 
@@ -59,12 +60,16 @@ START_TEST (test_uniq_known) {
   fail_unless(U!=0, "uniq_init");
 
   for(i=0; tests[i].expected; i++) {
-    u = uniq_add(U, tests[i].key, tests[i].key_len, &hash);
-    fail_unless_fmt(u==0 && strcmp(hash, tests[i].expected)==0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
+        if (CL_SUCCESS != uniq_add(U, tests[i].key, tests[i].key_len, &hash, &u)) {
+            fail("uniq_add(%s) failed.", tests[i].key);
+        }
+        fail_unless_fmt(u == 1 && strcmp(hash, tests[i].expected) == 0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
   }
 
   for(i=0; tests[i].expected; i++) {
-    u = uniq_get(U, tests[i].key, tests[i].key_len, &hash);
+        if (CL_SUCCESS != uniq_get(U, tests[i].key, tests[i].key_len, &hash, &u)) {
+            fail("uniq_get(%s) failed.", tests[i].key);
+        }
     fail_unless_fmt(u==1 && strcmp(hash, tests[i].expected)==0, "uniq_get(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
   }
 
@@ -82,11 +87,16 @@ START_TEST (test_uniq_colls) {
   fail_unless(U!=0, "uniq_init");
 
   for(j=4; j>0; j--)
-    for (i=0; i<j; i++)
-      u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
+        for (i = 0; i < j; i++) {
+            if (CL_SUCCESS != uniq_add(U, tests[i], strlen(tests[i]), NULL, &u)) {
+                fail("uniq_add(%s) failed.", tests[i]);
+            }
+        }
   
   for (i=0; i<4; i++) {
-    u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
+        if (CL_SUCCESS != uniq_get(U, tests[i], strlen(tests[i]), NULL, &u)) {
+            fail("uniq_get(%s) failed.", tests[i]);
+        }
     fail_unless_fmt(u+i==4, "uniq_get(%s) = %u - expected %u", tests[i], u, 4-i);
   }
 

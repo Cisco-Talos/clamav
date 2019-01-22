@@ -294,6 +294,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	struct vba56_header v56h;
 	off_t seekback;
 	char fullname[1024], *hash;
+    uint32_t hashcnt = 0;
 
 	cli_dbgmsg("in cli_vba_readdir()\n");
 
@@ -304,8 +305,13 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	 * _VBA_PROJECT files are embedded within office documents (OLE2)
 	 */
 	
-	if (!uniq_get(U, "_vba_project", 12, &hash))
+    if (CL_SUCCESS != uniq_get(U, "_vba_project", 12, &hash, &hashcnt)) {
+        cli_dbgmsg("vba_readdir: uniq_get('_vba_project') failed. Unable to check # of embedded vba proj files\n");
 		return NULL;
+    }
+    if (hashcnt == 0) {
+        return NULL;
+    }
 	snprintf(fullname, sizeof(fullname), "%s"PATHSEP"%s_%u", dir, hash, which);
 	fullname[sizeof(fullname)-1] = '\0';
 	fd = open(fullname, O_RDONLY|O_BINARY);
@@ -448,7 +454,13 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 		}
 		ptr = get_unicode_name((const char *)buf, length, big_endian);
 		if(ptr == NULL) break;
-		if (!(vba_project->colls[i]=uniq_get(U, ptr, strlen(ptr), &hash))) {
+        if (CL_SUCCESS != uniq_get(U, ptr, strlen(ptr), &hash, &hashcnt)) {
+            cli_dbgmsg("vba_readdir: uniq_get('%s') failed.\n", ptr);
+            free(ptr);
+            break;
+        }
+        vba_project->colls[i] = hashcnt;
+        if (0 == vba_project->colls[i]) {
 			cli_dbgmsg("vba_readdir: cannot find project %s (%s)\n", ptr, hash);
 			free(ptr);
 			break;
@@ -1308,7 +1320,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 {
 	vba_project_t *ret;
 
-	ret = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
+    ret = (vba_project_t *)cli_calloc(1, sizeof(struct vba_project_tag));
 
 	if(ret == NULL) {
         cli_errmsg("create_vba_project: Unable to allocate memory for vba project structure\n");
@@ -1320,16 +1332,8 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 	ret->dir = cli_strdup(dir);
 	ret->offset = (uint32_t *)cli_malloc (sizeof(uint32_t) * record_count);
 
-	if((ret->name == NULL) || (ret->dir == NULL) || (ret->offset == NULL)) {
-		if(ret->dir)
-			free(ret->dir);
-		if(ret->colls)
-			free(ret->colls);
-		if(ret->name)
-			free(ret->name);
-		if(ret->offset)
-			free(ret->offset);
-		free(ret);
+    if ((ret->colls == NULL) || (ret->name == NULL) || (ret->dir == NULL) || (ret->offset == NULL)) {
+        cli_free_vba_project(ret);
         cli_errmsg("create_vba_project: Unable to allocate memory for vba project elements\n");
 		return NULL;
 	}
@@ -1337,4 +1341,33 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 	ret->U = U;
 
 	return ret;
+}
+
+/**
+ * @brief Free up the memory associated with the vba_project_t type.
+ *
+ * @param project A vba_project_t type allocated by one of these:
+ *  - create_vba_project()
+ *  - cli_wm_readdir()
+ *  - cli_vba_readdir()
+ */
+void cli_free_vba_project(vba_project_t *vba_project)
+{
+    if (vba_project) {
+        if (vba_project->dir)
+            free(vba_project->dir);
+        if (vba_project->colls)
+            free(vba_project->colls);
+        if (vba_project->name)
+            free(vba_project->name);
+        if (vba_project->offset)
+            free(vba_project->offset);
+        if (vba_project->length)
+            free(vba_project->length);
+        if (vba_project->key)
+            free(vba_project->key);
+        free(vba_project);
+    }
+
+    return;
 }
