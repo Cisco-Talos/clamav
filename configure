@@ -760,6 +760,8 @@ HAVE_LIBCHECK_TRUE
 CHECK_CPPFLAGS
 CHECK_LIBS
 CHECK_CFLAGS
+ENABLE_FUZZ_FALSE
+ENABLE_FUZZ_TRUE
 BUILD_CONFIGURE_FLAGS
 VERSIONSCRIPT_FALSE
 VERSIONSCRIPT_TRUE
@@ -936,6 +938,7 @@ with_ltdl_lib
 enable_ltdl_install
 enable_gcc_vcheck
 enable_experimental
+enable_fuzz
 enable_mempool
 enable_check
 enable_rpath
@@ -1648,6 +1651,7 @@ Optional Features:
   --enable-ltdl-install   install libltdl
   --disable-gcc-vcheck    do not check for buggy gcc version
   --enable-experimental   enable experimental code
+  --enable-fuzz           enable building standalone fuzz targets [default=no]
   --disable-mempool       do not use memory pools
   --enable-check          enable check unit tests [default=auto]
   --disable-rpath         do not hardcode runtime library paths
@@ -20313,6 +20317,27 @@ build_configure_args=`echo "$ac_configure_args" | sed -e 's/\"//g'`
 BUILD_CONFIGURE_FLAGS=$build_configure_args
 
 
+# Check whether --enable-fuzz was given.
+if test "${enable_fuzz+set}" = set; then :
+  enableval=$enable_fuzz; enable_cov=$enableval
+else
+  enable_cov="no"
+fi
+
+
+if test "x$enable_fuzz" = "xyes"; then
+    CXXFLAGS="-std=c++11 -stdlib=libc++ $CXXFLAGS"
+fi
+
+ if test "x$enable_fuzz" = "xyes"; then
+  ENABLE_FUZZ_TRUE=
+  ENABLE_FUZZ_FALSE='#'
+else
+  ENABLE_FUZZ_TRUE='#'
+  ENABLE_FUZZ_FALSE=
+fi
+
+
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether uname(2) is POSIX" >&5
 $as_echo_n "checking whether uname(2) is POSIX... " >&6; }
@@ -29174,7 +29199,7 @@ else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 clamav-types.h"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile fuzz/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 clamav-types.h"
 
 
 # Define variables needed to generate clamav-types.h.
@@ -29487,6 +29512,10 @@ fi
 
 if test -z "${VERSIONSCRIPT_TRUE}" && test -z "${VERSIONSCRIPT_FALSE}"; then
   as_fn_error $? "conditional \"VERSIONSCRIPT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_FUZZ_TRUE}" && test -z "${ENABLE_FUZZ_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_FUZZ\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_LIBCHECK_TRUE}" && test -z "${HAVE_LIBCHECK_FALSE}"; then
@@ -30544,6 +30573,7 @@ do
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
+    "fuzz/Makefile") CONFIG_FILES="$CONFIG_FILES fuzz/Makefile" ;;
     "clamdtop/Makefile") CONFIG_FILES="$CONFIG_FILES clamdtop/Makefile" ;;
     "clambc/Makefile") CONFIG_FILES="$CONFIG_FILES clambc/Makefile" ;;
     "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
@@ -32357,6 +32387,10 @@ if test -z "${VERSIONSCRIPT_TRUE}" && test -z "${VERSIONSCRIPT_FALSE}"; then
   as_fn_error $? "conditional \"VERSIONSCRIPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${ENABLE_FUZZ_TRUE}" && test -z "${ENABLE_FUZZ_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_FUZZ\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${HAVE_LIBCHECK_TRUE}" && test -z "${HAVE_LIBCHECK_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_LIBCHECK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -33429,6 +33463,7 @@ do
     "etc/Makefile") CONFIG_FILES="$CONFIG_FILES etc/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "unit_tests/Makefile") CONFIG_FILES="$CONFIG_FILES unit_tests/Makefile" ;;
+    "fuzz/Makefile") CONFIG_FILES="$CONFIG_FILES fuzz/Makefile" ;;
     "clamdtop/Makefile") CONFIG_FILES="$CONFIG_FILES clamdtop/Makefile" ;;
     "clambc/Makefile") CONFIG_FILES="$CONFIG_FILES clambc/Makefile" ;;
     "libfreshclam/Makefile") CONFIG_FILES="$CONFIG_FILES libfreshclam/Makefile" ;;
