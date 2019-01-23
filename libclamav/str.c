@@ -268,7 +268,7 @@ char *cli_utf16toascii(const char *str, unsigned int length)
 	return NULL;
 
     for(i = 0, j = 0; i < length; i += 2, j++) {
-       decoded[j] = str[i + 1] << 4;
+        decoded[j] = ((unsigned char) str[i + 1]) << 4;
        decoded[j] += str[i];
     }
 
