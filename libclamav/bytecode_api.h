@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2014-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
- *  All rights reserved.
+
  *  Authors: Török Edvin, Kevin Lin
  *
  * Redistribution and use in source and binary forms, with or without

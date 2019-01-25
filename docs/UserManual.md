@@ -17,7 +17,7 @@ Table Of Contents
 
 -----
 
-ClamAV User Manual © 2018 Cisco Systems, Inc.
+ClamAV User Manual © 2019 Cisco Systems, Inc.
 
 This document is distributed under the terms of the GNU General Public License v2.
 

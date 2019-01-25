@@ -1,7 +1,9 @@
 /*
  * Interface to libclamunrar
- * Copyright (C) 2015-2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *
+ * Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
+ *
  * Authors: Trog, Torok Edvin, Tomasz Kojm, Micah Snyder
  *
  * Redistribution and use in source and binary forms, with or without

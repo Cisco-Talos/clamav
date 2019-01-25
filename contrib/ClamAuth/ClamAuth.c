@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2007 by Apple Computer, Inc., All Rights Reserved.
- * Copyright (c) 2011 Sourcefire, Inc.
+ * Copyright (C) 2011-2013 Sourcefire, Inc.
  */
 
 #include <kern/assert.h>
