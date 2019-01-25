@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2007-2014 Cisco Systems, Inc.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  Authors: Tomasz Kojm
  *

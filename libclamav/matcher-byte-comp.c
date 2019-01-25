@@ -1,8 +1,7 @@
 /*
  *  Byte comparison matcher support functions
  *
- *  Copyright (C) 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  All Rights Reserved.
+ *  Copyright (C) 2018-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *

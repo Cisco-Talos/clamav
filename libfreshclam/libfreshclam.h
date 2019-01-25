@@ -3,7 +3,7 @@
 //  freshclam
 //
 //  Created by msachedi on 2/3/14.
-//  Copyright (c) 2014 Sourcefire, Inc. All rights reserved.
+//  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 //
 
 #ifndef freshclam_libfreshclam_h
