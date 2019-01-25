@@ -1,6 +1,7 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2011 Sourcefire, Inc.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *
  *  Authors: Tomasz Kojm <tkojm@clamav.net>
  *
  *  The code is based on Flasm, command line assembler & disassembler of Flash

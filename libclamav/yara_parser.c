@@ -1,7 +1,7 @@
 /*
  * YARA parser for ClamAV: back-end functions
  * 
- * Copyright (C) 2014, 2017 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * 
  * Authors: Steven Morgan
  * 
