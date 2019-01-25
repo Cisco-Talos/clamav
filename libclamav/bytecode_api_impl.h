@@ -2,7 +2,7 @@
  *  ClamAV bytecode internal API
  *  This is an automatically generated file!
  *
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  * Redistribution and use in source and binary forms, with or without

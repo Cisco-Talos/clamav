@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2015, 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2008 Sourcefire, Inc.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
  *
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
     printf("\n");
     printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2009-2018 Cisco Systems, Inc.\n");
+    printf("           (C) 2019 Cisco Systems, Inc.\n");
     printf("\n");
 	printf("    %s [-c <config-file>]\n\n", argv[0]);
     printf("\n");

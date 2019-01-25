@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Cisco Systems, Inc.
+ *  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Steven Morgan <smorgan@sourcefire.com>
  *

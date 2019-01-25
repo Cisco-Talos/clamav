@@ -1,6 +1,5 @@
 /*
- *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2014 Sourcefire, Inc.
+ *  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
  *

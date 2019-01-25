@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Selim Menouar, Verene Houdebine
  *
