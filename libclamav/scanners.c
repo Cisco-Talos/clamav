@@ -3695,7 +3695,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         if (FSTAT(desc, &sb))
             return CL_ESTAT;
 
-        if ((size_t)(sb.st_size) > (size_t)(INT_MAX - 2))
+        if ((unsigned long long)(sb.st_size) > (unsigned long long)(INT_MAX - 2))
             return CL_CLEAN;
     }
 
