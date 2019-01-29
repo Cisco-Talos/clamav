@@ -1,18 +1,23 @@
 # ClamAV
 
 ClamAV® is an open source antivirus engine for detecting trojans, viruses,
- malware & other malicious threats.
+malware & other malicious threats.
 
 ## Documentation & FAQ
 
-The ClamAV documentation can be found in the [ClamAV User Manual](docs/UserManual.md) with
- additional information online in
-[our FAQ](https://www.clamav.net/documents).
+Official documentation can be found online at
+[ClamAV.net](https://www.clamav.net/documents).
+Our source code release tarballs also includes a copy of the documentation for
+[offline](docs/html/UserManual.html) reading.
 
 ## ClamAV Signatures
 
 Anyone can learn to read and write ClamAV signatures. Take a look
- at the [signature writing documentation](docs/UserManual/Signatures.md) and [phishing signature writing documentation](docs/UserManual/PhishSigs.md) to get started!
+at the
+[signature writing documentation](https://www.clamav.net/documents/creating-signatures-for-clamav)
+and
+[phishing signature writing documentation](https://www.clamav.net/documents/phishsigs)
+to get started!
 
 ## Installation Instructions
 
@@ -24,7 +29,8 @@ For basic compile and install instructions on Linux/Unix platforms, check out
 the [install instructions](INSTALL.md).
 
 For detailed instructions specific to building ClamAV please investigate
-our the [Linux/Unix/Mac Install instructions in the User Manual](docs/UserManual/Installation-Unix.md).
+our the
+[Linux/Unix/Mac Install instructions in the User Manual](https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source).
 
 #### Install from a binary package
 
@@ -48,7 +54,7 @@ for users that may wish to run ClamAV without installing it to a system-owned
 directory.
 
 For details on how to use either option, head over to the
-[Windows Install instructions in the User Manual](docs/UserManual/Installation-Windows.md).
+[Windows Install instructions in the User Manual](https://www.clamav.net/documents/installing-clamav-on-windows).
 
 ### Upgrading from a previous version
 
@@ -57,23 +63,24 @@ Some tips on [how to upgrade](https://www.clamav.net/documents/upgrading-clamav)
 
 ## ClamAV News
 
-For information about the features in this and prior releases, read [the news](NEWS.md).
+For information about the features in this and prior releases, read
+[the news](NEWS.md).
 
 Catch up on the latest about ClamAV by reading our
- [blog](http://blog.clamav.net) and follow us on Twitter @clamav.
+[blog](http://blog.clamav.net) and follow us on Twitter @clamav.
 
 ## Join the ClamAV Community
 
 The best way to get in touch with the ClamAV community is to join our
- [our mailing lists](https://www.clamav.net/documents/mailing-lists-faq), and
- tune to #clamav on [IRC](irc.freenode.net).
+[our mailing lists](https://www.clamav.net/documents/mailing-lists-faq), and
+tune to #clamav on [IRC](irc.freenode.net).
 
 ## Want to make a contribution?
 
 The ClamAV development team welcomes
- [code contributions](https://github.com/Cisco-Talos/clamav-devel),
- improvements to [our FAQ](https://github.com/Cisco-Talos/clamav-faq), and also
- [bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
+[code contributions](https://github.com/Cisco-Talos/clamav-devel),
+improvements to [our documentation](https://github.com/Cisco-Talos/clamav-faq), and also
+[bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
 
 ## Credits
 

@@ -9,7 +9,13 @@ ClamAV 0.102.0 is in development.
 
 ### Notable changes in 0.102
 
--
+- The documentation has moved.
+  - Users should navigate to [ClamAV.net](http://www.clamav.net/documents/)
+    to view the documentation.
+  - The documentation will continue to be provided in HTML format with each
+    release for offline viewing in the `docs/html` directory.
+  - The new home for the documentation markdown is in our
+    [ClamAV FAQ Github repository](https://github.com/Cisco-Talos/clamav-faq)
 
 ### Acknowledgements
 
