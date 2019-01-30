@@ -3845,10 +3845,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 }
 
-static int cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type)
+static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type)
 {
     STATBUF sb;
-    int ret;
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret    = CL_CLEAN;
+
+    if (!ctx) {
+        return CL_EARG;
+    }
 
     const char *parent_filepath = ctx->sub_filepath;
     ctx->sub_filepath = filepath;
@@ -3861,12 +3866,18 @@ static int cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_f
     if (FSTAT(desc, &sb) == -1)
     {
         cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
-        early_ret_from_magicscan(CL_ESTAT);
+
+        status = CL_ESTAT;
+        cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
+        goto done;  
     }
     if (sb.st_size <= 5)
     {
         cli_dbgmsg("Small data (%u bytes)\n", (unsigned int)sb.st_size);
-        early_ret_from_magicscan(CL_CLEAN);
+
+        status = CL_CLEAN;
+        cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
+        goto done;  
     }
 
     ctx->fmap++;
@@ -3876,18 +3887,22 @@ static int cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_f
         cli_errmsg("CRITICAL: fmap() failed\n");
         ctx->fmap--;
         perf_stop(ctx, PERFT_MAP);
-        early_ret_from_magicscan(CL_EMEM);
+
+        status = CL_EMEM;
+        cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
+        goto done;  
     }
     perf_stop(ctx, PERFT_MAP);
 
-    ret = magic_scandesc(ctx, type);
+    status = magic_scandesc(ctx, type);
 
     funmap(*ctx->fmap);
     ctx->fmap--;
 
+done:
     ctx->sub_filepath = parent_filepath;
 
-    return ret;
+    return status;
 }
 
 int cli_magic_scandesc(int desc, const char *filepath, cli_ctx *ctx)
