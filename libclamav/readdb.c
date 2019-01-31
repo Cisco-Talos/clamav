@@ -810,7 +810,7 @@ static char *cli_signorm(const char *signame)
         nsz = 3;
     }
 
-    new_signame = malloc(nsz + 1);
+    new_signame = cli_calloc((nsz + 1), sizeof(char));
     if (!new_signame)
         return NULL;
 
