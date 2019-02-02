@@ -94,7 +94,7 @@ typedef struct code_ent {
 struct lzw_internal_state {
     /* general state */
     uint16_t    nbits;      /* # of bits/code */
-    long        nextdata;   /* next bits of i/o */
+    unsigned long nextdata; /* next bits of i/o */
     long        nextbits;   /* # of valid bits in lzw_nextdata */
 
     /* decoding-specific state */
@@ -194,7 +194,8 @@ int lzwInflate(lzw_streamp strm)
     uint8_t *from, *to;
     unsigned in, out;
     unsigned have, left;
-    long nbits, nextbits, nextdata, nbitsmask;
+    long nbits, nextbits, nbitsmask;
+    unsigned long nextdata;
     code_t *codep, *free_entp, *maxcodep, *oldcodep;
 
     uint8_t *wp;
