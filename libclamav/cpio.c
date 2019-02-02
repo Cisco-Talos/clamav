@@ -146,7 +146,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 	    } else if(hdr_namesize % 2)
 		pos++;
 	}
-	filesize = (uint32_t) (EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
+        filesize = (uint32_t)((uint32_t)EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
 	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
 	if(!filesize)
 	    continue;
