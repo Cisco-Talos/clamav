@@ -567,7 +567,6 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     uint8_t shash1[SHA1_HASH_SIZE * 2 + 1];
     uint8_t shash256[SHA256_HASH_SIZE * 2 + 1];
     int have_sha1, have_sha256, do_dsig_check = 1;
-    stats_section_t sections;
 
     if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
@@ -585,6 +584,8 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
                    vname ? vname : "Name");
     }
 
+    // TODO Replace this with the ability to actually perform detection with
+    // the blacklisted sig entries
     if (vname)
         do_dsig_check = strncmp("W32S.", vname, 5);
 
@@ -652,17 +653,10 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     }
 #endif
 
-    memset(&sections, 0x00, sizeof(stats_section_t));
-    if (do_dsig_check || ctx->engine->cb_stats_add_sample) {
-        uint32_t flags = (do_dsig_check ? CL_CHECKFP_PE_FLAG_AUTHENTICODE : 0);
-        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) && !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
-            flags |= CL_CHECKFP_PE_FLAG_STATS;
-
-        switch (cli_checkfp_pe(ctx, &sections, flags)) {
+    if (do_dsig_check) {
+        switch (cli_checkfp_pe(ctx)) {
             case CL_CLEAN:
                 cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid digital signature\n");
-                if (sections.sections)
-                    free(sections.sections);
                 return CL_CLEAN;
             default:
                 break;
@@ -672,11 +666,22 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     if (ctx->engine->cb_hash)
         ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, vname ? vname : "noname", ctx->cb_ctx);
 
-    if (ctx->engine->cb_stats_add_sample)
+    if (ctx->engine->cb_stats_add_sample) {
+        stats_section_t sections;
+        memset(&sections, 0x00, sizeof(stats_section_t));
+
+        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) &&
+            !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
+            cli_genhash_pe(ctx, CL_GENHASH_PE_CLASS_SECTION, 1, &sections);
+
+        // TODO We probably only want to call cb_stats_add_sample when
+        // sections.section != NULL... leaving as is for now
         ctx->engine->cb_stats_add_sample(vname ? vname : "noname", digest, size, &sections, ctx->engine->stats_data);
 
-    if (sections.sections)
-        free(sections.sections);
+        if (sections.sections) {
+            free(sections.sections);
+        }
+    }
 
     return CL_VIRUS;
 }

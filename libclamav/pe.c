@@ -5508,29 +5508,8 @@ static int sort_sects(const void *first, const void *second)
  * CL_CLEAN will be returned if the file was whitelisted based on its
  * signature.  CL_VIRUS will be returned if the file was blacklisted based on
  * its signature.  Otherwise, an cl_error_t error value will be returned.
- * 
- * Also, this function computes the hashes of each section (sorted based on the
- * RVAs of the sections) if the CL_CHECKFP_PE_FLAG_STATS flag exists in flags
- *
- * TODO The code to compute the section hashes is copied from
- * cli_genhash_pe - we should use that function instead where this
- * functionality is needed, since we no longer need to compute the section
- * hashes as part of the authenticode hash calculation.
- * 
- * If the section hashes are to be computed and returned, this function
- * allocates memory for the section hashes, and it's up to the caller to free
- * it.  hashes->sections will be initialized to NULL at the beginning of the
- * function, and if after the call it's value is non-NULL, the memory should be
- * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
- * to be valid regardless of the return code.
- *
- * Also, a few other notes:
- *  - If a section has a virtual size of zero, it's corresponding hash value
- *    will not be computed and the hash contents will be all zeroes.
- *  - TODO Instead of not providing back any hashes when an invalid section is
- *    encountered, would it be better to still compute hashes for the valid
- *    sections? */
-cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
+ */
+cl_error_t cli_checkfp_pe(cli_ctx *ctx)
 {
     size_t at;
     unsigned int i, hlen;
@@ -5554,15 +5533,6 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     if (!(DCONF & PE_CONF_CATALOG))
         return CL_EFORMAT;
 
-    if (flags == CL_CHECKFP_PE_FLAG_NONE)
-        return CL_BREAK;
-
-    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-        if (!(hashes))
-            return CL_ENULLARG;
-        hashes->sections = NULL;
-    }
-
     // TODO see if peinfo can be passed in (or lives in ctx or something) and
     // if so, use that to avoid having to re-parse the header
     cli_exe_info_init(peinfo, 0);
@@ -5579,68 +5549,12 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     // the section hashes), bail out if we don't have any Authenticode hashes
     // loaded from .cat files
     if (sec_dir_size < 8 && !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2)) {
-        if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-            /* If stats is enabled, continue parsing the sample */
-            flags ^= CL_CHECKFP_PE_FLAG_AUTHENTICODE;
-        } else {
-            cli_exe_info_destroy(peinfo);
-            return CL_BREAK;
-        }
+        cli_exe_info_destroy(peinfo);
+        return CL_BREAK;
     }
     fsize = map->len;
 
-    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-        hashes->nsections = peinfo->nsections;
-        hashes->sections  = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
-        ;
-        if (!(hashes->sections)) {
-            cli_exe_info_destroy(peinfo);
-            return CL_EMEM;
-        }
-    }
-
-#define free_section_hashes()                   \
-    do {                                        \
-        if (flags & CL_CHECKFP_PE_FLAG_STATS) { \
-            free(hashes->sections);             \
-            hashes->sections = NULL;            \
-        }                                       \
-    } while (0)
-
-    // TODO This likely isn't needed anymore, since we no longer compute
-    // the authenticode hash like the 2008 spec doc says (sort sections
-    // and use the section info to compute the hash)
-    cli_qsort(peinfo->sections, peinfo->nsections, sizeof(*peinfo->sections), sort_sects);
-
-    /* Hash the sections */
-    if (flags & CL_CHECKFP_PE_FLAG_STATS) {
-
-        for (i = 0; i < peinfo->nsections; i++) {
-            const uint8_t *hptr;
-            void *md5ctx;
-
-            if (!peinfo->sections[i].rsz)
-                continue;
-
-            if (!(hptr = fmap_need_off_once(map, peinfo->sections[i].raw, peinfo->sections[i].rsz))) {
-                cli_exe_info_destroy(peinfo);
-                free_section_hashes();
-                return CL_EFORMAT;
-            }
-            md5ctx = cl_hash_init("md5");
-            if (md5ctx) {
-                cl_update_hash(md5ctx, (void *)hptr, peinfo->sections[i].rsz);
-                cl_finish_hash(md5ctx, hashes->sections[i].md5);
-            }
-        }
-    }
-
-    /* After this point it's the caller's responsibility to free
-     * hashes->sections. Also, in the case where we are just computing the
-     * stats, we are finished */
-
-    while (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) {
-
+    do {
         // We'll build a list of the regions that need to be hashed and pass it to
         // asn1_check_mscat to do hash verification there (the hash algorithm is
         // specified in the PKCS7 structure).  We need to hash up to 4 regions
@@ -5651,13 +5565,11 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
         }
         nregions = 0;
 
-#define add_chunk_to_hash_list(_offset, _size)         \
-    do {                                               \
-        if (flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) { \
-            regions[nregions].offset = (_offset);      \
-            regions[nregions].size   = (_size);        \
-            nregions++;                                \
-        }                                              \
+#define add_chunk_to_hash_list(_offset, _size) \
+    do {                                       \
+        regions[nregions].offset = (_offset);  \
+        regions[nregions].size   = (_size);    \
+        nregions++;                            \
     } while (0)
 
         // Pretty much every case below should return CL_EFORMAT
@@ -5802,7 +5714,8 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
 
         ret = CL_EVERIFY;
         break;
-    } /* while(flags & CL_CHECKFP_PE_FLAG_AUTHENTICODE) */
+
+    } while (0);
 
     if (NULL != hashctx) {
         cl_hash_destroy(hashctx);
@@ -5816,7 +5729,26 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags)
     return ret;
 }
 
-int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
+/* Print out either the MD5, SHA1, or SHA256 associated with the imphash or
+ * the individual sections. Also, this function computes the hashes of each
+ * section (sorted based on the RVAs of the sections) if hashes is non-NULL.
+ *
+ * If the section hashes are to be computed and returned, this function
+ * allocates memory for the section hashes, and it's up to the caller to free
+ * it.  hashes->sections will be initialized to NULL at the beginning of the
+ * function, and if after the call it's value is non-NULL, the memory should be
+ * freed.  Furthermore, if hashes->sections is non-NULL, the hashes can assume
+ * to be valid regardless of the return code.
+ *
+ * Also, a few other notes:
+ *  - If a section has a virtual size of zero, it's corresponding hash value
+ *    will not be computed and the hash contents will be all zeroes.
+ *  - If a section extends beyond the end of the file, the section data and
+ *    length will be truncated, and the hash generated accordingly
+ *  - If a section exists completely outside of the file, it won't be included
+ *    in the list of sections, and nsections will be adjusted accordingly.
+ */
+int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_section_t *hashes)
 {
     unsigned int i;
     struct cli_exe_info _peinfo;
@@ -5826,9 +5758,20 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
     int genhash[CLI_HASH_AVAIL_TYPES];
     int hlen = 0;
 
+    if (hashes) {
+        hashes->sections = NULL;
+
+        if (class != CL_GENHASH_PE_CLASS_SECTION || type != 1) {
+            cli_dbgmsg("`hashes` can only be populated with MD5 PE section data\n");
+            return CL_EARG;
+        }
+    }
+
     if (class >= CL_GENHASH_PE_CLASS_LAST)
         return CL_EARG;
 
+    // TODO see if peinfo can be passed in (or lives in ctx or something) and
+    // if so, use that to avoid having to re-parse the header
     cli_exe_info_init(peinfo, 0);
 
     if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
@@ -5864,35 +5807,54 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         return CL_EMEM;
     }
 
+    if (hashes) {
+        hashes->nsections = peinfo->nsections;
+        hashes->sections  = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
+
+        if (!(hashes->sections)) {
+            cli_exe_info_destroy(peinfo);
+            free(hash);
+            return CL_EMEM;
+        }
+    }
+
     if (class == CL_GENHASH_PE_CLASS_SECTION) {
-        char *dstr = NULL;
+        char *dstr;
 
         for (i = 0; i < peinfo->nsections; i++) {
             /* Generate hashes */
             if (cli_hashsect(*ctx->fmap, &peinfo->sections[i], hashset, genhash, genhash) == 1) {
-                dstr = cli_str2hex((char *)hash, hlen);
-                cli_dbgmsg("Section{%u}: %u:%s\n", i, peinfo->sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
-                if (dstr != NULL) {
-                    free(dstr);
-                    dstr = NULL;
+                if (cli_debug_flag) {
+                    dstr = cli_str2hex((char *)hash, hlen);
+                    cli_dbgmsg("Section{%u}: %u:%s\n", i, peinfo->sections[i].rsz, dstr ? (char *)dstr : "(NULL)");
+                    if (dstr != NULL) {
+                        free(dstr);
+                    }
                 }
-            } else {
+                if (hashes) {
+                    memcpy(hashes->sections[i].md5, hash, sizeof(hashes->sections[i].md5));
+                    hashes->sections[i].len = peinfo->sections[i].rsz;
+                }
+            } else if (peinfo->sections[i].rsz) {
                 cli_dbgmsg("Section{%u}: failed to generate hash for section\n", i);
+            } else {
+                cli_dbgmsg("Section{%u}: section contains no data\n", i);
             }
         }
     } else if (class == CL_GENHASH_PE_CLASS_IMPTBL) {
-        char *dstr     = NULL;
+        char *dstr;
         uint32_t impsz = 0;
         int ret;
 
         /* Generate hash */
         ret = hash_imptbl(ctx, hashset, &impsz, genhash, peinfo);
         if (ret == CL_SUCCESS) {
-            dstr = cli_str2hex((char *)hash, hlen);
-            cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
-            if (dstr != NULL) {
-                free(dstr);
-                dstr = NULL;
+            if (cli_debug_flag) {
+                dstr = cli_str2hex((char *)hash, hlen);
+                cli_dbgmsg("Imphash: %s:%u\n", dstr ? (char *)dstr : "(NULL)", impsz);
+                if (dstr != NULL) {
+                    free(dstr);
+                }
             }
         } else {
             cli_dbgmsg("Imphash: failed to generate hash for import table (%d)\n", ret);
@@ -5901,8 +5863,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type)
         cli_dbgmsg("cli_genhash_pe: unknown pe genhash class: %u\n", class);
     }
 
-    if (hash)
-        free(hash);
+    free(hash);
     cli_exe_info_destroy(peinfo);
     return CL_SUCCESS;
 }

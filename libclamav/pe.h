@@ -98,8 +98,8 @@ enum {
 int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo);
 int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx);
 
-cl_error_t cli_checkfp_pe(cli_ctx *ctx, stats_section_t *hashes, uint32_t flags);
-int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type);
+cl_error_t cli_checkfp_pe(cli_ctx *ctx);
+int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_section_t *hashes);
 
 uint32_t cli_rawaddr(uint32_t, const struct cli_exe_section *, uint16_t, unsigned int *, size_t, uint32_t);
 void findres(uint32_t, uint32_t, fmap_t *map, struct cli_exe_info *, int (*)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *);
