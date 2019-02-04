@@ -255,10 +255,10 @@ static int hashpe(const char *filename, unsigned int class, int type)
     /* Send to PE-specific hasher */
     switch (class) {
         case 1:
-            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type);
+            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_SECTION, type, NULL);
             break;
         case 2:
-            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type);
+            ret = cli_genhash_pe(&ctx, CL_GENHASH_PE_CLASS_IMPTBL, type, NULL);
             break;
         default:
             mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
@@ -3455,7 +3455,7 @@ static int dumpcerts(const struct optstruct *opts)
         return -1;
     }
 
-    ret = cli_checkfp_pe(&ctx, NULL, CL_CHECKFP_PE_FLAG_AUTHENTICODE);
+    ret = cli_checkfp_pe(&ctx);
 
     switch (ret) {
         case CL_CLEAN:
@@ -3466,6 +3466,9 @@ static int dumpcerts(const struct optstruct *opts)
             break;
         case CL_BREAK:
             mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
+            break;
+        case CL_EVERIFY:
+            mprintf("!dumpcerts: CL_EVERIFY after cli_checkfp_pe()!\n");
             break;
         case CL_EFORMAT:
             mprintf("!dumpcerts: An error occurred when parsing the file\n");
