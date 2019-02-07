@@ -39,8 +39,12 @@
 #if YYDEBUG
 extern int yara_yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 39 "yara_grammar.y" /* yacc.c:1909  */
 
 #include "yara_compiler.h"
+
+#line 48 "yara_grammar.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -158,7 +162,7 @@ extern int yara_yydebug;
 
 union YYSTYPE
 {
-#line 214 "yara_grammar.y" /* yacc.c:1909  */
+#line 218 "yara_grammar.y" /* yacc.c:1909  */
 
   SIZED_STRING*   sized_string;
   char*           c_string;
@@ -168,7 +172,7 @@ union YYSTYPE
   YR_META*        meta;
   YR_OBJECT*      object;
 
-#line 170 "yara_grammar.h" /* yacc.c:1909  */
+#line 176 "yara_grammar.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

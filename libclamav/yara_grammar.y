@@ -36,6 +36,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+%code requires {
+#include "yara_compiler.h"
+}
+
 %{
 
 #include <assert.h>
