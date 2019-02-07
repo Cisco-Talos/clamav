@@ -89,7 +89,7 @@ uint8_t unrar_debug = 0;
 
 /**
  * @brief  Translate an ERAR_<code> to the appropriate UNRAR_<code>
- * 
+ *
  * @param errorCode ERAR_<code>
  * @return cl_unrar_error_t UNRAR_OK, UNRAR_ENCRYPTED, or UNRAR_ERR.
  */
@@ -133,6 +133,7 @@ static cl_unrar_error_t unrar_retcode(int retcode)
     }
     case ERAR_EOPEN: {
         unrar_dbgmsg("unrar_retcode: Volume open error.\n");
+        status = UNRAR_EOPEN;
         break;
     }
     case ERAR_ECREATE: {
@@ -289,7 +290,7 @@ done:
 
 /**
  * @brief  Get file metadata from the next file header.
- * 
+ *
  * @param hArchive              Handle to the archive we're extracting.
  * @param[in/out] file_metadata Pointer to a pre-allocated metadata structure.
  * @return cl_unrar_error_t     UNRAR_OK if metadata retrieved, UNRAR_BREAK if no more files, UNRAR_ENCRYPTED if header was encrypted, else maybe UNRAR_EMEM or UNRAR_ERR.
@@ -317,7 +318,7 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
      */
     headerData.CmtBuf = NULL;
     headerData.CmtBufSize = 0;
-    
+
     headerData.RedirNameSize = 1024 * sizeof(wchar_t);
     headerData.RedirName = (wchar_t*)&RedirName;
     memset(headerData.RedirName, 0, headerData.RedirNameSize);

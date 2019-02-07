@@ -496,6 +496,7 @@ extern int have_rar;
 #define SCAN_COLLECT_METADATA                   (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)
 #define SCAN_HEURISTICS                         (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS)
 #define SCAN_HEURISTIC_PRECEDENCE               (ctx->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE)
+#define SCAN_UNPRIVILEGED                       (ctx->options->general & CL_SCAN_GENERAL_UNPRIVILEGED)
 
 #define SCAN_PARSE_ARCHIVE                      (ctx->options->parse & CL_SCAN_PARSE_ARCHIVE)
 #define SCAN_PARSE_ELF                          (ctx->options->parse & CL_SCAN_PARSE_ELF)
@@ -538,7 +539,7 @@ extern int have_rar;
 		     (((v) & 0x00ff000000000000ULL) >> 40) | \
 		     (((v) & 0xff00000000000000ULL) >> 56))
 
-#ifndef HAVE_ATTRIB_PACKED 
+#ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif
 #ifdef HAVE_PRAGMA_PACK
@@ -751,18 +752,18 @@ const char *cli_gettmpdir(void);
 
 /**
  * @brief Generate tempfile filename (no path) with a random MD5 hash.
- * 
+ *
  * Caller is responsible for freeing the filename.
- * 
+ *
  * @return char* filename or NULL.
  */
 char *cli_genfname(const char *prefix);
 
 /**
  * @brief Generate a full tempfile filepath with a random MD5 hash and prefix the name, if provided.
- * 
+ *
  * Caller is responsible for freeing the filename.
- * 
+ *
  * @param dir 	 Alternative temp directory. (optional)
  * @return char* filename or NULL.
  */
@@ -770,9 +771,9 @@ char* cli_gentemp_with_prefix(const char* dir, const char* prefix);
 
 /**
  * @brief Generate a full tempfile filepath with a random MD5 hash.
- * 
+ *
  * Caller is responsible for freeing the filename.
- * 
+ *
  * @param dir 	 Alternative temp directory. (optional)
  * @return char* filename or NULL.
  */
@@ -784,18 +785,18 @@ char *cli_gentemp(const char *dir);
  * @param dir        Alternative temp directory (optional).
  * @param[out] name  Allocated filepath, must be freed by caller.
  * @param[out] fd    File descriptor of open temp file.
- * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM. 
+ * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM.
  */
 cl_error_t cli_gentempfd(const char *dir, char **name, int *fd);
 
 /**
  * @brief Create a temp filename, create the file, open it, and pass back the filepath and open file descriptor.
- * 
+ *
  * @param dir        Alternative temp directory (optional).
  * @param prefix  	 (Optional) Prefix for new file tempfile.
  * @param[out] name  Allocated filepath, must be freed by caller.
  * @param[out] fd    File descriptor of open temp file.
- * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM. 
+ * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM.
  */
 cl_error_t cli_gentempfd_with_prefix(const char* dir, char* prefix, char** name, int* fd);
 
@@ -844,11 +845,11 @@ struct cli_ftw_cbdata {
     void *data;
 };
 
-/* 
+/*
  * return CL_BREAK to break out without an error, CL_SUCCESS to continue,
  * or any CL_E* to break out due to error.
  * The callback is responsible for freeing filename when it is done using it.
- * Note that callback decides if directory traversal should continue 
+ * Note that callback decides if directory traversal should continue
  * after an error, we call the callback with reason == error,
  * and if it returns CL_BREAK we break.
  */
@@ -861,7 +862,7 @@ typedef int (*cli_ftw_cb)(STATBUF *stat_buf, char *filename, const char *path, e
 typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
 
 /*
- * returns 
+ * returns
  *  CL_SUCCESS if it traversed all files and subdirs
  *  CL_BREAK if traversal has stopped at some point
  *  CL_E* if error encountered during traversal and we had to break out
@@ -880,10 +881,10 @@ const char *cli_strerror(int errnum, char* buf, size_t len);
 
 /**
  * @brief   Attempt to get a filename from an open file descriptor.
- * 
+ *
  * Caller is responsible for free'ing the filename.
  * Should work on Linux, macOS, Windows.
- * 
+ *
  * @param desc           File descriptor
  * @param[out] filepath  Will be set to file path if found, or NULL.
  * @return cl_error_t    CL_SUCCESS if found, else an error code.

@@ -223,16 +223,15 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 
 /**
  * @brief  Scan the metadata using cli_matchmeta()
- * 
+ *
  * @param metadata  unrar metadata structure
  * @param ctx       scanning context structure
- * @param files     
+ * @param files
  * @return cl_error_t  Returns CL_CLEAN if nothing found, CL_VIRUS if something found, CL_EUNPACK if encrypted.
  */
 static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t* metadata, cli_ctx* ctx, unsigned int files)
 {
     cl_error_t status = CL_CLEAN;
-    int virus_found = 0;
 
     cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
         metadata->filename, metadata->crc, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -246,8 +245,6 @@ static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t* metadata, cli_ctx* ct
         status = CL_EUNPACK;
     }
 
-done:
-
     return status;
 }
 
@@ -255,9 +252,8 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
 {
     cl_error_t status = CL_EPARSE;
     cl_unrar_error_t unrar_ret = UNRAR_ERR;
-    
+
     char* extract_dir = NULL; /* temp dir to write extracted files to */
-    char* comment_dir = NULL; /* temp dir to write file comments to */
     unsigned int file_count = 0;
     unsigned int viruses_found = 0;
 
@@ -283,7 +279,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
 
     /* Zero out the metadata struct before we read the header */
     memset(&metadata, 0, sizeof(unrar_metadata_t));
-    
+
     /* Determine file basename */
     if (CL_SUCCESS != cli_basename(filepath, strlen(filepath), &filename_base)) {
         status = CL_EARG;
@@ -312,6 +308,9 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
         }
         if (unrar_ret == UNRAR_EMEM) {
             status = CL_EMEM;
+            goto done;
+        } else if (unrar_ret == UNRAR_EOPEN) {
+            status = CL_EOPEN;
             goto done;
         } else {
             status = CL_EFORMAT;
@@ -360,7 +359,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
     /*
      * Read & scan each file header.
      * Extract & scan each file.
-     * 
+     *
      * Skip files if they will exceed max filesize or max scansize.
      * Count the number of encrypted file headers and encrypted files.
      *  - Alert if there are encrypted files,
@@ -416,7 +415,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
             /* Check if we've already exceeded the scan limit */
             if (cli_checklimits("RAR", ctx, 0, 0, 0))
                 break;
-            
+
             if (metadata.is_dir) {
                 /* Entry is a directory. Skip. */
                 cli_dbgmsg("RAR: Found directory. Skipping to next file.\n");
@@ -427,7 +426,7 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
                     break;
                 }
             } else if (cli_checklimits("RAR", ctx, metadata.unpack_size, 0, 0)) {
-                /* File size exceeds maxfilesize, must skip extraction. 
+                /* File size exceeds maxfilesize, must skip extraction.
                 * Although we may be able to scan the metadata */
                 nTooLargeFilesFound += 1;
 
@@ -462,12 +461,12 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
 
                 unrar_ret = cli_unrar_extract_file(hArchive, extract_fullpath, NULL);
                 if (unrar_ret != UNRAR_OK) {
-                    /* 
+                    /*
                      * Some other error extracting the file
                      */
                     cli_dbgmsg("RAR: Error extracting file: %s\n", metadata.filename);
 
-                    /* TODO: 
+                    /* TODO:
                      *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
                      */
                 } else {
@@ -2580,7 +2579,6 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 {
     int ret = CL_CLEAN, nret = CL_CLEAN;
     struct cli_matched_type *ftoffset = NULL, *fpt;
-    uint32_t lastrar;
     struct cli_exe_info peinfo;
     unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
     fmap_t *map = *ctx->fmap;
@@ -2660,7 +2658,11 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                         cli_set_container(ctx, CL_TYPE_RAR, csize);
                         cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int)fpt->offset);
 
-                        if ((ctx->sub_filepath == NULL) || (fpt->offset != 0)) {
+#ifdef _WIN32
+                        if ((fpt->offset != 0) || (SCAN_UNPRIVILEGED)|| (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
+#else
+                        if ((fpt->offset != 0) || (SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != access(ctx->sub_filepath, R_OK))) {
+#endif
                             /*
                              * If map is not file-backed, or offset is not at the start of the file...
                              * ...have to dump to file for scanrar.
@@ -2682,6 +2684,25 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
                         /* scan file */
                         nret = cli_scanrar(filepath, fd, ctx);
+
+                        if ((NULL == tmpname) && (CL_EOPEN == nret)) {
+                            /*
+                             * Failed to open the file using the original filename.
+                             * Try writing the file descriptor to a temp file and try again.
+                             */
+                            nret = fmap_dump_to_file(map, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, fpt->offset, fpt->offset + csize);
+                            if (nret != CL_SUCCESS) {
+                                cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                                ret = nret;
+                                break_loop = 1;
+                                break;
+                            }
+                            filepath = tmpname;
+                            fd = tmpfd;
+
+                            /* try to scan again */
+                            nret = cli_scanrar(filepath, fd, ctx);
+                        }
 
                         if (tmpfd != -1)
                         {
@@ -3348,7 +3369,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             char *tmpname = NULL;
             int tmpfd = -1;
 
-            if (ctx->sub_filepath == NULL) {
+#ifdef _WIN32
+            if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
+#else
+            if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != access(ctx->sub_filepath, R_OK))) {
+#endif
                 /* If map is not file-backed have to dump to file for scanrar. */
                 ret = fmap_dump_to_file(*ctx->fmap, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
                 if (ret != CL_SUCCESS) {
@@ -3365,6 +3390,23 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
             /* scan file */
             ret = cli_scanrar(filepath, fd, ctx);
+
+            if ((NULL == tmpname) && (CL_EOPEN == ret)) {
+                /*
+                 * Failed to open the file using the original filename.
+                 * Try writing the file descriptor to a temp file and try again.
+                 */
+                ret = fmap_dump_to_file(*ctx->fmap, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+                if (ret != CL_SUCCESS) {
+                    cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                    break;
+                }
+                filepath = tmpname;
+                fd = tmpfd;
+
+                /* try to scan again */
+                ret = cli_scanrar(filepath, fd, ctx);
+            }
 
             if (tmpfd != -1) {
                 /* If dumped tempfile, need to cleanup */
@@ -4015,8 +4057,8 @@ int cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx)
 }
 
 /**
- * @brief   The main function to initiate a scan, that may be invoked with a file descriptor or a file map. 
- * 
+ * @brief   The main function to initiate a scan, that may be invoked with a file descriptor or a file map.
+ *
  * @param desc              File descriptor of an open file. The caller must provide this or the map.
  * @param map               File map. The caller must provide this or the desc.
  * @param filepath          (optional, recommended) filepath of the open file descriptor or file map.
@@ -4092,23 +4134,13 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char * filepath, c
         }
     }
 
-    /* Best effort to determine the filename if not provided. 
-     * May still be NULL if filename could not be determined. */
-    if (filepath == NULL)
+    if (filepath != NULL)
     {
-        char *fpath = NULL;
-
-        if (desc >= 0) {
-            (void) cli_get_filepath_from_filedesc(desc, &fpath);
-        }
-
-        ctx.target_filepath = fpath;
-    } else {
         ctx.target_filepath = strdup(filepath);
     }
 
     cli_logg_setup(&ctx);
-    rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY) 
+    rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY)
              : cli_magic_scandesc(desc, ctx.target_filepath, &ctx);
 
 #if HAVE_JSON
@@ -4237,8 +4269,8 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char * filepath, c
     if (rc == CL_CLEAN)
     {
         if ((ctx.found_possibly_unwanted) ||
-            ((ctx.num_viruses != 0) && 
-               ((ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) || 
+            ((ctx.num_viruses != 0) &&
+               ((ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) ||
                 (ctx.options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX))
             ))
             rc = CL_VIRUS;
@@ -4279,8 +4311,8 @@ int cli_found_possibly_unwanted(cli_ctx *ctx)
             return CL_VIRUS;
         }
         /* heuristic scan isn't taking precedence, keep scanning.
-     * If this is part of an archive, and 
-     * we find a real malware we report that instead of the 
+     * If this is part of an archive, and
+     * we find a real malware we report that instead of the
      * heuristic match */
         ctx->found_possibly_unwanted = 1;
     }
