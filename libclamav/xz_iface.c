@@ -57,6 +57,8 @@ int cli_XzInit(struct CLI_XZ *XZ) {
 }
 	
 void cli_XzShutdown(struct CLI_XZ *XZ) {
+    if (!XZ)
+        return;
     XzUnpacker_Free(&XZ->state);
 }
 

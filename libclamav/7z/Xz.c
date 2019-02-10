@@ -93,6 +93,7 @@ int XzCheck_Final(CXzCheck *p, Byte *digest)
           return 0;
 
       cl_finish_hash(p->sha, digest);
+      p->sha = NULL;
       break;
     default:
       return 0;
