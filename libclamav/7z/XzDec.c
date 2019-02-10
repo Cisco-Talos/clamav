@@ -614,7 +614,11 @@ SRes XzUnpacker_Create(CXzUnpacker *p, ISzAlloc *alloc)
 
 void XzUnpacker_Free(CXzUnpacker *p)
 {
+  if (!p)
+    return;
   MixCoder_Free(&p->decoder);
+  cl_hash_destroy(p->sha);
+  p->sha = NULL;
 }
 
 SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
@@ -816,8 +820,10 @@ SRes XzUnpacker_Code(CXzUnpacker *p, Byte *dest, SizeT *destLen,
             p->state = XZ_STATE_STREAM_INDEX_CRC;
             p->indexSize += 4;
             p->pos = 0;
-            if ((p->sha))
+            if ((p->sha)) {
                 cl_finish_hash(p->sha, digest);
+                p->sha = NULL;
+            }
 
             if (memcmp(digest, p->shaDigest, SHA256_DIGEST_SIZE) != 0)
               return SZ_ERROR_CRC;
