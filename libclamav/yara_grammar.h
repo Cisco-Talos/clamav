@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.0.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -39,8 +39,12 @@
 #if YYDEBUG
 extern int yara_yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 39 "../../libclamav/yara_grammar.y" /* yacc.c:1909  */
 
 #include "yara_compiler.h"
+
+#line 48 "yara_grammar.h" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -155,10 +159,10 @@ extern int yara_yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
+typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 214 "yara_grammar.y" /* yacc.c:1909  */
+#line 218 "../../libclamav/yara_grammar.y" /* yacc.c:1909  */
 
   SIZED_STRING*   sized_string;
   char*           c_string;
@@ -168,10 +172,8 @@ union YYSTYPE
   YR_META*        meta;
   YR_OBJECT*      object;
 
-#line 170 "yara_grammar.h" /* yacc.c:1909  */
+#line 176 "yara_grammar.h" /* yacc.c:1909  */
 };
-
-typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
