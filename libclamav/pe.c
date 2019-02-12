@@ -2,7 +2,7 @@
  *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
- *  Authors: Alberto Wu, Tomasz Kojm
+ *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
  *
  *  Acknowledgements: The header structures were based upon a PE format 
  *                    analysis by B. Luevelsmeyer.
@@ -5505,11 +5505,16 @@ static int sort_sects(const void *first, const void *second)
  * - A PE file has an embedded Authenticode section
  * - The PE file has no embedded Authenticode section but is covered by a
  *   catalog file that was loaded in via a -d 
- * CL_CLEAN will be returned if the file was whitelisted based on its
+ * 
+ * If peinfo is NULL, one will be created internally and used
+ * 
+ * CL_VERIFIED will be returned if the file was whitelisted based on its
  * signature.  CL_VIRUS will be returned if the file was blacklisted based on
  * its signature.  Otherwise, an cl_error_t error value will be returned.
- */
-cl_error_t cli_checkfp_pe(cli_ctx *ctx)
+ * 
+ * If CL_VIRUS is returned, certname will be set to the certname of blacklist
+ * rule that matched (unless certname is NULL). */
+cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo, char **certname)
 {
     size_t at;
     unsigned int i, hlen;
@@ -5524,7 +5529,6 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
     uint32_t sec_dir_offset;
     uint32_t sec_dir_size;
     struct cli_exe_info _peinfo;
-    struct cli_exe_info *peinfo = &_peinfo;
 
     // If Authenticode parsing has been disabled via DCONF, then don't
     // continue on.
@@ -5533,12 +5537,15 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
     if (!(DCONF & PE_CONF_CATALOG))
         return CL_EFORMAT;
 
-    // TODO see if peinfo can be passed in (or lives in ctx or something) and
-    // if so, use that to avoid having to re-parse the header
-    cli_exe_info_init(peinfo, 0);
+    // If peinfo is NULL, initialize one.  This makes it so that this function
+    // can be used easily by sigtool
+    if (NULL == peinfo) {
+        peinfo = &_peinfo;
+        cli_exe_info_init(peinfo, 0);
 
-    if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
-        return CL_EFORMAT;
+        if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
+            return CL_EFORMAT;
+        }
     }
 
     sec_dir_offset = EC32(peinfo->dirs[4].VirtualAddress);
@@ -5549,21 +5556,20 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
     // the section hashes), bail out if we don't have any Authenticode hashes
     // loaded from .cat files
     if (sec_dir_size < 8 && !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2)) {
-        cli_exe_info_destroy(peinfo);
-        return CL_BREAK;
+        ret = CL_BREAK;
+        goto finish;
     }
     fsize = map->len;
 
-    do {
-        // We'll build a list of the regions that need to be hashed and pass it to
-        // asn1_check_mscat to do hash verification there (the hash algorithm is
-        // specified in the PKCS7 structure).  We need to hash up to 4 regions
-        regions = (struct cli_mapped_region *)cli_calloc(4, sizeof(struct cli_mapped_region));
-        if (!regions) {
-            cli_exe_info_destroy(peinfo);
-            return CL_EMEM;
-        }
-        nregions = 0;
+    // We'll build a list of the regions that need to be hashed and pass it to
+    // asn1_check_mscat to do hash verification there (the hash algorithm is
+    // specified in the PKCS7 structure).  We need to hash up to 4 regions
+    regions = (struct cli_mapped_region *)cli_calloc(4, sizeof(struct cli_mapped_region));
+    if (!regions) {
+        ret = CL_EMEM;
+        goto finish;
+    }
+    nregions = 0;
 
 #define add_chunk_to_hash_list(_offset, _size) \
     do {                                       \
@@ -5572,74 +5578,74 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
         nregions++;                            \
     } while (0)
 
-        // Pretty much every case below should return CL_EFORMAT
-        ret = CL_EFORMAT;
+    // Pretty much every case below should return CL_EFORMAT
+    ret = CL_EFORMAT;
 
-        /* MZ to checksum */
-        at   = 0;
-        hlen = peinfo->e_lfanew + sizeof(struct pe_image_file_hdr) + (peinfo->is_pe32plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
-        add_chunk_to_hash_list(0, hlen);
-        at = hlen + 4;
+    /* MZ to checksum */
+    at   = 0;
+    hlen = peinfo->e_lfanew + sizeof(struct pe_image_file_hdr) + (peinfo->is_pe32plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
+    add_chunk_to_hash_list(0, hlen);
+    at = hlen + 4;
 
-        /* Checksum to security */
-        if (peinfo->is_pe32plus)
-            hlen = sizeof(struct pe_image_optional_hdr64) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
-        else
-            hlen = sizeof(struct pe_image_optional_hdr32) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
+    /* Checksum to security */
+    if (peinfo->is_pe32plus)
+        hlen = sizeof(struct pe_image_optional_hdr64) - offsetof(struct pe_image_optional_hdr64, CheckSum) - 4;
+    else
+        hlen = sizeof(struct pe_image_optional_hdr32) - offsetof(struct pe_image_optional_hdr32, CheckSum) - 4;
 
-        hlen += sizeof(struct pe_image_data_dir) * 4;
-        add_chunk_to_hash_list(at, hlen);
-        at += hlen + 8;
+    hlen += sizeof(struct pe_image_data_dir) * 4;
+    add_chunk_to_hash_list(at, hlen);
+    at += hlen + 8;
 
-        if (at > peinfo->hdr_size) {
-            break;
+    if (at > peinfo->hdr_size) {
+        goto finish;
+    }
+
+    /* Security to End of header */
+    hlen = peinfo->hdr_size - at;
+    add_chunk_to_hash_list(at, hlen);
+    at += hlen;
+
+    if (sec_dir_offset) {
+
+        // Verify that we have all the bytes we expect in the authenticode sig
+        // and that the certificate table is the last thing in the file
+        // (according to the MS13-098 bulletin, this is a requirement)
+        if (fsize != sec_dir_size + sec_dir_offset) {
+            cli_dbgmsg("cli_check_auth_header: expected authenticode data at the end of the file\n");
+            goto finish;
         }
 
-        /* Security to End of header */
-        hlen = peinfo->hdr_size - at;
-        add_chunk_to_hash_list(at, hlen);
-        at += hlen;
+        // Hash everything from the end of the header to the start of the
+        // security section
+        if (at < sec_dir_offset) {
+            hlen = sec_dir_offset - at;
+            add_chunk_to_hash_list(at, hlen);
+        } else {
+            cli_dbgmsg("cli_check_auth_header: security directory offset appears to overlap with the PE header\n");
+            goto finish;
+        }
 
-        if (sec_dir_offset) {
+        // Parse the security directory header
 
-            // Verify that we have all the bytes we expect in the authenticode sig
-            // and that the certificate table is the last thing in the file
-            // (according to the MS13-098 bulletin, this is a requirement)
-            if (fsize != sec_dir_size + sec_dir_offset) {
-                cli_dbgmsg("cli_checkfp_pe: expected authenticode data at the end of the file\n");
-                break;
-            }
+        if (fmap_readn(map, &cert_hdr, sec_dir_offset, sizeof(cert_hdr)) != sizeof(cert_hdr)) {
+            goto finish;
+        }
 
-            // Hash everything from the end of the header to the start of the
-            // security section
-            if (at < sec_dir_offset) {
-                hlen = sec_dir_offset - at;
-                add_chunk_to_hash_list(at, hlen);
-            } else {
-                cli_dbgmsg("cli_checkfp_pe: security directory offset appears to overlap with the PE header\n");
-                break;
-            }
+        if (EC16(cert_hdr.revision) != WIN_CERT_REV_2) {
+            cli_dbgmsg("cli_check_auth_header: unsupported authenticode data revision\n");
+            goto finish;
+        }
 
-            // Parse the security directory header
+        if (EC16(cert_hdr.type) != WIN_CERT_TYPE_PKCS7) {
+            cli_dbgmsg("cli_check_auth_header: unsupported authenticode data type\n");
+            goto finish;
+        }
 
-            if (fmap_readn(map, &cert_hdr, sec_dir_offset, sizeof(cert_hdr)) != sizeof(cert_hdr)) {
-                break;
-            }
+        hlen = sec_dir_size;
 
-            if (EC16(cert_hdr.revision) != WIN_CERT_REV_2) {
-                cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data revision\n");
-                break;
-            }
-
-            if (EC16(cert_hdr.type) != WIN_CERT_TYPE_PKCS7) {
-                cli_dbgmsg("cli_checkfp_pe: unsupported authenticode data type\n");
-                break;
-            }
-
-            hlen = sec_dir_size;
-
-            if (EC32(cert_hdr.length) != hlen) {
-                /* This is the case that MS13-098 aimed to address, but it got
+        if (EC32(cert_hdr.length) != hlen) {
+            /* This is the case that MS13-098 aimed to address, but it got
                  * pushback to where the fix (not allowing additional, non-zero
                  * bytes in the security directory) is now opt-in via a registry
                  * key.  Given that most machines will treat these binaries as
@@ -5647,76 +5653,74 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
                  * our whitelist signatures are tailored enough to where any
                  * instances of this are reasonable (for instance, I saw one
                  * binary that appeared to use this to embed a license key.) */
-                cli_dbgmsg("cli_checkfp_pe: MS13-098 violation detected, but continuing on to verify certificate\n");
-            }
-
-            at = sec_dir_offset + sizeof(cert_hdr);
-            hlen -= sizeof(cert_hdr);
-
-            ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions);
-
-            if (CL_CLEAN == ret) {
-                // We validated the embedded signature.  Hooray!
-                break;
-            } else if (CL_VIRUS == ret) {
-                // A blacklist rule hit - don't continue on to check hm_fp for a match
-                break;
-            }
-
-            // Otherwise, we still need to check to see whether this file is
-            // covered by a .cat file (it's common these days for driver files
-            // to have .cat files covering PEs with embedded signatures)
-
-        } else {
-
-            // Hash everything from the end of the header to the end of the
-            // file
-            if (at < fsize) {
-                hlen = fsize - at;
-                add_chunk_to_hash_list(at, hlen);
-            }
+            cli_dbgmsg("cli_check_auth_header: MS13-098 violation detected, but continuing on to verify certificate\n");
         }
 
-        // At this point we should compute the SHA1 authenticode hash to see
-        // whether we've had any hashes added from external catalog files
-        // TODO Is it gauranteed that the hashing algorithm will be SHA1?  If
-        // not, figure out how to handle that case
-        hashctx = cl_hash_init("sha1");
-        if (NULL == hashctx) {
-            ret = CL_EMEM;
+        at = sec_dir_offset + sizeof(cert_hdr);
+        hlen -= sizeof(cert_hdr);
+
+        ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions, certname);
+
+        if (CL_VERIFIED == ret) {
+            // We validated the embedded signature.  Hooray!
+            goto finish;
+        } else if (CL_VIRUS == ret) {
+            // A blacklist rule hit - don't continue on to check hm_fp for a match
+            goto finish;
+        }
+
+        // Otherwise, we still need to check to see whether this file is
+        // covered by a .cat file (it's common these days for driver files
+        // to have .cat files covering PEs with embedded signatures)
+
+    } else {
+
+        // Hash everything from the end of the header to the end of the
+        // file
+        if (at < fsize) {
+            hlen = fsize - at;
+            add_chunk_to_hash_list(at, hlen);
+        }
+    }
+
+    // At this point we should compute the SHA1 authenticode hash to see
+    // whether we've had any hashes added from external catalog files
+    // TODO Is it gauranteed that the hashing algorithm will be SHA1?  If
+    // not, figure out how to handle that case
+    hashctx = cl_hash_init("sha1");
+    if (NULL == hashctx) {
+        ret = CL_EMEM;
+        goto finish;
+    }
+
+    for (i = 0; i < nregions; i++) {
+        const uint8_t *hptr;
+        if (0 == regions[i].size) {
+            continue;
+        }
+        if (!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))) {
             break;
         }
 
-        for (i = 0; i < nregions; i++) {
-            const uint8_t *hptr;
-            if (0 == regions[i].size) {
-                continue;
-            }
-            if (!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))) {
-                break;
-            }
+        cl_update_hash(hashctx, hptr, regions[i].size);
+    }
 
-            cl_update_hash(hashctx, hptr, regions[i].size);
-        }
+    if (i != nregions) {
+        goto finish;
+    }
 
-        if (i != nregions) {
-            break;
-        }
+    cl_finish_hash(hashctx, authsha1);
+    hashctx = NULL;
 
-        cl_finish_hash(hashctx, authsha1);
-        hashctx = NULL;
+    if (cli_hm_scan(authsha1, 2, NULL, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+        cli_dbgmsg("cli_check_auth_header: PE file whitelisted by catalog file\n");
+        ret = CL_CLEAN;
+        goto finish;
+    }
 
-        if (cli_hm_scan(authsha1, 2, NULL, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-            cli_dbgmsg("cli_checkfp_pe: PE file whitelisted by catalog file\n");
-            ret = CL_CLEAN;
-            break;
-        }
+    ret = CL_EVERIFY;
 
-        ret = CL_EVERIFY;
-        break;
-
-    } while (0);
-
+finish:
     if (NULL != hashctx) {
         cl_hash_destroy(hashctx);
     }
@@ -5725,7 +5729,10 @@ cl_error_t cli_checkfp_pe(cli_ctx *ctx)
         free(regions);
     }
 
-    cli_exe_info_destroy(peinfo);
+    // If we created the peinfo, then destroy it.  Otherwise we don't own it
+    if (&_peinfo == peinfo) {
+        cli_exe_info_destroy(peinfo);
+    }
     return ret;
 }
 

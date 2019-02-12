@@ -3455,26 +3455,25 @@ static int dumpcerts(const struct optstruct *opts)
         return -1;
     }
 
-    ret = cli_checkfp_pe(&ctx);
+    ret = cli_check_auth_header(&ctx, NULL, NULL);
 
     switch (ret) {
-        case CL_CLEAN:
-            mprintf("*dumpcerts: CL_CLEAN after cli_checkfp_pe()!\n");
-            break;
+        case CL_VERIFIED:
         case CL_VIRUS:
-            mprintf("*dumpcerts: CL_VIRUS after cli_checkfp_pe()!\n");
-            break;
-        case CL_BREAK:
-            mprintf("*dumpcerts: CL_BREAK after cli_checkfp_pe()!\n");
+            // These shouldn't happen, since sigtool doesn't load in any sigs
             break;
         case CL_EVERIFY:
-            mprintf("!dumpcerts: CL_EVERIFY after cli_checkfp_pe()!\n");
+            // The Authenticode header was parsed successfully but there were
+            // no applicable whitelist/blacklist rules
+            break;
+        case CL_BREAK:
+            mprintf("*dumpcerts: No Authenticode signature detected\n");
             break;
         case CL_EFORMAT:
             mprintf("!dumpcerts: An error occurred when parsing the file\n");
             break;
         default:
-            mprintf("!dumpcerts: Other error %d inside cli_checkfp_pe.\n", ret);
+            mprintf("!dumpcerts: Other error %d inside cli_check_auth_header.\n", ret);
             break;
     }
 

@@ -2402,6 +2402,9 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
+    // TODO I think this causes embedded file extraction to stop when a
+    // signature has matched in cli_fmap_scandesc, which wouldn't be what
+    // we want if allmatch is specified.
     if (ret >= CL_TYPENO) {
         perf_nested_start(ctx, PERFT_RAWTYPENO, PERFT_SCAN);
         ctx->recursion++;
@@ -2625,6 +2628,25 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                                              * be found recursively
                                              * through the above call
                                              */
+                                // TODO This method of embedded PE extraction
+                                // is kinda gross in that:
+                                //   - if you have an executable that contains
+                                //     20 other exes, the bytes associated with
+                                //     the last exe will have been included in
+                                //     hash computations and things 20 times
+                                //     (as overlay data to the previously
+                                //     extracted exes).
+                                //   - if you have a signed embedded exe, it
+                                //     will fail to validate after extraction
+                                //     bc it has overlay data, which is a
+                                //     violation of the Authenticode spec.
+                                //   - this method of extraction is subject to
+                                //     the recursion limit, which is fairly
+                                //     low by default (I think 16)
+                                //
+                                // It'd be awesome if we could compute the PE
+                                // size from the PE header and just extract
+                                // that.
                             }
                         }
                         break;
@@ -3403,7 +3425,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     cli_bitset_free(ctx->hook_lsig_matches);
                     ctx->hook_lsig_matches = old_hook_lsig_matches;
                     return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, res, parent_property);
-                /* CL_VIRUS = malware found, check FP and report */
+                /* CL_VIRUS = malware found, check FP and report.
+                 * Likewise, if the file was determined to be trusted, then we
+                 * can also finish with the scan. (Ex: EXE with a valid
+                 * Authenticode sig.) */
+                case CL_VERIFIED:
+                    // For now just conver CL_VERIFIED to CL_CLEAN, since
+                    // CL_VERIFIED isn't used elsewhere
+                    res = CL_CLEAN;
+                    // Fall through
                 case CL_VIRUS:
                     ret = res;
                     if (SCAN_ALLMATCHES)

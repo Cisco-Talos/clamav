@@ -282,6 +282,8 @@ const char *cl_strerror(int clerror)
             return "Scanner still active";
         case CL_ESTATE:
             return "Bad state (engine not initialized, or already initialized)";
+        case CL_VERIFIED:
+            return "The scanned object was verified and deemed trusted";
         default:
             return "Unknown error code";
     }

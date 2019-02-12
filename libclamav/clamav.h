@@ -117,6 +117,8 @@ typedef enum cl_error_t {
     CL_EBUSY,
     CL_ESTATE,
 
+    CL_VERIFIED, /* The binary has been deemed trusted */
+
     /* no error codes below this line please */
     CL_ELAST_ERROR
 } cl_error_t;
