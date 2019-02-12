@@ -107,8 +107,13 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
         // The CRB rules are based on subject, serial, and public key,
         // so do blacklist queries based on those fields
 
+        // TODO the rule format specifies CodeSign / TimeSign / CertSign
+        // which we could also match on, but we just ignore those fields
+        // for blacklist certs for now
+
         // TODO Handle the case where these items aren't specified in a CRB
-        // rule entry - substitute in default values instead.
+        // rule entry - substitute in default values instead (or make the
+        // crb parser not permit leaving these fields blank).
 
         if (i->isBlacklisted &&
             !memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
@@ -407,16 +412,24 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
     int score             = 0;
     unsigned int possible = 0;
 
+    // For a blacklist cert, if it exists in the signature then that is
+    // enough to report back a match.  We can't whitelist this way, though,
+    // or an attacker could just include a known-good certificate in the
+    // signature and just not use it.
     if (NULL != (i = crtmgr_blacklist_lookup(m, x509))) {
         return i;
     }
+
+    // Loop through each of the certificates in our trust store and see whether
+    // x509 is signed with it.  If it is, it's trusted
 
     // TODO Technically we should loop through all of the blacklisted certs
     // first to see whether one of those is used to sign x509.  This case
     // will get handled if the blacklisted certificate is embedded, since we
     // will call crtmgr_verify_crt on it and match against the blacklist entry
     // that way, but the cert doesn't HAVE to be embedded.  This case seems
-    // unlikely enough to ignore, though.
+    // unlikely enough to ignore, though.  If we ever want to blacklist a
+    // stolen CA cert or something, then we will need to revisit this.
 
     for (i = m->crts; i; i = i->next) {
         if (i->certSign &&

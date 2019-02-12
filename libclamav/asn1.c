@@ -1365,7 +1365,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
     return 1;
 }
 
-static cl_error_t asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, struct cl_engine *engine)
+static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, char **certname)
 {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t issuer[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
@@ -1555,6 +1555,11 @@ static cl_error_t asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size
                             sprintf(&serial[j * 2], "%02x", x509->serial[j]);
                         }
 
+                        // TODO The raw information we print out here isn't
+                        // very helpful, since it's only the first 64-bytes...
+                        // Change this so that raw is only populated when the
+                        // debug flag is set, and then copy/display the full
+                        // contents.
                         cli_dbgmsg_internal("cert:\n");
                         cli_dbgmsg_internal("  subject: %s\n", subject);
                         cli_dbgmsg_internal("  serial: %s\n", serial);
@@ -1593,7 +1598,26 @@ static cl_error_t asn1_parse_mscat(fmap_t *map, size_t offset, unsigned int size
                             // in cmgr for this certificate, not a blacklist
                             // entry for this certificate's parent
                             ret = CL_VIRUS;
-                            cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as virus.\n", (parent->name ? parent->name : "(no name)"));
+                            cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as a virus.\n", (parent->name ? parent->name : "(no name)"));
+                            if (NULL != certname) {
+                                // We need to pass back the certname from a
+                                // place where it won't go away (and nothing
+                                // above here knows to free it) so just find it
+                                // again in the engine->cmgr.
+                                // TODO Refactor this so that blacklist cert
+                                // lookups happen against engine->cmgr so we
+                                // don't have to lookup twice
+                                if (cmgr != &(engine->cmgr)) {
+                                    parent = crtmgr_verify_crt(&(engine->cmgr), x509);
+                                }
+
+                                if (NULL == parent) {
+                                    cli_dbgmsg("asn1_parse_mscat: Unexpected case - blacklist cert can't be found in the global list\n");
+                                    *certname = "(error fetching name)";
+                                } else {
+                                    *certname = parent->name ? parent->name : "(no name)";
+                                }
+                            }
                             crtmgr_free(&newcerts);
                             goto finish;
                         }
@@ -2046,7 +2070,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
     // TODO Since we pass engine->cmgr directly here, the whole chain of trust
     // for this .cat file will get added to the global trust store assuming it
     // verifies successfully.  Is this a bug for a feature?
-    if (CL_CLEAN != asn1_parse_mscat(map, 0, map->len, &engine->cmgr, 0, &c.next, &size, engine))
+    if (CL_CLEAN != asn1_parse_mscat(engine, map, 0, map->len, &engine->cmgr, 0, &c.next, &size, NULL))
         return 1;
 
     if (asn1_expect_objtype(map, c.next, &size, &c, ASN1_TYPE_SEQUENCE))
@@ -2179,6 +2203,9 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
                 engine->hm_fp->mempool = engine->mempool;
 #endif
             }
+            /* Load the trusted hashes into hm_fp, using the size values
+             * 1 and 2 as sentinel values corresponding to CAB and PE hashes
+             * from .cat files respectively. */
             if (hm_addhash_bin(engine->hm_fp, tagval3.content, CLI_HASH_SHA1, hashtype, NULL)) {
                 cli_warnmsg("asn1_load_mscat: failed to add hash\n");
                 return 1;
@@ -2190,11 +2217,14 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
 }
 
 /* Check an embedded PE Authenticode section to determine whether it's trusted.
- * This will return CL_CLEAN if the file should be trusted, CL_EPARSE if an
+ * This will return CL_VERIFIED if the file should be trusted, CL_EPARSE if an
  * error occurred while parsing the signature, CL_EVERIFY if parsing was
  * successful but there were no whitelist rules for the signature, and
- * CL_VIRUS if a blacklist rule was found for an embedded certificate. */
-cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions)
+ * CL_VIRUS if a blacklist rule was found for an embedded certificate.
+ *
+ * If CL_VIRUS is returned, certname will be set to the certname of blacklist
+ * rule that matched (unless certname is NULL). */
+cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions, char **certname)
 {
     unsigned int content_size;
     struct cli_asn1 c;
@@ -2207,7 +2237,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     void *ctx;
     unsigned int i;
 
-    // TODO Move these into cli_checkfp_pe
+    // TODO Move these into cli_check_auth_header
     if (!(engine->dconf->pe & PE_CONF_CERTS))
         return CL_EVERIFY;
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS)
@@ -2219,7 +2249,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
         crtmgr_free(&certs);
         return CL_EVERIFY;
     }
-    ret = asn1_parse_mscat(map, offset, size, &certs, 1, &content, &content_size, engine);
+    ret = asn1_parse_mscat(engine, map, offset, size, &certs, 1, &content, &content_size, certname);
     crtmgr_free(&certs);
     if (CL_CLEAN != ret)
         return ret;
@@ -2288,5 +2318,5 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     }
 
     cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");
-    return CL_CLEAN;
+    return CL_VERIFIED;
 }

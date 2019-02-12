@@ -566,7 +566,7 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
     const char *ptr;
     uint8_t shash1[SHA1_HASH_SIZE * 2 + 1];
     uint8_t shash256[SHA256_HASH_SIZE * 2 + 1];
-    int have_sha1, have_sha256, do_dsig_check = 1;
+    int have_sha1, have_sha256;
 
     if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
@@ -584,13 +584,8 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
                    vname ? vname : "Name");
     }
 
-    // TODO Replace this with the ability to actually perform detection with
-    // the blacklisted sig entries
-    if (vname)
-        do_dsig_check = strncmp("W32S.", vname, 5);
-
     map         = *ctx->fmap;
-    have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || (cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1) && do_dsig_check);
+    have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
     have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
     if (have_sha1 || have_sha256) {
         if ((ptr = fmap_need_off_once(map, 0, size))) {
@@ -605,7 +600,9 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
                     cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
                     return CL_CLEAN;
                 }
-                if (do_dsig_check && cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                /* See whether the hash matches those loaded in from .cat files
+                 * (associated with the .CAB file type) */
+                if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
                     cli_dbgmsg("cli_checkfp(sha1): Found false positive detection via catalog file\n");
                     return CL_CLEAN;
                 }
@@ -652,16 +649,6 @@ int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const ch
         ctx->sha_collect = -1;
     }
 #endif
-
-    if (do_dsig_check) {
-        switch (cli_checkfp_pe(ctx)) {
-            case CL_CLEAN:
-                cli_dbgmsg("cli_checkfp(pe): PE file whitelisted due to valid digital signature\n");
-                return CL_CLEAN;
-            default:
-                break;
-        }
-    }
 
     if (ctx->engine->cb_hash)
         ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, vname ? vname : "noname", ctx->cb_ctx);
@@ -918,7 +905,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     struct cli_target_info info;
     fmap_t *map = *ctx->fmap;
     struct cli_matcher *hdb, *fp;
-    const char *virname    = NULL;
+    const char *virname;
     uint32_t viruses_found = 0;
     void *md5ctx, *sha1ctx, *sha256ctx;
 
@@ -985,6 +972,33 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
                    "fuzzy icon matching, "
                    "MDB/IMP sigs, "
                    "and bytecode sigs that require exe metadata\n");
+    }
+
+    /* If it's a PE, check the Authenticode header.  This would be more
+     * appropriate in cli_scanpe, but cli_scanraw->cli_fmap_scandesc gets
+     * called first for PEs, and we want to determine the whitelist/blacklist
+     * status early on so we can skip things like embedded PE extraction
+     * (which is broken for signed binaries within signed binaries).
+     * 
+     * If we want to add support for more signature parsing in the future
+     * (Ex: MachO sigs), do that here too. */
+    if (1 == info.status && i == 1) {
+        char *certname = NULL;
+        ret            = cli_check_auth_header(ctx, &(info.exeinfo), &certname);
+
+        if (CL_VIRUS == ret) {
+            ret = cli_append_virus(ctx, certname);
+        }
+
+        if ((ret == CL_VIRUS || ret == CL_VERIFIED) && !SCAN_ALLMATCHES) {
+            cli_targetinfo_destroy(&info);
+            cl_hash_destroy(md5ctx);
+            cl_hash_destroy(sha1ctx);
+            cl_hash_destroy(sha256ctx);
+            return ret;
+        }
+
+        ret = CL_CLEAN;
     }
 
     if (!ftonly) {
