@@ -1615,6 +1615,10 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     if (NULL != (crt = crtmgr_whitelist_lookup(cmgr, x509, 1))) {
                         cli_crt *tmp = x509->next;
                         cli_dbgmsg("asn1_parse_mscat: Directly whitelisting embedded cert based on %s\n", (crt->name ? crt->name : "(no name)"));
+                        if (cli_debug_flag && crt->name) {
+                            // Copy the name from the CRB entry for printing below
+                            x509->name = strdup(crt->name);
+                        }
                         if (crtmgr_add(cmgr, x509)) {
                             cli_dbgmsg("asn1_parse_mscat: adding x509 cert to crtmgr failed\n");
                             break;
@@ -1625,6 +1629,10 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     }
 
                     x509 = x509->next;
+                }
+                if (x509) {
+                    crtmgr_free(&newcerts);
+                    break;
                 }
                 x509 = newcerts.crts;
 
