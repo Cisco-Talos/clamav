@@ -390,7 +390,7 @@ struct cl_engine *cl_engine_new(void)
     }
 
     crtmgr_init(&(new->cmgr));
-    if (crtmgr_add_roots(new, &(new->cmgr))) {
+    if (crtmgr_add_roots(new, &(new->cmgr), 0)) {
         cli_errmsg("cl_engine_new: Can't initialize root certificates\n");
         mpool_free(new->mempool, new->pwdbs);
         mpool_free(new->mempool, new->dconf);
