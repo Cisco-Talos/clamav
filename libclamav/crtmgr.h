@@ -26,7 +26,8 @@
 
 #include "bignum.h"
 
-typedef enum { CLI_SHA1RSA,
+typedef enum { CLI_HASHTYPE_ANY, /* used by crts added from .CRB rules */
+               CLI_SHA1RSA,
                CLI_MD5RSA,
                CLI_MD2RSA,
                CLI_RSA,
@@ -77,9 +78,11 @@ void crtmgr_init(crtmgr *m);
 void crtmgr_free(crtmgr *m);
 int crtmgr_add(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509);
+cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509);
+cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only);
 void crtmgr_del(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509);
 cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype);
-int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m);
+int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m, int exclude_bl_crts);
 
 #endif

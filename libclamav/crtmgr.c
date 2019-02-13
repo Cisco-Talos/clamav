@@ -71,27 +71,52 @@ void cli_crt_clear(cli_crt *x509)
  *
  * There are two ways that things get added to the whitelist - through the CRB
  * rules, and through embedded signatures / catalog files that we parse.  CRB
- * rules only specify the subject, serial, public key, and whether the cert
- * can be used for cert/code/time signing, so in those cases the issuer and
- * hashtype get set to a hardcoded value.  Those values are important for
- * doing signature verification, though, so we include them when doing this
- * lookup.  That way, certs with more specific values can get added to the
- * whitelist by functions like crtmgr_add and increase the probability of
- * successful signature verification. */
-cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509)
+ * rules don't currently allow the issuer and hashtype to be specified, so the
+ * code sets those to sentinel values (0xcacacaca repeating and
+ * CLI_HASHTYPE_ANY respectively).  There are two ways we'd like to use this
+ * function:
+ * 
+ *  - To see whether x509 already exists in m (when adding new CRB sig certs
+ *    and when adding certs that are embedded in Authenticode signatures)
+ * 
+ *  - To see whether a CRB sig matches against x509, deeming it worthy to be
+ *    added to the trust store
+ * 
+ * Use crb_crts_only to distinguish between the two cases.  If True, it will
+ * ignore all crts not added from CRB rules and ignore x509's issuer and
+ * hashtype fields */
+cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
 {
     cli_crt *i;
     for (i = m->crts; i; i = i->next) {
-        if (!i->isBlacklisted &&
-            x509->not_before >= i->not_before &&
+
+        if (i->isBlacklisted) {
+            continue;
+        }
+
+        if (crb_crts_only) {
+            if (i->hashtype != CLI_HASHTYPE_ANY) {
+                continue;
+            }
+        } else {
+            /* Almost all of the rules in m will be CRB rules, so optimize for
+             * the case where we are trying to determine whether an embedded
+             * cert already exists in m (by checking the hashtype first). Do
+             * the issuer check here too to simplify the code. */
+
+            if (x509->hashtype != i->hashtype ||
+                memcmp(x509->issuer, i->issuer, sizeof(i->issuer))) {
+                continue;
+            }
+        }
+
+        if (x509->not_before >= i->not_before &&
             x509->not_after <= i->not_after &&
             (i->certSign | x509->certSign) == i->certSign &&
             (i->codeSign | x509->codeSign) == i->codeSign &&
             (i->timeSign | x509->timeSign) == i->timeSign &&
             !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
             !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
-            !memcmp(x509->issuer, i->issuer, sizeof(i->issuer)) &&
-            x509->hashtype == i->hashtype &&
             !mp_cmp(&x509->n, &i->n) &&
             !mp_cmp(&x509->e, &i->e)) {
             return i;
@@ -133,7 +158,7 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509)
     if (x509->isBlacklisted) {
         return crtmgr_blacklist_lookup(m, x509);
     } else {
-        return crtmgr_whitelist_lookup(m, x509);
+        return crtmgr_whitelist_lookup(m, x509, 0);
     }
 }
 
@@ -148,7 +173,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
             return 0;
         }
     } else {
-        if (crtmgr_whitelist_lookup(m, x509)) {
+        if (crtmgr_whitelist_lookup(m, x509, 0)) {
             cli_dbgmsg("crtmgr_add: duplicate trusted certificate detected - not adding\n");
             return 0;
         }
@@ -402,8 +427,7 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
     return 1;
 }
 
-/* For a given cli_crt, returns an existing blacklisted cert in crtmgr if one
- * is present.  Otherwise returns a pointer to the signer x509 certificate if
+/* For a given cli_crt, returns a pointer to the signer x509 certificate if
  * one is found in the crtmgr and it's signature can be validated (NULL is
  * returned otherwise.) */
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
@@ -411,14 +435,6 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
     cli_crt *i = m->crts, *best = NULL;
     int score             = 0;
     unsigned int possible = 0;
-
-    // For a blacklist cert, if it exists in the signature then that is
-    // enough to report back a match.  We can't whitelist this way, though,
-    // or an attacker could just include a known-good certificate in the
-    // signature and just not use it.
-    if (NULL != (i = crtmgr_blacklist_lookup(m, x509))) {
-        return i;
-    }
 
     // Loop through each of the certificates in our trust store and see whether
     // x509 is signed with it.  If it is, it's trusted
@@ -493,7 +509,7 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
     return i;
 }
 
-int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m)
+int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m, int exclude_bl_crts)
 {
     cli_crt *crt;
     /*
@@ -501,6 +517,9 @@ int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m)
      */
     if (m != &(engine->cmgr)) {
         for (crt = engine->cmgr.crts; crt != NULL; crt = crt->next) {
+            if (exclude_bl_crts && crt->isBlacklisted) {
+                continue;
+            }
             if (crtmgr_add(m, crt)) {
                 crtmgr_free(m);
                 return 1;

@@ -1575,12 +1575,70 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     x509 = newcerts.crts;
                 }
 
+                /* Determine whether the embedded certificate is blacklisted or
+                 * whitelisted. If an embedded cert matches a blacklist rule,
+                 * we can return immediately indicating that a sig matched.
+                 * This isn't true for whitelist matches, since otherwise an
+                 * attacker could just include a known-good certificate in the
+                 * signature and not use it. Instead, for those we will add the
+                 * embedded cert to the trust store and continue on to ensure
+                 * that a trusted cert is used for signing. */
+                while (x509) {
+                    cli_crt *crt;
+
+                    /* Use &(engine->cmgr) for this check, since we don't copy
+                     * blacklist certs into cmgr and so that if there's a
+                     * match, we have a long-lived pointer that we can pass
+                     * back indicating the name of the sig that matched (we
+                     * can't just malloc new space for one, since nothing above
+                     * here knows to free it.) */
+                    if (NULL != (crt = crtmgr_blacklist_lookup(&(engine->cmgr), x509))) {
+                        ret = CL_VIRUS;
+                        cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blacklisted by %s\n", (crt->name ? crt->name : "(no name)"));
+                        if (NULL != certname) {
+                            *certname = crt->name ? crt->name : "(no name)";
+                        }
+                        crtmgr_free(&newcerts);
+                        goto finish;
+                    }
+
+                    /* NOTE: Since the 'issuer' cli_crt field is required for
+                     * Authenticode validation, we rely on adding embedded
+                     * certs with the 'issuer' actually set into our trust
+                     * store for doing the time/code digital signature checks.
+                     * This isn't required for cert-signing certs that
+                     * we discover this way, since the CRB cli_crts have enough
+                     * info to be able to whitelist other certs, but executing
+                     * the following code for those has the benefit of removing
+                     * them from newcerts so they aren't processed again while
+                     * looking for chained trust. */
+                    if (NULL != (crt = crtmgr_whitelist_lookup(cmgr, x509, 1))) {
+                        cli_crt *tmp = x509->next;
+                        cli_dbgmsg("asn1_parse_mscat: Directly whitelisting embedded cert based on %s\n", (crt->name ? crt->name : "(no name)"));
+                        if (crtmgr_add(cmgr, x509)) {
+                            cli_dbgmsg("asn1_parse_mscat: adding x509 cert to crtmgr failed\n");
+                            break;
+                        }
+                        crtmgr_del(&newcerts, x509);
+                        x509 = tmp;
+                        continue;
+                    }
+
+                    x509 = x509->next;
+                }
+                x509 = newcerts.crts;
+
+                /* Now look for cases where embedded certs can be trusted
+                 * indirectly because they are signed by trusted certs */
                 while (x509) {
                     cli_crt *parent;
 
                     /* If the certificate is in the trust store already, remove
-                     * it from the newcerts list */
-                    if (crtmgr_lookup(cmgr, x509)) {
+                     * it from the newcerts list.  This is legacy code that I'm
+                     * assuming tries to prevent us from doing the expensive
+                     * RSA verification in the case where the same cert is
+                     * embedded multiple times?  Sure, why not */
+                    if (crtmgr_whitelist_lookup(cmgr, x509, 0)) {
                         cli_crt *tmp = x509->next;
                         cli_dbgmsg("asn1_parse_mscat: found embedded certificate matching one in the trust store\n");
                         crtmgr_del(&newcerts, x509);
@@ -1589,40 +1647,17 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     }
 
                     /* Determine whether the cert is signed by one in our trust
-                     * store or has a blacklist entry */
+                     * store */
                     parent = crtmgr_verify_crt(cmgr, x509);
 
                     if (parent) {
-                        if (parent->isBlacklisted) {
-                            // NOTE: In this case, parent is a blacklist entry
-                            // in cmgr for this certificate, not a blacklist
-                            // entry for this certificate's parent
-                            ret = CL_VIRUS;
-                            cli_dbgmsg("asn1_parse_mscat: Authenticode certificate %s is revoked. Flagging sample as a virus.\n", (parent->name ? parent->name : "(no name)"));
-                            if (NULL != certname) {
-                                // We need to pass back the certname from a
-                                // place where it won't go away (and nothing
-                                // above here knows to free it) so just find it
-                                // again in the engine->cmgr.
-                                // TODO Refactor this so that blacklist cert
-                                // lookups happen against engine->cmgr so we
-                                // don't have to lookup twice
-                                if (cmgr != &(engine->cmgr)) {
-                                    parent = crtmgr_verify_crt(&(engine->cmgr), x509);
-                                }
 
-                                if (NULL == parent) {
-                                    cli_dbgmsg("asn1_parse_mscat: Unexpected case - blacklist cert can't be found in the global list\n");
-                                    *certname = "(error fetching name)";
-                                } else {
-                                    *certname = parent->name ? parent->name : "(no name)";
-                                }
-                            }
-                            crtmgr_free(&newcerts);
-                            goto finish;
-                        }
+                        cli_dbgmsg("asn1_parse_mscat: Indirectly whitelisting embedded cert based on %s\n", (parent->name ? parent->name : "(no name)"));
 
-                        // TODO Why is this done?
+                        // TODO Why is this done?  It seems like you should be
+                        // able to have a parent cert can only do cert signing
+                        // and have that be able to sign a cert used for
+                        // code-signing...
                         x509->codeSign &= parent->codeSign;
                         x509->timeSign &= parent->timeSign;
 
@@ -2245,7 +2280,8 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
 
     cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);
-    if (crtmgr_add_roots(engine, &certs)) {
+    /* Get a copy of all certs in the trust store, excluding blacklist certs */
+    if (crtmgr_add_roots(engine, &certs, 1)) {
         crtmgr_free(&certs);
         return CL_EVERIFY;
     }
