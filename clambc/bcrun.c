@@ -347,8 +347,9 @@ int main(int argc, char *argv[])
     } else if (optget(opts, "printsrc")->enabled) {
         print_src(opts->filename[0]);
     } else if (optget(opts, "printbcir")->enabled) {
+        unsigned i;
         cli_bytetype_describe(bc);
-        for (unsigned i = 0; i < bc->num_func; ++i) {
+        for (i = 0; i < bc->num_func; ++i) {
             printf("########################################################################\n"
                    "####################### Function id %3u ################################\n"
                    "########################################################################\n", i);
