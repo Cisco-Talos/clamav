@@ -21,7 +21,7 @@
 ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test clamdtop clambc unit_tests
-EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.md NEWS.md README.md fuzz
+EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.md NEWS.md README.md
 
 bin_SCRIPTS=clamav-config
 
@@ -33,6 +33,10 @@ if ENABLE_LIBFRESHCLAM
 SUBDIRS += libfreshclam
 endif
 
+if ENABLE_FUZZ
+SUBDIRS += fuzz
+endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
 
@@ -41,7 +45,7 @@ nodist_include_HEADERS = clamav-types.h
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
 DISTCLEANFILES = target.h
-DISTCHECK_CONFIGURE_FLAGS=--enable-milter --disable-clamav --enable-all-jit-targets --enable-llvm=yes --with-system-llvm=no --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
+DISTCHECK_CONFIGURE_FLAGS=--enable-milter --disable-clamav --enable-all-jit-targets --enable-llvm=yes --with-system-llvm=no --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) CC="$(CC)" CXX="$(CXX)" YACC="$(YACC)" LEX="$(LEX)" AR="$(AR)" AS="$(AS)"
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
 quick-check:
