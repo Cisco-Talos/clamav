@@ -1749,6 +1749,7 @@ static int vbadump(const struct optstruct *opts)
         destroy_ctx(-1, ctx);
         cli_rmdirs(dir);
         free(dir);
+        close(fd);
         return -1;
     }
     destroy_ctx(-1, ctx);
@@ -1756,6 +1757,7 @@ static int vbadump(const struct optstruct *opts)
         sigtool_vba_scandir(dir, hex_output, vba);
     cli_rmdirs(dir);
     free(dir);
+    close(fd);
     return 0;
 }
 
