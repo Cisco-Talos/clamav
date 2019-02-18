@@ -3455,7 +3455,7 @@ static int dumpcerts(const struct optstruct *opts)
         return -1;
     }
 
-    ret = cli_check_auth_header(&ctx, NULL, NULL);
+    ret = cli_check_auth_header(&ctx, NULL);
 
     switch (ret) {
         case CL_VERIFIED:

@@ -983,12 +983,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
      * If we want to add support for more signature parsing in the future
      * (Ex: MachO sigs), do that here too. */
     if (1 == info.status && i == 1) {
-        char *certname = NULL;
-        ret            = cli_check_auth_header(ctx, &(info.exeinfo), &certname);
-
-        if (CL_VIRUS == ret) {
-            ret = cli_append_virus(ctx, certname);
-        }
+        ret = cli_check_auth_header(ctx, &(info.exeinfo));
 
         if ((ret == CL_VIRUS || ret == CL_VERIFIED) && !SCAN_ALLMATCHES) {
             cli_targetinfo_destroy(&info);

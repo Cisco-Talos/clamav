@@ -2939,6 +2939,16 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     char *subject = NULL, *pubkey = NULL, *serial = NULL;
     const uint8_t exp[] = "\x01\x00\x01";
 
+    if (!(engine->dconf->pe & PE_CONF_CERTS)) {
+        cli_dbgmsg("cli_loadcrt: Ignoring .crb sigs due to DCONF configuration\n");
+        return ret;
+    }
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS) {
+        cli_dbgmsg("cli_loadcrt: Ignoring .crb sigs due to engine options\n");
+        return ret;
+    }
+
     cli_crt_init(&ca);
     memset(ca.issuer, 0xca, sizeof(ca.issuer));
 
@@ -3104,6 +3114,19 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
 
     UNUSEDPARAM(options);
     UNUSEDPARAM(dbio);
+
+    /* If loading in signatures stored in .cat files is disabled, then skip.
+     * If Authenticoded signature parsing in general is disabled, then also
+     * skip. */
+    if (!(engine->dconf->pe & PE_CONF_CATALOG) || !(engine->dconf->pe & PE_CONF_CERTS)) {
+        cli_dbgmsg("cli_loadmscat: Ignoring .cat sigs due to DCONF configuration\n");
+        return 0;
+    }
+
+    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS) {
+        cli_dbgmsg("cli_loadmscat: Ignoring .cat sigs due to engine options\n");
+        return 0;
+    }
 
     if (!(map = fmap(fileno(fs), 0, 0))) {
         cli_dbgmsg("Can't map cat: %s\n", dbname);
