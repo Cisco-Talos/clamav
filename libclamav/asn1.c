@@ -1365,7 +1365,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
     return 1;
 }
 
-static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, char **certname)
+static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, crtmgr *cmgr, int embedded, const void **hashes, unsigned int *hashes_size, cli_ctx *ctx)
 {
     struct cli_asn1 asn1, deep, deeper;
     uint8_t issuer[SHA1_HASH_SIZE], serial[SHA1_HASH_SIZE];
@@ -1378,7 +1378,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
     // md is used to hold the message digest we extract from the signature
     uint8_t md[MAX_HASH_SIZE];
     cli_crt *x509;
-    void *ctx;
+    void *hash_ctx;
     int result;
     cl_error_t ret = CL_EPARSE;
 
@@ -1589,17 +1589,23 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     /* Use &(engine->cmgr) for this check, since we don't copy
                      * blacklist certs into cmgr and so that if there's a
                      * match, we have a long-lived pointer that we can pass
-                     * back indicating the name of the sig that matched (we
-                     * can't just malloc new space for one, since nothing above
-                     * here knows to free it.) */
+                     * back (via cli_append_virus) indicating the name of the
+                     * sigs that matched (we can't just malloc new space for
+                     * one, since nothing above here knows to free it.) */
                     if (NULL != (crt = crtmgr_blacklist_lookup(&(engine->cmgr), x509))) {
                         ret = CL_VIRUS;
-                        cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blacklisted by %s\n", (crt->name ? crt->name : "(no name)"));
-                        if (NULL != certname) {
-                            *certname = crt->name ? crt->name : "(no name)";
+                        cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blacklisted by %s\n", crt->name ? crt->name : "(unnamed CRB rule)");
+                        if (NULL != ctx) {
+                            ret = cli_append_virus(ctx, crt->name ? crt->name : "(unnamed CRB rule)");
+                            if ((ret == CL_VIRUS) && !SCAN_ALLMATCHES) {
+                                crtmgr_free(&newcerts);
+                                goto finish;
+                            }
                         }
-                        crtmgr_free(&newcerts);
-                        goto finish;
+                        /* In the case where ctx is NULL, we don't care about
+                         * blacklist matches - we are either using this
+                         * function to parse .cat rules that were loaded in,
+                         * or it's sigtool doing cert printing. */
                     }
 
                     /* NOTE: Since the 'issuer' cli_crt field is required for
@@ -1634,6 +1640,16 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     crtmgr_free(&newcerts);
                     break;
                 }
+
+                /* In the SCAN_ALLMATCHES case, we'd get here with
+                 * ret == CL_VIRUS if a match occurred but we wanted
+                 * to keep looping to look for other matches.  In that
+                 * case, bail here. */
+                if (CL_VIRUS == ret) {
+                    crtmgr_free(&newcerts);
+                    break;
+                }
+
                 x509 = newcerts.crts;
 
                 /* Now look for cases where embedded certs can be trusted
@@ -1928,13 +1944,13 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
             break;
         }
 
-        if (NULL == (ctx = get_hash_ctx(hashtype))) {
+        if (NULL == (hash_ctx = get_hash_ctx(hashtype))) {
             break;
         }
 
-        cl_update_hash(ctx, "\x31", 1);
-        cl_update_hash(ctx, (void *)(attrs + 1), attrs_size - 1);
-        cl_finish_hash(ctx, hash);
+        cl_update_hash(hash_ctx, "\x31", 1);
+        cl_update_hash(hash_ctx, (void *)(attrs + 1), attrs_size - 1);
+        cl_finish_hash(hash_ctx, hash);
 
         if (!fmap_need_ptr_once(map, asn1.content, asn1.size)) {
             cli_dbgmsg("asn1_parse_mscat: failed to read encryptedDigest\n");
@@ -2267,7 +2283,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
  *
  * If CL_VIRUS is returned, certname will be set to the certname of blacklist
  * rule that matched (unless certname is NULL). */
-cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions, char **certname)
+cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions, cli_ctx *ctx)
 {
     unsigned int content_size;
     struct cli_asn1 c;
@@ -2277,14 +2293,8 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
     const void *content;
     crtmgr certs;
     int ret;
-    void *ctx;
+    void *hash_ctx;
     unsigned int i;
-
-    // TODO Move these into cli_check_auth_header
-    if (!(engine->dconf->pe & PE_CONF_CERTS))
-        return CL_EVERIFY;
-    if (engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS)
-        return CL_EVERIFY;
 
     cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);
@@ -2293,7 +2303,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
         crtmgr_free(&certs);
         return CL_EVERIFY;
     }
-    ret = asn1_parse_mscat(engine, map, offset, size, &certs, 1, &content, &content_size, certname);
+    ret = asn1_parse_mscat(engine, map, offset, size, &certs, 1, &content, &content_size, ctx);
     crtmgr_free(&certs);
     if (CL_CLEAN != ret)
         return ret;
@@ -2325,7 +2335,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
         return CL_EPARSE;
     }
 
-    if (NULL == (ctx = get_hash_ctx(hashtype))) {
+    if (NULL == (hash_ctx = get_hash_ctx(hashtype))) {
         return CL_EPARSE;
     }
 
@@ -2340,10 +2350,10 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
             return CL_EVERIFY;
         }
 
-        cl_update_hash(ctx, hptr, regions[i].size);
+        cl_update_hash(hash_ctx, hptr, regions[i].size);
     }
 
-    cl_finish_hash(ctx, hash);
+    cl_finish_hash(hash_ctx, hash);
 
     if (cli_debug_flag) {
         char hashtxt[MAX_HASH_SIZE * 2 + 1];

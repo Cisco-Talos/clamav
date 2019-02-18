@@ -5510,11 +5510,11 @@ static int sort_sects(const void *first, const void *second)
  * 
  * CL_VERIFIED will be returned if the file was whitelisted based on its
  * signature.  CL_VIRUS will be returned if the file was blacklisted based on
- * its signature.  Otherwise, an cl_error_t error value will be returned.
+ * its signature.  Otherwise, a cl_error_t error value will be returned.
  * 
- * If CL_VIRUS is returned, certname will be set to the certname of blacklist
- * rule that matched (unless certname is NULL). */
-cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo, char **certname)
+ * If CL_VIRUS is returned, cli_append_virus will get called, adding the
+ * name associated with the blacklist CRB rules to the list of found viruses.*/
+cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     size_t at;
     unsigned int i, hlen;
@@ -5530,12 +5530,13 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo, char
     uint32_t sec_dir_size;
     struct cli_exe_info _peinfo;
 
-    // If Authenticode parsing has been disabled via DCONF, then don't
-    // continue on.
-    // TODO This should probably be named PE_CONF_AUTHENTICODE instead
-    // of PE_CONF_CATALOG
-    if (!(DCONF & PE_CONF_CATALOG))
-        return CL_EFORMAT;
+    // If Authenticode parsing has been disabled via DCONF or an engine
+    // option, then don't continue on.
+    if (!(DCONF & PE_CONF_CERTS))
+        return CL_EVERIFY;
+
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_CERTS)
+        return CL_EVERIFY;
 
     // If peinfo is NULL, initialize one.  This makes it so that this function
     // can be used easily by sigtool
@@ -5659,7 +5660,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo, char
         at = sec_dir_offset + sizeof(cert_hdr);
         hlen -= sizeof(cert_hdr);
 
-        ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions, certname);
+        ret = asn1_check_mscat((struct cl_engine *)(ctx->engine), map, at, hlen, regions, nregions, ctx);
 
         if (CL_VERIFIED == ret) {
             // We validated the embedded signature.  Hooray!
