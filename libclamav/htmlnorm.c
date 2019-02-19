@@ -3,8 +3,8 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
- * 
- *  Summary: Normalise HTML text. Decode MS Script Encoder protection. 
+ *
+ *  Summary: Normalise HTML text. Decode MS Script Encoder protection.
  *           The ScrEnc decoder was initially based upon an analysis by Andreas Marx.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -100,7 +100,7 @@ struct tag_contents {
 };
 
 // clang-format off
-static const int base64_chars[256] = {
+static const int32_t base64_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,62, -1,-1,-1,63,
@@ -592,14 +592,14 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
         size_t remaining;
         if (strlen((const char *)ptr) >= 12) {
             uint32_t expected;
-            expected = base64_chars[ptr[0]] << 2;
+            expected = base64_chars[ptr[0]] < 0 ? 0 : base64_chars[ptr[0]] << 2;
             expected += base64_chars[ptr[1]] >> 4;
             expected += (base64_chars[ptr[1]] & 0x0f) << 12;
-            expected += (base64_chars[ptr[2]] >> 2) << 8;
+            expected += ((base64_chars[ptr[2]] >> 2) < 0 ? 0 : (base64_chars[ptr[2]] >> 2)) << 8;
             expected += (base64_chars[ptr[2]] & 0x03) << 22;
-            expected += base64_chars[ptr[3]] << 16;
-            expected += (base64_chars[ptr[4]] << 2) << 24;
-            expected += (base64_chars[ptr[5]] >> 4) << 24;
+            expected += base64_chars[ptr[3]] < 0 ? 0 : base64_chars[ptr[3]] << 16;
+            expected += (base64_chars[ptr[4]] < 0 ? 0 : base64_chars[ptr[4]] << 2) << 24;
+            expected += ((base64_chars[ptr[5]] >> 4) < 0 ? 0 : (base64_chars[ptr[5]] >> 4)) << 24;
             ptr += 8;
             if (s->sum != expected) {
                 cli_dbgmsg("screnc_decode: checksum mismatch: %u != %u\n", s->sum, expected);
@@ -643,7 +643,7 @@ static void js_process(struct parser_state *js_state, const unsigned char *js_be
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs, const struct cli_dconf *dconf)
 {
     int fd_tmp, tag_length = 0, tag_arg_length = 0, binary;
-    int retval = FALSE, escape = FALSE, value = 0, hex = FALSE, tag_val_length = 0;
+    int64_t retval = FALSE, escape = FALSE, value = 0, hex = FALSE, tag_val_length = 0;
     int look_for_screnc = FALSE, in_screnc = FALSE, in_script = FALSE, text_space_written = FALSE;
     FILE *stream_in  = NULL;
     html_state state = HTML_NORM, next_state = HTML_BAD_STATE, saved_next_state = HTML_BAD_STATE;
@@ -1450,10 +1450,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         next_state = HTML_BAD_STATE;
                         ptr++;
                     } else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
-                        if (hex) {
+                        if (hex && (value >> 32) * 16 < INT32_MAX) {
                             value *= 16;
-                        } else {
+                        } else if ((value >> 32) * 10 < INT32_MAX) {
                             value *= 10;
+                        } else {
+                            html_output_c(file_buff_o2, value);
+                            state      = next_state;
+                            next_state = HTML_BAD_STATE;
+                            ptr++;
+                            break;
                         }
                         if (isdigit(*ptr)) {
                             value += (*ptr - '0');
@@ -1498,14 +1504,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         break;
                     }
                     memset(&screnc_state, 0, sizeof(screnc_state));
-                    screnc_state.length = base64_chars[ptr[0]] << 2;
+                    screnc_state.length = base64_chars[ptr[0]] < 0 ? 0 : base64_chars[ptr[0]] << 2;
                     screnc_state.length += base64_chars[ptr[1]] >> 4;
                     screnc_state.length += (base64_chars[ptr[1]] & 0x0f) << 12;
-                    screnc_state.length += (base64_chars[ptr[2]] >> 2) << 8;
+                    screnc_state.length += ((base64_chars[ptr[2]] >> 2) < 0 ? 0 : (base64_chars[ptr[2]] >> 2)) << 8;
                     screnc_state.length += (base64_chars[ptr[2]] & 0x03) << 22;
-                    screnc_state.length += base64_chars[ptr[3]] << 16;
-                    screnc_state.length += (base64_chars[ptr[4]] << 2) << 24;
-                    screnc_state.length += (base64_chars[ptr[5]] >> 4) << 24;
+                    screnc_state.length += base64_chars[ptr[3]] < 0 ? 0 : base64_chars[ptr[3]] << 16;
+                    screnc_state.length += (base64_chars[ptr[4]] < 0 ? 0 : base64_chars[ptr[4]] << 2) << 24;
+                    screnc_state.length += ((base64_chars[ptr[5]] >> 4) < 0 ? 0 : (base64_chars[ptr[5]] >> 4)) << 24;
                     state      = HTML_JSDECODE_DECRYPT;
                     in_screnc  = TRUE;
                     next_state = HTML_BAD_STATE;
@@ -1700,7 +1706,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     state = HTML_RFC2397_DATA;
                     break;
                 case HTML_ESCAPE_CHAR:
-                    value *= 16;
+                    if ((value >> 32) * 16 < INT32_MAX) {
+                        value *= 16;
+                    } else {
+                        state      = next_state;
+                        next_state = HTML_BAD_STATE;
+                        ptr++;
+                        break;
+                    }
                     length++;
                     if (isxdigit(*ptr)) {
                         if (isdigit(*ptr)) {
@@ -1891,15 +1904,14 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
     } while (count < 8);
 
     memset(&screnc_state, 0, sizeof(screnc_state));
-    screnc_state.length = base64_chars[tmpstr[0]] << 2;
+    screnc_state.length = base64_chars[tmpstr[0]] < 0 ? 0 : base64_chars[tmpstr[0]] << 2;
     screnc_state.length += base64_chars[tmpstr[1]] >> 4;
     screnc_state.length += (base64_chars[tmpstr[1]] & 0x0f) << 12;
-    screnc_state.length += (base64_chars[tmpstr[2]] >> 2) << 8;
+    screnc_state.length += ((base64_chars[tmpstr[2]] >> 2) < 0 ? 0 : (base64_chars[tmpstr[2]] >> 2)) << 8;
     screnc_state.length += (base64_chars[tmpstr[2]] & 0x03) << 22;
-    screnc_state.length += base64_chars[tmpstr[3]] << 16;
-    screnc_state.length += (base64_chars[tmpstr[4]] << 2) << 24;
-    screnc_state.length += (base64_chars[tmpstr[5]] >> 4) << 24;
-
+    screnc_state.length += base64_chars[tmpstr[3]] < 0 ? 0 : base64_chars[tmpstr[3]] << 16;
+    screnc_state.length += (base64_chars[tmpstr[4]] < 0 ? 0 : base64_chars[tmpstr[4]] << 2) << 24;
+    screnc_state.length += ((base64_chars[tmpstr[5]] >> 4) < 0 ? 0 : (base64_chars[tmpstr[5]] >> 4)) << 24;
     cli_writen(ofd, "<script>", strlen("<script>"));
     while (screnc_state.length && line) {
         screnc_decode(ptr, &screnc_state);
