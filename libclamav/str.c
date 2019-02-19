@@ -3,7 +3,7 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Nigel Horne, Török Edvin
- * 
+ *
  *  Acknowledgements: cli_strcasestr() contains a public domain code from:
  *                    http://unixpapa.com/incnote/string.html
  *
@@ -129,7 +129,8 @@ uint16_t *cli_hex2ui(const char *hex)
     len = strlen(hex);
 
     if (len % 2 != 0) {
-        cli_errmsg("cli_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex, len);
+        cli_errmsg("cli_hex2ui(): Malformed hexstring: %s (length: %u)\n", hex,
+                   len);
         return NULL;
     }
 
@@ -152,7 +153,8 @@ char *cli_hex2str(const char *hex)
     len = strlen(hex);
 
     if (len % 2 != 0) {
-        cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %u)\n", hex, (unsigned)len);
+        cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %u)\n", hex,
+                   (unsigned)len);
         return NULL;
     }
 
@@ -198,7 +200,8 @@ int cli_hex2num(const char *hex)
     len = strlen(hex);
 
     if (len % 2 != 0) {
-        cli_errmsg("cli_hex2num(): Malformed hexstring: %s (length: %d)\n", hex, len);
+        cli_errmsg("cli_hex2num(): Malformed hexstring: %s (length: %d)\n", hex,
+                   len);
         return -1;
     }
 
@@ -237,8 +240,8 @@ int cli_xtoi(const char *hex)
 char *cli_str2hex(const char *string, unsigned int len)
 {
     char *hexstr;
-    char HEX[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-                  'a', 'b', 'c', 'd', 'e', 'f'};
+    char HEX[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     unsigned int i, j;
 
     if ((hexstr = (char *)cli_calloc(2 * len + 1, sizeof(char))) == NULL)
@@ -269,7 +272,7 @@ char *cli_utf16toascii(const char *str, unsigned int length)
         return NULL;
 
     for (i = 0, j = 0; i < length; i += 2, j++) {
-        decoded[j] = str[i + 1] << 4;
+        decoded[j] = ((unsigned char)str[i + 1]) << 4;
         decoded[j] += str[i];
     }
 
@@ -367,7 +370,8 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
  * Returns NULL for error, or a pointer to output
  * njh@bandsman.co.uk
  */
-char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output)
+char *cli_strtokbuf(const char *input, int fieldno, const char *delim,
+                    char *output)
 {
     int counter = 0, i, j;
 
@@ -399,7 +403,8 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     return output;
 }
 
-const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle, unsigned int ns)
+const char *cli_memstr(const char *haystack, unsigned int hs,
+                       const char *needle, unsigned int ns)
 {
     unsigned int i, s1, s2;
 
@@ -423,7 +428,8 @@ const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle
         if (needle[1] != haystack[i + 1]) {
             i += s1;
         } else {
-            if ((needle[0] == haystack[i]) && !memcmp(needle + 2, haystack + i + 2, ns - 2))
+            if ((needle[0] == haystack[i]) &&
+                !memcmp(needle + 2, haystack + i + 2, ns - 2))
                 return &haystack[i];
             i += s2;
         }
@@ -440,7 +446,8 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
         return NULL;
     }
 
-    while ((*dest++ = *source++)) continue;
+    while ((*dest++ = *source++))
+        ;
 
     return --dest;
 }
@@ -496,7 +503,8 @@ char *cli_strndup(const char *s, size_t n)
 }
 #endif
 
-size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
+size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
+                       const char **tokens)
 {
     size_t tokens_found, i;
 
@@ -518,23 +526,23 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
 
 /**
  * @brief The strntol() function converts the string in str to a long value.
- * Modifications made to validate the length of the string for non-null term strings.
+ * Modifications made to validate the length of the string for non-null term
+ * strings.
  *
  * Copyright (c) 1990 The Regents of the University of California.
  * All rights reserved.
  *
  * @param nptr          Pointer to start of string.
  * @param n             Max length of buffer in bytes.
- * @param[out] endptr   [optional] If endptr is not NULL, strtol() stores the address
- *                      of the first invalid character in *endptr. If there were no digits
- *                      at all, however, strtol() stores the
- *                      original value of str in *endptr. 
- * 	                     Nota Bene:  If the buffer is non-null terminated and the number
- *                       comprises the entire buffer, endptr will point past the end of
- *                       the buffer, and the caller should check if endptr >= nptr + n.
- *                      
- * @param int           The conversion is done according to the given base, which must be
- *                      between 2 and 36 inclusive, or be the special value 0.
+ * @param[out] endptr   [optional] If endptr is not NULL, strtol() stores the
+ * address of the first invalid character in *endptr. If there were no digits at
+ * all, however, strtol() stores the original value of str in *endptr. Nota
+ * Bene:  If the buffer is non-null terminated and the number comprises the
+ * entire buffer, endptr will point past the end of the buffer, and the caller
+ * should check if endptr >= nptr + n.
+ *
+ * @param int           The conversion is done according to the given base,
+ * which must be between 2 and 36 inclusive, or be the special value 0.
  * @return long         The signed long value.
  */
 long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
@@ -549,10 +557,10 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         goto done;
     }
     /*
-	 * Skip white space and pick up leading +/- sign if any.
-	 * If base is 0, allow 0x for hex and 0 for octal, else
-	 * assume decimal; if base is already 16, allow 0x.
-	 */
+   * Skip white space and pick up leading +/- sign if any.
+   * If base is 0, allow 0x for hex and 0 for octal, else
+   * assume decimal; if base is already 16, allow 0x.
+   */
     do {
         c = *s;
     } while (isspace(c) && (++s < nptr + n));
@@ -575,7 +583,8 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (s + 1 < nptr + n) && (*(s + 1) == 'x' || *(s + 1) == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) &&
+            (*(s + 1) == 'x' || *(s + 1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }
@@ -589,22 +598,22 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         base = c == '0' ? 8 : 10;
 
     /*
-	 * Compute the cutoff value between legal numbers and illegal
-	 * numbers.  That is the largest legal value, divided by the
-	 * base.  An input number that is greater than this value, if
-	 * followed by a legal input character, is too big.  One that
-	 * is equal to this value may be valid or not; the limit
-	 * between valid and invalid numbers is then based on the last
-	 * digit.  For instance, if the range for longs is
-	 * [-2147483648..2147483647] and the input base is 10,
-	 * cutoff will be set to 214748364 and cutlim to either
-	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
-	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
-	 * the number is too big, and we will return a range error.
-	 *
-	 * Set any if any `digits' consumed; make it negative to indicate
-	 * overflow.
-	 */
+   * Compute the cutoff value between legal numbers and illegal
+   * numbers.  That is the largest legal value, divided by the
+   * base.  An input number that is greater than this value, if
+   * followed by a legal input character, is too big.  One that
+   * is equal to this value may be valid or not; the limit
+   * between valid and invalid numbers is then based on the last
+   * digit.  For instance, if the range for longs is
+   * [-2147483648..2147483647] and the input base is 10,
+   * cutoff will be set to 214748364 and cutlim to either
+   * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
+   * a value > 214748364, or equal but the next digit is > 7 (or 8),
+   * the number is too big, and we will return a range error.
+   *
+   * Set any if any `digits' consumed; make it negative to indicate
+   * overflow.
+   */
     cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
     cutlim = cutoff % (unsigned long)base;
     cutoff /= (unsigned long)base;
@@ -640,28 +649,28 @@ done:
 }
 
 /**
- * @brief The strntoul() function converts the string in str to an unsigned long value.
- * Modifications made to validate the length of the string for non-null term strings.
+ * @brief The strntoul() function converts the string in str to an unsigned long
+ * value. Modifications made to validate the length of the string for non-null
+ * term strings.
  *
  * Copyright (c) 1990 The Regents of the University of California.
  * All rights reserved.
  *
  * @param nptr          Pointer to start of string.
  * @param n             Max length of buffer in bytes.
- * @param[out] endptr   [optional] If endptr is not NULL, strtol() stores the address
- *                      of the first invalid character in *endptr. If there were no digits
- *                      at all, however, strtol() stores the
- *                      original value of str in *endptr. 
- * 	                     Nota Bene:  If the buffer is non-null terminated and the number
- *                       comprises the entire buffer, endptr will point past the end of
- *                       the buffer, and the caller should check if endptr >= nptr + n.
- *                      
- * @param int           The conversion is done according to the given base, which must be
- *                      between 2 and 36 inclusive, or be the special value 0.
+ * @param[out] endptr   [optional] If endptr is not NULL, strtol() stores the
+ * address of the first invalid character in *endptr. If there were no digits at
+ * all, however, strtol() stores the original value of str in *endptr. Nota
+ * Bene:  If the buffer is non-null terminated and the number comprises the
+ * entire buffer, endptr will point past the end of the buffer, and the caller
+ * should check if endptr >= nptr + n.
+ *
+ * @param int           The conversion is done according to the given base,
+ * which must be between 2 and 36 inclusive, or be the special value 0.
  * @return unsigned long The unsigned long value.
  */
-unsigned long
-cli_strntoul(const char *nptr, size_t n, char **endptr, register int base)
+unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
+                           register int base)
 {
     register const char *s     = nptr;
     register unsigned long acc = 0;
@@ -670,8 +679,8 @@ cli_strntoul(const char *nptr, size_t n, char **endptr, register int base)
     register int neg = 0, any = 0, cutlim;
 
     /*
-	 * See cli_strntol for comments as to the logic used.
-	 */
+   * See cli_strntol for comments as to the logic used.
+   */
     do {
         c = *s;
     } while (isspace(c) && (++s < nptr + n));
@@ -694,7 +703,8 @@ cli_strntoul(const char *nptr, size_t n, char **endptr, register int base)
     }
 
     if (base == 0 || base == 16) {
-        if (c == '0' && (s + 1 < nptr + n) && (*(s + 1) == 'x' || *(s + 1) == 'X')) {
+        if (c == '0' && (s + 1 < nptr + n) &&
+            (*(s + 1) == 'x' || *(s + 1) == 'X')) {
             if (s + 2 >= nptr + n) {
                 goto done;
             }
@@ -741,20 +751,23 @@ done:
 
 /**
  * @brief 	cli_strntol_wrap() converts the string in str to a long value.
- * 
+ *
  * Wrapper for cli_strntol() that provides incentive to check for failure.
- * 
- * @param buf               Pointer to start of string. 
- * @param buf_size 			Max length of buffer to convert to integer.
- * @param fail_at_nondigit  If 1, fail out if the a non-digit character is found before the end of the buffer.
- *                          If 0, non-digit character represents end of number and is not a failure.
- * @param base              The conversion is done according to the given base, which must be
- *                          between 2 and 36 inclusive, or be the special value 0.
+ *
+ * @param buf               Pointer to start of string.
+ * @param buf_size 			Max length of buffer to convert to
+ * integer.
+ * @param fail_at_nondigit  If 1, fail out if the a non-digit character is found
+ * before the end of the buffer. If 0, non-digit character represents end of
+ * number and is not a failure.
+ * @param base              The conversion is done according to the given base,
+ * which must be between 2 and 36 inclusive, or be the special value 0.
  * @param[out] result 	    Long integer value of ascii number.
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result)
+cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size,
+                            int fail_at_nondigit, int base, long *result)
 {
     char *endptr = NULL;
     long num;
@@ -784,20 +797,24 @@ cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondig
 
 /**
  * @brief 	cli_strntoul_wrap() converts the string in str to a long value.
- * 
+ *
  * Wrapper for cli_strntoul() that provides incentive to check for failure.
- * 
- * @param buf               Pointer to start of string. 
- * @param buf_size 			Max length of buffer to convert to integer.
- * @param fail_at_nondigit  If 1, fail out if the a non-digit character is found before the end of the buffer.
- *                          If 0, non-digit character represents end of number and is not a failure.
- * @param base              The conversion is done according to the given base, which must be
- *                          between 2 and 36 inclusive, or be the special value 0.
+ *
+ * @param buf               Pointer to start of string.
+ * @param buf_size 			Max length of buffer to convert to
+ * integer.
+ * @param fail_at_nondigit  If 1, fail out if the a non-digit character is found
+ * before the end of the buffer. If 0, non-digit character represents end of
+ * number and is not a failure.
+ * @param base              The conversion is done according to the given base,
+ * which must be between 2 and 36 inclusive, or be the special value 0.
  * @param[out] result 	    Unsigned long integer value of ascii number.
  * @return CL_SUCCESS       Success
  * @return CL_EPARSE        Failure
  */
-cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result)
+cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
+                             int fail_at_nondigit, int base,
+                             unsigned long *result)
 {
     char *endptr = NULL;
     long num;
@@ -825,7 +842,8 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondi
     return CL_SUCCESS;
 }
 
-size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip)
+size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
+                       const char **tokens, int token_skip)
 {
     size_t tokens_found, i;
     int within_pcre = 0;
@@ -836,7 +854,8 @@ size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
         while (*buffer != '\0') {
             if (!within_pcre && (*buffer == delim))
                 break;
-            else if ((tokens_found > token_skip) && (*(buffer - 1) != '\\') && (*buffer == '/'))
+            else if ((tokens_found > token_skip) && (*(buffer - 1) != '\\') &&
+                     (*buffer == '/'))
                 within_pcre = !within_pcre;
             buffer++;
         }
@@ -879,8 +898,8 @@ static inline size_t output_utf8(uint16_t u, unsigned char *dst)
         return 2;
     }
     /* u < 0x10000 because we only handle utf-16,
-	 * values in range 0xd800 - 0xdfff aren't valid, but we don't check for
-	 * that*/
+   * values in range 0xd800 - 0xdfff aren't valid, but we don't check for
+   * that*/
     *dst++ = 0xe0 | (u >> 12);         /* 1110xxxx */
     *dst++ = 0x80 | ((u >> 6) & 0x3f); /* 10yyyyyy */
     *dst   = 0x80 | (u & 0x3f);        /* 10zzzzzz */
@@ -894,7 +913,7 @@ char *cli_unescape(const char *str)
     size_t k, i = 0;
     const size_t len = strlen(str);
     /* unescaped string is at most as long as original,
-	 * it will usually be shorter */
+   * it will usually be shorter */
     R = cli_malloc(len + 1);
     if (!R) {
         cli_errmsg("cli_unescape: Unable to allocate memory for string\n");
@@ -903,20 +922,29 @@ char *cli_unescape(const char *str)
     for (k = 0; k < len; k++) {
         unsigned char c = str[k];
         if (str[k] == '%') {
-            if (k + 5 >= len || str[k + 1] != 'u' || !isxdigit(str[k + 2]) || !isxdigit(str[k + 3]) || !isxdigit(str[k + 4]) || !isxdigit(str[k + 5])) {
+            if (k + 5 >= len || str[k + 1] != 'u' || !isxdigit(str[k + 2]) ||
+                !isxdigit(str[k + 3]) || !isxdigit(str[k + 4]) ||
+                !isxdigit(str[k + 5])) {
                 if (k + 2 < len && isxdigit(str[k + 1]) && isxdigit(str[k + 2])) {
-                    c = (cli_hex2int(str[k + 1]) << 4) | cli_hex2int(str[k + 2]);
+                    c = ((cli_hex2int(str[k + 1]) < 0 ? 0 : cli_hex2int(str[k + 1]))
+                         << 4) |
+                        cli_hex2int(str[k + 2]);
                     k += 2;
                 }
             } else {
-                uint16_t u = (cli_hex2int(str[k + 2]) << 12) | (cli_hex2int(str[k + 3]) << 8) |
-                             (cli_hex2int(str[k + 4]) << 4) | cli_hex2int(str[k + 5]);
+                uint16_t u =
+                    ((cli_hex2int(str[k + 2]) < 0 ? 0 : cli_hex2int(str[k + 2]))
+                     << 12) |
+                    ((cli_hex2int(str[k + 3]) < 0 ? 0 : cli_hex2int(str[k + 3])) << 8) |
+                    ((cli_hex2int(str[k + 4]) < 0 ? 0 : cli_hex2int(str[k + 4])) << 4) |
+                    cli_hex2int(str[k + 5]);
                 i += output_utf8(u, (unsigned char *)&R[i]);
                 k += 5;
                 continue;
             }
         }
-        if (!c) c = 1; /* don't add \0 */
+        if (!c)
+            c = 1; /* don't add \0 */
         R[i++] = c;
     }
     R[i++] = '\0';
@@ -925,7 +953,8 @@ char *cli_unescape(const char *str)
 }
 
 /* handle javascript's escape sequences inside strings */
-int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len)
+int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str,
+                                    size_t len)
 {
     size_t i;
     for (i = 0; i < len; i++) {
@@ -956,13 +985,21 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, si
                     break;
                 case 'x':
                     if (i + 2 < len)
-                        c = (cli_hex2int(str[i + 1]) << 4) | cli_hex2int(str[i + 2]);
+                        c = ((cli_hex2int(str[i + 1]) < 0 ? 0 : cli_hex2int(str[i + 1]))
+                             << 4) |
+                            cli_hex2int(str[i + 2]);
                     i += 2;
                     break;
                 case 'u':
                     if (i + 4 < len) {
-                        uint16_t u = (cli_hex2int(str[i + 1]) << 12) | (cli_hex2int(str[i + 2]) << 8) |
-                                     (cli_hex2int(str[i + 3]) << 4) | cli_hex2int(str[i + 4]);
+                        uint16_t u =
+                            ((cli_hex2int(str[i + 1]) < 0 ? 0 : cli_hex2int(str[i + 1]))
+                             << 12) |
+                            ((cli_hex2int(str[i + 2]) < 0 ? 0 : cli_hex2int(str[i + 2]))
+                             << 8) |
+                            ((cli_hex2int(str[i + 3]) < 0 ? 0 : cli_hex2int(str[i + 3]))
+                             << 4) |
+                            cli_hex2int(str[i + 4]);
                         if (textbuffer_ensure_capacity(buf, 4) == -1)
                             return -1;
                         buf->pos += output_utf8(u, (unsigned char *)&buf->data[buf->pos]);
@@ -975,7 +1012,8 @@ int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, si
                     break;
             }
         }
-        if (!c) c = 1; /* we don't insert \0 */
+        if (!c)
+            c = 1; /* we don't insert \0 */
         if (textbuffer_putc(buf, c) == -1)
             return -1;
     }
@@ -987,7 +1025,8 @@ int cli_hexnibbles(char *str, int len)
     int i;
     for (i = 0; i < len; i++) {
         int c = cli_hex2int(str[i]);
-        if (c < 0) return 1;
+        if (c < 0)
+            return 1;
         str[i] = c;
     }
     return 0;
@@ -996,8 +1035,8 @@ int cli_hexnibbles(char *str, int len)
 char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type)
 {
     /* utf8 -
-     * 4 bytes for utf16 high+low surrogate (4 bytes input)
-     * 3 bytes for utf16 otherwise (2 bytes input) */
+   * 4 bytes for utf16 high+low surrogate (4 bytes input)
+   * 3 bytes for utf16 otherwise (2 bytes input) */
     size_t i, j;
     size_t needed = length * 3 / 2 + 2;
     char *s2;
@@ -1015,7 +1054,8 @@ char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type)
 
     i = 0;
 
-    if ((utf16[0] == '\xff' && utf16[1] == '\xfe') || (utf16[0] == '\xfe' && utf16[1] == '\xff')) {
+    if ((utf16[0] == '\xff' && utf16[1] == '\xfe') ||
+        (utf16[0] == '\xfe' && utf16[1] == '\xff')) {
         i += 2;
         if (type == UTF16_BOM)
             type = (utf16[0] == '\xff') ? UTF16_LE : UTF16_BE;
@@ -1109,7 +1149,8 @@ int cli_isutf8(const char *buf, unsigned int len)
     return 1;
 }
 
-cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **filebase)
+cl_error_t cli_basename(const char *filepath, size_t filepath_len,
+                        char **filebase)
 {
     cl_error_t status = CL_EARG;
     const char *index = NULL;
@@ -1122,7 +1163,8 @@ cl_error_t cli_basename(const char *filepath, size_t filepath_len, char **fileba
     index = filepath + filepath_len - 1;
 
     while (index > filepath) {
-        if (index[0] == PATHSEP[0]) break;
+        if (index[0] == PATHSEP[0])
+            break;
         index--;
     }
     if ((index != filepath) || (index[0] == PATHSEP[0]))
