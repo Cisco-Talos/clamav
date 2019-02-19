@@ -3,9 +3,9 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
- * 
+ *
  *  Summary: Extract component parts of OLE2 files (e.g. MS Office Documents).
- * 
+ *
  *  Acknowledgements: Some ideas and algorithms were based upon OpenOffice and libgsf.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -391,9 +391,14 @@ ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t block
         return FALSE;
     }
     /* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
-    offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
+    if ((uint64_t)blockno << hdr->log2_big_block_size < INT32_MAX) {
+        offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
+        offend = offset + size;
+    } else {
+        offset = INT32_MAX - size;
+        offend = INT32_MAX;
+    }
 
-    offend = offset + size;
     if ((offend <= 0) || (offset < 0) || (offset >= hdr->m_length)) {
         return FALSE;
     } else if (offend > hdr->m_length) {
