@@ -39,10 +39,10 @@
 #include <sys/fanotify.h>
 #include <sys/inotify.h>
 
-#include "onaccess_fan.h"
+#include "../fanotif/onaccess_fan.h"
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
-#include "onaccess_scth.h"
+#include "../scan/onaccess_scth.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"

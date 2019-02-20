@@ -203,11 +203,14 @@ am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
 	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/clamdcom.c \
-	$(top_srcdir)/shared/clamdcom.h clamonacc.c onaccess_client.c \
-	onaccess_client.h onaccess_proto.c onaccess_proto.h \
-	onaccess_ddd.c onaccess_ddd.h onaccess_fan.c onaccess_fan.h \
-	onaccess_hash.c onaccess_hash.h onaccess_others.c \
-	onaccess_others.h onaccess_scth.c onaccess_scth.h
+	$(top_srcdir)/shared/clamdcom.h clamonacc.c \
+	./client/onaccess_client.c ./client/onaccess_client.h \
+	./client/onaccess_proto.c ./client/onaccess_proto.h \
+	./inotif/onaccess_ddd.c ./inotif/onaccess_ddd.h \
+	./fanotif/onaccess_fan.c ./fanotif/onaccess_fan.h \
+	./inotif/onaccess_hash.c ./inotif/onaccess_hash.h \
+	./misc/onaccess_others.c ./misc/onaccess_others.h \
+	./scan/onaccess_scth.c ./scan/onaccess_scth.h
 @BUILD_CLAMD_TRUE@am_clamonacc_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) actions.$(OBJEXT) \
@@ -238,9 +241,8 @@ am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/libclammspack
-depcomp = $(SHELL) $(top_srcdir)/config/depcomp
-am__depfiles_maybe = depfiles
-am__mv = mv -f
+depcomp =
+am__depfiles_maybe =
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -285,7 +287,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp
+am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -531,20 +533,20 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/clamdcom.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/clamdcom.h \
 @BUILD_CLAMD_TRUE@    clamonacc.c \
-@BUILD_CLAMD_TRUE@    onaccess_client.c \
-@BUILD_CLAMD_TRUE@    onaccess_client.h \
-@BUILD_CLAMD_TRUE@    onaccess_proto.c \
-@BUILD_CLAMD_TRUE@    onaccess_proto.h \
-@BUILD_CLAMD_TRUE@    onaccess_ddd.c \
-@BUILD_CLAMD_TRUE@    onaccess_ddd.h \
-@BUILD_CLAMD_TRUE@    onaccess_fan.c \
-@BUILD_CLAMD_TRUE@    onaccess_fan.h \
-@BUILD_CLAMD_TRUE@    onaccess_hash.c \
-@BUILD_CLAMD_TRUE@    onaccess_hash.h \
-@BUILD_CLAMD_TRUE@    onaccess_others.c \
-@BUILD_CLAMD_TRUE@    onaccess_others.h \
-@BUILD_CLAMD_TRUE@    onaccess_scth.c \
-@BUILD_CLAMD_TRUE@    onaccess_scth.h
+@BUILD_CLAMD_TRUE@    ./client/onaccess_client.c \
+@BUILD_CLAMD_TRUE@    ./client/onaccess_client.h \
+@BUILD_CLAMD_TRUE@    ./client/onaccess_proto.c \
+@BUILD_CLAMD_TRUE@    ./client/onaccess_proto.h \
+@BUILD_CLAMD_TRUE@    ./inotif/onaccess_ddd.c \
+@BUILD_CLAMD_TRUE@    ./inotif/onaccess_ddd.h \
+@BUILD_CLAMD_TRUE@    ./fanotif/onaccess_fan.c \
+@BUILD_CLAMD_TRUE@    ./fanotif/onaccess_fan.h \
+@BUILD_CLAMD_TRUE@    ./inotif/onaccess_hash.c \
+@BUILD_CLAMD_TRUE@    ./inotif/onaccess_hash.h \
+@BUILD_CLAMD_TRUE@    ./misc/onaccess_others.c \
+@BUILD_CLAMD_TRUE@    ./misc/onaccess_others.h \
+@BUILD_CLAMD_TRUE@    ./scan/onaccess_scth.c \
+@BUILD_CLAMD_TRUE@    ./scan/onaccess_scth.h
 
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
@@ -563,9 +565,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign clamonacc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign --ignore-deps clamonacc/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign clamonacc/Makefile
+	  $(AUTOMAKE) --foreign --ignore-deps clamonacc/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -659,125 +661,92 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/actions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdcom.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_client.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_ddd.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_fan.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_hash.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_others.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_proto.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/onaccess_scth.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
-
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+	$(AM_V_CC)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+	$(AM_V_CC)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+	$(AM_V_CC)$(LTCOMPILE) -c -o $@ $<
 
 output.o: $(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.o -MD -MP -MF $(DEPDIR)/output.Tpo -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/output.Tpo $(DEPDIR)/output.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/output.c' object='output.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
 
 output.obj: $(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.obj -MD -MP -MF $(DEPDIR)/output.Tpo -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/output.Tpo $(DEPDIR)/output.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/output.c' object='output.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
 
 optparser.o: $(top_srcdir)/shared/optparser.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT optparser.o -MD -MP -MF $(DEPDIR)/optparser.Tpo -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/optparser.Tpo $(DEPDIR)/optparser.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/optparser.c' object='optparser.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c
 
 optparser.obj: $(top_srcdir)/shared/optparser.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT optparser.obj -MD -MP -MF $(DEPDIR)/optparser.Tpo -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/optparser.Tpo $(DEPDIR)/optparser.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/optparser.c' object='optparser.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
 
 misc.o: $(top_srcdir)/shared/misc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF $(DEPDIR)/misc.Tpo -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/misc.Tpo $(DEPDIR)/misc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/misc.c' object='misc.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
 
 misc.obj: $(top_srcdir)/shared/misc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.obj -MD -MP -MF $(DEPDIR)/misc.Tpo -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/misc.Tpo $(DEPDIR)/misc.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/misc.c' object='misc.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
 
 getopt.o: $(top_srcdir)/shared/getopt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT getopt.o -MD -MP -MF $(DEPDIR)/getopt.Tpo -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/getopt.Tpo $(DEPDIR)/getopt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/getopt.c' object='getopt.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
 
 getopt.obj: $(top_srcdir)/shared/getopt.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT getopt.obj -MD -MP -MF $(DEPDIR)/getopt.Tpo -c -o getopt.obj `if test -f '$(top_srcdir)/shared/getopt.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/getopt.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/getopt.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/getopt.Tpo $(DEPDIR)/getopt.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/getopt.c' object='getopt.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.obj `if test -f '$(top_srcdir)/shared/getopt.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/getopt.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/getopt.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.obj `if test -f '$(top_srcdir)/shared/getopt.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/getopt.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/getopt.c'; fi`
 
 actions.o: $(top_srcdir)/shared/actions.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT actions.o -MD -MP -MF $(DEPDIR)/actions.Tpo -c -o actions.o `test -f '$(top_srcdir)/shared/actions.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/actions.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/actions.Tpo $(DEPDIR)/actions.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/actions.c' object='actions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.o `test -f '$(top_srcdir)/shared/actions.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/actions.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.o `test -f '$(top_srcdir)/shared/actions.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/actions.c
 
 actions.obj: $(top_srcdir)/shared/actions.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT actions.obj -MD -MP -MF $(DEPDIR)/actions.Tpo -c -o actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/actions.Tpo $(DEPDIR)/actions.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/actions.c' object='actions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
 
 clamdcom.o: $(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT clamdcom.o -MD -MP -MF $(DEPDIR)/clamdcom.Tpo -c -o clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamdcom.Tpo $(DEPDIR)/clamdcom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/clamdcom.c' object='clamdcom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
 
 clamdcom.obj: $(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT clamdcom.obj -MD -MP -MF $(DEPDIR)/clamdcom.Tpo -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamdcom.Tpo $(DEPDIR)/clamdcom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/clamdcom.c' object='clamdcom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
+
+onaccess_client.o: ./client/onaccess_client.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_client.o `test -f './client/onaccess_client.c' || echo '$(srcdir)/'`./client/onaccess_client.c
+
+onaccess_client.obj: ./client/onaccess_client.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_client.obj `if test -f './client/onaccess_client.c'; then $(CYGPATH_W) './client/onaccess_client.c'; else $(CYGPATH_W) '$(srcdir)/./client/onaccess_client.c'; fi`
+
+onaccess_proto.o: ./client/onaccess_proto.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_proto.o `test -f './client/onaccess_proto.c' || echo '$(srcdir)/'`./client/onaccess_proto.c
+
+onaccess_proto.obj: ./client/onaccess_proto.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_proto.obj `if test -f './client/onaccess_proto.c'; then $(CYGPATH_W) './client/onaccess_proto.c'; else $(CYGPATH_W) '$(srcdir)/./client/onaccess_proto.c'; fi`
+
+onaccess_ddd.o: ./inotif/onaccess_ddd.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_ddd.o `test -f './inotif/onaccess_ddd.c' || echo '$(srcdir)/'`./inotif/onaccess_ddd.c
+
+onaccess_ddd.obj: ./inotif/onaccess_ddd.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_ddd.obj `if test -f './inotif/onaccess_ddd.c'; then $(CYGPATH_W) './inotif/onaccess_ddd.c'; else $(CYGPATH_W) '$(srcdir)/./inotif/onaccess_ddd.c'; fi`
+
+onaccess_fan.o: ./fanotif/onaccess_fan.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_fan.o `test -f './fanotif/onaccess_fan.c' || echo '$(srcdir)/'`./fanotif/onaccess_fan.c
+
+onaccess_fan.obj: ./fanotif/onaccess_fan.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_fan.obj `if test -f './fanotif/onaccess_fan.c'; then $(CYGPATH_W) './fanotif/onaccess_fan.c'; else $(CYGPATH_W) '$(srcdir)/./fanotif/onaccess_fan.c'; fi`
+
+onaccess_hash.o: ./inotif/onaccess_hash.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_hash.o `test -f './inotif/onaccess_hash.c' || echo '$(srcdir)/'`./inotif/onaccess_hash.c
+
+onaccess_hash.obj: ./inotif/onaccess_hash.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_hash.obj `if test -f './inotif/onaccess_hash.c'; then $(CYGPATH_W) './inotif/onaccess_hash.c'; else $(CYGPATH_W) '$(srcdir)/./inotif/onaccess_hash.c'; fi`
+
+onaccess_others.o: ./misc/onaccess_others.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_others.o `test -f './misc/onaccess_others.c' || echo '$(srcdir)/'`./misc/onaccess_others.c
+
+onaccess_others.obj: ./misc/onaccess_others.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_others.obj `if test -f './misc/onaccess_others.c'; then $(CYGPATH_W) './misc/onaccess_others.c'; else $(CYGPATH_W) '$(srcdir)/./misc/onaccess_others.c'; fi`
+
+onaccess_scth.o: ./scan/onaccess_scth.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_scth.o `test -f './scan/onaccess_scth.c' || echo '$(srcdir)/'`./scan/onaccess_scth.c
+
+onaccess_scth.obj: ./scan/onaccess_scth.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o onaccess_scth.obj `if test -f './scan/onaccess_scth.c'; then $(CYGPATH_W) './scan/onaccess_scth.c'; else $(CYGPATH_W) '$(srcdir)/./scan/onaccess_scth.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -910,7 +879,6 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -956,7 +924,6 @@ install-ps-am:
 installcheck-am: installcheck-binPROGRAMS
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

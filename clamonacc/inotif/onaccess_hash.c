@@ -36,7 +36,7 @@
 
 #include <sys/fanotify.h>
 
-#include "onaccess_fan.h"
+#include "../fanotif/onaccess_fan.h"
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
 
