@@ -265,6 +265,7 @@
     <ClCompile Include="..\libclamav\7z\XzIn.c" />
     <ClCompile Include="..\libclamav\conv.c" />
     <ClCompile Include="..\libclamav\crypto.c" />
+    <ClCompile Include="..\libclamav\execs.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
     <ClCompile Include="..\libclamav\hostid.c" />
     <ClCompile Include="..\libclamav\hwp.c" />
