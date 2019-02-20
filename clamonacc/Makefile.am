@@ -36,20 +36,20 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
     clamonacc.c \
-    onaccess_client.c \
-    onaccess_client.h \
-    onaccess_proto.c \
-    onaccess_proto.h \
-    onaccess_ddd.c \
-    onaccess_ddd.h \
-    onaccess_fan.c \
-    onaccess_fan.h \
-    onaccess_hash.c \
-    onaccess_hash.h \
-    onaccess_others.c \
-    onaccess_others.h \
-    onaccess_scth.c \
-    onaccess_scth.h
+    ./client/onaccess_client.c \
+    ./client/onaccess_client.h \
+    ./client/onaccess_proto.c \
+    ./client/onaccess_proto.h \
+    ./inotif/onaccess_ddd.c \
+    ./inotif/onaccess_ddd.h \
+    ./fanotif/onaccess_fan.c \
+    ./fanotif/onaccess_fan.h \
+    ./inotif/onaccess_hash.c \
+    ./inotif/onaccess_hash.h \
+    ./misc/onaccess_others.c \
+    ./misc/onaccess_others.h \
+    ./scan/onaccess_scth.c \
+    ./scan/onaccess_scth.h
 
 AM_CFLAGS=@WERR_CFLAGS@
 endif

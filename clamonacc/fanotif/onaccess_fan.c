@@ -44,12 +44,12 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 
-#include "onaccess_others.h"
+#include "../misc/onaccess_others.h"
 #include "clamd/server.h"
 
 #include "onaccess_fan.h"
-#include "onaccess_hash.h"
-#include "onaccess_ddd.h"
+#include "../inotif/onaccess_hash.h"
+#include "../inotif/onaccess_ddd.h"
 
 static pthread_t ddd_pid;
 static int onas_fan_fd;

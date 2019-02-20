@@ -43,7 +43,7 @@
 #include "shared/optparser.h"
 #include "shared/actions.h"
 
-#include "onaccess_client.h"
+#include "./client/onaccess_client.h"
 
 void help(void);
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	    optfree(clamdopts);
 	    exit(2);
 	}
-    } else 
+    } else
 	logg_file = NULL;
 
 
