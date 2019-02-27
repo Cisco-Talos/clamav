@@ -258,9 +258,9 @@ static inline int matcher_run(const struct cli_matcher *root,
     return ret;
 }
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
+cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
-    int ret        = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
     unsigned int i = 0, j = 0, viruses_found = 0;
     struct cli_ac_data mdata;
     struct cli_matcher *groot, *troot = NULL;
@@ -327,7 +327,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
  * offdata[2]: max shift
  * offdata[3]: section number
  */
-int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
+cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
 {
     char offcpy[65];
     unsigned int n, val;
@@ -575,12 +575,12 @@ void cli_targetinfo_destroy(struct cli_target_info *info)
     info->status = 0;
 }
 
-int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
+cl_error_t cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
 {
     return cli_checkfp_virus(digest, size, ctx, NULL);
 }
 
-int cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname)
+cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname)
 {
     char md5[33];
     unsigned int i;
@@ -759,9 +759,10 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     return ret;
 }
 
-int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
+cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
 {
-    int ret     = CL_EMEM, empty;
+    cl_error_t ret = CL_EMEM;
+    int empty;
     fmap_t *map = *ctx->fmap;
 
     if ((*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty))) {
@@ -892,11 +893,11 @@ static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 }
 #endif
 
-int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
+cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash)
 {
     uint8_t viruses_found = 0;
     uint32_t i;
-    int32_t rc = CL_SUCCESS;
+    cl_error_t rc = CL_SUCCESS;
 
     for (i = 0; i < root->ac_lsigs; i++) {
         if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
@@ -917,10 +918,11 @@ int cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acd
     return CL_CLEAN;
 }
 
-int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
+cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
     const unsigned char *buff;
-    int ret = CL_CLEAN, type = CL_CLEAN, compute_hash[CLI_HASH_AVAIL_TYPES];
+    cl_error_t ret = CL_CLEAN, type = CL_CLEAN;
+    int compute_hash[CLI_HASH_AVAIL_TYPES];
     unsigned int i = 0, j = 0, bm_offmode = 0;
     uint32_t maxpatlen, bytes, offset     = 0;
     struct cli_ac_data gdata, tdata;
@@ -1005,7 +1007,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
      * called first for PEs, and we want to determine the whitelist/blacklist
      * status early on so we can skip things like embedded PE extraction
      * (which is broken for signed binaries within signed binaries).
-     * 
+     *
      * If we want to add support for more signature parsing in the future
      * (Ex: MachO sigs), do that here too.
      *
@@ -1316,11 +1318,11 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
-int cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2)
+cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2)
 {
     const struct cli_cdb *cdb;
     unsigned int viruses_found = 0;
-    int ret                    = CL_CLEAN;
+    cl_error_t ret             = CL_CLEAN;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
                cli_ftname(cli_get_container(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,

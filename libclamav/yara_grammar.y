@@ -1569,7 +1569,9 @@ primary_expression
       }
     | _TEXT_STRING_
       {
+#if REAL_YARA
         SIZED_STRING* sized_string = $1;
+#endif
         char* string = NULL;
 
 #if REAL_YARA

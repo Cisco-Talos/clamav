@@ -994,7 +994,6 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
     char *fname;
     char *fullpath;
     const char *mdir;
-    int i;
     size_t len;
 
     mdir = dir ? dir : cli_gettmpdir();

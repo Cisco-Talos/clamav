@@ -197,7 +197,7 @@ int cli_pcre_init()
     return cli_pcre_init_internal();
 }
 
-int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
+cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_pcre_meta **newmetatable = NULL, *pm = NULL;
     uint32_t pcre_count;
@@ -394,10 +394,10 @@ int cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *
     return CL_SUCCESS;
 }
 
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
+cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
 {
     unsigned int i;
-    int ret;
+    cl_error_t ret;
     struct cli_pcre_meta *pm = NULL;
     int disable_all          = 0;
 
@@ -459,10 +459,10 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
 }
 
 /* TODO - handle VI and Macro offset types */
-int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
+cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
 {
     /* TANGENT: maintain relative offset data in cli_ac_data? */
-    int ret;
+    cl_error_t ret;
     unsigned int i;
     struct cli_pcre_meta *pm;
     uint32_t endoff;
@@ -575,15 +575,15 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
     return CL_SUCCESS;
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
+cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
-    struct cli_pcre_meta **metatable = root->pcre_metatable, *pm = NULL;
+    struct cli_pcre_meta *pm = NULL;
     struct cli_pcre_data *pd;
     struct cli_pcre_results p_res;
     struct cli_ac_result *newres;
     uint32_t adjbuffer, adjshift, adjlength;
-    unsigned int i, evalcnt       = 0;
-    uint64_t maxfilesize, evalids = 0;
+    unsigned int i, evalcnt = 0;
+    uint64_t evalids = 0;
     uint32_t global, encompass, rolling;
     int rc = 0, offset = 0, ret = CL_SUCCESS, options = 0;
     uint8_t viruses_found = 0;

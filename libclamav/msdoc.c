@@ -59,6 +59,8 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     size_t inlen, outlen, nonrev, sz2;
     int i, attempt;
     iconv_t cd;
+#else
+    UNUSEDPARAM(encoding);
 #endif
     /* applies in the both case */
     if (sctx->codepage == 20127 || sctx->codepage == 65001) {

@@ -368,6 +368,8 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 
 static int hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
+    UNUSEDPARAM(cbdata);
+
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
@@ -1507,21 +1509,15 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_infoblk_0(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
-{
-    uint16_t infoid, infolen;
-    fmap_t *map = (dmap ? dmap : *ctx->fmap);
-
-    return CL_SUCCESS;
-}
-
 static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
     uint32_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
     int i, count, ret = CL_SUCCESS;
     long long unsigned infoloc = (long long unsigned)(*offset);
+#if HWP3_DEBUG
     char field[HWP3_FIELD_LENGTH];
+#endif
 #if HAVE_JSON
     json_object *infoblk_1, *contents, *counter, *entry;
 #endif
@@ -1753,11 +1749,13 @@ static int hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
     fmap_t *map, *dmap;
     off_t offset, start, new_offset;
-    int i, t = 0, p = 0, last = 0, ret = CL_SUCCESS;
+    int i, p = 0, last = 0, ret = CL_SUCCESS;
     uint16_t nstyles;
 #if HAVE_JSON
     json_object *fonts;
 #endif
+
+    UNUSEDPARAM(filepath);
 
     offset = start = cbdata ? *(off_t *)cbdata : 0;
 
@@ -1967,6 +1965,8 @@ static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
 /* binary streams needs to be base64-decoded then decompressed if fields are set */
 static int hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
+    UNUSEDPARAM(cbdata);
+
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
@@ -2106,7 +2106,7 @@ int cli_scanhwpml(cli_ctx *ctx)
     struct msxml_cbdata cbdata;
     struct msxml_ctx mxctx;
     xmlTextReaderPtr reader = NULL;
-    int state, ret = CL_SUCCESS;
+    int ret                 = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanhwpml()\n");
 

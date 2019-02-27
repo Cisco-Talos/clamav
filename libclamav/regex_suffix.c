@@ -59,7 +59,7 @@ struct node {
 };
 
 /* --- Prototypes --*/
-static int build_suffixtree_descend(struct node *n, struct text_buffer *buf, suffix_callback cb, void *cbdata, struct regex_list *regex);
+static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *buf, suffix_callback cb, void *cbdata, struct regex_list *regex);
 /* -----------------*/
 
 static uint8_t dot_bitmap[32] = {
@@ -324,7 +324,7 @@ static struct node *parse_regex(const char *p, size_t *last)
 
 #define BITMAP_HASSET(b, i) (b[i >> 3] & (1 << (i & 7)))
 
-static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, struct node *prev, suffix_callback cb, void *cbdata, struct regex_list *regex)
+static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *buf, struct node *prev, suffix_callback cb, void *cbdata, struct regex_list *regex)
 {
     size_t i, cnt;
     while (n) {
@@ -334,7 +334,7 @@ static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, stru
                 textbuffer_putc(buf, '\0');
                 if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
                     return CL_EMEM;
-                return 0;
+                return CL_SUCCESS;
             case leaf:
                 textbuffer_putc(buf, n->u.leaf_char);
                 n = n->parent;
@@ -348,7 +348,7 @@ static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, stru
                     textbuffer_putc(buf, '\0');
                     if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
                         return CL_EMEM;
-                    return 0;
+                    return CL_SUCCESS;
                 }
                 /* handle small classes by expanding */
                 for (i = 0; i < 255; i++) {
@@ -368,7 +368,7 @@ static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, stru
                         return CL_EMEM;
                     /* we're done here, descend will call
 					 * ascend if needed */
-                    return 0;
+                    return CL_SUCCESS;
                 } else {
                     n = n->parent;
                 }
@@ -380,21 +380,21 @@ static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, stru
                 textbuffer_putc(buf, '\0');
                 if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
                     return CL_EMEM;
-                return 0;
+                return CL_SUCCESS;
         }
         prev = q;
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
-static int build_suffixtree_descend(struct node *n, struct text_buffer *buf, suffix_callback cb, void *cbdata, struct regex_list *regex)
+static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *buf, suffix_callback cb, void *cbdata, struct regex_list *regex)
 {
     size_t pos;
     while (n && n->type == concat) {
         n = n->u.children.right;
     }
     if (!n)
-        return 0;
+        return CL_SUCCESS;
     /* find out end of the regular expression,
 	 * if it ends with a static pattern */
     switch (n->type) {
@@ -412,19 +412,19 @@ static int build_suffixtree_descend(struct node *n, struct text_buffer *buf, suf
             textbuffer_putc(buf, '\0');
             if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
                 return CL_EMEM;
-            return 0;
+            return CL_SUCCESS;
         case leaf:
         case leaf_class:
             if (build_suffixtree_ascend(n, buf, NULL, cb, cbdata, regex) < 0)
                 return CL_EMEM;
-            return 0;
+            return CL_SUCCESS;
         default:
             break;
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata)
+cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata)
 {
     struct regex_list regex;
     struct text_buffer buf;

@@ -273,6 +273,8 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
     struct clamscan_cb_data *data = (struct clamscan_cb_data *)context;
     const char *filename;
 
+    UNUSEDPARAM(fd);
+
     if (data == NULL)
         return;
     if (data->filename != NULL)

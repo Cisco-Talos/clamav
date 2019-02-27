@@ -76,13 +76,13 @@ struct cli_pcre_results {
 };
 #endif
 
-int cli_pcre_init_internal();
-int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout);
-int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override);
+cl_error_t cli_pcre_init_internal();
+cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout);
+cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override);
 int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, struct cli_pcre_results *results);
 void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, struct cli_pcre_results *results);
 
-int cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd);
+cl_error_t cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd);
 void cli_pcre_results_free(struct cli_pcre_results *results);
 void cli_pcre_free_single(struct cli_pcre_data *pd);
 #endif /* HAVE_PCRE */

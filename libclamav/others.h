@@ -635,7 +635,7 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 }
 #endif
 
-int cli_append_virus(cli_ctx *ctx, const char *virname);
+cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname);
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx);

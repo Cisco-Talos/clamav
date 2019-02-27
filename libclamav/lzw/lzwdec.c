@@ -45,7 +45,7 @@
  *  OpenSSL library under certain conditions as described in each
  *  individual source file, and distribute linked combinations
  *  including the two.
- *  
+ *
  *  You must obey the GNU General Public License in all respects
  *  for all of the code used other than OpenSSL.  If you modify
  *  file(s) with this exception, you may extend this exception to your
@@ -107,8 +107,11 @@ struct lzw_internal_state {
     code_t *dec_codetab;   /* kept separate for small machines */
 };
 
+#define LZW_ENABLE_PRINT_DEBUGGING 0
+#if LZW_ENABLE_PRINT_DEBUGGING
 static void code_print(code_t *code);
 static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
+#endif
 
 #define GetNextCode(code)                                               \
     {                                                                   \
@@ -418,6 +421,7 @@ int lzwInflateEnd(lzw_streamp strm)
     return LZW_OK;
 }
 
+#if LZW_ENABLE_PRINT_DEBUGGING
 static void code_print(code_t *code)
 {
     code_t *cpt = code;
@@ -451,3 +455,4 @@ static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode)
         code_print(codetab + i);
     }
 }
+#endif

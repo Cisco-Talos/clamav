@@ -110,6 +110,8 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
     struct scan_cb_data *d = c->scandata;
     const char *fname;
 
+    UNUSEDPARAM(fd);
+
     if (d == NULL)
         return;
     if (!(d->options->general & CL_SCAN_GENERAL_ALLMATCHES) && !(d->options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE))

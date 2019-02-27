@@ -40,19 +40,19 @@
 #define BM_BLOCK_SIZE 3
 #define HASH(a, b, c) (211 * a + 37 * b + c)
 
-int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset)
+cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset)
 {
     uint16_t idx, i;
     const unsigned char *pt = pattern->pattern;
     struct cli_bm_patt *prev, *next = NULL;
-    int ret;
+    cl_error_t ret;
 
     if (pattern->length < BM_MIN_LENGTH) {
         cli_errmsg("cli_bm_addpatt: Signature for %s is too short\n", pattern->virname);
         return CL_EMALFDB;
     }
 
-    if ((ret = cli_caloff(offset, NULL, root->type, pattern->offdata, &pattern->offset_min, &pattern->offset_max))) {
+    if (CL_SUCCESS != (ret = cli_caloff(offset, NULL, root->type, pattern->offdata, &pattern->offset_min, &pattern->offset_max))) {
         cli_errmsg("cli_bm_addpatt: Can't calculate offset for signature %s\n", pattern->virname);
         return ret;
     }
@@ -133,7 +133,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
     return CL_SUCCESS;
 }
 
-int cli_bm_init(struct cli_matcher *root)
+cl_error_t cli_bm_init(struct cli_matcher *root)
 {
     uint16_t i, size = HASH(255, 255, 255) + 1;
 #ifdef USE_MPOOL
@@ -154,9 +154,9 @@ int cli_bm_init(struct cli_matcher *root)
     return CL_SUCCESS;
 }
 
-int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, const struct cli_target_info *info)
+cl_error_t cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, const struct cli_target_info *info)
 {
-    int ret;
+    cl_error_t ret;
     unsigned int i;
     struct cli_bm_patt *patt;
 
@@ -185,7 +185,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, cons
             if (data->offtab[data->cnt] >= info->fsize)
                 continue;
             data->cnt++;
-        } else if ((ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], NULL))) {
+        } else if (CL_SUCCESS != (ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], NULL))) {
             cli_errmsg("cli_bm_initoff: Can't calculate relative offset in signature for %s\n", patt->virname);
             free(data->offtab);
             free(data->offset);
@@ -242,7 +242,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, cli_ctx *ctx)
+cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, const struct cli_target_info *info, struct cli_bm_off *offdata, cli_ctx *ctx)
 {
     uint32_t i, j, off, off_min, off_max;
     uint8_t found, pchain, shift;
@@ -250,7 +250,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     struct cli_bm_patt *p;
     const unsigned char *bp, *pt;
     unsigned char prefix;
-    int ret, viruses_found = 0;
+    cl_error_t ret;
+    int viruses_found = 0;
 
     if (!root || !root->bm_shift)
         return CL_CLEAN;

@@ -1117,7 +1117,7 @@ int cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
     return CL_CLEAN;
 }
 
-int cli_append_virus(cli_ctx *ctx, const char *virname)
+cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
 {
     if (ctx->virname == NULL)
         return CL_CLEAN;

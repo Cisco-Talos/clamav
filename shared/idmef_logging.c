@@ -18,16 +18,23 @@
  *  MA 02110-1301, USA.
  */
 
-#include "shared/misc.h"
-#include "shared/output.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "clamav.h"
+#include "shared/misc.h"
+#include "shared/output.h"
+
 #ifndef PRELUDE
 void prelude_logging(const char *filename, const char *virname, const char *virhash, int virsize)
 {
+    UNUSEDPARAM(filename);
+    UNUSEDPARAM(virname);
+    UNUSEDPARAM(virhash);
+    UNUSEDPARAM(virsize);
+
     logg("You have to compile with libprelude using ./configure --enable-prelude\n");
 }
 #else
