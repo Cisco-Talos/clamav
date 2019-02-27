@@ -2368,7 +2368,7 @@ inline static char *get_paren_end(char *hexstr)
 static char *decodehexspecial(const char *hex, unsigned int *dlen)
 {
     char *pt, *start, *hexcpy, *decoded, *h, *e, *c, op, lop;
-    unsigned int i, len = 0, hlen, negative;
+    unsigned int len = 0, hlen, negative;
     int level;
     char *buff;
 
@@ -2806,7 +2806,7 @@ static int decodehex(const char *hexsig)
 
 static int decodesigmod(const char *sigmod)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < strlen(sigmod); i++) {
         mprintf(" ");
@@ -2836,9 +2836,7 @@ static int decodesigmod(const char *sigmod)
 
 static int decodecdb(char **tokens)
 {
-
-    char *pt = NULL;
-    int sz   = 0;
+    int sz = 0;
     char *range[2];
 
     if (!tokens)

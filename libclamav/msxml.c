@@ -224,12 +224,12 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
 }
 #endif
 
-int cli_scanmsxml(cli_ctx *ctx)
+cl_error_t cli_scanmsxml(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     xmlTextReaderPtr reader = NULL;
-    int state, ret = CL_SUCCESS;
+    cl_error_t ret          = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanmsxml()\n");
 

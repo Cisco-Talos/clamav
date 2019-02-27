@@ -308,7 +308,7 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
     return cli_ac_addpatt_recursive(root, pattern, next, i + 1, len);
 }
 
-int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
+cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
     struct cli_ac_patt **newtable;
     uint16_t len = MIN(root->ac_maxdepth, pattern->length[0]);
@@ -482,7 +482,7 @@ static int ac_maketrans(struct cli_matcher *root)
     return CL_SUCCESS;
 }
 
-int cli_ac_buildtrie(struct cli_matcher *root)
+cl_error_t cli_ac_buildtrie(struct cli_matcher *root)
 {
     if (!root)
         return CL_EMALFDB;
@@ -498,7 +498,7 @@ int cli_ac_buildtrie(struct cli_matcher *root)
     return ac_maketrans(root);
 }
 
-int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering)
+cl_error_t cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
     assert(root->mempool && "mempool must be initialized");
@@ -1247,7 +1247,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     return 0;
 }
 
-int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
+cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
 {
     unsigned int i, j;
 
@@ -1396,7 +1396,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
     return CL_SUCCESS;
 }
 
-int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info)
+cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info)
 {
     int ret;
     unsigned int i;
@@ -1507,7 +1507,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
+cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
 {
     const struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsigid1];
     const struct cli_lsig_tdb *tdb    = &ac_lsig->tdb;
@@ -1602,7 +1602,7 @@ int lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, 
     return CL_SUCCESS;
 }
 
-int cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
+cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
 {
     const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
     unsigned i;
@@ -1618,7 +1618,7 @@ int cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned
     return CL_SUCCESS;
 }
 
-int cli_ac_scanbuff(
+cl_error_t cli_ac_scanbuff(
     const unsigned char *buffer,
     uint32_t length,
     const char **virname,
@@ -2405,7 +2405,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
+cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_ac_patt *new;
     char *pt, *pt2, *hex = NULL, *hexcpy = NULL;

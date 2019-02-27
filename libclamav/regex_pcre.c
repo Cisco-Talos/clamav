@@ -53,7 +53,7 @@ void cli_pcre_free(void *ptr, void *ext)
 #endif
 
 /* cli_pcre_init_internal: redefine pcre_malloc and pcre_free; pcre2 does this during compile */
-int cli_pcre_init_internal()
+cl_error_t cli_pcre_init_internal()
 {
 #if !USING_PCRE2
     pcre_malloc       = cli_malloc;
@@ -65,7 +65,7 @@ int cli_pcre_init_internal()
     return CL_SUCCESS;
 }
 
-int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
+cl_error_t cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 {
     if (!pd || !opt || !(*opt))
         return CL_ENULLARG;
@@ -135,7 +135,7 @@ int cli_pcre_addoptions(struct cli_pcre_data *pd, const char **opt, int errout)
 }
 
 #if USING_PCRE2
-int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
+cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
     int errornum;
     PCRE2_SIZE erroffset;
@@ -193,7 +193,7 @@ int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, l
     return CL_SUCCESS;
 }
 #else
-int cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
+cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_limit, long long unsigned match_limit_recursion, unsigned int options, int opt_override)
 {
     const char *error;
     int erroffset;
@@ -442,7 +442,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
     }
 }
 
-int cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd)
+cl_error_t cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd)
 {
     results->err      = CL_SUCCESS;
     results->match[0] = results->match[1] = 0;

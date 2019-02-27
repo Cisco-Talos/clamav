@@ -117,7 +117,7 @@ char *cli_virname(const char *virname, unsigned int official)
     return newname;
 }
 
-int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     char *hexcpy, *start, *end, *mid;
     unsigned int i;
@@ -303,7 +303,7 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
 }
 
 #define PCRE_TOKENS 4
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     struct cli_bm_patt *bm_new;
     char *pt, *hexcpy, *start = NULL, *mid = NULL, *end = NULL, *n, l, r;
@@ -591,13 +591,13 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     } else if ((start = strchr(hexsig, '(')) && (mid = strchr(hexsig, '#')) && (end = strrchr(hexsig, '#')) && mid != end) {
 
         /* format seems to match byte_compare */
-        if (ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options)) {
+        if (CL_SUCCESS != (ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (2b).\n");
             return ret;
         }
 
     } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
-        if ((ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
+        if (CL_SUCCESS != (ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
             return ret;
         }
@@ -624,7 +624,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
         if (bm_new->length > root->maxpatlen)
             root->maxpatlen = bm_new->length;
 
-        if ((ret = cli_bm_addpatt(root, bm_new, offset))) {
+        if (CL_SUCCESS != (ret = cli_bm_addpatt(root, bm_new, offset))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
             mpool_free(root->mempool, bm_new->pattern);
             mpool_free(root->mempool, bm_new->virname);
@@ -636,7 +636,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return CL_SUCCESS;
 }
 
-int cli_initroots(struct cl_engine *engine, unsigned int options)
+cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
 {
     int i, ret;
     struct cli_matcher *root;
@@ -659,7 +659,7 @@ int cli_initroots(struct cl_engine *engine, unsigned int options)
                 root->ac_only = 1;
 
             cli_dbgmsg("Initializing AC pattern matcher of root[%d]\n", i);
-            if ((ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+            if (CL_SUCCESS != (ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
                 /* no need to free previously allocated memory here */
                 cli_errmsg("cli_initroots: Can't initialise AC pattern matcher\n");
                 return ret;
@@ -667,7 +667,7 @@ int cli_initroots(struct cl_engine *engine, unsigned int options)
 
             if (!root->ac_only) {
                 cli_dbgmsg("cli_initroots: Initializing BM tables of root[%d]\n", i);
-                if ((ret = cli_bm_init(root))) {
+                if (CL_SUCCESS != (ret = cli_bm_init(root))) {
                     cli_errmsg("cli_initroots: Can't initialise BM pattern matcher\n");
                     return ret;
                 }
@@ -886,7 +886,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
     return ret;
 }
 
-static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
     char buffer[FILEBUFF], *buffer_cpy = NULL, *pt, *start;
     unsigned int line = 0, sigs = 0;
@@ -895,7 +895,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
     UNUSEDPARAM(dbname);
 
-    if ((ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
         return ret;
 
     root = engine->root[0];
@@ -934,7 +934,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
         if (*pt == '=') continue;
 
-        if ((ret = cli_parse_add(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
+        if (CL_SUCCESS != (ret = cli_parse_add(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
             cli_dbgmsg("cli_loaddb: cli_parse_add failed on line %d\n", line);
             ret = CL_EMALFDB;
             break;
@@ -962,7 +962,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 }
 
 #define ICO_TOKENS 4
-static int cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
     const char *tokens[ICO_TOKENS + 1];
     char buffer[FILEBUFF], *buffer_cpy = NULL;
@@ -1202,12 +1202,12 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
         return CL_SUCCESS;
 
     if (!engine->whitelist_matcher) {
-        if ((ret = init_whitelist(engine))) {
+        if (CL_SUCCESS != (ret = init_whitelist(engine))) {
             return ret;
         }
     }
 
-    if ((ret = load_regex_matcher(engine, engine->whitelist_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->whitelist_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -1222,12 +1222,12 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return CL_SUCCESS;
 
     if (!engine->domainlist_matcher) {
-        if ((ret = init_domainlist(engine))) {
+        if (CL_SUCCESS != (ret = init_domainlist(engine))) {
             return ret;
         }
     }
 
-    if ((ret = load_regex_matcher(engine, engine->domainlist_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->domainlist_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -1247,7 +1247,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     UNUSEDPARAM(dbname);
 
-    if ((ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
         return ret;
 
     if (engine->ignored)
@@ -1331,7 +1331,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         offset = tokens[2];
         sig    = tokens[3];
 
-        if ((ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
+        if (CL_SUCCESS != (ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
             ret = CL_EMALFDB;
             break;
         }
@@ -1638,7 +1638,7 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 #ifdef USE_MPOOL
     tdb->mempool = engine->mempool;
 #endif
-    if ((ret = lsigattribs(target, tdb))) {
+    if (CL_SUCCESS != (ret = lsigattribs(target, tdb))) {
         FREE_TDB_P(tdb);
         if (ret == 1) {
             cli_dbgmsg("init_tdb: Not supported attribute(s) in signature for %s, skipping\n", virname);
@@ -1769,7 +1769,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
-    if ((ret = init_tdb(&tdb, engine, tokens[1], virname)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname)) != CL_SUCCESS) {
         (*sigs)--;
         if (ret == CL_BREAK)
             return CL_SUCCESS;
@@ -1890,7 +1890,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     unsigned int line = 0, sigs = 0;
     int ret;
 
-    if ((ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
         return ret;
 
     if (engine->ignored) {
@@ -2084,7 +2084,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     int ret;
     int magictype;
 
-    if ((ret = cli_initroots(engine, options)))
+    if (CL_SUCCESS != (ret = cli_initroots(engine, options)))
         return ret;
 
     while (1) {
@@ -2145,7 +2145,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
         if (magictype == 1) { /* A-C */
-            if ((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
+            if (CL_SUCCESS != (ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
                 break;
 
         } else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */
@@ -2344,7 +2344,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 #ifdef USE_MPOOL
         engine->ignored->mempool = engine->mempool;
 #endif
-        if ((ret = cli_bm_init(engine->ignored))) {
+        if (CL_SUCCESS != (ret = cli_bm_init(engine->ignored))) {
             cli_errmsg("cli_loadign: Can't initialise AC pattern matcher\n");
             return ret;
         }
@@ -2411,7 +2411,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
         new->length = len;
         new->boundary |= BM_BOUNDARY_EOL;
 
-        if ((ret = cli_bm_addpatt(engine->ignored, new, "0"))) {
+        if (CL_SUCCESS != (ret = cli_bm_addpatt(engine->ignored, new, "0"))) {
             if (hash)
                 mpool_free(engine->mempool, new->virname);
             mpool_free(engine->mempool, new->pattern);
@@ -2557,7 +2557,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             break;
         }
 
-        if ((ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
+        if (CL_SUCCESS != (ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
             cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
             mpool_free(engine->mempool, (void *)virname);
             break;
@@ -3292,7 +3292,7 @@ static int32_t ytable_lookup(const char *hexsig)
     return -1;
 }
 
-static int ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
+static cl_error_t ytable_add_attrib(struct cli_ytable *ytable, const char *hexsig, const char *value, int type)
 {
     int32_t lookup;
 
@@ -3380,7 +3380,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     newtable[ytable->tbl_cnt - 1] = new;
     ytable->table                 = newtable;
 
-    if ((ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
         cli_yaramsg("ytable_add_string: failed to add default offset\n");
         free(new->hexstr);
         free(new);
@@ -3425,7 +3425,7 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr, uint32_t *l
     }
 
     /* Long Check: Attempt to load hexstr */
-    if ((ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", 0, lsigid, options)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", 0, lsigid, options)) != CL_SUCCESS) {
         if (ret == CL_EMALFDB) {
             cli_warnmsg("load_oneyara[verify]: recovered from database loading error\n");
             /* TODO: if necessary, reset testing matcher if error occurs */
@@ -3581,7 +3581,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
 #ifdef USE_MPOOL
                 engine->test_root->mempool = engine->mempool;
 #endif
-                if ((ret = cli_ac_init(engine->test_root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+                if (CL_SUCCESS != (ret = cli_ac_init(engine->test_root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
                     cli_errmsg("load_oneyara: cannot initialize test ac root\n");
                     free(substr);
                     return ret;
@@ -3690,7 +3690,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         /* modifier handler */
         if (STRING_IS_NO_CASE(string)) {
             cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if ((ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
                 cli_warnmsg("load_oneyara: failed to add 'nocase' sigopt\n");
                 str_error++;
                 break;
@@ -3698,7 +3698,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         }
         if (STRING_IS_ASCII(string)) {
             cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if ((ret = ytable_add_attrib(&ytable, NULL, "a", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "a", 1)) != CL_SUCCESS) {
                 cli_warnmsg("load_oneyara: failed to add 'ascii' sigopt\n");
                 str_error++;
                 break;
@@ -3712,7 +3712,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 str_error++;
                 break;
             }
-            if ((ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
                 cli_warnmsg("load_oneyara: failed to add 'wide' sigopt\n");
                 str_error++;
                 break;
@@ -3720,7 +3720,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         }
         if (STRING_IS_FULL_WORD(string)) {
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if ((ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
                 cli_warnmsg("load_oneyara: failed to add 'fullword' sigopt\n");
                 str_error++;
                 break;
@@ -3832,7 +3832,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     target_str = cli_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
-    if ((ret = init_tdb(&tdb, engine, target_str, newident)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, target_str, newident)) != CL_SUCCESS) {
         ytable_delete(&ytable);
         free(logic);
         free(target_str);
@@ -3914,7 +3914,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if ((ret = cli_sigopts_handler(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+        if (CL_SUCCESS != (ret = cli_sigopts_handler(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
@@ -3943,7 +3943,7 @@ struct _yara_global {
     YR_HASH_TABLE *db_table;
 };
 
-int cli_yara_init(struct cl_engine *engine)
+cl_error_t cli_yara_init(struct cl_engine *engine)
 {
     /* Initialize YARA */
     engine->yara_global = cli_calloc(1, sizeof(struct _yara_global));
@@ -4303,7 +4303,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
 
 static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
-int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
+cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
     FILE *fs        = NULL;
     int ret         = CL_SUCCESS;
@@ -4739,11 +4739,11 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
     }
 
     if ((dboptions & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE))
-        if ((ret = phishing_init(engine)))
+        if (CL_SUCCESS != (ret = phishing_init(engine)))
             return ret;
 
     if ((dboptions & CL_DB_BYTECODE) && !engine->bcs.inited) {
-        if ((ret = cli_bytecode_init(&engine->bcs)))
+        if (CL_SUCCESS != (ret = cli_bytecode_init(&engine->bcs)))
             return ret;
     } else {
         cli_dbgmsg("Bytecode engine disabled\n");

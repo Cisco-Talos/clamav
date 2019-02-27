@@ -49,6 +49,6 @@ struct msxml_cbdata {
 };
 
 int msxml_read_cb(void *ctx, char *buffer, int len);
-int cli_scanmsxml(cli_ctx *ctx);
+cl_error_t cli_scanmsxml(cli_ctx *ctx);
 
 #endif /* __MSXML_H */

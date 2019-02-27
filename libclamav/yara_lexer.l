@@ -720,6 +720,8 @@ int yr_lex_parse_rules_string(
 
   return compiler->errors;
 #else
+  (void)rules_string;
+  (void)compiler;
   cli_errmsg("yara_lexer:yr_lex_parse_rules_string() disabled\n");
   return 0;
 #endif

@@ -74,7 +74,6 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     char *comp_buf       = NULL;
     char *comp_start     = NULL;
     char *comp_end       = NULL;
-    char *hexcpy         = NULL;
 
     if (!hexsig || !(*hexsig) || !root || !virname) {
         return CL_ENULLARG;
@@ -455,7 +454,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
 
-    int64_t i = 0, rc = 0, ret = CL_SUCCESS;
+    int64_t i = 0, ret = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
     uint32_t offset              = 0;
     uint8_t viruses_found        = 0;

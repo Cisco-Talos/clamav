@@ -668,7 +668,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     uint8_t *content = (uint8_t *)token->content;
     uint32_t length  = token->length;
     z_stream stream;
-    int zstat, skip = 0, rc = CL_SUCCESS;
+    int zstat, rc = CL_SUCCESS;
 
     UNUSEDPARAM(params);
 
@@ -912,7 +912,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     uint8_t *content = (uint8_t *)token->content;
     uint32_t length  = token->length;
     lzw_stream stream;
-    int echg = 1, lzwstat, skip = 0, rc = CL_SUCCESS;
+    int echg = 1, lzwstat, rc = CL_SUCCESS;
 
     if (pdf->ctx && !(pdf->ctx->dconf->other & OTHER_CONF_LZW))
         return CL_BREAK;

@@ -295,8 +295,15 @@ int _yr_parser_write_string(
 #endif
 
     int result;
+#if REAL_YARA
     int max_string_len;
     int free_literal = FALSE;
+#endif
+
+#if !REAL_YARA
+    UNUSEDPARAM(re);
+    UNUSEDPARAM(min_atom_length);
+#endif
 
     *string = NULL;
 
@@ -456,23 +463,21 @@ YR_STRING* yr_parser_reduce_string_declaration(
     SIZED_STRING* str)
 {
     int min_atom_length;
-    int min_atom_length_aux;
     int re_flags = 0;
-
-    int32_t min_gap;
-    int32_t max_gap;
-
-    char message[512];
 
     YR_COMPILER* compiler = yyget_extra(yyscanner);
     YR_STRING* string     = NULL;
+
+#if REAL_YARA
+    int min_atom_length_aux;
+    char message[512];
+    int32_t min_gap;
+    int32_t max_gap;
     YR_STRING* aux_string;
     YR_STRING* prev_string;
 
     RE* re = NULL;
     RE* remainder_re;
-
-#if REAL_YARA
     RE_ERROR re_error;
 #endif
 
@@ -654,6 +659,12 @@ YR_STRING* yr_parser_reduce_string_declaration(
         YR_RULE* rule;
         YR_STRING* string;
         uint8_t halt = OP_HALT;
+
+#if !REAL_YARA
+        UNUSEDPARAM(tags);
+        UNUSEDPARAM(strings);
+        UNUSEDPARAM(metas);
+#endif
 
         if (yr_hash_table_lookup(
                 compiler->rules_table,
@@ -899,11 +910,12 @@ YR_STRING* yr_parser_reduce_string_declaration(
         yyscan_t yyscanner,
         SIZED_STRING * module_name)
     {
-        YR_COMPILER* compiler = yyget_extra(yyscanner);
-        ///  YR_OBJECT* module_structure;
 #if REAL_YARA
-
+        YR_COMPILER* compiler = NULL;
+        ///  YR_OBJECT* module_structure;
         char* name;
+
+        compiler = yyget_extra(yyscanner);
 
         module_structure = yr_hash_table_lookup(
             compiler->objects_table,
@@ -952,6 +964,9 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
         return compiler->last_result;
 #else
+    UNUSEDPARAM(yyscanner);
+    UNUSEDPARAM(module_name);
+
     return ERROR_SUCCESS;
 #endif
     }

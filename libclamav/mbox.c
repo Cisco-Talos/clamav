@@ -1118,9 +1118,6 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
 #if HAVE_LIBXML2
     const char *xmlsrt, *xmlend;
     xmlTextReaderPtr reader;
-#if HAVE_JSON
-    json_object *thisjobj = (json_object *)wrkjobj;
-#endif
     int ret = CL_SUCCESS;
 
     UNUSEDPARAM(cbdata);
@@ -3831,7 +3828,6 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
     message *aMessage        = messages[i];
     const int doPhishingScan = mctx->ctx->engine->dboptions & CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 #if HAVE_JSON
-    const char *mtype    = NULL;
     json_object *thisobj = NULL, *saveobj = mctx->wrkobj;
 
     if (mctx->wrkobj != NULL) {

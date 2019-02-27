@@ -60,8 +60,8 @@
 /* Prototypes */
 static regex_t *new_preg(struct regex_matcher *matcher);
 static size_t reverse_string(char *pattern);
-static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *regex);
-static int add_static_pattern(struct regex_matcher *matcher, char *pattern);
+static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *regex);
+static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *pattern);
 /* ---------- */
 
 #define MATCH_SUCCESS 0
@@ -148,18 +148,26 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
  * Do not send NULL pointers to this function!!
  *
  */
-int regex_list_match(struct regex_matcher *matcher, char *real_url, const char *display_url, const struct pre_fixup_info *pre_fixup, int hostOnly, const char **info, int is_whitelist)
+cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const char *display_url, const struct pre_fixup_info *pre_fixup, int hostOnly, const char **info, int is_whitelist)
 {
     char *orig_real_url = real_url;
     struct regex_list *regex;
     size_t real_len, display_len, buffer_len;
+
+    char *buffer         = NULL;
+    char *bufrev         = NULL;
+    cl_error_t rc        = CL_SUCCESS;
+    int filter_search_rc = 0;
+    int root;
+    struct cli_ac_data mdata;
+    struct cli_ac_result *res = NULL;
 
     assert(matcher);
     assert(real_url);
     assert(display_url);
     *info = NULL;
     if (!matcher->list_inited)
-        return 0;
+        return CL_SUCCESS;
     assert(matcher->list_built);
     /* skip initial '.' inserted by get_host */
     if (real_url[0] == '.') real_url++;
@@ -169,98 +177,95 @@ int regex_list_match(struct regex_matcher *matcher, char *real_url, const char *
     buffer_len  = (hostOnly && !is_whitelist) ? real_len + 1 : real_len + display_len + 1 + 1;
     if (buffer_len < 3) {
         /* too short, no match possible */
-        return 0;
+        return CL_SUCCESS;
     }
-    {
-        char *buffer = cli_malloc(buffer_len + 1);
-        char *bufrev;
-        int rc = 0, root;
-        struct cli_ac_data mdata;
-        struct cli_ac_result *res = NULL;
+    buffer = cli_malloc(buffer_len + 1);
+    if (!buffer) {
+        cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
+        return CL_EMEM;
+    }
 
-        if (!buffer) {
-            cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
-            return CL_EMEM;
-        }
+    strncpy(buffer, real_url, real_len);
+    buffer[real_len] = (!is_whitelist && hostOnly) ? '/' : ':';
 
-        strncpy(buffer, real_url, real_len);
-        buffer[real_len] = (!is_whitelist && hostOnly) ? '/' : ':';
+    /*
+     * For H-type PDB signatures, real_url is actually the DisplayedHostname.
+     * RealHostname is not used.
+     */
+    if (!hostOnly || is_whitelist) {
+        /* For all other PDB and WDB signatures concatenate Real:Displayed. */
+        strncpy(buffer + real_len + 1, display_url, display_len);
+    }
+    buffer[buffer_len - 1] = '/';
+    buffer[buffer_len]     = 0;
+    cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
-        /* For H-type PDB signatures, real_url is actually the DisplayedHostname.
-           RealHostname is not used. */
-        if (!hostOnly || is_whitelist) {
-            /* For all other PDB and WDB signatures concatenate Real:Displayed. */
-            strncpy(buffer + real_len + 1, display_url, display_len);
-        }
-        buffer[buffer_len - 1] = '/';
-        buffer[buffer_len]     = 0;
-        cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
+    if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
+        return rc;
 
-        if ((rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
-            return rc;
+    bufrev = cli_strdup(buffer);
+    if (!bufrev)
+        return CL_EMEM;
 
-        bufrev = cli_strdup(buffer);
-        if (!bufrev)
-            return CL_EMEM;
-        reverse_string(bufrev);
-        rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len) != -1;
-        if (rc == -1) {
-            free(buffer);
-            free(bufrev);
-            /* filter says this suffix doesn't match.
+    reverse_string(bufrev);
+    filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len) != -1;
+    if (filter_search_rc == -1) {
+        free(buffer);
+        free(bufrev);
+        /* filter says this suffix doesn't match.
 			 * The filter has false positives, but no false
 			 * negatives */
-            return 0;
-        }
-        rc = cli_ac_scanbuff((const unsigned char *)bufrev, buffer_len, NULL, (void *)&regex, &res, &matcher->suffixes, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
-        free(bufrev);
-        cli_ac_freedata(&mdata);
-
-        rc   = 0;
-        root = matcher->root_regex_idx;
-        while (res || root) {
-            struct cli_ac_result *q;
-            if (!res) {
-                regex = matcher->suffix_regexes[root].head;
-                root  = 0;
-            } else {
-                regex = res->customdata;
-            }
-            while (!rc && regex) {
-                /* loop over multiple regexes corresponding to
-				 * this suffix */
-                if (!regex->preg) {
-                    /* we matched a static pattern */
-                    rc = validate_subdomain(regex, pre_fixup, buffer, buffer_len, real_url, real_len, orig_real_url);
-                } else {
-                    rc = !cli_regexec(regex->preg, buffer, 0, NULL, 0);
-                }
-                if (rc) *info = regex->pattern;
-                regex = regex->nxt;
-            }
-            if (res) {
-                q   = res;
-                res = res->next;
-                free(q);
-            }
-        }
-        free(buffer);
-        if (!rc)
-            cli_dbgmsg("Lookup result: not in regex list\n");
-        else
-            cli_dbgmsg("Lookup result: in regex list\n");
-        return rc;
+        return CL_SUCCESS;
     }
+
+    rc = cli_ac_scanbuff((const unsigned char *)bufrev, buffer_len, NULL, (void *)&regex, &res, &matcher->suffixes, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
+    free(bufrev);
+    cli_ac_freedata(&mdata);
+
+    rc   = CL_SUCCESS;
+    root = matcher->root_regex_idx;
+    while (res || root) {
+        struct cli_ac_result *q;
+        if (!res) {
+            regex = matcher->suffix_regexes[root].head;
+            root  = 0;
+        } else {
+            regex = res->customdata;
+        }
+        while (!rc && regex) {
+            /* loop over multiple regexes corresponding to
+				 * this suffix */
+            if (!regex->preg) {
+                /* we matched a static pattern */
+                rc = validate_subdomain(regex, pre_fixup, buffer, buffer_len, real_url, real_len, orig_real_url);
+            } else {
+                rc = !cli_regexec(regex->preg, buffer, 0, NULL, 0);
+            }
+            if (rc) *info = regex->pattern;
+            regex = regex->nxt;
+        }
+        if (res) {
+            q   = res;
+            res = res->next;
+            free(q);
+        }
+    }
+    free(buffer);
+    if (!rc)
+        cli_dbgmsg("Lookup result: not in regex list\n");
+    else
+        cli_dbgmsg("Lookup result: in regex list\n");
+    return rc;
 }
 
 /* Initialization & loading */
 /* Initializes @matcher, allocating necessary substructures */
-int init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefiltering)
+cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
     mpool_t *mp = matcher->mempool;
 #endif
-    int rc;
+    cl_error_t rc;
 
     assert(matcher);
     memset(matcher, 0, sizeof(*matcher));
@@ -389,9 +394,10 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
 }
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, FILE *fd, unsigned int *signo, unsigned int options, int is_whitelist, struct cli_dbio *dbio, uint8_t dconf_prefiltering)
+cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, FILE *fd, unsigned int *signo, unsigned int options, int is_whitelist, struct cli_dbio *dbio, uint8_t dconf_prefiltering)
 {
-    int rc, line = 0, entry = 0;
+    cl_error_t rc;
+    int line = 0, entry = 0;
     char buffer[FILEBUFF];
 
     assert(matcher);
@@ -505,9 +511,9 @@ int load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, 
 }
 
 /* Build the matcher list */
-int cli_build_regex_list(struct regex_matcher *matcher)
+cl_error_t cli_build_regex_list(struct regex_matcher *matcher)
 {
-    int rc;
+    cl_error_t rc;
     if (!matcher)
         return CL_SUCCESS;
     if (!matcher->list_inited || !matcher->list_loaded) {
@@ -624,7 +630,7 @@ static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
 }
 
 /* returns 0 on success, clamav error code otherwise */
-static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
+static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
     struct regex_matcher *matcher = cbdata;
     struct regex_list *regex      = cli_malloc(sizeof(*regex));
@@ -663,7 +669,7 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
             matcher->root_regex_idx = n;
         add_newsuffix(matcher, regex, suffix, suffix_len);
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 static size_t reverse_string(char *pattern)
@@ -695,11 +701,11 @@ static regex_t *new_preg(struct regex_matcher *matcher)
     return r;
 }
 
-static int add_static_pattern(struct regex_matcher *matcher, char *pattern)
+static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *pattern)
 {
     size_t len;
     struct regex_list regex;
-    int rc;
+    cl_error_t rc;
 
     len           = reverse_string(pattern);
     regex.nxt     = NULL;
@@ -710,9 +716,9 @@ static int add_static_pattern(struct regex_matcher *matcher, char *pattern)
     return rc;
 }
 
-int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
+cl_error_t regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 {
-    int rc;
+    cl_error_t rc;
     regex_t *preg;
     size_t len;
     /* we only match the host, so remove useless stuff */

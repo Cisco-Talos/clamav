@@ -848,7 +848,7 @@ static void free_regex(regex_t* p)
     }
 }
 
-int phishing_init(struct cl_engine* engine)
+cl_error_t phishing_init(struct cl_engine* engine)
 {
     struct phishcheck* pchk;
     if (!engine->phishcheck) {
@@ -1160,12 +1160,12 @@ static enum phish_status phishy_map(int phishy, enum phish_status fallback)
         return fallback;
 }
 
-static int whitelist_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
+static cl_error_t whitelist_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
 {
     return whitelist_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
 }
 
-static int hash_match(const struct regex_matcher* rlist, const char* host, size_t hlen, const char* path, size_t plen, int* prefix_matched)
+static cl_error_t hash_match(const struct regex_matcher* rlist, const char* host, size_t hlen, const char* path, size_t plen, int* prefix_matched)
 {
     const char* virname;
 #if 0
@@ -1227,7 +1227,7 @@ static int hash_match(const struct regex_matcher* rlist, const char* host, size_
 
 #define URL_MAX_LEN 1024
 #define COMPONENTS 4
-int cli_url_canon(const char* inurl, size_t len, char* urlbuff, size_t dest_len, char** host, size_t* hostlen, const char** path, size_t* pathlen)
+enum phish_status cli_url_canon(const char* inurl, size_t len, char* urlbuff, size_t dest_len, char** host, size_t* hostlen, const char** path, size_t* pathlen)
 {
     char *url, *p, *last;
     char *host_begin, *path_begin;
@@ -1331,7 +1331,7 @@ int cli_url_canon(const char* inurl, size_t len, char* urlbuff, size_t dest_len,
     return CL_PHISH_NODECISION;
 }
 
-static int url_hash_match(const struct regex_matcher* rlist, const char* inurl, size_t len)
+static cl_error_t url_hash_match(const struct regex_matcher* rlist, const char* inurl, size_t len)
 {
     size_t j, k, ji, ki;
     char* host_begin;
@@ -1340,7 +1340,9 @@ static int url_hash_match(const struct regex_matcher* rlist, const char* inurl, 
     size_t path_len;
     size_t host_len;
     char* p;
-    int rc, prefix_matched = 0;
+    enum phish_status phish_rc;
+    cl_error_t rc;
+    int prefix_matched = 0;
     const char* lp[COMPONENTS + 1];
     size_t pp[COMPONENTS + 2];
     char urlbuff[URL_MAX_LEN + 3]; /* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
@@ -1354,9 +1356,9 @@ static int url_hash_match(const struct regex_matcher* rlist, const char* inurl, 
     if (!inurl)
         return CL_EMEM;
 
-    rc = cli_url_canon(inurl, len, urlbuff, sizeof(urlbuff), &host_begin, &host_len, &path_begin, &path_len);
-    if (rc == CL_PHISH_CLEAN)
-        return rc;
+    phish_rc = cli_url_canon(inurl, len, urlbuff, sizeof(urlbuff), &host_begin, &host_len, &path_begin, &path_len);
+    if (phish_rc == CL_PHISH_CLEAN)
+        return CL_CLEAN;
 
     /* get last 5 components of hostname */
     j         = COMPONENTS;
@@ -1403,7 +1405,7 @@ static int url_hash_match(const struct regex_matcher* rlist, const char* inurl, 
             /* lookup prefix/suffix hashes of URL */
             rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki],
                             need_prefixmatch ? &prefix_matched : NULL);
-            if (rc) {
+            if (CL_CLEAN != rc) {
                 return rc;
             }
             count++;

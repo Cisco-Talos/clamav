@@ -199,7 +199,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files)
 {
     cl_error_t status = CL_CLEAN;
-    int virus_found   = 0;
 
     cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
                metadata->filename, metadata->crc, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -213,8 +212,6 @@ static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ct
         status = CL_EUNPACK;
     }
 
-done:
-
     return status;
 }
 
@@ -224,7 +221,6 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
     cl_unrar_error_t unrar_ret = UNRAR_ERR;
 
     char *extract_dir          = NULL; /* temp dir to write extracted files to */
-    char *comment_dir          = NULL; /* temp dir to write file comments to */
     unsigned int file_count    = 0;
     unsigned int viruses_found = 0;
 
@@ -2789,7 +2785,6 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 {
     int ret = CL_CLEAN, nret = CL_CLEAN;
     struct cli_matched_type *ftoffset = NULL, *fpt;
-    uint32_t lastrar;
     struct cli_exe_info peinfo;
     unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
     fmap_t *map = *ctx->fmap;
