@@ -1740,18 +1740,6 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     }
     subsigs++;
 
-#if !HAVE_PCRE
-    /* Regex Usage and Support Check */
-    for (i = 0; i < subsigs; ++i) {
-        char *slash = strchr(tokens[i + 3], '/');
-        if (slash && strchr(slash + 1, '/')) {
-            cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
-            (*sigs)--;
-            return CL_SUCCESS;
-        }
-    }
-#endif
-
     if (!line) {
         /* This is a logical signature from the bytecode, we need all
          * subsignatures, even if not referenced from the logical expression */
@@ -1765,6 +1753,18 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
         return CL_EMALFDB;
     }
+
+#if !HAVE_PCRE
+    /* Regex Usage and Support Check */
+    for (i = 0; i < subsigs; ++i) {
+        char *slash = strchr(tokens[i + 3], '/');
+        if (slash && strchr(slash + 1, '/')) {
+            cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
+            (*sigs)--;
+            return CL_SUCCESS;
+        }
+    }
+#endif
 
     /* enforce MAX_LDB_SUBSIGS(currently 64) subsig cap */
     if (subsigs > MAX_LDB_SUBSIGS) {

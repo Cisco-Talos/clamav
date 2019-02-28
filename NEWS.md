@@ -17,11 +17,16 @@ ClamAV 0.102.0 is in development.
   - The new home for the documentation markdown is in our
     [ClamAV FAQ Github repository](https://github.com/Cisco-Talos/clamav-faq)
 
+### Additional minor bug fixes
+
+- Fix to prevent a possible crash when loading LDB type signature databases
+  and PCRE is not available. Patch courtesy of Tomasz Kojm.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:
 
--
+- Tomasz Kojm
 
 ## 0.101.1
 
@@ -119,18 +124,18 @@ we've cooked up over the past 6 months.
     |                                  | `AlertEncryptedArchive`      |
     |                                  | `AlertEncryptedDoc`          |
 
-    | Old `clamscan` option        | *New* `clamscan` option          |
-    | ---------------------------- | -------------------------------- |
-    | `--algorithmic-detection`    | `--heuristic-alerts`             |
-    | `--detect-broken`            | `--alert-broken`                 |
-    | `--phishing-cloak`           | `--alert-phishing-cloak`         |
-    | `--phishing-ssl`             | `--alert-phishing-ssl`           |
-    | `--partition-intersection`   | `--alert-partition-intersection` |
-    | `--block-max`                | `--alert-exceeds-max`            |
-    | `--block-macros`             | `--alert-macros`                 |
-    | `--block-encrypted`          | `--alert-encrypted`              |
-    |                              | `--alert-encrypted-archive`      |
-    |                              | `--alert-encrypted-doc`          |
+    | Old `clamscan` option      | *New* `clamscan` option          |
+    | -------------------------- | -------------------------------- |
+    | `--algorithmic-detection`  | `--heuristic-alerts`             |
+    | `--detect-broken`          | `--alert-broken`                 |
+    | `--phishing-cloak`         | `--alert-phishing-cloak`         |
+    | `--phishing-ssl`           | `--alert-phishing-ssl`           |
+    | `--partition-intersection` | `--alert-partition-intersection` |
+    | `--block-max`              | `--alert-exceeds-max`            |
+    | `--block-macros`           | `--alert-macros`                 |
+    | `--block-encrypted`        | `--alert-encrypted`              |
+    |                            | `--alert-encrypted-archive`      |
+    |                            | `--alert-encrypted-doc`          |
 
 ### Some more subtle improvements
 
