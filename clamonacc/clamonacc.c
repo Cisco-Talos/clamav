@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB, Mickey Sola
  *
@@ -38,122 +38,147 @@
 #include "clamav.h"
 
 #include "libclamav/clamav.h"
+#include "libclamav/others.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/optparser.h"
 #include "shared/actions.h"
 
-#include "./client/onaccess_client.h"
 
-void help(void);
+#include "clamonacc.h"
+#include "./client/onaccess_client.h"
+#include "./fanotif/onaccess_fan.h"
+#include "./inotif/onaccess_ddd.h"
+
 
 int printinfected;
 int reload = 0;
 struct optstruct *clamdopts = NULL;
-
-static void print_server_version(const struct optstruct *opt)
-{
-    if(get_clamd_version(opt)) {
-	/* can't get version from server, fallback */
-	printf("ClamAV %s\n", get_version());
-    }
-}
+pthread_t ddd_pid = 0;
 
 int main(int argc, char **argv)
 {
-	int ds, dms, ret, infected = 0, err = 0;
-	struct timeval t1, t2;
-	time_t starttime;
-        struct optstruct *opts;
-        const struct optstruct *opt;
-#ifndef _WIN32
-	struct sigaction sigact;
+	const struct optstruct *opts;
+	struct onas_context *ctx;
+	int ret = 0;
+
+	/* Initialize context */
+	ctx = onas_init_context();
+	if(ctx == NULL) {
+		mprintf("!Clamonacc: can't initialize context\n");
+		return 2;
+	}
+
+	/* Parse out all our command line options */
+	opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL);
+	if(opts == NULL) {
+		mprintf("!Clamonacc: can't parse command line options\n");
+		return 2;
+	}
+	ctx->opts = opts;
+
+
+	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
+	if (clamdopts == NULL) {
+		logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+		return 2;
+	}
+	ctx->clamdopts = clamdopts;
+
+	/* Setup our client */
+	switch(onas_setup_client(&ctx)) {
+		case CL_SUCCESS:
+			if (onas_check_client_connection()) {
+				break;
+			}
+		case CL_BREAK:
+			ret = 0;
+			goto clean_up;
+			break;
+		case CL_EARG:
+		default:
+			mprintf("!Clamonacc: can't setup client\n");
+			ret = 2;
+			goto clean_up;
+			break;
+	}
+
+#if defined(FANOTIFY)
+	/* Setup fanotify */
+	switch(onas_setup_fanotif(&ctx)) {
+		case CL_SUCCESS:
+			break;
+		case CL_BREAK:
+			ret = 0;
+			goto clean_up;
+			break;
+		case CL_EARG:
+		default:
+			mprintf("!Clamonacc: can't setup fanotify\n");
+			ret = 2;
+			goto clean_up;
+			break;
+	}
+
+	if (ctx->ddd_enabled) {
+		/* Setup inotify and kickoff DDD system */
+		switch(onas_enable_inotif_ddd(&ctx)) {
+			case CL_SUCCESS:
+				break;
+			case CL_BREAK:
+				ret = 0;
+				goto clean_up;
+				break;
+			case CL_EARG:
+			default:
+				mprintf("!Clamonacc: can't setup fanotify\n");
+				ret = 2;
+				goto clean_up;
+				break;
+		}
+	}
+#else
+	mprintf("!Clamonacc: currently, this application only runs on linux systems with fanotify enabled\n");
+	goto clean_up;
 #endif
 
-    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
-	mprintf("!Can't parse command line options\n");
-	return 2;
-    }
+	/*  Kick off event loop(s) */
+	ret = onas_start_eloop(&ctx);
 
-    if((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
-	return 2;
-    }
-
-    if(optget(opts, "verbose")->enabled) {
-	mprintf_verbose = 1;
-	logg_verbose = 1;
-    }
-
-    if(optget(opts, "quiet")->enabled)
-	mprintf_quiet = 1;
-
-    if(optget(opts, "stdout")->enabled)
-	mprintf_stdout = 1;
-
-    if(optget(opts, "version")->enabled) {
-	print_server_version(opts);
-	optfree(opts);
-	optfree(clamdopts);
-	exit(0);
-    }
-
-    if(optget(opts, "help")->enabled) {
-	optfree(opts);
-	optfree(clamdopts);
-    	help();
-    }
-
-    if(optget(opts, "infected")->enabled)
-	printinfected = 1;
-
-    /* initialize logger */
-
-    if((opt = optget(opts, "log"))->enabled) {
-	logg_file = opt->strarg;
-	if(logg("--------------------------------------\n")) {
-	    mprintf("!Problem with internal logger.\n");
-	    optfree(opts);
-	    optfree(clamdopts);
-	    exit(2);
-	}
-    } else
-	logg_file = NULL;
-
-
-   if(optget(opts, "reload")->enabled) {
-	ret = reload_clamd_database(opts);
-	optfree(opts);
-	optfree(clamdopts);
-	logg_close();
+	/* Clean up */
+clean_up:
+	onas_cleanup(ctx);
 	exit(ret);
+}
+
+struct onas_context *onas_init_context(void) {
+    struct onas_context *ctx = (struct onas_context*) cli_malloc(sizeof(struct onas_context));
+    if (NULL == ctx) {
+        return NULL;
     }
 
-    if(actsetup(opts)) {
-	optfree(opts);
-	optfree(clamdopts);
-	logg_close();
-	exit(2);
-    }
+    memset(ctx, 0, sizeof(struct onas_context));
+    return ctx;
+}
 
-    memset(&sigact, 0, sizeof(struct sigaction));
-    sigact.sa_handler = SIG_IGN;
-    sigemptyset(&sigact.sa_mask);
-    sigaddset(&sigact.sa_mask, SIGPIPE);
-    sigaction(SIGPIPE, &sigact, NULL);
+cl_error_t onas_check_client_connection(void) {
 
-    time(&starttime);
-    /* ctime() does \n, but I need it once more */
+	return CL_SUCCESS;
+}
 
-    gettimeofday(&t1, NULL);
+int onas_start_eloop(struct onas_context **ctx) {
+	int ret = 0;
 
-    ret = client(opts, &infected, &err);
+	if (!ctx || !*ctx) {
+		mprintf("!Clamonacc: unable to start clamonacc. (bad context)\n");
+		return CL_EARG;
+	}
 
-    optfree(clamdopts);
-    logg_close();
-    optfree(opts);
-    cl_cleanup_crypto();
-    exit(ret);
+#ifdef C_LINUX
+	ret = onas_fan_eloop(ctx);
+#endif
+
+	return ret;
 }
 
 void help(void)
@@ -163,7 +188,7 @@ void help(void)
     mprintf("\n");
     mprintf("           ClamAV: On Access Scanning Application and Client %s\n", get_version());
     mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf("           (C) 2007-2018 Cisco Systems, Inc.\n");
+    mprintf("           (C) 2007-2019 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    clamonacc [options] [file/directory/-]\n");
     mprintf("\n");
@@ -174,7 +199,7 @@ void help(void)
     mprintf("    --stdout                           Write to stdout instead of stderr\n");
     mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
-    mprintf("    --watch-list=FILE      -f FILE     Watch directories from FILE\n");
+    mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
     mprintf("    --exclude-list=FILES   -f FILE     Exclude directories from FILE\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
@@ -183,10 +208,47 @@ void help(void)
     mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
     mprintf("    --multiscan            -m          Force MULTISCAN mode\n");
     mprintf("    --infected             -i          Only print infected files\n");
-    mprintf("    --reload=TIME                      Request clamd to reload the virus database at the specified interval TIME (in seconds)\n");
     mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
     mprintf("\n");
 
     exit(0);
 }
+
+void* onas_cleanup(struct onas_context *ctx) {
+	onas_context_cleanup(ctx);
+	cl_cleanup_crypto();
+	logg_close();
+}
+
+void* onas_context_cleanup(struct onas_context *ctx) {
+	close(ctx->fan_fd);
+	optfree((struct optstruct *) ctx->opts);
+	ctx->opts = NULL;
+	optfree(clamdopts);
+	ctx->clamdopts = NULL;
+	free(ctx);
+}
+
+/*int main(int argc, char **argv)
+{
+	int ds, dms, ret, infected = 0, err = 0;
+	struct timeval t1, t2;
+	time_t starttime;
+#ifndef _WIN32
+	struct sigaction sigact;
+#endif
+
+    memset(&sigact, 0, sizeof(struct sigaction));
+    sigact.sa_handler = SIG_IGN;
+    sigemptyset(&sigact.sa_mask);
+    sigaddset(&sigact.sa_mask, SIGPIPE);
+    sigaction(SIGPIPE, &sigact, NULL);
+
+    time(&starttime);
+    ctime() does \n, but I need it once more
+
+    gettimeofday(&t1, NULL);
+
+    ret = client(opts, &infected, &err);
+}*/

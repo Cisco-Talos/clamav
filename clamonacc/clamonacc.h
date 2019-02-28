@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,14 +19,41 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __FAN_H
-#define __FAN_H
+#ifndef __ONAS_CLAMONACC_H
+#define __ONAS_CLAMONACC_H
 
-#include "../clamonacc.h"
 #include "clamav.h"
 
-void *onas_fan_th(void *arg);
-cl_error_t onas_setup_fanotif(struct onas_context **ctx);
-int onas_fan_eloop(struct onas_context **ctx);
+struct onas_context {
+	const struct optstruct *opts;
+	struct optstruct *clamdopts;
+
+        int printinfected;
+
+        uint32_t ddd_enabled;
+
+        int fan_fd;
+        uint64_t fan_mask;
+        int retry_on_error;
+        int retry_attempts;
+        int deny_on_scanfail;
+
+        uint64_t sizelimit;
+        uint64_t extinfo;
+
+        int scantype;
+        int isremote;
+        int session;
+};
+
+
+struct onas_context* onas_init_context(void);
+void* onas_cleanup(struct onas_context *ctx);
+void* onas_context_cleanup(struct onas_context *ctx);
+cl_error_t onas_check_client_connection(void);
+int onas_start_eloop(struct onas_context **ctx);
+void help(void);
+
+
 
 #endif
