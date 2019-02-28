@@ -22,7 +22,7 @@
 #define __ONAS_IN_H
 
 #include "shared/optparser.h"
-#include "libclamav/clamav.h"
+#include "clamav.h"
 
 /*
  * Extra options for onas_scan_th(). 
@@ -43,5 +43,8 @@ struct ddd_thrarg {
 
 int onas_ddd_init(uint64_t nwatches, size_t ht_size);
 void *onas_ddd_th(void *arg);
+int onas_ddd_init(uint64_t nwatches, size_t ht_size);
+cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx);
+
 
 #endif

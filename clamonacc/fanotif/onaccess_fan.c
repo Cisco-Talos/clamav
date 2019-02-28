@@ -51,12 +51,14 @@
 #include "../inotif/onaccess_hash.h"
 #include "../inotif/onaccess_ddd.h"
 
-static pthread_t ddd_pid;
-static int onas_fan_fd;
+#include "../client/onaccess_client.h"
 
-static void onas_fan_exit(int sig)
+extern pthread_t ddd_pid;
+extern reload;
+
+/*static void onas_fan_exit(int sig)
 {
-    logg("*ScanOnAccess: onas_fan_exit(), signal %d\n", sig);
+	logg("*ClamFanotif: onas_fan_exit(), signal %d\n", sig);
 
     close(onas_fan_fd);
 
@@ -66,52 +68,64 @@ static void onas_fan_exit(int sig)
     }
 
     pthread_exit(NULL);
-    logg("ScanOnAccess: stopped\n");
-}
+	logg("ClamFanotif: stopped\n");
+}*/
 
-static int onas_fan_scanfile(int fan_fd, const char *fname, struct fanotify_event_metadata *fmd, int scan, int extinfo, struct thrarg *tharg)
+static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *fmd, STATBUF sb, int scan, struct onas_context **ctx)
 {
     struct fanotify_response res;
     const char *virname = NULL;
+        int infected = 0;
+        int err = 0;
     int ret             = 0;
+	int i = 0;
+	int scan_failed = 0;
 
     res.fd       = fmd->fd;
     res.response = FAN_ALLOW;
 
     if (scan) {
-        if (onas_scan(fname, fmd->fd, &virname, tharg->engine, tharg->options, extinfo) == CL_VIRUS) {
-            /* TODO : FIXME? virusaction forks. This could be extraordinarily problematic, lead to deadlocks,
-             * or at the very least lead to extreme memory consumption. Leaving disabled for now.*/
-            //virusaction(fname, virname, tharg->opts);
+		ret = onas_client_scan(ctx, fname, sb, &infected, &err);
+
+		if (err) {
+			logg("!ClamFanotif: Internal error (client failed to scan)\n");
+			if ((*ctx)->retry_on_error) {
+				logg("!ClamFanotif: reattempting scan ... \n");
+				while (err) {
+					ret = onas_client_scan(ctx, fname, sb, &infected, &err);
+
+					i++;
+					if (err && i == (*ctx)->retry_attempts) {
+						err = 0;
+						scan_failed = 1;
+					}
+				}
+			} else {
+				scan_failed = 1;
+			}
+		}
+
+		if ((scan_failed && (*ctx)->deny_on_scanfail) || infected) {
             res.response = FAN_DENY;
         }
     }
 
     if (fmd->mask & FAN_ALL_PERM_EVENTS) {
-        ret = write(fan_fd, &res, sizeof(res));
+		ret = write((*ctx)->fan_fd, &res, sizeof(res));
         if (ret == -1)
-            logg("!ScanOnAccess: Internal error (can't write to fanotify)\n");
+			logg("!ClamFanotif: Internal error (can't write to fanotify)\n");
     }
 
     return ret;
 }
 
-void *onas_fan_th(void *arg)
-{
-    struct thrarg *tharg = (struct thrarg *)arg;
-    sigset_t sigset;
-    struct sigaction act;
+cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
+
     const struct optstruct *pt;
     short int scan;
     unsigned int sizelimit = 0, extinfo;
-    STATBUF sb;
+	int onas_fan_fd;
     uint64_t fan_mask = FAN_EVENT_ON_CHILD | FAN_CLOSE;
-    fd_set rfds;
-    char buf[4096];
-    ssize_t bread;
-    struct fanotify_event_metadata *fmd;
-    char fname[1024];
-    int ret, len, check;
     char err[128];
 
     pthread_attr_t ddd_attr;
@@ -119,127 +133,104 @@ void *onas_fan_th(void *arg)
 
     ddd_pid = 0;
 
-    /* ignore all signals except SIGUSR1 */
-    sigfillset(&sigset);
-    sigdelset(&sigset, SIGUSR1);
-    /* The behavior of a process is undefined after it ignores a
-     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
-    sigdelset(&sigset, SIGFPE);
-    sigdelset(&sigset, SIGILL);
-    sigdelset(&sigset, SIGSEGV);
-#ifdef SIGBUS
-    sigdelset(&sigset, SIGBUS);
-#endif
-    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-    memset(&act, 0, sizeof(struct sigaction));
-    act.sa_handler = onas_fan_exit;
-    sigfillset(&(act.sa_mask));
-    sigaction(SIGUSR1, &act, NULL);
-    sigaction(SIGSEGV, &act, NULL);
-
     /* Initialize fanotify */
     onas_fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
     if (onas_fan_fd < 0) {
-        logg("!ScanOnAccess: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
+		logg("!ClamFanotif: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
         if (errno == EPERM)
-            logg("ScanOnAccess: clamd must be started by root\n");
-        return NULL;
+			logg("!ClamFanotif: clamonacc must have elevated permissions ... exiting ...\n");
+		return CL_EOPEN;
     }
 
-    if (!tharg) {
-        logg("!Unable to start on-access scanner. Bad thread args.\n");
-        return NULL;
+
+	if (!ctx || !*ctx) {
+		logg("!ClamFanotif: unable to start clamonacc. (bad context)\n");
+		return CL_EARG;
     }
 
-    if (optget(tharg->opts, "OnAccessPrevention")->enabled && !optget(tharg->opts, "OnAccessMountPath")->enabled) {
-        logg("ScanOnAccess: preventing access attempts on malicious files.\n");
+	(*ctx)->fan_fd = onas_fan_fd;
+	(*ctx)->fan_mask = fan_mask;
+
+	if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
+		logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
         fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
-        logg("ScanOnAccess: notifying only for access attempts.\n");
+		logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
+		if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
+			logg("*ClamFanotif: feature not available when watching mounts ... \n");
+		}
         fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
 
-    if ((pt = optget(tharg->opts, "OnAccessMountPath"))->enabled) {
+	if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
             if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, fan_mask, onas_fan_fd, pt->strarg) != 0) {
-                logg("!ScanOnAccess: Can't include mountpoint '%s'\n", pt->strarg);
-                return NULL;
+				logg("!ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
+				return CL_EARG;
             } else
-                logg("ScanOnAccess: Protecting '%s' and rest of mount.\n", pt->strarg);
+				logg("*ClamFanotif: recursively watching the mount point '%s'\n", pt->strarg);
             pt = (struct optstruct *)pt->nextarg;
         }
 
-    } else if (!optget(tharg->opts, "OnAccessDisableDDD")->enabled) {
-        int thread_started = 1;
-        do {
-            if (pthread_attr_init(&ddd_attr)) break;
-            pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
-
-            /* Allocate memory for arguments. Thread is responsible for freeing it. */
-            if (!(ddd_tharg = (struct ddd_thrarg *)calloc(sizeof(struct ddd_thrarg), 1))) break;
-            if (!(ddd_tharg->options = (struct cl_scan_options *)calloc(sizeof(struct cl_scan_options), 1))) break;
-
-            (void)memcpy(ddd_tharg->options, tharg->options, sizeof(struct cl_scan_options));
-            ddd_tharg->fan_fd   = onas_fan_fd;
-            ddd_tharg->fan_mask = fan_mask;
-            ddd_tharg->opts     = tharg->opts;
-            ddd_tharg->engine   = tharg->engine;
-
-            thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, ddd_tharg);
-        } while (0);
-
-        if (0 != thread_started) {
-            /* Failed to create thread. Free anything we may have allocated. */
-            logg("!Unable to start dynamic directory determination.\n");
-            if (NULL != ddd_tharg) {
-                if (NULL != ddd_tharg->options) {
-                    free(ddd_tharg->options);
-                    ddd_tharg->options = NULL;
-                }
-                free(ddd_tharg);
-                ddd_tharg = NULL;
-            }
-        }
-
+	} else if (!optget((*ctx)->clamdopts, "OnAccessDisableDDD")->enabled) {
+		(*ctx)->ddd_enabled = 1;
     } else {
-        if ((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
+		if((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
             while (pt) {
                 if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD, fan_mask, onas_fan_fd, pt->strarg) != 0) {
-                    logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
-                    return NULL;
+					logg("!ClamFanotif: can't include path '%s'\n", pt->strarg);
+					return CL_EARG;
                 } else
-                    logg("ScanOnAccess: Protecting directory '%s'\n", pt->strarg);
+					logg("*ClamFanotif: watching directory '%s' (non-recursively)\n", pt->strarg);
                 pt = (struct optstruct *)pt->nextarg;
             }
         } else {
-            logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludePath\n");
-            return NULL;
+			logg("!ClamFanotif: Please specify at least one path with OnAccessIncludePath\n");
+			return CL_EARG;
         }
     }
 
     /* Load other options. */
-    sizelimit = optget(tharg->opts, "OnAccessMaxFileSize")->numarg;
+	sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
     if (sizelimit)
-        logg("ScanOnAccess: Max file size limited to %u bytes\n", sizelimit);
+		logg("*ClamFanotif: Max file size limited to %u bytes\n", sizelimit);
     else
-        logg("ScanOnAccess: File size limit disabled\n");
+		logg("*ClamFanotif: File size limit disabled\n");
 
-    extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
+
+	(*ctx)->sizelimit = sizelimit;
+	(*ctx)->extinfo = extinfo;
+
+	return CL_SUCCESS;
+}
+
+int onas_fan_eloop(struct onas_context **ctx) {
+	int ret = 0;
+	short int scan;
+	STATBUF sb;
+	fd_set rfds;
+	char buf[4096];
+	ssize_t bread;
+	struct fanotify_event_metadata *fmd;
+	char fname[1024];
+	int len, check;
+	char err[128];
 
     FD_ZERO(&rfds);
-    FD_SET(onas_fan_fd, &rfds);
+	FD_SET((*ctx)->fan_fd, &rfds);
     do {
         if (reload) sleep(1);
-        ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
+		ret = select((*ctx)->fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while ((ret == -1 && errno == EINTR) || reload);
 
     time_t start = time(NULL) - 30;
-    while (((bread = read(onas_fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
+	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
 
         if (errno == EOVERFLOW) {
             if (time(NULL) - start >= 30) {
-                logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
-                logg("!ScanOnAccess: File too large for fanotify ... recovering and continuing scans...\n");
+				logg("!ClamFanotif: Internal error (failed to read data) ... %s\n", strerror(errno));
+				logg("!ClamFanotif: File too large for fanotify ... recovering and continuing scans...\n");
                 start = time(NULL);
             }
 
@@ -255,12 +246,12 @@ void *onas_fan_th(void *arg)
                 len = readlink(fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
-                    logg("!ScanOnAccess: Internal error (readlink() failed)\n");
-                    return NULL;
+					logg("!ClamFanotif: Internal error (readlink() failed)\n");
+					return 2;
                 }
                 fname[len] = 0;
 
-                if ((check = onas_fan_checkowner(fmd->pid, tharg->opts))) {
+				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->opts))) {
                     scan = 0;
 /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
@@ -268,39 +259,42 @@ void *onas_fan_th(void *arg)
 #else
                     if (check != CHK_SELF) {
 #endif
-                    logg("*ScanOnAccess: %s skipped (excluded UID)\n", fname);
+							logg("*ClamFanotif: %s skipped (excluded UID)\n", fname);
                 }
             }
 
-            if (sizelimit) {
-                if (FSTAT(fmd->fd, &sb) != 0 || sb.st_size > sizelimit) {
+					if((*ctx)->sizelimit) {
+						if(FSTAT(fmd->fd, &sb) != 0 || sb.st_size > (*ctx)->sizelimit) {
                     scan = 0;
-                    /* logg("*ScanOnAccess: %s skipped (size > %d)\n", fname, sizelimit); */
+							/* logg("*ClamFanotif: %s skipped (size > %d)\n", fname, sizelimit); */
                 }
             }
 
-            if (onas_fan_scanfile(onas_fan_fd, fname, fmd, scan, extinfo, tharg) == -1) {
+                                        if (FSTAT(fmd->fd, &sb) != 0 && onas_fan_scanfile(fname, fmd,
+                                                    sb, scan, ctx) == -1) {
                 close(fmd->fd);
-                return NULL;
+						return 2;
             }
 
             if (close(fmd->fd) == -1) {
-                printf("!ScanOnAccess: Internal error (close(%d) failed)\n", fmd->fd);
-                close(fmd->fd);
-                return NULL;
+						printf("!ClamFanotif: Internal error (close(%d) failed)\n", fmd->fd);
+						return 2;
             }
         }
         fmd = FAN_EVENT_NEXT(fmd, bread);
     }
     do {
         if (reload) sleep(1);
-        ret = select(onas_fan_fd + 1, &rfds, NULL, NULL, NULL);
+				ret = select((*ctx)->fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while ((ret == -1 && errno == EINTR) || reload);
 }
 
-if (bread < 0)
-    logg("!ScanOnAccess: Internal error (failed to read data) ... %s\n", strerror(errno));
+		if(bread < 0) {
+			logg("!ClamFanotif: Internal error (failed to read data) ... %s\n", strerror(errno));
+                        return 2;
+                }
 
-return NULL;
+
+	return ret;
 }
 #endif

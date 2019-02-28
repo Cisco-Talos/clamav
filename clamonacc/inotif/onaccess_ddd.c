@@ -39,6 +39,8 @@
 #include <sys/fanotify.h>
 #include <sys/inotify.h>
 
+#include "clamav.h"
+
 #include "../fanotif/onaccess_fan.h"
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
@@ -76,6 +78,7 @@ static struct onas_ht *ddd_ht;
 static char **wdlt;
 static uint32_t wdlt_len;
 static int onas_in_fd;
+extern pthread_t ddd_pid;
 
 static int onas_ddd_init_ht(uint32_t ht_size)
 {
@@ -290,8 +293,35 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
     return CL_SUCCESS;
 }
 
-void *onas_ddd_th(void *arg)
-{
+cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx) {
+
+	pthread_attr_t ddd_attr;
+	int32_t thread_started = 1;
+
+	if (!ctx || !*ctx) {
+		logg("!ClamInotif: unable to start clamonacc. (bad context)\n");
+		return CL_EARG;
+	}
+
+	if ((*ctx)->ddd_enabled) {
+		do {
+			if(pthread_attr_init(&ddd_attr)) break;
+			pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
+			thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, *ctx);
+		} while(0);
+
+	}
+
+	if (0 != thread_started) {
+		/* Failed to create thread */
+		logg("!ClamInotif: Unable to start dynamic directory determination ... \n");
+		return CL_ECREAT;
+	}
+
+	return CL_SUCCESS;
+}
+
+void *onas_ddd_th(void *arg) {
     struct ddd_thrarg *tharg = (struct ddd_thrarg *)arg;
     sigset_t sigset;
     struct sigaction act;
@@ -323,13 +353,13 @@ void *onas_ddd_th(void *arg)
 
     onas_in_fd = inotify_init1(IN_NONBLOCK);
     if (onas_in_fd == -1) {
-        logg("!ScanOnAccess: Could not init inotify.");
+		logg("!ClamInotif: Could not init inotify.");
         return NULL;
     }
 
     ret = onas_ddd_init(0, ONAS_DEFAULT_HT_SIZE);
     if (ret) {
-        logg("!ScanOnAccess: Failed to initialize 3D. \n");
+		logg("!ClamInotif: Failed to initialize 3D. \n");
         return NULL;
     }
 
@@ -337,23 +367,23 @@ void *onas_ddd_th(void *arg)
     if ((pt = optget(tharg->opts, "OnAccessIncludePath"))->enabled) {
         while (pt) {
             if (!strcmp(pt->strarg, "/")) {
-                logg("!ScanOnAccess: Not including path '%s' while DDD is enabled\n", pt->strarg);
-                logg("!ScanOnAccess: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+				logg("!ClamInotif: Not including path '%s' while DDD is enabled\n", pt->strarg);
+				logg("!ClamInotif: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
                 pt = (struct optstruct *)pt->nextarg;
                 continue;
             }
             if (onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
                 if (onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
-                    logg("!ScanOnAccess: Can't include path '%s'\n", pt->strarg);
+					logg("!ClamInotif: Can't include path '%s'\n", pt->strarg);
                     return NULL;
                 } else
-                    logg("ScanOnAccess: Protecting directory '%s' (and all sub-directories)\n", pt->strarg);
+					logg("ClamInotif: Protecting directory '%s' (and all sub-directories)\n", pt->strarg);
             }
 
             pt = (struct optstruct *)pt->nextarg;
         }
     } else {
-        logg("!ScanOnAccess: Please specify at least one path with OnAccessIncludePath\n");
+		logg("!ClamInotif: Please specify at least one path with OnAccessIncludePath\n");
         return NULL;
     }
 
@@ -363,10 +393,10 @@ void *onas_ddd_th(void *arg)
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
                 if (onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
-                    logg("!ScanOnAccess: Can't exclude path '%s'\n", pt->strarg);
+					logg("!ClamInotif: Can't exclude path '%s'\n", pt->strarg);
                     return NULL;
                 } else
-                    logg("ScanOnAccess: Excluding  directory '%s' (and all sub-directories)\n", pt->strarg);
+					logg("ClamInotif: Excluding  directory '%s' (and all sub-directories)\n", pt->strarg);
             }
 
             pt = (struct optstruct *)pt->nextarg;
@@ -379,9 +409,9 @@ void *onas_ddd_th(void *arg)
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
                 if (onas_ddd_watch(pt->strarg, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask)) {
-                    logg("!ScanOnAccess: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
+					logg("!ClamInotif: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
                     if (errno == EINVAL && optget(tharg->opts, "OnAccessPrevention")->enabled) {
-                        logg("!ScanOnAccess: When using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+						logg("!ClamInotif: When using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
 
                         kill(getpid(), SIGTERM);
                     }
@@ -395,7 +425,7 @@ void *onas_ddd_th(void *arg)
     /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
 	if(optget(tharg->opts, "OnAccessExtraScanning")->enabled) {
-		logg("ScanOnAccess: Extra scanning and notifications enabled.\n");
+		logg("ClamInotif: Extra scanning and notifications enabled.\n");
 }
 #endif
 
@@ -459,7 +489,7 @@ static void onas_ddd_handle_in_delete(struct ddd_thrarg *tharg,
     if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
     if (!(event->mask & IN_ISDIR)) return;
 
-    logg("*ddd: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	logg("*ClamInotif: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
     onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
     onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
@@ -474,7 +504,7 @@ static void onas_ddd_handle_in_moved_from(struct ddd_thrarg *tharg,
     if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
     if (!(event->mask & IN_ISDIR)) return;
 
-    logg("*ddd: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	logg("*ClamInotif: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
     onas_ddd_unwatch(child_path, tharg->fan_fd, onas_in_fd);
     onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
@@ -494,7 +524,7 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
 
 		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
-			logg("*ddd: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			logg("*ClamInotif: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
 			onas_ht_add_hierarchy(ddd_ht, child_path);
 			onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
 
@@ -507,7 +537,7 @@ static void onas_ddd_handle_in_create(struct ddd_thrarg *tharg,
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
 
-        logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
         onas_ht_add_hierarchy(ddd_ht, child_path);
         onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
     }
@@ -527,7 +557,7 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
 			onas_ddd_handle_extra_scanning(tharg, child_path, ONAS_SCTH_ISFILE);
 
 		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
-			logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
 			onas_ht_add_hierarchy(ddd_ht, child_path);
 			onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
 
@@ -540,7 +570,7 @@ static void onas_ddd_handle_in_moved_to(struct ddd_thrarg *tharg,
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
 
-        logg("*ddd: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
         onas_ht_add_hierarchy(ddd_ht, child_path);
         onas_ddd_watch(child_path, tharg->fan_fd, tharg->fan_mask, onas_in_fd, in_mask);
     }
@@ -576,7 +606,7 @@ static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char 
 
     if (0 != thread_started) {
         /* Failed to create thread. Free anything we may have allocated. */
-        logg("!ScanOnAccess: Unable to kick off extra scanning.\n");
+		logg("!ClamInotif: Unable to kick off extra scanning.\n");
         if (NULL != scth_tharg) {
             if (NULL != scth_tharg->pathname) {
                 free(scth_tharg->pathname);
@@ -594,9 +624,8 @@ static void onas_ddd_handle_extra_scanning(struct ddd_thrarg *tharg, const char 
     return;
 }
 
-static void onas_ddd_exit(int sig)
-{
-    logg("*ScanOnAccess: onas_ddd_exit(), signal %d\n", sig);
+static void onas_ddd_exit(int sig) {
+	logg("*ClamInotif: onas_ddd_exit(), signal %d\n", sig);
 
     close(onas_in_fd);
 
@@ -604,6 +633,6 @@ static void onas_ddd_exit(int sig)
     free(wdlt);
 
     pthread_exit(NULL);
-    logg("ScanOnAccess: stopped\n");
+	logg("ClamInotif: stopped\n");
 }
 #endif

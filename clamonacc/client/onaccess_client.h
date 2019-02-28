@@ -23,6 +23,7 @@
 #define __ONAS_CLIENT_H
 
 #include "shared/optparser.h"
+#include "../clamonacc.h"
 
 enum {
     CONT,
@@ -33,8 +34,9 @@ enum {
     MAX_SCANTYPE = ALLMATCH
 };
 
-int client(const struct optstruct *opts, int *infected, int *err);
-int get_clamd_version(const struct optstruct *opts);
-int reload_clamd_database(const struct optstruct *opts);
+
+int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err);
+int onas_get_clamd_version(struct onas_context **ctx);
+cl_error_t onas_setup_client(struct onas_context **ctx);
 
 #endif
