@@ -361,6 +361,12 @@
 /* Define to 1 if you have the `strlcpy' function. */
 /* #undef HAVE_STRLCPY */
 
+/* Define to 1 if you have the `strndup' function. */
+/* #undef HAVE_STRNDUP */
+
+/* Define to 1 if you have the `strnstr' function. */
+/* #undef HAVE_STRNSTR */
+
 /* Define to 1 if sysconf(_SC_PAGESIZE) is available */
 /* #undef HAVE_SYSCONF_SC_PAGESIZE */
 

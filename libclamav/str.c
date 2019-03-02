@@ -496,6 +496,48 @@ char *cli_strndup(const char *s, size_t n)
 }
 #endif
 
+#if !defined(HAVE_STRNSTR) || defined(HAVE_STRNI)
+/*
+ * @brief Find the first occurrence of find in s.
+ *
+ * The search is limited to the first slen characters of s.
+ *
+ * Copyright (c) 2001 Mike Barcroft <mike@FreeBSD.org>
+ * Copyright (c) 1990, 1993
+ * The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
+ *
+ * Copyright (c) 1990 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * @param s      haystack
+ * @param find   needle
+ * @param slen   haystack length
+ * @return char* Address of the needle, if found, else NULL.
+ */
+char *cli_strnstr(const char *s, const char *find, size_t slen)
+{
+    char c, sc;
+    size_t len;
+
+    if ((c = *find++) != '\0') {
+        len = strlen(find);
+        do {
+            do {
+                if (slen-- < 1 || (sc = *s++) == '\0')
+                    return (NULL);
+            } while (sc != c);
+            if (len > slen)
+                return (NULL);
+        } while (strncmp(s, find, len) != 0);
+        s--;
+    }
+    return ((char *)s);
+}
+#endif
+
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
 {
 	size_t tokens_found, i;

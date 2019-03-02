@@ -751,6 +751,15 @@ int cli_writen(int fd, const void *buff, unsigned int count);
 const char *cli_gettmpdir(void);
 
 /**
+ * @brief Sanitize a relative path, so it cannot have a negative depth.
+ *
+ * Caller is responsible for freeing the filename.
+ *
+ * @return char* filename or NULL.
+ */
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len);
+
+/**
  * @brief Generate tempfile filename (no path) with a random MD5 hash.
  *
  * Caller is responsible for freeing the filename.

@@ -449,9 +449,9 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx* ctx)
                 }
             } else {
                 /*
-                * Extract the file...
-                */
-                extract_fullpath = cli_gentemp_with_prefix(extract_dir, metadata.filename);
+                 * Extract the file...
+                 */
+                extract_fullpath = cli_gentemp(extract_dir);
                 if (NULL == extract_fullpath) {
                     cli_dbgmsg("RAR: Memory error allocating filename for extracted file.");
                     status = CL_EMEM;

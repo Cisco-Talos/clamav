@@ -116,6 +116,7 @@ CLAMAV_PRIVATE {
     cli_memstr;
     cli_strdup;
     cli_strndup;
+    cli_strnstr;
     cli_realloc;
     cli_ctime;
     tableCreate;
@@ -257,6 +258,7 @@ CLAMAV_PRIVATE {
     cl_get_pkey_file;
     cl_base64_decode;
     cl_base64_encode;
+    cli_sanitize_filepath;
   local:
     *;
 };

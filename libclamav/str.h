@@ -52,6 +52,12 @@ char *cli_strndup(const char *s, size_t n);
 size_t cli_strnlen(const char *s, size_t n);
 #endif
 
+#if defined(HAVE_STRNSTR) && !defined(HAVE_STRNI)
+#define cli_strnstr strnstr
+#else
+char *cli_strnstr(const char *s, const char *find, size_t slen);
+#endif
+
 #include <stdio.h>
 #define cli_nocase(val) tolower(val)
 #define cli_nocasei(val) toupper(val)
