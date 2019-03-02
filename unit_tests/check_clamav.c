@@ -23,6 +23,7 @@
 #include "../libclamav/version.h"
 #include "../libclamav/dsig.h"
 #include "../libclamav/fpu.h"
+#include "../platform.h"
 #include "checks.h"
 
 static int fpu_words = FPU_ENDIAN_INITME;
@@ -882,11 +883,107 @@ START_TEST(test_sha256)
 }
 END_TEST
 
+START_TEST(test_sanitize_path)
+{
+    char *sanitized         = NULL;
+    const char *unsanitized = NULL;
+
+    unsanitized = "";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL != sanitized, "sanitize_path: Empty path test failed");
+
+    unsanitized = NULL;
+    sanitized   = cli_sanitize_filepath(unsanitized, 0);
+    fail_if(NULL != sanitized, "sanitize_path: NULL path #1 test failed");
+
+    unsanitized = NULL;
+    sanitized   = cli_sanitize_filepath(unsanitized, 50);
+    fail_if(NULL != sanitized, "sanitize_path: NULL path #2 test failed");
+
+    unsanitized = "badlen";
+    sanitized   = cli_sanitize_filepath(unsanitized, 0);
+    fail_if(NULL != sanitized, "sanitize_path: Zero/bad path length test failed");
+
+    unsanitized = ".." PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL");
+
+    unsanitized = "." PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL (2)");
+
+    unsanitized = PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL (3)");
+
+    unsanitized = ".." PATHSEP "relative_bad_1";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative_bad_1"), "sanitize_path: bad relative path test #1 failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP ".." PATHSEP "good";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "good"), "sanitize_path: good relative path test failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP ".." PATHSEP ".." PATHSEP "bad_2";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_2"), "sanitize_path: bad relative path test failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP "." PATHSEP ".." PATHSEP ".." PATHSEP "bad_current";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_current"), "sanitize_path: bad relative current path test failed");
+    free(sanitized);
+
+    unsanitized = "relative/../../bad_win_posix_path";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative/../bad_win_posix_path"), "sanitize_path: bad relative win posix path test failed");
+    free(sanitized);
+
+    unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP ".." PATHSEP "bad";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "bad"), "sanitize_path: bad absolute path test failed");
+    free(sanitized);
+
+    unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP "good";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "good"), "sanitize_path: good absolute path test failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP "normal";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP "normal"), "sanitize_path: relative normal path test failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP PATHSEP "doublesep";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP "doublesep"), "sanitize_path: relative double sep path test failed");
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP "shortname" PATHSEP "1";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    fail_if(NULL == sanitized);
+    fail_unless(!strcmp(sanitized, "relative" PATHSEP "shortname" PATHSEP "1"), "sanitize_path: relative short name path test failed");
+    free(sanitized);
+}
+END_TEST
+
 static Suite *test_cli_suite(void)
 {
-    Suite *s             = suite_create("cli");
-    TCase *tc_cli_others = tcase_create("byteorder_macros");
-    TCase *tc_cli_dsig   = tcase_create("digital signatures");
+    Suite *s               = suite_create("cli");
+    TCase *tc_cli_others   = tcase_create("byteorder_macros");
+    TCase *tc_cli_dsig     = tcase_create("digital signatures");
+    TCase *tc_cli_assorted = tcase_create("assorted functions");
 
     suite_add_tcase(s, tc_cli_others);
     tcase_add_checked_fixture(tc_cli_others, data_setup, data_teardown);
@@ -897,6 +994,9 @@ static Suite *test_cli_suite(void)
     suite_add_tcase(s, tc_cli_dsig);
     tcase_add_loop_test(tc_cli_dsig, test_cli_dsig, 0, dsig_tests_cnt);
     tcase_add_test(tc_cli_dsig, test_sha256);
+
+    suite_add_tcase(s, tc_cli_assorted);
+    tcase_add_test(tc_cli_assorted, test_sanitize_path);
 
     return s;
 }

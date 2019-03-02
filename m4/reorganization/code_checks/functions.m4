@@ -5,6 +5,7 @@ AC_SEARCH_LIBS([gethostent],[nsl], [(LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CL
 AC_CHECK_FUNCS_ONCE([poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp mallinfo madvise getnameinfo])
 AC_CHECK_FUNCS([strndup])
 AC_CHECK_FUNCS([strnlen])
+AC_CHECK_FUNCS([strnstr])
 AC_FUNC_FSEEKO
 
 dnl Check if anon maps are available, check if we can determine the page size
