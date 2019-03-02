@@ -20545,6 +20545,17 @@ _ACEOF
 fi
 done
 
+for ac_func in strnstr
+do :
+  ac_fn_c_check_func "$LINENO" "strnstr" "ac_cv_func_strnstr"
+if test "x$ac_cv_func_strnstr" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRNSTR 1
+_ACEOF
+
+fi
+done
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for _LARGEFILE_SOURCE value needed for large files" >&5
 $as_echo_n "checking for _LARGEFILE_SOURCE value needed for large files... " >&6; }
 if ${ac_cv_sys_largefile_source+:} false; then :
