@@ -55,6 +55,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "platform.h"
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
@@ -852,16 +853,132 @@ unsigned int cli_rndnum(unsigned int max)
     return 1 + (unsigned int)(max * (rand() / (1.0 + RAND_MAX)));
 }
 
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
+{
+    uint32_t depth           = 0;
+    size_t index             = 0;
+    size_t sanitized_index   = 0;
+    char *sanitized_filepath = NULL;
+
+    if ((NULL == filepath) || (0 == filepath_len) || (MAX_PATH < filepath_len)) {
+        goto done;
+    }
+
+    sanitized_filepath = cli_calloc(filepath_len + 1, sizeof(unsigned char));
+    if (NULL == sanitized_filepath) {
+        cli_dbgmsg("cli_sanitize_filepath: out of memory\n");
+        goto done;
+    }
+
+    while (index < filepath_len) {
+        char *next_pathsep = NULL;
+
+        if (0 == strncmp(filepath + index, PATHSEP, strlen(PATHSEP))) {
+            /*
+             * Is "/" (or "\\" on Windows)
+             */
+            /* Skip leading pathsep in absolute path, or extra pathsep) */
+            index += strlen(PATHSEP);
+            continue;
+        } else if (0 == strncmp(filepath + index, "." PATHSEP, strlen("." PATHSEP))) {
+            /*
+             * Is "./" (or ".\\" on Windows)
+             */
+            /* Current directory indicator is meaningless and should not add to the depth. Skip it. */
+            index += strlen("." PATHSEP);
+            continue;
+        } else if (0 == strncmp(filepath + index, ".." PATHSEP, strlen(".." PATHSEP))) {
+            /*
+             * Is "../" (or "..\\" on Windows)
+             */
+            if (depth == 0) {
+                /* Relative path would traverse parent directory. Skip it. */
+                index += strlen(".." PATHSEP);
+                continue;
+            } else {
+                /* Relative path is safe. Allow it. */
+                strncpy(sanitized_filepath + sanitized_index, filepath + index, strlen(".." PATHSEP));
+                sanitized_index += strlen(".." PATHSEP);
+                index += strlen(".." PATHSEP);
+                depth--;
+            }
+#ifdef _WIN32
+        /*
+         * Windows' POSIX style API's accept both "/" and "\\" style path separators.
+         * The following checks using POSIX style path separators on Windows.
+         */
+        } else if (0 == strncmp(filepath + index, "/", strlen("/"))) {
+            /*
+             * Is "/".
+             */
+            /* Skip leading pathsep in absolute path, or extra pathsep) */
+            index += strlen("/");
+            continue;
+        } else if (0 == strncmp(filepath + index, "./", strlen("./"))) {
+            /*
+             * Is "./"
+             */
+            /* Current directory indicator is meaningless and should not add to the depth. Skip it. */
+            index += strlen("./");
+            continue;
+        } else if (0 == strncmp(filepath + index, "../", strlen("../"))) {
+            /*
+             * Is "../"
+             */
+            if (depth == 0) {
+                /* Relative path would traverse parent directory. Skip it. */
+                index += strlen("../");
+                continue;
+            } else {
+                /* Relative path is safe. Allow it. */
+                strncpy(sanitized_filepath + sanitized_index, filepath + index, strlen("../"));
+                sanitized_index += strlen("../");
+                index += strlen("../");
+                depth--;
+            }
+#endif
+        } else {
+            /*
+             * Is not "/", "./", or "../".
+             */
+            /* Find the next path separator. */
+            next_pathsep = cli_strnstr(filepath + index, PATHSEP, filepath_len - index);
+            if (NULL == next_pathsep) {
+                /* No more path separators, copy the rest (filename) into the sanitized path */
+                strncpy(sanitized_filepath + sanitized_index, filepath + index, filepath_len - index);
+                break;
+            }
+            next_pathsep += strlen(PATHSEP); /* Include the path separator in the copy */
+
+            /* Copy next directory name into the sanitized path */
+            strncpy(sanitized_filepath + sanitized_index, filepath + index, next_pathsep - (filepath + index));
+            sanitized_index += next_pathsep - (filepath + index);
+            index += next_pathsep - (filepath + index);
+            depth++;
+        }
+    }
+    
+done:
+    if ((NULL != sanitized_filepath) && (0 == strlen(sanitized_filepath))) {
+        free(sanitized_filepath);
+        sanitized_filepath = NULL;
+    }
+
+    return sanitized_filepath;
+}
+
 char *cli_genfname(const char *prefix)
 {
-    char *fname;
+    char *sanitized_prefix = NULL;
+    char *fname            = NULL;
     unsigned char salt[16 + 32];
     char *tmp;
     int i;
     size_t len;
 
     if (prefix && (strlen(prefix) > 0)) {
-        len = strlen(prefix) + 1 + 5 + 1; /* {prefix}.{5}\0 */
+        sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix));
+        len              = strlen(sanitized_prefix) + 1 + 5 + 1; /* {prefix}.{5}\0 */
     } else {
         len = 6 + 1 + 48 + 4 + 1; /* clamav-{48}.tmp\0 */
     }
@@ -893,9 +1010,10 @@ char *cli_genfname(const char *prefix)
         return NULL;
     }
 
-    if (prefix && (strlen(prefix) > 0)) {
+    if (sanitized_prefix && (strlen(sanitized_prefix) > 0)) {
         fname[5] = '\0';
-        snprintf(fname, len, "%s.%s", prefix, tmp);
+        snprintf(fname, len, "%s.%s", sanitized_prefix, tmp);
+        free(sanitized_prefix);
     } else {
         snprintf(fname, len, "clamav-%s.tmp", tmp);
     }

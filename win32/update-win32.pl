@@ -8,7 +8,7 @@ use File::Temp 'tempfile';
 
 
 #########################################################
-# HACK HERE  HACK HERE  HACK HERE  HACK HERE  HACK HERE # 
+# HACK HERE  HACK HERE  HACK HERE  HACK HERE  HACK HERE #
 #########################################################
 
 use constant DEBUG => 0;
@@ -135,6 +135,8 @@ my %CONF = (
     'HAVE_STRING_H' => '1',
     'HAVE_STRLCAT' => -1,
     'HAVE_STRLCPY' => -1,
+    'HAVE_STRNDUP' => -1,
+    'HAVE_STRNSTR' => -1,
     'HAVE_SYSCONF_SC_PAGESIZE' => -1,
     'HAVE_SYSTEM_TOMMATH' => -1,
     'HAVE_SYS_DL_H' => -1,
@@ -257,7 +259,7 @@ my @PROJECTS = (
     );
 
 ###########################################################
-# STOP HACKING HERE  STOP HACKING HERE  STOP HACKING HERE # 
+# STOP HACKING HERE  STOP HACKING HERE  STOP HACKING HERE #
 ###########################################################
 
 
