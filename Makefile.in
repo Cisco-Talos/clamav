@@ -126,10 +126,9 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/clamsubmit.1.in \
 	$(srcdir)/clamav-types.h.in COPYING config/ar-lib \
 	config/compile config/config.guess config/config.rpath \
-	config/config.sub config/depcomp config/install-sh \
-	config/missing config/ylwrap config/ltmain.sh \
-	$(top_srcdir)/config/ar-lib $(top_srcdir)/config/compile \
-	$(top_srcdir)/config/config.guess \
+	config/config.sub config/install-sh config/missing \
+	config/ylwrap config/ltmain.sh $(top_srcdir)/config/ar-lib \
+	$(top_srcdir)/config/compile $(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.rpath \
 	$(top_srcdir)/config/config.sub \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \
@@ -582,7 +581,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
