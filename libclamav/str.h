@@ -32,7 +32,7 @@
 #include "clamav.h"
 #include "clamav.h"
 
-#define SIZE_T_CHARLEN ((sizeof(size_t) * CHAR_BIT + 2) / 3 + 1)
+#define SIZE_T_CHARLEN ( (sizeof(size_t) * CHAR_BIT + 2) / 3 + 1 )
 
 #ifdef HAVE_STRCASESTR
 #define cli_strcasestr strcasestr
@@ -61,25 +61,25 @@ int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
 int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len);
 uint16_t *cli_hex2ui(const char *hex);
-int cli_hex2str_to(const char *hex, char *ptr, size_t len);
+int  cli_hex2str_to(const char *hex, char *ptr, size_t len);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);
 int cli_xtoi(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
 char *cli_utf16toascii(const char *str, unsigned int length);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
-const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle, unsigned int ns);
+const char *cli_memstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 char *cli_strrcpy(char *dest, const char *source);
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens, int token_skip);
-long cli_strntol(const char *nptr, size_t n, char **endptr, register int base);
-unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr, register int base);
+long cli_strntol(const char* nptr, size_t n, char** endptr, register int base);
+unsigned long cli_strntoul(const char* nptr, size_t n, char** endptr, register int base);
 cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, long *result);
 cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size, int fail_at_nondigit, int base, unsigned long *result);
 int cli_isnumber(const char *str);
 char *cli_unescape(const char *str);
 struct text_buffer;
-int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
+int  cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
 int cli_hexnibbles(char *str, int len);
 
 typedef enum {
