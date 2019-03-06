@@ -134,14 +134,14 @@ static int xrefCheck(const char *xref, const char *eof)
     if (xref + 4 >= eof)
         return -1;
 
-    if (!memcmp(xref, "xref", 4)) {
+    if (!memcmp(xref, "xref", strlen("xref"))) {
         cli_dbgmsg("cli_pdf: found xref\n");
         return 0;
     }
 
     /* could be xref stream */
     for (q=xref; q+5 < eof; q++) {
-        if (!memcmp(q,"/XRef",4)) {
+        if (!memcmp(q,"/XRef", strlen("/XRef"))) {
             cli_dbgmsg("cli_pdf: found /XRef\n");
             return 0;
         }
@@ -163,10 +163,10 @@ static int xrefCheck(const char *xref, const char *eof)
 
 /**
  * @brief   Searching BACKwards, find the next character that is not a whitespace.
- * 
+ *
  * @param q         Index to start from (at the end of the search space)
- * @param start     Beginning of the search space. 
- * 
+ * @param start     Beginning of the search space.
+ *
  * @return const char*  Address of the final non-whitespace character OR the same address as the start.
  */
 static const char *findNextNonWSBack(const char *q, const char *start)
@@ -179,10 +179,10 @@ static const char *findNextNonWSBack(const char *q, const char *start)
 
 /**
  * @brief   Searching FORwards, find the next character that is not a whitespace.
- * 
+ *
  * @param q         Index to start from (at the end of the search space)
- * @param start     Beginning of the search space. 
- * 
+ * @param start     Beginning of the search space.
+ *
  * @return const char*  Address of the final non-whitespace character OR the same address as the start.
  */
 static const char *findNextNonWS(const char *q, const char *end)
@@ -195,100 +195,116 @@ static const char *findNextNonWS(const char *q, const char *end)
 
 /**
  * @brief   Find bounds of stream.
- * 
+ *
  * PDF streams are prefixed with "stream" and suffixed with "endstream".
  * Return value indicates success or failure.
- * 
+ *
  * @param start             start address of search space.
- * @param bytesleft         size of search space for "stream"
- * @param bytesleft2        size of search space for "endstream"
+ * @param size              size of search space
  * @param[out] stream       output param, address of start of stream data
- * @param[out] endstream    output param, address of end of stream data
+ * @param[out] stream_size  output param, size of stream data
  * @param newline_hack      hack to support newlines that are \r\n, and not just \n or just \r.
- * 
- * @return int  1 if stream bounds were found. 
- * @return int  0 if stream bounds could not be found. 
+ *
+ * @return cl_error_t       CL_SUCCESS if stream bounds were found.
+ * @return cl_error_t       CL_BREAK if stream bounds could not be found.
+ * @return cl_error_t       CL_EFORMAT if stream start was found, but not end. (truncated)
+ * @return cl_error_t       CL_EARG if invalid args were provided.
  */
-static int find_stream_bounds(
-    const char *start, 
-    off_t bytesleft, 
-    off_t bytesleft2, 
-    off_t *stream, 
-    off_t *endstream, 
+static cl_error_t find_stream_bounds(
+    const char *start,
+    size_t size,
+    const char **stream,
+    size_t *stream_size,
     int newline_hack)
 {
-    const char *q2, *q;
+    cl_error_t status = CL_BREAK;
 
-    /* Begin by finding the "stream" string that prefixes stream data. */
-    if ((q2 = cli_memstr(start, bytesleft, "stream", 6))) {
-        q2 += 6;
-        bytesleft -= q2 - start;
-        if (bytesleft < 0)
-            return 0;
+    const char *idx;
+    const char *stream_begin;
+    const char *endstream_begin;
+    size_t bytesleft = size;
 
-        /* Skip any new line charcters. */
-        if (bytesleft >= 2 && q2[0] == '\xd' && q2[1] == '\xa') {
-            q2 += 2;
-            if (newline_hack && (bytesleft > 2) && q2[0] == '\xa')
-                q2++;
-        } else if (bytesleft && q2[0] == '\xa') {
-            q2++;
-        }
-
-        *stream = q2 - start;
-
-        bytesleft2 -= q2 - start;
-        if (bytesleft2 <= 0)
-            return 0;
-
-        /* Now find the "endstream" string that suffixes stream data */
-        q = q2;
-        q2 = cli_memstr(q, bytesleft2, "endstream", 9);
-        if (!q2) {
-            /* Couldn't find "endstream" */
-            return 0;
-        }
-
-        *endstream = q2 - start;
-
-        /* Double-check that endstream >= stream */
-        if (*endstream < *stream)
-            *endstream = *stream;
-
-        return 1;
+    if ((NULL == start) || (0 == bytesleft) || (NULL == stream) || (NULL == stream_size)) {
+        status = CL_EARG;
+        return status;
     }
 
-    return 0;
+    *stream = NULL;
+    *stream_size = 0;
+
+    /* Begin by finding the "stream" string that prefixes stream data. */
+    if ((stream_begin = cli_memstr(start, bytesleft, "stream", strlen("stream")))) {
+        idx = stream_begin + strlen("stream");
+        bytesleft -= idx - start;
+        if (bytesleft < 0)
+            goto done;
+
+        /* Skip any new line charcters. */
+        if (bytesleft >= 2 && idx[0] == '\xd' && idx[1] == '\xa') {
+            idx += 2;
+            if (newline_hack && (bytesleft > 2) && idx[0] == '\xa')
+                idx++;
+        } else if (bytesleft && idx[0] == '\xa') {
+            idx++;
+        }
+
+        /* Pass back start of the stream data. */
+        *stream = idx;
+
+        bytesleft = size - (idx - start);
+        if (bytesleft <= 0)
+            goto done;
+
+        /* Now find the "endstream" string that suffixes stream data. */
+        endstream_begin = cli_memstr(idx, bytesleft, "endstream", strlen("endstream"));
+        if (!endstream_begin) {
+            /* Couldn't find "endstream", but that's ok --
+             * -- we'll just count the rest of the provided buffer. */
+            cli_dbgmsg("find_stream_bounds: Truncated stream found!\n");
+            endstream_begin = start + size;
+            status = CL_EFORMAT;
+        }
+
+        /* Pass back end of the stream data, as offset from start. */
+        *stream_size = endstream_begin - *stream;
+
+        if (CL_EFORMAT != status)
+            status = CL_SUCCESS;
+    }
+
+done:
+
+    return status;
 }
 
 /**
- * @brief Find the next *indirect* object in an object stream, adds it to our list of 
+ * @brief Find the next *indirect* object in an object stream, adds it to our list of
  *        objects, and increments nobj.
- * 
+ *
  * Indirect objects in a stream DON'T begin with "obj" and end with "endobj".
  * Instead, they have an obj ID and an offset from the first object to point you
  * right at them.
- * 
+ *
  * If found, objstm->current will be updated to the next obj id.
- * 
- * All objects in an object stream are indirect and thus do not begin or start 
- * with "obj" or "endobj".  Instead, the object stream takes the following 
+ *
+ * All objects in an object stream are indirect and thus do not begin or start
+ * with "obj" or "endobj".  Instead, the object stream takes the following
  * format.
- * 
+ *
  *      <dictionary describing stream> objstm content endobjstm
- * 
+ *
  * where content looks something like the following:
- * 
+ *
  *      15 0 16 3 17 46 (ab)<</IDS 8 0 R/JavaScript 27 0 R/URLS 9 0 R>><</Names[(Test)28 0 R]>>
- * 
- * In the above example, the literal string (ab) is indirect object # 15, and 
- * begins at offset 0 of the set of objects.  The next object, # 16 begis at 
- * offset 3 is a dictionary.  The final object is also a dictionary, beginning 
+ *
+ * In the above example, the literal string (ab) is indirect object # 15, and
+ * begins at offset 0 of the set of objects.  The next object, # 16 begis at
+ * offset 3 is a dictionary.  The final object is also a dictionary, beginning
  * at offset 46.
- * 
- * @param pdf   Pdf struct that keeps track of all information found in the PDF. 
+ *
+ * @param pdf   Pdf struct that keeps track of all information found in the PDF.
  * @param objstm
- * 
+ *
  * @return CL_SUCCESS  if success
  * @return CL_EPARSE   if parsing error
  * @return CL_EMEM     if error allocating memory
@@ -298,7 +314,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 {
     cl_error_t status = CL_EPARSE;
     struct pdf_obj *obj = NULL;
-    unsigned long objid = 0, objsize = 0, objoff = 0;
+    unsigned long objid = 0, objoff = 0;
     long temp_long         = 0;
     const char *index = NULL;
     size_t bytes_remaining = 0;
@@ -383,10 +399,10 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     {
         unsigned long next_objid = 0, next_objoff = 0;
 
-        /* 
-         * While we're at it, 
+        /*
+         * While we're at it,
          *   lets record the size as running up to the next object offset.
-         * 
+         *
          * To do so, we will need to parse the next obj pair.
          */
         /* objstm->current_pair points directly to the obj id */
@@ -439,14 +455,14 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         }
 
         obj->size = next_objoff - objoff;
-    } 
-    else 
+    }
+    else
     {
         /*
          * Should be no more objects. We should verify.
-         * 
+         *
          * Either way...
-         *   obj->size should be the rest of the buffer. 
+         *   obj->size should be the rest of the buffer.
          */
         if (objstm->nobjs_found < objstm->n) {
             cli_warnmsg("pdf_findobj_in_objstm: Fewer objects found in object stream than expected!\n");
@@ -480,17 +496,25 @@ done:
 
 /**
  * @brief Find the next *indirect* object.
- * 
- * Indirect objects begin with "obj" and end with "endobj".
- * Identify objects that contain streams.
- * Identify truncated objects. 
- * 
+ *
+ * Indirect objects located outside of an object stream are prefaced with:
+ *      <objid> <genid> obj
+ *
+ * Each of the above are separated by whitespace of some sort.
+ *
+ * Indirect objects are postfaced with:
+ *      endobj
+ *
+ * The specification does not say if whitespace is required before or after "endobj".
+ *
+ * Identify truncated objects.
+ *
  * If found, pdf->offset will be updated to just after the "endobj".
  * If truncated, pdf->offset will == pdf->size.
  * If not found, pdf->offset will not be updated.
- * 
- * @param pdf   Pdf context struct that keeps track of all information found in the PDF. 
- * 
+ *
+ * @param pdf   Pdf context struct that keeps track of all information found in the PDF.
+ *
  * @return CL_SUCCESS  if success
  * @return CL_BREAK    if no more objects
  * @return CL_EPARSE   if parsing error
@@ -499,9 +523,13 @@ done:
 cl_error_t pdf_findobj(struct pdf_struct *pdf)
 {
     cl_error_t status = CL_EPARSE;
-    const char *start, *q, *q2, *q3, *eof;
+    const char *start, *idx, *genid_search_index, *objid_search_index;
+
+    const char *obj_begin = NULL, *obj_end = NULL;
+    const char *endobj_begin = NULL, *endobj_end = NULL;
+
     struct pdf_obj *obj = NULL;
-    off_t bytesleft;
+    size_t bytesleft;
     unsigned long genid, objid;
     long temp_long;
 
@@ -524,101 +552,111 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     start = pdf->map + pdf->offset;
     bytesleft = pdf->size - pdf->offset;
 
-    /* Indirect objects located outside of an object stream are prefaced with "obj"
-     * and suffixed with "endobj".  Find the "obj" preface. */
-    while (bytesleft > 0)
-    {
-        q2 = cli_memstr(start, bytesleft, "obj", 3);
-        if (!q2) {
-            status = CL_BREAK; /* no more objs */
-            goto done;
+    /*
+     * Start by searching for "obj"
+     */
+    idx = start + 1;
+    while (bytesleft > 1 + strlen("obj")) {
+        /* `- 1` accounts for size of white space before obj */
+        idx = cli_memstr(idx, bytesleft - 1, "obj", strlen("obj"));
+        if (NULL == idx) {
+            status = CL_BREAK;
+            goto done; /* No more objs. */
         }
 
-        /* verify that "obj" has a whitespace before it, and is not the end of 
-         * a previous string like... "globj" */
-        q2--;
-        bytesleft -= q2 - start;
+        /* verify that the word has a whitespace before it, and is not the end of
+         * a previous word */
+        idx--;
+        bytesleft = (pdf->size - pdf->offset) - (size_t)(idx - start);
 
-        if (*q2 != 0 && *q2 != 9 && *q2 != 0xa && *q2 != 0xc && *q2 != 0xd && *q2 != 0x20) {
-            /* This instance of the "obj" string appears to be part of another string.
+        if (*idx != 0 && *idx != 9 && *idx != 0xa && *idx != 0xc && *idx != 0xd && *idx != 0x20) {
+            /* This instance of "obj" appears to be part of a longer string.
              * Skip it, and keep searching for an object. */
-            start = q2+4;
-            bytesleft -= 4;
+            idx += 1 + strlen("obj");
+            bytesleft -= 1 + strlen("obj");
             continue;
         }
 
-        break; /* Found it. q2 should point to the whitespace before the "obj" string */
+        /* Found the beginning of the word */
+        obj_begin = idx;
+        obj_end = idx + 1 + strlen("obj");
+
+        break;
     }
 
-    if (bytesleft <= 0) {
-        status = CL_BREAK; /* No "obj" found. */
-        goto done;
+    if ((NULL == obj_begin) || (NULL == obj_end)) {
+        status = CL_BREAK;
+        goto done; /* No more objs. */
     }
-
-    /* "obj" found! */
 
     /* Find the generation id (genid) that appears before the "obj" */
-    q = findNextNonWSBack(q2-1, start);
-    while (q > start && isdigit(*q))
-        q--;
+    genid_search_index = findNextNonWSBack(obj_begin - 1, start);
+    while (genid_search_index > start && isdigit(*genid_search_index))
+        genid_search_index--;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
+    if (CL_SUCCESS != cli_strntol_wrap(genid_search_index, (size_t)((obj_begin) - genid_search_index), 0, 10, &temp_long)) {
         cli_dbgmsg("pdf_findobj: Failed to parse object genid (# objects found: %u)\n", pdf->nobjs);
         /* Failed to parse, probably not a real object.  Skip past the "obj" thing, and continue. */
-        pdf->offset = q2 + 4 - pdf->map;
+        pdf->offset = obj_end - pdf->map;
         status = CL_EPARSE;
         goto done;
     } else if (temp_long < 0) {
         cli_dbgmsg("pdf_findobj: Encountered invalid negative obj genid (%ld).\n", temp_long);
-        pdf->offset = q2 + 4 - pdf->map;
+        pdf->offset = obj_end - pdf->map;
         status      = CL_EPARSE;
         goto done;
     }
     genid = (unsigned long)temp_long;
 
-    /* Find the object id (objid) that appers before the genid */
-    q = findNextNonWSBack(q-1,start);
-    while (q > start && isdigit(*q))
-        q--;
+    /* Find the object id (objid) that appears before the genid */
+    objid_search_index = findNextNonWSBack(genid_search_index - 1, start);
+    while (objid_search_index > start && isdigit(*objid_search_index))
+        objid_search_index--;
 
-    if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
+    if (CL_SUCCESS != cli_strntol_wrap(objid_search_index, (size_t)((genid_search_index) - objid_search_index), 0, 10, &temp_long)) {
         /*
-         * PDFs with multiple revisions will have %%EOF before the end of the file, 
-         * followed by the next revision of the PDF.  If this is the case, we can 
-         * detect it and continue parsing after the %%EOF.
+         * Edge case:
+         *
+         * PDFs with multiple revisions will have %%EOF before the end of the file,
+         * followed by the next revision of the PDF, which will probably be an immediate objid.
+         *
+         * Example:
+         *   %%EOF1 1 obj <blah> endobj
+         *
+         * If this is the case, we can detect it and continue parsing after the %%EOF.
          */
-        if (q - 4 > start) {
-            const char* lastfile = q - 4;
+        if (objid_search_index - strlen("\%\%EO") > start) {
+            const char* lastfile = objid_search_index - strlen("\%\%EO");
             if (0 != strncmp(lastfile, "\%\%EOF", 5)) {
                 /* Nope, wasn't %%EOF */
                 cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
                 /* Skip past the "obj" thing, and continue. */
-                pdf->offset = q2 + 4 - pdf->map;
-                status = CL_EPARSE;
+                pdf->offset = obj_end - pdf->map;
+                status      = CL_EPARSE;
                 goto done;
             }
-            /* Yup, Looks, like the file continues after %%EOF.  
+            /* Yup, Looks, like the file continues after %%EOF.
              * Probably another revision.  Keep parsing... */
-            q++;
-            cli_dbgmsg("pdf_findobj: \%\%EOF detected before end of file, at %zu\n", (size_t)q);
+            objid_search_index++;
+            cli_dbgmsg("pdf_findobj: \%\%EOF detected before end of file, at offset: %zu\n", (size_t)(objid_search_index - pdf->map));
         } else {
             /* Failed parsing at the very beginning */
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
             /* Probably not a real object.  Skip past the "obj" thing, and continue. */
-            pdf->offset = q2 + 4 - pdf->map;
-            status = CL_EPARSE;
+            pdf->offset = obj_end - pdf->map;
+            status      = CL_EPARSE;
             goto done;
         }
         /* Try again, with offset slightly adjusted */
-        if (CL_SUCCESS != cli_strntol_wrap(q, (size_t)(bytesleft + (q2 - q)), 0, 10, &temp_long)) {
+        if (CL_SUCCESS != cli_strntol_wrap(objid_search_index, (size_t)((genid_search_index - 1) - objid_search_index), 0, 10, &temp_long)) {
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
             /* Still failed... Probably not a real object.  Skip past the "obj" thing, and continue. */
-            pdf->offset = q2 + 4 - pdf->map;
-            status = CL_EPARSE;
+            pdf->offset = obj_end - pdf->map;
+            status      = CL_EPARSE;
             goto done;
         } else if (temp_long < 0) {
             cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
-            pdf->offset = q2 + 4 - pdf->map;
+            pdf->offset = obj_end - pdf->map;
             status      = CL_EPARSE;
             goto done;
         }
@@ -626,85 +664,54 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
         cli_dbgmsg("pdf_findobj: There appears to be an additional revision. Continuing to parse...\n");
     } else if (temp_long < 0) {
         cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
-        pdf->offset = q2 + 4 - pdf->map;
+        pdf->offset = obj_end - pdf->map;
         status      = CL_EPARSE;
         goto done;
     }
     objid = (unsigned long)temp_long;
 
-    /*
-     * Ok so we have the objid, genid, and "obj" string.
-     *   Time to store that information and then ...
-     *     ... investigate what kind of object this is.
-     */
     obj->id = (objid << 8) | (genid & 0xff);
-    obj->start = q2+4 - pdf->map; /* obj start begins just after the "obj" string */
+    obj->start = obj_end - pdf->map; /* obj start begins just after the "obj" string */
     obj->flags = 0;
 
-    bytesleft -= 4;
-    eof = pdf->map + pdf->size;
-    q = pdf->map + obj->start;
+    /*
+     * We now have the objid, genid, and object start.
+     * Find the object end ("endobj").
+     */
+    /* `- 1` accounts for size of white space before obj */
+    endobj_begin = cli_memstr(obj_end, pdf->map + pdf->size - obj_end, "endobj", strlen("endobj"));
+    if (NULL == endobj_begin) {
+        /* No end to object.
+         * PDF appears to be malformed or truncated.
+         * Will record the object size as going ot the end of the file.
+         * Will record that the object is truncated.
+         * Will position the pdf offset to the end of the PDF.
+         * The next iteration of this function will find no more objects. */
+        obj->flags |= 1 << OBJ_TRUNCATED;
+        obj->size   = (pdf->map + pdf->size) - obj_end;
+        pdf->offset = pdf->size;
 
-    while (q < eof && bytesleft > 0)
-    {
-        off_t p_stream, p_endstream;
-        q2 = pdf_nextobject(q, bytesleft);
-        if (!q2)
-            q2 = pdf->map + pdf->size; /* No interesting objects found, fast-forward to eof */
-
-        bytesleft -= q2 - q;
-        if (find_stream_bounds(q-1, q2-q, bytesleft + (q2-q), &p_stream, &p_endstream, 1)) {
-            /*
-             * Found obj that contains a stream.
-             */
-            obj->flags |= 1 << OBJ_STREAM;
-            q2 = q-1 + p_endstream + 9;
-            bytesleft -= q2 - q + 1;
-
-            if (bytesleft < 0) {
-                /* ... and the stream is truncated.  Hmm... */
-                obj->flags |= 1 << OBJ_TRUNCATED;
-                pdf->offset = pdf->size;
-
-                status = CL_SUCCESS;
-                goto done; /* Truncated file, no end to obj/stream. 
-                            * The next call to pdf_findobj() will return no more objects. */
-            }
-        } else if ((q3 = cli_memstr(q-1, q2-q+1, "endobj", 6))) {
-            /*
-             * obj found and offset positioned. ideal return case
-             */
-            q2 = q3 + 6;
-            pdf->offset = q2 - pdf->map; /* update the offset to just after the endobj */
-
-            status = CL_SUCCESS;
-            goto done; 
-        } else {
-            q2++;
-            bytesleft--;
-        }
-
-        q = q2;
+        /* Truncated "object" found! */
+        status = CL_SUCCESS;
+        goto done;
     }
+    endobj_end = endobj_begin + strlen("endobj");
 
-    obj->flags |= 1 << OBJ_TRUNCATED;
-    pdf->offset = pdf->size;
+    /* Size of the object goes from "obj" <-> "endobject". */
+    obj->size = endobj_begin - obj_end;
+    pdf->offset = endobj_end - pdf->map;
 
+    /*
+     * Object found!
+     */
     status = CL_SUCCESS; /* truncated file, no end to obj. */
 
 done:
     if (status == CL_SUCCESS) {
-        cli_dbgmsg("pdf_findobj: found %d %d obj @%lld\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + pdf->startoff));
+        cli_dbgmsg("pdf_findobj: found %d %d obj @%lld, size: %zu bytes.\n", obj->id >> 8, obj->id&0xff, (long long)(obj->start + pdf->startoff), obj->size);
     }
     else
     {
-        if(status == CL_BREAK) {
-            cli_dbgmsg("pdf_findobj: No more objects (# objects found: %u)\n", pdf->nobjs);
-        } else if(status == CL_EMEM) {
-            cli_warnmsg("pdf_findobj: Error allocating memory (# objects found: %u)\n", pdf->nobjs);
-        } else {
-            cli_dbgmsg("pdf_findobj: Unexpected status code %d.\n", status);
-        }
         /* Remove the unused obj reference from our list of objects found */
         /* No need to realloc pdf->objs back down.  It won't leak. */
         pdf->objs[pdf->nobjs-1] = NULL;
@@ -713,9 +720,17 @@ done:
         /* Free up the obj struct. */
         if (NULL != obj)
             free(obj);
+
+        if(status == CL_BREAK) {
+            cli_dbgmsg("pdf_findobj: No more objects (# objects found: %u)\n", pdf->nobjs);
+        } else if(status == CL_EMEM) {
+            cli_warnmsg("pdf_findobj: Error allocating memory (# objects found: %u)\n", pdf->nobjs);
+        } else {
+            cli_dbgmsg("pdf_findobj: Unexpected status code %d.\n", status);
+        }
     }
 
-    return status; 
+    return status;
 }
 
 static size_t filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj, int fout, const char *buf, size_t len, size_t *sum)
@@ -836,14 +851,14 @@ struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t o
 
 /**
  * @brief   Find and interpret the "/Length" dictionary key value.
- * 
+ *
  * The value may be:
- *  - a direct object (i.e. just a number) 
+ *  - a direct object (i.e. just a number)
  *  - an indirect object, where the value is somewhere else in the document and we have to look it up.
  *    indirect objects are referenced using an object id (objid), generation id (genid) genid, and the letter 'R'.
- * 
+ *
  * Example dictionary with a single key "/Length" that relies direct object for the value.
- * 
+ *
  *      1 0 obj
  *          << /Length 534
  *              /Filter [ /ASCII85Decode /LZWDecode ]
@@ -857,9 +872,9 @@ struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t o
  *              JD?M$0QP)lKn06l1apKDC@\qJ4B!!(5m+j.7F790m(Vj88l8Q:_CZ(Gm1%X\N1&u!FKHMB~>
  *          endstream
  *      endobj
- * 
+ *
  * Example dictionary with a single key "/Length" that relies on an indirect object for the value.
- * 
+ *
  *      7 0 obj
  *          << /Length 8 0 R >> % An indirect reference to object 8, with generation id 0.
  *          stream
@@ -870,11 +885,11 @@ struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t o
  *              ET
  *          endstream
  *      endobj
- * 
+ *
  *      8 0 obj
  *          77 % The length of the preceding stream
  *      endobj
- * 
+ *
  * @param pdf       Pdf context structure.
  * @param obj       Pdf object context structure.
  * @param start     Pointer start of the dictionary string.
@@ -914,12 +929,12 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     if (!obj_start)
         return 0;
 
-    if (bytes_remaining < obj_start - index) {
+    if (bytes_remaining < (size_t)(obj_start - index)) {
         return 0;
     }
     bytes_remaining -= obj_start - index;
     index = obj_start;
-    
+
     /* Read the value.  This could either be the direct length value,
        or the object id of the indirect object that has the length */
     if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
@@ -931,10 +946,10 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     }
     length = (size_t)temp_long; /* length or maybe object id */
 
-    /* 
-     * Keep parsing, skipping past the first integer that might have been what we wanted. 
-     * If it's an indirect object, we'll find a Generation ID followed by the letter 'R' 
-     * I.e. something like " 0 R" 
+    /*
+     * Keep parsing, skipping past the first integer that might have been what we wanted.
+     * If it's an indirect object, we'll find a Generation ID followed by the letter 'R'
+     * I.e. something like " 0 R"
      */
     while ((bytes_remaining > 0) && isdigit(*index)) {
         index++;
@@ -966,14 +981,14 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
         }
 
         if (index[0] == ' ' && index[1] == 'R') {
-            /* 
-             * Ok so we found a genid and that 'R'.  Which means that first value 
+            /*
+             * Ok so we found a genid and that 'R'.  Which means that first value
              * was actually the objid.
              * We can look up the indirect object using this information.
              */
             unsigned long objid = length;
             const char* indirect_obj_start = NULL;
-            
+
             cli_dbgmsg("find_length: length is in indirect object %lu %lu\n", objid, genid);
 
             obj = find_obj(pdf, obj, (length << 8) | (genid&0xff));
@@ -984,15 +999,15 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 
             indirect_obj_start = pdf->map + obj->start;
             bytes_remaining = pdf->size - obj->start;
-            
+
             /* Ok so we found the indirect object, lets read the value. */
             index = pdf_nextobject(indirect_obj_start, bytes_remaining);
             if (!index) {
                 cli_dbgmsg("find_length: next object not found\n");
                 return 0;
             }
-            
-            if (bytes_remaining < index - indirect_obj_start) {
+
+            if (bytes_remaining < (size_t)(index - indirect_obj_start)) {
                 return 0;
             }
             bytes_remaining -= index - indirect_obj_start;
@@ -1010,109 +1025,13 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
     }
 
     /* limit length */
-    if (obj_start - pdf->map + length + 5 > pdf->size)
+    if ((size_t)(obj_start - pdf->map) + length + 5 > pdf->size)
         length = pdf->size - (obj_start - pdf->map) - 5;
 
     return length;
 }
 
 #define DUMP_MASK ((1 << OBJ_CONTENTS) | (1 << OBJ_FILTER_FLATE) | (1 << OBJ_FILTER_DCT) | (1 << OBJ_FILTER_AH) | (1 << OBJ_FILTER_A85) | (1 << OBJ_EMBEDDED_FILE) | (1 << OBJ_JAVASCRIPT) | (1 << OBJ_OPENACTION) | (1 << OBJ_LAUNCHACTION))
-
-static int obj_size(struct pdf_struct *pdf, struct pdf_obj *obj, int binary)
-{
-    if (0 == obj->size)
-    {
-        /*
-         * Programmatically determine size if not already known.
-         */
-        unsigned i = 0;
-
-        /* Find the index of the current object */
-        for (i = 0; i < pdf->nobjs; i++) {
-            if (pdf->objs[i] == obj)
-                break;
-        }
-
-        /* Find the next object that exists in the same buffer (pdf fmap, or object stream) */
-        if (i < pdf->nobjs) {
-            i++;
-        }
-
-        if (obj->objstm == NULL) {
-            /* Current object isn't in an object stream, we want to find
-             * the next object that also isn't in an object stream. */
-            for ( ; i < pdf->nobjs; i++) {
-                if (pdf->objs[i]->objstm == NULL)
-                    break;
-            }
-        } else {
-            /* Current object is in an object stream, we want to find
-             * the next object that is in the same object stream.
-             *
-             * This really shouldn't happen, so throw a warning and
-             * then see if we can solve it anyhow */
-            cli_warnmsg("obj_size: Encountered pdf object in an object stream that has an unknown size!!\n");
-
-            for ( ; i < pdf->nobjs; i++) {
-                if (pdf->objs[i]->objstm == obj->objstm)
-                    break;
-            }
-        }
-
-        /* Step backwards from the "next" object to find the end of the current object */
-        if (i < pdf->nobjs) {
-            int s = pdf->objs[i]->start - obj->start - 4;
-            if (s > 0) {
-                if (!binary) {
-                    const char *p = NULL;
-                    const char *q = NULL;
-
-                    if (obj->objstm == NULL) {
-                        p = pdf->map + obj->start;
-                    } else {
-                        p = obj->objstm->streambuf + obj->start;
-                    }
-                    q = p + s;
-
-                    while (q > p && (isspace(*q) || isdigit(*q)))
-                        q--;
-
-                    if (q > p+5 && !memcmp(q-5,"endobj",6))
-                        q -= 6;
-
-                    q = findNextNonWSBack(q, p);
-                    q++;
-
-                    obj->size = q - p;
-                    goto done;
-                }
-
-                obj->size = s;
-                goto done;
-            }
-        }
-
-        /* If we've gotten this far, we didn't find a "next" object... so our 
-         * current object must be at the end of the pdf fmap or the end of the 
-         * object stream. */
-        if (obj->objstm == NULL) {
-            /* Current object isn't in an object stream, so we can determine object 
-             * size based on the remaining size of the file (in theory). */
-            if (binary)
-                obj->size = pdf->size - obj->start;
-            else
-                obj->size = pdf->offset - obj->start - 6; /* This hack I think assumes that we reached the end of the file when finding objects. */
-        } else {
-            /* Current object is in an object stream, we want to find 
-             * the next object that is in the same object stream. */
-            obj->size = obj->objstm->streambuf_len - obj->start;
-        }
-    }
-
-done:
-
-    return obj->size;
-}
 
 static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, int dumpid)
 {
@@ -1482,330 +1401,328 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
     if (!(flags & PDF_EXTRACT_OBJ_SCAN))
         obj->path = strdup(fullname);
 
-    do {
-        if (obj->flags & (1 << OBJ_STREAM)) {
-            const char *start = pdf->map + obj->start;
-            off_t p_stream = 0, p_endstream = 0;
-            off_t length;
+    if ((NULL == obj->objstm) &&
+        (obj->flags & (1 << OBJ_STREAM))) {
+        /*
+         * Object contains a stream. Parse this now.
+         */
+        cli_dbgmsg("pdf_extract_obj: parsing a stream in obj %u %u\n", obj->id>>8, obj->id&0xff);
 
-            if (NULL != obj->objstm) {
-                cli_warnmsg("pdf_extract_obj: Object found in object stream claims to be an object stream! Skipping.\n");
-                break;
+        const char *start = pdf->map + obj->start;
+
+        size_t length;
+        size_t orig_length;
+        int dict_len = obj->stream - start; /* Dictionary should end where the stream begins */
+
+        const char *pstr;
+        struct pdf_dict *dparams = NULL;
+        struct objstm_struct *objstm = NULL;
+        int xref = 0;
+
+        /* Find and interpret the length dictionary value */
+        length = find_length(pdf, obj, start, dict_len);
+        if (length < 0)
+            length = 0;
+
+        orig_length = length;
+
+        if (length > obj->stream_size) {
+            cli_dbgmsg("cli_pdf: Stream length exceeds object length by %zu bytes. Length truncated to %zu bytes\n", length - obj->stream_size, obj->stream_size);
+            noisy_warnmsg("Stream length exceeds object length by %zu bytes. Length truncated to %zu bytes\n", length - obj->stream_size, obj->stream_size);
+
+            length = obj->stream_size;
+        }
+
+        if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && (length <= 0)) {
+            /*
+             * If the length is unknown and this doesn't contain a FLATE encoded filter...
+             * Calculate the length using the stream size, and trimming
+             * off any newline/carriage returns from the end of the stream.
+             */
+            const char *q = start + obj->stream_size;
+            length = obj->stream_size;
+            q--;
+
+            if (*q == '\n') {
+                q--;
+                length--;
+
+                if (*q == '\r')
+                    length--;
+            } else if (*q == '\r') {
+                length--;
             }
 
-            find_stream_bounds(start, pdf->size - obj->start,
-                       pdf->size - obj->start,
-                       &p_stream, &p_endstream,
-                       pdf->enc_method_stream <= ENC_IDENTITY &&
-                       pdf->enc_method_embeddedfile <= ENC_IDENTITY);
+            if (length < 0)
+                length = 0;
 
-            if (p_stream && p_endstream) {
-                size_t size = p_endstream - p_stream;
-                off_t orig_length;
-                int len = p_stream;
-                const char *pstr;
-                struct pdf_dict *dparams = NULL;
-                struct objstm_struct *objstm = NULL;
-                int xref = 0;
-
-                length = find_length(pdf, obj, start, p_stream);
-                if (length < 0)
-                    length = 0;
-
-                orig_length = length;
-                if (length > pdf->size || obj->start + p_stream + length > pdf->size) {
-                    cli_dbgmsg("cli_pdf: length out of file: %lld + %lld > %lld\n",
-                           (long long)p_stream, (long long)length, (long long)pdf->size);
-                    noisy_warnmsg("length out of file, truncated: %lld + %lld > %lld\n",
-                           (long long)p_stream, (long long)length, (long long)pdf->size);
-                    length = pdf->size - (obj->start + p_stream);
-                }
-
-                if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && length <= 0) {
-                    const char *q = start + p_endstream;
-                    length = size;
-                    q--;
-
-                    if (*q == '\n') {
-                        q--;
-                        length--;
-
-                        if (*q == '\r')
-                            length--;
-                    } else if (*q == '\r') {
-                        length--;
-                    }
-
-                    if (length < 0)
-                        length = 0;
-
-                    cli_dbgmsg("pdf_extract_obj: calculated length %lld\n", (long long)length);
-                } else {
-                    if (size > (size_t)length+2) {
-                        cli_dbgmsg("cli_pdf: calculated length %zu < %zu\n",
-                                   (size_t)length, size);
-                        length = size;
-                    }
-                }
-
-                if (orig_length && size > (size_t)orig_length + 20) {
-                    cli_dbgmsg("pdf_extract_obj: orig length: %lld, length: %lld, size: %zu\n",
-                               (long long)orig_length, (long long)length, size);
-                    pdfobj_flag(pdf, obj, BAD_STREAMLEN);
-                }
-
-                if (!length) {
-                    length = size;
-                    if (!length) {
-                        cli_dbgmsg("pdf_extract_obj: length and size both 0\n");
-                        break; /* Empty stream, nothing to scan */
-                    }
-                }
-
-                if (cli_memstr(start, p_stream, "/XRef", 5))
-                    xref = 1;
-
-                cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
-                /*
-                 * Identify the DecodeParms, if available.
-                 */
-                if (NULL != (pstr = pdf_getdict(start, &len, "/DecodeParms")))
-                {
-                    cli_dbgmsg("pdf_extract_obj: Found /DecodeParms\n");
-                }
-                else if (NULL != (pstr = pdf_getdict(start, &len, "/DP")))
-                {
-                    cli_dbgmsg("pdf_extract_obj: Found /DP\n");
-                }
-
-                if (pstr) {
-                    unsigned int objsize = obj_size(pdf, obj, 1);
-
-                    /* shift pstr left to "<<" for pdf_parse_dict */
-                    while ((*pstr == '<') && (pstr > start)) {
-                        pstr--;
-                        len++;
-                    }
-
-                    /* shift pstr right to "<<" for pdf_parse_dict */
-                    while ((*pstr != '<') && (len > 0)) {
-                        pstr++;
-                        len--;
-                    }
-
-                    if (len > 4)
-                        dparams = pdf_parse_dict(pdf, obj, objsize, (char *)pstr, NULL);
-                    else
-                        cli_dbgmsg("pdf_extract_obj: failed to locate DecodeParms dictionary start\n");
-                }
-
-                /*
-                 * Identify if the stream is an object stream. If so, collect the relevant info. 
-                 */
-                len = p_stream;
-                if (NULL != (pstr = pdf_getdict(start, &len, "/Type/ObjStm")))
-                {
-                    int32_t objstm_first = -1;
-                    int32_t objstm_length = -1;
-                    int32_t objstm_n = -1;
-
-                    cli_dbgmsg("pdf_extract_obj: Found /Type/ObjStm\n");
-
-                    len = p_stream;
-                    if ((-1 == (objstm_first = pdf_readint(start, len, "/First"))))
-                    {
-                        cli_warnmsg("pdf_extract_obj: Failed to find offset of first object in object stream\n");
-                    }
-                    else if ((-1 == (objstm_length = pdf_readint(start, len, "/Length"))))
-                    {
-                        cli_warnmsg("pdf_extract_obj: Failed to find length of object stream\n");
-                    }
-                    else if ((-1 == (objstm_n = pdf_readint(start, len, "/N"))))
-                    {
-                        cli_warnmsg("pdf_extract_obj: Failed to find num objects in object stream\n");
-                    }
-                    else
-                    {
-                        /* Add objstm to pdf struct, so it can be freed eventually */
-                        pdf->nobjstms++;
-                        pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
-                        if (!pdf->objstms) {
-                            cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
-                            pdf_free_dict(dparams);
-                            return CL_EMEM;
-                        }
-
-                        objstm = malloc(sizeof(struct objstm_struct));
-                        if (!objstm) {
-                            cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
-                            pdf_free_dict(dparams);
-                            return CL_EMEM;
-                        }
-                        pdf->objstms[pdf->nobjstms-1] = objstm;
-
-                        memset(objstm, 0, sizeof(*objstm));
-
-                        objstm->first =         (uint32_t)objstm_first;
-                        objstm->current =       (uint32_t)objstm_first;
-                        objstm->current_pair =  0;
-                        objstm->length =        (uint32_t)objstm_length;
-                        objstm->n =             (uint32_t)objstm_n;
-
-                        cli_dbgmsg("pdf_extract_obj: ObjStm first obj at offset %d\n", objstm->first);
-                        cli_dbgmsg("pdf_extract_obj: ObjStm length is %d bytes\n", objstm->length);
-                        cli_dbgmsg("pdf_extract_obj: ObjStm should contain %d objects\n", objstm->n);
-                    }
-                }
-
-                sum = pdf_decodestream(pdf, obj, dparams, start + p_stream, (uint32_t)length, xref, fout, &rc, objstm);
-                if ((CL_SUCCESS != rc) && (CL_VIRUS != rc)) {
-                    cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
-
-                    /* It's ok if we couldn't decode the stream,
-                     *   make a best effort to keep parsing. */
-                    if (CL_EPARSE == rc)
-                        rc = CL_SUCCESS;
-
-                    if (NULL != objstm) {
-                        /*
-                         * If we were expecting an objstm and there was a failure...
-                         *   discard the memory for last object stream.
-                         */
-                        if (NULL != pdf->objstms) {
-                            if (NULL != pdf->objstms[pdf->nobjstms - 1]) {
-                                if (NULL != pdf->objstms[pdf->nobjstms - 1]->streambuf) {
-                                    free(pdf->objstms[pdf->nobjstms - 1]->streambuf);
-                                    pdf->objstms[pdf->nobjstms - 1]->streambuf = NULL;
-                                }
-                                free(pdf->objstms[pdf->nobjstms - 1]);
-                                pdf->objstms[pdf->nobjstms - 1] = NULL;
-                            }
-
-                            /* Pop the objstm off the end of the pdf->objstms array. */
-                            if (pdf->nobjstms > 0) {
-                                pdf->nobjstms--;
-                                if (0 == pdf->nobjstms) {
-                                    free(pdf->objstms);
-                                    pdf->objstms = NULL;
-                                } else {
-                                    pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
-
-                                    if (!pdf->objstms) {
-                                        cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
-                                        return CL_EMEM;
-                                    }
-                                }
-                            } else {
-                                /* hm.. this shouldn't happen */
-                                cli_warnmsg("pdf_extract_obj: Failure counting objstms.\n");
-                            }
-                        }
-                    }
-                }
-
-                if (dparams)
-                    pdf_free_dict(dparams);
-
-                if ((rc == CL_VIRUS) && !SCAN_ALLMATCHES) {
-                    sum = 0; /* prevents post-filter scan */
-                    break;
-                }
-
-                cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-            } else {
-                noisy_warnmsg("pdf_extract_obj: cannot find stream bounds for obj %u %u\n", obj->id>>8, obj->id&0xff);
-            }
-
-        } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
-            const char *q2;
-            const char *q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                                          : (const char *)(obj->start + pdf->map);
-
-            /* TODO: get obj-endobj size */
-            off_t bytesleft = obj_size(pdf, obj, 0);
-
-            if (bytesleft < 0)
-                break;
-
-            do {
-                char *js = NULL;
-                size_t js_len = 0;
-                const char *q3;
-
-                q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
-                if (!q2)
-                    break;
-
-                bytesleft -= q2 - q + 11;
-                q = q2 + 11;
-
-                js = pdf_readstring(q, bytesleft,  "/JS", NULL, &q2, !(pdf->flags & (1<<DECRYPTABLE_PDF)));
-                bytesleft -= q2 - q;
-                q = q2;
-
-                if (js) {
-                    char *decrypted = NULL;
-                    const char *out = js;
-                    js_len = strlen(js);
-                    if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
-                        cli_dbgmsg("pdf_extract_obj: encrypted string\n");
-                        decrypted = decrypt_any(pdf, obj->id, js, &js_len, pdf->enc_method_string);
-
-                        if (decrypted) {
-                            noisy_msg(pdf, "pdf_extract_obj: decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
-                            out = decrypted;
-                        }
-                    }
-
-                    if (filter_writen(pdf, obj, fout, out, js_len, (size_t*)&sum) != js_len) {
-                        rc = CL_EWRITE;
-                                free(js);
-                        break;
-                    }
-
-                    free(decrypted);
-                    free(js);
-                    cli_dbgmsg("pdf_extract_obj: bytesleft: %d\n", (int)bytesleft);
-
-                    if (bytesleft > 0) {
-                        q2 = pdf_nextobject(q, bytesleft);
-                        if (!q2)
-                            q2 = q + bytesleft - 1;
-
-                        /* non-conforming PDFs that don't escape ) properly */
-                        q3 = memchr(q, ')', bytesleft);
-                        if (q3 && q3 < q2)
-                            q2 = q3;
-
-                        while (q2 > q && q2[-1] == ' ')
-                            q2--;
-
-                        if (q2 > q) {
-                            q--;
-                            filter_writen(pdf, obj, fout, q, q2 - q, (size_t*)&sum);
-                            q++;
-                        }
-                    }
-                }
-
-            } while (bytesleft > 0);
+            cli_dbgmsg("pdf_extract_obj: calculated length %lld\n", (long long)length);
         } else {
-            off_t bytesleft = obj_size(pdf, obj, 0);
+            if (obj->stream_size > (size_t)length + 2) {
+                cli_dbgmsg("cli_pdf: calculated length %zu < %zu\n",
+                            (size_t)length, obj->stream_size);
+                length = obj->stream_size;
+            }
+        }
 
-            if (bytesleft < 0)
-                rc = CL_EFORMAT;
-            else {
-                if (obj->objstm) {
-                    if (filter_writen(pdf, obj, fout , obj->objstm->streambuf + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
-                        rc = CL_EWRITE;
-                } else {
-                    if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
-                        rc = CL_EWRITE;
+        if ((0 != orig_length) && (obj->stream_size > (size_t)orig_length + 20)) {
+            cli_dbgmsg("pdf_extract_obj: orig length: %lld, length: %lld, size: %zu\n",
+                        (long long)orig_length, (long long)length, obj->stream_size);
+            pdfobj_flag(pdf, obj, BAD_STREAMLEN);
+        }
+
+        if (0 == length) {
+            length = obj->stream_size;
+            if (0 == length) {
+                cli_dbgmsg("pdf_extract_obj: Alleged or calculated stream length and stream buffer size both 0\n");
+                goto done; /* Empty stream, nothing to scan */
+            }
+        }
+
+        /* Check if XRef is enabled */
+        if (cli_memstr(start, dict_len, "/XRef", strlen("/XRef"))) {
+            xref = 1;
+        }
+
+        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
+
+        /*
+         * Identify the DecodeParms, if available.
+         */
+        if (NULL != (pstr = pdf_getdict(start, &dict_len, "/DecodeParms")))
+        {
+            cli_dbgmsg("pdf_extract_obj: Found /DecodeParms\n");
+        }
+        else if (NULL != (pstr = pdf_getdict(start, &dict_len, "/DP")))
+        {
+            cli_dbgmsg("pdf_extract_obj: Found /DP\n");
+        }
+
+        if (pstr) {
+            /* shift pstr left to "<<" for pdf_parse_dict */
+            while ((*pstr == '<') && (pstr > start)) {
+                pstr--;
+                dict_len++;
+            }
+
+            /* shift pstr right to "<<" for pdf_parse_dict */
+            while ((*pstr != '<') && (dict_len > 0)) {
+                pstr++;
+                dict_len--;
+            }
+
+            if (dict_len > 4)
+                dparams = pdf_parse_dict(pdf, obj, obj->size, (char *)pstr, NULL);
+            else
+                cli_dbgmsg("pdf_extract_obj: failed to locate DecodeParms dictionary start\n");
+        }
+
+        /*
+         * Go back to the start of the dictionary and check to see if the stream
+         * is an object stream. If so, collect the relevant info.
+         */
+        dict_len = obj->stream - start;
+        if (NULL != (pstr = pdf_getdict(start, &dict_len, "/Type/ObjStm")))
+        {
+            int32_t objstm_first = -1;
+            int32_t objstm_length = -1;
+            int32_t objstm_n = -1;
+
+            cli_dbgmsg("pdf_extract_obj: Found /Type/ObjStm\n");
+
+            dict_len = obj->stream - start;
+            if ((-1 == (objstm_first = pdf_readint(start, dict_len, "/First"))))
+            {
+                cli_warnmsg("pdf_extract_obj: Failed to find offset of first object in object stream\n");
+            }
+            else if ((-1 == (objstm_length = pdf_readint(start, dict_len, "/Length"))))
+            {
+                cli_warnmsg("pdf_extract_obj: Failed to find length of object stream\n");
+            }
+            else if ((-1 == (objstm_n = pdf_readint(start, dict_len, "/N"))))
+            {
+                cli_warnmsg("pdf_extract_obj: Failed to find num objects in object stream\n");
+            }
+            else
+            {
+                /* Add objstm to pdf struct, so it can be freed eventually */
+                pdf->nobjstms++;
+                pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
+                if (!pdf->objstms) {
+                    cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
+                    pdf_free_dict(dparams);
+                    return CL_EMEM;
+                }
+
+                objstm = malloc(sizeof(struct objstm_struct));
+                if (!objstm) {
+                    cli_warnmsg("pdf_extract_obj: out of memory parsing object stream (%u)\n", pdf->nobjstms);
+                    pdf_free_dict(dparams);
+                    return CL_EMEM;
+                }
+                pdf->objstms[pdf->nobjstms-1] = objstm;
+
+                memset(objstm, 0, sizeof(*objstm));
+
+                objstm->first =         (uint32_t)objstm_first;
+                objstm->current =       (uint32_t)objstm_first;
+                objstm->current_pair =  0;
+                objstm->length =        (uint32_t)objstm_length;
+                objstm->n =             (uint32_t)objstm_n;
+
+                cli_dbgmsg("pdf_extract_obj: ObjStm first obj at offset %d\n", objstm->first);
+                cli_dbgmsg("pdf_extract_obj: ObjStm length is %d bytes\n", objstm->length);
+                cli_dbgmsg("pdf_extract_obj: ObjStm should contain %d objects\n", objstm->n);
+            }
+        }
+
+        sum = pdf_decodestream(pdf, obj, dparams, obj->stream, (uint32_t)length, xref, fout, &rc, objstm);
+        if ((CL_SUCCESS != rc) && (CL_VIRUS != rc)) {
+            cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
+
+            /* It's ok if we couldn't decode the stream,
+             *   make a best effort to keep parsing. */
+            if (CL_EPARSE == rc)
+                rc = CL_SUCCESS;
+
+            if (NULL != objstm) {
+                /*
+                 * If we were expecting an objstm and there was a failure...
+                 *   discard the memory for last object stream.
+                 */
+                if (NULL != pdf->objstms) {
+                    if (NULL != pdf->objstms[pdf->nobjstms - 1]) {
+                        if (NULL != pdf->objstms[pdf->nobjstms - 1]->streambuf) {
+                            free(pdf->objstms[pdf->nobjstms - 1]->streambuf);
+                            pdf->objstms[pdf->nobjstms - 1]->streambuf = NULL;
+                        }
+                        free(pdf->objstms[pdf->nobjstms - 1]);
+                        pdf->objstms[pdf->nobjstms - 1] = NULL;
+                    }
+
+                    /* Pop the objstm off the end of the pdf->objstms array. */
+                    if (pdf->nobjstms > 0) {
+                        pdf->nobjstms--;
+                        if (0 == pdf->nobjstms) {
+                            free(pdf->objstms);
+                            pdf->objstms = NULL;
+                        } else {
+                            pdf->objstms = cli_realloc2(pdf->objstms, sizeof(struct objstm_struct*) * pdf->nobjstms);
+
+                            if (!pdf->objstms) {
+                                cli_warnmsg("pdf_extract_obj: out of memory when shrinking down objstm array\n");
+                                return CL_EMEM;
+                            }
+                        }
+                    } else {
+                        /* hm.. this shouldn't happen */
+                        cli_warnmsg("pdf_extract_obj: Failure counting objstms.\n");
+                    }
                 }
             }
         }
-    } while (0);
+
+        if (dparams)
+            pdf_free_dict(dparams);
+
+        if ((rc == CL_VIRUS) && !SCAN_ALLMATCHES) {
+            sum = 0; /* prevents post-filter scan */
+            goto done;
+        }
+
+        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
+
+    } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
+        const char *q2;
+        const char *q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                                        : (const char *)(obj->start + pdf->map);
+
+        /* TODO: get obj-endobj size */
+        off_t bytesleft = obj->size;
+
+        if (bytesleft < 0) {
+            goto done;
+        }
+
+        do {
+            char *js = NULL;
+            size_t js_len = 0;
+            const char *q3;
+
+            q2 = cli_memstr(q, bytesleft, "/JavaScript", 11);
+            if (!q2)
+                break;
+
+            bytesleft -= q2 - q + 11;
+            q = q2 + 11;
+
+            js = pdf_readstring(q, bytesleft,  "/JS", NULL, &q2, !(pdf->flags & (1<<DECRYPTABLE_PDF)));
+            bytesleft -= q2 - q;
+            q = q2;
+
+            if (js) {
+                char *decrypted = NULL;
+                const char *out = js;
+                js_len = strlen(js);
+                if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
+                    cli_dbgmsg("pdf_extract_obj: encrypted string\n");
+                    decrypted = decrypt_any(pdf, obj->id, js, &js_len, pdf->enc_method_string);
+
+                    if (decrypted) {
+                        noisy_msg(pdf, "pdf_extract_obj: decrypted Javascript string from obj %u %u\n", obj->id>>8,obj->id&0xff);
+                        out = decrypted;
+                    }
+                }
+
+                if (filter_writen(pdf, obj, fout, out, js_len, (size_t*)&sum) != js_len) {
+                    rc = CL_EWRITE;
+                            free(js);
+                    break;
+                }
+
+                free(decrypted);
+                free(js);
+                cli_dbgmsg("pdf_extract_obj: bytesleft: %d\n", (int)bytesleft);
+
+                if (bytesleft > 0) {
+                    q2 = pdf_nextobject(q, bytesleft);
+                    if (!q2)
+                        q2 = q + bytesleft - 1;
+
+                    /* non-conforming PDFs that don't escape ) properly */
+                    q3 = memchr(q, ')', bytesleft);
+                    if (q3 && q3 < q2)
+                        q2 = q3;
+
+                    while (q2 > q && q2[-1] == ' ')
+                        q2--;
+
+                    if (q2 > q) {
+                        q--;
+                        filter_writen(pdf, obj, fout, q, q2 - q, (size_t*)&sum);
+                        q++;
+                    }
+                }
+            }
+
+        } while (bytesleft > 0);
+    } else {
+        off_t bytesleft = obj->size;
+
+        if (bytesleft < 0)
+            rc = CL_EFORMAT;
+        else {
+            if (obj->objstm) {
+                if (filter_writen(pdf, obj, fout , obj->objstm->streambuf + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
+                    rc = CL_EWRITE;
+            } else {
+                if (filter_writen(pdf, obj, fout , pdf->map + obj->start, bytesleft, (size_t*)&sum) != (size_t)bytesleft)
+                    rc = CL_EWRITE;
+            }
+        }
+    }
+
+done:
 
     cli_dbgmsg("pdf_extract_obj: extracted %td bytes %u %u obj\n", sum, obj->id>>8, obj->id&0xff);
     cli_dbgmsg("pdf_extract_obj:         ... to %s\n", fullname);
@@ -2079,7 +1996,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     }
     genid = (unsigned long)temp_long;
 
-    objid |= genid & 0xff; 
+    objid |= genid & 0xff;
     q2 = pdf_nextobject(q, len);
     if (!q2 || *q2 != 'R')
         return;
@@ -2116,7 +2033,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     const char *nextobj = NULL, *nextopen = NULL, *nextclose = NULL;
     const char *q = NULL;
     const char *dict = NULL, *enddict = NULL, *start = NULL;
-    off_t dict_length = 0, full_dict_length = 0, objsize = 0, bytesleft = 0;
+    off_t dict_length = 0, full_dict_length = 0, bytesleft = 0;
     size_t i = 0;
     unsigned filters = 0, blockopens = 0;
     enum objstate objstate = STATE_NONE;
@@ -2128,6 +2045,8 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         cli_warnmsg("pdf_parseobj: invalid arguments\n");
         return;
     }
+
+    cli_dbgmsg("pdf_parseobj: Parsing object %u %u\n", obj->id >> 8, obj->id & 0xff);
 
     if (obj->objstm) {
         if ((size_t)obj->start > obj->objstm->streambuf_len) {
@@ -2146,14 +2065,38 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     }
     start = q;
 
-    objsize = obj_size(pdf, obj, 1);
-    if (objsize < 0)
+    if (obj->size <= 0)
         return;
 
     if (obj->objstm) {
-        bytesleft = MIN(objsize, obj->objstm->streambuf_len - obj->start);
+        bytesleft = MIN(obj->size, obj->objstm->streambuf_len - obj->start);
     } else {
-        bytesleft = MIN(objsize, pdf->size - obj->start);
+        bytesleft = MIN(obj->size, pdf->size - obj->start);
+    }
+
+    /* For objects that aren't already in an object stream^, check if they contain a stream.
+     * ^Objects in object streams aren't supposed to contain streams, so we don't check them. */
+    if (NULL == obj->objstm) {
+        /* Check if object contains stream */
+        cl_error_t has_stream;
+        const char* stream = NULL;
+        size_t stream_size = 0;
+
+        has_stream = find_stream_bounds(
+            start,
+            obj->size,
+            &stream,
+            &stream_size,
+            (pdf->enc_method_stream <= ENC_IDENTITY) && (pdf->enc_method_embeddedfile <= ENC_IDENTITY));
+
+        if ((CL_SUCCESS == has_stream) ||
+            (CL_EFORMAT == has_stream)) {
+            /* Stream found. Store this fact and the stream bounds. */
+            cli_dbgmsg("pdf_parseobj: %u %u contains stream, size: %zu\n", obj->id>>8, obj->id&0xff, stream_size);
+            obj->flags |= (1 << OBJ_STREAM);
+            obj->stream = stream;
+            obj->stream_size = stream_size;
+        }
     }
 
     /* find start of dictionary */
@@ -2204,7 +2147,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     dict = q3+2;
     q = dict;
     blockopens++;
-    bytesleft = objsize - (q - start);
+    bytesleft = obj->size - (q - start);
     enddict = q + bytesleft - 1;
 
     /* find end of dictionary block */
@@ -2355,7 +2298,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             pdfobj_flag(pdf, obj, LINEARIZED_PDF);
             objstate = STATE_NONE;
             trailer_end = pdf_readint(dict, full_dict_length, "/H");
-            if (trailer_end > 0 && trailer_end < pdf->size) {
+            if ((trailer_end > 0) && ((size_t)trailer_end < pdf->size)) {
                 trailer = trailer_end - 1024;
                 if (trailer < 0)
                     trailer = 0;
@@ -2967,7 +2910,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
         return;
     }
 
-    len = obj_size(pdf, obj, 1);
+    len = obj->size;
     q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                       : (const char *)(obj->start + pdf->map);
 
@@ -3123,20 +3066,20 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 }
 
 /**
- * @brief Search pdf buffer for objects.  Parse each.  
- * 
+ * @brief Search pdf buffer for objects.  Parse each.
+ *
  * Newly found objects will be extracted after completion when the extraction for loop continues.
- * 
- * @param pdf           Pdf struct that keeps track of all information found in the PDF. 
+ *
+ * @param pdf           Pdf struct that keeps track of all information found in the PDF.
  * @param objstm        Pointer to an object stream to parse.
- * 
+ *
  * @return cl_error_t   Error code.
  */
 cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm)
 {
     cl_error_t status = CL_EFORMAT;
     cl_error_t retval = CL_EPARSE;
-    int32_t foundobj = 0, alerts = 0;
+    int32_t alerts = 0;
     uint32_t badobjects = 0;
     size_t i = 0;
 
@@ -3147,11 +3090,8 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         goto done;
     }
 
-    char* current_pair = objstm->streambuf;
-    char* current_obj = objstm->streambuf + objstm->first;
-
-    if ((0 == objstm->first) || 
-        (0 == objstm->streambuf_len) || 
+    if ((0 == objstm->first) ||
+        (0 == objstm->streambuf_len) ||
         (0 == objstm->n))
     {
         cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Empty object stream.\n");
@@ -3177,7 +3117,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
 
         /* Find object */
         retval = pdf_findobj_in_objstm(pdf, objstm, &obj);
-        
+
         if (retval != CL_SUCCESS)
         {
             cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %u found, %u expected.\n",
@@ -3207,7 +3147,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         status = CL_EFORMAT;
         goto done;
     }
-    
+
     status = CL_SUCCESS;
 
 done:
@@ -3216,18 +3156,17 @@ done:
 
 /**
  * @brief Search pdf buffer for objects.  Parse each and then extract each.
- * 
+ *
  * @param pdf               Pdf struct that keeps track of all information found in the PDF.
  * @param alerts[in/out]    The number of alerts, relevant in ALLMATCH mode.
- * 
+ *
  * @return cl_error_t   Error code.
  */
 cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
 {
     cl_error_t status = CL_SUCCESS;
     int32_t rv = 0;
-    int foundobj = 0;
-    unsigned int i = 0, j = 0;
+    unsigned int i = 0;
     uint32_t badobjects = 0;
     cli_ctx *ctx = pdf->ctx;
 
@@ -3269,7 +3208,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
          * This doesn't trigger for PDFs that are encrypted but don't need
          * a password to decrypt */
         status = cli_append_virus(pdf->ctx, "Heuristics.Encrypted.PDF");
-        if (status == CL_VIRUS) { 
+        if (status == CL_VIRUS) {
             alerts++;
             if (SCAN_ALLMATCHES)
                 status = CL_CLEAN;
@@ -3328,11 +3267,11 @@ done:
 
 /**
  * @brief Primary function for parsing and scanning a PDF.
- * 
+ *
  * @param dir       Filepath for temp file.
- * @param ctx       clam scan context structure. 
+ * @param ctx       clam scan context structure.
  * @param offset    offset of pdf in ctx->fmap
- * 
+ *
  * @return int      Returns cl_error_t status value.
  */
 int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
@@ -3532,7 +3471,7 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
 
     /*
-     * Find and extract all objects in the PDF. 
+     * Find and extract all objects in the PDF.
      * New experimental recursive methodology that adds objects from object streams.
      */
     objs_found = pdf.nobjs;
@@ -3633,10 +3572,10 @@ done:
 
 /**
  * @brief   Skip the rest of the current line, and find the start of the next line.
- * 
+ *
  * @param ptr   Current offset into buffer.
- * @param len   Remaining bytes in buffer. 
- * 
+ * @param len   Remaining bytes in buffer.
+ *
  * @return const char*  Address of next line, or NULL if no next line in buffer.
  */
 static const char *
@@ -3666,13 +3605,13 @@ pdf_nextlinestart(const char *ptr, size_t len)
 
 /**
  * @brief   Return the start of the next PDF object.
- * 
+ *
  * This assumes that we're not in a stream.
- * 
+ *
  * @param ptr   Current offset into buffer.
- * @param len   Remaining bytes in buffer. 
- * 
- * @return const char*  Address of next object in the buffer, or NULL if there is none in the buffer. 
+ * @param len   Remaining bytes in buffer.
+ *
+ * @return const char*  Address of next object in the buffer, or NULL if there is none in the buffer.
  */
 static const char *
 pdf_nextobject(const char *ptr, size_t len)
@@ -4015,7 +3954,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         pdf->stats.author = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.author))
             return;
-        pdf->stats.author->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Author", NULL, &(pdf->stats.author->meta));
+        pdf->stats.author->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Author", NULL, &(pdf->stats.author->meta));
     }
 }
 #endif
@@ -4040,7 +3979,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->stats.creator = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creator))
             return;
-        pdf->stats.creator->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Creator", NULL, &(pdf->stats.creator->meta));
+        pdf->stats.creator->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Creator", NULL, &(pdf->stats.creator->meta));
     }
 }
 #endif
@@ -4065,7 +4004,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         pdf->stats.modificationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.modificationdate))
             return;
-        pdf->stats.modificationdate->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/ModDate", NULL, &(pdf->stats.modificationdate->meta));
+        pdf->stats.modificationdate->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/ModDate", NULL, &(pdf->stats.modificationdate->meta));
     }
 }
 #endif
@@ -4090,7 +4029,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         pdf->stats.creationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creationdate))
             return;
-        pdf->stats.creationdate->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/CreationDate", NULL, &(pdf->stats.creationdate->meta));
+        pdf->stats.creationdate->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/CreationDate", NULL, &(pdf->stats.creationdate->meta));
     }
 }
 #endif
@@ -4115,7 +4054,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->stats.producer = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.producer))
             return;
-        pdf->stats.producer->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Producer", NULL, &(pdf->stats.producer->meta));
+        pdf->stats.producer->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Producer", NULL, &(pdf->stats.producer->meta));
     }
 }
 #endif
@@ -4140,7 +4079,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         pdf->stats.title = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.title))
             return;
-        pdf->stats.title->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Title", NULL, &(pdf->stats.title->meta));
+        pdf->stats.title->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Title", NULL, &(pdf->stats.title->meta));
     }
 }
 #endif
@@ -4165,7 +4104,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->stats.keywords = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.keywords))
             return;
-        pdf->stats.keywords->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Keywords", NULL, &(pdf->stats.keywords->meta));
+        pdf->stats.keywords->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Keywords", NULL, &(pdf->stats.keywords->meta));
     }
 }
 #endif
@@ -4190,7 +4129,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->stats.subject = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.subject))
             return;
-        pdf->stats.subject->data = pdf_parse_string(pdf, obj, objstart, obj_size(pdf, obj, 1), "/Subject", NULL, &(pdf->stats.subject->meta));
+        pdf->stats.subject->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Subject", NULL, &(pdf->stats.subject->meta));
     }
 }
 #endif
@@ -4242,7 +4181,6 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                          : (const char *)(obj->start + pdf->map);
     const char *begin;
-    unsigned int objsize;
     unsigned long npages=0, count;
     long temp_long;
     struct pdf_array_node *node;
@@ -4257,19 +4195,17 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
     if (!(SCAN_COLLECT_METADATA))
         return;
 
-    objsize = obj_size(pdf, obj, 1);
-
     pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
     if (!(pdfobj))
         return;
 
-    begin = cli_memstr(objstart, objsize, "/Kids", 5);
+    begin = cli_memstr(objstart, obj->size, "/Kids", 5);
     if (!(begin))
         return;
 
     begin += 5;
 
-    array = pdf_parse_array(pdf, obj, objsize, (char *)begin, NULL);
+    array = pdf_parse_array(pdf, obj, obj->size, (char *)begin, NULL);
     if (!(array)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
         return;
@@ -4280,22 +4216,22 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
             if (strchr((char *)(node->data), 'R'))
                 npages++;
 
-    begin = cli_memstr(objstart, objsize, "/Count", 6);
+    begin = cli_memstr(objstart, obj->size, "/Count", 6);
     if (!(begin)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
         goto cleanup;
     }
 
     begin += 6;
-    while (begin - objstart <  objsize && isspace(begin[0]))
+    while (((size_t)(begin - objstart) < obj->size) && isspace(begin[0]))
         begin++;
 
-    if (begin - objstart >= objsize) {
+    if ((size_t)(begin - objstart) >= obj->size) {
         goto cleanup;
     }
 
-    countsize = (obj->objstm) ? (size_t)(obj->start + obj->objstm->streambuf + objsize - begin)
-                              : (size_t)(obj->start + pdf->map + objsize - begin);
+    countsize = (obj->objstm) ? (size_t)(obj->start + obj->objstm->streambuf + obj->size - begin)
+                              : (size_t)(obj->start + pdf->map + obj->size - begin);
 
     if (CL_SUCCESS != cli_strntol_wrap(begin, countsize, 0, 10, &temp_long)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
@@ -4323,7 +4259,6 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     char *p1;
     const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                          : (const char *)(obj->start + pdf->map);
-    size_t objsize;
 
     UNUSEDPARAM(act);
 
@@ -4333,25 +4268,23 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
     if (!(SCAN_COLLECT_METADATA))
         return;
 
-    objsize = obj_size(pdf, obj, 1);
-
-    p1 = (char *)cli_memstr(objstart, objsize, "/Colors", 7);
+    p1 = (char *)cli_memstr(objstart, obj->size, "/Colors", 7);
     if (!(p1))
         return;
 
     p1 += 7;
 
     /* Ensure that we have at least one whitespace character plus at least one number */
-    if (objsize - (p1 - objstart) < 2)
+    if (obj->size - (size_t)(p1 - objstart) < 2)
         return;
 
-    while (p1 - objstart < objsize && isspace(p1[0]))
+    while (((size_t)(p1 - objstart) < obj->size) && isspace(p1[0]))
         p1++;
 
-    if ((size_t)(p1 - objstart) == objsize)
+    if ((size_t)(p1 - objstart) == obj->size)
         return;
 
-    if (CL_SUCCESS != cli_strntol_wrap(p1, (size_t)((p1 - objstart) - objsize), 0, 10, &temp_long)) {
+    if (CL_SUCCESS != cli_strntol_wrap(p1, (size_t)((p1 - objstart) - obj->size), 0, 10, &temp_long)) {
         return;
     } else if (temp_long < 0) {
         return;

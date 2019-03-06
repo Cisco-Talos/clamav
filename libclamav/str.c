@@ -400,9 +400,9 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     return output;
 }
 
-const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle, unsigned int ns)
+const char *cli_memstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 {
-	unsigned int i, s1, s2;
+	size_t i, s1, s2;
 
     if(!hs || !ns || hs < ns)
 	return NULL;
