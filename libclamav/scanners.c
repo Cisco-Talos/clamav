@@ -1072,13 +1072,12 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
         for (i = 0; i < vba_project->count; i++)
         {
-            for (j = 0; (unsigned int)j < vba_project->colls[i]; j++)
+            for (j = 1; (unsigned int)j <= vba_project->colls[i]; j++)
             {
                 snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", vba_project->dir, vba_project->name[i], j);
                 vbaname[sizeof(vbaname) - 1] = '\0';
                 fd = open(vbaname, O_RDONLY | O_BINARY);
                 if (fd == -1) {
-                    hashcnt--;
                     continue;
                 }
                 cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
