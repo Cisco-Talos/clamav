@@ -3,6 +3,34 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.100.3
+
+ClamAV 0.100.3 is a patch release to address a few security related bugs.
+
+This patch release is being released alongside the 0.101.2 patch so that users
+who are unable to upgrade to 0.101 due to libclamav API changes are protected.
+
+The bug fixes in this release are limited to security-related bugs only.
+Users are encouraged to upgrade to 0.101.2 for additional improvements.
+
+- Fixes for the following vulnerabilities:
+  - [CVE-2019-1787](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1787):
+    An out-of-bounds heap read condition may occur when scanning PDF
+    documents. The defect is a failure to correctly keep track of the number
+    of bytes remaining in a buffer when indexing file data.
+  - [CVE-2019-1789](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1789):
+    An out-of-bounds heap read condition may occur when scanning PE files
+    (i.e. Windows EXE and DLL files) that have been packed using Aspack as a
+    result of inadequate bound-checking.
+  - [CVE-2019-1788](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1788):
+    An out-of-bounds heap write condition may occur when scanning OLE2 files
+    such as Microsoft Office 97-2003 documents. The invalid write happens when
+    an invalid pointer is mistakenly used to initialize a 32bit integer to
+    zero. This is likely to crash the application.
+
+Thank you to the Google OSS-Fuzz project for identifying and reporting the bugs
+patched in this release.
+
 ## 0.100.2
 
 ClamAV 0.100.2 is a patch release to address a set of vulnerabilities.

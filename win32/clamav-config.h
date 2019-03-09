@@ -511,7 +511,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "0.100.2"
+#define VERSION "0.100.3"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""

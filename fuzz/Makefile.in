@@ -221,7 +221,7 @@ ARFLAGS = cru
 AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
-am__v_AR_1 =
+am__v_AR_1 = 
 standalone_fuzz_target_runner_a_AR = $(AR) $(ARFLAGS)
 standalone_fuzz_target_runner_a_LIBADD =
 am__dist_standalone_fuzz_target_runner_a_SOURCES_DIST =  \
@@ -243,7 +243,7 @@ clamav_dbload_CDB_fuzzer_OBJECTS =  \
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 =
+am__v_lt_1 = 
 am__dist_clamav_dbload_CFG_fuzzer_SOURCES_DIST =  \
 	clamav_dbload_fuzzer.cpp
 @ENABLE_FUZZ_TRUE@dist_clamav_dbload_CFG_fuzzer_OBJECTS = clamav_dbload_CFG_fuzzer-clamav_dbload_fuzzer.$(OBJEXT)
@@ -556,11 +556,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 =
+am__v_GEN_1 = 
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 =
+am__v_at_1 = 
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -574,7 +574,7 @@ LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 AM_V_CXX = $(am__v_CXX_@AM_V@)
 am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
 am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 =
+am__v_CXX_1 = 
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -582,7 +582,7 @@ CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 =
+am__v_CXXLD_1 = 
 SOURCES = $(dist_standalone_fuzz_target_runner_a_SOURCES) \
 	$(dist_clamav_dbload_CDB_fuzzer_SOURCES) \
 	$(dist_clamav_dbload_CFG_fuzzer_SOURCES) \
@@ -1082,7 +1082,7 @@ $(am__aclocal_m4_deps):
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 
-standalone_fuzz_target_runner.a: $(standalone_fuzz_target_runner_a_OBJECTS) $(standalone_fuzz_target_runner_a_DEPENDENCIES) $(EXTRA_standalone_fuzz_target_runner_a_DEPENDENCIES)
+standalone_fuzz_target_runner.a: $(standalone_fuzz_target_runner_a_OBJECTS) $(standalone_fuzz_target_runner_a_DEPENDENCIES) $(EXTRA_standalone_fuzz_target_runner_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f standalone_fuzz_target_runner.a
 	$(AM_V_AR)$(standalone_fuzz_target_runner_a_AR) standalone_fuzz_target_runner.a $(standalone_fuzz_target_runner_a_OBJECTS) $(standalone_fuzz_target_runner_a_LIBADD)
 	$(AM_V_at)$(RANLIB) standalone_fuzz_target_runner.a
@@ -1152,159 +1152,159 @@ installcheck-fuzzPROGRAMS: $(fuzz_PROGRAMS)
 	  done; \
 	done; rm -f c$${pid}_.???; exit $$bad
 
-clamav_dbload_CDB_fuzzer$(EXEEXT): $(clamav_dbload_CDB_fuzzer_OBJECTS) $(clamav_dbload_CDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CDB_fuzzer_DEPENDENCIES)
+clamav_dbload_CDB_fuzzer$(EXEEXT): $(clamav_dbload_CDB_fuzzer_OBJECTS) $(clamav_dbload_CDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_CDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_CDB_fuzzer_OBJECTS) $(clamav_dbload_CDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_CFG_fuzzer$(EXEEXT): $(clamav_dbload_CFG_fuzzer_OBJECTS) $(clamav_dbload_CFG_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CFG_fuzzer_DEPENDENCIES)
+clamav_dbload_CFG_fuzzer$(EXEEXT): $(clamav_dbload_CFG_fuzzer_OBJECTS) $(clamav_dbload_CFG_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CFG_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_CFG_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_CFG_fuzzer_OBJECTS) $(clamav_dbload_CFG_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_CRB_fuzzer$(EXEEXT): $(clamav_dbload_CRB_fuzzer_OBJECTS) $(clamav_dbload_CRB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CRB_fuzzer_DEPENDENCIES)
+clamav_dbload_CRB_fuzzer$(EXEEXT): $(clamav_dbload_CRB_fuzzer_OBJECTS) $(clamav_dbload_CRB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_CRB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_CRB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_CRB_fuzzer_OBJECTS) $(clamav_dbload_CRB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_FP_fuzzer$(EXEEXT): $(clamav_dbload_FP_fuzzer_OBJECTS) $(clamav_dbload_FP_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_FP_fuzzer_DEPENDENCIES)
+clamav_dbload_FP_fuzzer$(EXEEXT): $(clamav_dbload_FP_fuzzer_OBJECTS) $(clamav_dbload_FP_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_FP_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_FP_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_FP_fuzzer_OBJECTS) $(clamav_dbload_FP_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_FTM_fuzzer$(EXEEXT): $(clamav_dbload_FTM_fuzzer_OBJECTS) $(clamav_dbload_FTM_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_FTM_fuzzer_DEPENDENCIES)
+clamav_dbload_FTM_fuzzer$(EXEEXT): $(clamav_dbload_FTM_fuzzer_OBJECTS) $(clamav_dbload_FTM_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_FTM_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_FTM_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_FTM_fuzzer_OBJECTS) $(clamav_dbload_FTM_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_HDB_fuzzer$(EXEEXT): $(clamav_dbload_HDB_fuzzer_OBJECTS) $(clamav_dbload_HDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_HDB_fuzzer_DEPENDENCIES)
+clamav_dbload_HDB_fuzzer$(EXEEXT): $(clamav_dbload_HDB_fuzzer_OBJECTS) $(clamav_dbload_HDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_HDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_HDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_HDB_fuzzer_OBJECTS) $(clamav_dbload_HDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_HSB_fuzzer$(EXEEXT): $(clamav_dbload_HSB_fuzzer_OBJECTS) $(clamav_dbload_HSB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_HSB_fuzzer_DEPENDENCIES)
+clamav_dbload_HSB_fuzzer$(EXEEXT): $(clamav_dbload_HSB_fuzzer_OBJECTS) $(clamav_dbload_HSB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_HSB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_HSB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_HSB_fuzzer_OBJECTS) $(clamav_dbload_HSB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_IDB_fuzzer$(EXEEXT): $(clamav_dbload_IDB_fuzzer_OBJECTS) $(clamav_dbload_IDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IDB_fuzzer_DEPENDENCIES)
+clamav_dbload_IDB_fuzzer$(EXEEXT): $(clamav_dbload_IDB_fuzzer_OBJECTS) $(clamav_dbload_IDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_IDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_IDB_fuzzer_OBJECTS) $(clamav_dbload_IDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_IGN2_fuzzer$(EXEEXT): $(clamav_dbload_IGN2_fuzzer_OBJECTS) $(clamav_dbload_IGN2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IGN2_fuzzer_DEPENDENCIES)
+clamav_dbload_IGN2_fuzzer$(EXEEXT): $(clamav_dbload_IGN2_fuzzer_OBJECTS) $(clamav_dbload_IGN2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IGN2_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_IGN2_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_IGN2_fuzzer_OBJECTS) $(clamav_dbload_IGN2_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_IGN_fuzzer$(EXEEXT): $(clamav_dbload_IGN_fuzzer_OBJECTS) $(clamav_dbload_IGN_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IGN_fuzzer_DEPENDENCIES)
+clamav_dbload_IGN_fuzzer$(EXEEXT): $(clamav_dbload_IGN_fuzzer_OBJECTS) $(clamav_dbload_IGN_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_IGN_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_IGN_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_IGN_fuzzer_OBJECTS) $(clamav_dbload_IGN_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_LDB_fuzzer$(EXEEXT): $(clamav_dbload_LDB_fuzzer_OBJECTS) $(clamav_dbload_LDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_LDB_fuzzer_DEPENDENCIES)
+clamav_dbload_LDB_fuzzer$(EXEEXT): $(clamav_dbload_LDB_fuzzer_OBJECTS) $(clamav_dbload_LDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_LDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_LDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_LDB_fuzzer_OBJECTS) $(clamav_dbload_LDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_MDB_fuzzer$(EXEEXT): $(clamav_dbload_MDB_fuzzer_OBJECTS) $(clamav_dbload_MDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_MDB_fuzzer_DEPENDENCIES)
+clamav_dbload_MDB_fuzzer$(EXEEXT): $(clamav_dbload_MDB_fuzzer_OBJECTS) $(clamav_dbload_MDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_MDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_MDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_MDB_fuzzer_OBJECTS) $(clamav_dbload_MDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_MSB_fuzzer$(EXEEXT): $(clamav_dbload_MSB_fuzzer_OBJECTS) $(clamav_dbload_MSB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_MSB_fuzzer_DEPENDENCIES)
+clamav_dbload_MSB_fuzzer$(EXEEXT): $(clamav_dbload_MSB_fuzzer_OBJECTS) $(clamav_dbload_MSB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_MSB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_MSB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_MSB_fuzzer_OBJECTS) $(clamav_dbload_MSB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_NDB_fuzzer$(EXEEXT): $(clamav_dbload_NDB_fuzzer_OBJECTS) $(clamav_dbload_NDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_NDB_fuzzer_DEPENDENCIES)
+clamav_dbload_NDB_fuzzer$(EXEEXT): $(clamav_dbload_NDB_fuzzer_OBJECTS) $(clamav_dbload_NDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_NDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_NDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_NDB_fuzzer_OBJECTS) $(clamav_dbload_NDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_PDB_fuzzer$(EXEEXT): $(clamav_dbload_PDB_fuzzer_OBJECTS) $(clamav_dbload_PDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_PDB_fuzzer_DEPENDENCIES)
+clamav_dbload_PDB_fuzzer$(EXEEXT): $(clamav_dbload_PDB_fuzzer_OBJECTS) $(clamav_dbload_PDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_PDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_PDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_PDB_fuzzer_OBJECTS) $(clamav_dbload_PDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_WDB_fuzzer$(EXEEXT): $(clamav_dbload_WDB_fuzzer_OBJECTS) $(clamav_dbload_WDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_WDB_fuzzer_DEPENDENCIES)
+clamav_dbload_WDB_fuzzer$(EXEEXT): $(clamav_dbload_WDB_fuzzer_OBJECTS) $(clamav_dbload_WDB_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_WDB_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_WDB_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_WDB_fuzzer_OBJECTS) $(clamav_dbload_WDB_fuzzer_LDADD) $(LIBS)
 
-clamav_dbload_YARA_fuzzer$(EXEEXT): $(clamav_dbload_YARA_fuzzer_OBJECTS) $(clamav_dbload_YARA_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_YARA_fuzzer_DEPENDENCIES)
+clamav_dbload_YARA_fuzzer$(EXEEXT): $(clamav_dbload_YARA_fuzzer_OBJECTS) $(clamav_dbload_YARA_fuzzer_DEPENDENCIES) $(EXTRA_clamav_dbload_YARA_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_dbload_YARA_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_dbload_YARA_fuzzer_OBJECTS) $(clamav_dbload_YARA_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_ARCHIVE_fuzzer$(EXEEXT): $(clamav_scanfile_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanfile_ARCHIVE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_ARCHIVE_fuzzer_DEPENDENCIES)
+clamav_scanfile_ARCHIVE_fuzzer$(EXEEXT): $(clamav_scanfile_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanfile_ARCHIVE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_ARCHIVE_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_ARCHIVE_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanfile_ARCHIVE_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_ELF_fuzzer$(EXEEXT): $(clamav_scanfile_ELF_fuzzer_OBJECTS) $(clamav_scanfile_ELF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_ELF_fuzzer_DEPENDENCIES)
+clamav_scanfile_ELF_fuzzer$(EXEEXT): $(clamav_scanfile_ELF_fuzzer_OBJECTS) $(clamav_scanfile_ELF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_ELF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_ELF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_ELF_fuzzer_OBJECTS) $(clamav_scanfile_ELF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_HTML_fuzzer$(EXEEXT): $(clamav_scanfile_HTML_fuzzer_OBJECTS) $(clamav_scanfile_HTML_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_HTML_fuzzer_DEPENDENCIES)
+clamav_scanfile_HTML_fuzzer$(EXEEXT): $(clamav_scanfile_HTML_fuzzer_OBJECTS) $(clamav_scanfile_HTML_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_HTML_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_HTML_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_HTML_fuzzer_OBJECTS) $(clamav_scanfile_HTML_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_HWP3_fuzzer$(EXEEXT): $(clamav_scanfile_HWP3_fuzzer_OBJECTS) $(clamav_scanfile_HWP3_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_HWP3_fuzzer_DEPENDENCIES)
+clamav_scanfile_HWP3_fuzzer$(EXEEXT): $(clamav_scanfile_HWP3_fuzzer_OBJECTS) $(clamav_scanfile_HWP3_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_HWP3_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_HWP3_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_HWP3_fuzzer_OBJECTS) $(clamav_scanfile_HWP3_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_MAIL_fuzzer$(EXEEXT): $(clamav_scanfile_MAIL_fuzzer_OBJECTS) $(clamav_scanfile_MAIL_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_MAIL_fuzzer_DEPENDENCIES)
+clamav_scanfile_MAIL_fuzzer$(EXEEXT): $(clamav_scanfile_MAIL_fuzzer_OBJECTS) $(clamav_scanfile_MAIL_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_MAIL_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_MAIL_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_MAIL_fuzzer_OBJECTS) $(clamav_scanfile_MAIL_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_OLE2_fuzzer$(EXEEXT): $(clamav_scanfile_OLE2_fuzzer_OBJECTS) $(clamav_scanfile_OLE2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_OLE2_fuzzer_DEPENDENCIES)
+clamav_scanfile_OLE2_fuzzer$(EXEEXT): $(clamav_scanfile_OLE2_fuzzer_OBJECTS) $(clamav_scanfile_OLE2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_OLE2_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_OLE2_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_OLE2_fuzzer_OBJECTS) $(clamav_scanfile_OLE2_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_PDF_fuzzer$(EXEEXT): $(clamav_scanfile_PDF_fuzzer_OBJECTS) $(clamav_scanfile_PDF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_PDF_fuzzer_DEPENDENCIES)
+clamav_scanfile_PDF_fuzzer$(EXEEXT): $(clamav_scanfile_PDF_fuzzer_OBJECTS) $(clamav_scanfile_PDF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_PDF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_PDF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_PDF_fuzzer_OBJECTS) $(clamav_scanfile_PDF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_PE_fuzzer$(EXEEXT): $(clamav_scanfile_PE_fuzzer_OBJECTS) $(clamav_scanfile_PE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_PE_fuzzer_DEPENDENCIES)
+clamav_scanfile_PE_fuzzer$(EXEEXT): $(clamav_scanfile_PE_fuzzer_OBJECTS) $(clamav_scanfile_PE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_PE_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_PE_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_PE_fuzzer_OBJECTS) $(clamav_scanfile_PE_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_SWF_fuzzer$(EXEEXT): $(clamav_scanfile_SWF_fuzzer_OBJECTS) $(clamav_scanfile_SWF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_SWF_fuzzer_DEPENDENCIES)
+clamav_scanfile_SWF_fuzzer$(EXEEXT): $(clamav_scanfile_SWF_fuzzer_OBJECTS) $(clamav_scanfile_SWF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_SWF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_SWF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_SWF_fuzzer_OBJECTS) $(clamav_scanfile_SWF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_XMLDOCS_fuzzer$(EXEEXT): $(clamav_scanfile_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanfile_XMLDOCS_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_XMLDOCS_fuzzer_DEPENDENCIES)
+clamav_scanfile_XMLDOCS_fuzzer$(EXEEXT): $(clamav_scanfile_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanfile_XMLDOCS_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_XMLDOCS_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_XMLDOCS_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanfile_XMLDOCS_fuzzer_LDADD) $(LIBS)
 
-clamav_scanfile_fuzzer$(EXEEXT): $(clamav_scanfile_fuzzer_OBJECTS) $(clamav_scanfile_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_fuzzer_DEPENDENCIES)
+clamav_scanfile_fuzzer$(EXEEXT): $(clamav_scanfile_fuzzer_OBJECTS) $(clamav_scanfile_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanfile_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanfile_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanfile_fuzzer_OBJECTS) $(clamav_scanfile_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_ARCHIVE_fuzzer$(EXEEXT): $(clamav_scanmap_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanmap_ARCHIVE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_ARCHIVE_fuzzer_DEPENDENCIES)
+clamav_scanmap_ARCHIVE_fuzzer$(EXEEXT): $(clamav_scanmap_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanmap_ARCHIVE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_ARCHIVE_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_ARCHIVE_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_ARCHIVE_fuzzer_OBJECTS) $(clamav_scanmap_ARCHIVE_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_ELF_fuzzer$(EXEEXT): $(clamav_scanmap_ELF_fuzzer_OBJECTS) $(clamav_scanmap_ELF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_ELF_fuzzer_DEPENDENCIES)
+clamav_scanmap_ELF_fuzzer$(EXEEXT): $(clamav_scanmap_ELF_fuzzer_OBJECTS) $(clamav_scanmap_ELF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_ELF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_ELF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_ELF_fuzzer_OBJECTS) $(clamav_scanmap_ELF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_HTML_fuzzer$(EXEEXT): $(clamav_scanmap_HTML_fuzzer_OBJECTS) $(clamav_scanmap_HTML_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_HTML_fuzzer_DEPENDENCIES)
+clamav_scanmap_HTML_fuzzer$(EXEEXT): $(clamav_scanmap_HTML_fuzzer_OBJECTS) $(clamav_scanmap_HTML_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_HTML_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_HTML_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_HTML_fuzzer_OBJECTS) $(clamav_scanmap_HTML_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_HWP3_fuzzer$(EXEEXT): $(clamav_scanmap_HWP3_fuzzer_OBJECTS) $(clamav_scanmap_HWP3_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_HWP3_fuzzer_DEPENDENCIES)
+clamav_scanmap_HWP3_fuzzer$(EXEEXT): $(clamav_scanmap_HWP3_fuzzer_OBJECTS) $(clamav_scanmap_HWP3_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_HWP3_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_HWP3_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_HWP3_fuzzer_OBJECTS) $(clamav_scanmap_HWP3_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_MAIL_fuzzer$(EXEEXT): $(clamav_scanmap_MAIL_fuzzer_OBJECTS) $(clamav_scanmap_MAIL_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_MAIL_fuzzer_DEPENDENCIES)
+clamav_scanmap_MAIL_fuzzer$(EXEEXT): $(clamav_scanmap_MAIL_fuzzer_OBJECTS) $(clamav_scanmap_MAIL_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_MAIL_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_MAIL_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_MAIL_fuzzer_OBJECTS) $(clamav_scanmap_MAIL_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_OLE2_fuzzer$(EXEEXT): $(clamav_scanmap_OLE2_fuzzer_OBJECTS) $(clamav_scanmap_OLE2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_OLE2_fuzzer_DEPENDENCIES)
+clamav_scanmap_OLE2_fuzzer$(EXEEXT): $(clamav_scanmap_OLE2_fuzzer_OBJECTS) $(clamav_scanmap_OLE2_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_OLE2_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_OLE2_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_OLE2_fuzzer_OBJECTS) $(clamav_scanmap_OLE2_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_PDF_fuzzer$(EXEEXT): $(clamav_scanmap_PDF_fuzzer_OBJECTS) $(clamav_scanmap_PDF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_PDF_fuzzer_DEPENDENCIES)
+clamav_scanmap_PDF_fuzzer$(EXEEXT): $(clamav_scanmap_PDF_fuzzer_OBJECTS) $(clamav_scanmap_PDF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_PDF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_PDF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_PDF_fuzzer_OBJECTS) $(clamav_scanmap_PDF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_PE_fuzzer$(EXEEXT): $(clamav_scanmap_PE_fuzzer_OBJECTS) $(clamav_scanmap_PE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_PE_fuzzer_DEPENDENCIES)
+clamav_scanmap_PE_fuzzer$(EXEEXT): $(clamav_scanmap_PE_fuzzer_OBJECTS) $(clamav_scanmap_PE_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_PE_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_PE_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_PE_fuzzer_OBJECTS) $(clamav_scanmap_PE_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_SWF_fuzzer$(EXEEXT): $(clamav_scanmap_SWF_fuzzer_OBJECTS) $(clamav_scanmap_SWF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_SWF_fuzzer_DEPENDENCIES)
+clamav_scanmap_SWF_fuzzer$(EXEEXT): $(clamav_scanmap_SWF_fuzzer_OBJECTS) $(clamav_scanmap_SWF_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_SWF_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_SWF_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_SWF_fuzzer_OBJECTS) $(clamav_scanmap_SWF_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_XMLDOCS_fuzzer$(EXEEXT): $(clamav_scanmap_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanmap_XMLDOCS_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_XMLDOCS_fuzzer_DEPENDENCIES)
+clamav_scanmap_XMLDOCS_fuzzer$(EXEEXT): $(clamav_scanmap_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanmap_XMLDOCS_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_XMLDOCS_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_XMLDOCS_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_XMLDOCS_fuzzer_OBJECTS) $(clamav_scanmap_XMLDOCS_fuzzer_LDADD) $(LIBS)
 
-clamav_scanmap_fuzzer$(EXEEXT): $(clamav_scanmap_fuzzer_OBJECTS) $(clamav_scanmap_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_fuzzer_DEPENDENCIES)
+clamav_scanmap_fuzzer$(EXEEXT): $(clamav_scanmap_fuzzer_OBJECTS) $(clamav_scanmap_fuzzer_DEPENDENCIES) $(EXTRA_clamav_scanmap_fuzzer_DEPENDENCIES) 
 	@rm -f clamav_scanmap_fuzzer$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(clamav_scanmap_fuzzer_OBJECTS) $(clamav_scanmap_fuzzer_LDADD) $(LIBS)
 
