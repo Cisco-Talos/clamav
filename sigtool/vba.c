@@ -84,6 +84,15 @@ cli_ctx *convenience_ctx(int fd)
         free(ctx);
         return NULL;
     }
+
+    ctx->options = cli_calloc(1, sizeof(struct cl_scan_options));
+    if(!(ctx->options)){
+        printf("options initialization failed\n");
+        free(ctx->fmap);
+        free(engine);
+        free(ctx);
+        return NULL;
+    }
     return ctx;
 }
 
@@ -93,6 +102,7 @@ void destroy_ctx(int desc, cli_ctx *ctx)
     if (desc >= 0)
         close(desc);
     free(ctx->fmap);
+    free(ctx->options);
     cl_engine_free((struct cl_engine *)ctx->engine);
     free(ctx);
 }
