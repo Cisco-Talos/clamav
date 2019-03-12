@@ -33,17 +33,19 @@
  *  NOTE: This is used to store PE, MachO, and ELF section information. Not
  *  all members are populated by the respective parsing functions.
  *
- *  NOTE: This structure MUST stay in-sync with the ones defined within the
- *  clamav-bytecode-compiler source at:
- *  - clang/lib/Headers/bytecode_execs.h
- *  - llvm/tools/clang/lib/Headers/bytecode_execs.h
- *  We allocate space for an array of these and pass it directly to the
- *  bytecode sig runtime for use.
+ *  NOTE: This header file originates in the clamav-devel source and gets
+ *  copied into the clamav-bytecode-compiler source through a script
+ *  (sync-clamav.sh). This is done because an array of this structure is
+ *  allocated by libclamav and passed to the bytecode sig runtime.
  *
- *  TODO Next time we are making changes to the clamav-bytecode-compiler
- *  source, modify this structure to also include the section name (here and
- *  there).  Then, populate this field in the PE/MachO/ELF header parsing
- *  functions.  Choose a length that's reasonable for all platforms
+ *  If you need to make changes to this structure, you will need to update
+ *  it in both repos.  Also, I'm not sure whether changing this structure
+ *  would require a recompile of all previous bytecode sigs.  This should
+ *  be investigated before changes are made.
+ *
+ *  TODO Modify this structure to also include the section name (in both
+ *  repos).  Then, populate this field in the libclamav PE/MachO/ELF header
+ *  parsing functions.  Choose a length that's reasonable for all platforms
 */
 struct cli_exe_section {
     uint32_t rva;  /**< Relative VirtualAddress */
@@ -61,18 +63,17 @@ struct cli_exe_section {
  *  NOTE: This is used to store PE, MachO, and ELF executable information,
  *  but it predominantly has fields for PE info.  Not all members are
  *  populated by the respective parsing functions.
- * 
- *  TODO: Document which fields are PE only (maybe put those into a union of
- *  structs containing the various type-specific members)
-
- *  NOTE: This structure is also defined in the clamav-bytecode-compiler
- *  source at:
- *  - clang/lib/Headers/bytecode_execs.h
- *  - llvm/tools/clang/lib/Headers/bytecode_execs.h
- *  Based on how we use it, though, it doesn't need to stay in-sync
  *
- *  TODO Next time we are making changes to the clamav-bytecode-compiler
- *  source, remove this structure definition there so it's not confusing
+ *  NOTE: This header file originates in the clamav-devel source and gets
+ *  copied into the clamav-bytecode-compiler source through a script
+ *  (sync-clamav.sh). This is done because an array of cli_exe_section
+ *  structs is allocated by libclamav and passed to the bytecode sig
+ *  runtime.
+ *
+ *  This structure is not used by the bytecode sig runtime, so it can be
+ *  modified in the clamav-devel repo without requiring the changes to
+ *  be propagated to the clamav-bytecode-compile repo and that code rebuilt.
+ *  It'd be nice to keep them in sync if possible, though.
 */
 struct cli_exe_info {
     /** Information about all the sections of this file. 
@@ -91,15 +92,12 @@ struct cli_exe_info {
      */
     uint16_t nsections;
 
-    // TODO Remove - not required
-    void *dummy; /* for compat - preserve offset */
+    /***************** Begin PE-specific Section *****************/
 
-    /** Resources RVA - PE ONLY */
-    // TODO Maybe get rid of this - it looks like it's only used by the
-    // icon matching code (and maybe the bytecode API more broadly?)
+    /** Resources RVA */
     uint32_t res_addr;
 
-    /** Size of the  header (aligned) - PE ONLY. This corresponds to
+    /** Size of the  header (aligned). This corresponds to
      *  SizeOfHeaders in the optional header
     */
     uint32_t hdr_size;
@@ -140,7 +138,7 @@ struct cli_exe_info {
     /* Raw data copied in from the EXE directly.
      *
      * NOTE: The data in the members below haven't been converted to host
-     * endianness, so all field accesses most account for this to ensure
+     * endianness, so all field accesses must account for this to ensure
      * proper functionality on big endian systems (the PE header is always
      * little-endian)
      */
@@ -159,9 +157,10 @@ struct cli_exe_info {
      * the unpopulated entries will be memset'd to zero.
      */
     struct pe_image_data_dir dirs[16];
+
+    /***************** End PE-specific Section *****************/
 };
 
-// TODO Document
 void cli_exe_info_init(struct cli_exe_info *exeinfo, uint32_t offset);
 void cli_exe_info_destroy(struct cli_exe_info *exeinfo);
 

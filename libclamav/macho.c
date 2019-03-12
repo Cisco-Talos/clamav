@@ -204,8 +204,15 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     fmap_t *map = *ctx->fmap;
     ssize_t at;
 
-    if (fileinfo)
+    if (fileinfo) {
         matcher = 1;
+
+        // TODO This code assumes fileinfo->offset == 0, which might not always
+        // be the case.  For now just print this debug message and continue on
+        if (0 != fileinfo->offset) {
+            cli_dbgmsg("cli_scanmacho: Assumption Violated: fileinfo->offset != 0\n");
+        }
+    }
 
     if (fmap_readn(map, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
         cli_dbgmsg("cli_scanmacho: Can't read header\n");

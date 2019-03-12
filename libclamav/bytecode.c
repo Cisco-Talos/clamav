@@ -2818,6 +2818,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
             cli_bytecode_context_clear(&ctx);
             return rc;
         } else {
+            cli_bytecode_context_clear(&ctx);
             return CL_VIRUS;
         }
     }

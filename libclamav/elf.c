@@ -455,7 +455,6 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         section_hdr = (struct elf_section_hdr32 *)cli_calloc(shnum, shentsize);
         if (!section_hdr) {
             cli_errmsg("ELF: Can't allocate memory for section headers\n");
-            cli_exe_info_destroy(elfinfo);
             return CL_EMEM;
         }
         if (ctx) {
@@ -473,7 +472,6 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
                 cli_dbgmsg("ELF: Possibly broken ELF file\n");
             }
             free(section_hdr);
-            cli_exe_info_destroy(elfinfo);
             if (ctx && SCAN_HEURISTIC_BROKEN) {
                 cli_append_virus(ctx, "Heuristics.Broken.Executable");
                 return CL_VIRUS;
@@ -558,7 +556,6 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
         section_hdr = (struct elf_section_hdr64 *)cli_calloc(shnum, shentsize);
         if (!section_hdr) {
             cli_errmsg("ELF: Can't allocate memory for section headers\n");
-            cli_exe_info_destroy(elfinfo);
             return CL_EMEM;
         }
         if (ctx) {
@@ -576,7 +573,6 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
                 cli_dbgmsg("ELF: Possibly broken ELF file\n");
             }
             free(section_hdr);
-            cli_exe_info_destroy(elfinfo);
             if (ctx && SCAN_HEURISTIC_BROKEN) {
                 cli_append_virus(ctx, "Heuristics.Broken.Executable");
                 return CL_VIRUS;
@@ -804,6 +800,12 @@ int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
     int ret;
 
     cli_dbgmsg("in cli_elfheader\n");
+
+    // TODO This code assumes elfinfo->offset == 0, which might not always
+    // be the case.  For now just print this debug message and continue on
+    if (0 != elfinfo->offset) {
+        cli_dbgmsg("cli_elfheader: Assumption Violated: elfinfo->offset != 0\n");
+    }
 
     ret = cli_elf_fileheader(NULL, map, &file_hdr, &conv, &is64);
     if (ret != CL_CLEAN) {

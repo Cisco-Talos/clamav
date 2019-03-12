@@ -1505,7 +1505,7 @@ static int cli_scanhtml(cli_ctx *ctx)
 static int cli_scanscript(cli_ctx *ctx)
 {
     const unsigned char *buff;
-    unsigned char *normalized;
+    unsigned char *normalized = NULL;
     struct text_norm_state state;
     char *tmpname = NULL;
     int ofd       = -1, ret;
@@ -1513,6 +1513,8 @@ static int cli_scanscript(cli_ctx *ctx)
     uint32_t maxpatlen, offset = 0;
     struct cli_matcher *groot;
     struct cli_ac_data gmdata, tmdata;
+    int gmdata_initialized = 0;
+    int tmdata_initialized = 0;
     struct cli_ac_data *mdata[2];
     fmap_t *map;
     size_t at                  = 0;
@@ -1537,25 +1539,26 @@ static int cli_scanscript(cli_ctx *ctx)
     /* CL_ENGINE_MAX_SCRIPTNORMALIZE */
     if (curr_len > ctx->engine->maxscriptnormalize) {
         cli_dbgmsg("cli_scanscript: exiting (file larger than MaxScriptSize)\n");
-        return CL_CLEAN;
+        ret = CL_CLEAN;
+        goto done;
     }
 
     if (!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
         cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
-        return CL_EMEM;
+        ret = CL_EMEM;
+        goto done;
     }
     text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 
     if ((ret = cli_ac_initdata(&tmdata, troot ? troot->ac_partsigs : 0, troot ? troot->ac_lsigs : 0, troot ? troot->ac_reloff_num : 0, CLI_DEFAULT_AC_TRACKLEN))) {
-        free(normalized);
-        return ret;
+        goto done;
     }
+    tmdata_initialized = 1;
 
     if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
-        cli_ac_freedata(&tmdata);
-        free(normalized);
-        return ret;
+        goto done;
     }
+    gmdata_initialized = 1;
 
     /* dump to disk only if explicitly asked to
      * or if necessary to check relative offsets,
@@ -1662,9 +1665,18 @@ static int cli_scanscript(cli_ctx *ctx)
 
 done:
     cli_targetinfo_destroy(&info);
-    free(normalized);
-    cli_ac_freedata(&tmdata);
-    cli_ac_freedata(&gmdata);
+
+    if (NULL != normalized) {
+        free(normalized);
+    }
+
+    if (tmdata_initialized) {
+        cli_ac_freedata(&tmdata);
+    }
+
+    if (gmdata_initialized) {
+        cli_ac_freedata(&gmdata);
+    }
 
     if (ofd != -1)
         close(ofd);
