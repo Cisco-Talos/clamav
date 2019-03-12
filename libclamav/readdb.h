@@ -28,19 +28,14 @@
 #include "str.h"
 #include "cvd.h"
 
-// TODO Is it safe to remove .db2 and .db3 from here?  These strings aren't
-// referenced anywhere else in the source.
-
-// NOTE: We don't include .info in CLI_DBEXT because they are only used for
-// one specific purpose - verifying the contents of database container files.
-// This list is geared towards file extensions of files that users can provide
-// to ClamAV directly.
+/* NOTE: We don't include .info in CLI_DBEXT because they are only used for
+ * one specific purpose - verifying the contents of database container files.
+ * This list is geared towards file extensions of files that users can provide
+ * to ClamAV directly. */
 #ifdef HAVE_YARA
 #define CLI_DBEXT(ext)                   \
     (                                    \
         cli_strbcasestr(ext, ".db") ||   \
-        cli_strbcasestr(ext, ".db2") ||  \
-        cli_strbcasestr(ext, ".db3") ||  \
         cli_strbcasestr(ext, ".hdb") ||  \
         cli_strbcasestr(ext, ".hdu") ||  \
         cli_strbcasestr(ext, ".fp") ||   \
@@ -82,8 +77,6 @@
 #define CLI_DBEXT(ext)                   \
     (                                    \
         cli_strbcasestr(ext, ".db") ||   \
-        cli_strbcasestr(ext, ".db2") ||  \
-        cli_strbcasestr(ext, ".db3") ||  \
         cli_strbcasestr(ext, ".hdb") ||  \
         cli_strbcasestr(ext, ".hdu") ||  \
         cli_strbcasestr(ext, ".fp") ||   \

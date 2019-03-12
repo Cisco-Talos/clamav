@@ -504,23 +504,39 @@ int cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned 
     return CL_SUCCESS;
 }
 
+/**
+ * Initialize a struct cli_target_info so that it's ready to have its exeinfo
+ * populated by the call to cli_targetinfo and/or destroyed by
+ * cli_targetinfo_destroy.
+ *
+ * @param info a pointer to the struct cli_target_info to initialize
+ */
 void cli_targetinfo_init(struct cli_target_info *info)
 {
 
     if (NULL == info) {
         return;
     }
-    // Things that must be initialized here:
-    // - status (set to 0)
-    // - vinfo
-    // Maybe other things.
-    // TODO Consider replacing with just the required member assignments
-    // for performance
-    memset(info, 0, sizeof(struct cli_target_info));
-
-    cli_hashset_init_noalloc(&info->exeinfo.vinfo);
+    info->status = 0;
+    cli_exe_info_init(&(info->exeinfo), 0);
 }
 
+/** Parse the executable headers and, if successful, populate exeinfo
+ *
+ * @param info A structure to populate with info from the exe header. This
+ *             MUST be initialized via cli_targetinfo_init prior to calling
+ * @param target the target executable file type. Possible values are:
+ *               - 1 - PE32 / PE32+
+ *               - 6 - ELF
+ *               - 9 - MachO
+ * @param map The fmap_t backing the file being scanned
+ *
+ * @return If target refers to a supported executable file type, the exe header
+ *         will be parsed and, if successful, info->status will be set to 1.
+ *         If parsing the exe header fails, info->status will be set to -1.
+ *         The caller MUST destroy info via a call to cli_targetinfo_destroy
+ *         regardless of what info->status is set to.
+ */
 void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
 {
     int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
@@ -542,14 +558,21 @@ void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *m
         info->status = 1;
 }
 
+/**
+ * Free resources associated with a struct cli_target_info initialized
+ * via cli_targetinfo_init
+ *
+ * @param info a pointer to the struct cli_target_info to destroy
+ */
 void cli_targetinfo_destroy(struct cli_target_info *info)
 {
 
-    if (NULL == info || info->status != 1) {
+    if (NULL == info) {
         return;
     }
 
     cli_exe_info_destroy(&(info->exeinfo));
+    info->status = 0;
 }
 
 int cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
@@ -701,6 +724,9 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     const char **oldvirname;
     struct cli_exe_info info;
 
+    // TODO This isn't a good check, since EP will be zero for DLLs and
+    // (assuming pedata->ep is populated from exeinfo->pe) non-zero for
+    // some MachO and ELF executables
     if (!ctx->hooks.pedata->ep) {
         cli_dbgmsg("bytecode: matchicon only works with PE files\n");
         return -1;
@@ -981,7 +1007,18 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
      * (which is broken for signed binaries within signed binaries).
      * 
      * If we want to add support for more signature parsing in the future
-     * (Ex: MachO sigs), do that here too. */
+     * (Ex: MachO sigs), do that here too.
+     *
+     * One benefit of not continuing on to scan files with trusted signatures
+     * is that the bytes associated with the exe won't get counted against the
+     * scansize limits, which means we have an increased chance of catching
+     * malware in container types (NSIS, iShield, etc.) where the file size is
+     * large.  A common case where this occurs is installers that embed one
+     * or more of the various Microsoft Redistributable Setup packages.  These
+     * can easily be 5 MB or more in size, and might appear before malware
+     * does in a given sample.
+     */
+
     if (1 == info.status && i == 1) {
         ret = cli_check_auth_header(ctx, &(info.exeinfo));
 

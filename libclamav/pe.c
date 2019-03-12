@@ -373,6 +373,10 @@ void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_inf
         return;
     }
 
+    if (0 != peinfo->offset) {
+        cli_dbgmsg("findres: Assumption Violated: Looking for version info when peinfo->offset != 0\n");
+    }
+
     res_rva = EC32(peinfo->dirs[2].VirtualAddress);
 
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
@@ -3305,6 +3309,8 @@ int cli_scanpe(cli_ctx *ctx)
         uint32_t fileoffset;
         const char *tbuff;
 
+        // TODO shouldn't peinfo->ep be used here instead?  ep is the file
+        // offset, vep is the entry point RVA
         fileoffset = (peinfo->vep + cli_readint32(epbuff + 1) + 5);
         while (fileoffset == 0x154 || fileoffset == 0x158) {
             char *src;
@@ -4450,7 +4456,6 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  * @param map The fmap_t backing the file being scanned
  * @param peinfo A structure to populate with info from the PE header. This
  *               MUST be initialized via cli_exe_info_init prior to calling
- *               being passed in.
  * @param opts A bitfield indicating various options related to PE header
  *             parsing.  The options are (prefixed with CLI_PEHEADER_OPT_):
  *              - NONE - Do default parsing
@@ -4474,9 +4479,8 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  *         is returned. If it seems like the PE is broken,
  *         CLI_PEHEADER_RET_BROKEN_PE is returned.  Otherwise, one of the
  *         other error codes is returned.
- *         If CLI_PEHEADER_RET_SUCCESS is returned, it is the caller's
- *         responsibility to destroy peinfo.  Otherwise, it's safe to do
- *         so but not required.
+ *         The caller MUST destroy peinfo, regardless of what this function
+ *         returns.
  *
  * TODO What constitutes a "broken PE" seems somewhat arbitrary in places.
  * I think a PE should only be considered broken if it will not run on
@@ -4506,7 +4510,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     struct pe_image_file_hdr *file_hdr;
     struct pe_image_optional_hdr32 *opt32;
     struct pe_image_optional_hdr64 *opt64;
-    struct pe_image_section_hdr *section_hdrs;
+    struct pe_image_section_hdr *section_hdrs = NULL;
     unsigned int i, j, section_pe_idx;
     unsigned int err;
     uint32_t salign, falign;
@@ -4516,6 +4520,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     uint32_t is_exe = 0;
     int native      = 0;
     int read;
+    int ret = CLI_PEHEADER_RET_GENERIC_ERROR;
 #if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
@@ -4526,7 +4531,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         (opts & CLI_PEHEADER_OPT_COLLECT_JSON ||
          opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO)) {
         cli_errmsg("cli_peheader: ctx can't be NULL for options specified\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
 #if HAVE_JSON
@@ -4538,18 +4543,19 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     fsize = map->len - peinfo->offset;
     if (fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
         cli_dbgmsg("cli_peheader: Can't read DOS signature\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     if (EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
         cli_dbgmsg("cli_peheader: Invalid DOS signature\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     if (fmap_readn(map, &(peinfo->e_lfanew), peinfo->offset + 58 + sizeof(e_magic), sizeof(peinfo->e_lfanew)) != sizeof(peinfo->e_lfanew)) {
         /* truncated header? */
         cli_dbgmsg("cli_peheader: Unable to read e_lfanew - truncated header?\n");
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
 
     peinfo->e_lfanew = EC32(peinfo->e_lfanew);
@@ -4558,20 +4564,20 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     }
     if (!peinfo->e_lfanew) {
         cli_dbgmsg("cli_peheader: Not a PE file - e_lfanew == 0\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     if (fmap_readn(map, &(peinfo->file_hdr), peinfo->offset + peinfo->e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
         /* bad information in e_lfanew - probably not a PE file */
         cli_dbgmsg("cli_peheader: Can't read file header\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     file_hdr = &(peinfo->file_hdr);
 
     if (EC32(file_hdr->Magic) != PE_IMAGE_NT_SIGNATURE) {
         cli_dbgmsg("cli_peheader: Invalid PE signature (probably NE file)\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     if (EC16(file_hdr->Characteristics) & 0x2000) {
@@ -4745,7 +4751,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                 cli_dbgmsg("cli_peheader: Invalid NumberOfSections (>%d)\n", PE_MAXSECTIONS);
             }
         }
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
 
     timestamp    = (time_t)EC32(file_hdr->TimeDateStamp);
@@ -4753,13 +4760,14 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
     if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
         cli_dbgmsg("NumberOfSections: %d\n", peinfo->nsections);
-        cli_dbgmsg("TimeDateStamp: %s\n", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+        cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
         cli_dbgmsg("SizeOfOptionalHeader: 0x%x\n", opt_hdr_size);
     }
 
 #if HAVE_JSON
     if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
         cli_jsonint(pe_json, "NumberOfSections", peinfo->nsections);
+        /* NOTE: the TimeDateStamp value will look like "Wed Dec 31 19:00:00 1969\n" */
         cli_jsonstr(pe_json, "TimeDateStamp", cli_ctime(&timestamp, timestr, sizeof(timestr)));
         cli_jsonint(pe_json, "SizeOfOptionalHeader", opt_hdr_size);
     }
@@ -4776,13 +4784,15 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             pe_add_heuristic_property(ctx, "BadOptionalHeaderSize");
         }
 #endif
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
 
     at = peinfo->offset + peinfo->e_lfanew + sizeof(struct pe_image_file_hdr);
     if (fmap_readn(map, &(peinfo->pe_opt.opt32), at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("cli_peheader: Can't read optional file header\n");
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
     stored_opt_hdr_size = sizeof(struct pe_image_optional_hdr32);
     at += stored_opt_hdr_size;
@@ -4800,12 +4810,14 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                 pe_add_heuristic_property(ctx, "BadOptionalHeaderSizePE32Plus");
             }
 #endif
-            return CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            goto done;
         }
 
         if (fmap_readn(map, (void *)(((size_t) & (peinfo->pe_opt.opt64)) + sizeof(struct pe_image_optional_hdr32)), at, OPT_HDR_SIZE_DIFF) != OPT_HDR_SIZE_DIFF) {
             cli_dbgmsg("cli_peheader: Can't read additional optional file header bytes\n");
-            return CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            goto done;
         }
 
         stored_opt_hdr_size += OPT_HDR_SIZE_DIFF;
@@ -4987,14 +4999,16 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     if (!native && (!salign || (salign % 0x1000))) {
         cli_dbgmsg("cli_peheader: Bad section alignment\n");
         if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-            return CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            goto done;
         }
     }
 
     if (!native && (!falign || (falign % 0x200))) {
         cli_dbgmsg("cli_peheader: Bad file alignment\n");
         if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-            return CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            goto done;
         }
     }
 
@@ -5023,13 +5037,14 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
     if (opt_hdr_size < (stored_opt_hdr_size + data_dirs_size)) {
         cli_dbgmsg("cli_peheader: SizeOfOptionalHeader too small (doesn't include data dir size)\n");
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
 
     read = fmap_readn(map, peinfo->dirs, at, data_dirs_size);
     if (read < 0 || (uint32_t)read != data_dirs_size) {
         cli_dbgmsg("cli_peheader: Can't read optional file header data dirs\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
     at += data_dirs_size;
 
@@ -5060,25 +5075,21 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
     if (!peinfo->sections) {
         cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     section_hdrs = (struct pe_image_section_hdr *)cli_calloc(peinfo->nsections, sizeof(struct pe_image_section_hdr));
 
     if (!section_hdrs) {
         cli_dbgmsg("cli_peheader: Can't allocate memory for section headers\n");
-        free(peinfo->sections);
-        peinfo->sections = NULL;
-        return CLI_PEHEADER_RET_GENERIC_ERROR;
+        goto done;
     }
 
     read = fmap_readn(map, section_hdrs, at, peinfo->nsections * sizeof(struct pe_image_section_hdr));
     if (read < 0 || (uint32_t)read != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
         cli_dbgmsg("cli_peheader: Can't read section header - possibly broken PE file\n");
-        free(section_hdrs);
-        free(peinfo->sections);
-        peinfo->sections = NULL;
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
     at += sizeof(struct pe_image_section_hdr) * peinfo->nsections;
 
@@ -5122,10 +5133,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             if (section->raw >= fsize || section->uraw >= fsize) {
                 cli_dbgmsg("cli_peheader: Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
                 if (peinfo->nsections == 1) {
-                    free(section_hdrs);
-                    free(peinfo->sections);
-                    peinfo->sections = NULL;
-                    return CLI_PEHEADER_RET_BROKEN_PE;
+                    ret = CLI_PEHEADER_RET_BROKEN_PE;
+                    goto done;
                 }
 
                 for (j = i; j < peinfo->nsections - 1; j++)
@@ -5161,10 +5170,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             add_section_info(ctx, &peinfo->sections[i]);
 
             if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-                free(section_hdrs);
-                free(peinfo->sections);
-                peinfo->sections = NULL;
-                return CLI_PEHEADER_RET_JSON_TIMEOUT;
+                ret = CLI_PEHEADER_RET_JSON_TIMEOUT;
+                goto done;
             }
         }
 #endif
@@ -5207,10 +5214,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         if (!salign || (section->urva % salign)) { /* Bad section alignment */
             cli_dbgmsg("cli_peheader: Broken PE - section's VirtualAddress is misaligned\n");
             if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                free(section_hdrs);
-                free(peinfo->sections);
-                peinfo->sections = NULL;
-                return CLI_PEHEADER_RET_BROKEN_PE;
+                ret = CLI_PEHEADER_RET_BROKEN_PE;
+                goto done;
             }
         }
 
@@ -5218,22 +5223,16 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         // section? Why the exception for uraw?
         if (section->urva >> 31 || section->uvsz >> 31 || (section->rsz && section->uraw >> 31) || peinfo->sections[i].ursz >> 31) {
             cli_dbgmsg("cli_peheader: Found PE values with sign bit set\n");
-
-            free(section_hdrs);
-            free(peinfo->sections);
-            peinfo->sections = NULL;
-
-            return CLI_PEHEADER_RET_BROKEN_PE;
+            ret = CLI_PEHEADER_RET_BROKEN_PE;
+            goto done;
         }
 
         if (!i) {
             if (section->urva != peinfo->hdr_size) { /* Bad first section RVA */
                 cli_dbgmsg("cli_peheader: First section doesn't start immediately after the header\n");
                 if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                    free(section_hdrs);
-                    free(peinfo->sections);
-                    peinfo->sections = NULL;
-                    return CLI_PEHEADER_RET_BROKEN_PE;
+                    ret = CLI_PEHEADER_RET_BROKEN_PE;
+                    goto done;
                 }
             }
 
@@ -5243,10 +5242,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             if (section->urva - peinfo->sections[i - 1].urva != peinfo->sections[i - 1].vsz) { /* No holes, no overlapping, no virtual disorder */
                 cli_dbgmsg("cli_peheader: Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
                 if (opts & CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS) {
-                    free(section_hdrs);
-                    free(peinfo->sections);
-                    peinfo->sections = NULL;
-                    return CLI_PEHEADER_RET_BROKEN_PE;
+                    ret = CLI_PEHEADER_RET_BROKEN_PE;
+                    goto done;
                 }
             }
 
@@ -5268,15 +5265,12 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
     peinfo->overlay_size = fsize - peinfo->overlay_start;
 
-    free(section_hdrs);
-
     // NOTE: For DLLs the entrypoint is likely to be zero
-    // TODO ^^^ Does this mean this doesn't work for DLLs?
+    // TODO Should this offset include peinfo->offset?
     if (!(peinfo->ep = cli_rawaddr(peinfo->vep, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size)) && err) {
         cli_dbgmsg("cli_peheader: Broken PE file - Can't map EntryPoint to a file offset\n");
-        free(peinfo->sections);
-        peinfo->sections = NULL;
-        return CLI_PEHEADER_RET_BROKEN_PE;
+        ret = CLI_PEHEADER_RET_BROKEN_PE;
+        goto done;
     }
 
 #if HAVE_JSON
@@ -5284,9 +5278,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         cli_jsonint(pe_json, "EntryPointOffset", peinfo->ep);
 
         if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
-            free(peinfo->sections);
-            peinfo->sections = NULL;
-            return CLI_PEHEADER_RET_JSON_TIMEOUT;
+            ret = CLI_PEHEADER_RET_JSON_TIMEOUT;
+            goto done;
         }
     }
 #endif
@@ -5306,6 +5299,12 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         const uint8_t *vptr, *baseptr;
         uint32_t rva, res_sz;
 
+        // TODO This code assumes peinfo->offset == 0, which might not always
+        // be the case.
+        if (0 != peinfo->offset) {
+            cli_dbgmsg("cli_peheader: Assumption Violated: Looking for version info when peinfo->offset != 0\n");
+        }
+
         memset(&vlist, 0, sizeof(vlist));
         findres(0x10, 0xffffffff, map, peinfo, versioninfo_cb, &vlist);
         if (!vlist.count)
@@ -5313,9 +5312,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
         if (cli_hashset_init(&peinfo->vinfo, 32, 80)) {
             cli_errmsg("cli_peheader: Unable to init vinfo hashset\n");
-            free(peinfo->sections);
-            peinfo->sections = NULL;
-            return CLI_PEHEADER_RET_GENERIC_ERROR;
+            goto done;
         }
 
         err = 0;
@@ -5446,10 +5443,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
                             if (cli_hashset_addkey(&peinfo->vinfo, (uint32_t)(vptr - baseptr + 6))) {
                                 cli_errmsg("cli_peheader: Unable to add rva to vinfo hashset\n");
-                                cli_hashset_destroy(&peinfo->vinfo);
-                                free(peinfo->sections);
-                                peinfo->sections = NULL;
-                                return CLI_PEHEADER_RET_GENERIC_ERROR;
+                                goto done;
                             }
 
                             if (cli_debug_flag) {
@@ -5487,7 +5481,16 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     // Do final preperations for peinfo to be passed back
     peinfo->is_dll = is_dll;
 
-    return CLI_PEHEADER_RET_SUCCESS;
+    ret = CLI_PEHEADER_RET_SUCCESS;
+
+done:
+    /* In the fail case, peinfo will get destroyed by the caller */
+
+    if (NULL != section_hdrs) {
+        free(section_hdrs);
+    }
+
+    return ret;
 }
 
 // TODO We should sort based on VirtualAddress instead, since PointerToRawData

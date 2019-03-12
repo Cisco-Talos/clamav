@@ -4529,7 +4529,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     if ((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
         ret = CL_EOPEN;
-        goto cleanup;
+        goto done;
     }
 
     dirname_len = strlen(dirname);
@@ -4564,7 +4564,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         if (!dbfile) {
             cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
             ret = CL_EMEM;
-            goto cleanup;
+            goto done;
         }
         if (ends_with_sep)
             sprintf(dbfile, "%s%s", dirname, dent->d_name);
@@ -4585,6 +4585,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 
         } else if (!strcmp(dent->d_name, "daily.cld")) {
             /* the daily db must be loaded before main */
+            // TODO Why is this the case?
             load_priority = DB_LOAD_PRIORITY_DAILY_CLD;
 
             have_daily_cld = !access(dbfile, R_OK);
@@ -4593,7 +4594,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
                 if (!daily_cld) {
                     cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
                     ret = CL_EMALFDB;
-                    goto cleanup;
+                    goto done;
                 }
             }
 
@@ -4606,7 +4607,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
                 if (!daily_cvd) {
                     cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
                     ret = CL_EMALFDB;
-                    goto cleanup;
+                    goto done;
                 }
             }
 
@@ -4639,7 +4640,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         if (NULL == entry) {
             cli_errmsg("cli_loaddbdir(): entry == NULL\n");
             ret = CL_EMEM;
-            goto cleanup;
+            goto done;
         }
 
         entry->path          = dbfile;
@@ -4651,18 +4652,20 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     /* The list entries are stored in priority order, so now just loop through
      * and load everything.
      * NOTE: If there's a daily.cld and a daily.cvd, we'll only load whichever
-     * has the highest version number. */
-
-    // TODO Should we treat all cld/cvd pairs like we do the daily ones?
+     * has the highest version number.  If they have the same version number
+     * we load daily.cld, since that will load faster (it won't attempt to
+     * verify the digital signature of the db).
+     * TODO It'd be ideal if we treated all cld/cvd pairs like we do the daily
+     * ones, and only loaded the one with the highest version. */
     for (iter = head; iter != NULL; iter = iter->next) {
 
         if (DB_LOAD_PRIORITY_DAILY_CLD == iter->load_priority && have_daily_cvd) {
-            if (daily_cld->version <= daily_cvd->version) {
+            if (daily_cld->version < daily_cvd->version) {
                 continue;
             }
 
         } else if (DB_LOAD_PRIORITY_DAILY_CVD == iter->load_priority && have_daily_cld) {
-            if (daily_cld->version > daily_cvd->version) {
+            if (daily_cld->version >= daily_cvd->version) {
                 continue;
             }
         }
@@ -4670,11 +4673,11 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         ret = cli_load(iter->path, engine, signo, options, NULL);
         if (ret) {
             cli_errmsg("cli_loaddbdir(): error loading database %s\n", iter->path);
-            goto cleanup;
+            goto done;
         }
     }
 
-cleanup:
+done:
     for (iter = head; iter != NULL; iter = next) {
         next = iter->next;
         free(iter->path);
@@ -4763,7 +4766,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
         cli_dbgmsg("Bytecode engine disabled\n");
     }
 
-    if (cli_cache_init(engine))
+    if (!engine->cache && cli_cache_init(engine))
         return CL_EMEM;
 
     engine->dboptions |= dboptions;
@@ -5085,6 +5088,11 @@ int cl_engine_free(struct cl_engine *engine)
         mpool_free(engine->mempool, root);
     }
 
+    if ((root = engine->hm_imp)) {
+        hm_free(root);
+        mpool_free(engine->mempool, root);
+    }
+
     if ((root = engine->hm_fp)) {
         hm_free(root);
         mpool_free(engine->mempool, root);
@@ -5254,6 +5262,9 @@ int cl_engine_compile(struct cl_engine *engine)
 
     if (engine->hm_mdb)
         hm_flush(engine->hm_mdb);
+
+    if (engine->hm_imp)
+        hm_flush(engine->hm_imp);
 
     if (engine->hm_fp)
         hm_flush(engine->hm_fp);
