@@ -91,7 +91,7 @@ typedef enum {
 typedef struct file_buff_tag {
     int fd;
     unsigned char buffer[HTML_FILE_BUFF_LEN];
-    size_t length;
+    uint64_t length;
 } file_buff_t;
 
 struct tag_contents {
@@ -100,7 +100,7 @@ struct tag_contents {
 };
 
 // clang-format off
-static const int32_t base64_chars[256] = {
+static const int64_t base64_chars[256] = {
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,62, -1,-1,-1,63,
@@ -591,7 +591,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
     if (!s->length) {
         size_t remaining;
         if (strlen((const char *)ptr) >= 12) {
-            uint32_t expected;
+            uint64_t expected;
             expected = base64_chars[ptr[0]] < 0 ? 0 : base64_chars[ptr[0]] << 2;
             expected += base64_chars[ptr[1]] >> 4;
             expected += (base64_chars[ptr[1]] & 0x0f) << 12;
