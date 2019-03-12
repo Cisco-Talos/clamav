@@ -407,6 +407,9 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     sections[sect].rva = EC32(section.addr, conv);
                     sections[sect].vsz = EC32(section.size, conv);
                     sections[sect].raw = EC32(section.offset, conv);
+                    if ((uint64_t) 1 << EC32(section.align, conv) > INT32_MAX) {
+                        RETURN_BROKEN;
+                    }
                     section.align      = 1 << EC32(section.align, conv);
                     sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
                     strncpy(name, section.sectname, sizeof(name));
