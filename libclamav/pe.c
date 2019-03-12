@@ -2781,8 +2781,7 @@ int cli_scanpe(cli_ctx *ctx)
     struct cli_exe_info _peinfo;
     struct cli_exe_info *peinfo = &_peinfo;
 
-    uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO;
-    ;
+    uint32_t opts = CLI_PEHEADER_OPT_DBG_PRINT_INFO | CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS;
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
@@ -2808,16 +2807,20 @@ int cli_scanpe(cli_ctx *ctx)
         if (DETECT_BROKEN_PE) {
             // TODO Handle allmatch
             ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
+            cli_exe_info_destroy(peinfo);
             return ret;
         }
         cli_dbgmsg("cli_scanpe: PE header appears broken - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
+        cli_exe_info_destroy(peinfo);
         return CL_CLEAN;
 
     } else if (CLI_PEHEADER_RET_JSON_TIMEOUT == ret) {
         cli_dbgmsg("cli_scanpe: JSON creation timed out - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
+        cli_exe_info_destroy(peinfo);
         return CL_ETIMEOUT;
     } else if (CLI_PEHEADER_RET_GENERIC_ERROR == ret) {
         cli_dbgmsg("cli_scanpe: An error occurred when parsing the PE header - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
+        cli_exe_info_destroy(peinfo);
         return CL_CLEAN;
     }
 
@@ -4460,7 +4463,7 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  *             parsing.  The options are (prefixed with CLI_PEHEADER_OPT_):
  *              - NONE - Do default parsing
  *              - COLLECT_JSON - Populate ctx's json obj with PE header
- *                                   info
+ *                               info
  *              - DBG_PRINT_INFO - Print debug information about the
  *                                 PE file. Right now, cli_peheader is
  *                                 called multiple times for a given PE,
@@ -4473,6 +4476,10 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  *                                      executable cause RET_BROKEN_PE
  *                                      to be returned, but otherwise
  *                                      these will be tolerated.
+ *              - REMOVE_MISSING_SECTIONS - If a section exists outside of the
+ *                                          file, remove it from
+ *                                          peinfo->sections. Otherwise, the
+ *                                          rsz is just set to 0 for it.
  * @param ctx The overaching cli_ctx.  This is required with certain opts, but
  *            optional otherwise.
  * @return If the PE header is parsed successfully, CLI_PEHEADER_RET_SUCCESS
@@ -4489,6 +4496,13 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  *
  * TODO Simplify and get rid of CLI_PEHEADER_OPT_STRICT_ON_PE_ERRORS if
  * possible.  We should either fail always or ignore always, IMO.
+ *
+ * TODO Simplify and get rid of CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS if
+ * possible.  I don't think it makes sense to have pieces of the code work
+ * off of incomplete representations of the sections (for instance, I wonder
+ * if this makes any of the bytecode APIs return unexpected values).  This
+ * appears to have been implemented to prevent ClamAV from crashing, though,
+ * (bb11155) so we need to ensure the underlying issues are addressed.
  *
  * TODO Consolidate when information about the PE is printed (after successful
  * PE parsing).  This will allow us to simplify the code.  Some fail cases,
@@ -5126,39 +5140,46 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         section->uraw = EC32(section_hdr->PointerToRawData);
         section->ursz = EC32(section_hdr->SizeOfRawData);
 
-        // First, if a section exists totally outside of a file, remove the
-        // section from the list.
-        // TODO Document that this happens in the function documentation
+        /* First, if a section exists totally outside of a file, remove the
+         * section from the list or zero out it's size. */
         if (section->rsz) { /* Don't bother with virtual only sections */
             if (section->raw >= fsize || section->uraw >= fsize) {
                 cli_dbgmsg("cli_peheader: Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
-                if (peinfo->nsections == 1) {
-                    ret = CLI_PEHEADER_RET_BROKEN_PE;
-                    goto done;
+
+                if (opts & CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS) {
+                    if (peinfo->nsections == 1) {
+                        ret = CLI_PEHEADER_RET_BROKEN_PE;
+                        goto done;
+                    }
+
+                    for (j = i; j < peinfo->nsections - 1; j++)
+                        memcpy(&(peinfo->sections[j]), &(peinfo->sections[j + 1]), sizeof(struct cli_exe_section));
+
+                    for (j = i; j < peinfo->nsections - 1; j++)
+                        memcpy(&section_hdrs[j], &section_hdrs[j + 1], sizeof(struct pe_image_section_hdr));
+
+                    peinfo->nsections--;
+
+                    // Adjust i since we removed a section and continue on
+                    i--;
+                    continue;
+
+                } else {
+                    section->rsz  = 0;
+                    section->ursz = 0;
+                }
+            } else {
+
+                /* If a section is truncated, adjust it's size value */
+                if (!CLI_ISCONTAINED(0, fsize, section->raw, section->rsz)) {
+                    cli_dbgmsg("cli_peheader: PE Section %d raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
+                    section->rsz = fsize - section->raw;
                 }
 
-                for (j = i; j < peinfo->nsections - 1; j++)
-                    memcpy(&(peinfo->sections[j]), &(peinfo->sections[j + 1]), sizeof(struct cli_exe_section));
-
-                for (j = i; j < peinfo->nsections - 1; j++)
-                    memcpy(&section_hdrs[j], &section_hdrs[j + 1], sizeof(struct pe_image_section_hdr));
-
-                peinfo->nsections--;
-
-                // Adjust i since we removed a section and continue on
-                i--;
-                continue;
-            }
-
-            // Verify that the section is fully contained within the file
-            if (!CLI_ISCONTAINED(0, fsize, section->raw, section->rsz)) {
-                cli_dbgmsg("cli_peheader: PE Section %d raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
-                section->rsz = fsize - section->raw;
-            }
-
-            if (!CLI_ISCONTAINED(0, fsize, section->uraw, section->ursz)) {
-                cli_dbgmsg("cli_peheader: PE Section %d uraw+ursz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->uraw + section->ursz) - fsize);
-                section->ursz = fsize - section->uraw;
+                if (!CLI_ISCONTAINED(0, fsize, section->uraw, section->ursz)) {
+                    cli_dbgmsg("cli_peheader: PE Section %d uraw+ursz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->uraw + section->ursz) - fsize);
+                    section->ursz = fsize - section->uraw;
+                }
             }
         }
 
@@ -5548,6 +5569,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         cli_exe_info_init(peinfo, 0);
 
         if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
+            cli_exe_info_destroy(peinfo);
             return CL_EFORMAT;
         }
     }
@@ -5786,6 +5808,7 @@ int cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_section_t *
     cli_exe_info_init(peinfo, 0);
 
     if (cli_peheader(*ctx->fmap, peinfo, CLI_PEHEADER_OPT_NONE, NULL) != CLI_PEHEADER_RET_SUCCESS) {
+        cli_exe_info_destroy(peinfo);
         return CL_EFORMAT;
     }
 
