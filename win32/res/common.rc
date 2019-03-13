@@ -6,8 +6,8 @@
 #define REPO_VERSION VERSION
 #endif
 
-#define RES_VER_Q 0,101,1,0
-#define RES_VER_S "ClamAV 0.101.1"
+#define RES_VER_Q 0,101,2,0
+#define RES_VER_S "ClamAV 0.101.2"
 
 VS_VERSION_INFO VERSIONINFO
     FILEVERSION RES_VER_Q

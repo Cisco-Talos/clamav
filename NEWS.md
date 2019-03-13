@@ -3,6 +3,77 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.101.2
+
+ClamAV 0.101.2 is a patch release to address a handful of security related bugs.
+
+This patch release is being released alongside the 0.100.3 patch so that users
+who are unable to upgrade to 0.101 due to libclamav API changes are protected.
+
+This release includes 3 extra security related bug fixes that do not apply to
+prior versions.  In addition, it includes a number of minor bug fixes and
+improvements.
+
+- Fixes for the following vulnerabilities affecting 0.101.1 and prior:
+  - [CVE-2019-1787](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1787):
+    An out-of-bounds heap read condition may occur when scanning PDF
+    documents. The defect is a failure to correctly keep track of the number
+    of bytes remaining in a buffer when indexing file data.
+  - [CVE-2019-1789](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1789):
+    An out-of-bounds heap read condition may occur when scanning PE files
+    (i.e. Windows EXE and DLL files) that have been packed using Aspack as a
+    result of inadequate bound-checking.
+  - [CVE-2019-1788](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1788):
+    An out-of-bounds heap write condition may occur when scanning OLE2 files
+    such as Microsoft Office 97-2003 documents. The invalid write happens when
+    an invalid pointer is mistakenly used to initialize a 32bit integer to
+    zero. This is likely to crash the application.
+
+- Fixes for the following vulnerabilities affecting 0.101.1 and 0.101.0 only:
+  - [CVE-2019-1786](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1786):
+    An out-of-bounds heap read condition may occur when scanning malformed PDF
+    documents as a result of improper bounds-checking.
+  - [CVE-2019-1785](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1785):
+    A path-traversal write condition may occur as a result of improper input
+    validation when scanning RAR archives. Issue reported by aCaB.
+  - [CVE-2019-1798](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-1798):
+    A use-after-free condition may occur as a result of improper error
+    handling when scanning nested RAR archives. Issue reported by David L.
+
+- Fixes for the following assorted bugs:
+  - Added checks to prevent shifts from causing undefined behavior in HTML
+    normalizer, UPX unpacker, ARJ extractor, CPIO extractor, OLE2 parser,
+    LZW decompressor used in the PDF parser, Xz decompressor, and UTF-16 to
+    ASCII transcoder.
+  - Added checks to prevent integer overflow in UPX unpacker.
+  - Fix for minor memory leak in OLE2 parser.
+  - Fix to speed up PDF parser when handling truncated (or malformed) PDFs.
+  - Fix for memory leak in ARJ decoder failure condition.
+  - Fix for potential memory and file descriptor leak in HTML normalization code.
+
+- Removed use of problematic feature that converted file descriptors to
+  file paths. The feature was intended to improve performance when scanning
+  file types, notably RAR archives, for which the API requires a file path.
+  This feature caused issues in environments where the ClamAV engine is run
+  in a low-permissions or sandboxed process. RAR archives are still supported
+  with this change, but performance may suffer slightly if the file path is not
+  provided in calls to `cl_scandesc_callback()`.
+  - Added filename and tempfile names to scandesc calls in clamd.
+  - Added general scan option `CL_SCAN_GENERAL_UNPRIVILEGED` to treat the scan
+    engine as unprivileged, meaning that the scan engine will not have read
+    access to the file. Provided file paths are for logging purposes only.
+  - Added ability to create a temp file when scanning RAR archives when the
+    process does not have read access to the file path provided (i.e.
+    unprivileged is set, or an access check fails).
+
+Thank you to the Google OSS-Fuzz project for identifying and reporting many of
+the bugs patched in this release.
+
+Additional thanks to the following community members for submitting bug reports:
+
+- aCaB
+- David L.
+
 ## 0.101.1
 
 ClamAV 0.101.1 is an urgent patch release to address an issue in 0.101.0
@@ -99,18 +170,18 @@ we've cooked up over the past 6 months.
     |                                  | `AlertEncryptedArchive`      |
     |                                  | `AlertEncryptedDoc`          |
 
-    | Old `clamscan` option        | *New* `clamscan` option          |
-    | ---------------------------- | -------------------------------- |
-    | `--algorithmic-detection`    | `--heuristic-alerts`             |
-    | `--detect-broken`            | `--alert-broken`                 |
-    | `--phishing-cloak`           | `--alert-phishing-cloak`         |
-    | `--phishing-ssl`             | `--alert-phishing-ssl`           |
-    | `--partition-intersection`   | `--alert-partition-intersection` |
-    | `--block-max`                | `--alert-exceeds-max`            |
-    | `--block-macros`             | `--alert-macros`                 |
-    | `--block-encrypted`          | `--alert-encrypted`              |
-    |                              | `--alert-encrypted-archive`      |
-    |                              | `--alert-encrypted-doc`          |
+    | Old `clamscan` option      | *New* `clamscan` option          |
+    | -------------------------- | -------------------------------- |
+    | `--algorithmic-detection`  | `--heuristic-alerts`             |
+    | `--detect-broken`          | `--alert-broken`                 |
+    | `--phishing-cloak`         | `--alert-phishing-cloak`         |
+    | `--phishing-ssl`           | `--alert-phishing-ssl`           |
+    | `--partition-intersection` | `--alert-partition-intersection` |
+    | `--block-max`              | `--alert-exceeds-max`            |
+    | `--block-macros`           | `--alert-macros`                 |
+    | `--block-encrypted`        | `--alert-encrypted`              |
+    |                            | `--alert-encrypted-archive`      |
+    |                            | `--alert-encrypted-doc`          |
 
 ### Some more subtle improvements
 
