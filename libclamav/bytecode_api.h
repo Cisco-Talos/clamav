@@ -70,6 +70,8 @@ enum BytecodeKind {
     /** specifies a PRECLASS hook, executes at the end of file property collection and
       * operates on the original file targeted for property collection */
     BC_PRECLASS,
+    /** specifies an ELF unpacker, executed on ELF files on a logical trigger */
+    BC_ELF_UNPACKER,
     _BC_LAST_HOOK
 };
 
