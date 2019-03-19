@@ -2983,6 +2983,9 @@ void cli_bytecode_describe(const struct cli_bc *bc)
         case BC_PRECLASS:
             puts("preclass hook");
             break;
+        case BC_ELF_UNPACKER:
+            puts("ELF unpacker hook");
+            break;
         default:
             printf("Unknown (type %u)", bc->kind);
             break;
@@ -3023,6 +3026,12 @@ void cli_bytecode_describe(const struct cli_bc *bc)
                 puts("PRECLASS files matching logical signature");
             else
                 puts("all PRECLASS files!");
+            break;
+        case BC_ELF_UNPACKER:
+            if (bc->lsig)
+                puts("ELF files matching logical signature (unpacked)");
+            else
+                puts("all ELF files! (unpacked)");
             break;
         default:
             puts("N/A (unknown type)\n");

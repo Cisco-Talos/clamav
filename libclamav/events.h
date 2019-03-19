@@ -119,6 +119,7 @@ enum perfev {
     PERFT_BYTECODE,
     PERFT_KTIME,
     PERFT_UTIME,
+    PERFT_ELF,
     PERFT_LAST
 };
 
