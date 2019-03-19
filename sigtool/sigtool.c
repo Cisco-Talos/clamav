@@ -226,6 +226,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     if (fd < 0) {
         mprintf("!hashpe: Can't open file %s!\n", filename);
         free(ctx.containers);
+        free(ctx.fmap);
         cl_engine_free(engine);
         return -1;
     }
@@ -244,6 +245,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     if (!fmptr) {
         mprintf("!hashpe: fmap_need_off_once failed!\n");
         free(ctx.containers);
+        funmap(*ctx.fmap);
         free(ctx.fmap);
         close(fd);
         cl_engine_free(engine);
@@ -262,6 +264,10 @@ static int hashpe(const char *filename, unsigned int class, int type)
             break;
         default:
             mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
+            free(ctx.containers);
+            funmap(*ctx.fmap);
+            free(ctx.fmap);
+            close(fd);
             cl_engine_free(engine);
             return -1;
     }
@@ -286,6 +292,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     /* Cleanup */
     free(ctx.containers);
+    funmap(*ctx.fmap);
     free(ctx.fmap);
     close(fd);
     cl_engine_free(engine);
@@ -2280,6 +2287,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
         free(res);
     }
     free(ctx.containers);
+    funmap(*ctx.fmap);
     free(ctx.fmap);
     cl_engine_free(engine);
 }
@@ -3441,6 +3449,7 @@ static int dumpcerts(const struct optstruct *opts)
     if (fd < 0) {
         mprintf("!dumpcerts: Can't open file %s!\n", filename);
         free(ctx.containers);
+        free(ctx.fmap);
         cl_engine_free(engine);
         return -1;
     }
@@ -3479,6 +3488,7 @@ static int dumpcerts(const struct optstruct *opts)
 
     /* Cleanup */
     free(ctx.containers);
+    funmap(*ctx.fmap);
     free(ctx.fmap);
     close(fd);
     cl_engine_free(engine);
