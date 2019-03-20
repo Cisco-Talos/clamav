@@ -2426,8 +2426,8 @@ static const char *pdf_getdict(const char *q0, int *len, const char *key)
     }
 
     /* if the value is a dictionary object, include the < > brackets.*/
-    if (q[-1] == '<')
-        q--;
+    while (q > q0 && (q[-1] == '<' || q[-1] == '\n'))
+      q--;
 
     *len -= q - q0;
     return q;
@@ -2559,6 +2559,11 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
     if ((*q == '<') && (len >= 3)) {
         start = ++q;
         len -= 1;
+        // skip newlines after <
+        while (len > 0 && *start == '\n') {
+          start = ++q;
+          len -= 1;
+        }
         q = memchr(q + 1, '>', len - 1);
         if (!q)
             return NULL;
