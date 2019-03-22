@@ -54,7 +54,7 @@
 #include "../client/onaccess_client.h"
 
 extern pthread_t ddd_pid;
-extern reload;
+extern int reload;
 
 /*static void onas_fan_exit(int sig)
 {

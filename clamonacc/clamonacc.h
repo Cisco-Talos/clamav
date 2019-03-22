@@ -22,7 +22,7 @@
 #ifndef __ONAS_CLAMONACC_H
 #define __ONAS_CLAMONACC_H
 
-#include "clamav.h"
+#include "libclamav/clamav.h"
 
 struct onas_context {
 	const struct optstruct *opts;
