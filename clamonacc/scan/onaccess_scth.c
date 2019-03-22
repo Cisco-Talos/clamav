@@ -34,7 +34,7 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 
-#include "others.h"
+#include "libclamav/others.h"
 #include "clamd/priv_fts.h"
 #include "../misc/onaccess_others.h"
 #include "onaccess_scth.h"

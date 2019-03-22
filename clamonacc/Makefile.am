@@ -22,6 +22,9 @@ if BUILD_CLAMD
 
 bin_PROGRAMS = clamonacc
 
+clamonacc_CPPFLAGS="-g"
+clamonacc_CFLAGS="-g"
+
 clamonacc_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \

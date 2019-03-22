@@ -190,11 +190,13 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 
     if(optget(opts, "version")->enabled) {
 	print_server_version(ctx);
+	printf("here?");
 	return CL_BREAK;
     }
 
     if(optget(opts, "help")->enabled) {
     	help();
+	printf("here???");
 	return CL_BREAK;
     }
 
@@ -243,6 +245,8 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 
     maxstream = optget((*ctx)->clamdopts, "StreamMaxLength")->numarg;
 
+
+    printf("here????");
     return CL_SUCCESS;
 }
 

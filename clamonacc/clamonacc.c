@@ -35,8 +35,6 @@
 #include <time.h>
 #include <signal.h>
 
-#include "clamav.h"
-
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/output.h"
@@ -65,17 +63,18 @@ int main(int argc, char **argv)
 	/* Initialize context */
 	ctx = onas_init_context();
 	if(ctx == NULL) {
-		mprintf("!Clamonacc: can't initialize context\n");
+		logg("!Clamonacc: can't initialize context\n");
 		return 2;
 	}
 
 	/* Parse out all our command line options */
 	opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL);
 	if(opts == NULL) {
-		mprintf("!Clamonacc: can't parse command line options\n");
+		logg("!Clamonacc: can't parse command line options\n");
 		return 2;
 	}
 	ctx->opts = opts;
+        printf("opts\n");
 
 
 	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
@@ -84,25 +83,27 @@ int main(int argc, char **argv)
 		return 2;
 	}
 	ctx->clamdopts = clamdopts;
+        printf("clamdopts\n");
 
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {
 		case CL_SUCCESS:
-			if (onas_check_client_connection()) {
+			if (CL_SUCCESS == onas_check_client_connection()) {
 				break;
 			}
 		case CL_BREAK:
 			ret = 0;
+			logg("!Clamonacc: can't setup client\n");
 			goto clean_up;
 			break;
 		case CL_EARG:
 		default:
-			mprintf("!Clamonacc: can't setup client\n");
+			logg("!Clamonacc: can't setup client\n");
 			ret = 2;
 			goto clean_up;
 			break;
 	}
-
+	printf("client\n");
 #if defined(FANOTIFY)
 	/* Setup fanotify */
 	switch(onas_setup_fanotif(&ctx)) {

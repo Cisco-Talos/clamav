@@ -22,7 +22,7 @@
 #define __ONAS_IN_H
 
 #include "shared/optparser.h"
-#include "clamav.h"
+#include "libclamav/clamav.h"
 
 /*
  * Extra options for onas_scan_th(). 
