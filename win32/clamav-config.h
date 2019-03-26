@@ -138,10 +138,10 @@
 #define HAVE_CLOSEDIR 1
 
 /* Define to 1 if you have the `ctime_r' function. */
-#define HAVE_CTIME_R 1
+/* #undef HAVE_CTIME_R */
 
 /* ctime_r takes 2 arguments */
-#define HAVE_CTIME_R_2 1
+/* #undef HAVE_CTIME_R_2 */
 
 /* ctime_r takes 3 arguments */
 /* #undef HAVE_CTIME_R_3 */
@@ -202,7 +202,6 @@
 /* #undef HAVE_INITGROUPS */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-/* #undef HAVE_INTTYPES_H */
 #define HAVE_INTTYPES_H 1
 
 /* in_addr_t is defined */
@@ -210,6 +209,9 @@
 
 /* in_port_t is defined */
 #define HAVE_IN_PORT_T 1
+
+/* Define to 1 if you have the 'libjson' library (-ljson). */
+#define HAVE_JSON 1
 
 /* Define to '1' if you have the check.h library */
 /* #undef HAVE_LIBCHECK */
@@ -334,7 +336,7 @@
 #define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the <stdbool.h> header file. */
-/* #undef HAVE_STDBOOL_H */
+#define HAVE_STDBOOL_H 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 /* #undef HAVE_STDINT_H */
@@ -430,6 +432,12 @@
 /* "Major library version number" */
 #define LIBCLAMAV_MAJORVER 9
 
+/* "Full library version number" */
+#define LIBFRESHCLAM_FULLVER "2.0.0"
+
+/* "Major library version number" */
+#define LIBFRESHCLAM_MAJORVER 2
+
 /* Define if the OS needs help to load dependent libraries for dlopen(). */
 /* #undef LTDL_DLOPEN_DEPLIBS */
 
@@ -454,7 +462,7 @@
 #define LT_OBJDIR ""
 
 /* disable assertions */
-#define NDEBUG 1
+/* #undef NDEBUG */
 
 /* Define if dlsym() requires a leading underscore in symbol names. */
 /* #undef NEED_USCORE */
@@ -511,7 +519,7 @@
 #define STDC_HEADERS 1
 
 /* Support for IPv6 */
-/* #undef SUPPORT_IPv6 */
+#define SUPPORT_IPv6 1
 
 /* enable memory pools */
 #define USE_MPOOL 1

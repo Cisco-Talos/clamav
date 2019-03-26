@@ -1,3 +1,0 @@
-Pattern: Root test
-/XXX line 1: Root element is XXX, not AAA 
-./test/schematron/zvon4_1.xml fails to validate

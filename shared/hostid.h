@@ -1,10 +1,11 @@
 /*
- *  By Per Jessen <per@computer.org>
+ *  Copyright (C) 2014-2019 Cisco and/or its affiliates. All rights reserved.
+ *
+ *  Author: Shawn Webb
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -17,13 +18,24 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __EXECUTE_H
-#define __EXECUTE_H
+#ifndef __LIBFRESHCLAM_H
+#define __LIBFRESHCLAM_H
 
-#include "shared/optparser.h"
+extern char hostid[37];
 
-extern int g_active_children;
+/**
+ * @brief 
+ * 
+ * @return int 
+ */
+int is_valid_hostid(void);
 
-void execute(const char *type, const char *text, int bDaemonized);
+/**
+ * @brief Get the hostid object
+ * 
+ * @param cbdata 
+ * @return char* 
+ */
+char *get_hostid(void *cbdata);
 
-#endif
+#endif //__LIBFRESHCLAM_H

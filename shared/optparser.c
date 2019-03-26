@@ -442,7 +442,7 @@ const struct clam_option __clam_options[] = {
 
     {"DNSDatabaseInfo", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. Freshclam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
 
-    {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least two entries: db.XY.clamav.net (or db.XY.ipv6.clamav.net\nfor IPv6) and database.clamav.net (in this order). Please replace XY with your\ncountry code (see https://www.iana.org/domains/root/db).\ndatabase.clamav.net is a round-robin record which points to our most reliable\nmirrors. It's used as a fall back in case db.XY.clamav.net is not working.", "db.XY.clamav.net\ndatabase.clamav.net"},
+    {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: ddatabase.clamav.net.", "database.clamav.net"},
 
     {"PrivateMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "This option allows you to easily point freshclam to private mirrors.\nIf PrivateMirror is set, freshclam does not attempt to use DNS\nto determine whether its databases are out-of-date, instead it will\nuse the If-Modified-Since request or directly check the headers of the\nremote database files. For each database, freshclam first attempts\nto download the CLD file. If that fails, it tries to download the\nCVD file. This option overrides DatabaseMirror, DNSDatabaseInfo\nand Scripted Updates. It can be used multiple times to provide\nfall-back mirrors.", "mirror1.mynetwork.com\nmirror2.mynetwork.com"},
 
@@ -454,7 +454,9 @@ const struct clam_option __clam_options[] = {
 
     {"CompressLocalDatabase", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "By default freshclam will keep the local databases (.cld) uncompressed to\nmake their handling faster. With this option you can enable the compression.\nThe change will take effect with the next database update.", ""},
 
-    {"ExtraDatabase", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Download an additional 3rd party signature database distributed through\nthe ClamAV mirrors. This option can be used multiple times.", "dbname1\ndbname2"},
+    {"ExtraDatabase", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Include an optional signature databases (opt-in). This option can be used multiple times.", "dbname1\ndbname2"},
+
+    {"ExcludeDatabase", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "Exclude a standard signature database (opt-out). This option can be used multiple times.", "dbname1\ndbname2"},
 
     {"DatabaseCustomURL", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "With this option you can provide custom sources (http:// or file://) for database files.\nThis option can be used multiple times.", "http://myserver.com/mysigs.ndb\nfile:///mnt/nfs/local.hdb"},
 

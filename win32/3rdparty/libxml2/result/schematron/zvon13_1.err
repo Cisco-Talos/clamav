@@ -1,3 +1,0 @@
-Pattern: Sum equals 100%.
-/Total line 1: The values do not sum to 100%. 
-./test/schematron/zvon13_1.xml fails to validate

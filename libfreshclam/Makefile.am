@@ -16,6 +16,18 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
+libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
+libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
+
+if VERSIONSCRIPT
+libfreshclam_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libfreshclam/libfreshclam.map
+endif
+
+EXTRA_DIST = libfreshclam.map
+
+include_HEADERS = libfreshclam.h
+
 libfreshclam_la_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
@@ -29,29 +41,17 @@ libfreshclam_la_SOURCES = \
     $(top_srcdir)/shared/cdiff.h \
     $(top_srcdir)/shared/tar.c \
     $(top_srcdir)/shared/tar.h \
-    $(top_srcdir)/shared/clamdcom.c \
-    $(top_srcdir)/shared/clamdcom.h \
-	$(top_srcdir)/freshclam/freshclamcodes.h \
-	$(top_srcdir)/freshclam/manager.c \
-	$(top_srcdir)/freshclam/manager.h \
-	$(top_srcdir)/freshclam/notify.c \
-	$(top_srcdir)/freshclam/notify.h \
-	$(top_srcdir)/freshclam/dns.c \
-	$(top_srcdir)/freshclam/dns.h \
-	$(top_srcdir)/freshclam/execute.c \
-	$(top_srcdir)/freshclam/execute.h \
-	$(top_srcdir)/freshclam/nonblock.c \
-	$(top_srcdir)/freshclam/nonblock.h \
-	$(top_srcdir)/freshclam/mirman.c \
-	$(top_srcdir)/freshclam/mirman.h \
-	libfreshclam.c \
-	libfreshclam.h
+    libfreshclam.c \
+    libfreshclam_internal.c \
+    libfreshclam_internal.h \
+    dns.c \
+    dns.h
 
 lib_LTLIBRARIES = libfreshclam.la
 
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@  @JSON_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno

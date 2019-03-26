@@ -1,7 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#include <wincrypt.h>
+#endif
 
 #include <curl/curl.h>
 
@@ -27,14 +34,16 @@ typedef struct _write_data {
     char *str;
 } write_data;
 
+int g_debug = 0;
+
 void usage(char *name)
 {
     printf("\n");
-    printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
+    printf("                       Clam AntiVirus: Malware and False Positive Reporting Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
     printf("           (C) 2019 Cisco Systems, Inc.\n");
     printf("\n");
-    printf("    %s -hHinpVv?\n", name);
+    printf("    %s -hHinpVvd?\n", name);
     printf("\n");
     printf("    -h or -?                  Show this help\n");
     printf("    -v                        Show version\n");
@@ -43,6 +52,7 @@ void usage(char *name)
     printf("    -N [NAME]                 Your name contained in quotation marks (required)\n");
     printf("    -p [FILE/-]               Submit a false positive (FP)\n");
     printf("    -V [VIRUS]                Detected virus name (required with -p)\n");
+    printf("    -d                        Enable debug output\n");
     printf("\n");
     printf("You must specify -n or -p. Both are mutually exclusive. Pass in - as the filename for stdin.\n\n");
     exit(0);
@@ -110,7 +120,7 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 /**
  * @brief Parse a value from a JSON object, given a key.
- * 
+ *
  * @param ps_json_obj   The JSON object
  * @param key           The Key
  * @return const char*  The Value on Success, NULL on Failure.
@@ -131,6 +141,96 @@ const char *presigned_get_string(json_object *ps_json_obj, char *key)
     return json_str;
 }
 
+#ifdef _WIN32
+CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
+{
+    CURLcode status = CURLE_BAD_FUNCTION_ARGUMENT;
+
+    uint32_t numCertificatesFound = 0;
+
+    HCERTSTORE hStore              = NULL;
+    PCCERT_CONTEXT pWinCertContext = NULL;
+    X509 *x509                     = NULL;
+    X509_STORE *store              = SSL_CTX_get_cert_store((SSL_CTX *)ssl_ctx);
+
+    hStore = CertOpenSystemStoreA(NULL, "ROOT");
+
+    if (NULL == hStore) {
+        fprintf(stderr, "ERROR: Failed to open system certificate store.\n");
+        goto done;
+    }
+
+    while (NULL != (pWinCertContext = CertEnumCertificatesInStore(hStore, pWinCertContext))) {
+        int addCertResult                 = 0;
+        const unsigned char *encoded_cert = pWinCertContext->pbCertEncoded;
+
+        x509 = NULL;
+        x509 = d2i_X509(NULL, &encoded_cert, pWinCertContext->cbCertEncoded);
+        if (NULL == x509) {
+            fprintf(stderr, "ERROR: Failed to convert system certificate to x509.\n");
+            continue;
+        }
+
+        addCertResult = X509_STORE_add_cert(store, x509);
+        if (1 != addCertResult) {
+            fprintf(stderr, "ERROR: Failed to add x509 certificate to openssl certificate store.\n");
+            continue;
+        }
+
+        if (g_debug) {
+            char *issuer     = NULL;
+            size_t issuerLen = 0;
+            issuerLen        = CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, NULL, 0);
+
+            issuer = cli_malloc(issuerLen);
+            if (NULL == issuer) {
+                fprintf(stderr, "ERROR: Failed to allocate memory for certificate name.\n");
+                status = CURLE_OUT_OF_MEMORY;
+                goto done;
+            }
+
+            if (0 == CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, issuer, issuerLen)) {
+                fprintf(stderr, "ERROR: Failed to get friendly display name for certificate.\n");
+            } else {
+                fprintf(stdout, "Certificate loaded from Windows certificate store: %s\n", issuer);
+            }
+
+            free(issuer);
+        }
+
+        numCertificatesFound++;
+        X509_free(x509);
+    }
+
+    DWORD lastError = GetLastError();
+    switch (lastError) {
+        case E_INVALIDARG:
+            fprintf(stderr, "ERROR: The handle in the hCertStore parameter is not the same as that in the certificate context pointed to by pPrevCertContext.\n");
+            break;
+        case CRYPT_E_NOT_FOUND:
+        case ERROR_NO_MORE_FILES:
+            if (0 == numCertificatesFound) {
+                fprintf(stderr, "ERROR: No certificates were found.\n");
+            }
+            break;
+        default:
+            fprintf(stderr, "ERROR: Unexpected error code from CertEnumCertificatesInStore()\n");
+    }
+
+done:
+
+    if (NULL != pWinCertContext) {
+        CertFreeCertificateContext(pWinCertContext);
+    }
+    if (NULL != hStore) {
+        CertCloseStore(hStore, 0);
+    }
+
+    status = CURLE_OK;
+    return status;
+}
+#endif
+
 int main(int argc, char *argv[])
 {
     int status      = 1;
@@ -146,7 +246,6 @@ int main(int argc, char *argv[])
     header_data hd_malware   = {0, NULL, NULL};
     header_data hd_presigned = {0, NULL, NULL};
     json_object *ps_json_obj = NULL;
-    json_object *json_obj    = NULL;
     int malware              = 0;
     int len                  = 0;
     char *submissionID       = NULL;
@@ -188,6 +287,9 @@ int main(int argc, char *argv[])
             case 'V':
                 fpvname = optarg;
                 break;
+            case 'd':
+                g_debug = 1;
+                break;
             case 'h':
             case '?':
             default:
@@ -210,6 +312,12 @@ int main(int argc, char *argv[])
         }
         fromStream = 1;
     }
+
+#ifdef _WIN32
+    if (CURLE_OK != curl_easy_setopt(ch, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
+        fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
+    }
+#endif
 
     /*** The GET malware|fp ***/
     if (malware == 1)
@@ -485,7 +593,7 @@ int main(int argc, char *argv[])
     }
 
 cleanup:
-    /* 
+    /*
      * Cleanup
      */
     if (slist != NULL) {

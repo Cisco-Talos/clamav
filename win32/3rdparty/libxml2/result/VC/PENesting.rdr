@@ -1,4 +1,0 @@
-./test/VC/PENesting:1: parser error : StartTag: invalid element name
-<!ENTITY % pe1 "EMPTY> <!ELEMENT e2 EMPTY>"> 
- ^
-./test/VC/PENesting : failed to parse

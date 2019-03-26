@@ -636,7 +636,9 @@ ac_includes_default="\
 
 ac_func_list=
 enable_option_checking=no
-ac_subst_vars='ENABLE_YARA_FALSE
+ac_subst_vars='ENABLE_CLAMSUBMIT_FALSE
+ENABLE_CLAMSUBMIT_TRUE
+ENABLE_YARA_FALSE
 ENABLE_YARA_TRUE
 ENABLE_LLVM_FALSE
 ENABLE_LLVM_TRUE
@@ -659,6 +661,8 @@ UINT8_DEF
 INT8_DEF
 GENERATE_WARNING
 HAVE_STRNI
+CURL_LDFLAGS
+CURL_LIBS
 JSON_LDFLAGS
 JSON_LIBS
 SSL_LDFLAGS
@@ -678,6 +682,7 @@ CLAMD_LIBS
 LIBCLAMAV_LIBS
 PCRE_CPPFLAGS
 JSON_CPPFLAGS
+CURL_CPPFLAGS
 SSL_CPPFLAGS
 LIBCLAMSHARED_CPPFLAGS
 CLAMBC_CPPFLAGS
@@ -700,10 +705,6 @@ LIBPRELUDE_LDFLAGS
 LIBPRELUDE_PTHREAD_CFLAGS
 LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
-ENABLE_LIBFRESHCLAM_FALSE
-ENABLE_LIBFRESHCLAM_TRUE
-ENABLE_CLAMSUBMIT_FALSE
-ENABLE_CLAMSUBMIT_TRUE
 SYSTEM_LFS_FTS_FALSE
 SYSTEM_LFS_FTS_TRUE
 HAVE_YARA
@@ -813,6 +814,7 @@ LD
 FGREP
 SED
 LIBTOOL
+LIBFRESHCLAM_VERSION
 LIBCLAMAV_VERSION
 EGREP
 GREP
@@ -986,7 +988,6 @@ with_system_llvm
 with_llvm_linking
 enable_sha_collector_for_internal_use
 enable_yara
-enable_libfreshclam
 enable_prelude
 with_libprelude_prefix
 with_libcurl
@@ -1690,7 +1691,6 @@ if test -n "$ac_init_help"; then
   --enable-llvm           enable 'llvm' JIT/verifier support [default=auto]
 
   --disable-yara          do not include yara support
-  --enable-libfreshclam   enable building of libfreshclam
   --enable-prelude        Enable Prelude support for alerts.
   --enable-strni          enables explicit use of internal strn functions to
                           support cross-compilation against older libs
@@ -5942,17 +5942,33 @@ LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
 
-major=`expr $LC_CURRENT - $LC_AGE`
-
+LC_MAJOR=`expr $LC_CURRENT - $LC_AGE`
 
 cat >>confdefs.h <<_ACEOF
-#define LIBCLAMAV_FULLVER "$major.$LC_AGE.$LC_REVISION"
+#define LIBCLAMAV_FULLVER "$LC_MAJOR.$LC_AGE.$LC_REVISION"
 _ACEOF
 
 
+cat >>confdefs.h <<_ACEOF
+#define LIBCLAMAV_MAJORVER $LC_MAJOR
+_ACEOF
+
+
+LFC_CURRENT=2
+LFC_REVISION=0
+LFC_AGE=0
+LIBFRESHCLAM_VERSION="$LFC_CURRENT":"$LFC_REVISION":"$LFC_AGE"
+
+
+LFC_MAJOR=`expr $LFC_CURRENT - $LFC_AGE`
 
 cat >>confdefs.h <<_ACEOF
-#define LIBCLAMAV_MAJORVER $major
+#define LIBFRESHCLAM_FULLVER "$LFC_MAJOR.$LFC_AGE.$LFC_REVISION"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define LIBFRESHCLAM_MAJORVER $LFC_MAJOR
 _ACEOF
 
 
@@ -28516,37 +28532,6 @@ $as_echo "#define HAVE_SYSTEM_LFS_FTS 0" >>confdefs.h
 	lfs_fts_msg="internal, libc's is not LFS compatible"
 fi
 
- if test "$have_curl" = "yes"; then
-  ENABLE_CLAMSUBMIT_TRUE=
-  ENABLE_CLAMSUBMIT_FALSE='#'
-else
-  ENABLE_CLAMSUBMIT_TRUE='#'
-  ENABLE_CLAMSUBMIT_FALSE=
-fi
-
-
-# Check whether --enable-libfreshclam was given.
-if test "${enable_libfreshclam+set}" = set; then :
-  enableval=$enable_libfreshclam; enable_libfreshclam=$enableval
-else
-  enable_libfreshclam="no"
-fi
-
-
-if test "$enable_libfreshclam" = "yes"; then
-
-$as_echo "#define ENABLE_LIBFRESHCLAM 1" >>confdefs.h
-
-fi
- if test "$enable_libfreshclam" = "yes"; then
-  ENABLE_LIBFRESHCLAM_TRUE=
-  ENABLE_LIBFRESHCLAM_FALSE='#'
-else
-  ENABLE_LIBFRESHCLAM_TRUE='#'
-  ENABLE_LIBFRESHCLAM_FALSE=
-fi
-
-
 # PRELUDE
 # Check whether --enable-prelude was given.
 if test "${enable_prelude+set}" = set; then :
@@ -28894,26 +28879,29 @@ if test "X$have_curl" = "Xyes"; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBCURL_HOME" >&5
 $as_echo "$LIBCURL_HOME" >&6; }
     if test -f "$LIBCURL_HOME/bin/curl-config"; then
-        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_LDFLAGS="$LDFLAGS"
+        CURL_LIBS=$($LIBCURL_HOME/bin/curl-config --libs)
         CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
     else
         if test "$LIBCURL_HOME" != "/usr"; then
-            CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+            CURL_LDFLAGS="-L$LIBCURL_HOME/lib"
             CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
         else
-            CURL_LDFLAGS="-lcurl"
+            CURL_LDFLAGS="$LDFLAGS"
             CURL_CPPFLAGS=""
         fi
+        CURL_LIBS="-lcurl"
     fi
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$CURL_LDFLAGS"
+    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
 $as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
 if ${ac_cv_lib_curl_curl_easy_init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcurl $CURL_LDFLAGS $LIBS"
+LIBS="-lcurl $CURL_LIBS
+     $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -28944,17 +28932,27 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curl_curl_easy_init" >&5
 $as_echo "$ac_cv_lib_curl_curl_easy_init" >&6; }
 if test "x$ac_cv_lib_curl_curl_easy_init" = xyes; then :
-  curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"
+
+            curl_msg="";
+            have_curl="yes";
+            CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS $CURL_LIBS";
+            CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS";
+            FRESHCLAM_LIBS="$FRESHCLAM_LIBS $CURL_LDFLAGS $CURL_LIBS";
+            FRESHCLAM_CPPFLAGS="$FRESHCLAM_CPPFLAGS $CURL_CPPFLAGS"
+
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&5
-$as_echo "$as_me: WARNING: Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs." >&2;}
+
+            as_fn_error $? "Your libcurl is misconfigured. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit." "$LINENO" 5
+
 fi
 
     LDFLAGS="$save_LDFLAGS"
 else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs." >&5
-$as_echo "$as_me: WARNING: libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs." >&2;}
+    as_fn_error $? "libcurl not found. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit." "$LINENO" 5
 fi
+
+
+
 
 
 
@@ -29590,14 +29588,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -32465,14 +32455,6 @@ if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
   as_fn_error $? "conditional \"am__EXEEXT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -35178,65 +35160,110 @@ else
 fi
 
 
+
+   $as_echo_n "              openssl     : "
+   if test "xyes" = "xno"; then :
+  $as_echo "$LIBSSL_HOME (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "$LIBSSL_HOME"
+elif test "xyes" = "x"; then :
+  $as_echo "$LIBSSL_HOME"
+else
+  $as_echo "$LIBSSL_HOME (yes)"
+fi
+
+
+
+   $as_echo_n "              libcurl     : "
+   if test "xyes" = "xno"; then :
+  $as_echo "$LIBCURL_HOME (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "$LIBCURL_HOME"
+elif test "xyes" = "x"; then :
+  $as_echo "$LIBCURL_HOME"
+else
+  $as_echo "$LIBCURL_HOME (yes)"
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of optional tools" >&5
 $as_echo "$as_me: Summary of optional tools" >&6;}
 
+if test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"; then
+
 
    $as_echo_n "              clamdtop    : "
-   if test "x$enable_clamdtop" = "xno"; then :
-  $as_echo "$CURSES_LIBS (disabled)"
-elif test "x$enable_clamdtop" = "xyes"; then :
-  $as_echo "$CURSES_LIBS"
-elif test "x$enable_clamdtop" = "x"; then :
-  $as_echo "$CURSES_LIBS"
+   if test "xyes" = "xno"; then :
+  $as_echo "yes ($CURSES_LIBS) (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "yes ($CURSES_LIBS)"
+elif test "xyes" = "x"; then :
+  $as_echo "yes ($CURSES_LIBS)"
 else
-  $as_echo "$CURSES_LIBS ($enable_clamdtop)"
+  $as_echo "yes ($CURSES_LIBS) (yes)"
 fi
 
+else
+
+
+   $as_echo_n "              clamdtop    : "
+   if test "xno" = "xno"; then :
+  $as_echo "no (missing ncurses / pdcurses) (disabled)"
+elif test "xno" = "xyes"; then :
+  $as_echo "no (missing ncurses / pdcurses)"
+elif test "xno" = "x"; then :
+  $as_echo "no (missing ncurses / pdcurses)"
+else
+  $as_echo "no (missing ncurses / pdcurses) (no)"
+fi
+
+fi
+
+if test "X$have_milter" = "Xyes"; then
 
 
    $as_echo_n "              milter      : "
-   if test "x$have_milter" = "xno"; then :
-  $as_echo "yes (disabled)"
-elif test "x$have_milter" = "xyes"; then :
-  $as_echo "yes"
-elif test "x$have_milter" = "x"; then :
-  $as_echo "yes"
+   if test "xyes" = "xno"; then :
+  $as_echo "yes ($CLAMAV_MILTER_LIBS) (disabled)"
+elif test "xyes" = "xyes"; then :
+  $as_echo "yes ($CLAMAV_MILTER_LIBS)"
+elif test "xyes" = "x"; then :
+  $as_echo "yes ($CLAMAV_MILTER_LIBS)"
 else
-  $as_echo "yes ($have_milter)"
+  $as_echo "yes ($CLAMAV_MILTER_LIBS) (yes)"
 fi
 
-if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
+else
+
+
+   $as_echo_n "              milter      : "
+   if test "xno" = "xno"; then :
+  $as_echo "no (missing libmilter) (disabled)"
+elif test "xno" = "xyes"; then :
+  $as_echo "no (missing libmilter)"
+elif test "xno" = "x"; then :
+  $as_echo "no (missing libmilter)"
+else
+  $as_echo "no (missing libmilter) (no)"
+fi
+
+fi
+
+if test "X$have_json" = "Xyes"; then
 
 
    $as_echo_n "              clamsubmit  : "
    if test "xyes" = "xno"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME) (disabled)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (disabled)"
 elif test "xyes" = "xyes"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
 elif test "xyes" = "x"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
 else
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME) (yes)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (yes)"
 fi
 
 else
-    if test "X$have_curl" != "Xyes" && test "X$have_json" != "Xyes"; then
-
-
-   $as_echo_n "              clamsubmit  : "
-   if test "xno" = "xno"; then :
-  $as_echo "no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.) (disabled)"
-elif test "xno" = "xyes"; then :
-  $as_echo "no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)"
-elif test "xno" = "x"; then :
-  $as_echo "no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)"
-else
-  $as_echo "no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.) (no)"
-fi
-
-    else
-        if test "X$have_curl" = "Xyes"; then
 
 
    $as_echo_n "              clamsubmit  : "
@@ -35250,22 +35277,6 @@ else
   $as_echo "no (missing libjson-c-dev. Use the website to submit FPs/FNs.) (no)"
 fi
 
-        else
-
-
-   $as_echo_n "              clamsubmit  : "
-   if test "xno" = "xno"; then :
-  $as_echo "no (missing libcurl-devel. Use the website to submit FPs/FNs.) (disabled)"
-elif test "xno" = "xyes"; then :
-  $as_echo "no (missing libcurl-devel. Use the website to submit FPs/FNs.)"
-elif test "xno" = "x"; then :
-  $as_echo "no (missing libcurl-devel. Use the website to submit FPs/FNs.)"
-else
-  $as_echo "no (missing libcurl-devel. Use the website to submit FPs/FNs.) (no)"
-fi
-
-        fi
-    fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features" >&5

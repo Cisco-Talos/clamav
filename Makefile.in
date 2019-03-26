@@ -102,8 +102,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @ENABLE_CLAMSUBMIT_TRUE@am__append_1 = clamsubmit
-@ENABLE_LIBFRESHCLAM_TRUE@am__append_2 = libfreshclam
-@ENABLE_FUZZ_TRUE@am__append_3 = fuzz
+@ENABLE_FUZZ_TRUE@am__append_2 = fuzz
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -203,7 +202,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
-	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
@@ -313,9 +311,9 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam \
-	sigtool clamconf database docs etc clamav-milter test clamdtop \
-	clambc unit_tests clamsubmit libfreshclam fuzz
+DIST_SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
+	freshclam sigtool clamconf database docs etc clamav-milter \
+	test clamdtop clambc unit_tests clamsubmit fuzz
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -395,6 +393,9 @@ CLAMSUBMIT_CFLAGS = @CLAMSUBMIT_CFLAGS@
 CLAMSUBMIT_LIBS = @CLAMSUBMIT_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CURL_CPPFLAGS = @CURL_CPPFLAGS@
+CURL_LDFLAGS = @CURL_LDFLAGS@
+CURL_LIBS = @CURL_LIBS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CXX = @CXX@
@@ -458,6 +459,7 @@ LIBCLAMAV_CPPFLAGS = @LIBCLAMAV_CPPFLAGS@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
+LIBFRESHCLAM_VERSION = @LIBFRESHCLAM_VERSION@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
@@ -597,9 +599,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool \
-	clamconf database docs etc clamav-milter test clamdtop clambc \
-	unit_tests $(am__append_1) $(am__append_2) $(am__append_3)
+SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
+	freshclam sigtool clamconf database docs etc clamav-milter \
+	test clamdtop clambc unit_tests $(am__append_1) \
+	$(am__append_2)
 EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.md NEWS.md README.md
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig

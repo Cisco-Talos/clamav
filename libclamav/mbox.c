@@ -3,7 +3,7 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
+ *
  *  Acknowledgements: Some ideas came from Stephen White <stephen@earth.li>,
  *                    Michael Dankov <misha@btrc.ru>, Gianluigi Tiesi <sherpya@netfarm.it>,
  *                    Everton da Silva Marques, Thomas Lamy <Thomas.Lamy@in-online.net>,
@@ -67,6 +67,10 @@
 #include <pthread.h>
 #endif
 
+#if defined(_WIN32) || defined(_WIN64)
+#define strtok_r strtok_s
+#endif
+
 #include "clamav.h"
 #include "others.h"
 #include "str.h"
@@ -99,7 +103,10 @@
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
+
+#ifdef USE_SYSLOG
 #include <syslog.h>
+#endif
 
 static void sigsegv(int sig);
 static void print_trace(int use_syslog);
@@ -1815,8 +1822,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 * must be listed here */
                             break;
                         default:
-                            /* this is a subtype that we 
-						 * don't handle anyway, 
+                            /* this is a subtype that we
+						 * don't handle anyway,
 						 * don't store */
                             if (messages[multiparts]) {
                                 messageDestroy(messages[multiparts]);
@@ -3597,7 +3604,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
     src = cursrc = fmap_need_off_once(map, *at, input_len);
 
     /*	we check for eof from the result of GETC()
- *	if(feof(fin)) 
+ *	if(feof(fin))
 		return NULL;*/
     if (!src) {
         cli_dbgmsg("getline_from_mbox: fmap need failed\n");

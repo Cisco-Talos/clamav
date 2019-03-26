@@ -1,7 +1,7 @@
 ; -- ClamAV-Installer.iss --
 ; Install ClamAV.
-; Will install the correct files and DLLs built for two different 
-; for the system architecture (x86 or x64) using a single installer: 
+; Will install the correct files and DLLs built for two different
+; for the system architecture (x86 or x64) using a single installer:
 ; on a "x86" edition of Windows the x86 version of the program will be
 ; installed but on a "x64" edition of Windows the x64 version will
 ; be installed.
@@ -40,15 +40,24 @@ Source: "x64\Release\clamconf.exe"; DestDir: "{app}"; DestName: "clamconf.exe"; 
 Source: "x64\Release\clamd.exe"; DestDir: "{app}"; DestName: "clamd.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\clamdscan.exe"; DestDir: "{app}"; DestName: "clamdscan.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\clamscan.exe"; DestDir: "{app}"; DestName: "clamscan.exe"; Check: Is64BitInstallMode
+Source: "x64\Release\clamsubmit.exe"; DestDir: "{app}"; DestName: "clamsubmit.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\freshclam.exe"; DestDir: "{app}"; DestName: "freshclam.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dll"; Check: Is64BitInstallMode
+Source: "x64\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamunrar_iface.dll"; DestDir: "{app}"; DestName: "libclamunrar_iface.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamunrar.dll"; DestDir: "{app}"; DestName: "libclamunrar.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\mspack.dll"; DestDir: "{app}"; DestName: "mspack.dll"; Check: Is64BitInstallMode
-Source: "x64\Release\pthreads.dll"; DestDir: "{app}"; DestName: "pthreads.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: Is64BitInstallMode
-Source: "libcrypto-1_1-x64.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1-x64.dll"; Check: Is64BitInstallMode
-Source: "libssl-1_1-x64.dll"; DestDir: "{app}"; DestName: "libssl-1_1-x64.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libcrypto-1_1-x64.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1-x64.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libssl-1_1-x64.dll"; DestDir: "{app}"; DestName: "libssl-1_1-x64.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libcurl.dll"; DestDir: "{app}"; DestName: "libcurl.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libssh2.dll"; DestDir: "{app}"; DestName: "libssh2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\libxml2.dll"; DestDir: "{app}"; DestName: "libxml2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: Is64BitInstallMode
 
 ; x86 files here, first one should be marked 'solidbreak'
@@ -57,15 +66,24 @@ Source: "Win32\Release\clamconf.exe"; DestDir: "{app}"; DestName: "clamconf.exe"
 Source: "Win32\Release\clamd.exe"; DestDir: "{app}"; DestName: "clamd.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\clamdscan.exe"; DestDir: "{app}"; DestName: "clamdscan.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\clamscan.exe"; DestDir: "{app}"; DestName: "clamscan.exe"; Check: not Is64BitInstallMode
+Source: "Win32\Release\clamsubmit.exe"; DestDir: "{app}"; DestName: "clamsubmit.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\freshclam.exe"; DestDir: "{app}"; DestName: "freshclam.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dll"; Check: not Is64BitInstallMode
+Source: "Win32\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamunrar_iface.dll"; DestDir: "{app}"; DestName: "libclamunrar_iface.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamunrar.dll"; DestDir: "{app}"; DestName: "libclamunrar.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\mspack.dll"; DestDir: "{app}"; DestName: "mspack.dll"; Check: not Is64BitInstallMode
-Source: "Win32\Release\pthreads.dll"; DestDir: "{app}"; DestName: "pthreads.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: not Is64BitInstallMode
-Source: "libcrypto-1_1.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1.dll"; Check: not Is64BitInstallMode
-Source: "libssl-1_1.dll"; DestDir: "{app}"; DestName: "libssl-1_1.dll"; Check: not Is64BitInstallMode   
+Source: "C:\clam_dependencies\Win32\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libcrypto-1_1.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libssl-1_1.dll"; DestDir: "{app}"; DestName: "libssl-1_1.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libcurl.dll"; DestDir: "{app}"; DestName: "libcurl.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libssh2.dll"; DestDir: "{app}"; DestName: "libssh2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\libxml2.dll"; DestDir: "{app}"; DestName: "libxml2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x86.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not Is64BitInstallMode
 
 ; Place all common files here, first one should be marked 'solidbreak'
@@ -85,7 +103,7 @@ Source: "..\COPYING.unrar"; DestDir: "{app}\COPYING"; DestName: "COPYING.unrar"
 Source: "..\COPYING.YARA"; DestDir: "{app}\COPYING"; DestName: "COPYING.YARA"
 Source: "..\COPYING.zlib"; DestDir: "{app}\COPYING"; DestName: "COPYING.zlib"
 Source: "..\ChangeLog.md"; DestDir: "{app}\docs"; DestName: "ChangeLog.md"
-Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"              
+Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"
 Source: "..\README.md"; DestDir: "{app}"; DestName: "README.md"
 Source: "..\docs\html\*"; DestDir: "{app}\docs"; Flags: recursesubdirs
 
@@ -96,8 +114,8 @@ Name: "{app}\database"
 ; Modify the function with one (or more) of the VC_* constants to suit your version
 
 [Run]
-Filename: "{tmp}\vc_redist.x86.exe"; Parameters: "/q /norestart"; Check: not Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ 2015 Redistributables...; Flags: shellexec
-Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/q /norestart"; Check: Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ 2015 Redistributables...; Flags: shellexec
+Filename: "{tmp}\vc_redist.x86.exe"; Parameters: "/q /norestart"; Check: not Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ Redistributables...; Flags: shellexec
+Filename: "{tmp}\vc_redist.x64.exe"; Parameters: "/q /norestart"; Check: Is64BitInstallMode and VCRedistNeedsInstall; WorkingDir: {app}\redist; StatusMsg: Installing VC++ Redistributables...; Flags: shellexec
 Filename: file://{app}/docs/UserManual.html; Description: "Open the User Manual in the default browser"; Flags: postinstall shellexec
 
 [Code]
@@ -145,10 +163,10 @@ const
   VC_2010_SP1_REDIST_X64 = '{1D8E6291-B0D5-35EC-8441-6616F567A0F7}';
   VC_2010_SP1_REDIST_IA64 = '{88C73C1C-2DE5-3B01-AFB8-B46EF4AB41CD}';
 
-  // Microsoft Visual C++ 2012 x86 Minimum Runtime - 11.0.61030.0 (Update 4) 
+  // Microsoft Visual C++ 2012 x86 Minimum Runtime - 11.0.61030.0 (Update 4)
   VC_2012_REDIST_MIN_UPD4_X86 = '{BD95A8CD-1D9F-35AD-981A-3E7925026EBB}';
   VC_2012_REDIST_MIN_UPD4_X64 = '{CF2BEA3C-26EA-32F8-AA9B-331F7E34BA97}';
-  // Microsoft Visual C++ 2012 x86 Additional Runtime - 11.0.61030.0 (Update 4) 
+  // Microsoft Visual C++ 2012 x86 Additional Runtime - 11.0.61030.0 (Update 4)
   VC_2012_REDIST_ADD_UPD4_X86 = '{B175520C-86A2-35A7-8619-86DC379688B9}';
   VC_2012_REDIST_ADD_UPD4_X64 = '{37B8F9C7-03FB-3253-8781-2517C99D7C00}';
 
@@ -166,7 +184,14 @@ const
   VC_2015_REDIST_X86_ADD = '{BE960C1C-7BAD-3DE6-8B1A-2616FE532845}';
   VC_2015_REDIST_X64_ADD = '{BC958BD2-5DAC-3862-BB1A-C1BE0790438D}';
 
-function MsiQueryProductState(szProduct: string): INSTALLSTATE; 
+  // Visual C++ 2017 Redistributable 14.0.23026
+  VC_2017_REDIST_X86_MIN = '{029DA848-1A80-34D3-BFC1-A6447BFC8E7F}';
+  VC_2017_REDIST_X64_MIN = '{8D50D8C6-1E3D-3BAB-B2B7-A5399EA1EBD1}';
+
+  VC_2017_REDIST_X86_ADD = '{568CD07E-0824-3EEB-AEC1-8FD51F3C85CF}';
+  VC_2017_REDIST_X64_ADD = '{C668F044-4825-330D-8F9F-3CBFC9F2AB89}';
+
+function MsiQueryProductState(szProduct: string): INSTALLSTATE;
   external 'MsiQueryProductState{#AW}@msi.dll stdcall';
 
 function VCVersionInstalled(const ProductID: string): Boolean;
@@ -176,5 +201,5 @@ end;
 
 function VCRedistNeedsInstall: Boolean;
 begin
-  Result := not (VCVersionInstalled(VC_2015_REDIST_X86_MIN) or VCVersionInstalled(VC_2015_REDIST_X86_ADD) or VCVersionInstalled(VC_2015_REDIST_X64_MIN) or VCVersionInstalled(VC_2015_REDIST_X64_ADD));
+  Result := not (VCVersionInstalled(VC_2017_REDIST_X86_MIN) or VCVersionInstalled(VC_2017_REDIST_X86_ADD) or VCVersionInstalled(VC_2017_REDIST_X64_MIN) or VCVersionInstalled(VC_2017_REDIST_X64_ADD));
 end;

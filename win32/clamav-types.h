@@ -24,9 +24,7 @@
 #ifndef __CLAMAV_TYPES_H
 #define __CLAMAV_TYPES_H
 
-/* <inttypes.h> was added in VS2013, but will
- * continue to use <stdint.h> for now. */
-#include <stdint.h>
+#include <inttypes.h>
 
 /* Ensure we have print format types */
 /* PRIu64 should be in <inttypes.h> */

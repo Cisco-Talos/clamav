@@ -1,3 +1,0 @@
-Pattern: Test attribute
-/AAA/CCC[1] line 2: Attribute id is used in wrong context
-./test/schematron/zvon9_1.xml fails to validate

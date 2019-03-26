@@ -240,7 +240,7 @@ MSPACK_CFLAGS = $(LIBMSPACK_CFLAGS)
 MSPACKLIBADD = $(LIBMSPACK_LIBS)
 MSPACKDEP =
 
-libmspack/Makefile: 
+libmspack/Makefile:
 .PHONY: distdir distclean maintainer-clean
 distdir:
 	echo "make distdir requires --with-system-libmspack=no"
@@ -273,17 +273,17 @@ endif
 include_HEADERS = clamav.h
 
 libclamav_la_SOURCES = \
-        matcher-ac.c \
-        matcher-ac.h \
-        matcher-bm.c \
-        matcher-bm.h \
-        matcher-hash.c \
-        matcher-hash.h \
-        matcher.c \
-        matcher.h \
-        others.c \
-        others.h \
-        readdb.c \
+	matcher-ac.c \
+	matcher-ac.h \
+	matcher-bm.c \
+	matcher-bm.h \
+	matcher-hash.c \
+	matcher-hash.h \
+	matcher.c \
+	matcher.h \
+	others.c \
+	others.h \
+	readdb.c \
 	readdb.h \
 	cvd.c \
 	cvd.h \

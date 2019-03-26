@@ -87,9 +87,6 @@
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
 
-/* enable libfreshclam */
-#undef ENABLE_LIBFRESHCLAM
-
 /* use fanotify */
 #undef FANOTIFY
 
@@ -468,11 +465,17 @@
 /* For internal use only - DO NOT DEFINE */
 #undef HAVE__INTERNAL__SHA_COLLECT
 
-/* "Full library version number" */
+/* "Full clamav library version number" */
 #undef LIBCLAMAV_FULLVER
 
-/* "Major library version number" */
+/* "Major clamav library version number" */
 #undef LIBCLAMAV_MAJORVER
+
+/* "Full freshclam library version number" */
+#undef LIBFRESHCLAM_FULLVER
+
+/* "Major freshclam library version number" */
+#undef LIBFRESHCLAM_MAJORVER
 
 /* Define if the OS needs help to load dependent libraries for dlopen(). */
 #undef LTDL_DLOPEN_DEPLIBS

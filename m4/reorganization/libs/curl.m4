@@ -33,24 +33,40 @@ fi
 if test "X$have_curl" = "Xyes"; then
     AC_MSG_RESULT([$LIBCURL_HOME])
     if test -f "$LIBCURL_HOME/bin/curl-config"; then
-        CURL_LDFLAGS=$($LIBCURL_HOME/bin/curl-config --libs)
+        CURL_LDFLAGS="$LDFLAGS"
+        CURL_LIBS=$($LIBCURL_HOME/bin/curl-config --libs)
         CURL_CPPFLAGS=$($LIBCURL_HOME/bin/curl-config --cflags)
     else
         if test "$LIBCURL_HOME" != "/usr"; then
-            CURL_LDFLAGS="-L$LIBCURL_HOME/lib -lcurl"
+            CURL_LDFLAGS="-L$LIBCURL_HOME/lib"
             CURL_CPPFLAGS="-I$LIBCURL_HOME/include"
         else
-            CURL_LDFLAGS="-lcurl"
+            CURL_LDFLAGS="$LDFLAGS"
             CURL_CPPFLAGS=""
         fi
+        CURL_LIBS="-lcurl"
     fi
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$CURL_LDFLAGS"
-    AC_CHECK_LIB([curl], [curl_easy_init], [curl_msg="";have_curl="yes";CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS";CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS"],
-        [AC_MSG_WARN([Your libcurl is misconfigured. Please use the web interface for submitting FPs/FNs.])], [$CURL_LDFLAGS])
+    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+    AC_CHECK_LIB(
+        [curl],
+        [curl_easy_init],
+        [
+            curl_msg="";
+            have_curl="yes";
+            CLAMSUBMIT_LIBS="$CLAMSUBMIT_LIBS $CURL_LDFLAGS $CURL_LIBS";
+            CLAMSUBMIT_CFLAGS="$CLAMSUBMIT_CFLAGS $CURL_CPPFLAGS";
+            FRESHCLAM_LIBS="$FRESHCLAM_LIBS $CURL_LDFLAGS $CURL_LIBS";
+            FRESHCLAM_CPPFLAGS="$FRESHCLAM_CPPFLAGS $CURL_CPPFLAGS"
+        ],
+        [
+            AC_MSG_ERROR([Your libcurl is misconfigured. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit.])
+        ],
+        [$CURL_LIBS]
+    )
     LDFLAGS="$save_LDFLAGS"
 else
-    AC_MSG_WARN([libcurl not found or not requested by ./configure. Please use the web interface for submitting FPs/FNs.])
+    AC_MSG_ERROR([libcurl not found. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit.])
 fi
 
 AC_SUBST([CLAMSUBMIT_LIBS])

@@ -3667,6 +3667,6 @@ int main(int argc, char **argv)
         help();
 
     optfree(opts);
-    cl_cleanup_crypto();
+
     return ret ? 1 : 0;
 }

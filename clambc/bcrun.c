@@ -352,7 +352,8 @@ int main(int argc, char *argv[])
         for (i = 0; i < bc->num_func; ++i) {
             printf("########################################################################\n"
                    "####################### Function id %3u ################################\n"
-                   "########################################################################\n", i);
+                   "########################################################################\n",
+                   i);
             cli_bytevalue_describe(bc, i);
             cli_bytefunc_describe(bc, i);
         }
@@ -470,6 +471,6 @@ int main(int argc, char *argv[])
         close(fd);
     if (debug_flag)
         printf("[clambc] Exiting\n");
-    cl_cleanup_crypto();
+
     return 0;
 }

@@ -232,7 +232,12 @@ static int rename_logg(STATBUF *sb)
     }
 
     t = time(NULL);
+    
+#ifdef _WIN32
+    if (0 != localtime_s(&t, &tmp)) {
+#else
     if (!localtime_r(&t, &tmp)) {
+#endif
         if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but could not get local time.\n");
 
