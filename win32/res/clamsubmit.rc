@@ -1,0 +1,6 @@
+#define RES_FNAME "clamsubmit.exe"
+#define RES_NAME "clamsubmit"
+#define RES_FDESC "ClamAV - clamsubmit"
+#include "common.rc"
+
+1337 ICON "clam.ico"

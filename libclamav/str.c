@@ -295,9 +295,12 @@ int cli_strbcasestr(const char *haystack, const char *needle)
     return !strcasecmp(pt, needle);
 }
 
-/*
- * Remove trailing NL and CR characters from the end of the given string.
- * Return the new length of the string (ala strlen)
+/**
+ * @brief Remove trailing NL and CR characters from the end of the given string.
+ *
+ * @param string    string input
+ * @return int      the new length of the string (ala strlen)
+ * @return int      -1 if string was NULL.
  */
 int cli_chomp(char *string)
 {

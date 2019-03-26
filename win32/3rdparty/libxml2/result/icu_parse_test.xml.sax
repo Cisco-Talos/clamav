@@ -1,9 +1,0 @@
-SAX.setDocumentLocator()
-SAX.startDocument()
-SAX.startElement(foo)
-SAX.characters(
-Text with EUC-JP chars at pos, 170)
-SAX.characters(駪槗___
-_, 11)
-SAX.endElement(foo)
-SAX.endDocument()

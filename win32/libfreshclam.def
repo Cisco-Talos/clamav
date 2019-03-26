@@ -1,0 +1,18 @@
+LIBRARY libfreshclam
+; fc_functions
+; ------------
+;
+; These APIs are stable and can be safey linked by name or ordinal
+; Note: add new exports to the bottom of this block!
+
+EXPORTS fc_strerror @1
+EXPORTS fc_initialize @2
+EXPORTS fc_cleanup @3
+EXPORTS fc_prune_database_directory @4
+EXPORTS fc_test_database @5
+EXPORTS fc_dns_query_update_info @6
+EXPORTS fc_download_url_database @7
+EXPORTS fc_download_url_databases @8
+EXPORTS fc_update_database @9
+EXPORTS fc_update_databases @10
+EXPORTS fc_set_fccb_download_complete @12

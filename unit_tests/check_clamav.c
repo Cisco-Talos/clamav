@@ -1164,7 +1164,6 @@ int main(void)
 #if HAVE_LIBXML2
     xmlCleanupParser();
 #endif
-    cl_cleanup_crypto();
 
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

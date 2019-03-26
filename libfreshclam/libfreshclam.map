@@ -1,0 +1,19 @@
+FRESHCLAM_PUBLIC {
+  global:
+    fc_strerror;
+    fc_initialize;
+    fc_cleanup;
+    fc_prune_database_directory;
+    fc_test_database;
+    fc_dns_query_update_info;
+    fc_download_url_database;
+    fc_download_url_databases;
+    fc_update_database;
+    fc_update_databases;
+    fccb_download_complete;
+    fc_set_fccb_download_complete;
+};
+FRESHCLAM_PRIVATE {
+  local:
+    *;
+};

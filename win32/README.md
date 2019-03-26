@@ -7,15 +7,15 @@ For information on how to use ClamAV, please refer to our [User Manual](https://
 
 ### Installer Projects
 
-ClamAV 0.101 removes the old Visual Studio Installer Projects files (Setup-x64.vdproj, Setup-x86.vdproj). In their place we now build an installer using Inno Setup that is capable of installing ClamAV on both 32-bit and 64-bit architectures with one installer.
+ClamAV 0.101 removed the old Visual Studio Installer Projects files (Setup-x64.vdproj, Setup-x86.vdproj). In their place we now build an installer using Inno Setup that is capable of installing ClamAV on both 32-bit and 64-bit architectures with one installer.
 
 For more details, see the instructions below on how to build ClamAV.
 
-### OpenSSL
+### External library dependencies.
 
-In order to support more advanced features planned in future releases, ClamAV has switched to using OpenSSL for hashing. The ClamAV Visual Studio project included with ClamAV's source code requires the OpenSSL distributables to be placed in a specific directory. This article will teach you how to compile OpenSSL on a Microsoft Windows system and how to link ClamAV against OpenSSL.
+ClamAV relies on a handful of 3rd party libraries. In previous versions of ClamAV, most of these were copy-pasted into the win32/3rdparty directory, with the exception being OpenSSL. In ClamAV 0.102, all of these libraries are now external to ClamAV and must be compiled ahead of time as DLLs (or for zlib, a static lib) and placed in the %CLAM_DEPENDENCIES% (typically C:\clam_dependencies) directory so the ClamAV Visual Studio project files can find them. 
 
-[Read More here](http://blog.clamav.net/2014/07/compiling-openssl-for-windows.html "ClamAV Blog")
+To build each of these libraries, we recommend using [Mussels](https://github.com/Cisco-Talos/mussels).  Mussels is an open source application dependency build tool that can build the correct version of each dependency using the build tools intended by the original library authors.
 
 ### Socket and libclamav API input
 
@@ -39,14 +39,14 @@ even when redirected to a file.
 To build the source code you will need:
 
 - [Git for Windows](https://git-scm.com/download/win "Git SCM Windows Downloads") with a git "shell"
-- [Microsoft Visual Studio 2015](https://www.visualstudio.com/vs/older-downloads/ "Visual Studio Downloads"): the community version is just fine.
+- [Microsoft Visual Studio 2017](https://www.visualstudio.com/vs/older-downloads/ "Visual Studio Downloads"): the community version is just fine.
 
 To build the installer, you also need:
 
 - [Inno Setup 5](http://www.jrsoftware.org/isdl.php "Inno Setup installer creation tool")
 
 ClamAV is supported for Windows 7+, but Windows 10 is recommended.
-Visual Studio 2017 should work fine, but we currently work with Visual Studio 2015.
+Visual Studio 2019 should work fine, provided you install the platform toolkit for 2017.
 
 ## Getting the code
 
@@ -74,14 +74,13 @@ ClamAV for Windows uses the same code base as Unix/Linux based operating systems
 After downloading the source code, minimal configuration is required:
 
 1. Run the `win32/configure.bat` script *from within the git shell*. Skip this step if you are building from an official release tarball.
-2. Obtain OpenSSL V1.1.0 or higher.  You will need the headers, libs, and bins for the platform (Win32 or x64) that you're targeting.
-3. Place the headers and binaries in a directory with the following structure:
+2. Build the clamav_deps recipe collection using [Mussels](https://github.com/Cisco-Talos/mussels).  Mussels will install the headers and binaries in a directory structure similar to the tree described below, which is the format required by ClamAV Visual Studio project files and the `ClamAV-Installer.iss` InnoSetup 5 script.
     ```
     C:\clam_dependencies
     │
     ├───vcredist
-    │   ├───vc_redist.x64.exe <-- VS 2015 Redistributables installer (x64)
-    │   └───vc_redist.x86.exe <-- VS 2015 Redistributables installer (x86)
+    │   ├───vc_redist.x64.exe <-- VS 2017 Redistributables installer (x64)
+    │   └───vc_redist.x86.exe <-- VS 2017 Redistributables installer (x86)
     ├───Win32
     │   ├───include
     │   │   └───openssl  <-- openssl headers here
@@ -91,8 +90,10 @@ After downloading the source code, minimal configuration is required:
         │   └───openssl  <-- openssl headers here
         └───lib          <-- .DLLs and .LIBs here
     ```
-4. Add an environment variable with the name `CLAM_DEPENDENCIES` and set the value to the path of the above directory.
-5. At present, the Inno Setup script `ClamAV-Installer.iss` requires this directory to be located specifically at `C:\clam_dependencies` in order to build the installer:
+3. Copy `mussels\out\install` to `C:\clam_dependencies`*. Rename `C:\clam_dependencies\x86` to `C:\clam_dependencies\Win32`.
+4. Add an environment variable with the name `CLAM_DEPENDENCIES` and set the value to the path of the above directory. 
+
+   *Note: At present, the Inno Setup script `ClamAV-Installer.iss` requires this directory to be located specifically at `C:\clam_dependencies` in order to build the installer.
 
 ## Compilation
 
@@ -104,7 +105,7 @@ Alternatively, you can build from the command line (aka `cmd.exe`) by following 
 
 x64:
 ```cmd
-call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x64
+call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x64
 setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
 call configure.bat
 devenv ClamAV.sln /Clean "Release|x64" /useenv /ProjectConfig "Release|x64"
@@ -114,8 +115,8 @@ devenv ClamAV.sln /Rebuild "Release|x64" /useenv /ProjectConfig "Release|x64"'''
 x86:
 ```cmd
 reg Query "HKLM\\Hardware\\Description\\System\\CentralProcessor\\0" | find /i "x86" > NUL && set OS=32BIT || set OS=64BIT
-if %OS%==32BIT call "C:\\Program Files\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
-if %OS%==64BIT call "C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat" x86
+if %OS%==32BIT call "C:\\Program Files\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86
+if %OS%==64BIT call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86
 setx CLAM_DEPENDENCIES "C:\\clam_dependencies"
 call configure.bat
 devenv ClamAV.sln /Clean "Release|Win32" /useenv /ProjectConfig "Release|Win32"

@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
+#include <dirent.h>
 #ifndef _WIN32
 #include <sys/wait.h>
 #endif
@@ -49,247 +50,783 @@
 #include <syslog.h>
 #endif
 
+#include <curl/curl.h>
+
 #include "target.h"
 #include "clamav.h"
-#include "freshclam/freshclamcodes.h"
+#include "libfreshclam.h"
+#include "libfreshclam_internal.h"
+#include "dns.h"
 
-#include "libclamav/others.h"
-#include "libclamav/str.h"
-
-#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
-#include "freshclam/execute.h"
-#include "freshclam/manager.h"
-#include "freshclam/mirman.h"
-#include "libfreshclam.h"
-int sigchld_wait = 1;
-char updtmpdir[512], dbdir[512];
+#include "libclamav/others.h"
+#include "libclamav/regex_list.h"
+#include "libclamav/str.h"
 
-static int
-download(const struct optstruct *opts, const char *cfgfile)
+/*
+ * Private functions
+ */
+
+/*
+ * libclamav API functions
+ */
+const char *fc_strerror(fc_error_t fcerror)
 {
-    int ret = 0, attempt = 1, maxattempts = 0;
-    const struct optstruct *opt;
-
-    maxattempts = (int)optget(opts, "MaxAttempts")->numarg;
-    logg("*Max retries == %d\n", maxattempts);
-
-    if (!(opt = optget(opts, "DatabaseMirror"))->enabled) {
-        logg("^You must specify at least one database mirror in %s\n",
-             cfgfile);
-        return FCE_CONFIG;
-    } else {
-        while (opt) {
-            ret = downloadmanager(opts, opt->strarg, attempt);
-#ifndef _WIN32
-            alarm(0);
-#endif
-            if (ret == FCE_CONNECTION || ret == FCE_BADCVD || ret == FCE_FAILEDGET || ret == FCE_MIRRORNOTSYNC) {
-                if (attempt < maxattempts) {
-                    logg("Trying again in 5 secs...\n");
-                    attempt++;
-                    sleep(5);
-                    continue;
-                } else {
-                    logg("Giving up on %s...\n", opt->strarg);
-                    opt = (struct optstruct *)opt->nextarg;
-                    if (!opt) {
-                        logg("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check https://www.clamav.net/documents/official-mirror-faq for possible reasons.\n", cfgfile);
-                    }
-                }
-
-            } else {
-                return ret;
-            }
-        }
+    switch (fcerror) {
+        case FC_SUCCESS:
+            return "Success";
+        case FC_UPTODATE:
+            return "Up-to-date";
+        case FC_EINIT:
+            return "Failed to initalize";
+        case FC_EDIRECTORY:
+            return "Invalid, nonexistant, or inaccessible directory";
+        case FC_EFILE:
+            return "Invalid, nonexistant, or inaccessible file";
+        case FC_ECONNECTION:
+            return "Connection failed";
+        case FC_EEMPTYFILE:
+            return "Empty file";
+        case FC_EBADCVD:
+            return "Invalid or corrupted CVD/CLD database";
+        case FC_ETESTFAIL:
+            return "Test failed";
+        case FC_ECONFIG:
+            return "Invalid configuration settings(s)";
+        case FC_EDBDIRACCESS:
+            return "Failed to read/write file to database directory";
+        case FC_EFAILEDGET:
+            return "HTTP GET failed";
+        case FC_EMIRRORNOTSYNC:
+            return "Downloaded database had lower version than advertised";
+        case FC_ELOGGING:
+            return "Failed to write to log";
+        case FC_EFAILEDUPDATE:
+            return "Failed to update database";
+        case FC_EMEM:
+            return "Memory allocation error";
+        case FC_EARG:
+            return "Invalid argument(s)";
+        default:
+            return "Unknown libfreshclam error code!";
     }
-
-    return ret;
 }
 
-int download_with_opts(struct optstruct *opts, const char *db_path, const char *db_owner)
+fc_error_t fc_initialize(fc_config *fcConfig)
 {
-    const struct optstruct *opt;
-#ifdef HAVE_PWD_H
-    const char *dbowner;
-    struct passwd *user;
-#endif
-    struct mirdat mdat;
-    int ret;
+    fc_error_t status = FC_EARG;
+    STATBUF statbuf;
 
-#ifdef HAVE_PWD_H
-    if (db_owner) {
-        dbowner = db_owner;
-    } else {
-        /* freshclam shouldn't work with root privileges */
-        dbowner = optget(opts, "DatabaseOwner")->strarg;
+    if (NULL == fcConfig) {
+        printf("fc_initialize: Invalid arguments.\n");
+        return status;
     }
 
-    if (!geteuid()) {
-        if ((user = getpwnam(dbowner)) == NULL) {
-            logg("^Can't get information about user %s.\n", dbowner);
-            optfree(opts);
-            return FCE_USERINFO;
-        }
+    /* Initilize libcurl */
+    curl_global_init(CURL_GLOBAL_ALL);
 
-#ifdef HAVE_INITGROUPS
-        if (initgroups(dbowner, user->pw_gid)) {
-            logg("^initgroups() failed.\n");
-            optfree(opts);
-            return FCE_USERORGROUP;
+    /* Initialize mprintf options */
+    if (fcConfig->msgFlags & FC_CONFIG_MSG_DEBUG) cl_debug();
+    mprintf_verbose  = (fcConfig->msgFlags & FC_CONFIG_MSG_VERBOSE) ? 1 : 0;
+    mprintf_quiet    = (fcConfig->msgFlags & FC_CONFIG_MSG_QUIET) ? 1 : 0;
+    mprintf_nowarn   = (fcConfig->msgFlags & FC_CONFIG_MSG_NOWARN) ? 1 : 0;
+    mprintf_stdout   = (fcConfig->msgFlags & FC_CONFIG_MSG_STDOUT) ? 1 : 0;
+    mprintf_progress = (fcConfig->msgFlags & FC_CONFIG_MSG_SHOWPROGRESS) ? 1 : 0;
+
+    /* Initialize logger */
+    logg_verbose = (fcConfig->logFlags & FC_CONFIG_LOG_VERBOSE) ? 1 : 0;
+    logg_nowarn  = (fcConfig->logFlags & FC_CONFIG_LOG_NOWARN) ? 1 : 0;
+    logg_time    = (fcConfig->logFlags & FC_CONFIG_LOG_TIME) ? 1 : 0;
+    logg_rotate  = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
+    logg_size    = fcConfig->maxLogSize;
+    if (NULL != fcConfig->logFile) {
+        logg_file = cli_strdup(fcConfig->logFile);
+        if (0 != logg("#--------------------------------------\n")) {
+            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
+            status = FC_ELOGGING;
+            goto done;
         }
-#endif
     }
-#endif /* HAVE_PWD_H */
-
-    /* initialize some important variables */
-
-    if (optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled)
-        cl_debug();
-
-    if (optget(opts, "verbose")->enabled)
-        mprintf_verbose = 1;
-
-    if (optget(opts, "quiet")->enabled)
-        mprintf_quiet = 1;
-
-    if (optget(opts, "no-warnings")->enabled) {
-        mprintf_nowarn = 1;
-        logg_nowarn    = 1;
-    }
-
-    if (optget(opts, "stdout")->enabled)
-        mprintf_stdout = 1;
-
-    /* initialize logger */
-    logg_verbose = mprintf_verbose ? 1 : optget(opts, "LogVerbose")->enabled;
-    logg_time    = optget(opts, "LogTime")->enabled;
-    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
-    if (logg_size)
-        logg_rotate = optget(opts, "LogRotate")->enabled;
-
-    if ((opt = optget(opts, "UpdateLogFile"))->enabled) {
-        logg_file = opt->strarg;
-        if (logg("#--------------------------------------\n")) {
-            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n",
-                    logg_file);
-            optfree(opts);
-            return FCE_LOGGING;
-        }
-    } else
-        logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if (optget(opts, "LogSyslog")->enabled) {
-        int fac = LOG_LOCAL6;
-
-        if ((opt = optget(opts, "LogFacility"))->enabled) {
-            if ((fac = logg_facility(opt->strarg)) == -1) {
-                mprintf("!LogFacility: %s: No such facility.\n",
-                        opt->strarg);
-                optfree(opts);
-                return FCE_LOGGING;
-            }
+    /* Initialize syslog if available and requested */
+    if (fcConfig->logFlags & FC_CONFIG_LOG_SYSLOG) {
+        int logFacility = LOG_LOCAL6;
+        if ((NULL != fcConfig->logFacility) && (-1 == (logFacility = logg_facility(fcConfig->logFacility)))) {
+            mprintf("!LogFacility: %s: No such facility.\n", fcConfig->logFacility);
+            status = FC_ELOGGING;
+            goto done;
         }
 
-        openlog("freshclam", LOG_PID, fac);
+        openlog("freshclam", LOG_PID, logFacility);
         logg_syslog = 1;
     }
 #endif
 
-    /* change the current working directory */
-    if (chdir(optget(opts, "DatabaseDirectory")->strarg)) {
-        logg("!Can't change dir to %s\n",
-             optget(opts, "DatabaseDirectory")->strarg);
-        optfree(opts);
-        return FCE_DIRECTORY;
-    } else {
-        if (db_path) {
-            if (chdir(db_path)) {
-                logg("!Can't change dir to %s\n", db_path);
-                optfree(opts);
-                return FCE_DIRECTORY;
-            }
-        }
+    /* Optional connection settings. */
+    if (NULL != fcConfig->localIP) {
+#if !defined(CURLOPT_DNS_LOCAL_IP4) || !defined(CURLOPT_DNS_LOCAL_IP6)
+        mprintf("!The LocalIP feature was requested but this local IP support is not presently available.\n");
+        mprintf("!Your installation may require a newer version of libcurl or your libcurl build lacks the c-ares optional dependency.\n");
+#else
+        g_localIP = cli_strdup(fcConfig->localIP);
+#endif
+    }
+    if (NULL != fcConfig->userAgent) {
+        g_userAgent = cli_strdup(fcConfig->userAgent);
+    }
+    if (NULL != fcConfig->proxyServer) {
+        g_proxyServer = cli_strdup(fcConfig->proxyServer);
+        if (0 != fcConfig->proxyPort) {
+            g_proxyPort = fcConfig->proxyPort;
+        } else {
+            /*
+             * Proxy port not provided. Look up the default port for
+             * webcache in /etc/services.
+             * Default to 8080 if not provided.
+             */
+            const struct servent *webcache = getservbyname("webcache", "TCP");
 
-        if (!getcwd(dbdir, sizeof(dbdir))) {
-            logg("!getcwd() failed\n");
-            optfree(opts);
-            return FCE_DIRECTORY;
+            if (webcache)
+                g_proxyPort = ntohs(webcache->s_port);
+            else
+                g_proxyPort = 8080;
+
+            endservent();
         }
-        logg("*Current working dir is %s\n", dbdir);
+    }
+    if (NULL != fcConfig->proxyUsername) {
+        g_proxyUsername = cli_strdup(fcConfig->proxyUsername);
+    }
+    if (NULL != fcConfig->proxyPassword) {
+        g_proxyPassword = cli_strdup(fcConfig->proxyPassword);
     }
 
-    if (optget(opts, "list-mirrors")->enabled) {
-        if (mirman_read("mirrors.dat", &mdat, 1) == -1) {
-            printf("Can't read mirrors.dat\n");
-            optfree(opts);
-            return FCE_FILE;
-        }
-        mirman_list(&mdat);
-        mirman_free(&mdat);
-        optfree(opts);
-        return 0;
+    /* Validate that the database directory exists, and store it. */
+    if (LSTAT(fcConfig->databaseDirectory, &statbuf) == -1) {
+        logg("!Database directory does not exist: %s\n", fcConfig->databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    if (!S_ISDIR(statbuf.st_mode)) {
+        logg("!Database directory is not a directory: %s\n", fcConfig->databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    g_databaseDirectory = cli_strdup(fcConfig->databaseDirectory);
+
+    /* Validate that the temp directory exists, and store it. */
+    if (LSTAT(fcConfig->tempDirectory, &statbuf) == -1) {
+        logg("!Temp directory does not exist: %s\n", fcConfig->tempDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    if (!S_ISDIR(statbuf.st_mode)) {
+        logg("!Temp directory is not a directory: %s\n", fcConfig->tempDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    g_tempDirectory = cli_strdup(fcConfig->tempDirectory);
+
+    g_maxAttempts    = fcConfig->maxAttempts;
+    g_connectTimeout = fcConfig->connectTimeout;
+    g_requestTimeout = fcConfig->requestTimeout;
+
+    g_bCompressLocalDatabase = fcConfig->bCompressLocalDatabase;
+
+    status = FC_SUCCESS;
+
+done:
+    if (FC_SUCCESS != status) {
+        fc_cleanup();
     }
 
-    if ((opt = optget(opts, "PrivateMirror"))->enabled) {
-        struct optstruct *dbm, *opth;
+    return status;
+}
 
-        dbm         = (struct optstruct *)optget(opts, "DatabaseMirror");
-        dbm->active = dbm->enabled = 1;
-        do {
-            if (cli_strbcasestr(opt->strarg, ".clamav.net")) {
-                logg("!PrivateMirror: *.clamav.net is not allowed in this mode\n");
-                optfree(opts);
-                return FCE_PRIVATEMIRROR;
-            }
+void fc_cleanup(void)
+{
+    /* Cleanup libcurl */
+    curl_global_cleanup();
 
-            if (dbm->strarg)
-                free(dbm->strarg);
-            dbm->strarg = strdup(opt->strarg);
-            if (!dbm->strarg) {
-                logg("!strdup() failed\n");
-                optfree(opts);
-                return FCE_MEM;
-            }
-            if (!dbm->nextarg) {
-                dbm->nextarg =
-                    (struct optstruct *)calloc(1,
-                                               sizeof(struct optstruct));
-                if (!dbm->nextarg) {
-                    logg("!calloc() failed\n");
-                    optfree(opts);
-                    return FCE_MEM;
+    if (NULL != logg_file) {
+        free((void *)logg_file);
+        logg_file = NULL;
+    }
+    if (NULL != g_localIP) {
+        free(g_localIP);
+        g_localIP = NULL;
+    }
+    if (NULL != g_userAgent) {
+        free(g_userAgent);
+        g_userAgent = NULL;
+    }
+    if (NULL != g_proxyServer) {
+        free(g_proxyServer);
+        g_proxyServer = NULL;
+    }
+    if (NULL != g_proxyUsername) {
+        free(g_proxyUsername);
+        g_proxyUsername = NULL;
+    }
+    if (NULL != g_proxyPassword) {
+        free(g_proxyPassword);
+        g_proxyPassword = NULL;
+    }
+    if (NULL != g_databaseDirectory) {
+        free(g_databaseDirectory);
+        g_databaseDirectory = NULL;
+    }
+    if (NULL != g_tempDirectory) {
+        free(g_tempDirectory);
+        g_tempDirectory = NULL;
+    }
+}
+
+fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
+{
+    fc_error_t status = FC_EARG;
+
+    DIR *dir = NULL;
+    struct dirent *dent;
+    char fname[PATH_MAX];
+    char *extension = NULL;
+
+    if (!(dir = opendir(g_databaseDirectory))) {
+        logg("!checkdbdir: Can't open directory %s\n", g_databaseDirectory);
+        status = FC_EDBDIRACCESS;
+        goto done;
+    }
+
+    while ((dent = readdir(dir))) {
+        if (dent->d_ino) {
+            if ((NULL != (extension = strstr(dent->d_name, ".cld"))) ||
+                (NULL != (extension = strstr(dent->d_name, ".cvd")))) {
+
+                uint32_t i;
+                int bFound = 0;
+                for (i = 0; i < nDatabases; i++) {
+                    if (0 == strncmp(databaseList[i], dent->d_name, extension - dent->d_name)) {
+                        bFound = 1;
+                    }
+                }
+                if (!bFound) {
+                    /* Prune CVD/CLD */
+                    mprintf("Pruning unwanted or deprecated database file %s.\n", dent->d_name);
+                    if (unlink(fname)) {
+                        mprintf("!Failed to prune unwanted database file %s, consider removing it manually.\n", dent->d_name);
+                        status = FC_EDBDIRACCESS;
+                        goto done;
+                    }
                 }
             }
-            opth = dbm;
-            dbm  = dbm->nextarg;
-        } while ((opt = opt->nextarg));
-
-        opth->nextarg = NULL;
-        while (dbm) {
-            free(dbm->name);
-            free(dbm->cmd);
-            free(dbm->strarg);
-            opth = dbm;
-            dbm  = dbm->nextarg;
-            free(opth);
         }
-
-        /* disable DNS db checks */
-        opth         = (struct optstruct *)optget(opts, "no-dns");
-        opth->active = opth->enabled = 1;
-
-        /* disable scripted updates */
-        opth         = (struct optstruct *)optget(opts, "ScriptedUpdates");
-        opth->active = opth->enabled = 0;
     }
 
-    *updtmpdir = 0;
+    status = FC_SUCCESS;
 
-    ret = download(opts, NULL);
-    optfree(opts);
-    return ret;
+done:
+    if (NULL != dir) {
+        closedir(dir);
+    }
+    return status;
+}
+
+fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
+{
+    fc_error_t status        = FC_EARG;
+    struct cl_engine *engine = NULL;
+    unsigned newsigs         = 0;
+    cl_error_t cl_ret;
+
+    if ((NULL == dbFilename)) {
+        logg("^fc_test_database: Invalid arguments.\n");
+        goto done;
+    }
+
+    logg("*Loading signatures from %s\n", dbFilename);
+    if (NULL == (engine = cl_engine_new())) {
+        status = FC_ETESTFAIL;
+        goto done;
+    }
+
+    cl_engine_set_clcb_stats_submit(engine, NULL);
+
+    if (CL_SUCCESS != (cl_ret = cl_load(
+                           dbFilename, engine, &newsigs,
+                           CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_BYTECODE |
+                               CL_DB_PUA | CL_DB_ENHANCED))) {
+        logg("!Failed to load new database: %s\n", cl_strerror(cl_ret));
+        status = FC_ETESTFAIL;
+        goto done;
+    }
+
+    if (bBytecodeEnabled && (CL_SUCCESS != (cl_ret = cli_bytecode_prepare2(
+                                                engine, &engine->bcs,
+                                                engine->dconf->bytecode
+                                                /*FIXME: dconf has no sense here */)))) {
+        logg("!Failed to compile/load bytecode: %s\n", cl_strerror(cl_ret));
+        status = FC_ETESTFAIL;
+        goto done;
+    }
+    logg("*Properly loaded %u signatures from %s\n", newsigs, dbFilename);
+
+    status = FC_SUCCESS;
+
+done:
+
+    if (NULL != engine) {
+        if (engine->domainlist_matcher && engine->domainlist_matcher->sha256_pfx_set.keys)
+            cli_hashset_destroy(&engine->domainlist_matcher->sha256_pfx_set);
+
+        cl_engine_free(engine);
+    }
+
+    return status;
+}
+
+fc_error_t fc_dns_query_update_info(
+    const char *dnsUpdateInfoServer,
+    char **dnsUpdateInfo,
+    char **newVersion)
+{
+    fc_error_t status = FC_EFAILEDGET;
+    char *dnsReply    = NULL;
+
+#ifdef HAVE_RESOLV_H
+    unsigned int ttl;
+    char *reply_token = NULL;
+    int recordTime;
+    time_t currentTime;
+    int vwarning = 1;
+    char version_string[32];
+#endif /* HAVE_RESOLV_H */
+
+    if ((NULL == dnsUpdateInfo) || (NULL == newVersion)) {
+        logg("^dns_query_update_info: Invalid arguments.\n");
+        status = FC_EARG;
+        goto done;
+    }
+
+    *dnsUpdateInfo = NULL;
+    *newVersion    = NULL;
+
+#ifdef HAVE_RESOLV_H
+
+    if (dnsUpdateInfoServer == NULL) {
+        logg("^DNS Update Info disabled. Falling back to HTTP mode.\n");
+        goto done;
+    }
+
+    if (NULL == (dnsReply = dnsquery(dnsUpdateInfoServer, T_TXT, &ttl))) {
+        logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
+        goto done;
+    }
+
+    logg("*TTL: %d\n", ttl);
+
+    /*
+     * Check Record Time.
+     */
+    if (NULL == (reply_token = cli_strtok(dnsReply, DNS_UPDATEINFO_RECORDTIME, ":"))) {
+        logg("^Failed to find Record Time field in DNS Update Info.\n");
+        goto done;
+    }
+
+    recordTime = atoi(reply_token);
+    free(reply_token);
+    reply_token = NULL;
+
+    time(&currentTime);
+    if ((int)currentTime - recordTime > 10800) {
+        logg("^DNS record is older than 3 hours.\n");
+        goto done;
+    }
+
+    /*
+     * Check Version Warning Flag.
+     */
+    if (NULL == (reply_token = cli_strtok(dnsReply, DNS_UPDATEINFO_VERSIONWARNING, ":"))) {
+        logg("^Failed to find Version Warning Flag in DNS Update Info.\n");
+        goto done;
+    }
+
+    if (*reply_token == '0')
+        vwarning = 0;
+    free(reply_token);
+    reply_token = NULL;
+
+    /*
+     * Check the latest available ClamAV software version.
+     */
+    if (NULL == (reply_token = cli_strtok(dnsReply, DNS_UPDATEINFO_NEWVERSION, ":"))) {
+        logg("^Failed to find New Version field in DNS Update Info.\n");
+        goto done;
+    }
+
+    logg("*fc_dns_query_update_info: Software version from DNS: %s\n", reply_token);
+
+    /*
+     * Compare the latest available ClamAV version with this ClamAV version.
+     * Only throw a warning if the Version Warning Flag was set,
+     * and this is not a beta, release candidate, or development version.
+     */
+    strncpy(version_string, get_version(), sizeof(version_string));
+    version_string[31] = 0;
+
+    if (vwarning) {
+        if (!strstr(version_string, "devel") &&
+            !strstr(version_string, "beta") &&
+            !strstr(version_string, "rc")) {
+
+            char *suffix = strchr(version_string, '-');
+
+            if ((suffix && strncmp(version_string, reply_token, suffix - version_string)) ||
+                (!suffix && strcmp(version_string, reply_token))) {
+
+                logg("^Your ClamAV installation is OUTDATED!\n");
+                logg("^Local version: %s Recommended version: %s\n", version_string, reply_token);
+                logg("DON'T PANIC! Read https://www.clamav.net/documents/upgrading-clamav\n");
+                *newVersion = cli_strdup(reply_token);
+            }
+        }
+    }
+
+    free(reply_token);
+    reply_token = NULL;
+
+    *dnsUpdateInfo = dnsReply;
+
+    status = FC_SUCCESS;
+
+#endif /* HAVE_RESOLV_H */
+
+done:
+
+    if (FC_SUCCESS != status) {
+        free(dnsReply);
+    }
+
+    return status;
+}
+
+fc_error_t fc_update_database(
+    const char *database,
+    char **serverList,
+    uint32_t nServers,
+    int bPrivateMirror,
+    const char *dnsUpdateInfo,
+    int bScriptedUpdates,
+    void *context,
+    int *bUpdated)
+{
+    fc_error_t ret;
+    fc_error_t status = FC_EARG;
+
+    char *dbFilename = NULL;
+    char currDir[PATH_MAX];
+    int signo    = 0;
+    long attempt = 1;
+    uint32_t i;
+
+    currDir[0] = '\0';
+
+    if ((NULL == database) || (NULL == serverList) || (NULL == bUpdated)) {
+        logg("^fc_update_database: Invalid arguments.\n");
+        goto done;
+    }
+
+    *bUpdated = 0;
+
+    /* Store CWD */
+    if (!getcwd(currDir, PATH_MAX)) {
+        logg("!getcwd() failed\n");
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+
+    /* Change directory to database directory */
+    if (chdir(g_databaseDirectory)) {
+        logg("!Can't change dir to %s\n", g_databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    logg("*Current working dir is %s\n", g_databaseDirectory);
+
+    /*
+     * Attempt to update official database using DatabaseMirrors or PrivateMirrors.
+     */
+    for (i = 0; i < nServers; i++) {
+        for (attempt = 1; attempt <= g_maxAttempts; attempt++) {
+            ret = updatedb(
+                database,
+                dnsUpdateInfo,
+                serverList[i],
+                bPrivateMirror,
+                context,
+                bScriptedUpdates,
+                attempt == g_maxAttempts ? 1 : 0,
+                &signo,
+                &dbFilename,
+                bUpdated);
+
+            switch (ret) {
+                case FC_SUCCESS: {
+                    if (bUpdated) {
+                        logg("*fc_update_database: %s updated.\n", dbFilename);
+                        *bUpdated = 1;
+                    } else {
+                        logg("*fc_update_database: %s already up-to-date.\n", dbFilename);
+                    }
+                    goto success;
+                }
+                case FC_ECONNECTION:
+                case FC_EBADCVD:
+                case FC_EFAILEDGET:
+                case FC_EMIRRORNOTSYNC: {
+                    if (attempt < g_maxAttempts) {
+                        logg("Trying again in 5 secs...\n");
+                        attempt++;
+                        sleep(5);
+                    } else {
+                        logg("Giving up on %s...\n", serverList[i]);
+                        if (i == nServers - 1) {
+                            logg("!Update failed for database: %s\n", database);
+                            status = ret;
+                            goto done;
+                        }
+                    }
+                }
+                default: {
+                    logg("!Unexpected error when attempting to update database: %s\n", database);
+                    status = ret;
+                    goto done;
+                }
+            }
+        }
+    }
+
+success:
+
+    status = FC_SUCCESS;
+
+done:
+
+    if (NULL != dbFilename) {
+        free(dbFilename);
+    }
+
+    if (currDir[0] != '\0') {
+        /* Restore CWD */
+        if (chdir(currDir)) {
+            logg("!Failed to change back to original directory %s\n", currDir);
+            status = FC_EDIRECTORY;
+            goto done;
+        }
+        logg("*Current working dir restored to %s\n", currDir);
+    }
+
+    return status;
+}
+
+fc_error_t fc_update_databases(
+    char **databaseList,
+    uint32_t nDatabases,
+    char **serverList,
+    uint32_t nServers,
+    int bPrivateMirror,
+    const char *dnsUpdateInfo,
+    int bScriptedUpdates,
+    void *context,
+    uint32_t *nUpdated)
+{
+    fc_error_t ret;
+    fc_error_t status = FC_EARG;
+    uint32_t i;
+    int bUpdated        = 0;
+    uint32_t numUpdated = 0;
+
+    if ((NULL == databaseList) || (0 == nDatabases) || (NULL == serverList) || (NULL == nUpdated)) {
+        logg("^fc_update_databases: Invalid arguments.\n");
+        goto done;
+    }
+
+    *nUpdated = 0;
+
+    for (i = 0; i < nDatabases; i++) {
+        if (FC_SUCCESS != (ret = fc_update_database(
+                               databaseList[i],
+                               serverList,
+                               nServers,
+                               bPrivateMirror,
+                               dnsUpdateInfo,
+                               bScriptedUpdates,
+                               context,
+                               &bUpdated))) {
+            logg("^fc_update_databases: fc_update_database failed: %s (%d)\n", fc_strerror(ret), ret);
+            status = ret;
+            goto done;
+        }
+        if (bUpdated) {
+            numUpdated++;
+        }
+    }
+
+    *nUpdated = numUpdated;
+    status    = FC_SUCCESS;
+
+done:
+
+    return status;
+}
+
+fc_error_t fc_download_url_database(
+    const char *urlDatabase,
+    void *context,
+    int *bUpdated)
+{
+    fc_error_t ret;
+    fc_error_t status = FC_EARG;
+
+    char currDir[PATH_MAX];
+    long attempt     = 1;
+    char *dbFilename = NULL;
+
+    currDir[0] = '\0';
+
+    if ((NULL == urlDatabase) || (NULL == bUpdated)) {
+        logg("^fc_download_url_database: Invalid arguments.\n");
+        goto done;
+    }
+
+    *bUpdated = 0;
+
+    /* Store CWD */
+    if (!getcwd(currDir, PATH_MAX)) {
+        logg("!getcwd() failed\n");
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+
+    /* Change directory to database directory */
+    if (chdir(g_databaseDirectory)) {
+        logg("!Can't change dir to %s\n", g_databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    logg("*Current working dir is %s\n", g_databaseDirectory);
+
+    /*
+     * Attempt to update official database using DatabaseMirrors or PrivateMirrors.
+     */
+    for (attempt = 1; attempt <= g_maxAttempts; attempt++) {
+        int signo = 0;
+
+        ret = updatecustomdb(
+            urlDatabase,
+            context,
+            attempt == g_maxAttempts ? 1 : 0,
+            &signo,
+            &dbFilename,
+            bUpdated);
+
+        switch (ret) {
+            case FC_SUCCESS: {
+                if (bUpdated) {
+                    logg("*fc_download_url_database: %s updated.\n", dbFilename);
+                } else {
+                    logg("*fc_download_url_database: %s already up-to-date.\n", dbFilename);
+                }
+                goto success;
+            }
+            case FC_ECONNECTION:
+            case FC_EBADCVD:
+            case FC_EFAILEDGET: {
+                if (attempt < g_maxAttempts) {
+                    logg("Trying again in 5 secs...\n");
+                    attempt++;
+                    sleep(5);
+                } else {
+                    logg("Update failed for custom database URL: %s\n", urlDatabase);
+                    status = ret;
+                    goto done;
+                }
+            }
+            default: {
+                logg("Unexpected error when attempting to update from custom database URL: %s\n", urlDatabase);
+                status = ret;
+                goto done;
+            }
+        }
+    }
+
+success:
+
+    status = FC_SUCCESS;
+
+done:
+
+    if (NULL != dbFilename) {
+        free(dbFilename);
+    }
+
+    if (currDir[0] != '\0') {
+        /* Restore CWD */
+        if (chdir(currDir)) {
+            logg("!Failed to change back to original directory %s\n", currDir);
+            status = FC_EDIRECTORY;
+            goto done;
+        }
+        logg("*Current working dir restored to %s\n", currDir);
+    }
+
+    return status;
+}
+
+fc_error_t fc_download_url_databases(
+    char **urlDatabaseList,
+    uint32_t nUrlDatabases,
+    void *context,
+    uint32_t *nUpdated)
+{
+    fc_error_t ret;
+    fc_error_t status   = FC_EARG;
+    int bUpdated        = 0;
+    uint32_t numUpdated = 0;
+    uint32_t i;
+
+    if ((NULL == urlDatabaseList) || (0 == nUrlDatabases) || (NULL == nUpdated)) {
+        logg("^fc_download_url_databases: Invalid arguments.\n");
+        goto done;
+    }
+
+    *nUpdated = 0;
+
+    for (i = 0; i < nUrlDatabases; i++) {
+        if (FC_SUCCESS != (ret = fc_download_url_database(
+                               urlDatabaseList[i],
+                               context,
+                               &bUpdated))) {
+            logg("^fc_download_url_databases: fc_download_url_database failed: %s (%d)\n", fc_strerror(ret), ret);
+            status = ret;
+            goto done;
+        }
+        if (bUpdated) {
+            numUpdated++;
+        }
+    }
+
+    *nUpdated = numUpdated;
+    status    = FC_SUCCESS;
+
+done:
+
+    return status;
+}
+
+void fc_set_fccb_download_complete(fccb_download_complete callback)
+{
+    g_cb_download_complete = callback;
 }

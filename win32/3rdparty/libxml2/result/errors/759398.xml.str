@@ -1,5 +1,0 @@
-./test/errors/759398.xml:210: parser error : internal error: detected an error in element content
-
-need to worry about parsers whi<! don't expand 
-                               ^
-./test/errors/759398.xml : failed to parse

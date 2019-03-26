@@ -6,6 +6,11 @@ use XML::Twig;
 use File::Copy;
 use File::Temp 'tempfile';
 
+#
+# This script generates:
+#   new clamav-config.h.
+#   new visual studio project files for each library and program.
+#
 
 #########################################################
 # HACK HERE  HACK HERE  HACK HERE  HACK HERE  HACK HERE #
@@ -13,7 +18,7 @@ use File::Temp 'tempfile';
 
 use constant DEBUG => 0;
 
-### CLAMAV-CONFIG.H MACROES ###
+### CLAMAV-CONFIG.H MACROS ###
 # - Set to the proper win32 value or -1 to undef - #
 my %CONF = (
     'AC_APPLE_UNIVERSAL_BUILD' => -1,
@@ -27,7 +32,7 @@ my %CONF = (
     'CL_BCUNSIGNED' => -1,
     'CL_EXPERIMENTAL' => -1,
     'CL_THREAD_SAFE' => '1',
-    'CONFDIR' => '"C:\\\\ClamAV"',
+    'CONFDIR' => -1, #'"C:\\\\ClamAV"',
     'CURSES_INCLUDE' => -1,
     'C_AIX' => -1,
     'C_BEOS' => -1,
@@ -44,7 +49,7 @@ my %CONF = (
     'C_OSF' => -1,
     'C_QNX6' => -1,
     'C_SOLARIS' => -1,
-    'DATADIR' => '"C:\\\\ClamAV\\\\db"',
+    'DATADIR' => -1, #'"C:\\\\ClamAV\\\\db"',
     'DEFAULT_FD_SETSIZE' => '1024',
     'FDPASS_NEED_XOPEN' => -1,
     'FILEBUFF' => '8192',
@@ -73,9 +78,8 @@ my %CONF = (
     'HAVE_DLFCN_H' => '1',
     'HAVE_DL_H' => -1,
     'HAVE_DYLD' => -1,
-    'HAVE_ERROR_T' => -1,
     'HAVE_ENABLE_EXTENDED_FILE_STDIO' => -1,
-    'HAVE_SYS_TIMES_H' => -1,
+    'HAVE_ERROR_T' => -1,
     'HAVE_FD_PASSING' => -1,
     'HAVE_FSEEKO' => '1',
     'HAVE_GETADDRINFO' => '1',
@@ -84,15 +88,18 @@ my %CONF = (
     'HAVE_ICONV' => -1,
     'HAVE_INET_NTOP' => '1',
     'HAVE_INITGROUPS' => -1,
-    'HAVE_INTTYPES_H' => -1,
+    'HAVE_INTTYPES_H' => '1',
     'HAVE_IN_ADDR_T' => -1,
     'HAVE_IN_PORT_T' => '1',
+    'HAVE_JSON' => '1',
     'HAVE_LIBCHECK' => -1,
     'HAVE_LIBDL' => '1',
     'HAVE_LIBDLLOADER' => '1',
     'HAVE_LIBMILTER_MFAPI_H' => -1,
     'HAVE_LIBNCURSES' => -1,
     'HAVE_LIBPDCURSES' => -1,
+    'HAVE_PCRE' => '1',
+    'USING_PCRE2' => '1',
     'HAVE_LIBXML2' => '1',
     'HAVE_LIBZ' => '1',
     'HAVE_LIMITS_H' => '1',
@@ -126,7 +133,7 @@ my %CONF = (
     'HAVE_SETSID' => '1',
     'HAVE_SHL_LOAD' => -1,
     'HAVE_SNPRINTF' => '1',
-    'HAVE_STDBOOL_H' => -1,
+    'HAVE_STDBOOL_H' => '1',
     'HAVE_STDINT_H' => -1,
     'HAVE_STDLIB_H' => '1',
     'HAVE_STRCASESTR' => -1,
@@ -147,31 +154,37 @@ my %CONF = (
     'HAVE_SYS_PARAM_H' => -1,
     'HAVE_SYS_SELECT_H' => -1,
     'HAVE_SYS_STAT_H' => '1',
+    'HAVE_SYS_TIMES_H' => -1,
     'HAVE_SYS_TYPES_H' => '1',
     'HAVE_SYS_UIO_H' => -1,
     'HAVE_TERMIOS_H' => -1,
+    'HAVE_UNAME_SYSCALL' => -1,
     'HAVE_UNISTD_H' => -1,
     'HAVE_VSNPRINTF' => '1',
     'HAVE_WORKING_ARGZ' => -1,
-    'LIBCLAMAV_FULLVER' => '"6.0.4"',
-    'LIBCLAMAV_MAJORVER' => '6',
+    'HAVE__INTERNAL__SHA_COLLECT' => -1,
+    'LIBCLAMAV_FULLVER' => '"9.0.1"',
+    'LIBCLAMAV_MAJORVER' => '9',
+    'LIBCLAMAV_FULLVER' => '"2.0.0"',
+    'LIBCLAMAV_MAJORVER' => '2',
     'LTDL_DLOPEN_DEPLIBS' => -1,
     'LT_DLSEARCH_PATH' => '""',
     'LT_LIBEXT' => '"dll"',
+    'LT_LIBPREFIX' => -1,
     'LT_MODULE_EXT' => '".dll"',
     'LT_MODULE_PATH_VAR' => '"LD_LIBRARY_PATH"',
     'LT_OBJDIR' => '""',
-    'NDEBUG' => '1',
+    'NDEBUG' => -1,
     'NEED_USCORE' => -1,
     'NOBZ2PREFIX' => -1,
     'NO_FD_SET' => -1,
     'PACKAGE' => 'PACKAGE_NAME',
-    'PACKAGE_BUGREPORT' => '"https://bugs.clamav.net/"',
+    'PACKAGE_BUGREPORT' => '"https://bugzilla.clamav.net/"',
     'PACKAGE_NAME' => '"ClamAV"',
-    'PACKAGE_STRING' => '"ClamAV devel"',
+    'PACKAGE_STRING' => '"ClamAV 0.102.0-devel"',
     'PACKAGE_TARNAME' => '"clamav"',
     'PACKAGE_URL' => '"https://www.clamav.net/"',
-    'PACKAGE_VERSION' => '"devel"',
+    'PACKAGE_VERSION' => '"0.102.0-devel"',
     'SCANBUFF' => '131072',
     'SETPGRP_VOID' => '1',
     'SIZEOF_INT' => '4',
@@ -180,12 +193,11 @@ my %CONF = (
     'SIZEOF_SHORT' => '2',
     'SIZEOF_VOID_P' => -1,
     'STDC_HEADERS' => '1',
-    'SUPPORT_IPv6' => -1,
-    'USE_MPOOL' => 1,
+    'SUPPORT_IPv6' => '1',
+    'USE_MPOOL' => '1',
     'USE_SYSLOG' => -1,
     'VERSION_SUFFIX' => '""',
     'WORDS_BIGENDIAN' => '0',
-    'LT_LIBPREFIX' => '-1',
     '_LARGEFILE_SOURCE' => -1,
     '_POSIX_PII_SOCKET' => -1,
     '_REENTRANT' => '1',
@@ -197,8 +209,6 @@ my %CONF = (
     'off_t' => -1,
     'restrict' => -1,
     'socklen_t' => -1,
-    'HAVE_UNAME_SYSCALL' => -1,
-    'HAVE__INTERNAL__SHA_COLLECT' => -1,
     'FANOTIFY' => -1
     );
 
@@ -214,6 +224,9 @@ my @PROJECTS = (
     # LIBCLAMAV #
     {makefile => 'libclamav', sections => ['libclamav', 'libclamav_internal_utils'], output => 'win32/libclamav.vcxproj', vcxproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
 
+    # LIBFRESHCLAM #
+    {makefile => 'libfreshclam', sections => ['libfreshclam'], output => 'win32/libfreshclam.vcxproj', vcxproj_only => '(3rdparty\\\\|compat\\\\|getopt\\.c|misc\\.c)'},
+
     # LIBCLAMUNRAR_IFACE #
     {makefile => 'libclamav', sections => ['libclamunrar_iface'], output => 'win32/libclamunrar_iface.vcxproj', vcxproj_only => 'compat\\\\'},
 
@@ -228,6 +241,9 @@ my @PROJECTS = (
 
     # CLAMDSCAN #
     {makefile => 'clamdscan', sections => ['clamdscan'], output => 'win32/clamdscan.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
+
+    # CLAMDSUBMIT #
+    {makefile => 'clamdsubmit', sections => ['clamdsubmit'], output => 'win32/clamdsubmit.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c)$'},
 
     # CLAMD #
     {makefile => 'clamd', sections => ['clamd'], output => 'win32/clamd.vcxproj', makefile_only => '(optparser\\.c|getopt\\.c|(daz|clam)uko.*)$'},

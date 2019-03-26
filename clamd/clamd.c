@@ -74,10 +74,6 @@
 
 short debug_mode = 0, logok = 0;
 short foreground = -1;
-char hostid[37];
-
-char *get_hostid(void *cbdata);
-int is_valid_hostid(void);
 
 static void help(void)
 {
@@ -786,41 +782,5 @@ int main(int argc, char **argv)
     logg_close();
     optfree(opts);
 
-    cl_cleanup_crypto();
-
     return ret;
-}
-
-int is_valid_hostid(void)
-{
-    int count, i;
-
-    if (strlen(hostid) != 36)
-        return 0;
-
-    count = 0;
-    for (i = 0; i < 36; i++)
-        if (hostid[i] == '-')
-            count++;
-
-    if (count != 4)
-        return 0;
-
-    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
-        return 0;
-
-    return 1;
-}
-
-char *get_hostid(void *cbdata)
-{
-    UNUSEDPARAM(cbdata);
-
-    if (!strcmp(hostid, "none"))
-        return NULL;
-
-    if (!is_valid_hostid())
-        return strdup(STATS_ANON_UUID);
-
-    return strdup(hostid);
 }

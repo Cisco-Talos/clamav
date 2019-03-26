@@ -201,7 +201,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
 	$(top_srcdir)/m4/reorganization/yara.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
-	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
@@ -899,6 +898,9 @@ CLAMSUBMIT_CFLAGS = @CLAMSUBMIT_CFLAGS@
 CLAMSUBMIT_LIBS = @CLAMSUBMIT_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CURL_CPPFLAGS = @CURL_CPPFLAGS@
+CURL_LDFLAGS = @CURL_LDFLAGS@
+CURL_LIBS = @CURL_LIBS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CXX = @CXX@
@@ -962,6 +964,7 @@ LIBCLAMAV_CPPFLAGS = @LIBCLAMAV_CPPFLAGS@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
+LIBFRESHCLAM_VERSION = @LIBFRESHCLAM_VERSION@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
@@ -4568,7 +4571,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 @ENABLE_LLVM_FALSE@	$(AM_V_at) cp $< $@
 @ENABLE_LLVM_FALSE@distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
 
-@USE_INTERNAL_MSPACK_FALSE@libmspack/Makefile: 
+@USE_INTERNAL_MSPACK_FALSE@libmspack/Makefile:
 @USE_INTERNAL_MSPACK_FALSE@.PHONY: distdir distclean maintainer-clean
 @USE_INTERNAL_MSPACK_FALSE@distdir:
 @USE_INTERNAL_MSPACK_FALSE@	echo "make distdir requires --with-system-libmspack=no"

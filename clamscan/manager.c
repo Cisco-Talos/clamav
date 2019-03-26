@@ -68,11 +68,6 @@
 dev_t procdev;
 #endif
 
-char hostid[37];
-
-int is_valid_hostid(void);
-char *get_hostid(void *cbdata);
-
 #ifdef _WIN32
 /* FIXME: If possible, handle users correctly */
 static int checkaccess(const char *path, const char *username, int mode)
@@ -1238,40 +1233,4 @@ int scanmanager(const struct optstruct *opts)
         ret = 2;
 
     return ret;
-}
-
-int is_valid_hostid(void)
-{
-    int count, i;
-
-    if (strlen(hostid) != 36)
-        return 0;
-
-    count = 0;
-    for (i = 0; i < 36; i++)
-        if (hostid[i] == '-')
-            count++;
-
-    if (count != 4)
-        return 0;
-
-    if (hostid[8] != '-' || hostid[13] != '-' || hostid[18] != '-' || hostid[23] != '-')
-        return 0;
-
-    return 1;
-}
-
-char *get_hostid(void *cbdata)
-{
-    UNUSEDPARAM(cbdata);
-
-    if (!strcmp(hostid, "none"))
-        return NULL;
-
-    if (!is_valid_hostid())
-        return strdup(STATS_ANON_UUID);
-
-    logg("HostID is valid: %s\n", hostid);
-
-    return strdup(hostid);
 }

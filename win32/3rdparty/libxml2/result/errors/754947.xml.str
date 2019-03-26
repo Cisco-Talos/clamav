@@ -1,5 +1,0 @@
-./test/errors/754947.xml:1: parser error : Input is not proper UTF-8, indicate encoding !
-Bytes: 0xEE 0x5D 0x5D 0x3E
-<d><![CDATA[0000000000000î]]>
-                         ^
-./test/errors/754947.xml : failed to parse

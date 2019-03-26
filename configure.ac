@@ -140,7 +140,6 @@ m4_include([m4/reorganization/llvm.m4])
 m4_include([m4/reorganization/sha_collect.m4])
 m4_include([m4/reorganization/yara.m4])
 m4_include([m4/reorganization/code_checks/fts.m4])
-m4_include([m4/reorganization/libfreshclam.m4])
 m4_include([m4/reorganization/prelude.m4])
 m4_include([m4/reorganization/bsd.m4])
 
@@ -242,22 +241,27 @@ else
     CL_MSG_STATUS([fdpassing   ],[n/a],[])
 fi
 CL_MSG_STATUS([IPv6        ],[$have_cv_ipv6],[$want_ipv6])
+CL_MSG_STATUS([openssl     ],[$LIBSSL_HOME],[yes])
+CL_MSG_STATUS([libcurl     ],[$LIBCURL_HOME],[yes])
 
 AC_MSG_NOTICE([Summary of optional tools])
-CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
-CL_MSG_STATUS([milter      ],[yes],[$have_milter])
-if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
-    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME)], [yes])
+
+if test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"; then
+    CL_MSG_STATUS([clamdtop    ],[yes ($CURSES_LIBS)], [yes])
 else
-    if test "X$have_curl" != "Xyes" && test "X$have_json" != "Xyes"; then
-        CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)], [no])
-    else
-        if test "X$have_curl" = "Xyes"; then 
-            CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
-        else
-            CL_MSG_STATUS([clamsubmit  ], [no (missing libcurl-devel. Use the website to submit FPs/FNs.)], [no])
-        fi
-    fi
+    CL_MSG_STATUS([clamdtop    ],[no (missing ncurses / pdcurses)], [no])
+fi
+
+if test "X$have_milter" = "Xyes"; then
+    CL_MSG_STATUS([milter      ],[yes ($CLAMAV_MILTER_LIBS)], [yes])
+else
+    CL_MSG_STATUS([milter      ],[no (missing libmilter)], [no])
+fi
+
+if test "X$have_json" = "Xyes"; then
+    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME)], [yes])
+else
+    CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
 fi
 
 AC_MSG_NOTICE([Summary of engine performance features])
@@ -294,7 +298,7 @@ else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
 CL_MSG_STATUS([libmspack   ],[yes],[$mspack_msg])
-if test "x$XML_LIBS" = "x"; then 
+if test "x$XML_LIBS" = "x"; then
     CL_MSG_STATUS([libxml2     ],[no],[])
 else
     CL_MSG_STATUS([libxml2     ],[yes, from $XML_HOME],[])

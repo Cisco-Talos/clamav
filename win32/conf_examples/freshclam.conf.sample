@@ -63,16 +63,11 @@ Example
 # Default: current.cvd.clamav.net
 #DNSDatabaseInfo current.cvd.clamav.net
 
-# Uncomment the following line and replace XY with your country
-# code. See http://www.iana.org/cctld/cctld-whois.htm for the full list.
-# You can use db.XY.ipv6.clamav.net for IPv6 connections.
-#DatabaseMirror db.XY.clamav.net
-
-# database.clamav.net is a round-robin record which points to our most 
-# reliable mirrors. It's used as a fall back in case db.XY.clamav.net is 
-# not working. DO NOT TOUCH the following line unless you know what you
-# are doing.
-DatabaseMirror database.clamav.net
+# database.clamav.net is now the primary domain name to be used world-wide.
+# Now that CloudFlare is being used as our Content Delivery Network (CDN),
+# this one domain name works world-wide to direct freshclam to the closest
+# geographic endpoint.
+DatabaseMirror http://database.clamav.net
 
 # How many attempts to make before giving up.
 # Default: 3 (per mirror)
@@ -89,11 +84,16 @@ DatabaseMirror database.clamav.net
 # Default: no
 #CompressLocalDatabase no
 
-# With this option you can provide custom sources (http:// or file://) for
-# database files. This option can be used multiple times.
+# With this option you can provide custom sources for database files.
+# This option can be used multiple times. Support for:
+#   http(s)://, ftp(s)://, or file://
 # Default: no custom URLs
 #DatabaseCustomURL http://myserver.com/mysigs.ndb
-#DatabaseCustomURL file:///mnt/nfs/local.hdb
+#DatabaseCustomURL https://myserver.com/mysigs.ndb
+#DatabaseCustomURL https://myserver.com:4567/whitelist.wdb
+#DatabaseCustomURL ftp://myserver.com/example.ldb
+#DatabaseCustomURL ftps://myserver.com:4567/example.ndb
+#DatabaseCustomURL file://E:\Share\local.hdb
 
 # This option allows you to easily point freshclam to private mirrors.
 # If PrivateMirror is set, freshclam does not attempt to use DNS
@@ -113,8 +113,15 @@ DatabaseMirror database.clamav.net
 #Checks 24
 
 # Proxy settings
+# The HTTPProxyServer may be prefixed with [scheme]:// to specify which kind of proxy is used.
+#   http://     HTTP Proxy. Default when no scheme or proxy type is specified.
+#   https://    HTTPS Proxy. (Added in 7.52.0 for OpenSSL, GnuTLS and NSS)
+#   socks4://   SOCKS4 Proxy.
+#   socks4a://  SOCKS4a Proxy. Proxy resolves URL hostname.
+#   socks5://   SOCKS5 Proxy.
+#   socks5h://  SOCKS5 Proxy. Proxy resolves URL hostname.
 # Default: disabled
-#HTTPProxyServer myproxy.com
+#HTTPProxyServer https://myproxy.com
 #HTTPProxyPort 1234
 #HTTPProxyUsername myusername
 #HTTPProxyPassword mypass
@@ -179,7 +186,7 @@ DatabaseMirror database.clamav.net
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
 # terms of use. See https://transparencyreport.google.com/safe-browsing/
-# and https://www.clamav.net/documents/safebrowsing 
+# and https://www.clamav.net/documents/safebrowsing
 # for more information.
 # Default: disabled
 #SafeBrowsing yes
@@ -189,8 +196,12 @@ DatabaseMirror database.clamav.net
 # Default: enabled
 #Bytecode yes
 
-# Download an additional 3rd party signature database distributed through
-# the ClamAV mirrors. 
+# Include an optional signature databases (opt-in).
 # This option can be used multiple times.
 #ExtraDatabase dbname1
 #ExtraDatabase dbname2
+
+# Exclude a standard signature database (opt-out).
+# This option can be used multiple times.
+#ExcludeDatabase dbname1
+#ExcludeDatabase dbname2

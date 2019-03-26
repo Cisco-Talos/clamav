@@ -35,13 +35,13 @@
 
 #define MAX_CHILDREN 5
 
-int active_children;
+int g_active_children;
 
-void execute(const char *type, const char *text, const struct optstruct *opts)
+void execute(const char *type, const char *text, int bDaemonized)
 {
     int ret;
 
-    if (!optget(opts, "daemon")->enabled) {
+    if (!bDaemonized) {
         if (sscanf(text, "EXIT_%d", &ret) == 1) {
             logg("*%s: EXIT_%d\n", type, ret);
             exit(ret);
@@ -58,7 +58,7 @@ void execute(const char *type, const char *text, const struct optstruct *opts)
         return;
     }
 #else
-    if (active_children < MAX_CHILDREN) {
+    if (g_active_children < MAX_CHILDREN) {
         pid_t pid;
         switch (pid = fork()) {
             case 0:
@@ -70,10 +70,10 @@ void execute(const char *type, const char *text, const struct optstruct *opts)
                 logg("^%s::fork() failed, %s.\n", type, strerror(errno));
                 break;
             default:
-                active_children++;
+                g_active_children++;
         }
     } else {
-        logg("^%s: already %d processes active.\n", type, active_children);
+        logg("^%s: already %d processes active.\n", type, g_active_children);
     }
 #endif
 }

@@ -26,6 +26,7 @@
 #include <errno.h>
 #include "xar.h"
 #include "fmap.h"
+
 #if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 #include "clamav.h"
