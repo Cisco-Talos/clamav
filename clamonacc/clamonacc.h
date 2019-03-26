@@ -50,7 +50,7 @@ struct onas_context {
 struct onas_context* onas_init_context(void);
 void* onas_cleanup(struct onas_context *ctx);
 void* onas_context_cleanup(struct onas_context *ctx);
-cl_error_t onas_check_client_connection(void);
+cl_error_t onas_check_client_connection(struct onas_context **ctx);
 int onas_start_eloop(struct onas_context **ctx);
 void help(void);
 

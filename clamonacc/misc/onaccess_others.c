@@ -104,6 +104,7 @@ int onas_scan(const char *fname, int fd, const char **virname, const struct cl_e
     context.virsize  = 0;
     context.scandata = NULL;
 
+    logg("ClamOth: Scanning ...\n");
     /*ret = cl_scandesc_callback(fd, fname, virname, NULL, engine, options, &context);*/
 
     if (ret) {

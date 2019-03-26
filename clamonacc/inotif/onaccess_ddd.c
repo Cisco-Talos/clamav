@@ -368,7 +368,7 @@ void *onas_ddd_th(void *arg) {
 
         logg("*ClamInotif: Dynamically determining directory hierarchy...\n");
     /* Add provided paths recursively. */
-	if((pt = optget(ctx->opts, "OnAccessIncludePath"))->enabled) {
+	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
 
 		logg("*ClamInotif: asdkljfhaskjldf\n");
 		printf("pt = %s\n", pt->strarg);
@@ -399,7 +399,7 @@ void *onas_ddd_th(void *arg) {
     }
 
     /* Remove provided paths recursively. */
-	if((pt = optget(ctx->opts, "OnAccessExcludePath"))->enabled) {
+	if((pt = optget(ctx->clamdopts, "OnAccessExcludePath"))->enabled) {
         while (pt) {
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
@@ -415,13 +415,13 @@ void *onas_ddd_th(void *arg) {
     }
 
     /* Watch provided paths recursively */
-	if((pt = optget(ctx->opts, "OnAccessIncludePath"))->enabled) {
+	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
         while (pt) {
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
 				if(onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
 					logg("!ClamInotif: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
-					if(errno == EINVAL && optget(ctx->opts, "OnAccessPrevention")->enabled) {
+					if(errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
 						logg("!ClamInotif: When using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
 
                         kill(getpid(), SIGTERM);
@@ -435,7 +435,7 @@ void *onas_ddd_th(void *arg) {
 
     /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
-	if(optget(ctx->opts, "OnAccessExtraScanning")->enabled) {
+	if(optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		logg("ClamInotif: Extra scanning and notifications enabled.\n");
 }
 #endif
@@ -529,7 +529,7 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
 
     /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
-	if (optget(ctx->opts, "OnAccessExtraScanning")->enabled) {
+	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISFILE);
 
@@ -561,7 +561,7 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
     struct stat s;
     /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
-	if (optget(ctx->opts, "OnAccessExtraScanning")->enabled) {
+	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISFILE);
 
@@ -605,7 +605,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 
 
         scth_tharg->extra_options = extra_options;
-		scth_tharg->opts = ctx->opts;
+		scth_tharg->opts = ctx->clamdopts;
         scth_tharg->pathname      = strdup(pathname);
 
         thread_started = pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg);
