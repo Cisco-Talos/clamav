@@ -82,7 +82,7 @@ static void print_server_version(struct onas_context **ctx)
 
 /* Inits the communication layer
  * Returns 0 if clamd is local, non zero if clamd is remote */
-static int onas_check_remote(struct onas_context  **ctx) {
+int onas_check_remote(struct onas_context  **ctx) {
     int s, ret;
     const struct optstruct *opt;
     char *ipaddr = NULL;
@@ -209,7 +209,7 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     if((opt = optget(opts, "log"))->enabled) {
 	logg_file = opt->strarg;
 	if(logg("--------------------------------------\n")) {
-	    mprintf("!Problem with internal logger.\n");
+	    mprintf("!ClamClient: problem with internal logger\n");
             return CL_EARG;
 	}
     } else
@@ -258,12 +258,12 @@ static char *onas_make_absolute(const char *basepath) {
     char *ret;
 
     if(!(ret = malloc(PATH_MAX + 1))) {
-	logg("^Can't make room for fullpath.\n");
+	logg("^ClamClient: can't make room for fullpath\n");
 	return NULL;
     }
     if(!cli_is_abspath(basepath)) {
 	if(!getcwd(ret, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
+	    logg("ClamClient: ^can't get absolute pathname of current working directory.\n");
 	    free(ret);
 	    return NULL;
 	}
@@ -300,7 +300,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     while((len = recvln(&rcv, &buff, NULL))) {
         if(len == -1) {
-            logg("!Error occurred while receiving version information.\n");
+            logg("!ClamClient: error occurred while receiving version information\n");
             break;
         }
         printf("%s\n", buff);
@@ -323,12 +323,15 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 		scantype = (*ctx)->scantype;
         }
 
+        logg("*ClamClient: connecting to daemon ...\n");
 	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, fname, &ret, NULL)) >= 0) {
 		*infected = ret;
 	} else {
+		logg("*ClamClient: connection could not be established ... return code %d\n", ret);
 		errors = 1;
 	}
 	if(sockd >= 0) {
+		logg("*ClamClient: done, closing connection ...\n");
 		closesocket(sockd);
 	}
 

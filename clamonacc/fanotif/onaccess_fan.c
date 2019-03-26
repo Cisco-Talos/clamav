@@ -84,6 +84,8 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
     res.fd       = fmd->fd;
     res.response = FAN_ALLOW;
 
+
+        logg("*scan: %d\n", scan);
     if (scan) {
 		ret = onas_client_scan(ctx, fname, sb, &infected, &err);
 
@@ -103,6 +105,10 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
 			} else {
 				scan_failed = 1;
 			}
+		}
+
+		if (scan_failed) {
+			logg("*ClamFanotif: Scan failed with error code %d\n", err);
 		}
 
 		if ((scan_failed && (*ctx)->deny_on_scanfail) || infected) {
@@ -191,15 +197,15 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
     }
 
     /* Load other options. */
-	sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
-    if (sizelimit)
-		logg("*ClamFanotif: Max file size limited to %u bytes\n", sizelimit);
+	(*ctx)->sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
+	if((*ctx)->sizelimit)
+		logg("*ClamFanotif: Max file size limited to %lu bytes\n", (*ctx)->sizelimit);
     else
 		logg("*ClamFanotif: File size limit disabled\n");
 
 	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
 
-	(*ctx)->sizelimit = sizelimit;
+	//(*ctx)->sizelimit = sizelimit;
 	(*ctx)->extinfo = extinfo;
 
 	return CL_SUCCESS;
@@ -214,7 +220,7 @@ int onas_fan_eloop(struct onas_context **ctx) {
 	ssize_t bread;
 	struct fanotify_event_metadata *fmd;
 	char fname[1024];
-	int len, check;
+	int len, check, fres;
 	char err[128];
 
     FD_ZERO(&rfds);
@@ -249,13 +255,15 @@ int onas_fan_eloop(struct onas_context **ctx) {
 					logg("!ClamFanotif: Internal error (readlink() failed)\n");
 					return 2;
                 }
-                fname[len] = 0;
+				fname[len] = '\0';
 
-				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->opts))) {
+				logg("fname = %s\n", fname);
+				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
+					logg("*ClamFanotif: no scan today, fam\n");
                     scan = 0;
 /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
-			if ((check != CHK_SELF) || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled)) {
+					if ((check != CHK_SELF) || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled))
 #else
                     if (check != CHK_SELF) {
 #endif
@@ -263,18 +271,23 @@ int onas_fan_eloop(struct onas_context **ctx) {
                 }
             }
 
+                                fres = FSTAT(fmd->fd, &sb);
 					if((*ctx)->sizelimit) {
-						if(FSTAT(fmd->fd, &sb) != 0 || sb.st_size > (*ctx)->sizelimit) {
+					if(fres != 0 || sb.st_size > (*ctx)->sizelimit) {
                     scan = 0;
-							/* logg("*ClamFanotif: %s skipped (size > %d)\n", fname, sizelimit); */
+						logg("*ClamFanotif: %s skipped (size > %ld)\n", fname, (*ctx)->sizelimit);
                 }
             }
 
-                                        if (FSTAT(fmd->fd, &sb) != 0 && onas_fan_scanfile(fname, fmd,
-                                                    sb, scan, ctx) == -1) {
+				logg("SCASDFASDNNNN\n");
+                                logg("%d\n", fres);
+				if (onas_fan_scanfile(fname, fmd, sb, scan, ctx) == -1) {
                 close(fmd->fd);
+					logg("!ClamFanotif: Error when stating and/or scanning??\n");
 						return 2;
             }
+
+				logg("???????????\n");
 
             if (close(fmd->fd) == -1) {
 						printf("!ClamFanotif: Internal error (close(%d) failed)\n", fmd->fd);

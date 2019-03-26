@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {
 		case CL_SUCCESS:
-			if (CL_SUCCESS == onas_check_client_connection()) {
+			if (CL_SUCCESS == onas_check_client_connection(&ctx)) {
 				break;
 			}
 		case CL_BREAK:
@@ -143,6 +143,7 @@ int main(int argc, char **argv)
 	goto clean_up;
 #endif
 
+        logg("*Clamonacc: Beginning event loops\n");
 	/*  Kick off event loop(s) */
 	ret = onas_start_eloop(&ctx);
 
@@ -162,9 +163,17 @@ struct onas_context *onas_init_context(void) {
     return ctx;
 }
 
-cl_error_t onas_check_client_connection(void) {
+cl_error_t onas_check_client_connection(struct onas_context **ctx) {
 
-	return CL_SUCCESS;
+	errno = 0;
+
+	/* 0 local, non-zero remote, errno set on error */
+	(*ctx)->isremote = onas_check_remote(ctx);
+	if (errno == 0) {
+		logg("*Clamonacc: ");
+		(*ctx)->isremote ? logg("*daemon is remote\n") : logg("*daemon is local\n");
+	}
+	return errno ? CL_EACCES : CL_SUCCESS;
 }
 
 int onas_start_eloop(struct onas_context **ctx) {
