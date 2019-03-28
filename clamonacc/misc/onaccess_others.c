@@ -44,6 +44,8 @@
 
 #include "onaccess_others.h"
 #include "clamd/scanner.h"
+#include "../clamonacc.h"
+#include "../client/onaccess_client.h"
 
 static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -92,30 +94,114 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 
     return CHK_CLEAN;
 }
+#endif
 
-int onas_scan(const char *fname, int fd, const char **virname, const struct cl_engine *engine, struct cl_scan_options *options, int extinfo)
+/**
+ * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ */
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err)
 {
     int ret = 0;
-    struct cb_context context;
 
     pthread_mutex_lock(&onas_scan_lock);
 
-    context.filename = fname;
-    context.virsize  = 0;
-    context.scandata = NULL;
-
-    logg("ClamOth: Scanning ...\n");
-    /*ret = cl_scandesc_callback(fd, fname, virname, NULL, engine, options, &context);*/
-
-    if (ret) {
-        if (extinfo && context.virsize)
-            logg("ScanOnAccess: %s: %s(%s:%llu) FOUND\n", fname, *virname, context.virhash, context.virsize);
-        else
-            logg("ScanOnAccess: %s: %s FOUND\n", fname, *virname);
-    }
+    ret = onas_client_scan(ctx, fname, sb, infected, err);
 
     pthread_mutex_unlock(&onas_scan_lock);
 
     return ret;
+    }
+
+char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
+{
+
+	FILE* opt_file = 0;
+	STATBUF sb;
+	char** opt_list = NULL;
+	char** rlc_ptr = NULL;
+	uint64_t len = 0;
+	int32_t ret = 0;
+
+	*num_entries = 0;
+
+	opt_list = cli_malloc(sizeof(char*));
+	if (NULL == opt_list) {
+		*err = CL_EMEM;
+		return NULL;
+	}
+	opt_list[*num_entries] = NULL;
+
+	errno = 0;
+	opt_file = fopen(fname, "r");
+
+	if (NULL == opt_file) {
+		logg("!ClamMisc: could not open path list file `%s', %s\n", fname, errno ? strerror(errno) : "");
+		*err = CL_EARG;
+		return NULL;
+	}
+
+	while((ret = getline(opt_list + *num_entries, &len, opt_file)) != -1) {
+
+		opt_list[*num_entries][strlen(opt_list[*num_entries])-1] = '\0';
+		errno = 0;
+		if (0 != CLAMSTAT(opt_list[*num_entries], &sb))  {
+			logg("*ClamMisc: when parsing path list ... could not stat '%s' ... %s ... skipping\n", opt_list[*num_entries], strerror(errno));
+			len = 0;
+			free(opt_list[*num_entries]);
+			opt_list[*num_entries] = NULL;
+			continue;
+		}
+
+		if (!S_ISDIR(sb.st_mode)) {
+			logg("*ClamMisc: when parsing path list ... '%s' is not a directory ... skipping\n", opt_list[*num_entries]);
+			len = 0;
+			free(opt_list[*num_entries]);
+			opt_list[*num_entries] = NULL;
+			continue;
+		}
+
+		if (strcmp(opt_list[*num_entries], "/") == 0) {
+			logg("*ClamMisc: when parsing path list ... ignoring path '%s' while DDD is enabled ... skipping\n", opt_list[*num_entries]);
+			logg("*ClamMisc: use the OnAccessMountPath configuration option to watch '%s'\n", opt_list[*num_entries]);
+			len = 0;
+			free(opt_list[*num_entries]);
+			opt_list[*num_entries] = NULL;
+			continue;
+		}
+
+		(*num_entries)++;
+		rlc_ptr = cli_realloc(opt_list, sizeof(char*) * (*num_entries+1));
+		if (rlc_ptr) {
+			opt_list = rlc_ptr;
+			opt_list[*num_entries] = NULL;
+		} else {
+			*err = CL_EMEM;
+			fclose(opt_file);
+			free_opt_list(opt_list, *num_entries);
+			return NULL;
+		}
+
+		len = 0;
+	}
+
+	opt_list[*num_entries] = NULL;
+	fclose(opt_file);
+	return opt_list;
 }
-#endif
+
+void free_opt_list(char** opt_list, int entries)
+{
+
+	int i = 0;
+	for (i; i < entries; i++) {
+		if (opt_list[i]) {
+			free(opt_list[i]);
+			opt_list[i] = NULL;
+		}
+	}
+
+	free(opt_list);
+	opt_list = NULL;
+
+	return;
+}

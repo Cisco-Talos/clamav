@@ -39,12 +39,12 @@
 #include <sys/fanotify.h>
 #include <sys/inotify.h>
 
-#include "libclamav/clamav.h"
 
 #include "../fanotif/onaccess_fan.h"
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
 #include "../scan/onaccess_scth.h"
+#include "../misc/onaccess_others.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/scanners.h"
@@ -331,7 +331,12 @@ void *onas_ddd_th(void *arg) {
     char buf[4096];
     ssize_t bread;
     const struct inotify_event *event;
-    int ret, len;
+	int ret, len, idx;
+
+	char** include_list;
+	char** exclude_list;
+	int num_exdirs, num_indirs;
+        cl_error_t err;
 
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
@@ -368,35 +373,60 @@ void *onas_ddd_th(void *arg) {
 
         logg("*ClamInotif: Dynamically determining directory hierarchy...\n");
     /* Add provided paths recursively. */
+
+	if (!optget(ctx->opts, "watch-list")->enabled && !optget(ctx->clamdopts, "OnAccessIncludePath")->enabled) {
+		logg("!ClamInotif: Please specify at least one path with OnAccessIncludePath\n");
+		return NULL;
+	}
+
 	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
 
-		logg("*ClamInotif: asdkljfhaskjldf\n");
-		printf("pt = %s\n", pt->strarg);
         while (pt) {
             if (!strcmp(pt->strarg, "/")) {
-				logg("!ClamInotif: Not including path '%s' while DDD is enabled\n", pt->strarg);
-				logg("!ClamInotif: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+				logg("!ClamInotif: not including path '%s' while DDD is enabled\n", pt->strarg);
+				logg("!ClamInotif: please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
                 pt = (struct optstruct *)pt->nextarg;
                 continue;
             }
             if (onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
                 if (onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
-					logg("!ClamInotif: Can't include path '%s'\n", pt->strarg);
+					logg("!ClamInotif: can't include '%s'\n", pt->strarg);
                     return NULL;
 				} else {
-					printf("Blah\n");
-					logg("ClamInotif: Protecting directory '%s' (and all sub-directories)\n", pt->strarg);
+					logg("ClamInotif: watching '%s' (and all sub-directories)\n", pt->strarg);
             }
 			}
 
             pt = (struct optstruct *)pt->nextarg;
-			printf("Blah\n");
         }
-    } else {
-		printf("Blah\n");
-		logg("!ClamInotif: Please specify at least one path with OnAccessIncludePath\n");
+	}
+
+	if((pt = optget(ctx->opts, "watch-list"))->enabled) {
+
+		num_indirs = 0;
+		err = CL_SUCCESS;
+
+		include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
+		if (NULL == include_list) {
         return NULL;
     }
+
+		idx = 0;
+		while (include_list[idx] != NULL) {
+			if(onas_ht_get(ddd_ht, include_list[idx], strlen(include_list[idx]), NULL) != CL_SUCCESS) {
+				if(onas_ht_add_hierarchy(ddd_ht, include_list[idx])) {
+					logg("!ClamInotif: can't include '%s'\n", include_list[idx]);
+					return NULL;
+				} else {
+					logg("ClamInotif: watching '%s' (and all sub-directories)\n", include_list[idx]);
+				}
+			}
+
+
+			idx++;
+		}
+
+	}
 
     /* Remove provided paths recursively. */
 	if((pt = optget(ctx->clamdopts, "OnAccessExcludePath"))->enabled) {
@@ -404,34 +434,101 @@ void *onas_ddd_th(void *arg) {
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
                 if (onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
-					logg("!ClamInotif: Can't exclude path '%s'\n", pt->strarg);
+					logg("!ClamInotif: can't exclude '%s'\n", pt->strarg);
                     return NULL;
                 } else
-					logg("ClamInotif: Excluding  directory '%s' (and all sub-directories)\n", pt->strarg);
+					logg("ClamInotif: excluding '%s' (and all sub-directories)\n", pt->strarg);
             }
 
             pt = (struct optstruct *)pt->nextarg;
         }
     }
 
+	if((pt = optget(ctx->opts, "exclude-list"))->enabled) {
+
+		num_exdirs = 0;
+		err = CL_SUCCESS;
+
+		exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
+		if (NULL == exclude_list) {
+			return NULL;
+		}
+
+		idx = 0;
+		while (exclude_list[idx] != NULL) {
+			if(onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) != CL_SUCCESS) {
+				if(onas_ht_add_hierarchy(ddd_ht, exclude_list[idx])) {
+					logg("!ClamInotif: can't exclude '%s'\n", exclude_list[idx]);
+					return NULL;
+				} else {
+					logg("ClamInotif: excluding '%s' (and all sub-directories)\n", exclude_list[idx]);
+				}
+			}
+
+			idx++;
+		}
+
+	}
+
     /* Watch provided paths recursively */
 	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
         while (pt) {
+			errno = 0;
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-				if(onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
-					logg("!ClamInotif: Could not watch path '%s', %s\n", pt->strarg, strerror(errno));
+				if(err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+
+					if (0 == errno) {
+						logg("!ClamInotif: could not watch path '%s', %d\n ", pt->strarg, err);
+					} else {
+						logg("!ClamInotif: could not watch path '%s', %s\n", pt->strarg, strerror(errno));
 					if(errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
-						logg("!ClamInotif: When using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+							logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
 
                         kill(getpid(), SIGTERM);
                     }
-                    return NULL;
+						if (errno == ENOSPC) {
+
+							logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
+							logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
+
+							kill(getpid(), SIGTERM);                                       }
                 }
             }
             pt = (struct optstruct *)pt->nextarg;
         }
     }
+	}
+
+	if(NULL != include_list) {
+		idx = 0;
+		while(NULL != include_list[idx]) {
+			errno = 0;
+			uint64_t ptlen = strlen(include_list[idx]);
+			if(onas_ht_get(ddd_ht, include_list[idx], ptlen, NULL) == CL_SUCCESS) {
+				if(err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+					if (0 == errno) {
+						logg("!ClamInotif: could not watch path '%s', %d\n ", include_list[idx], err);
+					} else {
+						logg("!ClamInotif: could not watch path '%s', %s\n", include_list[idx], strerror(errno));
+						if(errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
+							logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+
+							kill(getpid(), SIGTERM);
+						}
+						if (errno == ENOSPC) {
+
+							logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
+							logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
+
+							kill(getpid(), SIGTERM);
+						}
+					}
+				}
+			}
+			idx++;
+		}
+	}
 
     /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0

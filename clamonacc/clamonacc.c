@@ -68,14 +68,12 @@ int main(int argc, char **argv)
 	}
 
 	/* Parse out all our command line options */
-	opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL);
+	opts = optparse(NULL, argc, argv, 1, OPT_CLAMONAC, OPT_CLAMSCAN, NULL);
 	if(opts == NULL) {
 		logg("!Clamonacc: can't parse command line options\n");
 		return 2;
 	}
 	ctx->opts = opts;
-        printf("opts\n");
-
 
 	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
 	if (clamdopts == NULL) {
@@ -83,7 +81,6 @@ int main(int argc, char **argv)
 		return 2;
 	}
 	ctx->clamdopts = clamdopts;
-        printf("clamdopts\n");
 
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {
@@ -103,7 +100,6 @@ int main(int argc, char **argv)
 			goto clean_up;
 			break;
 	}
-	printf("client\n");
 #if defined(FANOTIFY)
 	/* Setup fanotify */
 	switch(onas_setup_fanotif(&ctx)) {
@@ -143,7 +139,7 @@ int main(int argc, char **argv)
 	goto clean_up;
 #endif
 
-        logg("*Clamonacc: Beginning event loops\n");
+        logg("*Clamonacc: beginning event loops\n");
 	/*  Kick off event loop(s) */
 	ret = onas_start_eloop(&ctx);
 

@@ -600,7 +600,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 
     char *const pathargv[] = {(char *)pathname, NULL};
     if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
-        logg("!ScanOnAccess: Could not open '%s'\n", pathname);
+		logg("!ClamHash: could not open '%s'\n", pathname);
         return CL_EARG;
     }
 

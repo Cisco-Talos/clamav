@@ -53,7 +53,7 @@
 #endif
 
 #include "libclamav/clamav.h"
-#include "libclamav/others.h"
+//#include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
 #include "shared/misc.h"
@@ -71,7 +71,7 @@ extern struct sockaddr_un nixsock;
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
-/* Connects to clamd 
+/* Connects to clamd
  * Returns a FD or -1 on error */
 int dconnect() {
     int sockd, res;
@@ -241,11 +241,11 @@ static int chkpath(const char *path)
     return 0;
 }
 
-static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
+/*static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 {
     UNUSEDPARAM(data);
     return chkpath(path);
-}
+}*/
 
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
@@ -318,7 +318,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
 	    if(!colon) {
 		char * unkco = "UNKNOWN COMMAND";
 		if (!strncmp(bol, unkco, sizeof(unkco) - 1))
-		    logg("clamd replied \"UNKNOWN COMMAND\". Command was %s\n", 
+		    logg("clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
 			 (scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" :
 			                                             scancmd[scantype]);
 		else
@@ -388,91 +388,6 @@ struct client_serial_data {
     int errors;
 };
 
-/* FTW callback for scanning in non IDSESSION mode
- * Returns SUCCESS or BREAK on success, CL_EXXX on error */
-static int serial_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
-    struct client_serial_data *c = (struct client_serial_data *)data->data;
-    int sockd, ret;
-    const char *f = filename;
-
-    UNUSEDPARAM(sb);
-
-    if(chkpath(path))
-	return CL_SUCCESS;
-    c->files++;
-    switch(reason) {
-    case error_stat:
-	logg("!Can't access file %s\n", path);
-	c->errors++;
-	return CL_SUCCESS;
-    case error_mem:
-	logg("!Memory allocation failed in ftw\n");
-	c->errors++;
-	return CL_EMEM;
-    case warning_skipped_dir:
-	logg("^Directory recursion limit reached\n");
-    case warning_skipped_link:
-	return CL_SUCCESS;
-    case warning_skipped_special:
-	logg("^%s: Not supported file type\n", path);
-	c->errors++;
-	return CL_SUCCESS;
-    case visit_directory_toplev:
-	if(c->scantype >= STREAM)
-	    return CL_SUCCESS;
-	f = path;
-	filename = NULL;
-    case visit_file:
-	break;
-    }
-
-    if((sockd = dconnect()) < 0) {
-	if(filename) free(filename);
-	c->errors++;
-	return CL_EOPEN;
-    }
-    ret = dsresult(sockd, c->scantype, f, &c->printok, &c->errors);
-    if(filename) free(filename);
-    closesocket(sockd);
-    if(ret < 0) {
-	c->errors++;
-	return CL_EOPEN;
-    }
-    c->infected += ret;
-    if(reason == visit_directory_toplev)
-	return CL_BREAK;
-    return CL_SUCCESS;
-}
-
-/* Non-IDSESSION handler
- * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags) {
-    struct cli_ftw_cbdata data;
-    struct client_serial_data cdata;
-    int ftw;
-
-    cdata.infected = 0;
-    cdata.files = 0;
-    cdata.errors = 0;
-    cdata.printok = printinfected^1;
-    cdata.scantype = scantype;
-    data.data = &cdata;
-
-    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, ftw_chkpath);
-    *infected += cdata.infected;
-    *err += cdata.errors;
-
-    if(!cdata.errors && (ftw == CL_SUCCESS || ftw == CL_BREAK)) {
-	if(cdata.printok)
-	    logg("~%s: OK\n", file);
-	return 0;
-    } else if(!cdata.files) {
-	logg("~%s: No files scanned\n", file);
-	return 0;
-    }
-    return 1;
-}
-
 /* Used in IDSESSION mode */
 struct client_parallel_data {
     int infected;
@@ -541,151 +456,5 @@ static int dspresult(struct client_parallel_data *c) {
 	free(bol);
     } while(rcv.cur != rcv.buf); /* clamd sends whole lines, so, on partial lines, we just assume
 				    more data can be recv()'d with close to zero latency */
-    return 0;
-}
-
-/* FTW callback for scanning in IDSESSION mode
- * Returns SUCCESS on success, CL_EXXX or BREAK on error */
-static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
-    struct client_parallel_data *c = (struct client_parallel_data *)data->data;
-    struct SCANID *cid;
-    int res = CL_CLEAN;
-
-    UNUSEDPARAM(sb);
-
-    if(chkpath(path))
-	return CL_SUCCESS;
-    c->files++;
-    switch(reason) {
-    case error_stat:
-	logg("!Can't access file %s\n", path);
-	c->errors++;
-	return CL_SUCCESS;
-    case error_mem:
-	logg("!Memory allocation failed in ftw\n");
-	c->errors++;
-	return CL_EMEM;
-    case warning_skipped_dir:
-	logg("^Directory recursion limit reached\n");
-	return CL_SUCCESS;
-    case warning_skipped_special:
-	logg("^%s: Not supported file type\n", path);
-	c->errors++;
-    case warning_skipped_link:
-    case visit_directory_toplev:
-	return CL_SUCCESS;
-    case visit_file:
-	break;
-    }
-
-    while(1) {
-	/* consume all the available input to let some of the clamd
-	 * threads blocked on send() to be dead.
-	 * by doing so we shouldn't deadlock on the next recv() */
-	fd_set rfds, wfds;
-	FD_ZERO(&rfds);
-	FD_SET(c->sockd, &rfds);
-	FD_ZERO(&wfds);
-	FD_SET(c->sockd, &wfds);
-	if(select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
-	    if(errno == EINTR) continue;
-	    free(filename);
-	    logg("!select() failed during session: %s\n", strerror(errno));
-	    return CL_BREAK;
-	}
-	if(FD_ISSET(c->sockd, &rfds)) {
-	    if(dspresult(c)) {
-		free(filename);
-		return CL_BREAK;
-	    } else continue;
-	}
-	if(FD_ISSET(c->sockd, &wfds)) break;
-    }
-
-    cid = (struct SCANID *)malloc(sizeof(struct SCANID));
-    if(!cid) {
-	free(filename);
-	logg("!Failed to allocate scanid entry: %s\n", strerror(errno));
-	return CL_BREAK;
-    }
-    cid->id = ++c->lastid;
-    cid->file = filename;
-    cid->next = c->ids;
-    c->ids = cid;
-
-    switch(c->scantype) {
-#ifdef HAVE_FD_PASSING
-    case FILDES:
-	res = send_fdpass(c->sockd, filename);
-	break;
-#endif
-    case STREAM:
-	res = send_stream(c->sockd, filename);
-	break;
-    }
-    if(res <= 0) {
-	c->printok = 0;
-	c->errors++;
-	c->ids = cid->next;
-	c->lastid--;
-	free(cid);
-	free(filename);
-	return res ? CL_BREAK : CL_SUCCESS;
-    }
-    return CL_SUCCESS;
-}
-
-/* IDSESSION handler
- * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags) {
-    struct cli_ftw_cbdata data;
-    struct client_parallel_data cdata;
-    int ftw;
-
-    if((cdata.sockd = dconnect()) < 0)
-	return 1;
-
-    if(sendln(cdata.sockd, "zIDSESSION", 11)) {
-	closesocket(cdata.sockd);
-	return 1;
-    }
-
-    cdata.infected = 0;
-    cdata.files = 0;
-    cdata.errors = 0;
-    cdata.scantype = scantype;
-    cdata.lastid = 0;
-    cdata.ids = NULL;
-    cdata.printok = printinfected^1;
-    data.data = &cdata;
-
-    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, ftw_chkpath);
-
-    if(ftw != CL_SUCCESS) {
-	*err += cdata.errors;
-	*infected += cdata.infected;
-	closesocket(cdata.sockd);
-	return 1;
-    }
-
-    sendln(cdata.sockd, "zEND", 5);
-    while(cdata.ids && !dspresult(&cdata));
-    closesocket(cdata.sockd);
-
-    *infected += cdata.infected;
-    *err += cdata.errors;
-
-    if(cdata.ids) {
-	logg("!Clamd closed the connection before scanning all files.\n");
-	return 1;
-    }
-    if(cdata.errors)
-	return 1;
-
-    if(!cdata.files)
-	return 0;
-
-    if(cdata.printok)
-	logg("~%s: OK\n", file);
     return 0;
 }
