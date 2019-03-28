@@ -60,7 +60,8 @@ static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct sct
     int ret             = 0;
     const char *virname = NULL;
 
-    return onas_scan(fname, fd, &virname, tharg->engine, tharg->options, extinfo);
+    //return onas_scan(fname, fd, &virname, tharg->engine, tharg->options, extinfo);
+    return ret;
 }
 
 static int onas_scth_handle_dir(const char *pathname, struct scth_thrarg *tharg)

@@ -84,17 +84,15 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
     res.fd       = fmd->fd;
     res.response = FAN_ALLOW;
 
-
-        logg("*scan: %d\n", scan);
     if (scan) {
-		ret = onas_client_scan(ctx, fname, sb, &infected, &err);
+		ret = onas_scan(ctx, fname, sb, &infected, &err);
 
 		if (err) {
-			logg("!ClamFanotif: Internal error (client failed to scan)\n");
+			logg("!ClamFanotif: internal error (client failed to scan)\n");
 			if ((*ctx)->retry_on_error) {
 				logg("!ClamFanotif: reattempting scan ... \n");
 				while (err) {
-					ret = onas_client_scan(ctx, fname, sb, &infected, &err);
+					ret = onas_scan(ctx, fname, sb, &infected, &err);
 
 					i++;
 					if (err && i == (*ctx)->retry_attempts) {
@@ -108,7 +106,7 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
 		}
 
 		if (scan_failed) {
-			logg("*ClamFanotif: Scan failed with error code %d\n", err);
+			logg("*ClamFanotif: scan failed with error code %d\n", err);
 		}
 
 		if ((scan_failed && (*ctx)->deny_on_scanfail) || infected) {
@@ -119,7 +117,7 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
     if (fmd->mask & FAN_ALL_PERM_EVENTS) {
 		ret = write((*ctx)->fan_fd, &res, sizeof(res));
         if (ret == -1)
-			logg("!ClamFanotif: Internal error (can't write to fanotify)\n");
+			logg("!ClamFanotif: internal error (can't write to fanotify)\n");
     }
 
     return ret;
@@ -191,7 +189,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
                 pt = (struct optstruct *)pt->nextarg;
             }
         } else {
-			logg("!ClamFanotif: Please specify at least one path with OnAccessIncludePath\n");
+			logg("!ClamFanotif: please specify at least one path with OnAccessIncludePath\n");
 			return CL_EARG;
         }
     }
@@ -206,7 +204,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
 
 	//(*ctx)->sizelimit = sizelimit;
-	(*ctx)->extinfo = extinfo;
+	//(*ctx)->extinfo = extinfo;
 
 	return CL_SUCCESS;
 }
@@ -235,8 +233,8 @@ int onas_fan_eloop(struct onas_context **ctx) {
 
         if (errno == EOVERFLOW) {
             if (time(NULL) - start >= 30) {
-				logg("!ClamFanotif: Internal error (failed to read data) ... %s\n", strerror(errno));
-				logg("!ClamFanotif: File too large for fanotify ... recovering and continuing scans...\n");
+				logg("!ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+				logg("!ClamFanotif: file too large for fanotify ... recovering and continuing scans...\n");
                 start = time(NULL);
             }
 
@@ -252,14 +250,12 @@ int onas_fan_eloop(struct onas_context **ctx) {
                 len = readlink(fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
-					logg("!ClamFanotif: Internal error (readlink() failed)\n");
+					logg("!ClamFanotif: internal error (readlink() failed)\n");
 					return 2;
                 }
 				fname[len] = '\0';
 
-				logg("fname = %s\n", fname);
 				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
-					logg("*ClamFanotif: no scan today, fam\n");
                     scan = 0;
 /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
 #if 0
@@ -279,18 +275,14 @@ int onas_fan_eloop(struct onas_context **ctx) {
                 }
             }
 
-				logg("SCASDFASDNNNN\n");
-                                logg("%d\n", fres);
 				if (onas_fan_scanfile(fname, fmd, sb, scan, ctx) == -1) {
                 close(fmd->fd);
-					logg("!ClamFanotif: Error when stating and/or scanning??\n");
+					logg("!ClamFanotif: error when stating and/or scanning??\n");
 						return 2;
             }
 
-				logg("???????????\n");
-
             if (close(fmd->fd) == -1) {
-						printf("!ClamFanotif: Internal error (close(%d) failed)\n", fmd->fd);
+					printf("!ClamFanotif: internal error (close(%d) failed)\n", fmd->fd);
 						return 2;
             }
         }
@@ -303,7 +295,7 @@ int onas_fan_eloop(struct onas_context **ctx) {
 }
 
 		if(bread < 0) {
-			logg("!ClamFanotif: Internal error (failed to read data) ... %s\n", strerror(errno));
+		logg("!ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
                         return 2;
                 }
 
