@@ -99,7 +99,37 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 /**
  * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
  */
-int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err)
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, int *scan_failed)
+{
+    int ret = 0;
+    int i = 0;
+
+    ret = onas_scan_safe(ctx, fname, sb, infected, err);
+
+    if (*err) {
+	    logg("^ClamMisc: internal issue (client failed to scan)\n");
+	    if ((*ctx)->retry_on_error) {
+		    logg("*ClamMisc: reattempting scan ... \n");
+		    while (err) {
+			    ret = onas_scan_safe(ctx, fname, sb, infected, err);
+
+			    i++;
+			    if (*err && i == (*ctx)->retry_attempts) {
+				    *err = 0;
+				    *scan_failed = 1;
+			    }
+		    }
+	    } else {
+		    *scan_failed = 1;
+	    }
+    }
+    return ret;
+}
+
+/**
+ * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ */
+int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err)
 {
     int ret = 0;
 

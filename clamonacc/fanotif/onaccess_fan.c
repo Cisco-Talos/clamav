@@ -85,25 +85,7 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
     res.response = FAN_ALLOW;
 
     if (scan) {
-		ret = onas_scan(ctx, fname, sb, &infected, &err);
-
-		if (err) {
-			logg("!ClamFanotif: internal error (client failed to scan)\n");
-			if ((*ctx)->retry_on_error) {
-				logg("!ClamFanotif: reattempting scan ... \n");
-				while (err) {
-					ret = onas_scan(ctx, fname, sb, &infected, &err);
-
-					i++;
-					if (err && i == (*ctx)->retry_attempts) {
-						err = 0;
-						scan_failed = 1;
-					}
-				}
-			} else {
-				scan_failed = 1;
-			}
-		}
+		ret = onas_scan(ctx, fname, sb, &infected, &err, &scan_failed);
 
 		if (scan_failed) {
 			logg("*ClamFanotif: scan failed with error code %d\n", err);

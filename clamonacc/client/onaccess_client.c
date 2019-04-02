@@ -176,16 +176,7 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     opts = (*ctx)->opts;
 
     if(optget(opts, "verbose")->enabled) {
-	mprintf_verbose = 1;
 	logg_verbose = 1;
-    }
-
-    if(optget(opts, "quiet")->enabled) {
-	mprintf_quiet = 1;
-    }
-
-    if(optget(opts, "stdout")->enabled) {
-	mprintf_stdout = 1;
     }
 
     if(optget(opts, "version")->enabled) {
@@ -320,7 +311,7 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
         }
 
         logg("*ClamClient: connecting to daemon ...\n");
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, fname, &ret, NULL)) >= 0) {
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, fname, &ret, err)) >= 0) {
 		*infected = ret;
 	} else {
 		logg("*ClamClient: connection could not be established ... return code %d\n", ret);
