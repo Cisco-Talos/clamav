@@ -32,7 +32,8 @@ typedef enum {
 } cli_check_t;
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts);
-int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err);
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, int *scan_failed);
+int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err);
 char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err);
 void free_opt_list(char** opt_list, int entries);
 

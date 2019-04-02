@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Parse out all our command line options */
-	opts = optparse(NULL, argc, argv, 1, OPT_CLAMONAC, OPT_CLAMSCAN, NULL);
+	opts = optparse(NULL, argc, argv, 1, OPT_CLAMONACC, OPT_CLAMSCAN, NULL);
 	if(opts == NULL) {
 		logg("!Clamonacc: can't parse command line options\n");
 		return 2;
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			}
 		case CL_BREAK:
 			ret = 0;
-			logg("!Clamonacc: can't setup client\n");
+			logg("*Clamonacc: not setting up client\n");
 			goto clean_up;
 			break;
 		case CL_EARG:
@@ -201,9 +201,6 @@ void help(void)
     mprintf("    --help                 -h          Show this help\n");
     mprintf("    --version              -V          Print version number and exit\n");
     mprintf("    --verbose              -v          Be verbose\n");
-    mprintf("    --quiet                            Be quiet, only output error messages\n");
-    mprintf("    --stdout                           Write to stdout instead of stderr\n");
-    mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
     mprintf("    --exclude-list=FILES   -f FILE     Exclude directories from FILE\n");
@@ -212,7 +209,6 @@ void help(void)
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
     mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
-    mprintf("    --multiscan            -m          Force MULTISCAN mode\n");
     mprintf("    --infected             -i          Only print infected files\n");
     mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
