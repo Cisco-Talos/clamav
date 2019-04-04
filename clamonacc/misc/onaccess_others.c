@@ -99,28 +99,39 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 /**
  * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
  */
-int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, int *scan_failed)
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret = 0;
     int i = 0;
 
-    ret = onas_scan_safe(ctx, fname, sb, infected, err);
+    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
 
     if (*err) {
-	    logg("^ClamMisc: internal issue (client failed to scan)\n");
+        switch (*ret_code) {
+            case CL_EACCES:
+            case CL_ESTAT:
+
+                logg("*ClamMisc: internal issue (daemon could not access directory/file %s)\n", fname);
+                break;
+                /* TODO: handle other errors */
+            case CL_EPARSE:
+            case CL_EREAD:
+            case CL_EWRITE:
+            case CL_EMEM:
+            case CL_ENULLARG:
+            default:
+                logg("~ClamMisc: internal issue (client failed to scan)\n");
+        }
 	    if ((*ctx)->retry_on_error) {
 		    logg("*ClamMisc: reattempting scan ... \n");
 		    while (err) {
-			    ret = onas_scan_safe(ctx, fname, sb, infected, err);
+			    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
 
 			    i++;
 			    if (*err && i == (*ctx)->retry_attempts) {
 				    *err = 0;
-				    *scan_failed = 1;
 			    }
 		    }
-	    } else {
-		    *scan_failed = 1;
 	    }
     }
     return ret;
@@ -129,13 +140,13 @@ int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *inf
 /**
  * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
  */
-int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err)
+int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret = 0;
 
     pthread_mutex_lock(&onas_scan_lock);
 
-    ret = onas_client_scan(ctx, fname, sb, infected, err);
+    ret = onas_client_scan(ctx, fname, sb, infected, err, ret_code);
 
     pthread_mutex_unlock(&onas_scan_lock);
 

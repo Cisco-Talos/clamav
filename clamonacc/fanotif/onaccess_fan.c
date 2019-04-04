@@ -79,19 +79,19 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
         int err = 0;
     int ret             = 0;
 	int i = 0;
-	int scan_failed = 0;
+	cl_error_t ret_code = 0;
 
     res.fd       = fmd->fd;
     res.response = FAN_ALLOW;
 
     if (scan) {
-		ret = onas_scan(ctx, fname, sb, &infected, &err, &scan_failed);
+		ret = onas_scan(ctx, fname, sb, &infected, &err, &ret_code);
 
-		if (scan_failed) {
-			logg("*ClamFanotif: scan failed with error code %d\n", err);
+		if (err && ret_code != CL_SUCCESS) {
+			logg("*ClamFanotif: scan failed with error code %d\n", ret_code);
 		}
 
-		if ((scan_failed && (*ctx)->deny_on_scanfail) || infected) {
+		if ((err && ret_code && (*ctx)->deny_on_error) || infected) {
             res.response = FAN_DENY;
         }
     }
@@ -139,18 +139,18 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
 	if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 		logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
-        fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
+		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
 		logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
 		if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 			logg("*ClamFanotif: feature not available when watching mounts ... \n");
 		}
-        fan_mask |= FAN_ACCESS | FAN_OPEN;
+		(*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
 
 	if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
-            if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, fan_mask, onas_fan_fd, pt->strarg) != 0) {
+			if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
 				logg("!ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
 				return CL_EARG;
             } else
@@ -163,7 +163,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
     } else {
 		if((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
             while (pt) {
-                if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD, fan_mask, onas_fan_fd, pt->strarg) != 0) {
+				if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
 					logg("!ClamFanotif: can't include path '%s'\n", pt->strarg);
 					return CL_EARG;
                 } else

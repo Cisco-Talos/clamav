@@ -333,8 +333,8 @@ void *onas_ddd_th(void *arg) {
     const struct inotify_event *event;
 	int ret, len, idx;
 
-	char** include_list;
-	char** exclude_list;
+	char** include_list = NULL;
+	char** exclude_list = NULL;
 	int num_exdirs, num_indirs;
         cl_error_t err;
 
@@ -412,7 +412,7 @@ void *onas_ddd_th(void *arg) {
     }
 
 		idx = 0;
-		while (include_list[idx] != NULL) {
+		while (NULL != include_list[idx]) {
 			if(onas_ht_get(ddd_ht, include_list[idx], strlen(include_list[idx]), NULL) != CL_SUCCESS) {
 				if(onas_ht_add_hierarchy(ddd_ht, include_list[idx])) {
 					logg("!ClamInotif: can't include '%s'\n", include_list[idx]);
