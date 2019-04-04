@@ -49,14 +49,13 @@
 #include "./inotif/onaccess_ddd.h"
 
 
-int printinfected;
 int reload = 0;
-struct optstruct *clamdopts = NULL;
 pthread_t ddd_pid = 0;
 
 int main(int argc, char **argv)
 {
 	const struct optstruct *opts;
+	const struct optstruct *clamdopts;
 	struct onas_context *ctx;
 	int ret = 0;
 
@@ -226,8 +225,8 @@ void* onas_cleanup(struct onas_context *ctx) {
 void* onas_context_cleanup(struct onas_context *ctx) {
 	close(ctx->fan_fd);
 	optfree((struct optstruct *) ctx->opts);
+	optfree((struct optstruct *) ctx->clamdopts);
 	ctx->opts = NULL;
-	optfree(clamdopts);
 	ctx->clamdopts = NULL;
 	free(ctx);
 }

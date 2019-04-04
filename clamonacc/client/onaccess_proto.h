@@ -22,9 +22,8 @@
 #ifndef ONAS_PROTO_H
 #define ONAS_PROTO_H
 #include "shared/misc.h"
+#include "../clamonacc.h"
 
-int dconnect(void);
-int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
-int parallel_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);
-int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors);
+int onas_dconnect(struct onas_context **ctx) ;
+int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code);
 #endif

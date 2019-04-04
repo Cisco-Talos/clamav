@@ -66,9 +66,7 @@
 
 #include "../clamonacc.h"
 
-unsigned long int maxstream;
 struct sockaddr_un nixsock;
-extern struct optstruct *clamdopts;
 
 static void print_server_version(struct onas_context **ctx)
 {
@@ -176,6 +174,7 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     opts = (*ctx)->opts;
 
     if(optget(opts, "verbose")->enabled) {
+        mprintf_verbose = 1;
 	logg_verbose = 1;
     }
 
@@ -198,7 +197,7 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     if((opt = optget(opts, "log"))->enabled) {
 	logg_file = opt->strarg;
 	if(logg("--------------------------------------\n")) {
-	    mprintf("!ClamClient: problem with internal logger\n");
+	    logg("!ClamClient: problem with internal logger\n");
             return CL_EARG;
 	}
     } else
@@ -217,22 +216,27 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     remote = (*ctx)->isremote | optget(opts, "stream")->enabled;
 #ifdef HAVE_FD_PASSING
     if(!remote && optget((*ctx)->clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled)) {
+        logg("*ClamClient: client setup to scan via fd passing\n");
         (*ctx)->scantype = FILDES;
         (*ctx)->session = optget(opts, "multiscan")->enabled;
     } else
 #endif
         if(remote) {
+            logg("*ClamClient: client setup to scan via streaming\n");
             (*ctx)->scantype = STREAM;
             (*ctx)->session = optget(opts, "multiscan")->enabled;
         } else if(optget(opts, "multiscan")->enabled) {
+            logg("*ClamClient: client setup to scan in multiscan mode\n");
             (*ctx)->scantype = MULTI;
         } else if(optget(opts, "allmatch")->enabled) {
+            logg("*ClamClient: client setup to scan in all-match mode\n");
             (*ctx)->scantype = ALLMATCH;
         } else {
+            logg("*ClamClient: client setup for continuous scanning\n");
             (*ctx)->scantype = CONT;
         }
 
-    maxstream = optget((*ctx)->clamdopts, "StreamMaxLength")->numarg;
+    (*ctx)->maxstream = optget((*ctx)->clamdopts, "StreamMaxLength")->numarg;
 
     return CL_SUCCESS;
 }
@@ -250,7 +254,7 @@ static char *onas_make_absolute(const char *basepath) {
     }
     if(!cli_is_abspath(basepath)) {
 	if(!getcwd(ret, PATH_MAX)) {
-	    logg("ClamClient: ^can't get absolute pathname of current working directory.\n");
+	    logg("^ClamClient: can't get absolute pathname of current working directory.\n");
 	    free(ret);
 	    return NULL;
 	}
@@ -275,7 +279,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     struct RCVLN rcv;
 
     onas_check_remote(ctx);
-    if((sockd = dconnect()) < 0) {
+    if((sockd = onas_dconnect(ctx)) < 0) {
         return 2;
     }
     recvlninit(&rcv, sockd);
@@ -287,7 +291,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     while((len = recvln(&rcv, &buff, NULL))) {
         if(len == -1) {
-            logg("!ClamClient: error occurred while receiving version information\n");
+            logg("*ClamClient: clamd did not respond with version information\n");
             break;
         }
         printf("%s\n", buff);
@@ -297,7 +301,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     return 0;
 }
 
-int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err)
+int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
 	int scantype, errors = 0;
 	int sockd, ret;
@@ -310,15 +314,17 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 		scantype = (*ctx)->scantype;
         }
 
-        logg("*ClamClient: connecting to daemon ...\n");
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, fname, &ret, err)) >= 0) {
+	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
+        //logg("*ClamClient: connecting to daemon ...\n");
+	if((sockd = onas_dconnect(ctx)) >= 0 && (ret = onas_dsresult(ctx, sockd, scantype, fname, &ret, err, ret_code)) >= 0) {
 		*infected = ret;
 	} else {
 		logg("*ClamClient: connection could not be established ... return code %d\n", ret);
 		errors = 1;
 	}
 	if(sockd >= 0) {
-		logg("*ClamClient: done, closing connection ...\n");
+		/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
+		//logg("*ClamClient: done, closing connection ...\n");
 		closesocket(sockd);
 	}
 

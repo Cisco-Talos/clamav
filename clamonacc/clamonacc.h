@@ -26,9 +26,10 @@
 
 struct onas_context {
 	const struct optstruct *opts;
-	struct optstruct *clamdopts;
+	const struct optstruct *clamdopts;
 
         int printinfected;
+        int maxstream;
 
         uint32_t ddd_enabled;
 
@@ -36,7 +37,7 @@ struct onas_context {
         uint64_t fan_mask;
         int retry_on_error;
         int retry_attempts;
-        int deny_on_scanfail;
+        int deny_on_error;
 
         uint64_t sizelimit;
         uint64_t extinfo;
