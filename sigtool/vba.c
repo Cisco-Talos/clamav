@@ -36,6 +36,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/vba_extract.h"
 #include "libclamav/ole2_extract.h"
+#include "libclamav/readdb.h"
 #include "shared/output.h"
 
 #include "vba.h"
@@ -53,48 +54,125 @@ typedef struct mac_token2_tag {
 
 cli_ctx *convenience_ctx(int fd)
 {
-    cli_ctx *ctx;
-    struct cl_engine *engine;
+    cl_error_t status        = CL_EMEM;
+    cli_ctx *ctx             = NULL;
+    struct cl_engine *engine = NULL;
 
+    /* build engine */
+    engine = cl_engine_new();
+    if (NULL == engine) {
+        printf("convenience_ctx: engine initialization failed\n");
+        goto done;
+    }
+
+    cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
+
+    if (cli_initroots(engine, 0) != CL_SUCCESS) {
+        printf("convenience_ctx: cli_initroots() failed\n");
+        goto done;
+    }
+
+    if (cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+        printf("convenience_ctx: Can't parse signature\n");
+        goto done;
+    }
+
+    if (CL_SUCCESS != cl_engine_compile(engine)) {
+        printf("convenience_ctx: failed to compile engine.");
+        goto done;
+    }
+
+    /* prepare context */
     ctx = cli_calloc(1, sizeof(cli_ctx));
     if (!ctx) {
-        printf("ctx allocation failed\n");
-        return NULL;
+        printf("convenience_ctx: ctx allocation failed\n");
+        goto done;
     }
 
-    ctx->engine = engine = cl_engine_new();
-    if (!(ctx->engine)) {
-        printf("engine initialization failed\n");
-        free(ctx);
-        return NULL;
-    }
+    ctx->engine = (const struct cl_engine *)engine;
 
-    ctx->fmap = cli_calloc(1, sizeof(struct F_MAP *));
+    ctx->containers = cli_calloc(sizeof(cli_ctx_container), ctx->engine->maxreclevel + 2);
+    if (NULL == ctx->containers) {
+        printf("convenience_ctx: failed to allocate ctx containers.");
+        goto done;
+    }
+    ctx->containers[0].type = CL_TYPE_ANY;
+
+    ctx->dconf = (struct cli_dconf *)engine->dconf;
+
+    ctx->fmap = cli_calloc(sizeof(fmap_t *), ctx->engine->maxreclevel + 2);
     if (!(ctx->fmap)) {
-        printf("fmap initialization failed\n");
-        free(engine);
-        free(ctx);
-        return NULL;
+        printf("convenience_ctx: fmap initialization failed\n");
+        goto done;
     }
+
+    ctx->options = cli_calloc(1, sizeof(struct cl_scan_options));
+    if (!ctx->options) {
+        printf("convenience_ctx: scan options allocation failed\n");
+        goto done;
+    }
+    ctx->options->general |= CL_SCAN_GENERAL_HEURISTICS;
+    ctx->options->parse = ~(0);
 
     if (!(*ctx->fmap = fmap(fd, 0, 0))) {
-        printf("fmap failed\n");
-        free(ctx->fmap);
-        free(engine);
-        free(ctx);
-        return NULL;
+        printf("convenience_ctx: fmap failed\n");
+        goto done;
     }
+
+    status = CL_SUCCESS;
+
+done:
+    if (CL_SUCCESS != status) {
+        if (NULL != ctx) {
+            if (NULL != ctx->fmap) {
+                free(ctx->fmap);
+            }
+            if (NULL != ctx->options) {
+                free(ctx->options);
+            }
+            if (NULL != ctx->containers) {
+                free(ctx->containers);
+            }
+            free(ctx);
+            ctx = NULL;
+        }
+        if (NULL != engine) {
+            cl_engine_free(engine);
+        }
+    }
+
     return ctx;
 }
 
 void destroy_ctx(int desc, cli_ctx *ctx)
 {
-    funmap(*(ctx->fmap));
     if (desc >= 0)
         close(desc);
-    free(ctx->fmap);
-    cl_engine_free((struct cl_engine *)ctx->engine);
-    free(ctx);
+
+    if (NULL != ctx) {
+        if (NULL != *(ctx->fmap)) {
+            funmap(*(ctx->fmap));
+            *(ctx->fmap) = NULL;
+        }
+
+        if (NULL != ctx->fmap) {
+            free(ctx->fmap);
+            ctx->fmap = NULL;
+        }
+        if (NULL != ctx->engine) {
+            cl_engine_free((struct cl_engine *)ctx->engine);
+            ctx->engine = NULL;
+        }
+        if (NULL != ctx->options) {
+            free(ctx->options);
+            ctx->options = NULL;
+        }
+        if (NULL != ctx->containers) {
+            free(ctx->containers);
+            ctx->containers = NULL;
+        }
+        free(ctx);
+    }
 }
 
 int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
