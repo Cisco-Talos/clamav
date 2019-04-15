@@ -11,6 +11,7 @@ ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
 StandardOutput=syslog
+TimeoutStartSec=240
 
 [Install]
 WantedBy=multi-user.target
