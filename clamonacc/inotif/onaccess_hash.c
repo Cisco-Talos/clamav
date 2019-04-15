@@ -50,7 +50,7 @@
 #include "clamd/server.h"
 #include "clamd/others.h"
 #include "clamd/scanner.h"
-#include "clamd/priv_fts.h"
+#include "../misc/priv_fts.h"
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);

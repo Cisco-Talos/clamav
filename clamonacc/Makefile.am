@@ -38,6 +38,7 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/actions.h \
     $(top_srcdir)/shared/clamdcom.c \
     $(top_srcdir)/shared/clamdcom.h \
+    $(top_srcdir)/shared/priv-fts.h \
     clamonacc.c \
     ./client/onaccess_client.c \
     ./client/onaccess_client.h \
@@ -51,12 +52,16 @@ clamonacc_SOURCES = \
     ./inotif/onaccess_hash.h \
     ./misc/onaccess_others.c \
     ./misc/onaccess_others.h \
+    ./misc/priv_fts.h \
     ./scan/onaccess_scth.c \
     ./scan/onaccess_scth.h
 
-AM_CFLAGS=@WERR_CFLAGS@
+if !SYSTEM_LFS_FTS
+clamonacc_SOURCES += ./misc/fts.c
 endif
 
+AM_CFLAGS=@WERR_CFLAGS@
+endif
 
 DEFS = @DEFS@ -DCL_NOLIBCLAMAV
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@

@@ -48,12 +48,7 @@ clamd_SOURCES = \
     scanner.h \
     others.c \
     others.h \
-    shared.h \
-    priv_fts.h
-
-if !SYSTEM_LFS_FTS
-clamd_SOURCES += fts.c
-endif
+    shared.h
 
 AM_CFLAGS=@WERR_CFLAGS@
 
