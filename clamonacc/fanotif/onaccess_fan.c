@@ -54,7 +54,6 @@
 #include "../client/onaccess_client.h"
 
 extern pthread_t ddd_pid;
-extern int reload;
 
 /*static void onas_fan_exit(int sig)
 {
@@ -139,7 +138,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
 	if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 		logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
-		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
+		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM | FAN_NONBLOCK;
     } else {
 		logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
 		if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
@@ -206,9 +205,8 @@ int onas_fan_eloop(struct onas_context **ctx) {
     FD_ZERO(&rfds);
 	FD_SET((*ctx)->fan_fd, &rfds);
     do {
-        if (reload) sleep(1);
 		ret = select((*ctx)->fan_fd + 1, &rfds, NULL, NULL, NULL);
-    } while ((ret == -1 && errno == EINTR) || reload);
+	} while((ret == -1 && errno == EINTR));
 
     time_t start = time(NULL) - 30;
 	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
@@ -271,9 +269,8 @@ int onas_fan_eloop(struct onas_context **ctx) {
         fmd = FAN_EVENT_NEXT(fmd, bread);
     }
     do {
-        if (reload) sleep(1);
 				ret = select((*ctx)->fan_fd + 1, &rfds, NULL, NULL, NULL);
-    } while ((ret == -1 && errno == EINTR) || reload);
+		} while((ret == -1 && errno == EINTR));
 }
 
 		if(bread < 0) {

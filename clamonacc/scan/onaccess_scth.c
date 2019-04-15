@@ -35,7 +35,7 @@
 #include "shared/output.h"
 
 #include "libclamav/others.h"
-#include "clamd/priv_fts.h"
+#include "../misc/priv_fts.h"
 #include "../misc/onaccess_others.h"
 #include "onaccess_scth.h"
 //#include "onaccess_others.h"

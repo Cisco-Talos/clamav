@@ -319,7 +319,7 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 	if((sockd = onas_dconnect(ctx)) >= 0 && (ret = onas_dsresult(ctx, sockd, scantype, fname, &ret, err, ret_code)) >= 0) {
 		*infected = ret;
 	} else {
-		logg("*ClamClient: connection could not be established ... return code %d\n", ret);
+		logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
 		errors = 1;
 	}
 	if(sockd >= 0) {
