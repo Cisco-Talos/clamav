@@ -35,6 +35,14 @@
 #include "execs.h"
 #include "scanners.h"
 
+#define CLI_TMPUNLK()               \
+    if (!ctx->engine->keeptmp) {    \
+        if (cli_unlink(tempfile)) { \
+            free(tempfile);         \
+            return CL_EUNLINK;      \
+        }                           \
+    }
+
 #define EC32(v, conv) (conv ? cbswap32(v) : v)
 #define EC64(v, conv) (conv ? cbswap64(v) : v)
 
@@ -556,3 +564,55 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
 
     return ret; /* result from the last binary */
 }
+
+int cli_unpackmacho(cli_ctx *ctx)
+{
+    char *tempfile;
+    int ndesc;
+    struct cli_bc_ctx *bc_ctx;
+    int ret;
+    fmap_t *map = *ctx->fmap;
+
+    /* Bytecode BC_MACHO_UNPACKER hook */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+        cli_errmsg("cli_scanelf: can't allocate memory for bc_ctx\n");
+        return CL_EMEM;
+    }
+
+    cli_bytecode_context_setctx(bc_ctx, ctx);
+
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_MACHO_UNPACKER, map);
+    switch (ret) {
+        case CL_VIRUS:
+            cli_bytecode_context_destroy(bc_ctx);
+            return CL_VIRUS;
+        case CL_SUCCESS:
+            ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+            cli_bytecode_context_destroy(bc_ctx);
+            if (ndesc != -1 && tempfile) {
+                if (ctx->engine->keeptmp) 
+                    cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable saved in %s\n", tempfile);
+                else
+                    cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable\n");
+                lseek(ndesc, 0, SEEK_SET);
+                cli_dbgmsg("***** Scanning rebuilt Mach-O file *****\n");
+                if (cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) {
+                    close(ndesc);
+                    CLI_TMPUNLK();
+                    free(tempfile);
+                    return CL_VIRUS;
+                } 
+                close(ndesc);
+                CLI_TMPUNLK();
+                free(tempfile);
+                return CL_SUCCESS;
+            }
+            break;
+        default:
+            cli_bytecode_context_destroy(bc_ctx);
+    }
+
+    return CL_CLEAN;
+}
+

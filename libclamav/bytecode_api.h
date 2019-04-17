@@ -72,6 +72,8 @@ enum BytecodeKind {
     BC_PRECLASS,
     /** specifies an ELF unpacker, executed on ELF files on a logical trigger */
     BC_ELF_UNPACKER,
+    /** specifies an Mach-O unpacker, executed on Mach-O files on a logical trigger */
+    BC_MACHO_UNPACKER,
     _BC_LAST_HOOK
 };
 
