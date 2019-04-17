@@ -120,6 +120,7 @@ enum perfev {
     PERFT_KTIME,
     PERFT_UTIME,
     PERFT_ELF,
+    PERFT_MACHO,
     PERFT_LAST
 };
 

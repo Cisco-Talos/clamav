@@ -3525,6 +3525,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             ret = cli_unpackelf(ctx);
             perf_nested_stop(ctx, PERFT_ELF, PERFT_SCAN);
             break;
+        case CL_TYPE_MACHO:
+        case CL_TYPE_MACHO_UNIBIN:
+            perf_nested_start(ctx, PERFT_MACHO, PERFT_SCAN);
+            ret = cli_unpackmacho(ctx);
+            perf_nested_stop(ctx, PERFT_MACHO, PERFT_SCAN);
+            break;
         case CL_TYPE_BINARY_DATA:
             ret = cli_fmap_scandesc(ctx, CL_TYPE_OTHER, 0, NULL, AC_SCAN_VIR, NULL, NULL);
             break;
