@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <curl/curl.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -56,11 +57,12 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/actions.h"
-#include "shared/clamdcom.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 
+
+#include "onaccess_com.h"
 #include "onaccess_client.h"
 #include "onaccess_proto.h"
 
@@ -80,96 +82,123 @@ static void print_server_version(struct onas_context **ctx)
 
 /* Inits the communication layer
  * Returns 0 if clamd is local, non zero if clamd is remote */
-int onas_check_remote(struct onas_context  **ctx) {
-    int s, ret;
-    const struct optstruct *opt;
-    char *ipaddr = NULL;
-    char port[10];
-    struct addrinfo hints, *info, *p;
-    int res;
+int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
+	int s, ret;
+	const struct optstruct *opt;
+	CURL *curl;
+	CURLcode curlcode;
+	char *ipaddr = NULL;
+	char port[10];
+	struct addrinfo hints, *info, *p;
+	int res;
+
+	*err = CL_SUCCESS;
 
 #ifndef _WIN32
-    if((opt = optget((*ctx)->clamdopts, "LocalSocket"))->enabled) {
-        memset((void *)&nixsock, 0, sizeof(nixsock));
-        nixsock.sun_family = AF_UNIX;
-        strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
-        nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
-        return 0;
-    }
+	if((opt = optget((*ctx)->clamdopts, "LocalSocket"))->enabled) {
+		return 0;
+	}
 #endif
-    if(!(opt = optget((*ctx)->clamdopts, "TCPSocket"))->enabled)
-        return 0;
+	if(!(opt = optget((*ctx)->clamdopts, "TCPSocket"))->enabled) {
+		return 0;
+	}
 
-    snprintf(port, sizeof(port), "%lld", optget((*ctx)->clamdopts, "TCPSocket")->numarg);
+	snprintf(port, sizeof(port), "%lld", optget((*ctx)->clamdopts, "TCPSocket")->numarg);
 
-    opt = optget((*ctx)->clamdopts, "TCPAddr");
-    while (opt) {
+	if ((*ctx)->portstr) {
+		free((*ctx)->portstr);
+	}
 
-        if (opt->strarg)
-            ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+	(*ctx)->portstr = cli_strdup(port);
+	if ( NULL == (*ctx)->portstr ) {
+		*err = CL_EARG;
+		return 0;
+	}
 
-        memset(&hints, 0x00, sizeof(struct addrinfo));
-        hints.ai_family = AF_UNSPEC;
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_PASSIVE;
+	opt = optget((*ctx)->clamdopts, "TCPAddr");
+	while (opt) {
 
-        if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-            logg("!Can't lookup clamd hostname: %s\n", gai_strerror(res));
-            opt = opt->nextarg;
-            continue;
+		if (opt->strarg) {
+			ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
+		}
+
+		if (NULL == ipaddr) {
+			logg("!ClamClient: Clamonacc does not support binding to INADDR_ANY, \
+					please specify an address with TCPAddr in your clamd.conf config file\n");
+			*err = CL_EARG;
+			return 1;
+		}
+
+		curlcode = onas_curl_init(&curl, ipaddr, port);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not init curl, %s\n", curl_easy_strerror(curlcode));
+			*err = CL_EARG;
+			return 1;
+		}
+
+		curlcode = curl_easy_perform(curl);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not connect to remote clam daemon, %s\n", curl_easy_strerror(curlcode));
+			*err = CL_EARG;
+			return 1;
+		}
+
+		curl_easy_cleanup(curl);
+
+		opt = opt->nextarg;
+	}
+
+	if (*err == CL_SUCCESS) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+CURLcode onas_curl_init(CURL **curl, char *ipaddr, char *port) {
+
+	CURLcode curlcode = CURLE_OK;
+
+	if (!curl || !(*curl) || !ipaddr || !port) {
+		logg("!ClamClient: invalid (NULL) args passed to onas_curl_init\n");
+		return CURLE_FAILED_INIT;
+	}
+
+	*curl = curl_easy_init();
+
+	curlcode = curl_easy_setopt(*curl, CURLOPT_PORT, port);
+        if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with tcp port, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
         }
 
-        for (p = info; p != NULL; p = p->ai_next) {
-            if((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                logg("isremote: socket() returning: %s.\n", strerror(errno));
-                continue;
-            }
-
-            switch (p->ai_family) {
-            case AF_INET:
-                ((struct sockaddr_in *)(p->ai_addr))->sin_port = htons(INADDR_ANY);
-                break;
-            case AF_INET6:
-                ((struct sockaddr_in6 *)(p->ai_addr))->sin6_port = htons(INADDR_ANY);
-                break;
-            default:
-                break;
-            }
-
-            ret = bind(s, p->ai_addr, p->ai_addrlen);
-            if (ret) {
-                if (errno == EADDRINUSE) {
-                    /*
-                     * If we can't bind, then either we're attempting to listen on an IP that isn't
-                     * ours or that clamd is already listening on.
-                     */
-                    closesocket(s);
-                    freeaddrinfo(info);
-                    return 0;
-                }
-
-                closesocket(s);
-                freeaddrinfo(info);
-                return 1;
-            }
-
-            closesocket(s);
+	curlcode = curl_easy_setopt(*curl, CURLOPT_URL, ipaddr);
+        if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with tcp address, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
         }
 
-        freeaddrinfo(info);
+	/* we implement our own transfer protocol via send and recv, so we only need to connect */
+	curlcode = curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 1L);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
+	}
 
-        opt = opt->nextarg;
-    }
-
-    return 0;
+	return curlcode;
 }
 
 cl_error_t onas_setup_client (struct onas_context **ctx) {
 
     const struct optstruct *opts;
     const struct optstruct *opt;
-    errno = 0;
+    cl_error_t err;
     int remote;
+
+    errno = 0;
 
     opts = (*ctx)->opts;
 
@@ -200,16 +229,20 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 	    logg("!ClamClient: problem with internal logger\n");
             return CL_EARG;
 	}
-    } else
+    } else {
 	logg_file = NULL;
+    }
 
     if(actsetup(opts)) {
 	return CL_EARG;
     }
 
-    if (onas_check_remote(ctx)) {
-        (*ctx)->isremote = 1;
-    } else if (errno == EADDRINUSE) {
+    if (curl_global_init(CURL_GLOBAL_NOTHING)) {
+        return CL_EARG;
+    }
+
+    (*ctx)->isremote = onas_check_remote(ctx, &err);
+    if (err) {
         return CL_EARG;
     }
 
@@ -275,21 +308,51 @@ static char *onas_make_absolute(const char *basepath) {
 int onas_get_clamd_version(struct onas_context **ctx)
 {
     char *buff;
+    CURL *curl;
+    CURLcode curlcode;
+    cl_error_t err = CL_SUCCESS;
+    int b_remote;
     int len, sockd;
     struct RCVLN rcv;
 
-    onas_check_remote(ctx);
-    if((sockd = onas_dconnect(ctx)) < 0) {
-        return 2;
-    }
-    recvlninit(&rcv, sockd);
-
-    if(sendln(sockd, "zVERSION", 9)) {
-        closesocket(sockd);
-        return 2;
+    b_remote = onas_check_remote(ctx, &err);
+    if (CL_SUCCESS != err) {
+	    logg("!ClamClient: could not check to see if daemon was remote\n");
+	    return 2;
     }
 
-    while((len = recvln(&rcv, &buff, NULL))) {
+    if (!b_remote) {
+	curl = curl_easy_init();
+        curlcode = curl_easy_setopt(curl, CURLOPT_UNIX_SOCKET_PATH, optget((*ctx)->clamdopts, "LocalSocket")->strarg);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(curl);
+		return 2;
+	}
+    } else {
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portstr);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+		/* curl cleanup done in ons_curl_init on error */
+		return 2;
+	}
+    }
+
+    onas_recvlninit(&rcv, curl);
+
+    curlcode = curl_easy_perform(curl);
+    if (CURLE_OK != curlcode) {
+	    logg("!ClamClient: could not connect to clam daemon, %s\n", curl_easy_strerror(curlcode));
+	    return 2;
+    }
+
+
+    if(onas_sendln(curl, "zVERSION", 9)) {
+        curl_easy_close(curl);
+        return 2;
+    }
+
+    while((len = onas_recvln(&rcv, &buff, NULL))) {
         if(len == -1) {
             logg("*ClamClient: clamd did not respond with version information\n");
             break;
@@ -297,12 +360,14 @@ int onas_get_clamd_version(struct onas_context **ctx)
         printf("%s\n", buff);
     }
 
-    closesocket(sockd);
+    curl_easy_close(curl);
     return 0;
 }
 
 int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
+	CURL *curl = NULL;
+	CURLcode curlcode = CURLE_OK;
 	int scantype, errors = 0;
 	int sockd, ret;
 
@@ -314,19 +379,32 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 		scantype = (*ctx)->scantype;
         }
 
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portstr);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+		/* curl cleanup done in ons_curl_init on error */
+		return 2;
+	}
+
 	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
         //logg("*ClamClient: connecting to daemon ...\n");
-	if((sockd = onas_dconnect(ctx)) >= 0 && (ret = onas_dsresult(ctx, sockd, scantype, fname, &ret, err, ret_code)) >= 0) {
+	curlcode = curl_easy_perform(curl);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not establish connection, %s\n", curl_easy_strerror(curlcode));
+		return 2;
+	}
+
+
+	if((ret = onas_dsresult(ctx, curl, scantype, fname, &ret, err, ret_code)) >= 0) {
 		*infected = ret;
 	} else {
 		logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
 		errors = 1;
 	}
-	if(sockd >= 0) {
-		/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
-		//logg("*ClamClient: done, closing connection ...\n");
-		closesocket(sockd);
-	}
+	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
+	//logg("*ClamClient: done, closing connection ...\n");
 
+	curl_easy_cleanup(curl);
 	return *infected ? 1 : (errors ? 2 : 0);
 }
+

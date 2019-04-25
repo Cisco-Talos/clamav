@@ -70,10 +70,10 @@ extern pthread_t ddd_pid;
 	logg("ClamFanotif: stopped\n");
 }*/
 
-static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *fmd, STATBUF sb, int scan, struct onas_context **ctx)
+/* TODO: rework this to feed multithreading consumer queue
+ * static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *fmd, STATBUF sb, int scan, struct onas_context **ctx)
 {
     struct fanotify_response res;
-    const char *virname = NULL;
         int infected = 0;
         int err = 0;
     int ret             = 0;
@@ -102,7 +102,7 @@ static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *
     }
 
     return ret;
-}
+}*/
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
@@ -255,11 +255,12 @@ int onas_fan_eloop(struct onas_context **ctx) {
                 }
             }
 
+                                /* TODO: rework to feed consumer queue
 				if (onas_fan_scanfile(fname, fmd, sb, scan, ctx) == -1) {
                 close(fmd->fd);
 					logg("!ClamFanotif: error when stating and/or scanning??\n");
 						return 2;
-            }
+				}*/
 
             if (close(fmd->fd) == -1) {
 					printf("!ClamFanotif: internal error (close(%d) failed)\n", fmd->fd);

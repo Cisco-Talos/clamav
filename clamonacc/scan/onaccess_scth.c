@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+#include <sys/fanotify.h>
 
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -37,14 +38,19 @@
 #include "libclamav/others.h"
 #include "../misc/priv_fts.h"
 #include "../misc/onaccess_others.h"
+#include "../client/onaccess_client.h"
 #include "onaccess_scth.h"
 //#include "onaccess_others.h"
 
 #include "libclamav/clamav.h"
 
-static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct scth_thrarg *tharg);
-static int onas_scth_handle_dir(const char *pathname, struct scth_thrarg *tharg);
-static int onas_scth_handle_file(const char *pathname, struct scth_thrarg *tharg);
+static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+static int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+static int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STATBUF sb, struct onas_scan_event *event_data, int *infected, int *err, cl_error_t *ret_code);
+static int onas_scth_handle_dir(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
+static int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
 
 static void onas_scth_exit(int sig);
 
@@ -55,67 +61,168 @@ static void onas_scth_exit(int sig)
     pthread_exit(NULL);
 }
 
-static int onas_scth_scanfile(const char *fname, int fd, int extinfo, struct scth_thrarg *tharg)
+/**
+ * Scan wrapper, used by both inotify and fanotify threads. Owned by scanthread to force multithreaded client archtiecture
+ * which better avoids kernel level deadlocks from fanotify blocking/prevention
+ */
+static int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret             = 0;
-    const char *virname = NULL;
+    int i = 0;
 
-    //return onas_scan(fname, fd, &virname, tharg->engine, tharg->options, extinfo);
+    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
+
+    if (*err) {
+        switch (*ret_code) {
+            case CL_EACCES:
+            case CL_ESTAT:
+
+                logg("*ClamMisc: internal issue (daemon could not access directory/file %s)\n", fname);
+                break;
+                /* TODO: handle other errors */
+            case CL_EPARSE:
+            case CL_EREAD:
+            case CL_EWRITE:
+            case CL_EMEM:
+            case CL_ENULLARG:
+            default:
+                logg("~ClamMisc: internal issue (client failed to scan)\n");
+        }
+	    if ((*ctx)->retry_on_error) {
+		    logg("*ClamMisc: reattempting scan ... \n");
+		    while (err) {
+			    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
+
+			    i++;
+			    if (*err && i == (*ctx)->retry_attempts) {
+				    *err = 0;
+			    }
+		    }
+	    }
+    }
+
     return ret;
 }
 
-static int onas_scth_handle_dir(const char *pathname, struct scth_thrarg *tharg)
+/**
+ * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ */
+static int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
-    FTS *ftsp = NULL;
-    int fd;
-    int ftspopts = FTS_PHYSICAL | FTS_XDEV;
-    int extinfo;
-    int ret;
-    FTSENT *curr = NULL;
+	int ret = 0;
 
-    extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+	pthread_mutex_lock(&onas_scan_lock);
+
+	ret = onas_client_scan(ctx, fname, sb, infected, err, ret_code);
+
+	pthread_mutex_unlock(&onas_scan_lock);
+
+	return ret;
+}
+
+static int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STATBUF sb, struct onas_scan_event *event_data, int *infected, int *err, cl_error_t *ret_code)
+{
+	struct fanotify_response res;
+	int ret = 0;
+	int i = 0;
+
+	if (event_data->b_fanotify) {
+		res.fd = event_data->fmd->fd;
+		res.response = FAN_ALLOW;
+	}
+
+	if (event_data->b_scan) {
+		ret = onas_scan(ctx, fname, sb, infected, err, ret_code);
+
+		if (err && ret_code != CL_SUCCESS) {
+			logg("*Clamonacc: scan failed with error code %d\n", *ret_code);
+		}
+
+
+		if (event_data->b_fanotify) {
+			if ((err && ret_code && (*ctx)->deny_on_error) || infected) {
+				res.response = FAN_DENY;
+			}
+		}
+	}
+
+
+	if (event_data->b_fanotify) {
+		if(event_data->fmd->mask & FAN_ALL_PERM_EVENTS) {
+			ret = write((*ctx)->fan_fd, &res, sizeof(res));
+			if(ret == -1)
+				logg("!Clamonacc: internal error (can't write to fanotify)\n");
+		}
+	}
+
+	return ret;
+}
+
+static int onas_scth_handle_dir(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data) {
+    FTS *ftsp = NULL;
+	int32_t ftspopts = FTS_PHYSICAL | FTS_XDEV;
+	int32_t infected = 0;
+	int32_t err = 0;
+        cl_error_t ret_code = CL_SUCCESS;
+	int32_t ret = 0;
+	int32_t fres = 0;
+    FTSENT *curr = NULL;
+        STATBUF sb;
 
     char *const pathargv[] = {(char *)pathname, NULL};
     if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) return CL_EOPEN;
 
     while ((curr = _priv_fts_read(ftsp))) {
         if (curr->fts_info != FTS_D) {
-            if ((fd = safe_open(curr->fts_path, O_RDONLY | O_BINARY)) == -1)
-                return CL_EOPEN;
 
-            if (onas_scth_scanfile(curr->fts_path, fd, extinfo, tharg) == CL_VIRUS)
-                ;
-            ret = CL_VIRUS;
+			fres = CLAMSTAT(curr->fts_path, &sb);
 
-            close(fd);
+			if ((*ctx)->sizelimit) {
+				if (fres != 0 || sb.st_size > (*ctx)->sizelimit)  {
+					//okay to skip, directory from inotify events (probably) won't block w/ protection enabled
+                                        //log here later
+					continue;
+				}
+			}
+
+                        ret = onas_scth_scanfile(ctx, curr->fts_path, sb, event_data, &infected, &err, &ret_code);
+                        // probs need to error check here later, or at least log
         }
     }
 
     return ret;
 }
 
-static int onas_scth_handle_file(const char *pathname, struct scth_thrarg *tharg)
-{
-    int fd;
-    int extinfo;
-    int ret;
+static int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data) {
 
-    if (!pathname) return CL_ENULLARG;
+	STATBUF sb;
+	int32_t infected = 0;
+	int32_t err = 0;
+	cl_error_t ret_code = CL_SUCCESS;
+	int fres = 0;
+	int ret = 0;
 
-    extinfo = optget(tharg->opts, "ExtendedDetectionInfo")->enabled;
+	if (!pathname) return CL_ENULLARG;
 
-    if ((fd = safe_open(pathname, O_RDONLY | O_BINARY)) == -1)
-        return CL_EOPEN;
-    ret = onas_scth_scanfile(pathname, fd, extinfo, tharg);
+	fres = CLAMSTAT(pathname, &sb);
+	if ((*ctx)->sizelimit) {
+		if (fres != 0 || sb.st_size > (*ctx)->sizelimit)  {
+			/* don't skip so we avoid lockups, but don't scan either */
+			event_data->b_scan = 0;
+		}
+	}
 
-    close(fd);
+	ret = onas_scth_scanfile(ctx, pathname, sb, event_data, &infected, &err, &ret_code);
+	// probs need to error check here later, or at least log
 
     return ret;
 }
 
-void *onas_scan_th(void *arg)
-{
+void *onas_scan_th(void *arg) {
+
     struct scth_thrarg *tharg = (struct scth_thrarg *)arg;
+	struct onas_scan_event *event_data = NULL;
+	struct onas_context **ctx = NULL;
     sigset_t sigset;
     struct sigaction act;
 
@@ -126,7 +233,7 @@ void *onas_scan_th(void *arg)
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
-    sigdelset(&sigset, SIGSEGV);
+	//sigdelset(&sigset, SIGSEGV);
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
@@ -137,29 +244,45 @@ void *onas_scan_th(void *arg)
     sigaction(SIGUSR1, &act, NULL);
     sigaction(SIGSEGV, &act, NULL);
 
-    if (NULL == tharg || NULL == tharg->pathname || NULL == tharg->opts || NULL == tharg->engine) {
+	if (NULL == tharg || NULL == tharg->ctx || NULL == tharg->event_data || NULL == tharg->event_data->pathname || NULL == (*(tharg->ctx))->opts) {
         logg("ScanOnAccess: Invalid thread arguments for extra scanning\n");
         goto done;
     }
 
-    if (tharg->extra_options & ONAS_SCTH_ISDIR) {
-        logg("*ScanOnAccess: Performing additional scanning on directory '%s'\n", tharg->pathname);
-        onas_scth_handle_dir(tharg->pathname, tharg);
-    } else if (tharg->extra_options & ONAS_SCTH_ISFILE) {
-        logg("*ScanOnAccess: Performing additional scanning on file '%s'\n", tharg->pathname);
-        onas_scth_handle_file(tharg->pathname, tharg);
+        /* this event_data is ours and ours alone */
+	event_data = tharg->event_data;
+
+        /* we share this context globally--it's not ours to touch/edit */
+	ctx = tharg->ctx;
+
+        if (event_data->b_inotify) {
+            if (event_data->extra_options & ONAS_SCTH_ISDIR) {
+                logg("*ScanOnAccess: Performing additional scanning on directory '%s'\n", event_data->pathname);
+                onas_scth_handle_dir(ctx, event_data->pathname, event_data);
+            } else if (event_data->extra_options & ONAS_SCTH_ISFILE) {
+                logg("*ScanOnAccess: Performing additional scanning on file '%s'\n", event_data->pathname);
+                onas_scth_handle_file(ctx, event_data->pathname, event_data);
+            }
+        } else if (event_data->b_fanotify) {
+            logg("*ScanOnAccess: Performing scanning on file '%s'\n", event_data->pathname);
+            onas_scth_handle_file(ctx, event_data->pathname, event_data);
     }
+        /* TODO: else something went wrong and we should error out here */
 
 done:
-    if (NULL != tharg->pathname) {
-        free(tharg->pathname);
-        tharg->pathname = NULL;
+        /* our job to cleanup event data: worker queue just kicks us off, drops the event object
+         * from the queue and forgets about us. */
+
+	if (NULL != tharg) {
+		if (NULL != tharg->event_data) {
+			if (NULL != tharg->event_data->pathname) {
+				free(tharg->event_data->pathname);
+				event_data->pathname = NULL;
     }
-    if (NULL != tharg->options) {
-        free(tharg->options);
-        tharg->options = NULL;
+			free(tharg->event_data);
+			tharg->event_data = NULL;
     }
-    if (NULL != tharg) {
+		/* don't free context, cleanup for context is handled at the highest layer */
         free(tharg);
     }
 

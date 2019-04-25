@@ -32,6 +32,7 @@
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
+#include <curl/curl.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -57,8 +58,8 @@
 #include "shared/actions.h"
 #include "shared/output.h"
 #include "shared/misc.h"
-#include "shared/clamdcom.h"
 
+#include "onaccess_com.h"
 #include "onaccess_proto.h"
 #include "onaccess_client.h"
 
@@ -72,7 +73,7 @@ static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", 
 
 /* Connects to clamd
  * Returns a FD or -1 on error */
-int onas_dconnect(struct onas_context **ctx) {
+/*int onas_dconnect(struct onas_context **ctx) {
 	int sockd, res;
 	const struct optstruct *opt;
 	struct addrinfo hints, *info, *p;
@@ -134,11 +135,11 @@ int onas_dconnect(struct onas_context **ctx) {
 	}
 
 	return -1;
-}
+}*/
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_stream(struct onas_context **ctx, int sockd, const char *filename) {
+static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *filename) {
 	uint32_t buf[BUFSIZ/sizeof(uint32_t)];
 	int fd, len;
 	unsigned long int todo = (*ctx)->maxstream;
@@ -150,7 +151,7 @@ static int onas_send_stream(struct onas_context **ctx, int sockd, const char *fi
 		}
 	} else fd = 0;
 
-	if(sendln(sockd, "zINSTREAM", 10)) {
+	if(onas_sendln(curl, "zINSTREAM", 10)) {
 		close(fd);
 		return -1;
 	}
@@ -158,7 +159,7 @@ static int onas_send_stream(struct onas_context **ctx, int sockd, const char *fi
 	while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 		if((unsigned int)len > todo) len = todo;
 		buf[0] = htonl(len);
-		if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) {
+		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t))) {
 			close(fd);
 			return -1;
 		}
@@ -174,14 +175,15 @@ static int onas_send_stream(struct onas_context **ctx, int sockd, const char *fi
 		return 0;
 	}
 	*buf=0;
-	sendln(sockd, (const char *)buf, 4);
+	onas_sendln(curl, (const char *)buf, 4);
 	return 1;
 }
 
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_fdpass(int sockd, const char *filename) {
+static int onas_send_fdpass(CURL *curl, const char *filename) {
+	CURLcode result;
 	struct iovec iov[1];
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -195,7 +197,8 @@ static int onas_send_fdpass(int sockd, const char *filename) {
 			return 0;
 		}
 	} else fd = 0;
-	if(sendln(sockd, "zFILDES", 8)) {
+	if(result = onas_sendln(curl, "zFILDES", 8)) {
+		logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
 		close(fd);
 		return -1;
 	}
@@ -212,7 +215,7 @@ static int onas_send_fdpass(int sockd, const char *filename) {
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 	*(int *)CMSG_DATA(cmsg) = fd;
-	if(sendmsg(sockd, &msg, 0) == -1) {
+	if(onas_sendln(curl, &msg, 0) == -1) {
 		logg("!FD send failed: %s\n", strerror(errno));
 		close(fd);
 		return -1;
@@ -244,7 +247,7 @@ static int chkpath(struct onas_context **ctx, const char *path)
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code) {
+int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code) {
 	int infected = 0, len = 0, beenthere = 0;
 	char *bol, *eol;
 	struct RCVLN rcv;
@@ -252,7 +255,8 @@ int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char
 
 	if(filename && chkpath(ctx, filename))
 		return 0;
-	recvlninit(&rcv, sockd);
+
+	onas_recvlninit(&rcv, curl);
 
 	if (ret_code) {
 		*ret_code = CL_SUCCESS;
@@ -278,7 +282,7 @@ int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char
 				return -1;
 			}
 			sprintf(bol, "z%s %s", scancmd[scantype], filename);
-			if(sendln(sockd, bol, len)) {
+			if(onas_sendln(curl, bol, len)) {
 				if (ret_code) {
 					*ret_code = CL_EWRITE;
 				}
@@ -290,12 +294,12 @@ int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char
 
 		case STREAM:
 			/* NULL filename safe in send_stream() */
-			len = onas_send_stream(ctx, sockd, filename);
+			len = onas_send_stream(ctx, curl, filename);
 			break;
 #ifdef HAVE_FD_PASSING
 		case FILDES:
 			/* NULL filename safe in send_fdpass() */
-			len = onas_send_fdpass(sockd, filename);
+			len = onas_send_fdpass(curl, filename);
 			break;
 #endif
 	}
@@ -307,7 +311,7 @@ int onas_dsresult(struct onas_context **ctx, int sockd, int scantype, const char
 		return len;
 	}
 
-	while((len = recvln(&rcv, &bol, &eol))) {
+	while((len = onas_recvln(&rcv, &bol, &eol))) {
 		if(len == -1) {
 			if (ret_code) {
 				*ret_code = CL_EREAD;
