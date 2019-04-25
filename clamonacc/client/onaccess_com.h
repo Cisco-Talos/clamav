@@ -1,8 +1,8 @@
 /*
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm, aCaB
+ *  Author: aCaB
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,14 +19,30 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef ONAS_PROTO_H
-#define ONAS_PROTO_H
+#ifndef ONAS_COM_H
+#define ONAS_COM_H
 
-#include <curl/curl.h>
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 
 #include "shared/misc.h"
-#include "../clamonacc.h"
 
-/*int onas_dconnect(struct onas_context **ctx);*/
-int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code);
+struct RCVLN {
+    char buf[PATH_MAX+1024]; /* FIXME must match that in clamd - bb1349 */
+    CURL *curl;
+    CURLcode curlcode;
+    int retlen;
+    char *curr;
+    char *lnstart;
+};
+
+int onas_sendln(CURL *curl, const char *line, unsigned int len);
+void onas_recvlninit(struct RCVLN *s, CURL *curl);
+int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol);
+
 #endif

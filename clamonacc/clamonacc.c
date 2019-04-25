@@ -159,11 +159,12 @@ struct onas_context *onas_init_context(void) {
 
 cl_error_t onas_check_client_connection(struct onas_context **ctx) {
 
+	cl_error_t err = CL_SUCCESS;
 	errno = 0;
 
 	/* 0 local, non-zero remote, errno set on error */
-	(*ctx)->isremote = onas_check_remote(ctx);
-	if (errno == 0) {
+	(*ctx)->isremote = onas_check_remote(ctx, &err);
+	if (errno == 0 && CL_SUCCESS == err ) {
 		logg("*Clamonacc: ");
 		(*ctx)->isremote ? logg("*daemon is remote\n") : logg("*daemon is local\n");
 	}
@@ -225,6 +226,9 @@ void* onas_context_cleanup(struct onas_context *ctx) {
 	close(ctx->fan_fd);
 	optfree((struct optstruct *) ctx->opts);
 	optfree((struct optstruct *) ctx->clamdopts);
+        if (ctx->portstr) {
+            free(ctx->portstr);
+        }
 	ctx->opts = NULL;
 	ctx->clamdopts = NULL;
 	free(ctx);

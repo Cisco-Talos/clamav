@@ -51,7 +51,7 @@
 #include "crtmgr.h"
 
 #ifdef HAVE_JSON
-#include "json.h"
+#include "json-c/json.h"
 #endif
 
 #ifdef HAVE_YARA

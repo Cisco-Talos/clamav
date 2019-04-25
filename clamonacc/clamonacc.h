@@ -24,6 +24,16 @@
 
 #include "libclamav/clamav.h"
 
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 struct onas_context {
 	const struct optstruct *opts;
 	const struct optstruct *clamdopts;
@@ -45,8 +55,16 @@ struct onas_context {
         int scantype;
         int isremote;
         int session;
-};
 
+        char *portstr;
+} __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 
 struct onas_context* onas_init_context(void);
 void* onas_cleanup(struct onas_context *ctx);

@@ -37,5 +37,9 @@ AC_SUBST([SSL_LDFLAGS])
 AC_SUBST([JSON_LIBS])
 AC_SUBST([JSON_LDFLAGS])
 AC_SUBST([CURL_LIBS])
+<<<<<<< HEAD
 AC_SUBST([CURL_LDFLAGS])
 
+=======
+AC_SUBST([CURL_LIBS])
+>>>>>>> clamonacc - add curl support

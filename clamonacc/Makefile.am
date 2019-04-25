@@ -36,14 +36,14 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/actions.c \
     $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/shared/clamdcom.c \
-    $(top_srcdir)/shared/clamdcom.h \
     $(top_srcdir)/shared/priv-fts.h \
     clamonacc.c \
     ./client/onaccess_client.c \
     ./client/onaccess_client.h \
     ./client/onaccess_proto.c \
     ./client/onaccess_proto.h \
+    ./client/onaccess_com.c \
+    ./client/onaccess_com.h \
     ./inotif/onaccess_ddd.c \
     ./inotif/onaccess_ddd.h \
     ./fanotif/onaccess_fan.c \
@@ -64,8 +64,8 @@ AM_CFLAGS=@WERR_CFLAGS@
 endif
 
 DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LDFLAGS@ @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

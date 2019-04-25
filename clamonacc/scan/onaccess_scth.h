@@ -21,18 +21,26 @@
 #ifndef __ONAS_SCTH_H
 #define __ONAS_SCTH_H
 
+
+#include <sys/fanotify.h>
 #include "shared/optparser.h"
 #include "libclamav/clamav.h"
 
 #define ONAS_SCTH_ISDIR 0x01
 #define ONAS_SCTH_ISFILE 0x02
 
-struct scth_thrarg {
-    uint32_t extra_options;
-    struct cl_scan_options *options;
-    const struct optstruct *opts;
-    const struct cl_engine *engine;
+struct onas_scan_event {
     char *pathname;
+        struct fanotify_event_metadata *fmd;
+	int16_t b_inotify;
+	int16_t b_fanotify;
+        int16_t b_scan;
+	uint32_t extra_options;
+};
+
+struct scth_thrarg {
+	struct onas_scan_event *event_data;
+	struct onas_context **ctx;
 };
 
 void *onas_scan_th(void *arg);

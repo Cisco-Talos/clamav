@@ -69,7 +69,7 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx, const char *pa
 static void onas_ddd_handle_in_create(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
 static void onas_ddd_handle_in_moved_from(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
 static void onas_ddd_handle_in_delete(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
-static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options);
+/*static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options);*/
 
 static void onas_ddd_exit(int sig);
 
@@ -684,8 +684,8 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
     return;
 }
 
-
-static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
+/* TODO: rework this to use consumer queue when making multithreading changes */
+/*static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
 
     int thread_started             = 1;
     struct scth_thrarg *scth_tharg = NULL;
@@ -694,10 +694,10 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 
     do {
         if (pthread_attr_init(&scth_attr)) break;
-        pthread_attr_setdetachstate(&scth_attr, PTHREAD_CREATE_JOINABLE);
+		pthread_attr_setdetachstate(&scth_attr, PTHREAD_CREATE_JOINABLE);*/
 
         /* Allocate memory for arguments. Thread is responsible for freeing it. */
-        if (!(scth_tharg = (struct scth_thrarg *)calloc(sizeof(struct scth_thrarg), 1))) break;
+		/* (!(scth_tharg = (struct scth_thrarg *) calloc(sizeof(struct scth_thrarg), 1))) break;
         if (!(scth_tharg->options = (struct cl_scan_options *)calloc(sizeof(struct cl_scan_options), 1))) break;
 
 
@@ -708,9 +708,9 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
         thread_started = pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg);
     } while (0);
 
-    if (0 != thread_started) {
+	if (0 != thread_started) {*/
         /* Failed to create thread. Free anything we may have allocated. */
-		logg("!ClamInotif: Unable to kick off extra scanning.\n");
+		/*logg("!ClamInotif: Unable to kick off extra scanning.\n");
         if (NULL != scth_tharg) {
             if (NULL != scth_tharg->pathname) {
                 free(scth_tharg->pathname);
@@ -726,7 +726,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
     }
 
     return;
-}
+}*/
 
 static void onas_ddd_exit(int sig) {
 	logg("*ClamInotif: onas_ddd_exit(), signal %d\n", sig);

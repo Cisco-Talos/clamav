@@ -47,8 +47,6 @@
 #include "../clamonacc.h"
 #include "../client/onaccess_client.h"
 
-static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
-
 int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
     char path[32];
@@ -99,7 +97,9 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 /**
  * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
  */
-int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+
+/* TODO: remove this
+ * int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret = 0;
     int i = 0;
@@ -113,7 +113,6 @@ int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *inf
 
                 logg("*ClamMisc: internal issue (daemon could not access directory/file %s)\n", fname);
                 break;
-                /* TODO: handle other errors */
             case CL_EPARSE:
             case CL_EREAD:
             case CL_EWRITE:
@@ -135,12 +134,13 @@ int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *inf
 	    }
     }
     return ret;
-}
+}*/
 
 /**
  * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
  */
-int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+/* TODO: remove this
+ * int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret = 0;
 
@@ -151,7 +151,7 @@ int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int
     pthread_mutex_unlock(&onas_scan_lock);
 
     return ret;
-    }
+}*/
 
 char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
 {
