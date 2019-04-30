@@ -53,6 +53,10 @@
 
 #include <openssl/evp.h>
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_CRL_get0_nextUpdate X509_CRL_get_nextUpdate
+#endif
+
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
@@ -132,12 +136,14 @@ time_t timegm(struct tm *t)
  */
 int cl_initialize_crypto(void)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_load_error_strings();
     SSL_library_init();
     OpenSSL_add_all_digests();
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
     ERR_load_crypto_strings();
+#endif
 
     return 0;
 }
@@ -1137,9 +1143,9 @@ X509_CRL *cl_load_crl(const char *file)
     fclose(fp);
 
     if ((x)) {
-        ASN1_TIME *tme;
+        const ASN1_TIME *tme;
 
-        tme = X509_CRL_get_nextUpdate(x);
+        tme = X509_CRL_get0_nextUpdate(x);
         if (!tme || X509_cmp_current_time(tme) < 0) {
             X509_CRL_free(x);
             return NULL;
