@@ -29125,6 +29125,8 @@ fi
 
 
 
+
+
 # Check whether --enable-strni was given.
 if test "${enable_strni+set}" = set; then :
   enableval=$enable_strni; enable_strni=$enableval
@@ -35751,6 +35753,7 @@ elif test "xyes" = "x"; then :
 else
   $as_echo "$LIBSSL_HOME (yes)"
 fi
+
 
 
 

@@ -195,27 +195,26 @@ am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
-	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/clamdcom.c \
-	$(top_srcdir)/shared/clamdcom.h \
-	$(top_srcdir)/shared/priv-fts.h clamonacc.c \
-	./client/onaccess_client.c ./client/onaccess_client.h \
-	./client/onaccess_proto.c ./client/onaccess_proto.h \
-	./inotif/onaccess_ddd.c ./inotif/onaccess_ddd.h \
-	./fanotif/onaccess_fan.c ./fanotif/onaccess_fan.h \
-	./inotif/onaccess_hash.c ./inotif/onaccess_hash.h \
-	./misc/onaccess_others.c ./misc/onaccess_others.h \
-	./misc/priv_fts.h ./scan/onaccess_scth.c \
-	./scan/onaccess_scth.h ./misc/fts.c
+	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/priv-fts.h \
+	clamonacc.c ./client/onaccess_client.c \
+	./client/onaccess_client.h ./client/onaccess_proto.c \
+	./client/onaccess_proto.h ./client/onaccess_com.c \
+	./client/onaccess_com.h ./inotif/onaccess_ddd.c \
+	./inotif/onaccess_ddd.h ./fanotif/onaccess_fan.c \
+	./fanotif/onaccess_fan.h ./inotif/onaccess_hash.c \
+	./inotif/onaccess_hash.h ./misc/onaccess_others.c \
+	./misc/onaccess_others.h ./misc/priv_fts.h \
+	./scan/onaccess_scth.c ./scan/onaccess_scth.h ./misc/fts.c
 @BUILD_CLAMD_TRUE@@SYSTEM_LFS_FTS_FALSE@am__objects_1 = clamonacc-fts.$(OBJEXT)
 @BUILD_CLAMD_TRUE@am_clamonacc_OBJECTS = clamonacc-output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-optparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-actions.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamonacc-clamdcom.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-clamonacc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-onaccess_client.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-onaccess_proto.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamonacc-onaccess_com.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-onaccess_ddd.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-onaccess_fan.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamonacc-onaccess_hash.$(OBJEXT) \
@@ -332,6 +331,8 @@ CLAMSUBMIT_CFLAGS = @CLAMSUBMIT_CFLAGS@
 CLAMSUBMIT_LIBS = @CLAMSUBMIT_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CURL_CPPFLAGS = @CURL_CPPFLAGS@
+CURL_LIBS = @CURL_LIBS@
 CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CXX = @CXX@
@@ -407,7 +408,7 @@ LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
 LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
 LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
 LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la  @CLAMONACC_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LDFLAGS@ @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -545,13 +546,13 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/actions.c \
 @BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/actions.h \
-@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/clamdcom.c \
-@BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/clamdcom.h \
 @BUILD_CLAMD_TRUE@	$(top_srcdir)/shared/priv-fts.h clamonacc.c \
 @BUILD_CLAMD_TRUE@	./client/onaccess_client.c \
 @BUILD_CLAMD_TRUE@	./client/onaccess_client.h \
 @BUILD_CLAMD_TRUE@	./client/onaccess_proto.c \
 @BUILD_CLAMD_TRUE@	./client/onaccess_proto.h \
+@BUILD_CLAMD_TRUE@	./client/onaccess_com.c \
+@BUILD_CLAMD_TRUE@	./client/onaccess_com.h \
 @BUILD_CLAMD_TRUE@	./inotif/onaccess_ddd.c \
 @BUILD_CLAMD_TRUE@	./inotif/onaccess_ddd.h \
 @BUILD_CLAMD_TRUE@	./fanotif/onaccess_fan.c \
@@ -563,7 +564,7 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@	./scan/onaccess_scth.c \
 @BUILD_CLAMD_TRUE@	./scan/onaccess_scth.h $(am__append_1)
 @BUILD_CLAMD_TRUE@AM_CFLAGS = @WERR_CFLAGS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamonacc$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am
@@ -677,12 +678,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-actions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-clamdcom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-clamonacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-fts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-onaccess_client.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-onaccess_com.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-onaccess_ddd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-onaccess_fan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamonacc-onaccess_hash.Po@am__quote@
@@ -783,20 +784,6 @@ clamonacc-actions.obj: $(top_srcdir)/shared/actions.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
 
-clamonacc-clamdcom.o: $(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-clamdcom.o -MD -MP -MF $(DEPDIR)/clamonacc-clamdcom.Tpo -c -o clamonacc-clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamonacc-clamdcom.Tpo $(DEPDIR)/clamonacc-clamdcom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/clamdcom.c' object='clamonacc-clamdcom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-clamdcom.o `test -f '$(top_srcdir)/shared/clamdcom.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/clamdcom.c
-
-clamonacc-clamdcom.obj: $(top_srcdir)/shared/clamdcom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-clamdcom.obj -MD -MP -MF $(DEPDIR)/clamonacc-clamdcom.Tpo -c -o clamonacc-clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamonacc-clamdcom.Tpo $(DEPDIR)/clamonacc-clamdcom.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/clamdcom.c' object='clamonacc-clamdcom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
-
 clamonacc-clamonacc.o: clamonacc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-clamonacc.o -MD -MP -MF $(DEPDIR)/clamonacc-clamonacc.Tpo -c -o clamonacc-clamonacc.o `test -f 'clamonacc.c' || echo '$(srcdir)/'`clamonacc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamonacc-clamonacc.Tpo $(DEPDIR)/clamonacc-clamonacc.Po
@@ -838,6 +825,20 @@ clamonacc-onaccess_proto.obj: ./client/onaccess_proto.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='./client/onaccess_proto.c' object='clamonacc-onaccess_proto.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-onaccess_proto.obj `if test -f './client/onaccess_proto.c'; then $(CYGPATH_W) './client/onaccess_proto.c'; else $(CYGPATH_W) '$(srcdir)/./client/onaccess_proto.c'; fi`
+
+clamonacc-onaccess_com.o: ./client/onaccess_com.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-onaccess_com.o -MD -MP -MF $(DEPDIR)/clamonacc-onaccess_com.Tpo -c -o clamonacc-onaccess_com.o `test -f './client/onaccess_com.c' || echo '$(srcdir)/'`./client/onaccess_com.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamonacc-onaccess_com.Tpo $(DEPDIR)/clamonacc-onaccess_com.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='./client/onaccess_com.c' object='clamonacc-onaccess_com.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-onaccess_com.o `test -f './client/onaccess_com.c' || echo '$(srcdir)/'`./client/onaccess_com.c
+
+clamonacc-onaccess_com.obj: ./client/onaccess_com.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-onaccess_com.obj -MD -MP -MF $(DEPDIR)/clamonacc-onaccess_com.Tpo -c -o clamonacc-onaccess_com.obj `if test -f './client/onaccess_com.c'; then $(CYGPATH_W) './client/onaccess_com.c'; else $(CYGPATH_W) '$(srcdir)/./client/onaccess_com.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/clamonacc-onaccess_com.Tpo $(DEPDIR)/clamonacc-onaccess_com.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='./client/onaccess_com.c' object='clamonacc-onaccess_com.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -c -o clamonacc-onaccess_com.obj `if test -f './client/onaccess_com.c'; then $(CYGPATH_W) './client/onaccess_com.c'; else $(CYGPATH_W) '$(srcdir)/./client/onaccess_com.c'; fi`
 
 clamonacc-onaccess_ddd.o: ./inotif/onaccess_ddd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(clamonacc_CPPFLAGS) $(CPPFLAGS) $(clamonacc_CFLAGS) $(CFLAGS) -MT clamonacc-onaccess_ddd.o -MD -MP -MF $(DEPDIR)/clamonacc-onaccess_ddd.Tpo -c -o clamonacc-onaccess_ddd.o `test -f './inotif/onaccess_ddd.c' || echo '$(srcdir)/'`./inotif/onaccess_ddd.c
