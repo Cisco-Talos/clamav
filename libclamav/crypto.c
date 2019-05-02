@@ -22,7 +22,7 @@
  *  OpenSSL library under certain conditions as described in each
  *  individual source file, and distribute linked combinations
  *  including the two.
- *  
+ *
  *  You must obey the GNU General Public License in all respects
  *  for all of the code used other than OpenSSL.  If you modify
  *  file(s) with this exception, you may extend this exception to your
@@ -150,9 +150,9 @@ int cl_initialize_crypto(void)
 
 /**
  * @brief This is a deprecated function that used to clean up ssl crypto inits
- * 
- * Call to EVP_cleanup() has been removed since cleanup is now handled by 
- * auto-deinit as of openssl 1.0.2h and 1.1.0 
+ *
+ * Call to EVP_cleanup() has been removed since cleanup is now handled by
+ * auto-deinit as of openssl 1.0.2h and 1.1.0
  *
  */
 void cl_cleanup_crypto(void)
@@ -417,7 +417,7 @@ int cl_verify_signature_hash(EVP_PKEY *pkey, const char *alg, unsigned char *sig
         return -1;
     }
 
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
+    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
         EVP_MD_CTX_destroy(ctx);
         return -1;
     }
@@ -468,7 +468,7 @@ int cl_verify_signature_fd(EVP_PKEY *pkey, const char *alg, unsigned char *sig, 
         return -1;
     }
 
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
+    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
         free(digest);
         EVP_MD_CTX_destroy(ctx);
         return -1;
@@ -549,7 +549,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         return -1;
     }
 
-    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) != 0) {
+    if (EVP_VerifyFinal(ctx, sig, siglen, pkey) <= 0) {
         free(digest);
         if (decode)
             free(sig);
