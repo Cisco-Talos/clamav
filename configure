@@ -922,6 +922,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_mmap_for_cross_compiling
 enable_dependency_tracking
 enable_silent_rules
 enable_static
@@ -1624,6 +1625,15 @@ System types:
   --build=BUILD     configure for building on BUILD [guessed]
   --host=HOST       cross-compile to build programs to run on HOST [BUILD]
   --target=TARGET   configure for building compilers for TARGET [HOST]
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-mmap-for-cross-compiling
+                          set to "yes" to force enable mmap support without
+                          checking under cross-compiling. This could help
+                          enable mempool feature.
 _ACEOF
 fi
 
@@ -1632,11 +1642,6 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of ClamAV 0.102.0-devel:";;
    esac
   cat <<\_ACEOF
-
-Optional Features:
-  --disable-option-checking  ignore unrecognized --enable/--with options
-  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
-  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-dependency-tracking
                           do not reject slow dependency extractors
   --disable-dependency-tracking
@@ -20633,7 +20638,13 @@ if ${ac_cv_c_mmap_private+:} false; then :
 else
 
 		if test "$cross_compiling" = yes; then :
+
+	if test $enable_mmap_for_cross_compiling = yes; then
+  ac_cv_c_mmap_private=yes
+	else
   ac_cv_c_mmap_private=no
+	fi
+
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
