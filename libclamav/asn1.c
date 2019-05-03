@@ -2254,7 +2254,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
                 cli_dbgmsg("asn1_load_mscat: got hash %s (%s)\n", sha1, (hashtype == 2) ? "PE" : "CAB");
             }
             if (!engine->hm_fp) {
-                if (!(engine->hm_fp = mpool_calloc(engine->mempool, 1, sizeof(*(engine->hm_fp))))) {
+                if (!(engine->hm_fp = MPOOL_CALLOC(engine->mempool, 1, sizeof(*(engine->hm_fp))))) {
                     tag.size = 1;
                     return 1;
                 }

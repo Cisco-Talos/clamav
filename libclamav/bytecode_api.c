@@ -445,7 +445,7 @@ uint8_t *cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
             return NULL;
         }
     }
-    v = mpool_malloc(ctx->mpool, size);
+    v = MPOOL_MALLOC(ctx->mpool, size);
 #else
     /* TODO: implement using a list of pointers we allocated! */
     cli_errmsg("cli_bcapi_malloc not implemented for systems without mmap yet!\n");

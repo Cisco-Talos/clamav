@@ -122,11 +122,11 @@ START_TEST(test_cl_statfree)
 /*
     struct cl_stat *stat;
     fail_unless(CL_ENULLARG == cl_statfree(NULL), "cl_statfree(NULL)");
-    
+
     stat = malloc(sizeof(struct cl_stat));
     fail_unless(NULL != stat, "malloc");
     fail_unless(CL_SUCCESS == cl_statfree(stat), "cl_statfree(empty_struct)");
-    
+
     stat = malloc(sizeof(struct cl_stat));
     fail_unless(NULL != stat, "malloc");
     stat->stattab = strdup("test");
@@ -1093,7 +1093,7 @@ void dconf_setup(void)
 
 void dconf_teardown(void)
 {
-    mpool_free(pool, dconf);
+    MPOOL_FREE(pool, dconf);
 #ifdef USE_MPOOL
     if (pool)
         mpool_destroy(pool);

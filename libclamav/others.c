@@ -351,7 +351,7 @@ struct cl_engine *cl_engine_new(void)
     }
 #endif
 
-    new->root = mpool_calloc(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
+    new->root = MPOOL_CALLOC(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
     if (!new->root) {
         cli_errmsg("cl_engine_new: Can't allocate memory for roots\n");
 #ifdef USE_MPOOL
@@ -364,7 +364,7 @@ struct cl_engine *cl_engine_new(void)
     new->dconf = cli_mpool_dconf_init(new->mempool);
     if (!new->dconf) {
         cli_errmsg("cl_engine_new: Can't initialize dynamic configuration\n");
-        mpool_free(new->mempool, new->root);
+        MPOOL_FREE(new->mempool, new->root);
 #ifdef USE_MPOOL
         mpool_destroy(new->mempool);
 #endif
@@ -372,11 +372,11 @@ struct cl_engine *cl_engine_new(void)
         return NULL;
     }
 
-    new->pwdbs = mpool_calloc(new->mempool, CLI_PWDB_COUNT, sizeof(struct cli_pwdb *));
+    new->pwdbs = MPOOL_CALLOC(new->mempool, CLI_PWDB_COUNT, sizeof(struct cli_pwdb *));
     if (!new->pwdbs) {
         cli_errmsg("cl_engine_new: Can't initialize password databases\n");
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
+        MPOOL_FREE(new->mempool, new->dconf);
+        MPOOL_FREE(new->mempool, new->root);
 #ifdef USE_MPOOL
         mpool_destroy(new->mempool);
 #endif
@@ -387,9 +387,9 @@ struct cl_engine *cl_engine_new(void)
     crtmgr_init(&(new->cmgr));
     if (crtmgr_add_roots(new, &(new->cmgr), 0)) {
         cli_errmsg("cl_engine_new: Can't initialize root certificates\n");
-        mpool_free(new->mempool, new->pwdbs);
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
+        MPOOL_FREE(new->mempool, new->pwdbs);
+        MPOOL_FREE(new->mempool, new->dconf);
+        MPOOL_FREE(new->mempool, new->root);
 #ifdef USE_MPOOL
         mpool_destroy(new->mempool);
 #endif
@@ -403,9 +403,9 @@ struct cl_engine *cl_engine_new(void)
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&(intel->mutex), NULL)) {
             cli_errmsg("cli_engine_new: Cannot initialize stats gathering mutex\n");
-            mpool_free(new->mempool, new->pwdbs);
-            mpool_free(new->mempool, new->dconf);
-            mpool_free(new->mempool, new->root);
+            MPOOL_FREE(new->mempool, new->pwdbs);
+            MPOOL_FREE(new->mempool, new->dconf);
+            MPOOL_FREE(new->mempool, new->root);
 #ifdef USE_MPOOL
             mpool_destroy(new->mempool);
 #endif
@@ -452,9 +452,9 @@ struct cl_engine *cl_engine_new(void)
     /* YARA */
     if (cli_yara_init(new) != CL_SUCCESS) {
         cli_errmsg("cli_engine_new: failed to initialize YARA\n");
-        mpool_free(new->mempool, new->pwdbs);
-        mpool_free(new->mempool, new->dconf);
-        mpool_free(new->mempool, new->root);
+        MPOOL_FREE(new->mempool, new->pwdbs);
+        MPOOL_FREE(new->mempool, new->dconf);
+        MPOOL_FREE(new->mempool, new->root);
 #ifdef USE_MPOOL
         mpool_destroy(new->mempool);
 #endif
@@ -737,12 +737,12 @@ int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, cons
 
     switch (field) {
         case CL_ENGINE_PUA_CATEGORIES:
-            engine->pua_cats = cli_mpool_strdup(engine->mempool, str);
+            engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, str);
             if (!engine->pua_cats)
                 return CL_EMEM;
             break;
         case CL_ENGINE_TMPDIR:
-            engine->tmpdir = cli_mpool_strdup(engine->mempool, str);
+            engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, str);
             if (!engine->tmpdir)
                 return CL_EMEM;
             break;
@@ -866,9 +866,9 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->engine_options     = settings->engine_options;
 
     if (engine->tmpdir)
-        mpool_free(engine->mempool, engine->tmpdir);
+        MPOOL_FREE(engine->mempool, engine->tmpdir);
     if (settings->tmpdir) {
-        engine->tmpdir = cli_mpool_strdup(engine->mempool, settings->tmpdir);
+        engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, settings->tmpdir);
         if (!engine->tmpdir)
             return CL_EMEM;
     } else {
@@ -876,9 +876,9 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     }
 
     if (engine->pua_cats)
-        mpool_free(engine->mempool, engine->pua_cats);
+        MPOOL_FREE(engine->mempool, engine->pua_cats);
     if (settings->pua_cats) {
-        engine->pua_cats = cli_mpool_strdup(engine->mempool, settings->pua_cats);
+        engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, settings->pua_cats);
         if (!engine->pua_cats)
             return CL_EMEM;
     } else {

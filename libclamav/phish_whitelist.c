@@ -52,7 +52,7 @@ cl_error_t whitelist_match(const struct cl_engine* engine, char* real_url, const
 cl_error_t init_whitelist(struct cl_engine* engine)
 {
     if (engine) {
-        engine->whitelist_matcher = (struct regex_matcher*)mpool_malloc(engine->mempool, sizeof(struct regex_matcher));
+        engine->whitelist_matcher = (struct regex_matcher*)MPOOL_MALLOC(engine->mempool, sizeof(struct regex_matcher));
         if (!engine->whitelist_matcher) {
             cli_errmsg("Phish_whitelist: Unable to allocate memory for whitelist_match\n");
             return CL_EMEM;
@@ -74,7 +74,7 @@ void whitelist_done(struct cl_engine* engine)
 {
     if (engine && engine->whitelist_matcher) {
         regex_list_done(engine->whitelist_matcher);
-        mpool_free(engine->mempool, engine->whitelist_matcher);
+        MPOOL_FREE(engine->mempool, engine->whitelist_matcher);
         engine->whitelist_matcher = NULL;
     }
 }

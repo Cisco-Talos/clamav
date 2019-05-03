@@ -167,18 +167,18 @@ void cli_ftfree(const struct cl_engine *engine)
     while (ftypes) {
         pt     = ftypes;
         ftypes = ftypes->next;
-        mpool_free(engine->mempool, pt->magic);
-        mpool_free(engine->mempool, pt->tname);
-        mpool_free(engine->mempool, pt);
+        MPOOL_FREE(engine->mempool, pt->magic);
+        MPOOL_FREE(engine->mempool, pt->tname);
+        MPOOL_FREE(engine->mempool, pt);
     }
 
     ftypes = engine->ptypes;
     while (ftypes) {
         pt     = ftypes;
         ftypes = ftypes->next;
-        mpool_free(engine->mempool, pt->magic);
-        mpool_free(engine->mempool, pt->tname);
-        mpool_free(engine->mempool, pt);
+        MPOOL_FREE(engine->mempool, pt->magic);
+        MPOOL_FREE(engine->mempool, pt->tname);
+        MPOOL_FREE(engine->mempool, pt);
     }
 }
 
@@ -450,7 +450,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     out_area.length = sizeof(decodedbuff);
                     out_area.offset = 0;
 
-                    /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode 
+                    /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode
 			     * (multibyte characters will not be exactly handled, but that is not a problem).
 			     * However when detecting whether a file is HTML or not, we need exact conversion.
 			     * (just eliminating zeros and matching would introduce false positives */

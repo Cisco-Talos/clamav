@@ -44,7 +44,7 @@ static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
     } while (0)
 #endif
 
-/* The number of root trees and the chooser function 
+/* The number of root trees and the chooser function
    Each tree is protected by a mutex against concurrent access */
 /* #define TREES 1 */
 /* static inline unsigned int getkey(uint8_t *hash) { return 0; } */
@@ -191,7 +191,7 @@ static void cacheset_rehash(struct cache_set *map, mpool_t *mempool)
         key = key->lru_next;
     }
     pthread_mutex_lock(&pool_mutex);
-    mpool_free(mempool, map->data);
+    MPOOL_FREE(mempool, map->data);
     pthread_mutex_unlock(&pool_mutex);
     memcpy(map, &tmp_set, sizeof(tmp_set));
 }
@@ -267,7 +267,7 @@ static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t siz
 
 static int cacheset_init(struct cache_set *map, mpool_t *mempool)
 {
-    map->data = mpool_calloc(mempool, NODES, sizeof(*map->data));
+    map->data = MPOOL_CALLOC(mempool, NODES, sizeof(*map->data));
     if (!map->data)
         return CL_EMEM;
     map->maxelements = 80 * NODES / 100;
@@ -279,7 +279,7 @@ static int cacheset_init(struct cache_set *map, mpool_t *mempool)
 
 static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
 {
-    mpool_free(mempool, cs->data);
+    MPOOL_FREE(mempool, cs->data);
     cs->data = NULL;
 }
 
@@ -310,7 +310,7 @@ struct cache_set { /* a tree */
 static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
 {
     unsigned int i;
-    cs->data = mpool_calloc(mempool, NODES, sizeof(*cs->data));
+    cs->data = MPOOL_CALLOC(mempool, NODES, sizeof(*cs->data));
     cs->root = NULL;
 
     if (!cs->data)
@@ -330,7 +330,7 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
 /* Frees all the nodes */
 static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
 {
-    mpool_free(mempool, cs->data);
+    MPOOL_FREE(mempool, cs->data);
     cs->data = NULL;
 }
 
@@ -669,7 +669,7 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 }
 
 /* If the hash is not present nothing happens other than splaying the tree.
-   Otherwise the identified node is removed from the tree and then placed back at 
+   Otherwise the identified node is removed from the tree and then placed back at
    the front of the chain. */
 static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, size_t size)
 {
@@ -766,7 +766,7 @@ int cli_cache_init(struct cl_engine *engine)
         return 0;
     }
 
-    if (!(cache = mpool_malloc(engine->mempool, sizeof(struct CACHE) * TREES))) {
+    if (!(cache = MPOOL_MALLOC(engine->mempool, sizeof(struct CACHE) * TREES))) {
         cli_errmsg("cli_cache_init: mpool malloc fail\n");
         return 1;
     }
@@ -776,13 +776,13 @@ int cli_cache_init(struct cl_engine *engine)
             cli_errmsg("cli_cache_init: mutex init fail\n");
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
             for (j = 0; j < i; j++) pthread_mutex_destroy(&cache[j].mutex);
-            mpool_free(engine->mempool, cache);
+            MPOOL_FREE(engine->mempool, cache);
             return 1;
         }
         if (cacheset_init(&cache[i].cacheset, engine->mempool)) {
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
             for (j = 0; j <= i; j++) pthread_mutex_destroy(&cache[j].mutex);
-            mpool_free(engine->mempool, cache);
+            MPOOL_FREE(engine->mempool, cache);
             return 1;
         }
     }
@@ -807,7 +807,7 @@ void cli_cache_destroy(struct cl_engine *engine)
         cacheset_destroy(&cache[i].cacheset, engine->mempool);
         pthread_mutex_destroy(&cache[i].mutex);
     }
-    mpool_free(engine->mempool, cache);
+    MPOOL_FREE(engine->mempool, cache);
 }
 
 /* Looks up an hash in the proper tree */

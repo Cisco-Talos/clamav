@@ -342,12 +342,12 @@ static int functionality_level_check(char *line)
 static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl, int is_prefix)
 {
     int rc;
-    struct cli_bm_patt *pat = mpool_calloc(matcher->mempool, 1, sizeof(*pat));
+    struct cli_bm_patt *pat = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*pat));
     struct cli_matcher *bm;
     const char *vname = NULL;
     if (!pat)
         return CL_EMEM;
-    pat->pattern = (unsigned char *)cli_mpool_hex2str(matcher->mempool, pattern);
+    pat->pattern = (unsigned char *)CLI_MPOOL_HEX2STR(matcher->mempool, pattern);
     if (!pat->pattern)
         return CL_EMALFDB;
     pat->length = 32;
@@ -370,12 +370,12 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
         if (*vname == 'W') {
             /* hash is whitelisted in local.gdb */
             cli_dbgmsg("Skipping hash %s\n", pattern);
-            mpool_free(matcher->mempool, pat->pattern);
-            mpool_free(matcher->mempool, pat);
+            MPOOL_FREE(matcher->mempool, pat->pattern);
+            MPOOL_FREE(matcher->mempool, pat);
             return CL_SUCCESS;
         }
     }
-    pat->virname = mpool_malloc(matcher->mempool, 1);
+    pat->virname = MPOOL_MALLOC(matcher->mempool, 1);
     if (!pat->virname) {
         free(pat);
         cli_errmsg("add_hash: Unable to allocate memory for path->virname\n");
@@ -555,9 +555,9 @@ void regex_list_done(struct regex_matcher *matcher)
             for (i = 0; i < matcher->regex_cnt; i++) {
                 regex_t *r = matcher->all_pregs[i];
                 cli_regfree(r);
-                mpool_free(matcher->mempool, r);
+                MPOOL_FREE(matcher->mempool, r);
             }
-            mpool_free(matcher->mempool, matcher->all_pregs);
+            MPOOL_FREE(matcher->mempool, matcher->all_pregs);
         }
         cli_hashtab_free(&matcher->suffix_hash);
         cli_bm_free(&matcher->sha256_hashes);
@@ -574,7 +574,7 @@ int is_regex_ok(struct regex_matcher *matcher)
 static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
 {
     struct cli_matcher *root = &matcher->suffixes;
-    struct cli_ac_patt *new  = mpool_calloc(matcher->mempool, 1, sizeof(*new));
+    struct cli_ac_patt *new  = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*new));
     size_t i;
     int ret;
 
@@ -596,9 +596,9 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
     if (new->length[0] > root->maxpatlen)
         root->maxpatlen = new->length[0];
 
-    new->pattern = mpool_malloc(matcher->mempool, sizeof(new->pattern[0]) * len);
+    new->pattern = MPOOL_MALLOC(matcher->mempool, sizeof(new->pattern[0]) * len);
     if (!new->pattern) {
-        mpool_free(matcher->mempool, new);
+        MPOOL_FREE(matcher->mempool, new);
         cli_errmsg("add_newsuffix: Unable to allocate memory for new->pattern\n");
         return CL_EMEM;
     }
@@ -608,8 +608,8 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
     new->customdata = info;
     new->virname    = NULL;
     if ((ret = cli_ac_addpatt(root, new))) {
-        mpool_free(matcher->mempool, new->pattern);
-        mpool_free(matcher->mempool, new);
+        MPOOL_FREE(matcher->mempool, new->pattern);
+        MPOOL_FREE(matcher->mempool, new);
         return ret;
     }
     filter_add_static(&matcher->filter, (const unsigned char *)suffix, len, "regex");
@@ -687,12 +687,12 @@ static size_t reverse_string(char *pattern)
 static regex_t *new_preg(struct regex_matcher *matcher)
 {
     regex_t *r;
-    matcher->all_pregs = mpool_realloc(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
+    matcher->all_pregs = MPOOL_REALLOC(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
     if (!matcher->all_pregs) {
         cli_errmsg("new_preg: Unable to reallocate memory\n");
         return NULL;
     }
-    r = mpool_malloc(matcher->mempool, sizeof(*r));
+    r = MPOOL_MALLOC(matcher->mempool, sizeof(*r));
     if (!r) {
         cli_errmsg("new_preg: Unable to allocate memory\n");
         return NULL;

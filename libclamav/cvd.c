@@ -3,9 +3,9 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
- * 
+ *
  *  Summary: Code to parse Clamav CVD database format.
- * 
+ *
  *  Acknowledgements: ClamAV untar code is based on a public domain minitar utility
  *                    by Charles G. Waldman.
  *
@@ -704,11 +704,11 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     while (engine->dbinfo) {
         dbinfo         = engine->dbinfo;
         engine->dbinfo = dbinfo->next;
-        mpool_free(engine->mempool, dbinfo->name);
-        mpool_free(engine->mempool, dbinfo->hash);
+        MPOOL_FREE(engine->mempool, dbinfo->name);
+        MPOOL_FREE(engine->mempool, dbinfo->hash);
         if (dbinfo->cvd)
             cl_cvdfree(dbinfo->cvd);
-        mpool_free(engine->mempool, dbinfo);
+        MPOOL_FREE(engine->mempool, dbinfo);
     }
 
     return ret;

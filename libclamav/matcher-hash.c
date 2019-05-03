@@ -90,7 +90,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
         item = cli_htu32_find(ht, size);
         if (!item) {
             struct cli_htu32_element htitem;
-            szh = mpool_calloc(root->mempool, 1, sizeof(*szh));
+            szh = MPOOL_CALLOC(root->mempool, 1, sizeof(*szh));
             if (!szh) {
                 cli_errmsg("hm_addhash_bin: failed to allocate size hash\n");
                 return CL_EMEM;
@@ -101,7 +101,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
             i                  = cli_htu32_insert(ht, &htitem, root->mempool);
             if (i) {
                 cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
-                mpool_free(root->mempool, szh);
+                MPOOL_FREE(root->mempool, szh);
                 return i;
             }
         } else
@@ -112,20 +112,20 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
     }
     szh->items++;
 
-    szh->hash_array = mpool_realloc2(root->mempool, szh->hash_array, hlen * szh->items);
+    szh->hash_array = MPOOL_REALLOC2(root->mempool, szh->hash_array, hlen * szh->items);
     if (!szh->hash_array) {
         cli_errmsg("hm_addhash_bin: failed to grow hash array to %u entries\n", szh->items);
         szh->items = 0;
-        mpool_free(root->mempool, szh->virusnames);
+        MPOOL_FREE(root->mempool, szh->virusnames);
         szh->virusnames = NULL;
         return CL_EMEM;
     }
 
-    szh->virusnames = mpool_realloc2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
+    szh->virusnames = MPOOL_REALLOC2(root->mempool, szh->virusnames, sizeof(*szh->virusnames) * szh->items);
     if (!szh->virusnames) {
         cli_errmsg("hm_addhash_bin: failed to grow virusname array to %u entries\n", szh->items);
         szh->items = 0;
-        mpool_free(root->mempool, szh->hash_array);
+        MPOOL_FREE(root->mempool, szh->hash_array);
         szh->hash_array = NULL;
         return CL_EMEM;
     }
@@ -317,11 +317,11 @@ void hm_free(struct cli_matcher *root)
         while ((item = cli_htu32_next(ht, item))) {
             struct cli_sz_hash *szh = (struct cli_sz_hash *)item->data.as_ptr;
 
-            mpool_free(root->mempool, szh->hash_array);
+            MPOOL_FREE(root->mempool, szh->hash_array);
             while (szh->items)
-                mpool_free(root->mempool, (void *)szh->virusnames[--szh->items]);
-            mpool_free(root->mempool, szh->virusnames);
-            mpool_free(root->mempool, szh);
+                MPOOL_FREE(root->mempool, (void *)szh->virusnames[--szh->items]);
+            MPOOL_FREE(root->mempool, szh->virusnames);
+            MPOOL_FREE(root->mempool, szh);
         }
         cli_htu32_free(ht, root->mempool);
     }
@@ -332,9 +332,9 @@ void hm_free(struct cli_matcher *root)
         if (!szh->items)
             continue;
 
-        mpool_free(root->mempool, szh->hash_array);
+        MPOOL_FREE(root->mempool, szh->hash_array);
         while (szh->items)
-            mpool_free(root->mempool, (void *)szh->virusnames[--szh->items]);
-        mpool_free(root->mempool, szh->virusnames);
+            MPOOL_FREE(root->mempool, (void *)szh->virusnames[--szh->items]);
+        MPOOL_FREE(root->mempool, szh->virusnames);
     }
 }

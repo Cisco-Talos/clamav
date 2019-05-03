@@ -3,11 +3,11 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
- * 
+ *
  *  Summary: Hash-table and -set data structures.
- * 
- *  Acknowledgements: hash32shift() is an implementation of Thomas Wang's 
- * 	                  32-bit integer hash function: 
+ *
+ *  Acknowledgements: hash32shift() is an implementation of Thomas Wang's
+ * 	                  32-bit integer hash function:
  * 	                  http://www.cris.com/~Ttwang/tech/inthash.htm
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -197,7 +197,7 @@ int cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
     PROFILE_INIT(s);
 
     capacity  = nearest_power(capacity);
-    s->htable = mpool_calloc(mempool, capacity, sizeof(*s->htable));
+    s->htable = MPOOL_CALLOC(mempool, capacity, sizeof(*s->htable));
     if (!s->htable)
         return CL_EMEM;
     s->capacity = capacity;
@@ -380,7 +380,7 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 static int cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
 {
     const size_t new_capacity        = nearest_power(s->capacity + 1);
-    struct cli_htu32_element *htable = mpool_calloc(mempool, new_capacity, sizeof(*s->htable));
+    struct cli_htu32_element *htable = MPOOL_CALLOC(mempool, new_capacity, sizeof(*s->htable));
     size_t i, idx, used = 0;
     cli_dbgmsg("hashtab.c: new capacity: %llu\n", (long long unsigned)new_capacity);
     if (new_capacity == s->capacity || !htable)
@@ -412,7 +412,7 @@ static int cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
             }
         }
     }
-    mpool_free(mempool, s->htable);
+    MPOOL_FREE(mempool, s->htable);
     s->htable   = htable;
     s->used     = used;
     s->capacity = new_capacity;
@@ -581,7 +581,7 @@ void cli_hashtab_free(struct cli_hashtable *s)
 
 void cli_htu32_free(struct cli_htu32 *s, mpool_t *mempool)
 {
-    mpool_free(mempool, s->htable);
+    MPOOL_FREE(mempool, s->htable);
     s->htable   = NULL;
     s->capacity = 0;
 }
@@ -681,14 +681,14 @@ int cli_hashset_init_pool(struct cli_hashset *hs, size_t initial_capacity, uint8
     hs->mask         = initial_capacity - 1;
     hs->count        = 0;
     hs->mempool      = mempool;
-    hs->keys         = mpool_malloc(mempool, initial_capacity * sizeof(*hs->keys));
+    hs->keys         = MPOOL_MALLOC(mempool, initial_capacity * sizeof(*hs->keys));
     if (!hs->keys) {
         cli_errmsg("hashtab.c: Unable to allocate memory pool for hs->keys\n");
         return CL_EMEM;
     }
-    hs->bitmap = mpool_calloc(mempool, initial_capacity >> 5, sizeof(*hs->bitmap));
+    hs->bitmap = MPOOL_CALLOC(mempool, initial_capacity >> 5, sizeof(*hs->bitmap));
     if (!hs->bitmap) {
-        mpool_free(mempool, hs->keys);
+        MPOOL_FREE(mempool, hs->keys);
         cli_errmsg("hashtab.c: Unable to allocate/initialize memory for hs->keys\n");
         return CL_EMEM;
     }
@@ -699,8 +699,8 @@ void cli_hashset_destroy(struct cli_hashset *hs)
 {
     cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
     if (hs->mempool) {
-        mpool_free(hs->mempool, hs->keys);
-        mpool_free(hs->mempool, hs->bitmap);
+        MPOOL_FREE(hs->mempool, hs->keys);
+        MPOOL_FREE(hs->mempool, hs->bitmap);
     } else {
         free(hs->keys);
         free(hs->bitmap);
