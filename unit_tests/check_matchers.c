@@ -170,7 +170,7 @@ static void setup(void)
     ctx.fmap    = &thefmap;
     ctx.engine  = cl_engine_new();
     fail_unless(!!ctx.engine, "cl_engine_new() failed");
-    root = (struct cli_matcher *)mpool_calloc(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
+    root = (struct cli_matcher *)MPOOL_CALLOC(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
     fail_unless(root != NULL, "root == NULL");
 #ifdef USE_MPOOL
     root->mempool = ctx.engine->mempool;

@@ -159,7 +159,7 @@ struct cli_dconf *cli_dconf_init(void)
     unsigned int i;
     struct cli_dconf *dconf;
 
-    dconf = (struct cli_dconf *)mpool_calloc(mempool, sizeof(struct cli_dconf), 1);
+    dconf = (struct cli_dconf *)MPOOL_CALLOC(mempool, sizeof(struct cli_dconf), 1);
     if (!dconf)
         return NULL;
 

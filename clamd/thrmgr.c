@@ -272,7 +272,7 @@ int thrmgr_printstats(int f, char term)
                     seen               = s;
                     seen[seen_cnt - 1] = task->engine;
 
-                    if (mpool_getstats(task->engine, &used, &total) != -1) {
+                    if (MPOOL_GETSTATS(task->engine, &used, &total) != -1) {
                         pool_used += used;
                         pool_total += total;
                         pool_cnt++;

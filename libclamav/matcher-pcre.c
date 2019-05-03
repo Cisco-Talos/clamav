@@ -254,25 +254,25 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
 #endif
 
     /* allocating entries */
-    pm = (struct cli_pcre_meta *)mpool_calloc(root->mempool, 1, sizeof(*pm));
+    pm = (struct cli_pcre_meta *)MPOOL_CALLOC(root->mempool, 1, sizeof(*pm));
     if (!pm) {
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for new pcre meta\n");
         return CL_EMEM;
     }
 
-    pm->trigger = cli_mpool_strdup(root->mempool, trigger);
+    pm->trigger = CLI_MPOOL_STRDUP(root->mempool, trigger);
     if (!pm->trigger) {
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for trigger string\n");
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
         return CL_EMEM;
     }
 
-    pm->virname = (char *)cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
+    pm->virname = (char *)CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
     if (!pm->virname) {
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for virname or NULL virname\n");
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
         return CL_EMEM;
     }
 
@@ -291,7 +291,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     if (!pm->pdata.expression) {
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for expression\n");
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
         return CL_EMEM;
     }
 
@@ -301,7 +301,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     if (ret != CL_SUCCESS) {
         cli_errmsg("cli_pcre_addpatt: cannot calculate offset data: %s for pattern: %s\n", offset, pattern);
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
         return ret;
     }
     if (pm->offdata[0] != CLI_OFF_ANY) {
@@ -331,7 +331,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
                 default:
                     cli_errmsg("cli_pcre_addpatt: unknown/extra pcre option encountered %c\n", *opt);
                     cli_pcre_freemeta(root, pm);
-                    mpool_free(root->mempool, pm);
+                    MPOOL_FREE(root->mempool, pm);
                     return CL_EMALFDB;
             }
             opt++;
@@ -377,12 +377,12 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
 
     /* add pcre data to root after reallocation */
     pcre_count   = root->pcre_metas + 1;
-    newmetatable = (struct cli_pcre_meta **)mpool_realloc(root->mempool, root->pcre_metatable,
+    newmetatable = (struct cli_pcre_meta **)MPOOL_REALLOC(root->mempool, root->pcre_metatable,
                                                           pcre_count * sizeof(struct cli_pcre_meta *));
     if (!newmetatable) {
         cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for new pcre meta table\n");
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
         return CL_EMEM;
     }
 
@@ -773,12 +773,12 @@ void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
         return;
 
     if (pm->trigger) {
-        mpool_free(root->mempool, pm->trigger);
+        MPOOL_FREE(root->mempool, pm->trigger);
         pm->trigger = NULL;
     }
 
     if (pm->virname) {
-        mpool_free(root->mempool, pm->virname);
+        MPOOL_FREE(root->mempool, pm->virname);
         pm->virname = NULL;
     }
 
@@ -799,11 +799,11 @@ void cli_pcre_freetable(struct cli_matcher *root)
         /* free pcre meta */
         pm = root->pcre_metatable[i];
         cli_pcre_freemeta(root, pm);
-        mpool_free(root->mempool, pm);
+        MPOOL_FREE(root->mempool, pm);
     }
 
     /* free holding structures and set count to zero */
-    mpool_free(root->mempool, root->pcre_metatable);
+    MPOOL_FREE(root->mempool, root->pcre_metatable);
     root->pcre_metatable = NULL;
     root->pcre_metas     = 0;
 }

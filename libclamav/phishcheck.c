@@ -852,7 +852,7 @@ cl_error_t phishing_init(struct cl_engine* engine)
 {
     struct phishcheck* pchk;
     if (!engine->phishcheck) {
-        pchk = engine->phishcheck = mpool_malloc(engine->mempool, sizeof(struct phishcheck));
+        pchk = engine->phishcheck = MPOOL_MALLOC(engine->mempool, sizeof(struct phishcheck));
         if (!pchk) {
             cli_errmsg("Phishcheck: Unable to allocate memory for initialization\n");
             return CL_EMEM;
@@ -871,7 +871,7 @@ cl_error_t phishing_init(struct cl_engine* engine)
     cli_dbgmsg("Initializing phishcheck module\n");
 
     if (build_regex(&pchk->preg_numeric, numeric_url_regex, 1)) {
-        mpool_free(engine->mempool, pchk);
+        MPOOL_FREE(engine->mempool, pchk);
         engine->phishcheck = NULL;
         return CL_EFORMAT;
     }
@@ -891,7 +891,7 @@ void phishing_done(struct cl_engine* engine)
     domainlist_done(engine);
     if (pchk) {
         cli_dbgmsg("Freeing phishcheck struct\n");
-        mpool_free(engine->mempool, pchk);
+        MPOOL_FREE(engine->mempool, pchk);
     }
     cli_dbgmsg("Phishcheck cleaned up\n");
 }

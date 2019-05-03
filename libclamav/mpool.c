@@ -426,7 +426,7 @@ static inline unsigned int alignof(size_t size)
 {
     /* conservative estimate of alignment.
      * A struct that needs alignment of 'align' is padded by the compiler
-     * so that sizeof(struct)%align == 0 
+     * so that sizeof(struct)%align == 0
      * (otherwise you wouldn't be able to use it in an array)
      * Also align = 2^n.
      * Largest alignment we need is 8 bytes (ptr/int64), since we don't use long
@@ -766,7 +766,7 @@ char *cli_mpool_hex2str(mpool_t *mp, const char *hex)
     size_t len = strlen((const char *)hex);
 
     if (len & 1) {
-        cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %lu)\n", hex, (unsigned long)len);
+        cli_errmsg("cli_mpool_hex2str(): Malformed hexstring: %s (length: %lu)\n", hex, (unsigned long)len);
         return NULL;
     }
 
@@ -838,7 +838,7 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
             *pt = '\0';
 
     if (!virname[0]) {
-        cli_errmsg("cli_virname: Empty virus name\n");
+        cli_errmsg("cli_mpool_virname: Empty virus name\n");
         return NULL;
     }
 
@@ -854,7 +854,7 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
 
     newname = (char *)mpool_malloc(mp, strlen(virname) + 11 + 1);
     if (!newname) {
-        cli_errmsg("cli_virname: Can't allocate memory for newname\n");
+        cli_errmsg("cli_mpool_virname: Can't allocate memory for newname\n");
         return NULL;
     }
     sprintf(newname, "%s.UNOFFICIAL", virname);

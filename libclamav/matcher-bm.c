@@ -70,7 +70,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
 	 * we want to see the entire signature! */
         if (filter_add_static(root->filter, pattern->pattern, pattern->length, pattern->virname) == -1) {
             cli_warnmsg("cli_bm_addpatt: cannot use filter for trie\n");
-            mpool_free(root->mempool, root->filter);
+            MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;
         }
         /* TODO: should this affect maxpatlen? */
@@ -119,7 +119,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
     root->bm_suffix[idx]->cnt++;
 
     if (root->bm_offmode) {
-        root->bm_pattab = (struct cli_bm_patt **)mpool_realloc2(root->mempool, root->bm_pattab, (root->bm_patterns + 1) * sizeof(struct cli_bm_patt *));
+        root->bm_pattab = (struct cli_bm_patt **)MPOOL_REALLOC2(root->mempool, root->bm_pattab, (root->bm_patterns + 1) * sizeof(struct cli_bm_patt *));
         if (!root->bm_pattab) {
             cli_errmsg("cli_bm_addpatt: Can't allocate memory for root->bm_pattab\n");
             return CL_EMEM;
@@ -140,11 +140,11 @@ cl_error_t cli_bm_init(struct cli_matcher *root)
     assert(root->mempool && "mempool must be initialized");
 #endif
 
-    if (!(root->bm_shift = (uint8_t *)mpool_calloc(root->mempool, size, sizeof(uint8_t))))
+    if (!(root->bm_shift = (uint8_t *)MPOOL_CALLOC(root->mempool, size, sizeof(uint8_t))))
         return CL_EMEM;
 
-    if (!(root->bm_suffix = (struct cli_bm_patt **)mpool_calloc(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
-        mpool_free(root->mempool, root->bm_shift);
+    if (!(root->bm_suffix = (struct cli_bm_patt **)MPOOL_CALLOC(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
+        MPOOL_FREE(root->mempool, root->bm_shift);
         return CL_EMEM;
     }
 
@@ -218,10 +218,10 @@ void cli_bm_free(struct cli_matcher *root)
     uint16_t i, size = HASH(255, 255, 255) + 1;
 
     if (root->bm_shift)
-        mpool_free(root->mempool, root->bm_shift);
+        MPOOL_FREE(root->mempool, root->bm_shift);
 
     if (root->bm_pattab)
-        mpool_free(root->mempool, root->bm_pattab);
+        MPOOL_FREE(root->mempool, root->bm_pattab);
 
     if (root->bm_suffix) {
         for (i = 0; i < size; i++) {
@@ -230,15 +230,15 @@ void cli_bm_free(struct cli_matcher *root)
                 prev = patt;
                 patt = patt->next;
                 if (prev->prefix)
-                    mpool_free(root->mempool, prev->prefix);
+                    MPOOL_FREE(root->mempool, prev->prefix);
                 else
-                    mpool_free(root->mempool, prev->pattern);
+                    MPOOL_FREE(root->mempool, prev->pattern);
                 if (prev->virname)
-                    mpool_free(root->mempool, prev->virname);
-                mpool_free(root->mempool, prev);
+                    MPOOL_FREE(root->mempool, prev->virname);
+                MPOOL_FREE(root->mempool, prev);
             }
         }
-        mpool_free(root->mempool, root->bm_suffix);
+        MPOOL_FREE(root->mempool, root->bm_suffix);
     }
 }
 

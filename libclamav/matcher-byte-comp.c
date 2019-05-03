@@ -85,14 +85,14 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     /* zero out our byte compare data struct and tie it to the root struct's mempool instance */
     struct cli_bcomp_meta *bcomp;
-    bcomp = (struct cli_bcomp_meta *)mpool_calloc(root->mempool, 1, sizeof(*bcomp));
+    bcomp = (struct cli_bcomp_meta *)MPOOL_CALLOC(root->mempool, 1, sizeof(*bcomp));
     if (!bcomp) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for new byte compare meta\n");
         return CL_EMEM;
     }
 
     /* allocate virname space with the root structure's mempool instance */
-    bcomp->virname = (char *)cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
+    bcomp->virname = (char *)CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
     if (!bcomp->virname) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for virname or NULL virname\n");
         cli_bcomp_freemeta(root, bcomp);
@@ -349,7 +349,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     }
 
     /* allocate comp struct list space with the root structure's mempool instance */
-    bcomp->comps = (struct cli_bcomp_comp **)mpool_calloc(root->mempool, bcomp->comp_count, sizeof(struct cli_bcomp_comp *));
+    bcomp->comps = (struct cli_bcomp_comp **)MPOOL_CALLOC(root->mempool, bcomp->comp_count, sizeof(struct cli_bcomp_comp *));
     if (!bcomp->comps) {
         cli_errmsg("cli_bcomp_addpatt: unable to allocate memory for comp struct pointers\n");
         free(buf);
@@ -361,7 +361,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     /* loop through our new list, allocate, and parse out the needed comparison evaluation bits for this subsig */
     for (i = 0; i < bcomp->comp_count; i++) {
 
-        bcomp->comps[i] = (struct cli_bcomp_comp *)mpool_calloc(root->mempool, 1, sizeof(struct cli_bcomp_comp));
+        bcomp->comps[i] = (struct cli_bcomp_comp *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_bcomp_comp));
         if (!bcomp->virname) {
             cli_errmsg("cli_bcomp_addpatt: unable to allocate memory for comp struct\n");
             free(buf);
@@ -424,7 +424,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     bcomp_count = root->bcomp_metas + 1;
 
     /* allocate space for new meta table to store in root structure and increment number of byte compare patterns added */
-    newmetatable = (struct cli_bcomp_meta **)mpool_realloc(root->mempool, root->bcomp_metatable, bcomp_count * sizeof(struct cli_bcomp_meta *));
+    newmetatable = (struct cli_bcomp_meta **)MPOOL_REALLOC(root->mempool, root->bcomp_metatable, bcomp_count * sizeof(struct cli_bcomp_meta *));
     if (!newmetatable) {
         cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for new bcomp meta table\n");
         cli_bcomp_freemeta(root, bcomp);
@@ -1029,7 +1029,7 @@ void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm)
     }
 
     if (bm->virname) {
-        mpool_free(root->mempool, bm->virname);
+        MPOOL_FREE(root->mempool, bm->virname);
         bm->virname = NULL;
     }
 
@@ -1037,16 +1037,16 @@ void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm)
     if (bm->comps) {
         for (i = 0; i < 2; i++) {
             if (bm->comps[i]) {
-                mpool_free(root->mempool, bm->comps[i]);
+                MPOOL_FREE(root->mempool, bm->comps[i]);
                 bm->comps[i] = NULL;
             }
         }
 
-        mpool_free(root->mempool, bm->comps);
+        MPOOL_FREE(root->mempool, bm->comps);
         bm->comps = NULL;
     }
 
-    mpool_free(root->mempool, bm);
+    MPOOL_FREE(root->mempool, bm);
     bm = NULL;
 
     return;

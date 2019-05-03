@@ -338,7 +338,7 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        patt = mpool_calloc(root->mempool, 1, sizeof(*patt));
+        patt = MPOOL_CALLOC(root->mempool, 1, sizeof(*patt));
         if (!patt)
             return CL_EMEM;
 
@@ -350,14 +350,14 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
         patt->length[0]     = root->ac_mindepth;
 
         /* dummy */
-        patt->pattern = mpool_calloc(root->mempool, patt->length[0], sizeof(*patt->pattern));
+        patt->pattern = MPOOL_CALLOC(root->mempool, patt->length[0], sizeof(*patt->pattern));
         if (!patt->pattern) {
             free(patt);
             return CL_EMEM;
         }
 
         if ((ret = cli_ac_addpatt(root, patt))) {
-            mpool_free(root->mempool, patt->pattern);
+            MPOOL_FREE(root->mempool, patt->pattern);
             free(patt);
             return ret;
         }
@@ -602,22 +602,22 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             return ret;
         }
     } else {
-        bm_new = (struct cli_bm_patt *)mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
+        bm_new = (struct cli_bm_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_bm_patt));
         if (!bm_new)
             return CL_EMEM;
 
-        bm_new->pattern = (unsigned char *)cli_mpool_hex2str(root->mempool, hexsig);
+        bm_new->pattern = (unsigned char *)CLI_MPOOL_HEX2STR(root->mempool, hexsig);
         if (!bm_new->pattern) {
-            mpool_free(root->mempool, bm_new);
+            MPOOL_FREE(root->mempool, bm_new);
             return CL_EMALFDB;
         }
 
         bm_new->length = hexlen / 2;
 
-        bm_new->virname = cli_mpool_virname(root->mempool, virname, options & CL_DB_OFFICIAL);
+        bm_new->virname = CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
         if (!bm_new->virname) {
-            mpool_free(root->mempool, bm_new->pattern);
-            mpool_free(root->mempool, bm_new);
+            MPOOL_FREE(root->mempool, bm_new->pattern);
+            MPOOL_FREE(root->mempool, bm_new);
             return CL_EMEM;
         }
 
@@ -626,9 +626,9 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 
         if (CL_SUCCESS != (ret = cli_bm_addpatt(root, bm_new, offset))) {
             cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
-            mpool_free(root->mempool, bm_new->pattern);
-            mpool_free(root->mempool, bm_new->virname);
-            mpool_free(root->mempool, bm_new);
+            MPOOL_FREE(root->mempool, bm_new->pattern);
+            MPOOL_FREE(root->mempool, bm_new->virname);
+            MPOOL_FREE(root->mempool, bm_new);
             return ret;
         }
     }
@@ -646,7 +646,7 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
     for (i = 0; i < CLI_MTARGETS; i++) {
         if (!engine->root[i]) {
             cli_dbgmsg("Initializing engine->root[%d]\n", i);
-            root = engine->root[i] = (struct cli_matcher *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+            root = engine->root[i] = (struct cli_matcher *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_matcher));
             if (!root) {
                 cli_errmsg("cli_initroots: Can't allocate memory for cli_matcher\n");
                 return CL_EMEM;
@@ -972,13 +972,13 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
     struct icomtr *metric;
     struct icon_matcher *matcher;
 
-    if (!(matcher = (struct icon_matcher *)mpool_calloc(engine->mempool, sizeof(*matcher), 1)))
+    if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1)))
         return CL_EMEM;
 
     if (engine->ignored)
         if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
             cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
-            mpool_free(engine->mempool, matcher);
+            MPOOL_FREE(engine->mempool, matcher);
             return CL_EMEM;
         }
 
@@ -1027,7 +1027,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         enginesize = (size >> 3) - 2;
         hash += 2;
 
-        metric = (struct icomtr *)mpool_realloc(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
+        metric = (struct icomtr *)MPOOL_REALLOC(engine->mempool, matcher->icons[enginesize], sizeof(struct icomtr) * (matcher->icon_counts[enginesize] + 1));
         if (!metric) {
             ret = CL_EMEM;
             break;
@@ -1133,7 +1133,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
             break;
         }
 
-        if (!(metric->name = cli_mpool_strdup(engine->mempool, tokens[0]))) {
+        if (!(metric->name = CLI_MPOOL_STRDUP(engine->mempool, tokens[0]))) {
             ret = CL_EMEM;
             break;
         }
@@ -1143,8 +1143,8 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
                 break;
         }
         if (i == matcher->group_counts[0]) {
-            if (!(matcher->group_names[0] = mpool_realloc(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
-                !(matcher->group_names[0][i] = cli_mpool_strdup(engine->mempool, tokens[1]))) {
+            if (!(matcher->group_names[0] = MPOOL_REALLOC(engine->mempool, matcher->group_names[0], sizeof(char *) * (i + 1))) ||
+                !(matcher->group_names[0][i] = CLI_MPOOL_STRDUP(engine->mempool, tokens[1]))) {
                 ret = CL_EMEM;
                 break;
             }
@@ -1157,8 +1157,8 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
                 break;
         }
         if (i == matcher->group_counts[1]) {
-            if (!(matcher->group_names[1] = mpool_realloc(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
-                !(matcher->group_names[1][i] = cli_mpool_strdup(engine->mempool, tokens[2]))) {
+            if (!(matcher->group_names[1] = MPOOL_REALLOC(engine->mempool, matcher->group_names[1], sizeof(char *) * (i + 1))) ||
+                !(matcher->group_names[1][i] = CLI_MPOOL_STRDUP(engine->mempool, tokens[2]))) {
                 ret = CL_EMEM;
                 break;
             }
@@ -1446,7 +1446,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 }
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-                tdb->val     = (uint32_t *)mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                tdb->val     = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if (!tdb->val) {
                     tdb->cnt[CLI_TDB_UINT] = 0;
                     return -1;
@@ -1462,7 +1462,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 }
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-                tdb->val     = (uint32_t *)mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                tdb->val     = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if (!tdb->val) {
                     tdb->cnt[CLI_TDB_UINT] = 0;
                     return -1;
@@ -1482,7 +1482,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                     return 1;
                 }
                 tdb->cnt[CLI_TDB_UINT] += (ftypes_count + 1);
-                tdb->val = (uint32_t *)mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                tdb->val = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if (!tdb->val) {
                     tdb->cnt[CLI_TDB_UINT] = 0;
                     return -1;
@@ -1507,7 +1507,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 *pt2++ = 0;
                 off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
                 tdb->cnt[CLI_TDB_RANGE] += 2;
-                tdb->range = (uint32_t *)mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+                tdb->range = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
                 if (!tdb->range) {
                     tdb->cnt[CLI_TDB_RANGE] = 0;
                     return -1;
@@ -1530,7 +1530,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
                 tdb->cnt[CLI_TDB_RANGE] += 3;
-                tdb->range = (uint32_t *)mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+                tdb->range = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
                 if (!tdb->range) {
                     tdb->cnt[CLI_TDB_RANGE] = 0;
                     return -1;
@@ -1549,7 +1549,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
             case CLI_TDB_STR:
                 off[i] = cnt = tdb->cnt[CLI_TDB_STR];
                 tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
-                tdb->str = (char *)mpool_realloc2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
+                tdb->str = (char *)MPOOL_REALLOC2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
                 if (!tdb->str) {
                     cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
                     return -1;
@@ -1610,25 +1610,25 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 #define FREE_TDB(x)                               \
     do {                                          \
         if (x.cnt[CLI_TDB_UINT])                  \
-            mpool_free(x.mempool, x.val);         \
+            MPOOL_FREE(x.mempool, x.val);         \
         if (x.cnt[CLI_TDB_RANGE])                 \
-            mpool_free(x.mempool, x.range);       \
+            MPOOL_FREE(x.mempool, x.range);       \
         if (x.cnt[CLI_TDB_STR])                   \
-            mpool_free(x.mempool, x.str);         \
+            MPOOL_FREE(x.mempool, x.str);         \
         if (x.macro_ptids)                        \
-            mpool_free(x.mempool, x.macro_ptids); \
+            MPOOL_FREE(x.mempool, x.macro_ptids); \
     } while (0);
 
 #define FREE_TDB_P(x)                               \
     do {                                            \
         if (x->cnt[CLI_TDB_UINT])                   \
-            mpool_free(x->mempool, x->val);         \
+            MPOOL_FREE(x->mempool, x->val);         \
         if (x->cnt[CLI_TDB_RANGE])                  \
-            mpool_free(x->mempool, x->range);       \
+            MPOOL_FREE(x->mempool, x->range);       \
         if (x->cnt[CLI_TDB_STR])                    \
-            mpool_free(x->mempool, x->str);         \
+            MPOOL_FREE(x->mempool, x->str);         \
         if (x->macro_ptids)                         \
-            mpool_free(x->mempool, x->macro_ptids); \
+            MPOOL_FREE(x->mempool, x->macro_ptids); \
     } while (0);
 
 static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, char *target, const char *virname)
@@ -1637,7 +1637,10 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 
 #ifdef USE_MPOOL
     tdb->mempool = engine->mempool;
+#else
+    UNUSEDPARAM(engine);
 #endif
+
     if (CL_SUCCESS != (ret = lsigattribs(target, tdb))) {
         FREE_TDB_P(tdb);
         if (ret == 1) {
@@ -1778,7 +1781,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     root = engine->root[tdb.target[0]];
 
-    lsig = (struct cli_ac_lsig *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+    lsig = (struct cli_ac_lsig *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if (!lsig) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
         FREE_TDB(tdb);
@@ -1786,11 +1789,11 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     }
 
     lsig->type    = CLI_LSIG_NORMAL;
-    lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
+    lsig->u.logic = CLI_MPOOL_STRDUP(engine->mempool, logic);
     if (!lsig->u.logic) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
         FREE_TDB(tdb);
-        mpool_free(engine->mempool, lsig);
+        MPOOL_FREE(engine->mempool, lsig);
         return CL_EMEM;
     }
 
@@ -1799,14 +1802,14 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     if (bc_idx)
         root->linked_bcs++;
     root->ac_lsigs++;
-    newtable = (struct cli_ac_lsig **)mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+    newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
     if (!newtable) {
         if (bc_idx)
             root->linked_bcs--;
         root->ac_lsigs--;
         cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
         FREE_TDB(tdb);
-        mpool_free(engine->mempool, lsig);
+        MPOOL_FREE(engine->mempool, lsig);
         return CL_EMEM;
     }
 
@@ -1872,7 +1875,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
         if (sig[0] == '$' && i) {
             /* allow mapping from lsig back to pattern for macros */
             if (!tdb.macro_ptids)
-                tdb.macro_ptids = mpool_calloc(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
+                tdb.macro_ptids = MPOOL_CALLOC(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
             if (!tdb.macro_ptids)
                 return CL_EMEM;
 
@@ -2154,25 +2157,25 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
                 ret = CL_EMALFDB;
                 break;
             }
-            new = (struct cli_ftype *)mpool_malloc(engine->mempool, sizeof(struct cli_ftype));
+            new = (struct cli_ftype *)MPOOL_MALLOC(engine->mempool, sizeof(struct cli_ftype));
             if (!new) {
                 ret = CL_EMEM;
                 break;
             }
             new->type   = type;
             new->offset = atoi(tokens[1]);
-            new->magic  = (unsigned char *)cli_mpool_hex2str(engine->mempool, tokens[2]);
+            new->magic  = (unsigned char *)CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]);
             if (!new->magic) {
                 cli_errmsg("cli_loadftm: Can't decode the hex string\n");
                 ret = CL_EMALFDB;
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new);
                 break;
             }
             new->length = (uint16_t)strlen(tokens[2]) / 2;
-            new->tname  = cli_mpool_strdup(engine->mempool, tokens[3]);
+            new->tname  = CLI_MPOOL_STRDUP(engine->mempool, tokens[3]);
             if (!new->tname) {
-                mpool_free(engine->mempool, new->magic);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->magic);
+                MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMEM;
                 break;
             }
@@ -2257,7 +2260,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
                 ret = CL_EMALFDB;
                 break;
             }
-            last = engine->dbinfo = (struct cli_dbinfo *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
+            last = engine->dbinfo = (struct cli_dbinfo *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_bm_patt));
             if (!engine->dbinfo) {
                 ret = CL_EMEM;
                 break;
@@ -2281,31 +2284,31 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
             ret = CL_EMALFDB;
             break;
         }
-        new = (struct cli_dbinfo *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_dbinfo));
+        new = (struct cli_dbinfo *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_dbinfo));
         if (!new) {
             ret = CL_EMEM;
             break;
         }
-        new->name = cli_mpool_strdup(engine->mempool, tokens[0]);
+        new->name = CLI_MPOOL_STRDUP(engine->mempool, tokens[0]);
         if (!new->name) {
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
 
         if (!cli_isnumber(tokens[1])) {
             cli_errmsg("cli_loadinfo: Invalid value in the size field\n");
-            mpool_free(engine->mempool, new->name);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->name);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMALFDB;
             break;
         }
         new->size = atoi(tokens[1]);
 
-        if (strlen(tokens[2]) != 64 || !(new->hash = cli_mpool_hex2str(engine->mempool, tokens[2]))) {
+        if (strlen(tokens[2]) != 64 || !(new->hash = CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]))) {
             cli_errmsg("cli_loadinfo: Malformed SHA256 string at line %u\n", line);
-            mpool_free(engine->mempool, new->name);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->name);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMALFDB;
             break;
         }
@@ -2338,7 +2341,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     UNUSEDPARAM(options);
 
     if (!engine->ignored) {
-        engine->ignored = (struct cli_matcher *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+        engine->ignored = (struct cli_matcher *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_matcher));
         if (!engine->ignored)
             return CL_EMEM;
 #ifdef USE_MPOOL
@@ -2388,22 +2391,22 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
             len = 3;
         }
 
-        new = (struct cli_bm_patt *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
+        new = (struct cli_bm_patt *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_bm_patt));
         if (!new) {
             ret = CL_EMEM;
             break;
         }
-        new->pattern = (unsigned char *)cli_mpool_strdup(engine->mempool, signame);
+        new->pattern = (unsigned char *)CLI_MPOOL_STRDUP(engine->mempool, signame);
         if (!new->pattern) {
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
         if (hash) {
-            if (strlen(hash) != 32 || !(new->virname = cli_mpool_hex2str(engine->mempool, hash))) {
+            if (strlen(hash) != 32 || !(new->virname = CLI_MPOOL_HEX2STR(engine->mempool, hash))) {
                 cli_errmsg("cli_loadign: Malformed MD5 string at line %u\n", line);
-                mpool_free(engine->mempool, new->pattern);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->pattern);
+                MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMALFDB;
                 break;
             }
@@ -2413,9 +2416,9 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         if (CL_SUCCESS != (ret = cli_bm_addpatt(engine->ignored, new, "0"))) {
             if (hash)
-                mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new->pattern);
-            mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new->pattern);
+            MPOOL_FREE(engine->mempool, new);
             break;
         }
     }
@@ -2457,7 +2460,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         db = engine->hm_fp;
 
     if (!db) {
-        if (!(db = mpool_calloc(engine->mempool, 1, sizeof(*db))))
+        if (!(db = MPOOL_CALLOC(engine->mempool, 1, sizeof(*db))))
             return CL_EMEM;
 #ifdef USE_MPOOL
         db->mempool = engine->mempool;
@@ -2551,7 +2554,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
             }
         }
 
-        virname = cli_mpool_virname(engine->mempool, pt, options & CL_DB_OFFICIAL);
+        virname = CLI_MPOOL_VIRNAME(engine->mempool, pt, options & CL_DB_OFFICIAL);
         if (!virname) {
             ret = CL_EMALFDB;
             break;
@@ -2559,7 +2562,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
         if (CL_SUCCESS != (ret = hm_addhash_str(db, tokens[md5_field], size, virname))) {
             cli_errmsg("cli_loadhash: Malformed hash string at line %u\n", line);
-            mpool_free(engine->mempool, (void *)virname);
+            MPOOL_FREE(engine->mempool, (void *)virname);
             break;
         }
 
@@ -2647,30 +2650,30 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
             break;
         }
 
-        new = (struct cli_cdb *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
+        new = (struct cli_cdb *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_cdb));
         if (!new) {
             ret = CL_EMEM;
             break;
         }
 
-        new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
+        new->virname = CLI_MPOOL_VIRNAME(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
         if (!new->virname) {
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
         new->ctype = (type == 1) ? CL_TYPE_ZIP : CL_TYPE_RAR;
 
         if (engine->ignored && cli_chkign(engine->ignored, new->virname, buffer /*_cpy*/)) {
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             continue;
         }
 
         if (engine->cb_sigload && engine->cb_sigload("md", new->virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loadmd: skipping %s due to callback\n", new->virname);
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             continue;
         }
 
@@ -2678,8 +2681,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
         if (strcmp(tokens[2], "*") && cli_regcomp(&new->name, tokens[2], REG_EXTENDED | REG_NOSUB)) {
             cli_errmsg("cli_loadmd: Can't compile regular expression %s in signature for %s\n", tokens[2], tokens[0]);
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
@@ -2698,8 +2701,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
         if (strcmp(tokens[5], "*")) {
             new->res1 = cli_hex2num(tokens[5]);
             if (new->res1 == -1) {
-                mpool_free(engine->mempool, new->virname);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->virname);
+                MPOOL_FREE(engine->mempool, new);
                 if (new->name.re_magic)
                     cli_regfree(&new->name);
                 ret = CL_EMALFDB;
@@ -2789,29 +2792,29 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             }
         }
 
-        new = (struct cli_cdb *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_cdb));
+        new = (struct cli_cdb *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_cdb));
         if (!new) {
             ret = CL_EMEM;
             break;
         }
 
-        new->virname = cli_mpool_virname(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
+        new->virname = CLI_MPOOL_VIRNAME(engine->mempool, tokens[0], options & CL_DB_OFFICIAL);
         if (!new->virname) {
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
 
         if (engine->ignored && cli_chkign(engine->ignored, new->virname, buffer /*_cpy*/)) {
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             continue;
         }
 
         if (engine->cb_sigload && engine->cb_sigload("cdb", new->virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
             cli_dbgmsg("cli_loadcdb: skipping %s due to callback\n", new->virname);
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             continue;
         }
 
@@ -2820,15 +2823,15 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         } else if ((new->ctype = cli_ftcode(tokens[1])) == CL_TYPE_ERROR) {
             cli_errmsg("cli_loadcdb: Unknown container type %s in signature for %s, skipping\n", tokens[1], tokens[0]);
             ret = CL_EMALFDB;
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             break;
         }
 
         if (strcmp(tokens[3], "*") && cli_regcomp(&new->name, tokens[3], REG_EXTENDED | REG_NOSUB)) {
             cli_errmsg("cli_loadcdb: Can't compile regular expression %s in signature for %s\n", tokens[3], tokens[0]);
-            mpool_free(engine->mempool, new->virname);
-            mpool_free(engine->mempool, new);
+            MPOOL_FREE(engine->mempool, new->virname);
+            MPOOL_FREE(engine->mempool, new);
             ret = CL_EMEM;
             break;
         }
@@ -2853,8 +2856,8 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                        token_str, tokens[0]);                                 \
             if (new->name.re_magic)                                           \
                 cli_regfree(&new->name);                                      \
-            mpool_free(engine->mempool, new->virname);                        \
-            mpool_free(engine->mempool, new);                                 \
+            MPOOL_FREE(engine->mempool, new->virname);                        \
+            MPOOL_FREE(engine->mempool, new);                                 \
             ret = CL_EMEM;                                                    \
             break;                                                            \
         }                                                                     \
@@ -2874,8 +2877,8 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                 cli_errmsg("cli_loadcdb: Invalid encryption flag value in signature for %s\n", tokens[0]);
                 if (new->name.re_magic)
                     cli_regfree(&new->name);
-                mpool_free(engine->mempool, new->virname);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->virname);
+                MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMEM;
                 break;
             }
@@ -2883,13 +2886,13 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         }
 
         if (strcmp(tokens[9], "*")) {
-            new->res2 = cli_mpool_strdup(engine->mempool, tokens[9]);
+            new->res2 = CLI_MPOOL_STRDUP(engine->mempool, tokens[9]);
             if (!new->res2) {
                 cli_errmsg("cli_loadcdb: Can't allocate memory for res2 in signature for %s\n", tokens[0]);
                 if (new->name.re_magic)
                     cli_regfree(&new->name);
-                mpool_free(engine->mempool, new->virname);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->virname);
+                MPOOL_FREE(engine->mempool, new);
                 ret = CL_EMEM;
                 break;
             }
@@ -3572,7 +3575,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             /* handle lack of hexstr support here in order to suppress */
             /* initialize testing matcher */
             if (!engine->test_root) {
-                engine->test_root = (struct cli_matcher *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+                engine->test_root = (struct cli_matcher *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_matcher));
                 if (!engine->test_root) {
                     cli_errmsg("load_oneyara[verify]: cannot allocate memory for test cli_matcher\n");
                     free(substr);
@@ -3591,7 +3594,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             /* generate a test lsig if one does not exist */
             if (!tsig) {
                 /*** populating lsig ***/
-                tsig = (struct cli_ac_lsig *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+                tsig = (struct cli_ac_lsig *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_ac_lsig));
                 if (!tsig) {
                     cli_errmsg("load_oneyara: cannot allocate memory for test lsig\n");
                     free(substr);
@@ -3604,11 +3607,11 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 lsigid[0] = tsig->id = root->ac_lsigs;
 
                 root->ac_lsigs++;
-                newtable = (struct cli_ac_lsig **)mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+                newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
                 if (!newtable) {
                     root->ac_lsigs--;
                     cli_errmsg("load_oneyara: cannot allocate test root->ac_lsigtable\n");
-                    mpool_free(engine->mempool, tsig);
+                    MPOOL_FREE(engine->mempool, tsig);
                     free(substr);
                     return CL_EMEM;
                 }
@@ -3847,7 +3850,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     /*** populating lsig ***/
     root = engine->root[tdb.target[0]];
 
-    lsig = (struct cli_ac_lsig *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+    lsig = (struct cli_ac_lsig *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if (!lsig) {
         cli_errmsg("load_oneyara: Can't allocate memory for lsig\n");
         FREE_TDB(tdb);
@@ -3861,13 +3864,13 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         cli_yaramsg("normal lsig triggered yara: %s\n", logic);
 
         lsig->type    = CLI_LSIG_NORMAL;
-        lsig->u.logic = cli_mpool_strdup(engine->mempool, logic);
+        lsig->u.logic = CLI_MPOOL_STRDUP(engine->mempool, logic);
         free(logic);
         if (!lsig->u.logic) {
             cli_errmsg("load_oneyara: Can't allocate memory for lsig->logic\n");
             FREE_TDB(tdb);
             ytable_delete(&ytable);
-            mpool_free(engine->mempool, lsig);
+            MPOOL_FREE(engine->mempool, lsig);
             free(newident);
             return CL_EMEM;
         }
@@ -3880,7 +3883,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             cli_errmsg("load_oneyara: code start is NULL\n");
             FREE_TDB(tdb);
             ytable_delete(&ytable);
-            mpool_free(engine->mempool, lsig);
+            MPOOL_FREE(engine->mempool, lsig);
             free(newident);
             return CL_EMEM;
         }
@@ -3889,13 +3892,13 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     lsigid[0] = lsig->id = root->ac_lsigs;
 
     root->ac_lsigs++;
-    newtable = (struct cli_ac_lsig **)mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+    newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
     if (!newtable) {
         root->ac_lsigs--;
         cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
         FREE_TDB(tdb);
         ytable_delete(&ytable);
-        mpool_free(engine->mempool, lsig);
+        MPOOL_FREE(engine->mempool, lsig);
         free(newident);
         return CL_EMEM;
     }
@@ -3918,7 +3921,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
-            mpool_free(engine->mempool, lsig);
+            MPOOL_FREE(engine->mempool, lsig);
 
             yara_malform++;
             free(newident);
@@ -4243,25 +4246,25 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
 
         pwstype = atoi(tokens[2]);
         if ((pwstype == 0) || (pwstype == 1)) {
-            new = (struct cli_pwdb *)mpool_calloc(engine->mempool, 1, sizeof(struct cli_pwdb));
+            new = (struct cli_pwdb *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_pwdb));
             if (!new) {
                 ret = CL_EMEM;
                 break;
             }
 
             /* copy passwd name */
-            new->name = cli_mpool_strdup(engine->mempool, tokens[0]);
+            new->name = CLI_MPOOL_STRDUP(engine->mempool, tokens[0]);
             if (!new->name) {
                 ret = CL_EMEM;
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new);
                 break;
             }
 
             if (pwstype == 0) { /* cleartext */
-                new->passwd = cli_mpool_strdup(engine->mempool, tokens[3]);
+                new->passwd = CLI_MPOOL_STRDUP(engine->mempool, tokens[3]);
                 new->length = (uint16_t)strlen(tokens[3]);
             } else { /* 1 => hex-encoded */
-                new->passwd = cli_mpool_hex2str(engine->mempool, tokens[3]);
+                new->passwd = CLI_MPOOL_HEX2STR(engine->mempool, tokens[3]);
                 new->length = (uint16_t)strlen(tokens[3]) / 2;
             }
             if (!new->passwd) {
@@ -4270,8 +4273,8 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
                     ret = CL_EMEM;
                 else
                     ret = CL_EMALFDB;
-                mpool_free(engine->mempool, new->name);
-                mpool_free(engine->mempool, new);
+                MPOOL_FREE(engine->mempool, new->name);
+                MPOOL_FREE(engine->mempool, new);
                 break;
             }
 
@@ -4925,13 +4928,17 @@ void cli_pwdb_list_free(struct cl_engine *engine, struct cli_pwdb *pwdb)
 {
     struct cli_pwdb *thiz, *that;
 
+#ifndef USE_MPOOL
+    UNUSEDPARAM(engine);
+#endif
+
     thiz = pwdb;
     while (thiz) {
         that = thiz->next;
 
-        mpool_free(engine->mempool, thiz->name);
-        mpool_free(engine->mempool, thiz->passwd);
-        mpool_free(engine->mempool, thiz);
+        MPOOL_FREE(engine->mempool, thiz->name);
+        MPOOL_FREE(engine->mempool, thiz->passwd);
+        MPOOL_FREE(engine->mempool, thiz);
 
         thiz = that;
     }
@@ -5022,39 +5029,39 @@ int cl_engine_free(struct cl_engine *engine)
                 if (root->ac_lsigtable) {
                     for (j = 0; j < root->ac_lsigs; j++) {
                         if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL)
-                            mpool_free(engine->mempool, root->ac_lsigtable[j]->u.logic);
+                            MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]->u.logic);
                         FREE_TDB(root->ac_lsigtable[j]->tdb);
-                        mpool_free(engine->mempool, root->ac_lsigtable[j]);
+                        MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]);
                     }
-                    mpool_free(engine->mempool, root->ac_lsigtable);
+                    MPOOL_FREE(engine->mempool, root->ac_lsigtable);
                 }
 #if HAVE_PCRE
                 cli_pcre_freetable(root);
 #endif /* HAVE_PCRE */
-                mpool_free(engine->mempool, root);
+                MPOOL_FREE(engine->mempool, root);
             }
         }
-        mpool_free(engine->mempool, engine->root);
+        MPOOL_FREE(engine->mempool, engine->root);
     }
 
     if ((root = engine->hm_hdb)) {
         hm_free(root);
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
     }
 
     if ((root = engine->hm_mdb)) {
         hm_free(root);
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
     }
 
     if ((root = engine->hm_imp)) {
         hm_free(root);
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
     }
 
     if ((root = engine->hm_fp)) {
         hm_free(root);
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
     }
 
     crtmgr_free(&engine->cmgr);
@@ -5064,19 +5071,19 @@ int cl_engine_free(struct cl_engine *engine)
         engine->cdb        = pt->next;
         if (pt->name.re_magic)
             cli_regfree(&pt->name);
-        mpool_free(engine->mempool, pt->res2);
-        mpool_free(engine->mempool, pt->virname);
-        mpool_free(engine->mempool, pt);
+        MPOOL_FREE(engine->mempool, pt->res2);
+        MPOOL_FREE(engine->mempool, pt->virname);
+        MPOOL_FREE(engine->mempool, pt);
     }
 
     while (engine->dbinfo) {
         struct cli_dbinfo *pt = engine->dbinfo;
         engine->dbinfo        = pt->next;
-        mpool_free(engine->mempool, pt->name);
-        mpool_free(engine->mempool, pt->hash);
+        MPOOL_FREE(engine->mempool, pt->name);
+        MPOOL_FREE(engine->mempool, pt->hash);
         if (pt->cvd)
             cl_cvdfree(pt->cvd);
-        mpool_free(engine->mempool, pt);
+        MPOOL_FREE(engine->mempool, pt);
     }
 
     if (engine->dconf) {
@@ -5094,18 +5101,18 @@ int cl_engine_free(struct cl_engine *engine)
         if (engine->dconf->phishing & PHISHING_CONF_ENGINE)
             phishing_done(engine);
 
-        mpool_free(engine->mempool, engine->dconf);
+        MPOOL_FREE(engine->mempool, engine->dconf);
     }
 
     if (engine->pwdbs) {
         for (i = 0; i < CLI_PWDB_COUNT; i++)
             if (engine->pwdbs[i])
                 cli_pwdb_list_free(engine, engine->pwdbs[i]);
-        mpool_free(engine->mempool, engine->pwdbs);
+        MPOOL_FREE(engine->mempool, engine->pwdbs);
     }
 
     if (engine->pua_cats)
-        mpool_free(engine->mempool, engine->pua_cats);
+        MPOOL_FREE(engine->mempool, engine->pua_cats);
 
     if (engine->iconcheck) {
         struct icon_matcher *iconcheck = engine->iconcheck;
@@ -5113,26 +5120,26 @@ int cl_engine_free(struct cl_engine *engine)
             if (iconcheck->icons[i]) {
                 for (j = 0; j < iconcheck->icon_counts[i]; j++) {
                     struct icomtr *metric = iconcheck->icons[i];
-                    mpool_free(engine->mempool, metric[j].name);
+                    MPOOL_FREE(engine->mempool, metric[j].name);
                 }
-                mpool_free(engine->mempool, iconcheck->icons[i]);
+                MPOOL_FREE(engine->mempool, iconcheck->icons[i]);
             }
         }
         if (iconcheck->group_names[0]) {
             for (i = 0; i < iconcheck->group_counts[0]; i++)
-                mpool_free(engine->mempool, iconcheck->group_names[0][i]);
-            mpool_free(engine->mempool, iconcheck->group_names[0]);
+                MPOOL_FREE(engine->mempool, iconcheck->group_names[0][i]);
+            MPOOL_FREE(engine->mempool, iconcheck->group_names[0]);
         }
         if (iconcheck->group_names[1]) {
             for (i = 0; i < iconcheck->group_counts[1]; i++)
-                mpool_free(engine->mempool, iconcheck->group_names[1][i]);
-            mpool_free(engine->mempool, iconcheck->group_names[1]);
+                MPOOL_FREE(engine->mempool, iconcheck->group_names[1][i]);
+            MPOOL_FREE(engine->mempool, iconcheck->group_names[1]);
         }
-        mpool_free(engine->mempool, iconcheck);
+        MPOOL_FREE(engine->mempool, iconcheck);
     }
 
     if (engine->tmpdir)
-        mpool_free(engine->mempool, engine->tmpdir);
+        MPOOL_FREE(engine->mempool, engine->tmpdir);
 
     if (engine->cache)
         cli_cache_destroy(engine);
@@ -5140,7 +5147,7 @@ int cl_engine_free(struct cl_engine *engine)
     cli_ftfree(engine);
     if (engine->ignored) {
         cli_bm_free(engine->ignored);
-        mpool_free(engine->mempool, engine->ignored);
+        MPOOL_FREE(engine->mempool, engine->ignored);
     }
     if (engine->test_root) {
         root = engine->test_root;
@@ -5150,16 +5157,16 @@ int cl_engine_free(struct cl_engine *engine)
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
                 if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
-                    mpool_free(engine->mempool, root->ac_lsigtable[i]->u.logic);
+                    MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->u.logic);
                 FREE_TDB(root->ac_lsigtable[i]->tdb);
-                mpool_free(engine->mempool, root->ac_lsigtable[i]);
+                MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]);
             }
-            mpool_free(engine->mempool, root->ac_lsigtable);
+            MPOOL_FREE(engine->mempool, root->ac_lsigtable);
         }
 #if HAVE_PCRE
         cli_pcre_freetable(root);
 #endif /* HAVE_PCRE */
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
     }
 
 #ifdef USE_MPOOL
@@ -5236,7 +5243,7 @@ int cl_engine_compile(struct cl_engine *engine)
     }
     if (engine->ignored) {
         cli_bm_free(engine->ignored);
-        mpool_free(engine->mempool, engine->ignored);
+        MPOOL_FREE(engine->mempool, engine->ignored);
         engine->ignored = NULL;
     }
     if (engine->test_root) {
@@ -5247,20 +5254,20 @@ int cl_engine_compile(struct cl_engine *engine)
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
                 if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
-                    mpool_free(engine->mempool, root->ac_lsigtable[i]->u.logic);
+                    MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->u.logic);
                 FREE_TDB(root->ac_lsigtable[i]->tdb);
-                mpool_free(engine->mempool, root->ac_lsigtable[i]);
+                MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]);
             }
-            mpool_free(engine->mempool, root->ac_lsigtable);
+            MPOOL_FREE(engine->mempool, root->ac_lsigtable);
         }
 #if HAVE_PCRE
         cli_pcre_freetable(root);
 #endif /* HAVE_PCRE */
-        mpool_free(engine->mempool, root);
+        MPOOL_FREE(engine->mempool, root);
         engine->test_root = NULL;
     }
     cli_dconf_print(engine->dconf);
-    mpool_flush(engine->mempool);
+    MPOOL_FLUSH(engine->mempool);
 
     /* Compile bytecode */
     if ((ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode))) {
