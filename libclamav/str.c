@@ -861,7 +861,7 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
                              unsigned long *result)
 {
     char *endptr = NULL;
-    long num;
+    unsigned long num;
 
     if (buf_size == 0 || !buf || !result) {
         /* invalid parameter */
@@ -869,7 +869,7 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
     }
     errno = 0;
     num   = cli_strntoul(buf, buf_size, &endptr, base);
-    if (num == ULONG_MAX && errno == ERANGE) {
+    if ((num == ULONG_MAX) && (errno == ERANGE)) {
         /* under- or overflow */
         return CL_EPARSE;
     }
@@ -887,7 +887,7 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
 }
 
 size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
-                       const char **tokens, int token_skip)
+                       const char **tokens, size_t token_skip)
 {
     size_t tokens_found, i;
     int within_pcre = 0;

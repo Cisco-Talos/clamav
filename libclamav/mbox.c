@@ -4065,7 +4065,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
         fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 #if HAVE_JSON
         json_object *arrobj;
-        int arrlen = 0;
+        size_t arrlen = 0;
 
         if (thisobj != NULL) {
             /* attempt to determine container size - prevents incorrect type reporting */
@@ -4096,7 +4096,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                 if (entry)
                     dtype = json_object_get_string(entry);
             }
-            cli_jsonint(thisobj, "ContainedObjectsIndex", arrlen);
+            cli_jsonint(thisobj, "ContainedObjectsIndex", (uint32_t)arrlen);
             cli_jsonstr(thisobj, "ClamAVFileType", dtype ? dtype : "UNKNOWN");
         }
 #endif

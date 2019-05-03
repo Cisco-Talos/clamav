@@ -2660,7 +2660,7 @@ static void get_thread_times(uint64_t *kt, uint64_t *ut)
     *ut         = ul.QuadPart / 10;
 #else
     struct tms tbuf;
-    if (times(&tbuf) != -1) {
+    if (times(&tbuf) != ((clock_t)-1)) {
         clock_t tck = sysconf(_SC_CLK_TCK);
         *kt         = ((uint64_t)1000000) * tbuf.tms_stime / tck;
         *ut         = ((uint64_t)1000000) * tbuf.tms_utime / tck;
@@ -3958,7 +3958,6 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 {
     STATBUF sb;
     cl_error_t status = CL_CLEAN;
-    cl_error_t ret    = CL_CLEAN;
 
     if (!ctx) {
         return CL_EARG;

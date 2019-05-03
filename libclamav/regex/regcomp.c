@@ -196,7 +196,7 @@ cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 		return(REG_ESPACE);
 	}
 	p->ssize = len/(size_t)2*(size_t)3 + (size_t)1;	/* ugh */
-	assert(p->ssize >= len);
+	assert((size_t)p->ssize >= len);
 
 	p->strip = (sop *)cli_calloc(p->ssize, sizeof(sop));
 	p->slen = 0;

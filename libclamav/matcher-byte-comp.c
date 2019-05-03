@@ -566,7 +566,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     uint16_t opt              = 0;
     uint16_t opt_val          = 0;
     int64_t value             = 0;
-    uint64_t bin_value        = 0;
+    int64_t bin_value         = 0;
     int16_t compare_check     = 0;
     unsigned char *end_buf    = NULL;
     unsigned char *buffer     = NULL;
@@ -716,16 +716,16 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
                 case 1:
-                    bin_value = (*(uint8_t *)f_buffer);
+                    bin_value = (int64_t)(*(uint8_t *)f_buffer);
                     break;
                 case 2:
-                    bin_value = (uint16_t)le16_to_host(*(uint16_t *)f_buffer);
+                    bin_value = (int64_t)le16_to_host(*(uint16_t *)f_buffer);
                     break;
                 case 4:
-                    bin_value = (uint32_t)le32_to_host(*(uint32_t *)f_buffer);
+                    bin_value = (int64_t)le32_to_host(*(uint32_t *)f_buffer);
                     break;
                 case 8:
-                    bin_value = (uint64_t)le64_to_host(*(uint64_t *)f_buffer);
+                    bin_value = (int64_t)le64_to_host(*(uint64_t *)f_buffer);
                     break;
 
                 default:
@@ -740,16 +740,16 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             /* exact byte_length option is implied for binary extraction */
             switch (byte_len) {
                 case 1:
-                    bin_value = (*(uint8_t *)f_buffer);
+                    bin_value = (int64_t)(*(uint8_t *)f_buffer);
                     break;
                 case 2:
-                    bin_value = (uint16_t)be16_to_host(*(uint16_t *)f_buffer);
+                    bin_value = (int64_t)be16_to_host(*(uint16_t *)f_buffer);
                     break;
                 case 4:
-                    bin_value = (uint32_t)be32_to_host(*(uint32_t *)f_buffer);
+                    bin_value = (int64_t)be32_to_host(*(uint32_t *)f_buffer);
                     break;
                 case 8:
-                    bin_value = (uint64_t)be64_to_host(*(uint64_t *)f_buffer);
+                    bin_value = (int64_t)be64_to_host(*(uint64_t *)f_buffer);
                     break;
 
                 default:
