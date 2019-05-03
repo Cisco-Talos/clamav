@@ -76,8 +76,6 @@
 
 struct pdf_struct;
 
-static int asciihexdecode(const char *buf, off_t len, char *output);
-static int ascii85decode(const char *buf, off_t len, unsigned char *output);
 static const char *pdf_nextlinestart(const char *ptr, size_t len);
 static const char *pdf_nextobject(const char *ptr, size_t len);
 
@@ -3205,7 +3203,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
          * a password to decrypt */
         status = cli_append_virus(pdf->ctx, "Heuristics.Encrypted.PDF");
         if (status == CL_VIRUS) {
-            *alerts++;
+            *alerts += 1;
             if (SCAN_ALLMATCHES)
                 status = CL_CLEAN;
         }
@@ -3215,7 +3213,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
         status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1, -1);
         cli_dbgmsg("pdf_find_and_extract_objs: (parsed hooks) returned %d\n", status);
         if (status == CL_VIRUS) {
-            *alerts++;
+            *alerts += 1;
             if (SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
             }
@@ -3243,7 +3241,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
                 status = CL_CLEAN;
                 break;
             case CL_VIRUS:
-                *alerts++;
+                *alerts += 1;
                 if (SCAN_ALLMATCHES) {
                     status = CL_CLEAN;
                 }

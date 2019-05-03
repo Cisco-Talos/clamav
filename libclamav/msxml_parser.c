@@ -95,6 +95,8 @@ static void msxml_error_handler(void *arg, const char *msg, xmlParserSeverities 
     int line     = xmlTextReaderLocatorLineNumber(locator);
     xmlChar *URI = xmlTextReaderLocatorBaseURI(locator);
 
+    UNUSEDPARAM(arg);
+
     switch (severity) {
         case XML_PARSER_SEVERITY_WARNING:
         case XML_PARSER_SEVERITY_VALIDITY_WARNING:
