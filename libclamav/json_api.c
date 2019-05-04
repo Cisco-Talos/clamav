@@ -1,19 +1,19 @@
 /*
  * JSON Object API
- * 
+ *
  * Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -28,7 +28,7 @@
 #include "json_api.h"
 
 #ifdef HAVE_JSON
-int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
+cl_error_t cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
 {
     if (SCAN_COLLECT_METADATA) {
         if (*toval <= 0) {
@@ -45,7 +45,7 @@ int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
     return CL_SUCCESS;
 }
 
-int cli_json_parse_error(json_object *root, const char *errstr)
+cl_error_t cli_json_parse_error(json_object *root, const char *errstr)
 {
     json_object *perr;
 
@@ -60,7 +60,7 @@ int cli_json_parse_error(json_object *root, const char *errstr)
     return cli_jsonstr(perr, NULL, errstr);
 }
 
-int cli_jsonnull(json_object *obj, const char *key)
+cl_error_t cli_jsonnull(json_object *obj, const char *key)
 {
     json_type objty;
     json_object *fpobj = NULL;
@@ -84,7 +84,7 @@ int cli_jsonnull(json_object *obj, const char *key)
     return CL_SUCCESS;
 }
 
-int cli_jsonstr(json_object *obj, const char *key, const char *s)
+cl_error_t cli_jsonstr(json_object *obj, const char *key, const char *s)
 {
     json_type objty;
     json_object *fpobj;
@@ -122,7 +122,7 @@ int cli_jsonstr(json_object *obj, const char *key, const char *s)
     return CL_SUCCESS;
 }
 
-int cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len)
+cl_error_t cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len)
 {
     json_type objty;
     json_object *fpobj;
@@ -160,7 +160,7 @@ int cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len)
     return CL_SUCCESS;
 }
 
-int cli_jsonint(json_object *obj, const char *key, int32_t i)
+cl_error_t cli_jsonint(json_object *obj, const char *key, int32_t i)
 {
     json_type objty;
     json_object *fpobj;
@@ -194,7 +194,7 @@ int cli_jsonint(json_object *obj, const char *key, int32_t i)
 }
 
 #ifdef JSON10
-int cli_jsonint64(json_object *obj, const char *key, int64_t i)
+cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
 {
     json_type objty;
     json_object *fpobj;
@@ -227,7 +227,7 @@ int cli_jsonint64(json_object *obj, const char *key, int64_t i)
     return CL_SUCCESS;
 }
 #else
-int cli_jsonint64(json_object *obj, const char *key, int64_t i)
+cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
 {
     json_type objty;
     int32_t li, hi;
@@ -284,7 +284,7 @@ int cli_jsonint64(json_object *obj, const char *key, int64_t i)
 //#define cli_jsonint64(o,n,i) cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
 #endif
 
-int cli_jsonbool(json_object *obj, const char *key, int i)
+cl_error_t cli_jsonbool(json_object *obj, const char *key, int i)
 {
     json_type objty;
     json_object *fpobj;
@@ -317,7 +317,7 @@ int cli_jsonbool(json_object *obj, const char *key, int i)
     return CL_SUCCESS;
 }
 
-int cli_jsondouble(json_object *obj, const char *key, double d)
+cl_error_t cli_jsondouble(json_object *obj, const char *key, double d)
 {
     json_type objty;
     json_object *fpobj;
@@ -379,7 +379,7 @@ json_object *cli_jsonarray(json_object *obj, const char *key)
     return newobj;
 }
 
-int cli_jsonint_array(json_object *obj, int32_t val)
+cl_error_t cli_jsonint_array(json_object *obj, int32_t val)
 {
     return cli_jsonint(obj, NULL, val);
 }
@@ -436,7 +436,7 @@ int json_object_object_get_ex(struct json_object *obj, const char *key, struct j
 #endif
 
 /* adding an object does NOT increment reference count */
-int cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx)
+cl_error_t cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx)
 {
     json_type objty;
     if (NULL == owner) {
@@ -475,7 +475,7 @@ int cli_json_addowner(json_object *owner, json_object *child, const char *key, i
 }
 
 /* deleting an object DOES decrement reference count */
-int cli_json_delowner(json_object *owner, const char *key, int idx)
+cl_error_t cli_json_delowner(json_object *owner, const char *key, int idx)
 {
     json_type objty;
     json_object *obj;
@@ -525,25 +525,25 @@ int cli_json_delowner(json_object *owner, const char *key, int idx)
 
 #else
 
-int cli_json_nojson()
+cl_error_t cli_json_nojson()
 {
     nojson_func("nojson: json needs to be enabled for this feature\n");
     return CL_SUCCESS;
 }
 
-int cli_jsonnull_nojson(const char* key)
+cl_error_t cli_jsonnull_nojson(const char* key)
 {
     nojson_func("nojson: %s: null\n", key);
     return CL_SUCCESS;
 }
 
-int cli_jsonstr_nojson(const char* key, const char* s)
+cl_error_t cli_jsonstr_nojson(const char* key, const char* s)
 {
     nojson_func("nojson: %s: %s\n", key, s);
     return CL_SUCCESS;
 }
 
-int cli_jsonstrlen_nojson(const char* key, const char* s, int len)
+cl_error_t cli_jsonstrlen_nojson(const char* key, const char* s, int len)
 {
     char* sp = cli_malloc(len + 1);
     if (NULL == sp) {
@@ -559,25 +559,25 @@ int cli_jsonstrlen_nojson(const char* key, const char* s, int len)
     return CL_SUCCESS;
 }
 
-int cli_jsonint_nojson(const char* key, int32_t i)
+cl_error_t cli_jsonint_nojson(const char* key, int32_t i)
 {
     nojson_func("nojson: %s: %d\n", key, i);
     return CL_SUCCESS;
 }
 
-int cli_jsonint64_nojson(const char* key, int64_t i)
+cl_error_t cli_jsonint64_nojson(const char* key, int64_t i)
 {
     nojson_func("nojson: %s: %ld\n", key, (long int)i);
     return CL_SUCCESS;
 }
 
-int cli_jsonbool_nojson(const char* key, int i)
+cl_error_t cli_jsonbool_nojson(const char* key, int i)
 {
     nojson_func("nojson: %s: %s\n", key, i ? "true" : "false");
     return CL_SUCCESS;
 }
 
-int cli_jsondouble_nojson(const char* key, double d)
+cl_error_t cli_jsondouble_nojson(const char* key, double d)
 {
     nojson_func("nojson: %s: %f\n", key, d);
     return CL_SUCCESS;
@@ -589,7 +589,7 @@ void* cli_jsonarray_nojson(const char* key)
     return NULL;
 }
 
-int cli_jsonint_array_nojson(int32_t val)
+cl_error_t cli_jsonint_array_nojson(int32_t val)
 {
     nojson_func("nojson: %d\n", val);
     return CL_SUCCESS;
