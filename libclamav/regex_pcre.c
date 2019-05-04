@@ -162,9 +162,9 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
 
     /* compile the pcre2 regex last arg is charset, allow for options override */
     if (opt_override)
-        pd->re = pcre2_compile(pd->expression, PCRE2_ZERO_TERMINATED, options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
+        pd->re = pcre2_compile((PCRE2_SPTR8)pd->expression, PCRE2_ZERO_TERMINATED, options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
     else
-        pd->re = pcre2_compile(pd->expression, PCRE2_ZERO_TERMINATED, pd->options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
+        pd->re = pcre2_compile((PCRE2_SPTR8)pd->expression, PCRE2_ZERO_TERMINATED, pd->options, &errornum, &erroffset, cctx); /* pd->re handled by pcre2 -> call pcre_free() -> calls free() */
     if (pd->re == NULL) {
         PCRE2_UCHAR errmsg[256];
         pcre2_get_error_message(errornum, errmsg, sizeof(errmsg));
@@ -246,17 +246,20 @@ cl_error_t cli_pcre_compile(struct cli_pcre_data *pd, long long unsigned match_l
 }
 #endif
 
-int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int override_offset, int options, struct cli_pcre_results *results)
+int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, size_t buflen, size_t override_offset, int options, struct cli_pcre_results *results)
 {
-    int rc, startoffset;
+    int rc;
+
 #if USING_PCRE2
-    pcre2_general_context *pc2ctx;
     PCRE2_SIZE *ovector;
+    size_t startoffset;
+#else
+    int startoffset;
 #endif
 
     /* set the startoffset, override if a value is specified */
     startoffset = pd->search_offset;
-    if (override_offset >= 0)
+    if (override_offset != pd->search_offset)
         startoffset = override_offset;
 
         /* execute the pcre and return */
@@ -289,7 +292,7 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
         results->match[0] = results->match[1] = 0;
     }
 #else
-    rc = pcre_exec(pd->re, pd->ex, (const char *)buffer, buflen, startoffset, options, results->ovector, OVECCOUNT);
+    rc = pcre_exec(pd->re, pd->ex, (const char *)buffer, (int)buflen, (int)startoffset, options, results->ovector, OVECCOUNT);
     if (rc < 0 && rc != PCRE_ERROR_NOMATCH) {
         switch (rc) {
             case PCRE_ERROR_CALLOUT:
@@ -322,9 +325,20 @@ int cli_pcre_match(struct cli_pcre_data *pd, const unsigned char *buffer, uint32
 #define MATCH_MAXLEN 1028 /*because lolz*/
 
 /* TODO: audit this function */
+#if USING_PCRE2
+static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, PCRE2_SIZE *ovector)
+#else
 static void named_substr_print(const struct cli_pcre_data *pd, const unsigned char *buffer, int *ovector)
+#endif
 {
-    int i, j, length, namecount, trunc;
+    int i, namecount, trunc;
+
+#if USING_PCRE2
+    PCRE2_SIZE length, j;
+#else
+    int length, j;
+#endif
+
     unsigned char *tabptr;
     int name_entry_size;
     unsigned char *name_table;
@@ -380,11 +394,19 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
 }
 
 /* TODO: audit this function */
-void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, uint32_t buflen, int rc, struct cli_pcre_results *results)
+void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer, size_t buflen, int rc, struct cli_pcre_results *results)
 {
-    int i, j, length, trunc;
+    int i, trunc;
+
+#if USING_PCRE2
+    PCRE2_SIZE length, j;
+#else
+    int length, j;
+#endif
+
     const char *start;
     char outstr[2 * MATCH_MAXLEN + 1];
+
 #if USING_PCRE2
     PCRE2_SIZE *ovector;
     ovector = pcre2_get_ovector_pointer(results->match_data);
@@ -407,7 +429,11 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
                 start  = (const char *)buffer + ovector[2 * i];
                 length = ovector[2 * i + 1] - ovector[2 * i];
 
+#ifdef USING_PCRE2
                 if (ovector[2 * i + 1] > buflen) {
+#else
+                if (ovector[2 * i + 1] > (int)buflen) {
+#endif
                     cli_warnmsg("cli_pcre_report: reported match goes outside buffer\n");
                     continue;
                 }
