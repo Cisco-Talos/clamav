@@ -1,4 +1,4 @@
-/* 
+/*
  *  Simple library to detect and validate SSN and Credit Card numbers.
  *
  *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
@@ -31,29 +31,29 @@
 #define SSN_FORMAT_STRIPPED 1 /* xxxyyzzzz */
 
 /*
- * will check if a valid credit card number exists within the 
+ * will check if a valid credit card number exists within the
  * first 16 bytes of the supplied buffer.  Validation supplied
  * via the Luhn algorithm.
  * Params:
  *      buffer => data buffer to be validated.
  *      length => length of supplied buffer.  Values greater than 16 are
- *                truncated to 16.  Values less than 13 are rejected. 
+ *                truncated to 16.  Values less than 13 are rejected.
  * Returns:
  *      1 on a find, 0 on a miss
  */
-int dlp_is_valid_cc(const unsigned char *buffer, int length);
+int dlp_is_valid_cc(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for credit card numbers and returns
  * the number of CC's found.
  * Params:
  *      buffer => data buffer to be analyzed.
- *      length => length of buffer.  
+ *      length => length of buffer.
  * Returns:
  *      Count of detected CC #'s.
  */
-int dlp_get_cc_count(const unsigned char *buffer, int length);
+int dlp_get_cc_count(const unsigned char *buffer, size_t length);
 
-/* Searches the supplied buffer for CC #'s.  Bails out as soon as a 
+/* Searches the supplied buffer for CC #'s.  Bails out as soon as a
  * validated number is detected.
  * Params:
  *      buffer => data buffer to be analyzed.
@@ -61,7 +61,7 @@ int dlp_get_cc_count(const unsigned char *buffer, int length);
  * Returns:
  *      1 on detect, 0 on fail
  */
-int dlp_has_cc(const unsigned char *buffer, int length);
+int dlp_has_cc(const unsigned char *buffer, size_t length);
 
 /* Checks the supplied buffer for a valid SSN number.  Validation
  * is supplied via area and group number validation.  Valid numbers
@@ -74,7 +74,7 @@ int dlp_has_cc(const unsigned char *buffer, int length);
  * Returns:
  *      1 on detect, 0 on failure
  */
-int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format);
+int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format);
 
 /* Searches the supplied buffer for valid SSNs.  Note that this function
  * is effectively searching the buffer TWICE looking for the hyphenated and
@@ -85,7 +85,7 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format);
  * Returns:
  *      Count of SSNs in the supplied buffer
  */
-int dlp_get_ssn_count(const unsigned char *buffer, int length);
+int dlp_get_ssn_count(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for valid SSNs formatted as xxxyyzzzz.
  * Params:
@@ -94,7 +94,7 @@ int dlp_get_ssn_count(const unsigned char *buffer, int length);
  * Returns:
  *      Count of SSNs in the supplied buffer.
  */
-int dlp_get_stripped_ssn_count(const unsigned char *buffer, int length);
+int dlp_get_stripped_ssn_count(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for valid SSNs formatted as xxx-yy-zzzz.
  * Params:
@@ -103,7 +103,7 @@ int dlp_get_stripped_ssn_count(const unsigned char *buffer, int length);
  * Returns:
  *      Count of SSNs in the supplied buffer.
  */
-int dlp_get_normal_ssn_count(const unsigned char *buffer, int length);
+int dlp_get_normal_ssn_count(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for a SSN in any format.  This searches the
  * buffer twice for both the stripped and hyphenated versions of an SSN so
@@ -114,7 +114,7 @@ int dlp_get_normal_ssn_count(const unsigned char *buffer, int length);
  * Returns:
  *      1 on detect, 0 on fail
  */
-int dlp_has_ssn(const unsigned char *buffer, int length);
+int dlp_has_ssn(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for a SSN in the stripped xxxyyzzzz format.
  * Params:
@@ -123,7 +123,7 @@ int dlp_has_ssn(const unsigned char *buffer, int length);
  * Returns:
  *      1 on detect, 0 on fail
  */
-int dlp_has_stripped_ssn(const unsigned char *buffer, int length);
+int dlp_has_stripped_ssn(const unsigned char *buffer, size_t length);
 
 /* Searches the supplied buffer for a SSN in the normal xxx-yy-zzzz format.
  * Params:
@@ -132,10 +132,10 @@ int dlp_has_stripped_ssn(const unsigned char *buffer, int length);
  * Returns:
  *      1 on detect, 0 on fail
  */
-int dlp_has_normal_ssn(const unsigned char *buffer, int length);
+int dlp_has_normal_ssn(const unsigned char *buffer, size_t length);
 
-int cdn_ctn_is_valid(const char *, int);
-int cdn_eft_is_valid(const char *, int);
-int us_micr_is_valid(const char *, int);
+int cdn_ctn_is_valid(const char *buffer, size_t length);
+int cdn_eft_is_valid(const char *buffer, size_t length);
+int us_micr_is_valid(const char *buffer, size_t length);
 
 #endif /* __DLP_H_ */
