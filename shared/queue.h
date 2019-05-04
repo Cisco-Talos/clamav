@@ -449,6 +449,7 @@ struct {								\
 	LIST_FIRST((head)) = NULL;					\
 } while (0)
 
+#undef LIST_INSERT_AFTER
 #define	LIST_INSERT_AFTER(listelm, elm, field) do {			\
 	QMD_LIST_CHECK_NEXT(listelm, field);				\
 	if ((LIST_NEXT((elm), field) = LIST_NEXT((listelm), field)) != NULL)\
@@ -458,6 +459,7 @@ struct {								\
 	(elm)->field.le_prev = &LIST_NEXT((listelm), field);		\
 } while (0)
 
+#undef LIST_INSERT_BEFORE
 #define	LIST_INSERT_BEFORE(listelm, elm, field) do {			\
 	QMD_LIST_CHECK_PREV(listelm, field);				\
 	(elm)->field.le_prev = (listelm)->field.le_prev;		\
@@ -466,6 +468,7 @@ struct {								\
 	(listelm)->field.le_prev = &LIST_NEXT((elm), field);		\
 } while (0)
 
+#undef LIST_INSERT_HEAD
 #define	LIST_INSERT_HEAD(head, elm, field) do {				\
 	QMD_LIST_CHECK_HEAD((head), field);				\
 	if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL)	\

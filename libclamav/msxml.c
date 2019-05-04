@@ -1,20 +1,20 @@
 /*
  * Extract component parts of MS XML files (e.g. MS Office 2003 XML Documents)
- * 
+ *
  * Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -81,7 +81,7 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     off_t new_mappos;
     size_t bytes;
 
-    if (cbdata->mappos == cbdata->map->len) {
+    if ((size_t)cbdata->mappos == cbdata->map->len) {
         cli_msxmlmsg("msxml_read_cb: fmap REALLY EOF\n");
         return 0;
     }
@@ -116,11 +116,12 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     return bytes;
 }
 
-int msxml_read_cb(void *ctx, char *buffer, int len)
+int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
 {
     struct msxml_cbdata *cbdata = (struct msxml_cbdata *)ctx;
     size_t wbytes, rbytes;
     int winret;
+    size_t len = (size_t)buffer_len;
 
     cli_msxmlmsg("msxml_read_cb called\n");
 
@@ -130,7 +131,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
             return winret;
     }
 
-    cli_msxmlmsg("msxml_read_cb: requested %d bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos + cbdata->winpos));
+    cli_msxmlmsg("msxml_read_cb: requested %zu bytes from offset %llu\n", len, (long long unsigned)(cbdata->mappos + cbdata->winpos));
 
     wbytes = 0;
     rbytes = cbdata->winsize - cbdata->winpos;
@@ -165,7 +166,7 @@ int msxml_read_cb(void *ctx, char *buffer, int len)
         read_from = cbdata->window + cbdata->winpos;
         state     = &(cbdata->state);
 
-        while (rbytes > 0 && wbytes < len) {
+        while ((rbytes > 0) && (wbytes < len)) {
             switch (*state) {
                 case MSXML_STATE_NORMAL:
                     if ((*read_from) == '&')

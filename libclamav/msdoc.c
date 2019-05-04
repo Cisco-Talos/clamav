@@ -1,20 +1,20 @@
 /*
  * Extract component parts of OLE2 files (e.g. MS Office Documents)
- * 
+ *
  * Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -65,7 +65,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     /* applies in the both case */
     if (sctx->codepage == 20127 || sctx->codepage == 65001) {
         char *track;
-        int bcnt, scnt;
+        size_t bcnt, scnt;
 
         outbuf = cli_calloc(1, sz + 1);
         if (!(outbuf))
@@ -87,8 +87,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             }
 
             if (bcnt != scnt) {
-                cli_dbgmsg("ole2_convert_utf: cleaning out %d bytes from incomplete "
-                           "utf-8 character length %d\n",
+                cli_dbgmsg("ole2_convert_utf: cleaning out %zu bytes from incomplete utf-8 character length %zu\n",
                            bcnt, scnt);
                 for (; bcnt > 0; bcnt--, track++)
                     *track = '\0';

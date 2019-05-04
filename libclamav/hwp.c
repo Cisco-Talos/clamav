@@ -72,8 +72,9 @@
 #define hwpml_debug(...) ;
 #endif
 
-typedef int (*hwp_cb)(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
-static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
+typedef cl_error_t (*hwp_cb)(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
+
+static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
     cl_error_t ret = CL_SUCCESS;
     int zret, ofd;
@@ -197,8 +198,8 @@ dc_end:
 #define HANGUL_NUMERICAL 0
 static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *parent, cl_error_t *ret)
 {
-    int rc    = CL_SUCCESS;
-    char *res = NULL;
+    cl_error_t rc = CL_SUCCESS;
+    char *res     = NULL;
 #if HANGUL_NUMERICAL && HAVE_ICONV
     char *p1, *p2, *inbuf = NULL, *outbuf = NULL;
     size_t inlen, outlen;
@@ -275,7 +276,7 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
 }
 
 /*** HWPOLE2 ***/
-int cli_scanhwpole2(cli_ctx *ctx)
+cl_error_t cli_scanhwpole2(cli_ctx *ctx)
 {
     fmap_t *map = *ctx->fmap;
     uint32_t usize, asize;
@@ -298,7 +299,7 @@ int cli_scanhwpole2(cli_ctx *ctx)
 
 /*** HWP5 ***/
 
-int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
+cl_error_t cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
 {
     if (!ctx || !hwp5)
         return CL_ENULLARG;
@@ -369,7 +370,7 @@ int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
     return CL_SUCCESS;
 }
 
-static int hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
     UNUSEDPARAM(cbdata);
 
@@ -379,7 +380,7 @@ static int hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
     return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath)
+cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath)
 {
     hwp5_debug("HWP5.x: NAME: %s\n", name ? name : "(NULL)");
 
@@ -403,7 +404,7 @@ int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, c
                 /* DocInfo JSON Handling */
                 STATBUF statbuf;
                 fmap_t *input;
-                int ret;
+                cl_error_t ret;
 
                 hwp5_debug("HWP5.x: Sending %s for decompress and scan\n", name);
 
@@ -509,10 +510,10 @@ struct hwp3_docsummary_entry {
 #define PCSD_SIZE 0  /* offset 0 (2 bytes) - size of characters */
 #define PCSD_PROP 26 /* offset 26 (1 byte) - properties */
 
-static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
+static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_docinfo *docinfo)
 {
     const uint8_t *hwp3_ptr;
-    int iret;
+    cl_error_t iret;
 
     //TODO: use fmap_readn?
     if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
@@ -670,14 +671,16 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
 #define HWP3_PSPECIAL_VERIFY(map, offset, second, id, match)
 #endif
 
-static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int level, off_t *roffset, int *last)
+static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, uint32_t level, off_t *roffset, int *last)
 {
+    cl_error_t ret = CL_SUCCESS;
+
     off_t offset = *roffset;
     off_t new_offset;
     uint16_t nchars, nlines, content;
     uint8_t ppfs, ifsc, cfsb;
     uint16_t i;
-    int c, l, sp = 0, term = 0, ret = CL_SUCCESS;
+    int c, l, sp = 0, term = 0;
 #if HWP3_VERIFY
     uint16_t match;
 #endif
@@ -695,8 +698,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     uint8_t pcsd_prop;
 #endif
 
-    hwp3_debug("HWP3.x: recursion level: %d\n", level);
-    hwp3_debug("HWP3.x: Paragraph[%d, %d] starts @ offset %llu\n", level, p, (long long unsigned)offset);
+    hwp3_debug("HWP3.x: recursion level: %u\n", level);
+    hwp3_debug("HWP3.x: Paragraph[%u, %d] starts @ offset %llu\n", level, p, (long long unsigned)offset);
 
     if (level >= ctx->engine->maxrechwp3)
         return CL_EMAXREC;
@@ -1515,11 +1518,13 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
+static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset, int *last)
 {
+    cl_error_t ret = CL_SUCCESS;
+
     uint32_t infoid, infolen;
     fmap_t *map = (dmap ? dmap : *ctx->fmap);
-    int i, count, ret = CL_SUCCESS;
+    int i, count;
     long long unsigned infoloc = (long long unsigned)(*offset);
 #if HWP3_DEBUG
     char field[HWP3_FIELD_LENGTH];
@@ -1751,11 +1756,12 @@ static inline int parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, off_t *offset,
     return ret;
 }
 
-static int hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
+    cl_error_t ret = CL_SUCCESS;
     fmap_t *map, *dmap;
     off_t offset, start, new_offset;
-    int i, p = 0, last = 0, ret = CL_SUCCESS;
+    int i, p = 0, last = 0;
     uint16_t nstyles;
 #if HAVE_JSON
     json_object *fonts;
@@ -1859,8 +1865,8 @@ static int hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
     if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-        int subret  = ret;
-        size_t dlen = offset - start;
+        cl_error_t subret = ret;
+        size_t dlen       = offset - start;
 
         ret = cli_map_scandesc(map, start, dlen, ctx, CL_TYPE_ANY);
         //ret = cli_map_scandesc(map, 0, 0, ctx, CL_TYPE_ANY);
@@ -1874,10 +1880,11 @@ static int hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
     return ret;
 }
 
-int cli_scanhwp3(cli_ctx *ctx)
+cl_error_t cli_scanhwp3(cli_ctx *ctx)
 {
+    cl_error_t ret = CL_SUCCESS;
+
     struct hwp3_docinfo docinfo;
-    int ret      = CL_SUCCESS;
     off_t offset = 0, new_offset = 0;
     fmap_t *map = *ctx->fmap;
 
@@ -1969,7 +1976,7 @@ static const struct key_entry hwpml_keys[] = {
 static size_t num_hwpml_keys = sizeof(hwpml_keys) / sizeof(struct key_entry);
 
 /* binary streams needs to be base64-decoded then decompressed if fields are set */
-static int hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ctx)
 {
     UNUSEDPARAM(cbdata);
 
@@ -1979,9 +1986,11 @@ static int hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_ctx *ct
     return cli_magic_scandesc(fd, filepath, ctx);
 }
 
-static int hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
+static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
 {
-    int i, ret, df = 0, com = 0, enc = 0;
+    cl_error_t ret;
+
+    int i, df = 0, com = 0, enc = 0;
     char *tempfile;
 
     UNUSEDPARAM(cbdata);
@@ -2106,13 +2115,14 @@ hwpml_end:
 }
 #endif /* HAVE_LIBXML2 */
 
-int cli_scanhwpml(cli_ctx *ctx)
+cl_error_t cli_scanhwpml(cli_ctx *ctx)
 {
+    cl_error_t ret = CL_SUCCESS;
+
 #if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     struct msxml_ctx mxctx;
     xmlTextReaderPtr reader = NULL;
-    int ret                 = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanhwpml()\n");
 
@@ -2143,7 +2153,7 @@ int cli_scanhwpml(cli_ctx *ctx)
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_scanhwpml()\n");
     cli_dbgmsg("cli_scanhwpml: scanning hwpml documents requires libxml2!\n");
-
-    return CL_SUCCESS;
 #endif
+
+    return ret;
 }

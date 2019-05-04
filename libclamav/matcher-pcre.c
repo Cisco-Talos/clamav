@@ -153,7 +153,7 @@ void cli_pcre_perf_print()
             continue;
         }
         if (name)
-            name_len = strlen(name);
+            name_len = (int)strlen(name);
         else
             name_len = 0;
         if (name_len > max_name_len)
@@ -166,8 +166,8 @@ void cli_pcre_perf_print()
         elem++;
         elems++;
     }
-    if (max_name_len < strlen("PCRE Expression"))
-        max_name_len = strlen("PCRE Expression");
+    if (max_name_len < (int)strlen("PCRE Expression"))
+        max_name_len = (int)strlen("PCRE Expression");
 
     cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 
@@ -238,11 +238,11 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         }
 
         if (lsigid) {
-            if (rssigs > lsigid[1]) {
+            if ((uint32_t)rssigs > lsigid[1]) {
                 cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger refers to subsequent subsig %d\n", lsigid[1], rssigs);
                 return CL_EMALFDB;
             }
-            if (rssigs == lsigid[1]) {
+            if ((uint32_t)rssigs == lsigid[1]) {
                 cli_errmsg("cli_pcre_addpatt: regex subsig %d logical trigger is self-referential\n", lsigid[1]);
                 return CL_EMALFDB;
             }
@@ -577,6 +577,8 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
 
 cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
+    cl_error_t ret = CL_SUCCESS;
+
     struct cli_pcre_meta *pm = NULL;
     struct cli_pcre_data *pd;
     struct cli_pcre_results p_res;
@@ -585,7 +587,8 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
     unsigned int i, evalcnt = 0;
     uint64_t evalids = 0;
     uint32_t global, encompass, rolling;
-    int rc = 0, offset = 0, ret = CL_SUCCESS, options = 0;
+    int rc = 0, options = 0;
+    uint32_t offset       = 0;
     uint8_t viruses_found = 0;
 
     if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
@@ -746,7 +749,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
              * NOTE: misses matches starting within the last match; TODO: start from start of last match? */
             offset = p_res.match[1];
 
-        } while (global && rc > 0 && offset < adjlength);
+        } while ((global && rc > 0) && (offset < adjlength));
 
         /* handle error code */
         if (rc < 0 && p_res.err != CL_SUCCESS) {
@@ -771,6 +774,10 @@ void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
 {
     if (!pm)
         return;
+
+#ifndef USE_MPOOL
+    UNUSEDPARAM(root);
+#endif
 
     if (pm->trigger) {
         MPOOL_FREE(root->mempool, pm->trigger);
