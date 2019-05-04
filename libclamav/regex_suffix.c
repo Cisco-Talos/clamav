@@ -332,7 +332,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
         switch (n->type) {
             case root:
                 textbuffer_putc(buf, '\0');
-                if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
+                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
                     return CL_EMEM;
                 return CL_SUCCESS;
             case leaf:
@@ -346,7 +346,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                         cnt++;
                 if (cnt > 16) {
                     textbuffer_putc(buf, '\0');
-                    if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
+                    if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
                         return CL_EMEM;
                     return CL_SUCCESS;
                 }
@@ -356,7 +356,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                         size_t pos;
                         pos = buf->pos;
                         textbuffer_putc(buf, (char)i);
-                        if (build_suffixtree_ascend(n->parent, buf, n, cb, cbdata, regex) < 0)
+                        if (build_suffixtree_ascend(n->parent, buf, n, cb, cbdata, regex) != CL_SUCCESS)
                             return CL_EMEM;
                         buf->pos = pos;
                     }
@@ -364,7 +364,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                 return 0;
             case concat:
                 if (prev != n->u.children.left) {
-                    if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) < 0)
+                    if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS)
                         return CL_EMEM;
                     /* we're done here, descend will call
 					 * ascend if needed */
@@ -378,7 +378,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                 break;
             case optional:
                 textbuffer_putc(buf, '\0');
-                if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
+                if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
                     return CL_EMEM;
                 return CL_SUCCESS;
         }
@@ -401,21 +401,21 @@ static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *b
         case alternate:
             /* save pos as restart point */
             pos = buf->pos;
-            if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) < 0)
+            if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS)
                 return CL_EMEM;
             buf->pos = pos;
-            if (build_suffixtree_descend(n->u.children.right, buf, cb, cbdata, regex) < 0)
+            if (build_suffixtree_descend(n->u.children.right, buf, cb, cbdata, regex) != CL_SUCCESS)
                 return CL_EMEM;
             buf->pos = pos;
             break;
         case optional:
             textbuffer_putc(buf, '\0');
-            if (cb(cbdata, buf->data, buf->pos - 1, regex) < 0)
+            if (cb(cbdata, buf->data, buf->pos - 1, regex) != CL_SUCCESS)
                 return CL_EMEM;
             return CL_SUCCESS;
         case leaf:
         case leaf_class:
-            if (build_suffixtree_ascend(n, buf, NULL, cb, cbdata, regex) < 0)
+            if (build_suffixtree_ascend(n, buf, NULL, cb, cbdata, regex) != CL_SUCCESS)
                 return CL_EMEM;
             return CL_SUCCESS;
         default:

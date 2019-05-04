@@ -44,19 +44,19 @@
 
 static size_t cb_called = 0;
 
-static int cb_fail(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
+static cl_error_t cb_fail(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
 {
     fail("this pattern is not supposed to have a suffix");
-    return -1;
+    return CL_EMEM;
 }
 
-static int cb_expect_single(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
+static cl_error_t cb_expect_single(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
 {
     const char *expected = cbdata;
     cb_called++;
     fail_unless_fmt(suffix && strcmp(suffix, expected) == 0,
                     "suffix mismatch, was: %s, expected: %s\n", suffix, expected);
-    return 0;
+    return CL_SUCCESS;
 }
 
 static struct regex_list regex;
@@ -101,7 +101,7 @@ static const char **tests[] = {
     ex1,
     ex2};
 
-static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, const struct regex_list *r)
+static cl_error_t cb_expect_multi(void *cbdata, const char *suffix, size_t len, const struct regex_list *r)
 {
     const char **exp = cbdata;
     fail_unless(!!exp, "expected data");
@@ -112,7 +112,7 @@ static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, const s
                     "suffix mismatch, was: %s, expected: %s\n", suffix, exp[cb_called]);
     fail_unless_fmt(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
     cb_called++;
-    return 0;
+    return CL_SUCCESS;
 }
 
 #ifdef CHECK_HAVE_LOOPS
@@ -172,7 +172,7 @@ static const struct rtest {
     const char *pattern; /* NULL if not meant for whitelist testing */
     const char *realurl;
     const char *displayurl;
-    int result; /* 0 - phish, 1 - whitelisted, 2 - clean, 
+    int result; /* 0 - phish, 1 - whitelisted, 2 - clean,
 		      3 - blacklisted if 2nd db is loaded,
 		      4 - invalid regex*/
 } rtests[] = {
