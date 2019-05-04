@@ -130,21 +130,31 @@ static inline void fmap_unneed_ptr(fmap_t *m, const void *ptr, size_t len)
     fmap_unneed_off(m, fmap_ptr2off(m, ptr), len);
 }
 
-static inline int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
+/**
+ * @brief Read bytes from fmap at offset into destinatio buffer.
+ *
+ * @param m         fmap
+ * @param dst       destination buffer
+ * @param at        offset into fmap
+ * @param len       # of bytes to read
+ * @return size_t   # of bytes read
+ * @return size_t   (size_t)-1 if error
+ */
+static inline size_t fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
 {
     const void *src;
 
     if (at == m->len || !len)
         return 0;
     if (at > m->len)
-        return -1;
+        return (size_t)-1;
     if (len > m->len - at)
         len = m->len - at;
     src = fmap_need_off_once(m, at, len);
     if (!src)
-        return -1;
+        return (size_t)-1;
     memcpy(dst, src, len);
-    return (len <= INT_MAX) ? (int)len : -1;
+    return (len <= INT_MAX) ? len : (size_t)-1;
 }
 
 static inline const void *fmap_need_str(fmap_t *m, const void *ptr, size_t len_hint)
@@ -183,7 +193,7 @@ static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, siz
 
 /**
  * @brief 	Dump a specified range of data from an fmap to a new temp file.
- * 
+ *
  * @param map           The file map in question
  * @param filepath      (Optional) The full filepath of the file being dumped.
  * @param tmpdir        The directory to drop the file to.
@@ -191,17 +201,17 @@ static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, siz
  * @param outfd         The file descriptor of the new file, open and seeked to the start of the file.
  * @param start_offset  The start offset of the data that you wish to write to the temp file. Must be less than the length of the fmap and must be less than end_offset.
  * @param end_offset    The end offset of the data you wish to write to the temp file.  May be larger than the size of the fmap.  Use SIZE_MAX to write the entire fmap.
- * @return cl_error_t   CL_SUCCESS on success, else CL_EARG, CL_EWRITE, CL_ECREAT, or CL_EMEM for self-explanatory reasons. 
+ * @return cl_error_t   CL_SUCCESS on success, else CL_EARG, CL_EWRITE, CL_ECREAT, or CL_EMEM for self-explanatory reasons.
  */
 cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpdir, char **outname, int *outfd, size_t start_offset, size_t end_offset);
 
 /* deprecated */
 /**
  * @brief   Return the open file desciptor for the fmap (if available).
- * 
- * This function will only provide the file descriptor if the fmap handle is set, 
+ *
+ * This function will only provide the file descriptor if the fmap handle is set,
  * and if the handle is in fact a file descriptor (handle_is_fd != 0).
- * 
+ *
  * @param m     The fmap.
  * @return int  The file descriptor, or -1 if not available.
  */

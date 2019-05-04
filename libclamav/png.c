@@ -319,10 +319,11 @@ static int check_ascii_float(uch *buffer, int len)
 
 int cli_parsepng(cli_ctx *ctx)
 {
-    long sz;
+    long sz_long;
+    size_t sz;
     uch magic[8];
     char chunkid[5] = {'\0', '\0', '\0', '\0', '\0'};
-    int toread;
+    size_t toread;
     int c;
     int have_IHDR = 0, have_IEND = 0;
     int have_PLTE = 0;
@@ -334,7 +335,8 @@ int cli_parsepng(cli_ctx *ctx)
     ulg crc, filecrc;
     long num_chunks = 0L;
     long w = 0L, h = 0L;
-    int bitdepth = 0, sampledepth = 0, lace = 0, nplte = 0;
+    int bitdepth = 0, sampledepth = 0, lace = 0;
+    size_t nplte      = 0;
     unsigned int ityp = 1;
     uch buffer[BS];
     int first_idat           = 1; /* flag:  is this the first IDAT chunk? */
@@ -365,11 +367,12 @@ int cli_parsepng(cli_ctx *ctx)
             return CL_EPARSE;
         }
 
-        sz = getlong(map, &offset, "chunk length");
-        if (sz < 0 || sz > 0x7fffffff) { /* FIXME:  convert to ulg, lose "< 0" */
+        sz_long = getlong(map, &offset, "chunk length");
+        if (sz_long < 0 || sz_long > 0x7fffffff) { /* FIXME:  convert to ulg, lose "< 0" */
             cli_dbgmsg("PNG: invalid chunk length (too large)\n");
             return CL_EPARSE;
         }
+        sz = (size_t)sz_long;
 
         if (fmap_readn(map, chunkid, offset, 4) != 4) {
             cli_dbgmsg("PNG: EOF while reading chunk type\n");
@@ -401,8 +404,8 @@ int cli_parsepng(cli_ctx *ctx)
         crc = update_crc(crc, (uch *)buffer, toread);
 
         /*------*
-     | IHDR |
-     *------*/
+         | IHDR |
+         *------*/
         if (strcmp(chunkid, "IHDR") == 0) {
             if (have_IHDR) {
                 cli_dbgmsg("PNG: multiple IHDR not allowed\n");
@@ -488,12 +491,12 @@ int cli_parsepng(cli_ctx *ctx)
             zlib_error                  = 0; /* flag:  no zlib errors yet in this file */
                                              /* GRR 20000304:  data dump not yet compatible with interlaced images: */
             /*================================================*
-     * PNG chunks (with the exception of IHDR, above) *
-     *================================================*/
+             * PNG chunks (with the exception of IHDR, above) *
+             *================================================*/
 
             /*------*
-     | PLTE |
-     *------*/
+             | PLTE |
+             *------*/
         } else if (strcmp(chunkid, "PLTE") == 0) {
             if (have_PLTE) {
                 cli_dbgmsg("PNG: multiple PLTE not allowed\n");
@@ -514,7 +517,7 @@ int cli_parsepng(cli_ctx *ctx)
                 nplte = sz / 3;
                 if (((bitdepth == 1 && nplte > 2) ||
                      (bitdepth == 2 && nplte > 4) || (bitdepth == 4 && nplte > 16))) {
-                    cli_dbgmsg("PNG: invalid number of PLTE entries (%d) for %d-bit image\n", nplte, bitdepth);
+                    cli_dbgmsg("PNG: invalid number of PLTE entries (%zu) for %d-bit image\n", nplte, bitdepth);
                     return CL_EPARSE;
                 }
             }
@@ -534,9 +537,9 @@ int cli_parsepng(cli_ctx *ctx)
             }
 
             /* We just want to check that we have read at least the minimum (10)
-       * IDAT bytes possible, but avoid any overflow for short ints.  We
-       * must also take into account that 0-length IDAT chunks are legal.
-       */
+             * IDAT bytes possible, but avoid any overflow for short ints.  We
+             * must also take into account that 0-length IDAT chunks are legal.
+             */
             if (have_IDAT <= 0)
                 have_IDAT = (sz > 0) ? sz : -1; /* -1 as marker for IDAT(s), no data */
             else if (have_IDAT < 10)
@@ -550,11 +553,11 @@ int cli_parsepng(cli_ctx *ctx)
                 if (zhead >= 0x10000) {
                     /* formerly print_zlibheader(zhead & 0xffff); */
                     /* See the code in zlib deflate.c that writes out the header when
-             s->status is INIT_STATE.  In fact this code is based on the zlib
-             specification in RFC 1950 (ftp://ds.internic.net/rfc/rfc1950.txt),
-             with the implicit assumption that the zlib header *is* written (it
-             always should be inside a valid PNG file).  The variable names are
-             taken, verbatim, from the RFC. */
+                       s->status is INIT_STATE.  In fact this code is based on the zlib
+                       specification in RFC 1950 (ftp://ds.internic.net/rfc/rfc1950.txt),
+                       with the implicit assumption that the zlib header *is* written (it
+                       always should be inside a valid PNG file).  The variable names are
+                       taken, verbatim, from the RFC. */
                     unsigned int CINFO = (zhead & 0xf000) >> 12;
                     unsigned int CM    = (zhead & 0xf00) >> 8;
                     zlib_windowbits    = CINFO + 8;
@@ -640,7 +643,7 @@ int cli_parsepng(cli_ctx *ctx)
                                     break;
                             }
                             /* effective height is reduced if odd pass:  subtract yoff (but
-               * if effective width of pass is 0 => no rows and no filters) */
+                             * if effective width of pass is 0 => no rows and no filters) */
                             numfilt_pass[passm1] =
                                 (w <= xoff) ? 0 : (h - yoff + yskip - 1) / yskip;
                             if (passm1 > 0) /* now make it cumulative */
@@ -695,15 +698,15 @@ int cli_parsepng(cli_ctx *ctx)
                         if (lace) {
                             while (cur_y >= h) { /* may loop if very short image */
                                 /*
-                    pass  xskip yskip  xoff yoff
-                      1     8     8      0    0
-                      2     8     8      4    0
-                      3     4     8      0    4
-                      4     4     4      2    0
-                      5     2     4      0    2
-                      6     2     2      1    0
-                      7     1     2      0    1
-                 */
+                                    pass  xskip yskip  xoff yoff
+                                      1     8     8      0    0
+                                      2     8     8      4    0
+                                      3     4     8      0    4
+                                      4     4     4      2    0
+                                      5     2     4      0    2
+                                      6     2     2      1    0
+                                      7     1     2      0    1
+                                 */
                                 ++cur_pass;
                                 if (cur_pass & 1) { /* beginning an odd pass */
                                     cur_yoff = cur_xoff;
@@ -740,13 +743,11 @@ int cli_parsepng(cli_ctx *ctx)
                     zstrm.avail_out = BS;
 
                     /* get more input (waiting until buffer empties is not necessary best
-           * zlib strategy, but simpler than shifting leftover data around) */
+                     * zlib strategy, but simpler than shifting leftover data around) */
                     if (zstrm.avail_in == 0 && sz > toread) {
-                        int data_read;
-
                         sz -= toread;
                         toread = (sz > BS) ? BS : sz;
-                        if ((data_read = fmap_readn(map, buffer, offset, toread)) != toread) {
+                        if (fmap_readn(map, buffer, offset, toread) != toread) {
                             cli_dbgmsg("PNG: EOF while reading %s data\n", chunkid);
                             return CL_EPARSE;
                         }
@@ -761,8 +762,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_JDAT = 0;
 
             /*------*
-     | IEND |
-     *------*/
+             | IEND |
+             *------*/
         } else if (strcmp(chunkid, "IEND") == 0) {
             if (have_IEND) {
                 cli_dbgmsg("PNG: multiple IEND not allowed\n");
@@ -781,8 +782,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | bKGD |
-     *------*/
+             | bKGD |
+             *------*/
         } else if (strcmp(chunkid, "bKGD") == 0) {
             if (have_bKGD) {
                 cli_dbgmsg("PNG: multiple bKGD not allowed\n");
@@ -821,8 +822,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | cHRM |
-     *------*/
+             | cHRM |
+             *------*/
         } else if (strcmp(chunkid, "cHRM") == 0) {
             if (have_cHRM) {
                 cli_dbgmsg("PNG: multiple cHRM not allowed\n");
@@ -866,14 +867,14 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | fRAc |
-     *------*/
+             | fRAc |
+             *------*/
         } else if (strcmp(chunkid, "fRAc") == 0) {
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | gAMA |
-     *------*/
+             | gAMA |
+             *------*/
         } else if (strcmp(chunkid, "gAMA") == 0) {
             if (have_gAMA) {
                 cli_dbgmsg("PNG: multiple gAMA not allowed\n");
@@ -895,8 +896,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | gIFg |
-     *------*/
+             | gIFg |
+             *------*/
         } else if (strcmp(chunkid, "gIFg") == 0) {
             if (sz != 4) {
                 cli_dbgmsg("PNG: invalid gIFg length\n");
@@ -905,8 +906,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | gIFt |
-     *------*/
+             | gIFt |
+             *------*/
         } else if (strcmp(chunkid, "gIFt") == 0) {
             if (sz < 24) {
                 cli_dbgmsg("PNG: invalid gIFt length\n");
@@ -915,8 +916,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | gIFx |
-     *------*/
+             | gIFx |
+             *------*/
         } else if (strcmp(chunkid, "gIFx") == 0) {
             if (sz < 11) {
                 cli_dbgmsg("PNG: invalid gIFx length\n");
@@ -925,8 +926,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | hIST |
-     *------*/
+             | hIST |
+             *------*/
         } else if (strcmp(chunkid, "hIST") == 0) {
             if (have_hIST) {
                 cli_dbgmsg("PNG: multiple hIST not allowed\n");
@@ -945,8 +946,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | iCCP |
-     *------*/
+             | iCCP |
+             *------*/
         } else if (strcmp(chunkid, "iCCP") == 0) {
             int name_len;
 
@@ -985,8 +986,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | iTXt |
-     *------*/
+             | iTXt |
+             *------*/
         } else if (strcmp(chunkid, "iTXt") == 0) {
             int keylen;
 
@@ -1012,8 +1013,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | oFFs |
-     *------*/
+             | oFFs |
+             *------*/
         } else if (strcmp(chunkid, "oFFs") == 0) {
             if (have_oFFs) {
                 cli_dbgmsg("PNG: multiple oFFs not allowed\n");
@@ -1032,8 +1033,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | pCAL |
-     *------*/
+             | pCAL |
+             *------*/
         } else if (strcmp(chunkid, "pCAL") == 0) {
             if (have_pCAL) {
                 cli_dbgmsg("PNG: multiple pCAL not allowed\n");
@@ -1046,8 +1047,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | pHYs |
-     *------*/
+             | pHYs |
+             *------*/
         } else if (strcmp(chunkid, "pHYs") == 0) {
             if (have_pHYs) {
                 cli_dbgmsg("PNG: multiple pHYs not allowed\n");
@@ -1066,8 +1067,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | sBIT |
-     *------*/
+             | sBIT |
+             *------*/
         } else if (strcmp(chunkid, "sBIT") == 0) {
             int maxbits = (ityp == 3) ? 8 : sampledepth;
 
@@ -1142,8 +1143,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | sCAL |
-     *------*/
+             | sCAL |
+             *------*/
         } else if (strcmp(chunkid, "sCAL") == 0) {
             int unittype   = buffer[0];
             uch *pPixwidth = buffer + 1, *pPixheight = NULL;
@@ -1196,8 +1197,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | sPLT |
-     *------*/
+             | sPLT |
+             *------*/
         } else if (strcmp(chunkid, "sPLT") == 0) {
             int name_len;
 
@@ -1229,8 +1230,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | sRGB |
-     *------*/
+             | sRGB |
+             *------*/
         } else if (strcmp(chunkid, "sRGB") == 0) {
             if (have_sRGB) {
                 cli_dbgmsg("PNG: multiple sRGB not allowed\n");
@@ -1255,8 +1256,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | sTER |
-     *------*/
+             | sTER |
+             *------*/
         } else if (strcmp(chunkid, "sTER") == 0) {
             if (have_sTER) {
                 cli_dbgmsg("PNG: multiple sTER not allowed\n");
@@ -1275,8 +1276,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*  *------*
-     | tEXt |  | zTXt |
-     *------*  *------*/
+             | tEXt |  | zTXt |
+             *------*  *------*/
         } else if (strcmp(chunkid, "tEXt") == 0 || strcmp(chunkid, "zTXt") == 0) {
             int ztxt = (chunkid[0] == 'z');
             int keylen;
@@ -1298,8 +1299,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | tIME |
-     *------*/
+             | tIME |
+             *------*/
         } else if (strcmp(chunkid, "tIME") == 0) {
             if (have_tIME) {
                 cli_dbgmsg("PNG: multiple tIME not allowed\n");
@@ -1343,8 +1344,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*------*
-     | tRNS |
-     *------*/
+             | tRNS |
+             *------*/
         } else if (strcmp(chunkid, "tRNS") == 0) {
             if (have_tRNS) {
                 cli_dbgmsg("PNG: multiple tRNS not allowed\n");
@@ -1385,8 +1386,8 @@ int cli_parsepng(cli_ctx *ctx)
             last_is_IDAT = last_is_JDAT = 0;
 
             /*===============*
-     * unknown chunk *
-     *===============*/
+             * unknown chunk *
+             *===============*/
 
         } else {
             if (CRITICAL(chunkid) && SAFECOPY(chunkid)) {
@@ -1399,8 +1400,8 @@ int cli_parsepng(cli_ctx *ctx)
                 return CL_EPARSE;
             } else if (PUBLIC(chunkid)) {
                 /* GRR 20050725:  all registered (public) PNG/MNG/JNG chunks are now
-         *  known to pngcheck, so any unknown public ones are invalid (or have
-         *  been proposed and approved since the last release of pngcheck) */
+                 *  known to pngcheck, so any unknown public ones are invalid (or have
+                 *  been proposed and approved since the last release of pngcheck) */
                 cli_dbgmsg("PNG: illegal (unless recently approved) unknown, public\n");
                 return CL_EPARSE;
             } else if (/* !PUBLIC(chunkid) && */ CRITICAL(chunkid)) {
@@ -1411,12 +1412,10 @@ int cli_parsepng(cli_ctx *ctx)
         }
 
         while (sz > toread) {
-            int data_read;
             sz -= toread;
             toread = (sz > BS) ? BS : sz;
 
-            data_read = fmap_readn(map, buffer, offset, toread);
-            if (data_read != toread) {
+            if (fmap_readn(map, buffer, offset, toread) != toread) {
                 cli_dbgmsg("PNG: EOF while reading final data\n");
                 return CL_EPARSE;
             }

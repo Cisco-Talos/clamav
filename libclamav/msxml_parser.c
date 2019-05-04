@@ -450,7 +450,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                                 return ret;
                             }
 
-                            if (cli_writen(of, decoded, decodedlen) != (int)decodedlen) {
+                            if (cli_writen(of, decoded, decodedlen) != decodedlen) {
                                 free(decoded);
                                 close(of);
                                 if (!(ctx->engine->keeptmp))

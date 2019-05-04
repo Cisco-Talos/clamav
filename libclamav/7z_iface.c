@@ -40,13 +40,13 @@ static ISzAlloc allocImp = {__lzma_wrap_alloc, __lzma_wrap_free}, allocTempImp =
 static SRes FileInStream_fmap_Read(void *pp, void *buf, size_t *size)
 {
     CFileInStream *p = (CFileInStream *)pp;
-    int read_sz;
+    size_t read_sz;
 
     if (*size == 0)
         return 0;
 
     read_sz = fmap_readn(p->file.fmap, buf, p->s.curpos, *size);
-    if (read_sz < 0) {
+    if (read_sz == (size_t)-1) {
         *size = 0;
         return SZ_ERROR_READ;
     }
@@ -92,7 +92,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     Int64 begin_of_archive = offset;
     UInt32 viruses_found   = 0;
 
-    /* Replacement for 
+    /* Replacement for
        FileInStream_CreateVTable(&archiveStream); */
     archiveStream.s.Read    = FileInStream_fmap_Read;
     archiveStream.s.Seek    = FileInStream_fmap_Seek;
@@ -188,7 +188,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                     break;
 
                 cli_dbgmsg("cli_7unz: Saving to %s\n", name);
-                if ((size_t)cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
+                if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
                     found = CL_EWRITE;
                 else if ((found = cli_magic_scandesc(fd, name, ctx)) == CL_VIRUS)
                     viruses_found++;

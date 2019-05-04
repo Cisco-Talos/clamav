@@ -100,7 +100,7 @@ int cli_scansis(cli_ctx *ctx)
 
 /*************************************************
      This is the handler for the old (pre 0.9)
-                 SIS file format. 
+                 SIS file format.
  *************************************************/
 
 enum {
@@ -270,7 +270,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     const char **alangs;
     const uint16_t *llangs;
     unsigned int i, umped = 0;
-    int sleft = 0, smax = 0;
+    uint32_t sleft = 0, smax = 0;
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
     fmap_t *map = *ctx->fmap;
@@ -497,7 +497,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             free(alangs);
                             return CL_ECREAT;
                         }
-                        if (cli_writen(fd, decompp, olen) != (int)olen) {
+                        if (cli_writen(fd, decompp, olen) != olen) {
                             close(fd);
                             free(decomp);
                             free(ptrs);
@@ -551,9 +551,9 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     return CL_CLEAN;
 }
 
-/*************************************************                                              
-     This is the handler for the new (post 9.x) 
-                  SIS file format. 
+/*************************************************
+     This is the handler for the new (post 9.x)
+                  SIS file format.
  *************************************************/
 
 enum { T_INVALID,
@@ -808,7 +808,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 free(dst);
                                 break;
                             }
-                            if (cli_writen(fd, dst, uusize) != (int)uusize) {
+                            if (cli_writen(fd, dst, uusize) != uusize) {
                                 free(dst);
                                 close(fd);
                                 break;

@@ -750,8 +750,8 @@ int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
 char *cli_hashfile(const char *filename, int type);
 int cli_unlink(const char *pathname);
-int cli_readn(int fd, void *buff, unsigned int count);
-int cli_writen(int fd, const void *buff, unsigned int count);
+size_t cli_readn(int fd, void *buff, size_t count);
+size_t cli_writen(int fd, const void *buff, size_t count);
 const char *cli_gettmpdir(void);
 
 /**

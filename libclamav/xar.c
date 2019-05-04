@@ -145,7 +145,7 @@ static void xar_get_checksum_values(xmlTextReaderPtr reader, unsigned char **cks
 }
 
 /*
-   xar_get_toc_data_values - return the values of a <data> or <ea> xml element that represent 
+   xar_get_toc_data_values - return the values of a <data> or <ea> xml element that represent
                              an extent of data on the heap.
    parameters:
      reader - xmlTextReaderPtr
@@ -316,7 +316,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
                     cli_dbgmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
                     cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
-                    if (cli_writen(fd, subdoc, subdoc_len) < 0) {
+                    if (cli_writen(fd, subdoc, subdoc_len) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error writing subdoc temporary file.\n");
                         rc = CL_EWRITE;
                     }
@@ -525,7 +525,7 @@ int cli_scanxar(cli_ctx *ctx)
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
-        if (cli_writen(fd, toc, hdr.toc_length_decompressed) < 0) {
+        if (cli_writen(fd, toc, hdr.toc_length_decompressed) == (size_t)-1) {
             cli_dbgmsg("cli_scanxar: cli_writen error writing TOC.\n");
             rc = CL_EWRITE;
             xar_cleanup_temp_file(ctx, fd, tmpname);
@@ -624,7 +624,7 @@ int cli_scanxar(cli_ctx *ctx)
                         if (e_hash_ctx != NULL)
                             xar_hash_update(e_hash_ctx, buff, bytes, e_hash);
 
-                        if (cli_writen(fd, buff, bytes) < 0) {
+                        if (cli_writen(fd, buff, bytes) == (size_t)-1) {
                             cli_dbgmsg("cli_scanxar: cli_writen error file %s.\n", tmpname);
                             inflateEnd(&strm);
                             rc = CL_EWRITE;
@@ -747,7 +747,7 @@ int cli_scanxar(cli_ctx *ctx)
                     /*            "consumed %li of %li available compressed bytes.\n", */
                     /*            avail_out, in_consumed, avail_in); */
 
-                    if (cli_writen(fd, buff, avail_out) < 0) {
+                    if (cli_writen(fd, buff, avail_out) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error writing lzma temp file for %llu bytes.\n",
                                    (long long unsigned)avail_out);
                         __lzma_wrap_free(NULL, buff);
@@ -793,7 +793,7 @@ int cli_scanxar(cli_ctx *ctx)
                     if (a_hash_ctx != NULL)
                         xar_hash_update(a_hash_ctx, blockp, writelen, a_hash);
 
-                    if (cli_writen(fd, blockp, writelen) < 0) {
+                    if (cli_writen(fd, blockp, writelen) == (size_t)-1) {
                         cli_dbgmsg("cli_scanxar: cli_writen error %zu bytes @ %zu.\n", writelen, at);
                         rc = CL_EWRITE;
                         goto exit_tmpfile;

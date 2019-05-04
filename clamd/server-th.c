@@ -380,7 +380,7 @@ static void *acceptloop_th(void *arg)
             }
 
             /* don't accept unlimited number of connections, or
-	     * we'll run out of file descriptors */
+	         * we'll run out of file descriptors */
             pthread_mutex_lock(recv_fds->buf_mutex);
             while (recv_fds->nfds > (unsigned)max_queue) {
                 pthread_mutex_lock(&exit_mutex);
@@ -549,29 +549,29 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
                 /* no more commands are accepted */
                 conn->mode = MODE_WAITREPLY;
                 /* Stop monitoring this FD, it will be closed either
-		 * by us, or by the scanner thread.
-		 * Never close a file descriptor that is being
-		 * monitored by poll()/select() from another thread,
-		 * because this can lead to subtle bugs such as:
-		 * Other thread closes file descriptor -> POLLHUP is
-		 * set, but the poller thread doesn't wake up yet.
-		 * Another client opens a connection and sends some
-		 * data. If the socket reuses the previous file descriptor,
-		 * then POLLIN is set on the file descriptor too.
-		 * When poll() wakes up it sees POLLIN | POLLHUP
-		 * and thinks that the client has sent some data,
-		 * and closed the connection, so clamd closes the
-		 * connection in turn resulting in a bug.
-		 *
-		 * If we wouldn't have poll()-ed the file descriptor
-		 * we closed in another thread, but rather made sure
-		 * that we don't put a FD that we're about to close
-		 * into poll()'s list of watched fds; then POLLHUP
-		 * would be set, but the file descriptor would stay
-		 * open, until we wake up from poll() and close it.
-		 * Thus a new connection won't be able to reuse the
-		 * same FD, and there is no bug.
-		 * */
+                 * by us, or by the scanner thread.
+                 * Never close a file descriptor that is being
+                 * monitored by poll()/select() from another thread,
+                 * because this can lead to subtle bugs such as:
+                 * Other thread closes file descriptor -> POLLHUP is
+                 * set, but the poller thread doesn't wake up yet.
+                 * Another client opens a connection and sends some
+                 * data. If the socket reuses the previous file descriptor,
+                 * then POLLIN is set on the file descriptor too.
+                 * When poll() wakes up it sees POLLIN | POLLHUP
+                 * and thinks that the client has sent some data,
+                 * and closed the connection, so clamd closes the
+                 * connection in turn resulting in a bug.
+                 *
+                 * If we wouldn't have poll()-ed the file descriptor
+                 * we closed in another thread, but rather made sure
+                 * that we don't put a FD that we're about to close
+                 * into poll()'s list of watched fds; then POLLHUP
+                 * would be set, but the file descriptor would stay
+                 * open, until we wake up from poll() and close it.
+                 * Thus a new connection won't be able to reuse the
+                 * same FD, and there is no bug.
+                 */
                 buf->fd = -1;
             }
         }
@@ -692,7 +692,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
         else
             cmdlen = buf->off - pos;
         buf->chunksize -= cmdlen;
-        if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+        if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) == (size_t)-1) {
             conn_reply_error(conn, "Error writing to temporary file");
             logg("!INSTREAM: Can't write to temporary file.\n");
             *error = 1;
@@ -1184,15 +1184,15 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         int solaris_has_extended_stdio = 0;
 #endif
         /* Condition to not run out of file descriptors:
-	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
-	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
-	 * */
+	     * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
+	     * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
+	     * */
 #ifdef C_SOLARIS
 
         /*
-	**  If compiling 64bit, then set the solaris_has_extended_stdio
-	**  flag
-	*/
+	     **  If compiling 64bit, then set the solaris_has_extended_stdio
+	     **  flag
+	     */
 
 #if defined(_LP64)
         solaris_has_extended_stdio++;
@@ -1214,10 +1214,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #endif
 
         /*
-	**  If compiling in 64bit or the file stdio has been extended,
-	**  then increase the soft limit for the number of open files
-	**  as the default is usually 256
-	*/
+	     **  If compiling in 64bit or the file stdio has been extended,
+	     **  then increase the soft limit for the number of open files
+	     **  as the default is usually 256
+	     */
 
         if (solaris_has_extended_stdio) {
             rlim_t saved_soft_limit = rlim.rlim_cur;

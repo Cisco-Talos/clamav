@@ -226,7 +226,7 @@ vba_read_project_strings(int fd, int big_endian)
         }
 
         /* if read name failed, break */
-        if (cli_readn(fd, buf, length) != (int)length) {
+        if (cli_readn(fd, buf, (size_t)length) != (size_t)length) {
             cli_dbgmsg("read name failed - rewinding\n");
             if (lseek(fd, offset, SEEK_SET) == -1) {
                 cli_dbgmsg("call to lseek() in read name failed\n");
@@ -444,7 +444,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
             buflen = length;
             buf    = newbuf;
         }
-        if (cli_readn(fd, buf, length) != length) {
+        if (cli_readn(fd, buf, (size_t)length) != (size_t)length) {
             cli_dbgmsg("vba_readdir: read name failed\n");
             break;
         }
@@ -506,7 +506,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 }
 
 unsigned char *
-cli_vba_inflate(int fd, off_t offset, int *size)
+cli_vba_inflate(int fd, off_t offset, size_t *size)
 {
     unsigned int pos, shift, mask, distance, clean;
     uint8_t flag;
@@ -585,7 +585,7 @@ cli_vba_inflate(int fd, off_t offset, int *size)
     }
 
     if (size)
-        *size = (int)blobGetDataSize(b);
+        *size = blobGetDataSize(b);
     return (unsigned char *)blobToMem(b);
 }
 
@@ -598,13 +598,18 @@ ole_copy_file_data(int s, int d, uint32_t len)
     unsigned char data[FILEBUFF];
 
     while (len > 0) {
-        int todo = MIN(sizeof(data), len);
+        size_t todo = MIN(sizeof(data), len);
 
-        if (cli_readn(s, data, (unsigned int)todo) != todo)
+        if (cli_readn(s, data, todo) != todo)
             break;
-        if (cli_writen(d, data, (unsigned int)todo) != todo)
+        if (cli_writen(d, data, todo) != todo)
             break;
-        len -= todo;
+
+        if (todo > len) {
+            break;
+        } else {
+            len -= todo;
+        }
     }
 }
 
@@ -737,7 +742,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
     stream.avail_out = sizeof(outbuff);
     stream.avail_in  = MIN(length, PPT_LZW_BUFFSIZE);
 
-    if (cli_readn(fd, inbuff, stream.avail_in) != (int)stream.avail_in) {
+    if (cli_readn(fd, inbuff, (size_t)stream.avail_in) != (size_t)stream.avail_in) {
         close(ofd);
         cli_unlink(fullname);
         return FALSE;
@@ -764,7 +769,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
         if (stream.avail_in == 0) {
             stream.next_in  = inbuff;
             stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
-            if (cli_readn(fd, inbuff, stream.avail_in) != (int)stream.avail_in) {
+            if (cli_readn(fd, inbuff, (size_t)stream.avail_in) != (size_t)stream.avail_in) {
                 close(ofd);
                 inflateEnd(&stream);
                 return FALSE;
@@ -773,7 +778,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
         }
     } while (inflate(&stream, Z_NO_FLUSH) == Z_OK);
 
-    if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE - stream.avail_out) != (int)(PPT_LZW_BUFFSIZE - stream.avail_out)) {
+    if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE - stream.avail_out) != (size_t)(PPT_LZW_BUFFSIZE - stream.avail_out)) {
         close(ofd);
         inflateEnd(&stream);
         return FALSE;
@@ -885,8 +890,8 @@ word_read_fib(int fd, mso_fib_t *fib)
 static int
 word_read_macro_entry(int fd, macro_info_t *macro_info)
 {
-    int msize;
-    int count = macro_info->count;
+    size_t msize;
+    uint16_t count = macro_info->count;
     macro_entry_t *macro_entry;
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
@@ -923,7 +928,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
 
     if (cli_readn(fd, m, msize) != msize) {
         free(m);
-        cli_warnmsg("read %d macro_entries failed\n", count);
+        cli_warnmsg("read %u macro_entries failed\n", count);
         return FALSE;
     }
     macro_entry = macro_info->entries;
@@ -1245,8 +1250,8 @@ skip_past_nul(int fd)
     char smallbuf[128];
 
     do {
-        int nread = cli_readn(fd, smallbuf, sizeof(smallbuf));
-        if (nread <= 0)
+        size_t nread = cli_readn(fd, smallbuf, sizeof(smallbuf));
+        if ((nread == 0) || (nread == (size_t)-1))
             return FALSE;
         end = memchr(smallbuf, '\0', nread);
         if (end) {
@@ -1295,7 +1300,7 @@ seekandread(int fd, off_t offset, int whence, void *data, size_t len)
         cli_dbgmsg("lseek failed\n");
         return FALSE;
     }
-    return cli_readn(fd, data, (unsigned int)len) == (int)len;
+    return cli_readn(fd, data, len) == len;
 }
 
 /*

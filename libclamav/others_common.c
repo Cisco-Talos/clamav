@@ -329,13 +329,19 @@ const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
     return ret;
 }
 
-/* Function: readn
-        Try hard to read the requested number of bytes
-*/
-int cli_readn(int fd, void *buff, unsigned int count)
+/**
+ * @brief  Try hard to read the requested number of bytes
+ *
+ * @param fd        File desriptor to read from.
+ * @param buff      Buffer to read data into.
+ * @param count     # of bytes to read.
+ * @return size_t   # of bytes read.
+ * @return size_t   (size_t)-1 if error.
+ */
+size_t cli_readn(int fd, void *buff, size_t count)
 {
-    int retval;
-    unsigned int todo;
+    ssize_t retval;
+    size_t todo;
     unsigned char *current;
 
     todo    = count;
@@ -352,27 +358,39 @@ int cli_readn(int fd, void *buff, unsigned int count)
                 continue;
             }
             cli_errmsg("cli_readn: read error: %s\n", cli_strerror(errno, err, sizeof(err)));
-            return -1;
+            return (size_t)-1;
         }
-        todo -= retval;
+
+        if ((size_t)retval > todo) {
+            break;
+        } else {
+            todo -= retval;
+        }
+
         current += retval;
     } while (todo > 0);
 
     return count;
 }
 
-/* Function: writen
-        Try hard to write the specified number of bytes
-*/
-int cli_writen(int fd, const void *buff, unsigned int count)
+/**
+ * @brief  Try hard to write the specified number of bytes
+ *
+ * @param fd        File descriptor to write to.
+ * @param buff      Buffer to write from.
+ * @param count     # of bytes to write.
+ * @return size_t   # of bytes written
+ * @return size_t   (size_t)-1 if error.
+ */
+size_t cli_writen(int fd, const void *buff, size_t count)
 {
-    int retval;
-    unsigned int todo;
+    ssize_t retval;
+    size_t todo;
     const unsigned char *current;
 
     if (!buff) {
         cli_errmsg("cli_writen: invalid NULL buff argument\n");
-        return -1;
+        return (size_t)-1;
     }
 
     todo    = count;
@@ -386,9 +404,15 @@ int cli_writen(int fd, const void *buff, unsigned int count)
                 continue;
             }
             cli_errmsg("cli_writen: write error: %s\n", cli_strerror(errno, err, sizeof(err)));
-            return -1;
+            return (size_t)-1;
         }
-        todo -= retval;
+
+        if ((size_t)retval > todo) {
+            break;
+        } else {
+            todo -= retval;
+        }
+
         current += retval;
     } while (todo > 0);
 
@@ -402,7 +426,8 @@ int cli_filecopy(const char *src, const char *dest)
     return CopyFileA(src, dest, 0) ? 0 : -1;
 #else
     char *buffer;
-    int s, d, bytes;
+    int s, d;
+    size_t bytes;
 
     if ((s = open(src, O_RDONLY | O_BINARY)) == -1)
         return -1;
@@ -418,7 +443,7 @@ int cli_filecopy(const char *src, const char *dest)
         return -1;
     }
 
-    while ((bytes = cli_readn(s, buffer, FILEBUFF)) > 0)
+    while ((bytes = cli_readn(s, buffer, FILEBUFF)) != (size_t)-1)
         cli_writen(d, buffer, bytes);
 
     free(buffer);

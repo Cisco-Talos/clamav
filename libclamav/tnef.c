@@ -3,8 +3,8 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
- *  Acknowledgements: The algorithm was based on 
+ *
+ *  Acknowledgements: The algorithm was based on
  *                    kdepim/ktnef/lib/ktnefparser.cpp from KDE.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -166,12 +166,12 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                         fout = open(filename, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
 
                     if (fout >= 0) {
-                        int count;
+                        size_t count;
 
                         cli_warnmsg("Saving dump to %s:  refer to https://www.clamav.net/documents/installing-clamav\n", filename);
 
                         pos = 0;
-                        while ((count = fmap_readn(*ctx->fmap, buffer, pos, sizeof(buffer))) > 0) {
+                        while ((count = fmap_readn(*ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1) {
                             pos += count;
                             cli_writen(fout, buffer, count);
                         }

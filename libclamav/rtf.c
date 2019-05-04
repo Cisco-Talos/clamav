@@ -402,7 +402,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                 break;
             }
             case DUMP_DATA: {
-                ssize_t out_want = out_cnt < data->desc_len ? out_cnt : data->desc_len;
+                size_t out_want = (out_cnt < data->desc_len) ? out_cnt : data->desc_len;
                 if (!data->bread) {
                     if (out_data[0] != 0xd0 || out_data[1] != 0xcf) {
                         /* this is not an ole2 doc, but some ole (stream?) to be

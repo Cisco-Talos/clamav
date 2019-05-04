@@ -60,7 +60,7 @@ static int yc_bounds_check(cli_ctx *ctx, char *base, unsigned int filesize, char
 static int yc_poly_emulator(cli_ctx *ctx, char *base, unsigned int filesize, char *decryptor_offset, char *code, unsigned int ecx, uint32_t max_emu)
 {
 
-    /* 
+    /*
      This is the instruction set of the poly code.
      Numbers stand for example only.
 
@@ -221,9 +221,9 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
     char *sname                  = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
     uint32_t max_emu;
     unsigned int ofilesize = filesize;
-    /* 
+    /*
 
-  First layer (decryptor of the section decryptor) in last section 
+  First layer (decryptor of the section decryptor) in last section
 
   Start offset for analyze: Start of yC Section + 0x93
   End offset for analyze: Start of yC Section + 0xC3
@@ -240,9 +240,9 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
     }
     filesize -= sections[sectcount].ursz;
 
-    /* 
+    /*
 
-  Second layer (decryptor of the sections) in last section 
+  Second layer (decryptor of the sections) in last section
 
   Start offset for analyze: Start of yC Section + 0x457
   End offset for analyze: Start of yC Section + 0x487
@@ -295,7 +295,7 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
     /* Fix SizeOfImage */
     cli_writeint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38, cli_readint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38) - sections[sectcount].vsz);
 
-    if (cli_writen(desc, fbuf, filesize) == -1) {
+    if (cli_writen(desc, fbuf, filesize) == (size_t)-1) {
         cli_dbgmsg("yC: Cannot write unpacked file\n");
         return CL_EUNPACK;
     }
