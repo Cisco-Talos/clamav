@@ -70,7 +70,8 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
     char name[1024], obuf[BUFSIZ];
     char *tempfile = name;
     int of, ret = CL_CLEAN;
-    unsigned int res = 1, written = 0;
+    int res        = 1;
+    size_t written = 0;
 
     if (tmpd) {
         snprintf(name, sizeof(name), "%s" PATHSEP "zip.%03u", tmpd, *fu);
@@ -99,7 +100,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
                     cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int)ctx->engine->maxfilesize);
                     csize = ctx->engine->maxfilesize;
                 }
-                if (cli_writen(of, src, csize) != (int)csize)
+                if (cli_writen(of, src, csize) != csize)
                     ret = CL_EWRITE;
                 else
                     res = 0;
@@ -164,7 +165,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
                         res = Z_STREAM_END;
                         break;
                     }
-                    if (cli_writen(of, obuf, sizeof(obuf) - (*avail_out)) != (int)(sizeof(obuf) - (*avail_out))) {
+                    if (cli_writen(of, obuf, sizeof(obuf) - (*avail_out)) != (size_t)(sizeof(obuf) - (*avail_out))) {
                         cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", (unsigned long int)sizeof(obuf) - (*avail_out));
                         ret = CL_EWRITE;
                         res = 100;
@@ -207,7 +208,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
                         res = BZ_STREAM_END;
                         break;
                     }
-                    if (cli_writen(of, obuf, sizeof(obuf) - strm.avail_out) != (int)(sizeof(obuf) - strm.avail_out)) {
+                    if (cli_writen(of, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
                         cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", (long unsigned int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
@@ -243,7 +244,7 @@ static int unz(const uint8_t *src, uint32_t csize, uint32_t usize, uint16_t meth
                         res = 0;
                         break;
                     }
-                    if (cli_writen(of, obuf, sizeof(obuf) - strm.avail_out) != (int)(sizeof(obuf) - strm.avail_out)) {
+                    if (cli_writen(of, obuf, sizeof(obuf) - strm.avail_out) != (size_t)(sizeof(obuf) - strm.avail_out)) {
                         cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", (unsigned long int)sizeof(obuf) - strm.avail_out);
                         ret = CL_EWRITE;
                         res = 100;
@@ -353,9 +354,11 @@ static inline unsigned char zdecryptbyte(uint32_t key[3])
 
 /* zip decrypt, CL_EPARSE = could not apply a password, csize includes the decryption header */
 /* TODO - search for strong encryption header (0x0017) and handle them */
-static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, const uint8_t *lh, unsigned int *fu, cli_ctx *ctx, char *tmpd, zip_cb zcb)
+static inline cl_error_t zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, const uint8_t *lh, unsigned int *fu, cli_ctx *ctx, char *tmpd, zip_cb zcb)
 {
-    int i, ret, v = 0;
+    cl_error_t ret;
+    int v = 0;
+    uint32_t i;
     uint32_t key[3];
     uint8_t eh[12]; /* encryption header buffer */
     struct cli_pwdb *password, *pass_any, *pass_zip;
@@ -414,8 +417,8 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 
         if (v) {
             char name[1024], obuf[BUFSIZ];
-            char *tempfile       = name;
-            unsigned int written = 0, total = 0;
+            char *tempfile = name;
+            size_t written = 0, total = 0;
             fmap_t *dcypt_map;
             const uint8_t *dcypt_zip;
             int of;
@@ -441,7 +444,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
 
                 written++;
                 if (written >= BUFSIZ) {
-                    if (cli_writen(of, obuf, written) != (int)written) {
+                    if (cli_writen(of, obuf, written) != written) {
                         ret = CL_EWRITE;
                         goto zd_clean;
                     }
@@ -450,7 +453,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
                 }
             }
             if (written) {
-                if (cli_writen(of, obuf, written) != (int)written) {
+                if (cli_writen(of, obuf, written) != written) {
                     ret = CL_EWRITE;
                     goto zd_clean;
                 }
@@ -458,7 +461,7 @@ static inline int zdecrypt(const uint8_t *src, uint32_t csize, uint32_t usize, c
                 written = 0;
             }
 
-            cli_dbgmsg("cli_unzip: decrypt - decrypted %u bytes to %s\n", total, tempfile);
+            cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
             /* decrypt data to new fmap -> buffer */
             if (!(dcypt_map = fmap(of, 0, total))) {

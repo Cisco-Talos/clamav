@@ -21,7 +21,7 @@
 
 /*
 ** rebuildpe.c
-** 
+**
 ** 28/07/2k4 - Moved out of petitep.c
 ** 08/08/2k4 - Fixed typo for sects characteristics
 **
@@ -204,7 +204,7 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
     }
     fakepe->SizeOfImage = EC32(datasize);
 
-    i = (cli_writen(file, pefile, rawbase) != -1);
+    i = (cli_writen(file, pefile, rawbase) != (size_t)-1);
     free(pefile);
     return i;
 }

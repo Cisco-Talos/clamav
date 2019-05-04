@@ -252,7 +252,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
         while (csize) {
             uint8_t buf2[BUFSIZ];
             z.avail_in = MIN(csize, sizeof(buf2));
-            if ((uInt)fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
+            if (fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
                 cli_dbgmsg("ishield-msi: premature EOS or read fail\n");
                 break;
             }
@@ -276,7 +276,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
                     off += csize;
                     break;
                 }
-                if (cli_writen(ofd, obuf, sizeof(obuf) - z.avail_out) < 0) {
+                if (cli_writen(ofd, obuf, sizeof(obuf) - z.avail_out) == (size_t)-1) {
                     ret   = CL_EWRITE;
                     csize = 0;
                     break;
@@ -470,7 +470,7 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize)
             ret = CL_EREAD;
             break;
         }
-        if (cli_writen(ofd, buf, rd) <= 0) {
+        if (cli_writen(ofd, buf, rd) != rd) {
             ret = CL_EWRITE;
             break;
         }
@@ -754,7 +754,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
             zret        = inflate(&z, 0);
             if (zret == Z_OK || zret == Z_STREAM_END || zret == Z_BUF_ERROR) {
                 unsigned int umpd = IS_CABBUFSZ - z.avail_out;
-                if (cli_writen(ofd, outbuf, umpd) < (ssize_t)umpd)
+                if (cli_writen(ofd, outbuf, umpd) < umpd)
                     break;
                 outsz += umpd;
                 if (zret == Z_STREAM_END || z.avail_out == IS_CABBUFSZ /* FIXMEISHIELD: is the latter ok? */) {

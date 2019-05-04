@@ -216,16 +216,15 @@ static int decode_start(arj_decode_t *decode_data)
     return init_getbits(decode_data);
 }
 
-static int write_text(int ofd, unsigned char *data, int length)
+static cl_error_t write_text(int ofd, unsigned char *data, size_t length)
 {
-    int count;
+    size_t count;
 
     count = cli_writen(ofd, data, length);
     if (count != length) {
         return CL_EWRITE;
-    } else {
-        return CL_SUCCESS;
     }
+    return CL_SUCCESS;
 }
 
 static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitlen, int tablebits,
@@ -804,7 +803,7 @@ static int arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
             return CL_EFORMAT;
         }
         metadata->offset += count;
-        if ((size_t)cli_writen(ofd, data, count) != count) {
+        if (cli_writen(ofd, data, count) != count) {
             /* File writing problem */
             return CL_EWRITE;
         }

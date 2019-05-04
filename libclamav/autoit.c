@@ -77,7 +77,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
 }
 
 /*********************
-   MT realted stuff 
+   MT realted stuff
 *********************/
 
 struct MT {
@@ -129,7 +129,7 @@ static void MT_decrypt(uint8_t *buf, unsigned int size, uint32_t seed)
 }
 
 /*********************
-     inflate stuff 
+     inflate stuff
 *********************/
 
 struct UNP {
@@ -177,7 +177,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size)
 }
 
 /*********************
- autoit3 EA05 handler 
+ autoit3 EA05 handler
 *********************/
 
 static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
@@ -377,7 +377,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             free(UNP.outputbuf);
             return CL_ECREAT;
         }
-        if (cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
+        if (cli_writen(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
             cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
             close(i);
             free(UNP.outputbuf);
@@ -410,7 +410,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 }
 
 /*********************
-  LAME realted stuff 
+  LAME realted stuff
 *********************/
 
 #define ROFL(a, b) ((a << (b % (sizeof(a) << 3))) | (a >> ((sizeof(a) << 3) - (b % (sizeof(a) << 3)))))
@@ -495,7 +495,7 @@ static void LAME_decrypt(uint8_t *cypher, uint32_t size, uint16_t seed)
 }
 
 /*********************
- autoit3 EA06 handler 
+ autoit3 EA06 handler
 *********************/
 
 static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
@@ -906,7 +906,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             free(buf);
             return CL_ECREAT;
         }
-        if (cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) {
+        if (cli_writen(i, buf, UNP.cur_output) != UNP.cur_output) {
             cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
             close(i);
             free(buf);
@@ -939,7 +939,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 }
 
 /*********************
-   autoit3 wrapper 
+   autoit3 wrapper
 *********************/
 
 int cli_scanautoit(cli_ctx *ctx, off_t offset)

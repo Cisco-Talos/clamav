@@ -249,7 +249,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
         n->curpos += size;
         if (loops == size) {
 
-            if (cli_writen(n->ofd, ibuf, size) != (ssize_t)size) {
+            if (cli_writen(n->ofd, ibuf, size) != size) {
                 cli_dbgmsg("NSIS: cannot write output file"__AT__
                            "\n");
                 close(n->ofd);
@@ -270,9 +270,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
             loops             = 0;
 
             while ((ret = nsis_decomp(n)) == CL_SUCCESS) {
-                if ((size = n->nsis.next_out - obuf)) {
+                if ((size = n->nsis.next_out - obuf) > 0) {
                     gotsome = 1;
-                    if (cli_writen(n->ofd, obuf, size) != (ssize_t)size) {
+                    if (cli_writen(n->ofd, obuf, size) != size) {
                         cli_dbgmsg("NSIS: cannot write output file"__AT__
                                    "\n");
                         close(n->ofd);
@@ -297,9 +297,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
 
             nsis_shutdown(n);
 
-            if (n->nsis.next_out - obuf) {
+            if ((n->nsis.next_out - obuf) > 0) {
                 gotsome = 1;
-                if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
+                if (cli_writen(n->ofd, obuf, (size_t)(n->nsis.next_out - obuf)) != (size_t)(n->nsis.next_out - obuf)) {
                     cli_dbgmsg("NSIS: cannot write output file"__AT__
                                "\n");
                     close(n->ofd);
@@ -384,9 +384,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
 
         while (size && (ret = nsis_decomp(n)) == CL_SUCCESS) {
             unsigned int wsz;
-            if ((wsz = n->nsis.next_out - obuf)) {
+            if ((wsz = n->nsis.next_out - obuf) > 0) {
                 gotsome = 1;
-                if (cli_writen(n->ofd, obuf, wsz) != (ssize_t)wsz) {
+                if (cli_writen(n->ofd, obuf, wsz) != wsz) {
                     cli_dbgmsg("NSIS: cannot write output file"__AT__
                                "\n");
                     close(n->ofd);
@@ -404,9 +404,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
             }
         }
 
-        if (n->nsis.next_out - obuf) {
+        if ((n->nsis.next_out - obuf) > 0) {
             gotsome = 1;
-            if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
+            if (cli_writen(n->ofd, obuf, (size_t)(n->nsis.next_out - obuf)) != (size_t)(n->nsis.next_out - obuf)) {
                 cli_dbgmsg("NSIS: cannot write output file"__AT__
                            "\n");
                 close(n->ofd);

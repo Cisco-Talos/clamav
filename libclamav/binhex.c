@@ -111,7 +111,7 @@ int cli_binhex(cli_ctx *ctx)
                 unsigned int todo = MIN(dec_done, datalen);
                 datalen -= todo;
                 dec_done -= todo;
-                if (cli_writen(datafd, decoded, todo) != (int)todo) {
+                if (cli_writen(datafd, decoded, todo) != todo) {
                     ret = CL_EWRITE;
                     break;
                 }
@@ -158,7 +158,7 @@ int cli_binhex(cli_ctx *ctx)
                 unsigned int todo = MIN(dec_done, reslen);
                 reslen -= todo;
                 dec_done -= todo;
-                if (cli_writen(resfd, decoded, todo) != (int)todo) {
+                if (cli_writen(resfd, decoded, todo) != todo) {
                     ret = CL_EWRITE;
                     break;
                 }

@@ -368,7 +368,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
         /* Write the blocks, walking the map */
         while (currBlock <= endBlock) {
             size_t to_write = MIN(targetSize, volHeader->blockSize);
-            ssize_t written;
+            size_t written;
             off_t offset = currBlock * volHeader->blockSize;
             /* move map to next block */
             mPtr = fmap_need_off_once(*ctx->fmap, offset, volHeader->blockSize);
@@ -378,7 +378,7 @@ static int hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHea
                 break;
             }
             written = cli_writen(ofd, mPtr, to_write);
-            if ((size_t)written != to_write) {
+            if (written != to_write) {
                 cli_errmsg("hfsplus_dumpfile: write error\n");
                 ret = CL_EWRITE;
                 break;

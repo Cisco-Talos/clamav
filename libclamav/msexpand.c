@@ -3,7 +3,7 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
- * 
+ *
  *  Acknowledgements: Decompression scheme by M. Winterhoff.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -84,13 +84,13 @@ struct msexp_hdr {
     cur_off += rbytes;                                \
     r = 0;
 
-#define WRITEBYTES                           \
-    ret = cli_writen(ofd, wbuff, w);         \
-    if (ret == -1 || (unsigned int)ret != w) \
-        return CL_EWRITE;                    \
-    wbytes += w;                             \
-    if (wbytes >= fsize)                     \
-        return CL_SUCCESS;                   \
+#define WRITEBYTES                                   \
+    ret = cli_writen(ofd, wbuff, w);                 \
+    if (ret == (size_t)-1 || (unsigned int)ret != w) \
+        return CL_EWRITE;                            \
+    wbytes += w;                                     \
+    if (wbytes >= fsize)                             \
+        return CL_SUCCESS;                           \
     w = 0;
 
 int cli_msexpand(cli_ctx *ctx, int ofd)
@@ -104,7 +104,7 @@ int cli_msexpand(cli_ctx *ctx, int ofd)
     fmap_t *map   = *ctx->fmap;
     off_t cur_off = sizeof(*hdr);
     unsigned int fsize;
-    int ret;
+    size_t ret;
 
     if (!(hdr = fmap_need_off_once(map, 0, sizeof(*hdr))))
         return CL_EREAD;

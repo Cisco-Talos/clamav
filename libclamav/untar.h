@@ -3,9 +3,9 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
+ *
  *  Summary: Extract files compressed with TAR compression format.
- * 
+ *
  *  Acknowledgements: ClamAV untar code is based on a public domain minitar utility
  *                    by Charles G. Waldman.
  *
@@ -29,6 +29,6 @@
 
 #include "others.h"
 
-int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx);
+cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx);
 
 #endif

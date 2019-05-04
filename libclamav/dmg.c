@@ -618,7 +618,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
 {
     int ret    = CL_CLEAN;
     size_t len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
-    ssize_t written;
+    size_t written;
     uint8_t obuf[BUFSIZ];
 
     UNUSEDPARAM(ctx);
@@ -630,7 +630,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
     memset(obuf, 0, sizeof(obuf));
     while (len > sizeof(obuf)) {
         written = cli_writen(fd, obuf, sizeof(obuf));
-        if ((size_t)written != sizeof(obuf)) {
+        if (written != sizeof(obuf)) {
             ret = CL_EWRITE;
             break;
         }
@@ -639,7 +639,7 @@ static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mi
 
     if ((ret == CL_CLEAN) && (len > 0)) {
         written = cli_writen(fd, obuf, len);
-        if ((size_t)written != len) {
+        if (written != len) {
             ret = CL_EWRITE;
         }
     }
@@ -657,7 +657,7 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
     const void *obuf;
     size_t off = mish_set->stripes[index].dataOffset;
     size_t len = mish_set->stripes[index].dataLength;
-    ssize_t written;
+    size_t written;
 
     cli_dbgmsg("dmg_stripe_store: stripe " STDu32 "\n", index);
     if (len == 0)
@@ -669,10 +669,10 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
         return CL_EMAP;
     }
     written = cli_writen(fd, obuf, len);
-    if (written < 0) {
+    if (written == (size_t)-1) {
         cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
         return CL_EWRITE;
-    } else if ((size_t)written != len) {
+    } else if (written != len) {
         cli_errmsg("dmg_stripe_store: error writing bytes to file (out of disk space?)\n");
         return CL_EWRITE;
     }
@@ -712,7 +712,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
     }
 
     while (adcret == ADC_OK) {
-        int written;
+        size_t written;
         if (size_so_far > expected_len) {
             cli_warnmsg("dmg_stripe_adc: expected size exceeded!\n");
             adc_decompressEnd(&strm);
@@ -794,7 +794,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     }
 
     while (strm.avail_in) {
-        int written;
+        size_t written;
         if (size_so_far > expected_len) {
             cli_warnmsg("dmg_stripe_inflate: expected size exceeded!\n");
             inflateEnd(&strm);
@@ -916,7 +916,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
             size_t next_write = sizeof(obuf);
             do {
                 size_so_far += next_write;
-                dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %lu\n", size_so_far, next_write);
+                dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %zu\n", size_so_far, next_write);
                 if (size_so_far > expected_len) {
                     cli_warnmsg("dmg_stripe_bzip: expected size exceeded!\n");
                     ret = CL_EFORMAT;
@@ -929,7 +929,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                     break;
                 }
 
-                if ((size_t)cli_writen(fd, obuf, next_write) != next_write) {
+                if (cli_writen(fd, obuf, next_write) != next_write) {
                     cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
                     ret = CL_EWRITE;
                     break;
@@ -951,14 +951,14 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
         if (rc == BZ_STREAM_END) {
             size_t next_write = sizeof(obuf) - strm.avail_out;
             size_so_far += next_write;
-            dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %lu\n", size_so_far, next_write);
+            dmg_bzipmsg("dmg_stripe_bzip: size_so_far: " STDu64 " next_write: %zu\n", size_so_far, next_write);
 
             ret = cli_checklimits("dmg_stripe_bzip", ctx, (unsigned long)(size_so_far + sizeof(obuf)), 0, 0);
             if (ret != CL_CLEAN) {
                 break;
             }
 
-            if ((size_t)cli_writen(fd, obuf, next_write) != next_write) {
+            if (cli_writen(fd, obuf, next_write) != next_write) {
                 cli_dbgmsg("dmg_stripe_bzip: error writing to tmpfile\n");
                 ret = CL_EWRITE;
                 break;
@@ -1122,7 +1122,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
         return CL_ETMPFILE;
     }
 
-    if ((uint64_t)cli_writen(ofd, outdata, hdr->xmlLength) != hdr->xmlLength) {
+    if ((uint64_t)cli_writen(ofd, outdata, (size_t)hdr->xmlLength) != hdr->xmlLength) {
         cli_errmsg("cli_scandmg: Not all bytes written!\n");
         close(ofd);
         free(xmlfile);

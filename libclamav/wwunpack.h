@@ -25,6 +25,6 @@
 #include "clamav-types.h"
 #include "execs.h"
 
-int wwunpack(uint8_t *, uint32_t, uint8_t *, struct cli_exe_section *, uint16_t, uint32_t, int);
+cl_error_t wwunpack(uint8_t *, uint32_t, uint8_t *, struct cli_exe_section *, uint16_t, uint32_t, int);
 
 #endif

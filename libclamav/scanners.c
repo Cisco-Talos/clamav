@@ -1073,9 +1073,12 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset)
     return ret;
 }
 
-static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
+static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
 {
-    int fd, ret, outsize = 0, bytes;
+    int fd;
+    cl_error_t ret;
+    size_t outsize = 0;
+    int bytes;
     fmap_t *map = *ctx->fmap;
     char *tmpname;
     gzFile gz;
@@ -1103,7 +1106,7 @@ static int cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char *buff)
         outsize += bytes;
         if (cli_checklimits("GZip", ctx, outsize, 0, 0) != CL_CLEAN)
             break;
-        if (cli_writen(fd, buff, bytes) != bytes) {
+        if (cli_writen(fd, buff, (size_t)bytes) != (size_t)bytes) {
             close(fd);
             gzclose(gz);
             if (cli_unlink(tmpname)) {
@@ -1190,7 +1193,7 @@ static int cli_scangzip(cli_ctx *ctx)
                     /* no break yet, flush extracted bytes to file */
                 }
             }
-            if (cli_writen(fd, buff, sizeof(buff) - z.avail_out) < 0) {
+            if (cli_writen(fd, buff, sizeof(buff) - z.avail_out) == (size_t)-1) {
                 inflateEnd(&z);
                 close(fd);
                 if (cli_unlink(tmpname)) {
@@ -1414,7 +1417,7 @@ static int cli_scanxz(cli_ctx *ctx)
             //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
             //           towrite, size);
 
-            if ((size_t)cli_writen(fd, buf, towrite) != towrite) {
+            if (cli_writen(fd, buf, towrite) != towrite) {
                 cli_errmsg("cli_scanxz: Can't write to file.\n");
                 ret = CL_EWRITE;
                 goto xz_exit;
@@ -1480,13 +1483,13 @@ static int cli_scanszdd(cli_ctx *ctx)
     return ret;
 }
 
-static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ctx)
+static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *ctx)
 {
     struct cli_matcher *groot = ctx->engine->root[0];
     struct cli_matcher *troot = ctx->engine->root[2];
     struct cli_ac_data gmdata, tmdata;
     struct cli_ac_data *mdata[2];
-    int ret;
+    cl_error_t ret;
     unsigned int viruses_found = 0;
 
     if ((ret = cli_ac_initdata(&tmdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
@@ -1523,10 +1526,11 @@ static int vba_scandata(const unsigned char *data, unsigned int len, cli_ctx *ct
     return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS : CL_CLEAN;
 }
 
-static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
+static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
     cl_error_t ret = CL_CLEAN;
-    int i, j, fd, data_len, hasmacros = 0;
+    int i, j, fd, hasmacros = 0;
+    size_t data_len;
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
@@ -2296,7 +2300,7 @@ static int cli_scancryptff(cli_ctx *ctx)
     for (; (src = fmap_need_off_once_len(*ctx->fmap, pos, FILEBUFF, &bread)) && bread; pos += bread) {
         for (i = 0; i < bread; i++)
             dest[i] = src[i] ^ (unsigned char)0xff;
-        if (cli_writen(ndesc, dest, bread) == -1) {
+        if (cli_writen(ndesc, dest, bread) == (size_t)-1) {
             cli_dbgmsg("CryptFF: Can't write to descriptor %d\n", ndesc);
             free(dest);
             close(ndesc);
@@ -2444,14 +2448,14 @@ static int cli_scanmail(cli_ctx *ctx)
 static int cli_scan_structured(cli_ctx *ctx)
 {
     char buf[8192];
-    int result             = 0;
+    size_t result             = 0;
     unsigned int cc_count  = 0;
     unsigned int ssn_count = 0;
     int done               = 0;
     fmap_t *map;
     size_t pos = 0;
-    int (*ccfunc)(const unsigned char *buffer, int length);
-    int (*ssnfunc)(const unsigned char *buffer, int length);
+    int (*ccfunc)(const unsigned char *buffer, size_t length);
+    int (*ssnfunc)(const unsigned char *buffer, size_t length);
     unsigned int viruses_found = 0;
 
     if (ctx == NULL)
@@ -2490,9 +2494,9 @@ static int cli_scan_structured(cli_ctx *ctx)
             ssnfunc = NULL;
     }
 
-    while (!done && ((result = fmap_readn(map, buf, pos, 8191)) > 0)) {
+    while (!done && ((result = fmap_readn(map, buf, pos, 8191)) > 0) && (result != (size_t)-1)) {
         pos += result;
-        if ((cc_count += ccfunc((const unsigned char *)buf, result)) >= ctx->engine->min_cc_count) {
+        if ((cc_count += ccfunc((const unsigned char *)buf, (int)result)) >= ctx->engine->min_cc_count) {
             done = 1;
         }
 
@@ -2528,10 +2532,13 @@ static int cli_scan_structured(cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-static int cli_scanembpe(cli_ctx *ctx, off_t offset)
+static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
 {
-    int fd, bytes, ret = CL_CLEAN;
-    unsigned long int size = 0, todo;
+    cl_error_t ret = CL_CLEAN;
+    int fd;
+    size_t bytes;
+    size_t size = 0;
+    size_t todo;
     const char *buff;
     char *tmpname;
     fmap_t *map = *ctx->fmap;
@@ -4083,7 +4090,7 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
         }
 
         cli_dbgmsg("cli_map_scan: writing nested map content to temp file %s\n", tempfile);
-        if (cli_writen(fd, mapdata, length) < 0) {
+        if (cli_writen(fd, mapdata, length) == (size_t)-1) {
             cli_errmsg("cli_map_scan: cli_writen error writing subdoc temporary file.\n");
             ret = CL_EWRITE;
         }
@@ -4338,7 +4345,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
                 if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("scan_common: Can't create json properties file, ret = %i.\n", ret);
                 } else {
-                    if (cli_writen(fd, jstring, strlen(jstring)) < 0)
+                    if (cli_writen(fd, jstring, strlen(jstring)) == (size_t)-1)
                         cli_dbgmsg("scan_common: cli_writen error writing json properties file.\n");
                     else
                         cli_dbgmsg("json written to: %s\n", tmpname);

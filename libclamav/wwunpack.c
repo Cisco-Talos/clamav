@@ -70,11 +70,12 @@
         }                                           \
     }
 
-int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_section *sects, uint16_t scount, uint32_t pe, int desc)
+cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_section *sects, uint16_t scount, uint32_t pe, int desc)
 {
     uint8_t *structs = wwsect + 0x2a1, *compd, *ccur, *unpd, *ucur, bc;
     uint32_t src, srcend, szd, bt, bits;
-    int error = 0, i;
+    cl_error_t error = 0;
+    uint16_t i;
 
     cli_dbgmsg("in wwunpack\n");
     while (1) {
@@ -104,7 +105,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
         ccur = compd;
 
         RESEED;
-        while (!error) {
+        while (CL_SUCCESS == error) {
             uint32_t backbytes, backsize;
             uint8_t saved;
 
@@ -227,10 +228,11 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
         if (error || !*structs++) break;
     }
 
-    if (!error) {
+    if (CL_SUCCESS == error) {
         if (pe + 6 > exesz || pe + 7 > exesz || pe + 0x28 > exesz ||
             pe + 0x50 > exesz || pe + 0x14 > exesz)
             return CL_EFORMAT;
+
         exe[pe + 6] = (uint8_t)scount;
         exe[pe + 7] = (uint8_t)(scount >> 8);
         if (!CLI_ISCONTAINED(wwsect, sects[scount].rsz, wwsect + 0x295, 4))
@@ -258,7 +260,9 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
         }
 
         memset(structs, 0, 0x28);
-        error = (uint32_t)cli_writen(desc, exe, exesz) != exesz;
+        if (cli_writen(desc, exe, exesz) != (size_t)exesz) {
+            error = CL_EWRITE;
+        }
     }
     return error;
 }

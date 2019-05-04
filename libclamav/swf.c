@@ -18,14 +18,14 @@
  *  be used to endorse or promote products derived from this software without specific
  *  prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
- *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
- *  SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
- *  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
- *  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ *  SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ *  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ *  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
  *  WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -128,7 +128,8 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     off_t offset = 8;
     uint32_t d_insize;
     size_t outsize = 8;
-    int ret, lret, count;
+    int ret, lret;
+    size_t count;
     char *tmpname;
     int fd;
 
@@ -302,8 +303,10 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     z_stream stream;
     char inbuff[FILEBUFF], outbuff[FILEBUFF];
-    fmap_t *map = *ctx->fmap;
-    int offset = 8, ret, zret, outsize = 8, count, zend;
+    fmap_t *map    = *ctx->fmap;
+    int offset     = 8, ret, zret, zend;
+    size_t outsize = 8;
+    size_t count;
     char *tmpname;
     int fd;
 
@@ -405,15 +408,15 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         }
         cli_infomsg(ctx, "scancws: Error decompressing SWF file. Scanning what was decompressed.\n");
     }
-    cli_dbgmsg("SWF: Decompressed[zlib] to %s, size %d\n", tmpname, outsize);
+    cli_dbgmsg("SWF: Decompressed[zlib] to %s, size %zu\n", tmpname, outsize);
 
     /* check if declared output size matches actual output size */
     if (hdr->filesize != outsize) {
-        cli_warnmsg("SWF: declared output length != inflated stream size, %u != %llu\n",
-                    hdr->filesize, (long long unsigned)outsize);
+        cli_warnmsg("SWF: declared output length != inflated stream size, %u != %zu\n",
+                    hdr->filesize, outsize);
     } else {
-        cli_dbgmsg("SWF: declared output length == inflated stream size, %u == %llu\n",
-                   hdr->filesize, (long long unsigned)outsize);
+        cli_dbgmsg("SWF: declared output length == inflated stream size, %u == %zu\n",
+                   hdr->filesize, outsize);
     }
 
     ret = cli_magic_scandesc(fd, tmpname, ctx);

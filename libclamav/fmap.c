@@ -828,7 +828,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
         b = fmap_need_off_once_len(map, pos, write_size, &len);
         pos += len;
         if (b && (len > 0)) {
-            if ((size_t)cli_writen(tmpfd, b, len) != len) {
+            if (cli_writen(tmpfd, b, len) != len) {
                 cli_warnmsg("fmap_dump_to_file: write failed to %s!\n", tmpname);
                 close(tmpfd);
                 unlink(tmpname);

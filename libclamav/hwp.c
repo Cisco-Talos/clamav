@@ -1,19 +1,19 @@
 /*
  * HWP Stuff
- * 
+ *
  * Copyright (C) 2015-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -75,7 +75,9 @@
 typedef int (*hwp_cb)(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
 static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t len, const char *parent, hwp_cb cb, void *cbdata)
 {
-    int zret, ofd, in, ret = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
+    int zret, ofd;
+    size_t in;
     off_t off_in = at;
     size_t count, remain = 1, outsize = 0;
     z_stream zstrm;
@@ -115,8 +117,9 @@ static int decompress_and_callback(cli_ctx *ctx, fmap_t *input, off_t at, size_t
     do {
         if (zstrm.avail_in == 0) {
             zstrm.next_in = inbuf;
-            in            = fmap_readn(input, inbuf, off_in, FILEBUFF);
-            if (in < 0) {
+
+            in = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (in == (size_t)-1) {
                 cli_errmsg("%s: Error reading stream\n", parent);
                 ret = CL_EUNPACK;
                 goto dc_end;
@@ -192,7 +195,7 @@ dc_end:
 
 /* convert HANGUL_NUMERICAL to UTF-8 encoding using iconv library, converts to base64 encoding if no iconv or failure */
 #define HANGUL_NUMERICAL 0
-static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *parent, int *ret)
+static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *parent, cl_error_t *ret)
 {
     int rc    = CL_SUCCESS;
     char *res = NULL;
@@ -593,12 +596,14 @@ static inline int parsehwp3_docinfo(cli_ctx *ctx, off_t offset, struct hwp3_doci
     return CL_SUCCESS;
 }
 
-static inline int parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
+static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, off_t offset)
 {
 #if HAVE_JSON
     const uint8_t *hwp3_ptr;
     char *str;
-    int i, iret, ret;
+    size_t i;
+    cl_error_t ret, iret;
+
     json_object *summary;
 
     if (!SCAN_COLLECT_METADATA)
@@ -671,7 +676,8 @@ static inline int parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, int leve
     off_t new_offset;
     uint16_t nchars, nlines, content;
     uint8_t ppfs, ifsc, cfsb;
-    int i, c, l, sp = 0, term = 0, ret = CL_SUCCESS;
+    uint16_t i;
+    int c, l, sp = 0, term = 0, ret = CL_SUCCESS;
 #if HWP3_VERIFY
     uint16_t match;
 #endif
@@ -1877,7 +1883,7 @@ int cli_scanhwp3(cli_ctx *ctx)
 
 #if HAVE_JSON
     /*
-    // magic 
+    // magic
     cli_jsonstr(header, "Magic", hwp5->signature);
 
     // version
@@ -2045,7 +2051,7 @@ static int hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, int num_a
             return ret;
         }
 
-        if (cli_writen(df, decoded, decodedlen) != (int)decodedlen) {
+        if (cli_writen(df, decoded, decodedlen) != decodedlen) {
             free(decoded);
             ret = CL_EWRITE;
             goto hwpml_end;

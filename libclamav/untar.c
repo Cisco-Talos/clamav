@@ -3,9 +3,9 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
+ *
  *  Summary: Extract files compressed with TAR compression format.
- * 
+ *
  *  Acknowledgements: ClamAV untar code is based on a public domain minitar utility
  *                    by Charles G. Waldman.
  *
@@ -123,9 +123,12 @@ testchecksum(const char *header, int targetsum)
     return -1;
 }
 
-int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
+cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 {
-    int size = 0, ret, fout = -1;
+    cl_error_t ret;
+    size_t size         = 0;
+    int size_int        = 0;
+    int fout            = -1;
     int in_block        = 0;
     int last_header_bad = 0;
     int limitnear       = 0;
@@ -261,12 +264,13 @@ int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             strncpy(osize, block + TARSIZEOFFSET, TARSIZELEN);
             osize[TARSIZELEN] = '\0';
-            size              = octal(osize);
-            if (size < 0) {
+            size_int          = octal(osize);
+            if (size_int < 0) {
                 cli_dbgmsg("cli_untar: Invalid size in tar header\n");
                 skipEntry++;
             } else {
-                cli_dbgmsg("cli_untar: size = %d\n", size);
+                size = (size_t)size_int;
+                cli_dbgmsg("cli_untar: size = %zu\n", size);
                 ret = cli_checklimits("cli_untar", ctx, size, 0, 0);
                 switch (ret) {
                     case CL_EMAXFILES: // Scan no more files
@@ -318,12 +322,12 @@ int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             in_block = 1;
         } else { /* write or continue writing file contents */
-            int nbytes, nwritten;
+            size_t nbytes, nwritten;
             int skipwrite = 0;
             char err[128];
 
-            nbytes = size > 512 ? 512 : size;
-            if (nread && nread < (size_t)nbytes)
+            nbytes = (size > 512) ? 512 : size;
+            if (nread && (nread < nbytes))
                 nbytes = nread;
 
             if (limitnear > 0) {
@@ -337,16 +341,21 @@ int cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             }
 
             if (skipwrite == 0) {
-                nwritten = (int)cli_writen(fout, block, (size_t)nbytes);
+                nwritten = cli_writen(fout, block, nbytes);
 
                 if (nwritten != nbytes) {
-                    cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?): %s\n",
+                    cli_errmsg("cli_untar: only wrote %zu bytes to file %s (out of disc space?): %s\n",
                                nwritten, fullname, cli_strerror(errno, err, sizeof(err)));
                     close(fout);
                     return CL_EWRITE;
                 }
             }
-            size -= nbytes;
+            if (nbytes > size) {
+                cli_warnmsg("cli_untar: More bytes written than requested!\n");
+                size = 0;
+            } else {
+                size -= nbytes;
+            }
             if ((size != 0) && (nread == 0)) {
                 // Truncated tar file, so end file content like tar behavior
                 cli_dbgmsg("cli_untar: No bytes read! Forcing end of file content.\n");

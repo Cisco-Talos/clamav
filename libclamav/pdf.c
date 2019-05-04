@@ -751,7 +751,7 @@ static size_t filter_writen(struct pdf_struct *pdf, struct pdf_obj *obj, int fou
 
     *sum += len;
 
-    return cli_writen(fout, buf, (unsigned int)len);
+    return cli_writen(fout, buf, len);
 }
 
 void pdfobj_flag(struct pdf_struct *pdf, struct pdf_obj *obj, enum pdf_flag flag)
@@ -1276,7 +1276,7 @@ enum cstate {
     CSTATE_TJ_PAROPEN
 };
 
-static void process(struct text_norm_state *s, enum cstate *st, const char *buf, int length, int fout)
+static void process(struct text_norm_state *s, enum cstate *st, const char *buf, size_t length, int fout)
 {
     do {
         switch (*st) {
@@ -1288,7 +1288,11 @@ static void process(struct text_norm_state *s, enum cstate *st, const char *buf,
                     if (!nl)
                         return;
 
-                    length -= nl - buf;
+                    if ((size_t)(nl - buf) > length) {
+                        length = 0;
+                    } else {
+                        length -= nl - buf;
+                    }
                     buf = nl;
                 }
 
@@ -1312,7 +1316,8 @@ static void process(struct text_norm_state *s, enum cstate *st, const char *buf,
         }
 
         buf++;
-        length--;
+        if (length > 0)
+            length--;
     } while (length > 0);
 }
 
@@ -1322,7 +1327,8 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     char fullname[1024];
     char outbuff[BUFSIZ];
     char inbuf[BUFSIZ];
-    int fout, n;
+    int fout;
+    size_t n;
     cl_error_t rc;
     enum cstate st = CSTATE_NONE;
 
@@ -1338,7 +1344,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     text_normalize_init(&s, (unsigned char *)outbuff, sizeof(outbuff));
     while (1) {
         n = cli_readn(fd, inbuf, sizeof(inbuf));
-        if (n <= 0)
+        if ((n == 0) || (n == (size_t)-1))
             break;
 
         process(&s, &st, inbuf, n, fout);

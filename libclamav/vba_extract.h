@@ -43,7 +43,7 @@ vba_project_t *cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which);
 vba_project_t *cli_wm_readdir(int fd);
 void cli_free_vba_project(vba_project_t *vba_project);
 
-unsigned char *cli_vba_inflate(int fd, off_t offset, int *size);
+unsigned char *cli_vba_inflate(int fd, off_t offset, size_t *size);
 int cli_scan_ole10(int fd, cli_ctx *ctx);
 char *cli_ppt_vba_read(int fd, cli_ctx *ctx);
 unsigned char *cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len,

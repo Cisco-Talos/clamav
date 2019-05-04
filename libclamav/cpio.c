@@ -127,7 +127,7 @@ int cli_scancpio_old(cli_ctx *ctx)
         if (hdr_old.namesize) {
             hdr_namesize = EC16(hdr_old.namesize, conv);
             namesize     = MIN(sizeof(name), hdr_namesize);
-            if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
                 return CL_EFORMAT;
             }
@@ -215,7 +215,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
-            if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
                 ret = CL_EFORMAT;
                 goto leave;
@@ -303,7 +303,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
-            if ((uint32_t)fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
                 ret = CL_EFORMAT;
                 goto leave;

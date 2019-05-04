@@ -793,7 +793,8 @@ static int
 handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
     unsigned char *buff;
-    int32_t current_block, ofd, len, offset;
+    int32_t current_block, ofd;
+    size_t len, offset;
     char *name, newname[1024];
     bitset_t *blk_bitset;
     char *hash;
@@ -900,8 +901,7 @@ handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx
                 cli_bitset_free(blk_bitset);
                 return CL_SUCCESS;
             }
-            if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) !=
-                MIN(len, (1 << hdr->log2_big_block_size))) {
+            if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) != MIN(len, (1 << hdr->log2_big_block_size))) {
                 close(ofd);
                 free(buff);
                 cli_bitset_free(blk_bitset);
@@ -1068,10 +1068,10 @@ likely_mso_stream(int fd)
     return 0;
 }
 
-static int
-scan_mso_stream(int fd, cli_ctx *ctx)
+static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
 {
-    int zret, ofd, ret = CL_SUCCESS;
+    int zret, ofd;
+    cl_error_t ret = CL_SUCCESS;
     fmap_t *input;
     off_t off_in = 0;
     size_t count, outsize = 0;
@@ -1139,25 +1139,27 @@ scan_mso_stream(int fd, cli_ctx *ctx)
     /* inflation loop */
     do {
         if (zstrm.avail_in == 0) {
+            size_t bytes_read;
+
             zstrm.next_in = inbuf;
-            ret           = fmap_readn(input, inbuf, off_in, FILEBUFF);
-            if (ret < 0) {
+            bytes_read    = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            if (bytes_read == (size_t)-1) {
                 cli_errmsg("scan_mso_stream: Error reading MSO file\n");
                 ret = CL_EUNPACK;
                 goto mso_end;
             }
-            if (!ret)
+            if (bytes_read == 0)
                 break;
 
-            zstrm.avail_in = ret;
-            off_in += ret;
+            zstrm.avail_in = bytes_read;
+            off_in += bytes_read;
         }
         zret  = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
             if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
                 break;
-            if (cli_writen(ofd, outbuf, count) != (int)count) {
+            if (cli_writen(ofd, outbuf, count) != count) {
                 cli_errmsg("scan_mso_stream: Can't write to file %s\n", tmpname);
                 ret = CL_EWRITE;
                 goto mso_end;
@@ -1210,7 +1212,8 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
     char *tempfile, *name = NULL;
     unsigned char *buff;
-    int32_t current_block, len, offset;
+    int32_t current_block;
+    size_t len, offset;
     int ofd, is_mso, ret;
     bitset_t *blk_bitset;
 
@@ -1231,7 +1234,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
         return CL_ECREAT;
     }
     current_block = prop->start_block;
-    len           = (int32_t)prop->size;
+    len           = prop->size;
 
     if (cli_debug_flag) {
         if (!name)
@@ -1305,8 +1308,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
             if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
                 break;
             }
-            if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) !=
-                MIN(len, (1 << hdr->log2_big_block_size))) {
+            if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) != MIN(len, (1 << hdr->log2_big_block_size))) {
                 close(ofd);
                 if (name)
                     free(name);

@@ -4,9 +4,9 @@
  *
  *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
  *
- *  Acknowledgements: The header structures were based upon a PE format 
+ *  Acknowledgements: The header structures were based upon a PE format
  *                    analysis by B. Luevelsmeyer.
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -346,7 +346,7 @@ uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t n
     return ret;
 }
 
-/* 
+/*
    void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_info *peinfo, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
    callback based res lookup
 
@@ -2743,7 +2743,7 @@ int cli_scanpe(cli_ctx *ctx)
     uint8_t polipos = 0;
     char epbuff[4096], *tempfile;
     uint32_t epsize;
-    ssize_t bytes;
+    size_t bytes;
     unsigned int i, j, found, upx_success = 0, err;
     unsigned int ssize = 0, dsize = 0, corrupted_cur;
     int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
@@ -3377,14 +3377,15 @@ int cli_scanpe(cli_ctx *ctx)
                 return CL_EMEM;
             }
 
-            if ((bytes = fmap_readn(map, src + dsize, peinfo->sections[i + 1].raw, peinfo->sections[i + 1].rsz)) != peinfo->sections[i + 1].rsz) {
-                cli_dbgmsg("cli_scanpe: MEW: Can't read %d bytes [read: %lu]\n", peinfo->sections[i + 1].rsz, (unsigned long)bytes);
+            bytes = fmap_readn(map, src + dsize, peinfo->sections[i + 1].raw, peinfo->sections[i + 1].rsz);
+            if (bytes != peinfo->sections[i + 1].rsz) {
+                cli_dbgmsg("cli_scanpe: MEW: Can't read %u bytes [read: %zu]\n", peinfo->sections[i + 1].rsz, bytes);
                 cli_exe_info_destroy(peinfo);
                 free(src);
                 return CL_EREAD;
             }
 
-            cli_dbgmsg("cli_scanpe: MEW: %u (%08x) bytes read\n", (unsigned int)bytes, (unsigned int)bytes);
+            cli_dbgmsg("cli_scanpe: MEW: %zu (%08zx) bytes read\n", bytes, bytes);
 
             /* count offset to lzma proc, if lzma used, 0xe8 -> call */
             if (tbuff[0x7b] == '\xe8') {
@@ -3436,7 +3437,7 @@ int cli_scanpe(cli_ctx *ctx)
          *   mov esi, value
          *   push [esi]
          *   jmp
-         * 
+         *
          */
         /* upack 0.39-3s + sample 0151477*/
         while (((upack && peinfo->nsections == 3) && /* 3 sections */
@@ -3492,7 +3493,7 @@ int cli_scanpe(cli_ctx *ctx)
                 return CL_EMEM;
             }
 
-            if ((unsigned int)fmap_readn(map, dest, 0, ssize) != ssize) {
+            if (fmap_readn(map, dest, 0, ssize) != ssize) {
                 cli_dbgmsg("cli_scanpe: Upack: Can't read raw data of section 0\n");
                 free(dest);
                 break;
@@ -3501,7 +3502,7 @@ int cli_scanpe(cli_ctx *ctx)
             if (upack)
                 memmove(dest + peinfo->sections[2].rva - peinfo->sections[0].rva, dest, ssize);
 
-            if ((unsigned int)fmap_readn(map, dest + peinfo->sections[1].rva - off, peinfo->sections[1].uraw, peinfo->sections[1].ursz) != peinfo->sections[1].ursz) {
+            if (fmap_readn(map, dest + peinfo->sections[1].rva - off, peinfo->sections[1].uraw, peinfo->sections[1].ursz) != peinfo->sections[1].ursz) {
                 cli_dbgmsg("cli_scanpe: Upack: Can't read raw data of section 1\n");
                 free(dest);
                 break;
@@ -3819,7 +3820,7 @@ int cli_scanpe(cli_ctx *ctx)
         ssize = peinfo->sections[i + 1].rsz;
         dsize = peinfo->sections[i].vsz + peinfo->sections[i + 1].vsz;
 
-        /* 
+        /*
          * UPX support
          * we assume (i + 1) is UPX1
          */
@@ -4076,7 +4077,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EMEM;
         }
 
-        if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
+        if (fmap_readn(map, spinned, 0, fsize) != fsize) {
             cli_dbgmsg("cli_scanpe: PESpin: Can't read %lu bytes\n", (unsigned long)fsize);
             free(spinned);
             cli_exe_info_destroy(peinfo);
@@ -4144,7 +4145,7 @@ int cli_scanpe(cli_ctx *ctx)
                 return CL_EMEM;
             }
 
-            if ((size_t)fmap_readn(map, spinned, 0, fsize) != fsize) {
+            if (fmap_readn(map, spinned, 0, fsize) != fsize) {
                 cli_dbgmsg("cli_scanpe: yC: Can't read %lu bytes\n", (unsigned long)fsize);
                 free(spinned);
                 cli_exe_info_destroy(peinfo);
@@ -4210,7 +4211,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EMEM;
         }
 
-        if ((size_t)fmap_readn(map, src, 0, head) != head) {
+        if (fmap_readn(map, src, 0, head) != head) {
             cli_dbgmsg("cli_scanpe: WWPack: Can't read %d bytes from headers\n", head);
             free(src);
             cli_exe_info_destroy(peinfo);
@@ -4224,7 +4225,7 @@ int cli_scanpe(cli_ctx *ctx)
             if (!CLI_ISCONTAINED(src, ssize, src + peinfo->sections[i].rva, peinfo->sections[i].rsz))
                 break;
 
-            if ((unsigned int)fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
+            if (fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
                 break;
         }
 
@@ -4240,7 +4241,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EMEM;
         }
 
-        if (!peinfo->sections[peinfo->nsections - 1].rsz || (size_t)fmap_readn(map, packer, peinfo->sections[peinfo->nsections - 1].raw, peinfo->sections[peinfo->nsections - 1].rsz) != peinfo->sections[peinfo->nsections - 1].rsz) {
+        if (!peinfo->sections[peinfo->nsections - 1].rsz || fmap_readn(map, packer, peinfo->sections[peinfo->nsections - 1].raw, peinfo->sections[peinfo->nsections - 1].rsz) != peinfo->sections[peinfo->nsections - 1].rsz) {
             cli_dbgmsg("cli_scanpe: WWPack: Can't read %d bytes from wwpack sect\n", peinfo->sections[peinfo->nsections - 1].rsz);
             free(src);
             free(packer);
@@ -4300,7 +4301,7 @@ int cli_scanpe(cli_ctx *ctx)
             if (!CLI_ISCONTAINED(src, ssize, src + peinfo->sections[i].rva, peinfo->sections[i].rsz))
                 break;
 
-            if ((unsigned int)fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
+            if (fmap_readn(map, src + peinfo->sections[i].rva, peinfo->sections[i].raw, peinfo->sections[i].rsz) != peinfo->sections[i].rsz)
                 break;
         }
 
@@ -4535,7 +4536,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     uint32_t is_dll = 0;
     uint32_t is_exe = 0;
     int native      = 0;
-    int read;
+    size_t read;
+
     int ret = CLI_PEHEADER_RET_GENERIC_ERROR;
 #if HAVE_JSON
     int toval                   = 0;
@@ -5058,7 +5060,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     }
 
     read = fmap_readn(map, peinfo->dirs, at, data_dirs_size);
-    if (read < 0 || (uint32_t)read != data_dirs_size) {
+    if ((read == (size_t)-1) || (read != data_dirs_size)) {
         cli_dbgmsg("cli_peheader: Can't read optional file header data dirs\n");
         goto done;
     }
@@ -5102,7 +5104,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     }
 
     read = fmap_readn(map, section_hdrs, at, peinfo->nsections * sizeof(struct pe_image_section_hdr));
-    if (read < 0 || (uint32_t)read != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
+    if ((read == (size_t)-1) || (read != peinfo->nsections * sizeof(struct pe_image_section_hdr))) {
         cli_dbgmsg("cli_peheader: Can't read section header - possibly broken PE file\n");
         ret = CLI_PEHEADER_RET_BROKEN_PE;
         goto done;
@@ -5530,14 +5532,14 @@ static int sort_sects(const void *first, const void *second)
  * handle:
  * - A PE file has an embedded Authenticode section
  * - The PE file has no embedded Authenticode section but is covered by a
- *   catalog file that was loaded in via a -d 
- * 
+ *   catalog file that was loaded in via a -d
+ *
  * If peinfo is NULL, one will be created internally and used
- * 
+ *
  * CL_VERIFIED will be returned if the file was whitelisted based on its
  * signature.  CL_VIRUS will be returned if the file was blacklisted based on
  * its signature.  Otherwise, a cl_error_t error value will be returned.
- * 
+ *
  * If CL_VIRUS is returned, cli_append_virus will get called, adding the
  * name associated with the blacklist CRB rules to the list of found viruses.*/
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
