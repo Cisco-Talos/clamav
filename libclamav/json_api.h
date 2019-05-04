@@ -1,19 +1,19 @@
 /*
  * JSON Object API
- * 
+ *
  * Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -36,22 +36,22 @@
 #if HAVE_JSON
 #define JSON_TIMEOUT_SKIP_CYCLES 3
 
-int cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval);
-int cli_json_parse_error(json_object *root, const char *errstr);
+cl_error_t cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval);
+cl_error_t cli_json_parse_error(json_object *root, const char *errstr);
 
-int cli_jsonnull(json_object *obj, const char *key);
-int cli_jsonstr(json_object *obj, const char *key, const char *s);
-int cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len);
-int cli_jsonint(json_object *obj, const char *key, int32_t i);
-int cli_jsonint64(json_object *obj, const char *key, int64_t i);
-int cli_jsonbool(json_object *obj, const char *key, int i);
-int cli_jsondouble(json_object *obj, const char *key, double d);
+cl_error_t cli_jsonnull(json_object *obj, const char *key);
+cl_error_t cli_jsonstr(json_object *obj, const char *key, const char *s);
+cl_error_t cli_jsonstrlen(json_object *obj, const char *key, const char *s, int len);
+cl_error_t cli_jsonint(json_object *obj, const char *key, int32_t i);
+cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i);
+cl_error_t cli_jsonbool(json_object *obj, const char *key, int i);
+cl_error_t cli_jsondouble(json_object *obj, const char *key, double d);
 
 json_object *cli_jsonarray(json_object *obj, const char *key);
-int cli_jsonint_array(json_object *obj, int32_t val);
+cl_error_t cli_jsonint_array(json_object *obj, int32_t val);
 json_object *cli_jsonobj(json_object *obj, const char *key);
-int cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx);
-int cli_json_delowner(json_object *owner, const char *key, int idx);
+cl_error_t cli_json_addowner(json_object *owner, json_object *child, const char *key, int idx);
+cl_error_t cli_json_delowner(json_object *owner, const char *key, int idx);
 #define cli_json_delobj(obj) json_object_put(obj)
 
 #if HAVE_DEPRECATED_JSON
@@ -70,17 +70,17 @@ int json_object_object_get_ex(struct json_object *obj, const char *key, struct j
 #define nojson_func cli_dbgmsg
 
 /* internal functions */
-int cli_json_nojson(void);
+cl_error_t cli_json_nojson(void);
 
-int cli_jsonnull_nojson(const char* key);
-int cli_jsonstr_nojson(const char* key, const char* s);
-int cli_jsonstrlen_nojson(const char* key, const char* s, int len);
-int cli_jsonint_nojson(const char* key, int32_t i);
-int cli_jsonint64_nojson(const char* key, int64_t i);
-int cli_jsonbool_nojson(const char* key, int i);
-int cli_jsondouble_nojson(const char* key, double d);
+cl_error_t cli_jsonnull_nojson(const char* key);
+cl_error_t cli_jsonstr_nojson(const char* key, const char* s);
+cl_error_t cli_jsonstrlen_nojson(const char* key, const char* s, int len);
+cl_error_t cli_jsonint_nojson(const char* key, int32_t i);
+cl_error_t cli_jsonint64_nojson(const char* key, int64_t i);
+cl_error_t cli_jsonbool_nojson(const char* key, int i);
+cl_error_t cli_jsondouble_nojson(const char* key, double d);
 void* cli_jsonarray_nojson(const char* key);
-int cli_jsonint_array_nojson(int32_t val);
+cl_error_t cli_jsonint_array_nojson(int32_t val);
 
 #define cli_jsonnull(o, n) cli_jsonnull_nojson(n)
 #define cli_jsonstr(o, n, s) cli_jsonstr_nojson(n, s)
