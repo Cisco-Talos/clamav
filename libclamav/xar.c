@@ -78,7 +78,9 @@ static int xar_get_numeric_from_xml_element(xmlTextReaderPtr reader, size_t *val
             char *endptr = NULL;
             errno        = 0;
             numval       = strtol((const char *)numstr, &endptr, 10);
-            if (((numval == LONG_MAX || numval == LONG_MIN) && errno) || endptr == numstr) {
+            if ((((numval == LONG_MAX) || (numval == LONG_MIN)) && errno) ||
+                ((const xmlChar *)endptr == numstr)) {
+
                 cli_dbgmsg("cli_scanxar: XML element value invalid\n");
                 return CL_EFORMAT;
             } else if (numval < 0) {

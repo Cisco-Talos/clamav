@@ -207,7 +207,7 @@ static int cli_parse_mbox(const char *dir, cli_ctx *ctx);
 static message *parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static message *parseEmailHeaders(message *m, const table_t *rfc821Table);
 static int parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static int parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata);
+static cl_error_t parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata);
 static mbox_status parseRootMHTML(mbox_ctx *mctx, message *m, text *t);
 static mbox_status parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static int boundaryStart(const char *line, const char *boundary);
@@ -1112,13 +1112,13 @@ static size_t num_mhtml_comment_keys = sizeof(mhtml_comment_keys) / sizeof(struc
  * Attempts to leverage msxml parser, cannot operate without LIBXML2.
  * This function is only used for Preclassification JSON.
  */
-static int
-parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata)
+static cl_error_t parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata)
 {
+    cl_error_t ret = CL_SUCCESS;
+
 #if HAVE_LIBXML2
     const char *xmlsrt, *xmlend;
     xmlTextReaderPtr reader;
-    int ret = CL_SUCCESS;
 
     UNUSEDPARAM(cbdata);
     UNUSEDPARAM(wrkjobj);
@@ -1161,7 +1161,7 @@ parseMHTMLComment(const char *comment, cli_ctx *ctx, void *wrkjobj, void *cbdata
     cli_dbgmsg("in parseMHTMLComment\n");
     cli_dbgmsg("parseMHTMLComment: parsing html xml-comments requires libxml2!\n");
 #endif
-    return CL_SUCCESS;
+    return ret;
 }
 
 /*

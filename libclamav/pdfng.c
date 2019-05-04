@@ -22,7 +22,7 @@
  *  OpenSSL library under certain conditions as described in each
  *  individual source file, and distribute linked combinations
  *  including the two.
- *  
+ *
  *  You must obey the GNU General Public License in all respects
  *  for all of the code used other than OpenSSL.  If you modify
  *  file(s) with this exception, you may extend this exception to your
@@ -380,7 +380,6 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     size_t len, checklen;
     char *res = NULL;
     uint32_t objid;
-    size_t i;
 
     if (obj->objstm) {
         if (objsize > (size_t)(obj->objstm->streambuf_len - (objstart - obj->objstm->streambuf))) {
@@ -453,7 +452,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         if (newobj == obj)
             return NULL;
 
-        /* 
+        /*
          * If pdf_handlename hasn't been called for this object,
          * then parse the object prior to extracting it
          */

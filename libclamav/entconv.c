@@ -157,12 +157,17 @@ static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 
 static iconv_t iconv_open(const char* tocode, const char* fromcode)
 {
+    UNUSEDPARAM(tocode);
+
     iconv_t iconv = cli_malloc(sizeof(*iconv));
     if (!iconv)
         return NULL;
+
     cli_dbgmsg(MODULE_NAME "Internal iconv\n");
+
     /* TODO: check that tocode is UTF16BE */
     iconv->size = encoding_bytes(fromcode, &iconv->encoding);
+
     return iconv;
 }
 
@@ -685,7 +690,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
         return 0;
     }
     /* convert encoding conv->tmp_area. conv->out_area */
-    alignfix = inleft % 4; /* iconv gives an error if we give him 3 bytes to convert, 
+    alignfix = inleft % 4; /* iconv gives an error if we give him 3 bytes to convert,
 			       and we are using ucs4, ditto for utf16, and 1 byte*/
     inleft -= alignfix;
 

@@ -48,7 +48,7 @@ struct msxml_cbdata {
     size_t winsize;
 };
 
-int msxml_read_cb(void *ctx, char *buffer, int len);
+int msxml_read_cb(void *ctx, char *buffer, int buffer_len);
 cl_error_t cli_scanmsxml(cli_ctx *ctx);
 
 #endif /* __MSXML_H */

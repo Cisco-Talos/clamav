@@ -1,19 +1,19 @@
 /*
  * HWP Stuff
- * 
+ *
  * Copyright (C) 2015-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -47,16 +47,16 @@ typedef struct hwp5_header {
 } hwp5_header_t;
 
 /* HWP EMBEDDED OLE2 - 4-byte prefixed OLE2 */
-int cli_scanhwpole2(cli_ctx *ctx);
+cl_error_t cli_scanhwpole2(cli_ctx *ctx);
 
 /* HWP 5.0 - OLE2 */
-int cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5);
-int cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath);
+cl_error_t cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5);
+cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath);
 
 /* HWP 3.0 - UNIQUE FORMAT */
-int cli_scanhwp3(cli_ctx *ctx);
+cl_error_t cli_scanhwp3(cli_ctx *ctx);
 
 /* HWPML - SINGLE XML DOCUMENT (similar to MSXML) */
-int cli_scanhwpml(cli_ctx *ctx);
+cl_error_t cli_scanhwpml(cli_ctx *ctx);
 
 #endif /* __HWP_H__ */

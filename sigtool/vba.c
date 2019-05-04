@@ -1186,7 +1186,8 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
 {
     cl_error_t status = CL_CLEAN;
     cl_error_t ret;
-    int i, fd, data_len;
+    int i, fd;
+    size_t data_len;
     vba_project_t *vba_project = NULL;
     DIR *dd;
     struct dirent *dent;
@@ -1278,7 +1279,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
 
         for (i = 0; i < vba_project->count; i++) {
             data_len = vba_project->length[i];
-            data     = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], data_len, vba_project->key[i]);
+            data     = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], (uint32_t)data_len, vba_project->key[i]);
             if (data) {
                 data           = (unsigned char *)realloc(data, data_len + 1);
                 data[data_len] = '\0';

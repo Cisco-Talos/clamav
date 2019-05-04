@@ -1,19 +1,19 @@
 /*
  * OOXML JSON Internals
- * 
+ *
  * Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
  * Authors: Kevin Lin
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -149,6 +149,8 @@ static int ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx)
 {
     int ret;
 
+    UNUSEDPARAM(filepath);
+
     cli_dbgmsg("in ooxml_core_cb\n");
     ret = ooxml_parse_document(fd, ctx);
     if (ret == CL_EPARSE)
@@ -162,6 +164,8 @@ static int ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx)
 static int ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx)
 {
     int ret;
+
+    UNUSEDPARAM(filepath);
 
     cli_dbgmsg("in ooxml_extn_cb\n");
     ret = ooxml_parse_document(fd, ctx);
@@ -181,6 +185,8 @@ static int ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx)
     const xmlChar *name, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
+
+    UNUSEDPARAM(filepath);
 
     unsigned long sav_scansize    = ctx->scansize;
     unsigned int sav_scannedfiles = ctx->scannedfiles;
@@ -344,6 +350,8 @@ static int ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx)
 {
     int ret                 = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
+
+    UNUSEDPARAM(filepath);
 
     cli_dbgmsg("in ooxml_hwp_cb\n");
 

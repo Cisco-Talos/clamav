@@ -91,7 +91,7 @@ typedef enum {
 typedef struct file_buff_tag {
     int fd;
     unsigned char buffer[HTML_FILE_BUFF_LEN];
-    int length;
+    size_t length;
 } file_buff_t;
 
 struct tag_contents {

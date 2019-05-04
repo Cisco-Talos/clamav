@@ -1470,7 +1470,7 @@ void cli_sigperf_print()
             continue;
         }
         if (name)
-            name_len = strlen(name);
+            name_len = (int)strlen(name);
         else
             name_len = 0;
         if (name_len > max_name_len)
@@ -1483,8 +1483,8 @@ void cli_sigperf_print()
         elem++;
         elems++;
     }
-    if (max_name_len < strlen("Bytecode name"))
-        max_name_len = strlen("Bytecode name");
+    if (max_name_len < (int)strlen("Bytecode name"))
+        max_name_len = (int)strlen("Bytecode name");
 
     cli_qsort(stats, elems, sizeof(struct sigperf_elem), sigelem_comp);
 

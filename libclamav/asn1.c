@@ -364,13 +364,13 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
     unsigned int avail;
     int ret;
 
-    if (ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE)) {
+    if (0 != (ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) {
         cli_dbgmsg("asn1_expect_hash_algo: expected SEQUENCE to start AlgorithmIdentifier\n");
         return ret;
     }
     avail     = obj.size;
     *asn1data = obj.next;
-    if (ret = asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID)) {
+    if (0 != (ret = asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID))) {
         cli_dbgmsg("asn1_expect_hash_algo: unexpected object type inside AlgorithmIdentifier SET\n");
         return ret;
     }
