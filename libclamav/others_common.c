@@ -969,9 +969,9 @@ char *cli_genfname(const char *prefix)
 
     if (prefix && (strlen(prefix) > 0)) {
         sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix));
-        len              = strlen(sanitized_prefix) + 1 + 5 + 1; /* {prefix}.{5}\0 */
+        len              = strlen(sanitized_prefix) + strlen(".") + 5 + 1; /* {prefix}.{5}\0 */
     } else {
-        len = 6 + 1 + 48 + 4 + 1; /* clamav-{48}.tmp\0 */
+        len = strlen("clamav-") + 48 + strlen(".tmp") + 1; /* clamav-{48}.tmp\0 */
     }
 
     fname = (char *)cli_calloc(len, sizeof(char));
@@ -1001,9 +1001,10 @@ char *cli_genfname(const char *prefix)
         return NULL;
     }
 
-    if (sanitized_prefix && (strlen(sanitized_prefix) > 0)) {
-        fname[5] = '\0';
-        snprintf(fname, len, "%s.%s", sanitized_prefix, tmp);
+    if (sanitized_prefix) {
+        if (strlen(sanitized_prefix) > 0) {
+            snprintf(fname, len, "%s.%.*s", sanitized_prefix, 5, tmp);
+        }
         free(sanitized_prefix);
     } else {
         snprintf(fname, len, "clamav-%s.tmp", tmp);
