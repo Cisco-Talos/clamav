@@ -1,8 +1,8 @@
 /*
  * Author: 웃 Sebastian Andrzej Siewior
  * Summary: Glue code for libmspack handling.
- * 
- * Acknowledgements: ClamAV uses Stuart Caie's libmspack to parse as number of 
+ *
+ * Acknowledgements: ClamAV uses Stuart Caie's libmspack to parse as number of
  *                   Microsoft file formats.
  * ✉ sebastian @ breakpoint ̣cc
  */
@@ -160,7 +160,7 @@ static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
     }
     count = fread(buffer, bytes, 1, mspack_handle->f);
     if (count < 1) {
-        cli_dbgmsg("%s() %d %d, %zd\n", __func__, __LINE__, bytes, count);
+        cli_dbgmsg("%s() %d %d, %zu\n", __func__, __LINE__, bytes, count);
         return -1;
     }
     return bytes;
@@ -195,7 +195,7 @@ static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
 
     count = fwrite(buffer, max_size, 1, mspack_handle->f);
     if (count < 1) {
-        cli_dbgmsg("%s() err %m <%zd %d>\n", __func__, count, bytes);
+        cli_dbgmsg("%s() err %d <%zu %d>\n", __func__, __LINE__, count, bytes);
         return -1;
     }
 
