@@ -4,6 +4,12 @@
  *
  *  Authors: aCaB
  *
+ *  These functions are actions that may be taken when a sample alerts.
+ *  The user may wish to:
+ *  - move file to destination directory.
+ *  - copy file to destination directory.
+ *  - remove (delete) the file.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -24,8 +30,22 @@
 
 #include "shared/optparser.h"
 
+/**
+ * @brief Callback function to perform the action requested when actsetup() was invoked.
+ *
+ * @param filename
+ */
 extern void (*action)(const char *);
+
+/**
+ * @brief Select the appropriate callback function based on the configuration options.
+ *
+ * @param opts Application configuration options.
+ * @return int 0 if success.
+ * @return int 1 if move or copy were selected but the destination directory does not exist.
+ */
 int actsetup(const struct optstruct *opts);
+
 extern unsigned int notremoved, notmoved;
 
 #endif
