@@ -150,12 +150,12 @@ void destroy_ctx(int desc, cli_ctx *ctx)
         close(desc);
 
     if (NULL != ctx) {
-        if (NULL != *(ctx->fmap)) {
-            funmap(*(ctx->fmap));
-            *(ctx->fmap) = NULL;
-        }
-
         if (NULL != ctx->fmap) {
+            if (NULL != *(ctx->fmap)) {
+                funmap(*(ctx->fmap));
+                *(ctx->fmap) = NULL;
+            }
+
             free(ctx->fmap);
             ctx->fmap = NULL;
         }
