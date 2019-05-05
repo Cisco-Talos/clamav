@@ -4304,12 +4304,13 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
     return CL_SUCCESS;
 }
 
-static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
+static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 
 cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
+    cl_error_t ret = CL_SUCCESS;
+
     FILE *fs        = NULL;
-    int ret         = CL_SUCCESS;
     uint8_t skipped = 0;
     const char *dbname;
     char buff[FILEBUFF];
@@ -4503,12 +4504,14 @@ cli_insertdbtoll(struct db_ll_entry **head, struct db_ll_entry *entry)
     return;
 }
 
-static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options)
+static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options)
 {
+    cl_error_t ret = CL_EOPEN;
+
     DIR *dd = NULL;
     struct dirent *dent;
-    char *dbfile = NULL;
-    int ret = CL_EOPEN, have_daily_cld = 0, have_daily_cvd = 0, ends_with_sep = 0;
+    char *dbfile      = NULL;
+    int ends_with_sep = 0;
     size_t dirname_len;
     struct cl_cvd *daily_cld = NULL;
     struct cl_cvd *daily_cvd = NULL;
@@ -4570,12 +4573,12 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
             load_priority = DB_LOAD_PRIORITY_IGN;
 
         } else if (!strcmp(dent->d_name, "daily.cld")) {
-            /* the daily db must be loaded before main */
-            // TODO Why is this the case?
+            /* The daily db must be loaded before main, this way, the
+               daily ign & ign2 signatures prevent ign'ored signatures
+               in all databases from being loaded. */
             load_priority = DB_LOAD_PRIORITY_DAILY_CLD;
 
-            have_daily_cld = !access(dbfile, R_OK);
-            if (have_daily_cld) {
+            if (0 == access(dbfile, R_OK)) {
                 daily_cld = cl_cvdhead(dbfile);
                 if (!daily_cld) {
                     cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
@@ -4587,8 +4590,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         } else if (!strcmp(dent->d_name, "daily.cvd")) {
             load_priority = DB_LOAD_PRIORITY_DAILY_CVD;
 
-            have_daily_cvd = !access(dbfile, R_OK);
-            if (have_daily_cvd) {
+            if (0 == access(dbfile, R_OK)) {
                 daily_cvd = cl_cvdhead(dbfile);
                 if (!daily_cvd) {
                     cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
@@ -4603,7 +4605,10 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         } else if (!strcmp(dent->d_name, "daily.cfg")) {
             load_priority = DB_LOAD_PRIORITY_DAILY_CFG;
 
-        } else if ((options & CL_DB_OFFICIAL_ONLY) && !strstr(dirname, "clamav-") && !cli_strbcasestr(dent->d_name, ".cld") && !cli_strbcasestr(dent->d_name, ".cvd")) {
+        } else if ((options & CL_DB_OFFICIAL_ONLY) &&
+                   !strstr(dirname, "clamav-") &&            // Official databases that are temp-files (in the process of updating).
+                   !cli_strbcasestr(dent->d_name, ".cld") && // Official databases that have been updated using incremental updates.
+                   !cli_strbcasestr(dent->d_name, ".cvd")) { // Official databases.
             // TODO Should this be higher up in the list? Should we
             // ignore .ign/.ign2 files and the local.gdb file when this
             // flag is set?
@@ -4614,8 +4619,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 
         } else if (cli_strbcasestr(dent->d_name, ".crb")) {
             /* .cat files cannot be loaded successfully unless there are .crb
-         * rules that whitelist the certs used to sign the catalog files.
-         * Therefore, we need to ensure the .crb rules are loaded prior */
+             * rules that whitelist the certs used to sign the catalog files.
+             * Therefore, we need to ensure the .crb rules are loaded prior */
             load_priority = DB_LOAD_PRIORITY_CRB;
 
         } else {
@@ -4641,17 +4646,20 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
      * has the highest version number.  If they have the same version number
      * we load daily.cld, since that will load faster (it won't attempt to
      * verify the digital signature of the db).
+     *
      * TODO It'd be ideal if we treated all cld/cvd pairs like we do the daily
      * ones, and only loaded the one with the highest version. */
     for (iter = head; iter != NULL; iter = iter->next) {
 
-        if (DB_LOAD_PRIORITY_DAILY_CLD == iter->load_priority && have_daily_cvd) {
-            if (daily_cld->version < daily_cvd->version) {
+        if (DB_LOAD_PRIORITY_DAILY_CLD == iter->load_priority) {
+            /* iter is the daily.cld. If we also have the cvd and the cvd is newer, skip the cld. */
+            if ((NULL != daily_cvd) && (daily_cld->version < daily_cvd->version)) {
                 continue;
             }
 
-        } else if (DB_LOAD_PRIORITY_DAILY_CVD == iter->load_priority && have_daily_cld) {
-            if (daily_cld->version >= daily_cvd->version) {
+        } else if (DB_LOAD_PRIORITY_DAILY_CVD == iter->load_priority) {
+            /* iter is the daily.cvd. If we also have the cld and the cld is same or newer, skip the cvd. */
+            if ((NULL != daily_cld) && (daily_cld->version >= daily_cvd->version)) {
                 continue;
             }
         }
