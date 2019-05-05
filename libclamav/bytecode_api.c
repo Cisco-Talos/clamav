@@ -1353,17 +1353,22 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
     char *option_name_l = NULL;
 
     if (ctx == NULL || option_name == NULL || name_len == 0) {
-        cli_warnmsg("engine_scan_options_ex: Invalid arguments!");
-        return 0;
+        cli_warnmsg("engine_scan_options_ex: Invalid arguments!\n");
+        goto done;
     }
 
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     if (cctx == NULL || cctx->options == NULL) {
-        cli_warnmsg("engine_scan_options_ex: Invalid arguments!");
-        return 0;
+        cli_warnmsg("engine_scan_options_ex: Invalid arguments!\n");
+        goto done;
     }
 
     option_name_l = malloc(name_len + 1);
+    if (NULL == option_name_l) {
+        cli_warnmsg("Failed to allocate memory for option name.\n");
+        goto done;
+    }
+
     for (i = 0; i < name_len; i++) {
         option_name_l[0] = tolower(option_name[i]);
     }
@@ -1442,6 +1447,8 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
         /* else unknown option */
     }
     /* else unknown option */
+
+done:
 
     if (NULL != option_name_l)
         free(option_name_l);
