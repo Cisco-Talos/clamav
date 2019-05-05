@@ -148,6 +148,8 @@ def : Proc<"istanbul",        [Feature3DNowA, Feature64Bit, FeatureSSE4A,
                                Feature3DNowA]>;
 def : Proc<"shanghai",        [Feature3DNowA, Feature64Bit, FeatureSSE4A,
                                Feature3DNowA]>;
+def : Proc<"dhyana",          [Feature3DNowA, Feature64Bit, FeatureSSE42,
+                               FeatureAVX]>;
 
 def : Proc<"winchip-c6",      [FeatureMMX]>;
 def : Proc<"winchip2",        [FeatureMMX, Feature3DNow]>;

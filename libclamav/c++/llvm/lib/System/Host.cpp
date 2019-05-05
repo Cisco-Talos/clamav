@@ -291,6 +291,14 @@ std::string sys::getHostCPUName() {
     default:
       return "generic";
     }
+  } else if (memcmp(text.c, "HygonGenuine", 12) == 0) {
+    switch (Family) {
+    case 24: //family 18h
+      return "dhyana";
+    default:
+      return "generic";
+    }
+    return "generic";
   }
   return "generic";
 }

@@ -259,13 +259,14 @@ void X86Subtarget::AutoDetectSubtargetFeatures() {
 
   bool IsIntel = memcmp(text.c, "GenuineIntel", 12) == 0;
   bool IsAMD   = !IsIntel && memcmp(text.c, "AuthenticAMD", 12) == 0;
+  bool IsHygon = memcmp(text.c, "HygonGenuine", 12) == 0;
 
   HasCLMUL = IsIntel && ((ECX >> 1) & 0x1);
   HasFMA3  = IsIntel && ((ECX >> 12) & 0x1);
   HasAVX   = ((ECX >> 28) & 0x1);
   HasAES   = IsIntel && ((ECX >> 25) & 0x1);
 
-  if (IsIntel || IsAMD) {
+  if (IsIntel || IsAMD || IsHygon) {
     // Determine if bit test memory instructions are slow.
     unsigned Family = 0;
     unsigned Model  = 0;
@@ -277,8 +278,8 @@ void X86Subtarget::AutoDetectSubtargetFeatures() {
 
     GetCpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
     HasX86_64 = (EDX >> 29) & 0x1;
-    HasSSE4A = IsAMD && ((ECX >> 6) & 0x1);
-    HasFMA4 = IsAMD && ((ECX >> 16) & 0x1);
+    HasSSE4A = (IsAMD||IsHygon) && ((ECX >> 6) & 0x1);
+    HasFMA4 = (IsAMD||IsHygon) && ((ECX >> 16) & 0x1);
   }
 }
 
