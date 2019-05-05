@@ -3165,13 +3165,15 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
     int32_t rv          = 0;
     unsigned int i      = 0;
     uint32_t badobjects = 0;
-    cli_ctx *ctx        = pdf->ctx;
+    cli_ctx *ctx        = NULL;
 
     if (NULL == pdf || NULL == alerts) {
         cli_errmsg("pdf_find_and_extract_objs: Invalid arguments.\n");
         status = CL_EARG;
         goto done;
     }
+
+    ctx = pdf->ctx;
 
     /* parse PDF and find obj offsets */
     while (CL_BREAK != (rv = pdf_findobj(pdf))) {
@@ -3215,7 +3217,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
         }
     }
 
-    if (!status) {
+    if (CL_SUCCESS == status) {
         status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1, -1);
         cli_dbgmsg("pdf_find_and_extract_objs: (parsed hooks) returned %d\n", status);
         if (status == CL_VIRUS) {
@@ -3258,7 +3260,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
     }
 
 done:
-    if (!status && badobjects) {
+    if ((CL_SUCCESS == status) && badobjects) {
         status = CL_EFORMAT;
     }
 
