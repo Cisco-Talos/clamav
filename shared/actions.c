@@ -4,6 +4,12 @@
  *
  *  Author: aCaB
  *
+ *  These functions are actions that may be taken when a sample alerts.
+ *  The user may wish to:
+ *  - move file to destination directory.
+ *  - copy file to destination directory.
+ *  - remove (delete) the file.
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -83,7 +89,7 @@ static void action_move(const char *filename)
     char *nuname;
     int fd = getdest(filename, &nuname), copied = 0;
 
-    if (fd < 0 || (rename(filename, nuname) && (copied = 1) && filecopy(filename, nuname))) {
+    if (fd < 0 || (rename(filename, nuname) && ((copied = 1)) && filecopy(filename, nuname))) {
         logg("!Can't move file %s\n", filename);
         notmoved++;
         if (nuname) unlink(nuname);
@@ -134,6 +140,10 @@ static int isdir(void)
     return 1;
 }
 
+/*
+ * Call this function at the beginning to configure the user preference.
+ * Later, call the "action" callback function to perform the selection action.
+ */
 int actsetup(const struct optstruct *opts)
 {
     int move = optget(opts, "move")->enabled;
