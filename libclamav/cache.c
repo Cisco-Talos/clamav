@@ -33,15 +33,11 @@
 #include "cache.h"
 #include "fmap.h"
 
-#ifdef CL_THREAD_SAFE
+// #define USE_LRUHASHCACHE /* The replacement policy algorithm to use */
+#define USE_SPLAY
+
+#if defined(CL_THREAD_SAFE) && defined(USE_LRUHASHCACHE)
 static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
-#else
-#define pthread_mutex_lock(x) 0
-#define pthread_mutex_unlock(x)
-#define pthread_mutex_init(a, b) 0
-#define pthread_mutex_destroy(a) \
-    do {                         \
-    } while (0)
 #endif
 
 /* The number of root trees and the chooser function
@@ -60,10 +56,6 @@ static inline unsigned int getkey(uint8_t *hash)
 
 /* The number of nodes in each tree */
 #define NODES 256
-
-/* The replacement policy algorithm to use */
-/* #define USE_LRUHASHCACHE */
-#define USE_SPLAY
 
 /* LRUHASHCACHE --------------------------------------------------------------------- */
 #ifdef USE_LRUHASHCACHE
@@ -179,9 +171,13 @@ static void cacheset_rehash(struct cache_set *map, mpool_t *mempool)
     int ret;
     struct cache_set tmp_set;
     struct cache_key *key;
+#ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&pool_mutex);
+#endif
     ret = cacheset_init(&tmp_set, mempool);
+#ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&pool_mutex);
+#endif
     if (ret)
         return;
 
@@ -190,9 +186,13 @@ static void cacheset_rehash(struct cache_set *map, mpool_t *mempool)
         cacheset_add(&tmp_set, (unsigned char *)&key->digest, key->size, mempool);
         key = key->lru_next;
     }
+#ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&pool_mutex);
+#endif
     MPOOL_FREE(mempool, map->data);
+#ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&pool_mutex);
+#endif
     memcpy(map, &tmp_set, sizeof(tmp_set));
 }
 
@@ -310,6 +310,11 @@ struct cache_set { /* a tree */
 static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
 {
     unsigned int i;
+
+#ifndef USE_MPOOL
+    UNUSEDPARAM(mempool);
+#endif
+
     cs->data = MPOOL_CALLOC(mempool, NODES, sizeof(*cs->data));
     cs->root = NULL;
 
@@ -330,6 +335,10 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
 /* Frees all the nodes */
 static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
 {
+#ifndef USE_MPOOL
+    UNUSEDPARAM(mempool);
+#endif
+
     MPOOL_FREE(mempool, cs->data);
     cs->data = NULL;
 }
@@ -772,6 +781,7 @@ int cli_cache_init(struct cl_engine *engine)
     }
 
     for (i = 0; i < TREES; i++) {
+#ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&cache[i].mutex, NULL)) {
             cli_errmsg("cli_cache_init: mutex init fail\n");
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
@@ -779,9 +789,12 @@ int cli_cache_init(struct cl_engine *engine)
             MPOOL_FREE(engine->mempool, cache);
             return 1;
         }
+#endif
         if (cacheset_init(&cache[i].cacheset, engine->mempool)) {
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
+#ifdef CL_THREAD_SAFE
             for (j = 0; j <= i; j++) pthread_mutex_destroy(&cache[j].mutex);
+#endif
             MPOOL_FREE(engine->mempool, cache);
             return 1;
         }
@@ -805,7 +818,9 @@ void cli_cache_destroy(struct cl_engine *engine)
 
     for (i = 0; i < TREES; i++) {
         cacheset_destroy(&cache[i].cacheset, engine->mempool);
+#ifdef CL_THREAD_SAFE
         pthread_mutex_destroy(&cache[i].mutex);
+#endif
     }
     MPOOL_FREE(engine->mempool, cache);
 }
@@ -818,16 +833,20 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
     struct CACHE *c;
 
     c = &cache[key];
+#ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cache_lookup_hash: cache_lookup_hash: mutex lock fail\n");
         return ret;
     }
+#endif
 
     /* cli_warnmsg("cache_lookup_hash: key is %u\n", key); */
 
     ret = (cacheset_lookup(&c->cacheset, md5, len, reclevel)) ? CL_CLEAN : CL_VIRUS;
+#ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
-    /* if(ret == CL_CLEAN) cli_warnmsg("cached\n"); */
+    // if(ret == CL_CLEAN) cli_warnmsg("cached\n");
+#endif
     return ret;
 }
 
@@ -854,10 +873,12 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         return;
     }
     c = &ctx->engine->cache[key];
+#ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cli_add: mutex lock fail\n");
         return;
     }
+#endif
 
     /* cli_warnmsg("cache_add: key is %u\n", key); */
 
@@ -871,7 +892,9 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 #endif
 #endif
 
+#ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
+#endif
     cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
     return;
 }
@@ -893,10 +916,12 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
     /* cli_warnmsg("cache_remove: key is %u\n", key); */
 
     c = &engine->cache[key];
+#ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cli_add: mutex lock fail\n");
         return;
     }
+#endif
 
 #ifdef USE_LRUHASHCACHE
     cacheset_remove(&c->cacheset, md5, size, engine->mempool);
@@ -908,7 +933,9 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
 #endif
 #endif
 
+#ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
+#endif
     cli_dbgmsg("cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
     return;
 }
