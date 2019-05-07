@@ -21,12 +21,15 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
 #include <string.h>
 
+#include "mpool.h"
+#include "readdb.h"
 #include "clamav.h"
 #include "others.h"
 #include "openioc.h"

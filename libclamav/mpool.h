@@ -22,6 +22,10 @@
 #ifndef MPOOL_H
 #define MPOOL_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #ifdef USE_MPOOL
 
 #include "clamav-types.h"
