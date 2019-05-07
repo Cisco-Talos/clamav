@@ -45,4 +45,7 @@ struct scth_thrarg {
 
 void *onas_scan_th(void *arg);
 
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
+
 #endif
