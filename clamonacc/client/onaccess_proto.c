@@ -71,78 +71,15 @@ extern struct sockaddr_un nixsock;
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
-/* Connects to clamd
- * Returns a FD or -1 on error */
-/*int onas_dconnect(struct onas_context **ctx) {
-	int sockd, res;
-	const struct optstruct *opt;
-	struct addrinfo hints, *info, *p;
-	char port[10];
-	char *ipaddr;
-
-#ifndef _WIN32
-	opt = optget((*ctx)->clamdopts, "LocalSocket");
-	if (opt->enabled) {
-		if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) >= 0) {
-			if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
-				return sockd;
-			else {
-				logg("!Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
-				close(sockd);
-			}
-		}
-	}
-#endif
-
-	snprintf(port, sizeof(port), "%lld", optget((*ctx)->clamdopts, "TCPSocket")->numarg);
-
-	opt = optget((*ctx)->clamdopts, "TCPAddr");
-	while (opt) {
-		if (opt->enabled) {
-			ipaddr = NULL;
-			if (opt->strarg)
-				ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
-
-			memset(&hints, 0x00, sizeof(struct addrinfo));
-			hints.ai_family = AF_UNSPEC;
-			hints.ai_socktype = SOCK_STREAM;
-
-			if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-				logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
-				opt = opt->nextarg;
-				continue;
-			}
-
-			for (p = info; p != NULL; p = p->ai_next) {
-				if((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-					logg("!Can't create the socket: %s\n", strerror(errno));
-					continue;
-				}
-
-				if(connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
-					logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
-					closesocket(sockd);
-					continue;
-				}
-
-				freeaddrinfo(info);
-				return sockd;
-			}
-
-			freeaddrinfo(info);
-		}
-		opt = opt->nextarg;
-	}
-
-	return -1;
-}*/
-
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
 static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *filename) {
 	uint32_t buf[BUFSIZ/sizeof(uint32_t)];
 	int fd, len;
 	unsigned long int todo = (*ctx)->maxstream;
+        int64_t timeout;
+
+        timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
 
 	if(filename) {
 		if((fd = safe_open(filename, O_RDONLY | O_BINARY))<0) {
@@ -151,7 +88,7 @@ static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *f
 		}
 	} else fd = 0;
 
-	if(onas_sendln(curl, "zINSTREAM", 10)) {
+	if(onas_sendln(curl, "zINSTREAM", 10, timeout)) {
 		close(fd);
 		return -1;
 	}
@@ -159,7 +96,7 @@ static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *f
 	while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 		if((unsigned int)len > todo) len = todo;
 		buf[0] = htonl(len);
-		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t))) {
+		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t), timeout)) {
 			close(fd);
 			return -1;
 		}
@@ -175,14 +112,14 @@ static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *f
 		return 0;
 	}
 	*buf=0;
-	onas_sendln(curl, (const char *)buf, 4);
+	onas_sendln(curl, (const char *)buf, 4, timeout);
 	return 1;
 }
 
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_fdpass(CURL *curl, const char *filename) {
+static int onas_send_fdpass(CURL *curl, const char *filename, int64_t timeout) {
 	CURLcode result;
 	struct iovec iov[1];
 	struct msghdr msg;
@@ -197,7 +134,7 @@ static int onas_send_fdpass(CURL *curl, const char *filename) {
 			return 0;
 		}
 	} else fd = 0;
-	if(result = onas_sendln(curl, "zFILDES", 8)) {
+	if(result = onas_sendln(curl, "zFILDES", 8, timeout)) {
 		logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
 		close(fd);
 		return -1;
@@ -215,7 +152,7 @@ static int onas_send_fdpass(CURL *curl, const char *filename) {
 	cmsg->cmsg_level = SOL_SOCKET;
 	cmsg->cmsg_type = SCM_RIGHTS;
 	*(int *)CMSG_DATA(cmsg) = fd;
-	if(onas_sendln(curl, &msg, 0) == -1) {
+	if(onas_sendln(curl, &msg, 0, timeout) == -1) {
 		logg("!FD send failed: %s\n", strerror(errno));
 		close(fd);
 		return -1;
@@ -252,6 +189,9 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 	char *bol, *eol;
 	struct RCVLN rcv;
 	STATBUF sb;
+        int64_t timeout;
+
+        timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
 
 	if(filename && chkpath(ctx, filename))
 		return 0;
@@ -282,7 +222,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 				return -1;
 			}
 			sprintf(bol, "z%s %s", scancmd[scantype], filename);
-			if(onas_sendln(curl, bol, len)) {
+			if(onas_sendln(curl, bol, len, timeout)) {
 				if (ret_code) {
 					*ret_code = CL_EWRITE;
 				}
@@ -299,7 +239,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 #ifdef HAVE_FD_PASSING
 		case FILDES:
 			/* NULL filename safe in send_fdpass() */
-			len = onas_send_fdpass(curl, filename);
+			len = onas_send_fdpass(curl, filename, timeout);
 			break;
 #endif
 	}
@@ -311,7 +251,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 		return len;
 	}
 
-	while((len = onas_recvln(&rcv, &bol, &eol))) {
+	while((len = onas_recvln(&rcv, &bol, &eol, timeout))) {
 		if(len == -1) {
 			if (ret_code) {
 				*ret_code = CL_EREAD;
@@ -339,11 +279,11 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 			if(!colon) {
 				char * unkco = "UNKNOWN COMMAND";
 				if (!strncmp(bol, unkco, sizeof(unkco) - 1)) {
-					logg("clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
+					logg("*clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
 							(scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" :
 							scancmd[scantype]);
 				} else {
-					logg("Failed to parse reply: \"%s\"\n", bol);
+					logg("*Failed to parse reply: \"%s\"\n", bol);
 				}
 
 				if (ret_code) {
@@ -392,7 +332,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 				*printok = 0;
 
 				if(filename) {
-					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
+					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*burp %s\n", bol);
 				}
 
 				if (ret_code) {
@@ -406,7 +346,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 				*printok = 0;
 
 				if(filename) {
-					(scantype >= STREAM) ? logg("~%s%s\n", filename, colon) : logg("~%s\n", bol);
+					(scantype >= STREAM) ? logg("~%s%s\n", filename, colon) : logg("~blegh%s\n", bol);
 				}
 
 				if (ret_code) {

@@ -46,11 +46,11 @@
 
 static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+//static int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STATBUF sb, struct onas_scan_event *event_data, int *infected, int *err, cl_error_t *ret_code);
 static int onas_scth_handle_dir(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
-static int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
+//static int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
 
 static void onas_scth_exit(int sig);
 
@@ -65,7 +65,7 @@ static void onas_scth_exit(int sig)
  * Scan wrapper, used by both inotify and fanotify threads. Owned by scanthread to force multithreaded client archtiecture
  * which better avoids kernel level deadlocks from fanotify blocking/prevention
  */
-static int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
     int ret             = 0;
     int i = 0;
@@ -120,7 +120,7 @@ static int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF 
 	return ret;
 }
 
-static int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STATBUF sb, struct onas_scan_event *event_data, int *infected, int *err, cl_error_t *ret_code)
+int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STATBUF sb, struct onas_scan_event *event_data, int *infected, int *err, cl_error_t *ret_code)
 {
 	struct fanotify_response res;
 	int ret = 0;
@@ -134,13 +134,13 @@ static int onas_scth_scanfile(struct onas_context **ctx, const char *fname, STAT
 	if (event_data->b_scan) {
 		ret = onas_scan(ctx, fname, sb, infected, err, ret_code);
 
-		if (err && ret_code != CL_SUCCESS) {
+		if (*err && *ret_code != CL_SUCCESS) {
 			logg("*Clamonacc: scan failed with error code %d\n", *ret_code);
 		}
 
 
 		if (event_data->b_fanotify) {
-			if ((err && ret_code && (*ctx)->deny_on_error) || infected) {
+			if ((*err && *ret_code && (*ctx)->deny_on_error) || *infected) {
 				res.response = FAN_DENY;
 			}
 		}
@@ -193,7 +193,7 @@ static int onas_scth_handle_dir(struct onas_context **ctx, const char *pathname,
     return ret;
 }
 
-static int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data) {
+int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data) {
 
 	STATBUF sb;
 	int32_t infected = 0;

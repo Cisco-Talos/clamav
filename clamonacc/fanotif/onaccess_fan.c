@@ -53,6 +53,8 @@
 
 #include "../client/onaccess_client.h"
 
+#include "../scan/onaccess_scth.h"
+
 extern pthread_t ddd_pid;
 
 /*static void onas_fan_exit(int sig)
@@ -247,20 +249,22 @@ int onas_fan_eloop(struct onas_context **ctx) {
                 }
             }
 
-                                fres = FSTAT(fmd->fd, &sb);
-					if((*ctx)->sizelimit) {
-					if(fres != 0 || sb.st_size > (*ctx)->sizelimit) {
-                    scan = 0;
-						logg("*ClamFanotif: %s skipped (size > %ld)\n", fname, (*ctx)->sizelimit);
-                }
-            }
+                                if (scan) {
+					struct onas_scan_event *event_data;
 
-                                /* TODO: rework to feed consumer queue
-				if (onas_fan_scanfile(fname, fmd, sb, scan, ctx) == -1) {
+					event_data = cli_calloc(1, sizeof(struct onas_scan_event));
+
+					event_data->b_fanotify = 1;
+					event_data->fmd = fmd;
+					event_data->b_scan = scan;
+
+					/* TODO: rework to feed consumer queue */
+					if (onas_scth_handle_file(ctx, fname, event_data) == -1) {
                 close(fmd->fd);
-					logg("!ClamFanotif: error when stating and/or scanning??\n");
+						logg("!ClamFanotif: unrecoverable fanotify error occurred :(\n");
 						return 2;
-				}*/
+					}
+                                }
 
             if (close(fmd->fd) == -1) {
 					printf("!ClamFanotif: internal error (close(%d) failed)\n", fmd->fd);

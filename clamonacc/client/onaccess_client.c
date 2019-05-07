@@ -23,6 +23,8 @@
 #include "clamav-config.h"
 #endif
 
+#define ONAS_DEBUG
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <curl/curl.h>
@@ -88,9 +90,12 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 	CURL *curl;
 	CURLcode curlcode;
 	char *ipaddr = NULL;
-	char port[10];
 	struct addrinfo hints, *info, *p;
 	int res;
+    int64_t timeout;
+
+    timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+
 
 	*err = CL_SUCCESS;
 
@@ -103,17 +108,8 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 		return 0;
 	}
 
-	snprintf(port, sizeof(port), "%lld", optget((*ctx)->clamdopts, "TCPSocket")->numarg);
 
-	if ((*ctx)->portstr) {
-		free((*ctx)->portstr);
-	}
-
-	(*ctx)->portstr = cli_strdup(port);
-	if ( NULL == (*ctx)->portstr ) {
-		*err = CL_EARG;
-		return 0;
-	}
+	(*ctx)->portnum = optget((*ctx)->clamdopts, "TCPSocket")->numarg;
 
 	opt = optget((*ctx)->clamdopts, "TCPAddr");
 	while (opt) {
@@ -129,19 +125,28 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 			return 1;
 		}
 
-		curlcode = onas_curl_init(&curl, ipaddr, port);
+		curlcode = onas_curl_init(&curl, ipaddr, (*ctx)->portnum, timeout);
 		if (CURLE_OK != curlcode) {
 			logg("!ClamClient: could not init curl, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
 			return 1;
 		}
 
-		curlcode = curl_easy_perform(curl);
+                curlcode = curl_easy_perform(curl);
 		if (CURLE_OK != curlcode) {
 			logg("!ClamClient: could not connect to remote clam daemon, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
 			return 1;
 		}
+
+#ifndef ONAS_DEBUG
+                if(onas_sendln(curl, "zPING", 5)) {
+			logg("!ClamClient: could not ping clamd, %s\n", curl_easy_strerror(curlcode));
+			*err = CL_EARG;
+                    curl_easy_cleanup(curl);
+                    return 1;
+                }
+#endif
 
 		curl_easy_cleanup(curl);
 
@@ -155,15 +160,16 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 	}
 }
 
-CURLcode onas_curl_init(CURL **curl, char *ipaddr, char *port) {
+CURLcode onas_curl_init(CURL **curl, char *ipaddr, int64_t port, int64_t timeout) {
 
 	CURLcode curlcode = CURLE_OK;
 
-	if (!curl || !(*curl) || !ipaddr || !port) {
+	if (!curl || !ipaddr || !port) {
 		logg("!ClamClient: invalid (NULL) args passed to onas_curl_init\n");
 		return CURLE_FAILED_INIT;
 	}
 
+        /* setup here, but caller needs to cleanup */
 	*curl = curl_easy_init();
 
 	curlcode = curl_easy_setopt(*curl, CURLOPT_PORT, port);
@@ -181,9 +187,43 @@ CURLcode onas_curl_init(CURL **curl, char *ipaddr, char *port) {
         }
 
 	/* we implement our own transfer protocol via send and recv, so we only need to connect */
-	curlcode = curl_easy_setopt(curl, CURLOPT_CONNECT_ONLY, 1L);
+	curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECT_ONLY, 1L);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
+	}
+
+	/* we implement our own transfer protocol via send and recv, so we only need to connect */
+	curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT_MS, (long) timeout);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl with connect timeout, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
+	}
+
+
+
+#ifdef ONAS_DEBUG
+	curlcode = curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not tell curl to be verbose, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
+	}
+#endif
+
+        /* don't care about the body of the return message */
+        curlcode = curl_easy_setopt(*curl, CURLOPT_NOBODY, 1L);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl to send HEAD request, %s\n", curl_easy_strerror(curlcode));
+		curl_easy_cleanup(*curl);
+		return curlcode;
+	}
+
+        curlcode = curl_easy_setopt(*curl, CURLOPT_HEADER, 0L);
+	if (CURLE_OK != curlcode) {
+		logg("!ClamClient: could not setup curl to not send header, %s\n", curl_easy_strerror(curlcode));
 		curl_easy_cleanup(*curl);
 		return curlcode;
 	}
@@ -314,6 +354,9 @@ int onas_get_clamd_version(struct onas_context **ctx)
     int b_remote;
     int len, sockd;
     struct RCVLN rcv;
+    int64_t timeout;
+
+    timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
 
     b_remote = onas_check_remote(ctx, &err);
     if (CL_SUCCESS != err) {
@@ -330,10 +373,10 @@ int onas_get_clamd_version(struct onas_context **ctx)
 		return 2;
 	}
     } else {
-	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portstr);
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
-		/* curl cleanup done in ons_curl_init on error */
+		/* curl cleanup done in onas_curl_init on error */
 		return 2;
 	}
     }
@@ -346,13 +389,12 @@ int onas_get_clamd_version(struct onas_context **ctx)
 	    return 2;
     }
 
-
-    if(onas_sendln(curl, "zVERSION", 9)) {
-        curl_easy_close(curl);
+    if(onas_sendln(curl, "zVERSION", 9, timeout)) {
+        curl_easy_cleanup(curl);
         return 2;
     }
 
-    while((len = onas_recvln(&rcv, &buff, NULL))) {
+    while((len = onas_recvln(&rcv, &buff, NULL, timeout))) {
         if(len == -1) {
             logg("*ClamClient: clamd did not respond with version information\n");
             break;
@@ -360,7 +402,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
         printf("%s\n", buff);
     }
 
-    curl_easy_close(curl);
+    curl_easy_cleanup(curl);
     return 0;
 }
 
@@ -370,6 +412,10 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 	CURLcode curlcode = CURLE_OK;
 	int scantype, errors = 0;
 	int sockd, ret;
+    int64_t timeout;
+
+    timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+
 
 	*infected = 0;
 
@@ -379,7 +425,7 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 		scantype = (*ctx)->scantype;
         }
 
-	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portstr);
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
 		/* curl cleanup done in ons_curl_init on error */

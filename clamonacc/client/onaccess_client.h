@@ -38,7 +38,7 @@ enum {
 
 
 int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
-CURLcode onas_curl_init(CURL **curl, char *ipaddr, char *port);
+CURLcode onas_curl_init(CURL **curl, char *ipaddr, int64_t port, int64_t timeout);
 int onas_get_clamd_version(struct onas_context **ctx);
 cl_error_t onas_setup_client(struct onas_context **ctx);
 int onas_check_remote(struct onas_context  **ctx, cl_error_t *err);

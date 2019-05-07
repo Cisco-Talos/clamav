@@ -45,6 +45,11 @@
 
 #define CMD21 "ALLMATCHSCAN"
 
+#define CMD22 "GET / HTTP/1.1"
+#define CMD23 "GET / HTTP/2"
+#define CMD24 ""
+
+
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "server.h"
@@ -73,7 +78,10 @@ enum commands {
     /* internal commands */
     COMMAND_MULTISCANFILE,
     COMMAND_INSTREAMSCAN,
-    COMMAND_ALLMATCHSCAN
+    COMMAND_ALLMATCHSCAN,
+    COMMAND_SYNACK,
+    COMMAND_ACK,
+    COMMAND_GOPHER
 };
 
 typedef struct client_conn_tag {

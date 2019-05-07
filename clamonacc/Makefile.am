@@ -64,7 +64,7 @@ AM_CFLAGS=@WERR_CFLAGS@
 endif
 
 DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LDFLAGS@ @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)

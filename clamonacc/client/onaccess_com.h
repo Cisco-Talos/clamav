@@ -36,13 +36,13 @@ struct RCVLN {
     char buf[PATH_MAX+1024]; /* FIXME must match that in clamd - bb1349 */
     CURL *curl;
     CURLcode curlcode;
-    int retlen;
+    size_t retlen;
     char *curr;
     char *lnstart;
 };
 
-int onas_sendln(CURL *curl, const char *line, unsigned int len);
+int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout_ms);
 void onas_recvlninit(struct RCVLN *s, CURL *curl);
-int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol);
+int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout_ms);
 
 #endif

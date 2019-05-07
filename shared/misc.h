@@ -53,6 +53,10 @@
 #define PATH_MAX 1024
 #endif
 
+#ifndef ADDR_LEN
+#define ADDR_LEN 13
+#endif
+
 char *freshdbdir(void);
 void print_version(const char *dbdir);
 int check_flevel(void);

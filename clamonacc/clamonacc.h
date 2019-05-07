@@ -56,7 +56,7 @@ struct onas_context {
         int isremote;
         int session;
 
-        char *portstr;
+        int64_t portnum;
 } __attribute__((packed));
 
 #ifdef HAVE_PRAGMA_PACK
