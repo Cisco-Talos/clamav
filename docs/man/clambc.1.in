@@ -46,10 +46,9 @@ file
 file to test
 .SH "CREDITS"
 Please check the full documentation for credits.
-.PP
-Clam AntiVirus Bytecode Analysis and Testing Tool 0.98
-By The ClamAV Team: https://www.clamav.net/about.html#credits
+.SH "AUTHOR"
 .LP
-(C) 2009-2013 Sourcefire, Inc.
+Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>
+.SH "SEE ALSO"
 .LP
-(C) 2014-2018 Cisco Systems, Inc. All Rights Reserved
+clamscan(1), sigtool(1)
