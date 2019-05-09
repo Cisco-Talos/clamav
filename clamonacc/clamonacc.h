@@ -45,9 +45,9 @@ struct onas_context {
 
         int fan_fd;
         uint64_t fan_mask;
-        int retry_on_error;
-        int retry_attempts;
-        int deny_on_error;
+        uint8_t retry_on_error;
+        uint8_t retry_attempts;
+        uint8_t deny_on_error;
 
         uint64_t sizelimit;
         uint64_t extinfo;
@@ -55,6 +55,7 @@ struct onas_context {
         int scantype;
         int isremote;
         int session;
+	int timeout;
 
         int64_t portnum;
 } __attribute__((packed));

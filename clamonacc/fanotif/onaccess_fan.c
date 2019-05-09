@@ -54,8 +54,10 @@
 #include "../client/onaccess_client.h"
 
 #include "../scan/onaccess_scth.h"
+#include "../scan/onaccess_scque.h"
 
 extern pthread_t ddd_pid;
+extern pthread_t scque_pid;
 
 /*static void onas_fan_exit(int sig)
 {
@@ -68,42 +70,13 @@ extern pthread_t ddd_pid;
         pthread_join(ddd_pid, NULL);
     }
 
-    pthread_exit(NULL);
+        if (scque_pid > 0) {
+		pthread_kill(ddd_pid, SIGUSR1);
+		pthread_join(ddd_pid, NULL);
+    }
+
+	pthread_exit(NULL);
 	logg("ClamFanotif: stopped\n");
-}*/
-
-/* TODO: rework this to feed multithreading consumer queue
- * static int onas_fan_scanfile(const char *fname, struct fanotify_event_metadata *fmd, STATBUF sb, int scan, struct onas_context **ctx)
-{
-    struct fanotify_response res;
-        int infected = 0;
-        int err = 0;
-    int ret             = 0;
-	int i = 0;
-	cl_error_t ret_code = 0;
-
-    res.fd       = fmd->fd;
-    res.response = FAN_ALLOW;
-
-    if (scan) {
-		ret = onas_scan(ctx, fname, sb, &infected, &err, &ret_code);
-
-		if (err && ret_code != CL_SUCCESS) {
-			logg("*ClamFanotif: scan failed with error code %d\n", ret_code);
-		}
-
-		if ((err && ret_code && (*ctx)->deny_on_error) || infected) {
-            res.response = FAN_DENY;
-        }
-    }
-
-    if (fmd->mask & FAN_ALL_PERM_EVENTS) {
-		ret = write((*ctx)->fan_fd, &res, sizeof(res));
-        if (ret == -1)
-			logg("!ClamFanotif: internal error (can't write to fanotify)\n");
-    }
-
-    return ret;
 }*/
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
@@ -186,9 +159,6 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
 	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
 
-	//(*ctx)->sizelimit = sizelimit;
-	//(*ctx)->extinfo = extinfo;
-
 	return CL_SUCCESS;
 }
 
@@ -239,12 +209,7 @@ int onas_fan_eloop(struct onas_context **ctx) {
 
 				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
                     scan = 0;
-/* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
-#if 0
-					if ((check != CHK_SELF) || !(optget(tharg->opts, "OnAccessExtraScanning")->enabled))
-#else
                     if (check != CHK_SELF) {
-#endif
 							logg("*ClamFanotif: %s skipped (excluded UID)\n", fname);
                 }
             }
@@ -253,23 +218,26 @@ int onas_fan_eloop(struct onas_context **ctx) {
 					struct onas_scan_event *event_data;
 
 					event_data = cli_calloc(1, sizeof(struct onas_scan_event));
+                                        if (NULL == event_data) {
+					    logg("!ClamFanotif: could not allocate memory for event data struct\n");
+                                            return 2;
+                                        }
 
-					event_data->b_fanotify = 1;
+                                        /* general mapping */
+                                        onas_map_context_info_to_event_data(*ctx, &event_data);
+					scan ? event_data->bool_opts |= ONAS_SCTH_B_SCAN : scan;
+
+                                        /* fanotify specific stuffs */
+					event_data->bool_opts |= ONAS_SCTH_B_FANOTIFY;
 					event_data->fmd = fmd;
-					event_data->b_scan = scan;
 
-					/* TODO: rework to feed consumer queue */
-					if (onas_scth_handle_file(ctx, fname, event_data) == -1) {
+					/* feed consumer queue */
+					if (CL_SUCCESS != onas_queue_event(event_data)) {
                 close(fmd->fd);
-						logg("!ClamFanotif: unrecoverable fanotify error occurred :(\n");
+						logg("!ClamFanotif: error occurred while feeding consumer queue :(\n");
 						return 2;
 					}
                                 }
-
-            if (close(fmd->fd) == -1) {
-					printf("!ClamFanotif: internal error (close(%d) failed)\n", fmd->fd);
-						return 2;
-            }
         }
         fmd = FAN_EVENT_NEXT(fmd, bread);
     }

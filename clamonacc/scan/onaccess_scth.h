@@ -26,26 +26,33 @@
 #include "shared/optparser.h"
 #include "libclamav/clamav.h"
 
-#define ONAS_SCTH_ISDIR 0x01
-#define ONAS_SCTH_ISFILE 0x02
+#define ONAS_SCTH_B_DIR         0x01
+#define ONAS_SCTH_B_FILE        0x02
+#define ONAS_SCTH_B_INOTIFY     0x04
+#define ONAS_SCTH_B_FANOTIFY    0x08
+#define ONAS_SCTH_B_SCAN        0x10
+#define ONAS_SCTH_B_RETRY_ON_E  0x20
+#define ONAS_SCTH_B_DENY_ON_E   0x40
 
 struct onas_scan_event {
+        const char *tcpaddr;
+        int64_t portnum;
     char *pathname;
+        int fan_fd;
         struct fanotify_event_metadata *fmd;
-	int16_t b_inotify;
-	int16_t b_fanotify;
-        int16_t b_scan;
-	uint32_t extra_options;
-};
-
-struct scth_thrarg {
-	struct onas_scan_event *event_data;
-	struct onas_context **ctx;
+        uint8_t retry_attempts;
+        uint64_t sizelimit;
+        int32_t scantype;
+        int64_t maxstream;
+        int64_t timeout;
+	uint8_t bool_opts;
 };
 
 void *onas_scan_th(void *arg);
 
-int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
-int onas_scth_handle_file(struct onas_context **ctx, const char *pathname, struct onas_scan_event *event_data);
+void *onas_scan_worker(void *arg);
+
+int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct onas_scan_event **event_data);
 
 #endif
