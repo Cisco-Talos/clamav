@@ -20,16 +20,18 @@ dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 dnl   MA 02110-1301, USA.
 
 AC_PREREQ([2.59])
+
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [0.102.0-devel], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
+
+dnl put configure auxiliary into config
+AC_CONFIG_AUX_DIR([config])
 
 dnl enable C++
 AC_PROG_CXX()
 
 AH_BOTTOM([#include "platform.h"])
-dnl put configure auxiliary into config
-AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_HEADERS([clamav-config.h libclammspack/config.h:libclammspack/config.h.in])
 
 dnl safety check, this used to be a parameter to AC_INIT
