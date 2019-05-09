@@ -47,6 +47,7 @@
 #include "./client/onaccess_client.h"
 #include "./fanotif/onaccess_fan.h"
 #include "./inotif/onaccess_ddd.h"
+#include "./scan/onaccess_scque.h"
 
 
 pthread_t ddd_pid = 0;
@@ -79,6 +80,20 @@ int main(int argc, char **argv)
 		return 2;
 	}
 	ctx->clamdopts = clamdopts;
+
+        /* Setup our event queue */
+        switch(onas_scanque_start(&ctx)) {
+            case CL_SUCCESS:
+                break;
+            case CL_BREAK:
+            case CL_EARG:
+            case CL_ECREAT:
+            default:
+                ret = 2;
+                logg("!Clamonacc: can't setup event consumer queue\n");
+                goto clean_up;
+                break;
+        }
 
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {

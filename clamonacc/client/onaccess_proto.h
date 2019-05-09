@@ -2,7 +2,7 @@
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm, aCaB
+ *  Authors: Tomasz Kojm, aCaB, Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -27,6 +27,5 @@
 #include "shared/misc.h"
 #include "../clamonacc.h"
 
-/*int onas_dconnect(struct onas_context **ctx);*/
-int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code);
+int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code);
 #endif

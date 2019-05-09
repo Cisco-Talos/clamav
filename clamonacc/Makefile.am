@@ -54,7 +54,12 @@ clamonacc_SOURCES = \
     ./misc/onaccess_others.h \
     ./misc/priv_fts.h \
     ./scan/onaccess_scth.c \
-    ./scan/onaccess_scth.h
+    ./scan/onaccess_scth.h \
+    ./scan/onaccess_scque.c \
+    ./scan/onaccess_scque.h \
+    ./c-thread-pool/thpool.c \
+    ./c-thread-pool/thpool.h
+
 
 if !SYSTEM_LFS_FTS
 clamonacc_SOURCES += ./misc/fts.c

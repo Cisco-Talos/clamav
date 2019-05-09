@@ -73,13 +73,10 @@ static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", 
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *filename) {
+static int onas_send_stream(CURL *curl, const char *filename, int64_t timeout, uint64_t maxstream) {
 	uint32_t buf[BUFSIZ/sizeof(uint32_t)];
-	int fd, len;
-	unsigned long int todo = (*ctx)->maxstream;
-        int64_t timeout;
-
-        timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+    	uint64_t fd, len;
+        uint64_t todo = maxstream;
 
 	if(filename) {
 		if((fd = safe_open(filename, O_RDONLY | O_BINARY))<0) {
@@ -94,7 +91,7 @@ static int onas_send_stream(struct onas_context **ctx, CURL *curl, const char *f
 	}
 
 	while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
-		if((unsigned int)len > todo) len = todo;
+		if((uint64_t)len > todo) len = todo;
 		buf[0] = htonl(len);
 		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t), timeout)) {
 			close(fd);
@@ -162,39 +159,15 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int64_t timeout) {
 }
 #endif
 
-/* 0: scan, 1: skip */
-static int chkpath(struct onas_context **ctx, const char *path)
-{
-	const struct optstruct *opt;
-
-	if((opt = optget((*ctx)->clamdopts, "ExcludePath"))->enabled) {
-		while(opt) {
-			if(match_regex(path, opt->strarg) == 1) {
-				if ((*ctx)->printinfected != 1)
-					logg("~%s: Excluded\n", path);
-				return 1;
-			}
-			opt = opt->nextarg;
-		}
-	}
-	return 0;
-}
-
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const char *filename, int *printok, int *errors, cl_error_t *ret_code) {
+int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code) {
 	int infected = 0, len = 0, beenthere = 0;
 	char *bol, *eol;
 	struct RCVLN rcv;
 	STATBUF sb;
-        int64_t timeout;
-
-        timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
-
-	if(filename && chkpath(ctx, filename))
-		return 0;
 
 	onas_recvlninit(&rcv, curl);
 
@@ -234,7 +207,7 @@ int onas_dsresult(struct onas_context **ctx, CURL *curl, int scantype, const cha
 
 		case STREAM:
 			/* NULL filename safe in send_stream() */
-			len = onas_send_stream(ctx, curl, filename);
+			len = onas_send_stream(curl, filename, timeout, maxstream);
 			break;
 #ifdef HAVE_FD_PASSING
 		case FILDES:

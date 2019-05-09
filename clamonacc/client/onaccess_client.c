@@ -160,7 +160,7 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 	}
 }
 
-CURLcode onas_curl_init(CURL **curl, char *ipaddr, int64_t port, int64_t timeout) {
+CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t timeout) {
 
 	CURLcode curlcode = CURLE_OK;
 
@@ -280,6 +280,8 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     if (curl_global_init(CURL_GLOBAL_NOTHING)) {
         return CL_EARG;
     }
+
+    (*ctx)->timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
 
     (*ctx)->isremote = onas_check_remote(ctx, &err);
     if (err) {
@@ -406,30 +408,24 @@ int onas_get_clamd_version(struct onas_context **ctx)
     return 0;
 }
 
-int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
 	CURL *curl = NULL;
 	CURLcode curlcode = CURLE_OK;
-	int scantype, errors = 0;
+	int errors = 0;
 	int sockd, ret;
-    int64_t timeout;
-
-    timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
-
 
 	*infected = 0;
 
 	if((sb.st_mode & S_IFMT) != S_IFREG) {
 		scantype = STREAM;
-	} else {
-		scantype = (*ctx)->scantype;
-        }
+	}
 
-	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
+	curlcode = onas_curl_init(&curl, tcpaddr, portnum, timeout);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
-		/* curl cleanup done in ons_curl_init on error */
-		return 2;
+		/* curl cleanup done in onas_curl_init on error */
+		return CL_ECREAT;
 	}
 
 	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
@@ -437,11 +433,11 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 	curlcode = curl_easy_perform(curl);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not establish connection, %s\n", curl_easy_strerror(curlcode));
-		return 2;
+		return CL_ECREAT;
 	}
 
 
-	if((ret = onas_dsresult(ctx, curl, scantype, fname, &ret, err, ret_code)) >= 0) {
+	if((ret = onas_dsresult(curl, scantype, maxstream, fname, timeout, &ret, err, ret_code)) >= 0) {
 		*infected = ret;
 	} else {
 		logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
@@ -451,6 +447,6 @@ int onas_client_scan(struct onas_context **ctx, const char *fname, STATBUF sb, i
 	//logg("*ClamClient: done, closing connection ...\n");
 
 	curl_easy_cleanup(curl);
-	return *infected ? 1 : (errors ? 2 : 0);
+	return *infected ? CL_VIRUS : (errors ? CL_ECREAT : CL_CLEAN);
 }
 
