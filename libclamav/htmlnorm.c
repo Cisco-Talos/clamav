@@ -1450,6 +1450,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         next_state = HTML_BAD_STATE;
                         ptr++;
                     } else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
+                        int64_t increment = 0;
+
                         if (hex && (value >> 32) * 16 < INT32_MAX) {
                             value *= 16;
                         } else if ((value >> 32) * 10 < INT32_MAX) {
@@ -1462,10 +1464,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             break;
                         }
                         if (isdigit(*ptr)) {
-                            value += (*ptr - '0');
+                            increment = *ptr - '0';
                         } else {
-                            value += (tolower(*ptr) - 'a' + 10);
+                            increment = tolower(*ptr) - 'a' + 10;
                         }
+                        if (value > INT64_MAX - increment) {
+                            /* Addition would result in integer overflow. */
+                            html_output_c(file_buff_o2, value);
+                            state      = next_state;
+                            next_state = HTML_BAD_STATE;
+                            ptr++;
+                            break;
+                        }
+                        value += increment;
                         ptr++;
                     } else {
                         html_output_c(file_buff_o2, value);
