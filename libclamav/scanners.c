@@ -2619,17 +2619,22 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                             // TODO We could probably substitute in a quicker
                             // method of determining whether a PE file exists
                             // at this offset.
-                            if (cli_peheader(map, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) == 0) {
+                            if (cli_peheader(map, &peinfo, CLI_PEHEADER_OPT_NONE, NULL) != 0) {
+                                /* Despite failing, peinfo memory may have been allocated and must be freed. */
+                                cli_exe_info_destroy(&peinfo);
+                            } else {
                                 cli_dbgmsg("*** Detected embedded PE file at %u ***\n",
                                            (unsigned int)fpt->offset);
+
+                                /* Immediately free up peinfo allocated memory, prior to any recursion */
                                 cli_exe_info_destroy(&peinfo);
 
                                 nret       = cli_scanembpe(ctx, fpt->offset);
                                 break_loop = 1; /* we can stop here and other
-                                             * embedded executables will
-                                             * be found recursively
-                                             * through the above call
-                                             */
+                                                 * embedded executables will
+                                                 * be found recursively
+                                                 * through the above call
+                                                 */
                                 // TODO This method of embedded PE extraction
                                 // is kinda gross in that:
                                 //   - if you have an executable that contains
