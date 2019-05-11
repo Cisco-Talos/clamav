@@ -168,7 +168,7 @@ static struct scope *scope_done(struct scope *s)
  * --(PAR_CLOSE)--> dec par_counter
  * --(VAR)--> PUSH, to InsideVar (if bracket_counter != 0 || par_counter != 0)
  *        --> POP, to InsideVar, inc. syntax_errors (if bracket_counter == 0  && par_counter == 0)
- *  POP only allowed if bracket_counter == 0 && par_counter == 0 
+ *  POP only allowed if bracket_counter == 0 && par_counter == 0
  *
  * InsideInitializer acts differently, make it only a flag
  * ....................
@@ -195,10 +195,10 @@ static struct scope *scope_done(struct scope *s)
  *
  * function foo() {
  *  alert(x); -> x exists, undefined
- *  var x=5; 
+ *  var x=5;
  *  alert(x); -> x exists, =5
  * }
- * 
+ *
  * vs.
  *
  * function bar() {
@@ -238,7 +238,7 @@ static struct scope *scope_done(struct scope *s)
  *   //same as foo3
  *   var x=4;
  *   alert(x);
- *   { 
+ *   {
  *        x=5;
  *   }
  *   alert(x);
@@ -283,7 +283,7 @@ static long scope_lookup(struct scope *s, const char *token, const size_t len)
     return -1;
 }
 
-static int tokens_ensure_capacity(struct tokens *tokens, size_t cap)
+static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
 {
     if (tokens->capacity < cap) {
         yystype *data;
@@ -312,7 +312,7 @@ struct buf {
     char buf[65536];
 };
 
-static inline int buf_outc(char c, struct buf *buf)
+static inline cl_error_t buf_outc(char c, struct buf *buf)
 {
     if (buf->pos >= sizeof(buf->buf)) {
         if (write(buf->outfd, buf->buf, sizeof(buf->buf)) != sizeof(buf->buf))
@@ -323,7 +323,7 @@ static inline int buf_outc(char c, struct buf *buf)
     return CL_SUCCESS;
 }
 
-static inline int buf_outs(const char *s, struct buf *buf)
+static inline cl_error_t buf_outs(const char *s, struct buf *buf)
 {
     const size_t buf_len = sizeof(buf->buf);
     size_t i;
@@ -426,7 +426,7 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
  * scopes too), if ID is found then output (n%3d, Id),
  * otherwise output the identifier as is.
  *
- * To make  it easier to match sigs, we do a xfrm : 
+ * To make  it easier to match sigs, we do a xfrm :
  * 'function ID1 (..'. => 'n%3d = function (...'
  */
 
@@ -511,19 +511,21 @@ static inline char *textbuffer_done(yyscan_t scanner)
 static void free_token(yystype *token)
 {
     if (token->vtype == vtype_string) {
-        free(token->val.string);
-        token->val.string = NULL;
+        if (NULL != token->val.string) {
+            free(token->val.string);
+            token->val.string = NULL;
+        }
     }
 }
 
-static int replace_token_range(struct tokens *dst, size_t start, size_t end, const struct tokens *with)
+static cl_error_t replace_token_range(struct tokens *dst, size_t start, size_t end, const struct tokens *with)
 {
     const size_t len = with ? with->cnt : 0;
     size_t i;
     cli_dbgmsg(MODULE "Replacing tokens %lu - %lu with %lu tokens\n", (unsigned long)start,
                (unsigned long)end, (unsigned long)len);
     if (start >= dst->cnt || end > dst->cnt)
-        return -1;
+        return CL_EARG;
     for (i = start; i < end; i++) {
         free_token(&dst->data[i]);
     }
@@ -537,7 +539,7 @@ static int replace_token_range(struct tokens *dst, size_t start, size_t end, con
     return CL_SUCCESS;
 }
 
-static int append_tokens(struct tokens *dst, const struct tokens *src)
+static cl_error_t append_tokens(struct tokens *dst, const struct tokens *src)
 {
     if (!dst || !src)
         return CL_ENULLARG;
@@ -684,8 +686,10 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
     }
 }
 
-static int handle_unescape(struct tokens *tokens, size_t start)
+static cl_error_t handle_unescape(struct tokens *tokens, size_t start)
 {
+    cl_error_t retval;
+
     if (tokens->data[start].type == TOK_StringLiteral) {
         char *R;
         struct tokens new_tokens;
@@ -696,8 +700,17 @@ static int handle_unescape(struct tokens *tokens, size_t start)
         TOKEN_SET(&tok, string, R);
         new_tokens.capacity = new_tokens.cnt = 1;
         new_tokens.data                      = &tok;
-        if (replace_token_range(tokens, start - 2, start + 2, &new_tokens) < 0)
+        if (CL_SUCCESS != (retval = replace_token_range(tokens, start - 2, start + 2, &new_tokens))) {
+            if (retval == CL_EARG) {
+                size_t i;
+                cli_dbgmsg(MODULE "replace_token_range failed.\n");
+
+                for (i = 0; i < new_tokens.cnt; i++) {
+                    free_token(&(new_tokens.data[i]));
+                }
+            }
             return CL_EMEM;
+        }
     }
     return CL_SUCCESS;
 }
@@ -827,10 +840,16 @@ static void run_decoders(struct parser_state *state)
                 --state->rec;
             }
             free(res.txtbuf.data);
-            /* state->tokens still refers to the embedded/nested context
-		 * here */
+            /* state->tokens still refers to the embedded/nested context here */
             if (!res.append) {
-                replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens);
+                if (CL_EARG == replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens)) {
+                    size_t j;
+                    cli_dbgmsg(MODULE "replace_token_range failed.\n");
+
+                    for (j = 0; j < state->tokens.cnt; j++) {
+                        free_token(&(state->tokens.data[j]));
+                    }
+                }
             } else {
                 /* delete tokens */
                 replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, NULL);
