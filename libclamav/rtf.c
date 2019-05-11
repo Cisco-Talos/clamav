@@ -65,7 +65,7 @@ struct rtf_state {
     void* cb_data; /* data set up by cb_begin, used by cb_process, and cleaned up by cb_end. typically state data */
     size_t default_elements;
     size_t controlword_cnt;
-    ssize_t controlword_param;
+    int64_t controlword_param;
     enum parse_state parse_state;
     int controlword_param_sign;
     int encounteredTopLevel; /* encountered top-level control words that we care about */
@@ -643,7 +643,14 @@ int cli_scanrtf(cli_ctx* ctx)
                     break;
                 case PARSE_CONTROL_WORD_PARAM:
                     if (isdigit(*ptr)) {
-                        state.controlword_param = state.controlword_param * 10 + *ptr++ - '0';
+                        if (((state.controlword_param) > INT64_MAX / 10) ||
+                            (state.controlword_param * 10 > INT64_MAX - (*ptr - '0'))) {
+                            cli_dbgmsg("Invalid control word param: maximum size exceeded.\n");
+                            state.parse_state = PARSE_MAIN;
+                        } else {
+                            state.controlword_param = state.controlword_param * 10 + (*ptr - '0');
+                            ptr++;
+                        }
                     } else if (isalpha(*ptr)) {
                         ptr++;
                     } else {
