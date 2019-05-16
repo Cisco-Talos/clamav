@@ -51,6 +51,7 @@
 
 
 pthread_t ddd_pid = 0;
+pthread_t scque_pid = 0;
 
 int main(int argc, char **argv)
 {

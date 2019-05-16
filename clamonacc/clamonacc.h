@@ -58,6 +58,8 @@ struct onas_context {
 	int timeout;
 
         int64_t portnum;
+
+        int32_t maxthreads;
 } __attribute__((packed));
 
 #ifdef HAVE_PRAGMA_PACK
