@@ -33,77 +33,43 @@
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
-#include <errno.h>
-#include <stdbool.h>
 
-#include <sys/fanotify.h>
-#include <sys/inotify.h>
-
-#include "../fanotif/onaccess_fan.h"
-#include "onaccess_hash.h"
-#include "onaccess_ddd.h"
-#include "../scan/onaccess_scth.h"
 #include "../misc/onaccess_others.h"
 
 #include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
 
 #include "shared/optparser.h"
 #include "shared/output.h"
 
-#include "clamd/server.h"
-#include "clamd/others.h"
-#include "clamd/scanner.h"
-
 #include "../c-thread-pool/thpool.h"
 
+#include "onaccess_scth.h"
+#include "onaccess_scque.h"
+
 static void onas_scanque_exit(int sig);
-static int onas_consume_event(struct *event_data);
+static int onas_consume_event(threadpool thpool);
+static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node);
+static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
 
 static pthread_mutex_t onas_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+extern pthread_t scque_pid;
 
 static threadpool g_thpool;
 
 static struct onas_event_queue_node *g_onas_event_queue_head = NULL;
 static struct onas_event_queue_node *g_onas_event_queue_tail = NULL;
 
-static struct onas_event_queue g_onas_event_queue = {
-    head = g_onas_event_queue_head,
-    tail = g_onas_event_queue_tail,
+static struct onas_event_queue g_onas_event_queue;
 
-    size = 0;
-};
+static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node) {
 
-static void *onas_init_event_queue() {
-    *g_onas_event_queue_head = (struct event_queue_node) {
-        .next = NULL,
-            .prev = NULL,
-
-            .data = NULL
-    };
-
-    *g_onas_event_queue_tail = &(struct event_queue_node) {
-        .next = NULL,
-            .prev = NULL,
-
-            .data = NULL
-    };
-
-    g_onas_event_queue_tail->prev = g_onas_event_queue_head;
-    g_onas_event_queue_head->next = g_onas_event_queue_tail;
-}
-
-extern pthread_t scque_pid;
-
-static cl_error_t onas_new_event_queue_node(struct event_queue_node **node) {
-
-	*node = malloc(sizeof(struct onas_event_queue));
+	*node = malloc(sizeof(struct onas_event_queue_node));
 	if (NULL == *node) {
 		return CL_EMEM;
 	}
 
 
-	**node = (struct event_queue_node) {
+	**node = (struct onas_event_queue_node) {
 		.next = NULL,
 		.prev = NULL,
 
@@ -113,7 +79,30 @@ static cl_error_t onas_new_event_queue_node(struct event_queue_node **node) {
 	return CL_SUCCESS;
 }
 
-static void onas_destroy_event_queue_node(struct event_queue_node *node) {
+static void *onas_init_event_queue() {
+
+	if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_head)) {
+		return NULL;
+	}
+
+	if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_tail)) {
+		return NULL;
+	}
+
+	g_onas_event_queue_tail->prev = g_onas_event_queue_head;
+	g_onas_event_queue_head->next = g_onas_event_queue_tail;
+
+	g_onas_event_queue = (struct onas_event_queue)  {
+		.head = g_onas_event_queue_head,
+		.tail = g_onas_event_queue_tail,
+
+		.size = 0
+	};
+
+	return &g_onas_event_queue;
+}
+
+static void onas_destroy_event_queue_node(struct onas_event_queue_node *node) {
 
 	if (NULL == node) {
 		return;
@@ -188,12 +177,11 @@ void *onas_scanque_th(void *arg) {
 		}
 	} while(1);
 
-	return;
 }
 
 static int onas_queue_is_b_empty() {
 
-    if (g_onas_event_queue->head->next == g_onas_event_queue->tail) {
+    if (g_onas_event_queue.head->next == g_onas_event_queue.tail) {
         return 1;
     }
 
@@ -214,11 +202,11 @@ static int onas_consume_event(threadpool thpool) {
     thpool_add_work(thpool, (void *) onas_scan_worker, (void *) popped_node->data);
 
     g_onas_event_queue_head->next = g_onas_event_queue_head->next->next;
-    g_onas_event_queue_head->next->prev = g_onas_event_head;
+    g_onas_event_queue_head->next->prev = g_onas_event_queue_head;
 
     onas_destroy_event_queue_node(popped_node);
 
-    g_onas_event_queue->size--;
+    g_onas_event_queue.size--;
 
     pthread_mutex_unlock(&onas_queue_lock);
     return 0;
@@ -243,7 +231,7 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
     ((struct onas_event_queue_node *) g_onas_event_queue_tail->prev)->next = node;
     g_onas_event_queue_tail->prev = node;
 
-    g_onas_event_queue->size++;
+    g_onas_event_queue.size++;
 
     pthread_mutex_unlock(&onas_queue_lock);
 
