@@ -82,6 +82,8 @@ int main(int argc, char **argv)
 	}
 	ctx->clamdopts = clamdopts;
 
+        ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
+
         /* Setup our event queue */
         switch(onas_scanque_start(&ctx)) {
             case CL_SUCCESS:

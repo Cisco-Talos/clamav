@@ -345,7 +345,7 @@ void *onas_ddd_th(void *arg) {
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
-    sigdelset(&sigset, SIGSEGV);
+	//sigdelset(&sigset, SIGSEGV);
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif

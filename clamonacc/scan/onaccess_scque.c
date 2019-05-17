@@ -153,7 +153,7 @@ void *onas_scanque_th(void *arg) {
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
 	sigdelset(&sigset, SIGFPE);
 	sigdelset(&sigset, SIGILL);
-	sigdelset(&sigset, SIGSEGV);
+	//sigdelset(&sigset, SIGSEGV);
 #ifdef SIGBUS
 	sigdelset(&sigset, SIGBUS);
 #endif
@@ -164,11 +164,13 @@ void *onas_scanque_th(void *arg) {
 	sigaction(SIGUSR1, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
+	logg("*ClamQueue: initializing event queue consumer w/ (%d) threads in thread pool\n", ctx->maxthreads);
         onas_init_event_queue();
         threadpool thpool = thpool_init(ctx->maxthreads);
 	g_thpool = thpool;
 
         /* loop w/ onas_consume_event until we die */
+	logg("*ClamQueue: waiting to cosume events ...\n");
 	do {
 		/* if there's no event to consume ... */
 		if (!onas_consume_event(thpool)) {
@@ -196,6 +198,7 @@ static int onas_consume_event(threadpool thpool) {
 
     /* TODO: create scth arg using head event data, use get queue head here before lock*/
     if (onas_queue_is_b_empty()) {
+        pthread_mutex_unlock(&onas_queue_lock);
         return 1;
     }
 
@@ -214,10 +217,13 @@ static int onas_consume_event(threadpool thpool) {
 
 cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
 
+
+    logg("*ClamonQueue: queueing event!\n");
     pthread_mutex_lock(&onas_queue_lock);
 
     struct onas_event_queue_node *node = NULL;
 
+    logg("*ClamonQueue: queueing event!\n");
     if (CL_EMEM == onas_new_event_queue_node(&node)) {
 	    return CL_EMEM;
     }
