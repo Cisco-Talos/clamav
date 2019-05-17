@@ -240,6 +240,23 @@ int onas_fan_eloop(struct onas_context **ctx) {
 						logg("!ClamFanotif: error occurred while feeding consumer queue :(\n");
 						return 2;
 					}
+                                } else {
+                                    if (fmd->mask & FAN_ALL_PERM_EVENTS) {
+                                        struct fanotify_response res;
+
+                                        res.fd = fmd->fd;
+                                        res.response = FAN_ALLOW;
+
+                                        if (-1 == write((*ctx)->fan_fd, &res, sizeof(res))) {
+						logg("!ClamFanotif: error occurred while excluding event\n");
+                                                return 2;
+                                        }
+
+                                        if (-1 == close(fmd->fd)) {
+						logg("!ClamFanotif: error occurred while closing metadata fd\n");
+                                                return 2;
+                                        }
+                                    }
                                 }
         }
         fmd = FAN_EVENT_NEXT(fmd, bread);
