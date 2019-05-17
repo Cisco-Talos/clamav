@@ -262,6 +262,9 @@ void *onas_scan_worker(void *arg) {
 
 	if (NULL == event_data || NULL == event_data->pathname) {
 		logg("ClamWorker: invalid worker arguments for scanning thread\n");
+                if (event_data) {
+                    logg("ClamWorker: pathname is null\n");
+                }
         goto done;
     }
 

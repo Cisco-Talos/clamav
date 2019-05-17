@@ -230,7 +230,10 @@ int onas_fan_eloop(struct onas_context **ctx) {
                                         /* fanotify specific stuffs */
 					event_data->bool_opts |= ONAS_SCTH_B_FANOTIFY;
 					event_data->fmd = fmd;
+                                        event_data->pathname = cli_strdup(fname);
 
+
+					logg("ClamFanotif: attempting to feed consumer queue\n");
 					/* feed consumer queue */
 					if (CL_SUCCESS != onas_queue_event(event_data)) {
                 close(fmd->fd);
