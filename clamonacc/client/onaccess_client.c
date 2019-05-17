@@ -164,7 +164,7 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 
 	CURLcode curlcode = CURLE_OK;
 
-	if (!curl || !ipaddr || !port) {
+	if (!curl || !ipaddr) {
 		logg("!ClamClient: invalid (NULL) args passed to onas_curl_init\n");
 		return CURLE_FAILED_INIT;
 	}
@@ -423,7 +423,8 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 
 	curlcode = onas_curl_init(&curl, tcpaddr, portnum, timeout);
 	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+		logg("!ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
+                logg("*DEBUG: addr : %s\tportnum : %d\n", tcpaddr, portnum);
 		/* curl cleanup done in onas_curl_init on error */
 		return CL_ECREAT;
 	}

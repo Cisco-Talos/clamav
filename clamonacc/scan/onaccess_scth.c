@@ -323,7 +323,7 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
     (*event_data)->scantype = ctx->scantype;
     (*event_data)->timeout = ctx->timeout;
     (*event_data)->maxstream = ctx->maxstream;
-    (*event_data)->tcpaddr = optget(ctx->clamdopts, "TCPAddr")->strarg;
+    (*event_data)->tcpaddr = cli_strdup((optget(ctx->clamdopts, "TCPAddr"))->strarg);
     (*event_data)->portnum = ctx->portnum;
     (*event_data)->fan_fd = ctx->fan_fd;
     (*event_data)->sizelimit = ctx->sizelimit;
