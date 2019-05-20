@@ -2423,8 +2423,10 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
     unsigned int err;
     int first = 1;
 
+    /* If the PE doesn't have an import table then skip it. This is an
+     * uncommon case but can happen. */
     if (peinfo->dirs[1].VirtualAddress == 0 || peinfo->dirs[1].Size == 0) {
-        cli_errmsg("scan_pe: import table data directory does not exist\n");
+        cli_dbgmsg("scan_pe: import table data dir does not exist (skipping .imp scanning)\n");
         return CL_SUCCESS;
     }
 
