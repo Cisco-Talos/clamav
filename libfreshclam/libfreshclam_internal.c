@@ -599,7 +599,7 @@ static fc_error_t remote_cvdhead(
             logg("%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
             logg("%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
-        status = FC_EDBDIRACCESS;
+        status = FC_ECONNECTION;
         goto done;
     }
 
@@ -822,7 +822,7 @@ static fc_error_t downloadFile(
             logg("%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
             logg("%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
-        status = FC_EDBDIRACCESS;
+        status = FC_ECONNECTION;
         goto done;
     }
 

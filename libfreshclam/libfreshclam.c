@@ -632,7 +632,6 @@ fc_error_t fc_update_database(
                 case FC_EMIRRORNOTSYNC: {
                     if (attempt < g_maxAttempts) {
                         logg("Trying again in 5 secs...\n");
-                        attempt++;
                         sleep(5);
                     } else {
                         logg("Giving up on %s...\n", serverList[i]);
@@ -642,6 +641,7 @@ fc_error_t fc_update_database(
                             goto done;
                         }
                     }
+                    break;
                 }
                 default: {
                     logg("!Unexpected error when attempting to update database: %s\n", database);
@@ -790,13 +790,13 @@ fc_error_t fc_download_url_database(
             case FC_EFAILEDGET: {
                 if (attempt < g_maxAttempts) {
                     logg("Trying again in 5 secs...\n");
-                    attempt++;
                     sleep(5);
                 } else {
                     logg("Update failed for custom database URL: %s\n", urlDatabase);
                     status = ret;
                     goto done;
                 }
+                break;
             }
             default: {
                 logg("Unexpected error when attempting to update from custom database URL: %s\n", urlDatabase);
