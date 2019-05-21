@@ -205,18 +205,33 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         g_proxyPassword = cli_strdup(fcConfig->proxyPassword);
     }
 
+#ifdef _WIN32
+    if ((fcConfig->databaseDirectory[strlen(fcConfig->databaseDirectory) - 1] != '/') &&
+        ((fcConfig->databaseDirectory[strlen(fcConfig->databaseDirectory) - 1] != '\\'))) {
+#else
+    if (fcConfig->databaseDirectory[strlen(fcConfig->databaseDirectory) - 1] != '/') {
+#endif
+        g_databaseDirectory = cli_malloc(strlen(fcConfig->databaseDirectory) + strlen(PATHSEP) + 1);
+        snprintf(
+            g_databaseDirectory,
+            strlen(fcConfig->databaseDirectory) + strlen(PATHSEP) + 1,
+            "%s" PATHSEP,
+            fcConfig->databaseDirectory);
+    } else {
+        g_databaseDirectory = cli_strdup(fcConfig->databaseDirectory);
+    }
+
     /* Validate that the database directory exists, and store it. */
-    if (LSTAT(fcConfig->databaseDirectory, &statbuf) == -1) {
-        logg("!Database directory does not exist: %s\n", fcConfig->databaseDirectory);
+    if (LSTAT(g_databaseDirectory, &statbuf) == -1) {
+        logg("!Database directory does not exist: %s\n", g_databaseDirectory);
         status = FC_EDIRECTORY;
         goto done;
     }
     if (!S_ISDIR(statbuf.st_mode)) {
-        logg("!Database directory is not a directory: %s\n", fcConfig->databaseDirectory);
+        logg("!Database directory is not a directory: %s\n", g_databaseDirectory);
         status = FC_EDIRECTORY;
         goto done;
     }
-    g_databaseDirectory = cli_strdup(fcConfig->databaseDirectory);
 
     /* Validate that the temp directory exists, and store it. */
     if (LSTAT(fcConfig->tempDirectory, &statbuf) == -1) {

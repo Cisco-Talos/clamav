@@ -758,6 +758,19 @@ static fc_error_t initialize(struct optstruct *opts)
         }
     }
 
+#ifdef HAVE_PWD_H
+    /*
+     * freshclam shouldn't work with root privileges.
+     * Drop privileges to the DatabaseOwner user, if specified.
+     */
+    ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
+    if (FC_SUCCESS != ret) {
+        logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+        status = ret;
+        goto done;
+    }
+#endif /* HAVE_PWD_H */
+
     /*
      * Initilize libclamav.
      */
@@ -951,19 +964,6 @@ static fc_error_t initialize(struct optstruct *opts)
      * Set libfreshclam callback functions.
      */
     fc_set_fccb_download_complete(download_complete_callback);
-
-#ifdef HAVE_PWD_H
-    /*
-     * freshclam shouldn't work with root privileges.
-     * Drop privileges to the DatabaseOwner user, if specified.
-     */
-    ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
-    if (FC_SUCCESS != ret) {
-        logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-        status = ret;
-        goto done;
-    }
-#endif /* HAVE_PWD_H */
 
     status = FC_SUCCESS;
 
