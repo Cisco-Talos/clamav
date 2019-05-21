@@ -208,7 +208,7 @@ void help(void)
     mprintf("    --archive-verbose     -a             Show filenames inside scanned archives\n");
     mprintf("    --debug                              Enable libclamav's debug messages\n");
     mprintf("    --quiet                              Only output error messages\n");
-    mprintf("    --stdout                             Write to stdout instead of stderr\n");
+    mprintf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
     mprintf("    --no-summary                         Disable summary at end of scanning\n");
     mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --suppress-ok-results -o             Skip printing OK files\n");

@@ -46,6 +46,10 @@
 #include <grp.h>
 #endif
 
+#if defined(USE_SYSLOG) && !defined(C_AIX)
+#include <syslog.h>
+#endif
+
 #include "target.h"
 #include "clamav.h"
 #include "libfreshclam/libfreshclam.h"
@@ -147,7 +151,7 @@ static void help(void)
     mprintf("    --debug                              Enable debug messages\n");
     mprintf("    --quiet                              Only output error messages\n");
     mprintf("    --no-warnings                        Don't print and log warnings\n");
-    mprintf("    --stdout                             Write to stdout instead of stderr\n");
+    mprintf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
     mprintf("    --show-progress                      Show download progress percentage\n");
     mprintf("\n");
     mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
@@ -172,7 +176,7 @@ static void help(void)
     mprintf("\n");
 }
 
-static void msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx)
+static void libclamav_msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx)
 {
     UNUSEDPARAM(fullmsg);
     UNUSEDPARAM(ctx);
@@ -186,6 +190,20 @@ static void msg_callback(enum cl_msg severity, const char *fullmsg, const char *
             break;
         default:
             logg("*[LibClamAV] %s", msg);
+            break;
+    }
+}
+
+static void libclamav_msg_callback_quiet(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx)
+{
+    UNUSEDPARAM(fullmsg);
+    UNUSEDPARAM(ctx);
+
+    switch (severity) {
+        case CL_MSG_ERROR:
+            logg("^[LibClamAV] %s", msg);
+            break;
+        default:
             break;
     }
 }
@@ -749,46 +767,91 @@ static fc_error_t initialize(struct optstruct *opts)
         goto done;
     }
 
-    /* Set libclamav message callback. */
-    cl_set_clcb_msg(msg_callback);
-
     /*
      * Identify libfreshclam config options.
      */
-    /* Set libclamav Message option flags. */
+    /* Set libclamav Message and [file-based] Logging option flags.
+       mprintf and logg options are also directly set, as they are also
+       used in freshclam (not only used in libfreshclam) */
     if (optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled)
         fcConfig.msgFlags |= FC_CONFIG_MSG_DEBUG;
-    if (optget(opts, "verbose")->enabled)
-        fcConfig.msgFlags |= FC_CONFIG_MSG_VERBOSE;
-    if (optget(opts, "quiet")->enabled)
-        fcConfig.msgFlags |= FC_CONFIG_MSG_QUIET;
-    if (optget(opts, "no-warnings")->enabled)
-        fcConfig.msgFlags |= FC_CONFIG_MSG_NOWARN;
-    if (optget(opts, "stdout")->enabled)
-        fcConfig.msgFlags |= FC_CONFIG_MSG_STDOUT;
-    if (optget(opts, "show-progress")->enabled)
-        fcConfig.msgFlags |= FC_CONFIG_MSG_SHOWPROGRESS;
 
-    /* Set libclamav [file-based] Logging option flags. */
-    if (mprintf_verbose ? 1 : optget(opts, "LogVerbose")->enabled)
+    if ((optget(opts, "verbose")->enabled) ||
+        (optget(opts, "LogVerbose")->enabled)) {
+        fcConfig.msgFlags |= FC_CONFIG_MSG_VERBOSE;
         fcConfig.logFlags |= FC_CONFIG_LOG_VERBOSE;
-    if (optget(opts, "LogTime")->enabled)
+        mprintf_verbose = 1;
+        logg_verbose    = 1;
+    }
+
+    if (optget(opts, "quiet")->enabled) {
+        fcConfig.msgFlags |= FC_CONFIG_MSG_QUIET;
+        mprintf_quiet = 1;
+        /* Silence libclamav messages. */
+        cl_set_clcb_msg(libclamav_msg_callback_quiet);
+    } else {
+        /* Enable libclamav messages, with [LibClamAV] message prefix. */
+        cl_set_clcb_msg(libclamav_msg_callback);
+    }
+
+    if (optget(opts, "no-warnings")->enabled) {
+        fcConfig.msgFlags |= FC_CONFIG_MSG_NOWARN;
+        fcConfig.logFlags |= FC_CONFIG_LOG_NOWARN;
+        mprintf_nowarn = 1;
+        logg_nowarn    = 1;
+    }
+
+    if (optget(opts, "stdout")->enabled) {
+        fcConfig.msgFlags |= FC_CONFIG_MSG_STDOUT;
+        mprintf_stdout = 1;
+    }
+
+    if (optget(opts, "show-progress")->enabled) {
+        fcConfig.msgFlags |= FC_CONFIG_MSG_SHOWPROGRESS;
+        mprintf_progress = 1;
+    }
+
+    if (optget(opts, "LogTime")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_TIME;
-    if (optget(opts, "LogFileMaxSize")->numarg && optget(opts, "LogRotate")->enabled)
+        logg_time = 1;
+    }
+    if (optget(opts, "LogFileMaxSize")->numarg && optget(opts, "LogRotate")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_ROTATE;
+        logg_rotate = 1;
+    }
     if (optget(opts, "LogSyslog")->enabled)
         fcConfig.logFlags |= FC_CONFIG_LOG_SYSLOG;
 
     logFileOpt = optget(opts, "UpdateLogFile");
-    if (logFileOpt->enabled)
+    if (logFileOpt->enabled) {
         fcConfig.logFile = logFileOpt->strarg;
-    if (optget(opts, "LogFileMaxSize")->numarg)
+        logg_file        = cli_strdup(fcConfig.logFile);
+        if (0 != logg("#--------------------------------------\n")) {
+            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
+            status = FC_ELOGGING;
+            goto done;
+        }
+    }
+    if (optget(opts, "LogFileMaxSize")->numarg) {
         fcConfig.maxLogSize = optget(opts, "LogFileMaxSize")->numarg;
+        logg_size           = 1;
+    }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if (optget(opts, "LogSyslog")->enabled) {
-        if (optget(opts, "LogFacility")->enabled)
+        if (optget(opts, "LogFacility")->enabled) {
+            int logFacility = LOG_LOCAL6;
+
             fcConfig.logFacility = optget(opts, "LogFacility")->strarg;
+            if ((NULL != fcConfig.logFacility) && (-1 == (logFacility = logg_facility(fcConfig.logFacility)))) {
+                mprintf("!LogFacility: %s: No such facility.\n", fcConfig.logFacility);
+                status = FC_ELOGGING;
+                goto done;
+            }
+
+            openlog("freshclam", LOG_PID, logFacility);
+            logg_syslog = 1;
+        }
     }
 #endif
 
@@ -896,7 +959,7 @@ static fc_error_t initialize(struct optstruct *opts)
      */
     ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
     if (FC_SUCCESS != ret) {
-        logg("!Failedd to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+        logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
         status = ret;
         goto done;
     }

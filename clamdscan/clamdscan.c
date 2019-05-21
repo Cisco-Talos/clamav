@@ -191,7 +191,7 @@ void help(void)
     mprintf("    --version           -V             Print version number and exit\n");
     mprintf("    --verbose           -v             Be verbose\n");
     mprintf("    --quiet                            Be quiet, only output error messages\n");
-    mprintf("    --stdout                           Write to stdout instead of stderr\n");
+    mprintf("    --stdout                           Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
     mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
     mprintf("    --file-list=FILE    -f FILE        Scan files from FILE\n");

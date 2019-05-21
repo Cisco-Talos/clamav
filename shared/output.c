@@ -232,7 +232,7 @@ static int rename_logg(STATBUF *sb)
     }
 
     t = time(NULL);
-    
+
 #ifdef _WIN32
     if (0 != localtime_s(&t, &tmp)) {
 #else
@@ -477,19 +477,19 @@ void mprintf(const char *str, ...)
     fd = stdout;
 
     /* legend:
- * ! - error
- * @ - error with logging
- * ...
- */
+     * ! - error
+     * @ - error with logging
+     * ...
+     */
 
     /*
- *             ERROR    WARNING    STANDARD
- * normal      stderr   stderr     stdout
- * 
- * verbose     stderr   stderr     stdout
- * 
- * quiet       stderr     no         no
- */
+     *             ERROR    WARNING    STANDARD
+     * normal      stderr   stderr     stdout
+     *
+     * verbose     stderr   stderr     stdout
+     *
+     * quiet       stderr     no         no
+     */
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
