@@ -1156,9 +1156,9 @@ fc_error_t select_from_official_databases(
             continue;
         }
 
-        logg("*Selecting optional database: %s\n", optionalDatabases[i]);
-        if (FC_SUCCESS != (ret = string_list_add(optionalDatabases[i], &selectedDatabases, &nSelectedDatabases))) {
-            logg("!Failed to add optional database %s to list of selected databases.\n", optionalDatabases[i]);
+        logg("*Selecting optional database: %s\n", optInList[i]);
+        if (FC_SUCCESS != (ret = string_list_add(optInList[i], &selectedDatabases, &nSelectedDatabases))) {
+            logg("!Failed to add optional database %s to list of selected databases.\n", optInList[i]);
             status = ret;
             goto done;
         }

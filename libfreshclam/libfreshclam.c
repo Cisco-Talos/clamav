@@ -307,8 +307,25 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
 
     DIR *dir = NULL;
     struct dirent *dent;
-    char fname[PATH_MAX];
     char *extension = NULL;
+
+    char currDir[PATH_MAX];
+
+    /* Store CWD */
+    if (!getcwd(currDir, PATH_MAX)) {
+        logg("!getcwd() failed\n");
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+
+    /* Change directory to database directory */
+    if (chdir(g_databaseDirectory)) {
+        logg("!Can't change dir to %s\n", g_databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+
+    logg("*Current working dir is %s\n", g_databaseDirectory);
 
     if (!(dir = opendir(g_databaseDirectory))) {
         logg("!checkdbdir: Can't open directory %s\n", g_databaseDirectory);
@@ -331,7 +348,7 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
                 if (!bFound) {
                     /* Prune CVD/CLD */
                     mprintf("Pruning unwanted or deprecated database file %s.\n", dent->d_name);
-                    if (unlink(fname)) {
+                    if (unlink(dent->d_name)) {
                         mprintf("!Failed to prune unwanted database file %s, consider removing it manually.\n", dent->d_name);
                         status = FC_EDBDIRACCESS;
                         goto done;
@@ -347,6 +364,17 @@ done:
     if (NULL != dir) {
         closedir(dir);
     }
+
+    if (currDir[0] != '\0') {
+        /* Restore CWD */
+        if (chdir(currDir)) {
+            logg("!Failed to change back to original directory %s\n", currDir);
+            status = FC_EDIRECTORY;
+            goto done;
+        }
+        logg("*Current working dir restored to %s\n", currDir);
+    }
+
     return status;
 }
 
