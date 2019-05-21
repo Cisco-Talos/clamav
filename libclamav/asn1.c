@@ -1560,15 +1560,15 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                         // Change this so that raw is only populated when the
                         // debug flag is set, and then copy/display the full
                         // contents.
-                        cli_dbgmsg_internal("cert:\n");
-                        cli_dbgmsg_internal("  subject: %s\n", subject);
-                        cli_dbgmsg_internal("  serial: %s\n", serial);
-                        cli_dbgmsg_internal("  pubkey: %s\n", mod);
-                        cli_dbgmsg_internal("  i: %s %lu->%lu %s%s%s\n", issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->codeSign ? "code " : "", x509->timeSign ? "time " : "", x509->certSign ? "cert " : "");
-                        cli_dbgmsg_internal("  ==============RAW==============\n");
-                        cli_dbgmsg_internal("  raw_subject: %s\n", raw_subject);
-                        cli_dbgmsg_internal("  raw_serial: %s\n", raw_serial);
-                        cli_dbgmsg_internal("  raw_issuer: %s\n", raw_issuer);
+                        cli_dbgmsg("cert:\n");
+                        cli_dbgmsg("  subject: %s\n", subject);
+                        cli_dbgmsg("  serial: %s\n", serial);
+                        cli_dbgmsg("  pubkey: %s\n", mod);
+                        cli_dbgmsg("  i: %s %lu->%lu %s%s%s\n", issuer, (unsigned long)x509->not_before, (unsigned long)x509->not_after, x509->codeSign ? "code " : "", x509->timeSign ? "time " : "", x509->certSign ? "cert " : "");
+                        cli_dbgmsg("  ==============RAW==============\n");
+                        cli_dbgmsg("  raw_subject: %s\n", raw_subject);
+                        cli_dbgmsg("  raw_serial: %s\n", raw_serial);
+                        cli_dbgmsg("  raw_issuer: %s\n", raw_issuer);
 
                         x509 = x509->next;
                     }

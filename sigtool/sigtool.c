@@ -3508,7 +3508,7 @@ static void help(void)
     mprintf("    --version              -V              Print version number and exit\n");
     mprintf("    --quiet                                Be quiet, output only error messages\n");
     mprintf("    --debug                                Enable debug messages\n");
-    mprintf("    --stdout                               Write to stdout instead of stderr\n");
+    mprintf("    --stdout                               Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
     mprintf("    --hex-dump                             Convert data from stdin to a hex\n");
     mprintf("                                           string and print it on stdout\n");
     mprintf("    --md5 [FILES]                          Generate MD5 checksum from stdin\n");

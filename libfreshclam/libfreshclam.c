@@ -141,7 +141,8 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     logg_time    = (fcConfig->logFlags & FC_CONFIG_LOG_TIME) ? 1 : 0;
     logg_rotate  = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
     logg_size    = fcConfig->maxLogSize;
-    if (NULL != fcConfig->logFile) {
+    /* Set a log file if requested, and is not already set */
+    if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
         logg_file = cli_strdup(fcConfig->logFile);
         if (0 != logg("#--------------------------------------\n")) {
             mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
@@ -151,10 +152,10 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    /* Initialize syslog if available and requested */
+    /* Initialize syslog if available and requested, and is not already set */
     if (fcConfig->logFlags & FC_CONFIG_LOG_SYSLOG) {
         int logFacility = LOG_LOCAL6;
-        if ((NULL != fcConfig->logFacility) && (-1 == (logFacility = logg_facility(fcConfig->logFacility)))) {
+        if ((0 == logg_syslog) && (NULL != fcConfig->logFacility) && (-1 == (logFacility = logg_facility(fcConfig->logFacility)))) {
             mprintf("!LogFacility: %s: No such facility.\n", fcConfig->logFacility);
             status = FC_ELOGGING;
             goto done;
