@@ -22,7 +22,6 @@
 bin_PROGRAMS = freshclam
 
 freshclam_SOURCES = \
-    $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/optparser.c \
     $(top_srcdir)/shared/optparser.h \
