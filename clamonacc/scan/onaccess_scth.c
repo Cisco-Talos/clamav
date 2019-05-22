@@ -111,11 +111,20 @@ int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb,
 static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code) {
 
 	int ret = 0;
+	int fd = 0;
+	uint8_t b_fanotify;
+
+	b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
+
+	if (b_fanotify) {
+		fd = event_data->fmd->fd;
+	}
 
 	pthread_mutex_lock(&onas_scan_lock);
 
+
 	ret = onas_client_scan(event_data->tcpaddr, event_data->portnum, event_data->scantype, event_data->maxstream,
-                                    fname, event_data->timeout, sb, infected, err, ret_code);
+			fname, fd, event_data->timeout, sb, infected, err, ret_code);
 
 	pthread_mutex_unlock(&onas_scan_lock);
 

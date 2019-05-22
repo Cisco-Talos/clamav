@@ -408,7 +408,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     return 0;
 }
 
-int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
+int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int fd, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
 	CURL *curl = NULL;
 	CURLcode curlcode = CURLE_OK;
@@ -438,7 +438,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 	}
 
 
-	if((ret = onas_dsresult(curl, scantype, maxstream, fname, timeout, &ret, err, ret_code)) >= 0) {
+	if((ret = onas_dsresult(curl, scantype, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
 		*infected = ret;
 	} else {
 		logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
