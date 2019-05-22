@@ -66,11 +66,11 @@
 
 #define DEFAULT_SERVER_PORT 443
 
-int g_sigchildWait             = 1;
-short g_terminate              = 0;
-short g_foreground             = -1;
-const char *g_pidfile          = NULL;
-char g_tempDirectory[PATH_MAX] = {0};
+int g_sigchildWait                      = 1;
+short g_terminate                       = 0;
+short g_foreground                      = -1;
+const char *g_pidfile                   = NULL;
+char g_freshclamTempDirectory[PATH_MAX] = {0};
 
 typedef struct fc_ctx_ {
     uint32_t bTestDatabases;
@@ -109,8 +109,8 @@ sighandler(int sig)
             break;
 #endif
         default:
-            if (*g_tempDirectory)
-                cli_rmdirs(g_tempDirectory);
+            if (*g_freshclamTempDirectory)
+                cli_rmdirs(g_freshclamTempDirectory);
             if (g_pidfile)
                 unlink(g_pidfile);
             logg("Update process terminated\n");
@@ -868,8 +868,8 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 
     /* Store the path of the temp directory so we can delete it later. */
-    strncpy(g_tempDirectory, fcConfig.tempDirectory, sizeof(g_tempDirectory));
-    g_tempDirectory[sizeof(g_tempDirectory) - 1] = '\0';
+    strncpy(g_freshclamTempDirectory, fcConfig.tempDirectory, sizeof(g_freshclamTempDirectory));
+    g_freshclamTempDirectory[sizeof(g_freshclamTempDirectory) - 1] = '\0';
 
 #ifndef _WIN32
     /*
@@ -1947,8 +1947,8 @@ done:
     fc_cleanup();
 
     /* Remove temp directory */
-    if (*g_tempDirectory) {
-        cli_rmdirs(g_tempDirectory);
+    if (*g_freshclamTempDirectory) {
+        cli_rmdirs(g_freshclamTempDirectory);
     }
 
     if ((FC_UPTODATE == status) || (FC_SUCCESS == status)) {
