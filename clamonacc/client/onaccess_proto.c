@@ -73,20 +73,28 @@ static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", 
 
 /* Issues an INSTREAM command to clamd and streams the given file
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_stream(CURL *curl, const char *filename, int64_t timeout, uint64_t maxstream) {
+static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t timeout, uint64_t maxstream) {
 	uint32_t buf[BUFSIZ/sizeof(uint32_t)];
-    	uint64_t fd, len;
+    	uint64_t len;
         uint64_t todo = maxstream;
+        int close_flag = 0;
 
-	if(filename) {
+        if (0 == fd) {
+            if(filename) {
 		if((fd = safe_open(filename, O_RDONLY | O_BINARY))<0) {
 			logg("~%s: Access denied. ERROR\n", filename);
 			return 0;
 		}
-	} else fd = 0;
+                close_flag = 1;
+            } else {
+                fd = 0;
+            }
+        }
 
 	if(onas_sendln(curl, "zINSTREAM", 10, timeout)) {
-		close(fd);
+		if (close_flag) {
+                    close(fd);
+                }
 		return -1;
 	}
 
@@ -94,7 +102,9 @@ static int onas_send_stream(CURL *curl, const char *filename, int64_t timeout, u
 		if((uint64_t)len > todo) len = todo;
 		buf[0] = htonl(len);
 		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t), timeout)) {
-			close(fd);
+                    if (close_flag) {
+                        close(fd);
+                    }
 			return -1;
 		}
 		todo -= len;
@@ -103,7 +113,9 @@ static int onas_send_stream(CURL *curl, const char *filename, int64_t timeout, u
 			break;
 		}
 	}
-	close(fd);
+        if (close_flag) {
+            close(fd);
+        }
 	if(len) {
 		logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
 		return 0;
@@ -116,24 +128,31 @@ static int onas_send_stream(CURL *curl, const char *filename, int64_t timeout, u
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_fdpass(CURL *curl, const char *filename, int64_t timeout) {
+static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t timeout) {
 	CURLcode result;
 	struct iovec iov[1];
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
 	unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
 	char dummy[]="";
-	int fd;
+        int close_flag = 0;
 
-	if(filename) {
+        if (0 == fd) {
+            if(filename) {
 		if((fd = open(filename, O_RDONLY))<0) {
 			logg("~%s: Access denied. ERROR\n", filename);
 			return 0;
 		}
-	} else fd = 0;
+                close_flag = 1;
+            } else {
+                fd = 0;
+            }
+        }
 	if(result = onas_sendln(curl, "zFILDES", 8, timeout)) {
 		logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
-		close(fd);
+		if (close_flag) {
+                    close(fd);
+                }
 		return -1;
 	}
 
@@ -151,10 +170,14 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int64_t timeout) {
 	*(int *)CMSG_DATA(cmsg) = fd;
 	if(onas_sendln(curl, &msg, 0, timeout) == -1) {
 		logg("!FD send failed: %s\n", strerror(errno));
-		close(fd);
+                if (close_flag) {
+                    close(fd);
+                }
 		return -1;
 	}
-	close(fd);
+        if (close_flag) {
+            close(fd);
+        }
 	return 1;
 }
 #endif
@@ -163,7 +186,7 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int64_t timeout) {
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error
  * NOTE: filename may be NULL for STREAM scantype. */
-int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code) {
+int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *filename, int fd, int64_t timeout, int *printok, int *errors, cl_error_t *ret_code) {
 	int infected = 0, len = 0, beenthere = 0;
 	char *bol, *eol;
 	struct RCVLN rcv;
@@ -207,12 +230,12 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
 		case STREAM:
 			/* NULL filename safe in send_stream() */
-			len = onas_send_stream(curl, filename, timeout, maxstream);
+			len = onas_send_stream(curl, filename, fd, timeout, maxstream);
 			break;
 #ifdef HAVE_FD_PASSING
 		case FILDES:
 			/* NULL filename safe in send_fdpass() */
-			len = onas_send_fdpass(curl, filename, timeout);
+			len = onas_send_fdpass(curl, filename, fd, timeout);
 			break;
 #endif
 	}
@@ -319,7 +342,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 				*printok = 0;
 
 				if(filename) {
-					(scantype >= STREAM) ? logg("~%s%s\n", filename, colon) : logg("~blegh%s\n", bol);
+					(scantype >= STREAM) ? logg("~%s%s\n", filename, colon) : logg("~%s\n", bol);
 				}
 
 				if (ret_code) {
