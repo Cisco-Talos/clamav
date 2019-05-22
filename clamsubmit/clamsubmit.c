@@ -17,7 +17,7 @@
 #include "shared/misc.h"
 #include "shared/getopt.h"
 
-#define OPTS "e:p:n:N:V:H:h?v"
+#define OPTS "e:p:n:N:V:H:h?v?d"
 
 char *read_stream(void);
 void usage(char *name);
@@ -313,8 +313,22 @@ int main(int argc, char *argv[])
         fromStream = 1;
     }
 
+	if (g_debug) {
+		/* ask libcurl to show us the verbose output */
+		if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_VERBOSE, 1L)) {
+			fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+		}
+		if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_STDERR, stdout)) {
+			fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+		}
+	}
+
+	if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
+		fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+	}
+
 #ifdef _WIN32
-    if (CURLE_OK != curl_easy_setopt(ch, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
+    if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
     }
 #endif
@@ -441,6 +455,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Error: malformed 'key' string in GET presigned response (missing '-'.\n");
         goto cleanup;
     }
+
     submissionID = malloc(ep - sp + 1);
     if (submissionID == NULL) {
         fprintf(stderr, "Error: malloc submissionID.\n");
@@ -448,12 +463,33 @@ int main(int argc, char *argv[])
     }
     memcpy(submissionID, sp, ep - sp);
     submissionID[ep - sp] = '\0';
+
     aws_curl              = curl_easy_init();
     if (!(aws_curl)) {
         fprintf(stderr, "ERROR: Could not initialize libcurl POST presigned\n");
         goto cleanup;
     }
-    submissionID[ep - sp] = '\0';
+
+	if (g_debug) {
+		/* ask libcurl to show us the verbose output */
+		if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
+			fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+		}
+		if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_STDERR, stdout)) {
+			fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+		}
+	}
+
+	if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
+		fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+	}
+
+#ifdef _WIN32
+	if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
+		fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
+	}
+#endif
+
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "key", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "acl");
