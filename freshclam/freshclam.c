@@ -793,13 +793,10 @@ static fc_error_t initialize(struct optstruct *opts)
         (optget(opts, "LogVerbose")->enabled)) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_VERBOSE;
         fcConfig.logFlags |= FC_CONFIG_LOG_VERBOSE;
-        mprintf_verbose = 1;
-        logg_verbose    = 1;
     }
 
     if (optget(opts, "quiet")->enabled) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_QUIET;
-        mprintf_quiet = 1;
         /* Silence libclamav messages. */
         cl_set_clcb_msg(libclamav_msg_callback_quiet);
     } else {
@@ -810,27 +807,21 @@ static fc_error_t initialize(struct optstruct *opts)
     if (optget(opts, "no-warnings")->enabled) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_NOWARN;
         fcConfig.logFlags |= FC_CONFIG_LOG_NOWARN;
-        mprintf_nowarn = 1;
-        logg_nowarn    = 1;
     }
 
     if (optget(opts, "stdout")->enabled) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_STDOUT;
-        mprintf_stdout = 1;
     }
 
     if (optget(opts, "show-progress")->enabled) {
         fcConfig.msgFlags |= FC_CONFIG_MSG_SHOWPROGRESS;
-        mprintf_progress = 1;
     }
 
     if (optget(opts, "LogTime")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_TIME;
-        logg_time = 1;
     }
     if (optget(opts, "LogFileMaxSize")->numarg && optget(opts, "LogRotate")->enabled) {
         fcConfig.logFlags |= FC_CONFIG_LOG_ROTATE;
-        logg_rotate = 1;
     }
     if (optget(opts, "LogSyslog")->enabled)
         fcConfig.logFlags |= FC_CONFIG_LOG_SYSLOG;
@@ -838,32 +829,15 @@ static fc_error_t initialize(struct optstruct *opts)
     logFileOpt = optget(opts, "UpdateLogFile");
     if (logFileOpt->enabled) {
         fcConfig.logFile = logFileOpt->strarg;
-        logg_file        = cli_strdup(fcConfig.logFile);
-        if (0 != logg("#--------------------------------------\n")) {
-            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
-            status = FC_ELOGGING;
-            goto done;
-        }
     }
     if (optget(opts, "LogFileMaxSize")->numarg) {
         fcConfig.maxLogSize = optget(opts, "LogFileMaxSize")->numarg;
-        logg_size           = 1;
     }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if (optget(opts, "LogSyslog")->enabled) {
         if (optget(opts, "LogFacility")->enabled) {
-            int logFacility = LOG_LOCAL6;
-
             fcConfig.logFacility = optget(opts, "LogFacility")->strarg;
-            if ((NULL != fcConfig.logFacility) && (-1 == (logFacility = logg_facility(fcConfig.logFacility)))) {
-                mprintf("!LogFacility: %s: No such facility.\n", fcConfig.logFacility);
-                status = FC_ELOGGING;
-                goto done;
-            }
-
-            openlog("freshclam", LOG_PID, logFacility);
-            logg_syslog = 1;
         }
     }
 #endif

@@ -12,6 +12,21 @@ FRESHCLAM_PUBLIC {
     fc_update_databases;
     fccb_download_complete;
     fc_set_fccb_download_complete;
+    logg;
+    logg_close;
+    mprintf;
+    logg_verbose;
+    logg_nowarn;
+    logg_time;
+    logg_rotate;
+    logg_size;
+    logg_file;
+    mprintf_verbose;
+    mprintf_quiet;
+    mprintf_nowarn;
+    mprintf_stdout;
+    mprintf_progress;
+    mprintf_disabled;
 };
 FRESHCLAM_PRIVATE {
   local:
