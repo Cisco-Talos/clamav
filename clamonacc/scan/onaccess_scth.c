@@ -25,6 +25,7 @@
 #if defined(FANOTIFY)
 
 #include <stdio.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -175,17 +176,25 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 			ret = write(event_data->fan_fd, &res, sizeof(res));
 			if(ret == -1) {
 				logg("!ClamWorker: internal error (can't write to fanotify)\n");
+                                if (errno == ENOENT) {
+                                    logg("ClamWorker: permission event has already been written ... recovering ...\n");
+                                } else {
 				ret = CL_EWRITE;
 			}
 		}
 	}
+	}
 
         if (b_fanotify) {
             if (-1 == close(event_data->fmd->fd) ) {
-                logg("!ClamWorker: internal error (can't close fanotify meta fd)\n");
+                logg("!ClamWorker: internal error (can't close fanotify meta fd, %d)\n", event_data->fmd->fd);
+                if (errno == EBADF) {
+                    logg("ClamWorker: fd already closed ... recovering ...\n");
+                } else {
                 ret = CL_EUNLINK;
 		}
 	}
+        }
 
 	return ret;
 }
@@ -313,6 +322,11 @@ done:
 			free(event_data->pathname);
 				event_data->pathname = NULL;
     }
+
+                if (NULL != event_data->fmd) {
+                    free(event_data->fmd);
+                    event_data->fmd = NULL;
+                }
 		free(event_data);
 		event_data = NULL;
     }
@@ -332,7 +346,7 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
     (*event_data)->scantype = ctx->scantype;
     (*event_data)->timeout = ctx->timeout;
     (*event_data)->maxstream = ctx->maxstream;
-    (*event_data)->tcpaddr = cli_strdup((optget(ctx->clamdopts, "TCPAddr"))->strarg);
+    (*event_data)->tcpaddr = optget(ctx->clamdopts, "TCPAddr")->strarg;
     (*event_data)->portnum = ctx->portnum;
     (*event_data)->fan_fd = ctx->fan_fd;
     (*event_data)->sizelimit = ctx->sizelimit;

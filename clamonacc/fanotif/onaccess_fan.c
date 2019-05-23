@@ -113,7 +113,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
 	if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 		logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
-		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM | FAN_NONBLOCK;
+		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
 		logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
 		if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
@@ -164,6 +164,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
 int onas_fan_eloop(struct onas_context **ctx) {
 	int ret = 0;
+        int err_cnt = 0;
 	short int scan;
 	STATBUF sb;
 	fd_set rfds;
@@ -199,12 +200,18 @@ int onas_fan_eloop(struct onas_context **ctx) {
             scan = 1;
             if (fmd->fd >= 0) {
                 sprintf(fname, "/proc/self/fd/%d", fmd->fd);
+                                errno = 0;
                 len = readlink(fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
-					logg("!ClamFanotif: internal error (readlink() failed)\n");
+					logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
+                                        if (errno == EBADF) {
+                                            logg("ClamWorker: fd already closed ... recovering ...\n");
+                                            continue;
+                                        } else {
 					return 2;
                 }
+				}
 				fname[len] = '\0';
 
 				if((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
@@ -229,15 +236,27 @@ int onas_fan_eloop(struct onas_context **ctx) {
 
                                         /* fanotify specific stuffs */
 					event_data->bool_opts |= ONAS_SCTH_B_FANOTIFY;
-					event_data->fmd = fmd;
+                                        event_data->fmd = cli_malloc(sizeof(struct fanotify_event_metadata));
+                                        if (NULL == event_data->fmd) {
+					    logg("!ClamFanotif: could not allocate memory for event data struct fmd\n");
+                                            return 2;
+                                        }
+					memcpy(event_data->fmd, fmd, sizeof(struct fanotify_event_metadata));
                                         event_data->pathname = cli_strdup(fname);
 
 
-					logg("ClamFanotif: attempting to feed consumer queue\n");
+					logg("*ClamFanotif: attempting to feed consumer queue\n");
 					/* feed consumer queue */
 					if (CL_SUCCESS != onas_queue_event(event_data)) {
                 close(fmd->fd);
-						logg("!ClamFanotif: error occurred while feeding consumer queue :(\n");
+						logg("!ClamFanotif: error occurred while feeding consumer queue ... \n");
+                                                if ((*ctx)->retry_on_error) {
+                                                    err_cnt++;
+                                                    if (err_cnt < (*ctx)->retry_attempts) {
+                                                        logg("ClamFanotif: ... recovering ...\n");
+                                                        continue;
+                                                    }
+                                                }
 						return 2;
 					}
                                 } else {
@@ -253,12 +272,16 @@ int onas_fan_eloop(struct onas_context **ctx) {
                                         }
 
                                         if (-1 == close(fmd->fd)) {
-						logg("!ClamFanotif: error occurred while closing metadata fd\n");
+						logg("!ClamFanotif: error occurred while closing metadata fd, %d\n", fmd->fd);
+                                                if (errno == EBADF) {
+                                                    logg("ClamFanotif: fd already closed ... recovering ...\n");
+                                                } else {
                                                 return 2;
                                         }
                                     }
                                 }
         }
+			}
         fmd = FAN_EVENT_NEXT(fmd, bread);
     }
     do {
