@@ -202,6 +202,7 @@ static int onas_consume_event(threadpool thpool) {
         return 1;
     }
 
+    logg("*ClamonQueue: consuming event!\n");
     thpool_add_work(thpool, (void *) onas_scan_worker, (void *) popped_node->data);
 
     g_onas_event_queue_head->next = g_onas_event_queue_head->next->next;
@@ -218,7 +219,6 @@ static int onas_consume_event(threadpool thpool) {
 cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
 
 
-    logg("*ClamonQueue: queueing event!\n");
     pthread_mutex_lock(&onas_queue_lock);
 
     struct onas_event_queue_node *node = NULL;
