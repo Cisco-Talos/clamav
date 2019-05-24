@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  EGG is an archive format created by ESTsoft used by their ALZip
  *  archiving software.
@@ -870,7 +870,7 @@ static cl_egg_error_t egg_parse_comment_header(const uint8_t* index, size_t size
 
     *commentInfo = NULL;
 
-    if (extraField->bit_flag & FILENAME_HEADER_FLAGS_ENCRYPT) {
+    if (extraField->bit_flag & COMMENT_HEADER_FLAGS_ENCRYPT) {
         /*
          * comment is encrypted, nothing to be done.
          */
@@ -882,20 +882,20 @@ static cl_egg_error_t egg_parse_comment_header(const uint8_t* index, size_t size
     /*
      * Store comment as UTF-8 string.
      */
-    if (extraField->bit_flag & FILENAME_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8) {
+    if (extraField->bit_flag & COMMENT_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8) {
         /*
          * Unlike with filenames, the multibyte string codepage (or "locale") is not present in comment headers.
          * Try conversion with codepage 65001.
          */
         if (EGG_OK != cli_codepage_to_utf8((char*)index, size, 65001, &comment_utf8, &comment_utf8_size)) {
-            cli_dbgmsg("egg_parse_file_extra_field: failed to convert codepage \"0\" to UTF-8\n");
+            cli_dbgmsg("egg_parse_comment_header: failed to convert codepage \"0\" to UTF-8\n");
             comment_utf8 = cli_genfname(NULL);
         }
     } else {
         /* Should already be UTF-8. Use as-is.. */
         comment_utf8 = cli_strndup((char*)index, size);
         if (NULL == comment_utf8) {
-            cli_dbgmsg("egg_parse_file_extra_field: failed to allocate comment buffer.\n");
+            cli_dbgmsg("egg_parse_comment_header: failed to allocate comment buffer.\n");
             status = EGG_EMEM;
             goto done;
         }
@@ -1656,7 +1656,7 @@ static cl_egg_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file
                le64_to_host(fileHeader->file_length));
 
     if (0 == le16_to_host(fileHeader->file_length)) {
-        cli_warnmsg("egg_parse_file_headers: Empty file!\n");
+        cli_dbgmsg("egg_parse_file_headers: Empty file!\n");
     }
 
     handle->offset += sizeof(file_header);
@@ -1698,6 +1698,7 @@ static cl_egg_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file
             retval = egg_parse_file_extra_field(handle, eggFile);
             if (EGG_OK != retval) {
                 cli_dbgmsg("egg_parse_file_headers: Failed to parse archive header, magic: %08x (%s)\n", magic, getMagicHeaderName(magic));
+                break; /* Break out of the loop */
             }
         }
     }
@@ -1844,16 +1845,13 @@ done:
     return status;
 }
 
-cl_egg_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char** comment, uint32_t* comment_size)
+cl_egg_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char*** comments, uint32_t* nComments)
 {
     cl_egg_error_t status = EGG_ERR;
     cl_egg_error_t retval = EGG_ERR;
     egg_handle* handle    = NULL;
     uint32_t magic        = 0;
     const uint8_t* index  = 0;
-
-    UNUSEDPARAM(comment);
-    UNUSEDPARAM(comment_size);
 
     if (!map || !hArchive) {
         cli_errmsg("cli_egg_open: Invalid args!\n");
@@ -2050,9 +2048,11 @@ cl_egg_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, cha
             }
             handle->comments[handle->nComments] = comment;
             handle->nComments++;
+            handle->offset += size;
         } else {
             cli_dbgmsg("cli_egg_open: unexpected header magic:               %08x (%s)\n", magic, getMagicHeaderName(magic));
             status = EGG_ERR;
+            goto done;
         }
     }
 
@@ -2069,8 +2069,11 @@ cl_egg_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, cha
         }
     }
 
-    *hArchive = handle;
-    status    = EGG_OK;
+    *hArchive  = handle;
+    *comments  = handle->comments;
+    *nComments = handle->nComments;
+
+    status = EGG_OK;
 
 done:
     if (EGG_OK != status) {
@@ -2125,7 +2128,7 @@ cl_egg_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_me
     } else {
         uint64_t i = 0;
         if (!currFile->blocks) {
-            cli_errmsg("cli_egg_peek_file_header: empty file!\n");
+            cli_dbgmsg("cli_egg_peek_file_header: Empty file!\n");
         }
         for (i = 0; i < currFile->nBlocks; i++) {
             egg_block* currBlock = currFile->blocks[i];
@@ -2553,7 +2556,7 @@ cl_egg_error_t cli_egg_extract_file(void* hArchive, const char** filename, const
          */
     } else {
         if (currFile->nBlocks == 0 || currFile->blocks == NULL) {
-            cli_errmsg("cli_egg_extract_file: empty file!\n");
+            cli_dbgmsg("cli_egg_extract_file: Empty file!\n");
         }
 
         for (i = 0; i < currFile->nBlocks; i++) {

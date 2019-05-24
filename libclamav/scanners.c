@@ -585,7 +585,6 @@ done:
 static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, unsigned int files)
 {
     cl_error_t status = CL_CLEAN;
-    int virus_found   = 0;
 
     cli_dbgmsg("EGG: %s, encrypted: %u, compressed: %u, normal: %u, ratio: %u\n",
                metadata->filename, metadata->encrypted, (unsigned int)metadata->pack_size,
@@ -621,8 +620,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
 
     void *hArchive = NULL;
 
-    char *comment         = NULL;
-    uint32_t comment_size = 0;
+    char **comments     = NULL;
+    uint32_t nComments = 0;
 
     cl_egg_metadata metadata;
     char *filename_base    = NULL;
@@ -662,7 +661,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
     /*
      * Open the archive.
      */
-    if (CL_SUCCESS != (egg_ret = cli_egg_open(*ctx->fmap, sfx_offset, &hArchive, &comment, &comment_size))) {
+    if (CL_SUCCESS != (egg_ret = cli_egg_open(*ctx->fmap, sfx_offset, &hArchive, &comments, &nComments))) {
         if (egg_ret == EGG_ENCRYPTED) {
             cli_dbgmsg("EGG: Encrypted main header\n");
             status = CL_EUNPACK;
@@ -678,42 +677,56 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
     }
 
     /* If the archive header had a comment, write it to the comment dir. */
-    if ((comment != NULL) && (comment_size > 0)) {
-        /*
-         * Drop the comment to a temp file, if requested
-         */
-        if (ctx->engine->keeptmp) {
-            int comment_fd = -1;
-            if (!(comment_fullpath = cli_gentemp_with_prefix(extract_dir, "comments"))) {
-                status = CL_EMEM;
+    if (comments != NULL) {
+        uint32_t i;
+        for (i = 0; i < nComments; i++) {
+            /*
+            * Drop the comment to a temp file, if requested
+            */
+            if (ctx->engine->keeptmp) {
+                int comment_fd = -1;
+                size_t prefixLen = strlen("comments_") + 5;
+                char * prefix = (char*)malloc(prefixLen + 1);
+
+                snprintf(prefix, prefixLen, "comments_%u", i);
+                prefix[prefixLen] = '\0';
+
+                if (!(comment_fullpath = cli_gentemp_with_prefix(extract_dir, prefix))) {
+                    free(prefix);
+                    status = CL_EMEM;
+                    goto done;
+                }
+                free(prefix);
+                prefix = NULL;
+
+                comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+                if (comment_fd < 0) {
+                    cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
+                } else {
+                    cli_dbgmsg("EGG: Writing the archive comment to temp file: %s\n", comment_fullpath);
+                    if (0 == write(comment_fd, comments[i], nComments)) {
+                        cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
+                    } else {
+                        close(comment_fd);
+                        comment_fd = -1;
+                    }
+                }
+                free(comment_fullpath);
+                comment_fullpath = NULL;
+            }
+
+            /*
+            * Scan the comment.
+            */
+            status = cli_mem_scandesc(comments[i], strlen(comments[i]), ctx);
+
+            if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
+                status = CL_CLEAN;
+                viruses_found++;
+            }
+            if ((status == CL_VIRUS) || (status == CL_BREAK)) {
                 goto done;
             }
-
-            comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
-            if (comment_fd < 0) {
-                cli_dbgmsg("EGG: ERROR: Failed to open output file\n");
-            } else {
-                cli_dbgmsg("EGG: Writing the archive comment to temp file: %s\n", comment_fullpath);
-                if (0 == write(comment_fd, comment, comment_size)) {
-                    cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
-                } else {
-                    close(comment_fd);
-                    comment_fd = -1;
-                }
-            }
-        }
-
-        /*
-         * Scan the comment.
-         */
-        status = cli_mem_scandesc(comment, comment_size, ctx);
-
-        if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
-            status = CL_CLEAN;
-            viruses_found++;
-        }
-        if ((status == CL_VIRUS) || (status == CL_BREAK)) {
-            goto done;
         }
     }
 
@@ -908,10 +921,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
         status = CL_CLEAN;
 
 done:
-    if (NULL != comment) {
-        free(comment);
-        comment = NULL;
-    }
 
     if (NULL != comment_fullpath) {
         free(comment_fullpath);

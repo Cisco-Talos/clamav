@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  EGG is an archive format created by ESTsoft used by their ALZip
  *  archiving software.
@@ -32,6 +32,9 @@
 #include <clamav.h>
 #include <others.h>
 
+/**
+ * @brief Status return codes for egg extraction APIs.
+ */
 typedef enum {
     EGG_OK = 0,
     EGG_BREAK,
@@ -40,6 +43,11 @@ typedef enum {
     EGG_ERR
 } cl_egg_error_t;
 
+/**
+ * @brief Metadata list node structure modeled after the ClamAV RAR metadata structure.
+ *
+ * Information is primarily used by the scan metadata feature.
+ */
 typedef struct cl_egg_metadata {
     uint64_t pack_size;
     uint64_t unpack_size;
@@ -49,10 +57,70 @@ typedef struct cl_egg_metadata {
     uint32_t is_dir;
 } cl_egg_metadata;
 
-cl_egg_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char** comment, uint32_t* comment_size);
-cl_egg_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metadata);
-cl_egg_error_t cli_egg_extract_file(void* hArchive, const char** filename, const char** output_buffer, size_t* output_buffer_length);
+/**
+ * @brief Given an fmap to en EGG archive, open a handle for extracting archive contents.
+ *
+ * A best effort will be made for split archives, though it is incapable of properly extracting split
+ * archives since it can only accept 1 file at a time.
+ *
+ * @param map               fmap representing archive file.
+ * @param sfx_offset        0 for a regular file, or an offset into the fmap for the EGG archive if found embedded in another file.
+ * @param hArchive          [out] Handle to opened archive.
+ * @param comments          [out] Array of null terminated archive comments, if present in archive. Array will be free'd by cli_egg_close()
+ * @param nComments         [out] Number of archive comments in array.
+ * @return cl_egg_error_t   EGG_OK if success.
+ */
+cl_egg_error_t cli_egg_open(
+    fmap_t* map,
+    size_t sfx_offset,
+    void** hArchive,
+    char*** comments,
+    uint32_t* nComments);
+
+/**
+ * @brief Peek at the next file in the archive, without incremented the the current file index.
+ *
+ * @param hArchive          An open EGG archive handle from cli_egg_open()
+ * @param file_metadata     Metadata describing the next file to be extracted (or skipped).
+ * @return cl_egg_error_t   EGG_OK if success.
+ */
+cl_egg_error_t cli_egg_peek_file_header(
+    void* hArchive,
+    cl_egg_metadata* file_metadata);
+
+/**
+ * @brief Extract the next file in the archive.
+ *
+ * Does not return all of the metadata provided by cli_egg_peek_file_header(), so both should be used to get file information.
+ * The current file index will be incrememnted on both success and failure.
+ *
+ * @param hArchive              An open EGG archive handle from cli_egg_open()
+ * @param filename              [out] The filename of the extracted file, in UTF-8.
+ * @param output_buffer         [out] A malloc'd buffer of the file contents.  Must be free()'d by caller. Set to NULL on failure.
+ * @param output_buffer_length  [out] Size of buffer in bytes.
+ * @return cl_egg_error_t       EGG_OK if success.
+ */
+cl_egg_error_t cli_egg_extract_file(
+    void* hArchive,
+    const char** filename,
+    const char** output_buffer,
+    size_t* output_buffer_length);
+
+/**
+ * @brief Skip the next file.
+ *
+ * This is useful to skip things like directories, encrypted files, or file that are too large.
+ *
+ * @param hArchive          An open EGG archive handle from cli_egg_open()
+ * @return cl_egg_error_t   EGG_OK if success.
+ */
 cl_egg_error_t cli_egg_skip_file(void* hArchive);
+
+/**
+ * @brief Close the handle to the EGG archive and free the associated resources.
+ *
+ * @param hArchive  An open EGG archive handle from cli_egg_open()
+ */
 void cli_egg_close(void* hArchive);
 
 #endif // _EGG_H
