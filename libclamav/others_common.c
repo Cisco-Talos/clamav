@@ -60,6 +60,8 @@
 #include "ltdl.h"
 #include "matcher-ac.h"
 
+#define MSGBUFSIZ 8192
+
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
 
 #ifdef CL_NOTHREADS
@@ -139,7 +141,7 @@ void cl_set_clcb_msg(clcb_msg callback)
 #define MSGCODE(buff, len, x)                             \
     va_list args;                                         \
     size_t len = sizeof(x) - 1;                           \
-    char buff[BUFSIZ];                                    \
+    char buff[MSGBUFSIZ];                                 \
     strncpy(buff, x, len);                                \
     va_start(args, str);                                  \
     vsnprintf(buff + len, sizeof(buff) - len, str, args); \
@@ -1018,6 +1020,54 @@ char *cli_genfname(const char *prefix)
     return (fname);
 }
 
+char *cli_newfilepath(const char *dir, const char *fname)
+{
+    char *fullpath;
+    const char *mdir;
+    int i;
+    size_t len;
+
+    mdir = dir ? dir : cli_gettmpdir();
+
+    if (!fname) {
+        cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
+    fullpath = (char *)cli_calloc(len, sizeof(char));
+    if (!fullpath) {
+        free(fname);
+        cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    snprintf(fullpath, len, "%s" PATHSEP "%s", mdir, fname);
+
+    return (fullpath);
+}
+
+cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
+{
+    *name = cli_newfilepath(dir, fname);
+    if (!*name)
+        return CL_EMEM;
+
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+    /*
+     * EEXIST is almost impossible to occur, so we just treat it as other
+     * errors
+     */
+    if (*fd == -1) {
+        cli_errmsg("cli_newfilepathfd: Can't create file %s: %s\n", *name, strerror(errno));
+        free(*name);
+        *name = NULL;
+        return CL_ECREAT;
+    }
+
+    return CL_SUCCESS;
+}
+
 char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
 {
     char *fname;
@@ -1029,7 +1079,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
 
     fname = cli_genfname(prefix);
     if (!fname) {
-        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        cli_dbgmsg("cli_gentemp_with_prefix('%s'): out of memory\n", mdir);
         return NULL;
     }
 
@@ -1037,7 +1087,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
     fullpath = (char *)cli_calloc(len, sizeof(char));
     if (!fullpath) {
         free(fname);
-        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        cli_dbgmsg("cli_gentemp_with_prefix('%s'): out of memory\n", mdir);
         return NULL;
     }
 

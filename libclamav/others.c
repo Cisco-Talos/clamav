@@ -738,13 +738,21 @@ int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, cons
 
     switch (field) {
         case CL_ENGINE_PUA_CATEGORIES:
+            if (NULL != engine->pua_cats) {
+                MPOOL_FREE(engine->mempool, engine->pua_cats);
+                engine->pua_cats = NULL;
+            }
             engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (!engine->pua_cats)
+            if (NULL == engine->pua_cats)
                 return CL_EMEM;
             break;
         case CL_ENGINE_TMPDIR:
+            if (NULL != engine->tmpdir) {
+                MPOOL_FREE(engine->mempool, engine->tmpdir);
+                engine->tmpdir = NULL;
+            }
             engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (!engine->tmpdir)
+            if (NULL == engine->tmpdir)
                 return CL_EMEM;
             break;
         default:

@@ -218,7 +218,7 @@ static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
 static char *rfc822comments(const char *in, char *out);
-static int rfc1341(message *m, const char *dir);
+static int rfc1341(mbox_ctx *mctx, message *m);
 static bool usefulHeader(int commandNumber, const char *cmd);
 static char *getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at);
 static bool isBounceStart(mbox_ctx *mctx, const char *line);
@@ -235,11 +235,11 @@ static blob *getHrefs(message *m, tag_arguments_t *hrefs);
 static void hrefs_done(blob *b, tag_arguments_t *hrefs);
 static void checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
-static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc);
-static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound);
+static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc);
+static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound);
 
 /* Maximum line length according to RFC2821 */
 #define RFC2821LENGTH 1000
@@ -665,7 +665,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
 
     if (strlen(buffer) > spaceLeft) {
         ReadStruct *next = NULL;
-        int part = spaceLeft;
+        int part         = spaceLeft;
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
@@ -741,8 +741,8 @@ freeList(ReadStruct *head)
     } while (0)
 #endif /*FREELIST_REALLOC*/
 
-/*Check if we have repeated blank lines with only a semicolon at the end.  Semicolon is a delimiter for parameters, 
- * but if there is no data, it isn't a parameter.  Allow the first one because it may be continuation of a previous line 
+/*Check if we have repeated blank lines with only a semicolon at the end.  Semicolon is a delimiter for parameters,
+ * but if there is no data, it isn't a parameter.  Allow the first one because it may be continuation of a previous line
  * that actually had data in it.*/
 static bool
 doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
@@ -772,7 +772,7 @@ doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 }
 
 static bool
-hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound)
+hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (line) {
@@ -795,7 +795,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
 }
 
 static bool
-haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (totalLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES) {
@@ -810,7 +810,7 @@ haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound)
 }
 
 static bool
-haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (totalHeaderCnt > HEURISTIC_EMAIL_MAX_HEADERS) {
@@ -825,7 +825,7 @@ haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFou
 }
 
 static bool
-haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc)
+haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc)
 {
 
     if (mimePartCnt >= HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE) {
@@ -840,7 +840,7 @@ haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * 
 }
 
 static bool
-haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (argCnt >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) {
@@ -1070,7 +1070,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     int needContinue = 0;
                     DO_VERIFY_POINTER(header);
 
-                    needContinue     = (header[strlen(header) - 1] == ';');
+                    needContinue = (header[strlen(header) - 1] == ';');
                     if (0 == needContinue) {
                         needContinue = (line && (count_quotes(header) & 1));
                     }
@@ -2503,7 +2503,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 } else if (strcasecmp(mimeSubtype, "partial") == 0) {
                     if (mctx->ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) {
                         /* RFC1341 message split over many emails */
-                        if (rfc1341(mainMessage, mctx->dir) >= 0)
+                        if (rfc1341(mctx, mainMessage) >= 0)
                             rc = OK;
                     } else {
                         cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
@@ -3294,7 +3294,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
                     argCnt++;
-                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound )) {
+                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
                         break;
                     }
                     messageAddArguments(m, buf);
@@ -3555,20 +3555,31 @@ rfc2047(const char *in)
  * Handle partial messages
  */
 static int
-rfc1341(message *m, const char *dir)
+rfc1341(mbox_ctx *mctx, message *m)
 {
     char *arg, *id, *number, *total, *oldfilename;
-    const char *tmpdir;
+    const char *tmpdir = NULL;
     int n;
     char pdir[NAME_MAX + 1];
     unsigned char md5_val[16];
     char *md5_hex;
 
-    id = (char *)messageFindArgument(m, "id");
-    if (id == NULL)
+    if ((NULL == mctx) || (NULL == m)) {
+        cli_dbgmsg("rfc1341: Invalid NULL arguments\n");
         return -1;
+    }
 
-    tmpdir = cli_gettmpdir();
+    id = (char *)messageFindArgument(m, "id");
+    if (id == NULL) {
+        return -1;
+    }
+
+    if (NULL != mctx->ctx) {
+        tmpdir = cl_engine_get_str((const struct cl_engine *)mctx->ctx->engine, CL_ENGINE_TMPDIR, NULL);
+    }
+    if (NULL == tmpdir) {
+        tmpdir = cli_gettmpdir();
+    }
 
     snprintf(pdir, sizeof(pdir) - 1, "%s" PATHSEP "clamav-partial", tmpdir);
 
@@ -3652,7 +3663,7 @@ rfc1341(message *m, const char *dir)
 
             sanitiseName(id);
 
-            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", dir, id);
+            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", mctx->dir, id);
 
             cli_dbgmsg("outname: %s\n", outname);
 

@@ -535,20 +535,19 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     }
 }
 
-static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
+static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *options)
 {
     int ret;
-    unsigned int fsize = 0;
-    const char *virname, *tmpdir;
+    unsigned int fsize  = 0;
+    const char *virname = NULL;
+    const char *tmpdir  = NULL;
     char *file, buff[FILEBUFF];
     size_t bread;
     FILE *fs;
     struct clamscan_cb_data data;
 
-    if (optget(opts, "tempdir")->enabled) {
-        tmpdir = optget(opts, "tempdir")->strarg;
-    } else {
-        /* check write access */
+    tmpdir = cl_engine_get_str(engine, CL_ENGINE_TMPDIR, NULL);
+    if (NULL == tmpdir) {
         tmpdir = cli_gettmpdir();
     }
 
@@ -1185,7 +1184,7 @@ int scanmanager(const struct optstruct *opts)
         }
 
     } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-        ret = scanstdin(engine, opts, &options);
+        ret = scanstdin(engine, &options);
     } else {
         if (opts->filename && optget(opts, "file-list")->enabled)
             logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");

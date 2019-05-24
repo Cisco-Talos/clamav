@@ -773,6 +773,30 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len);
 char *cli_genfname(const char *prefix);
 
 /**
+ * @brief Generate a full tempfile filepath with a provided the name.
+ *
+ * Caller is responsible for freeing the filename.
+ * If the dir is not provided, the engine->tmpdir will be used.
+ *
+ * @param dir 	 Alternative directory. (optional)
+ * @return char* filename or NULL.
+ */
+char *cli_newfilepath(const char *dir, const char *fname);
+
+/**
+ * @brief Generate a full tempfile filepath with a provided the name.
+ *
+ * Caller is responsible for freeing the filename.
+ * If the dir is not provided, the engine->tmpdir will be used.
+ *
+ * @param dir        Alternative temp directory (optional).
+ * @param prefix  	 (Optional) Base filename for new file.
+ * @param[out] name  Allocated filepath, must be freed by caller.
+ * @param[out] fd    File descriptor of open temp file.
+ */
+cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd);
+
+/**
  * @brief Generate a full tempfile filepath with a random MD5 hash and prefix the name, if provided.
  *
  * Caller is responsible for freeing the filename.

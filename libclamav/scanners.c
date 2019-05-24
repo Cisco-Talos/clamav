@@ -3021,6 +3021,11 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
         while (fpt) {
             /* set current level as container AFTER recursing */
             cli_set_container(ctx, fpt->type, map->len);
+#if HAVE_JSON
+            if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
+                cli_jsonstr(ctx->wrkproperty, "EvaluatedFileType", cli_ftname(fpt->type));
+            }
+#endif
             if (fpt->offset)
                 switch (fpt->type) {
                     case CL_TYPE_MHTML:
@@ -3530,37 +3535,28 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         json_object *arrobj;
 
         if (NULL == ctx->properties) {
-            if (type == CL_TYPE_PDF || /* file types we collect properties about */
-                type == CL_TYPE_MSOLE2 ||
-                type == CL_TYPE_MSEXE ||
-                //type == CL_TYPE_ZIP ||
-                type == CL_TYPE_OOXML_WORD ||
-                type == CL_TYPE_OOXML_PPT ||
-                type == CL_TYPE_OOXML_XL ||
-                type == CL_TYPE_XML_WORD ||
-                type == CL_TYPE_XML_XL ||
-                type == CL_TYPE_HWP3 ||
-                type == CL_TYPE_XML_HWP ||
-                type == CL_TYPE_HWPOLE2 ||
-                type == CL_TYPE_OOXML_HWP ||
-                type == CL_TYPE_MHTML) {
-                ctx->properties = json_object_new_object();
-                if (NULL == ctx->properties) {
-                    cli_errmsg("magic_scandesc: no memory for json properties object\n");
-                    early_ret_from_magicscan(CL_EMEM);
-                }
-                ctx->wrkproperty = ctx->properties;
-                ret              = cli_jsonstr(ctx->properties, "Magic", "CLAMJSONv0");
-                if (ret != CL_SUCCESS) {
-                    early_ret_from_magicscan(ret);
-                }
-                ret = cli_jsonstr(ctx->properties, "RootFileType", filetype);
-                if (ret != CL_SUCCESS) {
-                    early_ret_from_magicscan(ret);
-                }
-            } else { /* turn off property collection flag for file types we don't care about */
-                ctx->options->general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
+            ctx->properties = json_object_new_object();
+            if (NULL == ctx->properties) {
+                cli_errmsg("magic_scandesc: no memory for json properties object\n");
+                early_ret_from_magicscan(CL_EMEM);
             }
+            ctx->wrkproperty = ctx->properties;
+
+            ret = cli_jsonstr(ctx->properties, "Magic", "CLAMJSONv0");
+            if (ret != CL_SUCCESS) {
+                early_ret_from_magicscan(ret);
+            }
+            ret = cli_jsonstr(ctx->properties, "RootFileType", filetype);
+            if (ret != CL_SUCCESS) {
+                early_ret_from_magicscan(ret);
+            }
+            if (ctx->target_filepath) {
+                ret = cli_jsonstr(ctx->wrkproperty, "FilePath", ctx->target_filepath);
+                if (ret != CL_SUCCESS) {
+                    early_ret_from_magicscan(ret);
+                }
+            }
+
         } else {
             parent_property = ctx->wrkproperty;
             if (!json_object_object_get_ex(parent_property, "ContainedObjects", &arrobj)) {
@@ -3577,6 +3573,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 early_ret_from_magicscan(CL_EMEM);
             }
             json_object_array_add(arrobj, ctx->wrkproperty);
+
+            if (ctx->sub_filepath) {
+                ret = cli_jsonstr(ctx->wrkproperty, "FilePath", ctx->sub_filepath);
+                if (ret != CL_SUCCESS) {
+                    early_ret_from_magicscan(ret);
+                }
+            }
         }
     }
 
@@ -4454,6 +4457,15 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     int rc;
     STATBUF sb;
 
+    char *target_basename = NULL;
+    char *new_temp_prefix = NULL;
+    size_t new_temp_prefix_len;
+    char *old_temp_path = NULL;
+    char *new_temp_path = NULL;
+
+    time_t current_time;
+    struct tm tm_struct;
+
     /* We have a limit of around 2.17GB (INT_MAX - 2). Enforce it here. */
     if (map != NULL) {
         if ((size_t)(map->real_len) > (size_t)(INT_MAX - 2))
@@ -4508,6 +4520,73 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         ctx.target_filepath = strdup(filepath);
     }
 
+    /*
+     * Create a temp directory for the temp files under this directory.
+     */
+    current_time = time(NULL);
+
+#ifdef _WIN32
+    if (0 != localtime_s(&tm_struct, &current_time)) {
+#else
+    if (!localtime_r(&current_time, &tm_struct)) {
+#endif
+        cli_errmsg("scan_common: Failed to get local time.\n");
+        return CL_ESTAT;
+    }
+
+    /* Save off original temp path to restore after scan */
+    if (NULL == ctx.engine->tmpdir) {
+        cl_engine_set_str((struct cl_engine *)ctx.engine, CL_ENGINE_TMPDIR, cli_gettmpdir());
+    }
+    old_temp_path = cli_strdup(ctx.engine->tmpdir);
+
+    /*
+     * Select a name for the new temp directory.
+     *
+     * If keeptmp is enabled and we have a filename for the thing we're scanning,
+     * try to use the basename of the filename within the temp directory name.
+     *
+     * If not, just use the date in the temp directory name.
+     */
+    if ((!ctx.engine->keeptmp) ||
+        (NULL == ctx.target_filepath) ||
+        (CL_SUCCESS != cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename))) {
+        /* Just use date */
+        new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
+        new_temp_prefix     = calloc(1, new_temp_prefix_len + 1);
+        if (!new_temp_prefix) {
+            cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
+            return CL_EMEM;
+        }
+        strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
+    } else {
+        /* Include the basename in the temp directory */
+        new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
+        new_temp_prefix     = calloc(1, new_temp_prefix_len + 1);
+        if (!new_temp_prefix) {
+            cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
+            return CL_EMEM;
+        }
+        strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-", &tm_struct);
+        strcpy(new_temp_prefix + strlen("YYYYMMDD_HHMMSS-"), target_basename);
+    }
+
+    /* Set a new temp directory within the parent temp directory */
+    new_temp_path = cli_gentemp_with_prefix(ctx.engine->tmpdir, new_temp_prefix);
+    free(new_temp_prefix);
+    if (NULL == new_temp_path) {
+        cli_errmsg("scan_common: Failed to generate temp directory name.\n");
+        return CL_EMEM;
+    }
+
+    cl_engine_set_str((struct cl_engine *)ctx.engine, CL_ENGINE_TMPDIR, new_temp_path);
+    free(new_temp_path);
+
+    if (mkdir(ctx.engine->tmpdir, 0700)) {
+        cli_errmsg("Can't create temporary directory for scan: %s.\n", ctx.engine->tmpdir);
+        return CL_EACCES;
+    }
+
     cli_logg_setup(&ctx);
     rc = map ? cli_map_scandesc(map, 0, map->len, &ctx, CL_TYPE_ANY)
              : cli_magic_scandesc(desc, ctx.target_filepath, &ctx);
@@ -4530,7 +4609,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         }
 
         /* serialize json properties to string */
-        jstring = json_object_to_json_string(ctx.properties);
+        jstring = json_object_to_json_string_ext(ctx.properties, JSON_C_TO_STRING_PRETTY);
         if (NULL == jstring) {
             cli_errmsg("scan_common: no memory for json serialization.\n");
             rc = CL_EMEM;
@@ -4539,7 +4618,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
             struct cli_matcher *iroot = ctx.engine->root[13];
             cli_dbgmsg("%s\n", jstring);
 
-            if (rc != CL_VIRUS) {
+            if ((rc != CL_VIRUS) || (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES)) {
                 /* run bytecode preclass hook; generate fmap if needed for running hook */
                 struct cli_bc_ctx *bc_ctx = cli_bytecode_context_alloc();
                 if (!bc_ctx) {
@@ -4587,7 +4666,8 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
             if (ctx.engine->keeptmp) {
                 int fd        = -1;
                 char *tmpname = NULL;
-                if ((ret = cli_gentempfd(ctx.engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+
+                if ((ret = cli_newfilepathfd(ctx.engine->tmpdir, "metadata.json", &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("scan_common: Can't create json properties file, ret = %i.\n", ret);
                 } else {
                     if (cli_writen(fd, jstring, strlen(jstring)) == (size_t)-1)
@@ -4620,6 +4700,10 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
             rc = CL_VIRUS;
     }
 
+    /* Restore the original temp directory */
+    cl_engine_set_str((struct cl_engine *)ctx.engine, CL_ENGINE_TMPDIR, old_temp_path);
+    free(old_temp_path);
+
     if (NULL != ctx.target_filepath) {
         free(ctx.target_filepath);
     }
@@ -4629,6 +4713,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     free(ctx.options);
     cli_logg_unsetup();
     perf_done(&ctx);
+
     return rc;
 }
 
