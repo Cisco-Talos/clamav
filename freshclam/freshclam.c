@@ -136,44 +136,42 @@ static void writepid(const char *pidfile)
 
 static void help(void)
 {
-    mprintf_stdout = 1;
-
-    mprintf("\n");
-    mprintf("                      Clam AntiVirus: Database Updater %s\n", get_version());
-    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf("           (C) 2019 Cisco Systems, Inc.\n");
-    mprintf("\n");
-    mprintf("    freshclam [options]\n");
-    mprintf("\n");
-    mprintf("    --help               -h              Show this help\n");
-    mprintf("    --version            -V              Print version number and exit\n");
-    mprintf("    --verbose            -v              Be verbose\n");
-    mprintf("    --debug                              Enable debug messages\n");
-    mprintf("    --quiet                              Only output error messages\n");
-    mprintf("    --no-warnings                        Don't print and log warnings\n");
-    mprintf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
-    mprintf("    --show-progress                      Show download progress percentage\n");
-    mprintf("\n");
-    mprintf("    --config-file=FILE                   Read configuration from FILE.\n");
-    mprintf("    --log=FILE           -l FILE         Log into FILE\n");
-    mprintf("    --daemon             -d              Run in daemon mode\n");
-    mprintf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
+    printf("\n");
+    printf("                      Clam AntiVirus: Database Updater %s\n", get_version());
+    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("\n");
+    printf("    freshclam [options]\n");
+    printf("\n");
+    printf("    --help               -h              Show this help\n");
+    printf("    --version            -V              Print version number and exit\n");
+    printf("    --verbose            -v              Be verbose\n");
+    printf("    --debug                              Enable debug messages\n");
+    printf("    --quiet                              Only output error messages\n");
+    printf("    --no-warnings                        Don't print and log warnings\n");
+    printf("    --stdout                             Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
+    printf("    --show-progress                      Show download progress percentage\n");
+    printf("\n");
+    printf("    --config-file=FILE                   Read configuration from FILE.\n");
+    printf("    --log=FILE           -l FILE         Log into FILE\n");
+    printf("    --daemon             -d              Run in daemon mode\n");
+    printf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
 #ifndef _WIN32
-    mprintf("    --user=USER          -u USER         Run as USER\n");
+    printf("    --user=USER          -u USER         Run as USER\n");
 #endif
-    mprintf("    --no-dns                             Force old non-DNS verification method\n");
-    mprintf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
-    mprintf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
+    printf("    --no-dns                             Force old non-DNS verification method\n");
+    printf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
+    printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
 #ifdef BUILD_CLAMD
-    mprintf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
+    printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
 #endif
-    mprintf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
-    mprintf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
-    mprintf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
-    mprintf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
-    mprintf("    --list-mirrors                       (deprecated) Print mirrors from mirrors.dat\n");
-    mprintf("    --update-db=DBNAME                   Only update database DBNAME\n");
-    mprintf("\n");
+    printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
+    printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
+    printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
+    printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
+    printf("    --list-mirrors                       (deprecated) Print mirrors from mirrors.dat\n");
+    printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+    printf("\n");
 }
 
 static void libclamav_msg_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *ctx)
