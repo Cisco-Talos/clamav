@@ -451,7 +451,26 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
                      *   may need to manually skip the file depending on what, specifically, cli_unrar_extract_file() returned.
                      */
                 } else {
-                    /* File should be extracted...
+                    /*
+                     * File should be extracted...
+                     * ... make sure we have read permissions to the file.
+                     */
+#ifdef _WIN32
+                    if (0 != _access_s(extract_fullpath, R_OK)) {
+#else
+                    if (0 != access(extract_fullpath, R_OK)) {
+#endif
+                        cli_dbgmsg("RAR: Don't have read permissions, attempting to change file permissions to make it readable..\n");
+#ifdef _WIN32
+                        if (0 != _chmod(extract_fullpath, _S_IREAD)) {
+#else
+                        if (0 != chmod(extract_fullpath, S_IRUSR | S_IRGRP)) {
+#endif
+                            cli_dbgmsg("RAR: Failed to change permission bits so the extracted file is readable..\n");
+                        }
+                    }
+
+                    /*
                      * ... scan the extracted file.
                      */
                     cli_dbgmsg("RAR: Extraction complete.  Scanning now...\n");
