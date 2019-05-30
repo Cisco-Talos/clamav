@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2015-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -44,6 +44,7 @@
 #include "onaccess_hash.h"
 #include "onaccess_ddd.h"
 #include "../scan/onaccess_scth.h"
+#include "../scan/onaccess_scque.h"
 #include "../misc/onaccess_others.h"
 
 #include "libclamav/clamav.h"
@@ -55,6 +56,8 @@
 #include "clamd/server.h"
 #include "clamd/others.h"
 #include "clamd/scanner.h"
+
+
 
 static int onas_ddd_init_ht(uint32_t ht_size);
 static int onas_ddd_init_wdlt(uint64_t nwatches);
@@ -69,7 +72,7 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx, const char *pa
 static void onas_ddd_handle_in_create(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
 static void onas_ddd_handle_in_moved_from(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
 static void onas_ddd_handle_in_delete(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
-/*static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options);*/
+static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options);
 
 static void onas_ddd_exit(int sig);
 
@@ -425,7 +428,6 @@ void *onas_ddd_th(void *arg) {
 
 			idx++;
 		}
-
 	}
 
     /* Remove provided paths recursively. */
@@ -457,7 +459,7 @@ void *onas_ddd_th(void *arg) {
 		idx = 0;
 		while (exclude_list[idx] != NULL) {
 			if(onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) != CL_SUCCESS) {
-				if(onas_ht_add_hierarchy(ddd_ht, exclude_list[idx])) {
+				if(onas_ht_rm_hierarchy(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), 0)){
 					logg("!ClamInotif: can't exclude '%s'\n", exclude_list[idx]);
 					return NULL;
 				} else {
@@ -467,7 +469,6 @@ void *onas_ddd_th(void *arg) {
 
 			idx++;
 		}
-
 	}
 
     /* Watch provided paths recursively */
@@ -492,7 +493,8 @@ void *onas_ddd_th(void *arg) {
 							logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
 							logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
 
-							kill(getpid(), SIGTERM);                                       }
+							kill(getpid(), SIGTERM);
+                                                }
                 }
             }
             pt = (struct optstruct *)pt->nextarg;
@@ -530,12 +532,9 @@ void *onas_ddd_th(void *arg) {
 		}
 	}
 
-    /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
-#if 0
 	if(optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
-		logg("ClamInotif: Extra scanning and notifications enabled.\n");
+		logg("ClamInotif: extra scanning on inotify events enabled\n");
 }
-#endif
 
     FD_ZERO(&rfds);
     FD_SET(onas_in_fd, &rfds);
@@ -559,16 +558,24 @@ void *onas_ddd_th(void *arg) {
                 path  = wdlt[wd];
                 child = event->name;
 
+				if (path == NULL) {
+					logg("*ClamInotif: watch descriptor not found in lookup table ... skipping\n");
+					continue;
+				}
+
                 len              = strlen(path);
                 size_t size      = strlen(child) + len + 2;
                 char *child_path = (char *)cli_malloc(size);
-                if (child_path == NULL)
+				if (child_path == NULL) {
+					logg("*ClamInotif: could not allocate space for child path ... aborting\n");
                     return NULL;
+				}
 
-                if (path[len - 1] == '/')
+				if (path[len-1] == '/') {
                     snprintf(child_path, --size, "%s%s", path, child);
-                else
+				} else {
                     snprintf(child_path, size, "%s/%s", path, child);
+				}
 
                 if (event->mask & IN_DELETE) {
 					onas_ddd_handle_in_delete(ctx, path, child_path, event, wd);
@@ -624,22 +631,19 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
 
     struct stat s;
 
-    /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
-#if 0
 	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISFILE);
+			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
-		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
+		} else if(event->mask & IN_ISDIR) {
 			logg("*ClamInotif: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
+
 			onas_ht_add_hierarchy(ddd_ht, child_path);
 			onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISDIR);
 		}
 	}
 	else
-#endif
     {
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
@@ -656,23 +660,19 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
     struct stat s;
-    /* TODO: Re-enable OnAccessExtraScanning once the thread resource consumption issue is resolved. */
-#if 0
 	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISFILE);
+			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
-		} else if(stat(child_path, &s) == 0 && S_ISDIR(s.st_mode)) {
+		} else if(event->mask & IN_ISDIR) {
 			logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
+
 			onas_ht_add_hierarchy(ddd_ht, child_path);
 			onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
 
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_ISDIR);
 		}
-	}
-	else
-#endif
-    {
+	} else {
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
 
@@ -684,49 +684,35 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
     return;
 }
 
-/* TODO: rework this to use consumer queue when making multithreading changes */
-/*static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
+static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
 
-    int thread_started             = 1;
-    struct scth_thrarg *scth_tharg = NULL;
-    pthread_attr_t scth_attr;
-    pthread_t scth_pid = 0;
-
-    do {
-        if (pthread_attr_init(&scth_attr)) break;
-		pthread_attr_setdetachstate(&scth_attr, PTHREAD_CREATE_JOINABLE);*/
-
-        /* Allocate memory for arguments. Thread is responsible for freeing it. */
-		/* (!(scth_tharg = (struct scth_thrarg *) calloc(sizeof(struct scth_thrarg), 1))) break;
-        if (!(scth_tharg->options = (struct cl_scan_options *)calloc(sizeof(struct cl_scan_options), 1))) break;
+	struct onas_scan_event *event_data;
 
 
-        scth_tharg->extra_options = extra_options;
-		scth_tharg->opts = ctx->clamdopts;
-        scth_tharg->pathname      = strdup(pathname);
+	event_data = (struct onas_scan_event *) cli_calloc(1, sizeof(struct onas_scan_event));
+	if (NULL == event_data) {
+		logg("!ClamInotif: could not allocate memory for event data struct\n");
+	}
 
-        thread_started = pthread_create(&scth_pid, &scth_attr, onas_scan_th, scth_tharg);
-    } while (0);
+	/* general mapping */
+	onas_map_context_info_to_event_data(ctx, &event_data);
+	event_data->pathname = cli_strdup(pathname);
+	event_data->bool_opts |= ONAS_SCTH_B_SCAN;
 
-	if (0 != thread_started) {*/
-        /* Failed to create thread. Free anything we may have allocated. */
-		/*logg("!ClamInotif: Unable to kick off extra scanning.\n");
-        if (NULL != scth_tharg) {
-            if (NULL != scth_tharg->pathname) {
-                free(scth_tharg->pathname);
-                scth_tharg->pathname = NULL;
-            }
-            if (NULL != scth_tharg->options) {
-                free(scth_tharg->options);
-                scth_tharg->options = NULL;
-            }
-            free(scth_tharg);
-            scth_tharg = NULL;
-        }
+	/* inotify specific stuffs */
+	event_data->bool_opts |= ONAS_SCTH_B_INOTIFY;
+	extra_options & ONAS_SCTH_B_FILE ? event_data->bool_opts |= ONAS_SCTH_B_FILE : extra_options;
+        extra_options & ONAS_SCTH_B_DIR ? event_data->bool_opts |= ONAS_SCTH_B_DIR : extra_options;
+
+	logg("*ClamInotif: attempting to feed consumer queue\n");
+	/* feed consumer queue */
+	if (CL_SUCCESS != onas_queue_event(event_data)) {
+		logg("!ClamInotif: error occurred while feeding consumer queue extra event ... continuing ...\n");
+		return;
     }
 
     return;
-}*/
+}
 
 static void onas_ddd_exit(int sig) {
 	logg("*ClamInotif: onas_ddd_exit(), signal %d\n", sig);

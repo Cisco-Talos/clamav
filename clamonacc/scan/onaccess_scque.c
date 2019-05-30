@@ -175,7 +175,7 @@ void *onas_scanque_th(void *arg) {
 		/* if there's no event to consume ... */
 		if (!onas_consume_event(thpool)) {
 			/* sleep for a bit */
-			usleep(500);
+			usleep(1000);
 		}
 	} while(1);
 
@@ -196,7 +196,6 @@ static int onas_consume_event(threadpool thpool) {
 
     struct onas_event_queue_node *popped_node = g_onas_event_queue_head->next;
 
-    /* TODO: create scth arg using head event data, use get queue head here before lock*/
     if (onas_queue_is_b_empty()) {
         pthread_mutex_unlock(&onas_queue_lock);
         return 1;
@@ -273,7 +272,6 @@ static void onas_scanque_exit(int sig) {
 
 	logg("*ClamScanque: onas_scanque_exit(), signal %d\n", sig);
 
-        /* TODO: cleanup queue struct */
 	onas_destroy_event_queue();
 	thpool_destroy(g_thpool);
 

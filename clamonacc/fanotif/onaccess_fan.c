@@ -1,8 +1,7 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
- *  Authors: Tomasz Kojm, Mickey Sola
+ *  Authors: Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -85,7 +84,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
     short int scan;
     unsigned int sizelimit = 0, extinfo;
 	int onas_fan_fd;
-    uint64_t fan_mask = FAN_EVENT_ON_CHILD | FAN_CLOSE;
+	uint64_t fan_mask = FAN_EVENT_ON_CHILD;
     char err[128];
 
     pthread_attr_t ddd_attr;
@@ -182,7 +181,7 @@ int onas_fan_eloop(struct onas_context **ctx) {
 	} while((ret == -1 && errno == EINTR));
 
     time_t start = time(NULL) - 30;
-	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || errno == EOVERFLOW) {
+	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || (errno == EOVERFLOW || errno == EMFILE)) {
 
         if (errno == EOVERFLOW) {
             if (time(NULL) - start >= 30) {
@@ -194,6 +193,15 @@ int onas_fan_eloop(struct onas_context **ctx) {
             errno = 0;
             continue;
         }
+
+                if (errno == EMFILE) {
+				logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+                                logg("*ClamFanotif: waiting for consumer thread to catch up then retrying ...\n");
+                                errno = 0;
+
+                                sleep(3);
+                                continue;
+                }
 
         fmd = (struct fanotify_event_metadata *)buf;
         while (FAN_EVENT_OK(fmd, bread)) {

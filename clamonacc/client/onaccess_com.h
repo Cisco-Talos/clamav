@@ -2,7 +2,7 @@
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
- *  Author: aCaB
+ *  Author: aCaB, Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -33,7 +33,7 @@
 #include "shared/misc.h"
 
 struct RCVLN {
-    char buf[PATH_MAX+1024]; /* FIXME must match that in clamd - bb1349 */
+    char buf[PATH_MAX+1024];
     CURL *curl;
     CURLcode curlcode;
     size_t retlen;

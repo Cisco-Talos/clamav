@@ -142,7 +142,7 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 	uint8_t b_deny_on_error;
 
 	if (NULL == event_data || NULL == fname || NULL == infected || NULL == err || NULL == ret_code) {
-		/* TODO: log */
+		logg("!ClamWorker: scan failed (NULL arg given)\n");
 		return CL_ENULLARG;
 	}
 
@@ -162,12 +162,13 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 			logg("*ClamWorker: scan failed with error code %d\n", *ret_code);
 		}
 
-
 		if (b_fanotify) {
 			if ((*err && *ret_code && b_deny_on_error) || *infected) {
 				res.response = FAN_DENY;
 			}
 		}
+	} else {
+            logg("DEBUG: NOT SCANNING\n");
 	}
 
 
@@ -201,7 +202,7 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 
 static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const char *pathname) {
     FTS *ftsp = NULL;
-	int32_t ftspopts = FTS_PHYSICAL | FTS_XDEV;
+	int32_t ftspopts = FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV;
 	FTSENT *curr = NULL;
 
 	int32_t infected = 0;
@@ -215,8 +216,12 @@ static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const
     char *const pathargv[] = {(char *)pathname, NULL};
 
 	if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
-		return CL_EOPEN;
+		ret = CL_EOPEN;
+                goto out;
 	}
+
+
+        logg("*ClamWorker: should never be here again!!!!!!!!!!!!\n");
 
     while ((curr = _priv_fts_read(ftsp))) {
         if (curr->fts_info != FTS_D) {
@@ -227,15 +232,19 @@ static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const
 				if (fres != 0 || sb.st_size > event_data->sizelimit)  {
 					/* okay to skip w/o allow/deny since dir comes from inotify
 					 * events and (probably) won't block w/ protection enabled */
-                                        // TODO: log here later ??
-					continue;
+                                    event_data->bool_opts &= ((uint16_t)  ~ONAS_SCTH_B_SCAN);
+                                    logg("*ClamWorker: size limit surpassed while doing extra scanning ... skipping object ...\n");
 				}
 			}
 
                         ret = onas_scth_scanfile(event_data, curr->fts_path, sb, &infected, &err, &ret_code);
-                        // TODO: probs need to error check here later, or at least log
         }
     }
+
+out:
+        if(ftsp) {
+            _priv_fts_close(ftsp);
+        }
 
     return ret;
 }
@@ -265,6 +274,10 @@ static cl_error_t onas_scth_handle_file(struct onas_scan_event *event_data, cons
 
 	ret = onas_scth_scanfile(event_data, pathname, sb, &infected, &err, &ret_code);
 	// probs need to error check here later, or at least log
+        if (event_data->bool_opts | ONAS_SCTH_B_INOTIFY) {
+            logg(">>>>>>DEBUG: ClamWorker: Inotify Scan Rsults ... ret = %d ; infected = %d ; err = %d ret_code = %d\n",
+                    ret, infected, err, ret_code);
+        }
 
     return ret;
 }
@@ -299,20 +312,26 @@ void *onas_scan_worker(void *arg) {
 		if (b_dir) {
 			logg("*ClamWorker: performing (extra) scanning on directory '%s'\n", event_data->pathname);
 			onas_scth_handle_dir(event_data, event_data->pathname);
-
 		} else if (b_file) {
 			logg("*ClamWorker: performing (extra) scanning on file '%s'\n", event_data->pathname);
 			onas_scth_handle_file(event_data, event_data->pathname);
-
             }
 
 	} else if (b_fanotify) {
 
 		logg("*ClamWorker: performing scanning on file '%s'\n", event_data->pathname);
 		onas_scth_handle_file(event_data, event_data->pathname);
+	} else {
+            /* something went very wrong, so check if we have an open fd,
+             * try to close it to resolve any potential lingering permissions event,
+             * then move to cleanup */
+            if (event_data->fmd) {
+                if (event_data->fmd->fd) {
+                    close(event_data->fmd->fd);
+                    goto done;
+                }
+            }
     }
-	/* TODO: else something went wrong and we should probably error out here, maybe try to recover somehow */
-
 done:
 	/* our job to cleanup event data: worker queue just kicks us off in a thread pool, drops the event object
 	 * from the queue and forgets about us */

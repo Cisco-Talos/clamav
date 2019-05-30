@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -28,19 +28,12 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <pthread.h>
-//#include <limits.h>
 #include "libclamav/clamav.h"
-//#include "libclamav/scanners.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
-//#include "shared/misc.h"
-//#include "libclamav/others.h"
-
-//#include "others.h"
 
 #include "onaccess_others.h"
 #include "clamd/scanner.h"
@@ -86,72 +79,13 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     } else if (errno == EACCES) {
         logg("*Permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
     } else if (errno == ENOENT) {
-        /* FIXME: should this be configurable? */
+        /* TODO: should this be configurable? */
         logg("$/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
     return CHK_CLEAN;
 }
 #endif
-
-/**
- * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
- */
-
-/* TODO: remove this
- * int onas_scan(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
-{
-    int ret = 0;
-    int i = 0;
-
-    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
-
-    if (*err) {
-        switch (*ret_code) {
-            case CL_EACCES:
-            case CL_ESTAT:
-
-                logg("*ClamMisc: internal issue (daemon could not access directory/file %s)\n", fname);
-                break;
-            case CL_EPARSE:
-            case CL_EREAD:
-            case CL_EWRITE:
-            case CL_EMEM:
-            case CL_ENULLARG:
-            default:
-                logg("~ClamMisc: internal issue (client failed to scan)\n");
-        }
-	    if ((*ctx)->retry_on_error) {
-		    logg("*ClamMisc: reattempting scan ... \n");
-		    while (err) {
-			    ret = onas_scan_safe(ctx, fname, sb, infected, err, ret_code);
-
-			    i++;
-			    if (*err && i == (*ctx)->retry_attempts) {
-				    *err = 0;
-			    }
-		    }
-	    }
-    }
-    return ret;
-}*/
-
-/**
- * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
- */
-/* TODO: remove this
- * int onas_scan_safe(struct onas_context **ctx, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
-{
-    int ret = 0;
-
-    pthread_mutex_lock(&onas_scan_lock);
-
-    ret = onas_client_scan(ctx, fname, sb, infected, err, ret_code);
-
-    pthread_mutex_unlock(&onas_scan_lock);
-
-    return ret;
-}*/
 
 char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
 {

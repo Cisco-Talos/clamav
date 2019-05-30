@@ -2,7 +2,7 @@
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm, aCaB
+ *  Authors: Tomasz Kojm, aCaB, Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -54,7 +54,6 @@
 #endif
 
 #include "libclamav/clamav.h"
-//#include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
 #include "shared/misc.h"
@@ -62,12 +61,6 @@
 #include "onaccess_com.h"
 #include "onaccess_proto.h"
 #include "onaccess_client.h"
-
-//#include "../clamonacc.h"
-
-#ifndef _WIN32
-extern struct sockaddr_un nixsock;
-#endif
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 
@@ -77,6 +70,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 	uint32_t buf[BUFSIZ/sizeof(uint32_t)];
     	uint64_t len;
         uint64_t todo = maxstream;
+	int ret = 1;
         int close_flag = 0;
 
         if (0 == fd) {
@@ -85,27 +79,25 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 			logg("~%s: Access denied. ERROR\n", filename);
 			return 0;
 		}
+                //logg("DEBUG: >>>>> fd is %d\n", fd);
                 close_flag = 1;
             } else {
                 fd = 0;
             }
         }
 
+
 	if(onas_sendln(curl, "zINSTREAM", 10, timeout)) {
-		if (close_flag) {
-                    close(fd);
-                }
-		return -1;
+		ret = -1;
+		goto strm_out;
 	}
 
 	while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 		if((uint64_t)len > todo) len = todo;
 		buf[0] = htonl(len);
 		if (onas_sendln(curl, (const char *)buf, len+sizeof(uint32_t), timeout)) {
-                    if (close_flag) {
-                        close(fd);
-                    }
-			return -1;
+			ret = -1;
+			goto strm_out;
 		}
 		todo -= len;
 		if(!todo) {
@@ -113,16 +105,21 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 			break;
 		}
 	}
-        if (close_flag) {
-            close(fd);
-        }
+
 	if(len) {
 		logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
-		return 0;
+		ret =  0;
+		goto strm_out;
 	}
 	*buf=0;
 	onas_sendln(curl, (const char *)buf, 4, timeout);
-	return 1;
+
+strm_out:
+        if (close_flag) {
+            //logg("DEBUG: >>>>> closed fd %d\n", fd);
+            close(fd);
+        }
+	return ret;
 }
 
 #ifdef HAVE_FD_PASSING
@@ -135,6 +132,7 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t ti
 	struct cmsghdr *cmsg;
 	unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
 	char dummy[]="";
+	int ret = 1;
         int close_flag = 0;
 
         if (0 == fd) {
@@ -150,10 +148,8 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t ti
         }
 	if(result = onas_sendln(curl, "zFILDES", 8, timeout)) {
 		logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
-		if (close_flag) {
-                    close(fd);
-                }
-		return -1;
+		ret = -1;
+		goto fd_out;
 	}
 
 	iov[0].iov_base = dummy;
@@ -170,15 +166,14 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t ti
 	*(int *)CMSG_DATA(cmsg) = fd;
 	if(onas_sendln(curl, &msg, 0, timeout) == -1) {
 		logg("!FD send failed: %s\n", strerror(errno));
-                if (close_flag) {
-                    close(fd);
-                }
-		return -1;
+		ret = -1;
+		goto fd_out;
 	}
+fd_out:
         if (close_flag) {
             close(fd);
         }
-	return 1;
+	return ret;
 }
 #endif
 
@@ -328,7 +323,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 				*printok = 0;
 
 				if(filename) {
-					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*burp %s\n", bol);
+					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
 				}
 
 				if (ret_code) {

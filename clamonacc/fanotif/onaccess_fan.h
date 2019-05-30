@@ -1,8 +1,7 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2011-2013 Sourcefire, Inc.
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,13 +18,13 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __FAN_H
-#define __FAN_H
+#ifndef __ONAS_FAN_H
+#define __ONAS_FAN_H
 
 #include "../clamonacc.h"
 #include "libclamav/clamav.h"
 
-void *onas_fan_th(void *arg);
+//void *onas_fan_th(void *arg);
 cl_error_t onas_setup_fanotif(struct onas_context **ctx);
 int onas_fan_eloop(struct onas_context **ctx);
 

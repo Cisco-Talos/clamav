@@ -23,7 +23,7 @@
 #include "clamav-config.h"
 #endif
 
-#define ONAS_DEBUG
+//#define ONAS_DEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,7 +140,7 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 		}
 
 #ifndef ONAS_DEBUG
-                if(onas_sendln(curl, "zPING", 5)) {
+                if(onas_sendln(curl, "zPING", 5, timeout)) {
 			logg("!ClamClient: could not ping clamd, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
                     curl_easy_cleanup(curl);
@@ -316,37 +316,6 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     return CL_SUCCESS;
 }
 
-/* Turns a relative path into an absolute one
- * Returns a pointer to the path (which must be
- * freed by the caller) or NULL on error */
-static char *onas_make_absolute(const char *basepath) {
-    int namelen;
-    char *ret;
-
-    if(!(ret = malloc(PATH_MAX + 1))) {
-	logg("^ClamClient: can't make room for fullpath\n");
-	return NULL;
-    }
-    if(!cli_is_abspath(basepath)) {
-	if(!getcwd(ret, PATH_MAX)) {
-	    logg("^ClamClient: can't get absolute pathname of current working directory.\n");
-	    free(ret);
-	    return NULL;
-	}
-	if(*basepath == '\\') {
-	    namelen = 2;
-	    basepath++;
-	} else {
-		namelen = strlen(ret);
-	}
-	snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP"%s", basepath);
-    } else {
-	strncpy(ret, basepath, PATH_MAX);
-    }
-    ret[PATH_MAX] = '\0';
-    return ret;
-}
-
 int onas_get_clamd_version(struct onas_context **ctx)
 {
     char *buff;
@@ -424,13 +393,10 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 	curlcode = onas_curl_init(&curl, tcpaddr, portnum, timeout);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
-                logg("*DEBUG: addr : %s\tportnum : %d\n", tcpaddr, portnum);
 		/* curl cleanup done in onas_curl_init on error */
 		return CL_ECREAT;
 	}
 
-	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
-        //logg("*ClamClient: connecting to daemon ...\n");
 	curlcode = curl_easy_perform(curl);
 	if (CURLE_OK != curlcode) {
 		logg("!ClamClient: could not establish connection, %s\n", curl_easy_strerror(curlcode));
@@ -444,8 +410,6 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 		logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
 		errors = 1;
 	}
-	/* logg here is noisy even for debug, enable only for dev work if something has gone very wrong. */
-	//logg("*ClamClient: done, closing connection ...\n");
 
 	curl_easy_cleanup(curl);
 	return *infected ? CL_VIRUS : (errors ? CL_ECREAT : CL_CLEAN);
