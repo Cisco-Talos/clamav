@@ -167,8 +167,6 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 				res.response = FAN_DENY;
 			}
 		}
-	} else {
-            logg("DEBUG: NOT SCANNING\n");
 	}
 
 
@@ -178,7 +176,7 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 			if(ret == -1) {
 				logg("!ClamWorker: internal error (can't write to fanotify)\n");
                                 if (errno == ENOENT) {
-                                    logg("ClamWorker: permission event has already been written ... recovering ...\n");
+                                    logg("*ClamWorker: permission event has already been written ... recovering ...\n");
                                 } else {
 				ret = CL_EWRITE;
 			}
@@ -187,10 +185,15 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 	}
 
         if (b_fanotify) {
+
+#ifdef ONAS_DEBUG
+            logg("*ClamWorker: closing fd, %d)\n", event_data->fmd->fd);
+#endif
             if (-1 == close(event_data->fmd->fd) ) {
+
                 logg("!ClamWorker: internal error (can't close fanotify meta fd, %d)\n", event_data->fmd->fd);
                 if (errno == EBADF) {
-                    logg("ClamWorker: fd already closed ... recovering ...\n");
+                    logg("*ClamWorker: fd already closed ... recovering ...\n");
                 } else {
                 ret = CL_EUNLINK;
 		}
@@ -273,11 +276,17 @@ static cl_error_t onas_scth_handle_file(struct onas_scan_event *event_data, cons
 	}
 
 	ret = onas_scth_scanfile(event_data, pathname, sb, &infected, &err, &ret_code);
-	// probs need to error check here later, or at least log
-        if (event_data->bool_opts | ONAS_SCTH_B_INOTIFY) {
-            logg(">>>>>>DEBUG: ClamWorker: Inotify Scan Rsults ... ret = %d ; infected = %d ; err = %d ret_code = %d\n",
+
+#ifdef ONAS_DEBUG
+        /* very noisy, debug only */
+        if (event_data->bool_opts & ONAS_SCTH_B_INOTIFY) {
+            logg("*ClamWorker: Inotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n",
                     ret, infected, err, ret_code);
+        } else {
+            logg("*ClamWorker: Fanotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n\tfd = %d\n",
+                    ret, infected, err, ret_code, event_data->fmd->fd);
         }
+#endif
 
     return ret;
 }
@@ -365,8 +374,6 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
     (*event_data)->scantype = ctx->scantype;
     (*event_data)->timeout = ctx->timeout;
     (*event_data)->maxstream = ctx->maxstream;
-    (*event_data)->tcpaddr = optget(ctx->clamdopts, "TCPAddr")->strarg;
-    (*event_data)->portnum = ctx->portnum;
     (*event_data)->fan_fd = ctx->fan_fd;
     (*event_data)->sizelimit = ctx->sizelimit;
     (*event_data)->retry_attempts = ctx->retry_attempts;
@@ -377,6 +384,14 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
 
     if (ctx->deny_on_error) {
         (*event_data)->bool_opts |= ONAS_SCTH_B_DENY_ON_E;
+    }
+
+    if (ctx->isremote) {
+        (*event_data)->bool_opts |= ONAS_SCTH_B_REMOTE;
+        (*event_data)->tcpaddr = optget(ctx->clamdopts, "TCPAddr")->strarg;
+        (*event_data)->portnum = ctx->portnum;
+    } else {
+        (*event_data)->tcpaddr = optget(ctx->clamdopts, "LocalSocket")->strarg;
     }
 
     return CL_SUCCESS;

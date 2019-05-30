@@ -24,6 +24,12 @@
 
 #include "libclamav/clamav.h"
 
+#ifndef ONAS_DEBUG
+#define ONAS_DEBUG
+#endif
+/* dev only switch for very noisy output */
+#undef ONAS_DEBUG
+
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif

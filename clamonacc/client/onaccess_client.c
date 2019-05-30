@@ -23,8 +23,6 @@
 #include "clamav-config.h"
 #endif
 
-//#define ONAS_DEBUG
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <curl/curl.h>
@@ -169,64 +167,90 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 		return CURLE_FAILED_INIT;
 	}
 
-        /* setup here, but caller needs to cleanup */
+	/* setup here, but caller needs to cleanup */
 	*curl = curl_easy_init();
 
-	curlcode = curl_easy_setopt(*curl, CURLOPT_PORT, port);
-        if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl with tcp port, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
+	if (!port) {
+
+		/* "ipaddr" is actually our unix socket path here */
+		curlcode = curl_easy_setopt(*curl, CURLOPT_UNIX_SOCKET_PATH, ipaddr);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
+
+		curlcode = curl_easy_setopt(*curl, CURLOPT_URL, "http://localhost/");
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl with local address, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
+
+	} else {
+
+		curlcode = curl_easy_setopt(*curl, CURLOPT_PORT, port);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl with tcp port, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
+
+		curlcode = curl_easy_setopt(*curl, CURLOPT_URL, ipaddr);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl with tcp address, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
         }
 
-	curlcode = curl_easy_setopt(*curl, CURLOPT_URL, ipaddr);
-        if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl with tcp address, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-        }
+		curlcode = curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1L);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl to not use signals, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
 
-	/* we implement our own transfer protocol via send and recv, so we only need to connect */
-	curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECT_ONLY, 1L);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-	}
+		curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT_MS, (long) timeout);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl with connect timeout, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
 
-	/* we implement our own transfer protocol via send and recv, so we only need to connect */
-	curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT_MS, (long) timeout);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl with connect timeout, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-	}
-
+		/* we implement our own transfer protocol via send and recv, so we only need to connect */
+		curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECT_ONLY, 1L);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
 
 
 #ifdef ONAS_DEBUG
-	curlcode = curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not tell curl to be verbose, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-	}
+		curlcode = curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not tell curl to be verbose, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
 #endif
 
-        /* don't care about the body of the return message */
-        curlcode = curl_easy_setopt(*curl, CURLOPT_NOBODY, 1L);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl to send HEAD request, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-	}
+		/* don't care about the body of the return message */
+		curlcode = curl_easy_setopt(*curl, CURLOPT_NOBODY, 1L);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl to send HEAD request, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
 
-        curlcode = curl_easy_setopt(*curl, CURLOPT_HEADER, 0L);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl to not send header, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(*curl);
-		return curlcode;
-	}
+		curlcode = curl_easy_setopt(*curl, CURLOPT_HEADER, 0L);
+		if (CURLE_OK != curlcode) {
+			logg("!ClamClient: could not setup curl to not send header, %s\n", curl_easy_strerror(curlcode));
+			curl_easy_cleanup(*curl);
+			return curlcode;
+		}
+
 
 	return curlcode;
 }
@@ -336,13 +360,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     }
 
     if (!b_remote) {
-	curl = curl_easy_init();
-        curlcode = curl_easy_setopt(curl, CURLOPT_UNIX_SOCKET_PATH, optget((*ctx)->clamdopts, "LocalSocket")->strarg);
-	if (CURLE_OK != curlcode) {
-		logg("!ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
-		curl_easy_cleanup(curl);
-		return 2;
-	}
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "LocalSocket")->strarg, (*ctx)->portnum, timeout);
     } else {
 	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
 	if (CURLE_OK != curlcode) {

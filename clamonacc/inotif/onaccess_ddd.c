@@ -348,7 +348,8 @@ void *onas_ddd_th(void *arg) {
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
-	//sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
@@ -359,22 +360,22 @@ void *onas_ddd_th(void *arg) {
     sigaction(SIGUSR1, &act, NULL);
     sigaction(SIGSEGV, &act, NULL);
 
-        logg("*ClamInotif: Starting inotify event thread\n");
+        logg("*ClamInotif: starting inotify event thread\n");
 
     onas_in_fd = inotify_init1(IN_NONBLOCK);
     if (onas_in_fd == -1) {
-		logg("!ClamInotif: Could not init inotify.");
+		logg("!ClamInotif: could not init inotify\n");
         return NULL;
     }
 
     ret = onas_ddd_init(0, ONAS_DEFAULT_HT_SIZE);
     if (ret) {
-		logg("!ClamInotif: Failed to initialize 3D. \n");
+		logg("!ClamInotif: failed to initialize DDD system\n");
         return NULL;
     }
 
 
-        logg("*ClamInotif: Dynamically determining directory hierarchy...\n");
+	logg("*ClamInotif: dynamically determining directory hierarchy...\n");
     /* Add provided paths recursively. */
 
 	if (!optget(ctx->opts, "watch-list")->enabled && !optget(ctx->clamdopts, "OnAccessIncludePath")->enabled) {
@@ -593,7 +594,7 @@ void *onas_ddd_th(void *arg) {
         }
     }
 
-        logg("*ClamInotif: Exiting inotify event thread\n");
+        logg("*ClamInotif: exiting inotify event thread\n");
     return NULL;
 }
 
@@ -605,7 +606,7 @@ static void onas_ddd_handle_in_delete(struct onas_context *ctx,
     if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
     if (!(event->mask & IN_ISDIR)) return;
 
-	logg("*ClamInotif: DELETE - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	logg("*ClamInotif: DELETE - removing %s from %s with wd:%d\n", child_path, path, wd);
 	onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
     onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
@@ -619,7 +620,7 @@ static void onas_ddd_handle_in_moved_from(struct onas_context *ctx,
     if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
     if (!(event->mask & IN_ISDIR)) return;
 
-	logg("*ClamInotif: MOVED_FROM - Removing %s from %s with wd:%d\n", child_path, path, wd);
+	logg("*ClamInotif: MOVED_FROM - removing %s from %s with wd:%d\n", child_path, path, wd);
 	onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
     onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
@@ -636,7 +637,7 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
 		} else if(event->mask & IN_ISDIR) {
-			logg("*ClamInotif: CREATE - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			logg("*ClamInotif: CREATE - adding %s to %s with wd:%d\n", child_path, path, wd);
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
 
 			onas_ht_add_hierarchy(ddd_ht, child_path);
@@ -648,7 +649,7 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
 
-		logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
         onas_ht_add_hierarchy(ddd_ht, child_path);
 		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
     }
@@ -665,7 +666,7 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
 		} else if(event->mask & IN_ISDIR) {
-			logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+			logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
 
 			onas_ht_add_hierarchy(ddd_ht, child_path);
@@ -676,7 +677,7 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
         if (!(event->mask & IN_ISDIR)) return;
 
-		logg("*ClamInotif: MOVED_TO - Adding %s to %s with wd:%d\n", child_path, path, wd);
+		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
         onas_ht_add_hierarchy(ddd_ht, child_path);
 		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
     }
@@ -717,12 +718,22 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 static void onas_ddd_exit(int sig) {
 	logg("*ClamInotif: onas_ddd_exit(), signal %d\n", sig);
 
+        if (onas_in_fd) {
     close(onas_in_fd);
+        }
+        onas_in_fd = 0;
 
+	if (ddd_ht) {
     onas_free_ht(ddd_ht);
-    free(wdlt);
+        }
+        ddd_ht = NULL;
 
-    pthread_exit(NULL);
+        if (wdlt) {
+    free(wdlt);
+        }
+        wdlt = NULL;
+
 	logg("ClamInotif: stopped\n");
+	pthread_exit(NULL);
 }
 #endif
