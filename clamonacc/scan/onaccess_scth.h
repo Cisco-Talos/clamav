@@ -33,6 +33,17 @@
 #define ONAS_SCTH_B_SCAN        0x10
 #define ONAS_SCTH_B_RETRY_ON_E  0x20
 #define ONAS_SCTH_B_DENY_ON_E   0x40
+#define ONAS_SCTH_B_REMOTE      0x80
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
 
 struct onas_scan_event {
         const char *tcpaddr;
@@ -46,7 +57,14 @@ struct onas_scan_event {
         int64_t maxstream;
         int64_t timeout;
 	uint8_t bool_opts;
-};
+} __attribute((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 
 void *onas_scan_th(void *arg);
 

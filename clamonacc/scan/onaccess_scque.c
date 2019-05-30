@@ -148,12 +148,13 @@ void *onas_scanque_th(void *arg) {
 
 	/* ignore all signals except SIGUSR1 */
 	sigfillset(&sigset);
-	sigdelset(&sigset, SIGUSR1);
+	sigdelset(&sigset, SIGUSR2);
 	/* The behavior of a process is undefined after it ignores a
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
 	sigdelset(&sigset, SIGFPE);
 	sigdelset(&sigset, SIGILL);
-	//sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
 	sigdelset(&sigset, SIGBUS);
 #endif
@@ -161,16 +162,16 @@ void *onas_scanque_th(void *arg) {
 	memset(&act, 0, sizeof(struct sigaction));
 	act.sa_handler = onas_scanque_exit;
 	sigfillset(&(act.sa_mask));
-	sigaction(SIGUSR1, &act, NULL);
+	sigaction(SIGUSR2, &act, NULL);
 	sigaction(SIGSEGV, &act, NULL);
 
-	logg("*ClamQueue: initializing event queue consumer w/ (%d) threads in thread pool\n", ctx->maxthreads);
+	logg("*ClamQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
         onas_init_event_queue();
         threadpool thpool = thpool_init(ctx->maxthreads);
 	g_thpool = thpool;
 
         /* loop w/ onas_consume_event until we die */
-	logg("*ClamQueue: waiting to cosume events ...\n");
+	logg("*ClamQueue: waiting to consume events ...\n");
 	do {
 		/* if there's no event to consume ... */
 		if (!onas_consume_event(thpool)) {
@@ -201,7 +202,10 @@ static int onas_consume_event(threadpool thpool) {
         return 1;
     }
 
+#ifdef ONAS_DEBUG
     logg("*ClamonQueue: consuming event!\n");
+#endif
+
     thpool_add_work(thpool, (void *) onas_scan_worker, (void *) popped_node->data);
 
     g_onas_event_queue_head->next = g_onas_event_queue_head->next->next;
@@ -222,7 +226,10 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
 
     struct onas_event_queue_node *node = NULL;
 
+#ifdef ONAS_DEBUG
     logg("*ClamonQueue: queueing event!\n");
+#endif
+
     if (CL_EMEM == onas_new_event_queue_node(&node)) {
 	    return CL_EMEM;
     }
@@ -273,10 +280,13 @@ static void onas_scanque_exit(int sig) {
 	logg("*ClamScanque: onas_scanque_exit(), signal %d\n", sig);
 
 	onas_destroy_event_queue();
-	thpool_destroy(g_thpool);
+        if (g_thpool) {
+            thpool_destroy(g_thpool);
+        }
+        g_thpool = NULL;
 
-	pthread_exit(NULL);
 	logg("ClamScanque: stopped\n");
+	pthread_exit(NULL);
 }
 
 #endif

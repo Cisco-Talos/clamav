@@ -329,7 +329,32 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 				if (ret_code) {
 					*ret_code = CL_ESTAT;
 				}
+                        } else if(len > 41 && !memcmp(eol-42, " lstat() failed: Permission denied. ERROR", 41)) {
+				if(errors) {
+					(*errors)++;
+				}
+				*printok = 0;
 
+				if(filename) {
+					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
+				}
+
+				if (ret_code) {
+					*ret_code = CL_ESTAT;
+				}
+                        } else if(len > 21 && !memcmp(eol-22, " Access denied. ERROR", 21)) {
+				if(errors) {
+					(*errors)++;
+				}
+				*printok = 0;
+
+				if(filename) {
+					(scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
+				}
+
+				if (ret_code) {
+					*ret_code = CL_EACCES;
+				}
 			} else if(!memcmp(eol-7, " ERROR", 6)) {
 				if(errors) {
 					(*errors)++;

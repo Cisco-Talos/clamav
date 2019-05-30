@@ -57,33 +57,38 @@
 
 extern pthread_t ddd_pid;
 extern pthread_t scque_pid;
+static int onas_fan_fd;
 
-/*static void onas_fan_exit(int sig)
+static void onas_fan_exit(int sig)
 {
 	logg("*ClamFanotif: onas_fan_exit(), signal %d\n", sig);
 
+        if(onas_fan_fd) {
     close(onas_fan_fd);
+        }
+        onas_fan_fd = 0;
 
     if (ddd_pid > 0) {
         pthread_kill(ddd_pid, SIGUSR1);
         pthread_join(ddd_pid, NULL);
     }
+        ddd_pid = 0;
 
         if (scque_pid > 0) {
-		pthread_kill(ddd_pid, SIGUSR1);
-		pthread_join(ddd_pid, NULL);
+		pthread_kill(scque_pid, SIGUSR2);
+		pthread_join(scque_pid, NULL);
     }
+        scque_pid = 0;
 
-	pthread_exit(NULL);
 	logg("ClamFanotif: stopped\n");
-}*/
+	pthread_exit(NULL);
+}
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
     const struct optstruct *pt;
     short int scan;
     unsigned int sizelimit = 0, extinfo;
-	int onas_fan_fd;
 	uint64_t fan_mask = FAN_EVENT_ON_CHILD;
     char err[128];
 
@@ -152,9 +157,9 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
     /* Load other options. */
 	(*ctx)->sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
 	if((*ctx)->sizelimit)
-		logg("*ClamFanotif: Max file size limited to %lu bytes\n", (*ctx)->sizelimit);
+		logg("*ClamFanotif: max file size limited to %lu bytes\n", (*ctx)->sizelimit);
     else
-		logg("*ClamFanotif: File size limit disabled\n");
+		logg("*ClamFanotif: file size limit disabled\n");
 
 	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
 
@@ -164,6 +169,8 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 int onas_fan_eloop(struct onas_context **ctx) {
 	int ret = 0;
         int err_cnt = 0;
+	sigset_t sigset;
+	struct sigaction act;
 	short int scan;
 	STATBUF sb;
 	fd_set rfds;
@@ -173,6 +180,26 @@ int onas_fan_eloop(struct onas_context **ctx) {
 	char fname[1024];
 	int len, check, fres;
 	char err[128];
+
+	/* ignore all signals except SIGUSR1 */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGUSR1);
+	/* The behavior of a process is undefined after it ignores a
+	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+	sigdelset(&sigset, SIGFPE);
+	sigdelset(&sigset, SIGILL);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGINT);
+#ifdef SIGBUS
+	sigdelset(&sigset, SIGBUS);
+#endif
+	pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+	memset(&act, 0, sizeof(struct sigaction));
+	act.sa_handler = onas_fan_exit;
+	sigfillset(&(act.sa_mask));
+	sigaction(SIGUSR1, &act, NULL);
+	sigaction(SIGSEGV, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
 
     FD_ZERO(&rfds);
 	FD_SET((*ctx)->fan_fd, &rfds);
@@ -278,6 +305,7 @@ int onas_fan_eloop(struct onas_context **ctx) {
 						logg("!ClamFanotif: error occurred while excluding event\n");
                                                 return 2;
                                         }
+					}
 
                                         if (-1 == close(fmd->fd)) {
 						logg("!ClamFanotif: error occurred while closing metadata fd, %d\n", fmd->fd);
@@ -289,7 +317,6 @@ int onas_fan_eloop(struct onas_context **ctx) {
                                     }
                                 }
         }
-			}
         fmd = FAN_EVENT_NEXT(fmd, bread);
     }
     do {
