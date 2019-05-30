@@ -588,6 +588,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
     if (!ht || !pathname) return CL_ENULLARG;
 
+        int ret = 0;
     FTS *ftsp         = NULL;
     int ftspopts      = FTS_PHYSICAL | FTS_XDEV;
     FTSENT *curr      = NULL;
@@ -601,7 +602,8 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
     char *const pathargv[] = {(char *)pathname, NULL};
     if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
 		logg("!ClamHash: could not open '%s'\n", pathname);
-        return CL_EARG;
+		ret = CL_EARG;
+                goto out;
     }
 
     while ((curr = _priv_fts_read(ftsp))) {
@@ -612,7 +614,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         switch (curr->fts_info) {
             case FTS_D:
                 hnode = onas_hashnode_init();
-                if (!hnode) return CL_EMEM;
+				if (!hnode) {
+                                    ret = CL_EMEM;
+                                    goto out;
+                                }
 
                 hnode->pathlen  = curr->fts_pathlen;
                 hnode->pathname = cli_strndup(curr->fts_path, hnode->pathlen);
@@ -631,8 +636,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
             do {
                 if (childlist->fts_info == FTS_D) {
                     if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name)) {
-                        onas_free_hashnode(hnode);
-                        return CL_EMEM;
+
+						ret = CL_EMEM;
+                                                goto out;
+                                        }
                     }
                 }
 
@@ -640,15 +647,27 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         }
 
         struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);
-        if (!elem) return CL_EMEM;
+		if (!elem) {
+                    ret = CL_EMEM;
+                    goto out;
+                }
 
         if (onas_ht_insert(ht, elem)) {
-            onas_free_element(elem);
-            return CL_EMEM;
+
+                    ret = -1;
+                    goto out;
         }
     }
 
+out:
+        if (ftsp) {
     _priv_fts_close(ftsp);
+        }
+
+        if (ret) {
+            return ret;
+        }
+
     return CL_SUCCESS;
 }
 

@@ -2,7 +2,7 @@
  *  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2010 Sourcefire, Inc.
  *
- *  Author: aCaB
+ *  Author: aCaB, Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -208,7 +208,7 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
 		}
 
 		if (!eol) {
-			if(rcv_data->buf != rcv_data->lnstart) { /* old memmove sux */
+			if(rcv_data->buf != rcv_data->lnstart) {
 				memmove(rcv_data->buf, rcv_data->lnstart, rcv_data->retlen);
 				rcv_data->lnstart = rcv_data->buf;
 			}
