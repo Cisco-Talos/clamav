@@ -52,6 +52,9 @@ static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node)
 static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
 
 static pthread_mutex_t onas_queue_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static pthread_mutex_t onas_scque_loop = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t onas_scque_empty_cond = PTHREAD_COND_INITIALIZER;
 extern pthread_t scque_pid;
 
 static threadpool g_thpool;
@@ -173,11 +176,16 @@ void *onas_scanque_th(void *arg) {
         /* loop w/ onas_consume_event until we die */
 	logg("*ClamQueue: waiting to consume events ...\n");
 	do {
-		/* if there's no event to consume ... */
-		if (!onas_consume_event(thpool)) {
-			/* sleep for a bit */
-			usleep(1000);
-		}
+            pthread_mutex_lock(&onas_scque_loop);
+            pthread_cond_wait(&onas_scque_empty_cond, &onas_scque_loop);
+            /* run 'till we're empty */
+		do {
+                    ret = onas_consume_event(thpool);
+                } while (1 != ret);
+            pthread_mutex_unlock(&onas_scque_loop);
+
+
+
 	} while(1);
 
 }
@@ -246,6 +254,7 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
     g_onas_event_queue.size++;
 
     pthread_mutex_unlock(&onas_queue_lock);
+    pthread_cond_signal(&onas_scque_empty_cond);
 
     return CL_SUCCESS;
 }
