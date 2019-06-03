@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pthread.h>
+#include <pwd.h>
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/output.h"
@@ -42,10 +43,12 @@
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
+    struct passwd *pwd;
     char path[32];
     STATBUF sb;
     const struct optstruct *opt      = NULL;
     const struct optstruct *opt_root = NULL;
+    const struct optstruct *opt_uname = NULL;
 
     /* always ignore ourselves */
     if (pid == (int)getpid()) {
@@ -55,9 +58,10 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     /* look up options */
     opt      = optget(opts, "OnAccessExcludeUID");
     opt_root = optget(opts, "OnAccessExcludeRootUID");
+    opt_uname = optget (opts, "OnAccessExcludeUname");
 
     /* we can return immediately if no uid exclusions were requested */
-    if (!(opt->enabled || opt_root->enabled))
+    if (!(opt->enabled || opt_root->enabled || opt_uname->enabled))
         return CHK_CLEAN;
 
     /* perform exclusion checks if we can stat OK */
@@ -71,16 +75,26 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
                 opt = opt->nextarg;
             }
         }
+        /* then check our unames */
+        if (opt_uname->enabled) {
+            while (opt_uname)
+            {
+                pwd = getpwuid(sb.st_uid);
+                if (!strncmp(opt_uname->strarg, pwd->pw_name, strlen(opt_uname->strarg)))
+                    return CHK_FOUND;
+                opt_uname = opt_uname->nextarg;
+            }
+        }
         /* finally check root UID */
         if (opt_root->enabled) {
             if (0 == (long long)sb.st_uid)
                 return CHK_FOUND;
         }
     } else if (errno == EACCES) {
-        logg("*Permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
+        logg("*ClamMisc: permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
     } else if (errno == ENOENT) {
         /* TODO: should this be configurable? */
-        logg("$/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
+        logg("ClamMisc: $/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
     return CHK_CLEAN;

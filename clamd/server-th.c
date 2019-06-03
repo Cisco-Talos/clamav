@@ -1259,44 +1259,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*MaxQueue set to: %d\n", max_queue);
     acceptdata.max_queue = max_queue;
 
-    if (optget(opts, "ScanOnAccess")->enabled)
-/*
-#if defined(FANOTIFY) || defined(CLAMAUTH)
-    {
-        int thread_started = 1;
-        do {
-            if (pthread_attr_init(&fan_attr)) break;
-            pthread_attr_setdetachstate(&fan_attr, PTHREAD_CREATE_JOINABLE);
-
-			Allocate memory for arguments. Thread is responsible for freeing it.
-            if (!(tharg = (struct thrarg *)calloc(sizeof(struct thrarg), 1))) break;
-            if (!(tharg->options = (struct cl_scan_options *)calloc(sizeof(struct cl_scan_options), 1))) break;
-
-            (void)memcpy(tharg->options, &options, sizeof(struct cl_scan_options));
-            tharg->opts   = opts;
-            tharg->engine = engine;
-
-            thread_started = pthread_create(&fan_pid, &fan_attr, onas_fan_th, tharg);
-        } while (0);
-
-        if (0 != thread_started) {
-			Failed to create thread. Free anything we may have allocated.
-            logg("!Unable to start on-access scan.\n");
-            if (NULL != tharg) {
-                if (NULL != tharg->options) {
-                    free(tharg->options);
-                    tharg->options = NULL;
-                }
-                free(tharg);
-                tharg = NULL;
-            }
-        }
-    }
-#else
-        logg("!On-access scan is not available\n");
-#endif
-*/
-
 #ifndef _WIN32
     /* set up signal handling */
     sigfillset(&sigset);
@@ -1576,12 +1538,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
             reload = 0;
             time(&reloaded_time);
             pthread_mutex_unlock(&reload_mutex);
-
-#if defined(FANOTIFY) || defined(CLAMAUTH)
-            if (optget(opts, "ScanOnAccess")->enabled && tharg) {
-                tharg->engine = engine;
-            }
-#endif
             time(&start_time);
         } else {
             pthread_mutex_unlock(&reload_mutex);
@@ -1603,16 +1559,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
      */
     logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
-#if defined(FANOTIFY) || defined(CLAMAUTH)
-    if (optget(opts, "ScanOnAccess")->enabled && tharg) {
-        logg("Stopping on-access scan\n");
-        pthread_mutex_lock(&logg_mutex);
-        pthread_kill(fan_pid, SIGUSR1);
-        pthread_mutex_unlock(&logg_mutex);
-        pthread_join(fan_pid, NULL);
-        free(tharg);
-    }
-#endif
     if (engine) {
         thrmgr_setactiveengine(NULL);
         cl_engine_free(engine);

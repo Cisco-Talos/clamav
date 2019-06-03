@@ -306,6 +306,9 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
     }
 
     (*ctx)->timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+    (*ctx)->retry_attempts = optget((*ctx)->clamdopts, "OnAccessRetryAttempts")->numarg;
+    (*ctx)->retry_attempts ? ((*ctx)->retry_on_error = 1) : ((*ctx)->retry_on_error = 0);
+    optget((*ctx)->clamdopts, "OnAccessDenyOnError")->enabled ? ((*ctx)->deny_on_error  = 1) : ((*ctx)->deny_on_error = 0);
 
     (*ctx)->isremote = onas_check_remote(ctx, &err);
     if (err) {

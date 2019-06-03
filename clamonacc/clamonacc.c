@@ -75,6 +75,15 @@ int main(int argc, char **argv)
 	}
 	ctx->opts = opts;
 
+#ifndef _WIN32
+        if (!optget(ctx->opts, "foreground")->enabled) {
+            if (-1 == daemonize()) {
+                logg("!Clamonacc: could not daemonize\n");
+                return 2;
+            }
+        }
+#endif
+
 	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
 	if (clamdopts == NULL) {
 		logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
@@ -218,14 +227,14 @@ void help(void)
     mprintf("    --version              -V          Print version number and exit\n");
     mprintf("    --verbose              -v          Be verbose\n");
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
+    mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
-    mprintf("    --exclude-list=FILES   -f FILE     Exclude directories from FILE\n");
+    mprintf("    --exclude-list=FILES   -e FILE     Exclude directories from FILE\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
     mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
-    mprintf("    --infected             -i          Only print infected files\n");
     mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
     mprintf("\n");

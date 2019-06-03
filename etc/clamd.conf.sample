@@ -614,34 +614,53 @@ Example
 ## On-access Scan Settings
 ##
 
-# Enable on-access scanning. Currently, this is supported via fanotify.
-# Clamuko/Dazuko support has been deprecated.
-# Default: no
-#ScanOnAccess yes
-
-# Set the  mount point to be scanned. The mount point specified, or the mount
-# point containing the specified directory will be watched. If any directories
-# are specified, this option will preempt the DDD system. This will notify
-# only. It can be used multiple times.
-# (On-access scan only)
-# Default: disabled
-#OnAccessMountPath /
-#OnAccessMountPath /home/user
-
 # Don't scan files larger than OnAccessMaxFileSize
 # Value of 0 disables the limit.
 # Default: 5M
 #OnAccessMaxFileSize 10M
 
+# Max number of scanning threads to allocate to the OnAccess thread pool at startup.
+# These threads are the ones responsible for creating a connection with the daemon 
+# and kicking off scanning after an event has been processed. To prevent clamonacc 
+# from consuming all clamd's resources keep this lower than clamd's max threads.
+# Default: 5
+#OnAccessMaxThreads 10
+
+# Max amount of time (in milliseconds) that the OnAccess client should spend for every 
+# connect, send, and recieve attempt when communicating with clamd via curl.
+# Default: 5000L (5 seconds)
+# OnAccessCurlTimeout 10000L
+
 # Set the include paths (all files inside them will be scanned). You can have
 # multiple OnAccessIncludePath directives but each directory must be added
-# in a separate line. (On-access scan only)
+# in a separate line.
 # Default: disabled
 #OnAccessIncludePath /home
 #OnAccessIncludePath /students
 
+# Modifies fanotify blocking behaviour when handling permission events.
+# If off, fanotify will only notify if the file scanned is a virus,
+# and not perform any blocking.
+# Default: no
+#OnAccessPrevention yes
+
+# Toggles dynamic directory determination. Allows for recursively watching
+# include paths.
+# Default: no
+#OnAccessDisableDDD yes
+
+# Set the  mount point to be scanned. The mount point specified, or the mount
+# point containing the specified directory will be watched. If any directories
+# are specified, this option will preempt (disable and ignore all options related to) 
+# the DDD system. This option will result in verdicts only: Prevention is explicitly 
+# disallowed to prevent uninteded, fatal misuse by users due to their potential 
+# fundamental misunderstanding of (pre kernel 5.1) fanotify mechanisms.
+# It can be used multiple times.
+# Default: disabled
+#OnAccessMountPath /
+#OnAccessMountPath /home/user
+
 # Set the exclude paths. All subdirectories are also excluded.
-# (On-access scan only)
 # Default: disabled
 #OnAccessExcludePath /home/bofh
 
@@ -671,25 +690,28 @@ Example
 # Default: disabled
 #OnAccessExcludeUID -1
 
-# Toggles dynamic directory determination. Allows for recursively watching
-# include paths.
-# (On-access scan only)
-# Default: no
-#OnAccessDisableDDD yes
+# This option allows exclusions via user names when using the on-access 
+# scanning client. It can be used multiple times.
+# It has the same potential race condition limitations of the OnAccessExcludeUID option.
+# Default: disabled
+#OnAccessExcludeUname clamuser
 
-# Modifies fanotify blocking behaviour when handling permission events.
-# If off, fanotify will only notify if the file scanned is a virus,
-# and not perform any blocking.
-# (On-access scan only)
+# Number of times the OnAccess client will retry a failed scan due to connection problems 
+# (or other issues). 
+# Default: 0
+#OnAccessRetryAttempts 3
+
+# When using prevention, if this option is turned on, any errors that occur during 
+# scanning will result in the event attempt being denied. This could potentially 
+# lead to unwanted system behaviour with certain configurations, so the client defaults 
+# this to off and prefers allowing access events in case of scan or connection error.
 # Default: no
-#OnAccessPrevention yes
+#OnAccessDenyOnError yes
+
 
 # Toggles extra scanning and notifications when a file or directory is
 # created or moved.
 # Requires the  DDD system to kick-off extra scans.
-# NOTE:  This feature is disabled until a thread resource leak bug
-#        in the OnAccessExtraScanning code can be resolved.
-# (On-access scan only)
 # Default: no
 #OnAccessExtraScanning yes
 
