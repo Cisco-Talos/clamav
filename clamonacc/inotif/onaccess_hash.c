@@ -614,10 +614,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         switch (curr->fts_info) {
             case FTS_D:
                 hnode = onas_hashnode_init();
-				if (!hnode) {
-                                    ret = CL_EMEM;
-                                    goto out;
-                                }
+                if (!hnode) {
+                    ret = CL_EMEM;
+                    goto out;
+                }
 
                 hnode->pathlen  = curr->fts_pathlen;
                 hnode->pathname = cli_strndup(curr->fts_path, hnode->pathlen);
@@ -637,12 +637,10 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
                 if (childlist->fts_info == FTS_D) {
                     if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name)) {
 
-						ret = CL_EMEM;
-                                                goto out;
-                                        }
+                        ret = CL_EMEM;
+                        goto out;
                     }
                 }
-
             } while ((childlist = childlist->fts_link));
         }
 

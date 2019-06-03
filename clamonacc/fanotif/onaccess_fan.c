@@ -208,26 +208,33 @@ int onas_fan_eloop(struct onas_context **ctx) {
 	} while((ret == -1 && errno == EINTR));
 
     time_t start = time(NULL) - 30;
-	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || (errno == EOVERFLOW || errno == EMFILE)) {
-
-        if (errno == EOVERFLOW) {
+	while(((bread = read((*ctx)->fan_fd, buf, sizeof(buf))) > 0) || (errno == EOVERFLOW || errno == EMFILE || errno == EACCES)) {
+		switch(errno) {
+			case EOVERFLOW:
             if (time(NULL) - start >= 30) {
-				logg("!ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
-				logg("!ClamFanotif: file too large for fanotify ... recovering and continuing scans...\n");
+					logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+					logg("*ClamFanotif: file too large for fanotify ... recovering and continuing scans...\n");
                 start = time(NULL);
             }
 
             errno = 0;
             continue;
-        }
+			case EACCES:
+				logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+				logg("*ClamFanotif: check your SELinux audit logs and consider adding an exception \
+						... recovering and continuing scans...\n");
 
-                if (errno == EMFILE) {
+				errno = 0;
+				continue;
+			case EMFILE:
 				logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
                                 logg("*ClamFanotif: waiting for consumer thread to catch up then retrying ...\n");
-                                errno = 0;
-
                                 sleep(3);
+
+				errno = 0;
                                 continue;
+			default:
+			break;
                 }
 
         fmd = (struct fanotify_event_metadata *)buf;
