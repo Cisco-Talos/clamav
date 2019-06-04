@@ -1009,7 +1009,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
                 }
             }
         }
-        tmp_buffer[norm_len + 1] = '\0';
+        tmp_buffer[norm_len] = '\0';
         bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", norm_len, tmp_buffer);
     }
 
