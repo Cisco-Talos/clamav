@@ -583,16 +583,13 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     opt      = bm->options;
 
     /* ensure we won't run off the end of the file buffer */
-    if (bm->offset > 0) {
-        if (!((offset + bm->offset + byte_len <= length))) {
-            bcm_dbgmsg("cli_bcomp_compare_check: %u bytes requested at offset %zu would go past file buffer of %u\n", byte_len, (offset + bm->offset), length);
-            return CL_CLEAN;
-        }
-    } else {
-        if (!(offset + bm->offset > 0)) {
-            bcm_dbgmsg("cli_bcomp_compare_check: negative offset would underflow buffer\n");
-            return CL_CLEAN;
-        }
+    if (!(offset + bm->offset + byte_len <= length)) {
+        bcm_dbgmsg("cli_bcomp_compare_check: %u bytes requested at offset %zu would go past file buffer of %u\n", byte_len, (offset + bm->offset), length);
+        return CL_CLEAN;
+    }
+    if (!(offset + bm->offset > 0)) {
+        bcm_dbgmsg("cli_bcomp_compare_check: negative offset would underflow buffer\n");
+        return CL_CLEAN;
     }
 
     /* jump to byte compare offset, then store off specified bytes into a null terminated buffer */
