@@ -2296,7 +2296,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
                         MAP(inst->u.three[2]);
                     break;
                     /*		case OP_BC_GEPN:
-		    *TODO 
+		    *TODO
 		    break;*/
                 case OP_BC_MEMSET:
                 case OP_BC_MEMCPY:
