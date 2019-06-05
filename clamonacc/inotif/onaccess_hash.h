@@ -21,6 +21,9 @@
 #ifndef __ONAS_HASH_H
 #define __ONAS_HASH_H
 
+
+#if defined(FANOTIFY)
+
 #define ONAS_FANWATCH 0x1
 #define ONAS_INWATCH 0x2
 #define ONAS_STOPWATCH 0x3
@@ -106,4 +109,5 @@ int onas_rm_listnode(struct onas_lnode *head, const char *dirname);
 
 void onas_free_dirlist(struct onas_lnode *head);
 
+#endif
 #endif

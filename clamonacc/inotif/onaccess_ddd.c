@@ -22,7 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,28 +35,30 @@
 #include <errno.h>
 #include <stdbool.h>
 
+#if defined(FANOTIFY)
 #include <sys/fanotify.h>
 #include <sys/inotify.h>
-
+#endif
 
 #include "../fanotif/onaccess_fan.h"
-#include "onaccess_hash.h"
-#include "onaccess_ddd.h"
+#include "./onaccess_hash.h"
+#include "./onaccess_ddd.h"
 #include "../scan/onaccess_scth.h"
 #include "../scan/onaccess_scque.h"
 #include "../misc/onaccess_others.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
+#include "../../libclamav/clamav.h"
+#include "../../libclamav/scanners.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+#include "../../shared/optparser.h"
+#include "../../shared/output.h"
 
-#include "clamd/server.h"
-#include "clamd/others.h"
-#include "clamd/scanner.h"
+#include "../../clamd/server.h"
+#include "../../clamd/others.h"
+#include "../../clamd/scanner.h"
 
 
+#if defined(FANOTIFY)
 
 static int onas_ddd_init_ht(uint32_t ht_size);
 static int onas_ddd_init_wdlt(uint64_t nwatches);

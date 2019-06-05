@@ -22,7 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -34,23 +33,29 @@
 #include <errno.h>
 #include <stdbool.h>
 
+
+#if defined(FANOTIFY)
 #include <sys/fanotify.h>
+#endif
 
 #include "../fanotif/onaccess_fan.h"
-#include "onaccess_hash.h"
-#include "onaccess_ddd.h"
+#include "./onaccess_hash.h"
+#include "./onaccess_ddd.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
-#include "libclamav/str.h"
+#include "../../libclamav/clamav.h"
+#include "../../libclamav/scanners.h"
+#include "../../libclamav/str.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+#include "../../shared/optparser.h"
+#include "../../shared/output.h"
 
-#include "clamd/server.h"
-#include "clamd/others.h"
-#include "clamd/scanner.h"
+#include "../../clamd/server.h"
+#include "../../clamd/others.h"
+#include "../../clamd/scanner.h"
 #include "../misc/priv_fts.h"
+
+
+#if defined(FANOTIFY)
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);

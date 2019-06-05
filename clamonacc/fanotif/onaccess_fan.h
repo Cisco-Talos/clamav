@@ -22,7 +22,7 @@
 #define __ONAS_FAN_H
 
 #include "../clamonacc.h"
-#include "libclamav/clamav.h"
+#include "../../libclamav/clamav.h"
 
 //void *onas_fan_th(void *arg);
 cl_error_t onas_setup_fanotif(struct onas_context **ctx);

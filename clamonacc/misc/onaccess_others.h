@@ -21,8 +21,8 @@
 #ifndef __CLAMD_ONAS_OTHERS_H
 #define __CLAMD_ONAS_OTHERS_H
 
-#include "shared/optparser.h"
-#include "libclamav/clamav.h"
+#include "../../shared/optparser.h"
+#include "../../libclamav/clamav.h"
 #include "../clamonacc.h"
 
 typedef enum {
@@ -31,7 +31,10 @@ typedef enum {
     CHK_SELF
 } cli_check_t;
 
+
+#if defined(FANOTIFY)
 int onas_fan_checkowner(int pid, const struct optstruct *opts);
+#endif
 char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err);
 void free_opt_list(char** opt_list, int entries);
 

@@ -22,8 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -32,14 +30,16 @@
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
+#include "../../libclamav/clamav.h"
+#include "../../shared/optparser.h"
+#include "../../shared/output.h"
 
-#include "onaccess_others.h"
-#include "clamd/scanner.h"
+#include "./onaccess_others.h"
+#include "../../clamd/scanner.h"
 #include "../clamonacc.h"
 #include "../client/onaccess_client.h"
+
+#if defined(FANOTIFY)
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
@@ -99,6 +99,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 
     return CHK_CLEAN;
 }
+
 #endif
 
 char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
