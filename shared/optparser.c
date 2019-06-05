@@ -442,7 +442,7 @@ const struct clam_option __clam_options[] = {
 
     {"DNSDatabaseInfo", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. Freshclam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
 
-    {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: ddatabase.clamav.net.", "database.clamav.net"},
+    {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: database.clamav.net.", "database.clamav.net"},
 
     {"PrivateMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "This option allows you to easily point freshclam to private mirrors.\nIf PrivateMirror is set, freshclam does not attempt to use DNS\nto determine whether its databases are out-of-date, instead it will\nuse the If-Modified-Since request or directly check the headers of the\nremote database files. For each database, freshclam first attempts\nto download the CLD file. If that fails, it tries to download the\nCVD file. This option overrides DatabaseMirror, DNSDatabaseInfo\nand Scripted Updates. It can be used multiple times to provide\nfall-back mirrors.", "mirror1.mynetwork.com\nmirror2.mynetwork.com"},
 
@@ -483,7 +483,7 @@ const struct clam_option __clam_options[] = {
 
     {"ConnectTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30"},
 
-    {"ReceiveTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server.", "30"},
+    {"ReceiveTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 60, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server.", "60"},
 
     {"SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "This option enables support for Google Safe Browsing. When activated for\nthe first time, freshclam will download a new database file (safebrowsing.cvd)\nwhich will be automatically loaded by clamd and clamscan during the next\nreload, provided that the heuristic phishing detection is turned on. This\ndatabase includes information about websites that may be phishing sites or\npossible sources of malware. When using this option, it's mandatory to run\nfreshclam at least every 30 minutes.\nFreshclam uses the ClamAV's mirror infrastructure to distribute the\ndatabase and its updates but all the contents are provided under Google's\nterms of use. See https://transparencyreport.google.com/safe-browsing/overview \n and https://www.clamav.net/documents/safebrowsing for more information.", "yes"},
 
