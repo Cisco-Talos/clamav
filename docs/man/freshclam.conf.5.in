@@ -1,35 +1,35 @@
 .TH "freshclam.conf" "5" "December 4, 2013" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
-.LP 
+.LP
 \fBfreshclam.conf\fR \- Configuration file for Clam AntiVirus database update tool
 .SH "DESCRIPTION"
-.LP 
+.LP
 The file freshclam.conf configures the Clam AntiVirus Database Updater, freshclam(1).
 .SH "FILE FORMAT"
 The file consists of comments and options with arguments. Each line which starts with a hash (\fB#\fR) symbol is ignored by the parser. Options and arguments are case sensitive and of the form \fBOption Argument\fR. The arguments are of the following types:
 .TP
-\fBBOOL\fR 
+\fBBOOL\fR
 Boolean value (yes/no or true/false or 1/0).
-.TP 
+.TP
 \fBSTRING\fR
 String without blank characters.
-.TP 
+.TP
 \fBSIZE\fR
 Size in bytes. You can use 'M' or 'm' modifiers for megabytes and 'K' or 'k' for kilobytes.
-.TP 
+.TP
 \fBNUMBER\fR
 Unsigned integer.
 .SH "DIRECTIVES"
-.LP 
+.LP
 When an option is not used (hashed or doesn't exist in the configuration file) freshclam takes a default action.
-.TP 
+.TP
 \fBExample\fR
 If this option is set freshclam will not run.
 .TP
 \fBLogFileMaxSize SIZE\fR
 Limit the size of the log file. The logger will be automatically disabled if the file is greater than SIZE. Value of 0 disables the limit.
 .br
-Default: 1M 
+Default: 1M
 .TP
 \fBLogTime BOOL\fR
 Log time with each message.
@@ -38,32 +38,32 @@ Default: no
 .TP
 \fBLogSyslog BOOL\fR
 Enable logging to Syslog. May be used in combination with UpdateLogFile.
-.br 
+.br
 Default: disabled.
-.TP 
+.TP
 \fBLogFacility STRING\fR
 Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
-.br 
+.br
 Default: LOG_LOCAL6
-.TP 
+.TP
 \fBLogVerbose BOOL\fR
 Enable verbose logging.
-.br 
+.br
 Default: disabled
 .TP
 \fBLogRotate BOOL\fR
 Rotate log file. Requires LogFileMaxSize option set prior to this option.
 .br
 Default: no
-.TP 
+.TP
 \fBPidFile STRING\fR
 This option allows you to save the process identifier of the daemon to a file specified in the argument.
-.br 
+.br
 Default: disabled
-.TP 
+.TP
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
-.br 
+.br
 Default: @DBDIR@
 .TP
 \fBForeground BOOL\fR
@@ -75,102 +75,119 @@ Default: no
 Enable debug messages in libclamav.
 .br
 Default: no
-.TP 
+.TP
 \fBUpdateLogFile STRING\fR
 Enable logging to a specified file. Highly recommended.
-.br 
+.br
 Default: disabled.
-.TP 
+.TP
 \fBDatabaseOwner STRING\fR
-When started by root, drop privileges to a specified user. 
-.br 
+When started by root, drop privileges to a specified user.
+.br
 Default: @CLAMAVUSER@
-.TP 
+.TP
 \fBChecks NUMBER\fR
 Number of database checks per day.
-.br 
+.br
 Default: 12
-.TP 
+.TP
 \fBDNSDatabaseInfo STRING\fR
 Use DNS to verify the virus database version. Freshclam uses DNS TXT records to verify the versions of the database and software itself. With this directive you can change the database verification domain.
 .br
 \fBWARNING:\fR Please don't change it unless you're configuring freshclam to use your own database verification domain.
-.br 
+.br
 Default: enabled, pointing to current.cvd.clamav.net
-.TP 
+.TP
 \fBDatabaseMirror STRING\fR
-DatabaseMirror specifies to which mirror(s) freshclam should connect. You should have at least two entries: db.XY.clamav.net (or db.XY.ipv6.clamav.net for IPv6) and database.clamav.net (in this order). Please replace XY with your country code (see https://www.iana.org/domains/root/db). database.clamav.net is a round-robin record which points to our most reliable mirrors. It's used as a fall back in case db.XY.clamav.net is not working.
-.br 
+DatabaseMirror specifies to which mirror(s) freshclam should connect. You should have at least one entries: database.clamav.net.
+Now that CloudFlare is being used as our Content Delivery Network (CDN), this one domain name works world-wide to direct freshclam to the closest geographic endpoint.
+.br
 Default: database.clamav.net
-.TP 
+.TP
 \fBPrivateMirror STR\fR
 This option allows you to easily point freshclam to private mirrors. If PrivateMirror is set, freshclam does not attempt to use DNS to determine whether its databases are out-of-date, instead it will use the If-Modified-Since request or directly check the headers of the remote database files. For each database, freshclam first attempts to download the CLD file. If that fails, it tries to download the CVD file. This option overrides DatabaseMirror, DNSDatabaseInfo and ScriptedUpdates. It can be used multiple times to provide fall-back mirrors.
-.br 
+.br
 Default: disabled
-.TP 
+.TP
 \fBMaxAttempts NUMBER\fR
 How many attempts (per mirror) to make before giving up.
 .br .
 Default: 3 (per mirror)
-.TP 
+.TP
 \fBScriptedUpdates BOOL\fR
 With this option you can control scripted updates. It's highly recommended to keep it enabled.
 .br .
 Default: yes
-.TP 
+.TP
 \fBTestDatabases BOOL\fR
 With this option enabled, freshclam will attempt to load new databases into memory to make sure they are properly handled by libclamav before replacing the old ones.
 .br .
 Default: enabled
-.TP 
+.TP
 \fBCompressLocalDatabase BOOL\fR
 By default freshclam will keep the local databases (.cld) uncompressed to make their handling faster. With this option you can enable the compression; the change will take effect with the next database update.
-.br 
+.br
 Default: no
 .TP
 \fBExtraDatabase STRING\fR
 Download an additional 3rd party signature database distributed through the ClamAV mirrors. This option can be used multiple times.
 .br
 Default: disabled
-.TP 
-\fBDatabaseCustomURL STRING\fR
-With this option you can provide custom sources (http:// or file://) for database files. This option can be used multiple times.
-.br 
+.TP
+\fBExcludeDatabase STRING\fR
+Exclude a standard signature database (opt-out). This option can be used multiple times.
+.br
 Default: disabled
-.TP 
+.TP
+\fBDatabaseCustomURL STRING\fR
+With this option you can provide custom sources for database files. This option can be used multiple times.
+Support for:
+  http(s)://, ftp(s)://, or file://
+Example usage:
+  DatabaseCustomURL https://myserver.com:4567/whitelist.wdb
+.br
+Default: disabled
+.TP
 \fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUMBER\fR
-Use given proxy server and TCP port for database downloads. HTTPProxyPort defaults to 8080.
-.TP 
+Use given proxy server and TCP port for database downloads.
+The HTTPProxyServer may be prefixed with [scheme]:// to specify which kind of proxy is used.
+  http://     HTTP Proxy. Default when no scheme or proxy type is specified.
+  https://    HTTPS Proxy. (Added in 7.52.0 for OpenSSL, GnuTLS and NSS)
+  socks4://   SOCKS4 Proxy.
+  socks4a://  SOCKS4a Proxy. Proxy resolves URL hostname.
+  socks5://   SOCKS5 Proxy.
+  socks5h://  SOCKS5 Proxy. Proxy resolves URL hostname.
+.TP
 \fBHTTPProxyUsername STR\fR,\fBHTTPProxyPassword STRING\fR
 Proxy usage is authenticated through given username and password.
 .br .
 Default: disabled
-.TP 
+.TP
 \fBHTTPUserAgent STRING\fR
 If your servers are behind a firewall/proxy which applies User-Agent filtering, you can use this option to force the use of a different User-Agent header.
 .br .
 Default: clamav/version_number
-.TP 
+.TP
 \fBNotifyClamd STRING\fR
 Notify a running clamd(8) to reload its database after a download has occurred. The path for clamd.conf file must be provided.
 .br .
 Default: The default is to not notify clamd. See clamd.conf(5)'s option SelfCheck for how clamd(8) handles database updates in this case.
-.TP 
+.TP
 \fBOnUpdateExecute STRING\fR
 Execute this command after the database has been successfully updated.
-.br 
+.br
 Default: disabled
 .TP
 \fBOnErrorExecute STRING\fR
 Execute this command after a database update has failed.
-.br 
+.br
 Default: disabled
-.TP 
+.TP
 \fBOnOutdatedExecute STRING\fR
 Execute this command when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
-.br 
+.br
 Default: disabled
-.TP 
+.TP
 \fBLocalIPAddress IP\fR
 Use \fBIP\fR as client address for downloading databases. Useful for multi homed systems.
 .br .
@@ -178,13 +195,13 @@ Default: Use OS'es default outgoing IP address.
 .TP
 \fBConnectTimeout NUMBER\fR
 Timeout in seconds when connecting to database server.
-.br 
+.br
 Default: 10
 .TP
 \fBReceiveTimeout NUMBER\fR
 Timeout in seconds when reading from database server.
-.br 
-Default: 30
+.br
+Default: 60
 .TP
 \fBSafeBrowsing BOOL\fR
 This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See https://support.google.com/code/answer/70015 and https://www.clamav.net/documents/safebrowsing for more information.
@@ -196,11 +213,11 @@ This option enables downloading of bytecode.cvd, which includes additional detec
 .br
 Default: enabled
 .SH "FILES"
-.LP 
+.LP
 @CFGDIR@/freshclam.conf
 .SH "AUTHOR"
-.LP 
+.LP
 Thomas Lamy <thomas.lamy@netwake.de>, Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>
 .SH "SEE ALSO"
-.LP 
+.LP
 freshclam(1), clamd.conf(5), clamd(8), clamscan(1)

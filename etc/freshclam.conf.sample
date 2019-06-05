@@ -67,7 +67,7 @@ Example
 # Now that CloudFlare is being used as our Content Delivery Network (CDN),
 # this one domain name works world-wide to direct freshclam to the closest
 # geographic endpoint.
-DatabaseMirror http://database.clamav.net
+DatabaseMirror database.clamav.net
 
 # How many attempts to make before giving up.
 # Default: 3 (per mirror)
@@ -167,8 +167,8 @@ DatabaseMirror http://database.clamav.net
 #ConnectTimeout 60
 
 # Timeout in seconds when reading from database server.
-# Default: 30
-#ReceiveTimeout 60
+# Default: 60
+#ReceiveTimeout 300
 
 # With this option enabled, freshclam will attempt to load new
 # databases into memory to make sure they are properly handled

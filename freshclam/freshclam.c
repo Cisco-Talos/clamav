@@ -169,7 +169,6 @@ static void help(void)
     printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
-    printf("    --list-mirrors                       (deprecated) Print mirrors from mirrors.dat\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
     printf("\n");
 }
