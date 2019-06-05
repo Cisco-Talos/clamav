@@ -35,15 +35,14 @@
 #include <time.h>
 #include <signal.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/optparser.h"
-#include "shared/actions.h"
+#include "../libclamav/clamav.h"
+#include "../libclamav/others.h"
+#include "../shared/output.h"
+#include "../shared/misc.h"
+#include "../shared/optparser.h"
+#include "../shared/actions.h"
 
-
-#include "clamonacc.h"
+#include "./clamonacc.h"
 #include "./client/onaccess_client.h"
 #include "./fanotif/onaccess_fan.h"
 #include "./inotif/onaccess_ddd.h"
@@ -205,7 +204,7 @@ int onas_start_eloop(struct onas_context **ctx) {
 		return CL_EARG;
 	}
 
-#ifdef C_LINUX
+#if defined(FANOTIFY)
 	ret = onas_fan_eloop(ctx);
 #endif
 
@@ -257,25 +256,3 @@ void* onas_context_cleanup(struct onas_context *ctx) {
 	free(ctx);
 }
 
-/*int main(int argc, char **argv)
-{
-	int ds, dms, ret, infected = 0, err = 0;
-	struct timeval t1, t2;
-	time_t starttime;
-#ifndef _WIN32
-	struct sigaction sigact;
-#endif
-
-    memset(&sigact, 0, sizeof(struct sigaction));
-    sigact.sa_handler = SIG_IGN;
-    sigemptyset(&sigact.sa_mask);
-    sigaddset(&sigact.sa_mask, SIGPIPE);
-    sigaction(SIGPIPE, &sigact, NULL);
-
-    time(&starttime);
-    ctime() does \n, but I need it once more
-
-    gettimeofday(&t1, NULL);
-
-    ret = client(opts, &infected, &err);
-}*/

@@ -53,14 +53,14 @@
 #include <netdb.h>
 #endif
 
-#include "libclamav/clamav.h"
-#include "shared/actions.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+#include "../../libclamav/clamav.h"
+#include "../../shared/actions.h"
+#include "../../shared/output.h"
+#include "../../shared/misc.h"
 
-#include "onaccess_com.h"
-#include "onaccess_proto.h"
-#include "onaccess_client.h"
+#include "./onaccess_com.h"
+#include "./onaccess_proto.h"
+#include "./onaccess_client.h"
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN" };
 

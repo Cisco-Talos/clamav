@@ -21,11 +21,14 @@
 #ifndef __ONAS_IN_H
 #define __ONAS_IN_H
 
-#include "shared/optparser.h"
-#include "libclamav/clamav.h"
+
+#if defined(FANOTIFY)
+
+#include "../../shared/optparser.h"
+#include "../../libclamav/clamav.h"
 
 /*
- * Extra options for onas_scan_th(). 
+ * Extra options for onas_scan_th().
  */
 #define ONAS_IN 0x01
 #define ONAS_FAN 0x02
@@ -46,5 +49,5 @@ void *onas_ddd_th(void *arg);
 int onas_ddd_init(uint64_t nwatches, size_t ht_size);
 cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx);
 
-
+#endif
 #endif

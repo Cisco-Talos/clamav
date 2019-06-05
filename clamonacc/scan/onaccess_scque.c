@@ -22,8 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,15 +34,15 @@
 
 #include "../misc/onaccess_others.h"
 
-#include "libclamav/clamav.h"
+#include "../../libclamav/clamav.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+#include "../../shared/optparser.h"
+#include "../../shared/output.h"
 
 #include "../c-thread-pool/thpool.h"
 
-#include "onaccess_scth.h"
-#include "onaccess_scque.h"
+#include "./onaccess_scth.h"
+#include "./onaccess_scque.h"
 
 static void onas_scanque_exit(int sig);
 static int onas_consume_event(threadpool thpool);
@@ -298,4 +296,3 @@ static void onas_scanque_exit(int sig) {
 	pthread_exit(NULL);
 }
 
-#endif

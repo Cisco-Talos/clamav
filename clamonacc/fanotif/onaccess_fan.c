@@ -37,16 +37,16 @@
 
 #include <sys/fanotify.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
+#include "../../libclamav/clamav.h"
+#include "../../libclamav/scanners.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+#include "../../shared/optparser.h"
+#include "../../shared/output.h"
 
 #include "../misc/onaccess_others.h"
-#include "clamd/server.h"
+#include "../../clamd/server.h"
 
-#include "onaccess_fan.h"
+#include "./onaccess_fan.h"
 #include "../inotif/onaccess_hash.h"
 #include "../inotif/onaccess_ddd.h"
 
