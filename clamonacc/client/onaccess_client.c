@@ -275,11 +275,6 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 	return CL_BREAK;
     }
 
-    if(optget(opts, "help")->enabled) {
-    	help();
-	return CL_BREAK;
-    }
-
     if(optget(opts, "infected")->enabled) {
 	(*ctx)->printinfected = 1;
     }
