@@ -167,7 +167,6 @@
     <ResourceCompile Include="res\clamd.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\clamd\onaccess_fan.c" />
     <ClCompile Include="..\clamd\clamd.c" />
     <ClCompile Include="..\clamd\localserver.c" />
     <ClCompile Include="..\clamd\others.c" />
