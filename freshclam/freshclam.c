@@ -410,7 +410,14 @@ static fc_error_t get_server_node(
     /*
      * Ensure that URL contains protocol.
      */
-    if (!strstr(server, "://")) {
+    if (!strncmp(server, "db.", 3) && strstr(server, ".clamav.net")) {
+        url = cli_strdup("https://database.clamav.net");
+        if (NULL == url) {
+            logg("!get_server_node: Failed to duplicate string for database.clamav.net url.\n");
+            status = FC_EMEM;
+            goto done;
+        }
+    } else if (!strstr(server, "://")) {
         urlLen = strlen(defaultProtocol) + strlen("://") + strlen(server);
         url    = malloc(urlLen + 1);
         if (NULL == url) {
