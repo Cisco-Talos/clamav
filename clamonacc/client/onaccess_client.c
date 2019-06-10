@@ -69,7 +69,7 @@
 
 struct sockaddr_un nixsock;
 
-static void print_server_version(struct onas_context **ctx)
+void onas_print_server_version(struct onas_context **ctx)
 {
 	if(onas_get_clamd_version(ctx)) {
 		/* can't get version from server, fallback */
@@ -270,11 +270,6 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 	logg_verbose = 1;
     }
 
-    if(optget(opts, "version")->enabled) {
-	print_server_version(ctx);
-	return CL_BREAK;
-    }
-
     if(optget(opts, "infected")->enabled) {
 	(*ctx)->printinfected = 1;
     }
@@ -357,7 +352,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     }
 
     if (!b_remote) {
-	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "LocalSocket")->strarg, (*ctx)->portnum, timeout);
+	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "LocalSocket")->strarg, 0, timeout);
     } else {
 	curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
 	if (CURLE_OK != curlcode) {
@@ -371,7 +366,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {
-	    logg("!ClamClient: could not connect to clam daemon, %s\n", curl_easy_strerror(curlcode));
+	    logg("*ClamClient: could not connect to clam daemon, %s\n", curl_easy_strerror(curlcode));
 	    return 2;
     }
 

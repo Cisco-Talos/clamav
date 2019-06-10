@@ -51,6 +51,8 @@
 pthread_t ddd_pid = 0;
 pthread_t scque_pid = 0;
 
+static int startup_checks(struct onas_context *ctx);
+
 int main(int argc, char **argv)
 {
 	const struct optstruct *opts;
@@ -73,43 +75,12 @@ int main(int argc, char **argv)
 	}
 	ctx->opts = opts;
 
-        if(optget(opts, "help")->enabled) {
-            help();
-            ret = 2;
-            goto clean_up;
-        }
-
-#ifndef _WIN32
-        if (!optget(ctx->opts, "foreground")->enabled) {
-            if (-1 == daemonize()) {
-                logg("!Clamonacc: could not daemonize\n");
-                return 2;
-            }
-        }
-#endif
-
 	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
 	if (clamdopts == NULL) {
 		logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
 		return 2;
 	}
 	ctx->clamdopts = clamdopts;
-
-        ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
-
-        /* Setup our event queue */
-        switch(onas_scanque_start(&ctx)) {
-            case CL_SUCCESS:
-                break;
-            case CL_BREAK:
-            case CL_EARG:
-            case CL_ECREAT:
-            default:
-                ret = 2;
-                logg("!Clamonacc: can't setup event consumer queue\n");
-                goto clean_up;
-                break;
-        }
 
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {
@@ -129,6 +100,37 @@ int main(int argc, char **argv)
 			goto clean_up;
 			break;
 	}
+
+        ret = startup_checks(ctx);
+        if (ret) {
+            goto clean_up;
+        }
+
+#ifndef _WIN32
+        if (!optget(ctx->opts, "foreground")->enabled) {
+            if (-1 == daemonize()) {
+                logg("!Clamonacc: could not daemonize\n");
+                return 2;
+            }
+        }
+#endif
+
+        ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
+
+        /* Setup our event queue */
+        switch(onas_scanque_start(&ctx)) {
+            case CL_SUCCESS:
+                break;
+            case CL_BREAK:
+            case CL_EARG:
+            case CL_ECREAT:
+            default:
+                ret = 2;
+                logg("!Clamonacc: can't setup event consumer queue\n");
+                goto clean_up;
+                break;
+        }
+
 #if defined(FANOTIFY)
 	/* Setup fanotify */
 	switch(onas_setup_fanotif(&ctx)) {
@@ -213,6 +215,35 @@ int onas_start_eloop(struct onas_context **ctx) {
 	ret = onas_fan_eloop(ctx);
 #endif
 
+	return ret;
+}
+
+static int startup_checks(struct onas_context *ctx) {
+
+	int ret = 0;
+        cl_error_t err = CL_SUCCESS;
+
+	if(optget(ctx->opts, "help")->enabled) {
+		help();
+		ret = 2;
+		goto done;
+	}
+
+	if(optget(ctx->opts, "version")->enabled) {
+		onas_print_server_version(&ctx);
+		ret = 2;
+		goto done;
+	}
+
+	if (0 == onas_check_remote(&ctx, &err)) {
+		if(!optget(ctx->clamdopts, "OnAccessExcludeUID")->enabled &&
+				!optget(ctx->clamdopts, "OnAccessExcludeUname")->enabled) {
+			logg("!Clamonacc: neither OnAccessExcludeUID or OnAccessExcludeUname is specified ... it is reccomended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
+			ret = 2;
+			goto done;
+		}
+	}
+done:
 	return ret;
 }
 
