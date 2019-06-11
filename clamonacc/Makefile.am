@@ -18,7 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
+if BUILD_CLAMONACC
 
 bin_PROGRAMS = clamonacc
 
@@ -66,7 +66,6 @@ clamonacc_SOURCES += ./misc/fts.c
 endif
 
 AM_CFLAGS=@WERR_CFLAGS@
-endif
 
 DEFS = @DEFS@ -DCL_NOLIBCLAMAV
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
@@ -74,3 +73,5 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(t
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)
 CLEANFILES=*.gcda *.gcno
+
+endif
