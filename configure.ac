@@ -293,6 +293,11 @@ if test "X$have_json" = "Xyes"; then
 else
     CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
 fi
+AM_COND_IF([BUILD_CLAMONACC],
+	   [CL_MSG_STATUS([clamonacc   ],[yes],[$enable_clamonacc])],
+	   [CL_MSG_STATUS([clamonacc   ],[no],[$enable_clamonacc])])
+
+
 
 AC_MSG_NOTICE([Summary of engine performance features])
 if test "x$enable_debug" = "xyes"; then

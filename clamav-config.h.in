@@ -12,6 +12,9 @@
 /* "build clamd" */
 #undef BUILD_CLAMD
 
+/* "build clamonacc" */
+#undef BUILD_CLAMONACC
+
 /* use ClamAuth */
 #undef CLAMAUTH
 
