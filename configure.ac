@@ -150,6 +150,9 @@ m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
 m4_include([m4/reorganization/strni.m4])
 
+dnl Clamonacc loading
+m4_include([m4/reorganization/clamonacc.m4])
+
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
     AC_SYS_LARGEFILE

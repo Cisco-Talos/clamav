@@ -48,6 +48,7 @@ if test "X$have_curl" = "Xyes"; then
     fi
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+
     AC_CHECK_LIB(
         [curl],
         [curl_easy_init],
@@ -64,6 +65,7 @@ if test "X$have_curl" = "Xyes"; then
         ],
         [$CURL_LIBS]
     )
+
     LDFLAGS="$save_LDFLAGS"
 else
     AC_MSG_ERROR([libcurl not found. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit.])
