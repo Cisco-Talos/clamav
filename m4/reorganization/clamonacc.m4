@@ -5,7 +5,6 @@ AC_ARG_ENABLE(clamonacc,
 if test "$enable_clamonacc" != "no"; then
 	AC_CANONICAL_HOST
 
-
         case "${host_os}" in
 
         	linux*)

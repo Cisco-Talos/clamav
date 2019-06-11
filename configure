@@ -672,6 +672,8 @@ OBJCDEPMODE
 ac_ct_OBJC
 OBJCFLAGS
 OBJC
+BUILD_CLAMONACC_FALSE
+BUILD_CLAMONACC_TRUE
 HAVE_STRNI
 CURL_LDFLAGS
 CURL_LIBS
@@ -1006,6 +1008,7 @@ enable_prelude
 with_libprelude_prefix
 with_libcurl
 enable_strni
+enable_clamonacc
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1720,6 +1723,7 @@ if test -n "$ac_init_help"; then
   --enable-prelude        Enable Prelude support for alerts.
   --enable-strni          enables explicit use of internal strn functions to
                           support cross-compilation against older libs
+  --enable-clamonacc      build clamonacc tool [default=auto]
   --disable-largefile     omit support for large files
 
 Optional Packages:
@@ -29038,6 +29042,7 @@ $as_echo "$LIBCURL_HOME" >&6; }
     fi
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
 $as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
 if ${ac_cv_lib_curl_curl_easy_init+:} false; then :
@@ -29089,6 +29094,7 @@ else
             as_fn_error $? "Your libcurl is misconfigured. libcurl (e.g. libcurl-devel) is required in order to build freshclam and clamsubmit." "$LINENO" 5
 
 fi
+
 
     LDFLAGS="$save_LDFLAGS"
 else
@@ -29156,6 +29162,61 @@ $as_echo "#define HAVE_STRNI 1" >>confdefs.h
 fi
 
 
+
+
+# Check whether --enable-clamonacc was given.
+if test "${enable_clamonacc+set}" = set; then :
+  enableval=$enable_clamonacc; enable_clamonacc=$enableval
+else
+  enable_clamonacc="auto"
+fi
+
+
+ if test x$enable_clamonacc != xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+if test "$enable_clamonacc" != "no"; then
+
+$as_echo "#define BUILD_CLAMONACC 0" >>confdefs.h
+
+
+
+	if test "$host_os" != "linux*"; then
+		if test "$enable_clamonacc" == "yes"; then
+			as_fn_error $? "Clamonacc was explicitly requested, but the platform you are trying to build on not currently supported for this tool." "$LINENO" 5
+		fi
+	else
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curl/curl.h>
+int
+main ()
+{
+
+				int x;
+				curl_easy_setopt(NULL,CURLOPT_URL,NULL);
+				x=CURLOPT_UNIX_SOCKET_PATH;
+				if (x) {;}
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+$as_echo "#define BUILD_CLAMONACC 1" >>confdefs.h
+
+else
+  as_fn_error $? "Your libcurl (e.g. libcurl-devel) is too old. ClamAV requires libcurl 7.40 or higher." "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+	fi
+fi
 
 
 if test "x$use_internal_mspack" = "xyes"; then
@@ -30166,7 +30227,18 @@ if test -z "${WINDOWS_TRUE}" && test -z "${WINDOWS_FALSE}"; then
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MACOS_TRUE}" && test -z "${MACOS_FALSE}"; then
-  as_fn_error $? "conditional \"MACOS\" was never defined.
+  as_fn_error $? "conditional \"MACOS\" was never defined."
+fi
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -33048,6 +33120,16 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MACOS_TRUE}" && test -z "${MACOS_FALSE}"; then
   as_fn_error $? "conditional \"MACOS\" was never defined.
+if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
@@ -35874,6 +35956,37 @@ else
 fi
 
 fi
+if test -z "$BUILD_CLAMONACC_TRUE"; then :
+
+
+   $as_echo_n "              clamonacc   : "
+   if test "x$enable_clamonacc" = "xno"; then :
+  $as_echo "yes (disabled)"
+elif test "x$enable_clamonacc" = "xyes"; then :
+  $as_echo "yes"
+elif test "x$enable_clamonacc" = "x"; then :
+  $as_echo "yes"
+else
+  $as_echo "yes ($enable_clamonacc)"
+fi
+
+else
+
+
+   $as_echo_n "              clamonacc   : "
+   if test "x$enable_clamonacc" = "xno"; then :
+  $as_echo "no (disabled)"
+elif test "x$enable_clamonacc" = "xyes"; then :
+  $as_echo "no"
+elif test "x$enable_clamonacc" = "x"; then :
+  $as_echo "no"
+else
+  $as_echo "no ($enable_clamonacc)"
+fi
+
+fi
+
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Summary of engine performance features" >&5
 $as_echo "$as_me: Summary of engine performance features" >&6;}
