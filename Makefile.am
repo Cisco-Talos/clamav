@@ -25,6 +25,10 @@ EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.
 
 bin_SCRIPTS=clamav-config
 
+if BUILD_CLAMONACC
+SUBDIRS += clamonacc
+endif
+
 if ENABLE_CLAMSUBMIT
 SUBDIRS += clamsubmit
 endif

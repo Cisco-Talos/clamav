@@ -145,13 +145,13 @@ m4_include([m4/reorganization/code_checks/fts.m4])
 m4_include([m4/reorganization/prelude.m4])
 m4_include([m4/reorganization/bsd.m4])
 
+dnl Clamonacc loading
+m4_include([m4/reorganization/clamonacc.m4])
+
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
 m4_include([m4/reorganization/strni.m4])
-
-dnl Clamonacc loading
-m4_include([m4/reorganization/clamonacc.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
@@ -192,7 +192,6 @@ clamd/Makefile
 clamd/clamav-daemon.service
 clamd/clamav-daemon.socket
 clamdscan/Makefile
-clamonacc/Makefile
 clamsubmit/Makefile
 clamav-milter/Makefile
 freshclam/clamav-freshclam.service
@@ -225,6 +224,9 @@ docs/man/clamdtop.1
 docs/man/clamsubmit.1
 clamav-types.h
 ])
+
+AM_COND_IF([BUILD_CLAMONACC],
+           [AC_CONFIG_FILES([clamonacc/Makefile])])
 
 # Define variables needed to generate clamav-types.h.
 m4_include([m4/reorganization/types.m4])
