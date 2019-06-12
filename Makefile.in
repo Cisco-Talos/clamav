@@ -111,8 +111,10 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@ENABLE_CLAMSUBMIT_TRUE@am__append_1 = clamsubmit
-@ENABLE_FUZZ_TRUE@am__append_2 = fuzz
+@BUILD_CLAMONACC_TRUE@am__append_1 = clamonacc
+@ENABLE_CLAMSUBMIT_TRUE@am__append_2 = clamsubmit
+@ENABLE_LIBFRESHCLAM_TRUE@am__append_3 = libfreshclam
+@ENABLE_FUZZ_TRUE@am__append_4 = fuzz
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
@@ -185,10 +187,10 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
+	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
-	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
