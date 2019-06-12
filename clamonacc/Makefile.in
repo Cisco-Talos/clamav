@@ -109,8 +109,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_CLAMONACC_TRUE@bin_PROGRAMS = clamonacc$(EXEEXT)
-@BUILD_CLAMONACC_TRUE@@SYSTEM_LFS_FTS_FALSE@am__append_1 = ./misc/fts.c
+bin_PROGRAMS = clamonacc$(EXEEXT)
+@SYSTEM_LFS_FTS_FALSE@am__append_1 = ./misc/fts.c
 subdir = clamonacc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
@@ -185,10 +185,10 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libfreshclam.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
+	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
 	$(top_srcdir)/m4/reorganization/strni.m4 \
-	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -218,25 +218,21 @@ am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	./scan/onaccess_scth.c ./scan/onaccess_scth.h \
 	./scan/onaccess_scque.c ./scan/onaccess_scque.h \
 	./c-thread-pool/thpool.c ./c-thread-pool/thpool.h ./misc/fts.c
-@BUILD_CLAMONACC_TRUE@@SYSTEM_LFS_FTS_FALSE@am__objects_1 = clamonacc-fts.$(OBJEXT)
-@BUILD_CLAMONACC_TRUE@am_clamonacc_OBJECTS =  \
-@BUILD_CLAMONACC_TRUE@	clamonacc-output.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-optparser.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-misc.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-getopt.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-actions.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-clamonacc.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_client.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_proto.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_com.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_ddd.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_fan.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_hash.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_others.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_scth.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-onaccess_scque.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	clamonacc-thpool.$(OBJEXT) \
-@BUILD_CLAMONACC_TRUE@	$(am__objects_1)
+@SYSTEM_LFS_FTS_FALSE@am__objects_1 = clamonacc-fts.$(OBJEXT)
+am_clamonacc_OBJECTS = clamonacc-output.$(OBJEXT) \
+	clamonacc-optparser.$(OBJEXT) clamonacc-misc.$(OBJEXT) \
+	clamonacc-getopt.$(OBJEXT) clamonacc-actions.$(OBJEXT) \
+	clamonacc-clamonacc.$(OBJEXT) \
+	clamonacc-onaccess_client.$(OBJEXT) \
+	clamonacc-onaccess_proto.$(OBJEXT) \
+	clamonacc-onaccess_com.$(OBJEXT) \
+	clamonacc-onaccess_ddd.$(OBJEXT) \
+	clamonacc-onaccess_fan.$(OBJEXT) \
+	clamonacc-onaccess_hash.$(OBJEXT) \
+	clamonacc-onaccess_others.$(OBJEXT) \
+	clamonacc-onaccess_scth.$(OBJEXT) \
+	clamonacc-onaccess_scque.$(OBJEXT) clamonacc-thpool.$(OBJEXT) \
+	$(am__objects_1)
 clamonacc_OBJECTS = $(am_clamonacc_OBJECTS)
 clamonacc_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -360,8 +356,7 @@ CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
 DEFINE_SF32_PREFIX = @DEFINE_SF32_PREFIX@
 DEFINE_SF64_PREFIX = @DEFINE_SF64_PREFIX@
-@BUILD_CLAMONACC_TRUE@DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-DEFS = @DEFS@
+DEFS = @DEFS@ -DCL_NOLIBCLAMAV
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
@@ -426,8 +421,7 @@ LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
 LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
 LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
 LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
-@BUILD_CLAMONACC_TRUE@LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
-LIBS = @LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -554,44 +548,30 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@BUILD_CLAMONACC_TRUE@clamonacc_CPPFLAGS = "-g"
-@BUILD_CLAMONACC_TRUE@clamonacc_CFLAGS = "-g"
-@BUILD_CLAMONACC_TRUE@clamonacc_SOURCES =  \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/output.c \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/output.h \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/optparser.c \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/optparser.h \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/misc.c \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/misc.h \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/getopt.c \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/getopt.h \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/actions.c \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/actions.h \
-@BUILD_CLAMONACC_TRUE@	$(top_srcdir)/shared/priv-fts.h \
-@BUILD_CLAMONACC_TRUE@	clamonacc.c ./client/onaccess_client.c \
-@BUILD_CLAMONACC_TRUE@	./client/onaccess_client.h \
-@BUILD_CLAMONACC_TRUE@	./client/onaccess_proto.c \
-@BUILD_CLAMONACC_TRUE@	./client/onaccess_proto.h \
-@BUILD_CLAMONACC_TRUE@	./client/onaccess_com.c \
-@BUILD_CLAMONACC_TRUE@	./client/onaccess_com.h \
-@BUILD_CLAMONACC_TRUE@	./inotif/onaccess_ddd.c \
-@BUILD_CLAMONACC_TRUE@	./inotif/onaccess_ddd.h \
-@BUILD_CLAMONACC_TRUE@	./fanotif/onaccess_fan.c \
-@BUILD_CLAMONACC_TRUE@	./fanotif/onaccess_fan.h \
-@BUILD_CLAMONACC_TRUE@	./inotif/onaccess_hash.c \
-@BUILD_CLAMONACC_TRUE@	./inotif/onaccess_hash.h \
-@BUILD_CLAMONACC_TRUE@	./misc/onaccess_others.c \
-@BUILD_CLAMONACC_TRUE@	./misc/onaccess_others.h \
-@BUILD_CLAMONACC_TRUE@	./misc/priv_fts.h ./scan/onaccess_scth.c \
-@BUILD_CLAMONACC_TRUE@	./scan/onaccess_scth.h \
-@BUILD_CLAMONACC_TRUE@	./scan/onaccess_scque.c \
-@BUILD_CLAMONACC_TRUE@	./scan/onaccess_scque.h \
-@BUILD_CLAMONACC_TRUE@	./c-thread-pool/thpool.c \
-@BUILD_CLAMONACC_TRUE@	./c-thread-pool/thpool.h $(am__append_1)
-@BUILD_CLAMONACC_TRUE@AM_CFLAGS = @WERR_CFLAGS@
-@BUILD_CLAMONACC_TRUE@AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-@BUILD_CLAMONACC_TRUE@AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamonacc$(EXEEXT)
-@BUILD_CLAMONACC_TRUE@CLEANFILES = *.gcda *.gcno
+clamonacc_CPPFLAGS = "-g"
+clamonacc_CFLAGS = "-g"
+clamonacc_SOURCES = $(top_srcdir)/shared/output.c \
+	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
+	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
+	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
+	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/priv-fts.h \
+	clamonacc.c ./client/onaccess_client.c \
+	./client/onaccess_client.h ./client/onaccess_proto.c \
+	./client/onaccess_proto.h ./client/onaccess_com.c \
+	./client/onaccess_com.h ./inotif/onaccess_ddd.c \
+	./inotif/onaccess_ddd.h ./fanotif/onaccess_fan.c \
+	./fanotif/onaccess_fan.h ./inotif/onaccess_hash.c \
+	./inotif/onaccess_hash.h ./misc/onaccess_others.c \
+	./misc/onaccess_others.h ./misc/priv_fts.h \
+	./scan/onaccess_scth.c ./scan/onaccess_scth.h \
+	./scan/onaccess_scque.c ./scan/onaccess_scque.h \
+	./c-thread-pool/thpool.c ./c-thread-pool/thpool.h \
+	$(am__append_1)
+AM_CFLAGS = @WERR_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamonacc$(EXEEXT)
+CLEANFILES = *.gcda *.gcno
 all: all-am
 
 .SUFFIXES:

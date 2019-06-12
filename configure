@@ -714,6 +714,8 @@ CLAMSCAN_CPPFLAGS
 FRESHCLAM_CPPFLAGS
 CLAMSUBMIT_CFLAGS
 CLAMSUBMIT_LIBS
+BUILD_CLAMONACC_FALSE
+BUILD_CLAMONACC_TRUE
 LIBPRELUDE_CONFIG_PREFIX
 LIBPRELUDE_PREFIX
 LIBPRELUDE_LIBS
@@ -1006,9 +1008,9 @@ enable_sha_collector_for_internal_use
 enable_yara
 enable_prelude
 with_libprelude_prefix
+enable_clamonacc
 with_libcurl
 enable_strni
-enable_clamonacc
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1721,9 +1723,9 @@ if test -n "$ac_init_help"; then
 
   --disable-yara          do not include yara support
   --enable-prelude        Enable Prelude support for alerts.
+  --enable-clamonacc      build clamonacc tool [default=auto]
   --enable-strni          enables explicit use of internal strn functions to
                           support cross-compilation against older libs
-  --enable-clamonacc      build clamonacc tool [default=auto]
   --disable-largefile     omit support for large files
 
 Optional Packages:
@@ -28988,6 +28990,56 @@ fi
 esac
 
 
+# Check whether --enable-clamonacc was given.
+if test "${enable_clamonacc+set}" = set; then :
+  enableval=$enable_clamonacc; enable_clamonacc=$enableval
+else
+  enable_clamonacc="auto"
+fi
+
+
+if test "$enable_clamonacc" != "no"; then
+
+
+        case "${host_os}" in
+        	linux*)
+			 if test x$enable_clamonacc != xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+			;;
+		*)
+			if test "$enable_clamonacc" == "yes"; then
+				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
+			fi
+			 if test x$enable_clamonacc == xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+                        ;;
+	esac
+else
+	 if test x$enable_clamonacc == xyes; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+fi
+
+
+
+
 
 have_curl="no"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl installation" >&5
@@ -29042,6 +29094,32 @@ $as_echo "$LIBCURL_HOME" >&6; }
     fi
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+
+	if test -z "$BUILD_CLAMONACC_TRUE"; then :
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <curl/curl.h>
+int
+main ()
+{
+
+				int x;
+				curl_easy_setopt(NULL,CURLOPT_URL,NULL);
+				x=CURLOPT_UNIX_SOCKET_PATH;
+                                x=CURLINFO_ACTIVESOCKET;
+				if (x) {;}
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  $enable_clamonacc="yes"
+else
+  as_fn_error $? "Your libcurl (e.g. libcurl-devel) is too old. ClamAV requires libcurl 7.45 or higher." "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
 $as_echo_n "checking for curl_easy_init in -lcurl... " >&6; }
@@ -29162,61 +29240,6 @@ $as_echo "#define HAVE_STRNI 1" >>confdefs.h
 fi
 
 
-
-
-# Check whether --enable-clamonacc was given.
-if test "${enable_clamonacc+set}" = set; then :
-  enableval=$enable_clamonacc; enable_clamonacc=$enableval
-else
-  enable_clamonacc="auto"
-fi
-
-
- if test x$enable_clamonacc != xno; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-if test "$enable_clamonacc" != "no"; then
-
-$as_echo "#define BUILD_CLAMONACC 0" >>confdefs.h
-
-
-
-	if test "$host_os" != "linux*"; then
-		if test "$enable_clamonacc" == "yes"; then
-			as_fn_error $? "Clamonacc was explicitly requested, but the platform you are trying to build on not currently supported for this tool." "$LINENO" 5
-		fi
-	else
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <curl/curl.h>
-int
-main ()
-{
-
-				int x;
-				curl_easy_setopt(NULL,CURLOPT_URL,NULL);
-				x=CURLOPT_UNIX_SOCKET_PATH;
-				if (x) {;}
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-$as_echo "#define BUILD_CLAMONACC 1" >>confdefs.h
-
-else
-  as_fn_error $? "Your libcurl (e.g. libcurl-devel) is too old. ClamAV requires libcurl 7.40 or higher." "$LINENO" 5
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-	fi
-fi
 
 
 if test "x$use_internal_mspack" = "xyes"; then
@@ -30241,6 +30264,14 @@ if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 
 : "${CONFIG_STATUS=./config.status}"
 ac_write_fail=0
@@ -31227,7 +31258,6 @@ do
     "clamd/clamav-daemon.service") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.service" ;;
     "clamd/clamav-daemon.socket") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.socket" ;;
     "clamdscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamdscan/Makefile" ;;
-    "clamonacc/Makefile") CONFIG_FILES="$CONFIG_FILES clamonacc/Makefile" ;;
     "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "clamav-milter/Makefile") CONFIG_FILES="$CONFIG_FILES clamav-milter/Makefile" ;;
     "freshclam/clamav-freshclam.service") CONFIG_FILES="$CONFIG_FILES freshclam/clamav-freshclam.service" ;;
@@ -31259,6 +31289,7 @@ do
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
     "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
     "clamav-types.h") CONFIG_FILES="$CONFIG_FILES clamav-types.h" ;;
+    "clamonacc/Makefile") CONFIG_FILES="$CONFIG_FILES clamonacc/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -33132,6 +33163,14 @@ if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
   as_fn_error $? "conditional \"am__EXEEXT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -34135,7 +34174,6 @@ do
     "clamd/clamav-daemon.service") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.service" ;;
     "clamd/clamav-daemon.socket") CONFIG_FILES="$CONFIG_FILES clamd/clamav-daemon.socket" ;;
     "clamdscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamdscan/Makefile" ;;
-    "clamonacc/Makefile") CONFIG_FILES="$CONFIG_FILES clamonacc/Makefile" ;;
     "clamsubmit/Makefile") CONFIG_FILES="$CONFIG_FILES clamsubmit/Makefile" ;;
     "clamav-milter/Makefile") CONFIG_FILES="$CONFIG_FILES clamav-milter/Makefile" ;;
     "freshclam/clamav-freshclam.service") CONFIG_FILES="$CONFIG_FILES freshclam/clamav-freshclam.service" ;;
@@ -34167,6 +34205,7 @@ do
     "docs/man/clamdtop.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdtop.1" ;;
     "docs/man/clamsubmit.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamsubmit.1" ;;
     "clamav-types.h") CONFIG_FILES="$CONFIG_FILES clamav-types.h" ;;
+    "clamonacc/Makefile") CONFIG_FILES="$CONFIG_FILES clamonacc/Makefile" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
