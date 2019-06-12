@@ -49,6 +49,14 @@ if test "X$have_curl" = "Xyes"; then
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
 
+	AM_COND_IF([BUILD_CLAMONACC], 
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <curl/curl.h>]],[[
+				int x;
+				curl_easy_setopt(NULL,CURLOPT_URL,NULL);
+				x=CURLOPT_UNIX_SOCKET_PATH;
+                                x=CURLINFO_ACTIVESOCKET;
+				if (x) {;}]])],$enable_clamonacc="yes", AC_MSG_ERROR([Your libcurl (e.g. libcurl-devel) is too old. ClamAV requires libcurl 7.45 or higher.])))
+
     AC_CHECK_LIB(
         [curl],
         [curl_easy_init],
