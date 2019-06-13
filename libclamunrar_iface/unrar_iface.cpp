@@ -54,13 +54,12 @@ extern "C" {
 
 #include "unrar_iface.h"
 
-
 #ifndef MIN
-   #define MIN(x,y) ((x)<(y)?(x):(y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 #endif
 
 #ifndef MAX
-   #define MAX(x,y) ((x)>(y)?(x):(y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif
 
 /* tell compiler about branches that are very rarely taken,
@@ -77,7 +76,7 @@ extern "C" {
 
 #define CMTBUFSIZE (64 * 1024)
 
-int CALLBACK CallbackProc(UINT msg,LPARAM UserData,LPARAM P1,LPARAM P2);
+int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2);
 
 static void unrar_dbgmsg_internal(const char* str, ...)
 {
@@ -100,90 +99,91 @@ static cl_unrar_error_t unrar_retcode(int retcode)
     cl_unrar_error_t status = UNRAR_ERR;
 
     switch (retcode) {
-    case ERAR_SUCCESS: {
-        unrar_dbgmsg("unrar_retcode: Success!\n");
-        status = UNRAR_OK;
-        break;
-    }
-    case ERAR_END_ARCHIVE: {
-        unrar_dbgmsg("unrar_retcode: No more files in archive.\n");
-        status = UNRAR_BREAK;
-        break;
-    }
-    case ERAR_NO_MEMORY: {
-        unrar_dbgmsg("unrar_retcode: Not enough memory!\n");
-        status = UNRAR_EMEM;
-        break;
-    }
-    case ERAR_MISSING_PASSWORD: {
-        unrar_dbgmsg("unrar_retcode: Encrypted file header found in archive.\n");
-        status = UNRAR_ENCRYPTED;
-        break;
-    }
-    case ERAR_BAD_PASSWORD: {
-        unrar_dbgmsg("unrar_retcode: Encrypted archive or encrypted file in archive.\n");
-        status = UNRAR_ENCRYPTED;
-        break;
-    }
-    case ERAR_BAD_DATA: {
-        unrar_dbgmsg("unrar_retcode: Bad data / File CRC error.\n");
-        break;
-    }
-    case ERAR_UNKNOWN_FORMAT: {
-        unrar_dbgmsg("unrar_retcode: Unknown archive format.\n");
-        break;
-    }
-    case ERAR_EOPEN: {
-        unrar_dbgmsg("unrar_retcode: Volume open error.\n");
-        break;
-    }
-    case ERAR_ECREATE: {
-        unrar_dbgmsg("unrar_retcode: File create error.\n");
-        break;
-    }
-    case ERAR_ECLOSE: {
-        unrar_dbgmsg("unrar_retcode: File close error.\n");
-        break;
-    }
-    case ERAR_EREAD: {
-        unrar_dbgmsg("unrar_retcode: Read error.\n");
-        break;
-    }
-    case ERAR_EWRITE: {
-        unrar_dbgmsg("unrar_retcode: Write error.\n");
-        break;
-    }
-    case ERAR_EREFERENCE: {
-        unrar_dbgmsg("unrar_retcode: Error attempting to unpack the reference record without its source file.\n");
-        break;
-    }
-    default: {
-        unrar_dbgmsg("unrar_retcode: Unexpected error code: %d\n", retcode);
-    }
+        case ERAR_SUCCESS: {
+            unrar_dbgmsg("unrar_retcode: Success!\n");
+            status = UNRAR_OK;
+            break;
+        }
+        case ERAR_END_ARCHIVE: {
+            unrar_dbgmsg("unrar_retcode: No more files in archive.\n");
+            status = UNRAR_BREAK;
+            break;
+        }
+        case ERAR_NO_MEMORY: {
+            unrar_dbgmsg("unrar_retcode: Not enough memory!\n");
+            status = UNRAR_EMEM;
+            break;
+        }
+        case ERAR_MISSING_PASSWORD: {
+            unrar_dbgmsg("unrar_retcode: Encrypted file header found in archive.\n");
+            status = UNRAR_ENCRYPTED;
+            break;
+        }
+        case ERAR_BAD_PASSWORD: {
+            unrar_dbgmsg("unrar_retcode: Encrypted archive or encrypted file in archive.\n");
+            status = UNRAR_ENCRYPTED;
+            break;
+        }
+        case ERAR_BAD_DATA: {
+            unrar_dbgmsg("unrar_retcode: Bad data / File CRC error.\n");
+            break;
+        }
+        case ERAR_UNKNOWN_FORMAT: {
+            unrar_dbgmsg("unrar_retcode: Unknown archive format.\n");
+            break;
+        }
+        case ERAR_EOPEN: {
+            unrar_dbgmsg("unrar_retcode: Volume open error.\n");
+            break;
+        }
+        case ERAR_ECREATE: {
+            unrar_dbgmsg("unrar_retcode: File create error.\n");
+            break;
+        }
+        case ERAR_ECLOSE: {
+            unrar_dbgmsg("unrar_retcode: File close error.\n");
+            break;
+        }
+        case ERAR_EREAD: {
+            unrar_dbgmsg("unrar_retcode: Read error.\n");
+            break;
+        }
+        case ERAR_EWRITE: {
+            unrar_dbgmsg("unrar_retcode: Write error.\n");
+            break;
+        }
+        case ERAR_EREFERENCE: {
+            unrar_dbgmsg("unrar_retcode: Error attempting to unpack the reference record without its source file.\n");
+            break;
+        }
+        default: {
+            unrar_dbgmsg("unrar_retcode: Unexpected error code: %d\n", retcode);
+        }
     }
     return status;
 }
 
-static size_t unrar_strnlen(const char *s, size_t n)
+static size_t unrar_strnlen(const char* s, size_t n)
 {
     size_t i = 0;
-    for(; (i < n) && s[i] != '\0'; ++i);
+    for (; (i < n) && s[i] != '\0'; ++i)
+        ;
     return i;
 }
 
-static char *unrar_strndup(const char *s, size_t n)
+static char* unrar_strndup(const char* s, size_t n)
 {
-    char *alloc;
+    char* alloc;
     size_t len;
 
-    if(!s) {
+    if (!s) {
         return NULL;
     }
 
-    len = unrar_strnlen(s, n);
-    alloc = (char *)malloc(len+1);
+    len   = unrar_strnlen(s, n);
+    alloc = (char*)malloc(len + 1);
 
-    if(!alloc) {
+    if (!alloc) {
         return NULL;
     } else
         memcpy(alloc, s, len);
@@ -195,8 +195,8 @@ static char *unrar_strndup(const char *s, size_t n)
 cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** comment, uint32_t* comment_size, uint8_t debug_flag)
 {
     struct RAROpenArchiveDataEx* archiveData = NULL;
-    HANDLE archiveHandle = NULL;
-    cl_unrar_error_t status = UNRAR_ERR;
+    HANDLE archiveHandle                     = NULL;
+    cl_unrar_error_t status                  = UNRAR_ERR;
 
     if (NULL == filename || NULL == hArchive || NULL == comment || NULL == comment_size) {
         unrar_dbgmsg("unrar_open: Invalid arguments.\n");
@@ -211,7 +211,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header data structure.\n");
         status = UNRAR_EMEM;
     }
-    archiveData->ArcName = (char *)filename;
+    archiveData->ArcName  = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
     archiveData->OpFlags |= ROADOF_KEEPBROKEN;
     archiveData->CmtBuf = (char*)calloc(1, CMTBUFSIZE);
@@ -229,37 +229,37 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
     }
 
     switch (archiveData->CmtState) {
-    case 0: {
-        unrar_dbgmsg("unrar_open: Comments are not present in this archive.\n");
-        break;
-    }
-    case ERAR_BAD_DATA: {
-        unrar_dbgmsg("unrar_open: Archive Comments may be broken.\n");
-    }
-    case ERAR_SMALL_BUF: {
-        unrar_dbgmsg("unrar_open: Archive Comments are not present in this file.\n");
-    }
-    case 1: {
-        unrar_dbgmsg("unrar_open: Archive Comments:\n\t %s\n", archiveData->CmtBuf);
-        break;
-    }
-    case ERAR_NO_MEMORY: {
-        unrar_dbgmsg("unrar_open: Memory error when reading archive comments!\n");
-        status = UNRAR_EMEM;
-        break;
-    }
-    default: {
-        unrar_dbgmsg("unrar_open: Unknown archive comment state %u!\n", archiveData->CmtState);
-    }
+        case 0: {
+            unrar_dbgmsg("unrar_open: Comments are not present in this archive.\n");
+            break;
+        }
+        case ERAR_BAD_DATA: {
+            unrar_dbgmsg("unrar_open: Archive Comments may be broken.\n");
+        }
+        case ERAR_SMALL_BUF: {
+            unrar_dbgmsg("unrar_open: Archive Comments are not present in this file.\n");
+        }
+        case 1: {
+            unrar_dbgmsg("unrar_open: Archive Comments:\n\t %s\n", archiveData->CmtBuf);
+            break;
+        }
+        case ERAR_NO_MEMORY: {
+            unrar_dbgmsg("unrar_open: Memory error when reading archive comments!\n");
+            status = UNRAR_EMEM;
+            break;
+        }
+        default: {
+            unrar_dbgmsg("unrar_open: Unknown archive comment state %u!\n", archiveData->CmtState);
+        }
     }
 
     if (archiveData->CmtSize > 0) {
         *comment_size = MIN(archiveData->CmtSize, archiveData->CmtBufSize);
-        *comment = unrar_strndup(archiveData->CmtBuf, *comment_size);
+        *comment      = unrar_strndup(archiveData->CmtBuf, *comment_size);
         if (NULL == *comment) {
             unrar_dbgmsg("unrar_open: Error duplicating comment buffer.\n");
             *comment_size = 0;
-            status = UNRAR_EMEM;
+            status        = UNRAR_EMEM;
         }
     }
 
@@ -275,7 +275,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
 
     unrar_dbgmsg("unrar_open: Opened archive: %s\n", filename);
     *hArchive = (void*)archiveHandle;
-    status = UNRAR_OK;
+    status    = UNRAR_OK;
 
 done:
 
@@ -319,11 +319,11 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
      * File header comments are not functional in unrar 5.6.5 and the struct member only exists for backwards compatibility.
      * The unrar user manual says to set headerData.CmtBuff = NULL, and headerData.CmtBufSize = 0.
      */
-    headerData.CmtBuf = NULL;
+    headerData.CmtBuf     = NULL;
     headerData.CmtBufSize = 0;
 
     headerData.RedirNameSize = 1024 * sizeof(wchar_t);
-    headerData.RedirName = (wchar_t*)&RedirName;
+    headerData.RedirName     = (wchar_t*)&RedirName;
     memset(headerData.RedirName, 0, headerData.RedirNameSize);
 
     read_header_ret = RARReadHeaderEx(hArchive, &headerData);
@@ -333,12 +333,12 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     }
 
     file_metadata->unpack_size = headerData.UnpSize + ((int64_t)headerData.UnpSizeHigh << 32);
-    file_metadata->pack_size = headerData.PackSize + ((int64_t)headerData.PackSizeHigh << 32);
-    file_metadata->filename = unrar_strndup(headerData.FileName, 1024);
-    file_metadata->crc = headerData.FileCRC;
-    file_metadata->encrypted = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
-    file_metadata->is_dir = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
-    file_metadata->method = headerData.Method;
+    file_metadata->pack_size   = headerData.PackSize + ((int64_t)headerData.PackSizeHigh << 32);
+    file_metadata->filename    = unrar_strndup(headerData.FileName, 1024);
+    file_metadata->crc         = headerData.FileCRC;
+    file_metadata->encrypted   = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
+    file_metadata->is_dir      = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
+    file_metadata->method      = headerData.Method;
 
     unrar_dbgmsg("unrar_peek_file_header:   Name:          %s\n", headerData.FileName);
     unrar_dbgmsg("unrar_peek_file_header:   Directory?:    %u\n", file_metadata->is_dir);
@@ -367,10 +367,10 @@ done:
     return status;
 }
 
-cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char *outputBuffer)
+cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char* outputBuffer)
 {
     cl_unrar_error_t status = UNRAR_ERR;
-    int process_file_ret = 0;
+    int process_file_ret    = 0;
 
     if (NULL == hArchive || NULL == destPath) {
         unrar_dbgmsg("unrar_extract_file: Invalid arguments.\n");
@@ -378,15 +378,14 @@ cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char *
     }
 
     if (NULL != outputBuffer) {
-        LPARAM UserData = (LPARAM) outputBuffer;
+        LPARAM UserData = (LPARAM)outputBuffer;
         RARSetCallback(hArchive, CallbackProc, UserData);
     }
 
-    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT, NULL, (char *)destPath);
+    process_file_ret = RARProcessFile(hArchive, RAR_EXTRACT, NULL, (char*)destPath);
     if (ERAR_BAD_DATA == process_file_ret) {
         unrar_dbgmsg("unrar_extract_file: Warning: Bad data/Invalid CRC. Attempting to scan anyways...\n");
-    }
-    else if (ERAR_SUCCESS != process_file_ret) {
+    } else if (ERAR_SUCCESS != process_file_ret) {
         status = unrar_retcode(process_file_ret);
         goto done;
     }
@@ -407,7 +406,7 @@ done:
 cl_unrar_error_t unrar_skip_file(void* hArchive)
 {
     cl_unrar_error_t status = UNRAR_ERR;
-    int process_file_ret = 0;
+    int process_file_ret    = 0;
 
     if (NULL == hArchive) {
         unrar_dbgmsg("unrar_skip_file: Invalid arguments.\n");
@@ -439,49 +438,49 @@ int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)
     int status = 1; /* -1 to cancel, 1 to continue */
 
     switch (msg) {
-    case UCM_CHANGEVOLUMEW: {
-        /* We don't support RAR's split into multiple volumes
+        case UCM_CHANGEVOLUMEW: {
+            /* We don't support RAR's split into multiple volumes
          * ClamAV is not aware of more than 1 file at a time */
-        status = -1;
-        unrar_dbgmsg("CallbackProc: Archive has multiple volumes, but we don't support multiple volumes.\n");
-        break;
-    }
-    case UCM_PROCESSDATA: {
-        char * UserBuffer = (char *)UserData;
-
-        if (UserBuffer == NULL) {
-            /* No buffer provided, continue with extraction to a temp file. */
-            status = 1;
-            unrar_dbgmsg("CallbackProc: Extracting to a new tempfile!\n");
-        } else {
-            /* Buffer provided, write to it and cancel extraction to the temp file. */
-            memcpy(UserBuffer, (char *)P1, P2);
-
             status = -1;
-            unrar_dbgmsg("CallbackProc: Extracting %lu bytes of data to a provided buffer.\n", P2);
-        }
-        break;
-    }
-    case UCM_NEEDPASSWORDW: {
-        /* Let's try an empty password.  Probably won't work. */
-        wchar_t *password_buffer = (wchar_t *)P1;
-
-        if (NULL == password_buffer || P2 == 0) {
-            status = -1;
-            unrar_dbgmsg("CallbackProc: P1 callback argument is invalid.\n");
+            unrar_dbgmsg("CallbackProc: Archive has multiple volumes, but we don't support multiple volumes.\n");
             break;
         }
+        case UCM_PROCESSDATA: {
+            char* UserBuffer = (char*)UserData;
 
-        memset(password_buffer, 0, P2 * sizeof(wchar_t));
+            if (UserBuffer == NULL) {
+                /* No buffer provided, continue with extraction to a temp file. */
+                status = 1;
+                unrar_dbgmsg("CallbackProc: Extracting to a new tempfile!\n");
+            } else {
+                /* Buffer provided, write to it and cancel extraction to the temp file. */
+                memcpy(UserBuffer, (char*)P1, P2);
 
-        status = 1;
-        unrar_dbgmsg("CallbackProc: Password required, attempting empty password.\n");
-        break;
-    }
-    default: {
-        /* ... */
-        unrar_dbgmsg("CallbackProc: Unexpected callback type!\n");
-    }
+                status = -1;
+                unrar_dbgmsg("CallbackProc: Extracting %lu bytes of data to a provided buffer.\n", P2);
+            }
+            break;
+        }
+        case UCM_NEEDPASSWORDW: {
+            /* Let's try an empty password.  Probably won't work. */
+            wchar_t* password_buffer = (wchar_t*)P1;
+
+            if (NULL == password_buffer || P2 == 0) {
+                status = -1;
+                unrar_dbgmsg("CallbackProc: P1 callback argument is invalid.\n");
+                break;
+            }
+
+            memset(password_buffer, 0, P2 * sizeof(wchar_t));
+
+            status = 1;
+            unrar_dbgmsg("CallbackProc: Password required, attempting empty password.\n");
+            break;
+        }
+        default: {
+            /* ... */
+            unrar_dbgmsg("CallbackProc: Unexpected callback type!\n");
+        }
     }
     return status;
 }
