@@ -9,5 +9,5 @@ EXPORTS
   RARSetCallback
   RARSetChangeVolProc
   RARSetProcessDataProc
-  RARSetPassword
+;  RARSetPassword
   RARGetDllVersion

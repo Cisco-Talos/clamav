@@ -14,6 +14,10 @@ enum {
    MATCH_EXACT,        // Paths must match exactly.
                        // Names must match exactly.
 
+   MATCH_ALLWILD,      // Paths and names are compared using wildcards.
+                       // Unlike MATCH_SUBPATH, paths do not match subdirs
+                       // unless a wildcard tells so.
+
    MATCH_EXACTPATH,    // Paths must match exactly.
                        // Names are compared using wildcards.
 

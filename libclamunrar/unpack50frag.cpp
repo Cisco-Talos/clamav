@@ -48,7 +48,7 @@ void FragmentedWindow::Init(size_t WinSize)
     }
     if (NewMem==NULL)
       throw std::bad_alloc();
-    
+
     // Clean the window to generate the same output when unpacking corrupt
     // RAR files, which may access to unused areas of sliding dictionary.
     memset(NewMem,0,Size);

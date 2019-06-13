@@ -348,7 +348,7 @@ wchar *MkTemp(wchar *Name,size_t MaxSize)
     swprintf(RndText,ASIZE(RndText),L"%u.%03u",PID,Ext);
     if (Length+wcslen(RndText)>=MaxSize || Attempt==1000)
       return NULL;
-    wcscpy(Name+Length,RndText);
+    wcsncpyz(Name+Length,RndText,MaxSize-Length);
     if (!FileExist(Name))
       break;
   }

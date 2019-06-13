@@ -77,7 +77,7 @@ class SubAllocator
     inline void* ExpandUnits(void* ptr,int OldNU);
     inline void* ShrinkUnits(void* ptr,int OldNU,int NewNU);
     inline void  FreeUnits(void* ptr,int OldNU);
-    long GetAllocatedMemory() {return(SubAllocatorSize);};
+    long GetAllocatedMemory() {return(SubAllocatorSize);}
 
     byte *pText, *UnitsStart,*HeapEnd,*FakeUnitsStart;
 };

@@ -165,7 +165,7 @@ void Unpack::Unpack5MT(bool Solid)
         if (DataLeft<TooSmallToProcess)
           break;
       }
-      
+
 //#undef USE_THREADS
       UnpackThreadDataList UTDArray[MaxPoolThreads];
       uint UTDArrayPos=0;
@@ -180,7 +180,7 @@ void Unpack::Unpack5MT(bool Solid)
         UnpackThreadDataList *UTD=UTDArray+UTDArrayPos++;
         UTD->D=UnpThreadData+CurBlock;
         UTD->BlockCount=Min(MaxBlockPerThread,BlockNumberMT-CurBlock);
-      
+
 #ifdef USE_THREADS
         if (BlockNumber==1)
           UnpackDecode(*UTD->D);
@@ -200,7 +200,7 @@ void Unpack::Unpack5MT(bool Solid)
 #endif
 
       bool IncompleteThread=false;
-      
+
       for (uint Block=0;Block<BlockNumber;Block++)
       {
         UnpackThreadData *CurData=UnpThreadData+Block;
@@ -251,7 +251,7 @@ void Unpack::Unpack5MT(bool Solid)
             break;
           }
       }
-      
+
       if (IncompleteThread || Done)
         break; // Current buffer is done, read more data or quit.
       else
@@ -303,7 +303,7 @@ void Unpack::UnpackDecode(UnpackThreadData &D)
     D.DamagedData=true;
     return;
   }
-  
+
   D.DecodedSize=0;
   int BlockBorder=D.BlockHeader.BlockStart+D.BlockHeader.BlockSize-1;
 
@@ -413,7 +413,7 @@ void Unpack::UnpackDecode(UnpackThreadData &D)
     {
       UnpackFilter Filter;
       ReadFilter(D.Inp,Filter);
-      
+
       CurItem->Type=UNPDT_FILTER;
       CurItem->Length=Filter.Type;
       CurItem->Distance=Filter.BlockStart;
@@ -498,7 +498,7 @@ bool Unpack::ProcessDecoded(UnpackThreadData &D)
             if (Item->Type==UNPDT_FILTER)
             {
               UnpackFilter Filter;
-              
+
               Filter.Type=(byte)Item->Length;
               Filter.BlockStart=Item->Distance;
 
@@ -534,7 +534,7 @@ bool Unpack::UnpackLargeBlock(UnpackThreadData &D)
     D.DamagedData=true;
     return false;
   }
-  
+
   int BlockBorder=D.BlockHeader.BlockStart+D.BlockHeader.BlockSize-1;
 
   // Reserve enough space even for filter entry.

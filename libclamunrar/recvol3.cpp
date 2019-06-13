@@ -111,7 +111,7 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
     NewStyle=IsNewStyleRev(ArcName);
     while (Ext>ArcName+1 && (IsDigit(*(Ext-1)) || *(Ext-1)=='_'))
       Ext--;
-    wcscpy(Ext,L"*.*");
+    wcsncpyz(Ext,L"*.*",ASIZE(ArcName)-(Ext-ArcName));
     
     FindFile Find;
     Find.SetMask(ArcName);
@@ -235,7 +235,7 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
     }
     RecVolNumber=P[1];
     FileNumber=P[2];
-    wcscpy(PrevName,CurName);
+    wcsncpyz(PrevName,CurName,ASIZE(PrevName));
     File *NewFile=new File;
     NewFile->TOpen(CurName);
     SrcFile[FileNumber+P[0]-1]=NewFile;
@@ -247,7 +247,7 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
   if (!Silent || FoundRecVolumes!=0)
     uiMsg(UIMSG_RECVOLFOUND,FoundRecVolumes);
   if (FoundRecVolumes==0)
-    return(false);
+    return false;
 
   bool WriteFlags[256];
   memset(WriteFlags,0,sizeof(WriteFlags));
@@ -290,8 +290,8 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
       {
         NewFile->Close();
         wchar NewName[NM];
-        wcscpy(NewName,ArcName);
-        wcscat(NewName,L".bad");
+        wcsncpyz(NewName,ArcName,ASIZE(NewName));
+        wcsncatz(NewName,L".bad",ASIZE(NewName));
 
         uiMsg(UIMSG_BADARCHIVE,ArcName);
         uiMsg(UIMSG_RENAMING,ArcName,NewName);
@@ -322,7 +322,7 @@ bool RecVolumes3::Restore(RAROptions *Cmd,const wchar *Name,bool Silent)
       MissingVolumes++;
 
       if (CurArcNum==FileNumber-1)
-        wcscpy(LastVolName,ArcName);
+        wcsncpyz(LastVolName,ArcName,ASIZE(LastVolName));
 
       uiMsg(UIMSG_MISSINGVOL,ArcName);
       uiMsg(UIEVENT_NEWARCHIVE,ArcName);

@@ -34,7 +34,7 @@ bool Archive::GetComment(Array<wchar> *CmtData)
 #ifndef SFX_MODULE
     // Old style (RAR 2.9) comment header embedded into the main 
     // archive header.
-    if (BrokenHeader)
+    if (BrokenHeader || CommHead.HeadSize<SIZEOF_COMMHEAD)
     {
       uiMsg(UIERROR_CMTBROKEN,FileName);
       return false;
@@ -57,6 +57,8 @@ bool Archive::GetComment(Array<wchar> *CmtData)
 #else
       UnpCmtLength=GetByte();
       UnpCmtLength+=(GetByte()<<8);
+      if (CmtLength<2)
+        return false;
       CmtLength-=2;
       DataIO.SetCmt13Encryption();
       CommHead.UnpVer=15;
@@ -85,15 +87,18 @@ bool Archive::GetComment(Array<wchar> *CmtData)
       byte *UnpData;
       size_t UnpDataSize;
       DataIO.GetUnpackedData(&UnpData,&UnpDataSize);
+      if (UnpDataSize>0)
+      {
 #ifdef _WIN_ALL
-      // If we ever decide to extend it to Android, we'll need to alloc
-      // 4x memory for OEM to UTF-8 output here.
-      OemToCharBuffA((char *)UnpData,(char *)UnpData,(DWORD)UnpDataSize);
+        // If we ever decide to extend it to Android, we'll need to alloc
+        // 4x memory for OEM to UTF-8 output here.
+        OemToCharBuffA((char *)UnpData,(char *)UnpData,(DWORD)UnpDataSize);
 #endif
-      CmtData->Alloc(UnpDataSize+1);
-      memset(CmtData->Addr(0),0,CmtData->Size()*sizeof(wchar));
-      CharToWide((char *)UnpData,CmtData->Addr(0),CmtData->Size());
-      CmtData->Alloc(wcslen(CmtData->Addr(0)));
+        CmtData->Alloc(UnpDataSize+1);
+        memset(CmtData->Addr(0),0,CmtData->Size()*sizeof(wchar));
+        CharToWide((char *)UnpData,CmtData->Addr(0),CmtData->Size());
+        CmtData->Alloc(wcslen(CmtData->Addr(0)));
+      }
     }
   }
   else

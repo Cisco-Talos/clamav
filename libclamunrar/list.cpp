@@ -71,6 +71,7 @@ void ListArchive(CommandData *Cmd)
         *VolNumText=0;
         while(Arc.ReadHeader()>0)
         {
+          Wait(); // Allow quit listing with Ctrl+C.
           HEADER_TYPE HeaderType=Arc.GetHeaderType();
           if (HeaderType==HEAD_ENDARC)
           {
@@ -91,7 +92,7 @@ void ListArchive(CommandData *Cmd)
           switch(HeaderType)
           {
             case HEAD_FILE:
-              FileMatched=Cmd->IsProcessFile(Arc.FileHead)!=0;
+              FileMatched=Cmd->IsProcessFile(Arc.FileHead,NULL,MATCH_WILDSUBPATH,0,NULL,0)!=0;
               if (FileMatched)
               {
                 ListFileHeader(Arc,Arc.FileHead,TitleShown,Verbose,Technical,Bare);
@@ -215,7 +216,7 @@ void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bo
 
   wchar UnpSizeText[30],PackSizeText[30];
   if (hd.UnpSize==INT64NDF)
-    wcscpy(UnpSizeText,L"?");
+    wcsncpyz(UnpSizeText,L"?",ASIZE(UnpSizeText));
   else
     itoa(hd.UnpSize,UnpSizeText,ASIZE(UnpSizeText));
   itoa(hd.PackSize,PackSizeText,ASIZE(PackSizeText));
@@ -229,13 +230,13 @@ void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bo
   wchar RatioStr[10];
 
   if (hd.SplitBefore && hd.SplitAfter)
-    wcscpy(RatioStr,L"<->");
+    wcsncpyz(RatioStr,L"<->",ASIZE(RatioStr));
   else
     if (hd.SplitBefore)
-      wcscpy(RatioStr,L"<--");
+      wcsncpyz(RatioStr,L"<--",ASIZE(RatioStr));
     else
       if (hd.SplitAfter)
-        wcscpy(RatioStr,L"-->");
+        wcsncpyz(RatioStr,L"-->",ASIZE(RatioStr));
       else
         swprintf(RatioStr,ASIZE(RatioStr),L"%d%%",ToPercentUnlim(hd.PackSize,hd.UnpSize));
 
@@ -344,7 +345,8 @@ void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bo
       mprintf(L"\n%12ls: %ls",St(MListHostOS),HostOS);
 
     mprintf(L"\n%12ls: RAR %ls(v%d) -m%d -md=%d%s",St(MListCompInfo),
-            Format==RARFMT15 ? L"3.0":L"5.0",hd.UnpVer,hd.Method,
+            Format==RARFMT15 ? L"3.0":L"5.0",
+            hd.UnpVer==VER_UNKNOWN ? 0 : hd.UnpVer,hd.Method,
             hd.WinSize>=0x100000 ? hd.WinSize/0x100000:hd.WinSize/0x400,
             hd.WinSize>=0x100000 ? L"M":L"K");
 
@@ -466,7 +468,7 @@ void ListFileAttr(uint A,HOST_SYSTEM_TYPE HostType,wchar *AttrStr,size_t AttrSiz
               (A & 0x0001) ? ((A & 0x200)!=0 ? 't' : 'x') : '-');
       break;
     case HSYS_UNKNOWN:
-      wcscpy(AttrStr,L"?");
+      wcsncpyz(AttrStr,L"?",AttrSize);
       break;
   }
 }
