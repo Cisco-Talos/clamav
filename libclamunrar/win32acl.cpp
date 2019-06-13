@@ -54,7 +54,10 @@ void ExtractACL20(Archive &Arc,const wchar *FileName)
   if (!SetCode)
   {
     uiMsg(UIERROR_ACLSET,Arc.FileName,FileName);
+    DWORD LastError=GetLastError();
     ErrHandler.SysErrMsg();
+    if (LastError==ERROR_ACCESS_DENIED && !IsUserAdmin())
+      uiMsg(UIERROR_NEEDADMIN);
     ErrHandler.SetErrorCode(RARX_WARNING);
   }
 }
@@ -86,7 +89,10 @@ void ExtractACL(Archive &Arc,const wchar *FileName)
   if (!SetCode)
   {
     uiMsg(UIERROR_ACLSET,Arc.FileName,FileName);
+    DWORD LastError=GetLastError();
     ErrHandler.SysErrMsg();
+    if (LastError==ERROR_ACCESS_DENIED && !IsUserAdmin())
+      uiMsg(UIERROR_NEEDADMIN);
     ErrHandler.SetErrorCode(RARX_WARNING);
   }
 }

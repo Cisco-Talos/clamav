@@ -28,8 +28,8 @@ void CryptData::SetKey30(bool Encrypt,SecPassword *Password,const wchar *PwdW,co
     sha1_context c;
     sha1_init(&c);
 
-    const int HashRounds=0x40000;
-    for (int I=0;I<HashRounds;I++)
+    const uint HashRounds=0x40000;
+    for (uint I=0;I<HashRounds;I++)
     {
       sha1_process_rar29( &c, RawPsw, RawLength );
       byte PswNum[3];
@@ -47,8 +47,8 @@ void CryptData::SetKey30(bool Encrypt,SecPassword *Password,const wchar *PwdW,co
     }
     uint32 digest[5];
     sha1_done( &c, digest );
-    for (int I=0;I<4;I++)
-      for (int J=0;J<4;J++)
+    for (uint I=0;I<4;I++)
+      for (uint J=0;J<4;J++)
         AESKey[I*4+J]=(byte)(digest[I]>>(J*8));
 
     KDF3Cache[KDF3CachePos].Pwd=*Password;

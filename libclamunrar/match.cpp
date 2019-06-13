@@ -25,10 +25,10 @@ bool CmpName(const wchar *Wildcard,const wchar *Name,int CmpMode)
   if (CmpMode!=MATCH_NAMES)
   {
     size_t WildLength=wcslen(Wildcard);
-    if (CmpMode!=MATCH_EXACT && CmpMode!=MATCH_EXACTPATH &&
+    if (CmpMode!=MATCH_EXACT && CmpMode!=MATCH_EXACTPATH && CmpMode!=MATCH_ALLWILD &&
         mwcsnicompc(Wildcard,Name,WildLength,ForceCase)==0)
     {
-      // For all modes except MATCH_NAMES, MATCH_EXACT and MATCH_EXACTPATH
+      // For all modes except MATCH_NAMES, MATCH_EXACT, MATCH_EXACTPATH, MATCH_ALLWILD,
       // "path1" mask must match "path1\path2\filename.ext" and "path1" names.
       wchar NextCh=Name[WildLength];
       if (NextCh==L'\\' || NextCh==L'/' || NextCh==0)
@@ -46,6 +46,8 @@ bool CmpName(const wchar *Wildcard,const wchar *Name,int CmpMode)
     if ((CmpMode==MATCH_EXACT || CmpMode==MATCH_EXACTPATH) &&
         mwcsicompc(Path1,Path2,ForceCase)!=0)
       return(false);
+    if (CmpMode==MATCH_ALLWILD)
+      return match(Wildcard,Name,ForceCase);
     if (CmpMode==MATCH_SUBPATH || CmpMode==MATCH_WILDSUBPATH)
       if (IsWildcard(Path1))
         return(match(Wildcard,Name,ForceCase));
@@ -64,8 +66,8 @@ bool CmpName(const wchar *Wildcard,const wchar *Name,int CmpMode)
 
   // Always return false for RAR temporary files to exclude them
   // from archiving operations.
-  if (mwcsnicompc(L"__rar_",Name2,6,false)==0)
-    return(false);
+//  if (mwcsnicompc(L"__rar_",Name2,6,false)==0)
+//    return(false);
 
   if (CmpMode==MATCH_EXACT)
     return(mwcsicompc(Name1,Name2,ForceCase)==0);

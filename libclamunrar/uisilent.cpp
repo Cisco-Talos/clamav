@@ -39,6 +39,12 @@ bool uiGetPassword(UIPASSWORD_TYPE Type,const wchar *FileName,SecPassword *Passw
 }
 
 
+bool uiIsGlobalPasswordSet()
+{
+  return false;
+}
+
+
 void uiAlarm(UIALARM_TYPE Type)
 {
 }

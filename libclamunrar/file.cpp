@@ -271,7 +271,7 @@ bool File::Rename(const wchar *NewName)
     Success=RenameFile(FileName,NewName);
 
   if (Success)
-    wcscpy(FileName,NewName);
+    wcsncpyz(FileName,NewName,ASIZE(FileName));
 
   return Success;
 }

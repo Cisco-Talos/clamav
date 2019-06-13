@@ -1,8 +1,8 @@
-static bool uiSoundEnabled;
+static SOUND_NOTIFY_MODE uiSoundNotify;
 
-void uiInit(bool Sound)
+void uiInit(SOUND_NOTIFY_MODE Sound)
 {
-  uiSoundEnabled = Sound;
+  uiSoundNotify = Sound;
 }
 
 

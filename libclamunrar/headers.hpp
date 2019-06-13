@@ -14,10 +14,11 @@
 #define  SIZEOF_UOHEAD          18
 #define  SIZEOF_STREAMHEAD      26
 
-#define  VER_PACK               29
-#define  VER_PACK5              50 // It is stored as 0, but we subtract 50 when saving an archive.
-#define  VER_UNPACK             29
-#define  VER_UNPACK5            50 // It is stored as 0, but we add 50 when reading an archive.
+#define  VER_PACK               29U
+#define  VER_PACK5              50U // It is stored as 0, but we subtract 50 when saving an archive.
+#define  VER_UNPACK             29U
+#define  VER_UNPACK5            50U // It is stored as 0, but we add 50 when reading an archive.
+#define  VER_UNKNOWN          9999U // Just some large value.
 
 #define  MHD_VOLUME         0x0001U
 
@@ -174,7 +175,7 @@ struct MainHeader:BaseBlock
 struct FileHeader:BlockHeader
 {
   byte HostOS;
-  byte UnpVer;
+  uint UnpVer; // It is 1 byte in RAR29 and bit field in RAR5.
   byte Method;
   union {
     uint FileAttr;
@@ -190,7 +191,7 @@ struct FileHeader:BlockHeader
 
   int64 PackSize;
   int64 UnpSize;
-  int64 MaxSize; // Reserve size bytes for vint of this size.
+  int64 MaxSize; // Reserve packed and unpacked size bytes for vint of this size.
 
   HashValue FileHash;
 

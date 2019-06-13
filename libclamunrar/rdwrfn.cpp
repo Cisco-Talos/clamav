@@ -25,6 +25,7 @@ void ComprDataIO::Init()
   NextVolumeMissing=false;
   SrcFile=NULL;
   DestFile=NULL;
+  UnpWrAddr=NULL;
   UnpWrSize=0;
   Command=NULL;
   Encryption=false;

@@ -6,6 +6,8 @@
 
 enum RAR_CMD_LIST_MODE {RCLM_AUTO,RCLM_REJECT_LISTS,RCLM_ACCEPT_LISTS};
 
+enum IS_PROCESS_FILE_FLAGS {IPFF_EXCLUDE_PARENT=1};
+
 class CommandData:public RAROptions
 {
   private:
@@ -13,6 +15,9 @@ class CommandData:public RAROptions
     void ProcessSwitch(const wchar *Switch);
     void BadSwitch(const wchar *Switch);
     uint GetExclAttr(const wchar *Str);
+#if !defined(SFX_MODULE)
+    void SetTimeFilters(const wchar *Mod,bool Before,bool Age);
+#endif
 
     bool FileLists;
     bool NoMoreSwitches;
@@ -34,11 +39,11 @@ class CommandData:public RAROptions
     bool ExclCheck(const wchar *CheckName,bool Dir,bool CheckFullPath,bool CheckInclList);
     static bool CheckArgs(StringList *Args,bool Dir,const wchar *CheckName,bool CheckFullPath,int MatchMode);
     bool ExclDirByAttr(uint FileAttr);
-    bool TimeCheck(RarTime &ft);
+    bool TimeCheck(RarTime &ftm,RarTime &ftc,RarTime &fta);
     bool SizeCheck(int64 Size);
     bool AnyFiltersActive();
-    int IsProcessFile(FileHeader &FileHead,bool *ExactMatch=NULL,int MatchType=MATCH_WILDSUBPATH,
-                      wchar *MatchedArg=NULL,uint MatchedArgSize=0);
+    int IsProcessFile(FileHeader &FileHead,bool *ExactMatch,int MatchType,
+                      bool Flags,wchar *MatchedArg,uint MatchedArgSize);
     void ProcessCommand();
     void AddArcName(const wchar *Name);
     bool GetArcName(wchar *Name,int MaxSize);

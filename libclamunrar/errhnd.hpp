@@ -56,7 +56,7 @@ class ErrorHandler
     uint GetErrorCount() {return ErrCount;}
     void SetSignalHandlers(bool Enable);
     void Throw(RAR_EXIT Code);
-    void SetSilent(bool Mode) {Silent=Mode;};
+    void SetSilent(bool Mode) {Silent=Mode;}
     bool GetSysErrMsg(wchar *Msg,size_t Size);
     void SysErrMsg();
     int GetSystemErrorCode();

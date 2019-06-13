@@ -16,10 +16,10 @@ wchar* RemoveLF(wchar *Str);
 unsigned char loctolower(unsigned char ch);
 unsigned char loctoupper(unsigned char ch);
 
-char* strncpyz(char *dest, const char *src, size_t maxlen);
-wchar* wcsncpyz(wchar *dest, const wchar *src, size_t maxlen);
-char* strncatz(char* dest, const char* src, size_t maxlen);
-wchar* wcsncatz(wchar* dest, const wchar* src, size_t maxlen);
+void strncpyz(char *dest, const char *src, size_t maxlen);
+void wcsncpyz(wchar *dest, const wchar *src, size_t maxlen);
+void strncatz(char* dest, const char* src, size_t maxlen);
+void wcsncatz(wchar* dest, const wchar* src, size_t maxlen);
 
 unsigned char etoupper(unsigned char ch);
 wchar etoupperw(wchar ch);

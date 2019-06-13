@@ -11,7 +11,7 @@ void Unpack::Unpack5(bool Solid)
     // Check TablesRead5 to be sure that we read tables at least once
     // regardless of current block header TablePresent flag.
     // So we can safefly use these tables below.
-    if (!ReadBlockHeader(Inp,BlockHeader) || 
+    if (!ReadBlockHeader(Inp,BlockHeader) ||
         !ReadTables(Inp,BlockHeader,BlockTables) || !TablesRead5)
       return;
   }
@@ -536,11 +536,11 @@ bool Unpack::ReadBlockHeader(BitInput &Inp,UnpackBlockHeader &Header)
     if (!UnpReadBuf())
       return false;
   Inp.faddbits((8-Inp.InBit)&7);
-  
+
   byte BlockFlags=Inp.fgetbits()>>8;
   Inp.faddbits(8);
   uint ByteCount=((BlockFlags>>3)&3)+1; // Block size byte count.
-  
+
   if (ByteCount==4)
     return false;
 

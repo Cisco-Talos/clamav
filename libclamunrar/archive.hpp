@@ -37,8 +37,7 @@ class Archive:public File
     void RequestArcPassword();
     void UnexpEndArcMsg();
     void BrokenHeaderMsg();
-    void UnkEncVerMsg(const wchar *Name);
-    void UnkEncVerMsg();
+    void UnkEncVerMsg(const wchar *Name,const wchar *Info);
     bool ReadCommentData(Array<wchar> *CmtData);
 
 #if !defined(RAR_NOCRYPT)
@@ -85,7 +84,7 @@ class Archive:public File
     void AddSubData(byte *SrcData,uint64 DataSize,File *SrcFile,
          const wchar *Name,uint Flags);
     bool ReadSubData(Array<byte> *UnpData,File *DestFile);
-    HEADER_TYPE GetHeaderType() {return CurHeaderType;};
+    HEADER_TYPE GetHeaderType() {return CurHeaderType;}
     RAROptions* GetRAROptions() {return Cmd;}
     void SetSilentOpen(bool Mode) {SilentOpen=Mode;}
 #if 0
