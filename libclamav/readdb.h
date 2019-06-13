@@ -23,10 +23,15 @@
 #ifndef __READDB_H
 #define __READDB_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include "clamav.h"
-#include "matcher.h"
 #include "str.h"
 #include "cvd.h"
+
+struct cli_matcher;
 
 /* NOTE: We don't include .info in CLI_DBEXT because they are only used for
  * one specific purpose - verifying the contents of database container files.
