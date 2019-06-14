@@ -82,6 +82,20 @@ int main(int argc, char **argv)
 	}
 	ctx->clamdopts = clamdopts;
 
+        ret = startup_checks(ctx);
+        if (ret) {
+            goto clean_up;
+        }
+
+#ifndef _WIN32
+        if (!optget(ctx->opts, "foreground")->enabled) {
+            if (-1 == daemonize()) {
+                logg("!Clamonacc: could not daemonize\n");
+                return 2;
+            }
+        }
+#endif
+
 	/* Setup our client */
 	switch(onas_setup_client(&ctx)) {
 		case CL_SUCCESS:
@@ -100,20 +114,6 @@ int main(int argc, char **argv)
 			goto clean_up;
 			break;
 	}
-
-        ret = startup_checks(ctx);
-        if (ret) {
-            goto clean_up;
-        }
-
-#ifndef _WIN32
-        if (!optget(ctx->opts, "foreground")->enabled) {
-            if (-1 == daemonize()) {
-                logg("!Clamonacc: could not daemonize\n");
-                return 2;
-            }
-        }
-#endif
 
         ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
 
@@ -234,6 +234,11 @@ static int startup_checks(struct onas_context *ctx) {
 		ret = 2;
 		goto done;
 	}
+
+        if (curl_global_init(CURL_GLOBAL_NOTHING)) {
+            ret = 2;
+            goto done;
+        }
 
 	if (0 == onas_check_remote(&ctx, &err)) {
 		if(!optget(ctx->clamdopts, "OnAccessExcludeUID")->enabled &&

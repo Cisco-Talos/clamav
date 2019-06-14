@@ -290,10 +290,6 @@ cl_error_t onas_setup_client (struct onas_context **ctx) {
 	return CL_EARG;
     }
 
-    if (curl_global_init(CURL_GLOBAL_NOTHING)) {
-        return CL_EARG;
-    }
-
     (*ctx)->timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
     (*ctx)->retry_attempts = optget((*ctx)->clamdopts, "OnAccessRetryAttempts")->numarg;
     (*ctx)->retry_attempts ? ((*ctx)->retry_on_error = 1) : ((*ctx)->retry_on_error = 0);
