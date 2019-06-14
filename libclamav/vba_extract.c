@@ -1255,7 +1255,7 @@ skip_past_nul(int fd)
             return FALSE;
         end = memchr(smallbuf, '\0', nread);
         if (end) {
-            if (lseek(fd, 1 + (end - smallbuf) - nread, SEEK_CUR) < 0)
+            if (lseek(fd, 1 + (end - smallbuf) - (off_t)nread, SEEK_CUR) < 0)
                 return FALSE;
             return TRUE;
         }
