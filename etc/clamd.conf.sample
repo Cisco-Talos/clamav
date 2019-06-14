@@ -628,8 +628,8 @@ Example
 
 # Max amount of time (in milliseconds) that the OnAccess client should spend for every 
 # connect, send, and recieve attempt when communicating with clamd via curl.
-# Default: 5000L (5 seconds)
-# OnAccessCurlTimeout 10000L
+# Default: 5000 (5 seconds)
+# OnAccessCurlTimeout 10000
 
 # Set the include paths (all files inside them will be scanned). You can have
 # multiple OnAccessIncludePath directives but each directory must be added
