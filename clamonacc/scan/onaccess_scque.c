@@ -44,7 +44,7 @@
 #include "./onaccess_scth.h"
 #include "./onaccess_scque.h"
 
-static void onas_scanque_exit(int sig);
+static void onas_scanque_exit(void * arg);
 static int onas_consume_event(threadpool thpool);
 static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node);
 static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
@@ -121,6 +121,10 @@ static void onas_destroy_event_queue_node(struct onas_event_queue_node *node) {
 
 static void onas_destroy_event_queue() {
 
+	if (NULL == g_onas_event_queue_head) {
+		return;
+	}
+
 	struct onas_event_queue_node *curr = g_onas_event_queue_head;
 	struct onas_event_queue_node *next = curr->next;
 
@@ -147,7 +151,7 @@ void *onas_scanque_th(void *arg) {
 
         cl_error_t err;
 
-	/* ignore all signals except SIGUSR1 */
+	/* ignore all signals except SIGUSR2 */
 	sigfillset(&sigset);
 	sigdelset(&sigset, SIGUSR2);
 	/* The behavior of a process is undefined after it ignores a
@@ -155,16 +159,11 @@ void *onas_scanque_th(void *arg) {
 	sigdelset(&sigset, SIGFPE);
 	sigdelset(&sigset, SIGILL);
 	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGTERM);
 	sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
 	sigdelset(&sigset, SIGBUS);
 #endif
-	pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-	memset(&act, 0, sizeof(struct sigaction));
-	act.sa_handler = onas_scanque_exit;
-	sigfillset(&(act.sa_mask));
-	sigaction(SIGUSR2, &act, NULL);
-	sigaction(SIGSEGV, &act, NULL);
 
 	logg("*ClamQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
         onas_init_event_queue();
@@ -172,20 +171,21 @@ void *onas_scanque_th(void *arg) {
 	g_thpool = thpool;
 
         /* loop w/ onas_consume_event until we die */
+        pthread_cleanup_push(onas_scanque_exit, NULL);
 	logg("*ClamQueue: waiting to consume events ...\n");
 	do {
-            pthread_mutex_lock(&onas_scque_loop);
-            pthread_cond_wait(&onas_scque_empty_cond, &onas_scque_loop);
-            /* run 'till we're empty */
+		pthread_mutex_lock(&onas_scque_loop);
+		pthread_cond_wait(&onas_scque_empty_cond, &onas_scque_loop);
+		/* run 'till we're empty */
 		do {
-                    ret = onas_consume_event(thpool);
-                } while (1 != ret);
-            pthread_mutex_unlock(&onas_scque_loop);
-
-
+			pthread_testcancel();
+			ret = onas_consume_event(thpool);
+		} while (1 != ret);
+		pthread_mutex_unlock(&onas_scque_loop);
 
 	} while(1);
 
+	pthread_cleanup_pop(1);
 }
 
 static int onas_queue_is_b_empty() {
@@ -282,17 +282,19 @@ cl_error_t onas_scanque_start(struct onas_context **ctx) {
 	return CL_SUCCESS;
 }
 
-static void onas_scanque_exit(int sig) {
+static void onas_scanque_exit(void *arg) {
 
-	logg("*ClamScanque: onas_scanque_exit(), signal %d\n", sig);
+	logg("*ClamScanque: onas_scanque_exit()\n");
 
+	pthread_mutex_lock(&onas_queue_lock);
 	onas_destroy_event_queue();
+
         if (g_thpool) {
             thpool_destroy(g_thpool);
         }
         g_thpool = NULL;
+	pthread_mutex_unlock(&onas_queue_lock);
 
 	logg("ClamScanque: stopped\n");
-	pthread_exit(NULL);
 }
 
