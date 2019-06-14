@@ -94,7 +94,7 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout) {
 		do {
 			curlcode = curl_easy_send(curl, line, len, &sent);
 			if (CURLE_AGAIN == curlcode && !onas_socket_wait(sockfd, 0, timeout)) {
-				logg("!ClamCom: TIMEOUT while waiting on socket (send)");
+				logg("!ClamCom: TIMEOUT while waiting on socket (send)\n");
 				return 1;
 			}
 		} while (CURLE_AGAIN == curlcode);
@@ -143,7 +143,7 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
 
 	if(CURLE_OK != rcv_data->curlcode) {
 		logg("!ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(rcv_data->curlcode));
-		return 1;
+		return -1;
 	}
 
 	while(1) {
@@ -153,8 +153,8 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
 					sizeof(rcv_data->buf) - (rcv_data->curr - rcv_data->buf), &(rcv_data->retlen));
 
 			if (CURLE_AGAIN == rcv_data->curlcode && !onas_socket_wait(sockfd, 1, timeout)) {
-				logg("!ClamCom: TIMEOUT while waiting on socket (recv)");
-				return 1;
+				logg("!ClamCom: TIMEOUT while waiting on socket (recv)\n");
+				return -1;
 			}
 
                     } while (CURLE_AGAIN == rcv_data->curlcode);
