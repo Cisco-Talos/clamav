@@ -506,7 +506,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     unsigned int files = 0;
     char tempfile[1024];
     const char prefixes[] = {'\0', '\0', '@', '$', '\0', '.', '"', '#'};
-    const char *opers[]   = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&="};
+    const char *opers[]   = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=", "?", ":"};
     struct UNP UNP;
     fmap_t *map = *ctx->fmap;
 
@@ -858,6 +858,8 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                     case 0x54: /* /= */
                     case 0x55: /* *= */
                     case 0x56: /* &= */
+                    case 0x57: /* ? */
+                    case 0x58: /* : */
                         if (UNP.cur_output + 4 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
@@ -885,7 +887,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         break;
 
                     default:
-                        cli_dbgmsg("autoit: found unknown op (%x)\n", op);
+                        cli_dbgmsg("autoit: found unknown op (0x%x)\n", op);
                         UNP.error = 1;
                 }
             }
