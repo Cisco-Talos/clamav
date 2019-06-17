@@ -66,7 +66,7 @@
 #include <math.h>
 
 #if defined(C_DARWIN) || defined(_WIN32)
-#include <cert_util.h>
+#include <shared/cert_util.h>
 #endif
 
 #include <curl/curl.h>

@@ -58,6 +58,7 @@
 #include "libfreshclam_internal.h"
 #include "dns.h"
 
+#include "shared/cert_util.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
