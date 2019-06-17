@@ -34,7 +34,6 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/actions.c \
     $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/shared/priv-fts.h \
     clamonacc.c \
     ./client/onaccess_client.c \
     ./client/onaccess_client.h \
