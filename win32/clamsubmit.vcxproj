@@ -166,8 +166,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\clamsubmit\clamsubmit.c" />
+    <ClCompile Include="..\shared\cert_util.c" />
     <ClCompile Include="..\shared\getopt.c" />
     <ClCompile Include="..\shared\misc.c" />
+    <ClCompile Include="..\shared\output.c" />
+    <ClCompile Include="..\shared\win\cert_util_win.c" />
     <ClCompile Include="compat\gettimeofday.c" />
     <ClCompile Include="compat\glob.c" />
     <ClCompile Include="compat\net.c" />
@@ -179,9 +182,12 @@
     <ClCompile Include="compat\w32_stat.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\shared\cert_util.h" />
+    <ClInclude Include="..\shared\cert_util_internal.h" />
     <ClInclude Include="..\shared\getopt.h" />
     <ClInclude Include="..\shared\misc.h" />
     <ClInclude Include="..\shared\optparser.h" />
+    <ClInclude Include="..\shared\output.h" />
     <ClInclude Include="compat\gettimeofday.h" />
     <ClInclude Include="compat\net.h" />
     <ClInclude Include="compat\random.h" />

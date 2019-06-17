@@ -26,10 +26,10 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "cert_util.h"
-#include "cert_util_internal.h"
+#include "shared/cert_util.h"
+#include "shared/cert_util_internal.h"
 
-#include "output.h"
+#include "shared/output.h"
 
 static cert_store_t _cert_store = {
     .mutex = PTHREAD_MUTEX_INITIALIZER};
@@ -210,6 +210,82 @@ void cert_store_unload(void)
     }
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L /* 1.1.0+ */
+static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
+{
+    int rc = CL_EMEM;
+
+    X509_NAME *a = NULL;
+    X509_NAME *b = NULL;
+
+    BIO *bio_out_a = NULL;
+    BIO *bio_out_b = NULL;
+
+    BUF_MEM *biomem_a;
+    BUF_MEM *biomem_b;
+
+    bio_out_a = BIO_new(BIO_s_mem());
+    if (!bio_out_a)
+        goto done;
+
+    bio_out_b = BIO_new(BIO_s_mem());
+    if (!bio_out_b)
+        goto done;
+
+    rc = X509_NAME_print_ex(bio_out_a, a, 0, XN_FLAG_SEP_SPLUS_SPC);
+    BIO_get_mem_ptr(bio_out_a, &biomem_a);
+
+    rc = X509_NAME_print_ex(bio_out_b, b, 0, XN_FLAG_SEP_SPLUS_SPC);
+    BIO_get_mem_ptr(bio_out_b, &biomem_b);
+
+    *cmp_out = strncmp(biomem_a->data, biomem_b->data, MIN(biomem_a->length, biomem_b->length));
+
+done:
+    if (NULL != bio_out_a)
+        BIO_free(bio_out_a);
+    if (NULL != bio_out_b)
+        BIO_free(bio_out_b);
+
+    return !rc;
+}
+
+static cl_error_t x509_get_cert_name(X509 *cert, char **name)
+{
+    int rc = CL_EMEM;
+
+    X509_NAME *a = NULL;
+    BIO *bio_out = NULL;
+    BUF_MEM *biomem;
+
+    if (NULL == cert || NULL == name) {
+        rc = CL_EARG;
+        goto done;
+    }
+
+    *name = NULL;
+
+    bio_out = BIO_new(BIO_s_mem());
+    if (!bio_out)
+        goto done;
+
+    rc = X509_NAME_print_ex(bio_out, a, 0, XN_FLAG_SEP_SPLUS_SPC);
+    BIO_get_mem_ptr(bio_out, &biomem);
+
+    *name = malloc(biomem->length + 1);
+    if (!name)
+        goto done;
+
+    memcpy(*name, biomem->data, biomem->length);
+    *name[biomem->length] = '\0';
+
+done:
+    if (NULL != bio_out)
+        BIO_free(bio_out);
+
+    return !rc;
+}
+#endif
+
 cl_error_t cert_store_export_pem(char **cert_data,
                                  int *cert_data_len,
                                  X509 *additional_ca_cert)
@@ -259,11 +335,25 @@ cl_error_t cert_store_export_pem(char **cert_data,
          * one in the OS certificate/key store if the additional CA
          * name matches that of one in the store.
          */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        /* OpenSSL >= 1.1.0 */
+        if (additional_ca_cert) {
+            int cmp = 0;
+            if (CL_SUCCESS == x509_cert_name_cmp(_cert_store.system_certs.certificates[i],
+                                                 additional_ca_cert,
+                                                 &cmp)) {
+                if (0 == cmp)
+                    add_additional_ca_cert = false;
+            }
+        }
+#else
+        /* OpenSSL <= 1.0.2 */
         if (additional_ca_cert && additional_ca_cert->cert_info &&
             (strcmp(_cert_store.system_certs.certificates[i]->name,
                     additional_ca_cert->name) == 0)) {
             add_additional_ca_cert = false;
         }
+#endif
     }
 
     /* Load trusted ca certs into list */
@@ -279,11 +369,25 @@ cl_error_t cert_store_export_pem(char **cert_data,
          * one in the OS certificate/key store if the additional CA
          * name matches that of one in the store.
          */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        /* OpenSSL >= 1.1.0 */
+        if (additional_ca_cert) {
+            int cmp = 0;
+            if (CL_SUCCESS == x509_cert_name_cmp(_cert_store.trusted_certs.certificates[i],
+                                                 additional_ca_cert,
+                                                 &cmp)) {
+                if (0 == cmp)
+                    add_additional_ca_cert = false;
+            }
+        }
+#else
+        /* OpenSSL <= 1.0.2 */
         if (additional_ca_cert && additional_ca_cert->cert_info &&
             (strcmp(_cert_store.trusted_certs.certificates[i]->name,
                     additional_ca_cert->name) == 0)) {
             add_additional_ca_cert = false;
         }
+#endif
     }
 
     /* End with the additional CA certificate if provided */
@@ -353,7 +457,7 @@ cl_error_t cert_store_set_trusted_int(X509 **trusted_certs, size_t trusted_cert_
             tmp_trusted.certificates[tmp_trusted.count] =
                 X509_dup(trusted_certs[i]);
             if (!tmp_trusted.certificates[tmp_trusted.count]) {
-                mprintf("!X509_dup failed at index: %zu", i);
+                mprintf("!X509_dup failed at index: %zu\n", i);
                 continue; /* continue on error */
             }
 
@@ -431,19 +535,29 @@ void cert_fill_X509_store(X509_STORE *store, X509 **certs, size_t cert_count)
     if (store && certs && cert_count > 0) {
         for (i = 0; i < cert_count; ++i) {
             if (!certs[i]) {
-                mprintf("!NULL cert at index %zu in X509 cert list; skipping", i);
+                mprintf("!NULL cert at index %zu in X509 cert list; skipping\n", i);
                 continue;
             }
             if (X509_STORE_add_cert(store, certs[i]) != 1) {
+                char *name = NULL;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+                x509_get_cert_name(certs[i], &name);
+#else
+                name = certs[i]->name;
+#endif
                 err = ERR_get_error();
                 if (X509_R_CERT_ALREADY_IN_HASH_TABLE == ERR_GET_REASON(err)) {
-                    mprintf("*Certificate skipped; already exists in store: %s",
-                            (certs[i]->name ? certs[i]->name : ""));
+                    mprintf("*Certificate skipped; already exists in store: %s\n",
+                            (name ? name : ""));
                 } else {
-                    mprintf("!Failed to add certificate to store: %s (%lu) [%s]",
+                    mprintf("!Failed to add certificate to store: %s (%lu) [%s]\n",
                             ERR_error_string(err, NULL), err,
-                            (certs[i]->name ? certs[i]->name : ""));
+                            (name ? name : ""));
                 }
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+                free(name);
+#endif
             }
         }
     }
@@ -491,16 +605,26 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
         /* Adding the additional CA cert to the trustchain */
         if ((additional_ca_cert != NULL) &&
             (X509_STORE_add_cert(store, additional_ca_cert) != 1)) {
+            char *name        = NULL;
             unsigned long err = ERR_get_error();
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+            x509_get_cert_name(additional_ca_cert, &name);
+#else
+            name = additional_ca_cert->name;
+#endif
             if (X509_R_CERT_ALREADY_IN_HASH_TABLE == ERR_GET_REASON(err)) {
-                mprintf("Certificate is already in trust [%s]",
-                        (additional_ca_cert->name ? additional_ca_cert->name : ""));
+                mprintf("Certificate is already in trust [%s]\n",
+                        (name ? name : ""));
             } else {
                 mprintf("!Failed to add CA certificate for the SSL context. "
-                        "Error: %d [%s]",
+                        "Error: %d [%s]\n",
                         ERR_GET_REASON(err),
-                        (additional_ca_cert->name ? additional_ca_cert->name : ""));
+                        (name ? name : ""));
             }
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+            free(name);
+#endif
         }
     } while (0);
 

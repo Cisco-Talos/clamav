@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include <Windows.h>
 #include <wincrypt.h>
 
 #include <openssl/x509.h>
@@ -28,10 +29,10 @@
 
 #include <curl/curl.h>
 
-#include "output.h"
+#include "shared/output.h"
 
-#include "cert_util.h"
-#include "cert_util_internal.h"
+#include "shared/cert_util.h"
+#include "shared/cert_util_internal.h"
 
 cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 {
@@ -46,17 +47,13 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     int pt_err;
 
     cert_store_t *store        = NULL;
-    CFIndex total_certificates = 0;
-    CFIndex i                  = 0;
     bool locked                = false;
 
-    hStore = CertOpenSystemStoreA(NULL, "ROOT\n");
+    hStore = CertOpenSystemStoreA(NULL, "ROOT");
     if (NULL == hStore) {
         mprintf("!Failed to open system certificate store.\n");
         goto done;
     }
-
-    X509_STORE *store = SSL_CTX_get_cert_store((SSL_CTX *)ssl_ctx);
 
     store = cert_store_get_int();
     if (!store) {
@@ -78,12 +75,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     store->system_certs.count        = 0;
-    store->system_certs.certificates = calloc(total_certificates,
-                                              sizeof(*store->system_certs.certificates));
-    if (store->system_certs.certificates == NULL) {
-        mprintf("!Failed to reserve memory for system cert list\n");
-        goto done;
-    }
+	store->system_certs.certificates = NULL;
 
     while (NULL != (pWinCertContext = CertEnumCertificatesInStore(hStore, pWinCertContext))) {
         int addCertResult                 = 0;
@@ -96,6 +88,14 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
             continue;
         }
 
+		store->system_certs.certificates = realloc(
+            store->system_certs.certificates,
+			(numCertificatesFound + 1) * sizeof(*store->system_certs.certificates));
+        if (store->system_certs.certificates == NULL) {
+            mprintf("!Failed to reserve memory for system cert list\n");
+            goto done;
+        }
+
         store->system_certs.certificates[store->system_certs.count++] = x509;
 
         if (mprintf_verbose) {
@@ -103,7 +103,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
             size_t issuerLen = 0;
             issuerLen        = CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, NULL, 0);
 
-            issuer = cli_malloc(issuerLen);
+            issuer = malloc(issuerLen);
             if (NULL == issuer) {
                 mprintf("!Failed to allocate memory for certificate name.\n");
                 ret = CURLE_OUT_OF_MEMORY;
@@ -120,8 +120,8 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         }
 
         numCertificatesFound++;
-        X509_free(x509);
     }
+
 
     lastError = GetLastError();
     switch (lastError) {

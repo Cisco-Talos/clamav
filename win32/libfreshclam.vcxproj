@@ -170,9 +170,11 @@
     <ClCompile Include="..\libfreshclam\libfreshclam.c" />
     <ClCompile Include="..\libfreshclam\libfreshclam_internal.c" />
     <ClCompile Include="..\shared\cdiff.c" />
+    <ClCompile Include="..\shared\cert_util.c" />
     <ClCompile Include="..\shared\misc.c" />
     <ClCompile Include="..\shared\output.c" />
     <ClCompile Include="..\shared\tar.c" />
+    <ClCompile Include="..\shared\win\cert_util_win.c" />
     <ClCompile Include="compat\libfreshclam_main.c" />
     <ClCompile Include="compat\resolv.c" />
     <ClCompile Include="compat\strptime.c" />
@@ -182,6 +184,8 @@
     <ClInclude Include="..\libfreshclam\libfreshclam.h" />
     <ClInclude Include="..\libfreshclam\libfreshclam_internal.h" />
     <ClInclude Include="..\shared\cdiff.h" />
+    <ClInclude Include="..\shared\cert_util.h" />
+    <ClInclude Include="..\shared\cert_util_internal.h" />
     <ClInclude Include="..\shared\misc.h" />
     <ClInclude Include="..\shared\output.h" />
     <ClInclude Include="..\shared\tar.h" />
