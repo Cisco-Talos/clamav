@@ -205,18 +205,18 @@ am__clamonacc_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
-	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/priv-fts.h \
-	clamonacc.c ./client/onaccess_client.c \
-	./client/onaccess_client.h ./client/onaccess_proto.c \
-	./client/onaccess_proto.h ./client/onaccess_com.c \
-	./client/onaccess_com.h ./inotif/onaccess_ddd.c \
-	./inotif/onaccess_ddd.h ./fanotif/onaccess_fan.c \
-	./fanotif/onaccess_fan.h ./inotif/onaccess_hash.c \
-	./inotif/onaccess_hash.h ./misc/onaccess_others.c \
-	./misc/onaccess_others.h ./misc/priv_fts.h \
-	./scan/onaccess_scth.c ./scan/onaccess_scth.h \
-	./scan/onaccess_scque.c ./scan/onaccess_scque.h \
-	./c-thread-pool/thpool.c ./c-thread-pool/thpool.h ./misc/fts.c
+	$(top_srcdir)/shared/actions.h clamonacc.c \
+	./client/onaccess_client.c ./client/onaccess_client.h \
+	./client/onaccess_proto.c ./client/onaccess_proto.h \
+	./client/onaccess_com.c ./client/onaccess_com.h \
+	./inotif/onaccess_ddd.c ./inotif/onaccess_ddd.h \
+	./fanotif/onaccess_fan.c ./fanotif/onaccess_fan.h \
+	./inotif/onaccess_hash.c ./inotif/onaccess_hash.h \
+	./misc/onaccess_others.c ./misc/onaccess_others.h \
+	./misc/priv_fts.h ./scan/onaccess_scth.c \
+	./scan/onaccess_scth.h ./scan/onaccess_scque.c \
+	./scan/onaccess_scque.h ./c-thread-pool/thpool.c \
+	./c-thread-pool/thpool.h ./misc/fts.c
 @SYSTEM_LFS_FTS_FALSE@am__objects_1 = clamonacc-fts.$(OBJEXT)
 am_clamonacc_OBJECTS = clamonacc-output.$(OBJEXT) \
 	clamonacc-optparser.$(OBJEXT) clamonacc-misc.$(OBJEXT) \
@@ -556,19 +556,18 @@ clamonacc_SOURCES = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/actions.c \
-	$(top_srcdir)/shared/actions.h $(top_srcdir)/shared/priv-fts.h \
-	clamonacc.c ./client/onaccess_client.c \
-	./client/onaccess_client.h ./client/onaccess_proto.c \
-	./client/onaccess_proto.h ./client/onaccess_com.c \
-	./client/onaccess_com.h ./inotif/onaccess_ddd.c \
-	./inotif/onaccess_ddd.h ./fanotif/onaccess_fan.c \
-	./fanotif/onaccess_fan.h ./inotif/onaccess_hash.c \
-	./inotif/onaccess_hash.h ./misc/onaccess_others.c \
-	./misc/onaccess_others.h ./misc/priv_fts.h \
-	./scan/onaccess_scth.c ./scan/onaccess_scth.h \
-	./scan/onaccess_scque.c ./scan/onaccess_scque.h \
-	./c-thread-pool/thpool.c ./c-thread-pool/thpool.h \
-	$(am__append_1)
+	$(top_srcdir)/shared/actions.h clamonacc.c \
+	./client/onaccess_client.c ./client/onaccess_client.h \
+	./client/onaccess_proto.c ./client/onaccess_proto.h \
+	./client/onaccess_com.c ./client/onaccess_com.h \
+	./inotif/onaccess_ddd.c ./inotif/onaccess_ddd.h \
+	./fanotif/onaccess_fan.c ./fanotif/onaccess_fan.h \
+	./inotif/onaccess_hash.c ./inotif/onaccess_hash.h \
+	./misc/onaccess_others.c ./misc/onaccess_others.h \
+	./misc/priv_fts.h ./scan/onaccess_scth.c \
+	./scan/onaccess_scth.h ./scan/onaccess_scque.c \
+	./scan/onaccess_scque.h ./c-thread-pool/thpool.c \
+	./c-thread-pool/thpool.h $(am__append_1)
 AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamd -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamonacc$(EXEEXT)
