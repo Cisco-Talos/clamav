@@ -98,7 +98,20 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libfreshclam/libfreshclam.map
+@MACOS_TRUE@am__append_1 = -framework CoreFoundation -framework Security
+@VERSIONSCRIPT_TRUE@am__append_2 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libfreshclam/libfreshclam.map
+@MACOS_TRUE@am__append_3 = \
+@MACOS_TRUE@        $(top_srcdir)/shared/mac/cert_util_mac.m \
+@MACOS_TRUE@        $(top_srcdir)/shared/cert_util.h
+
+@WINDOWS_TRUE@am__append_4 = \
+@WINDOWS_TRUE@        $(top_srcdir)/shared/win/cert_util_win.c \
+@WINDOWS_TRUE@        $(top_srcdir)/shared/cert_util.h
+
+@LINUX_TRUE@am__append_5 = \
+@LINUX_TRUE@        $(top_srcdir)/shared/linux/cert_util_linux.c \
+@LINUX_TRUE@        $(top_srcdir)/shared/cert_util.h
+
 subdir = libfreshclam
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/config/depcomp $(include_HEADERS)
@@ -214,18 +227,34 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
+am__libfreshclam_la_SOURCES_DIST = $(top_srcdir)/shared/output.c \
+	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
+	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \
+	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/cdiff.c \
+	$(top_srcdir)/shared/cdiff.h $(top_srcdir)/shared/tar.c \
+	$(top_srcdir)/shared/tar.h $(top_srcdir)/shared/cert_util.c \
+	$(top_srcdir)/shared/cert_util.h \
+	$(top_srcdir)/shared/cert_util_internal.h libfreshclam.c \
+	libfreshclam_internal.c libfreshclam_internal.h dns.c dns.h \
+	$(top_srcdir)/shared/mac/cert_util_mac.m \
+	$(top_srcdir)/shared/win/cert_util_win.c \
+	$(top_srcdir)/shared/linux/cert_util_linux.c
+@MACOS_TRUE@am__objects_1 = cert_util_mac.lo
+@WINDOWS_TRUE@am__objects_2 = cert_util_win.lo
+@LINUX_TRUE@am__objects_3 = cert_util_linux.lo
 am_libfreshclam_la_OBJECTS = output.lo optparser.lo getopt.lo misc.lo \
-	cdiff.lo tar.lo libfreshclam.lo libfreshclam_internal.lo \
-	dns.lo
+	cdiff.lo tar.lo cert_util.lo libfreshclam.lo \
+	libfreshclam_internal.lo dns.lo $(am__objects_1) \
+	$(am__objects_2) $(am__objects_3)
 libfreshclam_la_OBJECTS = $(am_libfreshclam_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
-libfreshclam_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libfreshclam_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+am__v_lt_1 =
+libfreshclam_la_LINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(OBJCLD) $(AM_OBJCFLAGS) \
+	$(OBJCFLAGS) $(libfreshclam_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -233,11 +262,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/libclammspack
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -251,7 +280,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -259,9 +288,27 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
+am__v_CCLD_1 =
+OBJCCOMPILE = $(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS)
+LTOBJCCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(OBJC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_OBJCFLAGS) $(OBJCFLAGS)
+AM_V_OBJC = $(am__v_OBJC_@AM_V@)
+am__v_OBJC_ = $(am__v_OBJC_@AM_DEFAULT_V@)
+am__v_OBJC_0 = @echo "  OBJC    " $@;
+am__v_OBJC_1 =
+OBJCLD = $(OBJC)
+OBJCLINK = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(OBJCLD) $(AM_OBJCFLAGS) $(OBJCFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_OBJCLD = $(am__v_OBJCLD_@AM_V@)
+am__v_OBJCLD_ = $(am__v_OBJCLD_@AM_DEFAULT_V@)
+am__v_OBJCLD_0 = @echo "  OBJCLD  " $@;
+am__v_OBJCLD_1 =
 SOURCES = $(libfreshclam_la_SOURCES)
-DIST_SOURCES = $(libfreshclam_la_SOURCES)
+DIST_SOURCES = $(am__libfreshclam_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -425,6 +472,9 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJC = @OBJC@
+OBJCDEPMODE = @OBJCDEPMODE@
+OBJCFLAGS = @OBJCFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -475,6 +525,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_ct_OBJC = @ac_ct_OBJC@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -535,28 +586,21 @@ libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@
 libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
 libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ \
 	@JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info \
-	@LIBFRESHCLAM_VERSION@ -no-undefined $(am__append_1)
+	@LIBFRESHCLAM_VERSION@ -no-undefined $(am__append_1) \
+	$(am__append_2)
 EXTRA_DIST = libfreshclam.map
 include_HEADERS = libfreshclam.h
-libfreshclam_la_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/cdiff.c \
-    $(top_srcdir)/shared/cdiff.h \
-    $(top_srcdir)/shared/tar.c \
-    $(top_srcdir)/shared/tar.h \
-    libfreshclam.c \
-    libfreshclam_internal.c \
-    libfreshclam_internal.h \
-    dns.c \
-    dns.h
-
+libfreshclam_la_SOURCES = $(top_srcdir)/shared/output.c \
+	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
+	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \
+	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/cdiff.c \
+	$(top_srcdir)/shared/cdiff.h $(top_srcdir)/shared/tar.c \
+	$(top_srcdir)/shared/tar.h $(top_srcdir)/shared/cert_util.c \
+	$(top_srcdir)/shared/cert_util.h \
+	$(top_srcdir)/shared/cert_util_internal.h libfreshclam.c \
+	libfreshclam_internal.c libfreshclam_internal.h dns.c dns.h \
+	$(am__append_3) $(am__append_4) $(am__append_5)
 lib_LTLIBRARIES = libfreshclam.la
 AM_CFLAGS = @WERR_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
@@ -564,7 +608,7 @@ CLEANFILES = *.gcda *.gcno
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .lo .m .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -631,8 +675,8 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libfreshclam.la: $(libfreshclam_la_OBJECTS) $(libfreshclam_la_DEPENDENCIES) $(EXTRA_libfreshclam_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libfreshclam_la_LINK) -rpath $(libdir) $(libfreshclam_la_OBJECTS) $(libfreshclam_la_LIBADD) $(LIBS)
+libfreshclam.la: $(libfreshclam_la_OBJECTS) $(libfreshclam_la_DEPENDENCIES) $(EXTRA_libfreshclam_la_DEPENDENCIES)
+	$(AM_V_OBJCLD)$(libfreshclam_la_LINK) -rpath $(libdir) $(libfreshclam_la_OBJECTS) $(libfreshclam_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -641,6 +685,10 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cdiff.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cert_util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cert_util_linux.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cert_util_mac.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cert_util_win.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfreshclam.Plo@am__quote@
@@ -712,6 +760,55 @@ tar.lo: $(top_srcdir)/shared/tar.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/tar.c' object='tar.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tar.lo `test -f '$(top_srcdir)/shared/tar.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/tar.c
+
+cert_util.lo: $(top_srcdir)/shared/cert_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cert_util.lo -MD -MP -MF $(DEPDIR)/cert_util.Tpo -c -o cert_util.lo `test -f '$(top_srcdir)/shared/cert_util.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cert_util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cert_util.Tpo $(DEPDIR)/cert_util.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/cert_util.c' object='cert_util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cert_util.lo `test -f '$(top_srcdir)/shared/cert_util.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cert_util.c
+
+cert_util_win.lo: $(top_srcdir)/shared/win/cert_util_win.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cert_util_win.lo -MD -MP -MF $(DEPDIR)/cert_util_win.Tpo -c -o cert_util_win.lo `test -f '$(top_srcdir)/shared/win/cert_util_win.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/win/cert_util_win.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cert_util_win.Tpo $(DEPDIR)/cert_util_win.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/win/cert_util_win.c' object='cert_util_win.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cert_util_win.lo `test -f '$(top_srcdir)/shared/win/cert_util_win.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/win/cert_util_win.c
+
+cert_util_linux.lo: $(top_srcdir)/shared/linux/cert_util_linux.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cert_util_linux.lo -MD -MP -MF $(DEPDIR)/cert_util_linux.Tpo -c -o cert_util_linux.lo `test -f '$(top_srcdir)/shared/linux/cert_util_linux.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/linux/cert_util_linux.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cert_util_linux.Tpo $(DEPDIR)/cert_util_linux.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/linux/cert_util_linux.c' object='cert_util_linux.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cert_util_linux.lo `test -f '$(top_srcdir)/shared/linux/cert_util_linux.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/linux/cert_util_linux.c
+
+.m.o:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJCCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJCCOMPILE) -c -o $@ $<
+
+.m.obj:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(OBJCCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(OBJCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.m.lo:
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(LTOBJCCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(LTOBJCCOMPILE) -c -o $@ $<
+
+cert_util_mac.lo: $(top_srcdir)/shared/mac/cert_util_mac.m
+@am__fastdepOBJC_TRUE@	$(AM_V_OBJC)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -MT cert_util_mac.lo -MD -MP -MF $(DEPDIR)/cert_util_mac.Tpo -c -o cert_util_mac.lo `test -f '$(top_srcdir)/shared/mac/cert_util_mac.m' || echo '$(srcdir)/'`$(top_srcdir)/shared/mac/cert_util_mac.m
+@am__fastdepOBJC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cert_util_mac.Tpo $(DEPDIR)/cert_util_mac.Plo
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	$(AM_V_OBJC)source='$(top_srcdir)/shared/mac/cert_util_mac.m' object='cert_util_mac.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepOBJC_FALSE@	DEPDIR=$(DEPDIR) $(OBJCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepOBJC_FALSE@	$(AM_V_OBJC@am__nodep@)$(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(OBJC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_OBJCFLAGS) $(OBJCFLAGS) -c -o cert_util_mac.lo `test -f '$(top_srcdir)/shared/mac/cert_util_mac.m' || echo '$(srcdir)/'`$(top_srcdir)/shared/mac/cert_util_mac.m
 
 mostlyclean-libtool:
 	-rm -f *.lo
