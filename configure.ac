@@ -23,6 +23,8 @@ AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [0.102.0-devel], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
+dnl put configure auxiliary into config
+AC_CONFIG_AUX_DIR([config])
 
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
@@ -154,6 +156,28 @@ if test "x$use_internal_mspack" = "xyes"; then
 else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
+
+# Detect the target system
+build_linux=no
+build_windows=no
+build_mac=no
+
+case "${host_os}" in
+    cygwin*|mingw*)
+        build_windows=yes
+        ;;
+    darwin*)
+        AC_PROG_OBJC
+        build_mac=yes
+        ;;
+    *)
+        build_linux=yes
+        ;;
+esac
+
+AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
+AM_CONDITIONAL([WINDOWS], [test "$build_windows" = "yes"])
+AM_CONDITIONAL([MACOS], [test "$build_mac" = "yes"])
 
 AC_CONFIG_FILES([
 clamscan/Makefile

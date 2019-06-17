@@ -65,8 +65,8 @@
 #include <zlib.h>
 #include <math.h>
 
-#ifdef _WIN32
-#include <wincrypt.h>
+#if defined(C_DARWIN) || defined(_WIN32)
+#include <cert_util.h>
 #endif
 
 #include <curl/curl.h>
@@ -82,6 +82,7 @@
 #include "shared/cdiff.h"
 #include "shared/tar.h"
 #include "shared/clamdcom.h"
+#include "shared/cert_util.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
@@ -135,97 +136,6 @@ static int textrecordfield(const char *database)
     }
     return 0;
 }
-
-#ifdef _WIN32
-CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
-{
-    CURLcode status = CURLE_BAD_FUNCTION_ARGUMENT;
-
-    uint32_t numCertificatesFound = 0;
-    DWORD lastError;
-
-    HCERTSTORE hStore              = NULL;
-    PCCERT_CONTEXT pWinCertContext = NULL;
-    X509 *x509                     = NULL;
-    X509_STORE *store              = SSL_CTX_get_cert_store((SSL_CTX *)ssl_ctx);
-
-    hStore = CertOpenSystemStoreA(NULL, "ROOT");
-
-    if (NULL == hStore) {
-        logg("!Failed to open system certificate store.\n");
-        goto done;
-    }
-
-    while (NULL != (pWinCertContext = CertEnumCertificatesInStore(hStore, pWinCertContext))) {
-        int addCertResult                 = 0;
-        const unsigned char *encoded_cert = pWinCertContext->pbCertEncoded;
-
-        x509 = NULL;
-        x509 = d2i_X509(NULL, &encoded_cert, pWinCertContext->cbCertEncoded);
-        if (NULL == x509) {
-            logg("!Failed to convert system certificate to x509.\n");
-            continue;
-        }
-
-        addCertResult = X509_STORE_add_cert(store, x509);
-        if (1 != addCertResult) {
-            logg("!Failed to add x509 certificate to openssl certificate store.\n");
-            continue;
-        }
-
-        if (logg_verbose) {
-            char *issuer     = NULL;
-            size_t issuerLen = 0;
-            issuerLen        = CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, NULL, 0);
-
-            issuer = cli_malloc(issuerLen);
-            if (NULL == issuer) {
-                logg("!Failed to allocate memory for certificate name.\n");
-                status = CURLE_OUT_OF_MEMORY;
-                goto done;
-            }
-
-            if (0 == CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, issuer, issuerLen)) {
-                logg("!Failed to get friendly display name for certificate.\n");
-            } else {
-                logg("Certificate loaded from Windows certificate store: %s\n", issuer);
-            }
-
-            free(issuer);
-        }
-
-        numCertificatesFound++;
-        X509_free(x509);
-    }
-
-    lastError = GetLastError();
-    switch (lastError) {
-        case E_INVALIDARG:
-            logg("!The handle in the hCertStore parameter is not the same as that in the certificate context pointed to by pPrevCertContext.\n");
-            break;
-        case CRYPT_E_NOT_FOUND:
-        case ERROR_NO_MORE_FILES:
-            if (0 == numCertificatesFound) {
-                logg("!No certificates were found.\n");
-            }
-            break;
-        default:
-            logg("!Unexpected error code from CertEnumCertificatesInStore()\n");
-    }
-
-done:
-
-    if (NULL != pWinCertContext) {
-        CertFreeCertificateContext(pWinCertContext);
-    }
-    if (NULL != hStore) {
-        CertCloseStore(hStore, 0);
-    }
-
-    status = CURLE_OK;
-    return status;
-}
-#endif
 
 #if LIBCURL_VERSION_NUM >= 0x073d00
 /* In libcurl 7.61.0, support was added for extracting the time in plain
@@ -497,7 +407,7 @@ static fc_error_t create_curl_handle(
         }
     }
 
-#ifdef _WIN32
+#if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         logg("!create_curl_handle: Failed to set SSL CTX function!\n");
     }
