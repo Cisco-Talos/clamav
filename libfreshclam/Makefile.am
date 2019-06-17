@@ -20,6 +20,10 @@ libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@
 libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
 libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
 
+if MACOS
+libfreshclam_la_LDFLAGS += -framework CoreFoundation -framework Security
+endif
+
 if VERSIONSCRIPT
 libfreshclam_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libfreshclam/libfreshclam.map
 endif
@@ -41,11 +45,30 @@ libfreshclam_la_SOURCES = \
     $(top_srcdir)/shared/cdiff.h \
     $(top_srcdir)/shared/tar.c \
     $(top_srcdir)/shared/tar.h \
+    $(top_srcdir)/shared/cert_util.c \
+    $(top_srcdir)/shared/cert_util.h \
+    $(top_srcdir)/shared/cert_util_internal.h \
     libfreshclam.c \
     libfreshclam_internal.c \
     libfreshclam_internal.h \
     dns.c \
     dns.h
+
+if MACOS
+    libfreshclam_la_SOURCES += \
+        $(top_srcdir)/shared/mac/cert_util_mac.m \
+        $(top_srcdir)/shared/cert_util.h
+endif
+if WINDOWS
+    libfreshclam_la_SOURCES += \
+        $(top_srcdir)/shared/win/cert_util_win.c \
+        $(top_srcdir)/shared/cert_util.h
+endif
+if LINUX
+    libfreshclam_la_SOURCES += \
+        $(top_srcdir)/shared/linux/cert_util_linux.c \
+        $(top_srcdir)/shared/cert_util.h
+endif
 
 lib_LTLIBRARIES = libfreshclam.la
 

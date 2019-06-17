@@ -27,12 +27,36 @@ clamsubmit_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
+    $(top_srcdir)/shared/cert_util.c \
+    $(top_srcdir)/shared/cert_util.h \
+    $(top_srcdir)/shared/cert_util_internal.h \
 	clamsubmit.c
+
+if MACOS
+    clamsubmit_SOURCES += \
+        $(top_srcdir)/shared/mac/cert_util_mac.m \
+        $(top_srcdir)/shared/cert_util.h
+endif
+if WINDOWS
+    clamsubmit_SOURCES += \
+        $(top_srcdir)/shared/win/cert_util_win.c \
+        $(top_srcdir)/shared/cert_util.h
+endif
+if LINUX
+    clamsubmit_SOURCES += \
+        $(top_srcdir)/shared/linux/cert_util_linux.c \
+        $(top_srcdir)/shared/cert_util.h
+endif
+
 
 AM_CFLAGS=@WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMSUBMIT_LIBS@ @THREAD_LIBS@ @JSON_LIBS@
+
+if MACOS
+AM_LDFLAGS = -framework CoreFoundation -framework Security
+endif
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamsubmit$(EXEEXT)
 CLEANFILES=*.gcda *.gcno
