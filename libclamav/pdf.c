@@ -2427,7 +2427,7 @@ static const char *pdf_getdict(const char *q0, int *len, const char *key)
 
     /* if the value is a dictionary object, include the < > brackets.*/
     while (q > q0 && (q[-1] == '<' || q[-1] == '\n'))
-      q--;
+        q--;
 
     *len -= q - q0;
     return q;
@@ -2535,8 +2535,8 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
                         case '9':
                             /* octal escape */
                             if (q + 2 < end) {
-                                *s++ = 64*(q[0] - '0') + 8*(q[1] - '0') + (q[2] - '0');
-                                q++; q++;
+                                *s++ = 64 * (q[0] - '0') + 8 * (q[1] - '0') + (q[2] - '0');
+                                q += 2;
                             }
                             break;
                         default:
@@ -2561,8 +2561,8 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
         len -= 1;
         // skip newlines after <
         while (len > 0 && *start == '\n') {
-          start = ++q;
-          len -= 1;
+            start = ++q;
+            len -= 1;
         }
         q = memchr(q + 1, '>', len - 1);
         if (!q)
