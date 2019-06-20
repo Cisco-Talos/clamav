@@ -33,6 +33,10 @@
 #endif
 #include <time.h>
 #include <signal.h>
+#if defined(FANOTIFY)
+#include <sys/fanotify.h>
+#include <fcntl.h>
+#endif
 
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
@@ -220,6 +224,9 @@ int onas_start_eloop(struct onas_context **ctx) {
 
 static int startup_checks(struct onas_context *ctx) {
 
+#if defined(FANOTIFY)
+	char faerr[128];
+#endif
 	int ret = 0;
         cl_error_t err = CL_SUCCESS;
 
@@ -234,6 +241,17 @@ static int startup_checks(struct onas_context *ctx) {
 		ret = 2;
 		goto done;
 	}
+
+#if defined(FANOTIFY)
+        ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
+        if (ctx->fan_fd < 0) {
+            logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
+            if (errno == EPERM)
+                logg("!Clamonacc: clamonacc must have elevated permissions ... exiting ...\n");
+            ret = 2;
+            goto done;
+        }
+#endif
 
         if (curl_global_init(CURL_GLOBAL_NOTHING)) {
             ret = 2;
@@ -284,7 +302,6 @@ void help(void)
 
 void* onas_cleanup(struct onas_context *ctx) {
 	onas_context_cleanup(ctx);
-	cl_cleanup_crypto();
 	logg_close();
 }
 
