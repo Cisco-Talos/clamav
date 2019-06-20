@@ -38,8 +38,11 @@
 #include "../../clamd/scanner.h"
 #include "../clamonacc.h"
 #include "../client/onaccess_client.h"
+#include "../scan/onaccess_scque.h"
 
 #if defined(FANOTIFY)
+
+extern pthread_cond_t onas_scque_empty_cond;
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
@@ -49,6 +52,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     const struct optstruct *opt      = NULL;
     const struct optstruct *opt_root = NULL;
     const struct optstruct *opt_uname = NULL;
+    int retry = 0;
 
     /* always ignore ourselves */
     if (pid == (int)getpid()) {
@@ -79,9 +83,45 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         if (opt_uname->enabled) {
             while (opt_uname)
             {
+                errno = 0;
                 pwd = getpwuid(sb.st_uid);
-                if (!strncmp(opt_uname->strarg, pwd->pw_name, strlen(opt_uname->strarg)))
-                    return CHK_FOUND;
+		if (NULL == pwd) {
+			if (errno) {
+				logg("*ClamMisc: internal error (failed to exclude event) ... %s\n", strerror(errno));
+				switch (errno) {
+					case EIO:
+						logg("*ClamMisc: system i/o failed while retrieving username information (excluding for safety)\n");
+						return CHK_FOUND;
+						break;
+					case EINTR:
+						logg("*ClamMisc: caught signal while retrieving username information from system (excluding for safety)\n");
+						return CHK_FOUND;
+						break;
+					case EMFILE:
+					case ENFILE:
+						if (0 == retry) {
+							logg("*ClamMisc: waiting for consumer thread to catch up then retrying ...\n");
+							sleep(3);
+							retry = 1;
+							continue;
+						} else {
+							logg("*ClamMisc: fds have been exhausted ... attempting to force the consumer thread to catch up ... (excluding for safety)\n");
+							pthread_cond_signal(&onas_scque_empty_cond);
+							sleep(3);
+							return CHK_FOUND;
+						}
+					case ERANGE:
+					default:
+						logg("*ClamMisc: unknown error occurred (excluding for safety)\n");
+						return CHK_FOUND;
+						break;
+				}
+			}
+		} else {
+			if (!strncmp(opt_uname->strarg, pwd->pw_name, strlen(opt_uname->strarg))) {
+				return CHK_FOUND;
+			}
+		}
                 opt_uname = opt_uname->nextarg;
             }
         }

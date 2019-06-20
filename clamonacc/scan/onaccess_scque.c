@@ -52,7 +52,7 @@ static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
 static pthread_mutex_t onas_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t onas_scque_loop = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t onas_scque_empty_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t onas_scque_empty_cond = PTHREAD_COND_INITIALIZER;
 extern pthread_t scque_pid;
 
 static threadpool g_thpool;

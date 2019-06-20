@@ -62,6 +62,9 @@ static int onas_fan_fd;
 static void onas_fan_exit(int sig)
 {
 	logg("*ClamFanotif: onas_fan_exit(), signal %d\n", sig);
+        if (sig == 11) {
+            logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --debug and report the issue and crash report to the developpers\n");
+        }
 
 	if(onas_fan_fd) {
 		close(onas_fan_fd);
@@ -88,80 +91,72 @@ static void onas_fan_exit(int sig)
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
-    const struct optstruct *pt;
-    short int scan;
-    unsigned int sizelimit = 0, extinfo;
+	const struct optstruct *pt;
+	short int scan;
+	unsigned int sizelimit = 0, extinfo;
 	uint64_t fan_mask = FAN_EVENT_ON_CHILD;
-    char err[128];
 
-    pthread_attr_t ddd_attr;
-    struct ddd_thrarg *ddd_tharg = NULL;
+	pthread_attr_t ddd_attr;
+	struct ddd_thrarg *ddd_tharg = NULL;
 
-    ddd_pid = 0;
-
-    /* Initialize fanotify */
-    onas_fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
-    if (onas_fan_fd < 0) {
-		logg("!ClamFanotif: fanotify_init failed: %s\n", cli_strerror(errno, err, sizeof(err)));
-        if (errno == EPERM)
-			logg("!ClamFanotif: clamonacc must have elevated permissions ... exiting ...\n");
-		return CL_EOPEN;
-    }
-
+	ddd_pid = 0;
 
 	if (!ctx || !*ctx) {
 		logg("!ClamFanotif: unable to start clamonacc. (bad context)\n");
 		return CL_EARG;
-    }
+	}
 
-	(*ctx)->fan_fd = onas_fan_fd;
+        onas_fan_fd = (*ctx)->fan_fd;
 	(*ctx)->fan_mask = fan_mask;
 
 	if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 		logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
 		(*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
-    } else {
+	} else {
 		logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
 		if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
 			logg("*ClamFanotif: feature not available when watching mounts ... \n");
 		}
 		(*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
-    }
+	}
 
 	if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
-        while (pt) {
+		while (pt) {
 			if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
 				logg("!ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
 				return CL_EARG;
-            } else
+			} else {
 				logg("*ClamFanotif: recursively watching the mount point '%s'\n", pt->strarg);
-            pt = (struct optstruct *)pt->nextarg;
-        }
+			}
+			pt = (struct optstruct *)pt->nextarg;
+		}
 
 	} else if (!optget((*ctx)->clamdopts, "OnAccessDisableDDD")->enabled) {
 		(*ctx)->ddd_enabled = 1;
-    } else {
+	} else {
 		if((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
-            while (pt) {
+			while (pt) {
 				if(fanotify_mark(onas_fan_fd, FAN_MARK_ADD, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
 					logg("!ClamFanotif: can't include path '%s'\n", pt->strarg);
 					return CL_EARG;
-                } else
+				} else {
 					logg("*ClamFanotif: watching directory '%s' (non-recursively)\n", pt->strarg);
-                pt = (struct optstruct *)pt->nextarg;
-            }
-        } else {
+				}
+				pt = (struct optstruct *)pt->nextarg;
+			}
+		} else {
 			logg("!ClamFanotif: please specify at least one path with OnAccessIncludePath\n");
 			return CL_EARG;
-        }
-    }
+		}
+	}
 
-    /* Load other options. */
+	/* Load other options. */
 	(*ctx)->sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
-	if((*ctx)->sizelimit)
+	if((*ctx)->sizelimit) {
 		logg("*ClamFanotif: max file size limited to %lu bytes\n", (*ctx)->sizelimit);
-    else
+	} else {
 		logg("*ClamFanotif: file size limit disabled\n");
+	}
 
 	extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
 
