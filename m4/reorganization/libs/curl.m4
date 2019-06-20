@@ -49,13 +49,26 @@ if test "X$have_curl" = "Xyes"; then
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
 
-	AM_COND_IF([BUILD_CLAMONACC], 
-        AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <curl/curl.h>]],[[
-				int x;
-				curl_easy_setopt(NULL,CURLOPT_URL,NULL);
-				x=CURLOPT_UNIX_SOCKET_PATH;
-                                x=CURLINFO_ACTIVESOCKET;
-				if (x) {;}]])],$enable_clamonacc="yes", AC_MSG_ERROR([Your libcurl (e.g. libcurl-devel) is too old. ClamAV requires libcurl 7.45 or higher.])))
+    dnl Following section modified from libcurl, Copyright (C) 2006, David Shaw, license under COPYING.curl
+    AC_PROG_AWK
+
+    curl_version_parse="eval $AWK '{split(\$NF,A,\".\"); X=256*256*A[[1]]+256*A[[2]]+A[[3]]; print X;}'"
+    AC_PATH_PROG([curl_config],[curl-config],["notfound"],
+                     ["$LIBCURL_HOME/bin"])
+
+
+    awk_curl_version=`$curl_config --version | $AWK '{print $2}'`
+    curl_version=`echo $awk_curl_version | $curl_version_parse`
+    dnl end of section
+
+    AM_COND_IF([BUILD_CLAMONACC], 
+                    dnl if version greater than (7.45)
+                    [if test $curl_version -ge 470272 ; then 
+                        $enable_clamonacc="yes"
+                    else
+                        AC_MSG_ERROR([Your libcurl (e.g. libcurl-devel) is too old. ClamAV (with clamonacc) requires libcurl 7.45 or higher.])
+                    fi]
+                )
 
     AC_CHECK_LIB(
         [curl],
