@@ -507,6 +507,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
+curl_config = @curl_config@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
