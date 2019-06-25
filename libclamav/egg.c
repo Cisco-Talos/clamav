@@ -2664,34 +2664,36 @@ cl_egg_error_t cli_egg_extract_file(void* hArchive, const char** filename, const
                     //break;
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_LZMA: {
-                    char* decompressed_block       = NULL;
-                    size_t decompressed_block_size = 0;
+                    cli_warnmsg("cli_egg_extract_file: LZMA decompression not yet supported.\n");
+                    goto done;
+                    // char* decompressed_block       = NULL;
+                    // size_t decompressed_block_size = 0;
 
-                    if (EGG_OK != cli_egg_lzma_decompress(currBlock->compressedData,
-                                                          currBlock->blockHeader->compress_size,
-                                                          &decompressed_block,
-                                                          &decompressed_block_size)) {
-                        /* Failed to decompress block */
-                        cli_warnmsg("Failed to decompress LZMA compressed block\n");
-                        goto done;
-                    }
-                    /* Decompressed block. Add it to the file data */
-                    decompressed = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
-                    if (NULL == decompressed) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
-                                   decompressed_size);
-                        free(decompressed_block);
-                        status = EGG_EMEM;
-                        goto done;
-                    }
+                    // if (EGG_OK != cli_egg_lzma_decompress(currBlock->compressedData,
+                    //                                       currBlock->blockHeader->compress_size,
+                    //                                       &decompressed_block,
+                    //                                       &decompressed_block_size)) {
+                    //     /* Failed to decompress block */
+                    //     cli_warnmsg("Failed to decompress LZMA compressed block\n");
+                    //     goto done;
+                    // }
+                    // /* Decompressed block. Add it to the file data */
+                    // decompressed = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
+                    // if (NULL == decompressed) {
+                    //     cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
+                    //                decompressed_size);
+                    //     free(decompressed_block);
+                    //     status = EGG_EMEM;
+                    //     goto done;
+                    // }
 
-                    memcpy(decompressed + decompressed_size, decompressed_block, decompressed_block_size);
-                    decompressed_size += decompressed_block_size;
+                    // memcpy(decompressed + decompressed_size, decompressed_block, decompressed_block_size);
+                    // decompressed_size += decompressed_block_size;
 
-                    free(decompressed_block);
+                    // free(decompressed_block);
 
-                    retval = EGG_OK;
-                    break;
+                    // retval = EGG_OK;
+                    // break;
                 }
                 default: {
                     cli_errmsg("cli_egg_extract_file: unknown compression algorithm: %d!\n",
