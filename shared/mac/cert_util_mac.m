@@ -332,17 +332,27 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
                     const unsigned char *der = CFDataGetBytePtr(cert_data);
                     CFIndex length           = CFDataGetLength(cert_data);
 
+                    char *name = NULL;
                     X509 *x509 = d2i_X509(NULL, &der, length);
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+                    x509_get_cert_name(x509, &name);
+#else
+                    name = x509->name;
+#endif
 
                     if (x509) {
                         mprintf("*Found %s trusted certificate %s\n",
                                 kc_info.name,
-                                (x509->name ? x509->name : "<no name>"));
+                                (name ? name : "<no name>"));
 
                         store->system_certs.certificates[store->system_certs.count++] = x509;
                     } else {
                         mprintf("!Failed conversion of DER format to X.509\n");
                     }
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+                    free(name);
+#endif
 
                     CFRelease(cert_data);
                     cert_data = NULL;

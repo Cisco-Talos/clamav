@@ -249,7 +249,7 @@ done:
     return !rc;
 }
 
-static cl_error_t x509_get_cert_name(X509 *cert, char **name)
+cl_error_t x509_get_cert_name(X509 *cert, char **name)
 {
     int rc = CL_EMEM;
 
