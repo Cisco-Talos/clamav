@@ -77,4 +77,17 @@ void cert_store_free_cert_list_int(cert_list_t *cert_list);
  */
 cl_error_t cert_store_set_trusted_int(X509 **trusted_certs, size_t trusted_cert_count);
 
+/**
+ * @brief Get the name from an X509 certificate.
+ * Required if OPENSSL_VERSION_NUMBER >= 0x10100000L ( 1.1.0+ )
+ * because the X509 structure is now opaque.
+ *
+ * The name must be free()'d by the caller.
+ *
+ * @param[in] cert - The cert in question.
+ * @param[out] name - The NULL terminated name.
+ * @return cl_error_t CL_SUCCESS on success.
+ */
+cl_error_t x509_get_cert_name(X509 *cert, char **name);
+
 #endif

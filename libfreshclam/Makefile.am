@@ -28,6 +28,8 @@ if VERSIONSCRIPT
 libfreshclam_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libfreshclam/libfreshclam.map
 endif
 
+AM_LIBTOOLFLAGS = --tag CXX
+
 EXTRA_DIST = libfreshclam.map
 
 include_HEADERS = libfreshclam.h
