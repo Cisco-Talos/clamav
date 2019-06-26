@@ -550,7 +550,7 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
         tmpdir = cli_gettmpdir();
     }
 
-    if (checkaccess(tmpdir, CLAMAVUSER, W_OK) != 1) {
+    if (access(tmpdir, R_OK | W_OK) == -1) {
         logg("!Can't write to temporary directory\n");
         return 2;
     }
