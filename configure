@@ -29220,17 +29220,7 @@ else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
 
-# Detect the target system
-build_linux=no
-build_windows=no
-build_mac=no
-
-case "${host_os}" in
-    cygwin*|mingw*)
-        build_windows=yes
-        ;;
-    darwin*)
-        ac_ext=m
+ac_ext=m
 ac_cpp='$OBJCPP $CPPFLAGS'
 ac_compile='$OBJC -c $OBJCFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$OBJC -o conftest$ac_exeext $OBJCFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
@@ -29607,6 +29597,16 @@ else
 fi
 
 
+
+build_linux=no
+build_windows=no
+build_mac=no
+
+case "${host_os}" in
+    cygwin*|mingw*)
+        build_windows=yes
+        ;;
+    darwin*)
         build_mac=yes
         ;;
     *)
