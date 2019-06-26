@@ -157,7 +157,10 @@ else
     mspack_msg="External, $LIBMSPACK_CFLAGS $LIBMSPACK_LIBS"
 fi
 
-# Detect the target system
+dnl Enable Objective-C, needed for macOS, may not be inside conditional.
+AC_PROG_OBJC
+
+dnl Detect the target system
 build_linux=no
 build_windows=no
 build_mac=no
@@ -167,7 +170,6 @@ case "${host_os}" in
         build_windows=yes
         ;;
     darwin*)
-        AC_PROG_OBJC
         build_mac=yes
         ;;
     *)
