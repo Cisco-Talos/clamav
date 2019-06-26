@@ -48,7 +48,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         pt_err = pthread_mutex_lock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf("!Mutex lock failed", );
+            mprintf("!Mutex lock failed\n");
         }
 
         if (store->loaded) {
@@ -63,7 +63,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
         if (trusted_certs && trusted_cert_count > 0) {
             if (cert_store_set_trusted_int(trusted_certs, trusted_cert_count) == 0) {
-                mprintf("*Trusted certificates loaded: %zu",
+                mprintf("*Trusted certificates loaded: %zu\n",
                         store->trusted_certs.count);
             } else {
                 mprintf("^Continuing without trusted certificates\n");
@@ -77,7 +77,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     } while (0);
 
     if (store) {
-        pt_err = pthread_mutex_unlock(&cert_store->mutex);
+        pt_err = pthread_mutex_unlock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
             mprintf("!Mutex unlock failed\n");
