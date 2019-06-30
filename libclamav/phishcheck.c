@@ -1429,6 +1429,9 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
     int phishy                    = 0;
     const struct phishcheck* pchk = (const struct phishcheck*)engine->phishcheck;
 
+    char* realData    = NULL;
+    char* displayData = NULL;
+
     if (!urls->realLink.data)
         return CL_PHISH_CLEAN;
 
@@ -1486,9 +1489,23 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
      * Eg:
      *      R:.+\.malicious\.net([/?].*)?:.+\.benign\.com
      */
-    if (domainlist_match(engine, urls->realLink.data, urls->displayLink.data, &urls->pre_fixup, 0)) {
+    /* Provide copies of the oirinal URL's, because domainlist_match() may modify the buffer,
+       and we don't want that to happen in this case. */
+    realData    = cli_strdup(urls->realLink.data);
+    if (!realData) {
+        cli_errmsg("Phishcheck: Failed to allocate memory for temporary real link string.\n");
+        return CL_PHISH_CLEAN;
+    }
+    displayData = cli_strdup(urls->displayLink.data);
+    if (!displayData) {
+        cli_errmsg("Phishcheck: Failed to allocate memory for temporary display link string.\n");
+        return CL_PHISH_CLEAN;
+    }
+    if (domainlist_match(engine, realData, displayData, &urls->pre_fixup, 0)) {
         phishy |= DOMAIN_LISTED;
     }
+    free(realData);
+    free(displayData);
 
     /*
      * Get copy of URLs stripped down to just the FQDN.
