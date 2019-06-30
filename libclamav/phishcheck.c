@@ -665,8 +665,8 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
 
         str_replace(begin, end, '\\', '/');
         /* find beginning of hostname, because:
-		 * - we want to keep only protocol, host, and 
-		 *  strip path & query parameter(s) 
+		 * - we want to keep only protocol, host, and
+		 *  strip path & query parameter(s)
 		 * - we want to make hostname lowercase*/
         host_begin = strchr(begin, ':');
         while (host_begin && (host_begin < end) && (host_begin[1] == '/')) host_begin++;
@@ -677,7 +677,7 @@ cleanupURL(struct string* URL, struct string* pre_URL, int isReal)
         host_len = strcspn(host_begin, ":/?");
         if (host_begin + host_len > end + 1) {
             /* prevent hostname extending beyond end, it can happen
-			 * if we have spaces at the end, we don't want those part of 
+			 * if we have spaces at the end, we don't want those part of
 			 * the hostname */
             host_len = end - host_begin + 1;
         } else {
@@ -1473,16 +1473,59 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
         return CL_PHISH_CLEAN;
     }
 
+    /*
+     * Whitelist X-type WDB signatures:  X:RealURL:DisplayedURL
+     * Eg:
+     *      X:.+\.benign\.com([/?].*)?:.+\.benign\.de
+     */
     if (whitelist_check(engine, urls, 0))
         return CL_PHISH_CLEAN; /* if url is whitelisted don't perform further checks */
 
-    url_check_init(&host_url);
+    /*
+     * Match R-type PDB signatures:  R:RealURL:DisplayedURL
+     * Eg:
+     *      R:.+\.malicious\.net([/?].*)?:.+\.benign\.com
+     */
+    if (domainlist_match(engine, urls->realLink.data, urls->displayLink.data, &urls->pre_fixup, 0)) {
+        phishy |= DOMAIN_LISTED;
+    }
 
+    /*
+     * Get copy of URLs stripped down to just the FQDN.
+     */
+    url_check_init(&host_url);
     if ((rc = url_get_host(urls, &host_url, DOMAIN_DISPLAY, &phishy))) {
         free_if_needed(&host_url);
         return rc < 0 ? rc : CL_PHISH_CLEAN;
     }
+    if ((rc = url_get_host(urls, &host_url, DOMAIN_REAL, &phishy))) {
+        free_if_needed(&host_url);
+        return rc < 0 ? rc : CL_PHISH_CLEAN;
+    }
 
+    /*
+     * Exit early if the realLink and displayLink are the same.
+     */
+    if (!strcmp(urls->realLink.data, urls->displayLink.data)) {
+        free_if_needed(&host_url);
+        return CL_PHISH_CLEAN;
+    }
+
+    /*
+     * Whitelist M-type WDB signatures: M:RealHostname:DisplayedHostname
+     * Eg:
+     *      M:email.isbenign.com:benign.com
+     */
+    if (whitelist_check(engine, &host_url, 1)) {
+        free_if_needed(&host_url);
+        return CL_PHISH_CLEAN;
+    }
+
+    /*
+     * Match H-type PDB signatures:  H:DisplayedHostname
+     * Eg:
+     *      H:malicious.com
+     */
     if (domainlist_match(engine, host_url.displayLink.data, host_url.realLink.data, &urls->pre_fixup, 1)) {
         phishy |= DOMAIN_LISTED;
     } else {
@@ -1512,21 +1555,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
     }
 
     if (!(phishy & DOMAIN_LISTED)) {
-        free_if_needed(&host_url);
-        return CL_PHISH_CLEAN;
-    }
-
-    if ((rc = url_get_host(urls, &host_url, DOMAIN_REAL, &phishy))) {
-        free_if_needed(&host_url);
-        return rc < 0 ? rc : CL_PHISH_CLEAN;
-    }
-
-    if (whitelist_check(engine, &host_url, 1)) {
-        free_if_needed(&host_url);
-        return CL_PHISH_CLEAN;
-    }
-
-    if (!strcmp(urls->realLink.data, urls->displayLink.data)) {
         free_if_needed(&host_url);
         return CL_PHISH_CLEAN;
     }

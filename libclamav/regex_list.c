@@ -119,7 +119,7 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
             if (real_url[pos] != '.') {
                 /* we need to shift left, and insert a '.'
 				 * we have an extra '.' at the beginning inserted by get_host to have room,
-				 * orig_real_url has to be used here, 
+				 * orig_real_url has to be used here,
 				 * because we want to overwrite that extra '.' */
                 size_t orig_real_len = strlen(orig_real_url);
                 cli_dbgmsg("No dot here:%s\n", real_url + pos);
@@ -185,7 +185,11 @@ int regex_list_match(struct regex_matcher *matcher, char *real_url, const char *
 
         strncpy(buffer, real_url, real_len);
         buffer[real_len] = (!is_whitelist && hostOnly) ? '/' : ':';
+
+        /* For H-type PDB signatures, real_url is actually the DisplayedHostname.
+           RealHostname is not used. */
         if (!hostOnly || is_whitelist) {
+            /* For all other PDB and WDB signatures concatenate Real:Displayed. */
             strncpy(buffer + real_len + 1, display_url, display_len);
         }
         buffer[buffer_len - 1] = '/';
@@ -413,20 +417,20 @@ int load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, 
 	 * Multiple lines of form, (empty lines are skipped):
  	 * Flags RealURL DisplayedURL
 	 * Where:
-	 * Flags: 
+	 * Flags:
 	 *
 	 * .pdb files:
-	 * R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing 
+	 * R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing
 	 * flags that should be filtered.
 	 * [i.e. phishcheck urls.flags that we don't want to be done for this particular host]
-	 * 
+	 *
 	 * .wdb files:
-	 * X - full URL regex 
+	 * X - full URL regex
 	 * Y - host-only regex
 	 * M - host simple pattern
 	 *
 	 * If a line in the file doesn't conform to this format, loading fails
-	 * 
+	 *
 	 */
     while (cli_dbgets(buffer, FILEBUFF, fd, dbio)) {
         char *pattern;
