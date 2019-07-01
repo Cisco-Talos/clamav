@@ -606,7 +606,7 @@ done:
 static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
 {
     cl_error_t status      = CL_EPARSE;
-    cl_egg_error_t egg_ret = EGG_ERR;
+    cl_error_t egg_ret = CL_EPARSE;
 
     char *buffer      = NULL;
     size_t buffer_len = 0;
@@ -662,12 +662,12 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
      * Open the archive.
      */
     if (CL_SUCCESS != (egg_ret = cli_egg_open(*ctx->fmap, sfx_offset, &hArchive, &comments, &nComments))) {
-        if (egg_ret == EGG_ENCRYPTED) {
+        if (egg_ret == CL_EUNPACK) {
             cli_dbgmsg("EGG: Encrypted main header\n");
             status = CL_EUNPACK;
             goto done;
         }
-        if (egg_ret == EGG_EMEM) {
+        if (egg_ret == CL_EMEM) {
             status = CL_EMEM;
             goto done;
         } else {
@@ -750,18 +750,18 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
          * Get the header information for the next file in the archive.
          */
         egg_ret = cli_egg_peek_file_header(hArchive, &metadata);
-        if (egg_ret != EGG_OK) {
-            if (egg_ret == EGG_ENCRYPTED) {
+        if (egg_ret != CL_SUCCESS) {
+            if (egg_ret == CL_EUNPACK) {
                 /* Found an encrypted file header, must skip. */
                 cli_dbgmsg("EGG: Encrypted file header, unable to reading file metadata and file contents. Skipping file...\n");
                 nEncryptedFilesFound += 1;
 
-                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                if (CL_SUCCESS != cli_egg_skip_file(hArchive)) {
                     /* Failed to skip!  Break extraction loop. */
                     cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
                     break;
                 }
-            } else if (egg_ret == EGG_BREAK) {
+            } else if (egg_ret == CL_BREAK) {
                 /* No more files. Break extraction loop. */
                 cli_dbgmsg("EGG: No more files in archive.\n");
                 break;
@@ -793,7 +793,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                 /* Entry is a directory. Skip. */
                 cli_dbgmsg("EGG: Found directory. Skipping to next file.\n");
 
-                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                if (CL_SUCCESS != cli_egg_skip_file(hArchive)) {
                     /* Failed to skip!  Break extraction loop. */
                     cli_dbgmsg("EGG: Failed to skip directory. EGG archive extraction has failed.\n");
                     break;
@@ -805,7 +805,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
 
                 cli_dbgmsg("EGG: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
 
-                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                if (CL_SUCCESS != cli_egg_skip_file(hArchive)) {
                     /* Failed to skip!  Break extraction loop. */
                     cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
                     break;
@@ -815,7 +815,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                 cli_dbgmsg("EGG: Encrypted file, unable to extract file contents. Skipping file...\n");
                 nEncryptedFilesFound += 1;
 
-                if (EGG_OK != cli_egg_skip_file(hArchive)) {
+                if (CL_SUCCESS != cli_egg_skip_file(hArchive)) {
                     /* Failed to skip!  Break extraction loop. */
                     cli_dbgmsg("EGG: Failed to skip file. EGG archive extraction has failed.\n");
                     break;
@@ -831,7 +831,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                 cli_dbgmsg("EGG: Extracting file: %s\n", metadata.filename);
 
                 egg_ret = cli_egg_extract_file(hArchive, (const char **)&extract_filename, (const char **)&extract_buffer, &extract_buffer_len);
-                if (egg_ret != EGG_OK) {
+                if (egg_ret != CL_SUCCESS) {
                     /*
                      * Some other error extracting the file
                      */
