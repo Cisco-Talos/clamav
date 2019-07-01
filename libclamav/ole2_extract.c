@@ -391,9 +391,9 @@ ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t block
         return FALSE;
     }
     /* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
-    if ((uint64_t) blockno << hdr->log2_big_block_size +
-            (uint64_t) 1 << hdr->log2_big_block_size < INT32_MAX) {
-        offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
+    if (( (uint64_t) blockno << hdr->log2_big_block_size) < (INT32_MAX - MAX(512, (uint64_t) 1 << hdr->log2_big_block_size) )) {
+	/* 512 is header size */
+	offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size);
         offend = offset + size;
     } else {
         offset = INT32_MAX - size;
