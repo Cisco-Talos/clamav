@@ -33,17 +33,6 @@
 #include <others.h>
 
 /**
- * @brief Status return codes for egg extraction APIs.
- */
-typedef enum {
-    EGG_OK = 0,
-    EGG_BREAK,
-    EGG_ENCRYPTED,
-    EGG_EMEM,
-    EGG_ERR
-} cl_egg_error_t;
-
-/**
  * @brief Metadata list node structure modeled after the ClamAV RAR metadata structure.
  *
  * Information is primarily used by the scan metadata feature.
@@ -68,9 +57,9 @@ typedef struct cl_egg_metadata {
  * @param hArchive          [out] Handle to opened archive.
  * @param comments          [out] Array of null terminated archive comments, if present in archive. Array will be free'd by cli_egg_close()
  * @param nComments         [out] Number of archive comments in array.
- * @return cl_egg_error_t   EGG_OK if success.
+ * @return cl_error_t   CL_SUCCESS if success.
  */
-cl_egg_error_t cli_egg_open(
+cl_error_t cli_egg_open(
     fmap_t* map,
     size_t sfx_offset,
     void** hArchive,
@@ -82,9 +71,9 @@ cl_egg_error_t cli_egg_open(
  *
  * @param hArchive          An open EGG archive handle from cli_egg_open()
  * @param file_metadata     Metadata describing the next file to be extracted (or skipped).
- * @return cl_egg_error_t   EGG_OK if success.
+ * @return cl_error_t   CL_SUCCESS if success.
  */
-cl_egg_error_t cli_egg_peek_file_header(
+cl_error_t cli_egg_peek_file_header(
     void* hArchive,
     cl_egg_metadata* file_metadata);
 
@@ -98,9 +87,9 @@ cl_egg_error_t cli_egg_peek_file_header(
  * @param filename              [out] The filename of the extracted file, in UTF-8.
  * @param output_buffer         [out] A malloc'd buffer of the file contents.  Must be free()'d by caller. Set to NULL on failure.
  * @param output_buffer_length  [out] Size of buffer in bytes.
- * @return cl_egg_error_t       EGG_OK if success.
+ * @return cl_error_t       CL_SUCCESS if success.
  */
-cl_egg_error_t cli_egg_extract_file(
+cl_error_t cli_egg_extract_file(
     void* hArchive,
     const char** filename,
     const char** output_buffer,
@@ -112,9 +101,9 @@ cl_egg_error_t cli_egg_extract_file(
  * This is useful to skip things like directories, encrypted files, or file that are too large.
  *
  * @param hArchive          An open EGG archive handle from cli_egg_open()
- * @return cl_egg_error_t   EGG_OK if success.
+ * @return cl_error_t   CL_SUCCESS if success.
  */
-cl_egg_error_t cli_egg_skip_file(void* hArchive);
+cl_error_t cli_egg_skip_file(void* hArchive);
 
 /**
  * @brief Close the handle to the EGG archive and free the associated resources.
