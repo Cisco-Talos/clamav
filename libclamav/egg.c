@@ -1220,6 +1220,86 @@ done:
     return status;
 }
 
+static void print_posix_info_mode(uint32_t mode)
+{
+    /* File type flags */
+    if (mode & POSIX_INFO_MODE_REG_FILE) {
+        printf("-");
+    } else if (mode & POSIX_INFO_MODE_DIRECTORY) {
+        printf("d");
+    } else if (mode & POSIX_INFO_MODE_CHAR_DEVICE) {
+        printf("c");
+    } else if (mode & POSIX_INFO_MODE_BLOCK_DEVICE) {
+        printf("s");
+    } else if (mode & POSIX_INFO_MODE_SOCKET) {
+        printf("s");
+    } else if (mode & POSIX_INFO_MODE_FIFO) {
+        printf("p");
+    } else if (mode & POSIX_INFO_MODE_SYM_LINK) {
+        printf("l");
+    } else if (mode & POSIX_INFO_MODE_SOCKET) {
+        printf("s");
+    }
+    /* Owner/Group/Other permissions */
+    if (mode & POSIX_INFO_MODE_PERM_OWNER_READ) {
+        printf("r");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_OWNER_WRITE) {
+        printf("w");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_SET_UID_BIT) {
+        printf("s");
+    } else if (mode & POSIX_INFO_MODE_PERM_OWNER_EXECUTE) {
+        printf("x");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_GROUP_READ) {
+        printf("r");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_GROUP_WRITE) {
+        printf("w");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_SET_UID_BIT) {
+        printf("s");
+    }
+    if (mode & POSIX_INFO_MODE_SET_GROUPID_BIT) {
+        printf("s");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_GROUP_EXECUTE) {
+        printf("x");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_OTHERS_READ) {
+        printf("r");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_OTHERS_WRITE) {
+        printf("w");
+    } else {
+        printf("-");
+    }
+    if (mode & POSIX_INFO_MODE_PERM_OTHERS_EXECUTE) {
+        printf("x");
+    } else {
+        printf("-");
+    }
+    /* Sticky Bit */
+    if (mode & POSIX_INFO_MODE_STICKY_BIT)
+        printf("t");
+    printf("\n");
+}
+
 static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFile)
 {
     cl_error_t status = CL_EPARSE;
@@ -1507,82 +1587,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
 
             cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->mode:                 %08x ", le32_to_host(posixFileInformation->mode));
             if (UNLIKELY(cli_debug_flag)) {
-                /* File type flags */
-                if (posixFileInformation->mode & POSIX_INFO_MODE_REG_FILE) {
-                    printf("-");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_DIRECTORY) {
-                    printf("d");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_CHAR_DEVICE) {
-                    printf("c");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_BLOCK_DEVICE) {
-                    printf("s");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_SOCKET) {
-                    printf("s");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_FIFO) {
-                    printf("p");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_SYM_LINK) {
-                    printf("l");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_SOCKET) {
-                    printf("s");
-                }
-                /* Owner/Group/Other permissions */
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OWNER_READ) {
-                    printf("r");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OWNER_WRITE) {
-                    printf("w");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_SET_UID_BIT) {
-                    printf("s");
-                } else if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OWNER_EXECUTE) {
-                    printf("x");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_GROUP_READ) {
-                    printf("r");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_GROUP_WRITE) {
-                    printf("w");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_SET_UID_BIT) {
-                    printf("s");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_SET_GROUPID_BIT) {
-                    printf("s");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_GROUP_EXECUTE) {
-                    printf("x");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OTHERS_READ) {
-                    printf("r");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OTHERS_WRITE) {
-                    printf("w");
-                } else {
-                    printf("-");
-                }
-                if (posixFileInformation->mode & POSIX_INFO_MODE_PERM_OTHERS_EXECUTE) {
-                    printf("x");
-                } else {
-                    printf("-");
-                }
-                /* Sticky Bit */
-                if (posixFileInformation->mode & POSIX_INFO_MODE_STICKY_BIT)
-                    printf("t");
-                printf("\n");
+                print_posix_info_mode(posixFileInformation->mode);
             }
 
             cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->uid:                  %08x\n", le32_to_host(posixFileInformation->uid));
@@ -2145,7 +2150,9 @@ cl_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metada
 
     if (handle->bSolid) {
         /*
-         * TODO: no idea.
+         * TODO: Add support for extracting files from solid archives.
+         *
+         * See the comments in cli_egg_extract_file() for more details.
          */
         file_metadata->pack_size   = 0;
         file_metadata->unpack_size = currFile->file->file_length;
@@ -2578,7 +2585,19 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
 
     if (handle->bSolid) {
         /*
-         * TODO: no idea.
+         * TODO: Add support for extracting files from solid archives.
+         *
+         * For solid archives, the blocks are shared between all of the files.
+         * To unpack them, we'd have to identify which block(s) each file would
+         * be associated with.
+         *
+         * Then in theory a single file could be extracted without decompressing
+         * all of the blocks at the same time.
+         *
+         * To be efficient about it, a block could have some sort of ref count
+         * or list of associated files. Then during extraction, the decompressed
+         * data for each block that is shared between files is not freed until
+         * all of the files associated with that block have been extracted.
          */
     } else {
         if (currFile->nBlocks == 0 || currFile->blocks == NULL) {
