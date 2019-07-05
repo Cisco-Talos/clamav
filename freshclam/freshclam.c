@@ -157,6 +157,7 @@ static void help(void)
     printf("    --daemon             -d              Run in daemon mode\n");
     printf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
 #ifndef _WIN32
+    printf("    --foreground         -F              Don't fork into background (for use in daemon mode).\n");
     printf("    --user=USER          -u USER         Run as USER\n");
 #endif
     printf("    --no-dns                             Force old non-DNS verification method\n");

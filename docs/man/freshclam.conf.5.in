@@ -206,12 +206,12 @@ Default: 60
 \fBSafeBrowsing BOOL\fR
 This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See https://support.google.com/code/answer/70015 and https://www.clamav.net/documents/safebrowsing for more information.
 .br
-Default: disabled
+Default: no
 .TP
 \fBBytecode BOOL\fR
 This option enables downloading of bytecode.cvd, which includes additional detection mechanisms and improvements to the ClamAV engine.
 .br
-Default: enabled
+Default: yes
 .SH "FILES"
 .LP
 @CFGDIR@/freshclam.conf
