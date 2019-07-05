@@ -48,6 +48,9 @@ Run in a daemon mode. Defaults to 12 checks per day unless otherwise specified b
 \fB\-p FILE, \-\-pid=FILE\fR
 Write daemon's pid to FILE.
 .TP
+\fB\-F, \-\-foreground\fR
+Don't fork into background (for use in daemon mode).
+.TP
 \fB\-u USER, \-\-user USER\fR
 Run as USER. By default (when started by root) freshclam drops privileges and operates as the '@CLAMAVUSER@' user.
 .TP

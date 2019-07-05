@@ -190,13 +190,13 @@ DatabaseMirror database.clamav.net
 # terms of use. See https://www.google.com/transparencyreport/safebrowsing
 # and https://www.clamav.net/documents/safebrowsing
 # for more information.
-# Default: disabled
+# Default: no
 #SafeBrowsing yes
 
 # This option enables downloading of bytecode.cvd, which includes additional
 # detection mechanisms and improvements to the ClamAV engine.
-# Default: enabled
-#Bytecode yes
+# Default: yes
+#Bytecode no
 
 # Include an optional signature databases (opt-in).
 # This option can be used multiple times.
