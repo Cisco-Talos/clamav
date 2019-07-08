@@ -287,7 +287,7 @@ void help(void)
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
-    mprintf("    --exclude-list=FILES   -e FILE     Exclude directories from FILE\n");
+    mprintf("    --exclude-list=FILE   -e FILE     Exclude directories from FILE\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
