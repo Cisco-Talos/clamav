@@ -63,6 +63,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <zlib.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include <wincrypt.h>
@@ -226,6 +227,125 @@ done:
 }
 #endif
 
+#if LIBCURL_VERSION_NUM >= 0x073d00
+/* In libcurl 7.61.0, support was added for extracting the time in plain
+   microseconds. Older libcurl versions are stuck in using 'double' for this
+   information so we complicate this example a bit by supporting either
+   approach. */
+#define TIME_IN_US 1
+#define TIMETYPE curl_off_t
+#define TIMEOPT CURLINFO_TOTAL_TIME_T
+#define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL 3000000
+#else
+#define TIMETYPE double
+#define TIMEOPT CURLINFO_TOTAL_TIME
+#define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL 3
+#endif
+
+#define STOP_DOWNLOAD_AFTER_THIS_MANY_BYTES 6000
+
+struct xfer_progress {
+    TIMETYPE lastRunTime; /* type depends on version, see above */
+    uint8_t bComplete;
+    CURL *curl;
+};
+
+/**
+ * Function from curl example code, Copyright (C) 1998 - 2018, Daniel Stenberg, see COPYING.curl for license details
+ * Progress bar callback function ( CURLOPT_XFERINFOFUNCTION ).
+ */
+static int xferinfo(void *prog,
+                    curl_off_t TotalToDownload, curl_off_t NowDownloaded,
+                    curl_off_t TotalToUpload, curl_off_t NowUploaded)
+{
+    struct xfer_progress *xferProg = (struct xfer_progress *)prog;
+    CURL *curl                     = xferProg->curl;
+    TIMETYPE curtime               = 0;
+    TIMETYPE remtime               = 0;
+
+    uint32_t i                = 0;
+    uint32_t totalNumDots     = 40;
+    uint32_t numDots          = 0;
+    double fractiondownloaded = 0.0;
+
+    if ((TotalToDownload <= 0.0) || (xferProg->bComplete)) {
+        return 0;
+    }
+
+    fractiondownloaded = (double)NowDownloaded / (double)TotalToDownload;
+    numDots            = round(fractiondownloaded * totalNumDots);
+
+    curl_easy_getinfo(curl, TIMEOPT, &curtime);
+
+    xferProg->lastRunTime = curtime;
+    remtime               = (curtime * 1 / fractiondownloaded) - curtime;
+
+#ifdef TIME_IN_US
+    if (fractiondownloaded <= 0.0) {
+        fprintf(stdout, "Elapsed: %" CURL_FORMAT_CURL_OFF_T ".%06ld sec. ",
+                (curtime / 1000000), (long)(curtime % 1000000));
+    } else {
+        fprintf(stdout, "Elapsed: %" CURL_FORMAT_CURL_OFF_T ".%06ld sec, Remaining; %f sec. ",
+                (curtime / 1000000), (long)(curtime % 1000000),
+                (remtime / 1000000), (long)(remtime % 1000000));
+    }
+#else
+    if (fractiondownloaded <= 0.0) {
+        fprintf(stdout, "Elapsed: %f sec. ", curtime);
+    } else {
+        fprintf(stdout, "Elapsed: %f sec, Remaining: %f sec. ", curtime, remtime);
+    }
+#endif
+
+    if (TotalToUpload > 0.0) {
+        fprintf(stdout, "Uploaded: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T,
+                NowUploaded, TotalToUpload);
+    } else if (TotalToDownload > 0.0) {
+        fprintf(stdout, "Downloaded: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T,
+                NowDownloaded, TotalToDownload);
+    }
+
+    fprintf(stdout, " [");
+    if (numDots > 0) {
+        if (numDots > 1) {
+            for (i = 0; i < numDots - 1; i++) {
+                fprintf(stdout, "=");
+            }
+            fprintf(stdout, ">");
+            i++;
+        }
+    }
+    for (; i < totalNumDots; i++) {
+        printf(" ");
+    }
+    if (NowDownloaded < TotalToDownload) {
+        fprintf(stdout, "]  \r");
+    } else {
+        fprintf(stdout, "]  \n");
+        xferProg->bComplete = 1;
+    }
+    fflush(stdout);
+
+    return 0;
+}
+
+#if LIBCURL_VERSION_NUM < 0x072000
+/**
+ * Function from curl example code, Copyright (C) 1998 - 2018, Daniel Stenberg, see COPYING.curl for license details
+ * Older style progress bar callback shim; for libcurl older than 7.32.0 ( CURLOPT_PROGRESSFUNCTION ).
+ */
+static int older_progress(void *prog,
+                          double TotalToDownload, double NowDownloaded,
+                          double TotalToUpload, double NowUploaded)
+{
+    return xferinfo(prog,
+                    (curl_off_t)TotalToDownload,
+                    (curl_off_t)NowDownloaded,
+                    (curl_off_t)TotalToUpload,
+                    (curl_off_t)NowUploaded);
+}
+#endif
+
 static fc_error_t create_curl_handle(
     int bHttp,
     int bAllowRedirect,
@@ -233,8 +353,11 @@ static fc_error_t create_curl_handle(
 {
     fc_error_t status = FC_EARG;
 
-    CURL *curl        = NULL;
+    CURL *curl = NULL;
+
+#if defined(CURLOPT_DNS_LOCAL_IP4) || defined(CURLOPT_DNS_LOCAL_IP4)
     CURLcode curl_ret = CURLE_OK;
+#endif
 
     char userAgent[128];
 
@@ -485,6 +608,7 @@ static fc_error_t remote_cvdhead(
     CURLcode curl_ret;
     char errbuf[CURL_ERROR_SIZE];
     struct curl_slist *slist = NULL;
+    struct xfer_progress prog;
 
     long http_code = 0;
 
@@ -517,6 +641,45 @@ static fc_error_t remote_cvdhead(
         logg("!remote_cvdhead: Failed to create curl handle.\n");
         status = ret;
         goto done;
+    }
+
+    if (mprintf_progress) {
+        prog.lastRunTime = 0;
+        prog.curl        = curl;
+        prog.bComplete   = 0;
+
+#if LIBCURL_VERSION_NUM >= 0x072000
+        /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
+       compile as they won't have the symbols around.
+
+       If built with a newer libcurl, but running with an older libcurl:
+       curl_easy_setopt() will fail in run-time trying to set the new
+       callback, making the older callback get used.
+
+       New libcurls will prefer the new callback and instead use that one even
+       if both callbacks are set. */
+
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+        /* pass the struct pointer into the xferinfo function, note that this is
+       an alias to CURLOPT_PROGRESSDATA */
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+#else
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+        /* pass the struct pointer into the progress function */
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+#endif
+
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_URL, url)) {
@@ -715,6 +878,7 @@ static fc_error_t downloadFile(
     CURLcode curl_ret;
     char errbuf[CURL_ERROR_SIZE];
     struct curl_slist *slist = NULL;
+    struct xfer_progress prog;
 
     long http_code = 0;
 
@@ -735,6 +899,45 @@ static fc_error_t downloadFile(
         logg("!downloadFile: Failed to create curl handle.\n");
         status = ret;
         goto done;
+    }
+
+    if (mprintf_progress) {
+        prog.lastRunTime = 0;
+        prog.curl        = curl;
+        prog.bComplete   = 0;
+
+#if LIBCURL_VERSION_NUM >= 0x072000
+        /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
+       compile as they won't have the symbols around.
+
+       If built with a newer libcurl, but running with an older libcurl:
+       curl_easy_setopt() will fail in run-time trying to set the new
+       callback, making the older callback get used.
+
+       New libcurls will prefer the new callback and instead use that one even
+       if both callbacks are set. */
+
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+        /* pass the struct pointer into the xferinfo function, note that this is
+       an alias to CURLOPT_PROGRESSDATA */
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+#else
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+        /* pass the struct pointer into the progress function */
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
+#endif
+
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
+            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        }
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_URL, url)) {
@@ -1761,11 +1964,22 @@ fc_error_t updatedb(
             goto done;
         }
 
+        if (mprintf_progress) {
+            if (remoteVersion - localVersion == 1) {
+                mprintf("Current database is 1 version behind.\n");
+            } else {
+                mprintf("Current database is %u versions behind.\n", remoteVersion - localVersion);
+            }
+        }
         for (i = localVersion + 1; i <= remoteVersion; i++) {
             for (j = 1; j <= g_maxAttempts; j++) {
                 int llogerr = logerr;
                 if (logerr)
                     llogerr = (j == g_maxAttempts);
+
+                if (mprintf_progress) {
+                    mprintf("Downloading database patch # %u...\n", i);
+                }
                 ret = downloadPatch(database, tmpdir, i, server, llogerr);
                 if (ret == FC_ECONNECTION || ret == FC_EFAILEDGET) {
                     continue;
@@ -1846,7 +2060,7 @@ fc_error_t updatedb(
         }
     }
 
-    /*
+/*
      * Replace original database with new database.
      */
 #ifdef _WIN32
