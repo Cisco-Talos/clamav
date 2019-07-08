@@ -407,6 +407,7 @@ void *onas_ddd_th(void *arg) {
 
 		include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
 		if (NULL == include_list) {
+			logg("!ClamInotif: could not parse include list (%d)\n", err);
 			return NULL;
 		}
 
@@ -449,12 +450,13 @@ void *onas_ddd_th(void *arg) {
 
 		exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
 		if (NULL == exclude_list) {
+			logg("!ClamInotif: could not parse exclude list (%d)\n", err);
 			return NULL;
 		}
 
 		idx = 0;
 		while (exclude_list[idx] != NULL) {
-			if(onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) != CL_SUCCESS) {
+			if(onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) == CL_SUCCESS) {
 				if(onas_ht_rm_hierarchy(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), 0)){
 					logg("!ClamInotif: can't exclude '%s'\n", exclude_list[idx]);
 					return NULL;
