@@ -69,11 +69,6 @@
 #include "regex_list.h"
 #include "hashtab.h"
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <limits.h>
-#include <stddef.h>
-#endif
-
 #include "mpool.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
@@ -129,7 +124,7 @@ int cli_sigopts_handler(struct cli_matcher *root, const char *virname, const cha
     int ret = CL_SUCCESS;
 
     /*
-     * cyclic loops with cli_parse_add are impossible now as cli_parse_add 
+     * cyclic loops with cli_parse_add are impossible now as cli_parse_add
      * no longer calls cli_sigopts_handler; leaving here for safety
      */
     if (sigopts & ACPATT_OPTION_ONCE) {
@@ -2923,7 +2918,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-/* 
+/*
  * name;trusted;subject;serial;pubkey;exp;codesign;timesign;certsign;notbefore;comment[;minFL[;maxFL]]
  * Name and comment are ignored. They're just for the end user.
  * Exponent is ignored for now and hardcoded to \x01\x00\x01.
@@ -3231,7 +3226,7 @@ static char *parse_yara_hex_string(YR_STRING *string, int *ret)
         }
     }
 
-/* FIXME: removing this code because anchored bytes are not sufficiently 
+/* FIXME: removing this code because anchored bytes are not sufficiently
    general for the purposes of yara rule to ClamAV sig conversions.
    1. ClamAV imposes a maximum value for the upper range limit of 32:
       #define AC_CH_MAXDIST 32
@@ -3811,7 +3806,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             ytable_delete(&ytable);
             return CL_EMEM;
         }
-        
+
         if (rule->cl_flags & RULE_ALL && rule->cl_flags & RULE_THEM)
             exp_op = "&";
         else {
@@ -3820,12 +3815,12 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 !(rule->cl_flags & RULE_EP && ytable.tbl_cnt == 1))
                 yara_complex++;
         }
-        
+
         for (i=0; i<ytable.tbl_cnt; i++) {
             size_t len=strlen(logic);
             snprintf(logic+len, lsize-len, "%u%s", i, (i+1 == ytable.tbl_cnt) ? "" : exp_op);
-        }    
-        
+        }
+
         /*** END CONDITIONAL HANDLING ***/
     }
 
@@ -4509,12 +4504,6 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 {
     DIR *dd = NULL;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     char *dbfile = NULL;
     int ret = CL_EOPEN, have_daily_cld = 0, have_daily_cvd = 0, ends_with_sep = 0;
     size_t dirname_len;
@@ -4540,13 +4529,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
         }
     }
 
-#ifdef HAVE_READDIR_R_3
-    while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-    while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
     while ((dent = readdir(dd))) {
-#endif
         struct db_ll_entry *entry;
         unsigned int load_priority;
 
@@ -4808,12 +4791,6 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 {
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     char *fname;
 
     if (dbstat) {
@@ -4834,13 +4811,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 
     cli_dbgmsg("Stat()ing files in %s\n", dirname);
 
-#ifdef HAVE_READDIR_R_3
-    while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-    while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
     while ((dent = readdir(dd))) {
-#endif
         if (dent->d_ino) {
             if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 dbstat->entries++;
@@ -4894,12 +4865,6 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 {
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     STATBUF sb;
     unsigned int i, found;
     char *fname;
@@ -4916,13 +4881,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 
     cli_dbgmsg("Stat()ing files in %s\n", dbstat->dir);
 
-#ifdef HAVE_READDIR_R_3
-    while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-    while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
     while ((dent = readdir(dd))) {
-#endif
         if (dent->d_ino) {
             if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
@@ -5402,12 +5361,6 @@ int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs
     STATBUF sb;
     char fname[1024];
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     DIR *dd;
     int ret;
 
@@ -5427,13 +5380,7 @@ int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs
             cli_errmsg("cl_countsigs: Can't open directory %s\n", path);
             return CL_EOPEN;
         }
-#ifdef HAVE_READDIR_R_3
-        while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-        while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
         while ((dent = readdir(dd))) {
-#endif
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                     snprintf(fname, sizeof(fname), "%s" PATHSEP "%s", path, dent->d_name);

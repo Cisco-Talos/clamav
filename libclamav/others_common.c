@@ -621,12 +621,6 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     DIR *dd;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     struct dirent_data *entries = NULL;
     size_t i, entries_cnt = 0;
     int ret;
@@ -639,16 +633,9 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 
     if ((dd = opendir(dirname)) != NULL) {
         struct dirent *dent;
-        int err;
         errno = 0;
         ret   = CL_SUCCESS;
-#ifdef HAVE_READDIR_R_3
-        while (!(err = readdir_r(dd, &result.d, &dent)) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-        while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
         while ((dent = readdir(dd))) {
-#endif
             int stated = 0;
             enum filetype ft;
             char *fname;
@@ -752,29 +739,8 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
             }
             errno = 0;
         }
-#ifndef HAVE_READDIR_R_3
-        err = errno;
-#endif
         closedir(dd);
         ret = CL_SUCCESS;
-        if (err) {
-            char errs[128];
-            cli_errmsg("Unable to readdir() directory %s: %s\n", dirname,
-                       cli_strerror(errno, errs, sizeof(errs)));
-            /* report error to callback using error_stat */
-            ret = callback(NULL, NULL, dirname, error_stat, data);
-            if (ret != CL_SUCCESS) {
-                if (entries) {
-                    for (i = 0; i < entries_cnt; i++) {
-                        struct dirent_data *entry = &entries[i];
-                        free(entry->filename);
-                        free(entry->statbuf);
-                    }
-                    free(entries);
-                }
-                return ret;
-            }
-        }
 
         if (entries) {
             cli_qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
@@ -903,7 +869,7 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
                 depth--;
             }
 #ifdef _WIN32
-        /*
+            /*
          * Windows' POSIX style API's accept both "/" and "\\" style path separators.
          * The following checks using POSIX style path separators on Windows.
          */
@@ -957,7 +923,7 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
             depth++;
         }
     }
-    
+
 done:
     if ((NULL != sanitized_filepath) && (0 == strlen(sanitized_filepath))) {
         free(sanitized_filepath);
@@ -1162,7 +1128,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     }
 
 #elif _WIN32
-    DWORD dwRet = 0;
+    DWORD dwRet    = 0;
     intptr_t hFile = _get_osfhandle(desc);
 
     dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_NT);
@@ -1184,7 +1150,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         free(*filepath);
         *filepath = NULL;
-        status = CL_EOPEN;
+        status    = CL_EOPEN;
         goto done;
     }
 

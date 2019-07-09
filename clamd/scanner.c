@@ -45,11 +45,6 @@
 #endif
 #include <pthread.h>
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <limits.h>
-#include <stddef.h>
-#endif
-
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/scanners.h"
@@ -144,7 +139,7 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
     int type = scandata->type;
     struct cb_context context;
 
-    /* detect disconnected socket, 
+    /* detect disconnected socket,
      * this should NOT detect half-shutdown sockets (SHUT_WR) */
     if (send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
         logg("$Client disconnected while command was active!\n");

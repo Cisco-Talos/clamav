@@ -115,11 +115,6 @@
 #include <bzlib.h>
 #endif
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <limits.h>
-#include <stddef.h>
-#endif
-
 #include <fcntl.h>
 #include <string.h>
 
@@ -129,24 +124,12 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 {
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     STATBUF statbuf;
     char *fname;
     unsigned int viruses_found = 0;
 
     if ((dd = opendir(dirname)) != NULL) {
-#ifdef HAVE_READDIR_R_3
-        while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-        while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
         while ((dent = readdir(dd))) {
-#endif
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                     /* build the full name */
@@ -1149,12 +1132,6 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     STATBUF statbuf;
     char *fullname, vbaname[1024];
     unsigned char *data;
@@ -1384,13 +1361,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
      * flattening the paths in ole2_walk_property_tree (case 1) */
 
     if ((dd = opendir(dirname)) != NULL) {
-#ifdef HAVE_READDIR_R_3
-        while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-        while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
         while ((dent = readdir(dd))) {
-#endif
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                     /* build the full name */
@@ -3590,14 +3561,14 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 
         status = CL_ESTAT;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
     if (sb.st_size <= 5) {
         cli_dbgmsg("Small data (%u bytes)\n", (unsigned int)sb.st_size);
 
         status = CL_CLEAN;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
 
     ctx->fmap++;
@@ -3609,7 +3580,7 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 
         status = CL_EMEM;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
     perf_stop(ctx, PERFT_MAP);
 
