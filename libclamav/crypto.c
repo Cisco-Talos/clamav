@@ -842,24 +842,12 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
     int res;
     DIR *dp;
     struct dirent *dirent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
 
     dp = opendir(tsdir);
     if (!(dp))
         return CL_EOPEN;
 
-#if defined(HAVE_READDIR_R_3)
-    while (!readdir_r(dp, &result.d, &dirent) && dirent) {
-#elif defined(HAVE_READDIR_R_2)
-    while ((dirent = (struct dirent *)readdir_r(dp, &result.d))) {
-#else
     while ((dirent = readdir(dp))) {
-#endif
         if (dirent->d_name[0] == '.')
             continue;
 

@@ -59,10 +59,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <stddef.h>
-#endif
-
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
 #endif
@@ -3269,22 +3265,10 @@ rfc1341(message *m, const char *dir)
             for (n = 1; n <= t; n++) {
                 char filename[NAME_MAX + 1];
                 struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-                union {
-                    struct dirent d;
-                    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-                } result;
-#endif
 
                 snprintf(filename, sizeof(filename), "_%s-%u", md5_hex, n);
 
-#ifdef HAVE_READDIR_R_3
-                while ((readdir_r(dd, &result.d, &dent) == 0) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-                while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else /*!HAVE_READDIR_R*/
                 while ((dent = readdir(dd))) {
-#endif
                     FILE *fin;
                     char buffer[BUFSIZ], fullname[NAME_MAX + 1];
                     int nblanks;

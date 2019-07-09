@@ -57,11 +57,6 @@
 #include <pthread.h>
 #endif
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <limits.h>
-#include <stddef.h>
-#endif
-
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #endif
@@ -1081,7 +1076,7 @@ int cli_unlink(const char *pathname)
 {
     if (unlink(pathname) == -1) {
 #ifdef _WIN32
-        /* Windows may fail to unlink a file if it is marked read-only, 
+        /* Windows may fail to unlink a file if it is marked read-only,
 		 * even if the user has permissions to delete the file. */
         if (-1 == _chmod(pathname, _S_IWRITE)) {
             char err[128];
@@ -1226,12 +1221,6 @@ int cli_rmdirs(const char *name)
     STATBUF statb;
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     char err[128];
 
     if (CLAMSTAT(name, &statb) < 0) {
@@ -1249,13 +1238,7 @@ int cli_rmdirs(const char *name)
 
     rc = 0;
 
-#ifdef HAVE_READDIR_R_3
-    while ((readdir_r(dd, &result.d, &dent) == 0) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-    while ((dent = (struct dirent *)readdir_r(dd, &result.d)) != NULL) {
-#else
     while ((dent = readdir(dd)) != NULL) {
-#endif
         char *path;
 
         if (strcmp(dent->d_name, ".") == 0)
@@ -1292,12 +1275,6 @@ int cli_rmdirs(const char *dirname)
 {
     DIR *dd;
     struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-    union {
-        struct dirent d;
-        char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-    } result;
-#endif
     STATBUF maind, statbuf;
     char *path;
     char err[128];
@@ -1312,13 +1289,7 @@ int cli_rmdirs(const char *dirname)
                 return -1;
             }
 
-#ifdef HAVE_READDIR_R_3
-            while (!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-            while ((dent = (struct dirent *)readdir_r(dd, &result.d))) {
-#else
             while ((dent = readdir(dd))) {
-#endif
                 if (dent->d_ino) {
                     if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                         path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
