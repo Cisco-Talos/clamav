@@ -977,7 +977,6 @@ enable_no_cache
 enable_dns_fix
 enable_bigstack
 with_dbdir
-enable_readdir_r
 enable_fdpassing
 enable_clamdtop
 with_libncurses_prefix
@@ -1683,7 +1682,6 @@ if test -n "$ac_init_help"; then
   --enable-dns-fix        enable workaround for broken DNS servers (as in
                           SpeedTouch 510)
   --enable-bigstack       increase thread stack size
-  --enable-readdir_r      enable support for readdir_r
   --disable-fdpassing     do not build file descriptor passing support
   --enable-clamdtop       build clamdtop tool [default=auto]
   --enable-distcheck-werror
@@ -25495,87 +25493,6 @@ $as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
 
 $as_echo "#define _REENTRANT 1" >>confdefs.h
 
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for readdir_r" >&5
-$as_echo_n "checking for readdir_r... " >&6; }
-if test -z "$ac_cv_readdir_args"; then
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <dirent.h>
-
-int
-main ()
-{
-
-    struct dirent dir, *dirp;
-    DIR *mydir;
-    dirp = readdir_r(mydir, &dir);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_readdir_args=2
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-if test -z "$ac_cv_readdir_args"; then
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <dirent.h>
-
-int
-main ()
-{
-
-        struct dirent dir, *dirp;
-        DIR *mydir;
-        int rc;
-        rc = readdir_r(mydir, &dir, &dirp);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_readdir_args=3
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-# Check whether --enable-readdir_r was given.
-if test "${enable_readdir_r+set}" = set; then :
-  enableval=$enable_readdir_r; enable_readdir_r=$enableval
-else
-  enable_readdir_r="no"
-fi
-
-
-if test "$enable_readdir_r" = "no"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: support disabled" >&5
-$as_echo "support disabled" >&6; }
-elif test -z "$ac_cv_readdir_args"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-else
-    if test "$ac_cv_readdir_args" = 2; then
-
-$as_echo "#define HAVE_READDIR_R_2 1" >>confdefs.h
-
-    elif test "$ac_cv_readdir_args" = 3; then
-
-$as_echo "#define HAVE_READDIR_R_3 1" >>confdefs.h
-
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, and it takes $ac_cv_readdir_args arguments" >&5
-$as_echo "yes, and it takes $ac_cv_readdir_args arguments" >&6; }
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ctime_r" >&5
