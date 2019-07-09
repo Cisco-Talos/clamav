@@ -136,7 +136,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/os_checks.m4 \
 	$(top_srcdir)/m4/reorganization/milter/check.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/pthread_02.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/readdir.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/ctime.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/socklen_t.m4 \
 	$(top_srcdir)/m4/reorganization/clamav_user.m4 \

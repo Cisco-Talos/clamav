@@ -315,12 +315,6 @@
 /* Define to 1 if you have the `readdir' function. */
 #undef HAVE_READDIR
 
-/* readdir_r takes 2 arguments */
-#undef HAVE_READDIR_R_2
-
-/* readdir_r takes 3 arguments */
-#undef HAVE_READDIR_R_3
-
 /* Define to 1 if you have the `recvmsg' function. */
 #undef HAVE_RECVMSG
 
