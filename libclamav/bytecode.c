@@ -45,11 +45,11 @@
 #include "json.h"
 #endif
 
-#ifndef MAX_BC
-#define MAX_BC 64
+#ifndef MAX_TRACKED_BC
+#define MAX_TRACKED_BC 64
 #endif
 #define BC_EVENTS_PER_SIG 2
-#define MAX_BC_SIGEVENT_ID MAX_BC *BC_EVENTS_PER_SIG
+#define MAX_BC_SIGEVENT_ID MAX_TRACKED_BC *BC_EVENTS_PER_SIG
 
 cli_events_t *g_sigevents = NULL;
 unsigned int g_sigid;
@@ -1450,7 +1450,7 @@ static int sigelem_comp(const void *a, const void *b)
 
 void cli_sigperf_print()
 {
-    struct sigperf_elem stats[MAX_BC], *elem = stats;
+    struct sigperf_elem stats[MAX_TRACKED_BC], *elem = stats;
     int i, elems = 0, max_name_len = 0, name_len;
 
     if (!g_sigid || !g_sigevents) {
@@ -1459,7 +1459,7 @@ void cli_sigperf_print()
     }
 
     memset(stats, 0, sizeof(stats));
-    for (i = 0; i < MAX_BC; i++) {
+    for (i = 0; i < MAX_TRACKED_BC; i++) {
         union ev_val val;
         uint32_t count;
         const char *name = cli_event_get_name(g_sigevents, i * BC_EVENTS_PER_SIG);
@@ -1516,7 +1516,7 @@ static void sigperf_events_init(struct cli_bc *bc)
     }
 
     if (g_sigid > MAX_BC_SIGEVENT_ID - BC_EVENTS_PER_SIG - 1) {
-        cli_errmsg("sigperf_events_init: events table full. Increase MAX_BC\n");
+        cli_errmsg("sigperf_events_init: events table full. Increase MAX_TRACKED_BC\n");
         return;
     }
 
