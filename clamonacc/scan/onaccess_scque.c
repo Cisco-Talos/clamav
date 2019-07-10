@@ -227,7 +227,6 @@ static int onas_consume_event(threadpool thpool) {
 
 cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
 
-
     pthread_mutex_lock(&onas_queue_lock);
 
     struct onas_event_queue_node *node = NULL;

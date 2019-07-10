@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <signal.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -55,7 +57,42 @@
 pthread_t ddd_pid = 0;
 pthread_t scque_pid = 0;
 
+static void onas_handle_signals();
 static int startup_checks(struct onas_context *ctx);
+static struct onas_context *g_ctx = NULL;
+
+static void onas_clamonacc_exit(int sig)
+{
+	logg("*Clamonacc: onas_clamonacc_exit(), signal %d\n", sig);
+	if (sig == 11) {
+		logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --debug and report the issue and crash report to the developpers\n");
+	}
+
+	if (g_ctx) {
+		if(g_ctx->fan_fd) {
+			close(g_ctx->fan_fd);
+		}
+		g_ctx->fan_fd = 0;
+	}
+
+	logg("*Clamonacc: attempting to stop event consumer thread ...\n");
+	if (scque_pid > 0) {
+		pthread_cancel(scque_pid);
+		pthread_join(scque_pid, NULL);
+	}
+	scque_pid = 0;
+
+	logg("*Clamonacc: attempting to stop ddd thread ... \n");
+	if (ddd_pid > 0) {
+		pthread_cancel(ddd_pid);
+		pthread_join(ddd_pid, NULL);
+	}
+	ddd_pid = 0;
+
+	logg("Clamonacc: stopped\n");
+	onas_cleanup(g_ctx);
+	pthread_exit(NULL);
+}
 
 int main(int argc, char **argv)
 {
@@ -174,6 +211,10 @@ int main(int argc, char **argv)
 	goto clean_up;
 #endif
 
+	/* Setup signal handling */
+	g_ctx = ctx;
+	onas_handle_signals();
+
         logg("*Clamonacc: beginning event loops\n");
 	/*  Kick off event loop(s) */
 	ret = onas_start_eloop(&ctx);
@@ -182,6 +223,34 @@ int main(int argc, char **argv)
 clean_up:
 	onas_cleanup(ctx);
 	exit(ret);
+}
+
+static void onas_handle_signals() {
+	sigset_t sigset;
+	struct sigaction act;
+
+	/* ignore all signals except SIGUSR1 */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGUSR1);
+	sigdelset(&sigset, SIGUSR2);
+	/* The behavior of a process is undefined after it ignores a
+	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+	sigdelset(&sigset, SIGFPE);
+	sigdelset(&sigset, SIGILL);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGINT);
+	sigdelset(&sigset, SIGTERM);
+#ifdef SIGBUS
+	sigdelset(&sigset, SIGBUS);
+#endif
+	pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+	memset(&act, 0, sizeof(struct sigaction));
+	act.sa_handler = onas_clamonacc_exit;
+	sigfillset(&(act.sa_mask));
+	sigaction(SIGUSR2, &act, NULL);
+	sigaction(SIGTERM, &act, NULL);
+	sigaction(SIGSEGV, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
 }
 
 struct onas_context *onas_init_context(void) {

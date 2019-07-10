@@ -29,7 +29,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
@@ -58,36 +57,6 @@
 extern pthread_t ddd_pid;
 extern pthread_t scque_pid;
 static int onas_fan_fd;
-
-static void onas_fan_exit(int sig)
-{
-	logg("*ClamFanotif: onas_fan_exit(), signal %d\n", sig);
-        if (sig == 11) {
-            logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --debug and report the issue and crash report to the developpers\n");
-        }
-
-	if(onas_fan_fd) {
-		close(onas_fan_fd);
-	}
-	onas_fan_fd = 0;
-
-	logg("*ClamFanotif: attempting to stop event consumer thread ...\n");
-	if (scque_pid > 0) {
-		pthread_cancel(scque_pid);
-		pthread_join(scque_pid, NULL);
-	}
-	scque_pid = 0;
-
-	logg("*ClamFanotif: attempting to stop ddd thread ... \n");
-	if (ddd_pid > 0) {
-		pthread_cancel(ddd_pid);
-		pthread_join(ddd_pid, NULL);
-	}
-	ddd_pid = 0;
-
-	logg("ClamFanotif: stopped\n");
-	pthread_exit(NULL);
-}
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 
@@ -166,8 +135,6 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx) {
 int onas_fan_eloop(struct onas_context **ctx) {
 	int ret = 0;
 	int err_cnt = 0;
-	sigset_t sigset;
-	struct sigaction act;
 	short int scan;
 	STATBUF sb;
 	fd_set rfds;
@@ -177,29 +144,6 @@ int onas_fan_eloop(struct onas_context **ctx) {
 	char fname[1024];
 	int len, check, fres;
 	char err[128];
-
-	/* ignore all signals except SIGUSR1 */
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGUSR1);
-	sigdelset(&sigset, SIGUSR2);
-	/* The behavior of a process is undefined after it ignores a
-	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
-	sigdelset(&sigset, SIGFPE);
-	sigdelset(&sigset, SIGILL);
-	sigdelset(&sigset, SIGSEGV);
-	sigdelset(&sigset, SIGINT);
-	sigdelset(&sigset, SIGTERM);
-#ifdef SIGBUS
-	sigdelset(&sigset, SIGBUS);
-#endif
-	pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-	memset(&act, 0, sizeof(struct sigaction));
-	act.sa_handler = onas_fan_exit;
-	sigfillset(&(act.sa_mask));
-	sigaction(SIGUSR2, &act, NULL);
-	sigaction(SIGTERM, &act, NULL);
-	sigaction(SIGSEGV, &act, NULL);
-	sigaction(SIGINT, &act, NULL);
 
 	FD_ZERO(&rfds);
 	FD_SET((*ctx)->fan_fd, &rfds);
