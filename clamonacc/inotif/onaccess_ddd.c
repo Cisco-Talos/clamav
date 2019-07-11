@@ -589,6 +589,9 @@ void *onas_ddd_th(void *arg) {
 				} else if (event->mask & IN_MOVED_TO) {
 					onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
 				}
+
+				free(child_path);
+				child_path = NULL;
 			}
 		}
 	}
@@ -616,21 +619,21 @@ static void onas_ddd_handle_in_delete(struct onas_context *ctx,
 static void onas_ddd_handle_in_moved_from(struct onas_context *ctx,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd) {
 
-    struct stat s;
-    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-    if (!(event->mask & IN_ISDIR)) return;
+	struct stat s;
+	if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+	if (!(event->mask & IN_ISDIR)) return;
 
 	logg("*ClamInotif: MOVED_FROM - removing %s from %s with wd:%d\n", child_path, path, wd);
 	onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
-    onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+	onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
-    return;
+	return;
 }
 
 static void onas_ddd_handle_in_create(struct onas_context *ctx,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
-    struct stat s;
+	struct stat s;
 
 	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
@@ -645,22 +648,22 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
 		}
 	}
 	else
-    {
-        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-        if (!(event->mask & IN_ISDIR)) return;
+	{
+		if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+		if (!(event->mask & IN_ISDIR)) return;
 
 		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-        onas_ht_add_hierarchy(ddd_ht, child_path);
+		onas_ht_add_hierarchy(ddd_ht, child_path);
 		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-    }
+	}
 
-    return;
+	return;
 }
 
 static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
 		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
 
-    struct stat s;
+	struct stat s;
 	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
 		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
 			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
@@ -674,15 +677,15 @@ static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
 
 		}
 	} else {
-        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-        if (!(event->mask & IN_ISDIR)) return;
+		if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+		if (!(event->mask & IN_ISDIR)) return;
 
 		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-        onas_ht_add_hierarchy(ddd_ht, child_path);
+		onas_ht_add_hierarchy(ddd_ht, child_path);
 		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-    }
+	}
 
-    return;
+	return;
 }
 
 static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
@@ -703,16 +706,16 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 	/* inotify specific stuffs */
 	event_data->bool_opts |= ONAS_SCTH_B_INOTIFY;
 	extra_options & ONAS_SCTH_B_FILE ? event_data->bool_opts |= ONAS_SCTH_B_FILE : extra_options;
-        extra_options & ONAS_SCTH_B_DIR ? event_data->bool_opts |= ONAS_SCTH_B_DIR : extra_options;
+	extra_options & ONAS_SCTH_B_DIR ? event_data->bool_opts |= ONAS_SCTH_B_DIR : extra_options;
 
 	logg("*ClamInotif: attempting to feed consumer queue\n");
 	/* feed consumer queue */
 	if (CL_SUCCESS != onas_queue_event(event_data)) {
 		logg("!ClamInotif: error occurred while feeding consumer queue extra event ... continuing ...\n");
 		return;
-    }
+	}
 
-    return;
+	return;
 }
 
 static void onas_ddd_exit(void *arg) {
