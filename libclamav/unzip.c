@@ -61,6 +61,8 @@
 #define ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED       (0x08074b50)
 // clang-format on
 
+#define ZIP_MAX_NUM_OVERLAPPING_FILES 5
+
 #define ZIP_CRC32(r, c, b, l) \
     do {                      \
         r = crc32(~c, b, l);  \
@@ -75,16 +77,16 @@ static int wrap_inflateinit2(void *a, int b)
 /**
  * @brief uncompress file from zip
  *
- * @param src                   pointer to compressed data
- * @param csize                 size of compressed data
- * @param usize                 expected size of uncompressed data
- * @param method                compression method
- * @param flags                 local header flags
- * @param num_files_unzipped    current number of files that have been unzipped
- * @param ctx                   scan context
- * @param tmpd                  temp directory path name
- * @param zcb                   callback function to invoke after extraction (default: scan)
- * @return cl_error_t           CL_EPARSE = could not apply a password
+ * @param src                           pointer to compressed data
+ * @param csize                         size of compressed data
+ * @param usize                         expected size of uncompressed data
+ * @param method                        compression method
+ * @param flags                         local header flags
+ * @param[in,out] num_files_unzipped    current number of files that have been unzipped
+ * @param[in,out] ctx                   scan context
+ * @param tmpd                          temp directory path name
+ * @param zcb                           callback function to invoke after extraction (default: scan)
+ * @return cl_error_t                   CL_EPARSE = could not apply a password
  */
 static cl_error_t unz(
     const uint8_t *src,
@@ -388,14 +390,14 @@ static inline unsigned char zdecryptbyte(uint32_t key[3])
  * TODO - search for strong encryption header (0x0017) and handle them
  *
  * @param src
- * @param csize                 size of compressed data; includes the decryption header
- * @param usize                 expected size of uncompressed data
+ * @param csize                         size of compressed data; includes the decryption header
+ * @param usize                         expected size of uncompressed data
  * @param local_header
- * @param num_files_unzipped    current number of files that have been unzipped
- * @param ctx                   scan context
- * @param tmpd                  temp directory path name
- * @param zcb                   callback function to invoke after extraction (default: scan)
- * @return cl_error_t           CL_EPARSE = could not apply a password
+ * @param[in,out] num_files_unzipped    current number of files that have been unzipped
+ * @param[in,out] ctx                   scan context
+ * @param tmpd                          temp directory path name
+ * @param zcb                           callback function to invoke after extraction (default: scan)
+ * @return cl_error_t                   CL_EPARSE = could not apply a password
  */
 static inline cl_error_t zdecrypt(
     const uint8_t *src,
@@ -557,18 +559,20 @@ static inline cl_error_t zdecrypt(
 /**
  * @brief Parse, extract, and scan a file using the local file header.
  *
- * @param map                   fmap for the file
- * @param loff                  offset of the local file header
- * @param zsize                 size of the zip file
- * @param num_files_unzipped    current number of files that have been unzipped
- * @param file_count            current number of files that have been discovered
- * @param central_header        offset of central directory header
- * @param ret                   [out] The status code
- * @param ctx                   scan context
- * @param tmpd                  temp directory path name
- * @param detect_encrypted      bool: if encrypted files should raise heuristic alert
- * @param zcb                   callback function to invoke after extraction (default: scan)
- * @return unsigned int         returns the size of the file header + file data, so zip file can be indexed without the central directory
+ * @param map                           fmap for the file
+ * @param loff                          offset of the local file header
+ * @param zsize                         size of the zip file
+ * @param[in,out] num_files_unzipped    current number of files that have been unzipped
+ * @param file_count                    current number of files that have been discovered
+ * @param central_header                offset of central directory header
+ * @param[out] ret                      The status code
+ * @param[in,out] ctx                   scan context
+ * @param tmpd                          temp directory path name
+ * @param detect_encrypted              bool: if encrypted files should raise heuristic alert
+ * @param zcb                           callback function to invoke after extraction (default: scan)
+ * @param[out] file_local_header_size   (optional) size of the local file header
+ * @param[out] file_local_data_size     (optional) size of the compressed local file data
+ * @return unsigned int                 returns the size of the file header + file data, so zip file can be indexed without the central directory
  */
 static unsigned int parse_local_file_header(
     fmap_t *map,
@@ -581,7 +585,9 @@ static unsigned int parse_local_file_header(
     cli_ctx *ctx,
     char *tmpd,
     int detect_encrypted,
-    zip_cb zcb)
+    zip_cb zcb,
+    uint32_t *file_local_header_size,
+    uint32_t *file_local_data_size)
 {
     const uint8_t *local_header, *zip;
     char name[256];
@@ -672,6 +678,11 @@ static unsigned int parse_local_file_header(
     zip += LOCAL_HEADER_elen;
     zsize -= LOCAL_HEADER_elen;
 
+    if (NULL != file_local_header_size)
+        *file_local_header_size = zip - local_header;
+    if (NULL != file_local_data_size)
+        *file_local_data_size = csize;
+
     if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
         cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
     } else {
@@ -680,6 +691,7 @@ static unsigned int parse_local_file_header(
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
             return 0;
         }
+
         if (LOCAL_HEADER_flags & F_ENCR) {
             if (fmap_need_ptr_once(map, zip, csize))
                 *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb);
@@ -718,16 +730,20 @@ static unsigned int parse_local_file_header(
 /**
  * @brief Parse, extract, and scan a file by iterating the central directory.
  *
- * @param map                   fmap for the file
- * @param coff                  offset of the file header in the central directory
- * @param zsize                 size of the zip file
- * @param num_files_unzipped    current number of files that have been unzipped
- * @param file_count            current number of files that have been discovered
- * @param ret                   [out] The status code
- * @param ctx                   scan context
- * @param tmpd                  temp directory path name
- * @param requests              (optional) structure use to search the zip for files by name
- * @return unsigned int         returns the size of the file header in the central directory, or 0 if no more files
+ * @param map                           fmap for the file
+ * @param coff                          offset of the file header in the central directory
+ * @param zsize                         size of the zip file
+ * @param[in,out] num_files_unzipped    current number of files that have been unzipped
+ * @param file_count                    current number of files that have been discovered
+ * @param[out] ret                      The status code
+ * @param[in,out] ctx                   scan context
+ * @param tmpd                          temp directory path name
+ * @param requests                      (optional) structure use to search the zip for files by name
+ * @return unsigned int                 returns the size of the file header in the central directory, or 0 if no more files
+ * @param[out] file_local_offset        (optional) offset of the local file header
+ * @param[out] file_local_header_size   (optional) size of the local file header
+ * @param[out] file_local_data_size     (optional) size of the compressed local file data
+ * @return unsigned int
  */
 static unsigned int parse_central_directory_file_header(
     fmap_t *map,
@@ -738,12 +754,22 @@ static unsigned int parse_central_directory_file_header(
     cl_error_t *ret,
     cli_ctx *ctx,
     char *tmpd,
-    struct zip_requests *requests)
+    struct zip_requests *requests,
+    uint32_t *file_local_offset,
+    uint32_t *file_local_header_size,
+    uint32_t *file_local_data_size)
 {
     char name[256];
     int last = 0;
     const uint8_t *central_header;
     int virus_found = 0;
+
+    if (NULL != file_local_offset)
+        *file_local_offset = 0;
+    if (NULL != file_local_header_size)
+        *file_local_header_size = 0;
+    if (NULL != file_local_data_size)
+        *file_local_data_size = 0;
 
     if (!(central_header = fmap_need_off(map, coff, SIZEOF_CENTRAL_HEADER)) || CENTRAL_HEADER_magic != ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_BEGIN) {
         if (central_header) fmap_unneed_ptr(map, central_header, SIZEOF_CENTRAL_HEADER);
@@ -790,9 +816,24 @@ static unsigned int parse_central_directory_file_header(
 
     if (!requests) {
         if (CENTRAL_HEADER_off < zsize - SIZEOF_LOCAL_HEADER) {
-            parse_local_file_header(map, CENTRAL_HEADER_off, zsize - CENTRAL_HEADER_off, num_files_unzipped, file_count, central_header, ret, ctx, tmpd, 1, zip_scan_cb);
-        } else
+            if (NULL != file_local_offset)
+                *file_local_offset = CENTRAL_HEADER_off;
+            parse_local_file_header(map,
+                                    CENTRAL_HEADER_off,
+                                    zsize - CENTRAL_HEADER_off,
+                                    num_files_unzipped,
+                                    file_count,
+                                    central_header,
+                                    ret,
+                                    ctx,
+                                    tmpd,
+                                    1,
+                                    zip_scan_cb,
+                                    file_local_header_size,
+                                    file_local_data_size);
+        } else {
             cli_dbgmsg("cli_unzip: central header - local hdr out of file\n");
+        }
     } else {
         int i;
         size_t len;
@@ -829,6 +870,13 @@ cl_error_t cli_unzip(cli_ctx *ctx)
 #if HAVE_JSON
     int toval = 0;
 #endif
+    int bZipBombDetected                 = 0;
+    uint32_t cur_file_local_offset       = 0;
+    uint32_t cur_file_local_header_size  = 0;
+    uint32_t cur_file_local_data_size    = 0;
+    uint32_t prev_file_local_offset      = 0;
+    uint32_t prev_file_local_header_size = 0;
+    uint32_t prev_file_local_data_size   = 0;
 
     cli_dbgmsg("in cli_unzip\n");
     fsize = (uint32_t)map->len;
@@ -861,20 +909,61 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     }
 
     if (coff) {
+        uint32_t nOverlappingFiles = 0;
+
         cli_dbgmsg("cli_unzip: central directory header offset: @%x\n", coff);
-        while ((coff = parse_central_directory_file_header(map, coff, fsize, &num_files_unzipped, file_count + 1, &ret, ctx, tmpd, NULL))) {
+        while ((coff = parse_central_directory_file_header(map,
+                                                           coff,
+                                                           fsize,
+                                                           &num_files_unzipped,
+                                                           file_count + 1,
+                                                           &ret,
+                                                           ctx,
+                                                           tmpd,
+                                                           NULL,
+                                                           &cur_file_local_offset,
+                                                           &cur_file_local_header_size,
+                                                           &cur_file_local_data_size))) {
             file_count++;
             if (ctx->engine->maxfiles && num_files_unzipped >= ctx->engine->maxfiles) {
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
                 ret = CL_EMAXFILES;
             }
+
+            /*
+             * Detect overlapping files and zip bombs.
+             */
+            if ((((cur_file_local_offset > prev_file_local_offset) && (cur_file_local_offset < prev_file_local_offset + prev_file_local_header_size + prev_file_local_data_size)) ||
+                 ((prev_file_local_offset > cur_file_local_offset) && (prev_file_local_offset < cur_file_local_offset + cur_file_local_header_size + cur_file_local_data_size))) &&
+                (cur_file_local_header_size + cur_file_local_data_size > 0)) {
+                /* Overlapping file detected */
+                nOverlappingFiles++;
+
+                cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
+                cli_dbgmsg("    previous file end:  %u\n", prev_file_local_offset + prev_file_local_header_size + prev_file_local_data_size);
+                cli_dbgmsg("    current file start: %u\n", cur_file_local_offset);
+
+                if (ZIP_MAX_NUM_OVERLAPPING_FILES < nOverlappingFiles) {
+                    if (SCAN_HEURISTICS) {
+                        ret         = cli_append_virus(ctx, "Heuristics.Zip.OverlappingFiles");
+                        virus_found = 1;
+                    } else {
+                        ret = CL_EFORMAT;
+                    }
+                    bZipBombDetected = 1;
+                }
+            }
+            prev_file_local_offset      = cur_file_local_offset;
+            prev_file_local_header_size = cur_file_local_header_size;
+            prev_file_local_data_size   = cur_file_local_data_size;
+
 #if HAVE_JSON
             if (cli_json_timeout_cycle_check(ctx, &toval) != CL_SUCCESS) {
                 ret = CL_ETIMEOUT;
             }
 #endif
             if (ret != CL_CLEAN) {
-                if (ret == CL_VIRUS && SCAN_ALLMATCHES) {
+                if (ret == CL_VIRUS && SCAN_ALLMATCHES && !bZipBombDetected) {
                     ret         = CL_CLEAN;
                     virus_found = 1;
                 } else
@@ -889,7 +978,19 @@ cl_error_t cli_unzip(cli_ctx *ctx)
         file_count = 0;
         while ((ret == CL_CLEAN) &&
                (lhoff < fsize) &&
-               (0 != (coff = parse_local_file_header(map, lhoff, fsize - lhoff, &num_files_unzipped, file_count + 1, NULL, &ret, ctx, tmpd, 1, zip_scan_cb)))) {
+               (0 != (coff = parse_local_file_header(map,
+                                                     lhoff,
+                                                     fsize - lhoff,
+                                                     &num_files_unzipped,
+                                                     file_count + 1,
+                                                     NULL,
+                                                     &ret,
+                                                     ctx,
+                                                     tmpd,
+                                                     1,
+                                                     zip_scan_cb,
+                                                     NULL,
+                                                     NULL)))) {
             file_count++;
             lhoff += coff;
             if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
@@ -939,7 +1040,19 @@ cl_error_t unzip_single_internal(cli_ctx *ctx, off_t local_header_offset, zip_cb
         return CL_CLEAN;
     }
 
-    parse_local_file_header(map, local_header_offset, fsize, &num_files_unzipped, 0, NULL, &ret, ctx, NULL, 0, zcb);
+    parse_local_file_header(map,
+                            local_header_offset,
+                            fsize,
+                            &num_files_unzipped,
+                            0,
+                            NULL,
+                            &ret,
+                            ctx,
+                            NULL,
+                            0,
+                            zcb,
+                            NULL,
+                            NULL);
 
     return ret;
 }
@@ -1010,7 +1123,18 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
 
     if (coff) {
         cli_dbgmsg("unzip_search: central directory header offset: @%x\n", coff);
-        while (ret == CL_CLEAN && (coff = parse_central_directory_file_header(zmap, coff, fsize, NULL, file_count + 1, &ret, ctx, NULL, requests))) {
+        while (ret == CL_CLEAN && (coff = parse_central_directory_file_header(zmap,
+                                                                              coff,
+                                                                              fsize,
+                                                                              NULL,
+                                                                              file_count + 1,
+                                                                              &ret,
+                                                                              ctx,
+                                                                              NULL,
+                                                                              requests,
+                                                                              NULL,
+                                                                              NULL,
+                                                                              NULL))) {
             if (requests->match) {
                 ret = CL_VIRUS;
             }
