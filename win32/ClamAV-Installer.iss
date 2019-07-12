@@ -1,14 +1,14 @@
 ; -- ClamAV-Installer.iss --
 ; Install ClamAV.
-; Will install the correct files and DLLs built for two different 
-; for the system architecture (x86 or x64) using a single installer: 
+; Will install the correct files and DLLs built for two different
+; for the system architecture (x86 or x64) using a single installer:
 ; on a "x86" edition of Windows the x86 version of the program will be
 ; installed but on a "x64" edition of Windows the x64 version will
 ; be installed.
 
 [Setup]
 AppName=ClamAV
-AppVersion=0.101.2
+AppVersion=0.101.3
 DefaultDirName={pf}\ClamAV
 DefaultGroupName=ClamAV
 AppCopyright=2019 Cisco Systems, Inc.
@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.101.2
+OutputBaseFilename=ClamAV-0.101.3
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 
@@ -65,7 +65,7 @@ Source: "Win32\Release\mspack.dll"; DestDir: "{app}"; DestName: "mspack.dll"; Ch
 Source: "Win32\Release\pthreads.dll"; DestDir: "{app}"; DestName: "pthreads.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: not Is64BitInstallMode
 Source: "libcrypto-1_1.dll"; DestDir: "{app}"; DestName: "libcrypto-1_1.dll"; Check: not Is64BitInstallMode
-Source: "libssl-1_1.dll"; DestDir: "{app}"; DestName: "libssl-1_1.dll"; Check: not Is64BitInstallMode   
+Source: "libssl-1_1.dll"; DestDir: "{app}"; DestName: "libssl-1_1.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x86.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not Is64BitInstallMode
 
 ; Place all common files here, first one should be marked 'solidbreak'
@@ -85,7 +85,7 @@ Source: "..\COPYING.unrar"; DestDir: "{app}\COPYING"; DestName: "COPYING.unrar"
 Source: "..\COPYING.YARA"; DestDir: "{app}\COPYING"; DestName: "COPYING.YARA"
 Source: "..\COPYING.zlib"; DestDir: "{app}\COPYING"; DestName: "COPYING.zlib"
 Source: "..\ChangeLog.md"; DestDir: "{app}\docs"; DestName: "ChangeLog.md"
-Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"              
+Source: "..\NEWS.md"; DestDir: "{app}\docs"; DestName: "NEWS.md"
 Source: "..\README.md"; DestDir: "{app}"; DestName: "README.md"
 Source: "..\docs\html\*"; DestDir: "{app}\docs"; Flags: recursesubdirs
 
@@ -145,10 +145,10 @@ const
   VC_2010_SP1_REDIST_X64 = '{1D8E6291-B0D5-35EC-8441-6616F567A0F7}';
   VC_2010_SP1_REDIST_IA64 = '{88C73C1C-2DE5-3B01-AFB8-B46EF4AB41CD}';
 
-  // Microsoft Visual C++ 2012 x86 Minimum Runtime - 11.0.61030.0 (Update 4) 
+  // Microsoft Visual C++ 2012 x86 Minimum Runtime - 11.0.61030.0 (Update 4)
   VC_2012_REDIST_MIN_UPD4_X86 = '{BD95A8CD-1D9F-35AD-981A-3E7925026EBB}';
   VC_2012_REDIST_MIN_UPD4_X64 = '{CF2BEA3C-26EA-32F8-AA9B-331F7E34BA97}';
-  // Microsoft Visual C++ 2012 x86 Additional Runtime - 11.0.61030.0 (Update 4) 
+  // Microsoft Visual C++ 2012 x86 Additional Runtime - 11.0.61030.0 (Update 4)
   VC_2012_REDIST_ADD_UPD4_X86 = '{B175520C-86A2-35A7-8619-86DC379688B9}';
   VC_2012_REDIST_ADD_UPD4_X64 = '{37B8F9C7-03FB-3253-8781-2517C99D7C00}';
 
@@ -166,7 +166,7 @@ const
   VC_2015_REDIST_X86_ADD = '{BE960C1C-7BAD-3DE6-8B1A-2616FE532845}';
   VC_2015_REDIST_X64_ADD = '{BC958BD2-5DAC-3862-BB1A-C1BE0790438D}';
 
-function MsiQueryProductState(szProduct: string): INSTALLSTATE; 
+function MsiQueryProductState(szProduct: string): INSTALLSTATE;
   external 'MsiQueryProductState{#AW}@msi.dll stdcall';
 
 function VCVersionInstalled(const ProductID: string): Boolean;

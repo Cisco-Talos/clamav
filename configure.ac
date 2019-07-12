@@ -22,7 +22,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.101.2], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
+AC_INIT([ClamAV], [0.101.3], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
 dnl enable C++
 AC_PROG_CXX()
@@ -252,7 +252,7 @@ else
     if test "X$have_curl" != "Xyes" && test "X$have_json" != "Xyes"; then
         CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)], [no])
     else
-        if test "X$have_curl" = "Xyes"; then 
+        if test "X$have_curl" = "Xyes"; then
             CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
         else
             CL_MSG_STATUS([clamsubmit  ], [no (missing libcurl-devel. Use the website to submit FPs/FNs.)], [no])
@@ -294,7 +294,7 @@ else
     CL_MSG_STATUS([pcre        ],[$PCRE_HOME],[$have_pcre])
 fi
 CL_MSG_STATUS([libmspack   ],[yes],[$mspack_msg])
-if test "x$XML_LIBS" = "x"; then 
+if test "x$XML_LIBS" = "x"; then
     CL_MSG_STATUS([libxml2     ],[no],[])
 else
     CL_MSG_STATUS([libxml2     ],[yes, from $XML_HOME],[])

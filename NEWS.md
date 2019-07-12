@@ -1,7 +1,18 @@
 # ClamAV News
 
 Note: This file refers to the source tarball. Things described here may differ
- slightly from the binary packages.
+ slight
+
+## 0.101.3
+
+ClamAV 0.101.3 is a patch release...
+
+- Fixes for the following vulnerabilities affecting 0.101.2 and prior:
+  -
+
+Additional thanks to the following community members for submitting bug reports:
+
+-
 
 ## 0.101.2
 
@@ -508,7 +519,7 @@ ClamAV 0.99.4 is a hotfix release to patch a set of vulnerabilities.
   a handful of other important bugs, including patches to support g++ 6, C++11.
 
 Thank you to the following ClamAV community members for your code
-submissions and bug reports! 
+submissions and bug reports!
 
 Alberto Garcia
 Bernhard Vogel
@@ -550,7 +561,7 @@ ClamAV 0.99.2 is a release of bug fixes and minor enhancements.
 - fix ups improving the reliability of several ClamAV file parsers.
 - sigtool now decodes file type signatures (e.g., daily.ftm CVD file).
 - now supporting libpcre2 in addition to libpcre.
-- systemd support for clamd and freshclam. Patch provided by 
+- systemd support for clamd and freshclam. Patch provided by
   Andreas Cadhalpun.
 - fixed builds on Mac OS X 10.10 & 10.11.
 - improved debug info for certificate metadata.
@@ -592,7 +603,7 @@ ClamAV 0.99.1:
 
 ## 0.99
 
-ClamAV 0.99 contains major new features and changes. YARA rules, 
+ClamAV 0.99 contains major new features and changes. YARA rules,
 Perl Compatible Regular Expressions, revamped on-access scanning
 for Linux, and other new features join the many great features of ClamAV:
 
@@ -603,10 +614,10 @@ for Linux, and other new features join the many great features of ClamAV:
   for full details.
 - New and improved on-access scanning for Linux. See the recent blog
   post and clamdoc.pdf for details on the new on-access capabilities.
-- A new ClamAV API callback function that is invoked when a virus 
-  is found. This is intended primarily for applications running in 
-  all-match mode. Any applications using all-match mode must use 
-  the new callback function to record and report detected viruses.    
+- A new ClamAV API callback function that is invoked when a virus
+  is found. This is intended primarily for applications running in
+  all-match mode. Any applications using all-match mode must use
+  the new callback function to record and report detected viruses.
 - Configurable default password list to attempt zip file decryption.
 - TIFF file support.
 - Upgrade Windows pthread library to 2.9.1.
@@ -643,7 +654,7 @@ included for ClamAV 0.99:
 ## 0.98.7
 
 ClamAV 0.98.7 is here! This release contains new scanning features
-and bug fixes. 
+and bug fixes.
 
 - Improvements to PDF processing: decryption, escape sequence
   handling, and file property collection.
@@ -663,7 +674,7 @@ and bug fixes.
   CVE-2015-2668.
 - Fix compilation error after ./configure --disable-pthreads.
   Reported and fix suggested by John E. Krokes.
-- Apply upstream patch for possible heap overflow in Henry Spencer's 
+- Apply upstream patch for possible heap overflow in Henry Spencer's
   regex library. CVE-2015-2305.
 - Fix crash in upx decoder with crafted file. Discovered and patch
   supplied by Sebastian Andrzej Siewior. CVE-2015-2170.
@@ -704,7 +715,7 @@ ClamAV 0.98.6 is a bug fix release correcting the following:
 - Compensate a crash due to incorrect compiler optimization when
   handling crafted petite packer files. This issue was discovered
   by Sebastian Andrzej Siewior.
-      
+
 Thanks to the following ClamAV community members for code submissions
 and bug reporting included in ClamAV 0.98.6:
 
@@ -803,17 +814,17 @@ Here are the new features and improvements in ClamAV 0.98.2:
   about OpenIOC.
 - All ClamAV sockets (clamd, freshclam, clamav-milter, clamdscan, clamdtop)
   now support IPV6 addresses and configuration parameters.
-- Use OpenSSL file hash functions for improved performance. OpenSSL 
+- Use OpenSSL file hash functions for improved performance. OpenSSL
   is now prerequisite software for ClamAV 0.98.2.
 - Improved detection of malware scripts within image files. Issue reported
   by Maarten Broekman.
 - Change to circumvent possible denial of service when processing icons within
   specially crafted PE files. Icon limits are now in place with corresponding
-  clamd and clamscan configuration parameters. This issue was reported by 
+  clamd and clamscan configuration parameters. This issue was reported by
   Joxean Koret.
 - Improvements to the fidelity of the ClamAV pattern matcher, an issue
   reported by Christian Blichmann.
-- Opt-in collection of statistics. Statistics collected are: sizes and MD5 
+- Opt-in collection of statistics. Statistics collected are: sizes and MD5
   hashes of files, PE file section counts and section MD5 hashes, and names
   and counts of detected viruses. Enable statistics collection with the
   --enable-stats clamscan flag or StatsEnabled clamd configuration
@@ -822,7 +833,7 @@ Here are the new features and improvements in ClamAV 0.98.2:
   assistance and suggestions by Sebastian Andrzej Siewior, Scott Kitterman,
   and Dave Simonson.
 - Patch by Arkadiusz Miskiewicz to improve error handling in freshclam.
-- ClamAV 0.98.2 also includes miscellaneous bug fixes and documentation 
+- ClamAV 0.98.2 also includes miscellaneous bug fixes and documentation
   improvements.
 
 Thanks to the following ClamAV community members for sending patches or reporting
@@ -841,7 +852,7 @@ Christian Blichmann
 REGARDING OPENSSL
 
 In addition, as a special exception, the copyright holders give
-permission to link the code of portions of this program with the 
+permission to link the code of portions of this program with the
 OpenSSL library under certain conditions as described in each
 individual source file, and distribute linked combinations
 including the two.
@@ -849,20 +860,20 @@ including the two.
 You must obey the GNU General Public License in all respects
 for all of the code used other than OpenSSL.  If you modify
 file(s) with this exception, you may extend this exception to your
-version of the file(s), but you are not obligated to do so.  If you 
+version of the file(s), but you are not obligated to do so.  If you
 do not wish to do so, delete this exception statement from your
 version.  If you delete this exception statement from all source
 files in the program, then also delete it here.
 
 ## 0.98.1
 
-ClamAV 0.98.1 provides improved support of Mac OS X platform, support for new file types, and 
+ClamAV 0.98.1 provides improved support of Mac OS X platform, support for new file types, and
 quality improvements. These include:
 
 - Extraction, decompression, and scanning of files within Apple Disk Image (DMG) format.
 
 - Extraction, decompression, and scanning of files within Extensible Archive (XAR) format.
-  XAR format is commonly used for software packaging, such as PKG and RPM, as well as 
+  XAR format is commonly used for software packaging, such as PKG and RPM, as well as
   general archival.
 
 - Decompression and scanning of files in "Xz" compression format.
@@ -877,7 +888,7 @@ quality improvements. These include:
   performance cost. This should only be needed when callback functions are used
   that need file access.
 
-- Various improvements to ClamAV configuration, support of third party libraries, 
+- Various improvements to ClamAV configuration, support of third party libraries,
   and unit tests.
 
 ## 0.98
@@ -915,8 +926,8 @@ support for additional filetypes, and internal upgrades.
 
 - New callbacks added to the API: The libclamav API has additional hooks
   for developers to use when wrapping ClamAV scanning. These function
-  types are prefixed with "clcb_" and allow developers to add logic at 
-  certain steps of the scanning process without directly modifying the 
+  types are prefixed with "clcb_" and allow developers to add logic at
+  certain steps of the scanning process without directly modifying the
   library. For more details refer to the clamav.h file.
 
 - More configurable limits: Several hardcoded values are now configurable
@@ -962,20 +973,20 @@ reported as scan result."
 
 ## 0.97.5
 
-ClamAV 0.97.5 addresses possible evasion cases in some archive formats 
-(CVE-2012-1457, CVE-2012-1458, CVE-2012-1459). It also addresses stability 
-issues in portions of the bytecode engine. This release is recommended for 
+ClamAV 0.97.5 addresses possible evasion cases in some archive formats
+(CVE-2012-1457, CVE-2012-1458, CVE-2012-1459). It also addresses stability
+issues in portions of the bytecode engine. This release is recommended for
 all users.
 
 ## 0.97.4
 
-ClamAV 0.97.4 includes minor bugfixes, detection improvements and initial 
-support for on-access scanning under Mac OS X (see contrib/ClamAuth). 
+ClamAV 0.97.4 includes minor bugfixes, detection improvements and initial
+support for on-access scanning under Mac OS X (see contrib/ClamAuth).
 This update is recommended for all users.
 
 ## 0.97.3
 
-ClamAV 0.97.3 is a minor bugfix release and is recommended for all 
+ClamAV 0.97.3 is a minor bugfix release and is recommended for all
 users. Please refer to the ChangeLog file for details.
 
 ## 0.97.2
@@ -996,9 +1007,9 @@ The ClamAV team (https://www.clamav.net/about.html#credits)
 
 ClamAV 0.97 brings many improvements, including complete Windows support
 (all major components compile out-of-box under Visual Studio), support for
-signatures based on SHA1 and SHA256, better error detection, as well as 
-speed and memory optimizations. The complete list of changes is available 
-in the ChangeLog file. For upgrade notes and tips please see: 
+signatures based on SHA1 and SHA256, better error detection, as well as
+speed and memory optimizations. The complete list of changes is available
+in the ChangeLog file. For upgrade notes and tips please see:
 https://wiki.clamav.net/Main/UpgradeNotes097
 
 With Sourcefire, Inc. acquisition of Immunet Corp., ClamAV for Windows
@@ -1009,7 +1020,7 @@ the full power of the LibClamAV engine, all the ClamAV signatures,
 and creation of custom signatures on any platform running Immunet 3.0,
 powered by ClamAV. If you run Windows systems in your environment and
 need an AV solution to protect them, give Immunet 3.0, powered by ClamAV
-a try; you can download it from https://www.clamav.net/download.html#otherversions 
+a try; you can download it from https://www.clamav.net/download.html#otherversions
 
 --
 The ClamAV team (https://www.clamav.net/about.html#credits)
@@ -1401,7 +1412,7 @@ The ClamAV team (https://www.clamav.net/about.html#credits)
 ## 0.90.3
 
 This release fixes some security bugs in libclamav and improves stability
-under Solaris. Please see ChangeLog for complete list of changes. 
+under Solaris. Please see ChangeLog for complete list of changes.
 
 If your system is suffering from long clamscan startup times, please
 consider installing 0.91rc1 which is due to be released shortly
@@ -1455,9 +1466,9 @@ systems yet. You are encouraged to pass the --enable-experimental flag to
 improvements in terms of detection rate and performances. If you find a bug,
 please take some time to report it on our bugzilla: https://bugzilla.clamav.net.
 Your help in testing the new code is really appreciated. The experimental code
-introduces many improvements in terms of detection rate and performances. 
+introduces many improvements in terms of detection rate and performances.
 
-RAR3, SIS and SFX archives support is finally available together with 
+RAR3, SIS and SFX archives support is finally available together with
 new unpackers and decryptors: pespin, sue, yc, wwpack32, nspack, mew, upack
 and others. Additionally, ClamAV now includes better mechanisms for scanning
 ELF, PDF and tar files. The email decoding has been improved to reduce both
@@ -1466,10 +1477,10 @@ the memory requirements and the time taken to process attachments.
 As part of the Google Summer of Code program, we have introduced support for
 a new phishing signatures format that has proved very effective in detecting
 phishing emails. The ClamAV phishing module allows better and more generic
-detection of phishing emails by searching for URLs in email messages, and 
-comparing the real site with the URL displayed to the user in the message. 
+detection of phishing emails by searching for URLs in email messages, and
+comparing the real site with the URL displayed to the user in the message.
 
-On the performance side, support for the MULTISCAN command has been 
+On the performance side, support for the MULTISCAN command has been
 implemented in clamd, allowing to scan multiple files simultaneously.
 Support for Sensory Networks' NodalCore acceleration technology
 (https://www.clamav.net/nodalcore/) is now available in ClamAV and will be
@@ -1568,7 +1579,7 @@ We are happy to announce new interesting software with support for ClamAV:
 - mod_streamav - a ClamAV based antivirus filter for Apache 2
 - pyClamd - a python interface to Clamd
 
-More information at https://www.clamav.net/download.html#tools 
+More information at https://www.clamav.net/download.html#tools
 
 --
 The ClamAV team (https://www.clamav.net/about.html#credits)
@@ -1622,7 +1633,7 @@ architectures and possible security problem in freshclam.
 Following the 0.88.1 release some portals and security related websites
 published incorrect information on security problems of 0.88. To avoid
 such incidents in the future, every new ClamAV package will be released
-together with detailed information about security bugs it fixes. 
+together with detailed information about security bugs it fixes.
 
 --
 The ClamAV team (https://www.clamav.net/about.html#credits)
@@ -1892,7 +1903,7 @@ Important note to clamdwatch users: please upgrade to the latest version
   - simscan - an e-mail and spam filter for qmail
   - smtpfilter - scan SMTP session for viruses
   - snort-inline - scan your network traffic for viruses with ClamAV
-  - SquidClamAV Redirector - a Squid helper script which adds virus scanning 
+  - SquidClamAV Redirector - a Squid helper script which adds virus scanning
   - WRAVLib - a library for a-v integration with Mono/.NET applications
 
 --
@@ -2050,7 +2061,7 @@ up with or beating the proprietary alternatives." Thanks!
 SourceWear.com is selling some very nice t-shirts and polo shirts powered by
 ClamAV. Wear them and virus writers will stay away from you :- A quarter out
 of every dollar profited from the sale of these shirts will go to the ClamAV
-project. Visit http://www.sourcewear.com and click on ClamAV logo! 
+project. Visit http://www.sourcewear.com and click on ClamAV logo!
 
 --
 The ClamAV team (https://www.clamav.net/about.html#credits)
@@ -2071,7 +2082,7 @@ We have been distributing the database in both formats till now, but
 we plan to drop support for ClamAV 0.60 on September 1st.
 
 We encourage _all_ users to upgrade to the latest release available.
-People running an old version of ClamAV are missing many viruses and 
+People running an old version of ClamAV are missing many viruses and
 may experience stability problems.
 
 On non-production systems you can try the latest development version.
@@ -2109,7 +2120,7 @@ The ClamAV team (https://www.clamav.net/about.html#credits)
 ## 0.73
 
 This version fixes memory management problems in the OLE2 decoder and
-improves mail scanning. 
+improves mail scanning.
 
 Thank you for using ClamAV !
 
@@ -2132,7 +2143,7 @@ This release fixes all bugs found in 0.70 and introduces a few new features -
 the noteworthy changes include:
 
 - libclamav:
-  - support nested OLE2 files 
+  - support nested OLE2 files
   - support Word6 macro code
   - ignore popular file types (media, graphics)
   - support compress.exe (SZDD) compression (test/test.msc)
@@ -2367,7 +2378,7 @@ the highest possible level.
 New mirroring mechanisms. Luca Gibelli (ClamAV) and mirror administrators
 (22 sites) are converting mirrors to new "push mirroring"
 method. It uses advanced techniques to ensure all the mirrors are up to date.
-More info: https://www.clamav.net/documents/introduction 
+More info: https://www.clamav.net/documents/introduction
 
 We would like to thank our donors:
 
@@ -2540,7 +2551,7 @@ Changes:
   - various mbox code updates (fixed memory leak; added support for decoding
     viruses sent in message bodies, detection of viruses that put their
     payloads after the end of message marker (thanks to Stephen White
-    <stephen@earth.li> for the bug report and useful CGI tools); 
+    <stephen@earth.li> for the bug report and useful CGI tools);
 
   - zziplib updated to 0.10.81 (some problems with older version were reported
     by Martin Schitter)
@@ -2681,7 +2692,7 @@ attachement file names.
 ## 0.52
 
 This version contains a portability fixes - it should compile on OpenBSD,
-MacOSX and NetBSD (support for them was broken in 0.51). 
+MacOSX and NetBSD (support for them was broken in 0.51).
 
 - clamd: various fixes:
   - drop supplementary groups (suggested by Enrico Scholz
@@ -2751,7 +2762,7 @@ New software:
 
 - clamd: a modern anti-virus daemon. It uses configuration file clamav.conf
   described in the clamav.conf(5) manual. The program was written with
-  security as a goal. 
+  security as a goal.
 
 - clamuko: on-access scanning under Linux. It utilizes Dazuko kernel module
   (GPL, http://dazuko.org) and is clamd-based.
