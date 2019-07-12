@@ -41,14 +41,13 @@ struct zip_requests {
     int found, match;
 };
 
-int cli_unzip(cli_ctx *);
-int cli_unzip_single_internal(cli_ctx *, off_t, zip_cb);
-int unzip_single_internal(cli_ctx *, off_t, zip_cb);
-int cli_unzip_single(cli_ctx *, off_t);
+cl_error_t cli_unzip(cli_ctx *);
+cl_error_t unzip_single_internal(cli_ctx *, off_t, zip_cb);
+cl_error_t cli_unzip_single(cli_ctx *, off_t);
 
-int unzip_search_add(struct zip_requests *, const char *, size_t);
-int unzip_search(cli_ctx *, fmap_t *, struct zip_requests *);
-int unzip_search_single(cli_ctx *, const char *, size_t, uint32_t *);
+cl_error_t unzip_search_add(struct zip_requests *, const char *, size_t);
+cl_error_t unzip_search(cli_ctx *, fmap_t *, struct zip_requests *);
+cl_error_t unzip_search_single(cli_ctx *, const char *, size_t, uint32_t *);
 
 // clang-format off
 #ifdef UNZIP_PRIVATE
@@ -95,6 +94,9 @@ enum ALGO {
     ALG_PPMD
 };
 
+/*
+ * Local File Header format:
+ */
 /* struct LH { */
 /*   uint32_t magic; */
 /*   uint16_t version; */
@@ -110,20 +112,26 @@ enum ALGO {
 /*   char extra[elen] */
 /* } __attribute__((packed)); */
 
+/*
+ * Local File Header convenience macros:
+ */
 // clang-format off
-#define LH_magic   ((uint32_t)cli_readint32((uint8_t *)(lh)+0))
-#define LH_version ((uint16_t)cli_readint16((uint8_t *)(lh)+4))
-#define LH_flags   ((uint16_t)cli_readint16((uint8_t *)(lh)+6))
-#define LH_method  ((uint16_t)cli_readint16((uint8_t *)(lh)+8))
-#define LH_mtime   ((uint32_t)cli_readint32((uint8_t *)(lh)+10))
-#define LH_crc32   ((uint32_t)cli_readint32((uint8_t *)(lh)+14))
-#define LH_csize   ((uint32_t)cli_readint32((uint8_t *)(lh)+18))
-#define LH_usize   ((uint32_t)cli_readint32((uint8_t *)(lh)+22))
-#define LH_flen    ((uint16_t)cli_readint16((uint8_t *)(lh)+26))
-#define LH_elen    ((uint16_t)cli_readint16((uint8_t *)(lh)+28))
-#define SIZEOF_LH 30
+#define LOCAL_HEADER_magic   ((uint32_t)cli_readint32((uint8_t *)(local_header)+0))
+#define LOCAL_HEADER_version ((uint16_t)cli_readint16((uint8_t *)(local_header)+4))
+#define LOCAL_HEADER_flags   ((uint16_t)cli_readint16((uint8_t *)(local_header)+6))
+#define LOCAL_HEADER_method  ((uint16_t)cli_readint16((uint8_t *)(local_header)+8))
+#define LOCAL_HEADER_mtime   ((uint32_t)cli_readint32((uint8_t *)(local_header)+10))
+#define LOCAL_HEADER_crc32   ((uint32_t)cli_readint32((uint8_t *)(local_header)+14))
+#define LOCAL_HEADER_csize   ((uint32_t)cli_readint32((uint8_t *)(local_header)+18))
+#define LOCAL_HEADER_usize   ((uint32_t)cli_readint32((uint8_t *)(local_header)+22))
+#define LOCAL_HEADER_flen    ((uint16_t)cli_readint16((uint8_t *)(local_header)+26))
+#define LOCAL_HEADER_elen    ((uint16_t)cli_readint16((uint8_t *)(local_header)+28))
+#define SIZEOF_LOCAL_HEADER 30
 // clang-format on
 
+/*
+ * Central Directory File Header format:
+ */
 /* struct CH { */
 /*   uint32_t magic; */
 /*   uint16_t vermade; */
@@ -146,27 +154,30 @@ enum ALGO {
 /*   char comment[clen] */
 /* } __attribute__((packed)); */
 
+/*
+ * Central Directory File Header convenience macro's:
+ */
 // clang-format off
-#define CH_magic   ((uint32_t)cli_readint32((uint8_t *)(ch)+0))
-#define CH_vermade ((uint16_t)cli_readint16((uint8_t *)(ch)+4))
-#define CH_verneed ((uint16_t)cli_readint16((uint8_t *)(ch)+6))
-#define CH_flags   ((uint16_t)cli_readint16((uint8_t *)(ch)+8))
-#define CH_method  ((uint16_t)cli_readint16((uint8_t *)(ch)+10))
-#define CH_mtime   ((uint32_t)cli_readint32((uint8_t *)(ch)+12))
-#define CH_crc32   ((uint32_t)cli_readint32((uint8_t *)(ch)+16))
-#define CH_csize   ((uint32_t)cli_readint32((uint8_t *)(ch)+20))
-#define CH_usize   ((uint32_t)cli_readint32((uint8_t *)(ch)+24))
-#define CH_flen    ((uint16_t)cli_readint16((uint8_t *)(ch)+28))
-#define CH_elen    ((uint16_t)cli_readint16((uint8_t *)(ch)+30))
-#define CH_clen    ((uint16_t)cli_readint16((uint8_t *)(ch)+32))
-#define CH_dsk     ((uint16_t)cli_readint16((uint8_t *)(ch)+34))
-#define CH_iattrib ((uint16_t)cli_readint16((uint8_t *)(ch)+36))
-#define CH_eattrib ((uint32_t)cli_readint32((uint8_t *)(ch)+38))
-#define CH_off     ((uint32_t)cli_readint32((uint8_t *)(ch)+42))
-#define SIZEOF_CH 46
+#define CENTRAL_HEADER_magic        ((uint32_t)cli_readint32((uint8_t *)(central_header)+0))
+#define CENTRAL_HEADER_vermade      ((uint16_t)cli_readint16((uint8_t *)(central_header)+4))
+#define CENTRAL_HEADER_verneed      ((uint16_t)cli_readint16((uint8_t *)(central_header)+6))
+#define CENTRAL_HEADER_flags        ((uint16_t)cli_readint16((uint8_t *)(central_header)+8))
+#define CENTRAL_HEADER_method       ((uint16_t)cli_readint16((uint8_t *)(central_header)+10))
+#define CENTRAL_HEADER_mtime        ((uint32_t)cli_readint32((uint8_t *)(central_header)+12))
+#define CENTRAL_HEADER_crc32        ((uint32_t)cli_readint32((uint8_t *)(central_header)+16))
+#define CENTRAL_HEADER_csize        ((uint32_t)cli_readint32((uint8_t *)(central_header)+20))
+#define CENTRAL_HEADER_usize        ((uint32_t)cli_readint32((uint8_t *)(central_header)+24))
+#define CENTRAL_HEADER_flen         ((uint16_t)cli_readint16((uint8_t *)(central_header)+28))
+#define CENTRAL_HEADER_extra_len    ((uint16_t)cli_readint16((uint8_t *)(central_header)+30))
+#define CENTRAL_HEADER_comment_len  ((uint16_t)cli_readint16((uint8_t *)(central_header)+32))
+#define CENTRAL_HEADER_disk_num     ((uint16_t)cli_readint16((uint8_t *)(central_header)+34))
+#define CENTRAL_HEADER_iattrib      ((uint16_t)cli_readint16((uint8_t *)(central_header)+36))
+#define CENTRAL_HEADER_eattrib      ((uint32_t)cli_readint32((uint8_t *)(central_header)+38))
+#define CENTRAL_HEADER_off          ((uint32_t)cli_readint32((uint8_t *)(central_header)+42))
 // clang-format on
 
-#define SIZEOF_EH 12
+#define SIZEOF_CENTRAL_HEADER 46
+#define SIZEOF_ENCRYPTION_HEADER 12
 #endif /* UNZIP_PRIVATE */
 
 #endif /* __UNZIP_H */
