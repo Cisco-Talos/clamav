@@ -219,7 +219,7 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(const unsigned char *buf, unsigned int nbytes);
 
-/* organize by length, cannot exceed SIZEOF_LH */
+/* organize by length, cannot exceed SIZEOF_LOCAL_HEADER */
 // clang-format off
 const struct ooxml_ftcodes {
     const char *entry;
@@ -322,7 +322,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     cli_dbgmsg("Recognized POSIX tar file\n");
                     return CL_TYPE_POSIX_TAR;
             }
-        } else if (ret == CL_TYPE_ZIP && bread > 2 * (SIZEOF_LH + 5)) {
+        } else if (ret == CL_TYPE_ZIP && bread > 2 * (SIZEOF_LOCAL_HEADER + 5)) {
             const char lhdr_magic[4]    = {0x50, 0x4b, 0x03, 0x04};
             const unsigned char *zbuff  = buff;
             uint32_t zread              = bread;
@@ -336,7 +336,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
             for (zi = 0; zi < 32; zi++) {
                 znamep = (const unsigned char *)cli_memstr((const char *)znamep, zlen, lhdr_magic, 4);
                 if (NULL != znamep) {
-                    znamep += SIZEOF_LH;
+                    znamep += SIZEOF_LOCAL_HEADER;
                     zlen = zread - (znamep - zbuff);
                     if (zlen > OOXML_DETECT_MAXLEN) {
                         for (i = 0; ooxml_detect[i].entry; i++) {
@@ -369,8 +369,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 }
 
                 if (znamep == NULL) {
-                    if (map->len - zoff > SIZEOF_LH) {
-                        zoff -= SIZEOF_LH + OOXML_DETECT_MAXLEN + 1; /* remap for SIZEOF_LH+filelen for header overlap map boundary */
+                    if (map->len - zoff > SIZEOF_LOCAL_HEADER) {
+                        zoff -= SIZEOF_LOCAL_HEADER + OOXML_DETECT_MAXLEN + 1; /* remap for SIZEOF_LOCAL_HEADER+filelen for header overlap map boundary */
                         zread = MIN(MAGIC_BUFFER_SIZE, map->len - zoff);
                         zbuff = fmap_need_off_once(map, zoff, zread);
                         if (zbuff == NULL) {
