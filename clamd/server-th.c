@@ -88,7 +88,7 @@ static void scanner_thread(void *arg)
 #ifndef _WIN32
     /* ignore all signals */
     sigfillset(&sigset);
-    /* The behavior of a process is undefined after it ignores a 
+    /* The behavior of a process is undefined after it ignores a
      * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
@@ -440,12 +440,7 @@ static void *acceptloop_th(void *arg)
 #endif
             } else if (errno != EINTR) {
                 /* very bad - need to exit or restart */
-#ifdef HAVE_STRERROR_R
-                (void)strerror_r(errno, buff, BUFFSIZE);
-                logg("!accept() failed: %s\n", buff);
-#else
-                logg("!accept() failed\n");
-#endif
+                logg("!accept() failed: %s\n", cli_strerror(errno, buff, BUFFSIZE));
                 /* give the poll loop a chance to close disconnected FDs */
                 break;
             }
@@ -554,7 +549,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
                 /* no more commands are accepted */
                 conn->mode = MODE_WAITREPLY;
                 /* Stop monitoring this FD, it will be closed either
-		 * by us, or by the scanner thread. 
+		 * by us, or by the scanner thread.
 		 * Never close a file descriptor that is being
 		 * monitored by poll()/select() from another thread,
 		 * because this can lead to subtle bugs such as:
@@ -1189,7 +1184,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         int solaris_has_extended_stdio = 0;
 #endif
         /* Condition to not run out of file descriptors:
-	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
+	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 #ifdef C_SOLARIS
@@ -1311,7 +1306,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     sigdelset(&sigset, SIGHUP);
     sigdelset(&sigset, SIGPIPE);
     sigdelset(&sigset, SIGUSR2);
-    /* The behavior of a process is undefined after it ignores a 
+    /* The behavior of a process is undefined after it ignores a
      * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
