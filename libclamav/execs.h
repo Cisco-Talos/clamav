@@ -29,7 +29,7 @@
 
 /** @file */
 /** Section of executable file.
-  \group_pe
+ * \group_pe
  *  NOTE: This is used to store PE, MachO, and ELF section information. Not
  *  all members are populated by the respective parsing functions.
  *
@@ -46,7 +46,7 @@
  *  TODO Modify this structure to also include the section name (in both
  *  repos).  Then, populate this field in the libclamav PE/MachO/ELF header
  *  parsing functions.  Choose a length that's reasonable for all platforms
-*/
+ */
 struct cli_exe_section {
     uint32_t rva;  /**< Relative VirtualAddress */
     uint32_t vsz;  /**< VirtualSize */
@@ -74,9 +74,9 @@ struct cli_exe_section {
  *  modified in the clamav-devel repo without requiring the changes to
  *  be propagated to the clamav-bytecode-compile repo and that code rebuilt.
  *  It'd be nice to keep them in sync if possible, though.
-*/
+ */
 struct cli_exe_info {
-    /** Information about all the sections of this file. 
+    /** Information about all the sections of this file.
      * This array has \p nsection elements */
     struct cli_exe_section *sections;
 

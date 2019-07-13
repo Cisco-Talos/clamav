@@ -150,11 +150,11 @@ const struct cli_apiglobal cli_globals[] = {
 /* Bytecode globals END */
 };
 const unsigned cli_apicall_maxglobal = _LAST_GLOBAL-1;
-static uint16_t cli_tmp0[]={32, 32, 16, 16, 74, 73, 32, 72, 70, 32, 32, 32, 32};
+static uint16_t cli_tmp0[]={32, 32, 16, 16, 74, 73, 70, 32, 72, 70, 70, 32, 32, 32, 32};
 static uint16_t cli_tmp1[]={71};
 static uint16_t cli_tmp2[]={32, 32};
-static uint16_t cli_tmp3[]={16, 8, 8, 32, 32, 32, 32, 32, 64, 32, 32, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 16, 16, 64, 64, 64, 64, 32, 32, 70};
-static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 16, 16, 32, 32, 32, 32, 32, 32, 70};
+static uint16_t cli_tmp3[]={16, 8, 8, 32, 32, 32, 32, 32, 64, 32, 32, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 16, 16, 64, 64, 64, 64, 32, 32};
+static uint16_t cli_tmp4[]={16, 8, 8, 32, 32, 32, 32, 32, 32, 32, 32, 32, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 16, 16, 32, 32, 32, 32, 32, 32};
 static uint16_t cli_tmp5[]={32, 16, 16, 32, 32, 32, 16, 16};
 static uint16_t cli_tmp6[]={32};
 static uint16_t cli_tmp7[]={32};
@@ -183,11 +183,11 @@ static uint16_t cli_tmp29[]={99};
 static uint16_t cli_tmp30[]={8};
 
 const struct cli_bc_type cli_apicall_types[]={
-	{DStructType, cli_tmp0, 13, 0, 0},
+	{DStructType, cli_tmp0, 15, 0, 0},
 	{DArrayType, cli_tmp1, 16, 0, 0},
 	{DStructType, cli_tmp2, 2, 0, 0},
-	{DStructType, cli_tmp3, 30, 0, 0},
-	{DStructType, cli_tmp4, 31, 0, 0},
+	{DStructType, cli_tmp3, 29, 0, 0},
+	{DStructType, cli_tmp4, 30, 0, 0},
 	{DStructType, cli_tmp5, 8, 0, 0},
 	{DArrayType, cli_tmp6, 1, 0, 0},
 	{DArrayType, cli_tmp7, 64, 0, 0},
