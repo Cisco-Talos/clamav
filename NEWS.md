@@ -5,14 +5,17 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.101.3
 
-ClamAV 0.101.3 is a patch release...
+ClamAV 0.101.3 is a patch release to address a vulnerability to non-recursive
+zip bombs.
 
-- Fixes for the following vulnerabilities affecting 0.101.2 and prior:
-  -
+A Denial-of-Service (DoS) vulnerability may occur when scanning a zip bomb as a
+result of excessively long scan times. The issue is resolved by detecting the
+overlapping local file headers which characterize the non-recursive zip bomb
+described by David Fifield,
+[here](https://www.bamsoftware.com/hacks/zipbomb/).
 
-Additional thanks to the following community members for submitting bug reports:
-
--
+Thank you to Hanno Böck for reporting the issue as it relates to ClamAV,
+[here](https://bugzilla.clamav.net/show_bug.cgi?id=12356).
 
 ## 0.101.2
 
