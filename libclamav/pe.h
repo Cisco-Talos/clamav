@@ -3,8 +3,8 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
- * 
- *  Acknowledgements: The header structures were based upon a PE format 
+ *
+ *  Acknowledgements: The header structures were based upon a PE format
  *                    analysis by B. Luevelsmeyer.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@
 #include "execs.h"
 
 /** Data for the bytecode PE hook
-  \group_pe
+ * \group_pe
  *
  *  NOTE: This structure must stay in-sync with the ones defined within the
  *  clamav-bytecode-compiler source at:
@@ -57,8 +57,8 @@ struct cli_pe_hook_data {
     struct pe_image_file_hdr file_hdr;    /**< Header for this PE file */
     struct pe_image_optional_hdr32 opt32; /**< 32-bit PE optional header */
     /** Our opt32 no longer includes DataDirectory[16], but the one in the
-   * bytecode compiler source still does.  Add this here as a placeholder (and
-   * it gets used, so we need to populate it also */
+     * bytecode compiler source still does.  Add this here as a placeholder (and
+     * it gets used, so we need to populate it also */
     struct pe_image_data_dir opt32_dirs[16];
     uint32_t dummy2;                         /* align */
     struct pe_image_optional_hdr64 opt64;    /**< 64-bit PE optional header */

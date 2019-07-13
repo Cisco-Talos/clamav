@@ -3,8 +3,8 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
- * 
- *  Acknowledgements: The header structures were based upon a PE format 
+ *
+ *  Acknowledgements: The header structures were based upon a PE format
  *                    analysis by B. Luevelsmeyer.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 
 /** @file */
 /** Header for this PE file
-  \group_pe */
+ * \group_pe */
 struct pe_image_file_hdr {
     uint32_t Magic;                /**< PE magic header: PE\\0\\0 */
     uint16_t Machine;              /**< CPU this executable runs on, see libclamav/pe.c for possible values */
@@ -42,14 +42,16 @@ struct pe_image_file_hdr {
 };
 
 /** PE data directory header
-  \group_pe */
+ * \group_pe
+ */
 struct pe_image_data_dir {
     uint32_t VirtualAddress;
     uint32_t Size;
 };
 
 /** 32-bit PE optional header
-  \group_pe */
+ * \group_pe
+ */
 struct pe_image_optional_hdr32 {
     uint16_t Magic;
     uint8_t MajorLinkerVersion;       /**< unreliable */
@@ -85,7 +87,8 @@ struct pe_image_optional_hdr32 {
 };
 
 /** PE 64-bit optional header
-  \group_pe */
+ * \group_pe
+ */
 struct pe_image_optional_hdr64 {
     uint16_t Magic;
     uint8_t MajorLinkerVersion;       /**< unreliable */
@@ -120,15 +123,16 @@ struct pe_image_optional_hdr64 {
 };
 
 /** PE section header
-  \group_pe */
+ * \group_pe
+ */
 struct pe_image_section_hdr {
     uint8_t Name[8]; /**< may not end with NULL */
     /*
-    union {
-	uint32_t PhysicalAddress;
-	uint32_t VirtualSize;
-    } AddrSize;
-    */
+     * union {
+     *     uint32_t PhysicalAddress;
+     *     uint32_t VirtualSize;
+     * } AddrSize;
+     */
     uint32_t VirtualSize;
     uint32_t VirtualAddress;
     uint32_t SizeOfRawData;        /**< multiple of FileAlignment */
@@ -144,7 +148,8 @@ struct pe_image_section_hdr {
 #define WIN_CERT_TYPE_PKCS7 0x0002
 
 /** PE authenticode data header
-  \group_pe */
+ * \group_pe
+ */
 struct pe_certificate_hdr {
     uint32_t length; /** length of the certificate data, including the header */
     uint16_t revision;
