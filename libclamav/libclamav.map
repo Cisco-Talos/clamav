@@ -62,8 +62,8 @@ CLAMAV_PUBLIC {
 };
 CLAMAV_PRIVATE {
   global:
-    cli_sigperf_print; 
-    cli_sigperf_events_destroy; 
+    cli_sigperf_print;
+    cli_sigperf_events_destroy;
     cli_pcre_perf_print;
     cli_pcre_perf_events_destroy;
     cli_pcre_init;
@@ -115,8 +115,6 @@ CLAMAV_PRIVATE {
     cli_malloc;
     cli_memstr;
     cli_strdup;
-    cli_strndup;
-    cli_strnstr;
     cli_realloc;
     cli_ctime;
     tableCreate;
