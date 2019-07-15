@@ -66,8 +66,8 @@ void mspack_destroy_szdd_decompressor(struct msszdd_decompressor *base)
 {
     struct msszdd_decompressor_p *self = (struct msszdd_decompressor_p *) base;
     if (self) {
-	struct mspack_system *sys = self->system;
-	sys->free(self);
+        struct mspack_system *sys = self->system;
+        sys->free(self);
     }
 }
 
@@ -77,7 +77,7 @@ void mspack_destroy_szdd_decompressor(struct msszdd_decompressor *base)
  * opens an SZDD file without decompressing, reads header
  */
 static struct msszddd_header *szddd_open(struct msszdd_decompressor *base,
-					 const char *filename)
+                                         const char *filename)
 {
     struct msszdd_decompressor_p *self = (struct msszdd_decompressor_p *) base;
     struct msszddd_header *hdr;
@@ -90,18 +90,18 @@ static struct msszddd_header *szddd_open(struct msszdd_decompressor *base,
     fh  = sys->open(sys, filename, MSPACK_SYS_OPEN_READ);
     hdr = (struct msszddd_header *) sys->alloc(sys, sizeof(struct msszddd_header_p));
     if (fh && hdr) {
-	((struct msszddd_header_p *) hdr)->fh = fh;
-	self->error = szddd_read_headers(sys, fh, hdr);
+        ((struct msszddd_header_p *) hdr)->fh = fh;
+        self->error = szddd_read_headers(sys, fh, hdr);
     }
     else {
-	if (!fh)  self->error = MSPACK_ERR_OPEN;
-	if (!hdr) self->error = MSPACK_ERR_NOMEMORY;
+        if (!fh)  self->error = MSPACK_ERR_OPEN;
+        if (!hdr) self->error = MSPACK_ERR_NOMEMORY;
     }
     
     if (self->error) {
-	if (fh) sys->close(fh);
-	sys->free(hdr);
-	hdr = NULL;
+        if (fh) sys->close(fh);
+        sys->free(hdr);
+        hdr = NULL;
     }
 
     return hdr;
@@ -113,7 +113,7 @@ static struct msszddd_header *szddd_open(struct msszdd_decompressor *base,
  * closes an SZDD file
  */
 static void szddd_close(struct msszdd_decompressor *base,
-			struct msszddd_header *hdr)
+                        struct msszddd_header *hdr)
 {
     struct msszdd_decompressor_p *self = (struct msszdd_decompressor_p *) base;
     struct msszddd_header_p *hdr_p = (struct msszddd_header_p *) hdr;
@@ -142,33 +142,33 @@ static unsigned char szdd_signature_qbasic[8] = {
 };
 
 static int szddd_read_headers(struct mspack_system *sys,
-			      struct mspack_file *fh,
-			      struct msszddd_header *hdr)
+                              struct mspack_file *fh,
+                              struct msszddd_header *hdr)
 {
     unsigned char buf[8];
 
     /* read and check signature */
     if (sys->read(fh, buf, 8) != 8) return MSPACK_ERR_READ;
 
-    if ((mspack_memcmp(buf, szdd_signature_expand, 8) == 0)) {
-	/* common SZDD */
-	hdr->format = MSSZDD_FMT_NORMAL;
+    if ((memcmp(buf, szdd_signature_expand, 8) == 0)) {
+        /* common SZDD */
+        hdr->format = MSSZDD_FMT_NORMAL;
 
-	/* read the rest of the header */
-	if (sys->read(fh, buf, 6) != 6) return MSPACK_ERR_READ;
-	if (buf[0] != 0x41) return MSPACK_ERR_DATAFORMAT;
-	hdr->missing_char = buf[1];
-	hdr->length = EndGetI32(&buf[2]);
+        /* read the rest of the header */
+        if (sys->read(fh, buf, 6) != 6) return MSPACK_ERR_READ;
+        if (buf[0] != 0x41) return MSPACK_ERR_DATAFORMAT;
+        hdr->missing_char = buf[1];
+        hdr->length = EndGetI32(&buf[2]);
     }
-    else if ((mspack_memcmp(buf, szdd_signature_qbasic, 8) == 0)) {
-	/* special QBasic SZDD */
-	hdr->format = MSSZDD_FMT_QBASIC;
-	if (sys->read(fh, buf, 4) != 4) return MSPACK_ERR_READ;
-	hdr->missing_char = '\0';
-	hdr->length = EndGetI32(buf);
+    else if ((memcmp(buf, szdd_signature_qbasic, 8) == 0)) {
+        /* special QBasic SZDD */
+        hdr->format = MSSZDD_FMT_QBASIC;
+        if (sys->read(fh, buf, 4) != 4) return MSPACK_ERR_READ;
+        hdr->missing_char = '\0';
+        hdr->length = EndGetI32(buf);
     }
     else {
-	return MSPACK_ERR_SIGNATURE;
+        return MSPACK_ERR_SIGNATURE;
     }
     return MSPACK_ERR_OK;
 }
@@ -179,7 +179,7 @@ static int szddd_read_headers(struct mspack_system *sys,
  * decompresses an SZDD file
  */
 static int szddd_extract(struct msszdd_decompressor *base,
-			 struct msszddd_header *hdr, const char *filename)
+                         struct msszddd_header *hdr, const char *filename)
 {
     struct msszdd_decompressor_p *self = (struct msszdd_decompressor_p *) base;
     struct mspack_file *fh, *outfh;
@@ -195,19 +195,19 @@ static int szddd_extract(struct msszdd_decompressor *base,
     /* seek to the compressed data */
     data_offset = (hdr->format == MSSZDD_FMT_NORMAL) ? 14 : 12;
     if (sys->seek(fh, data_offset, MSPACK_SYS_SEEK_START)) {
-	return self->error = MSPACK_ERR_SEEK;
+        return self->error = MSPACK_ERR_SEEK;
     }
 
     /* open file for output */
     if (!(outfh = sys->open(sys, filename, MSPACK_SYS_OPEN_WRITE))) {
-	return self->error = MSPACK_ERR_OPEN;
+        return self->error = MSPACK_ERR_OPEN;
     }
 
     /* decompress the data */
     self->error = lzss_decompress(sys, fh, outfh, SZDD_INPUT_SIZE,
-				  hdr->format == MSSZDD_FMT_NORMAL
-				  ? LZSS_MODE_EXPAND
-				  : LZSS_MODE_QBASIC);
+                                  hdr->format == MSSZDD_FMT_NORMAL
+                                  ? LZSS_MODE_EXPAND
+                                  : LZSS_MODE_QBASIC);
 
     /* close output file */
     sys->close(outfh);
@@ -221,7 +221,7 @@ static int szddd_extract(struct msszdd_decompressor *base,
  * unpacks directly from input to output
  */
 static int szddd_decompress(struct msszdd_decompressor *base,
-			    const char *input, const char *output)
+                            const char *input, const char *output)
 {
     struct msszdd_decompressor_p *self = (struct msszdd_decompressor_p *) base;
     struct msszddd_header *hdr;

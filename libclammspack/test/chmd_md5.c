@@ -35,27 +35,27 @@ int main(int argc, char *argv[]) {
       printf("*** %s\n", *argv);
       if ((chm = chmd->open(chmd, *argv))) {
 
-	/* extract in order of the offset into content section - faster */
-	for (numf=0, file=chm->files; file; file = file->next) numf++;
-	if ((f = (struct mschmd_file **) calloc(numf, sizeof(struct mschmd_file *)))) {
-	  for (i=0, file=chm->files; file; file = file->next) f[i++] = file;
-	  qsort(f, numf, sizeof(struct mschmd_file *), &sortfunc);
-	  for (i = 0; i < numf; i++) {
-	    if (chmd->extract(chmd, f[i], NULL)) {
-	      fprintf(stderr, "%s: extract error on \"%s\": %s\n",
-		      *argv, f[i]->filename, ERROR(chmd));
-	    }
-	    else {
-	      printf("%s %s\n", md5_string, f[i]->filename);
+        /* extract in order of the offset into content section - faster */
+        for (numf=0, file=chm->files; file; file = file->next) numf++;
+        if ((f = (struct mschmd_file **) calloc(numf, sizeof(struct mschmd_file *)))) {
+          for (i=0, file=chm->files; file; file = file->next) f[i++] = file;
+          qsort(f, numf, sizeof(struct mschmd_file *), &sortfunc);
+          for (i = 0; i < numf; i++) {
+            if (chmd->extract(chmd, f[i], NULL)) {
+              fprintf(stderr, "%s: extract error on \"%s\": %s\n",
+                      *argv, f[i]->filename, ERROR(chmd));
             }
-	  }
-	  free(f);
-	}
+            else {
+              printf("%s %s\n", md5_string, f[i]->filename);
+            }
+          }
+          free(f);
+        }
 
-	chmd->close(chmd, chm);
+        chmd->close(chmd, chm);
       }
       else {
-	fprintf(stderr, "%s: can't open -- %s\n", *argv, ERROR(chmd));
+        fprintf(stderr, "%s: can't open -- %s\n", *argv, ERROR(chmd));
       }
     }
     mspack_destroy_chm_decompressor(chmd);

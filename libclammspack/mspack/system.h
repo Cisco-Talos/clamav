@@ -1,5 +1,5 @@
 /* This file is part of libmspack.
- * (C) 2003-2004 Stuart Caie.
+ * (C) 2003-2018 Stuart Caie.
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -20,6 +20,9 @@ extern "C" {
 #endif
 
 #include <mspack.h>
+
+/* assume <string.h> exists */
+#include <string.h>
 
 /* fix for problem with GCC 4 and glibc (thanks to Ville Skytta)
  * http://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=150429
@@ -54,10 +57,6 @@ extern "C" {
  * greater than 2GB is detected, an error message indicating the library
  * can't support the file should be printed.
  */
-#if HAVE_LIMITS_H
-# include <limits.h>
-#endif
-
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
 #else
@@ -67,10 +66,11 @@ extern "C" {
 # define PRIu32 "lu"
 #endif
 
+#include <limits.h>
 #if ((defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS >= 64) || \
      (defined(FILESIZEBITS)      && FILESIZEBITS      >= 64) || \
-     (defined(SIZEOF_OFF_T)      && SIZEOF_OFF_T      >= 8)  || \
-     defined(_LARGEFILE_SOURCE) || defined(_LARGEFILE64_SOURCE))
+     defined(_LARGEFILE_SOURCE) || defined(_LARGEFILE64_SOURCE) || \
+     SIZEOF_OFF_T >= 8)
 # define LARGEFILE_SUPPORT 1
 # define LD PRId64
 # define LU PRIu64
@@ -81,51 +81,29 @@ extern const char *largefile_msg;
 #endif
 
 /* endian-neutral reading of little-endian data */
-#define __egi32(a,n) ( ((((unsigned char *) a)[n+3]) << 24) | \
-		       ((((unsigned char *) a)[n+2]) << 16) | \
-		       ((((unsigned char *) a)[n+1]) <<  8) | \
-		       ((((unsigned char *) a)[n+0])))
-#define EndGetI64(a) ((((unsigned long long int) __egi32(a,4)) << 32) | \
-		      ((unsigned int) __egi32(a,0)))
+#define __egi32(a,n) (((unsigned int) ((unsigned char *)(a))[n+3] << 24) | \
+                      ((unsigned int) ((unsigned char *)(a))[n+2] << 16) | \
+                      ((unsigned int) ((unsigned char *)(a))[n+1] <<  8) | \
+                      ((unsigned int) ((unsigned char *)(a))[n]))
+#define EndGetI64(a) (((unsigned long long int) __egi32(a,4) << 32) | __egi32(a,0))
 #define EndGetI32(a) __egi32(a,0)
 #define EndGetI16(a) ((((a)[1])<<8)|((a)[0]))
 
 /* endian-neutral reading of big-endian data */
-#define EndGetM32(a) (((((unsigned char *) a)[0]) << 24) | \
-		      ((((unsigned char *) a)[1]) << 16) | \
-		      ((((unsigned char *) a)[2]) <<  8) | \
-		      ((((unsigned char *) a)[3])))
+#define EndGetM32(a) (((unsigned int) ((unsigned char *)(a))[0] << 24) | \
+                      ((unsigned int) ((unsigned char *)(a))[1] << 16) | \
+                      ((unsigned int) ((unsigned char *)(a))[2] <<  8) | \
+                      ((unsigned int) ((unsigned char *)(a))[3]))
 #define EndGetM16(a) ((((a)[0])<<8)|((a)[1]))
 
 extern struct mspack_system *mspack_default_system;
 
 /* returns the length of a file opened for reading */
 extern int mspack_sys_filelen(struct mspack_system *system,
-			      struct mspack_file *file, off_t *length);
+                              struct mspack_file *file, off_t *length);
 
 /* validates a system structure */
 extern int mspack_valid_system(struct mspack_system *sys);
-
-#if HAVE_STRINGS_H
-# include <strings.h>
-#endif
-
-#if HAVE_STRING_H
-# include <string.h>
-#endif
-
-#if HAVE_MEMCMP
-# define mspack_memcmp memcmp
-#else
-/* inline memcmp() */
-static inline int mspack_memcmp(const void *s1, const void *s2, size_t n) {
-  unsigned char *c1 = (unsigned char *) s1;
-  unsigned char *c2 = (unsigned char *) s2;
-  if (n == 0) return 0;
-  while (--n && (*c1 == *c2)) c1++, c2++;
-  return *c1 - *c2;
-}
-#endif
 
 #ifdef __cplusplus
 }

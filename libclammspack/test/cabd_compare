@@ -1,0 +1,55 @@
+#!/bin/sh
+# Test if cabd_md5 expands cab files identically to Microsoft's EXTRACT.EXE
+
+[ -d .cache ] || mkdir .cache
+BASEDIR=`dirname "$0"`
+
+cnt=1
+for cab in "$@"; do
+    name=`printf '%d/%d %s' $cnt $# $cab`
+    cnt=`expr $cnt + 1`
+
+    echo "test $name"
+    cached=`echo $cab | sed -e 's/\//-/g' -e 's/^/.cache\//'`
+    if [ ! -s $cached ]; then
+        $BASEDIR/msextract_md5 $cab >.orig.out 2>.orig.err
+        if [ -s .orig.err ]; then
+            echo "FAIL $name: MS errors" >&2
+            cat .orig.err >&2
+        else
+            mv .orig.out $cached
+        fi
+    fi
+
+    $BASEDIR/cabd_md5 $cab >.test.out 2>.test.err
+    perl -pi -e 'if($.>1){s{\\}{/}g;s{  /}{  }}' .test.out
+
+    # suppress warning. PRECOPY2.CAB does not extend to CATALOG3.CAB, but
+    # CATALOG3.CAB extends backwards to PRECOPY2.CAB. cabd_md5 supports this
+    # but msextract_md5 does not, so differences appear. As a workaround, test
+    # PRECOPYn.CAB separately and suppress the warning when testing CATALOG3.CAB
+    sed -i "/can't find \"PRECOPY2.CAB\" to prepend/d" .test.err
+
+    # suppress warning. One cabinet set has this structure:
+    # * cab1: file1 FROM_PREV, file2 TO_NEXT
+    # * cab2: file2 FROM_PREV, file3 TO_NEXT, file4 TO_NEXT
+    # * cab3: file3 FROM_PREV, file4 FROM_PREV_AND_TO_NEXT
+    # * cab4: file4 FROM_PREV ...
+    # This is wrong. file3 and file4 are in the same folder, so both should
+    # be FROM_PREV_AND_TO_NEXT in cab3, and both should be listed in cab4.
+    # However, the set unpacks despite the warning, so suppress it.
+    sed -i '/rainloop.xa not listed in both cabinets/d' .test.err
+
+    if [ -s .test.err ]; then
+        echo "FAIL $name: errors" >&2
+        cat .test.err >&2
+    fi
+
+    if cmp $cached .test.out >/dev/null; then
+       echo "OK   $name"
+    else
+       echo "FAIL $name: differences" >&2
+       diff -u $cached .test.out >&2
+    fi
+done
+rm -f .orig.out .orig.err .test.out .test.err

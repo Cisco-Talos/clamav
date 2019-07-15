@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+# put extract.exe (or a link to it) into this directory
+# for this script to work
+
+use strict;
+use File::Temp qw(tempdir);
+use Cwd qw(cwd);
+
+my $extract = $0; $extract =~ s{[^/]+$}{extract.exe};
+my $HDR1 = 'Microsoft (R) Diamond Extraction Tool';
+my $HDR2 = 'Copyright (c) Microsoft Corp';
+
+my $dir = tempdir("./.tempXXXX", CLEANUP => 1) . '/extradir';
+mkdir $dir;
+$ENV{LANG} = 'C';
+
+for my $cab (@ARGV) {
+    my @files;
+    print "*** $cab\n";
+    for (`wine $extract /y /a /e /l $dir $cab 2>&1`) {
+        s/\015?\012$//s; # remove line endings
+        next if /^(\Q$HDR1\E|\Q$HDR2\E|\s*$| Cabinet )/;
+        if (/^Extracting \Q$dir\E\\(.+)$/) {
+            my $file = $1;
+            $file =~ s{\\}{/}g;
+            $file =~ s{^/+}{};
+            push @files, $file;
+        }
+        else {
+            print STDERR "$_\n";
+        }
+    }
+
+    next unless @files;
+    my $olddir = cwd();
+    chdir $dir;
+    system 'md5sum', @files;
+    chdir $olddir;
+}

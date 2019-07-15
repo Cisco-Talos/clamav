@@ -1,0 +1,14 @@
+*.log
+*.o
+*.trs
+.deps
+.dirstamp
+.libs
+cabd_md5
+cabd_test
+chmd_find
+chmd_md5
+chmd_order
+chmd_test
+chminfo
+kwajd_test
