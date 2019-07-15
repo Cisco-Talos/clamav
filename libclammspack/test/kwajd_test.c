@@ -10,6 +10,10 @@
 #include <mspack.h>
 #include <system.h>
 
+#define __tf3(x) #x
+#define __tf2(x) __tf3(x)
+#define TESTFILE(fname) (__tf2(TEST_FILES) "/" fname)
+
 unsigned int test_count = 0;
 #define TEST(x) do {\
     test_count++; \
@@ -21,85 +25,83 @@ void kwajd_open_test_01() {
     struct mskwaj_decompressor *kwajd;
     struct mskwajd_header *hdr;
 
-    kwajd = mspack_create_kwaj_decompressor(NULL);
-    TEST(kwajd != NULL);
+    TEST(kwajd = mspack_create_kwaj_decompressor(NULL));
 
-    hdr = kwajd->open(kwajd, "test_files/kwajd/f00.kwj");
-    TEST(hdr != NULL);
+    TEST(hdr = kwajd->open(kwajd, TESTFILE("f00.kwj")));
     TEST(hdr->filename == NULL);
     kwajd->close(kwajd, hdr);
 
-#define TEST_FNAME(testfile, fname)      \
-    hdr = kwajd->open(kwajd, testfile);  \
-    TEST(hdr != NULL);                   \
-    TEST(hdr->filename != NULL);         \
-    TEST(!strcmp(fname, hdr->filename)); \
+#define GOOD(testfile, fname)                             \
+    TEST(hdr = kwajd->open(kwajd, testfile));             \
+    TEST(hdr->filename && !strcmp(fname, hdr->filename)); \
     kwajd->close(kwajd, hdr)
-#define TEST_FNAME_BAD(testfile)         \
-    hdr = kwajd->open(kwajd, testfile);  \
-    TEST(hdr == NULL);                   \
+
+#define BAD(testfile)                    \
+    TEST(!kwajd->open(kwajd, testfile)); \
     TEST(kwajd->last_error(kwajd) == MSPACK_ERR_DATAFORMAT)
 
-    TEST_FNAME("test_files/kwajd/f01.kwj", ".1");
-    TEST_FNAME("test_files/kwajd/f02.kwj", ".12");
-    TEST_FNAME("test_files/kwajd/f03.kwj", ".123");
+    GOOD(TESTFILE("f01.kwj"), ".1");
+    GOOD(TESTFILE("f02.kwj"), ".12");
+    GOOD(TESTFILE("f03.kwj"), ".123");
 
-    TEST_FNAME("test_files/kwajd/f10.kwj", "1");
-    TEST_FNAME("test_files/kwajd/f11.kwj", "1.1");
-    TEST_FNAME("test_files/kwajd/f12.kwj", "1.12");
-    TEST_FNAME("test_files/kwajd/f13.kwj", "1.123");
+    GOOD(TESTFILE("f10.kwj"), "1");
+    GOOD(TESTFILE("f11.kwj"), "1.1");
+    GOOD(TESTFILE("f12.kwj"), "1.12");
+    GOOD(TESTFILE("f13.kwj"), "1.123");
 
-    TEST_FNAME("test_files/kwajd/f20.kwj", "12");
-    TEST_FNAME("test_files/kwajd/f21.kwj", "12.1");
-    TEST_FNAME("test_files/kwajd/f22.kwj", "12.12");
-    TEST_FNAME("test_files/kwajd/f23.kwj", "12.123");
+    GOOD(TESTFILE("f20.kwj"), "12");
+    GOOD(TESTFILE("f21.kwj"), "12.1");
+    GOOD(TESTFILE("f22.kwj"), "12.12");
+    GOOD(TESTFILE("f23.kwj"), "12.123");
 
-    TEST_FNAME("test_files/kwajd/f30.kwj", "123");
-    TEST_FNAME("test_files/kwajd/f31.kwj", "123.1");
-    TEST_FNAME("test_files/kwajd/f32.kwj", "123.12");
-    TEST_FNAME("test_files/kwajd/f33.kwj", "123.123");
+    GOOD(TESTFILE("f30.kwj"), "123");
+    GOOD(TESTFILE("f31.kwj"), "123.1");
+    GOOD(TESTFILE("f32.kwj"), "123.12");
+    GOOD(TESTFILE("f33.kwj"), "123.123");
 
-    TEST_FNAME("test_files/kwajd/f40.kwj", "1234");
-    TEST_FNAME("test_files/kwajd/f41.kwj", "1234.1");
-    TEST_FNAME("test_files/kwajd/f42.kwj", "1234.12");
-    TEST_FNAME("test_files/kwajd/f43.kwj", "1234.123");
+    GOOD(TESTFILE("f40.kwj"), "1234");
+    GOOD(TESTFILE("f41.kwj"), "1234.1");
+    GOOD(TESTFILE("f42.kwj"), "1234.12");
+    GOOD(TESTFILE("f43.kwj"), "1234.123");
 
-    TEST_FNAME("test_files/kwajd/f50.kwj", "12345");
-    TEST_FNAME("test_files/kwajd/f51.kwj", "12345.1");
-    TEST_FNAME("test_files/kwajd/f52.kwj", "12345.12");
-    TEST_FNAME("test_files/kwajd/f53.kwj", "12345.123");
+    GOOD(TESTFILE("f50.kwj"), "12345");
+    GOOD(TESTFILE("f51.kwj"), "12345.1");
+    GOOD(TESTFILE("f52.kwj"), "12345.12");
+    GOOD(TESTFILE("f53.kwj"), "12345.123");
 
-    TEST_FNAME("test_files/kwajd/f60.kwj", "123456");
-    TEST_FNAME("test_files/kwajd/f61.kwj", "123456.1");
-    TEST_FNAME("test_files/kwajd/f62.kwj", "123456.12");
-    TEST_FNAME("test_files/kwajd/f63.kwj", "123456.123");
+    GOOD(TESTFILE("f60.kwj"), "123456");
+    GOOD(TESTFILE("f61.kwj"), "123456.1");
+    GOOD(TESTFILE("f62.kwj"), "123456.12");
+    GOOD(TESTFILE("f63.kwj"), "123456.123");
 
-    TEST_FNAME("test_files/kwajd/f70.kwj", "1234567");
-    TEST_FNAME("test_files/kwajd/f71.kwj", "1234567.1");
-    TEST_FNAME("test_files/kwajd/f72.kwj", "1234567.12");
-    TEST_FNAME("test_files/kwajd/f73.kwj", "1234567.123");
+    GOOD(TESTFILE("f70.kwj"), "1234567");
+    GOOD(TESTFILE("f71.kwj"), "1234567.1");
+    GOOD(TESTFILE("f72.kwj"), "1234567.12");
+    GOOD(TESTFILE("f73.kwj"), "1234567.123");
 
-    TEST_FNAME("test_files/kwajd/f80.kwj", "12345678");
-    TEST_FNAME("test_files/kwajd/f81.kwj", "12345678.1");
-    TEST_FNAME("test_files/kwajd/f82.kwj", "12345678.12");
-    TEST_FNAME("test_files/kwajd/f83.kwj", "12345678.123");
+    GOOD(TESTFILE("f80.kwj"), "12345678");
+    GOOD(TESTFILE("f81.kwj"), "12345678.1");
+    GOOD(TESTFILE("f82.kwj"), "12345678.12");
+    GOOD(TESTFILE("f83.kwj"), "12345678.123");
 
-    TEST_FNAME_BAD("test_files/kwajd/f04.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f14.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f24.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f34.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f44.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f54.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f64.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f74.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f84.kwj");
+    BAD(TESTFILE("f04.kwj"));
+    BAD(TESTFILE("f14.kwj"));
+    BAD(TESTFILE("f24.kwj"));
+    BAD(TESTFILE("f34.kwj"));
+    BAD(TESTFILE("f44.kwj"));
+    BAD(TESTFILE("f54.kwj"));
+    BAD(TESTFILE("f64.kwj"));
+    BAD(TESTFILE("f74.kwj"));
+    BAD(TESTFILE("f84.kwj"));
 
-    TEST_FNAME_BAD("test_files/kwajd/f90.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f91.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f92.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f93.kwj");
-    TEST_FNAME_BAD("test_files/kwajd/f94.kwj");
+    BAD(TESTFILE("f90.kwj"));
+    BAD(TESTFILE("f91.kwj"));
+    BAD(TESTFILE("f92.kwj"));
+    BAD(TESTFILE("f93.kwj"));
+    BAD(TESTFILE("f94.kwj"));
 
+#undef GOOD
+#undef BAD
 
     mspack_destroy_kwaj_decompressor(kwajd);
 }

@@ -90,10 +90,10 @@ struct qtmd_stream {
  * - input_buffer_size is the number of bytes to use to store bitstream data.
  */
 extern struct qtmd_stream *qtmd_init(struct mspack_system *system,
-				     struct mspack_file *input,
-				     struct mspack_file *output,
-				     int window_bits,
-				     int input_buffer_size);
+                                     struct mspack_file *input,
+                                     struct mspack_file *output,
+                                     int window_bits,
+                                     int input_buffer_size);
 
 /* decompresses, or decompresses more of, a Quantum stream.
  *

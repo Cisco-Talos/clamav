@@ -1,15 +1,12 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
-AC_INIT([libmspack],[0.8alpha],[kyzer@cabextract.org.uk])
+AC_INIT([libmspack],[0.10.1alpha],[kyzer@cabextract.org.uk])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.11])
+AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([mspack/mspack.h])
 AC_CONFIG_HEADER([config.h])
-
-dnl Enable silent rules by default (if yet support in automake)
-dnl use 'make V=1' to look at verbose commandline
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # --enable-debug option
 AC_ARG_ENABLE(debug,
@@ -19,7 +16,6 @@ AC_ARG_ENABLE(debug,
 if test x$enable_debug = xyes; then
   AC_DEFINE(DEBUG, 1, [Turn debugging mode on?])
 fi
-AM_CONDITIONAL(DEBUG, test x$enable_debug = 'xyes')
 
 # Checks for programs.
 AC_PROG_CC
@@ -27,15 +23,14 @@ AM_CONDITIONAL(GCC, test x$GCC = 'xyes')
 AM_PROG_AR
 AC_PROG_INSTALL
 LT_INIT
-AC_EXEEXT
 
 # Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([ctype.h inttypes.h limits.h stdlib.h wctype.h])
+AC_CHECK_HEADERS([inttypes.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_C_INLINE
+AC_C_BIGENDIAN
 AC_TYPE_MODE_T
 AC_TYPE_OFF_T
 AC_TYPE_SIZE_T
@@ -43,12 +38,11 @@ AC_CHECK_SIZEOF([off_t])
 
 # Checks for library functions
 AX_FUNC_MKDIR
-AC_CHECK_FUNCS([tolower towlower])
+AC_CHECK_FUNCS([towlower])
 
 # largefile support
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
-# Checks for library functions.
-AC_CONFIG_FILES([Makefile doc/Makefile doc/Doxyfile libmspack.pc])
+AC_CONFIG_FILES([Makefile libmspack.pc])
 AC_OUTPUT

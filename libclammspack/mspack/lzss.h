@@ -54,10 +54,10 @@ extern "C" {
  * @return an error code, or MSPACK_ERR_OK if successful
  */
 extern int lzss_decompress(struct mspack_system *system,
-			   struct mspack_file *input,
-			   struct mspack_file *output,
-			   int input_buffer_size,
-			   int mode);
+                           struct mspack_file *input,
+                           struct mspack_file *output,
+                           int input_buffer_size,
+                           int mode);
 
 #ifdef __cplusplus
 }

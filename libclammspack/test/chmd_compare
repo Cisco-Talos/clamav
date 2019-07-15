@@ -1,0 +1,42 @@
+#!/bin/sh
+# Test if chmd_md5 expands chm files identically to Microsoft's HH.EXE -DECOMPILE
+
+[ -d .cache ] || mkdir .cache
+BASEDIR=`dirname $0`
+
+cnt=1
+for chm in "$@"; do
+    name=`printf '%d/%d %s' $cnt $# $chm`; cnt=`expr $cnt + 1`
+
+    echo "test $name"
+    cached=`echo $chm | sed -e 's/\//-/g' -e 's/^/.cache\//'`
+    if [ ! -s $cached ]; then
+        $BASEDIR/msdecompile_md5 $chm >.orig.out 2>.orig.err
+        if [ -s .orig.err ]; then
+            echo "FAIL $name: MS errors" >&2
+            cat .orig.err >&2
+        else
+            LANG=C sort -k2 .orig.out >$cached
+        fi
+    fi
+
+    $BASEDIR/chmd_md5 $chm >.test.out 2>.test.errwarn
+    perl -pe 'if($.>1){$_=""if/^[0-9a-f]{32} \/[#\$]/;s{ /}{  }}' .test.out | LANG=C sort -k2 >.test.sorted
+    sed '/^WARNING; /d' .test.errwarn > .test.err
+    if [ -s .test.err ]; then
+        echo "FAIL $name: errors" >&2
+        cat .test.errwarn >&2
+    fi
+
+    if cmp $cached .test.sorted >/dev/null; then
+        echo "OK   $name"
+    else
+       if [ `diff $cached .test.sorted | grep -c '^<'` -gt 0 ]; then
+           echo "FAIL $name: differences" >&2
+           diff -u $cached .test.sorted >&2
+       else
+           echo "OK   $name (better than hh.exe)"
+       fi
+    fi
+done
+rm -f .orig.out .orig.err .test.out .test.err .test.errwarn .test.sorted

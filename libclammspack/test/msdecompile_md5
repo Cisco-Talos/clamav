@@ -1,0 +1,25 @@
+#!/bin/sh
+# This script needs the following setup to work:
+# - hh.exe and hhctrl.ocx copied to Wine's system32
+# - itss.dll and itircl.dll installed as Wine DLLs
+#
+# Download the HTML Help Workshop (htmlhelp.exe) from Microsoft:
+#
+#   https://msdn.microsoft.com/en-us/library/windows/desktop/ms669985(v=vs.85).aspx
+#
+# and then run these commands:
+#
+#   cabextract htmlhelp.exe -F hhupd.exe
+#   cabextract hhupd.exe -F hh.exe
+#   cabextract hhupd.exe -F hhctrl.ocx
+#   cabextract hhupd.exe -F itircl.dll
+#   cabextract hhupd.exe -F itss.dll
+#   mv hh.exe hhctrl.ocx itircl.dll itss.dll ~/.wine/drive_c/windows/system32/
+#   wine regsvr32 /s 'c:\windows\system32\itircl.dll'
+#   wine regsvr32 /s 'c:\windows\system32\itss.dll'
+
+dir=`mktemp -d`
+echo "*** $1"
+LANG=C WINEDLLOVERRIDES='hhctrl.ocx=n' wine hh -decompile $dir "$1"
+cd $dir && find * -type f -exec md5sum {} +
+rm -rf $dir
