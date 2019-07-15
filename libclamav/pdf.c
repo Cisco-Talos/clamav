@@ -72,6 +72,8 @@
  *Save the file being worked on in tmp */
 #endif
 
+#define MAX_PDF_OBJECTS (64 * 1024)
+
 struct pdf_struct;
 
 static int asciihexdecode(const char *buf, off_t len, char *output);
@@ -324,6 +326,14 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         return CL_EARG;
     }
 
+    if (pdf->nobjs >= MAX_PDF_OBJECTS) {
+        pdf->flags |= 1 << BAD_PDF_TOOMANYOBJS;
+
+        cli_dbgmsg("pdf_findobj_in_objstm: reached object maximum\n");
+        status = CL_BREAK;
+        goto done;
+    }
+
     *obj_found = NULL;
 
     index           = objstm->streambuf + objstm->current_pair;
@@ -529,6 +539,13 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     unsigned long genid, objid;
     long temp_long;
 
+    if (pdf->nobjs >= MAX_PDF_OBJECTS) {
+        pdf->flags |= 1 << BAD_PDF_TOOMANYOBJS;
+
+        cli_dbgmsg("pdf_findobj: reached object maximum\n");
+        status = CL_BREAK;
+        goto done;
+    }
     pdf->nobjs++;
     pdf->objs = cli_realloc2(pdf->objs, sizeof(struct pdf_obj *) * pdf->nobjs);
     if (!pdf->objs) {
@@ -3094,12 +3111,13 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
 
         /* Find object */
         retval = pdf_findobj_in_objstm(pdf, objstm, &obj);
-
         if (retval != CL_SUCCESS) {
-            cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %u found, %u expected.\n",
-                       objstm->nobjs_found, objstm->n);
-            badobjects++;
-            pdf->stats.ninvalidobjs++;
+            if (retval != CL_BREAK) {
+                cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %u found, %u expected.\n",
+                        objstm->nobjs_found, objstm->n);
+                badobjects++;
+                pdf->stats.ninvalidobjs++;
+            }
             break;
         }
 
@@ -3154,12 +3172,11 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
     /* parse PDF and find obj offsets */
     while (CL_BREAK != (rv = pdf_findobj(pdf))) {
         if (rv == CL_EMEM) {
-            break;
+            cli_errmsg("pdf_find_and_extract_objs: Memory allocation error.\n");
+            status = CL_EMEM;
+            goto done;
         }
     }
-
-    if (rv == -1)
-        pdf->flags |= 1 << BAD_PDF_TOOMANYOBJS;
 
     /* must parse after finding all objs, so we can flag indirect objects */
     for (i = 0; i < pdf->nobjs; i++) {
