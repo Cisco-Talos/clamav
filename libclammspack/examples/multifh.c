@@ -75,7 +75,7 @@ static void m_msg(struct m_file *file, const char *format, ...) {
 
 
 static struct m_file *m_open_mem(struct mspack_system *self,
-				 struct m_filename *fn, int mode)
+                                 struct m_filename *fn, int mode)
 {
   struct m_file *fh;
 
@@ -92,7 +92,7 @@ static struct m_file *m_open_mem(struct mspack_system *self,
 }
 
 static struct m_file *m_open_file(struct mspack_system *self,
-				  struct m_filename *fn, int mode)
+                                  struct m_filename *fn, int mode)
 {
   struct m_file *fh;
   const char *fmode;
@@ -145,7 +145,7 @@ static struct m_file *m_open_file(struct mspack_system *self,
 }
 
 static struct m_file *m_open(struct mspack_system *self,
-			     struct m_filename *fn, int mode)
+                             struct m_filename *fn, int mode)
 {
   if (!self || !fn) return NULL;
 
@@ -402,17 +402,17 @@ int main() {
       /* first file in the cabinet: print it to stdout */
       file = cab->files;
       if (cabd->extract(cabd, file, std_out)) {
-	exit(1);
+        exit(1);
       }
 
       /* second file in the cabinet: print it to stderr */
       file = file->next;
       if (cabd->extract(cabd, file, std_err)) {
-	exit(1);
+        exit(1);
       }
       /* also write it to "example.txt" */
       if (cabd->extract(cabd, file, example)) {
-	exit(1);
+        exit(1);
       }
       cabd->close(cabd, cab);
     }

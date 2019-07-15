@@ -1,5 +1,5 @@
 # ===========================================================================
-#       http://www.gnu.org/software/autoconf-archive/ax_func_mkdir.html
+#      https://www.gnu.org/software/autoconf-archive/ax_func_mkdir.html
 # ===========================================================================
 #
 # SYNOPSIS
@@ -43,7 +43,7 @@
 #   Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License along
-#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#   with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 #   As a special exception, the respective Autoconf Macro's copyright owner
 #   gives unlimited permission to copy, distribute and modify the configure
@@ -58,19 +58,19 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
-#serial 4
+#serial 6
 
 AU_ALIAS([AC_FUNC_MKDIR], [AX_FUNC_MKDIR])
 AC_DEFUN([AX_FUNC_MKDIR],
 [AC_CHECK_FUNCS([mkdir _mkdir])
 AC_CACHE_CHECK([whether mkdir takes one argument],
                [ac_cv_mkdir_takes_one_arg],
-[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/stat.h>
 #if HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
-], [mkdir (".");])],
+]], [[mkdir (".");]])],
 [ac_cv_mkdir_takes_one_arg=yes], [ac_cv_mkdir_takes_one_arg=no])])
 if test x"$ac_cv_mkdir_takes_one_arg" = xyes; then
   AC_DEFINE([MKDIR_TAKES_ONE_ARG], 1,
@@ -91,7 +91,7 @@ dnl |  may prototype it in dir.h and dirent.h, for instance).
 dnl |
 dnl |Alexandre:
 dnl |  Would it be sufficient to check for these headers and #include
-dnl |  them in the AC_TRY_COMPILE block?  (and is AC_HEADER_DIRENT
+dnl |  them in the AC_COMPILE_IFELSE block?  (and is AC_HEADER_DIRENT
 dnl |  suitable for this?)
 dnl |
 dnl |Thomas:

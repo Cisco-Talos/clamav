@@ -16,8 +16,8 @@ int main(int argc, char *argv[]) {
     int err;
 
     if (argc != 3) {
-	fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
-	return 1;
+        fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
+        return 1;
     }
 
     /* exit if self-test reveals an error */

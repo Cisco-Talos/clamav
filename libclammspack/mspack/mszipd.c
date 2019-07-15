@@ -20,9 +20,9 @@
 #define BITS_VAR zip
 #define BITS_ORDER_LSB
 #define BITS_LSB_TABLE
-#define READ_BYTES do {		\
-    READ_IF_NEEDED;		\
-    INJECT_BITS(*i_ptr++, 8);	\
+#define READ_BYTES do {         \
+    READ_IF_NEEDED;             \
+    INJECT_BITS(*i_ptr++, 8);   \
 } while (0)
 #include <readbits.h>
 
@@ -34,13 +34,13 @@
 #define HUFF_ERROR          return INF_ERR_HUFFSYM
 #include <readhuff.h>
 
-#define FLUSH_IF_NEEDED do {				\
-    if (zip->window_posn == MSZIP_FRAME_SIZE) {		\
-	if (zip->flush_window(zip, MSZIP_FRAME_SIZE)) {	\
-	    return INF_ERR_FLUSH;			\
-	}						\
-	zip->window_posn = 0;				\
-    }							\
+#define FLUSH_IF_NEEDED do {                            \
+    if (zip->window_posn == MSZIP_FRAME_SIZE) {         \
+        if (zip->flush_window(zip, MSZIP_FRAME_SIZE)) { \
+            return INF_ERR_FLUSH;                       \
+        }                                               \
+        zip->window_posn = 0;                           \
+    }                                                   \
 } while (0)
 
 /* match lengths for literal codes 257.. 285 */
@@ -181,14 +181,14 @@ static int inflate(struct mszipd_stream *zip) {
 
       /* read 4 bytes of data, emptying the bit-buffer if necessary */
       for (i = 0; (bits_left >= 8); i++) {
-	if (i == 4) return INF_ERR_BITBUF;
-	lens_buf[i] = PEEK_BITS(8);
-	REMOVE_BITS(8);
+        if (i == 4) return INF_ERR_BITBUF;
+        lens_buf[i] = PEEK_BITS(8);
+        REMOVE_BITS(8);
       }
       if (bits_left != 0) return INF_ERR_BITBUF;
       while (i < 4) {
-	READ_IF_NEEDED;
-	lens_buf[i++] = *i_ptr++;
+        READ_IF_NEEDED;
+        lens_buf[i++] = *i_ptr++;
       }
 
       /* get the length and its complement */
@@ -198,18 +198,18 @@ static int inflate(struct mszipd_stream *zip) {
 
       /* read and copy the uncompressed data into the window */
       while (length > 0) {
-	READ_IF_NEEDED;
+        READ_IF_NEEDED;
 
-	this_run = length;
-	if (this_run > (unsigned int)(i_end - i_ptr)) this_run = i_end - i_ptr;
-	if (this_run > (MSZIP_FRAME_SIZE - zip->window_posn))
-	  this_run = MSZIP_FRAME_SIZE - zip->window_posn;
+        this_run = length;
+        if (this_run > (unsigned int)(i_end - i_ptr)) this_run = i_end - i_ptr;
+        if (this_run > (MSZIP_FRAME_SIZE - zip->window_posn))
+          this_run = MSZIP_FRAME_SIZE - zip->window_posn;
 
-	zip->sys->copy(i_ptr, &zip->window[zip->window_posn], this_run);
-	zip->window_posn += this_run;
-	i_ptr    += this_run;
-	length   -= this_run;
-	FLUSH_IF_NEEDED;
+        zip->sys->copy(i_ptr, &zip->window[zip->window_posn], this_run);
+        zip->window_posn += this_run;
+        i_ptr    += this_run;
+        length   -= this_run;
+        FLUSH_IF_NEEDED;
       }
     }
     else if ((block_type == 1) || (block_type == 2)) {
@@ -217,92 +217,92 @@ static int inflate(struct mszipd_stream *zip) {
       unsigned int match_posn, code;
 
       if (block_type == 1) {
-	/* block with fixed Huffman codes */
-	i = 0;
-	while (i < 144) zip->LITERAL_len[i++] = 8;
-	while (i < 256) zip->LITERAL_len[i++] = 9;
-	while (i < 280) zip->LITERAL_len[i++] = 7;
-	while (i < 288) zip->LITERAL_len[i++] = 8;
-	for (i = 0; i < 32; i++) zip->DISTANCE_len[i] = 5;
+        /* block with fixed Huffman codes */
+        i = 0;
+        while (i < 144) zip->LITERAL_len[i++] = 8;
+        while (i < 256) zip->LITERAL_len[i++] = 9;
+        while (i < 280) zip->LITERAL_len[i++] = 7;
+        while (i < 288) zip->LITERAL_len[i++] = 8;
+        for (i = 0; i < 32; i++) zip->DISTANCE_len[i] = 5;
       }
       else {
-	/* block with dynamic Huffman codes */
-	STORE_BITS;
-	if ((i = zip_read_lens(zip))) return i;
-	RESTORE_BITS;
+        /* block with dynamic Huffman codes */
+        STORE_BITS;
+        if ((i = zip_read_lens(zip))) return i;
+        RESTORE_BITS;
       }
 
       /* now huffman lengths are read for either kind of block, 
        * create huffman decoding tables */
       if (make_decode_table(MSZIP_LITERAL_MAXSYMBOLS, MSZIP_LITERAL_TABLEBITS,
-			    &zip->LITERAL_len[0], &zip->LITERAL_table[0]))
+                            &zip->LITERAL_len[0], &zip->LITERAL_table[0]))
       {
-	return INF_ERR_LITERALTBL;
+        return INF_ERR_LITERALTBL;
       }
 
       if (make_decode_table(MSZIP_DISTANCE_MAXSYMBOLS,MSZIP_DISTANCE_TABLEBITS,
-			    &zip->DISTANCE_len[0], &zip->DISTANCE_table[0]))
+                            &zip->DISTANCE_len[0], &zip->DISTANCE_table[0]))
       {
-	return INF_ERR_DISTANCETBL;
+        return INF_ERR_DISTANCETBL;
       }
 
       /* decode forever until end of block code */
       for (;;) {
-	READ_HUFFSYM(LITERAL, code);
-	if (code < 256) {
-	  zip->window[zip->window_posn++] = (unsigned char) code;
-	  FLUSH_IF_NEEDED;
-	}
-	else if (code == 256) {
-	  /* END OF BLOCK CODE: loop break point */
-	  break;
-	}
-	else {
-	  code -= 257; /* codes 257-285 are matches */
-	  if (code >= 29) return INF_ERR_LITCODE; /* codes 286-287 are illegal */
-	  READ_BITS_T(length, lit_extrabits[code]);
-	  length += lit_lengths[code];
+        READ_HUFFSYM(LITERAL, code);
+        if (code < 256) {
+          zip->window[zip->window_posn++] = (unsigned char) code;
+          FLUSH_IF_NEEDED;
+        }
+        else if (code == 256) {
+          /* END OF BLOCK CODE: loop break point */
+          break;
+        }
+        else {
+          code -= 257; /* codes 257-285 are matches */
+          if (code >= 29) return INF_ERR_LITCODE; /* codes 286-287 are illegal */
+          READ_BITS_T(length, lit_extrabits[code]);
+          length += lit_lengths[code];
 
-	  READ_HUFFSYM(DISTANCE, code);
-	  if (code >= 30) return INF_ERR_DISTCODE;
-	  READ_BITS_T(distance, dist_extrabits[code]);
-	  distance += dist_offsets[code];
+          READ_HUFFSYM(DISTANCE, code);
+          if (code >= 30) return INF_ERR_DISTCODE;
+          READ_BITS_T(distance, dist_extrabits[code]);
+          distance += dist_offsets[code];
 
-	  /* match position is window position minus distance. If distance
-	   * is more than window position numerically, it must 'wrap
-	   * around' the frame size. */ 
-	  match_posn = ((distance > zip->window_posn) ? MSZIP_FRAME_SIZE : 0)
-	    + zip->window_posn - distance;
+          /* match position is window position minus distance. If distance
+           * is more than window position numerically, it must 'wrap
+           * around' the frame size. */ 
+          match_posn = ((distance > zip->window_posn) ? MSZIP_FRAME_SIZE : 0)
+            + zip->window_posn - distance;
 
-	  /* copy match */
-	  if (length < 12) {
-	    /* short match, use slower loop but no loop setup code */
-	    while (length--) {
-	      zip->window[zip->window_posn++] = zip->window[match_posn++];
-	      match_posn &= MSZIP_FRAME_SIZE - 1;
-	      FLUSH_IF_NEEDED;
-	    }
-	  }
-	  else {
-	    /* longer match, use faster loop but with setup expense */
-	    unsigned char *runsrc, *rundest;
-	    do {
-	      this_run = length;
-	      if ((match_posn + this_run) > MSZIP_FRAME_SIZE)
-		this_run = MSZIP_FRAME_SIZE - match_posn;
-	      if ((zip->window_posn + this_run) > MSZIP_FRAME_SIZE)
-		this_run = MSZIP_FRAME_SIZE - zip->window_posn;
+          /* copy match */
+          if (length < 12) {
+            /* short match, use slower loop but no loop setup code */
+            while (length--) {
+              zip->window[zip->window_posn++] = zip->window[match_posn++];
+              match_posn &= MSZIP_FRAME_SIZE - 1;
+              FLUSH_IF_NEEDED;
+            }
+          }
+          else {
+            /* longer match, use faster loop but with setup expense */
+            unsigned char *runsrc, *rundest;
+            do {
+              this_run = length;
+              if ((match_posn + this_run) > MSZIP_FRAME_SIZE)
+                this_run = MSZIP_FRAME_SIZE - match_posn;
+              if ((zip->window_posn + this_run) > MSZIP_FRAME_SIZE)
+                this_run = MSZIP_FRAME_SIZE - zip->window_posn;
 
-	      rundest = &zip->window[zip->window_posn]; zip->window_posn += this_run;
-	      runsrc  = &zip->window[match_posn];  match_posn  += this_run;
-	      length -= this_run;
-	      while (this_run--) *rundest++ = *runsrc++;
-	      if (match_posn == MSZIP_FRAME_SIZE) match_posn = 0;
-	      FLUSH_IF_NEEDED;
-	    } while (length > 0);
-	  }
+              rundest = &zip->window[zip->window_posn]; zip->window_posn += this_run;
+              runsrc  = &zip->window[match_posn];  match_posn  += this_run;
+              length -= this_run;
+              while (this_run--) *rundest++ = *runsrc++;
+              if (match_posn == MSZIP_FRAME_SIZE) match_posn = 0;
+              FLUSH_IF_NEEDED;
+            } while (length > 0);
+          }
 
-	} /* else (code >= 257) */
+        } /* else (code >= 257) */
 
       } /* for(;;) -- break point at 'code == 256' */
     }
@@ -328,7 +328,7 @@ static int inflate(struct mszipd_stream *zip) {
  * is flushed, an error is raised.
  */  
 static int mszipd_flush_window(struct mszipd_stream *zip,
-			       unsigned int data_flushed)
+                               unsigned int data_flushed)
 {
   zip->bytes_output += data_flushed;
   if (zip->bytes_output > MSZIP_FRAME_SIZE) {
@@ -340,10 +340,10 @@ static int mszipd_flush_window(struct mszipd_stream *zip,
 }
 
 struct mszipd_stream *mszipd_init(struct mspack_system *system,
-				  struct mspack_file *input,
-				  struct mspack_file *output,
-				  int input_buffer_size,
-				  int repair_mode)
+                                  struct mspack_file *input,
+                                  struct mspack_file *output,
+                                  int input_buffer_size,
+                                  int repair_mode)
 {
   struct mszipd_stream *zip;
 
@@ -427,19 +427,19 @@ int mszipd_decompress(struct mszipd_stream *zip, off_t out_bytes) {
     if ((error = inflate(zip))) {
       D(("inflate error %d", error))
       if (zip->repair_mode) {
-	/* recover partially-inflated buffers */
-	if (zip->bytes_output == 0 && zip->window_posn > 0) {
-	  zip->flush_window(zip, zip->window_posn);
-	}
-	zip->sys->message(NULL, "MSZIP error, %u bytes of data lost.",
-			  MSZIP_FRAME_SIZE - zip->bytes_output);
-	for (i = zip->bytes_output; i < MSZIP_FRAME_SIZE; i++) {
-	  zip->window[i] = '\0';
-	}
-	zip->bytes_output = MSZIP_FRAME_SIZE;
+        /* recover partially-inflated buffers */
+        if (zip->bytes_output == 0 && zip->window_posn > 0) {
+          zip->flush_window(zip, zip->window_posn);
+        }
+        zip->sys->message(NULL, "MSZIP error, %u bytes of data lost.",
+                          MSZIP_FRAME_SIZE - zip->bytes_output);
+        for (i = zip->bytes_output; i < MSZIP_FRAME_SIZE; i++) {
+          zip->window[i] = '\0';
+        }
+        zip->bytes_output = MSZIP_FRAME_SIZE;
       }
       else {
-	return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
+        return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
       }
     }
     zip->o_ptr = &zip->window[0];
@@ -476,31 +476,31 @@ int mszipd_decompress_kwaj(struct mszipd_stream *zip) {
 
     /* unpack blocks until block_len == 0 */
     for (;;) {
-	RESTORE_BITS;
+        RESTORE_BITS;
 
-	/* align to bytestream, read block_len */
-	i = bits_left & 7; REMOVE_BITS(i);
-	READ_BITS(block_len, 8);
-	READ_BITS(i, 8); block_len |= i << 8;
+        /* align to bytestream, read block_len */
+        i = bits_left & 7; REMOVE_BITS(i);
+        READ_BITS(block_len, 8);
+        READ_BITS(i, 8); block_len |= i << 8;
 
-	if (block_len == 0) break;
+        if (block_len == 0) break;
 
-	/* read "CK" header */
-	READ_BITS(i, 8); if (i != 'C') return MSPACK_ERR_DATAFORMAT;
-	READ_BITS(i, 8); if (i != 'K') return MSPACK_ERR_DATAFORMAT;
+        /* read "CK" header */
+        READ_BITS(i, 8); if (i != 'C') return MSPACK_ERR_DATAFORMAT;
+        READ_BITS(i, 8); if (i != 'K') return MSPACK_ERR_DATAFORMAT;
 
-	/* inflate block */
-	zip->window_posn = 0;
-	zip->bytes_output = 0;
-	STORE_BITS;
-	if ((error = inflate(zip))) {
-	    D(("inflate error %d", error))
-	    return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
-	}
+        /* inflate block */
+        zip->window_posn = 0;
+        zip->bytes_output = 0;
+        STORE_BITS;
+        if ((error = inflate(zip))) {
+            D(("inflate error %d", error))
+            return zip->error = (error > 0) ? error : MSPACK_ERR_DECRUNCH;
+        }
 
-	/* write inflated block */
-	if (zip->sys->write(zip->output, &zip->window[0], zip->bytes_output)
-	    != zip->bytes_output) return zip->error = MSPACK_ERR_WRITE;
+        /* write inflated block */
+        if (zip->sys->write(zip->output, &zip->window[0], zip->bytes_output)
+            != zip->bytes_output) return zip->error = MSPACK_ERR_WRITE;
     }
     return MSPACK_ERR_OK;
 }

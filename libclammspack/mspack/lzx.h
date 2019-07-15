@@ -89,13 +89,13 @@ struct lzxd_stream {
 
   /* huffman decoding tables */
   unsigned short PRETREE_table [(1 << LZX_PRETREE_TABLEBITS) +
-				(LZX_PRETREE_MAXSYMBOLS * 2)];
+                                (LZX_PRETREE_MAXSYMBOLS * 2)];
   unsigned short MAINTREE_table[(1 << LZX_MAINTREE_TABLEBITS) +
-				(LZX_MAINTREE_MAXSYMBOLS * 2)];
+                                (LZX_MAINTREE_MAXSYMBOLS * 2)];
   unsigned short LENGTH_table  [(1 << LZX_LENGTH_TABLEBITS) +
-				(LZX_LENGTH_MAXSYMBOLS * 2)];
+                                (LZX_LENGTH_MAXSYMBOLS * 2)];
   unsigned short ALIGNED_table [(1 << LZX_ALIGNED_TABLEBITS) +
-				(LZX_ALIGNED_MAXSYMBOLS * 2)];
+                                (LZX_ALIGNED_MAXSYMBOLS * 2)];
   unsigned char LENGTH_empty;
 
   /* this is used purely for doing the intel E8 transform */
@@ -145,17 +145,17 @@ struct lzxd_stream {
  * there was not enough memory or parameters to the function were wrong.
  */
 extern struct lzxd_stream *lzxd_init(struct mspack_system *system,
-				     struct mspack_file *input,
-				     struct mspack_file *output,
-				     int window_bits,
-				     int reset_interval,
-				     int input_buffer_size,
-				     off_t output_length,
+                                     struct mspack_file *input,
+                                     struct mspack_file *output,
+                                     int window_bits,
+                                     int reset_interval,
+                                     int input_buffer_size,
+                                     off_t output_length,
                                      char is_delta);
 
 /* see description of output_length in lzxd_init() */
 extern void lzxd_set_output_length(struct lzxd_stream *lzx,
-				   off_t output_length);
+                                   off_t output_length);
 
 /**
  * Reads LZX DELTA reference data into the window and allows

@@ -1,0 +1,19 @@
+#!/bin/sh
+# Expand all cabs from the C10 collection; none are intentionally valid.
+# See https://www.ee.oulu.fi/research/ouspg/PROTOS_Test-Suite_c10-archive
+
+# I downloaded the .iso, unpacked cab_tar.bz2 and moved the cab files into
+# 256 directories (00 to ff) under C10/unpacked. This makes it possible to
+# invoke cabd_md5 just 256 times to test the entire collection.
+
+for dir in `find C10/unpacked -maxdepth 1 -type d`
+do
+    echo "testing $dir"
+    ./cabd_md5 $dir/*.cab >/dev/null 2>.err
+    result=$?
+    if [ $result -ne 0 ]; then
+      echo "FAIL $dir $result" >&2
+      cat .err >&2
+    fi
+done
+rm .err

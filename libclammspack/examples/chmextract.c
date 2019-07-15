@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mspack.h>
-#include <ctype.h>
 #include <sys/stat.h>
 
 #include <error.h>
@@ -92,28 +91,28 @@ int main(int argc, char *argv[]) {
       printf("%s\n", *argv);
       if ((chm = chmd->open(chmd, *argv))) {
 
-	/* build an ordered list of files for maximum extraction speed */
-	for (numf=0, file=chm->files; file; file = file->next) numf++;
-	if ((f = (struct mschmd_file **) calloc(numf, sizeof(struct mschmd_file *)))) {
-	  for (i=0, file=chm->files; file; file = file->next) f[i++] = file;
-	  qsort(f, numf, sizeof(struct mschmd_file *), &sortfunc);
+        /* build an ordered list of files for maximum extraction speed */
+        for (numf=0, file=chm->files; file; file = file->next) numf++;
+        if ((f = (struct mschmd_file **) calloc(numf, sizeof(struct mschmd_file *)))) {
+          for (i=0, file=chm->files; file; file = file->next) f[i++] = file;
+          qsort(f, numf, sizeof(struct mschmd_file *), &sortfunc);
 
-	  for (i = 0; i < numf; i++) {
-	    char *outname = create_output_name(f[i]->filename);
-	    printf("Extracting %s\n", outname);
-	    ensure_filepath(outname);
-	    if (chmd->extract(chmd, f[i], outname)) {
-	      printf("%s: extract error on \"%s\": %s\n",
-		     *argv, f[i]->filename, ERROR(chmd));
-	    }
-	    free(outname);
-	  }
-	  free(f);
-	}
-	chmd->close(chmd, chm);
+          for (i = 0; i < numf; i++) {
+            char *outname = create_output_name(f[i]->filename);
+            printf("Extracting %s\n", outname);
+            ensure_filepath(outname);
+            if (chmd->extract(chmd, f[i], outname)) {
+              printf("%s: extract error on \"%s\": %s\n",
+                     *argv, f[i]->filename, ERROR(chmd));
+            }
+            free(outname);
+          }
+          free(f);
+        }
+        chmd->close(chmd, chm);
       }
       else {
-	printf("%s: can't open -- %s\n", *argv, ERROR(chmd));
+        printf("%s: can't open -- %s\n", *argv, ERROR(chmd));
       }
     }
     mspack_destroy_chm_decompressor(chmd);

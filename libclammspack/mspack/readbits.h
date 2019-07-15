@@ -100,48 +100,48 @@
 #endif
 #define BITBUF_WIDTH (sizeof(bit_buffer) * CHAR_BIT)
 
-#define INIT_BITS do {				\
-    BITS_VAR->i_ptr      = &BITS_VAR->inbuf[0];	\
-    BITS_VAR->i_end      = &BITS_VAR->inbuf[0];	\
-    BITS_VAR->bit_buffer = 0;			\
-    BITS_VAR->bits_left  = 0;			\
-    BITS_VAR->input_end  = 0;			\
+#define INIT_BITS do {                          \
+    BITS_VAR->i_ptr      = &BITS_VAR->inbuf[0]; \
+    BITS_VAR->i_end      = &BITS_VAR->inbuf[0]; \
+    BITS_VAR->bit_buffer = 0;                   \
+    BITS_VAR->bits_left  = 0;                   \
+    BITS_VAR->input_end  = 0;                   \
 } while (0)
 
-#define STORE_BITS do {			\
-    BITS_VAR->i_ptr      = i_ptr;	\
-    BITS_VAR->i_end      = i_end;	\
-    BITS_VAR->bit_buffer = bit_buffer;	\
-    BITS_VAR->bits_left  = bits_left;	\
+#define STORE_BITS do {                 \
+    BITS_VAR->i_ptr      = i_ptr;       \
+    BITS_VAR->i_end      = i_end;       \
+    BITS_VAR->bit_buffer = bit_buffer;  \
+    BITS_VAR->bits_left  = bits_left;   \
 } while (0)
 
-#define RESTORE_BITS do {		\
-    i_ptr      = BITS_VAR->i_ptr;	\
-    i_end      = BITS_VAR->i_end;	\
-    bit_buffer = BITS_VAR->bit_buffer;	\
-    bits_left  = BITS_VAR->bits_left;	\
+#define RESTORE_BITS do {               \
+    i_ptr      = BITS_VAR->i_ptr;       \
+    i_end      = BITS_VAR->i_end;       \
+    bit_buffer = BITS_VAR->bit_buffer;  \
+    bits_left  = BITS_VAR->bits_left;   \
 } while (0)
 
-#define ENSURE_BITS(nbits) do {			\
-    while (bits_left < (nbits)) READ_BYTES;	\
+#define ENSURE_BITS(nbits) do {                 \
+    while (bits_left < (nbits)) READ_BYTES;     \
 } while (0)
 
-#define READ_BITS(val, nbits) do {		\
-    ENSURE_BITS(nbits);				\
-    (val) = PEEK_BITS(nbits);			\
-    REMOVE_BITS(nbits);				\
+#define READ_BITS(val, nbits) do {              \
+    ENSURE_BITS(nbits);                         \
+    (val) = PEEK_BITS(nbits);                   \
+    REMOVE_BITS(nbits);                         \
 } while (0)
 
-#define READ_MANY_BITS(val, bits) do {				\
-    unsigned char needed = (bits), bitrun;			\
-    (val) = 0;							\
-    while (needed > 0) {					\
-	if (bits_left <= (BITBUF_WIDTH - 16)) READ_BYTES;	\
-	bitrun = (bits_left < needed) ? bits_left : needed;	\
-	(val) = ((val) << bitrun) | PEEK_BITS(bitrun);		\
-	REMOVE_BITS(bitrun);					\
-	needed -= bitrun;					\
-    }								\
+#define READ_MANY_BITS(val, bits) do {                          \
+    unsigned char needed = (bits), bitrun;                      \
+    (val) = 0;                                                  \
+    while (needed > 0) {                                        \
+        if (bits_left <= (BITBUF_WIDTH - 16)) READ_BYTES;       \
+        bitrun = (bits_left < needed) ? bits_left : needed;     \
+        (val) = ((val) << bitrun) | PEEK_BITS(bitrun);          \
+        REMOVE_BITS(bitrun);                                    \
+        needed -= bitrun;                                       \
+    }                                                           \
 } while (0)
 
 #ifdef BITS_ORDER_MSB
@@ -163,21 +163,21 @@ static const unsigned short lsb_bit_mask[17] = {
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
 };
 # define PEEK_BITS_T(nbits) (bit_buffer & lsb_bit_mask[(nbits)])
-# define READ_BITS_T(val, nbits) do {	\
-    ENSURE_BITS(nbits);			\
-    (val) = PEEK_BITS_T(nbits);		\
-    REMOVE_BITS(nbits);			\
+# define READ_BITS_T(val, nbits) do {   \
+    ENSURE_BITS(nbits);                 \
+    (val) = PEEK_BITS_T(nbits);         \
+    REMOVE_BITS(nbits);                 \
 } while (0)
 #endif
 
 #ifndef BITS_NO_READ_INPUT
-# define READ_IF_NEEDED do {		\
-    if (i_ptr >= i_end) {		\
-	if (read_input(BITS_VAR))	\
-	    return BITS_VAR->error;	\
-	i_ptr = BITS_VAR->i_ptr;	\
-	i_end = BITS_VAR->i_end;	\
-    }					\
+# define READ_IF_NEEDED do {            \
+    if (i_ptr >= i_end) {               \
+        if (read_input(BITS_VAR))       \
+            return BITS_VAR->error;     \
+        i_ptr = BITS_VAR->i_ptr;        \
+        i_end = BITS_VAR->i_end;        \
+    }                                   \
 } while (0)
 
 static int read_input(BITS_TYPE *p) {
@@ -187,15 +187,15 @@ static int read_input(BITS_TYPE *p) {
     /* we might overrun the input stream by asking for bits we don't use,
      * so fake 2 more bytes at the end of input */
     if (read == 0) {
-	if (p->input_end) {
-	    D(("out of input bytes"))
-	    return p->error = MSPACK_ERR_READ;
-	}
-	else {
-	    read = 2;
-	    p->inbuf[0] = p->inbuf[1] = 0;
-	    p->input_end = 1;
-	}
+        if (p->input_end) {
+            D(("out of input bytes"))
+            return p->error = MSPACK_ERR_READ;
+        }
+        else {
+            read = 2;
+            p->inbuf[0] = p->inbuf[1] = 0;
+            p->input_end = 1;
+        }
     }
 
     /* update i_ptr and i_end */

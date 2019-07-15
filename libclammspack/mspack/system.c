@@ -31,12 +31,15 @@ int mspack_version(int entity) {
    * - added MSCABD_PARAM_SALVAGE
    */
   case MSPACK_VER_MSCABD:
+  /* OAB decoder version  1 -> 2 changes:
+   * - added msoab_decompressor::set_param and MSOABD_PARAM_DECOMPBUF
+   */
+  case MSPACK_VER_MSOABD:
     return 2;
   case MSPACK_VER_LIBRARY:
   case MSPACK_VER_SYSTEM:
   case MSPACK_VER_MSSZDDD:
   case MSPACK_VER_MSKWAJD:
-  case MSPACK_VER_MSOABD:
     return 1;
   case MSPACK_VER_MSCABC:
   case MSPACK_VER_MSCHMC:
@@ -66,7 +69,7 @@ int mspack_valid_system(struct mspack_system *sys) {
 
 /* returns the length of a file opened for reading */
 int mspack_sys_filelen(struct mspack_system *system,
-		       struct mspack_file *file, off_t *length)
+                       struct mspack_file *file, off_t *length)
 {
   off_t current;
 
@@ -116,7 +119,7 @@ struct mspack_file_p {
 };
 
 static struct mspack_file *msp_open(struct mspack_system *self,
-				    const char *filename, int mode)
+                                    const char *filename, int mode)
 {
   struct mspack_file_p *fh;
   const char *fmode;

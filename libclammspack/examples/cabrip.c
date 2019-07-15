@@ -46,7 +46,7 @@ void rip(char *fname, off_t offset, unsigned int length) {
         size_t actual = fread(&buf[0], 1, run, in);
         if (actual < run) {
             fprintf(stderr, "%s: file %u bytes shorter than expected\n",
-                    fname, length - (run - actual));
+                    fname, length - (unsigned int)(run - actual));
             length = run = actual;
         }
         if (fwrite(&buf[0], 1, run, out) != run) {

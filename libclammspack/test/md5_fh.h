@@ -19,20 +19,20 @@ struct mspack_file_p {
 static struct mspack_file *m_open(struct mspack_system *self, const char *filename, int mode) {
     struct mspack_file_p *fh;
     if (mode != MSPACK_SYS_OPEN_WRITE &&
-	mode != MSPACK_SYS_OPEN_READ) return NULL;
+        mode != MSPACK_SYS_OPEN_READ) return NULL;
 
     if ((fh = (struct mspack_file_p *) malloc(sizeof(struct mspack_file_p)))) {
-	if (mode == MSPACK_SYS_OPEN_WRITE) {
-	    fh->fh = NULL;
-	    md5_init_ctx(&md5_context);
-	    return (struct mspack_file *) fh;
-	}
-	else {
-	    if ((fh->fh = fopen(filename, "rb")))
-		return (struct mspack_file *) fh;
-	}
-	/* error - free file handle and return NULL */
-	free(fh);
+        if (mode == MSPACK_SYS_OPEN_WRITE) {
+            fh->fh = NULL;
+            md5_init_ctx(&md5_context);
+            return (struct mspack_file *) fh;
+        }
+        else {
+            if ((fh->fh = fopen(filename, "rb")))
+                return (struct mspack_file *) fh;
+        }
+        /* error - free file handle and return NULL */
+        free(fh);
     }
     return NULL;
 }
@@ -42,15 +42,15 @@ static void m_close(struct mspack_file *file) {
   if (self) {
       if (self->fh) fclose(self->fh);
       else {
-	  unsigned char md5[16];
-	  md5_finish_ctx(&md5_context, (void *) &md5);
-	  snprintf(md5_string, sizeof(md5_string),
-		   "%02x%02x%02x%02x%02x%02x%02x%02x"
-		   "%02x%02x%02x%02x%02x%02x%02x%02x",
-		   md5[0],  md5[1],  md5[2],  md5[3],
-		   md5[4],  md5[5],  md5[6],  md5[7],
-		   md5[8],  md5[9],  md5[10], md5[11],
-		   md5[12], md5[13], md5[14], md5[15]);
+          unsigned char md5[16];
+          md5_finish_ctx(&md5_context, (void *) &md5);
+          snprintf(md5_string, sizeof(md5_string),
+                   "%02x%02x%02x%02x%02x%02x%02x%02x"
+                   "%02x%02x%02x%02x%02x%02x%02x%02x",
+                   md5[0],  md5[1],  md5[2],  md5[3],
+                   md5[4],  md5[5],  md5[6],  md5[7],
+                   md5[8],  md5[9],  md5[10], md5[11],
+                   md5[12], md5[13], md5[14], md5[15]);
       }
       free(self);
   }
@@ -75,16 +75,16 @@ static int m_write(struct mspack_file *file, void *buffer, int bytes) {
 static int m_seek(struct mspack_file *file, off_t offset, int mode) {
     struct mspack_file_p *self = (struct mspack_file_p *) file;
     if (self && self->fh) {
-	switch (mode) {
-	case MSPACK_SYS_SEEK_START: mode = SEEK_SET; break;
-	case MSPACK_SYS_SEEK_CUR:   mode = SEEK_CUR; break;
-	case MSPACK_SYS_SEEK_END:   mode = SEEK_END; break;
-	default: return -1;
-	}
+        switch (mode) {
+        case MSPACK_SYS_SEEK_START: mode = SEEK_SET; break;
+        case MSPACK_SYS_SEEK_CUR:   mode = SEEK_CUR; break;
+        case MSPACK_SYS_SEEK_END:   mode = SEEK_END; break;
+        default: return -1;
+        }
 #if HAVE_FSEEKO
-	return fseeko(self->fh, offset, mode);
+        return fseeko(self->fh, offset, mode);
 #else
-	return fseek(self->fh, offset, mode);
+        return fseek(self->fh, offset, mode);
 #endif
     }
     return -1;

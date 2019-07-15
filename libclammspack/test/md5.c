@@ -25,15 +25,8 @@
 #endif
 
 #include <sys/types.h>
-
-#if STDC_HEADERS || defined _LIBC
-# include <stdlib.h>
-# include <string.h>
-#else
-# ifndef HAVE_MEMCPY
-#  define memcpy(d, s, n) bcopy ((s), (d), (n))
-# endif
-#endif
+#include <stdlib.h>
+#include <string.h>
 
 #include <md5.h>
 
@@ -54,7 +47,7 @@
 #endif
 
 #ifdef WORDS_BIGENDIAN
-# define SWAP(n)							\
+# define SWAP(n)                                                        \
     (((n) << 24) | (((n) & 0xff00) << 8) | (((n) >> 8) & 0xff00) | ((n) >> 24))
 #else
 # define SWAP(n) (n)
@@ -125,7 +118,7 @@ md5_finish_ctx (struct md5_ctx *ctx, void *resbuf)
   /* Put the 64-bit file length in *bits* at the end of the buffer.  */
   *(md5_uint32 *) &ctx->buffer[bytes + pad] = SWAP (ctx->total[0] << 3);
   *(md5_uint32 *) &ctx->buffer[bytes + pad + 4] = SWAP ((ctx->total[1] << 3) |
-							(ctx->total[0] >> 29));
+                                                        (ctx->total[0] >> 29));
 
   /* Process last bytes.  */
   md5_process_block (ctx->buffer, bytes + pad + 8, ctx);
@@ -150,40 +143,40 @@ md5_stream (FILE *stream, void *resblock)
   while (1)
     {
       /* We read the file in blocks of BLOCKSIZE bytes.  One call of the
-	 computation function processes the whole buffer so that with the
-	 next round of the loop another block can be read.  */
+         computation function processes the whole buffer so that with the
+         next round of the loop another block can be read.  */
       size_t n;
       sum = 0;
 
       /* Read block.  Take care for partial reads.  */
       while (1)
-	{
-	  n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
+        {
+          n = fread (buffer + sum, 1, BLOCKSIZE - sum, stream);
 
-	  sum += n;
+          sum += n;
 
-	  if (sum == BLOCKSIZE)
-	    break;
+          if (sum == BLOCKSIZE)
+            break;
 
-	  if (n == 0)
-	    {
-	      /* Check for the error flag IFF N == 0, so that we don't
-		 exit the loop after a partial read due to e.g., EAGAIN
-		 or EWOULDBLOCK.  */
-	      if (ferror (stream))
-		return 1;
-	      goto process_partial_block;
-	    }
+          if (n == 0)
+            {
+              /* Check for the error flag IFF N == 0, so that we don't
+                 exit the loop after a partial read due to e.g., EAGAIN
+                 or EWOULDBLOCK.  */
+              if (ferror (stream))
+                return 1;
+              goto process_partial_block;
+            }
 
-	  /* We've read at least one byte, so ignore errors.  But always
-	     check for EOF, since feof may be true even though N > 0.
-	     Otherwise, we could end up calling fread after EOF.  */
-	  if (feof (stream))
-	    goto process_partial_block;
-	}
+          /* We've read at least one byte, so ignore errors.  But always
+             check for EOF, since feof may be true even though N > 0.
+             Otherwise, we could end up calling fread after EOF.  */
+          if (feof (stream))
+            goto process_partial_block;
+        }
 
       /* Process buffer with BLOCKSIZE bytes.  Note that
-			BLOCKSIZE % 64 == 0
+                        BLOCKSIZE % 64 == 0
        */
       md5_process_block (buffer, BLOCKSIZE, &ctx);
     }
@@ -233,14 +226,14 @@ md5_process_bytes ( const void *buffer, size_t len, struct md5_ctx *ctx)
       ctx->buflen += add;
 
       if (ctx->buflen > 64)
-	{
-	  md5_process_block (ctx->buffer, ctx->buflen & ~63, ctx);
+        {
+          md5_process_block (ctx->buffer, ctx->buflen & ~63, ctx);
 
-	  ctx->buflen &= 63;
-	  /* The regions in the following copy operation cannot overlap.  */
-	  memcpy (ctx->buffer, &ctx->buffer[(left_over + add) & ~63],
-		  ctx->buflen);
-	}
+          ctx->buflen &= 63;
+          /* The regions in the following copy operation cannot overlap.  */
+          memcpy (ctx->buffer, &ctx->buffer[(left_over + add) & ~63],
+                  ctx->buflen);
+        }
 
       buffer = (const char *) buffer + add;
       len -= add;
@@ -258,20 +251,20 @@ md5_process_bytes ( const void *buffer, size_t len, struct md5_ctx *ctx)
 #  define UNALIGNED_P(p) (((md5_uintptr) p) % sizeof (md5_uint32) != 0)
 # endif
       if (UNALIGNED_P (buffer))
-	while (len > 64)
-	  {
-	    memcpy (ctx->buffer, buffer, 64);
-	    md5_process_block (ctx->buffer, 64, ctx);
-	    buffer = (const char *) buffer + 64;
-	    len -= 64;
-	  }
+        while (len > 64)
+          {
+            memcpy (ctx->buffer, buffer, 64);
+            md5_process_block (ctx->buffer, 64, ctx);
+            buffer = (const char *) buffer + 64;
+            len -= 64;
+          }
       else
 #endif
-	{
-	  md5_process_block (buffer, len & ~63, ctx);
-	  buffer = (const char *) buffer + (len & ~63);
-	  len &= 63;
-	}
+        {
+          md5_process_block (buffer, len & ~63, ctx);
+          buffer = (const char *) buffer + (len & ~63);
+          len &= 63;
+        }
     }
 
   /* Move remaining bytes in internal buffer.  */
@@ -282,11 +275,11 @@ md5_process_bytes ( const void *buffer, size_t len, struct md5_ctx *ctx)
       memcpy (&ctx->buffer[left_over], buffer, len);
       left_over += len;
       if (left_over >= 64)
-	{
-	  md5_process_block (ctx->buffer, 64, ctx);
-	  left_over -= 64;
-	  memcpy (ctx->buffer, &ctx->buffer[64], left_over);
-	}
+        {
+          md5_process_block (ctx->buffer, 64, ctx);
+          left_over -= 64;
+          memcpy (ctx->buffer, &ctx->buffer[64], left_over);
+        }
       ctx->buflen = left_over;
     }
 }
@@ -334,27 +327,27 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
       md5_uint32 D_save = D;
 
       /* First round: using the given function, the context and a constant
-	 the next context is computed.  Because the algorithms processing
-	 unit is a 32-bit word and it is determined to work on words in
-	 little endian byte order we perhaps have to change the byte order
-	 before the computation.  To reduce the work for the next steps
-	 we store the swapped words in the array CORRECT_WORDS.  */
+         the next context is computed.  Because the algorithms processing
+         unit is a 32-bit word and it is determined to work on words in
+         little endian byte order we perhaps have to change the byte order
+         before the computation.  To reduce the work for the next steps
+         we store the swapped words in the array CORRECT_WORDS.  */
 
-#define OP(a, b, c, d, s, T)						\
-      do								\
-        {								\
-	  a += FF (b, c, d) + (*cwp++ = SWAP (*words)) + T;		\
-	  ++words;							\
-	  a = rol (a, s);						\
-	  a += b;							\
-        }								\
+#define OP(a, b, c, d, s, T)                                            \
+      do                                                                \
+        {                                                               \
+          a += FF (b, c, d) + (*cwp++ = SWAP (*words)) + T;             \
+          ++words;                                                      \
+          a = rol (a, s);                                               \
+          a += b;                                                       \
+        }                                                               \
       while (0)
 
       /* Before we start, one word to the strange constants.
-	 They are defined in RFC 1321 as
+         They are defined in RFC 1321 as
 
-	 T[i] = (int) (4294967296.0 * fabs (sin (i))), i=1..64, or
-	 perl -e 'foreach(1..64){printf "0x%08x\n", int (4294967296 * abs (sin $_))}'
+         T[i] = (int) (4294967296.0 * fabs (sin (i))), i=1..64, or
+         perl -e 'foreach(1..64){printf "0x%08x\n", int (4294967296 * abs (sin $_))}'
        */
 
       /* Round 1.  */
@@ -376,16 +369,16 @@ md5_process_block (const void *buffer, size_t len, struct md5_ctx *ctx)
       OP (B, C, D, A, 22, 0x49b40821);
 
       /* For the second to fourth round we have the possibly swapped words
-	 in CORRECT_WORDS.  Redefine the macro to take an additional first
-	 argument specifying the function to use.  */
+         in CORRECT_WORDS.  Redefine the macro to take an additional first
+         argument specifying the function to use.  */
 #undef OP
-#define OP(f, a, b, c, d, k, s, T)					\
-      do 								\
-	{								\
-	  a += f (b, c, d) + correct_words[k] + T;			\
-	  a = rol (a, s);						\
-	  a += b;							\
-	}								\
+#define OP(f, a, b, c, d, k, s, T)                                      \
+      do                                                                \
+        {                                                               \
+          a += f (b, c, d) + correct_words[k] + T;                      \
+          a = rol (a, s);                                               \
+          a += b;                                                       \
+        }                                                               \
       while (0)
 
       /* Round 2.  */

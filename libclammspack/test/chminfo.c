@@ -1,11 +1,12 @@
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+# include <config.h>
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <mspack.h>
 #include <system.h>
 
@@ -13,8 +14,8 @@
 
 unsigned char *load_sys_data(struct mschm_decompressor *chmd,
                              struct mschmd_header *chm,
-			     const char *filename,
-			     off_t *length_ptr)
+                             const char *filename,
+                             off_t *length_ptr)
 {
   struct mschmd_file *file;
   unsigned char *data;
@@ -52,12 +53,12 @@ char *guid(unsigned char *data) {
   return result;
 }
 
-#define READ_ENCINT(var, label) do {	       		\
-    (var) = 0;						\
-    do {						\
-	if (p > &chunk[chm->chunk_size-2]) goto label;	\
-	(var) = ((var) << 7) | (*p & 0x7F);		\
-    } while (*p++ & 0x80);				\
+#define READ_ENCINT(var, label) do {                    \
+    (var) = 0;                                          \
+    do {                                                \
+        if (p > &chunk[chm->chunk_size-2]) goto label;  \
+        (var) = ((var) << 7) | (*p & 0x7F);             \
+    } while (*p++ & 0x80);                              \
 } while (0)
 
 void print_dir(struct mschmd_header *chm, char *filename) {
@@ -105,11 +106,11 @@ void print_dir(struct mschmd_header *chm, char *filename) {
         k = chm->chunk_size - 2;
         num_entries = chunk[k] | (chunk[k+1] << 8);
         quickref_size = EndGetI32(&chunk[4]);
-	if (quickref_size > (chm->chunk_size - 20)) {
-	    printf("    QR size of %d too large (max is %d)\n",
-		   quickref_size, chm->chunk_size - 20);
-	    quickref_size = chm->chunk_size - 20;
-	}
+        if (quickref_size > (chm->chunk_size - 20)) {
+            printf("    QR size of %d too large (max is %d)\n",
+                   quickref_size, chm->chunk_size - 20);
+            quickref_size = chm->chunk_size - 20;
+        }
         printf("    PMGL entries=%u qrsize=%u zero=%u prev=%d next=%d\n",
                num_entries, quickref_size, EndGetI32(&chunk[8]),
                EndGetI32(&chunk[12]), EndGetI32(&chunk[16]));
@@ -118,7 +119,7 @@ void print_dir(struct mschmd_header *chm, char *filename) {
         j = (1 << chm->density) + 1;
         while (j < num_entries) {
           k -= 2;
-	  if (k < (chm->chunk_size - quickref_size)) break;
+          if (k < (chm->chunk_size - quickref_size)) break;
           printf("    QR: entry %4u = offset %u\n",
                  j, (chunk[k] | (chunk[k+1] << 8)) + 20);
           j += (1 << chm->density) + 1;
@@ -128,25 +129,25 @@ void print_dir(struct mschmd_header *chm, char *filename) {
         for (j = 0; j < num_entries; j++) {
           unsigned int name_len = 0, section = 0, offset = 0, length = 0;
           printf("    %4d: ", (int) (p - &chunk[0]));
-	  READ_ENCINT(name_len, PMGL_end); name = p; p += name_len;
-	  READ_ENCINT(section, PMGL_end);
-	  READ_ENCINT(offset, PMGL_end);
-	  READ_ENCINT(length, PMGL_end);
+          READ_ENCINT(name_len, PMGL_end); name = p; p += name_len;
+          READ_ENCINT(section, PMGL_end);
+          READ_ENCINT(offset, PMGL_end);
+          READ_ENCINT(length, PMGL_end);
           printf("sec=%u off=%-10u len=%-10u name=\"",section,offset,length);
           if (name_len) fwrite(name, 1, name_len, stdout);
           printf("\"\n");
-	}
+        }
       PMGL_end:
-	if (j != num_entries) printf("premature end of chunk\n");
+        if (j != num_entries) printf("premature end of chunk\n");
 
       }
       else if  ((chunk[0] == 'P') && (chunk[1] == 'M') &&
-		(chunk[2] == 'G') && (chunk[3] == 'I'))
+                (chunk[2] == 'G') && (chunk[3] == 'I'))
       {
-	k = chm->chunk_size - 2;
-	num_entries = chunk[k] | (chunk[k+1] << 8);
-	quickref_size = EndGetI32(&chunk[4]);
-	printf("    PMGI entries=%u free=%u\n", num_entries, quickref_size);
+        k = chm->chunk_size - 2;
+        num_entries = chunk[k] | (chunk[k+1] << 8);
+        quickref_size = EndGetI32(&chunk[4]);
+        printf("    PMGI entries=%u free=%u\n", num_entries, quickref_size);
 
         printf("    QR: entry %4u = offset %u\n", 0, 8);
         j = (1 << chm->density) + 1;
@@ -166,12 +167,12 @@ void print_dir(struct mschmd_header *chm, char *filename) {
           printf("chunk=%-4u name=\"",section);
           if (name_len) fwrite(name, 1, name_len, stdout);
           printf("\"\n");
-	}
+        }
       PMGI_end: 
-	if (j != num_entries) printf("premature end of chunk\n");
+        if (j != num_entries) printf("premature end of chunk\n");
       }
       else {
-	printf("    unknown format\n");
+        printf("    unknown format\n");
       }
     }
 
@@ -198,84 +199,84 @@ int main(int argc, char *argv[]) {
     for (argv++; *argv; argv++) {
       printf("%s\n", *argv);
       if ((chm = chmd->open(chmd, *argv))) {
-	printf("  chmhead_Version     %u\n",      chm->version);
-	printf("  chmhead_Timestamp   %u\n",      chm->timestamp);
-	printf("  chmhead_LanguageID  %u\n", 	 chm->language);
-	printf("  chmhs0_FileLen      %" LD "\n", chm->length);
-	printf("  chmhst_OffsetHS1    %" LD "\n", chm->dir_offset);
-	printf("  chmhst3_OffsetCS0   %" LD "\n", chm->sec0.offset);
+        printf("  chmhead_Version     %u\n",      chm->version);
+        printf("  chmhead_Timestamp   %u\n",      chm->timestamp);
+        printf("  chmhead_LanguageID  %u\n",      chm->language);
+        printf("  chmhs0_FileLen      %" LD "\n", chm->length);
+        printf("  chmhst_OffsetHS1    %" LD "\n", chm->dir_offset);
+        printf("  chmhst3_OffsetCS0   %" LD "\n", chm->sec0.offset);
 
-	print_dir(chm, *argv);
+        print_dir(chm, *argv);
 
-	if ((data = load_sys_data(chmd, chm,
-	     "::DataSpace/Storage/MSCompressed/ControlData", &len)))
+        if ((data = load_sys_data(chmd, chm,
+             "::DataSpace/Storage/MSCompressed/ControlData", &len)))
         {
-	  printf("  lzxcd_Length        %u\n",    EndGetI32(&data[0]));
-	  printf("  lzxcd_Signature     %4.4s\n", &data[4]);
-	  printf("  lzxcd_Version       %u\n",    EndGetI32(&data[8]));
-	  printf("  lzxcd_ResetInterval %u\n",    EndGetI32(&data[12]));
-	  printf("  lzxcd_WindowSize    %u\n",    EndGetI32(&data[16]));
-	  printf("  lzxcd_CacheSize     %u\n",    EndGetI32(&data[20]));
-	  printf("  lzxcd_Unknown1      %u\n",    EndGetI32(&data[24]));
-	  free(data);
-	}
+          printf("  lzxcd_Length        %u\n",    EndGetI32(&data[0]));
+          printf("  lzxcd_Signature     %4.4s\n", &data[4]);
+          printf("  lzxcd_Version       %u\n",    EndGetI32(&data[8]));
+          printf("  lzxcd_ResetInterval %u\n",    EndGetI32(&data[12]));
+          printf("  lzxcd_WindowSize    %u\n",    EndGetI32(&data[16]));
+          printf("  lzxcd_CacheSize     %u\n",    EndGetI32(&data[20]));
+          printf("  lzxcd_Unknown1      %u\n",    EndGetI32(&data[24]));
+          free(data);
+        }
 
-	if ((data = load_sys_data(chmd, chm,
-	     "::DataSpace/Storage/MSCompressed/Transform/{7FC28940-"
-	     "9D31-11D0-9B27-00A0C91E9C7C}/InstanceData/ResetTable", &len)))
+        if ((data = load_sys_data(chmd, chm,
+             "::DataSpace/Storage/MSCompressed/Transform/{7FC28940-"
+             "9D31-11D0-9B27-00A0C91E9C7C}/InstanceData/ResetTable", &len)))
         {
-	  off_t contents = chm->sec0.offset;
-	  printf("  lzxrt_Unknown1      %u\n",      EndGetI32(&data[0]));
-	  printf("  lzxrt_NumEntries    %u\n",      EndGetI32(&data[4]));
-	  printf("  lzxrt_EntrySize     %u\n",      EndGetI32(&data[8]));
-	  printf("  lzxrt_TableOffset   %u\n",      EndGetI32(&data[12]));
-	  printf("  lzxrt_UncompLen     %" LU "\n", EndGetI64(&data[16]));
-	  printf("  lzxrt_CompLen       %" LU "\n", EndGetI64(&data[24]));
-	  printf("  lzxrt_FrameLen      %u\n",      EndGetI32(&data[32]));
+          off_t contents = chm->sec0.offset;
+          printf("  lzxrt_Unknown1      %u\n",   EndGetI32(&data[0]));
+          printf("  lzxrt_NumEntries    %u\n",   EndGetI32(&data[4]));
+          printf("  lzxrt_EntrySize     %u\n",   EndGetI32(&data[8]));
+          printf("  lzxrt_TableOffset   %u\n",   EndGetI32(&data[12]));
+          printf("  lzxrt_UncompLen     %llu\n", EndGetI64(&data[16]));
+          printf("  lzxrt_CompLen       %llu\n", EndGetI64(&data[24]));
+          printf("  lzxrt_FrameLen      %u\n",   EndGetI32(&data[32]));
 
-	  for (file = chm->sysfiles; file; file = file->next) {
-	    if (strcmp(file->filename,
-		       "::DataSpace/Storage/MSCompressed/Content") == 0)
-	    {
-	      contents += file->offset;
-	      break;
-	    }
-	  }
+          for (file = chm->sysfiles; file; file = file->next) {
+            if (strcmp(file->filename,
+                       "::DataSpace/Storage/MSCompressed/Content") == 0)
+            {
+              contents += file->offset;
+              break;
+            }
+          }
 
-	  printf("  - reset table (uncomp offset -> stream offset "
-		 "[real offset, length in file]\n");
+          printf("  - reset table (uncomp offset -> stream offset "
+                 "[real offset, length in file]\n");
 
-	  numf = EndGetI32(&data[4]);
-	  pos = ((unsigned int) EndGetI32(&data[12]));
-	  switch (EndGetI32(&data[8])) {
-	  case 4:
-	    for (i = 0; i < numf && pos < len; i++, pos += 4) {
-	      unsigned int rtdata = EndGetI32(&data[pos]);
-	      printf("    %-10u -> %-10u [ %" LU " %u ]\n",
-		     i * EndGetI32(&data[32]),
-		     rtdata,
-		     contents + rtdata,
-		     (i == (numf-1))
-		     ? (EndGetI32(&data[24]) - rtdata)
-		     : (EndGetI32(&data[pos + 4]) - rtdata)
-		     );
-	    }
-	    break;
-	  case 8:
-	    for (i = 0; i < numf && pos < len; i++, pos += 8) {
-	      unsigned long long int rtdata = EndGetI64(&data[pos]);
-	      printf("    %-10" LU " -> %-10" LU " [ %" LU " %" LU " ]\n",
-		     i * EndGetI64(&data[32]), rtdata, contents + rtdata,
-		     (i == (numf-1))
-		     ? (EndGetI64(&data[24]) - rtdata)
-		     : (EndGetI64(&data[pos + 8]) - rtdata)
-		     );
-	    }
-	    break;
-	  }
-	  free(data);
-	}
-	chmd->close(chmd, chm);
+          numf = EndGetI32(&data[4]);
+          pos = ((unsigned int) EndGetI32(&data[12]));
+          switch (EndGetI32(&data[8])) {
+          case 4:
+            for (i = 0; i < numf && pos < len; i++, pos += 4) {
+              unsigned int rtdata = EndGetI32(&data[pos]);
+              printf("    %-10u -> %-10u [ %" LU " %u ]\n",
+                     i * EndGetI32(&data[32]),
+                     rtdata,
+                     contents + rtdata,
+                     (i == (numf-1))
+                     ? (EndGetI32(&data[24]) - rtdata)
+                     : (EndGetI32(&data[pos + 4]) - rtdata)
+                     );
+            }
+            break;
+          case 8:
+            for (i = 0; i < numf && pos < len; i++, pos += 8) {
+              unsigned long long int rtdata = EndGetI64(&data[pos]);
+              printf("    %-10llu -> %-10llu [ %llu %llu ]\n",
+                     i * EndGetI64(&data[32]), rtdata, contents + rtdata,
+                     (i == (numf-1))
+                     ? (EndGetI64(&data[24]) - rtdata)
+                     : (EndGetI64(&data[pos + 8]) - rtdata)
+                     );
+            }
+            break;
+          }
+          free(data);
+        }
+        chmd->close(chmd, chm);
       }
     }
     mspack_destroy_chm_decompressor(chmd);

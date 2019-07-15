@@ -27,6 +27,7 @@ struct msoab_compressor_p {
 struct msoab_decompressor_p {
   struct msoab_decompressor base;
   struct mspack_system *system;
+  int buf_size;
   /* todo */
 };
 

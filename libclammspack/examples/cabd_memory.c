@@ -40,7 +40,7 @@ static void mem_msg(struct mem_file *file, const char *format, ...) {
 }
 
 static struct mem_file *mem_open(struct mspack_system *self,
-				 struct mem_buf *fn, int mode)
+                                 struct mem_buf *fn, int mode)
 {
   struct mem_file *fh;
   if (!fn || !fn->data || !fn->length) return NULL;
@@ -148,21 +148,21 @@ int main() {
 
       /* for all files */
       for (file = cab->files; file; file = file->next) {
-	/* fill out our "filename" (memory pointer and length) */
-	output.data = (char *) malloc(file->length);
-	output.length = file->length;
+        /* fill out our "filename" (memory pointer and length) */
+        output.data = (char *) malloc(file->length);
+        output.length = file->length;
 
-	/* let cabd extract this file to our memory buffer */
-	if (output.data && cabd->extract(cabd, file, (char *) &output)) {
-	  exit(1);
-	}
+        /* let cabd extract this file to our memory buffer */
+        if (output.data && cabd->extract(cabd, file, (char *) &output)) {
+          exit(1);
+        }
 
-	/* dump the memory buffer to stdout (for display purposes) */
-	printf("Filename: %s\nContents:\n", file->filename);
-	fwrite(output.data, 1, output.length, stdout);
+        /* dump the memory buffer to stdout (for display purposes) */
+        printf("Filename: %s\nContents:\n", file->filename);
+        fwrite(output.data, 1, output.length, stdout);
 
-	/* free our buffer */
-	free(output.data);
+        /* free our buffer */
+        free(output.data);
       }
       cabd->close(cabd, cab);
     }

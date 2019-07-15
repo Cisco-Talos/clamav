@@ -1,3 +1,110 @@
+2019-02-18  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* chmd_read_headers(): a CHM file name beginning "::" but shorter
+	than 33 bytes will lead to reading past the freshly-allocated name
+	buffer - checks for specific control filenames didn't take length
+	into account. Thanks to ADLab of Venustech for the report and
+	proof of concept.
+
+2019-02-18  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* chmd_read_headers(): CHM files can declare their chunks are any
+	size up to 4GB, and libmspack will attempt to allocate that to
+	read the file.
+
+	This is not a security issue; libmspack doesn't promise how much
+	memory it'll use to unpack files. You can set your own limits by
+	returning NULL in a custom mspack_system.alloc() implementation.
+
+	However, it would be good to validate chunk size further. With no
+	offical specification, only empirical data is available. All files
+	created by hhc.exe have a chunk size of 4096 bytes, and this is
+	matched by all the files I've found in the wild, except for one
+	which has a chunk size of 8192 bytes, which was created by someone
+	developing a CHM file creator 15 years ago, and they appear to
+	have abandoned it, so it seems 4096 is a de-facto standard.
+
+	I've changed the "chunk size is not a power of two" warning to
+	"chunk size is not 4096", and now only allow chunk sizes between
+	22 and 8192 bytes. If you have CHM files with a larger chunk size,
+	please send them to me and I'll increase this upper limit.
+
+	Thanks to ADLab of Venustech for the report.
+
+2019-02-18  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* oabd.c: replaced one-shot copying of uncompressed blocks (which
+	requires allocating a buffer of the size declared in the header,
+	which can be 4GB) with a fixed-size buffer. The buffer size is
+	user-controllable with the new msoab_decompressor::set_param()
+	method (check you have version 2 of the OAB decompressor), and
+	also controls the input buffer used for OAB's LZX decompression.
+
+	Reminder: compression formats can dictate how much memory is
+	needed to decompress them. If memory usage is a security concern
+	to you, write a custom mspack_system.alloc() that returns NULL
+	if "too much" memory is requested. Do not rely on libmspack adding
+	special heuristics to know not to request "too much".
+
+	Thanks to ADLab of Venustech for the report.
+
+2018-11-03  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* configure.ac, doc/Makefile.in, doc/Doxyfile.in: remove these
+	template files and replace with static files. You can still build
+	the documentation with make -C doc
+
+2018-11-03  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* Makefile.am, src: move the "useful" programs in src/ to examples/
+	and don't auto-install them. Even though they're useful, they are
+	intended as examples and aren't productised (no commmand-line
+	options, no man pages, etc.) -- if you disagree, feel free to
+	send in a patch
+
+2018-11-01  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* cabd_extract(): would not do decompression for random-access
+	offsets if the folder type was LZX. This is a fairly major bug,
+	and affects any decompression where you skip directly to a file,
+	or decompress data out-of-order. Thanks to austin987 for alerting
+	me to this.
+
+	This bug was introduced by the recent 'salvage mode' patch. Even
+	though I'd reviewed all the differences in clamav's copy of
+	libmspack and said "wtf" to this particular change, I didn't
+	notice it was still in the resulting patch I merged. Mea culpa :)
+
+	* test/cabd_test.c: now has a regression test to cover this
+
+2018-10-31  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* Makefile.am, test/*_test.c: use the automake test-suite system
+	with the test-suite programs (cabd_test, chmd_test, kwajd_test).
+	This also fixes a longstanding bugbear that these programs don't
+	access their test files using an absolute path. Now this is passed
+	to them and you can run them from any directory. Thanks to Richard
+	Jones for requesting this.
+
+2018-10-31  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* configure.ac: require at least automake 1.11, use AM_SILENT_RULES
+	unconditionally
+
+2018-10-30  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* configure.ac: remove obsolescent C library tests. AC_HEADER_STDC is
+	removed, and so are most checks for standard C headers. libmspack now
+	makes these assumptions:
+	- <ctype.h> <limits.h> <stdlib.h> <string.h> exist
+	- <ctype.h> defines tolower()
+	- <string.h> defines memset(), memcmp(), strlen()
+	- if towlower() exists, it's defined in <wctype.h>
+
+2018-10-22  Stuart Caie <kyzer@cabextract.org.uk>
+
+	* cabd.c: remove the only use of assert()
+
 2018-10-20  Stuart Caie <kyzer@cabextract.org.uk>
 
 	* src/chmextract.c: add anti "../" and leading slash protection to

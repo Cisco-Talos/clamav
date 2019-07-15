@@ -27,11 +27,11 @@
 #define BITS_TYPE struct qtmd_stream
 #define BITS_VAR qtm
 #define BITS_ORDER_MSB
-#define READ_BYTES do {			\
-    unsigned char b0, b1;		\
-    READ_IF_NEEDED; b0 = *i_ptr++;	\
-    READ_IF_NEEDED; b1 = *i_ptr++;	\
-    INJECT_BITS((b0 << 8) | b1, 16);	\
+#define READ_BYTES do {                 \
+    unsigned char b0, b1;               \
+    READ_IF_NEEDED; b0 = *i_ptr++;      \
+    READ_IF_NEEDED; b1 = *i_ptr++;      \
+    INJECT_BITS((b0 << 8) | b1, 16);    \
 } while (0)
 #include <readbits.h>
 
@@ -115,7 +115,7 @@ static const unsigned char length_extra[27] = {
       else break;                                                       \
     }                                                                   \
     L <<= 1; H = (H << 1) | 1;                                          \
-    ENSURE_BITS(1);							\
+    ENSURE_BITS(1);                                                     \
     C  = (C << 1) | PEEK_BITS(1);                                       \
     REMOVE_BITS(1);                                                     \
   }                                                                     \
@@ -130,7 +130,7 @@ static void qtmd_update_model(struct qtmd_model *model) {
       /* -1, not -2; the 0 entry saves this */
       model->syms[i].cumfreq >>= 1;
       if (model->syms[i].cumfreq <= model->syms[i+1].cumfreq) {
-	model->syms[i].cumfreq = model->syms[i+1].cumfreq + 1;
+        model->syms[i].cumfreq = model->syms[i+1].cumfreq + 1;
       }
     }
   }
@@ -149,11 +149,11 @@ static void qtmd_update_model(struct qtmd_model *model) {
      * characteristics */
     for (i = 0; i < model->entries - 1; i++) {
       for (j = i + 1; j < model->entries; j++) {
-	if (model->syms[i].cumfreq < model->syms[j].cumfreq) {
-	  tmp = model->syms[i];
-	  model->syms[i] = model->syms[j];
-	  model->syms[j] = tmp;
-	}
+        if (model->syms[i].cumfreq < model->syms[j].cumfreq) {
+          tmp = model->syms[i];
+          model->syms[i] = model->syms[j];
+          model->syms[j] = tmp;
+        }
       }
     }
 
@@ -166,7 +166,7 @@ static void qtmd_update_model(struct qtmd_model *model) {
 
 /* Initialises a model to decode symbols from [start] to [start]+[len]-1 */
 static void qtmd_init_model(struct qtmd_model *model,
-			    struct qtmd_modelsym *syms, int start, int len)
+                            struct qtmd_modelsym *syms, int start, int len)
 {
   int i;
 
@@ -184,9 +184,9 @@ static void qtmd_init_model(struct qtmd_model *model,
 /*-------- main Quantum code --------*/
 
 struct qtmd_stream *qtmd_init(struct mspack_system *system,
-			      struct mspack_file *input,
-			      struct mspack_file *output,
-			      int window_bits, int input_buffer_size)
+                              struct mspack_file *input,
+                              struct mspack_file *output,
+                              int window_bits, int input_buffer_size)
 {
   unsigned int window_size = 1 << window_bits;
   struct qtmd_stream *qtm;
@@ -308,113 +308,113 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
     while (window_posn < frame_end) {
       GET_SYMBOL(qtm->model7, selector);
       if (selector < 4) {
-	/* literal byte */
-	struct qtmd_model *mdl = (selector == 0) ? &qtm->model0 :
-	                        ((selector == 1) ? &qtm->model1 :
-				((selector == 2) ? &qtm->model2 :
+        /* literal byte */
+        struct qtmd_model *mdl = (selector == 0) ? &qtm->model0 :
+                                ((selector == 1) ? &qtm->model1 :
+                                ((selector == 2) ? &qtm->model2 :
                                                    &qtm->model3));
-	GET_SYMBOL((*mdl), sym);
-	window[window_posn++] = sym;
-	frame_todo--;
+        GET_SYMBOL((*mdl), sym);
+        window[window_posn++] = sym;
+        frame_todo--;
       }
       else {
-	/* match repeated string */
-	switch (selector) {
-	case 4: /* selector 4 = fixed length match (3 bytes) */
-	  GET_SYMBOL(qtm->model4, sym);
-	  READ_MANY_BITS(extra, extra_bits[sym]);
-	  match_offset = position_base[sym] + extra + 1;
-	  match_length = 3;
-	  break;
+        /* match repeated string */
+        switch (selector) {
+        case 4: /* selector 4 = fixed length match (3 bytes) */
+          GET_SYMBOL(qtm->model4, sym);
+          READ_MANY_BITS(extra, extra_bits[sym]);
+          match_offset = position_base[sym] + extra + 1;
+          match_length = 3;
+          break;
 
-	case 5: /* selector 5 = fixed length match (4 bytes) */
-	  GET_SYMBOL(qtm->model5, sym);
-	  READ_MANY_BITS(extra, extra_bits[sym]);
-	  match_offset = position_base[sym] + extra + 1;
-	  match_length = 4;
-	  break;
+        case 5: /* selector 5 = fixed length match (4 bytes) */
+          GET_SYMBOL(qtm->model5, sym);
+          READ_MANY_BITS(extra, extra_bits[sym]);
+          match_offset = position_base[sym] + extra + 1;
+          match_length = 4;
+          break;
 
-	case 6: /* selector 6 = variable length match */
-	  GET_SYMBOL(qtm->model6len, sym);
-	  READ_MANY_BITS(extra, length_extra[sym]);
-	  match_length = length_base[sym] + extra + 5;
+        case 6: /* selector 6 = variable length match */
+          GET_SYMBOL(qtm->model6len, sym);
+          READ_MANY_BITS(extra, length_extra[sym]);
+          match_length = length_base[sym] + extra + 5;
 
-	  GET_SYMBOL(qtm->model6, sym);
-	  READ_MANY_BITS(extra, extra_bits[sym]);
-	  match_offset = position_base[sym] + extra + 1;
-	  break;
+          GET_SYMBOL(qtm->model6, sym);
+          READ_MANY_BITS(extra, extra_bits[sym]);
+          match_offset = position_base[sym] + extra + 1;
+          break;
 
-	default:
-	  /* should be impossible, model7 can only return 0-6 */
-	  D(("got %d from selector", selector))
-	  return qtm->error = MSPACK_ERR_DECRUNCH;
-	}
+        default:
+          /* should be impossible, model7 can only return 0-6 */
+          D(("got %d from selector", selector))
+          return qtm->error = MSPACK_ERR_DECRUNCH;
+        }
 
-	rundest = &window[window_posn];
-	frame_todo -= match_length;
+        rundest = &window[window_posn];
+        frame_todo -= match_length;
 
-	/* does match destination wrap the window? This situation is possible
-	 * where the window size is less than the 32k frame size, but matches
-	 * must not go beyond a frame boundary */
-	if ((window_posn + match_length) > qtm->window_size) {
+        /* does match destination wrap the window? This situation is possible
+         * where the window size is less than the 32k frame size, but matches
+         * must not go beyond a frame boundary */
+        if ((window_posn + match_length) > qtm->window_size) {
           /* copy first part of match, before window end */
-	  i = qtm->window_size - window_posn;
-	  j = window_posn - match_offset;
-	  while (i--) *rundest++ = window[j++ & (qtm->window_size - 1)];
+          i = qtm->window_size - window_posn;
+          j = window_posn - match_offset;
+          while (i--) *rundest++ = window[j++ & (qtm->window_size - 1)];
 
-	  /* flush currently stored data */
-	  i = (&window[qtm->window_size] - qtm->o_ptr);
+          /* flush currently stored data */
+          i = (&window[qtm->window_size] - qtm->o_ptr);
 
-	  /* this should not happen, but if it does then this code
-	   * can't handle the situation (can't flush up to the end of
-	   * the window, but can't break out either because we haven't
-	   * finished writing the match). bail out in this case */
-	  if (i > out_bytes) {
-	    D(("during window-wrap match; %d bytes to flush but only need %d",
-	       i, (int) out_bytes))
-	    return qtm->error = MSPACK_ERR_DECRUNCH;
-	  }
-	  if (qtm->sys->write(qtm->output, qtm->o_ptr, i) != i) {
-	    return qtm->error = MSPACK_ERR_WRITE;
-	  }
-	  out_bytes -= i;
-	  qtm->o_ptr = &window[0];
-	  qtm->o_end = &window[0]; 
+          /* this should not happen, but if it does then this code
+           * can't handle the situation (can't flush up to the end of
+           * the window, but can't break out either because we haven't
+           * finished writing the match). bail out in this case */
+          if (i > out_bytes) {
+            D(("during window-wrap match; %d bytes to flush but only need %d",
+               i, (int) out_bytes))
+            return qtm->error = MSPACK_ERR_DECRUNCH;
+          }
+          if (qtm->sys->write(qtm->output, qtm->o_ptr, i) != i) {
+            return qtm->error = MSPACK_ERR_WRITE;
+          }
+          out_bytes -= i;
+          qtm->o_ptr = &window[0];
+          qtm->o_end = &window[0]; 
 
-	  /* copy second part of match, after window wrap */
-	  rundest = &window[0];
-	  i = match_length - (qtm->window_size - window_posn);
-	  while (i--) *rundest++ = window[j++ & (qtm->window_size - 1)];
-	  window_posn = window_posn + match_length - qtm->window_size;
+          /* copy second part of match, after window wrap */
+          rundest = &window[0];
+          i = match_length - (qtm->window_size - window_posn);
+          while (i--) *rundest++ = window[j++ & (qtm->window_size - 1)];
+          window_posn = window_posn + match_length - qtm->window_size;
 
           break; /* because "window_posn < frame_end" has now failed */
-	}
-	else {
+        }
+        else {
           /* normal match - output won't wrap window or frame end */
-	  i = match_length;
+          i = match_length;
 
-	  /* does match _offset_ wrap the window? */
-	  if (match_offset > window_posn) {
-	    /* j = length from match offset to end of window */
-	    j = match_offset - window_posn;
-	    if (j > (int) qtm->window_size) {
-	      D(("match offset beyond window boundaries"))
-	      return qtm->error = MSPACK_ERR_DECRUNCH;
-	    }
-	    runsrc = &window[qtm->window_size - j];
-	    if (j < i) {
-	      /* if match goes over the window edge, do two copy runs */
-	      i -= j; while (j-- > 0) *rundest++ = *runsrc++;
-	      runsrc = window;
-	    }
-	    while (i-- > 0) *rundest++ = *runsrc++;
-	  }
-	  else {
-	    runsrc = rundest - match_offset;
-	    while (i-- > 0) *rundest++ = *runsrc++;
-	  }
-	  window_posn += match_length;
-	}
+          /* does match _offset_ wrap the window? */
+          if (match_offset > window_posn) {
+            /* j = length from match offset to end of window */
+            j = match_offset - window_posn;
+            if (j > (int) qtm->window_size) {
+              D(("match offset beyond window boundaries"))
+              return qtm->error = MSPACK_ERR_DECRUNCH;
+            }
+            runsrc = &window[qtm->window_size - j];
+            if (j < i) {
+              /* if match goes over the window edge, do two copy runs */
+              i -= j; while (j-- > 0) *rundest++ = *runsrc++;
+              runsrc = window;
+            }
+            while (i-- > 0) *rundest++ = *runsrc++;
+          }
+          else {
+            runsrc = rundest - match_offset;
+            while (i-- > 0) *rundest++ = *runsrc++;
+          }
+          window_posn += match_length;
+        }
       } /* if (window_posn+match_length > frame_end) */
     } /* while (window_posn < frame_end) */
 
@@ -449,7 +449,7 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
       /* break out if we have more than enough to finish this request */
       if (i >= out_bytes) break;
       if (qtm->sys->write(qtm->output, qtm->o_ptr, i) != i) {
-	return qtm->error = MSPACK_ERR_WRITE;
+        return qtm->error = MSPACK_ERR_WRITE;
       }
       out_bytes -= i;
       qtm->o_ptr = &window[0];

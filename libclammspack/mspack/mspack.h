@@ -1,5 +1,5 @@
 /* libmspack -- a library for working with Microsoft compression formats.
- * (C) 2003-2016 Stuart Caie <kyzer@cabextract.org.uk>
+ * (C) 2003-2019 Stuart Caie <kyzer@cabextract.org.uk>
  *
  * libmspack is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License (LGPL) version 2.1
@@ -308,8 +308,8 @@ struct mspack_system {
    * @see close(), read(), write(), seek(), tell(), message()
    */
   struct mspack_file * (*open)(struct mspack_system *self,
-			       const char *filename,
-			       int mode);
+                               const char *filename,
+                               int mode);
 
   /**
    * Closes a previously opened file. If any memory was allocated for this
@@ -334,8 +334,8 @@ struct mspack_system {
    * @see open(), write()
    */
   int (*read)(struct mspack_file *file,
-	      void *buffer,
-	      int bytes);
+              void *buffer,
+              int bytes);
 
   /**
    * Writes a given number of bytes to an open file.
@@ -351,8 +351,8 @@ struct mspack_system {
    * @see open(), read()
    */
   int (*write)(struct mspack_file *file,
-	       void *buffer,
-	       int bytes);
+               void *buffer,
+               int bytes);
 
   /**
    * Seeks to a specific file offset within an open file.
@@ -378,8 +378,8 @@ struct mspack_system {
    * @see open(), tell()
    */
   int (*seek)(struct mspack_file *file,
-	      off_t offset,
-	      int mode);
+              off_t offset,
+              int mode);
 
   /**
    * Returns the current file position (in bytes) of the given file.
@@ -405,8 +405,8 @@ struct mspack_system {
    * @see open()
    */
   void (*message)(struct mspack_file *file,
-		  const char *format,
-		  ...);
+                  const char *format,
+                  ...);
 
   /**
    * Allocates memory.
@@ -419,7 +419,7 @@ struct mspack_system {
    * @see free()
    */
   void * (*alloc)(struct mspack_system *self,
-		  size_t bytes);
+                  size_t bytes);
   
   /**
    * Frees memory.
@@ -442,8 +442,8 @@ struct mspack_system {
    * @param bytes the size of the memory region, in bytes
    */
   void (*copy)(void *src,
-	       void *dest,
-	       size_t bytes);
+               void *dest,
+               size_t bytes);
 
   /**
    * A null pointer to mark the end of mspack_system. It must equal NULL.
@@ -976,7 +976,7 @@ struct mscab_decompressor {
    * @see close(), search(), last_error()
    */
   struct mscabd_cabinet * (*open) (struct mscab_decompressor *self,
-				   const char *filename);
+                                   const char *filename);
 
   /**
    * Closes a previously opened cabinet or cabinet set.
@@ -1008,7 +1008,7 @@ struct mscab_decompressor {
    * @see open(), search(), append(), prepend()
    */
   void (*close)(struct mscab_decompressor *self,
-		struct mscabd_cabinet *cab);
+                struct mscabd_cabinet *cab);
 
   /**
    * Searches a regular file for embedded cabinets.
@@ -1045,7 +1045,7 @@ struct mscab_decompressor {
    * @see close(), open(), last_error()
    */
   struct mscabd_cabinet * (*search) (struct mscab_decompressor *self,
-				     const char *filename);
+                                     const char *filename);
 
   /**
    * Appends one mscabd_cabinet to another, forming or extending a cabinet
@@ -1088,8 +1088,8 @@ struct mscab_decompressor {
    * @see prepend(), open(), close()
    */
   int (*append) (struct mscab_decompressor *self,
-		 struct mscabd_cabinet *cab,
-		 struct mscabd_cabinet *nextcab);
+                 struct mscabd_cabinet *cab,
+                 struct mscabd_cabinet *nextcab);
 
   /**
    * Prepends one mscabd_cabinet to another, forming or extending a
@@ -1110,8 +1110,8 @@ struct mscab_decompressor {
    * @see append(), open(), close()
    */
   int (*prepend) (struct mscab_decompressor *self,
-		  struct mscabd_cabinet *cab,
-		  struct mscabd_cabinet *prevcab);
+                  struct mscabd_cabinet *cab,
+                  struct mscabd_cabinet *prevcab);
 
   /**
    * Extracts a file from a cabinet or cabinet set.
@@ -1136,8 +1136,8 @@ struct mscab_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*extract)(struct mscab_decompressor *self,
-		 struct mscabd_file *file,
-		 const char *filename);
+                 struct mscabd_file *file,
+                 const char *filename);
 
   /**
    * Sets a CAB decompression engine parameter.
@@ -1162,8 +1162,8 @@ struct mscab_decompressor {
    * @see search(), extract()
    */
   int (*set_param)(struct mscab_decompressor *self,
-		   int param,
-		   int value);
+                   int param,
+                   int value);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -1448,8 +1448,8 @@ struct mschm_compressor {
    * @see use_temporary_file() set_param()
    */
   int (*generate)(struct mschm_compressor *self,
-		  struct mschmc_file file_list[],
-		  const char *output_file);
+                  struct mschmc_file file_list[],
+                  const char *output_file);
 
   /**
    * Specifies whether a temporary file is used during CHM generation.
@@ -1505,8 +1505,8 @@ struct mschm_compressor {
    * @see generate()
    */
   int (*use_temporary_file)(struct mschm_compressor *self,
-			    int use_temp_file,
-			    const char *temp_file);
+                            int use_temp_file,
+                            const char *temp_file);
   /**
    * Sets a CHM compression engine parameter.
    *
@@ -1553,8 +1553,8 @@ struct mschm_compressor {
    * @see generate()
    */
   int (*set_param)(struct mschm_compressor *self,
-		   int param,
-		   unsigned int value);
+                   int param,
+                   int value);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -1596,7 +1596,7 @@ struct mschm_decompressor {
    * @see close()
    */
   struct mschmd_header *(*open)(struct mschm_decompressor *self,
-				const char *filename);
+                                const char *filename);
 
   /**
    * Closes a previously opened CHM helpfile.
@@ -1616,7 +1616,7 @@ struct mschm_decompressor {
    * @see open(), fast_open()
    */
   void (*close)(struct mschm_decompressor *self,
-		struct mschmd_header *chm);
+                struct mschmd_header *chm);
 
   /**
    * Extracts a file from a CHM helpfile.
@@ -1637,8 +1637,8 @@ struct mschm_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*extract)(struct mschm_decompressor *self,
-		 struct mschmd_file *file,
-		 const char *filename);
+                 struct mschmd_file *file,
+                 const char *filename);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -1676,7 +1676,7 @@ struct mschm_decompressor {
    * @see open(), close(), fast_find(), extract()
    */
   struct mschmd_header *(*fast_open)(struct mschm_decompressor *self,
-				     const char *filename);
+                                     const char *filename);
 
   /**
    * Finds file details quickly.
@@ -1717,10 +1717,10 @@ struct mschm_decompressor {
    * @see open(), close(), fast_find(), extract()
    */
   int (*fast_find)(struct mschm_decompressor *self,
-		   struct mschmd_header *chm,
-		   const char *filename,
-		   struct mschmd_file *f_ptr,
-		   int f_size);
+                   struct mschmd_header *chm,
+                   const char *filename,
+                   struct mschmd_file *f_ptr,
+                   int f_size);
 };
 
 /* --- support for .LIT (EBook) file format -------------------------------- */
@@ -1826,9 +1826,9 @@ struct msszdd_compressor {
    * @see set_param()
    */
   int (*compress)(struct msszdd_compressor *self,
-		  const char *input,
-		  const char *output,
-		  off_t length);
+                  const char *input,
+                  const char *output,
+                  off_t length);
 
   /**
    * Sets an SZDD compression engine parameter.
@@ -1852,8 +1852,8 @@ struct msszdd_compressor {
    * @see compress()
    */
   int (*set_param)(struct msszdd_compressor *self,
-		   int param,
-		   unsigned int value);
+                   int param,
+                   int value);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -1894,7 +1894,7 @@ struct msszdd_decompressor {
    * @see close()
    */
   struct msszddd_header *(*open)(struct msszdd_decompressor *self,
-				 const char *filename);
+                                 const char *filename);
 
   /**
    * Closes a previously opened SZDD file.
@@ -1910,7 +1910,7 @@ struct msszdd_decompressor {
    * @see open()
    */
   void (*close)(struct msszdd_decompressor *self,
-		struct msszddd_header *szdd);
+                struct msszddd_header *szdd);
 
   /**
    * Extracts the compressed data from a SZDD file.
@@ -1926,8 +1926,8 @@ struct msszdd_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*extract)(struct msszdd_decompressor *self,
-		 struct msszddd_header *szdd,
-		 const char *filename);
+                 struct msszddd_header *szdd,
+                 const char *filename);
 
   /**
    * Decompresses an SZDD file to an output file in one step.
@@ -1947,8 +1947,8 @@ struct msszdd_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*decompress)(struct msszdd_decompressor *self,
-		    const char *input,
-		    const char *output);
+                    const char *input,
+                    const char *output);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -2062,9 +2062,9 @@ struct mskwaj_compressor {
    * @see set_param()
    */
   int (*compress)(struct mskwaj_compressor *self,
-		  const char *input,
-		  const char *output,
-		  off_t length);
+                  const char *input,
+                  const char *output,
+                  off_t length);
 
   /**
    * Sets an KWAJ compression engine parameter.
@@ -2090,8 +2090,8 @@ struct mskwaj_compressor {
    * @see generate()
    */
   int (*set_param)(struct mskwaj_compressor *self,
-		   int param,
-		   unsigned int value);
+                   int param,
+                   int value);
 
 
   /**
@@ -2112,7 +2112,7 @@ struct mskwaj_compressor {
    *         filename is too long
    */
   int (*set_filename)(struct mskwaj_compressor *self,
-		      const char *filename);
+                      const char *filename);
 
   /**
    * Sets arbitrary data that will be stored in the header of the
@@ -2132,8 +2132,8 @@ struct mskwaj_compressor {
    *         is too long
    */
   int (*set_extra_data)(struct mskwaj_compressor *self,
-			void *data,
-			size_t bytes);
+                        void *data,
+                        size_t bytes);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -2174,7 +2174,7 @@ struct mskwaj_decompressor {
    * @see close()
    */
   struct mskwajd_header *(*open)(struct mskwaj_decompressor *self,
-				 const char *filename);
+                                 const char *filename);
 
   /**
    * Closes a previously opened KWAJ file.
@@ -2189,7 +2189,7 @@ struct mskwaj_decompressor {
    * @see open()
    */
   void (*close)(struct mskwaj_decompressor *self,
-		struct mskwajd_header *kwaj);
+                struct mskwajd_header *kwaj);
 
   /**
    * Extracts the compressed data from a KWAJ file.
@@ -2205,8 +2205,8 @@ struct mskwaj_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*extract)(struct mskwaj_decompressor *self,
-		 struct mskwajd_header *kwaj,
-		 const char *filename);
+                 struct mskwajd_header *kwaj,
+                 const char *filename);
 
   /**
    * Decompresses an KWAJ file to an output file in one step.
@@ -2226,8 +2226,8 @@ struct mskwaj_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*decompress)(struct mskwaj_decompressor *self,
-		    const char *input,
-		    const char *output);
+                    const char *input,
+                    const char *output);
 
   /**
    * Returns the error code set by the most recently called method.
@@ -2268,8 +2268,8 @@ struct msoab_compressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*compress) (struct msoab_compressor *self,
-		   const char *input,
-		   const char *output);
+                   const char *input,
+                   const char *output);
 
   /**
    * Generate a compressed incremental OAB patch file.
@@ -2292,9 +2292,9 @@ struct msoab_compressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*compress_incremental) (struct msoab_compressor *self,
-			       const char *input,
-			       const char *base,
-			       const char *output);
+                               const char *input,
+                               const char *base,
+                               const char *output);
 };
 
 /**
@@ -2321,8 +2321,8 @@ struct msoab_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*decompress) (struct msoab_decompressor *self,
-		     const char *input,
-		     const char *output);
+                     const char *input,
+                     const char *output);
 
   /**
    * Decompresses an Offline Address Book with an incremental patch file.
@@ -2350,10 +2350,33 @@ struct msoab_decompressor {
    * @return an error code, or MSPACK_ERR_OK if successful
    */
   int (*decompress_incremental) (struct msoab_decompressor *self,
-				 const char *input,
-				 const char *base,
-				 const char *output);
+                                 const char *input,
+                                 const char *base,
+                                 const char *output);
+
+  /**
+   * Sets an OAB decompression engine parameter. Available only in OAB
+   * decompressor version 2 and above.
+   *
+   * - #MSOABD_PARAM_DECOMPBUF: How many bytes should be used as an input
+   *   buffer by decompressors? The minimum value is 16. The default value
+   *   is 4096.
+   *
+   * @param  self     a self-referential pointer to the msoab_decompressor
+   *                  instance being called
+   * @param  param    the parameter to set
+   * @param  value    the value to set the parameter to
+   * @return MSPACK_ERR_OK if all is OK, or MSPACK_ERR_ARGS if there
+   *         is a problem with either parameter or value.
+   */
+  int (*set_param)(struct msoab_decompressor *self,
+                   int param,
+                   int value);
+
 };
+
+/** msoab_decompressor::set_param() parameter: size of decompression buffer */
+#define MSOABD_PARAM_DECOMPBUF (0)
 
 #ifdef __cplusplus
 }
