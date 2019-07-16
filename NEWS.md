@@ -17,6 +17,11 @@ described by David Fifield,
 Thank you to Hanno Böck for reporting the issue as it relates to ClamAV,
 [here](https://bugzilla.clamav.net/show_bug.cgi?id=12356).
 
+Also included in 0.101.3:
+
+- Update of bundled the libmspack library from 0.8alpha to 0.10alpha, to
+  address a buffer overflow vulnerability in libmspack < 0.9.1α.
+
 ## 0.101.2
 
 ClamAV 0.101.2 is a patch release to address a handful of security related bugs.
