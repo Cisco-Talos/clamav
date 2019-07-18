@@ -48,14 +48,14 @@
 #include "../shared/actions.h"
 
 #include "./clamonacc.h"
-#include "./client/onaccess_client.h"
-#include "./fanotif/onaccess_fan.h"
-#include "./inotif/onaccess_ddd.h"
-#include "./scan/onaccess_scque.h"
+#include "./client/client.h"
+#include "./fanotif/fanotif.h"
+#include "./inotif/inotif.h"
+#include "./scan/queue.h"
 
 
 pthread_t ddd_pid = 0;
-pthread_t scque_pid = 0;
+pthread_t scan_queue_pid = 0;
 
 static void onas_handle_signals();
 static int startup_checks(struct onas_context *ctx);
@@ -76,11 +76,11 @@ static void onas_clamonacc_exit(int sig)
 	}
 
 	logg("*Clamonacc: attempting to stop event consumer thread ...\n");
-	if (scque_pid > 0) {
-		pthread_cancel(scque_pid);
-		pthread_join(scque_pid, NULL);
+	if (scan_queue_pid > 0) {
+		pthread_cancel(scan_queue_pid);
+		pthread_join(scan_queue_pid, NULL);
 	}
-	scque_pid = 0;
+	scan_queue_pid = 0;
 
 	logg("*Clamonacc: attempting to stop ddd thread ... \n");
 	if (ddd_pid > 0) {
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
         ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
 
         /* Setup our event queue */
-        switch(onas_scanque_start(&ctx)) {
+        switch(onas_scan_queue_start(&ctx)) {
             case CL_SUCCESS:
                 break;
             case CL_BREAK:

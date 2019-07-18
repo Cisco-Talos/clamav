@@ -42,20 +42,20 @@
 #include "../../shared/optparser.h"
 #include "../../shared/output.h"
 
-#include "../misc/onaccess_others.h"
+#include "../misc/utils.h"
 #include "../../clamd/server.h"
 
-#include "./onaccess_fan.h"
-#include "../inotif/onaccess_hash.h"
-#include "../inotif/onaccess_ddd.h"
+#include "./fanotif.h"
+#include "../inotif/hash.h"
+#include "../inotif/inotif.h"
 
-#include "../client/onaccess_client.h"
+#include "../client/client.h"
 
-#include "../scan/onaccess_scth.h"
-#include "../scan/onaccess_scque.h"
+#include "../scan/thread.h"
+#include "../scan/queue.h"
 
 extern pthread_t ddd_pid;
-extern pthread_t scque_pid;
+extern pthread_t scan_queue_pid;
 static int onas_fan_fd;
 
 cl_error_t onas_setup_fanotif(struct onas_context **ctx) {

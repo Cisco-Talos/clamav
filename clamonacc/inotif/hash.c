@@ -38,9 +38,9 @@
 #include <sys/fanotify.h>
 #endif
 
-#include "../fanotif/onaccess_fan.h"
-#include "./onaccess_hash.h"
-#include "./onaccess_ddd.h"
+#include "../fanotif/fanotif.h"
+#include "./hash.h"
+#include "./inotif.h"
 
 #include "../../libclamav/clamav.h"
 #include "../../libclamav/scanners.h"

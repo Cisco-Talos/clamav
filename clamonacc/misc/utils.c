@@ -34,15 +34,15 @@
 #include "../../shared/optparser.h"
 #include "../../shared/output.h"
 
-#include "./onaccess_others.h"
+#include "./utils.h"
 #include "../../clamd/scanner.h"
 #include "../clamonacc.h"
-#include "../client/onaccess_client.h"
-#include "../scan/onaccess_scque.h"
+#include "../client/client.h"
+#include "../scan/queue.h"
 
 #if defined(FANOTIFY)
 
-extern pthread_cond_t onas_scque_empty_cond;
+extern pthread_cond_t onas_scan_queue_empty_cond;
 
 int onas_fan_checkowner(int pid, const struct optstruct *opts)
 {
@@ -106,7 +106,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
 							continue;
 						} else {
 							logg("*ClamMisc: fds have been exhausted ... attempting to force the consumer thread to catch up ... (excluding for safety)\n");
-							pthread_cond_signal(&onas_scque_empty_cond);
+							pthread_cond_signal(&onas_scan_queue_empty_cond);
 							sleep(3);
 							return CHK_FOUND;
 						}

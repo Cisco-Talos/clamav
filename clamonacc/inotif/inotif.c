@@ -40,12 +40,12 @@
 #include <sys/inotify.h>
 #endif
 
-#include "../fanotif/onaccess_fan.h"
-#include "./onaccess_hash.h"
-#include "./onaccess_ddd.h"
-#include "../scan/onaccess_scth.h"
-#include "../scan/onaccess_scque.h"
-#include "../misc/onaccess_others.h"
+#include "../fanotif/fanotif.h"
+#include "./hash.h"
+#include "./inotif.h"
+#include "../scan/thread.h"
+#include "../scan/queue.h"
+#include "../misc/utils.h"
 
 #include "../../libclamav/clamav.h"
 #include "../../libclamav/scanners.h"
