@@ -40,24 +40,24 @@
 
 #include "../../libclamav/others.h"
 #include "../misc/priv_fts.h"
-#include "../misc/onaccess_others.h"
-#include "../client/onaccess_client.h"
-#include "./onaccess_scth.h"
+#include "../misc/utils.h"
+#include "../client/client.h"
+#include "./thread.h"
 
 static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 static int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
-static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
-static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const char *pathname);
-static cl_error_t onas_scth_handle_file(struct onas_scan_event *event_data, const char *pathname);
+static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
+static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data, const char *pathname);
+static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_data, const char *pathname);
 
-static void onas_scth_exit(int sig);
+static void onas_scan_thread_exit(int sig);
 
-static void onas_scth_exit(int sig)
+static void onas_scan_thread_exit(int sig)
 {
-    logg("*ScanOnAccess: onas_scth_exit(), signal %d\n", sig);
+    logg("*ScanOnAccess: onas_scan_thread_exit(), signal %d\n", sig);
 
     pthread_exit(NULL);
 }
@@ -136,7 +136,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 	return ret;
 }
 
-static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code) {
+static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code) {
 
 
 #if defined(FANOTIFY)
@@ -215,7 +215,7 @@ static cl_error_t onas_scth_scanfile(struct onas_scan_event *event_data, const c
 	return ret;
 }
 
-static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const char *pathname) {
+static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data, const char *pathname) {
 	FTS *ftsp = NULL;
 	int32_t ftspopts = FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV;
 	FTSENT *curr = NULL;
@@ -249,7 +249,7 @@ static cl_error_t onas_scth_handle_dir(struct onas_scan_event *event_data, const
 				}
 			}
 
-			ret = onas_scth_scanfile(event_data, curr->fts_path, sb, &infected, &err, &ret_code);
+			ret = onas_scan_thread_scanfile(event_data, curr->fts_path, sb, &infected, &err, &ret_code);
 		}
 	}
 
@@ -261,7 +261,7 @@ out:
 	return ret;
 }
 
-static cl_error_t onas_scth_handle_file(struct onas_scan_event *event_data, const char *pathname) {
+static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_data, const char *pathname) {
 
 	STATBUF sb;
 	int32_t infected = 0;
@@ -284,7 +284,7 @@ static cl_error_t onas_scth_handle_file(struct onas_scan_event *event_data, cons
 		}
 	}
 
-	ret = onas_scth_scanfile(event_data, pathname, sb, &infected, &err, &ret_code);
+	ret = onas_scan_thread_scanfile(event_data, pathname, sb, &infected, &err, &ret_code);
 
 #ifdef ONAS_DEBUG
 	/* very noisy, debug only */
@@ -329,16 +329,16 @@ void *onas_scan_worker(void *arg) {
 
 		if (b_dir) {
 			logg("*ClamWorker: performing (extra) scanning on directory '%s'\n", event_data->pathname);
-			onas_scth_handle_dir(event_data, event_data->pathname);
+			onas_scan_thread_handle_dir(event_data, event_data->pathname);
 		} else if (b_file) {
 			logg("*ClamWorker: performing (extra) scanning on file '%s'\n", event_data->pathname);
-			onas_scth_handle_file(event_data, event_data->pathname);
+			onas_scan_thread_handle_file(event_data, event_data->pathname);
 		}
 
 	} else if (b_fanotify) {
 
 		logg("*ClamWorker: performing scanning on file '%s'\n", event_data->pathname);
-		onas_scth_handle_file(event_data, event_data->pathname);
+		onas_scan_thread_handle_file(event_data, event_data->pathname);
 	} else {
 		/* something went very wrong, so check if we have an open fd,
 		 * try to close it to resolve any potential lingering permissions event,

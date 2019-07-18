@@ -40,7 +40,7 @@
 
 #include "../../shared/output.h"
 
-#include "./onaccess_com.h"
+#include "./communication.h"
 
 
 static int onas_socket_wait(curl_socket_t sockfd, int32_t b_recv, uint64_t timeout_ms);

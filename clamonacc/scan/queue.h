@@ -35,9 +35,9 @@ struct onas_event_queue_node {
     struct onas_scan_event *data;
 };
 
-void *onas_scanque_th(void *arg);
+void *onas_scan_queue_th(void *arg);
 
 cl_error_t onas_queue_event(struct onas_scan_event *event_data);
-cl_error_t onas_scanque_start(struct onas_context **ctx);
+cl_error_t onas_scan_queue_start(struct onas_context **ctx);
 
 #endif

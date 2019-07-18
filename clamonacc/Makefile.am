@@ -35,25 +35,25 @@ clamonacc_SOURCES = \
     $(top_srcdir)/shared/actions.c \
     $(top_srcdir)/shared/actions.h \
     clamonacc.c \
-    ./client/onaccess_client.c \
-    ./client/onaccess_client.h \
-    ./client/onaccess_proto.c \
-    ./client/onaccess_proto.h \
-    ./client/onaccess_com.c \
-    ./client/onaccess_com.h \
-    ./inotif/onaccess_ddd.c \
-    ./inotif/onaccess_ddd.h \
-    ./fanotif/onaccess_fan.c \
-    ./fanotif/onaccess_fan.h \
-    ./inotif/onaccess_hash.c \
-    ./inotif/onaccess_hash.h \
-    ./misc/onaccess_others.c \
-    ./misc/onaccess_others.h \
+    ./client/client.c \
+    ./client/client.h \
+    ./client/protocol.c \
+    ./client/protocol.h \
+    ./client/communication.c \
+    ./client/communication.h \
+    ./inotif/inotif.c \
+    ./inotif/inotif.h \
+    ./fanotif/fanotif.c \
+    ./fanotif/fanotif.h \
+    ./inotif/hash.c \
+    ./inotif/hash.h \
+    ./misc/utils.c \
+    ./misc/utils.h \
     ./misc/priv_fts.h \
-    ./scan/onaccess_scth.c \
-    ./scan/onaccess_scth.h \
-    ./scan/onaccess_scque.c \
-    ./scan/onaccess_scque.h \
+    ./scan/thread.c \
+    ./scan/thread.h \
+    ./scan/queue.c \
+    ./scan/queue.h \
     ./c-thread-pool/thpool.c \
     ./c-thread-pool/thpool.h
 

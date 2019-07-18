@@ -61,9 +61,9 @@
 #include "../../libclamav/str.h"
 #include "../../libclamav/others.h"
 
-#include "./onaccess_com.h"
-#include "./onaccess_client.h"
-#include "./onaccess_proto.h"
+#include "./communication.h"
+#include "./client.h"
+#include "./protocol.h"
 
 #include "../clamonacc.h"
 
