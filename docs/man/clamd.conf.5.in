@@ -653,11 +653,6 @@ WARNING: setting this limit too high or disabling it may severely impact perform
 .br
 Default: 25M
 .TP
-\fBScanOnAccess BOOL\fR
-This option enables on-access scanning (Linux only)
-.br
-Default: disabled
-.TP
 \fBOnAccessIncludePath STRING\fR
 This option specifies a directory (including all files and directories inside it), which should be scanned on access. This option can be used multiple times.
 .br
@@ -686,10 +681,25 @@ Also note that if clamd cannot check the uid of the process that generated an on
 .br
 Default: disabled
 .TP
+\fBOnAccessExcludeUname STRING\fR
+This option allows exclusions via user names when using the on-access scanning client. It can be used multiple times, and has the same potential race condition limitations of the OnAccessExcludeUID option.
+.br
+Default: disabled
+.TP
 \fBOnAccessMaxFileSize SIZE\fR
 Files larger than this value will not be scanned in on access.
 .br
 Default: 5M
+.TP
+\fBOnAccessMaxThreads NUMBER\fR
+Max number of scanning threads to allocate to the OnAccess thread pool at startup. These threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads.
+.br
+Default: 5
+.TP
+\fBOnAccessCurlTimeout NUMBER\fR
+Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl.
+.br
+Default: 5000 (5 seconds)
 .TP
 \fBOnAccessMountPath STRING\fR
 Specifies a mount point (including all files and directories under it), which should be scanned on access. This option can be used multiple times.
@@ -705,6 +715,23 @@ Default: no
 Enables fanotify blocking when malicious files are found.
 .br
 Default: disabled
+.TP
+\fBOnAccessRetryAttempts NUMBER\fR
+Number of times the OnAccess client will retry a failed scan due to connection problems (or other issues).
+.br
+Default: 0
+.TP
+\fBOnAccessDenyOnError BOOL\fR
+When using prevention, if this option is turned on, any errors that occur during  scanning will result in the event attempt being denied. This could potentially lead to unwanted system behaviour with certain configurations, so the client defaults this to off and prefers allowing access events in case of scan or connection error.
+.br
+Default: no
+.TP
+\fBOnAccessExtraScanning BOOL\fR
+Toggles extra scanning and notifications when a file or directory is created or moved.
+.br
+Requires the  DDD system to kick-off extra scans.
+.br
+Default: no
 .TP
 \fBDisableCertCheck BOOL\fR
 Disable authenticode certificate chain verification in PE files.

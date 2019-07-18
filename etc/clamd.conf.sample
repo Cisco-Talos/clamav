@@ -609,7 +609,6 @@ Example
 # Default: no
 #AlertExceedsMax yes
 
-
 ##
 ## On-access Scan Settings
 ##
@@ -631,6 +630,11 @@ Example
 # Default: 5000 (5 seconds)
 # OnAccessCurlTimeout 10000
 
+# Toggles dynamic directory determination. Allows for recursively watching
+# include paths.
+# Default: no
+#OnAccessDisableDDD yes
+
 # Set the include paths (all files inside them will be scanned). You can have
 # multiple OnAccessIncludePath directives but each directory must be added
 # in a separate line.
@@ -638,31 +642,39 @@ Example
 #OnAccessIncludePath /home
 #OnAccessIncludePath /students
 
+# Set the exclude paths. All subdirectories are also excluded.
+# Default: disabled
+#OnAccessExcludePath /home/user
+
 # Modifies fanotify blocking behaviour when handling permission events.
 # If off, fanotify will only notify if the file scanned is a virus,
 # and not perform any blocking.
 # Default: no
 #OnAccessPrevention yes
 
-# Toggles dynamic directory determination. Allows for recursively watching
-# include paths.
+# When using prevention, if this option is turned on, any errors that occur during 
+# scanning will result in the event attempt being denied. This could potentially 
+# lead to unwanted system behaviour with certain configurations, so the client defaults 
+# this to off and prefers allowing access events in case of scan or connection error.
 # Default: no
-#OnAccessDisableDDD yes
+#OnAccessDenyOnError yes
+
+# Toggles extra scanning and notifications when a file or directory is
+# created or moved.
+# Requires the  DDD system to kick-off extra scans.
+# Default: no
+#OnAccessExtraScanning yes
 
 # Set the  mount point to be scanned. The mount point specified, or the mount
 # point containing the specified directory will be watched. If any directories
 # are specified, this option will preempt (disable and ignore all options related to) 
-# the DDD system. This option will result in verdicts only: Prevention is explicitly 
-# disallowed to prevent uninteded, fatal misuse by users due to their potential 
-# fundamental misunderstanding of (pre kernel 5.1) fanotify mechanisms.
+# the DDD system. This option will result in verdicts only.
+# Note that prevention is explicitly disallowed to prevent common, fatal misconfigurations. (e.g. 
+# watching "/" with prevention on and no exclusions made on vital system directories)
 # It can be used multiple times.
 # Default: disabled
 #OnAccessMountPath /
 #OnAccessMountPath /home/user
-
-# Set the exclude paths. All subdirectories are also excluded.
-# Default: disabled
-#OnAccessExcludePath /home/bofh
 
 # With this option you can whitelist the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or
@@ -700,20 +712,6 @@ Example
 # (or other issues). 
 # Default: 0
 #OnAccessRetryAttempts 3
-
-# When using prevention, if this option is turned on, any errors that occur during 
-# scanning will result in the event attempt being denied. This could potentially 
-# lead to unwanted system behaviour with certain configurations, so the client defaults 
-# this to off and prefers allowing access events in case of scan or connection error.
-# Default: no
-#OnAccessDenyOnError yes
-
-
-# Toggles extra scanning and notifications when a file or directory is
-# created or moved.
-# Requires the  DDD system to kick-off extra scans.
-# Default: no
-#OnAccessExtraScanning yes
 
 ##
 ## Bytecode
