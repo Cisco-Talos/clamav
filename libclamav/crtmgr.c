@@ -77,10 +77,17 @@ void cli_crt_clear(cli_crt *x509)
  * function:
  * 
  *  - To see whether x509 already exists in m (when adding new CRB sig certs
- *    and when adding certs that are embedded in Authenticode signatures)
+ *    and when adding certs that are embedded in Authenticode signatures) to
+ *    prevent duplicate entries. In this case, we want to take x509's
+ *    hashtype and issuer field into account, so a CRB sig cert entry isn't
+ *    returned for an embedded cert duplicate check, and so that two embedded
+ *    certs with different hash types or issuers aren't treated as being the
+ *    same.
  * 
  *  - To see whether a CRB sig matches against x509, deeming it worthy to be
- *    added to the trust store
+ *    added to the trust store.  In this case, we don't want to compare
+ *    hashtype and issuer, since the embedded sig will have the actual values
+ *    and the CRB sig cert will have placeholder values.
  * 
  * Use crb_crts_only to distinguish between the two cases.  If True, it will
  * ignore all crts not added from CRB rules and ignore x509's issuer and

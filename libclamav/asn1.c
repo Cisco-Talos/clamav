@@ -1050,12 +1050,6 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             cli_dbgmsg("asn1_get_x509: encountered a certificate with no cert, code, or time signing capabilities\n");
         }
 
-        if (crtmgr_lookup(crts, &x509)) {
-            cli_dbgmsg("asn1_get_x509: duplicate embedded certificates detected\n");
-            cli_crt_clear(&x509);
-            return ASN1_GET_X509_SUCCESS;
-        }
-
         if (map_raw(map, issuer, issuersize, x509.raw_issuer))
             break;
         if (map_sha1(map, issuer, issuersize, x509.issuer))
@@ -1069,6 +1063,12 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
         x509.hashtype = hashtype1;
+
+        if (crtmgr_lookup(crts, &x509)) {
+            cli_dbgmsg("asn1_get_x509: duplicate embedded certificates detected\n");
+            cli_crt_clear(&x509);
+            return ASN1_GET_X509_SUCCESS;
+        }
 
         if (asn1_expect_objtype(map, tbs.next, &crt.size, &obj, ASN1_TYPE_BIT_STRING)) { /* signature */
             cli_dbgmsg("asn1_get_x509: Failed to parse x509 signature BIT STRING\n");
