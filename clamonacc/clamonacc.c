@@ -116,6 +116,7 @@ int main(int argc, char **argv)
 	}
 	ctx->opts = opts;
 
+        /* And our config file options */
 	clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
 	if (clamdopts == NULL) {
 		logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
@@ -123,12 +124,14 @@ int main(int argc, char **argv)
 	}
 	ctx->clamdopts = clamdopts;
 
+        /* Make sure we're good to begin spinup */
         ret = startup_checks(ctx);
         if (ret) {
             goto clean_up;
         }
 
 #ifndef _WIN32
+        /* Daemonize if sanity checks are good to go */
         if (!optget(ctx->opts, "foreground")->enabled) {
             if (-1 == daemonize()) {
                 logg("!Clamonacc: could not daemonize\n");
@@ -156,9 +159,10 @@ int main(int argc, char **argv)
 			break;
 	}
 
-        ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
 
         /* Setup our event queue */
+        ctx->maxthreads = optget(ctx->clamdopts, "OnAccessMaxThreads")->numarg;
+
         switch(onas_scan_queue_start(&ctx)) {
             case CL_SUCCESS:
                 break;
@@ -297,7 +301,7 @@ static int startup_checks(struct onas_context *ctx) {
 	char faerr[128];
 #endif
 	int ret = 0;
-        cl_error_t err = CL_SUCCESS;
+	cl_error_t err = CL_SUCCESS;
 
 	if(optget(ctx->opts, "help")->enabled) {
 		help();
@@ -312,25 +316,33 @@ static int startup_checks(struct onas_context *ctx) {
 	}
 
 #if defined(FANOTIFY)
-        ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
-        if (ctx->fan_fd < 0) {
-            logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
-            if (errno == EPERM)
-                logg("!Clamonacc: clamonacc must have elevated permissions ... exiting ...\n");
-            ret = 2;
-            goto done;
-        }
+	ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
+	if (ctx->fan_fd < 0) {
+		logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
+		if (errno == EPERM) {
+			logg("!Clamonacc: clamonacc must have elevated permissions ... exiting ...\n");
+		}
+		ret = 2;
+		goto done;
+	}
 #endif
 
-        if (curl_global_init(CURL_GLOBAL_NOTHING)) {
-            ret = 2;
-            goto done;
-        }
+	if (curl_global_init(CURL_GLOBAL_NOTHING)) {
+		ret = 2;
+		goto done;
+	}
 
 	if (0 == onas_check_remote(&ctx, &err)) {
+
+		if (CL_SUCCESS != err) {
+			logg("!Clamonacc: daemon is local, but a connection could not be established\n");
+			ret = 2;
+			goto done;
+		}
+
 		if(!optget(ctx->clamdopts, "OnAccessExcludeUID")->enabled &&
-				!optget(ctx->clamdopts, "OnAccessExcludeUname")->enabled) {
-			logg("!Clamonacc: neither OnAccessExcludeUID or OnAccessExcludeUname is specified ... it is reccomended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
+				!optget(ctx->clamdopts, "OnAccessExcludeUname")->enabled && !optget(ctx->clamdopts, "OnAccessExcludeRootUID")->enabled) {
+			logg("!Clamonacc: at least one of OnAccessExcludeUID, OnAccessExcludeUname, or OnAccessExcludeRootUID must be specified ... it is reccomended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
 			ret = 2;
 			goto done;
 		}
