@@ -98,17 +98,20 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 
 #ifndef _WIN32
 	if((opt = optget((*ctx)->clamdopts, "LocalSocket"))->enabled) {
-		return 0;
+		opt = optget((*ctx)->clamdopts, "LocalSocket");
+                (*ctx)->portnum = 0;
+		ret = 0;
+	} else {
+		opt = optget((*ctx)->clamdopts, "TCPAddr");
+                (*ctx)->portnum = optget((*ctx)->clamdopts, "TCPSocket")->numarg;
+		ret = 1;
 	}
-#endif
+#else
 	if(!(opt = optget((*ctx)->clamdopts, "TCPSocket"))->enabled) {
 		return 0;
 	}
+#endif
 
-
-	(*ctx)->portnum = optget((*ctx)->clamdopts, "TCPSocket")->numarg;
-
-	opt = optget((*ctx)->clamdopts, "TCPAddr");
 	while (opt) {
 
 		if (opt->strarg) {
@@ -119,21 +122,21 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 			logg("!ClamClient: Clamonacc does not support binding to INADDR_ANY, \
 					please specify an address with TCPAddr in your clamd.conf config file\n");
 			*err = CL_EARG;
-			return 1;
+			return ret;
 		}
 
 		curlcode = onas_curl_init(&curl, ipaddr, (*ctx)->portnum, timeout);
 		if (CURLE_OK != curlcode) {
 			logg("!ClamClient: could not init curl, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
-			return 1;
+			return ret;
 		}
 
                 curlcode = curl_easy_perform(curl);
 		if (CURLE_OK != curlcode) {
 			logg("!ClamClient: could not connect to remote clam daemon, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
-			return 1;
+			return ret;
 		}
 
 #ifndef ONAS_DEBUG
@@ -141,7 +144,7 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 			logg("!ClamClient: could not ping clamd, %s\n", curl_easy_strerror(curlcode));
 			*err = CL_EARG;
                     curl_easy_cleanup(curl);
-                    return 1;
+                    return ret;
                 }
 #endif
 
@@ -150,11 +153,7 @@ int onas_check_remote(struct onas_context  **ctx, cl_error_t *err) {
 		opt = opt->nextarg;
 	}
 
-	if (*err == CL_SUCCESS) {
-		return 1;
-	} else {
-		return 0;
-	}
+	return ret;
 }
 
 CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t timeout) {
