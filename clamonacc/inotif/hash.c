@@ -68,6 +68,28 @@ static struct onas_lnode *onas_listnode_init(void);
 
 static struct onas_hnode *onas_hashnode_init(void);
 
+/**
+ * The data structure described and implemented below is a hash table with elements that also act as relational nodes
+ * in a tree. This allows for average case constant time retrieval of nodes, and recursive operation on a node and all
+ * it's children and parents. The memory cost for this speed of relational retrieval is necessarily high, as every node
+ * must also keep track of it's children in a key-accessible way. To cut down on memory costs, children of nodes are not
+ * themselves key accessible, but must be combined with their parent in a constant-time operation to be retrieved from
+ * the table.
+ *
+ * Further optimization to retrieval and space management may include storing direct address to given children nodes, but
+ * such a design will create further complexitiy and time cost at insertion--which must also be as fast as possible in
+ * order to accomadate the real-time nature of security event processing.
+ *
+ * To date, the hashing function itself has not been well studied, and as such buckets were implemented from the start to
+ * help account for any potential collission issues in its design, as a measure to help offset any major time sinks during
+ * insertion.
+ *
+ * One last important note about this hash table is that to avoid massive slowdowns, it does not grow, but instead relies on
+ * buckets and a generous default size to distribute that load. Slight hit to retrieval time is a fair cost to pay to avoid
+ * total loss of service in a real-time system. Future work here might include automatically confiuguring initial hashtable
+ * size to align with the system being monitored, or max inotify watch points since that's our hard limit anyways.
+ */
+
 static inline uint32_t onas_hshift(uint32_t hash)
 {
 
@@ -84,6 +106,13 @@ static inline uint32_t onas_hshift(uint32_t hash)
     return hash;
 }
 
+/**
+ * @brief inline wrapper for onaccess inotify hashing function
+ *
+ * @param key       the string to be hashed
+ * @param keylen    size of the string
+ * @param size      the size of the hashtable
+ */
 static inline int onas_hash(const char *key, size_t keylen, uint32_t size)
 {
 
@@ -98,6 +127,9 @@ static inline int onas_hash(const char *key, size_t keylen, uint32_t size)
     return hash & (size - 1);
 }
 
+/**
+ * @brief initialises a bucketed hash table, pre-grown to the given size
+ */
 int onas_ht_init(struct onas_ht **ht, uint32_t size)
 {
 
@@ -177,7 +209,9 @@ static void onas_free_bucket(struct onas_bucket *bckt)
 
     return;
 }
-
+/**
+ * @brief the hash table uses buckets to store lists of key/value pairings
+ */
 struct onas_element *onas_element_init(struct onas_hnode *value, const char *key, size_t klen)
 {
 
@@ -258,7 +292,9 @@ static int onas_bucket_insert(struct onas_bucket *bckt, struct onas_element *ele
     return CL_SUCCESS;
 }
 
-/* Checks if key exists and optionally stores address to the element corresponding to the key within elem */
+/**
+ * @brief Checks if key exists and optionally stores address to the element corresponding to the key within elem
+ */
 int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_element **elem)
 {
 
@@ -283,7 +319,9 @@ int onas_ht_get(struct onas_ht *ht, const char *key, size_t klen, struct onas_el
     return CL_SUCCESS;
 }
 
-/* Removes the element corresponding to key from the hashtable and optionally returns a pointer to the removed element. */
+/**
+ * @brief Removes the element corresponding to key from the hashtable and optionally returns a pointer to the removed element.
+ */
 int onas_ht_remove(struct onas_ht *ht, const char *key, size_t klen, struct onas_element **relem)
 {
     if (!ht || !key || klen <= 0) return CL_ENULLARG;
@@ -347,7 +385,9 @@ static int onas_bucket_remove(struct onas_bucket *bckt, struct onas_element *ele
 
 /* Dealing with hash nodes and list nodes */
 
-/* Function to initialize hashnode. */
+/**
+ * @brief Function to initialize hashnode, which is the data value we're storing in the hash table
+ */
 static struct onas_hnode *onas_hashnode_init(void)
 {
     struct onas_hnode *hnode = NULL;
@@ -381,7 +421,9 @@ static struct onas_hnode *onas_hashnode_init(void)
     return hnode;
 }
 
-/* Function to initialize listnode. */
+/**
+ * @brief Function to initialize listnodes, which ultimately allow us to traverse this datastructure like a tree
+ */
 static struct onas_lnode *onas_listnode_init(void)
 {
     struct onas_lnode *lnode = NULL;
@@ -397,7 +439,9 @@ static struct onas_lnode *onas_listnode_init(void)
     return lnode;
 }
 
-/* Function to free hashnode. */
+/**
+ * @brief Function to free hashnodes
+ */
 void onas_free_hashnode(struct onas_hnode *hnode)
 {
     if (!hnode) return;
@@ -416,7 +460,9 @@ void onas_free_hashnode(struct onas_hnode *hnode)
     return;
 }
 
-/* Function to free list of listnodes. */
+/**
+ * @brief Function to free list of listnode
+ */
 void onas_free_dirlist(struct onas_lnode *head)
 {
     if (!head) return;
@@ -432,7 +478,9 @@ void onas_free_dirlist(struct onas_lnode *head)
     return;
 }
 
-/* Function to free a listnode. */
+/**
+ * @brief Function to free a single listnode
+ */
 void onas_free_listnode(struct onas_lnode *lnode)
 {
     if (!lnode) return;
@@ -448,6 +496,9 @@ void onas_free_listnode(struct onas_lnode *lnode)
     return;
 }
 
+/**
+ * @brief Function to add a single value to a hashnode's listnode
+ */
 static int onas_add_hashnode_child(struct onas_hnode *node, const char *dirname)
 {
     if (!node || !dirname) return CL_ENULLARG;
@@ -463,7 +514,9 @@ static int onas_add_hashnode_child(struct onas_hnode *node, const char *dirname)
     return CL_SUCCESS;
 }
 
-/* Function to add a dir_listnode to a list */
+/**
+ * @brief Function to add a dir_listnode to a list
+ */
 int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node)
 {
     if (!tail || !node) return CL_ENULLARG;
@@ -479,7 +532,9 @@ int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node)
     return CL_SUCCESS;
 }
 
-/* Function to remove a listnode based on dirname. */
+/**
+ * @brief Function to remove a listnode based on dirname.
+ */
 int onas_rm_listnode(struct onas_lnode *head, const char *dirname)
 {
     if (!dirname || !head) return CL_ENULLARG;
@@ -505,7 +560,9 @@ int onas_rm_listnode(struct onas_lnode *head, const char *dirname)
 
 /*** Dealing with parent/child relationships in the table. ***/
 
-/* Determines parent and returns a copy based on full pathname. */
+/**
+ * @brief Determines parent of given directory and returns a copy based on full pathname.
+ */
 inline static char *onas_get_parent(const char *pathname, size_t len)
 {
     if (!pathname || len <= 1) return NULL;
@@ -530,7 +587,9 @@ inline static char *onas_get_parent(const char *pathname, size_t len)
     return ret;
 }
 
-/* Gets the index at which the name of directory begins from the full pathname. */
+/**
+ * @brief Gets the index at which the name of directory begins from the full pathname.
+ */
 inline static int onas_get_dirname_idx(const char *pathname, size_t len)
 {
     if (!pathname || len <= 1) return -1;
@@ -547,7 +606,15 @@ inline static int onas_get_dirname_idx(const char *pathname, size_t len)
     return idx;
 }
 
-/* Emancipates the specified child from the specified parent. */
+/**
+ * @brief Emancipates the specified child from the specified parent directory, typical done after a delete or move event
+ *
+ * @param ht        the hashtable structure
+ * @param prntpath  the full path of the parent director to be used hashed and used as a key to retrieve the corresponding entry from the table
+ * @param prntlen   the length of the parent path in bytes
+ * @param childpath the path of the child to be deassociated with the passed parent
+ * @param childlen  the length of the child path in bytes
+ */
 int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen)
 {
 
@@ -569,7 +636,15 @@ int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, c
     return CL_SUCCESS;
 }
 
-/* The specified parent adds the specified child to its list. */
+/**
+ * @brief The specified parent adds the specified child to its list, typical done after a create, or move event
+ *
+ * @param ht        the hashtable structure
+ * @param prntpath  the full path of the parent director to be used hashed and used as a key to retrieve the corresponding entry from the table
+ * @param prntlen   the length of the parent path in bytes
+ * @param childpath the path of the child to be associated with the passed parent
+ * @param childlen  the length of the child path in bytes
+ */
 int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, const char *childpath, size_t childlen)
 {
     if (!ht || !prntpath || prntlen <= 0 || !childpath || childlen <= 1) return CL_ENULLARG;
@@ -588,7 +663,9 @@ int onas_ht_add_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, 
 
 /*** Dealing with hierarchy changes. ***/
 
-/* Adds the hierarchy under pathname to the tree and allocates all necessary memory. */
+/**
+ * @brief Adds the hierarchy under pathname to the tree and allocates all necessary memory.
+ */
 int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
     if (!ht || !pathname) return CL_ENULLARG;
@@ -674,7 +751,9 @@ out:
     return CL_SUCCESS;
 }
 
-/* Removes the underlying hierarchy from the tree and frees all associated memory. */
+/**
+ * @brief Removes the underlying hierarchy from the tree and frees all associated memory.
+ */
 int onas_ht_rm_hierarchy(struct onas_ht *ht, const char *pathname, size_t len, int level)
 {
     if (!ht || !pathname || len <= 0) return CL_ENULLARG;

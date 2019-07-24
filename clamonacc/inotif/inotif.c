@@ -92,6 +92,9 @@ static int onas_ddd_init_ht(uint32_t ht_size)
     return onas_ht_init(&ddd_ht, ht_size);
 }
 
+/**
+ * @brief Initialize watch descriptor lookup table which we use alongside inotify to keep track of which open watchpoints correspond to which objects
+ */
 static int onas_ddd_init_wdlt(uint64_t nwatches)
 {
 
@@ -105,6 +108,9 @@ static int onas_ddd_init_wdlt(uint64_t nwatches)
     return CL_SUCCESS;
 }
 
+/**
+ * @brief Initialize watch descriptor lookup table which we use alongside inotify to keep track of which open watchpoints correspond to which objects
+ */
 static int onas_ddd_grow_wdlt()
 {
 
@@ -152,6 +158,9 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
     return CL_SUCCESS;
 }
 
+/**
+ * @brief convenience function for adding both inotify and fanotify watchpoints for a single path in one go
+ */
 static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, int in_fd, uint64_t in_mask)
 {
     if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
@@ -168,6 +177,15 @@ static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, i
     return CL_SUCCESS;
 }
 
+/**
+ * @brief recursively adds a hierarchy from the hash table and all watches of a single type to specified object
+ *
+ * @param pathname  the directory to start watching
+ * @param len       the size of pathname in bytes
+ * @param fd        the fanotify or inotify file descriptor
+ * @param mask      options for watching the path
+ * @param type      specifies whether or not to add inotify or fanotify watchpoints and the type of fd passed
+ */
 static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, uint64_t mask, uint32_t type)
 {
 
@@ -204,6 +222,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
         return CL_EARG;
     }
 
+    /* recursively watch all children */
     struct onas_lnode *curr = hnode->childhead;
 
     while (curr->next != hnode->childtail) {
@@ -227,6 +246,9 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
     return CL_SUCCESS;
 }
 
+/**
+ * @brief convenience function for removing both inotify and fanotify watchpoints for a single path in one go
+ */
 static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd)
 {
     if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
@@ -243,6 +265,14 @@ static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd)
     return CL_SUCCESS;
 }
 
+/**
+ * @brief recursively removes a hierarchy from the hash table and drops all watches of a single type from linked objects
+ *
+ * @param pathname  the directory to stop watching
+ * @param len       the size of pathname in bytes
+ * @param fd        the fanotify or inotify file descriptor
+ * @param type      specifies whether or not to remove inotify or fanotify watchpoints and the type of fd passed
+ */
 static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, uint32_t type)
 {
 
@@ -275,6 +305,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
         return CL_EARG;
     }
 
+    /* free all children recursively */
     struct onas_lnode *curr = hnode->childhead;
 
     while (curr->next != hnode->childtail) {
