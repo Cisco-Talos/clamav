@@ -63,13 +63,14 @@ static void onas_scan_thread_exit(int sig)
 }
 
 /**
- * Safe-scan wrapper, originally used by inotify and fanotify threads, now exists for error checking/convenience.
- * Owned by scanthread to force multithreaded client archtiecture which better avoids kernel level deadlocks from
- * fanotify blocking/prevention
+ * @brief Safe-scan wrapper, originally used by inotify and fanotify threads, now exists for error checking/convenience.
+ *
+ * Owned by scanthread to try and force multithreaded client archtiecture which better avoids kernel level deadlocks from
+ * fanotify blocking/prevention.
  */
 static int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
-    int ret             = 0;
+    int ret = 0;
     int i = 0;
     uint8_t retry_on_error = event_data->bool_opts & ONAS_SCTH_B_RETRY_ON_E;
 
@@ -108,7 +109,11 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
 }
 
 /**
- * Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ * @brief Thread-safe scan wrapper to ensure there's no processs contention over use of the socket.
+ *
+ * This is noticeably slower, and I had no issues running smaller scale tests with it off, but better than sorry until more testing can be done.
+ *
+ * TODO: make this configurable?
  */
 static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code) {
 
@@ -300,6 +305,11 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 	return ret;
 }
 
+/**
+ * @brief worker thread designed to work with the lovely c-thread-pool library to handle our scanning jobs after our queue thread consumes an event
+ *
+ * @param arg this should always be an onas_scan_event struct
+ */
 void *onas_scan_worker(void *arg) {
 
 	struct onas_scan_event *event_data = (struct onas_scan_event *) arg;
@@ -374,8 +384,16 @@ done:
 	return NULL;
 }
 
-/* Simple utility function for external interfaces to add relevant context information to scan_event struct;
- * doing this mapping cuts down significantly on memory overhead when queueing hundreds of these scan_event structs */
+/**
+ * @brief Simple utility function for external interfaces to add relevant context information to scan_event struct.
+ *
+ * Doing this mapping cuts down significantly on memory overhead when queueing hundreds of these scan_event structs
+ * especially vs using a copy of a raw context struct.
+ *
+ * Other potential design options include giving the event access to the "global" context struct address instead,
+ * to further cut down on space used, but (among other thread safety concerns) I'd prefer the worker threads not
+ * have the ability to modify it at all to keep down on potential maintenance headaches in the future.
+ */
 cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct onas_scan_event **event_data) {
 
     if(NULL == ctx || NULL == event_data || NULL == *event_data) {
