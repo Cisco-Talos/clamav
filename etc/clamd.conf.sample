@@ -706,7 +706,7 @@ Example
 # scanning client. It can be used multiple times.
 # It has the same potential race condition limitations of the OnAccessExcludeUID option.
 # Default: disabled
-#OnAccessExcludeUname clamuser
+#OnAccessExcludeUname clamav
 
 # Number of times the OnAccess client will retry a failed scan due to connection problems 
 # (or other issues). 
