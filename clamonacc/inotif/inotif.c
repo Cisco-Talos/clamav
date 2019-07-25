@@ -22,7 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,7 +57,6 @@
 #include "clamd/server.h"
 #include "clamd/others.h"
 #include "clamd/scanner.h"
-
 
 #if defined(FANOTIFY)
 
@@ -329,447 +327,447 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
     return CL_SUCCESS;
 }
 
-cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx) {
+cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx)
+{
 
-	pthread_attr_t ddd_attr;
-	int32_t thread_started = 1;
+    pthread_attr_t ddd_attr;
+    int32_t thread_started = 1;
 
-	if (!ctx || !*ctx) {
-		logg("!ClamInotif: unable to start clamonacc. (bad context)\n");
-		return CL_EARG;
-	}
+    if (!ctx || !*ctx) {
+        logg("!ClamInotif: unable to start clamonacc. (bad context)\n");
+        return CL_EARG;
+    }
 
-	if ((*ctx)->ddd_enabled) {
-		do {
-			if(pthread_attr_init(&ddd_attr)) break;
-			pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
-			thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, *ctx);
-		} while(0);
+    if ((*ctx)->ddd_enabled) {
+        do {
+            if (pthread_attr_init(&ddd_attr)) break;
+            pthread_attr_setdetachstate(&ddd_attr, PTHREAD_CREATE_JOINABLE);
+            thread_started = pthread_create(&ddd_pid, &ddd_attr, onas_ddd_th, *ctx);
+        } while (0);
+    }
 
-	}
+    if (0 != thread_started) {
+        /* Failed to create thread */
+        logg("!ClamInotif: Unable to start dynamic directory determination ... \n");
+        return CL_ECREAT;
+    }
 
-	if (0 != thread_started) {
-		/* Failed to create thread */
-		logg("!ClamInotif: Unable to start dynamic directory determination ... \n");
-		return CL_ECREAT;
-	}
-
-	return CL_SUCCESS;
+    return CL_SUCCESS;
 }
 
-void *onas_ddd_th(void *arg) {
-	struct onas_context *ctx = (struct onas_context *) arg;
-	sigset_t sigset;
-	struct sigaction act;
-	const struct optstruct *pt;
-	uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
-	fd_set rfds;
-	char buf[4096];
-	ssize_t bread;
-	const struct inotify_event *event;
-	int ret, len, idx;
+void *onas_ddd_th(void *arg)
+{
+    struct onas_context *ctx = (struct onas_context *)arg;
+    sigset_t sigset;
+    struct sigaction act;
+    const struct optstruct *pt;
+    uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
+    fd_set rfds;
+    char buf[4096];
+    ssize_t bread;
+    const struct inotify_event *event;
+    int ret, len, idx;
 
-	char** include_list = NULL;
-	char** exclude_list = NULL;
-	int num_exdirs, num_indirs;
-	cl_error_t err;
+    char **include_list = NULL;
+    char **exclude_list = NULL;
+    int num_exdirs, num_indirs;
+    cl_error_t err;
 
-	/* ignore all signals */
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGUSR1);
-	sigdelset(&sigset, SIGUSR2);
-	/* The behavior of a process is undefined after it ignores a
+    /* ignore all signals */
+    sigfillset(&sigset);
+    sigdelset(&sigset, SIGUSR1);
+    sigdelset(&sigset, SIGUSR2);
+    /* The behavior of a process is undefined after it ignores a
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
-	sigdelset(&sigset, SIGFPE);
-	sigdelset(&sigset, SIGILL);
-	sigdelset(&sigset, SIGTERM);
-	sigdelset(&sigset, SIGINT);
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGTERM);
+    sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
-	sigdelset(&sigset, SIGBUS);
+    sigdelset(&sigset, SIGBUS);
 #endif
 
-	logg("*ClamInotif: starting inotify event loop ...\n");
+    logg("*ClamInotif: starting inotify event loop ...\n");
 
-	onas_in_fd = inotify_init1(IN_NONBLOCK);
-	if (onas_in_fd == -1) {
-		logg("!ClamInotif: could not init inotify\n");
-		return NULL;
-	}
+    onas_in_fd = inotify_init1(IN_NONBLOCK);
+    if (onas_in_fd == -1) {
+        logg("!ClamInotif: could not init inotify\n");
+        return NULL;
+    }
 
-	ret = onas_ddd_init(0, ONAS_DEFAULT_HT_SIZE);
-	if (ret) {
-		logg("!ClamInotif: failed to initialize DDD system\n");
-		return NULL;
-	}
+    ret = onas_ddd_init(0, ONAS_DEFAULT_HT_SIZE);
+    if (ret) {
+        logg("!ClamInotif: failed to initialize DDD system\n");
+        return NULL;
+    }
 
+    logg("*ClamInotif: dynamically determining directory hierarchy...\n");
+    /* Add provided paths recursively. */
 
-	logg("*ClamInotif: dynamically determining directory hierarchy...\n");
-	/* Add provided paths recursively. */
+    if (!optget(ctx->opts, "watch-list")->enabled && !optget(ctx->clamdopts, "OnAccessIncludePath")->enabled) {
+        logg("!ClamInotif: Please specify at least one path with OnAccessIncludePath\n");
+        return NULL;
+    }
 
-	if (!optget(ctx->opts, "watch-list")->enabled && !optget(ctx->clamdopts, "OnAccessIncludePath")->enabled) {
-		logg("!ClamInotif: Please specify at least one path with OnAccessIncludePath\n");
-		return NULL;
-	}
+    if ((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
 
-	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
+        while (pt) {
+            if (!strcmp(pt->strarg, "/")) {
+                logg("!ClamInotif: not including path '%s' while DDD is enabled\n", pt->strarg);
+                logg("!ClamInotif: please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+                pt = (struct optstruct *)pt->nextarg;
+                continue;
+            }
+            if (onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
+                if (onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
+                    logg("!ClamInotif: can't include '%s'\n", pt->strarg);
+                    return NULL;
+                } else {
+                    logg("ClamInotif: watching '%s' (and all sub-directories)\n", pt->strarg);
+                }
+            }
 
-		while (pt) {
-			if (!strcmp(pt->strarg, "/")) {
-				logg("!ClamInotif: not including path '%s' while DDD is enabled\n", pt->strarg);
-				logg("!ClamInotif: please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
-				pt = (struct optstruct *)pt->nextarg;
-				continue;
-			}
-			if (onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
-				if (onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
-					logg("!ClamInotif: can't include '%s'\n", pt->strarg);
-					return NULL;
-				} else {
-					logg("ClamInotif: watching '%s' (and all sub-directories)\n", pt->strarg);
-				}
-			}
+            pt = (struct optstruct *)pt->nextarg;
+        }
+    }
 
-			pt = (struct optstruct *)pt->nextarg;
-		}
-	}
+    if ((pt = optget(ctx->opts, "watch-list"))->enabled) {
 
-	if((pt = optget(ctx->opts, "watch-list"))->enabled) {
+        num_indirs = 0;
+        err        = CL_SUCCESS;
 
-		num_indirs = 0;
-		err = CL_SUCCESS;
+        include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
+        if (NULL == include_list) {
+            logg("!ClamInotif: could not parse include list (%d)\n", err);
+            return NULL;
+        }
 
-		include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
-		if (NULL == include_list) {
-			logg("!ClamInotif: could not parse include list (%d)\n", err);
-			return NULL;
-		}
+        idx = 0;
+        while (NULL != include_list[idx]) {
+            if (onas_ht_get(ddd_ht, include_list[idx], strlen(include_list[idx]), NULL) != CL_SUCCESS) {
+                if (onas_ht_add_hierarchy(ddd_ht, include_list[idx])) {
+                    logg("!ClamInotif: can't include '%s'\n", include_list[idx]);
+                    return NULL;
+                } else {
+                    logg("ClamInotif: watching '%s' (and all sub-directories)\n", include_list[idx]);
+                }
+            }
 
-		idx = 0;
-		while (NULL != include_list[idx]) {
-			if(onas_ht_get(ddd_ht, include_list[idx], strlen(include_list[idx]), NULL) != CL_SUCCESS) {
-				if(onas_ht_add_hierarchy(ddd_ht, include_list[idx])) {
-					logg("!ClamInotif: can't include '%s'\n", include_list[idx]);
-					return NULL;
-				} else {
-					logg("ClamInotif: watching '%s' (and all sub-directories)\n", include_list[idx]);
-				}
-			}
+            idx++;
+        }
+    }
 
+    /* Remove provided paths recursively. */
+    if ((pt = optget(ctx->clamdopts, "OnAccessExcludePath"))->enabled) {
+        while (pt) {
+            size_t ptlen = strlen(pt->strarg);
+            if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
+                if (onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
+                    logg("!ClamInotif: can't exclude '%s'\n", pt->strarg);
+                    return NULL;
+                } else
+                    logg("ClamInotif: excluding '%s' (and all sub-directories)\n", pt->strarg);
+            }
 
-			idx++;
-		}
-	}
+            pt = (struct optstruct *)pt->nextarg;
+        }
+    }
 
-	/* Remove provided paths recursively. */
-	if((pt = optget(ctx->clamdopts, "OnAccessExcludePath"))->enabled) {
-		while (pt) {
-			size_t ptlen = strlen(pt->strarg);
-			if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-				if (onas_ht_rm_hierarchy(ddd_ht, pt->strarg, ptlen, 0)) {
-					logg("!ClamInotif: can't exclude '%s'\n", pt->strarg);
-					return NULL;
-				} else
-					logg("ClamInotif: excluding '%s' (and all sub-directories)\n", pt->strarg);
-			}
+    if ((pt = optget(ctx->opts, "exclude-list"))->enabled) {
 
-			pt = (struct optstruct *)pt->nextarg;
-		}
-	}
+        num_exdirs = 0;
+        err        = CL_SUCCESS;
 
-	if((pt = optget(ctx->opts, "exclude-list"))->enabled) {
+        exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
+        if (NULL == exclude_list) {
+            logg("!ClamInotif: could not parse exclude list (%d)\n", err);
+            return NULL;
+        }
 
-		num_exdirs = 0;
-		err = CL_SUCCESS;
+        idx = 0;
+        while (exclude_list[idx] != NULL) {
+            if (onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) == CL_SUCCESS) {
+                if (onas_ht_rm_hierarchy(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), 0)) {
+                    logg("!ClamInotif: can't exclude '%s'\n", exclude_list[idx]);
+                    return NULL;
+                } else {
+                    logg("ClamInotif: excluding '%s' (and all sub-directories)\n", exclude_list[idx]);
+                }
+            }
 
-		exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
-		if (NULL == exclude_list) {
-			logg("!ClamInotif: could not parse exclude list (%d)\n", err);
-			return NULL;
-		}
+            idx++;
+        }
+    }
 
-		idx = 0;
-		while (exclude_list[idx] != NULL) {
-			if(onas_ht_get(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), NULL) == CL_SUCCESS) {
-				if(onas_ht_rm_hierarchy(ddd_ht, exclude_list[idx], strlen(exclude_list[idx]), 0)){
-					logg("!ClamInotif: can't exclude '%s'\n", exclude_list[idx]);
-					return NULL;
-				} else {
-					logg("ClamInotif: excluding '%s' (and all sub-directories)\n", exclude_list[idx]);
-				}
-			}
+    /* Watch provided paths recursively */
+    if ((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
+        while (pt) {
+            errno        = 0;
+            size_t ptlen = strlen(pt->strarg);
+            if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
+                if (err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
 
-			idx++;
-		}
-	}
+                    if (0 == errno) {
+                        logg("!ClamInotif: could not watch path '%s', %d\n ", pt->strarg, err);
+                    } else {
+                        logg("!ClamInotif: could not watch path '%s', %s\n", pt->strarg, strerror(errno));
+                        if (errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
+                            logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
 
-	/* Watch provided paths recursively */
-	if((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
-		while (pt) {
-			errno = 0;
-			size_t ptlen = strlen(pt->strarg);
-			if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-				if(err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+                            kill(getpid(), SIGTERM);
+                        }
+                        if (errno == ENOSPC) {
 
-					if (0 == errno) {
-						logg("!ClamInotif: could not watch path '%s', %d\n ", pt->strarg, err);
-					} else {
-						logg("!ClamInotif: could not watch path '%s', %s\n", pt->strarg, strerror(errno));
-						if(errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
-							logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+                            logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
+                            logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
 
-							kill(getpid(), SIGTERM);
-						}
-						if (errno == ENOSPC) {
+                            kill(getpid(), SIGTERM);
+                        }
+                    }
+                }
+                pt = (struct optstruct *)pt->nextarg;
+            }
+        }
+    }
 
-							logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
-							logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
+    if (NULL != include_list) {
+        idx = 0;
+        while (NULL != include_list[idx]) {
+            errno          = 0;
+            uint64_t ptlen = strlen(include_list[idx]);
+            if (onas_ht_get(ddd_ht, include_list[idx], ptlen, NULL) == CL_SUCCESS) {
+                if (err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+                    if (0 == errno) {
+                        logg("!ClamInotif: could not watch path '%s', %d\n ", include_list[idx], err);
+                    } else {
+                        logg("!ClamInotif: could not watch path '%s', %s\n", include_list[idx], strerror(errno));
+                        if (errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
+                            logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
 
-							kill(getpid(), SIGTERM);
-						}
-					}
-				}
-				pt = (struct optstruct *)pt->nextarg;
-			}
-		}
-	}
+                            kill(getpid(), SIGTERM);
+                        }
+                        if (errno == ENOSPC) {
 
-	if(NULL != include_list) {
-		idx = 0;
-		while(NULL != include_list[idx]) {
-			errno = 0;
-			uint64_t ptlen = strlen(include_list[idx]);
-			if(onas_ht_get(ddd_ht, include_list[idx], ptlen, NULL) == CL_SUCCESS) {
-				if(err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
-					if (0 == errno) {
-						logg("!ClamInotif: could not watch path '%s', %d\n ", include_list[idx], err);
-					} else {
-						logg("!ClamInotif: could not watch path '%s', %s\n", include_list[idx], strerror(errno));
-						if(errno == EINVAL && optget(ctx->clamdopts, "OnAccessPrevention")->enabled) {
-							logg("*ClamInotif: when using the OnAccessPrevention option, please ensure your kernel\n\t\t\twas compiled with CONFIG_FANOTIFY_ACCESS_PERMISSIONS set to Y\n");
+                            logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
+                            logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
 
-							kill(getpid(), SIGTERM);
-						}
-						if (errno == ENOSPC) {
+                            kill(getpid(), SIGTERM);
+                        }
+                    }
+                }
+            }
+            idx++;
+        }
+    }
 
-							logg("*ClamInotif: you likely do not have enough inotify watchpoints available ... run the follow command to increase available watchpoints and try again ...\n");
-							logg("*\t $ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p\n");
+    if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
+        logg("ClamInotif: extra scanning on inotify events enabled\n");
+    }
 
-							kill(getpid(), SIGTERM);
-						}
-					}
-				}
-			}
-			idx++;
-		}
-	}
+    FD_ZERO(&rfds);
+    FD_SET(onas_in_fd, &rfds);
 
-	if(optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
-		logg("ClamInotif: extra scanning on inotify events enabled\n");
-	}
+    pthread_cleanup_push(onas_ddd_exit, NULL);
 
-	FD_ZERO(&rfds);
-	FD_SET(onas_in_fd, &rfds);
+    while (1) {
+        do {
+            ret = select(onas_in_fd + 1, &rfds, NULL, NULL, NULL);
+        } while (ret == -1 && errno == EINTR);
 
-	pthread_cleanup_push(onas_ddd_exit, NULL);
+        while ((bread = read(onas_in_fd, buf, sizeof(buf))) > 0) {
+            pthread_testcancel();
+            /* Handle events. */
+            int wd;
+            char *p           = buf;
+            const char *path  = NULL;
+            const char *child = NULL;
+            for (; p < buf + bread; p += sizeof(struct inotify_event) + event->len) {
 
-	while (1) {
-		do {
-			ret = select(onas_in_fd + 1, &rfds, NULL, NULL, NULL);
-		} while (ret == -1 && errno == EINTR);
+                event = (const struct inotify_event *)p;
+                wd    = event->wd;
+                path  = wdlt[wd];
+                child = event->name;
 
-		while ((bread = read(onas_in_fd, buf, sizeof(buf))) > 0) {
-			pthread_testcancel();
-			/* Handle events. */
-			int wd;
-			char *p           = buf;
-			const char *path  = NULL;
-			const char *child = NULL;
-			for (; p < buf + bread; p += sizeof(struct inotify_event) + event->len) {
+                if (path == NULL) {
+                    logg("*ClamInotif: watch descriptor not found in lookup table ... skipping\n");
+                    continue;
+                }
 
-				event = (const struct inotify_event *)p;
-				wd    = event->wd;
-				path  = wdlt[wd];
-				child = event->name;
+                len              = strlen(path);
+                size_t size      = strlen(child) + len + 2;
+                char *child_path = (char *)cli_malloc(size);
+                if (child_path == NULL) {
+                    logg("*ClamInotif: could not allocate space for child path ... aborting\n");
+                    return NULL;
+                }
 
-				if (path == NULL) {
-					logg("*ClamInotif: watch descriptor not found in lookup table ... skipping\n");
-					continue;
-				}
+                if (path[len - 1] == '/') {
+                    snprintf(child_path, --size, "%s%s", path, child);
+                } else {
+                    snprintf(child_path, size, "%s/%s", path, child);
+                }
 
-				len              = strlen(path);
-				size_t size      = strlen(child) + len + 2;
-				char *child_path = (char *)cli_malloc(size);
-				if (child_path == NULL) {
-					logg("*ClamInotif: could not allocate space for child path ... aborting\n");
-					return NULL;
-				}
+                if (event->mask & IN_DELETE) {
+                    onas_ddd_handle_in_delete(ctx, path, child_path, event, wd);
 
-				if (path[len-1] == '/') {
-					snprintf(child_path, --size, "%s%s", path, child);
-				} else {
-					snprintf(child_path, size, "%s/%s", path, child);
-				}
+                } else if (event->mask & IN_MOVED_FROM) {
+                    onas_ddd_handle_in_moved_from(ctx, path, child_path, event, wd);
 
-				if (event->mask & IN_DELETE) {
-					onas_ddd_handle_in_delete(ctx, path, child_path, event, wd);
+                } else if (event->mask & IN_CREATE) {
+                    onas_ddd_handle_in_create(ctx, path, child_path, event, wd, in_mask);
 
-				} else if (event->mask & IN_MOVED_FROM) {
-					onas_ddd_handle_in_moved_from(ctx, path, child_path, event, wd);
+                } else if (event->mask & IN_MOVED_TO) {
+                    onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
+                }
 
-				} else if (event->mask & IN_CREATE) {
-					onas_ddd_handle_in_create(ctx, path, child_path, event, wd, in_mask);
+                free(child_path);
+                child_path = NULL;
+            }
+        }
+    }
 
-				} else if (event->mask & IN_MOVED_TO) {
-					onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
-				}
-
-				free(child_path);
-				child_path = NULL;
-			}
-		}
-	}
-
-	logg("*ClamInotif: exiting inotify event thread\n");
-	pthread_cleanup_pop(1);
-	return NULL;
+    logg("*ClamInotif: exiting inotify event thread\n");
+    pthread_cleanup_pop(1);
+    return NULL;
 }
 
-
 static void onas_ddd_handle_in_delete(struct onas_context *ctx,
-		const char *path, const char *child_path, const struct inotify_event *event, int wd) {
+                                      const char *path, const char *child_path, const struct inotify_event *event, int wd)
+{
 
-	struct stat s;
-	if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-	if (!(event->mask & IN_ISDIR)) return;
+    struct stat s;
+    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+    if (!(event->mask & IN_ISDIR)) return;
 
-	logg("*ClamInotif: DELETE - removing %s from %s with wd:%d\n", child_path, path, wd);
-	onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
-	onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+    logg("*ClamInotif: DELETE - removing %s from %s with wd:%d\n", child_path, path, wd);
+    onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
+    onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
-	return;
+    return;
 }
 
 static void onas_ddd_handle_in_moved_from(struct onas_context *ctx,
-		const char *path, const char *child_path, const struct inotify_event *event, int wd) {
+                                          const char *path, const char *child_path, const struct inotify_event *event, int wd)
+{
 
-	struct stat s;
-	if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-	if (!(event->mask & IN_ISDIR)) return;
+    struct stat s;
+    if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+    if (!(event->mask & IN_ISDIR)) return;
 
-	logg("*ClamInotif: MOVED_FROM - removing %s from %s with wd:%d\n", child_path, path, wd);
-	onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
-	onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
+    logg("*ClamInotif: MOVED_FROM - removing %s from %s with wd:%d\n", child_path, path, wd);
+    onas_ddd_unwatch(child_path, ctx->fan_fd, onas_in_fd);
+    onas_ht_rm_hierarchy(ddd_ht, child_path, strlen(child_path), 0);
 
-	return;
+    return;
 }
 
 static void onas_ddd_handle_in_create(struct onas_context *ctx,
-		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
+                                      const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask)
+{
 
-	struct stat s;
+    struct stat s;
 
-	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
-		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
+    if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
+        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+            onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
-		} else if(event->mask & IN_ISDIR) {
-			logg("*ClamInotif: CREATE - adding %s to %s with wd:%d\n", child_path, path, wd);
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
+        } else if (event->mask & IN_ISDIR) {
+            logg("*ClamInotif: CREATE - adding %s to %s with wd:%d\n", child_path, path, wd);
+            onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
 
-			onas_ht_add_hierarchy(ddd_ht, child_path);
-			onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-		}
-	}
-	else
-	{
-		if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-		if (!(event->mask & IN_ISDIR)) return;
+            onas_ht_add_hierarchy(ddd_ht, child_path);
+            onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+        }
+    } else {
+        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+        if (!(event->mask & IN_ISDIR)) return;
 
-		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-		onas_ht_add_hierarchy(ddd_ht, child_path);
-		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-	}
+        logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
+        onas_ht_add_hierarchy(ddd_ht, child_path);
+        onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+    }
 
-	return;
+    return;
 }
 
 static void onas_ddd_handle_in_moved_to(struct onas_context *ctx,
-		const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask) {
+                                        const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask)
+{
 
-	struct stat s;
-	if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
-		if(stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
+    struct stat s;
+    if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
+        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
+            onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
 
-		} else if(event->mask & IN_ISDIR) {
-			logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-			onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
+        } else if (event->mask & IN_ISDIR) {
+            logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
+            onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
 
-			onas_ht_add_hierarchy(ddd_ht, child_path);
-			onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+            onas_ht_add_hierarchy(ddd_ht, child_path);
+            onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+        }
+    } else {
+        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
+        if (!(event->mask & IN_ISDIR)) return;
 
-		}
-	} else {
-		if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-		if (!(event->mask & IN_ISDIR)) return;
+        logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
+        onas_ht_add_hierarchy(ddd_ht, child_path);
+        onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+    }
 
-		logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-		onas_ht_add_hierarchy(ddd_ht, child_path);
-		onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
-	}
-
-	return;
+    return;
 }
 
-static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options) {
+static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options)
+{
 
-	struct onas_scan_event *event_data;
+    struct onas_scan_event *event_data;
 
+    event_data = (struct onas_scan_event *)cli_calloc(1, sizeof(struct onas_scan_event));
+    if (NULL == event_data) {
+        logg("!ClamInotif: could not allocate memory for event data struct\n");
+    }
 
-	event_data = (struct onas_scan_event *) cli_calloc(1, sizeof(struct onas_scan_event));
-	if (NULL == event_data) {
-		logg("!ClamInotif: could not allocate memory for event data struct\n");
-	}
+    /* general mapping */
+    onas_map_context_info_to_event_data(ctx, &event_data);
+    event_data->pathname = cli_strdup(pathname);
+    event_data->bool_opts |= ONAS_SCTH_B_SCAN;
 
-	/* general mapping */
-	onas_map_context_info_to_event_data(ctx, &event_data);
-	event_data->pathname = cli_strdup(pathname);
-	event_data->bool_opts |= ONAS_SCTH_B_SCAN;
+    /* inotify specific stuffs */
+    event_data->bool_opts |= ONAS_SCTH_B_INOTIFY;
+    extra_options &ONAS_SCTH_B_FILE ? event_data->bool_opts |= ONAS_SCTH_B_FILE : extra_options;
+    extra_options &ONAS_SCTH_B_DIR ? event_data->bool_opts |= ONAS_SCTH_B_DIR : extra_options;
 
-	/* inotify specific stuffs */
-	event_data->bool_opts |= ONAS_SCTH_B_INOTIFY;
-	extra_options & ONAS_SCTH_B_FILE ? event_data->bool_opts |= ONAS_SCTH_B_FILE : extra_options;
-	extra_options & ONAS_SCTH_B_DIR ? event_data->bool_opts |= ONAS_SCTH_B_DIR : extra_options;
+    logg("*ClamInotif: attempting to feed consumer queue\n");
+    /* feed consumer queue */
+    if (CL_SUCCESS != onas_queue_event(event_data)) {
+        logg("!ClamInotif: error occurred while feeding consumer queue extra event ... continuing ...\n");
+        return;
+    }
 
-	logg("*ClamInotif: attempting to feed consumer queue\n");
-	/* feed consumer queue */
-	if (CL_SUCCESS != onas_queue_event(event_data)) {
-		logg("!ClamInotif: error occurred while feeding consumer queue extra event ... continuing ...\n");
-		return;
-	}
-
-	return;
+    return;
 }
 
-static void onas_ddd_exit(void *arg) {
-	logg("*ClamInotif: onas_ddd_exit()\n");
+static void onas_ddd_exit(void *arg)
+{
+    logg("*ClamInotif: onas_ddd_exit()\n");
 
-	if (onas_in_fd) {
-		close(onas_in_fd);
-	}
-	onas_in_fd = 0;
+    if (onas_in_fd) {
+        close(onas_in_fd);
+    }
+    onas_in_fd = 0;
 
-	if (ddd_ht) {
-		onas_free_ht(ddd_ht);
-	}
-	ddd_ht = NULL;
+    if (ddd_ht) {
+        onas_free_ht(ddd_ht);
+    }
+    ddd_ht = NULL;
 
-	if (wdlt) {
-		free(wdlt);
-	}
-	wdlt = NULL;
+    if (wdlt) {
+        free(wdlt);
+    }
+    wdlt = NULL;
 
-	logg("ClamInotif: stopped\n");
+    logg("ClamInotif: stopped\n");
 }
 
 #endif

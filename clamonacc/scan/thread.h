@@ -21,21 +21,20 @@
 #ifndef __ONAS_SCTH_H
 #define __ONAS_SCTH_H
 
-
 #if defined(FANOTIFY)
 #include <sys/fanotify.h>
 #endif
 #include "shared/optparser.h"
 #include "libclamav/clamav.h"
 
-#define ONAS_SCTH_B_DIR         0x01
-#define ONAS_SCTH_B_FILE        0x02
-#define ONAS_SCTH_B_INOTIFY     0x04
-#define ONAS_SCTH_B_FANOTIFY    0x08
-#define ONAS_SCTH_B_SCAN        0x10
-#define ONAS_SCTH_B_RETRY_ON_E  0x20
-#define ONAS_SCTH_B_DENY_ON_E   0x40
-#define ONAS_SCTH_B_REMOTE      0x80
+#define ONAS_SCTH_B_DIR 0x01
+#define ONAS_SCTH_B_FILE 0x02
+#define ONAS_SCTH_B_INOTIFY 0x04
+#define ONAS_SCTH_B_FANOTIFY 0x08
+#define ONAS_SCTH_B_SCAN 0x10
+#define ONAS_SCTH_B_RETRY_ON_E 0x20
+#define ONAS_SCTH_B_DENY_ON_E 0x40
+#define ONAS_SCTH_B_REMOTE 0x80
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -48,19 +47,19 @@
 #endif
 
 struct onas_scan_event {
-        const char *tcpaddr;
-        int64_t portnum;
-        char *pathname;
-        int fan_fd;
+    const char *tcpaddr;
+    int64_t portnum;
+    char *pathname;
+    int fan_fd;
 #if defined(FANOTIFY)
-        struct fanotify_event_metadata *fmd;
+    struct fanotify_event_metadata *fmd;
 #endif
-        uint8_t retry_attempts;
-        uint64_t sizelimit;
-        int32_t scantype;
-        int64_t maxstream;
-        int64_t timeout;
-	uint8_t bool_opts;
+    uint8_t retry_attempts;
+    uint64_t sizelimit;
+    int32_t scantype;
+    int64_t maxstream;
+    int64_t timeout;
+    uint8_t bool_opts;
 } __attribute((packed));
 
 #ifdef HAVE_PRAGMA_PACK

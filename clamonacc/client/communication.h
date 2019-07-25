@@ -33,7 +33,7 @@
 #include "shared/misc.h"
 
 struct RCVLN {
-    char buf[PATH_MAX+1024];
+    char buf[PATH_MAX + 1024];
     CURL *curl;
     CURLcode curlcode;
     size_t retlen;

@@ -41,31 +41,31 @@
 #endif
 
 struct onas_context {
-	const struct optstruct *opts;
-	const struct optstruct *clamdopts;
+    const struct optstruct *opts;
+    const struct optstruct *clamdopts;
 
-        int printinfected;
-        int maxstream;
+    int printinfected;
+    int maxstream;
 
-        uint32_t ddd_enabled;
+    uint32_t ddd_enabled;
 
-        int fan_fd;
-        uint64_t fan_mask;
-        uint8_t retry_on_error;
-        uint8_t retry_attempts;
-        uint8_t deny_on_error;
+    int fan_fd;
+    uint64_t fan_mask;
+    uint8_t retry_on_error;
+    uint8_t retry_attempts;
+    uint8_t deny_on_error;
 
-        uint64_t sizelimit;
-        uint64_t extinfo;
+    uint64_t sizelimit;
+    uint64_t extinfo;
 
-        int scantype;
-        int isremote;
-        int session;
-	int timeout;
+    int scantype;
+    int isremote;
+    int session;
+    int timeout;
 
-        int64_t portnum;
+    int64_t portnum;
 
-        int32_t maxthreads;
+    int32_t maxthreads;
 } __attribute__((packed));
 
 #ifdef HAVE_PRAGMA_PACK
@@ -75,13 +75,11 @@ struct onas_context {
 #pragma pack
 #endif
 
-struct onas_context* onas_init_context(void);
-void* onas_cleanup(struct onas_context *ctx);
-void* onas_context_cleanup(struct onas_context *ctx);
+struct onas_context *onas_init_context(void);
+void *onas_cleanup(struct onas_context *ctx);
+void *onas_context_cleanup(struct onas_context *ctx);
 cl_error_t onas_check_client_connection(struct onas_context **ctx);
 int onas_start_eloop(struct onas_context **ctx);
 void help(void);
-
-
 
 #endif

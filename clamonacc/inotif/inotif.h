@@ -21,7 +21,6 @@
 #ifndef __ONAS_IN_H
 #define __ONAS_IN_H
 
-
 #if defined(FANOTIFY)
 
 #include "shared/optparser.h"

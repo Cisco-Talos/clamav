@@ -48,7 +48,6 @@
 #define EC32(v, conv) (conv ? cbswap32(v) : v)
 #define EC64(v, conv) (conv ? cbswap64(v) : v)
 
-
 #define CLI_TMPUNLK()               \
     if (!ctx->engine->keeptmp) {    \
         if (cli_unlink(tempfile)) { \
@@ -876,7 +875,7 @@ int cli_unpackelf(cli_ctx *ctx)
             ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
             cli_bytecode_context_destroy(bc_ctx);
             if (ndesc != -1 && tempfile) {
-                if (ctx->engine->keeptmp) 
+                if (ctx->engine->keeptmp)
                     cli_dbgmsg("cli_scanelf: Unpacked and rebuilt executable saved in %s\n", tempfile);
                 else
                     cli_dbgmsg("cli_scanelf: Unpacked and rebuilt executable\n");
@@ -887,7 +886,7 @@ int cli_unpackelf(cli_ctx *ctx)
                     CLI_TMPUNLK();
                     free(tempfile);
                     return CL_VIRUS;
-                } 
+                }
                 close(ndesc);
                 CLI_TMPUNLK();
                 free(tempfile);
@@ -900,4 +899,3 @@ int cli_unpackelf(cli_ctx *ctx)
 
     return CL_CLEAN;
 }
-

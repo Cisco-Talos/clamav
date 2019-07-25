@@ -64,29 +64,29 @@ const struct clam_option __clam_options[] = {
     /* name,   longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
 
     /* cmdline only */
-    { NULL, "help", 'h', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", "" },
-    { NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR_CLAMD, FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP | OPT_CLAMONACC, "", "" },
+    {NULL, "help", 'h', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", ""},
+    {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR_CLAMD, FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP | OPT_CLAMONACC, "", ""},
     {NULL, "config-file", 0, CLOPT_TYPE_STRING, NULL, 0, CONFDIR_FRESHCLAM, FLAG_REQUIRED, OPT_FRESHCLAM, "", ""},
     {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR_MILTER, FLAG_REQUIRED, OPT_MILTER, "", ""},
-    { NULL, "version", 'V', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", "" },
+    {NULL, "version", 'V', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", ""},
     {NULL, "debug", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC | OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", ""},
     {NULL, "gen-json", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_SIGTOOL, "", ""},
-    { NULL, "verbose", 'v', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", "" },
+    {NULL, "verbose", 'v', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", ""},
     {NULL, "dumpcerts", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Dump authenticode certificate chain.", ""},
-    { NULL, "quiet", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", "" },
+    {NULL, "quiet", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", ""},
     {NULL, "leave-temps", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
     {NULL, "no-warnings", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", ""},
     {NULL, "show-progress", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", ""},
-    { NULL, "stdout", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", "" },
+    {NULL, "stdout", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_CLAMONACC, "", ""},
     {NULL, "daemon", 'd', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", ""},
     {NULL, "no-dns", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", ""},
     {NULL, "list-mirrors", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", ""},
     {NULL, "update-db", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "", ""},
     {NULL, "reload", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", ""},
-    { NULL, "multiscan", 'm', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
-    { NULL, "fdpass", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
-    { NULL, "stream", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
-    { NULL, "allmatch", 'z', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
+    {NULL, "multiscan", 'm', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "fdpass", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "stream", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "allmatch", 'z', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "normalize", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMSCAN, "Perform HTML, script, and text normalization", ""},
     {NULL, "database", 'd', CLOPT_TYPE_STRING, NULL, -1, DATADIR, FLAG_REQUIRED | FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""}, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
     {NULL, "recursive", 'r', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
@@ -96,11 +96,11 @@ const struct clam_option __clam_options[] = {
     {NULL, "bell", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
     {NULL, "no-summary", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", ""},
     {NULL, "file-list", 'f', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", ""},
-    { NULL, "infected", 'i', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
+    {NULL, "infected", 'i', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "suppress-ok-results", 'o', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
-    { NULL, "move", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
-    { NULL, "copy", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
-    { NULL, "remove", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", "" },
+    {NULL, "move", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "copy", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "remove", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "exclude", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""},
     {NULL, "exclude-dir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""},
     {NULL, "include", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""},
@@ -192,7 +192,7 @@ const struct clam_option __clam_options[] = {
 
     {"PreludeAnalyzerName", "prelude-analyzer-name", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Name of the analyzer as seen in prewikka", ""},
 
-    { "LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "Save all reports to a log file.", "/tmp/clamav.log" },
+    {"LogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "Save all reports to a log file.", "/tmp/clamav.log"},
 
     {"LogFileUnlock", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes"},
 
@@ -277,7 +277,7 @@ const struct clam_option __clam_options[] = {
 
     {"AllowAllMatchScan", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Permit use of the ALLMATCHSCAN command.", "yes"},
 
-    { "Foreground", "foreground", 'F', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER | OPT_CLAMONACC, "Don't fork into background.", "no" },
+    {"Foreground", "foreground", 'F', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER | OPT_CLAMONACC, "Don't fork into background.", "no"},
 
     {"Debug", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "Enable debug messages in libclamav.", "no"},
 
@@ -402,7 +402,7 @@ const struct clam_option __clam_options[] = {
     /* OnAccess settings */
     {"OnAccessMountPath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory or mount point which should be scanned on access. The mount point specified, or the mount point containing the specified directory will be watched, but only notifications will occur. If any directories are specified, this option will preempt the DDD system. It can also be used multiple times.", "/\n/home/user"},
 
-    { "OnAccessIncludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (including all files and directories\ninside it), which should be scanned on access. This option can\nbe used multiple times.", "/home\n/students" },
+    {"OnAccessIncludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (including all files and directories\ninside it), which should be scanned on access. This option can\nbe used multiple times.", "/home\n/students"},
 
     {"OnAccessExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times. Only works with DDD system.", "/home/bofh\n/root"},
 
@@ -410,30 +410,28 @@ const struct clam_option __clam_options[] = {
 
     {"OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To whitelist the root UID please enable the OnAccessExcludeRootUID option.", "0"},
 
-    { "OnAccessExcludeUname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows exclusions via user names when using the on-access scanning client. It can\nbe used multiple times.", "clamuser" },
+    {"OnAccessExcludeUname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows exclusions via user names when using the on-access scanning client. It can\nbe used multiple times.", "clamuser"},
 
     {"OnAccessMaxFileSize", NULL, 0, CLOPT_TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned in on access.", "5M"},
 
-    { "OnAccessDisableDDD", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only).", "no" },
+    {"OnAccessDisableDDD", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option toggles the dynamic directory determination system for on-access scanning (Linux only).", "no"},
 
     {"OnAccessPrevention", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "This option changes fanotify behavior to prevent access attempts on malicious files instead of simply notifying the user (On Access scan only).", "yes"},
 
     {"OnAccessExtraScanning", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enables extra scanning and notification after catching certain inotify events. Only works with the DDD system enabled.", "yes"},
 
+    {"OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L"},
 
-    { "OnAccessCurlTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000l, NULL, 0, OPT_CLAMD, "Max amount of time (in milliseconds) that the OnAccess client should spend for every connect, send, and recieve attempt when communicating with clamd via curl (5s default)", "10000L" },
+    {"OnAccessMaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10"},
 
-    { "OnAccessMaxThreads", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "Max number of scanning threads to allocate to the OnAccess thread pool at startup--these threads are the ones responsible for creating a connection with the daemon and kicking off scanning after an event has been processed. To prevent clamonacc from consuming all clamd's resources keep this lower than clamd's max threads. Default is 5", "10" },
+    {"OnAccessRetryAttempts", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD, "Number of times the OnAccess client will retry a failed scan due to connection problems (or other issues). Defaults to no retries.", "3"},
 
-    { "OnAccessRetryAttempts", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD, "Number of times the OnAccess client will retry a failed scan due to connection problems (or other issues). Defaults to no retries.", "3" },
-
-    { "OnAccessDenyOnError", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "When using prevention, if this option is turned on, any errors that occur during scanning will result in the event attempt being denied. This could potentially lead to unwanted system behaviour with certain configurations, so the client defaults to off and allowing access events in case of error.", "yes" },
-
+    {"OnAccessDenyOnError", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "When using prevention, if this option is turned on, any errors that occur during scanning will result in the event attempt being denied. This could potentially lead to unwanted system behaviour with certain configurations, so the client defaults to off and allowing access events in case of error.", "yes"},
 
     /* clamonacc cmdline options */
 
-    { NULL, "watch-list", 'w', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
-    { NULL, "exclude-list", 'e', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
+    {NULL, "watch-list", 'w', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
+    {NULL, "exclude-list", 'e', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
     {"DevACOnly", "dev-ac-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
@@ -525,7 +523,7 @@ const struct clam_option __clam_options[] = {
     {"ArchiveLimitMemoryUsage", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", ""},
     {"MailFollowURLs", "mail-follow-urls", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_DEPRECATED, "", ""},
     {"AllowSupplementaryGroups", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER | OPT_DEPRECATED, "Initialize a supplementary group access (the process must be started by root).", "no"},
-    { "ScanOnAccess", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    {"ScanOnAccess", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", ""},
 
     /* Milter specific options */
 
