@@ -252,9 +252,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-@ENABLE_UNRAR_TRUE@am__DEPENDENCIES_1 = libclamunrar_iface.la
-am__DEPENDENCIES_2 =
-@USE_INTERNAL_MSPACK_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_1 =
+@ENABLE_UNRAR_TRUE@am__DEPENDENCIES_2 = libclamunrar_iface.la
+@USE_INTERNAL_MSPACK_FALSE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @ENABLE_LLVM_FALSE@am__DEPENDENCIES_4 = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@am__DEPENDENCIES_4 = c++/libclamavcxx.la
 am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \

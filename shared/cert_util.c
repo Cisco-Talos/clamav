@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
