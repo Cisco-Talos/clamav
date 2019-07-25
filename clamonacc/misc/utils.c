@@ -30,12 +30,12 @@
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
-#include "../../libclamav/clamav.h"
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
+#include "libclamav/clamav.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
 
-#include "./utils.h"
-#include "../../clamd/scanner.h"
+#include "utils.h"
+#include "clamd/scanner.h"
 #include "../clamonacc.h"
 #include "../client/client.h"
 #include "../scan/queue.h"
