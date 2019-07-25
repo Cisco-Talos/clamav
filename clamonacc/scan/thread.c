@@ -35,14 +35,14 @@
 #include <sys/fanotify.h>
 #endif
 
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
 
-#include "../../libclamav/others.h"
+#include "libclamav/others.h"
 #include "../misc/priv_fts.h"
 #include "../misc/utils.h"
 #include "../client/client.h"
-#include "./thread.h"
+#include "thread.h"
 
 static pthread_mutex_t onas_scan_lock = PTHREAD_MUTEX_INITIALIZER;
 

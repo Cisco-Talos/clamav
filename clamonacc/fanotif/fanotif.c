@@ -36,16 +36,14 @@
 
 #include <sys/fanotify.h>
 
-#include "../../libclamav/clamav.h"
-#include "../../libclamav/scanners.h"
+#include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
 
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
 
-#include "../misc/utils.h"
-#include "../../clamd/server.h"
+#include "clamd/server.h"
 
-#include "./fanotif.h"
 #include "../inotif/hash.h"
 #include "../inotif/inotif.h"
 
@@ -53,6 +51,10 @@
 
 #include "../scan/thread.h"
 #include "../scan/queue.h"
+
+#include "../misc/utils.h"
+
+#include "fanotif.h"
 
 extern pthread_t ddd_pid;
 extern pthread_t scan_queue_pid;

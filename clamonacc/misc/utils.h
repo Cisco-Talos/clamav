@@ -21,8 +21,8 @@
 #ifndef __CLAMD_ONAS_OTHERS_H
 #define __CLAMD_ONAS_OTHERS_H
 
-#include "../../shared/optparser.h"
-#include "../../libclamav/clamav.h"
+#include "shared/optparser.h"
+#include "libclamav/clamav.h"
 #include "../clamonacc.h"
 
 typedef enum {

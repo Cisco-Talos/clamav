@@ -40,18 +40,18 @@
 #include <fcntl.h>
 #endif
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../shared/output.h"
-#include "../shared/misc.h"
-#include "../shared/optparser.h"
-#include "../shared/actions.h"
+#include "libclamav/clamav.h"
+#include "libclamav/others.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+#include "shared/optparser.h"
+#include "shared/actions.h"
 
-#include "./clamonacc.h"
-#include "./client/client.h"
-#include "./fanotif/fanotif.h"
-#include "./inotif/inotif.h"
-#include "./scan/queue.h"
+#include "clamonacc.h"
+#include "client/client.h"
+#include "fanotif/fanotif.h"
+#include "inotif/inotif.h"
+#include "scan/queue.h"
 
 
 pthread_t ddd_pid = 0;

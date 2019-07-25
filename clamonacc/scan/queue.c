@@ -34,15 +34,15 @@
 
 #include "../misc/utils.h"
 
-#include "../../libclamav/clamav.h"
+#include "libclamav/clamav.h"
 
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
 
 #include "../c-thread-pool/thpool.h"
 
-#include "./thread.h"
-#include "./queue.h"
+#include "thread.h"
+#include "queue.h"
 
 static void onas_scan_queue_exit(void * arg);
 static int onas_consume_event(threadpool thpool);

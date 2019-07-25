@@ -22,7 +22,7 @@
 #ifndef __ONAS_CLAMONACC_H
 #define __ONAS_CLAMONACC_H
 
-#include "../libclamav/clamav.h"
+#include "libclamav/clamav.h"
 
 #ifndef ONAS_DEBUG
 #define ONAS_DEBUG

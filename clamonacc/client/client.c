@@ -52,18 +52,18 @@
 #include <sys/uio.h>
 #endif
 
-#include "../../libclamav/clamav.h"
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
-#include "../../shared/misc.h"
-#include "../../shared/actions.h"
+#include "libclamav/clamav.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+#include "shared/actions.h"
 
-#include "../../libclamav/str.h"
-#include "../../libclamav/others.h"
+#include "libclamav/str.h"
+#include "libclamav/others.h"
 
-#include "./communication.h"
-#include "./client.h"
-#include "./protocol.h"
+#include "communication.h"
+#include "client.h"
+#include "protocol.h"
 
 #include "../clamonacc.h"
 

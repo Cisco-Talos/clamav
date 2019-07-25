@@ -39,19 +39,20 @@
 #endif
 
 #include "../fanotif/fanotif.h"
-#include "./hash.h"
-#include "./inotif.h"
 
-#include "../../libclamav/clamav.h"
-#include "../../libclamav/scanners.h"
-#include "../../libclamav/str.h"
+#include "hash.h"
+#include "inotif.h"
 
-#include "../../shared/optparser.h"
-#include "../../shared/output.h"
+#include "libclamav/clamav.h"
+#include "libclamav/scanners.h"
+#include "libclamav/str.h"
 
-#include "../../clamd/server.h"
-#include "../../clamd/others.h"
-#include "../../clamd/scanner.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
+
+#include "clamd/server.h"
+#include "clamd/others.h"
+#include "clamd/scanner.h"
 #include "../misc/priv_fts.h"
 
 

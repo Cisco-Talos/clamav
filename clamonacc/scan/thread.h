@@ -25,8 +25,8 @@
 #if defined(FANOTIFY)
 #include <sys/fanotify.h>
 #endif
-#include "../../shared/optparser.h"
-#include "../../libclamav/clamav.h"
+#include "shared/optparser.h"
+#include "libclamav/clamav.h"
 
 #define ONAS_SCTH_B_DIR         0x01
 #define ONAS_SCTH_B_FILE        0x02

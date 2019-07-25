@@ -24,7 +24,7 @@
 
 #include <curl/curl.h>
 
-#include "../../shared/optparser.h"
+#include "shared/optparser.h"
 #include "../clamonacc.h"
 
 enum {

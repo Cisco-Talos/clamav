@@ -24,8 +24,8 @@
 
 #if defined(FANOTIFY)
 
-#include "../../shared/optparser.h"
-#include "../../libclamav/clamav.h"
+#include "shared/optparser.h"
+#include "libclamav/clamav.h"
 
 /*
  * Extra options for onas_scan_th().
