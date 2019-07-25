@@ -596,7 +596,7 @@ int cli_unpackmacho(cli_ctx *ctx)
             ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
             cli_bytecode_context_destroy(bc_ctx);
             if (ndesc != -1 && tempfile) {
-                if (ctx->engine->keeptmp) 
+                if (ctx->engine->keeptmp)
                     cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable saved in %s\n", tempfile);
                 else
                     cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable\n");
@@ -607,7 +607,7 @@ int cli_unpackmacho(cli_ctx *ctx)
                     CLI_TMPUNLK();
                     free(tempfile);
                     return CL_VIRUS;
-                } 
+                }
                 close(ndesc);
                 CLI_TMPUNLK();
                 free(tempfile);
@@ -620,4 +620,3 @@ int cli_unpackmacho(cli_ctx *ctx)
 
     return CL_CLEAN;
 }
-

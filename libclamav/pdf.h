@@ -43,8 +43,8 @@ struct pdf_obj {
     uint32_t statsflags;
     uint32_t numfilters;
     uint32_t filterlist[PDF_FILTERLIST_MAX];
-    const char *stream;     // pointer to stream contained in object.
-    size_t stream_size;      // size of stream contained in object.
+    const char *stream;           // pointer to stream contained in object.
+    size_t stream_size;           // size of stream contained in object.
     struct objstm_struct *objstm; // Should be NULL unless the obj exists in an object stream (separate buffer)
     char *path;
 };

@@ -39,6 +39,10 @@ clang-format -i -verbose shared/*.c
 clang-format -i -verbose shared/*.h
 clang-format -i -verbose sigtool/*.c
 clang-format -i -verbose sigtool/*.h
+clang-format -i -verbose clamonacc/*.c
+clang-format -i -verbose clamonacc/*.h
+clang-format -i -verbose clamonacc/*/*.c
+clang-format -i -verbose clamonacc/*/*.h
 clang-format -i -verbose unit_tests/*.c
 clang-format -i -verbose unit_tests/*.h
 clang-format -i -verbose win32/compat/*.c
@@ -71,3 +75,5 @@ git checkout libclamav/inflate64.h
 git checkout libclamav/inflate64.c
 git checkout libclamav/inflate64_priv.h
 git checkout shared/queue.h
+git checkout clamonacc/c-thread-pool/thpool.c
+git checkout clamonacc/c-thread-pool/thpool.h

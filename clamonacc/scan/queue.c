@@ -44,7 +44,7 @@
 #include "thread.h"
 #include "queue.h"
 
-static void onas_scan_queue_exit(void * arg);
+static void onas_scan_queue_exit(void *arg);
 static int onas_consume_event(threadpool thpool);
 static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node);
 static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
@@ -52,7 +52,7 @@ static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
 static pthread_mutex_t onas_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_mutex_t onas_scan_queue_loop = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t onas_scan_queue_empty_cond = PTHREAD_COND_INITIALIZER;
+pthread_cond_t onas_scan_queue_empty_cond   = PTHREAD_COND_INITIALIZER;
 extern pthread_t scan_queue_pid;
 
 static threadpool g_thpool;
@@ -62,133 +62,135 @@ static struct onas_event_queue_node *g_onas_event_queue_tail = NULL;
 
 static struct onas_event_queue g_onas_event_queue;
 
-static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node) {
+static cl_error_t onas_new_event_queue_node(struct onas_event_queue_node **node)
+{
 
-	*node = malloc(sizeof(struct onas_event_queue_node));
-	if (NULL == *node) {
-		return CL_EMEM;
-	}
+    *node = malloc(sizeof(struct onas_event_queue_node));
+    if (NULL == *node) {
+        return CL_EMEM;
+    }
 
+    **node = (struct onas_event_queue_node){
+        .next = NULL,
+        .prev = NULL,
 
-	**node = (struct onas_event_queue_node) {
-		.next = NULL,
-		.prev = NULL,
+        .data = NULL};
 
-		.data = NULL
-	};
-
-	return CL_SUCCESS;
+    return CL_SUCCESS;
 }
 
-static void *onas_init_event_queue() {
+static void *onas_init_event_queue()
+{
 
-	if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_head)) {
-		return NULL;
-	}
+    if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_head)) {
+        return NULL;
+    }
 
-	if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_tail)) {
-		return NULL;
-	}
+    if (CL_EMEM == onas_new_event_queue_node(&g_onas_event_queue_tail)) {
+        return NULL;
+    }
 
-	g_onas_event_queue_tail->prev = g_onas_event_queue_head;
-	g_onas_event_queue_head->next = g_onas_event_queue_tail;
+    g_onas_event_queue_tail->prev = g_onas_event_queue_head;
+    g_onas_event_queue_head->next = g_onas_event_queue_tail;
 
-	g_onas_event_queue = (struct onas_event_queue)  {
-		.head = g_onas_event_queue_head,
-		.tail = g_onas_event_queue_tail,
+    g_onas_event_queue = (struct onas_event_queue){
+        .head = g_onas_event_queue_head,
+        .tail = g_onas_event_queue_tail,
 
-		.size = 0
-	};
+        .size = 0};
 
-	return &g_onas_event_queue;
+    return &g_onas_event_queue;
 }
 
-static void onas_destroy_event_queue_node(struct onas_event_queue_node *node) {
+static void onas_destroy_event_queue_node(struct onas_event_queue_node *node)
+{
 
-	if (NULL == node) {
-		return;
-	}
+    if (NULL == node) {
+        return;
+    }
 
-	node->next = NULL;
-	node->prev = NULL;
-	node->data = NULL;
+    node->next = NULL;
+    node->prev = NULL;
+    node->data = NULL;
 
-	free(node);
-	node = NULL;
+    free(node);
+    node = NULL;
 
-	return;
+    return;
 }
 
-static void onas_destroy_event_queue() {
+static void onas_destroy_event_queue()
+{
 
-	if (NULL == g_onas_event_queue_head) {
-		return;
-	}
+    if (NULL == g_onas_event_queue_head) {
+        return;
+    }
 
-	struct onas_event_queue_node *curr = g_onas_event_queue_head;
-	struct onas_event_queue_node *next = curr->next;
+    struct onas_event_queue_node *curr = g_onas_event_queue_head;
+    struct onas_event_queue_node *next = curr->next;
 
-	do {
-		onas_destroy_event_queue_node(curr);
-		curr = next;
-		if (curr) {
-			next = curr->next;
-		}
-	} while (curr);
+    do {
+        onas_destroy_event_queue_node(curr);
+        curr = next;
+        if (curr) {
+            next = curr->next;
+        }
+    } while (curr);
 
-	return;
+    return;
 }
 
+void *onas_scan_queue_th(void *arg)
+{
 
-void *onas_scan_queue_th(void *arg) {
+    /* not a ton of use for context right now, but perhaps in the future we can pass in more options */
+    struct onas_context *ctx = (struct onas_context *)arg;
+    sigset_t sigset;
+    struct sigaction act;
+    const struct optstruct *pt;
+    int ret, len, idx;
 
-	/* not a ton of use for context right now, but perhaps in the future we can pass in more options */
-	struct onas_context *ctx = (struct onas_context *) arg;
-	sigset_t sigset;
-	struct sigaction act;
-	const struct optstruct *pt;
-	int ret, len, idx;
+    cl_error_t err;
 
-        cl_error_t err;
-
-	/* ignore all signals except SIGUSR2 */
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGUSR2);
-	/* The behavior of a process is undefined after it ignores a
+    /* ignore all signals except SIGUSR2 */
+    sigfillset(&sigset);
+    sigdelset(&sigset, SIGUSR2);
+    /* The behavior of a process is undefined after it ignores a
 	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
-	sigdelset(&sigset, SIGFPE);
-	sigdelset(&sigset, SIGILL);
-	sigdelset(&sigset, SIGSEGV);
-	sigdelset(&sigset, SIGTERM);
-	sigdelset(&sigset, SIGINT);
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+    sigdelset(&sigset, SIGTERM);
+    sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
-	sigdelset(&sigset, SIGBUS);
+    sigdelset(&sigset, SIGBUS);
 #endif
 
-	logg("*ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
-        onas_init_event_queue();
-        threadpool thpool = thpool_init(ctx->maxthreads);
-	g_thpool = thpool;
+    logg("*ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
+    onas_init_event_queue();
+    threadpool thpool = thpool_init(ctx->maxthreads);
+    g_thpool          = thpool;
 
-        /* loop w/ onas_consume_event until we die */
-        pthread_cleanup_push(onas_scan_queue_exit, NULL);
-	logg("*ClamScanQueue: waiting to consume events ...\n");
-	do {
-		pthread_mutex_lock(&onas_scan_queue_loop);
-		pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_scan_queue_loop);
-		/* run 'till we're empty */
-		do {
-			pthread_testcancel();
-			ret = onas_consume_event(thpool);
-		} while (1 != ret);
-		pthread_mutex_unlock(&onas_scan_queue_loop);
+    /* loop w/ onas_consume_event until we die */
+    pthread_cleanup_push(onas_scan_queue_exit, NULL);
+    logg("*ClamScanQueue: waiting to consume events ...\n");
+    do {
+        pthread_mutex_lock(&onas_scan_queue_loop);
+        pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_scan_queue_loop);
+        /* run 'till we're empty */
+        do {
+            pthread_testcancel();
+            ret = onas_consume_event(thpool);
+        } while (1 != ret);
+        pthread_mutex_unlock(&onas_scan_queue_loop);
 
-	} while(1);
+    } while (1);
 
-	pthread_cleanup_pop(1);
+    pthread_cleanup_pop(1);
 }
 
-static int onas_queue_is_b_empty() {
+static int onas_queue_is_b_empty()
+{
 
     if (g_onas_event_queue.head->next == g_onas_event_queue.tail) {
         return 1;
@@ -197,7 +199,8 @@ static int onas_queue_is_b_empty() {
     return 0;
 }
 
-static int onas_consume_event(threadpool thpool) {
+static int onas_consume_event(threadpool thpool)
+{
 
     pthread_mutex_lock(&onas_queue_lock);
 
@@ -212,9 +215,9 @@ static int onas_consume_event(threadpool thpool) {
     logg("*ClamScanQueue: consuming event!\n");
 #endif
 
-    thpool_add_work(thpool, (void *) onas_scan_worker, (void *) popped_node->data);
+    thpool_add_work(thpool, (void *)onas_scan_worker, (void *)popped_node->data);
 
-    g_onas_event_queue_head->next = g_onas_event_queue_head->next->next;
+    g_onas_event_queue_head->next       = g_onas_event_queue_head->next->next;
     g_onas_event_queue_head->next->prev = g_onas_event_queue_head;
 
     onas_destroy_event_queue_node(popped_node);
@@ -225,7 +228,8 @@ static int onas_consume_event(threadpool thpool) {
     return 0;
 }
 
-cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
+cl_error_t onas_queue_event(struct onas_scan_event *event_data)
+{
 
     pthread_mutex_lock(&onas_queue_lock);
 
@@ -236,7 +240,7 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
 #endif
 
     if (CL_EMEM == onas_new_event_queue_node(&node)) {
-	    return CL_EMEM;
+        return CL_EMEM;
     }
 
     node->next = g_onas_event_queue_tail;
@@ -245,8 +249,8 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
     node->data = event_data;
 
     /* tail will always have a .prev */
-    ((struct onas_event_queue_node *) g_onas_event_queue_tail->prev)->next = node;
-    g_onas_event_queue_tail->prev = node;
+    ((struct onas_event_queue_node *)g_onas_event_queue_tail->prev)->next = node;
+    g_onas_event_queue_tail->prev                                         = node;
 
     g_onas_event_queue.size++;
 
@@ -256,44 +260,45 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data) {
     return CL_SUCCESS;
 }
 
-cl_error_t onas_scan_queue_start(struct onas_context **ctx) {
+cl_error_t onas_scan_queue_start(struct onas_context **ctx)
+{
 
-	pthread_attr_t scan_queue_attr;
-	int32_t thread_started = 1;
+    pthread_attr_t scan_queue_attr;
+    int32_t thread_started = 1;
 
-	if (!ctx || !*ctx) {
-		logg("*ClamScanQueue: unable to start clamonacc. (bad context)\n");
-		return CL_EARG;
-	}
+    if (!ctx || !*ctx) {
+        logg("*ClamScanQueue: unable to start clamonacc. (bad context)\n");
+        return CL_EARG;
+    }
 
-        if(pthread_attr_init(&scan_queue_attr)) {
-            return CL_BREAK;
-        }
-        pthread_attr_setdetachstate(&scan_queue_attr, PTHREAD_CREATE_JOINABLE);
-	thread_started = pthread_create(&scan_queue_pid, &scan_queue_attr, onas_scan_queue_th, *ctx);
+    if (pthread_attr_init(&scan_queue_attr)) {
+        return CL_BREAK;
+    }
+    pthread_attr_setdetachstate(&scan_queue_attr, PTHREAD_CREATE_JOINABLE);
+    thread_started = pthread_create(&scan_queue_pid, &scan_queue_attr, onas_scan_queue_th, *ctx);
 
-	if (0 != thread_started) {
-		/* Failed to create thread */
-		logg("*ClamScanQueue: Unable to start event consumer queue thread ... \n");
-		return CL_ECREAT;
-	}
+    if (0 != thread_started) {
+        /* Failed to create thread */
+        logg("*ClamScanQueue: Unable to start event consumer queue thread ... \n");
+        return CL_ECREAT;
+    }
 
-	return CL_SUCCESS;
+    return CL_SUCCESS;
 }
 
-static void onas_scan_queue_exit(void *arg) {
+static void onas_scan_queue_exit(void *arg)
+{
 
-	logg("*ClamScanQueue: onas_scan_queue_exit()\n");
+    logg("*ClamScanQueue: onas_scan_queue_exit()\n");
 
-	pthread_mutex_lock(&onas_queue_lock);
-	onas_destroy_event_queue();
+    pthread_mutex_lock(&onas_queue_lock);
+    onas_destroy_event_queue();
 
-        if (g_thpool) {
-            thpool_destroy(g_thpool);
-        }
-        g_thpool = NULL;
-	pthread_mutex_unlock(&onas_queue_lock);
+    if (g_thpool) {
+        thpool_destroy(g_thpool);
+    }
+    g_thpool = NULL;
+    pthread_mutex_unlock(&onas_queue_lock);
 
-	logg("ClamScanQueue: stopped\n");
+    logg("ClamScanQueue: stopped\n");
 }
-

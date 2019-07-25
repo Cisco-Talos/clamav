@@ -226,19 +226,19 @@ int main(int argc, char *argv[])
         fromStream = 1;
     }
 
-	if (g_debug) {
-		/* ask libcurl to show us the verbose output */
-		if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_VERBOSE, 1L)) {
-			fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
-		}
-		if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_STDERR, stdout)) {
-			fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
-		}
-	}
+    if (g_debug) {
+        /* ask libcurl to show us the verbose output */
+        if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_VERBOSE, 1L)) {
+            fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+        }
+        if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_STDERR, stdout)) {
+            fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+        }
+    }
 
-	if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-		fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
-	}
+    if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
+        fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+    }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
@@ -377,30 +377,30 @@ int main(int argc, char *argv[])
     memcpy(submissionID, sp, ep - sp);
     submissionID[ep - sp] = '\0';
 
-    aws_curl              = curl_easy_init();
+    aws_curl = curl_easy_init();
     if (!(aws_curl)) {
         fprintf(stderr, "ERROR: Could not initialize libcurl POST presigned\n");
         goto cleanup;
     }
 
-	if (g_debug) {
-		/* ask libcurl to show us the verbose output */
-		if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
-			fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
-		}
-		if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_STDERR, stdout)) {
-			fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
-		}
-	}
+    if (g_debug) {
+        /* ask libcurl to show us the verbose output */
+        if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
+            fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+        }
+        if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_STDERR, stdout)) {
+            fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+        }
+    }
 
-	if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-		fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
-	}
+    if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
+        fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+    }
 
 #ifdef _WIN32
-	if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-		fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
-	}
+    if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
+        fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
+    }
 #endif
 
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "key", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);

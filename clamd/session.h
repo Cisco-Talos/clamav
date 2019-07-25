@@ -49,7 +49,6 @@
 #define CMD23 "GET / HTTP/2"
 #define CMD24 ""
 
-
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "server.h"

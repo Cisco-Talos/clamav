@@ -36,12 +36,11 @@ enum {
     MAX_SCANTYPE = ALLMATCH
 };
 
-
 void onas_print_server_version(struct onas_context **ctx);
 int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int fd, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t timeout);
 int onas_get_clamd_version(struct onas_context **ctx);
 cl_error_t onas_setup_client(struct onas_context **ctx);
-int onas_check_remote(struct onas_context  **ctx, cl_error_t *err);
+int onas_check_remote(struct onas_context **ctx, cl_error_t *err);
 
 #endif

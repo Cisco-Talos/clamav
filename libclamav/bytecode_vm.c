@@ -89,7 +89,13 @@ static inline int bcfail(const char *msg, long a, long b,
 #define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
 #define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)(x));
 #define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
-#define TRACE_INST(inst) do {unsigned bbnum = 0; printf("LibClamAV debug: bytecode trace: executing instruction "); cli_byteinst_describe(inst, &bbnum); printf("\n");} while (0)
+#define TRACE_INST(inst)                                                   \
+    do {                                                                   \
+        unsigned bbnum = 0;                                                \
+        printf("LibClamAV debug: bytecode trace: executing instruction "); \
+        cli_byteinst_describe(inst, &bbnum);                               \
+        printf("\n");                                                      \
+    } while (0)
 #define TRACE_API(s, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %s, -> %u (%u); %u\n", s, dest, ty, stack)
 #else
 #define CHECK_UNREACHABLE return CL_EBYTECODE

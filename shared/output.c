@@ -254,8 +254,8 @@ static int rename_logg(STATBUF *sb)
     }
 
 #ifdef _WIN32
-	if (0 == MoveFileA(logg_file, rotate_file)) {
-		fprintf(stderr, "Failed to rename file with error code: %d\n", GetLastError());
+    if (0 == MoveFileA(logg_file, rotate_file)) {
+        fprintf(stderr, "Failed to rename file with error code: %d\n", GetLastError());
 #else
     if (rename(logg_file, rotate_file)) {
 #endif

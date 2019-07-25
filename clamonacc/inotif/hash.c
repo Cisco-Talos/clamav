@@ -33,7 +33,6 @@
 #include <errno.h>
 #include <stdbool.h>
 
-
 #if defined(FANOTIFY)
 #include <sys/fanotify.h>
 #endif
@@ -54,7 +53,6 @@
 #include "clamd/others.h"
 #include "clamd/scanner.h"
 #include "../misc/priv_fts.h"
-
 
 #if defined(FANOTIFY)
 
@@ -671,7 +669,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 {
     if (!ht || !pathname) return CL_ENULLARG;
 
-        int ret = 0;
+    int ret           = 0;
     FTS *ftsp         = NULL;
     int ftspopts      = FTS_PHYSICAL | FTS_XDEV;
     FTSENT *curr      = NULL;
@@ -684,9 +682,9 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 
     char *const pathargv[] = {(char *)pathname, NULL};
     if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
-		logg("!ClamHash: could not open '%s'\n", pathname);
-		ret = CL_EARG;
-                goto out;
+        logg("!ClamHash: could not open '%s'\n", pathname);
+        ret = CL_EARG;
+        goto out;
     }
 
     while ((curr = _priv_fts_read(ftsp))) {
@@ -728,26 +726,26 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         }
 
         struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);
-		if (!elem) {
-                    ret = CL_EMEM;
-                    goto out;
-                }
+        if (!elem) {
+            ret = CL_EMEM;
+            goto out;
+        }
 
         if (onas_ht_insert(ht, elem)) {
 
-                    ret = -1;
-                    goto out;
+            ret = -1;
+            goto out;
         }
     }
 
 out:
-        if (ftsp) {
-    _priv_fts_close(ftsp);
-        }
+    if (ftsp) {
+        _priv_fts_close(ftsp);
+    }
 
-        if (ret) {
-            return ret;
-        }
+    if (ret) {
+        return ret;
+    }
 
     return CL_SUCCESS;
 }
