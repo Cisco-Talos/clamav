@@ -672,8 +672,6 @@ OBJCDEPMODE
 ac_ct_OBJC
 OBJCFLAGS
 OBJC
-BUILD_CLAMONACC_FALSE
-BUILD_CLAMONACC_TRUE
 HAVE_STRNI
 CURL_LDFLAGS
 CURL_LIBS
@@ -29941,7 +29939,13 @@ else
 fi
 
 
-ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamonacc/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile fuzz/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 clamav-types.h"
+ac_config_files="$ac_config_files clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamd/clamav-daemon.service clamd/clamav-daemon.socket clamdscan/Makefile clamsubmit/Makefile clamav-milter/Makefile freshclam/clamav-freshclam.service freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile fuzz/Makefile clamdtop/Makefile clambc/Makefile libfreshclam/Makefile Makefile clamav-config libclamav.pc platform.h docs/man/clamav-milter.8 docs/man/clamav-milter.conf.5 docs/man/clambc.1 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 clamav-types.h"
+
+
+if test -z "$BUILD_CLAMONACC_TRUE"; then :
+  ac_config_files="$ac_config_files clamonacc/Makefile"
+
+fi
 
 # Define variables needed to generate clamav-types.h.
 # Define a warning for the user, so they don't edit clamav-types.h
@@ -30311,6 +30315,18 @@ if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${am__fastdepOBJC_TRUE}" && test -z "${am__fastdepOBJC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepOBJC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -30324,26 +30340,7 @@ if test -z "${WINDOWS_TRUE}" && test -z "${WINDOWS_FALSE}"; then
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MACOS_TRUE}" && test -z "${MACOS_FALSE}"; then
-  as_fn_error $? "conditional \"MACOS\" was never defined."
-fi
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+  as_fn_error $? "conditional \"MACOS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -33211,6 +33208,18 @@ if test -z "${SYSTEM_LFS_FTS_TRUE}" && test -z "${SYSTEM_LFS_FTS_FALSE}"; then
   as_fn_error $? "conditional \"SYSTEM_LFS_FTS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${am__fastdepOBJC_TRUE}" && test -z "${am__fastdepOBJC_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepOBJC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -33225,24 +33234,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${MACOS_TRUE}" && test -z "${MACOS_FALSE}"; then
   as_fn_error $? "conditional \"MACOS\" was never defined.
-if test -z "${ENABLE_CLAMSUBMIT_TRUE}" && test -z "${ENABLE_CLAMSUBMIT_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_CLAMSUBMIT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_LIBFRESHCLAM_TRUE}" && test -z "${ENABLE_LIBFRESHCLAM_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_LIBFRESHCLAM\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BUILD_CLAMONACC_TRUE}" && test -z "${BUILD_CLAMONACC_FALSE}"; then
-  as_fn_error $? "conditional \"BUILD_CLAMONACC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__EXEEXT_TRUE}" && test -z "${am__EXEEXT_FALSE}"; then
