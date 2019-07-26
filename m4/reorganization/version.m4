@@ -1,10 +1,10 @@
 dnl change this on a release
 dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.102.0-devel-`date +%Y%m%d`"
+VERSION="0.102.0-beta"
 
 dnl libclamav version info
 LC_CURRENT=9
-LC_REVISION=1
+LC_REVISION=4
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
