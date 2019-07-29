@@ -126,6 +126,22 @@ enum {
     FTnotinst = 99
 };
 
+//#define MALLOC(VAR, SIZE) \
+//{ \
+//VAR = malloc(size); \
+//if (NULL == VAR) { \
+//    status = CL_EMEM; \
+//    goto (done); \
+//}  \
+//memset(VAR, 0, SIZE);  \
+//}
+
+#define FREE(VAR) \
+    if (NULL != VAR) { \
+        free(VAR); \
+        VAR  = NULL; \
+    }
+
 #if 1
 #define GETD(VAR)                                                  \
 {                                                                  \
@@ -159,14 +175,14 @@ size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);   \
 smax = tmp; \
             if (-1 == tmp) {                                            \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");         \
-                free(alangs);                                          \
-                free(ptrs);                                            \
+                FREE(alangs);                                          \
+                FREE(ptrs);                                            \
                 ptrs = NULL;                                            \
                 return CL_CLEAN;                                       \
             } else if ((smax += sleft) < 4) {                          \
                 cli_dbgmsg("SIS: EOF\n");                              \
-                free(alangs);                                          \
-                free(ptrs);                                            \
+                FREE(alangs);                                          \
+                FREE(ptrs);                                            \
                 ptrs = NULL;                                            \
                 return CL_CLEAN;                                       \
             }                                                          \
@@ -309,6 +325,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
     fmap_t *map = *ctx->fmap;
+    uint32_t *ptrs = NULL;
+
 
     if (fmap_readn(map, &sis, 16, sizeof(sis)) != sizeof(sis)) {
         cli_dbgmsg("SIS: Unable to read header\n");
@@ -402,7 +420,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
         uint32_t pkgtype, fcount = 1;
         uint32_t j;
 
-        GETD(pkgtype);
+        GETD2(pkgtype);
         cli_dbgmsg("SIS: Pkgtype: %d\n", pkgtype);
         switch (pkgtype) {
             case PKGlangfile:
@@ -410,15 +428,15 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
             case PKGfile: {
                 uint32_t ftype, options, ssname, psname, sdname, pdname;
                 const char *sftype;
-                uint32_t *ptrs, *lens, *olens;
+                uint32_t *lens, *olens;
                 char *fn;
 
-                GETD(ftype);
-                GETD(options);
-                GETD(ssname);
-                GETD(psname);
-                GETD(sdname);
-                GETD(pdname);
+                GETD2(ftype);
+                GETD2(options);
+                GETD2(ssname);
+                GETD2(psname);
+                GETD2(sdname);
+                GETD2(pdname);
                 switch (ftype) {
                     case FTsimple:
                         sftype = "simple";
@@ -509,8 +527,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
 
                             if (!(decomp = cli_malloc(olen))) {
                                 cli_dbgmsg("\tOOM\n");
-                                free(ptrs);
-                                ptrs = NULL;
+                                FREE(ptrs);
                                 free(alangs);
                                 return CL_CLEAN;
                             }
@@ -529,24 +546,21 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                         if ((fd = open(ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
                             cli_errmsg("SIS: unable to create output file %s - aborting.", ofn);
                             free(decomp);
-                            free(ptrs);
-                            ptrs = NULL;
+                            FREE(ptrs);
                             free(alangs);
                             return CL_ECREAT;
                         }
                         if (cli_writen(fd, decompp, olen) != olen) {
                             close(fd);
                             free(decomp);
-                            free(ptrs);
-                            ptrs = NULL;
+                            FREE(ptrs);
                             free(alangs);
                             return CL_EWRITE;
                         }
                         free(decomp);
                         if (cli_magic_scandesc(fd, ofn, ctx) == CL_VIRUS) {
                             close(fd);
-                            free(ptrs);
-                            ptrs = NULL;
+                            FREE(ptrs);
                             free(alangs);
                             return CL_VIRUS;
                         }
@@ -554,23 +568,22 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                         umped++;
                     }
                 }
-                free(ptrs);
-                ptrs = NULL;
+                FREE(ptrs);
                 fcount = 2 * sizeof(uint32_t);
                 break;
             }
             case PKGoption:
                 cli_dbgmsg("SIS: I'm an option\n");
-                GETD(fcount);
+                GETD2(fcount);
                 fcount *= sis.langs * 2 * sizeof(uint32_t);
                 break;
             case PKGif:
                 cli_dbgmsg("SIS: #if\n");
-                GETD(fcount);
+                GETD2(fcount);
                 break;
             case PKGelsif:
                 cli_dbgmsg("SIS: #elsif\n");
-                GETD(fcount);
+                GETD2(fcount);
                 break;
             case PKGelse:
                 cli_dbgmsg("SIS: #else\n");
