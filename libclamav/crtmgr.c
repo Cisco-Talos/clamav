@@ -45,15 +45,13 @@
 int cli_crt_init(cli_crt *x509)
 {
     int ret;
+
+    memset(x509, 0, sizeof(*x509));
+
     if ((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
         cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
         return 1;
     }
-    x509->name          = NULL;
-    x509->isBlacklisted = 0;
-    x509->not_before = x509->not_after = 0;
-    x509->prev = x509->next = NULL;
-    x509->certSign = x509->codeSign = x509->timeSign = 0;
     return 0;
 }
 
