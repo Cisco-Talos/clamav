@@ -143,13 +143,11 @@ enum {
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \
                 FREE(alangs);                                                \
                 FREE(ptrs);                                                  \
-                ptrs = NULL;                                                 \
                 return CL_CLEAN;                                             \
             } else if ((smax += sleft) < 4) {                                \
                 cli_dbgmsg("SIS: EOF\n");                                    \
                 FREE(alangs);                                                \
                 FREE(ptrs);                                                  \
-                ptrs = NULL;                                                 \
                 return CL_CLEAN;                                             \
             }                                                                \
             pos += smax - sleft;                                             \
