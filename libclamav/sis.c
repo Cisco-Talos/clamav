@@ -126,72 +126,37 @@ enum {
     FTnotinst = 99
 };
 
-//#define MALLOC(VAR, SIZE) \
-//{ \
-//VAR = malloc(size); \
-//if (NULL == VAR) { \
-//    status = CL_EMEM; \
-//    goto (done); \
-//}  \
-//memset(VAR, 0, SIZE);  \
-//}
-
-#define FREE(VAR) \
+#define FREE(VAR)      \
     if (NULL != VAR) { \
-        free(VAR); \
-        VAR  = NULL; \
+        free(VAR);     \
+        VAR = NULL;    \
     }
 
-#if 0
-#define GETD(VAR)                                                  \
-{                                                                  \
-    /* cli_dbgmsg("GETD smax: %d sleft: %d\n", smax, sleft); */    \
-    if (sleft < 4) {                                               \
-        memcpy(buff, buff + smax - sleft, sleft);                  \
-size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);   \
-        smax = tmp; \
-        if (-1 == tmp) {                                            \
-            cli_dbgmsg("SIS: Read failed during GETD\n");          \
-            free(alangs);                                          \
-            return CL_CLEAN;                                       \
-        } else if ((smax += sleft) < 4) {                          \
-            cli_dbgmsg("SIS: EOF\n");                              \
-            free(alangs);                                          \
-            return CL_CLEAN;                                       \
-        }                                                          \
-        pos += smax - sleft;                                       \
-        sleft = smax;                                              \
-    }                                                              \
-    VAR = cli_readint32(&buff[smax - sleft]);                      \
-    sleft -= 4;                                                    \
-}
-#endif
-
-#define GETD2(VAR)                                                     \
-    {                                                                  \
-        /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */   \
-        if (sleft < 4) {                                               \
-            memcpy(buff, buff + smax - sleft, sleft);                  \
+#define GETD2(VAR)                                                           \
+    {                                                                        \
+        /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */         \
+        if (sleft < 4) {                                                     \
+            memcpy(buff, buff + smax - sleft, sleft);                        \
             size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
-smax = tmp; \
-            if (-1 == tmp) {                                            \
-                cli_dbgmsg("SIS: Read failed during GETD2\n");         \
-                FREE(alangs);                                          \
-                FREE(ptrs);                                            \
-                ptrs = NULL;                                            \
-                return CL_CLEAN;                                       \
-            } else if ((smax += sleft) < 4) {                          \
-                cli_dbgmsg("SIS: EOF\n");                              \
-                FREE(alangs);                                          \
-                FREE(ptrs);                                            \
-                ptrs = NULL;                                            \
-                return CL_CLEAN;                                       \
-            }                                                          \
-            pos += smax - sleft;                                       \
-            sleft = smax;                                              \
-        }                                                              \
-        VAR = cli_readint32(&buff[smax - sleft]);                      \
-        sleft -= 4;                                                    \
+            smax       = tmp;                                                \
+            if (-1 == tmp) {                                                 \
+                cli_dbgmsg("SIS: Read failed during GETD2\n");               \
+                FREE(alangs);                                                \
+                FREE(ptrs);                                                  \
+                ptrs = NULL;                                                 \
+                return CL_CLEAN;                                             \
+            } else if ((smax += sleft) < 4) {                                \
+                cli_dbgmsg("SIS: EOF\n");                                    \
+                FREE(alangs);                                                \
+                FREE(ptrs);                                                  \
+                ptrs = NULL;                                                 \
+                return CL_CLEAN;                                             \
+            }                                                                \
+            pos += smax - sleft;                                             \
+            sleft = smax;                                                    \
+        }                                                                    \
+        VAR = cli_readint32(&buff[smax - sleft]);                            \
+        sleft -= 4;                                                          \
     }
 
 #define SKIP(N)                                                 \
@@ -297,9 +262,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     uint32_t sleft = 0, smax = 0;
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map    = *ctx->fmap;
     uint32_t *ptrs = NULL;
-
 
     if (fmap_readn(map, &sis, 16, sizeof(sis)) != sizeof(sis)) {
         cli_dbgmsg("SIS: Unable to read header\n");
