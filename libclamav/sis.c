@@ -142,7 +142,7 @@ enum {
         VAR  = NULL; \
     }
 
-#if 1
+#if 0
 #define GETD(VAR)                                                  \
 {                                                                  \
     /* cli_dbgmsg("GETD smax: %d sleft: %d\n", smax, sleft); */    \
@@ -165,6 +165,7 @@ size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);   \
     VAR = cli_readint32(&buff[smax - sleft]);                      \
     sleft -= 4;                                                    \
 }
+#endif
 
 #define GETD2(VAR)                                                     \
     {                                                                  \
@@ -192,34 +193,6 @@ smax = tmp; \
         VAR = cli_readint32(&buff[smax - sleft]);                      \
         sleft -= 4;                                                    \
     }
-#else
-static uint32_t inline getD(uint32_t * sleft){
-
-        /* cli_dbgmsg("GETD2 smax: %d *sleft: %d\n", smax, *sleft); */
-        if (*sleft < 4) {
-            memcpy(buff, buff + smax - *sleft, *sleft);
-            size_t tmp = fmap_readn(map, buff + *sleft, pos, BUFSIZ - *sleft);
-            smax = (uint32_t) tmp;
-            //smax = fmap_readn(map, buff + *sleft, pos, BUFSIZ - *sleft);
-            if (smax == -1) {
-                cli_dbgmsg("SIS: Read failed during GETD2\n");     
-                free(alangs);                                     
-                free(ptrs);                                      
-                return CL_CLEAN;                                       
-            } else if ((smax += *sleft) < 4) {                         
-                cli_dbgmsg("SIS: EOF\n");                            
-                free(alangs);                                       
-                free(ptrs);                                        
-                return CL_CLEAN;                                  
-            }                                                    
-            pos += smax - *sleft;                                
-            *sleft = smax;                                      
-        }                                                     
-        VAR = cli_readint32(&buff[smax - *sleft]);            
-        *sleft -= 4;                                         
-
-}
-#endif
 
 #define SKIP(N)                                                 \
     /* cli_dbgmsg("SKIP smax: %d sleft: %d\n", smax, sleft); */ \
