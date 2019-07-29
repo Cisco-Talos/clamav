@@ -126,12 +126,15 @@ enum {
     FTnotinst = 99
 };
 
+#if 1
 #define GETD(VAR)                                                  \
+{                                                                  \
     /* cli_dbgmsg("GETD smax: %d sleft: %d\n", smax, sleft); */    \
     if (sleft < 4) {                                               \
         memcpy(buff, buff + smax - sleft, sleft);                  \
-        smax = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
-        if (smax < 0) {                                            \
+size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft);   \
+        smax = tmp; \
+        if (-1 == tmp) {                                            \
             cli_dbgmsg("SIS: Read failed during GETD\n");          \
             free(alangs);                                          \
             return CL_CLEAN;                                       \
@@ -144,23 +147,27 @@ enum {
         sleft = smax;                                              \
     }                                                              \
     VAR = cli_readint32(&buff[smax - sleft]);                      \
-    sleft -= 4;
+    sleft -= 4;                                                    \
+}
 
 #define GETD2(VAR)                                                     \
     {                                                                  \
         /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */   \
         if (sleft < 4) {                                               \
             memcpy(buff, buff + smax - sleft, sleft);                  \
-            smax = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
-            if (smax < 0) {                                            \
+            size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
+smax = tmp; \
+            if (-1 == tmp) {                                            \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");         \
                 free(alangs);                                          \
                 free(ptrs);                                            \
+                ptrs = NULL;                                            \
                 return CL_CLEAN;                                       \
             } else if ((smax += sleft) < 4) {                          \
                 cli_dbgmsg("SIS: EOF\n");                              \
                 free(alangs);                                          \
                 free(ptrs);                                            \
+                ptrs = NULL;                                            \
                 return CL_CLEAN;                                       \
             }                                                          \
             pos += smax - sleft;                                       \
@@ -169,6 +176,34 @@ enum {
         VAR = cli_readint32(&buff[smax - sleft]);                      \
         sleft -= 4;                                                    \
     }
+#else
+static uint32_t inline getD(uint32_t * sleft){
+
+        /* cli_dbgmsg("GETD2 smax: %d *sleft: %d\n", smax, *sleft); */
+        if (*sleft < 4) {
+            memcpy(buff, buff + smax - *sleft, *sleft);
+            size_t tmp = fmap_readn(map, buff + *sleft, pos, BUFSIZ - *sleft);
+            smax = (uint32_t) tmp;
+            //smax = fmap_readn(map, buff + *sleft, pos, BUFSIZ - *sleft);
+            if (smax == -1) {
+                cli_dbgmsg("SIS: Read failed during GETD2\n");     
+                free(alangs);                                     
+                free(ptrs);                                      
+                return CL_CLEAN;                                       
+            } else if ((smax += *sleft) < 4) {                         
+                cli_dbgmsg("SIS: EOF\n");                            
+                free(alangs);                                       
+                free(ptrs);                                        
+                return CL_CLEAN;                                  
+            }                                                    
+            pos += smax - *sleft;                                
+            *sleft = smax;                                      
+        }                                                     
+        VAR = cli_readint32(&buff[smax - *sleft]);            
+        *sleft -= 4;                                         
+
+}
+#endif
 
 #define SKIP(N)                                                 \
     /* cli_dbgmsg("SKIP smax: %d sleft: %d\n", smax, sleft); */ \
@@ -475,6 +510,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             if (!(decomp = cli_malloc(olen))) {
                                 cli_dbgmsg("\tOOM\n");
                                 free(ptrs);
+                                ptrs = NULL;
                                 free(alangs);
                                 return CL_CLEAN;
                             }
@@ -494,6 +530,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             cli_errmsg("SIS: unable to create output file %s - aborting.", ofn);
                             free(decomp);
                             free(ptrs);
+                            ptrs = NULL;
                             free(alangs);
                             return CL_ECREAT;
                         }
@@ -501,6 +538,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             close(fd);
                             free(decomp);
                             free(ptrs);
+                            ptrs = NULL;
                             free(alangs);
                             return CL_EWRITE;
                         }
@@ -508,6 +546,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                         if (cli_magic_scandesc(fd, ofn, ctx) == CL_VIRUS) {
                             close(fd);
                             free(ptrs);
+                            ptrs = NULL;
                             free(alangs);
                             return CL_VIRUS;
                         }
@@ -516,6 +555,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                     }
                 }
                 free(ptrs);
+                ptrs = NULL;
                 fcount = 2 * sizeof(uint32_t);
                 break;
             }
