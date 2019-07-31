@@ -11,6 +11,9 @@ properties(
                 string(name: 'BUILD_BRANCH',
                        defaultValue: 'build-0.102',
                        description: 'build-acceptance branch'),
+                string(name: 'BUILD_ENGINE_BRANCH',
+                       defaultValue: 'master',
+                       description: 'build-acceptance engine branch'),
                 string(name: 'TEST_BRANCH',
                        defaultValue: 'dev/0.102',
                        description: 'tests branch'),
@@ -43,6 +46,7 @@ node('master') {
             wait: true,
             parameters: [
                 [$class: 'StringParameterValue', name: 'TARGET_BRANCH', value: "${params.CLAMAV_BRANCH}"],
+                [$class: 'StringParameterValue', name: 'BUILD_ENGINE_BRANCH', value: "${params.BUILD_ENGINE_BRANCH}"],
                 [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
             ]
         )
