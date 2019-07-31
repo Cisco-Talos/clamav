@@ -297,8 +297,8 @@ ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
-	clamonacc freshclam sigtool clamconf database docs etc \
-	clamav-milter test clamdtop clambc unit_tests clamsubmit fuzz
+	freshclam sigtool clamconf database docs etc clamav-milter \
+	test clamdtop clambc unit_tests clamonacc clamsubmit fuzz
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(srcdir)/clamav-config.in $(srcdir)/clamav-types.h.in \
 	$(srcdir)/libclamav.pc.in $(srcdir)/platform.h.in \
@@ -619,8 +619,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
-	clamonacc freshclam sigtool clamconf database docs etc \
-	clamav-milter test clamdtop clambc unit_tests $(am__append_1) \
+	freshclam sigtool clamconf database docs etc clamav-milter \
+	test clamdtop clambc unit_tests $(am__append_1) \
 	$(am__append_2) $(am__append_3)
 EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.md NEWS.md README.md
 bin_SCRIPTS = clamav-config
