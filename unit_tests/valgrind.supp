@@ -259,3 +259,28 @@
    fun:_ZN4llvm19MachineFunctionPass13runOnFunctionERNS_8FunctionE
    fun:_ZN4llvm13FPPassManager13runOnFunctionERNS_8FunctionE
 }
+{
+   unrar-wcsrtombs
+   Memcheck:Cond
+   fun:internal_ascii_loop
+   fun:__gconv_transform_internal_ascii
+   fun:wcsrtombs
+   fun:wcsrtombs
+   ...
+}
+{
+   unrar-wcsrtombs-2
+   Memcheck:Cond
+   fun:__wcsnlen_avx2
+   fun:wcsrtombs
+   fun:wcsrtombs
+   ...
+}
+{
+   unrar-wcsrtombs-3
+   Memcheck:Cond
+   fun:__wcsnlen_sse4_1
+   fun:wcsrtombs
+   fun:wcsrtombs
+   ...
+}
