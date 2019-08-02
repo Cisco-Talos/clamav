@@ -756,16 +756,16 @@ AM_CFLAGS = @WERR_CFLAGS@
 @HAVE_LIBCHECK_TRUE@		       check_disasm.c check_uniq.c check_matchers.c\
 @HAVE_LIBCHECK_TRUE@		       check_htmlnorm.c check_bytecode.c
 
-@HAVE_LIBCHECK_TRUE@check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+@HAVE_LIBCHECK_TRUE@check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 @HAVE_LIBCHECK_TRUE@check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 @HAVE_LIBCHECK_TRUE@check_clamav_LDFLAGS = $(XML_LIBS)
 @HAVE_LIBCHECK_TRUE@check_clamav_CFLAGS = $(AM_CFLAGS) @XML_CPPFLAGS@
 @HAVE_LIBCHECK_FALSE@check_clamd_SOURCES = check_clamav_skip.c
 @HAVE_LIBCHECK_TRUE@check_clamd_SOURCES = check_clamd.c checks_common.h
-@HAVE_LIBCHECK_TRUE@check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
+@HAVE_LIBCHECK_TRUE@check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
 @HAVE_LIBCHECK_TRUE@check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
 check_fpu_endian_SOURCES = check_fpu_endian.c
-check_fpu_endian_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_fpu_endian_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 check_fpu_endian_LDADD = $(top_builddir)/libclamav/libclamav.la
 CLEANFILES = lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb $(utils)
 EXTRA_DIST = .split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
