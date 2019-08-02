@@ -1,5 +1,6 @@
 properties(
     [
+        disableConcurrentBuilds(),
         parameters(
             [
                 string(name: 'CLAMAV_BRANCH',
