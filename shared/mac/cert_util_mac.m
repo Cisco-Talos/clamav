@@ -187,7 +187,7 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
     status = SecItemCopyMatching(query, &items);
     if (status != errSecSuccess) {
         if (status == errSecItemNotFound) {
-            mprintf("!No items found in %s keychain\n",
+            mprintf("*No items found in %s keychain\n",
                     kc_info.name);
         } else {
             mprintf("!Unable to copy certificates from %s keychain (%d)\n",
