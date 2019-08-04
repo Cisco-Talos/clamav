@@ -553,7 +553,12 @@ static fc_error_t remote_cvdhead(
         goto done;
     }
 
-    if (mprintf_progress) {
+#ifdef HAVE_UNISTD_H
+    if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))
+#else
+    if (!mprintf_quiet)
+#endif
+    {
         prog.lastRunTime = 0;
         prog.curl        = curl;
         prog.bComplete   = 0;
@@ -811,7 +816,12 @@ static fc_error_t downloadFile(
         goto done;
     }
 
-    if (mprintf_progress) {
+#ifdef HAVE_UNISTD_H
+    if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))
+#else
+    if (!mprintf_quiet)
+#endif
+    {
         prog.lastRunTime = 0;
         prog.curl        = curl;
         prog.bComplete   = 0;
@@ -1874,7 +1884,12 @@ fc_error_t updatedb(
             goto done;
         }
 
-        if (mprintf_progress) {
+#ifdef HAVE_UNISTD_H
+        if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))
+#else
+        if (!mprintf_quiet)
+#endif
+        {
             if (remoteVersion - localVersion == 1) {
                 mprintf("Current database is 1 version behind.\n");
             } else {
@@ -1887,7 +1902,12 @@ fc_error_t updatedb(
                 if (logerr)
                     llogerr = (j == g_maxAttempts);
 
-                if (mprintf_progress) {
+#ifdef HAVE_UNISTD_H
+                if (!mprintf_quiet && (mprintf_progress || isatty(fileno(stdout))))
+#else
+                if (!mprintf_quiet)
+#endif
+                {
                     mprintf("Downloading database patch # %u...\n", i);
                 }
                 ret = downloadPatch(database, tmpdir, i, server, llogerr);
