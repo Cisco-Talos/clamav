@@ -230,6 +230,8 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     logg("*download_complete_callback:   fc_context->bTestDatabases   : %u\n", fc_context->bBytecodeEnabled);
     logg("*download_complete_callback:   fc_context->bBytecodeEnabled : %u\n", fc_context->bBytecodeEnabled);
 
+    printf("Testing database: '%s' ...\n", dbFilename);
+
     if (fc_context->bTestDatabases) {
 #ifdef WIN32
 
@@ -238,7 +240,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
         } __except (logg("!Exception during database testing, code %08x\n",
                          GetExceptionCode()),
                     EXCEPTION_CONTINUE_SEARCH) {
-            status = FC_ETESTFAIL;
+            ret = FC_ETESTFAIL;
         }
         if (FC_SUCCESS != ret) {
             logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
@@ -364,6 +366,13 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     status = FC_SUCCESS;
 
 done:
+
+    if (FC_SUCCESS == status) {
+        printf("Database test passed.\n");
+    } else {
+        printf("Database test FAILED.\n");
+    }
+
     g_sigchildWait = 1;
 
     return status;
