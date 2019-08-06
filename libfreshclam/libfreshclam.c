@@ -379,6 +379,41 @@ done:
     return status;
 }
 
+/**
+ * @brief Compare two version strings.
+ *
+ * @param v1 Version string 1
+ * @param v2 Version string 2
+ * @return int 1 if v1 is greater, 0 if equal, -1 if smaller.
+ */
+int version_string_compare(char *v1, size_t v1_len, char *v2, size_t v2_len)
+{
+    size_t i, j;
+    int vnum1 = 0, vnum2 = 0;
+
+    for (i = 0, j = 0; (i < v1_len || j < v2_len);) {
+        while (i < v1_len && v1[i] != '.') {
+            vnum1 = vnum1 * 10 + (v1[i] - '0');
+            i++;
+        }
+
+        while (j < v2_len && v2[j] != '.') {
+            vnum2 = vnum2 * 10 + (v2[j] - '0');
+            j++;
+        }
+
+        if (vnum1 > vnum2)
+            return 1;
+        if (vnum2 > vnum1)
+            return -1;
+
+        vnum1 = vnum2 = 0;
+        i++;
+        j++;
+    }
+    return 0;
+}
+
 fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 {
     fc_error_t status        = FC_EARG;
@@ -528,8 +563,8 @@ fc_error_t fc_dns_query_update_info(
 
             char *suffix = strchr(version_string, '-');
 
-            if ((suffix && strncmp(version_string, reply_token, suffix - version_string)) ||
-                (!suffix && strcmp(version_string, reply_token))) {
+            if ((suffix && (0 > version_string_compare(version_string, suffix - version_string, reply_token, strlen(reply_token)))) ||
+                (!suffix && (0 > version_string_compare(version_string, strlen(version_string), reply_token, strlen(reply_token))))) {
 
                 logg("^Your ClamAV installation is OUTDATED!\n");
                 logg("^Local version: %s Recommended version: %s\n", version_string, reply_token);
