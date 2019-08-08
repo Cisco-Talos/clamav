@@ -168,12 +168,13 @@ enum {
             return CL_CLEAN;                                    \
         }                                                       \
         pos += (N)-sleft;                                       \
-        sleft = smax = fmap_readn(map, buff, pos, BUFSIZ);      \
-        if (smax < 0) {                                         \
+        size_t tmp = fmap_readn(map, buff, pos, BUFSIZ);        \
+        if (-1 == tmp) {                                        \
             cli_dbgmsg("SIS: Read failed during SKIP\n");       \
             free(alangs);                                       \
             return CL_CLEAN;                                    \
         }                                                       \
+        sleft = smax = tmp;                                     \
         pos += smax;                                            \
     }
 
