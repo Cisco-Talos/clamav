@@ -298,7 +298,7 @@ enum cl_engine_field {
     CL_ENGINE_MAX_PARTITIONS,       /* uint32_t */
     CL_ENGINE_MAX_ICONSPE,          /* uint32_t */
     CL_ENGINE_MAX_RECHWP3,          /* uint32_t */
-    CL_ENGINE_TIME_LIMIT,           /* uint32_t */
+    CL_ENGINE_MAX_SCANTIME,         /* uint32_t */
     CL_ENGINE_PCRE_MATCH_LIMIT,     /* uint64_t */
     CL_ENGINE_PCRE_RECMATCH_LIMIT,  /* uint64_t */
     CL_ENGINE_PCRE_MAX_FILESIZE,    /* uint64_t */

@@ -3743,7 +3743,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             case CL_ETMPFILE:
             case CL_ETMPDIR:
             case CL_EMEM:
-            case CL_ETIMEOUT:
                 cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
                 cli_bitset_free(ctx->hook_lsig_matches);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
@@ -3756,7 +3755,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 cli_bitset_free(ctx->hook_lsig_matches);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
                 return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
-            /* "MAX" conditions should still fully scan the current file */
+            /* The CL_ETIMEOUT "MAX" condition should set exceeds max flag and exit out quietly. */
+            case CL_ETIMEOUT:
+                cli_check_blockmax(ctx, ret);
+                cli_bitset_free(ctx->hook_lsig_matches);
+                ctx->hook_lsig_matches = old_hook_lsig_matches;
+                cli_dbgmsg("Descriptor[%d]: Stopping after cli_scanraw reached %s\n",
+                            fmap_fd(*ctx->fmap), cl_strerror(res));
+                return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_CLEAN, parent_property);
+            /* All other "MAX" conditions should still fully scan the current file */
             case CL_EMAXREC:
             case CL_EMAXSIZE:
             case CL_EMAXFILES:
@@ -3820,14 +3827,16 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     switch (ret)
     {
+    /* Limits exceeded */
+    case CL_ETIMEOUT:
+    case CL_EMAXREC:
+    case CL_EMAXSIZE:
+    case CL_EMAXFILES:
+        cli_check_blockmax(ctx, ret);
     /* Malformed file cases */
     case CL_EFORMAT:
     case CL_EREAD:
     case CL_EUNPACK:
-    /* Limits exceeded */
-    case CL_EMAXREC:
-    case CL_EMAXSIZE:
-    case CL_EMAXFILES:
         cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
 #if HAVE_JSON
         ctx->wrkproperty = parent_property;
@@ -3868,7 +3877,7 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 
         status = CL_ESTAT;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
     if (sb.st_size <= 5)
     {
@@ -3876,7 +3885,7 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 
         status = CL_CLEAN;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
 
     ctx->fmap++;
@@ -3889,7 +3898,7 @@ static cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx
 
         status = CL_EMEM;
         cli_dbgmsg("cli_magic_scandesc: returning %d %s (no post, no cache)\n", status, __AT__);
-        goto done;  
+        goto done;
     }
     perf_stop(ctx, PERFT_MAP);
 
@@ -4144,12 +4153,12 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char * filepath, c
     }
     perf_init(&ctx);
 
-    if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && ctx.engine->time_limit != 0)
+    if (ctx.engine->maxscantime != 0)
     {
         if (gettimeofday(&ctx.time_limit, NULL) == 0)
         {
-            uint32_t secs = ctx.engine->time_limit / 1000;
-            uint32_t usecs = (ctx.engine->time_limit % 1000) * 1000;
+            uint32_t secs = ctx.engine->maxscantime / 1000;
+            uint32_t usecs = (ctx.engine->maxscantime % 1000) * 1000;
             ctx.time_limit.tv_sec += secs;
             ctx.time_limit.tv_usec += usecs;
             if (ctx.time_limit.tv_usec >= 1000000)
@@ -4161,7 +4170,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char * filepath, c
         else
         {
             char buf[64];
-            cli_dbgmsg("scan_common; gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
+            cli_dbgmsg("scan_common: gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
         }
     }
 

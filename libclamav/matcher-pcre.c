@@ -687,6 +687,12 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
 
         /* if the global flag is set, loop through the scanning */
         do {
+            if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+                cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
+                ret = CL_ETIMEOUT;
+                break;
+            }
+
             /* reset the match results */
             if ((ret = cli_pcre_results_reset(&p_res, pd)) != CL_SUCCESS)
                 break;

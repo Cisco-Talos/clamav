@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	    optfree(opts);
 	    return 2;
 	}
-    } else 
+    } else
 	logg_file = NULL;
 
     if(actsetup(opts)) {
@@ -277,6 +277,7 @@ void help(void)
     mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
     mprintf("    --dumpcerts                          Dump authenticode certificate chain in PE files\n");
     mprintf("\n");
+    mprintf("    --max-scantime=#n                    Scan time longer than this will be skipped and assumed clean\n");
     mprintf("    --max-filesize=#n                    Files larger than this will be skipped and assumed clean\n");
     mprintf("    --max-scansize=#n                    The maximum amount of data to scan for each container file (**)\n");
     mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (**)\n");

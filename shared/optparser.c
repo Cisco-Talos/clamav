@@ -288,13 +288,13 @@ const struct clam_option __clam_options[] = {
     /* Scan options */
     { "Bytecode", "bytecode", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option on, otherwise you'll miss detections for many new viruses.", "yes" },
 
-    { "BytecodeSecurity", NULL, 0, CLOPT_TYPE_STRING, "^(TrustSigned|Paranoid)$", -1, "TrustSigned", 0, OPT_CLAMD, 
+    { "BytecodeSecurity", NULL, 0, CLOPT_TYPE_STRING, "^(TrustSigned|Paranoid)$", -1, "TrustSigned", 0, OPT_CLAMD,
 	"Set bytecode security level.\nPossible values:\n\tTrustSigned - trust bytecode loaded from signed .c[lv]d files,\n\t\t insert runtime safety checks for bytecode loaded from other sources\n\tParanoid - don't trust any bytecode, insert runtime checks for all\nRecommended: TrustSigned, because bytecode in .cvd files already has these checks.","TrustSigned"},
 
-    { "BytecodeTimeout", "bytecode-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
+    { "BytecodeTimeout", "bytecode-timeout", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 5000, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN,
 	"Set bytecode timeout in milliseconds.","5000"},
 
-    { "BytecodeUnsigned", "bytecode-unsigned", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, 
+    { "BytecodeUnsigned", "bytecode-unsigned", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN,
 	"Allow loading bytecode from outside digitally signed .c[lv]d files.","no"},
 
     { "BytecodeMode", "bytecode-mode", 0, CLOPT_TYPE_STRING, "^(Auto|ForceJIT|ForceInterpreter|Test)$", -1, "Auto", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMSCAN,
@@ -366,6 +366,8 @@ const struct clam_option __clam_options[] = {
 
     { "ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no" },
 
+    { "MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nIn this version, this field only affects the scan time of ZIP archives.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},
+
     { "MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "100M" },
 
     { "MaxFileSize", "max-filesize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files/messages larger than this limit won't be scanned. Affects the input\nfile itself as well as files contained inside it (when the input file is\nan archive, a document or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "25M" },
@@ -390,8 +392,6 @@ const struct clam_option __clam_options[] = {
     { "MaxIconsPE", "max-iconspe", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXICONSPE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum number of icons within a PE to be scanned.\nPE files with more icons than this value will have up to the value number icons scanned.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "100" },
 
     { "MaxRecHWP3", "max-rechwp3", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECHWP3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum recursive calls to HWP3 parsing function.\nHWP3 files using more than this limit will be terminated and alert the user.\nScans will be unable to scan any HWP3 attachments if the recursive limit is reached.\nNegative values are not allowed.\nWARNING: setting this limit too high may result in severe damage or impact performance.", "16" },
-
-    { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "This clamscan option is currently for testing only. It sets the engine parameter CL_ENGINE_TIME_LIMIT. The value is in milliseconds.", "0" },
 
     { "PCREMatchLimit", "pcre-match-limit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_PCRE_MATCH_LIMIT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum calls to the PCRE match function during an instance of regex matching.\nInstances using more than this limit will be terminated and alert the user but the scan will continue.\nFor more information on match_limit, see the PCRE documentation.\nNegative values are not allowed.\nWARNING: setting this limit too high may severely impact performance.", "100000" },
 
@@ -491,6 +491,7 @@ const struct clam_option __clam_options[] = {
 
     /* Deprecated options */
 
+    { "TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "Deprecated option to set the max-scantime.\nThe value is in milliseconds.", "120000"},
     { "DetectBrokenExecutables", "detect-broken", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_DEPRECATED, "Deprecated option to alert on broken PE and ELF executable files.", "no" },
     { "AlgorithmicDetection", "algorithmic-detection", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Deprecated option to enable heuristic alerts (e.g. \"Heuristics.<sig name>\")", "no" },
     { "BlockMax", "block-max", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
@@ -1188,39 +1189,39 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
 	long long numarg, lnumarg;
 	int regflags = REG_EXTENDED | REG_NOSUB;
     const struct clam_option *optentry = NULL;
-    
+
     if(oldopts)
         opts = oldopts;
-    
-    
+
+
     for(i = 0; ; i++) {
         optentry = &clam_options[i];
         if(!optentry->name && !optentry->longopt)
             break;
-        
+
         if(((optentry->owner & toolmask) && ((optentry->owner & toolmask) != OPT_DEPRECATED)) || (ignore && (optentry->owner & ignore))) {
             if(!oldopts && optadd(&opts, &opts_last, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
                 fprintf(stderr, "ERROR: optparse: Can't register new option (not enough memory)\n");
                 optfree(opts);
                 return NULL;
             }
-            
+
         }
     }
-    
+
     if(MAX(sc, lc) > MAXCMDOPTS) {
 	    fprintf(stderr, "ERROR: optparse: (short|long)opts[] is too small\n");
 	    optfree(opts);
 	    return NULL;
 	}
-    
+
     while(1) {
         if(!name) {
             fprintf(stderr, "ERROR: Problem parsing options (name == NULL)\n");
             err = 1;
             break;
         }
-        
+
         opt = optget_i(opts, name);
         if(!opt) {
             if(verbose)
@@ -1229,13 +1230,13 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
             break;
         }
         optentry = &clam_options[opt->idx];
-        
+
         if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
             if(verbose)
                 fprintf(stderr, "WARNING: Ignoring unsupported option %s\n", opt->name);
             continue;
         }
-        
+
         if(optentry->owner & OPT_DEPRECATED) {
             if(toolmask & OPT_DEPRECATED) {
                 if(optaddarg(opts, name, "foo", 1) < 0) {
@@ -1249,11 +1250,11 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
             }
             continue;
         }
-        
+
         if(optentry->regex) {
             if(!(optentry->flags & FLAG_REG_CASE))
                 regflags |= REG_ICASE;
-            
+
             if(cli_regcomp(&regex, optentry->regex, regflags)) {
                 fprintf(stderr, "ERROR: optparse: Can't compile regular expression %s for option %s\n", optentry->regex, name);
                 err = 1;
@@ -1267,15 +1268,15 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                 break;
             }
         }
-        
+
         numarg = -1;
         switch(optentry->argtype) {
             case CLOPT_TYPE_STRING:
                 if(!arg)
                     arg = optentry->strarg;
-                
+
                 break;
-                
+
             case CLOPT_TYPE_NUMBER:
                 if (arg)
                     numarg = atoi(arg);
@@ -1283,7 +1284,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                     numarg = 0;
                 arg = NULL;
                 break;
-                
+
             case CLOPT_TYPE_SIZE:
                 errno = 0;
                 if(arg)
@@ -1311,41 +1312,41 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
                             err = 1;
                     }
                 }
-                
+
                 arg = NULL;
                 if(err) break;
                 if(errno == ERANGE) {
                     fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
                     lnumarg = UINT_MAX;
                 }
-                
+
                 numarg = lnumarg ? lnumarg : UINT_MAX;
                 break;
-                
+
             case CLOPT_TYPE_BOOL:
                 if(!strcasecmp(arg, "yes") || !strcmp(arg, "1") || !strcasecmp(arg, "true"))
                     numarg = 1;
                 else
                     numarg = 0;
-                
+
                 arg = NULL;
                 break;
         }
-        
+
         if(err)
             break;
-        
+
         if(optaddarg(opts, name, arg, numarg) < 0) {
             fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);
             err = 1;
         }
         break;
     }
-    
+
     if(err) {
         optfree(opts);
         return NULL;
     }
-      
+
     return opts;
 }

@@ -340,7 +340,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
             return;
         }
-#endif    
+#endif
         if(!sb.st_size) {
             if(!printinfected)
                 logg("~%s: Empty file\n", filename);
@@ -674,7 +674,7 @@ int scanmanager(const struct optstruct *opts)
     }
 
     cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
-    
+
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
 
@@ -873,6 +873,24 @@ int scanmanager(const struct optstruct *opts)
 
     /* set limits */
 
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((opt = optget(opts, "timelimit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+    if ((opt = optget(opts, "max-scantime"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     if((opt = optget(opts, "max-scansize"))->active) {
         if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
@@ -994,15 +1012,6 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
-    if ((opt = optget(opts, "timelimit"))->active) {
-        if ((ret = cl_engine_set_num(engine, CL_ENGINE_TIME_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(CL_ENGINE_TIME_LIMIT) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
-        }
-    }
-
     if ((opt = optget(opts, "pcre-max-filesize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_PCRE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
@@ -1038,7 +1047,7 @@ int scanmanager(const struct optstruct *opts)
         options.parse |= CL_SCAN_PARSE_ARCHIVE;
 
     /* TODO: Remove deprecated option in a future feature release */
-    if ((optget(opts, "detect-broken")->enabled) || 
+    if ((optget(opts, "detect-broken")->enabled) ||
         (optget(opts, "alert-broken")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
     }
@@ -1096,7 +1105,7 @@ int scanmanager(const struct optstruct *opts)
     }
 
     /* TODO: Remove deprecated option in a future feature release */
-    if ((optget(opts, "block-max")->enabled) || 
+    if ((optget(opts, "block-max")->enabled) ||
         (optget(opts, "alert-exceeds-max")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     }

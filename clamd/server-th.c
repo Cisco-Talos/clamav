@@ -88,7 +88,7 @@ static void scanner_thread(void *arg)
 #ifndef	_WIN32
     /* ignore all signals */
     sigfillset(&sigset);
-    /* The behavior of a process is undefined after it ignores a 
+    /* The behavior of a process is undefined after it ignores a
      * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
@@ -552,7 +552,7 @@ static const char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
 		/* no more commands are accepted */
 		conn->mode = MODE_WAITREPLY;
 		/* Stop monitoring this FD, it will be closed either
-		 * by us, or by the scanner thread. 
+		 * by us, or by the scanner thread.
 		 * Never close a file descriptor that is being
 		 * monitored by poll()/select() from another thread,
 		 * because this can lead to subtle bugs such as:
@@ -631,7 +631,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     int rc;
     size_t pos = *ppos;
     size_t cmdlen;
-    
+
     logg("$mode == MODE_STREAM\n");
     /* we received some data, set readtimeout */
     time(&buf->timeout_at);
@@ -754,12 +754,25 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	memset(&options, 0, sizeof(struct cl_scan_options));
 
     /* set up limits */
-    if((opt = optget(opts, "MaxScanSize"))->active) {
-	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
-	    logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
-	    cl_engine_free(engine);
-	    return 1;
-	}
+    if ((opt = optget(opts, "MaxScanTime"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANTIME, NULL);
+    if (val)
+        logg("Limits: Global time limit set to %llu milliseconds.\n", val);
+    else
+        logg("^Limits: Global time limit protection disabled.\n");
+
+    if ((opt = optget(opts, "MaxScanSize"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
+            logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL);
     if(val)
@@ -1016,7 +1029,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 	/* TODO: Remove deprecated option in a future feature release */
     if (optget(opts, "ScanPE")->enabled || optget(opts, "ScanELF")->enabled) {
-        if ((optget(opts, "DetectBrokenExecutables")->enabled) || 
+        if ((optget(opts, "DetectBrokenExecutables")->enabled) ||
 			(optget(opts, "AlertBrokenExecutables")->enabled)) {
             logg("Alerting on broken executables enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
@@ -1039,7 +1052,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     if (optget(opts, "ScanOLE2")->enabled) {
         logg("OLE2 support enabled.\n");
         options.parse |= CL_SCAN_PARSE_OLE2;
-		
+
 		/* TODO: Remove deprecated option in a future feature release */
         if ((optget(opts, "OLE2BlockMacros")->enabled) ||
         	(optget(opts, "AlertOLE2Macros")->enabled)) {
@@ -1187,7 +1200,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int solaris_has_extended_stdio = 0;
 #endif
 	/* Condition to not run out of file descriptors:
-	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
+	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 #ifdef C_SOLARIS
@@ -1314,12 +1327,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     sigdelset(&sigset, SIGHUP);
     sigdelset(&sigset, SIGPIPE);
     sigdelset(&sigset, SIGUSR2);
-    /* The behavior of a process is undefined after it ignores a 
+    /* The behavior of a process is undefined after it ignores a
      * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGSEGV);
-#ifdef SIGBUS    
+#ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
     sigdelset(&sigset, SIGTSTP);
@@ -1663,4 +1676,4 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
-} 
+}

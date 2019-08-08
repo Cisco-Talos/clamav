@@ -286,6 +286,7 @@ struct cl_engine {
     uint64_t engine_options;
 
     /* Limits */
+    uint32_t maxscantime;  /* Time limit (in milliseconds) */
     uint64_t maxscansize;  /* during the scanning of archives this size
 				     * will never be exceeded
 				     */
@@ -405,9 +406,6 @@ struct cl_engine {
     uint32_t maxiconspe; /* max number of icons to scan for PE */
     uint32_t maxrechwp3; /* max recursive calls for HWP3 parsing */
 
-    /* millisecond time limit for preclassification scanning */
-    uint32_t time_limit;
-
     /* PCRE matching limitations */
     uint64_t pcre_match_limit;
     uint64_t pcre_recmatch_limit;
@@ -429,6 +427,7 @@ struct cl_settings {
     uint32_t ac_maxdepth;
     char *tmpdir;
     uint32_t keeptmp;
+    uint32_t maxscantime;
     uint64_t maxscansize;
     uint64_t maxfilesize;
     uint32_t maxreclevel;
@@ -811,21 +810,20 @@ cl_error_t cli_gentempfd_with_prefix(const char* dir, char* prefix, char** name,
 
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
-int cli_mapscan(fmap_t *map, off_t offset, size_t size, cli_ctx *ctx, cli_file_t type);
 bitset_t *cli_bitset_init(void);
 void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 void cli_check_blockmax(cli_ctx *, int);
-int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
-int cli_updatelimits(cli_ctx *, unsigned long);
+cl_error_t cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
+cl_error_t cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void*, const void *, const void *), void *arg);
-int cli_checktimelimit(cli_ctx *ctx);
-int cli_append_possibly_unwanted(cli_ctx * ctx, const char * virname);
+cl_error_t cli_checktimelimit(cli_ctx *ctx);
+cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

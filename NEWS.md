@@ -1,13 +1,39 @@
 # ClamAV News
 
 Note: This file refers to the source tarball. Things described here may differ
- slight
+ slightly from the binary packages.
 
 ## 0.101.4
 
-An out of bounds write was possible within ClamAV's NSIS bzip2 library when attempting decompression in cases where the number of selectors exceeded the max limit set by the library (CVE-2019-12900). The issue has been resolved by respecting that limit.
+ClamAV 0.101.4 is a security patch release that addresses the following issues.
 
-Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
+- An out of bounds write was possible within ClamAV's NSIS bzip2 library when
+  attempting decompression in cases where the number of selectors exceeded the
+  max limit set by the library (CVE-2019-12900). The issue has been resolved
+  by respecting that limit.
+
+  Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
+
+- A workaround for the zip-bomb vulnerability patch found in 0.101.3 was
+  identified. To remediate future denial of service conditions caused by
+  excessive scan times, a scan time limit has been introduced.
+
+  The default value is 2 minutes (120000 milliseconds).
+
+  To customize the time limit:
+
+  - use the `clamscan` `--max-scantime` option
+  - use the `clamd` `MaxScanTime` config option
+
+  Libclamav users may customize the time limit using the `cl_engine_set_num`
+  function. For example:
+
+  ```c
+      cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, time_limit_milliseconds)
+  ```
+
+  Thanks to David Fifield for reviewing the zip-bomb mitigation in 0.101.3
+  and reporting the issue.
 
 ## 0.101.3
 

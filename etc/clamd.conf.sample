@@ -85,7 +85,7 @@ Example
 # Default: no
 #OfficialDatabaseOnly no
 
-# The daemon can work in local mode, network mode or both. 
+# The daemon can work in local mode, network mode or both.
 # Due to security reasons we recommend the local mode.
 
 # Path to a local socket file the daemon will listen on.
@@ -231,7 +231,7 @@ Example
 #DetectPUA yes
 
 # Exclude a specific PUA category. This directive can be used multiple times.
-# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for 
+# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for
 # the complete list of PUA categories.
 # Default: Load all categories (if DetectPUA is activated)
 #ExcludePUA NetTool
@@ -271,9 +271,9 @@ Example
 # the end of a scan. If an archive contains both a heuristically detected
 # virus/phish, and a real malware, the real malware will be reported
 #
-# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
+# Keep this disabled if you intend to handle "*.Heuristics.*" viruses
 # differently from "real" malware.
-# If a non-heuristically-detected virus (signature-based) is found first, 
+# If a non-heuristically-detected virus (signature-based) is found first,
 # the scan is interrupted immediately, regardless of this config option.
 #
 # Default: no
@@ -474,6 +474,16 @@ Example
 
 # The options below protect your system against Denial of Service attacks
 # using archive bombs.
+
+# This option sets the maximum amount of time to a scan may take.
+# In this version, this field only affects the scan time of ZIP archives.
+# Value of 0 disables the limit
+# Note: disabling this limit or setting it too high may result allow scanning
+# of certain files to lock up the scanning process/threads resulting in a Denial
+# of Service.
+# Time is in milliseconds.
+# Default: 120000
+#MaxScanTime 300000
 
 # This option sets the maximum amount of data to be scanned for each input
 # file.
@@ -697,7 +707,7 @@ Example
 ## Bytecode
 ##
 
-# With this option enabled ClamAV will load bytecode from the database. 
+# With this option enabled ClamAV will load bytecode from the database.
 # It is highly recommended you keep this option on, otherwise you'll miss
 # detections for many new viruses.
 # Default: yes
@@ -721,7 +731,7 @@ Example
 #BytecodeSecurity TrustSigned
 
 # Set bytecode timeout in milliseconds.
-# 
+#
 # Default: 5000
 # BytecodeTimeout 1000
 
