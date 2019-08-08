@@ -139,7 +139,7 @@ enum {
             memcpy(buff, buff + smax - sleft, sleft);                        \
             size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
             smax       = tmp;                                                \
-            if (-1 == tmp) {                                                 \
+            if (((size_t) -1) == tmp) {                                                 \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \
                 FREE(alangs);                                                \
                 FREE(ptrs);                                                  \
@@ -169,7 +169,7 @@ enum {
         }                                                       \
         pos += (N)-sleft;                                       \
         size_t tmp = fmap_readn(map, buff, pos, BUFSIZ);        \
-        if (-1 == tmp) {                                        \
+        if (((size_t) -1) == tmp) {                                        \
             cli_dbgmsg("SIS: Read failed during SKIP\n");       \
             free(alangs);                                       \
             return CL_CLEAN;                                    \
@@ -361,11 +361,13 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
         switch (pkgtype) {
             case PKGlangfile:
                 fcount = sis.langs;
+                break;
             case PKGfile: {
                 uint32_t ftype, options, ssname, psname, sdname, pdname;
                 const char *sftype;
                 uint32_t *lens, *olens;
                 char *fn;
+                fcount = sis.langs;
 
                 GETD2(ftype);
                 GETD2(options);
