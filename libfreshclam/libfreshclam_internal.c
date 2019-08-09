@@ -160,6 +160,19 @@ struct xfer_progress {
     CURL *curl;
 };
 
+static void printBytes(curl_off_t bytes)
+{
+    if (bytes / (1024 * 1024) > 1) {
+        double megabytes = bytes / (double)(1024 * 1024);
+        fprintf(stdout, "%.02fMiB", megabytes);
+    } else if (bytes / 1024 > 1) {
+        double kilobytes = bytes / (double)(1024 * 1024);
+        fprintf(stdout, "%.02fKiB", kilobytes);
+    } else {
+        fprintf(stdout, "%" CURL_FORMAT_CURL_OFF_T "B", bytes);
+    }
+}
+
 /**
  * Function from curl example code, Copyright (C) 1998 - 2018, Daniel Stenberg, see COPYING.curl for license details
  * Progress bar callback function ( CURLOPT_XFERINFOFUNCTION ).
@@ -192,30 +205,19 @@ static int xferinfo(void *prog,
 
 #ifdef TIME_IN_US
     if (fractiondownloaded <= 0.0) {
-        fprintf(stdout, "Elapsed: %" CURL_FORMAT_CURL_OFF_T ".%06ld sec. ",
-                (curtime / 1000000), (long)(curtime % 1000000));
+        fprintf(stdout, "Time: %.1fs ", curtime / 1000000.0);
     } else {
-        fprintf(stdout, "Elapsed: %" CURL_FORMAT_CURL_OFF_T ".%06ld sec, Remaining; %f sec. ",
-                (curtime / 1000000), (long)(curtime % 1000000),
-                (remtime / 1000000), (long)(remtime % 1000000));
+        fprintf(stdout, "Time: %.1fs, ETA; %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
     }
 #else
     if (fractiondownloaded <= 0.0) {
-        fprintf(stdout, "Elapsed: %f sec. ", curtime);
+        fprintf(stdout, "Time: %.1fs ", curtime);
     } else {
-        fprintf(stdout, "Elapsed: %f sec, Remaining: %f sec. ", curtime, remtime);
+        fprintf(stdout, "Time: %.1fs, ETA: %.1fs ", curtime, remtime);
     }
 #endif
 
-    if (TotalToUpload > 0.0) {
-        fprintf(stdout, "Uploaded: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T,
-                NowUploaded, TotalToUpload);
-    } else if (TotalToDownload > 0.0) {
-        fprintf(stdout, "Downloaded: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T,
-                NowDownloaded, TotalToDownload);
-    }
-
-    fprintf(stdout, " [");
+    fprintf(stdout, "[");
     if (numDots > 0) {
         if (numDots > 1) {
             for (i = 0; i < numDots - 1; i++) {
@@ -228,10 +230,23 @@ static int xferinfo(void *prog,
     for (; i < totalNumDots; i++) {
         printf(" ");
     }
+
+    fprintf(stdout, "] ");
+
+    if (TotalToUpload > 0.0) {
+        printBytes(NowUploaded);
+        fprintf(stdout, "/");
+        printBytes(TotalToUpload);
+    } else if (TotalToDownload > 0.0) {
+        printBytes(NowDownloaded);
+        fprintf(stdout, "/");
+        printBytes(TotalToDownload);
+    }
+
     if (NowDownloaded < TotalToDownload) {
-        fprintf(stdout, "]  \r");
+        fprintf(stdout, "  \r");
     } else {
-        fprintf(stdout, "]  \n");
+        fprintf(stdout, "  \n");
         xferProg->bComplete = 1;
     }
     fflush(stdout);
