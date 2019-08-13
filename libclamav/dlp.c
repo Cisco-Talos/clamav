@@ -175,11 +175,12 @@ static const struct iin_map_struct * get_iin(char * digits, int cc_only)
 
 int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
 {
-    int mult   = 0;
-    int sum    = 0;
-    size_t i   = 0;
-    int val    = 0;
-    int digits = 0;
+    int mult      = 0;
+    int sum       = 0;
+    size_t i      = 0;
+    ssize_t j     = 0;
+    int val       = 0;
+    size_t digits = 0;
     char cc_digits[20];
     size_t pad_allowance = MAX_CC_BREAKS;
     const struct iin_map_struct *iin;
@@ -230,12 +231,13 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
         digits++;
     }
 
-    if ((digits < 13) || ((i < length) && (isdigit(buffer[i]))))
+    if (digits < iin->card_min || (i < length && isdigit(buffer[i])))
 	return 0;
 
+    j = (ssize_t) i;
     //figure out luhn digits
-    for (i = digits - 1; i >= 0; i--) {
-        val = cc_digits[i] - '0';
+    for (j = digits - 1; j >= 0; j--) {
+        val = cc_digits[j] - '0';
         if (mult) {
             if ((val *= 2) > 9) val -= 9;
         }
