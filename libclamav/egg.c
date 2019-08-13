@@ -1560,7 +1560,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
             windowsFileInformation          = (windows_file_information*)index;
             eggFile->windowsFileInformation = windowsFileInformation;
 
-            cli_dbgmsg("egg_parse_file_extra_field: windows_file_information->last_modified_time:   %016llx\n", le64_to_host(windowsFileInformation->last_modified_time));
+            cli_dbgmsg("egg_parse_file_extra_field: windows_file_information->last_modified_time:   %016" PRIx64 "\n", le64_to_host(windowsFileInformation->last_modified_time));
             cli_dbgmsg("egg_parse_file_extra_field: windows_file_information->attribute:            %08x\n", windowsFileInformation->attribute);
             break;
         }
@@ -1592,7 +1592,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
 
             cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->uid:                  %08x\n", le32_to_host(posixFileInformation->uid));
             cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->gid:                  %08x\n", le32_to_host(posixFileInformation->gid));
-            cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->last_modified_time:   %016llx\n", le64_to_host(posixFileInformation->last_modified_time));
+            cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->last_modified_time:   %016" PRIx64 "\n", le64_to_host(posixFileInformation->last_modified_time));
             break;
         }
         case FILE_HEADER_MAGIC: {
@@ -1667,7 +1667,7 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
 
     cli_dbgmsg("egg_parse_file_headers: file_header->magic:       %08x (%s)\n", le32_to_host(fileHeader->magic), getMagicHeaderName(le32_to_host(fileHeader->magic)));
     cli_dbgmsg("egg_parse_file_headers: file_header->file_id:     %08x\n", le32_to_host(fileHeader->file_id));
-    cli_dbgmsg("egg_parse_file_headers: file_header->file_length: %016llx (%llu)\n",
+    cli_dbgmsg("egg_parse_file_headers: file_header->file_length: %016" PRIx64 " (%" PRIu64 ")\n",
                le64_to_host(fileHeader->file_length),
                le64_to_host(fileHeader->file_length));
 
@@ -2148,6 +2148,11 @@ cl_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metada
         goto done;
     }
 
+    if (NULL == currFile->filename.name_utf8) {
+        cli_errmsg("cli_egg_extract_file: egg_file is missing filename!\n");
+        goto done;
+    }
+
     if (handle->bSolid) {
         /*
          * TODO: Add support for extracting files from solid archives.
@@ -2583,6 +2588,11 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
         goto done;
     }
 
+    if (NULL == currFile->filename.name_utf8) {
+        cli_errmsg("cli_egg_extract_file: egg_file is missing filename!\n");
+        goto done;
+    }
+
     if (handle->bSolid) {
         /*
          * TODO: Add support for extracting files from solid archives.
@@ -2627,7 +2637,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     }
                     decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + currBlock->blockHeader->compress_size);
                     if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
+                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
                                    decompressed_size);
                         status = CL_EMEM;
                         goto done;
@@ -2655,7 +2665,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     /* Decompressed block. Add it to the file data */
                     decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
                     if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
+                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
                                    decompressed_size);
                         free(decompressed_block);
                         status = CL_EMEM;
@@ -2687,7 +2697,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     /* Decompressed block. Add it to the file data */
                     decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
                     if (NULL == decompressed_tmp) {
-                        cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
+                        cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
                                    decompressed_size);
                         free(decompressed_block);
                         status = CL_EMEM;
@@ -2729,7 +2739,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     // /* Decompressed block. Add it to the file data */
                     // decompressed_tmp = cli_realloc(decompressed, (size_t)decompressed_size + decompressed_block_size);
                     // if (NULL == decompressed_tmp) {
-                    //     cli_errmsg("cli_egg_extract_file: Failed to allocate %llu bytes for decompressed file!\n",
+                    //     cli_errmsg("cli_egg_extract_file: Failed to allocate %" PRIu64 " bytes for decompressed file!\n",
                     //                decompressed_size);
                     //     free(decompressed_block);
                     //     status = CL_EMEM;
@@ -2759,7 +2769,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
 
             if ((i == currFile->nBlocks - 1) &&                       // last block ?
                 (decompressed_size != currFile->file->file_length)) { // right amount of data ?
-                cli_warnmsg("cli_egg_extract_file: alleged filesize (%llu) != actual filesize (%llu)!\n",
+                cli_warnmsg("cli_egg_extract_file: alleged filesize (%" PRIu64 ") != actual filesize (%" PRIu64 ")!\n",
                             currFile->file->file_length,
                             decompressed_size);
             }
