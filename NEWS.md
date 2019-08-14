@@ -3,6 +3,12 @@
 Note: This file refers to the source tarball. Things described here may differ
  slight
 
+## 0.101.4
+
+An out of bounds write was possible within ClamAV's NSIS bzip2 library when attempting decompression in cases where the number of selectors exceeded the max limit set by the library (CVE-2019-12900). The issue has been resolved by respecting that limit.
+
+Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
+
 ## 0.101.3
 
 ClamAV 0.101.3 is a patch release to address a vulnerability to non-recursive
