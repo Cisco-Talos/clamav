@@ -14,11 +14,13 @@ ClamAV 0.101.4 is a security patch release that addresses the following issues.
 
   Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
 
-- A workaround for the zip-bomb vulnerability patch found in 0.101.3 was
-  identified. To remediate future denial of service conditions caused by
-  excessive scan times, a scan time limit has been introduced.
+- The zip bomb vulnerability mitigated in 0.101.3 has been assigned the
+  CVE identifier CVE-2019-12625. Unfortunately, a workaround for the zip-bomb
+  mitigation was immediately identified. To remediate the zip-bomb scantime
+  issue, a scan time limit has been introduced in 0.101.4. This limit now
+  resolves ClamAV's vulnerability to CVE-2019-12625.
 
-  The default value is 2 minutes (120000 milliseconds).
+  The default scan time limit is 2 minutes (120000 milliseconds).
 
   To customize the time limit:
 
