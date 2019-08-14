@@ -1736,6 +1736,10 @@ static void egg_free_egg_handle(egg_handle* handle)
 {
     uint32_t i = 0;
 
+    if (NULL == handle) {
+        return;
+    }
+
     if (NULL != handle->encrypt) {
         egg_free_encrypt(handle->encrypt);
         handle->encrypt = NULL;
@@ -1764,6 +1768,7 @@ static void egg_free_egg_handle(egg_handle* handle)
         free(handle->comments);
         handle->comments = NULL;
     }
+    free(handle);
 }
 
 static cl_error_t egg_parse_archive_headers(egg_handle* handle)
@@ -2105,8 +2110,9 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
 
 done:
     if (CL_SUCCESS != status) {
-        if (handle)
+        if (handle) {
             egg_free_egg_handle(handle);
+        }
         *hArchive = NULL;
     }
     return status;
