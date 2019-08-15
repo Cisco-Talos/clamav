@@ -2105,7 +2105,7 @@ updatedb (const char *dbname, const char *hostname, char *ip, int *signo,
 	if(!tmpdir){
 	    free(newfile);
 	    return FCE_MEM;
-	}    
+	}
 
         maxattempts = optget (opts, "MaxAttempts")->numarg;
         for (i = currver + 1; i <= newver; i++)
@@ -2518,6 +2518,41 @@ updatecustomdb (const char *url, int *signo, const struct optstruct *opts,
     return FC_SUCCESS;
 }
 
+/**
+ * @brief Compare two version strings.
+ *
+ * @param v1 Version string 1
+ * @param v2 Version string 2
+ * @return int 1 if v1 is greater, 0 if equal, -1 if smaller.
+ */
+int version_string_compare(char *v1, size_t v1_len, char *v2, size_t v2_len)
+{
+    size_t i, j;
+    int vnum1 = 0, vnum2 = 0;
+
+    for (i = 0, j = 0; (i < v1_len || j < v2_len);) {
+        while (i < v1_len && v1[i] != '.') {
+            vnum1 = vnum1 * 10 + (v1[i] - '0');
+            i++;
+        }
+
+        while (j < v2_len && v2[j] != '.') {
+            vnum2 = vnum2 * 10 + (v2[j] - '0');
+            j++;
+        }
+
+        if (vnum1 > vnum2)
+            return 1;
+        if (vnum2 > vnum1)
+            return -1;
+
+        vnum1 = vnum2 = 0;
+        i++;
+        j++;
+    }
+    return 0;
+}
+
 int
 downloadmanager (const struct optstruct *opts, const char *hostname,
                  unsigned int attempt)
@@ -2605,8 +2640,8 @@ downloadmanager (const struct optstruct *opts, const char *hostname,
                         && !strstr (vstr, "rc"))
                     {
                         pt = strchr (vstr, '-');
-                        if ((pt && strncmp (vstr, newver, pt - vstr))
-                            || (!pt && strcmp (vstr, newver)))
+                        if ((pt && (0 > version_string_compare(vstr, pt - vstr, newver, strlen(newver)))) ||
+                            (!pt && (0 > version_string_compare(vstr, strlen(vstr), newver, strlen(newver)))))
                         {
                             logg ("^Your ClamAV installation is OUTDATED!\n");
                             logg ("^Local version: %s Recommended version: %s\n", vstr, newver);
