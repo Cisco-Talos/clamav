@@ -155,11 +155,11 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
 
 /*          /\* can a new run be started? *\/ */
 /*          if (s->nblock_used == s->save_nblock+1) return False; */
-               
+
 /*          /\* Only caused by corrupt data stream? *\/ */
 /*          if (s->nblock_used > s->save_nblock+1) */
 /*             return True; */
-   
+
 /*          s->state_out_len = 1; */
 /*          s->state_out_ch = s->k0; */
 /*          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK;  */
@@ -169,19 +169,19 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          s->state_out_len = 2; */
 /*          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          s->state_out_len = 3; */
 /*          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          BZ_GET_FAST(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          s->state_out_len = ((Int32)k1) + 4; */
@@ -223,7 +223,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
             }
             s_state_out_len_eq_one:
             {
-               if (cs_avail_out == 0) { 
+               if (cs_avail_out == 0) {
                   c_state_out_len = 1; goto return_notr;
                };
                *cs_next_out = c_state_out_ch;
@@ -231,7 +231,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
                cs_next_out++;
                cs_avail_out--;
             }
-         }   
+         }
          /* Only caused by corrupt data stream? */
          if (c_nblock_used > s_save_nblockPP)
             return True;
@@ -239,25 +239,25 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
          /* can a new run be started? */
          if (c_nblock_used == s_save_nblockPP) {
             c_state_out_len = 0; goto return_notr;
-         };   
+         };
          c_state_out_ch = c_k0;
          BZ_GET_FAST_C(k1); c_nblock_used++;
-         if (k1 != c_k0) { 
-            c_k0 = k1; goto s_state_out_len_eq_one; 
+         if (k1 != c_k0) {
+            c_k0 = k1; goto s_state_out_len_eq_one;
          };
-         if (c_nblock_used == s_save_nblockPP) 
+         if (c_nblock_used == s_save_nblockPP)
             goto s_state_out_len_eq_one;
-   
+
          c_state_out_len = 2;
          BZ_GET_FAST_C(k1); c_nblock_used++;
          if (c_nblock_used == s_save_nblockPP) continue;
          if (k1 != c_k0) { c_k0 = k1; continue; };
-   
+
          c_state_out_len = 3;
          BZ_GET_FAST_C(k1); c_nblock_used++;
          if (c_nblock_used == s_save_nblockPP) continue;
          if (k1 != c_k0) { c_k0 = k1; continue; };
-   
+
          BZ_GET_FAST_C(k1); c_nblock_used++;
          c_state_out_len = ((Int32)k1) + 4;
          BZ_GET_FAST_C(c_k0); c_nblock_used++;
@@ -309,33 +309,33 @@ Bool unRLE_obuf_to_output_SMALL ( DState* s )
 /*             s->strm->total_out_lo32++; */
 /*             if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++; */
 /*          } */
-   
+
 /*          /\* can a new run be started? *\/ */
 /*          if (s->nblock_used == s->save_nblock+1) return False; */
 
 /*          /\* Only caused by corrupt data stream? *\/ */
 /*          if (s->nblock_used > s->save_nblock+1) */
 /*             return True; */
-   
+
 /*          s->state_out_len = 1; */
 /*          s->state_out_ch = s->k0; */
 /*          BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          s->state_out_len = 2; */
 /*          BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          s->state_out_len = 3; */
 /*          BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          if (s->nblock_used == s->save_nblock+1) continue; */
 /*          if (k1 != s->k0) { s->k0 = k1; continue; }; */
-   
+
 /*          BZ_GET_SMALL(k1); BZ_RAND_UPD_MASK;  */
 /*          k1 ^= BZ_RAND_MASK; s->nblock_used++; */
 /*          s->state_out_len = ((Int32)k1) + 4; */
@@ -358,30 +358,30 @@ Bool unRLE_obuf_to_output_SMALL ( DState* s )
             s->strm->total_out_lo32++;
             if (s->strm->total_out_lo32 == 0) s->strm->total_out_hi32++;
          }
-   
+
          /* can a new run be started? */
          if (s->nblock_used == s->save_nblock+1) return False;
 
          /* Only caused by corrupt data stream? */
          if (s->nblock_used > s->save_nblock+1)
             return True;
-   
+
          s->state_out_len = 1;
          s->state_out_ch = s->k0;
          BZ_GET_SMALL(k1); s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
-   
+
          s->state_out_len = 2;
          BZ_GET_SMALL(k1); s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
-   
+
          s->state_out_len = 3;
          BZ_GET_SMALL(k1); s->nblock_used++;
          if (s->nblock_used == s->save_nblock+1) continue;
          if (k1 != s->k0) { s->k0 = k1; continue; };
-   
+
          BZ_GET_SMALL(k1); s->nblock_used++;
          s->state_out_len = ((Int32)k1) + 4;
          BZ_GET_SMALL(s->k0); s->nblock_used++;
@@ -448,7 +448,7 @@ static Int32 BZ2_decompress ( DState* s )
    Int32  N;
    Int32  curr;
    Int32  zt;
-   Int32  zn; 
+   Int32  zn;
    Int32  zvec;
    Int32  zj;
    Int32  gSel;
@@ -502,7 +502,7 @@ static Int32 BZ2_decompress ( DState* s )
    N           = s->save_N;
    curr        = s->save_curr;
    zt          = s->save_zt;
-   zn          = s->save_zn; 
+   zn          = s->save_zn;
    zvec        = s->save_zvec;
    zj          = s->save_zj;
    gSel        = s->save_gSel;
@@ -526,7 +526,7 @@ static Int32 BZ2_decompress ( DState* s )
       if (uc != BZ_HDR_h) RETURN(BZ_DATA_ERROR_MAGIC);
 
       GET_BITS(BZ_X_MAGIC_4, s->blockSize100k, 8)
-      if (s->blockSize100k < (BZ_HDR_0 + 1) || 
+      if (s->blockSize100k < (BZ_HDR_0 + 1) ||
           s->blockSize100k > (BZ_HDR_0 + 9)) RETURN(BZ_DATA_ERROR_MAGIC);
       s->blockSize100k -= BZ_HDR_0;
      */
@@ -537,8 +537,8 @@ static Int32 BZ2_decompress ( DState* s )
 
       if (s->smallDecompress) {
          s->ll16 = BZALLOC( s->blockSize100k * 100000 * sizeof(UInt16) );
-         s->ll4  = BZALLOC( 
-                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(UChar) 
+         s->ll4  = BZALLOC(
+                      ((1 + s->blockSize100k * 100000) >> 1) * sizeof(UChar)
                    );
          if (s->ll16 == NULL || s->ll4 == NULL) RETURN(BZ_MEM_ERROR);
       } else {
@@ -566,7 +566,7 @@ static Int32 BZ2_decompress ( DState* s )
       s->currBlockNo++;
       if (s->verbosity >= 2)
          VPrintf1 ( "\n    [%d: huff+mtf ", s->currBlockNo );
- 
+
       s->storedBlockCRC = 0;
       GET_UCHAR(BZ_X_BCRC_1, uc);
       s->storedBlockCRC = (s->storedBlockCRC << 8) | ((UInt32)uc);
@@ -591,14 +591,14 @@ static Int32 BZ2_decompress ( DState* s )
 
       if (s->origPtr < 0)
          RETURN(BZ_DATA_ERROR);
-      if (s->origPtr > 10 + 100000*s->blockSize100k) 
+      if (s->origPtr > 10 + 100000*s->blockSize100k)
          RETURN(BZ_DATA_ERROR);
 
       /*--- Receive the mapping table ---*/
       for (i = 0; i < 16; i++) {
          GET_BIT(BZ_X_MAPPING_1, uc);
-         if (uc == 1) 
-            s->inUse16[i] = True; else 
+         if (uc == 1)
+            s->inUse16[i] = True; else
             s->inUse16[i] = False;
       }
 
@@ -618,7 +618,7 @@ static Int32 BZ2_decompress ( DState* s )
       GET_BITS(BZ_X_SELECTOR_1, nGroups, 3);
       if (nGroups < 2 || nGroups > 6) RETURN(BZ_DATA_ERROR);
       GET_BITS(BZ_X_SELECTOR_2, nSelectors, 15);
-      if (nSelectors < 1) RETURN(BZ_DATA_ERROR);
+      if (nSelectors < 1 || nSelectors > BZ_MAX_SELECTORS) RETURN(BZ_DATA_ERROR);
       for (i = 0; i < nSelectors; i++) {
          j = 0;
          while (True) {
@@ -634,7 +634,7 @@ static Int32 BZ2_decompress ( DState* s )
       {
          UChar pos[BZ_N_GROUPS], tmp, v;
          for (v = 0; v < nGroups; v++) pos[v] = v;
-   
+
          for (i = 0; i < nSelectors; i++) {
             v = s->selectorMtf[i];
             tmp = pos[v];
@@ -667,10 +667,10 @@ static Int32 BZ2_decompress ( DState* s )
             if (s->len[t][i] > maxLen) maxLen = s->len[t][i];
             if (s->len[t][i] < minLen) minLen = s->len[t][i];
          }
-         CreateDecodeTables ( 
-            &(s->limit[t][0]), 
-            &(s->base[t][0]), 
-            &(s->perm[t][0]), 
+         CreateDecodeTables (
+            &(s->limit[t][0]),
+            &(s->base[t][0]),
+            &(s->perm[t][0]),
             &(s->len[t][0]),
             minLen, maxLen, alphaSize
          );
@@ -769,23 +769,23 @@ static Int32 BZ2_decompress ( DState* s )
                      s->mtfa[(z)-3] = s->mtfa[(z)-4];
                      nn -= 4;
                   }
-                  while (nn > 0) { 
-                     s->mtfa[(pp+nn)] = s->mtfa[(pp+nn)-1]; nn--; 
+                  while (nn > 0) {
+                     s->mtfa[(pp+nn)] = s->mtfa[(pp+nn)-1]; nn--;
                   };
                   s->mtfa[pp] = uc;
-               } else { 
+               } else {
                   /* general case */
                   lno = nn / MTFL_SIZE;
                   off = nn % MTFL_SIZE;
                   pp = s->mtfbase[lno] + off;
                   uc = s->mtfa[pp];
-                  while (pp > s->mtfbase[lno]) { 
-                     s->mtfa[pp] = s->mtfa[pp-1]; pp--; 
+                  while (pp > s->mtfbase[lno]) {
+                     s->mtfa[pp] = s->mtfa[pp-1]; pp--;
                   };
                   s->mtfbase[lno]++;
                   while (lno > 0) {
                      s->mtfbase[lno]--;
-                     s->mtfa[s->mtfbase[lno]] 
+                     s->mtfa[s->mtfbase[lno]]
                         = s->mtfa[s->mtfbase[lno-1] + MTFL_SIZE - 1];
                      lno--;
                   }
@@ -880,7 +880,7 @@ static Int32 BZ2_decompress ( DState* s )
          if (s->blockRandomised) {
             BZ_RAND_INIT_MASK;
             BZ_GET_SMALL(s->k0); s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK; 
+            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK;
 	    } else */{
             BZ_GET_SMALL(s->k0); s->nblock_used++;
          }
@@ -900,7 +900,7 @@ static Int32 BZ2_decompress ( DState* s )
          if (s->blockRandomised) {
             BZ_RAND_INIT_MASK;
             BZ_GET_FAST(s->k0); s->nblock_used++;
-            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK; 
+            BZ_RAND_UPD_MASK; s->k0 ^= BZ_RAND_MASK;
 	    } else */{
             BZ_GET_FAST(s->k0); s->nblock_used++;
          }
@@ -971,7 +971,7 @@ static Int32 BZ2_decompress ( DState* s )
    s->save_gBase       = gBase;
    s->save_gPerm       = gPerm;
 
-   return retVal;   
+   return retVal;
 }
 
 
@@ -1003,8 +1003,8 @@ void default_bzfree ( void* opaque, void* addr )
 }
 
 /*---------------------------------------------------*/
-int BZ_API(nsis_BZ2_bzDecompressInit) 
-                     ( nsis_bzstream* strm, 
+int BZ_API(nsis_BZ2_bzDecompressInit)
+                     ( nsis_bzstream* strm,
                        int        verbosity,
                        int        small )
 {
@@ -1081,7 +1081,7 @@ int BZ_API(nsis_BZ2_bzDecompress) ( nsis_bzstream *strm )
          if (r == BZ_STREAM_END) {
 	   /* aCaB
             if (s->verbosity >= 3)
-               VPrintf2 ( "\n    combined CRCs: stored = 0x%08x, computed = 0x%08x", 
+               VPrintf2 ( "\n    combined CRCs: stored = 0x%08x, computed = 0x%08x",
                           s->storedCombinedCRC, s->calculatedCombinedCRC );
             if (s->calculatedCombinedCRC != s->storedCombinedCRC)
                return BZ_DATA_ERROR;
