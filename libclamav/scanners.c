@@ -601,7 +601,7 @@ done:
 
 static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
 {
-    cl_error_t status      = CL_EPARSE;
+    cl_error_t status  = CL_EPARSE;
     cl_error_t egg_ret = CL_EPARSE;
 
     char *buffer      = NULL;
@@ -616,7 +616,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
 
     void *hArchive = NULL;
 
-    char **comments     = NULL;
+    char **comments    = NULL;
     uint32_t nComments = 0;
 
     cl_egg_metadata metadata;
@@ -680,9 +680,9 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
             * Drop the comment to a temp file, if requested
             */
             if (ctx->engine->keeptmp) {
-                int comment_fd = -1;
+                int comment_fd   = -1;
                 size_t prefixLen = strlen("comments_") + 5;
-                char * prefix = (char*)malloc(prefixLen + 1);
+                char *prefix     = (char *)malloc(prefixLen + 1);
 
                 snprintf(prefix, prefixLen, "comments_%u", i);
                 prefix[prefixLen] = '\0';
@@ -2448,7 +2448,7 @@ static int cli_scanmail(cli_ctx *ctx)
 static int cli_scan_structured(cli_ctx *ctx)
 {
     char buf[8192];
-    size_t result             = 0;
+    size_t result          = 0;
     unsigned int cc_count  = 0;
     unsigned int ssn_count = 0;
     int done               = 0;
@@ -3244,7 +3244,7 @@ static int dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype
 
 static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 {
-    int ret            = CL_CLEAN;
+    cl_error_t ret     = CL_CLEAN;
     cli_file_t dettype = 0;
     uint8_t typercg    = 1;
     size_t hashed_size;
@@ -3567,11 +3567,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                         break;
                     } else if (ret != CL_SUCCESS) {
                         /*
-             * non-critical return => allow for the CL_TYPE_ZIP scan to occur
-             * cli_process_ooxml other possible returns:
-             *   CL_ETIMEOUT, CL_EMAXSIZE, CL_EMAXFILES, CL_EPARSE,
-             *   CL_EFORMAT, CL_BREAK, CL_ESTAT
-             */
+                         * non-critical return => allow for the CL_TYPE_ZIP scan to occur
+                         * cli_process_ooxml other possible returns:
+                         *   CL_ETIMEOUT, CL_EMAXSIZE, CL_EMAXFILES, CL_EPARSE,
+                         *   CL_EFORMAT, CL_BREAK, CL_ESTAT
+                         */
                         ret = CL_SUCCESS;
                     }
                 }
@@ -3804,8 +3804,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_TEXT_ASCII:
             if (SCAN_HEURISTIC_STRUCTURED && (DCONF_OTHER & OTHER_CONF_DLP))
                 /* TODO: consider calling this from cli_scanscript() for
-         * a normalised text
-         */
+                 * a normalised text
+                 */
 
                 ret = cli_scan_structured(ctx);
             break;
@@ -3845,7 +3845,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 case CL_ETMPFILE:
                 case CL_ETMPDIR:
                 case CL_EMEM:
-                case CL_ETIMEOUT:
                     cli_dbgmsg("Descriptor[%d]: cli_scanraw error %s\n", fmap_fd(*ctx->fmap), cl_strerror(res));
                     cli_bitset_free(ctx->hook_lsig_matches);
                     ctx->hook_lsig_matches = old_hook_lsig_matches;
@@ -3866,7 +3865,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                     cli_bitset_free(ctx->hook_lsig_matches);
                     ctx->hook_lsig_matches = old_hook_lsig_matches;
                     return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
-                /* "MAX" conditions should still fully scan the current file */
+                /* The CL_ETIMEOUT "MAX" condition should set exceeds max flag and exit out quietly. */
+                case CL_ETIMEOUT:
+                    cli_check_blockmax(ctx, ret);
+                    cli_bitset_free(ctx->hook_lsig_matches);
+                    ctx->hook_lsig_matches = old_hook_lsig_matches;
+                    cli_dbgmsg("Descriptor[%d]: Stopping after cli_scanraw reached %s\n",
+                               fmap_fd(*ctx->fmap), cl_strerror(res));
+                    return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, CL_CLEAN, parent_property);
+                /* All other "MAX" conditions should still fully scan the current file */
                 case CL_EMAXREC:
                 case CL_EMAXSIZE:
                 case CL_EMAXFILES:
@@ -3875,9 +3882,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                                fmap_fd(*ctx->fmap), cl_strerror(res));
                     break;
                 /* Other errors must not block further scans below
-         * This specifically includes CL_EFORMAT & CL_EREAD & CL_EUNPACK
-         * Malformed/truncated files could report as any of these three.
-         */
+                 * This specifically includes CL_EFORMAT & CL_EREAD & CL_EUNPACK
+                 * Malformed/truncated files could report as any of these three.
+                 */
                 default:
                     ret = res;
                     cli_dbgmsg("Descriptor[%d]: Continuing after cli_scanraw error %s\n",
@@ -3889,7 +3896,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     ctx->recursion++;
     switch (type) {
         /* bytecode hooks triggered by a lsig must be a hook
-     * called from one of the functions here */
+         * called from one of the functions here */
         case CL_TYPE_TEXT_ASCII:
         case CL_TYPE_TEXT_UTF16BE:
         case CL_TYPE_TEXT_UTF16LE:
@@ -3903,8 +3910,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);
             break;
         /* Due to performance reasons all executables were first scanned
-     * in raw mode. Now we will try to unpack them
-     */
+         * in raw mode. Now we will try to unpack them
+         */
         case CL_TYPE_MSEXE:
             perf_nested_start(ctx, PERFT_PE, PERFT_SCAN);
             if (SCAN_PARSE_PE && ctx->dconf->pe) {
@@ -3937,14 +3944,16 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     ctx->hook_lsig_matches = old_hook_lsig_matches;
 
     switch (ret) {
+        /* Limits exceeded */
+        case CL_ETIMEOUT:
+        case CL_EMAXREC:
+        case CL_EMAXSIZE:
+        case CL_EMAXFILES:
+            cli_check_blockmax(ctx, ret);
         /* Malformed file cases */
         case CL_EFORMAT:
         case CL_EREAD:
         case CL_EUNPACK:
-        /* Limits exceeded */
-        case CL_EMAXREC:
-        case CL_EMAXSIZE:
-        case CL_EMAXFILES:
             cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
 #if HAVE_JSON
             ctx->wrkproperty = parent_property;
@@ -4233,10 +4242,10 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     }
     perf_init(&ctx);
 
-    if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && ctx.engine->time_limit != 0) {
+    if (ctx.engine->maxscantime != 0) {
         if (gettimeofday(&ctx.time_limit, NULL) == 0) {
-            uint32_t secs  = ctx.engine->time_limit / 1000;
-            uint32_t usecs = (ctx.engine->time_limit % 1000) * 1000;
+            uint32_t secs  = ctx.engine->maxscantime / 1000;
+            uint32_t usecs = (ctx.engine->maxscantime % 1000) * 1000;
             ctx.time_limit.tv_sec += secs;
             ctx.time_limit.tv_usec += usecs;
             if (ctx.time_limit.tv_usec >= 1000000) {
@@ -4245,7 +4254,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
             }
         } else {
             char buf[64];
-            cli_dbgmsg("scan_common; gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
+            cli_dbgmsg("scan_common: gettimeofday error: %s\n", cli_strerror(errno, buf, 64));
         }
     }
 
@@ -4403,14 +4412,14 @@ int cli_found_possibly_unwanted(cli_ctx *ctx)
         cli_dbgmsg("found Possibly Unwanted: %s\n", cli_get_last_virus(ctx));
         if (SCAN_HEURISTIC_PRECEDENCE) {
             /* we found a heuristic match, don't scan further,
-         * but consider it a virus. */
+             * but consider it a virus. */
             cli_dbgmsg("cli_found_possibly_unwanted: CL_VIRUS\n");
             return CL_VIRUS;
         }
         /* heuristic scan isn't taking precedence, keep scanning.
-     * If this is part of an archive, and
-     * we find a real malware we report that instead of the
-     * heuristic match */
+         * If this is part of an archive, and
+         * we find a real malware we report that instead of the
+         * heuristic match */
         ctx->found_possibly_unwanted = 1;
     } else {
         cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
