@@ -85,7 +85,7 @@ Example
 # Default: no
 #OfficialDatabaseOnly no
 
-# The daemon can work in local mode, network mode or both. 
+# The daemon can work in local mode, network mode or both.
 # Due to security reasons we recommend the local mode.
 
 # Path to a local socket file the daemon will listen on.
@@ -231,7 +231,7 @@ Example
 #DetectPUA yes
 
 # Exclude a specific PUA category. This directive can be used multiple times.
-# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for 
+# See https://github.com/vrtadmin/clamav-faq/blob/master/faq/faq-pua.md for
 # the complete list of PUA categories.
 # Default: Load all categories (if DetectPUA is activated)
 #ExcludePUA NetTool
@@ -271,9 +271,9 @@ Example
 # the end of a scan. If an archive contains both a heuristically detected
 # virus/phish, and a real malware, the real malware will be reported
 #
-# Keep this disabled if you intend to handle "*.Heuristics.*" viruses 
+# Keep this disabled if you intend to handle "*.Heuristics.*" viruses
 # differently from "real" malware.
-# If a non-heuristically-detected virus (signature-based) is found first, 
+# If a non-heuristically-detected virus (signature-based) is found first,
 # the scan is interrupted immediately, regardless of this config option.
 #
 # Default: no
@@ -475,6 +475,16 @@ Example
 # The options below protect your system against Denial of Service attacks
 # using archive bombs.
 
+# This option sets the maximum amount of time to a scan may take.
+# In this version, this field only affects the scan time of ZIP archives.
+# Value of 0 disables the limit
+# Note: disabling this limit or setting it too high may result allow scanning
+# of certain files to lock up the scanning process/threads resulting in a Denial
+# of Service.
+# Time is in milliseconds.
+# Default: 120000
+#MaxScanTime 300000
+
 # This option sets the maximum amount of data to be scanned for each input
 # file.
 # Archives and other containers are recursively extracted and scanned up to
@@ -619,13 +629,13 @@ Example
 #OnAccessMaxFileSize 10M
 
 # Max number of scanning threads to allocate to the OnAccess thread pool at startup.
-# These threads are the ones responsible for creating a connection with the daemon 
-# and kicking off scanning after an event has been processed. To prevent clamonacc 
+# These threads are the ones responsible for creating a connection with the daemon
+# and kicking off scanning after an event has been processed. To prevent clamonacc
 # from consuming all clamd's resources keep this lower than clamd's max threads.
 # Default: 5
 #OnAccessMaxThreads 10
 
-# Max amount of time (in milliseconds) that the OnAccess client should spend for every 
+# Max amount of time (in milliseconds) that the OnAccess client should spend for every
 # connect, send, and recieve attempt when communicating with clamd via curl.
 # Default: 5000 (5 seconds)
 # OnAccessCurlTimeout 10000
@@ -652,9 +662,9 @@ Example
 # Default: no
 #OnAccessPrevention yes
 
-# When using prevention, if this option is turned on, any errors that occur during 
-# scanning will result in the event attempt being denied. This could potentially 
-# lead to unwanted system behaviour with certain configurations, so the client defaults 
+# When using prevention, if this option is turned on, any errors that occur during
+# scanning will result in the event attempt being denied. This could potentially
+# lead to unwanted system behaviour with certain configurations, so the client defaults
 # this to off and prefers allowing access events in case of scan or connection error.
 # Default: no
 #OnAccessDenyOnError yes
@@ -667,9 +677,9 @@ Example
 
 # Set the  mount point to be scanned. The mount point specified, or the mount
 # point containing the specified directory will be watched. If any directories
-# are specified, this option will preempt (disable and ignore all options related to) 
+# are specified, this option will preempt (disable and ignore all options related to)
 # the DDD system. This option will result in verdicts only.
-# Note that prevention is explicitly disallowed to prevent common, fatal misconfigurations. (e.g. 
+# Note that prevention is explicitly disallowed to prevent common, fatal misconfigurations. (e.g.
 # watching "/" with prevention on and no exclusions made on vital system directories)
 # It can be used multiple times.
 # Default: disabled
@@ -702,14 +712,14 @@ Example
 # Default: disabled
 #OnAccessExcludeUID -1
 
-# This option allows exclusions via user names when using the on-access 
+# This option allows exclusions via user names when using the on-access
 # scanning client. It can be used multiple times.
 # It has the same potential race condition limitations of the OnAccessExcludeUID option.
 # Default: disabled
 #OnAccessExcludeUname clamav
 
-# Number of times the OnAccess client will retry a failed scan due to connection problems 
-# (or other issues). 
+# Number of times the OnAccess client will retry a failed scan due to connection problems
+# (or other issues).
 # Default: 0
 #OnAccessRetryAttempts 3
 
@@ -717,7 +727,7 @@ Example
 ## Bytecode
 ##
 
-# With this option enabled ClamAV will load bytecode from the database. 
+# With this option enabled ClamAV will load bytecode from the database.
 # It is highly recommended you keep this option on, otherwise you'll miss
 # detections for many new viruses.
 # Default: yes
@@ -741,7 +751,7 @@ Example
 #BytecodeSecurity TrustSigned
 
 # Set bytecode timeout in milliseconds.
-# 
+#
 # Default: 5000
 # BytecodeTimeout 1000
 

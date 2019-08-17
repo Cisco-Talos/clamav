@@ -930,6 +930,11 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 ret = CL_EMAXFILES;
             }
 
+            if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+                cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
+                ret = CL_ETIMEOUT;
+            }
+
             /*
              * Detect overlapping files and zip bombs.
              */

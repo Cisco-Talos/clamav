@@ -750,6 +750,19 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     memset(&options, 0, sizeof(struct cl_scan_options));
 
     /* set up limits */
+    if ((opt = optget(opts, "MaxScanTime"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+            cl_engine_free(engine);
+            return 1;
+        }
+    }
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANTIME, NULL);
+    if (val)
+        logg("Limits: Global time limit set to %llu milliseconds.\n", val);
+    else
+        logg("^Limits: Global time limit protection disabled.\n");
+
     if ((opt = optget(opts, "MaxScanSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
             logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));

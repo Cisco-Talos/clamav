@@ -867,6 +867,24 @@ int scanmanager(const struct optstruct *opts)
 
     /* set limits */
 
+    /* TODO: Remove deprecated option in a future feature release */
+    if ((opt = optget(opts, "timelimit"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+    if ((opt = optget(opts, "max-scantime"))->active) {
+        if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
+            logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+
+            cl_engine_free(engine);
+            return 2;
+        }
+    }
+
     if ((opt = optget(opts, "max-scansize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
@@ -982,15 +1000,6 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "max-rechwp3"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECHWP3, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_RECHWP3) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
-        }
-    }
-
-    if ((opt = optget(opts, "timelimit"))->active) {
-        if ((ret = cl_engine_set_num(engine, CL_ENGINE_TIME_LIMIT, opt->numarg))) {
-            logg("!cli_engine_set_num(CL_ENGINE_TIME_LIMIT) failed: %s\n", cl_strerror(ret));
 
             cl_engine_free(engine);
             return 2;

@@ -257,7 +257,7 @@ const char *cl_strerror(int clerror)
         case CL_EMEM:
             return "Can't allocate memory";
         case CL_ETIMEOUT:
-            return "Time limit reached";
+            return "CL_ETIMEOUT: Time limit reached";
         /* internal (needed for debug messages) */
         case CL_EMAXREC:
             return "CL_EMAXREC";
@@ -321,6 +321,7 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Setup default limits */
+    new->maxscantime   = CLI_DEFAULT_TIMELIMIT;
     new->maxscansize   = CLI_DEFAULT_MAXSCANSIZE;
     new->maxfilesize   = CLI_DEFAULT_MAXFILESIZE;
     new->maxreclevel   = CLI_DEFAULT_MAXRECLEVEL;
@@ -613,8 +614,8 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
         case CL_ENGINE_MAX_RECHWP3:
             engine->maxrechwp3 = (uint32_t)num;
             break;
-        case CL_ENGINE_TIME_LIMIT:
-            engine->time_limit = (uint32_t)num;
+        case CL_ENGINE_MAX_SCANTIME:
+            engine->maxscantime = (uint32_t)num;
             break;
         case CL_ENGINE_PCRE_MATCH_LIMIT:
             engine->pcre_match_limit = (uint64_t)num;
@@ -714,8 +715,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
             return engine->maxiconspe;
         case CL_ENGINE_MAX_RECHWP3:
             return engine->maxrechwp3;
-        case CL_ENGINE_TIME_LIMIT:
-            return engine->time_limit;
+        case CL_ENGINE_MAX_SCANTIME:
+            return engine->maxscantime;
         case CL_ENGINE_PCRE_MATCH_LIMIT:
             return engine->pcre_match_limit;
         case CL_ENGINE_PCRE_RECMATCH_LIMIT:
@@ -795,6 +796,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->ac_maxdepth        = engine->ac_maxdepth;
     settings->tmpdir             = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
     settings->keeptmp            = engine->keeptmp;
+    settings->maxscantime        = engine->maxscantime;
     settings->maxscansize        = engine->maxscansize;
     settings->maxfilesize        = engine->maxfilesize;
     settings->maxreclevel        = engine->maxreclevel;
@@ -849,6 +851,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     engine->ac_mindepth        = settings->ac_mindepth;
     engine->ac_maxdepth        = settings->ac_maxdepth;
     engine->keeptmp            = settings->keeptmp;
+    engine->maxscantime        = settings->maxscantime;
     engine->maxscansize        = settings->maxscansize;
     engine->maxfilesize        = settings->maxfilesize;
     engine->maxreclevel        = settings->maxreclevel;
@@ -937,9 +940,9 @@ void cli_check_blockmax(cli_ctx *ctx, int rc)
     }
 }
 
-int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3)
+cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3)
 {
-    int ret = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     unsigned long needed;
 
     /* if called without limits, go on, unpack, scan */
@@ -947,6 +950,9 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
 
     needed = (need1 > need2) ? need1 : need2;
     needed = (needed > need3) ? needed : need3;
+
+    /* Enforce timelimit */
+    ret = cli_checktimelimit(ctx);
 
     /* if we have global scan limits */
     if (needed && ctx->engine->maxscansize) {
@@ -976,9 +982,9 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
     return ret;
 }
 
-int cli_updatelimits(cli_ctx *ctx, unsigned long needed)
+cl_error_t cli_updatelimits(cli_ctx *ctx, unsigned long needed)
 {
-    int ret = cli_checklimits("cli_updatelimits", ctx, needed, 0, 0);
+    cl_error_t ret = cli_checklimits("cli_updatelimits", ctx, needed, 0, 0);
 
     if (ret != CL_CLEAN) return ret;
     ctx->scannedfiles++;
@@ -988,18 +994,33 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed)
     return CL_CLEAN;
 }
 
-int cli_checktimelimit(cli_ctx *ctx)
+/**
+ * @brief Check if we've exceeded the time limit.
+ * If ctx is NULL, there can be no timelimit so just return success.
+ *
+ * @param ctx         The scanning context.
+ * @return cl_error_t CL_SUCCESS if has not exceeded, CL_ETIMEOUT if has exceeded.
+ */
+cl_error_t cli_checktimelimit(cli_ctx *ctx)
 {
+    cl_error_t ret = CL_SUCCESS;
+
+    if (NULL == ctx) {
+        goto done;
+    }
+
     if (ctx->time_limit.tv_sec != 0) {
         struct timeval now;
         if (gettimeofday(&now, NULL) == 0) {
-            if (now.tv_sec < ctx->time_limit.tv_sec)
-                return CL_SUCCESS;
-            if (now.tv_sec > ctx->time_limit.tv_sec || now.tv_usec > ctx->time_limit.tv_usec)
-                return CL_ETIMEOUT;
+            if (now.tv_sec > ctx->time_limit.tv_sec)
+                ret = CL_ETIMEOUT;
+            else if (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec)
+                ret = CL_ETIMEOUT;
         }
     }
-    return CL_SUCCESS;
+
+done:
+    return ret;
 }
 
 /*
@@ -1103,7 +1124,7 @@ void cli_virus_found_cb(cli_ctx *ctx)
         ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), (const char *)*ctx->virname, ctx->cb_ctx);
 }
 
-int cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
+cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
 {
     if (SCAN_ALLMATCHES)
         return cli_append_virus(ctx, virname);

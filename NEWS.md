@@ -48,6 +48,21 @@ changes.
     release for offline viewing in the `docs/html` directory.
   - The new home for the documentation markdown is in our
     [ClamAV FAQ Github repository](https://github.com/Cisco-Talos/clamav-faq)
+- To remediate future denial of service conditions caused by excessive scan times,
+  we introduced a scan time limit.
+  The default value is 2 minutes (120000 milliseconds).
+
+  To customize the time limit:
+
+  - use the `clamscan` `--max-scantime` option
+  - use the `clamd` `MaxScanTime` config option
+
+  Libclamav users may customize the time limit using the `cl_engine_set_num`
+  function. For example:
+
+  ```c
+      cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, time_limit_milliseconds)
+  ```
 
 ### Other improvements
 
