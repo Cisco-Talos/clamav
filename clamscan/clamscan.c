@@ -62,6 +62,7 @@ int main(int argc, char **argv)
     int ds, dms, ret;
     double mb, rmb;
     struct timeval t1, t2;
+    char buffer[26];
 #ifndef _WIN32
     sigset_t sigset;
 #endif
@@ -184,6 +185,10 @@ int main(int argc, char **argv)
         rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
         logg("Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
         logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t1.tv_sec));
+        logg("Start Date: %s\n", buffer);
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t2.tv_sec));
+        logg("End Date: %s\n", buffer);
     }
 
     optfree(opts);
