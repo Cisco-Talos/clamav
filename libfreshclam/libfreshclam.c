@@ -654,9 +654,8 @@ fc_error_t fc_update_database(
 
             switch (ret) {
                 case FC_SUCCESS: {
-                    if (bUpdated) {
+                    if (*bUpdated) {
                         logg("*fc_update_database: %s updated.\n", dbFilename);
-                        *bUpdated = 1;
                     } else {
                         logg("*fc_update_database: %s already up-to-date.\n", dbFilename);
                     }
@@ -814,7 +813,7 @@ fc_error_t fc_download_url_database(
 
         switch (ret) {
             case FC_SUCCESS: {
-                if (bUpdated) {
+                if (*bUpdated) {
                     logg("*fc_download_url_database: %s updated.\n", dbFilename);
                 } else {
                     logg("*fc_download_url_database: %s already up-to-date.\n", dbFilename);
