@@ -206,7 +206,7 @@ CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
 	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
 	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
 	docs/man/sigtool.1 docs/man/clamdtop.1 docs/man/clamsubmit.1 \
-	clamav-types.h
+	clamav-types.h clamav-version.h
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -301,9 +301,9 @@ DIST_SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
 	test clamdtop clambc unit_tests clamonacc clamsubmit fuzz
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(srcdir)/clamav-config.in $(srcdir)/clamav-types.h.in \
-	$(srcdir)/libclamav.pc.in $(srcdir)/platform.h.in \
-	$(top_srcdir)/config/ar-lib $(top_srcdir)/config/compile \
-	$(top_srcdir)/config/config.guess \
+	$(srcdir)/clamav-version.h.in $(srcdir)/libclamav.pc.in \
+	$(srcdir)/platform.h.in $(top_srcdir)/config/ar-lib \
+	$(top_srcdir)/config/compile $(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.rpath \
 	$(top_srcdir)/config/config.sub \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \
@@ -471,8 +471,10 @@ LIBBZ2_PREFIX = @LIBBZ2_PREFIX@
 LIBCLAMAV_CPPFLAGS = @LIBCLAMAV_CPPFLAGS@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
+LIBCLAMAV_VERSION_NUM = @LIBCLAMAV_VERSION_NUM@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBFRESHCLAM_VERSION = @LIBFRESHCLAM_VERSION@
+LIBFRESHCLAM_VERSION_NUM = @LIBFRESHCLAM_VERSION_NUM@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
@@ -519,6 +521,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PACKAGE_VERSION_NUM = @PACKAGE_VERSION_NUM@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PCRE_CPPFLAGS = @PCRE_CPPFLAGS@
 PCRE_LIBS = @PCRE_LIBS@
@@ -626,7 +629,7 @@ EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
-nodist_include_HEADERS = clamav-types.h
+nodist_include_HEADERS = clamav-types.h clamav-version.h
 
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
@@ -725,6 +728,8 @@ docs/man/clamdtop.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamdt
 docs/man/clamsubmit.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamsubmit.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 clamav-types.h: $(top_builddir)/config.status $(srcdir)/clamav-types.h.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+clamav-version.h: $(top_builddir)/config.status $(srcdir)/clamav-version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
