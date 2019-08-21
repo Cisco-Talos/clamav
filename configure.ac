@@ -223,6 +223,7 @@ docs/man/sigtool.1
 docs/man/clamdtop.1
 docs/man/clamsubmit.1
 clamav-types.h
+clamav-version.h
 ])
 
 AM_COND_IF([BUILD_CLAMONACC],
