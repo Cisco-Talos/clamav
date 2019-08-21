@@ -1,0 +1,68 @@
+/*
+ *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *
+ *  Authors: Micah Snyder
+ *
+ *  @GENERATE_WARNING@
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+#ifndef CLAMAV_VER_H
+#define CLAMAV_VER_H
+
+/**
+ * @macro
+ * Version number of the clamav package release
+ */
+#define CLAMAV_VERSION "@PACKAGE_VERSION@"
+
+/**
+ * @macro
+ * Numerical representation of the version number of the clamav package
+ * release. This is a 24 bit number with 8 bits for major number, 8 bits
+ * for minor and 8 bits for patch. Version 1.2.3 becomes 0x010203.
+ */
+#define CLAMAV_VERSION_NUM @PACKAGE_VERSION_NUM@
+
+/**
+ * @macro
+ * Version number of the clamav library release
+ */
+#define LIBCLAMAV_VERSION "@LIBCLAMAV_VERSION@"
+
+/**
+ * @macro
+ * Numerical representation of the version number of the libclamav library
+ * release. This is a 24 bit number with 8 bits for major number, 8 bits
+ * for minor and 8 bits for patch. Version 1.2.3 becomes 0x010203.
+ */
+#define LIBCLAMAV_VERSION_NUM @LIBCLAMAV_VERSION_NUM@
+
+/**
+ * @macro
+ * Version number of the clamav library release
+ */
+#define LIBFRESHCLAM_VERSION "@LIBFRESHCLAM_VERSION@"
+
+/**
+ * @macro
+ * Numerical representation of the version number of the libfreshclam library
+ * release. This is a 24 bit number with 8 bits for major number, 8 bits
+ * for minor and 8 bits for patch. Version 1.2.3 becomes 0x010203.
+ */
+#define LIBFRESHCLAM_VERSION_NUM @LIBFRESHCLAM_VERSION_NUM@
+
+#endif /* CLAMAV_VER_H */
