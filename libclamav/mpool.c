@@ -812,7 +812,7 @@ char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n)
         return NULL;
     }
 
-    strsz = cli_strnlen(s, n) + 1;
+    strsz = CLI_STRNLEN(s, n) + 1;
     alloc = mpool_malloc(mp, strsz);
     if (!alloc)
         cli_errmsg("cli_mpool_strndup(): Can't allocate memory (%lu bytes).\n", (unsigned long)strsz);

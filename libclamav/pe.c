@@ -2348,7 +2348,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 if (!ret) {
                     /* Hint field is a uint16_t and precedes the Name field */
                     if ((buffer = fmap_need_off_once(map, offset + sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize - offset))) != NULL) {
-                        funcname = cli_strndup(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
+                        funcname = CLI_STRNDUP(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
                         if (funcname == NULL) {
                             cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                             return CL_EMEM;
@@ -2384,7 +2384,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
                 if (!err) {
                     /* Hint field is a uint16_t and precedes the Name field */
                     if ((buffer = fmap_need_off_once(map, offset + sizeof(uint16_t), MIN(PE_MAXNAMESIZE, fsize - offset))) != NULL) {
-                        funcname = cli_strndup(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
+                        funcname = CLI_STRNDUP(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
                         if (funcname == NULL) {
                             cli_dbgmsg("scan_pe: cannot duplicate function name\n");
                             return CL_EMEM;
@@ -2508,7 +2508,7 @@ static unsigned int hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *
             goto hash_imptbl_end;
         }
 
-        dllname = cli_strndup(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
+        dllname = CLI_STRNDUP(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
         if (dllname == NULL) {
             cli_dbgmsg("scan_pe: cannot duplicate dll name\n");
             ret = CL_EMEM;

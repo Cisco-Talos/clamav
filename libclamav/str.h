@@ -30,38 +30,44 @@
 #include <limits.h>
 
 #include "clamav.h"
-#include "clamav.h"
 
 #define SIZE_T_CHARLEN ((sizeof(size_t) * CHAR_BIT + 2) / 3 + 1)
 
 #ifdef HAVE_STRCASESTR
-#define cli_strcasestr strcasestr
+#define CLI_STRCASESTR strcasestr
 #else
-const char *cli_strcasestr(const char *haystack, const char *needle);
+#define CLI_STRCASESTR __cli_strcasestr
 #endif
 
 #if defined(HAVE_STRNDUP) && !defined(HAVE_STRNI)
-#define cli_strndup strndup
+#define CLI_STRNDUP strndup
 #else
-char *cli_strndup(const char *s, size_t n);
+#define CLI_STRNDUP __cli_strndup
 #endif
 
 #if defined(HAVE_STRNLEN) && !defined(HAVE_STRNI)
-#define cli_strnlen strnlen
+#define CLI_STRNLEN strnlen
 #else
-size_t cli_strnlen(const char *s, size_t n);
+#define CLI_STRNLEN __cli_strnlen
 #endif
 
 #if defined(HAVE_STRNSTR) && !defined(HAVE_STRNI)
-#define cli_strnstr strnstr
+#define CLI_STRNSTR strnstr
 #else
-char *cli_strnstr(const char *s, const char *find, size_t slen);
+#define CLI_STRNSTR __cli_strnstr
 #endif
 
 #include <stdio.h>
-#define cli_nocase(val) tolower(val)
-#define cli_nocasei(val) toupper(val)
+#define CLI_NOCASE(val) tolower(val)
+#define CLI_NOCASEI(val) toupper(val)
 
+/* Custom implementations for systems that do not include these functions. */
+const char *__cli_strcasestr(const char *haystack, const char *needle);
+char *__cli_strndup(const char *s, size_t n);
+size_t __cli_strnlen(const char *s, size_t n);
+char *__cli_strnstr(const char *s, const char *find, size_t slen);
+
+/* Custom string-manipulation functions */
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);

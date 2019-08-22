@@ -933,7 +933,7 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
              * Is not "/", "./", or "../".
              */
             /* Find the next path separator. */
-            next_pathsep = cli_strnstr(filepath + index, PATHSEP, filepath_len - index);
+            next_pathsep = CLI_STRNSTR(filepath + index, PATHSEP, filepath_len - index);
             if (NULL == next_pathsep) {
                 /* No more path separators, copy the rest (filename) into the sanitized path */
                 strncpy(sanitized_filepath + sanitized_index, filepath + index, filepath_len - index);
@@ -1128,7 +1128,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     /* Success. Add null terminator */
     fname[linksz] = '\0';
 
-    *filepath = cli_strndup(fname, cli_strnlen(fname, PATH_MAX));
+    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
     if (NULL == *filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
@@ -1145,7 +1145,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
         goto done;
     }
 
-    *filepath = cli_strndup(fname, cli_strnlen(fname, PATH_MAX));
+    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
     if (NULL == *filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
