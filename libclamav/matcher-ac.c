@@ -284,13 +284,13 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
      * it's why this function was re-written to be recursive
      */
     if ((pattern->sigopts & ACPATT_OPTION_NOCASE) && isalpha(pattern->pattern[i] & 0xff)) {
-        next = pt->trans[cli_nocasei((unsigned char)(pattern->pattern[i] & 0xff))];
+        next = pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))];
         if (!next)
             next = add_new_node(root, i, len);
         if (!next)
             return CL_EMEM;
         else
-            pt->trans[cli_nocasei((unsigned char)(pattern->pattern[i] & 0xff))] = next;
+            pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))] = next;
 
         if ((ret = cli_ac_addpatt_recursive(root, pattern, next, i + 1, len)) != CL_SUCCESS)
             return ret;
@@ -878,7 +878,7 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
             break;                                                   \
                                                                      \
         case CLI_MATCH_NOCASE:                                       \
-            if ((unsigned char)(p & 0xff) != cli_nocase(b))          \
+            if ((unsigned char)(p & 0xff) != CLI_NOCASE(b))          \
                 match = 0;                                           \
             break;                                                   \
                                                                      \
@@ -909,7 +909,7 @@ static int ac_forward_match_branch(const unsigned char *buffer, uint32_t bp, uin
             break;                                                                            \
                                                                                               \
         case CLI_MATCH_NOCASE:                                                                \
-            if ((unsigned char)(p & 0xff) != cli_nocase(b))                                   \
+            if ((unsigned char)(p & 0xff) != CLI_NOCASE(b))                                   \
                 match = 0;                                                                    \
             break;                                                                            \
                                                                                               \
@@ -2164,7 +2164,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
     if (sigopts & ACPATT_OPTION_NOCASE) {
         for (i = 0; i < newnode->len; ++i)
             if ((newnode->str[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
-                newnode->str[i] = cli_nocase(newnode->str[i] & 0xff);
+                newnode->str[i] = CLI_NOCASE(newnode->str[i] & 0xff);
                 newnode->str[i] += CLI_MATCH_NOCASE;
             }
     }
@@ -2497,7 +2497,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 }
 
                 if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
-                    new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
+                    new->ch[i] = CLI_NOCASE(*dec) | CLI_MATCH_NOCASE;
                 else
                     new->ch[i] = *dec;
                 free(dec);
@@ -2513,7 +2513,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 }
 
                 if ((sigopts & ACPATT_OPTION_NOCASE) && ((*dec & CLI_MATCH_METADATA) == CLI_MATCH_CHAR))
-                    new->ch[i] = cli_nocase(*dec) | CLI_MATCH_NOCASE;
+                    new->ch[i] = CLI_NOCASE(*dec) | CLI_MATCH_NOCASE;
                 else
                     new->ch[i] = *dec;
                 free(dec);
@@ -2717,7 +2717,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if (sigopts & ACPATT_OPTION_NOCASE) {
         for (i = 0; i < new->length[0]; i++)
             if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_CHAR) {
-                new->pattern[i] = cli_nocase(new->pattern[i] & 0xff);
+                new->pattern[i] = CLI_NOCASE(new->pattern[i] & 0xff);
                 new->pattern[i] += CLI_MATCH_NOCASE;
             }
     }

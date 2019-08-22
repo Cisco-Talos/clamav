@@ -141,7 +141,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     }
 
     /* make a working copy of the param buffer */
-    buf = cli_strndup(buf_start, len);
+    buf = CLI_STRNDUP(buf_start, len);
 
     /* break up the new param buffer into its component strings and verify we have exactly 3 */
     toks = cli_strtokenize(buf, '#', 3 + 1, tokens);

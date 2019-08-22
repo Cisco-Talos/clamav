@@ -257,6 +257,11 @@ CLAMAV_PRIVATE {
     cl_base64_decode;
     cl_base64_encode;
     cli_sanitize_filepath;
+
+    __cli_strcasestr;
+    __cli_strndup;
+    __cli_strnlen;
+    __cli_strnstr;
   local:
     *;
 };

@@ -454,36 +454,23 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
     return --dest;
 }
 
-#ifndef HAVE_STRCASESTR
-const char *cli_strcasestr(const char *a, const char *b)
+const char *__cli_strcasestr(const char *haystack, const char *needle)
 {
     size_t l;
     char f[3];
-    const size_t strlen_a = strlen(a);
-    const size_t strlen_b = strlen(b);
+    const size_t strlen_a = strlen(haystack);
+    const size_t strlen_b = strlen(needle);
 
-    f[0] = tolower(*b);
-    f[1] = toupper(*b);
+    f[0] = tolower(*needle);
+    f[1] = toupper(*needle);
     f[2] = '\0';
-    for (l = strcspn(a, f); l != strlen_a; l += strcspn(a + l + 1, f) + 1)
-        if (strncasecmp(a + l, b, strlen_b) == 0)
-            return (a + l);
+    for (l = strcspn(haystack, f); l != strlen_a; l += strcspn(haystack + l + 1, f) + 1)
+        if (strncasecmp(haystack + l, needle, strlen_b) == 0)
+            return (haystack + l);
     return (NULL);
 }
-#endif
 
-#if !defined(HAVE_STRNLEN) || defined(HAVE_STRNI)
-size_t cli_strnlen(const char *s, size_t n)
-{
-    size_t i = 0;
-    for (; (i < n) && s[i] != '\0'; ++i)
-        ;
-    return i;
-}
-#endif
-
-#if !defined(HAVE_STRNDUP) || defined(HAVE_STRNI)
-char *cli_strndup(const char *s, size_t n)
+char *__cli_strndup(const char *s, size_t n)
 {
     char *alloc;
     size_t len;
@@ -492,7 +479,7 @@ char *cli_strndup(const char *s, size_t n)
         return NULL;
     }
 
-    len   = cli_strnlen(s, n);
+    len   = CLI_STRNLEN(s, n);
     alloc = malloc(len + 1);
 
     if (!alloc) {
@@ -503,9 +490,15 @@ char *cli_strndup(const char *s, size_t n)
     alloc[len] = '\0';
     return alloc;
 }
-#endif
 
-#if !defined(HAVE_STRNSTR) || defined(HAVE_STRNI)
+size_t __cli_strnlen(const char *s, size_t n)
+{
+    size_t i = 0;
+    for (; (i < n) && s[i] != '\0'; ++i)
+        ;
+    return i;
+}
+
 /*
  * @brief Find the first occurrence of find in s.
  *
@@ -526,7 +519,7 @@ char *cli_strndup(const char *s, size_t n)
  * @param slen   haystack length
  * @return char* Address of the needle, if found, else NULL.
  */
-char *cli_strnstr(const char *s, const char *find, size_t slen)
+char *__cli_strnstr(const char *s, const char *find, size_t slen)
 {
     char c, sc;
     size_t len;
@@ -545,7 +538,6 @@ char *cli_strnstr(const char *s, const char *find, size_t slen)
     }
     return ((char *)s);
 }
-#endif
 
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
                        const char **tokens)
@@ -1214,13 +1206,13 @@ cl_error_t cli_basename(const char *filepath, size_t filepath_len,
     if ((index != filepath) || (index[0] == PATHSEP[0]))
         index++;
 
-    if (0 == cli_strnlen(index, filepath_len - (index - filepath))) {
+    if (0 == CLI_STRNLEN(index, filepath_len - (index - filepath))) {
         cli_dbgmsg("cli_basename: Provided path does not include a file name.\n");
         status = CL_EFORMAT;
         goto done;
     }
 
-    *filebase = cli_strndup(index, filepath_len - (index - filepath));
+    *filebase = CLI_STRNDUP(index, filepath_len - (index - filepath));
     if (NULL == *filebase) {
         cli_errmsg("cli_basename: Failed to allocate memory for file basename.\n");
         status = CL_EMEM;

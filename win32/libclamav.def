@@ -182,6 +182,10 @@ EXPORTS cli_genhash_pe @44384 NONAME
 EXPORTS cli_free_vba_project @44385 NONAME
 EXPORTS cli_strdup @44386 NONAME
 EXPORTS cli_realloc @44387 NONAME
+EXPORTS __cli_strcasestr @44388 NONAME
+EXPORTS __cli_strndup @44389 NONAME
+EXPORTS __cli_strnlen @44390 NONAME
+EXPORTS __cli_strnstr @44391 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME

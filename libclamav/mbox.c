@@ -2220,7 +2220,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					 * Don't bother with text/plain or
 					 * text/html
 					 */
-                    if (cli_strcasestr(s, "text/plain") != NULL)
+                    if (CLI_STRCASESTR(s, "text/plain") != NULL)
                         /*
 						 * Don't bother to save the
 						 * unuseful part, read past
@@ -2230,7 +2230,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 */
                         continue;
                     if ((!doPhishingScan) &&
-                        (cli_strcasestr(s, "text/html") != NULL))
+                        (CLI_STRCASESTR(s, "text/html") != NULL))
                         continue;
                     break;
                 }

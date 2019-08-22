@@ -506,7 +506,7 @@ static int onas_add_hashnode_child(struct onas_hnode *node, const char *dirname)
     if (!child) return CL_EMEM;
 
     size_t n       = strlen(dirname);
-    child->dirname = cli_strndup(dirname, n);
+    child->dirname = CLI_STRNDUP(dirname, n);
 
     onas_add_listnode(node->childtail, child);
 
@@ -577,7 +577,7 @@ inline static char *onas_get_parent(const char *pathname, size_t len)
         idx++;
     }
 
-    ret = cli_strndup(pathname, idx);
+    ret = CLI_STRNDUP(pathname, idx);
     if (!ret) {
         errno = ENOMEM;
         return NULL;
@@ -701,7 +701,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
                 }
 
                 hnode->pathlen  = curr->fts_pathlen;
-                hnode->pathname = cli_strndup(curr->fts_path, hnode->pathlen);
+                hnode->pathname = CLI_STRNDUP(curr->fts_path, hnode->pathlen);
 
                 hnode->prnt_pathname = onas_get_parent(hnode->pathname, hnode->pathlen);
                 if (hnode->prnt_pathname)

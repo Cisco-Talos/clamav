@@ -897,7 +897,7 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
         }
     } else {
         /* Should already be UTF-8. Use as-is.. */
-        comment_utf8 = cli_strndup((char*)index, size);
+        comment_utf8 = CLI_STRNDUP((char*)index, size);
         if (NULL == comment_utf8) {
             cli_dbgmsg("egg_parse_comment_header: failed to allocate comment buffer.\n");
             status = CL_EMEM;
@@ -1453,7 +1453,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                 }
             } else {
                 /* Should already be UTF-8. Use as-is.. */
-                name_utf8 = cli_strndup((char*)index, name_size);
+                name_utf8 = CLI_STRNDUP((char*)index, name_size);
                 if (NULL == name_utf8) {
                     cli_dbgmsg("egg_parse_file_extra_field: failed to allocate name buffer.\n");
                     status = CL_EMEM;
