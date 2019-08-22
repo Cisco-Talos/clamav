@@ -594,8 +594,6 @@ static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, 
         status = CL_EUNPACK;
     }
 
-done:
-
     return status;
 }
 
