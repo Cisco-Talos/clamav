@@ -1186,7 +1186,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
                 cl_hash_destroy(sha1ctx);
                 cl_hash_destroy(sha256ctx);
                 return ret;
-            } else if ((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
+            } else if ((acmode & AC_SCAN_FT) && ((cli_file_t)ret >= CL_TYPENO)) {
                 if (ret > type)
                     type = ret;
             }

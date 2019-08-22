@@ -736,12 +736,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     unsigned int selfchk;
     threadpool_t *thr_pool;
 
-#if defined(FANOTIFY) || defined(CLAMAUTH)
-    pthread_t fan_pid = 0;
-    pthread_attr_t fan_attr;
-    struct thrarg *tharg = NULL; /* shut up gcc */
-#endif
-
 #ifndef _WIN32
     memset(&sigact, 0, sizeof(struct sigaction));
 #endif

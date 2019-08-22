@@ -602,7 +602,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
             expected += ((base64_chars[ptr[5]] >> 4) < 0 ? 0 : (base64_chars[ptr[5]] >> 4)) << 24;
             ptr += 8;
             if (s->sum != expected) {
-                cli_dbgmsg("screnc_decode: checksum mismatch: %u != %u\n", s->sum, expected);
+                cli_dbgmsg("screnc_decode: checksum mismatch: %u != %" PRIu64 "\n", s->sum, expected);
             } else {
                 if (strncmp((const char *)ptr, "^#~@", 4) != 0) {
                     cli_dbgmsg("screnc_decode: terminator not found\n");
