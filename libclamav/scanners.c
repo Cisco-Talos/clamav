@@ -740,7 +740,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
         status = CL_CLEAN;
 
         /* Zero out the metadata struct before we read the header */
-        memset(&metadata, 0, sizeof(unrar_metadata_t));
+        memset(&metadata, 0, sizeof(cl_egg_metadata));
 
         /*
          * Get the header information for the next file in the archive.
