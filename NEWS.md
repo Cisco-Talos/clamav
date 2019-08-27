@@ -133,9 +133,10 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Carlo Landmeter
 - Chips
 - Clement Lecigne
-- Paul Arthur
+- Joe Cooper
 - Jonas Zaddach
 - Ørjan Malde
+- Paul Arthur
 - Rick Wang
 - Rosen Penev
 - Thomas Jarosch
