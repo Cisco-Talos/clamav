@@ -152,10 +152,9 @@ static struct iin_map_struct iin_map[] = {
     {624000, 626999, 16, 16, 1, 1, "China Union Pay"},
     {628200, 628899, 16, 16, 1, 1, "China Union Pay"},
     {644000, 659999, 16, 16, 1, 1, "Discover 2009"},
-    {0}
-};
+    {0}};
 
-static const struct iin_map_struct * get_iin(char * digits, int cc_only)
+static const struct iin_map_struct *get_iin(char *digits, int cc_only)
 {
     uint32_t iin = atoi(digits);
     int i        = 0;
@@ -221,7 +220,7 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
 
     /* Look for the remaining needed digits. */
     for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_max; i++) {
-	if (isdigit(buffer[i]) == 0) {
+        if (isdigit(buffer[i]) == 0) {
             if (buffer[i] == ' ' || buffer[i] == '-')
                 if (pad_allowance-- > 0)
                     continue;
@@ -232,9 +231,9 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
     }
 
     if (digits < iin->card_min || (i < length && isdigit(buffer[i])))
-	return 0;
+        return 0;
 
-    j = (ssize_t) i;
+    j = (ssize_t)i;
     //figure out luhn digits
     for (j = digits - 1; j >= 0; j--) {
         val = cc_digits[j] - '0';
@@ -266,12 +265,9 @@ static int contains_cc(const unsigned char *buffer, size_t length, int detmode, 
     end = buffer + length;
     idx = buffer;
 
-    while (idx < end)
-    {
-        if (isdigit(*idx))
-        {
-            if ((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer), cc_only) == 1)
-            {
+    while (idx < end) {
+        if (isdigit(*idx)) {
+            if ((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer), cc_only) == 1) {
                 if (detmode == DETECT_MODE_DETECT)
                     return 1;
                 else {

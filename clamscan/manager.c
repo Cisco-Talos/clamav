@@ -1151,8 +1151,8 @@ int scanmanager(const struct optstruct *opts)
             }
         }
 
-        if((opt = optget(opts, "structured-cc-mode"))->active) {
-            switch(opt->numarg) {
+        if ((opt = optget(opts, "structured-cc-mode"))->active) {
+            switch (opt->numarg) {
                 case 0:
                     break;
                 case 1:
