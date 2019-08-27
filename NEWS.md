@@ -11,6 +11,11 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 ### Notable changes
 
+- The DLP module has been enhanced with additional credit card ranges and a new
+  engine option which allows ClamAV to alert only on credit cards (and not, for
+  instance, gift cards) when scannning with the DLP module. This feature
+  enhancement was made by John Schember, with input from Alexander Sulfrian.
+
 - Support for Adobe Reader X PDF encryption, an overhaul of PNG scanning to
   detect PNG specific exploits, and a major change to GIF parsing which makes
   it more tolerant to problematic files and adds the ability to scan overlays,
@@ -46,6 +51,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 The ClamAV team thanks the following individuals for their code submissions:
 
 - Aldo Mazzeo
+- John Schember
 - Jonathan Sabbe
 - Reio Remma
 - Sebastian A. Siewior
