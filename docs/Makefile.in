@@ -505,6 +505,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 EXTRA_DIST = html $(top_srcdir)/docs/man/*.in  
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 \
 	man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 \

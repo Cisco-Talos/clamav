@@ -501,6 +501,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
 CFGINST = @CFGDIR@
 sysconf_DATA = clamd.conf.sample freshclam.conf.sample $(am__append_1)
