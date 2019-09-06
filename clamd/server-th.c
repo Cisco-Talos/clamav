@@ -1074,6 +1074,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         logg("HTML support disabled.\n");
     }
 
+    #ifdef PRELUDE
+    if (optget(opts, "PreludeEnable")->enabled){
+        if ((opt = optget(opts, "PreludeAnalyzerName"))->enabled){
+            prelude_initialize_client(opt->strarg);
+        } else {
+            prelude_initialize_client("ClamAV");
+        }
+    }
+    #endif
+
     if (optget(opts, "ScanXMLDOCS")->enabled) {
         logg("XMLDOCS support enabled.\n");
         options.parse |= CL_SCAN_PARSE_XMLDOCS;
