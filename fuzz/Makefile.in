@@ -953,6 +953,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 @ENABLE_FUZZ_TRUE@AM_CPPFLAGS = \
 @ENABLE_FUZZ_TRUE@    @SSL_CPPFLAGS@ \
 @ENABLE_FUZZ_TRUE@    -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav \

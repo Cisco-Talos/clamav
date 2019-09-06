@@ -565,6 +565,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 clamsubmit_SOURCES = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \

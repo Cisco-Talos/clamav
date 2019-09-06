@@ -452,6 +452,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 FILES = clam.cab clam.exe clam.zip clam.arj clam.exe.rtf clam.exe.szdd \
 	clam.tar.gz clam.chm clam.sis clam-aspack.exe clam-pespin.exe \
 	clam-upx.exe clam-fsg.exe clam-mew.exe clam-nsis.exe \

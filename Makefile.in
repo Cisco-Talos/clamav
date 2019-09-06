@@ -323,8 +323,8 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(top_srcdir)/docs/man/sigtool.1.in \
 	$(top_srcdir)/libclammspack/config.h.in COPYING config/ar-lib \
 	config/compile config/config.guess config/config.rpath \
-	config/config.sub config/install-sh config/ltmain.sh \
-	config/missing config/ylwrap
+	config/config.sub config/depcomp config/install-sh \
+	config/ltmain.sh config/missing config/ylwrap
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -620,6 +620,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan \
 	freshclam sigtool clamconf database docs etc clamav-milter \

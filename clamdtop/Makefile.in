@@ -537,6 +537,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 @HAVE_CURSES_TRUE@man_MANS = $(top_builddir)/docs/man/clamdtop.1
 @HAVE_CURSES_TRUE@clamdtop_SOURCES = \
 @HAVE_CURSES_TRUE@    $(top_srcdir)/shared/optparser.c \

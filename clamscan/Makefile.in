@@ -525,6 +525,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+xmlconfig = @xmlconfig@
 clamscan_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
