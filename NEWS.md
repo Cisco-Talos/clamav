@@ -96,7 +96,7 @@ changes.
   assurance test suites and enables automatic testing of all proposed changes
   to ClamAV, with customizable parameters to suit the testing needs of any
   given code change.
-- Added a new `clamav-version.h` generated header to provide  version number
+- Added a new `clamav-version.h` generated header to provide version number
   macros in text and numerical format for ClamAV, libclamav, and libfreshclam.
 
 ### Bug fixes

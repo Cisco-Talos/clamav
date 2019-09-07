@@ -70,6 +70,12 @@ int main(int argc, char **argv)
         return 2;
     }
 
+    /* Example version macro usage to determine if new feature is available */
+#if defined(LIBCLAMAV_VERSION_NUM) && (LIBCLAMAV_VERSION_NUM >= 0x090400)
+    /* Example feature usage lowering max scan time to 15 seconds. */
+    cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, 15000);
+#endif
+
     /* load all available databases from default directory */
     if ((ret = cl_load(cl_retdbdir(), engine, &sigs, CL_DB_STDOPT)) != CL_SUCCESS) {
         printf("cl_load: %s\n", cl_strerror(ret));
