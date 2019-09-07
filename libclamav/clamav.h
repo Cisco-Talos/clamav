@@ -66,6 +66,7 @@
 #include <sys/stat.h>
 
 #include "clamav-types.h"
+#include "clamav-version.h"
 
 #ifdef __cplusplus
 extern "C" {
