@@ -835,6 +835,15 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                      * Empty file. Skip.
                      */
                     cli_dbgmsg("EGG: Skipping empty file: %s\n", metadata.filename);
+
+                    if (NULL != extract_filename) {
+                        free(extract_filename);
+                        extract_filename = NULL;
+                    }
+                    if (NULL != extract_buffer) {
+                        free(extract_buffer);
+                        extract_buffer = NULL;
+                    }
                 } else {
                     /*
                      * Drop to a temp file, if requested.
