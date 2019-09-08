@@ -855,7 +855,7 @@ char* cli_sanitize_filepath(const char* filepath, size_t filepath_len)
     size_t sanitized_index   = 0;
     char* sanitized_filepath = NULL;
 
-    if((NULL == filepath) || (0 == filepath_len) || (MAX_PATH < filepath_len)) {
+    if((NULL == filepath) || (0 == filepath_len) || (PATH_MAX < filepath_len)) {
         goto done;
     }
 
