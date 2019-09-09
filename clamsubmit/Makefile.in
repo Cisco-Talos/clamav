@@ -679,7 +679,7 @@ installcheck-binPROGRAMS: $(bin_PROGRAMS)
 
 clamsubmit$(EXEEXT): $(clamsubmit_OBJECTS) $(clamsubmit_DEPENDENCIES) $(EXTRA_clamsubmit_DEPENDENCIES) 
 	@rm -f clamsubmit$(EXEEXT)
-	$(AM_V_OBJCLD)$(OBJCLINK) $(clamsubmit_OBJECTS) $(clamsubmit_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(clamsubmit_OBJECTS) $(clamsubmit_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
