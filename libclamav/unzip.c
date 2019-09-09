@@ -61,7 +61,7 @@
 #define ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED       (0x08074b50)
 // clang-format on
 
-#define ZIP_MAX_NUM_OVERLAPPING_FILES 100
+#define ZIP_MAX_NUM_OVERLAPPING_FILES 5
 
 #define ZIP_CRC32(r, c, b, l) \
     do {                      \
@@ -71,9 +71,13 @@
 
 #define ZIP_RECORDS_CHECK_BLOCKSIZE 100
 struct zip_record {
-    uint32_t local_offset;
+    uint32_t local_header_offset;
     uint32_t local_header_size;
-    uint32_t local_data_size;
+    uint32_t compressed_size;
+    uint32_t uncompressed_size;
+    uint16_t method;
+    uint16_t flags;
+    int encrypted;
 };
 
 static int wrap_inflateinit2(void *a, int b)
@@ -685,11 +689,6 @@ static unsigned int parse_local_file_header(
     zip += LOCAL_HEADER_elen;
     zsize -= LOCAL_HEADER_elen;
 
-    if (NULL != record) {
-        record->local_header_size = zip - local_header;
-        record->local_data_size   = csize;
-    }
-
     if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
         cli_dbgmsg("cli_unzip: local header - skipping empty file\n");
     } else {
@@ -708,7 +707,16 @@ static unsigned int parse_local_file_header(
                 if (fmap_need_ptr_once(map, zip, csize))
                     *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb);
             }
+        } else {
+            record->local_header_offset = loff;
+            record->local_header_size   = zip - local_header;
+            record->compressed_size     = csize;
+            record->uncompressed_size   = usize;
+            record->method              = LOCAL_HEADER_method;
+            record->flags               = LOCAL_HEADER_flags;
+            record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
         }
+
         zip += csize;
         zsize -= csize;
     }
@@ -751,9 +759,8 @@ static unsigned int parse_local_file_header(
  * @param[in,out] ctx                   scan context
  * @param tmpd                          temp directory path name
  * @param requests                      (optional) structure use to search the zip for files by name
- * @return unsigned int                 returns the size of the file header in the central directory, or 0 if no more files
  * @param record                        (optional) a pointer to a struct to store file record information.
- * @return unsigned int
+ * @return unsigned int                 returns the size of the file header in the central directory, or 0 if no more files
  */
 static unsigned int
 parse_central_directory_file_header(
@@ -818,9 +825,6 @@ parse_central_directory_file_header(
 
     if (!requests) {
         if (CENTRAL_HEADER_off < zsize - SIZEOF_LOCAL_HEADER) {
-            if (NULL != record) {
-                record->local_offset = CENTRAL_HEADER_off;
-            }
             parse_local_file_header(map,
                                     CENTRAL_HEADER_off,
                                     zsize - CENTRAL_HEADER_off,
@@ -876,46 +880,63 @@ static int sort_by_file_offset(const void *first, const void *second)
 
     /* Avoid return x - y, which can cause undefined behaviour
        because of signed integer overflow. */
-    if (a->local_offset < b->local_offset)
+    if (a->local_header_offset < b->local_header_offset)
         return -1;
-    else if (a->local_offset > b->local_offset)
+    else if (a->local_header_offset > b->local_header_offset)
         return 1;
 
     return 0;
 }
 
 /**
- * @brief Search the central directory for overlapping files.
+ * @brief Create a catalogue of the central directory.
  *
- * This function indexes every file in the central directory and sorts them by file entry offset.
+ * This function indexes every file in the central directory.
+ * It creates a zip record catalogue and sorts them by file entry offset.
  * Then it iterates the sorted file records looking for overlapping files.
  *
- * @param ctx
- * @param map
- * @param fsize
- * @param coff
+ * The caller is responsible for freeing the catalogue.
+ * The catalogue may contain duplicate items, which should be skipped.
+ *
+ * @param ctx               The scanning context
+ * @param map               The file map
+ * @param fsize             The file size
+ * @param coff              The central directory offset
+ * @param[out] catalogue    A catalogue of zip_records found in the central directory.
+ * @param[out] num_records  The number of records in the catalogue.
  * @return cl_error_t  CL_CLEAN if no overlapping files
  * @return cl_error_t  CL_VIRUS if overlapping files and heuristic alerts are enabled
  * @return cl_error_t  CL_EFORMAT if overlapping files and heuristic alerts are disabled
  * @return cl_error_t  CL_ETIMEOUT if the scan time limit is exceeded.
  * @return cl_error_t  CL_EMEM for memory allocation errors.
  */
-cl_error_t check_for_overlapping_files(cli_ctx *ctx,
-                                       fmap_t *map,
-                                       uint32_t fsize,
-                                       uint32_t coff)
+cl_error_t index_the_central_directory(
+    cli_ctx *ctx,
+    fmap_t *map,
+    uint32_t fsize,
+    uint32_t coff,
+    struct zip_record **catalogue,
+    size_t *num_records)
 {
     cl_error_t status = CL_CLEAN;
     cl_error_t ret    = CL_CLEAN;
 
-    struct zip_record *zip_catalogue = NULL;
-    size_t num_record_blocks         = 0;
-    size_t index                     = 0;
-    size_t records_count             = 0;
+    size_t num_record_blocks = 0;
+    size_t index             = 0;
 
-    struct zip_record *curr_record = NULL;
-    struct zip_record *prev_record = NULL;
-    uint32_t nOverlappingFiles     = 0;
+    struct zip_record *zip_catalogue = NULL;
+    size_t records_count             = 0;
+    struct zip_record *curr_record   = NULL;
+    struct zip_record *prev_record   = NULL;
+    uint32_t num_overlapping_files   = 0;
+
+    if (NULL == catalogue || NULL == num_records) {
+        cli_errmsg("index_the_central_directory: Invalid NULL arguments\n");
+        goto done;
+    }
+
+    *catalogue   = NULL;
+    *num_records = 0;
 
     zip_catalogue = (struct zip_record *)cli_malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
     if (NULL == zip_catalogue) {
@@ -936,7 +957,7 @@ cl_error_t check_for_overlapping_files(cli_ctx *ctx,
                                                             ctx,
                                                             NULL, // tmpd not required
                                                             NULL,
-                                                            &zip_catalogue[records_count]))) {
+                                                            &(zip_catalogue[records_count])))) {
         index++;
 
         if (cli_checktimelimit(ctx) != CL_SUCCESS) {
@@ -970,64 +991,75 @@ cl_error_t check_for_overlapping_files(cli_ctx *ctx,
             }
             num_record_blocks++;
             /* zero out the memory for the new records */
-            memset(&zip_catalogue[records_count], 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
+            memset(&(zip_catalogue[records_count]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
         }
     }
 
-    if (records_count < 2) {
-        goto done;
-    }
+    if (records_count > 1) {
+        /*
+         * Sort the records by local file offset
+         */
+        cli_qsort(zip_catalogue, records_count, sizeof(struct zip_record), sort_by_file_offset);
 
-    /*
-     * Sort the records by local file offset
-     */
-    cli_qsort(zip_catalogue, records_count, sizeof(struct zip_record), sort_by_file_offset);
+        /*
+         * Detect overlapping files.
+         */
+        for (index = 1; index < records_count; index++) {
+            prev_record = &(zip_catalogue[index - 1]);
+            curr_record = &(zip_catalogue[index]);
 
-    /*
-     * Detect overlapping files.
-     */
-    for (index = 1; index < records_count; index++) {
-        prev_record = &zip_catalogue[index - 1];
-        curr_record = &zip_catalogue[index];
+            /* Check for integer overflow in 32bit size & offset values */
+            if ((UINT32_MAX - (prev_record->local_header_size + prev_record->compressed_size) < prev_record->local_header_offset) ||
+                (UINT32_MAX - (curr_record->local_header_size + curr_record->compressed_size) < curr_record->local_header_offset)) {
+                cli_dbgmsg("cli_unzip: Integer overflow detected; invalid data sizes in zip file headers.\n");
+                status = CL_EFORMAT;
+                goto done;
+            }
 
-        /* Check for integer overflow in 32bit size & offset values */
-        if ((UINT32_MAX - (prev_record->local_header_size + prev_record->local_data_size) < prev_record->local_offset) ||
-            (UINT32_MAX - (curr_record->local_header_size + curr_record->local_data_size) < curr_record->local_offset)) {
-            cli_dbgmsg("cli_unzip: Integer overflow detected; invalid data sizes in zip file headers.\n");
-            status = CL_EFORMAT;
-            goto done;
-        }
+            if (((curr_record->local_header_offset >= prev_record->local_header_offset) && (curr_record->local_header_offset < prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size)) ||
+                ((prev_record->local_header_offset >= curr_record->local_header_offset) && (prev_record->local_header_offset < curr_record->local_header_offset + curr_record->local_header_size + curr_record->compressed_size))) {
+                /* Overlapping file detected */
+                num_overlapping_files++;
 
-        if (((curr_record->local_offset >= prev_record->local_offset) && (curr_record->local_offset < prev_record->local_offset + prev_record->local_header_size + prev_record->local_data_size)) ||
-            ((prev_record->local_offset >= curr_record->local_offset) && (prev_record->local_offset < curr_record->local_offset + curr_record->local_header_size + curr_record->local_data_size))) {
-            /* Overlapping file detected */
-            nOverlappingFiles++;
-
-            cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
-            cli_dbgmsg("    previous file end:  %u\n", prev_record->local_offset + prev_record->local_header_size + prev_record->local_data_size);
-            cli_dbgmsg("    current file start: %u\n", curr_record->local_offset);
-
-            if (ZIP_MAX_NUM_OVERLAPPING_FILES < nOverlappingFiles) {
-                if (SCAN_HEURISTICS) {
-                    status = cli_append_virus(ctx, "Heuristics.Zip.OverlappingFiles");
+                if ((curr_record->local_header_offset == prev_record->local_header_offset) &&
+                    (curr_record->local_header_size == prev_record->local_header_size) &&
+                    (curr_record->compressed_size == prev_record->compressed_size)) {
+                    cli_dbgmsg("cli_unzip: Ignoring duplicate file entry @ 0x%x.\n", curr_record->local_header_offset);
                 } else {
-                    status = CL_EFORMAT;
+                    cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
+                    cli_dbgmsg("    previous file end:  %u\n", prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size);
+                    cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
+
+                    if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
+                        if (SCAN_HEURISTICS) {
+                            status = cli_append_virus(ctx, "Heuristics.Zip.OverlappingFiles");
+                        } else {
+                            status = CL_EFORMAT;
+                        }
+                        goto done;
+                    }
                 }
-                break;
+            }
+
+            if (cli_checktimelimit(ctx) != CL_SUCCESS) {
+                cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
+                status = CL_ETIMEOUT;
+                goto done;
             }
         }
-
-        if (cli_checktimelimit(ctx) != CL_SUCCESS) {
-            cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
-            status = CL_ETIMEOUT;
-            goto done;
-        }
     }
+
+    *catalogue   = zip_catalogue;
+    *num_records = records_count;
+    status       = CL_SUCCESS;
 
 done:
 
-    if (NULL != zip_catalogue) {
-        free(zip_catalogue);
+    if (CL_SUCCESS != status) {
+        if (NULL != zip_catalogue) {
+            free(zip_catalogue);
+            zip_catalogue = NULL;
+        }
     }
 
     return status;
@@ -1045,6 +1077,9 @@ cl_error_t cli_unzip(cli_ctx *ctx)
 #if HAVE_JSON
     int toval = 0;
 #endif
+    struct zip_record *zip_catalogue = NULL;
+    size_t records_count             = 0;
+    size_t i;
 
     cli_dbgmsg("in cli_unzip\n");
     fsize = (uint32_t)map->len;
@@ -1082,21 +1117,63 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     if (coff) {
         cli_dbgmsg("cli_unzip: central directory header offset: @%x\n", coff);
 
-        ret = check_for_overlapping_files(ctx, map, fsize, coff);
+        /*
+         * Index the central directory first.
+         */
+        ret = index_the_central_directory(
+            ctx,
+            map,
+            fsize,
+            coff,
+            &zip_catalogue,
+            &records_count);
         if (CL_SUCCESS != ret) {
             goto done;
         }
 
-        while ((coff = parse_central_directory_file_header(map,
-                                                           coff,
-                                                           fsize,
-                                                           &num_files_unzipped,
-                                                           file_count + 1,
-                                                           &ret,
-                                                           ctx,
-                                                           tmpd,
-                                                           NULL,
-                                                           NULL))) {
+        /*
+         * Then decrypt/unzip & scan each unique file entry.
+         */
+        for (i = 0; i < records_count; i++) {
+            const uint8_t *compressed_data = NULL;
+
+            if ((i > 0) &&
+                (zip_catalogue[i].local_header_offset == zip_catalogue[i - 1].local_header_offset) &&
+                (zip_catalogue[i].local_header_size == zip_catalogue[i - 1].local_header_size) &&
+                (zip_catalogue[i].compressed_size == zip_catalogue[i - 1].compressed_size)) {
+
+                /* Duplicate file entry, skip. */
+                cli_dbgmsg("cli_unzip: Skipping unzipping of duplicate file entry: @ 0x%x\n", zip_catalogue[i].local_header_offset);
+                continue;
+            }
+
+            compressed_data = fmap_need_off(map, zip_catalogue[i].local_header_offset + zip_catalogue[i].local_header_size, SIZEOF_LOCAL_HEADER);
+
+            if (zip_catalogue[i].encrypted) {
+                if (fmap_need_ptr_once(map, compressed_data, zip_catalogue[i].compressed_size))
+                    ret = zdecrypt(
+                        compressed_data,
+                        zip_catalogue[i].compressed_size,
+                        zip_catalogue[i].uncompressed_size,
+                        fmap_need_off(map, zip_catalogue[i].local_header_offset, SIZEOF_LOCAL_HEADER),
+                        &num_files_unzipped,
+                        ctx,
+                        tmpd,
+                        zip_scan_cb);
+            } else {
+                if (fmap_need_ptr_once(map, compressed_data, zip_catalogue[i].compressed_size))
+                    ret = unz(
+                        compressed_data,
+                        zip_catalogue[i].compressed_size,
+                        zip_catalogue[i].uncompressed_size,
+                        zip_catalogue[i].method,
+                        zip_catalogue[i].flags,
+                        &num_files_unzipped,
+                        ctx,
+                        tmpd,
+                        zip_scan_cb);
+            }
+
             file_count++;
             if (ctx->engine->maxfiles && num_files_unzipped >= ctx->engine->maxfiles) {
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
@@ -1164,6 +1241,12 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     }
 
 done:
+
+    if (NULL != zip_catalogue) {
+        free(zip_catalogue);
+        zip_catalogue = NULL;
+    }
+
     if (NULL != tmpd) {
         if (!ctx->engine->keeptmp) {
             cli_rmdirs(tmpd);
