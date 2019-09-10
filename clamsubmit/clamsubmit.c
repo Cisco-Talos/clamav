@@ -12,6 +12,7 @@
 
 #include <curl/curl.h>
 
+#include "target.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/misc.h"
@@ -146,7 +147,8 @@ const char *presigned_get_string(json_object *ps_json_obj, char *key)
 
 int main(int argc, char *argv[])
 {
-    int status      = 1;
+    int status = 1;
+    char userAgent[128];
     CURL *clam_curl = NULL, *aws_curl = NULL;
     CURLcode res;
     int ch;
@@ -173,6 +175,16 @@ int main(int argc, char *argv[])
     if (clam_curl == NULL) {
         fprintf(stderr, "ERROR: Could not initialize libcurl.\n");
         goto cleanup;
+    }
+
+    memset(userAgent, 0, sizeof(userAgent));
+    snprintf(userAgent, sizeof(userAgent),
+             PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ")",
+             get_version());
+    userAgent[sizeof(userAgent) - 1] = 0;
+
+    if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_USERAGENT, userAgent)) {
+        fprintf(stderr, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
     }
 
     while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
@@ -383,6 +395,10 @@ int main(int argc, char *argv[])
         goto cleanup;
     }
 
+    if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_USERAGENT, userAgent)) {
+        fprintf(stderr, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+    }
+
     if (g_debug) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
@@ -397,7 +413,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
     }
 
-#ifdef _WIN32
+#if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
     }
