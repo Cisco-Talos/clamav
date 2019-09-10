@@ -137,9 +137,12 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Clement Lecigne
 - Joe Cooper
 - Jonas Zaddach
+- Markus Kolb
+- Orion Poplawski
 - Ørjan Malde
 - Paul Arthur
 - Rick Wang
+- Romain Chollet
 - Rosen Penev
 - Thomas Jarosch
 - Tomasz Kojm
