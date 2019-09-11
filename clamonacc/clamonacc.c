@@ -384,13 +384,13 @@ void help(void)
     exit(0);
 }
 
-void *onas_cleanup(struct onas_context *ctx)
+void onas_cleanup(struct onas_context *ctx)
 {
     onas_context_cleanup(ctx);
     logg_close();
 }
 
-void *onas_context_cleanup(struct onas_context *ctx)
+void onas_context_cleanup(struct onas_context *ctx)
 {
     close(ctx->fan_fd);
     optfree((struct optstruct *)ctx->opts);
