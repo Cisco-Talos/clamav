@@ -576,6 +576,7 @@ clamsubmit_SOURCES = $(top_srcdir)/shared/output.c \
 AM_CFLAGS = @WERR_CFLAGS@ @CLAMSUBMIT_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 @MACOS_TRUE@AM_LDFLAGS = -framework CoreFoundation -framework Security
+AM_LIBTOOLFLAGS = --tag CXX
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamsubmit$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
 all: all-am
