@@ -53,6 +53,7 @@ extern "C" {
 #endif
 
 #include "unrar_iface.h"
+#include "clamav-types.h"
 
 #ifndef MIN
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -342,10 +343,10 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
 
     unrar_dbgmsg("unrar_peek_file_header:   Name:          %s\n", headerData.FileName);
     unrar_dbgmsg("unrar_peek_file_header:   Directory?:    %u\n", file_metadata->is_dir);
-    unrar_dbgmsg("unrar_peek_file_header:   Target Dir:    %ls\n", headerData.DirTarget);
+    unrar_dbgmsg("unrar_peek_file_header:   Target Dir:    %u\n", headerData.DirTarget);
     unrar_dbgmsg("unrar_peek_file_header:   RAR Version:   %u\n", headerData.UnpVer);
-    unrar_dbgmsg("unrar_peek_file_header:   Packed Size:   %lld\n", file_metadata->pack_size);
-    unrar_dbgmsg("unrar_peek_file_header:   Unpacked Size: %lld\n", file_metadata->unpack_size);
+    unrar_dbgmsg("unrar_peek_file_header:   Packed Size:   %" PRIu64 "\n", file_metadata->pack_size);
+    unrar_dbgmsg("unrar_peek_file_header:   Unpacked Size: %" PRIu64 "\n", file_metadata->unpack_size);
 
     // PrintTime("mtime",HeaderData.MtimeLow,HeaderData.MtimeHigh);
     // PrintTime("ctime",HeaderData.CtimeLow,HeaderData.CtimeHigh);
