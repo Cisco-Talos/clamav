@@ -58,5 +58,7 @@ if MACOS
 AM_LDFLAGS = -framework CoreFoundation -framework Security
 endif
 
+AM_LIBTOOLFLAGS = --tag CXX
+
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamsubmit$(EXEEXT)
 CLEANFILES=*.gcda *.gcno
