@@ -98,6 +98,8 @@ changes.
   given code change.
 - Added a new `clamav-version.h` generated header to provide version number
   macros in text and numerical format for ClamAV, libclamav, and libfreshclam.
+- Improved cross-platform buildability of libxml2. Work courtesy of Eneas U de 
+  Queiroz with supporting ideas pulled from the work of Jim Klimov.
 
 ### Bug fixes
 
@@ -135,6 +137,8 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Carlo Landmeter
 - Chips
 - Clement Lecigne
+- Eneas U de Queiroz
+- Jim Klimov
 - Joe Cooper
 - Jonas Zaddach
 - Markus Kolb
