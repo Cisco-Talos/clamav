@@ -65,6 +65,7 @@ int main(int argc, char **argv)
     time_t starttime;
     struct optstruct *opts;
     const struct optstruct *opt;
+    char buffer[26];
 #ifndef _WIN32
     struct sigaction sigact;
 #endif
@@ -167,6 +168,10 @@ int main(int argc, char **argv)
             logg("Not moved: %d\n", notmoved);
         }
         logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms / 1000, ds / 60, ds % 60);
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t1.tv_sec));
+        logg("Start Date: %s\n", buffer);
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t2.tv_sec));
+        logg("End Date: %s\n", buffer);
     }
 
     logg_close();
