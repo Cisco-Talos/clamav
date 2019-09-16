@@ -1,6 +1,6 @@
 /*
-*  Copyright (C) 2015 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
-*  Copyright (C) 2011 Sourcefire, Inc.
+*  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+*  Copyright (C) 2011-2013 Sourcefire, Inc.
 *
 *  Authors: Tomasz Kojm <tkojm@clamav.net>
 *
@@ -70,20 +70,20 @@ struct gif_image_desc {
 
 #define EC16(x) le16_to_host(x)
 
-#define GETDATA(v)                                                  \
-    {                                                               \
-    if(fmap_readn(map, &v, offset, sizeof(v)) == sizeof(v)) {       \
-	    offset += sizeof(v);                                        \
-    } else {                                                        \
-	    cli_errmsg("cli_parsegif: Can't read file (truncated?)\n"); \
-	    return CL_EPARSE;                                           \
-    }                                                               \
+#define GETDATA(v)                                                      \
+    {                                                                   \
+        if (fmap_readn(map, &v, offset, sizeof(v)) == sizeof(v)) {      \
+            offset += sizeof(v);                                        \
+        } else {                                                        \
+            cli_errmsg("cli_parsegif: Can't read file (truncated?)\n"); \
+            return CL_EPARSE;                                           \
+        }                                                               \
     }
 
 int cli_parsegif(cli_ctx *ctx)
 {
-    fmap_t *map = *ctx->fmap;
-    unsigned char v = 0;
+    fmap_t *map         = *ctx->fmap;
+    unsigned char v     = 0;
     unsigned int offset = 6;
     struct gif_screen_desc screen_desc;
     struct gif_image_desc image_desc;
@@ -102,23 +102,20 @@ int cli_parsegif(cli_ctx *ctx)
             GETDATA(v);
             if (v == 0xf9) {
                 offset += sizeof(struct gif_graphic_control_ext);
-            }
-            else {
+            } else {
                 while (1) {
                     GETDATA(v);
                     if (!v)
                         break;
 
-                    if (offset + v > map->len)
-                    {
+                    if (offset + v > map->len) {
                         retVal = CL_EPARSE;
                         goto scan_overlay;
                     }
                     offset += v;
                 }
             }
-        }
-        else if (v == 0x2c) {
+        } else if (v == 0x2c) {
             GETDATA(image_desc);
             cli_dbgmsg("GIF: Image size %ux%u, left pos: %u, top pos: %u\n", EC16(image_desc.width), EC16(image_desc.height), EC16(image_desc.leftpos), EC16(image_desc.toppos));
 
@@ -131,18 +128,15 @@ int cli_parsegif(cli_ctx *ctx)
                 if (!v)
                     break;
 
-                if (offset + v > map->len)
-                {
+                if (offset + v > map->len) {
                     retVal = CL_EPARSE;
                     goto scan_overlay;
                 }
                 offset += v;
             }
-        }
-        else if (v == 0x3b) {
+        } else if (v == 0x3b) {
             break;
-        }
-        else {
+        } else {
             // An unknown code: break.
             retVal = CL_EPARSE;
             goto scan_overlay;
@@ -156,10 +150,9 @@ scan_overlay:
         offset = 6;
 
     // Is there an overlay?
-    if (offset < map->len)
-    {
+    if (offset < map->len) {
         int recRetVal = cli_map_scan(map, offset, map->len - offset, ctx, CL_TYPE_ANY);
-        retVal = recRetVal != CL_SUCCESS ? recRetVal : retVal;
+        retVal        = recRetVal != CL_SUCCESS ? recRetVal : retVal;
     }
 
     return retVal;

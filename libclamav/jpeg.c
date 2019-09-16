@@ -37,12 +37,12 @@
 #include "jpeg.h"
 #include "clamav.h"
 
-#define GETBYTE(v)                                                         \
-    if (fmap_readn(map, &v, offset, sizeof(v)) == sizeof(v)) {             \
-        offset += sizeof(v);                                               \
-    } else {                                                               \
-	cli_errmsg("cli_parsejpeg: Can't read file (corrupted?)\n");	\
-        return CL_EPARSE;                                                  \
+#define GETBYTE(v)                                                   \
+    if (fmap_readn(map, &v, offset, sizeof(v)) == sizeof(v)) {       \
+        offset += sizeof(v);                                         \
+    } else {                                                         \
+        cli_errmsg("cli_parsejpeg: Can't read file (corrupted?)\n"); \
+        return CL_EPARSE;                                            \
     }
 
 int cli_parsejpeg(cli_ctx *ctx)
