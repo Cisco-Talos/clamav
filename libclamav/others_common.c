@@ -443,8 +443,11 @@ int cli_filecopy(const char *src, const char *dest)
         return -1;
     }
 
-    while ((bytes = cli_readn(s, buffer, FILEBUFF)) != (size_t)-1)
+    bytes = cli_readn(s, buffer, FILEBUFF);
+    while ((bytes != (size_t)-1) && (bytes != 0)) {
         cli_writen(d, buffer, bytes);
+        bytes = cli_readn(s, buffer, FILEBUFF);
+    }
 
     free(buffer);
     close(s);
