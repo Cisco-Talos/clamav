@@ -280,7 +280,7 @@ static fc_error_t create_curl_handle(
 
     CURL *curl = NULL;
 
-#if defined(CURLOPT_DNS_LOCAL_IP4) || defined(CURLOPT_DNS_LOCAL_IP4)
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 33))
     CURLcode curl_ret = CURLE_OK;
 #endif
 
@@ -340,9 +340,9 @@ static fc_error_t create_curl_handle(
         }
     }
 
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 33))
     if (g_localIP) {
         if (NULL == strchr(g_localIP, ':')) {
-#ifdef CURLOPT_DNS_LOCAL_IP4
             logg("*Local IPv4 address requested: %s\n", g_localIP);
             curl_ret = curl_easy_setopt(curl, CURLOPT_DNS_LOCAL_IP4, g_localIP); // Option requires libcurl built with c-ares
             switch (curl_ret) {
@@ -352,21 +352,17 @@ static fc_error_t create_curl_handle(
                     goto done;
                     break;
                 case CURLE_UNKNOWN_OPTION:
-#ifdef CURLE_NOT_BUILT_IN
                 case CURLE_NOT_BUILT_IN:
                     logg("!create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
-#endif
                 default:
                     break;
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4)) {
                 logg("!create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv4)!\n");
             }
-#endif
         } else {
-#ifdef CURLOPT_DNS_LOCAL_IP6
             logg("*Local IPv6 address requested: %s\n", g_localIP);
             curl_ret = curl_easy_setopt(curl, CURLOPT_DNS_LOCAL_IP6, g_localIP); // Option requires libcurl built with c-ares
             switch (curl_ret) {
@@ -376,21 +372,19 @@ static fc_error_t create_curl_handle(
                     goto done;
                     break;
                 case CURLE_UNKNOWN_OPTION:
-#ifdef CURLE_NOT_BUILT_IN
                 case CURLE_NOT_BUILT_IN:
                     logg("^create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
-#endif
                 default:
                     break;
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6)) {
                 logg("!create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv6)!\n");
             }
-#endif
         }
     }
+#endif
     if (g_proxyServer) {
         /*
          * Proxy requested.

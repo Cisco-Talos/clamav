@@ -169,9 +169,10 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 
     /* Optional connection settings. */
     if (NULL != fcConfig->localIP) {
-#if !defined(CURLOPT_DNS_LOCAL_IP4) || !defined(CURLOPT_DNS_LOCAL_IP6)
+#if !((LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 33)))
         mprintf("!The LocalIP feature was requested but this local IP support is not presently available.\n");
-        mprintf("!Your installation may require a newer version of libcurl or your libcurl build lacks the c-ares optional dependency.\n");
+        mprintf("!Your installation was built with libcurl version %u.%u.%u.\n", LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
+        mprintf("!LocalIP requires libcurl version 7.33.0 or higher and must include the c-ares optional dependency.\n");
 #else
         g_localIP = cli_strdup(fcConfig->localIP);
 #endif
