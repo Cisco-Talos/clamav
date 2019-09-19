@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
+libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
 libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
 libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
 
@@ -77,6 +77,6 @@ lib_LTLIBRARIES = libfreshclam.la
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno
