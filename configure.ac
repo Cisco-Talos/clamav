@@ -110,7 +110,7 @@ m4_include([m4/reorganization/code_checks/dns.m4])
 m4_include([m4/reorganization/code_checks/fanotify.m4])
 m4_include([m4/reorganization/code_checks/setpgrp.m4])
 m4_include([m4/reorganization/milter/enable.m4])
-m4_include([m4/reorganization/code_checks/iconv.m4])
+m4_include([m4/reorganization/libs/iconv_check.m4])
 m4_include([m4/reorganization/code_checks/pthreads.m4])
 m4_include([m4/reorganization/code_checks/reentrant.m4])
 m4_include([m4/reorganization/utility_checks/id.m4])
@@ -322,11 +322,7 @@ fi
 CL_MSG_STATUS([mempool     ],[$have_mempool],[$enable_mempool])
 
 AC_MSG_NOTICE([Summary of engine detection features])
-if test "X$have_iconv" = "Xyes"; then
-    CL_MSG_STATUS([iconv       ],[yes, from $ICONV_HOME],[])
-else
-    CL_MSG_STATUS([iconv       ],[no],[])
-fi
+CL_MSG_STATUS([iconv       ],[$am_func_iconv],[])
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 if test "x${ZLIB_HOME}" != "x"; then
     CL_MSG_STATUS([zlib        ], [yes (zlib found at $ZLIB_HOME)], [yes])
