@@ -18,7 +18,7 @@
 
 libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
 libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
-libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
+libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @LIBICONV@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
 
 if MACOS
 libfreshclam_la_LDFLAGS += -framework CoreFoundation -framework Security
