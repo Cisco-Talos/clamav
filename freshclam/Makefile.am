@@ -43,8 +43,8 @@ endif
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=freshclam$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

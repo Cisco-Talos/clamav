@@ -328,7 +328,11 @@ else
     CL_MSG_STATUS([iconv       ],[no],[])
 fi
 CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
-CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
+if test "x${ZLIB_HOME}" != "x"; then
+    CL_MSG_STATUS([zlib        ], [yes (zlib found at $ZLIB_HOME)], [yes])
+else
+    CL_MSG_STATUS([zlib        ], [yes (from system)], [yes])
+fi
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
 if test "X$have_json" = "Xyes"; then
     CL_MSG_STATUS([preclass    ],[yes (libjson-c-dev found at $LIBJSON_HOME)],[yes])
@@ -361,7 +365,7 @@ if test "x$gcc_check" != "xyes"; then
 ])
 fi
 
-if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" || test "x$bzip_check" != "xok" ; then
+if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$bzip_check" != "xok" ; then
 AC_MSG_WARN([
 ****** WARNING:
 ****** You are cross compiling to a different host or you are
