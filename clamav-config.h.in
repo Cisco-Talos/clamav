@@ -200,8 +200,11 @@
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
 
-/* iconv() available */
+/* Define if you have the iconv() function and it works. */
 #undef HAVE_ICONV
+
+/* Define to 1 if you have the <iconv.h> header file. */
+#undef HAVE_ICONV_H
 
 /* Define to 1 if you have the `inet_ntop' function. */
 #undef HAVE_INET_NTOP
@@ -220,6 +223,9 @@
 
 /* Define to 1 if you have the 'libjson' library (-ljson). */
 #undef HAVE_JSON
+
+/* Define to 1 if you have the `charset' library (-lcharset). */
+#undef HAVE_LIBCHARSET
 
 /* Define to '1' if you have the check.h library */
 #undef HAVE_LIBCHECK
@@ -250,6 +256,12 @@
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
+
+/* Define to 1 if you have the <localcharset.h> header file. */
+#undef HAVE_LOCALCHARSET_H
+
+/* Define to 1 if you have the `locale_charset' function. */
+#undef HAVE_LOCALE_CHARSET
 
 /* Define this if a modern libltdl is already installed */
 #undef HAVE_LTDL
@@ -456,8 +468,14 @@
 /* yara sources are compiled in */
 #undef HAVE_YARA
 
+/* Define to 1 if you have the <zlib.h> header file. */
+#undef HAVE_ZLIB_H
+
 /* For internal use only - DO NOT DEFINE */
 #undef HAVE__INTERNAL__SHA_COLLECT
+
+/* Define as const if the declaration of iconv() needs const. */
+#undef ICONV_CONST
 
 /* "Full clamav library version number" */
 #undef LIBCLAMAV_FULLVER
