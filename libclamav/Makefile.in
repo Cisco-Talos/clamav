@@ -173,7 +173,8 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fanotify.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/setpgrp.m4 \
 	$(top_srcdir)/m4/reorganization/milter/enable.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/iconv.m4 \
+	$(top_srcdir)/m4/reorganization/libs/iconv_check.m4 \
+	$(top_srcdir)/m4/reorganization/libs/iconv.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/pthreads.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/reentrant.m4 \
 	$(top_srcdir)/m4/reorganization/utility_checks/id.m4 \
@@ -945,8 +946,6 @@ GPERF = @GPERF@
 GREP = @GREP@
 HAVE_STRNI = @HAVE_STRNI@
 HAVE_YARA = @HAVE_YARA@
-ICONV_CPPFLAGS = @ICONV_CPPFLAGS@
-ICONV_LDFLAGS = @ICONV_LDFLAGS@
 INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -980,6 +979,7 @@ LIBCLAMAV_VERSION_NUM = @LIBCLAMAV_VERSION_NUM@
 LIBCLAMSHARED_CPPFLAGS = @LIBCLAMSHARED_CPPFLAGS@
 LIBFRESHCLAM_VERSION = @LIBFRESHCLAM_VERSION@
 LIBFRESHCLAM_VERSION_NUM = @LIBFRESHCLAM_VERSION_NUM@
+LIBICONV = @LIBICONV@
 LIBLTDL = @LIBLTDL@
 LIBM = @LIBM@
 LIBMSPACK_CFLAGS = @LIBMSPACK_CFLAGS@
@@ -1000,6 +1000,7 @@ LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
 LTDLOPEN = @LTDLOPEN@
 LTLIBBZ2 = @LTLIBBZ2@
+LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 LT_ARGZ_H = @LT_ARGZ_H@
 LT_CONFIG_H = @LT_CONFIG_H@
@@ -1058,6 +1059,8 @@ XML_CPPFLAGS = @XML_CPPFLAGS@
 XML_LIBS = @XML_LIBS@
 YACC = @YACC@
 YFLAGS = @YFLAGS@
+ZLIB_CFLAGS = @ZLIB_CFLAGS@
+ZLIB_LIBS = @ZLIB_LIBS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -1321,12 +1324,12 @@ SUBDIRS = $(am__append_6)
 @USE_INTERNAL_MSPACK_TRUE@MSPACKDEP = libclammspack.la
 @ENABLE_YARA_TRUE@YARA_CFLAGS = -DHAVE_YARA
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
-libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @LIBLTDL@ $(XML_LIBS) $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
+libclamav_nocxx_la_CFLAGS = $(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@
+libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @ZLIB_LIBS@ @LIBLTDL@ $(XML_LIBS) $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES = @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS = $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ICONV_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
+libclamav_la_CFLAGS = $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ \
-	@ICONV_LDFLAGS@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
+	@LIBICONV@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_8)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
