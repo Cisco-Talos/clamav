@@ -121,20 +121,23 @@ TCPAddr 127.0.0.1
 
 # This option specifies the time (in seconds) after which clamd should
 # timeout if a client doesn't provide any initial command after connecting.
-# Default: 5
-#CommandReadTimeout 5
+# Default: 30
+#CommandReadTimeout 30
 
-# This option specifies how long to wait (in milliseconds) if the send buffer is full.
-# Keep this value low to prevent clamd hanging
+# This option specifies how long to wait (in milliseconds) if the send buffer
+# is full.
+# Keep this value low to prevent clamd hanging.
 #
 # Default: 500
 #SendBufTimeout 200
 
-# Maximum number of queued items (including those being processed by MaxThreads threads)
+# Maximum number of queued items (including those being processed by
+# MaxThreads threads).
 # It is recommended to have this value at least twice MaxThreads if possible.
-# WARNING: you shouldn't increase this too much to avoid running out  of file descriptors,
-# the following condition should hold:
-# MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual max is 1024)
+# WARNING: you shouldn't increase this too much to avoid running out  of file
+# descriptors, the following condition should hold:
+# MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual
+# max is 1024).
 #
 # Default: 100
 #MaxQueue 200
@@ -239,8 +242,8 @@ TCPAddr 127.0.0.1
 # When enabled, if a heuristic scan (such as phishingScan) detects
 # a possible virus/phish it will stop scan immediately. Recommended, saves CPU
 # scan-time.
-# When disabled, virus/phish detected by heuristic scans will be reported only at
-# the end of a scan. If an archive contains both a heuristically detected
+# When disabled, virus/phish detected by heuristic scans will be reported only
+# at the end of a scan. If an archive contains both a heuristically detected
 # virus/phish, and a real malware, the real malware will be reported
 #
 # Keep this disabled if you intend to handle "*.Heuristics.*" viruses
@@ -261,11 +264,13 @@ TCPAddr 127.0.0.1
 # Default: no
 #AlertBrokenExecutables yes
 
-# Alert on encrypted archives _and_ documents with heuristic signature (encrypted .zip, .7zip, .rar, .pdf).
+# Alert on encrypted archives _and_ documents with heuristic signature
+# (encrypted .zip, .7zip, .rar, .pdf).
 # Default: no
 #AlertEncrypted yes
 
-# Alert on encrypted archives with heuristic signature (encrypted .zip, .7zip, .rar).
+# Alert on encrypted archives with heuristic signature (encrypted .zip, .7zip,
+# .rar).
 # Default: no
 #AlertEncryptedArchive yes
 
@@ -298,8 +303,8 @@ TCPAddr 127.0.0.1
 ##
 
 # PE stands for Portable Executable - it's an executable file format used
-# in all 32 and 64-bit versions of Windows operating systems. This option allows
-# ClamAV to perform a deeper analysis of executable files and it's also
+# in all 32 and 64-bit versions of Windows operating systems. This option
+# allows ClamAV to perform a deeper analysis of executable files and it's also
 # required for decompression of popular executable packers such as UPX, FSG,
 # and Petite. If you turn off this option, the original files will still be
 # scanned, but without additional processing.
@@ -371,7 +376,8 @@ TCPAddr 127.0.0.1
 #ScanMail yes
 
 # Scan RFC1341 messages split over many emails.
-# You will need to periodically clean up $TemporaryDirectory/clamav-partial directory.
+# You will need to periodically clean up $TemporaryDirectory/clamav-partial
+# directory.
 # WARNING: This option may open your system to a DoS attack.
 #	   Never use it on loaded servers.
 # Default: no
@@ -448,17 +454,17 @@ TCPAddr 127.0.0.1
 
 # This option sets the maximum amount of time to a scan may take.
 # In this version, this field only affects the scan time of ZIP archives.
-# Value of 0 disables the limit
+# Value of 0 disables the limit.
 # Note: disabling this limit or setting it too high may result allow scanning
-# of certain files to lock up the scanning process/threads resulting in a Denial
-# of Service.
+# of certain files to lock up the scanning process/threads resulting in a
+# Denial of Service.
 # Time is in milliseconds.
 # Default: 120000
 #MaxScanTime 300000
 
-# This option sets the maximum amount of data to be scanned for each input file.
-# Archives and other containers are recursively extracted and scanned up to this
-# value.
+# This option sets the maximum amount of data to be scanned for each input
+# file. Archives and other containers are recursively extracted and scanned
+# up to this value.
 # Value of 0 disables the limit
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
@@ -622,6 +628,3 @@ TCPAddr 127.0.0.1
 # Default: 5000
 # BytecodeTimeout 1000
 
-##
-## Statistics gathering and submitting
-##

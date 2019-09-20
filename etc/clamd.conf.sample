@@ -150,7 +150,7 @@ Example
 
 # This option specifies how long to wait (in milliseconds) if the send buffer
 # is full.
-# Keep this value low to prevent clamd hanging
+# Keep this value low to prevent clamd hanging.
 #
 # Default: 500
 #SendBufTimeout 200
@@ -161,7 +161,7 @@ Example
 # WARNING: you shouldn't increase this too much to avoid running out  of file
 # descriptors, the following condition should hold:
 # MaxThreads*MaxRecursion + (MaxQueue - MaxThreads) + 6< RLIMIT_NOFILE (usual
-# max is 1024)
+# max is 1024).
 #
 # Default: 100
 #MaxQueue 200
@@ -487,10 +487,9 @@ Example
 #MaxScanTime 300000
 
 # This option sets the maximum amount of data to be scanned for each input
-# file.
-# Archives and other containers are recursively extracted and scanned up to
-# this value.
-# Value of 0 disables the limit.
+# file. Archives and other containers are recursively extracted and scanned
+# up to this value.
+# Value of 0 disables the limit
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
 # Default: 100M
