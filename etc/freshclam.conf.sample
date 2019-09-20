@@ -90,11 +90,11 @@ DatabaseMirror database.clamav.net
 # This option can be used multiple times. Support for:
 #   http(s)://, ftp(s)://, or file://
 # Default: no custom URLs
-#DatabaseCustomURL http://myserver.com/mysigs.ndb
-#DatabaseCustomURL https://myserver.com/mysigs.ndb
-#DatabaseCustomURL https://myserver.com:4567/whitelist.wdb
-#DatabaseCustomURL ftp://myserver.com/example.ldb
-#DatabaseCustomURL ftps://myserver.com:4567/example.ndb
+#DatabaseCustomURL http://myserver.example.com/mysigs.ndb
+#DatabaseCustomURL https://myserver.example.com/mysigs.ndb
+#DatabaseCustomURL https://myserver.example.com:4567/whitelist.wdb
+#DatabaseCustomURL ftp://myserver.example.com/example.ldb
+#DatabaseCustomURL ftps://myserver.example.com:4567/example.ndb
 #DatabaseCustomURL file:///mnt/nfs/local.hdb
 
 # This option allows you to easily point freshclam to private mirrors.
@@ -107,15 +107,16 @@ DatabaseMirror database.clamav.net
 # and ScriptedUpdates. It can be used multiple times to provide
 # fall-back mirrors.
 # Default: disabled
-#PrivateMirror mirror1.mynetwork.com
-#PrivateMirror mirror2.mynetwork.com
+#PrivateMirror mirror1.example.com
+#PrivateMirror mirror2.example.com
 
 # Number of database checks per day.
 # Default: 12 (every two hours)
 #Checks 24
 
 # Proxy settings
-# The HTTPProxyServer may be prefixed with [scheme]:// to specify which kind of proxy is used.
+# The HTTPProxyServer may be prefixed with [scheme]:// to specify which kind
+# of proxy is used.
 #   http://     HTTP Proxy. Default when no scheme or proxy type is specified.
 #   https://    HTTPS Proxy. (Added in 7.52.0 for OpenSSL, GnuTLS and NSS)
 #   socks4://   SOCKS4 Proxy.
@@ -123,7 +124,7 @@ DatabaseMirror database.clamav.net
 #   socks5://   SOCKS5 Proxy.
 #   socks5h://  SOCKS5 Proxy. Proxy resolves URL hostname.
 # Default: disabled
-#HTTPProxyServer https://myproxy.com
+#HTTPProxyServer https://proxy.example.com
 #HTTPProxyPort 1234
 #HTTPProxyUsername myusername
 #HTTPProxyPassword mypass
@@ -188,8 +189,7 @@ DatabaseMirror database.clamav.net
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
 # terms of use. See https://www.google.com/transparencyreport/safebrowsing
-# and https://www.clamav.net/documents/safebrowsing
-# for more information.
+# and https://www.clamav.net/documents/safebrowsing for more information.
 # Default: no
 #SafeBrowsing yes
 
