@@ -188,7 +188,8 @@ DatabaseMirror database.clamav.net
 # option, it's mandatory to run freshclam at least every 30 minutes.
 # Freshclam uses the ClamAV's mirror infrastructure to distribute the
 # database and its updates but all the contents are provided under Google's
-# terms of use. See https://www.google.com/transparencyreport/safebrowsing
+# terms of use.
+# See https://transparencyreport.google.com/safe-browsing/overview
 # and https://www.clamav.net/documents/safebrowsing for more information.
 # Default: no
 #SafeBrowsing yes
