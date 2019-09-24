@@ -418,7 +418,7 @@ static fc_error_t create_curl_handle(
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+        logg("*create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
     }
 #endif
 
@@ -584,25 +584,25 @@ static fc_error_t remote_cvdhead(
        if both callbacks are set. */
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!create_curl_handle: Failed to set transfer info function!\n");
         }
         /* pass the struct pointer into the xferinfo function, note that this is
-       an alias to CURLOPT_PROGRESSDATA */
+           an alias to CURLOPT_PROGRESSDATA */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!create_curl_handle: Failed to set transfer info data structure!\n");
         }
 #else
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!create_curl_handle: Failed to set progress function!\n");
         }
         /* pass the struct pointer into the progress function */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!create_curl_handle: Failed to set progress data structure!\n");
         }
 #endif
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!create_curl_handle: Failed to disable progress function!\n");
         }
     }
 
@@ -847,25 +847,25 @@ static fc_error_t downloadFile(
        if both callbacks are set. */
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!downloadFile: Failed to set transfer info function!\n");
         }
         /* pass the struct pointer into the xferinfo function, note that this is
        an alias to CURLOPT_PROGRESSDATA */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!downloadFile: Failed to set transfer info data structure!\n");
         }
 #else
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!downloadFile: Failed to set progress function!\n");
         }
         /* pass the struct pointer into the progress function */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!downloadFile: Failed to set progress data structure!\n");
         }
 #endif
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
-            logg("!create_curl_handle: Failed to set SSL CTX function!\n");
+            logg("!downloadFile: Failed to disable progress function!\n");
         }
     }
 
@@ -929,11 +929,11 @@ static fc_error_t downloadFile(
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback)) {
-        logg("!remote_cvdhead: Failed to set write-data fwrite callback function for curl session.\n");
+        logg("!downloadFile: Failed to set write-data fwrite callback function for curl session.\n");
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&receivedFile)) {
-        logg("!remote_cvdhead: Failed to set write-data file handle for curl session.\n");
+        logg("!downloadFile: Failed to set write-data file handle for curl session.\n");
     }
 
     logg("*downloadFile: Download source:      %s\n", url);

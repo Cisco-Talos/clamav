@@ -214,7 +214,7 @@ void cert_store_unload(void)
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L /* 1.1.0+ */
 static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
 {
-    int rc = CL_EMEM;
+    cl_error_t status = CL_EMEM;
 
     X509_NAME *a = NULL;
     X509_NAME *b = NULL;
@@ -233,13 +233,24 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     if (!bio_out_b)
         goto done;
 
-    rc = X509_NAME_print_ex(bio_out_a, a, 0, XN_FLAG_SEP_SPLUS_SPC);
+    a = X509_get_subject_name(cert_a);
+
+    if (-1 == X509_NAME_print_ex(bio_out_a, a, 0, XN_FLAG_SEP_SPLUS_SPC)) {
+        mprintf("!Failed to print x509 certificate name!\n");
+        goto done;
+    }
     BIO_get_mem_ptr(bio_out_a, &biomem_a);
 
-    rc = X509_NAME_print_ex(bio_out_b, b, 0, XN_FLAG_SEP_SPLUS_SPC);
+    b = X509_get_subject_name(cert_b);
+
+    if (-1 == X509_NAME_print_ex(bio_out_b, b, 0, XN_FLAG_SEP_SPLUS_SPC)) {
+        mprintf("!Failed to print x509 certificate name!\n");
+        goto done;
+    }
     BIO_get_mem_ptr(bio_out_b, &biomem_b);
 
     *cmp_out = strncmp(biomem_a->data, biomem_b->data, MIN(biomem_a->length, biomem_b->length));
+    status   = CL_SUCCESS;
 
 done:
     if (NULL != bio_out_a)
@@ -247,19 +258,20 @@ done:
     if (NULL != bio_out_b)
         BIO_free(bio_out_b);
 
-    return !rc;
+    return status;
 }
 
 cl_error_t x509_get_cert_name(X509 *cert, char **name)
 {
-    int rc = CL_EMEM;
+    cl_error_t status = CL_EMEM;
 
     X509_NAME *a = NULL;
     BIO *bio_out = NULL;
     BUF_MEM *biomem;
+    char *cert_name = NULL;
 
     if (NULL == cert || NULL == name) {
-        rc = CL_EARG;
+        status = CL_EARG;
         goto done;
     }
 
@@ -269,21 +281,31 @@ cl_error_t x509_get_cert_name(X509 *cert, char **name)
     if (!bio_out)
         goto done;
 
-    rc = X509_NAME_print_ex(bio_out, a, 0, XN_FLAG_SEP_SPLUS_SPC);
+    a = X509_get_subject_name(cert);
+
+    if (-1 == X509_NAME_print_ex(bio_out, a, 0, XN_FLAG_SEP_SPLUS_SPC)) {
+        mprintf("!Failed to print x509 certificate name!\n");
+        goto done;
+    }
     BIO_get_mem_ptr(bio_out, &biomem);
 
-    *name = malloc(biomem->length + 1);
-    if (!name)
+    cert_name = malloc(biomem->length + 1);
+    if (!cert_name) {
+        mprintf("!Failed to allocate memory for certificate name biomem structure!\n");
         goto done;
+    }
 
-    memcpy(*name, biomem->data, biomem->length);
-    *name[biomem->length] = '\0';
+    memcpy(cert_name, biomem->data, biomem->length);
+    cert_name[biomem->length] = '\0';
+
+    *name  = cert_name;
+    status = CL_SUCCESS;
 
 done:
     if (NULL != bio_out)
         BIO_free(bio_out);
 
-    return !rc;
+    return status;
 }
 #endif
 

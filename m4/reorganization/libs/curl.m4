@@ -47,7 +47,7 @@ if test "X$have_curl" = "Xyes"; then
         CURL_LIBS="-lcurl"
     fi
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS $SSL_LDFLAGS $SSL_LIBS"
 
     dnl Following section modified from libcurl, Copyright (C) 2006, David Shaw, license under COPYING.curl
     AC_PROG_AWK
@@ -61,9 +61,9 @@ if test "X$have_curl" = "Xyes"; then
     curl_version=`echo $awk_curl_version | $curl_version_parse`
     dnl end of section
 
-    AM_COND_IF([BUILD_CLAMONACC], 
+    AM_COND_IF([BUILD_CLAMONACC],
                     dnl if version greater than (7.45)
-                    [if test $curl_version -ge 470272 ; then 
+                    [if test $curl_version -ge 470272 ; then
                         $enable_clamonacc="yes"
                     else
                         AC_MSG_ERROR([m4_normalize([
