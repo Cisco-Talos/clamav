@@ -29170,7 +29170,7 @@ $as_echo "$LIBCURL_HOME" >&6; }
         CURL_LIBS="-lcurl"
     fi
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS"
+    LDFLAGS="$CURL_LDFLAGS $CURL_LIBS $SSL_LDFLAGS $SSL_LIBS"
 
         for ac_prog in gawk mawk nawk awk
 do
