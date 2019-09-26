@@ -124,6 +124,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
 	$(top_srcdir)/m4/reorganization/version.m4 \
+	$(top_srcdir)/m4/reorganization/libclamav-only.m4 \
 	$(top_srcdir)/m4/reorganization/build_tools.m4 \
 	$(top_srcdir)/m4/reorganization/headers.m4 \
 	$(top_srcdir)/m4/reorganization/c_options.m4 \
@@ -143,15 +144,36 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/bzip.m4 \
 	$(top_srcdir)/m4/reorganization/libs/unrar.m4 \
 	$(top_srcdir)/m4/reorganization/libs/systemd.m4 \
+	$(top_srcdir)/m4/reorganization/milter/check.m4 \
+	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
+	$(top_srcdir)/m4/reorganization/llvm.m4 \
+	$(top_srcdir)/libclamav/c++/m4/llvm-opts.m4 \
+	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
+	$(top_srcdir)/m4/reorganization/yara.m4 \
+	$(top_srcdir)/m4/reorganization/os_checks.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/ctime.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/features.m4 \
+	$(top_srcdir)/m4/reorganization/strni.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/pthreads.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/reentrant.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/in_port_t.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/in_addr_t.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/pthread_02.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/socklen_t.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/compiler_attribs.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/select.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/stat64.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/shift.m4 \
+	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
+	$(top_srcdir)/m4/reorganization/libs/iconv.m4 \
+	$(top_srcdir)/m4/reorganization/libs/iconv_check.m4 \
+	$(top_srcdir)/m4/reorganization/libs/iconv.m4 \
+	$(top_srcdir)/m4/reorganization/dbdir.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/ipv6.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/dns.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fanotify.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/setpgrp.m4 \
 	$(top_srcdir)/m4/reorganization/milter/enable.m4 \
-	$(top_srcdir)/m4/reorganization/libs/iconv_check.m4 \
-	$(top_srcdir)/m4/reorganization/libs/iconv.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/pthreads.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/reentrant.m4 \
 	$(top_srcdir)/m4/reorganization/utility_checks/id.m4 \
 	$(top_srcdir)/m4/reorganization/utility_checks/yp.m4 \
 	$(top_srcdir)/m4/reorganization/usergroup.m4 \
@@ -160,34 +182,14 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/nocache.m4 \
 	$(top_srcdir)/m4/reorganization/dns.m4 \
 	$(top_srcdir)/m4/reorganization/bigstack.m4 \
-	$(top_srcdir)/m4/reorganization/dbdir.m4 \
 	$(top_srcdir)/m4/reorganization/cfgdir.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/in_port_t.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/in_addr_t.m4 \
-	$(top_srcdir)/m4/reorganization/os_checks.m4 \
-	$(top_srcdir)/m4/reorganization/milter/check.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/pthread_02.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/ctime.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/socklen_t.m4 \
 	$(top_srcdir)/m4/reorganization/clamav_user.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/compiler_attribs.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/select.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/stat64.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/shift.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/features.m4 \
-	$(top_srcdir)/m4/reorganization/clamdtop.m4 \
 	$(top_srcdir)/m4/reorganization/distcheck.m4 \
-	$(top_srcdir)/m4/reorganization/llvm.m4 \
-	$(top_srcdir)/libclamav/c++/m4/llvm-opts.m4 \
-	$(top_srcdir)/m4/reorganization/sha_collect.m4 \
-	$(top_srcdir)/m4/reorganization/yara.m4 \
-	$(top_srcdir)/m4/reorganization/code_checks/fts.m4 \
 	$(top_srcdir)/m4/reorganization/prelude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
-	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
-	$(top_srcdir)/m4/reorganization/strni.m4 \
+	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
