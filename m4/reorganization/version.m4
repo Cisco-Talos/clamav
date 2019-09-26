@@ -1,6 +1,6 @@
 dnl change this on a release
 dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.102.0-rc"
+VERSION="0.102.0"
 
 major=`echo $PACKAGE_VERSION |cut -d. -f1 | sed -e "s/[^0-9]//g"`
 minor=`echo $PACKAGE_VERSION |cut -d. -f2 | sed -e "s/[^0-9]//g"`

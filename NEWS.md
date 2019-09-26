@@ -5,8 +5,6 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.102.0
 
-Welcome to the beta for the 0.102 feature release.
-
 ClamAV 0.102.0 includes an assortment improvements and a couple of significant
 changes.
 
