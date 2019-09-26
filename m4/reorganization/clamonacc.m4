@@ -19,5 +19,3 @@ if test "$enable_clamonacc" != "no"; then
 else
 	AM_CONDITIONAL([BUILD_CLAMONACC], [test x$enable_clamonacc == xyes])
 fi
-
-
