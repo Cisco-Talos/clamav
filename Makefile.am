@@ -19,7 +19,12 @@
 #  MA 02110-1301, USA.
 
 ACLOCAL_AMFLAGS=-I m4
+if BUILD_LIBCLAMAV_ONLY
+SUBDIRS = libclamav
 
+bin_SCRIPTS=clamav-config
+
+else
 SUBDIRS = libltdl libclamav libfreshclam clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test clamdtop clambc unit_tests
 EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.md NEWS.md README.md
 
@@ -35,6 +40,7 @@ endif
 
 if ENABLE_FUZZ
 SUBDIRS += fuzz
+endif
 endif
 
 pkgconfigdir = $(libdir)/pkgconfig

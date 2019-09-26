@@ -59,6 +59,8 @@ LT_INIT([dlopen disable-static])
 LTDL_INIT([recursive])
 PKG_PROG_PKG_CONFIG(0.16)
 
+m4_include([m4/reorganization/libclamav-only.m4])
+
 m4_include([m4/reorganization/build_tools.m4])
 m4_include([m4/reorganization/headers.m4])
 
@@ -104,15 +106,45 @@ AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
 m4_include([m4/reorganization/libs/bzip.m4])
 m4_include([m4/reorganization/libs/unrar.m4])
+
 m4_include([m4/reorganization/libs/systemd.m4])
+m4_include([m4/reorganization/milter/check.m4])
+m4_include([m4/reorganization/clamdtop.m4])
+
+m4_include([m4/reorganization/llvm.m4])
+m4_include([m4/reorganization/sha_collect.m4])
+m4_include([m4/reorganization/yara.m4])
+
+m4_include([m4/reorganization/os_checks.m4])
+
+m4_include([m4/reorganization/code_checks/ctime.m4])
+m4_include([m4/reorganization/code_checks/features.m4])
+
+m4_include([m4/reorganization/strni.m4])
+
+m4_include([m4/reorganization/code_checks/pthreads.m4])
+m4_include([m4/reorganization/code_checks/reentrant.m4])
+m4_include([m4/reorganization/code_checks/in_port_t.m4])
+m4_include([m4/reorganization/code_checks/in_addr_t.m4])
+m4_include([m4/reorganization/code_checks/pthread_02.m4])
+m4_include([m4/reorganization/code_checks/socklen_t.m4])
+m4_include([m4/reorganization/code_checks/compiler_attribs.m4])
+m4_include([m4/reorganization/code_checks/select.m4])
+m4_include([m4/reorganization/code_checks/stat64.m4])
+m4_include([m4/reorganization/code_checks/shift.m4])
+m4_include([m4/reorganization/code_checks/fts.m4])
+
+m4_include([m4/reorganization/libs/iconv.m4])
+m4_include([m4/reorganization/libs/iconv_check.m4])
+
+m4_include([m4/reorganization/dbdir.m4])
+
+if test "x$enable_libclamav_only" = "xno"; then
 m4_include([m4/reorganization/code_checks/ipv6.m4])
 m4_include([m4/reorganization/code_checks/dns.m4])
 m4_include([m4/reorganization/code_checks/fanotify.m4])
 m4_include([m4/reorganization/code_checks/setpgrp.m4])
 m4_include([m4/reorganization/milter/enable.m4])
-m4_include([m4/reorganization/libs/iconv_check.m4])
-m4_include([m4/reorganization/code_checks/pthreads.m4])
-m4_include([m4/reorganization/code_checks/reentrant.m4])
 m4_include([m4/reorganization/utility_checks/id.m4])
 m4_include([m4/reorganization/utility_checks/yp.m4])
 m4_include([m4/reorganization/usergroup.m4])
@@ -121,37 +153,20 @@ m4_include([m4/reorganization/customversion.m4])
 m4_include([m4/reorganization/nocache.m4])
 m4_include([m4/reorganization/dns.m4])
 m4_include([m4/reorganization/bigstack.m4])
-m4_include([m4/reorganization/dbdir.m4])
 m4_include([m4/reorganization/cfgdir.m4])
-m4_include([m4/reorganization/code_checks/in_port_t.m4])
-m4_include([m4/reorganization/code_checks/in_addr_t.m4])
-m4_include([m4/reorganization/os_checks.m4])
-m4_include([m4/reorganization/milter/check.m4])
-m4_include([m4/reorganization/code_checks/pthread_02.m4])
-m4_include([m4/reorganization/code_checks/ctime.m4])
-m4_include([m4/reorganization/code_checks/socklen_t.m4])
 m4_include([m4/reorganization/clamav_user.m4])
-m4_include([m4/reorganization/code_checks/compiler_attribs.m4])
-m4_include([m4/reorganization/code_checks/select.m4])
-m4_include([m4/reorganization/code_checks/stat64.m4])
-m4_include([m4/reorganization/code_checks/shift.m4])
-m4_include([m4/reorganization/code_checks/features.m4])
-m4_include([m4/reorganization/clamdtop.m4])
 m4_include([m4/reorganization/distcheck.m4])
-m4_include([m4/reorganization/llvm.m4])
-m4_include([m4/reorganization/sha_collect.m4])
-m4_include([m4/reorganization/yara.m4])
-m4_include([m4/reorganization/code_checks/fts.m4])
 m4_include([m4/reorganization/prelude.m4])
 m4_include([m4/reorganization/bsd.m4])
-
-dnl Clamonacc loading
-m4_include([m4/reorganization/clamonacc.m4])
 
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
-m4_include([m4/reorganization/strni.m4])
+
+dnl Clamonacc loading
+m4_include([m4/reorganization/clamonacc.m4])
+
+fi
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
@@ -167,6 +182,8 @@ dnl Detect the target system
 build_linux=no
 build_windows=no
 build_mac=no
+
+AC_CANONICAL_HOST
 
 case "${host_os}" in
     cygwin*|mingw*)
@@ -184,50 +201,54 @@ AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
 AM_CONDITIONAL([WINDOWS], [test "$build_windows" = "yes"])
 AM_CONDITIONAL([MACOS], [test "$build_mac" = "yes"])
 
+
 AC_CONFIG_FILES([
-clamscan/Makefile
-database/Makefile
-docs/Makefile
-clamd/Makefile
-clamd/clamav-daemon.service
-clamd/clamav-daemon.socket
-clamdscan/Makefile
-clamsubmit/Makefile
-clamav-milter/Makefile
-freshclam/clamav-freshclam.service
-freshclam/Makefile
-sigtool/Makefile
-clamconf/Makefile
-etc/Makefile
-test/Makefile
-unit_tests/Makefile
-fuzz/Makefile
-clamdtop/Makefile
-clambc/Makefile
-libfreshclam/Makefile
-Makefile
-clamav-config
-libclamav.pc
-platform.h
-docs/man/clamav-milter.8
-docs/man/clamav-milter.conf.5
-docs/man/clambc.1
-docs/man/clamconf.1
-docs/man/clamd.8
-docs/man/clamd.conf.5
-docs/man/clamdscan.1
-docs/man/clamscan.1
-docs/man/freshclam.1
-docs/man/freshclam.conf.5
-docs/man/sigtool.1
-docs/man/clamdtop.1
-docs/man/clamsubmit.1
-clamav-types.h
-clamav-version.h
-])
+                 Makefile
+                 clamav-config
+                 libclamav.pc
+                 platform.h
+                 clamav-types.h
+                 clamav-version.h])
+if test "x$enable_libclamav_only" != "xyes"; then
+    AC_CONFIG_FILES([
+                     clamscan/Makefile
+                     database/Makefile
+                     docs/Makefile
+                     clamd/Makefile
+                     clamd/clamav-daemon.service
+                     clamd/clamav-daemon.socket
+                     clamdscan/Makefile
+                     clamsubmit/Makefile
+                     clamav-milter/Makefile
+                     freshclam/clamav-freshclam.service
+                     freshclam/Makefile
+                     sigtool/Makefile
+                     clamconf/Makefile
+                     etc/Makefile
+                     test/Makefile
+                     unit_tests/Makefile
+                     fuzz/Makefile
+                     clamdtop/Makefile
+                     clambc/Makefile
+                     libfreshclam/Makefile
+                     docs/man/clamav-milter.8
+                     docs/man/clamav-milter.conf.5
+                     docs/man/clambc.1
+                     docs/man/clamconf.1
+                     docs/man/clamd.8
+                     docs/man/clamd.conf.5
+                     docs/man/clamdscan.1
+                     docs/man/clamscan.1
+                     docs/man/freshclam.1
+                     docs/man/freshclam.conf.5
+                     docs/man/sigtool.1
+                     docs/man/clamdtop.1
+                     docs/man/clamsubmit.1
+                     ])
+fi
 
 AM_COND_IF([BUILD_CLAMONACC],
-           [AC_CONFIG_FILES([clamonacc/Makefile])])
+            [AC_CONFIG_FILES([clamonacc/Makefile])])
 
 # Define variables needed to generate clamav-types.h.
 m4_include([m4/reorganization/types.m4])
@@ -277,29 +298,31 @@ CL_MSG_STATUS([IPv6        ],[$have_cv_ipv6],[$want_ipv6])
 CL_MSG_STATUS([openssl     ],[$LIBSSL_HOME],[yes])
 CL_MSG_STATUS([libcurl     ],[$LIBCURL_HOME],[yes])
 
-AC_MSG_NOTICE([Summary of optional tools])
+if test "x$enable_libclamav_only" != "xyes"; then
+    AC_MSG_NOTICE([Summary of optional tools])
 
-if test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"; then
-    CL_MSG_STATUS([clamdtop    ],[yes ($CURSES_LIBS)], [yes])
-else
-    CL_MSG_STATUS([clamdtop    ],[no (missing ncurses / pdcurses)], [no])
+    if test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"; then
+        CL_MSG_STATUS([clamdtop    ],[yes ($CURSES_LIBS)], [yes])
+    else
+        CL_MSG_STATUS([clamdtop    ],[no (missing ncurses / pdcurses)], [no])
+    fi
+
+    if test "X$have_milter" = "Xyes"; then
+        CL_MSG_STATUS([milter      ],[yes ($CLAMAV_MILTER_LIBS)], [yes])
+    else
+        CL_MSG_STATUS([milter      ],[no (missing libmilter)], [no])
+    fi
+
+    if test "X$have_json" = "Xyes"; then
+        CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME)], [yes])
+    else
+        CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
+    fi
+
+    AM_COND_IF([BUILD_CLAMONACC],
+        [CL_MSG_STATUS([clamonacc   ],[yes],[$enable_clamonacc])],
+        [CL_MSG_STATUS([clamonacc   ],[no],[$enable_clamonacc])])
 fi
-
-if test "X$have_milter" = "Xyes"; then
-    CL_MSG_STATUS([milter      ],[yes ($CLAMAV_MILTER_LIBS)], [yes])
-else
-    CL_MSG_STATUS([milter      ],[no (missing libmilter)], [no])
-fi
-
-if test "X$have_json" = "Xyes"; then
-    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME)], [yes])
-else
-    CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev. Use the website to submit FPs/FNs.)], [no])
-fi
-AM_COND_IF([BUILD_CLAMONACC],
-	   [CL_MSG_STATUS([clamonacc   ],[yes],[$enable_clamonacc])],
-	   [CL_MSG_STATUS([clamonacc   ],[no],[$enable_clamonacc])])
-
 
 
 AC_MSG_NOTICE([Summary of engine performance features])
