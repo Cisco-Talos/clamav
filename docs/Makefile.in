@@ -167,6 +167,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/libs/iconv_check.m4 \
 	$(top_srcdir)/m4/reorganization/libs/iconv.m4 \
 	$(top_srcdir)/m4/reorganization/dbdir.m4 \
+	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/ipv6.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/dns.m4 \
 	$(top_srcdir)/m4/reorganization/code_checks/fanotify.m4 \
@@ -187,7 +188,6 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/reorganization/bsd.m4 \
 	$(top_srcdir)/m4/reorganization/libs/curl.m4 \
 	$(top_srcdir)/m4/reorganization/substitutions.m4 \
-	$(top_srcdir)/m4/reorganization/clamonacc.m4 \
 	$(top_srcdir)/m4/reorganization/types.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \

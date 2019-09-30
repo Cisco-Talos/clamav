@@ -1001,6 +1001,7 @@ enable_pthreads
 enable_cr
 with_libiconv_prefix
 with_dbdir
+enable_clamonacc
 enable_ipv6
 enable_dns
 enable_fanotify
@@ -1017,7 +1018,6 @@ enable_distcheck_werror
 enable_prelude
 with_libprelude_prefix
 with_libcurl
-enable_clamonacc
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1721,6 +1721,7 @@ if test -n "$ac_init_help"; then
                           support cross-compilation against older libs
   --disable-pthreads      do not include POSIX threads support
   --disable-cr            do not link with C reentrant library (BSD)
+  --enable-clamonacc      build clamonacc tool [default=auto]
   --disable-ipv6          do not include IPv6 support
   --disable-dns           do not include support for database verification
                           through DNS
@@ -1735,7 +1736,6 @@ if test -n "$ac_init_help"; then
   --enable-distcheck-werror
                           enable warnings as error for distcheck [default=no]
   --enable-prelude        Enable Prelude support for alerts.
-  --enable-clamonacc      build clamonacc tool [default=auto]
   --disable-largefile     omit support for large files
 
 Optional Packages:
@@ -28988,6 +28988,57 @@ DBDIR="$db_dir"
 
 
 
+# Check whether --enable-clamonacc was given.
+if test "${enable_clamonacc+set}" = set; then :
+  enableval=$enable_clamonacc; enable_clamonacc=$enableval
+else
+  enable_clamonacc="auto"
+fi
+
+
+if test "$enable_libclamav_only" != yes; then
+
+if test "$enable_clamonacc" != "no"; then
+
+
+        case "${host_os}" in
+        	linux*)
+			 if test x$enable_clamonacc != xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+			;;
+		*)
+			if test "$enable_clamonacc" == "yes"; then
+				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
+			fi
+			 if test x$enable_clamonacc == xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+                        ;;
+	esac
+else
+	 if test x$enable_clamonacc == xyes; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+fi
+fi
+
+
 if test "x$enable_libclamav_only" = "xno"; then
 # Check whether --enable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then :
@@ -30078,54 +30129,6 @@ fi
 
 
 
-
-
-# Check whether --enable-clamonacc was given.
-if test "${enable_clamonacc+set}" = set; then :
-  enableval=$enable_clamonacc; enable_clamonacc=$enableval
-else
-  enable_clamonacc="auto"
-fi
-
-
-if test "$enable_clamonacc" != "no"; then
-
-
-        case "${host_os}" in
-        	linux*)
-			 if test x$enable_clamonacc != xno; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-			;;
-		*)
-			if test "$enable_clamonacc" == "yes"; then
-				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
-			fi
-			 if test x$enable_clamonacc == xno; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-                        ;;
-	esac
-else
-	 if test x$enable_clamonacc == xyes; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-fi
 
 
 fi
