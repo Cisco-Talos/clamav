@@ -139,6 +139,9 @@ m4_include([m4/reorganization/libs/iconv_check.m4])
 
 m4_include([m4/reorganization/dbdir.m4])
 
+dnl Clamonacc loading
+m4_include([m4/reorganization/clamonacc.m4])
+
 if test "x$enable_libclamav_only" = "xno"; then
 m4_include([m4/reorganization/code_checks/ipv6.m4])
 m4_include([m4/reorganization/code_checks/dns.m4])
@@ -162,9 +165,6 @@ m4_include([m4/reorganization/bsd.m4])
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
-
-dnl Clamonacc loading
-m4_include([m4/reorganization/clamonacc.m4])
 
 fi
 

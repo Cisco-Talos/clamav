@@ -2,6 +2,8 @@ AC_ARG_ENABLE(clamonacc,
 	     [AC_HELP_STRING([--enable-clamonacc], [build clamonacc tool @<:@default=auto@:>@])],
 [enable_clamonacc=$enableval], [enable_clamonacc="auto"])
 
+if test "$enable_libclamav_only" != yes; then
+
 if test "$enable_clamonacc" != "no"; then
 	AC_CANONICAL_HOST
 
@@ -18,4 +20,5 @@ if test "$enable_clamonacc" != "no"; then
 	esac
 else
 	AM_CONDITIONAL([BUILD_CLAMONACC], [test x$enable_clamonacc == xyes])
+fi
 fi
