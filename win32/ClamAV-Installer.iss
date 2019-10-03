@@ -8,7 +8,7 @@
 
 [Setup]
 AppName=ClamAV
-AppVersion=0.102.0
+AppVersion=0.102.1
 DefaultDirName={pf}\ClamAV
 DefaultGroupName=ClamAV
 AppCopyright=2019 Cisco Systems, Inc.
@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.102.0
+OutputBaseFilename=ClamAV-0.102.1
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 
