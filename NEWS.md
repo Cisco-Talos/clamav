@@ -3,6 +3,12 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.101.5
+
+ClamAV 0.101.5 is a security patch release that addresses the following issues.
+
+-
+
 ## 0.101.4
 
 ClamAV 0.101.4 is a security patch release that addresses the following issues.
