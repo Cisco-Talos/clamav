@@ -106,48 +106,15 @@ AM_MAINTAINER_MODE
 m4_include([m4/reorganization/libs/libz.m4])
 m4_include([m4/reorganization/libs/bzip.m4])
 m4_include([m4/reorganization/libs/unrar.m4])
-
 m4_include([m4/reorganization/libs/systemd.m4])
-m4_include([m4/reorganization/milter/check.m4])
-m4_include([m4/reorganization/clamdtop.m4])
-
-m4_include([m4/reorganization/llvm.m4])
-m4_include([m4/reorganization/sha_collect.m4])
-m4_include([m4/reorganization/yara.m4])
-
-m4_include([m4/reorganization/os_checks.m4])
-
-m4_include([m4/reorganization/code_checks/ctime.m4])
-m4_include([m4/reorganization/code_checks/features.m4])
-
-m4_include([m4/reorganization/strni.m4])
-
-m4_include([m4/reorganization/code_checks/pthreads.m4])
-m4_include([m4/reorganization/code_checks/reentrant.m4])
-m4_include([m4/reorganization/code_checks/in_port_t.m4])
-m4_include([m4/reorganization/code_checks/in_addr_t.m4])
-m4_include([m4/reorganization/code_checks/pthread_02.m4])
-m4_include([m4/reorganization/code_checks/socklen_t.m4])
-m4_include([m4/reorganization/code_checks/compiler_attribs.m4])
-m4_include([m4/reorganization/code_checks/select.m4])
-m4_include([m4/reorganization/code_checks/stat64.m4])
-m4_include([m4/reorganization/code_checks/shift.m4])
-m4_include([m4/reorganization/code_checks/fts.m4])
-
-m4_include([m4/reorganization/libs/iconv.m4])
-m4_include([m4/reorganization/libs/iconv_check.m4])
-
-m4_include([m4/reorganization/dbdir.m4])
-
-dnl Clamonacc loading
-m4_include([m4/reorganization/clamonacc.m4])
-
-if test "x$enable_libclamav_only" = "xno"; then
 m4_include([m4/reorganization/code_checks/ipv6.m4])
 m4_include([m4/reorganization/code_checks/dns.m4])
 m4_include([m4/reorganization/code_checks/fanotify.m4])
 m4_include([m4/reorganization/code_checks/setpgrp.m4])
 m4_include([m4/reorganization/milter/enable.m4])
+m4_include([m4/reorganization/libs/iconv_check.m4])
+m4_include([m4/reorganization/code_checks/pthreads.m4])
+m4_include([m4/reorganization/code_checks/reentrant.m4])
 m4_include([m4/reorganization/utility_checks/id.m4])
 m4_include([m4/reorganization/utility_checks/yp.m4])
 m4_include([m4/reorganization/usergroup.m4])
@@ -156,17 +123,37 @@ m4_include([m4/reorganization/customversion.m4])
 m4_include([m4/reorganization/nocache.m4])
 m4_include([m4/reorganization/dns.m4])
 m4_include([m4/reorganization/bigstack.m4])
+m4_include([m4/reorganization/dbdir.m4])
 m4_include([m4/reorganization/cfgdir.m4])
+m4_include([m4/reorganization/code_checks/in_port_t.m4])
+m4_include([m4/reorganization/code_checks/in_addr_t.m4])
+m4_include([m4/reorganization/os_checks.m4])
+m4_include([m4/reorganization/milter/check.m4])
+m4_include([m4/reorganization/code_checks/pthread_02.m4])
+m4_include([m4/reorganization/code_checks/ctime.m4])
+m4_include([m4/reorganization/code_checks/socklen_t.m4])
 m4_include([m4/reorganization/clamav_user.m4])
+m4_include([m4/reorganization/code_checks/compiler_attribs.m4])
+m4_include([m4/reorganization/code_checks/select.m4])
+m4_include([m4/reorganization/code_checks/stat64.m4])
+m4_include([m4/reorganization/code_checks/shift.m4])
+m4_include([m4/reorganization/code_checks/features.m4])
+m4_include([m4/reorganization/clamdtop.m4])
 m4_include([m4/reorganization/distcheck.m4])
+m4_include([m4/reorganization/llvm.m4])
+m4_include([m4/reorganization/sha_collect.m4])
+m4_include([m4/reorganization/yara.m4])
+m4_include([m4/reorganization/code_checks/fts.m4])
 m4_include([m4/reorganization/prelude.m4])
 m4_include([m4/reorganization/bsd.m4])
+
+dnl Clamonacc loading
+m4_include([m4/reorganization/clamonacc.m4])
 
 dnl Freshclam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
-
-fi
+m4_include([m4/reorganization/strni.m4])
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
