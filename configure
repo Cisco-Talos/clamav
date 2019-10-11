@@ -672,6 +672,7 @@ OBJCDEPMODE
 ac_ct_OBJC
 OBJCFLAGS
 OBJC
+HAVE_STRNI
 CURL_LDFLAGS
 CURL_LIBS
 JSON_LDFLAGS
@@ -719,29 +720,28 @@ LIBPRELUDE_LDFLAGS
 LIBPRELUDE_PTHREAD_CFLAGS
 LIBPRELUDE_CFLAGS
 LIBPRELUDE_CONFIG
-WERR_CFLAGS_MILTER
-WERR_CFLAGS
-CLAMAVGROUP
-CLAMAVUSER
-GETENT
-CFGDIR
-DBDIR
-LTLIBICONV
-LIBICONV
 SYSTEM_LFS_FTS_FALSE
 SYSTEM_LFS_FTS_TRUE
-HAVE_STRNI
 HAVE_YARA
 subdirs
 llvmconfig
+WERR_CFLAGS_MILTER
+WERR_CFLAGS
 HAVE_CURSES_FALSE
 HAVE_CURSES_TRUE
 CURSES_LIBS
 CURSES_CPPFLAGS
+CLAMAVGROUP
+CLAMAVUSER
+GETENT
 HAVE_MILTER_FALSE
 HAVE_MILTER_TRUE
 BUILD_CLAMD_FALSE
 BUILD_CLAMD_TRUE
+CFGDIR
+DBDIR
+LTLIBICONV
+LIBICONV
 INSTALL_SYSTEMD_UNITS_FALSE
 INSTALL_SYSTEMD_UNITS_TRUE
 systemdsystemunitdir
@@ -987,25 +987,13 @@ with_libbz2_prefix
 enable_unrar
 enable_getaddrinfo
 with_systemdsystemunitdir
-enable_clamdtop
-with_libncurses_prefix
-with_libpdcurses_prefix
-enable_llvm
-with_system_llvm
-with_llvm_linking
-enable_sha_collector_for_internal_use
-enable_yara
-enable_fdpassing
-enable_strni
-enable_pthreads
-enable_cr
-with_libiconv_prefix
-with_dbdir
-enable_clamonacc
 enable_ipv6
 enable_dns
 enable_fanotify
 enable_milter
+with_libiconv_prefix
+enable_pthreads
+enable_cr
 enable_id_check
 enable_yp_check
 with_user
@@ -1014,10 +1002,22 @@ with_version
 enable_no_cache
 enable_dns_fix
 enable_bigstack
+with_dbdir
+enable_fdpassing
+enable_clamdtop
+with_libncurses_prefix
+with_libpdcurses_prefix
 enable_distcheck_werror
+enable_llvm
+with_system_llvm
+with_llvm_linking
+enable_sha_collector_for_internal_use
+enable_yara
 enable_prelude
 with_libprelude_prefix
+enable_clamonacc
 with_libcurl
+enable_strni
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1712,30 +1712,30 @@ if test -n "$ac_init_help"; then
   --disable-bzip2         do not include bzip2 support
   --disable-unrar         do not build libclamunrar and libclamunrar_iface
   --disable-getaddrinfo   do not include support for getaddrinfo
-  --enable-clamdtop       build clamdtop tool [default=auto]
-  --enable-llvm           enable 'llvm' JIT/verifier support [default=auto]
-
-  --disable-yara          do not include yara support
-  --disable-fdpassing     do not build file descriptor passing support
-  --enable-strni          enables explicit use of internal strn functions to
-                          support cross-compilation against older libs
-  --disable-pthreads      do not include POSIX threads support
-  --disable-cr            do not link with C reentrant library (BSD)
-  --enable-clamonacc      build clamonacc tool [default=auto]
   --disable-ipv6          do not include IPv6 support
   --disable-dns           do not include support for database verification
                           through DNS
   --disable-fanotify      do not add fanotify support (Linux only)
   --enable-milter         build clamav-milter
+  --disable-pthreads      do not include POSIX threads support
+  --disable-cr            do not link with C reentrant library (BSD)
   --enable-id-check       use id utility instead of /etc/passwd parsing
   --enable-yp-check       use ypmatch utility instead of /etc/passwd parsing
   --enable-no-cache       use "Cache-Control: no-cache" in freshclam
   --enable-dns-fix        enable workaround for broken DNS servers (as in
                           SpeedTouch 510)
   --enable-bigstack       increase thread stack size
+  --disable-fdpassing     do not build file descriptor passing support
+  --enable-clamdtop       build clamdtop tool [default=auto]
   --enable-distcheck-werror
                           enable warnings as error for distcheck [default=no]
+  --enable-llvm           enable 'llvm' JIT/verifier support [default=auto]
+
+  --disable-yara          do not include yara support
   --enable-prelude        Enable Prelude support for alerts.
+  --enable-clamonacc      build clamonacc tool [default=auto]
+  --enable-strni          enables explicit use of internal strn functions to
+                          support cross-compilation against older libs
   --disable-largefile     omit support for large files
 
 Optional Packages:
@@ -1779,6 +1779,12 @@ Optional Packages:
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
   --with-systemdsystemunitdir=DIR
                           Directory for systemd service files
+  --with-libiconv-prefix[=DIR]  search for libiconv in DIR/include and DIR/lib
+  --without-libiconv-prefix     don't search for libiconv in includedir and libdir
+  --with-user[=uid]       name of the clamav user [default=clamav]
+  --with-group[=gid]      name of the clamav group [default=clamav]
+  --with-version[=STR]    use custom version string (dev only)
+  --with-dbdir[=path]     path to virus database directory
   --with-libncurses-prefix[=DIR]  search for libncurses in DIR/include and DIR/lib
   --without-libncurses-prefix     don't search for libncurses in includedir and libdir
   --with-libpdcurses-prefix[=DIR]  search for libpdcurses in DIR/include and DIR/lib
@@ -1788,12 +1794,6 @@ Optional Packages:
                           (default=search PATH environment variable)
   --with-llvm-linking     specifies method to linking llvm [static|dynamic],
                           only valid with --with-system-llvm
-  --with-libiconv-prefix[=DIR]  search for libiconv in DIR/include and DIR/lib
-  --without-libiconv-prefix     don't search for libiconv in includedir and libdir
-  --with-dbdir[=path]     path to virus database directory
-  --with-user[=uid]       name of the clamav user [default=clamav]
-  --with-group[=gid]      name of the clamav group [default=clamav]
-  --with-version[=STR]    use custom version string (dev only)
   --with-libprelude-prefix=PFX
                           Prefix where libprelude is installed (optional)
   --with-libcurl[=DIR]    path to directory containing libcurl
@@ -24430,7 +24430,6 @@ $as_echo "#define HAVE_GETADDRINFO 1" >>confdefs.h
 fi
 
 
-
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for SYSTEMD" >&5
 $as_echo_n "checking for SYSTEMD... " >&6; }
@@ -24690,6 +24689,1622 @@ fi
 $as_echo "checking for systemd system unit installation directory... $with_systemdsystemunitdir" >&6; }
 
 
+# Check whether --enable-ipv6 was given.
+if test "${enable_ipv6+set}" = set; then :
+  enableval=$enable_ipv6; want_ipv6=$enableval
+else
+  want_ipv6="yes"
+fi
+
+
+if test "$want_ipv6" = "yes"
+then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for IPv6 support" >&5
+$as_echo_n "checking for IPv6 support... " >&6; }
+    if ${have_cv_ipv6+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		if test "$cross_compiling" = yes; then :
+  have_cv_ipv6=no
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		    #include <sys/types.h>
+		    #include <sys/socket.h>
+		    #include <netdb.h>
+		    #include <unistd.h>
+		    int main(int argc, char **argv)
+		    {
+			    struct addrinfo *res, hints;
+			    int sd;
+
+			if((sd = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
+			    return 1;
+			close(sd);
+			/* also check if getaddrinfo() handles AF_UNSPEC -- bb#1196 */
+			memset(&hints, 0, sizeof(hints));
+			hints.ai_family = AF_UNSPEC;
+			if(getaddrinfo("127.0.0.1", NULL, &hints, &res) < 0)
+			    return 1;
+			freeaddrinfo(res);
+			return 0;
+		    }
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_cv_ipv6=yes
+else
+  have_cv_ipv6=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_ipv6" >&5
+$as_echo "$have_cv_ipv6" >&6; }
+    if test "$have_cv_ipv6" = yes; then
+
+$as_echo "#define SUPPORT_IPv6 1" >>confdefs.h
+
+    fi
+fi
+
+
+
+# Check whether --enable-dns was given.
+if test "${enable_dns+set}" = set; then :
+  enableval=$enable_dns; want_dns=$enableval
+else
+  want_dns=yes
+
+fi
+
+if test $want_dns = yes; then
+    ac_cv_have_lresolv=no
+    ac_fn_c_check_header_compile "$LINENO" "resolv.h" "ac_cv_header_resolv_h" "
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+
+"
+if test "x$ac_cv_header_resolv_h" = xyes; then :
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dn_expand in std libs" >&5
+$as_echo_n "checking for dn_expand in std libs... " >&6; }
+if ${ac_cv_have_lresolv_std+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+	    	ac_cv_have_lresolv_std='no'
+	        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+int main() { return (long)dn_expand; }
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+		    ac_cv_have_lresolv_std='yes'
+		    ac_cv_have_lresolv=''
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_lresolv_std" >&5
+$as_echo "$ac_cv_have_lresolv_std" >&6; }
+	    if test "x$ac_cv_have_lresolv" = "xno"; then
+	    bklibs=$LIBS
+	    LIBS=-lresolv
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dn_expand in -lresolv" >&5
+$as_echo_n "checking for dn_expand in -lresolv... " >&6; }
+if ${ac_cv_have_lresolv_lresolv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		ac_cv_have_lresolv_lresolv='yes'
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+int main() { return (long)dn_expand; }
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+		    ac_cv_have_lresolv_lresolv='yes'
+		    ac_cv_have_lresolv=' -lresolv'
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_lresolv_lresolv" >&5
+$as_echo "$ac_cv_have_lresolv_lresolv" >&6; }
+	    LIBS=$bklibs;
+	    fi
+
+else
+   ac_cv_have_lresolv=no
+fi
+
+
+    if test "x$ac_cv_have_lresolv" != "xno"; then
+    	FRESHCLAM_LIBS="$FRESHCLAM_LIBS$ac_cv_have_lresolv"
+
+$as_echo "#define HAVE_RESOLV_H 1" >>confdefs.h
+
+    else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** DNS support disabled" >&5
+$as_echo "$as_me: WARNING: ****** DNS support disabled" >&2;}
+    fi
+fi
+
+
+
+# Check whether --enable-fanotify was given.
+if test "${enable_fanotify+set}" = set; then :
+  enableval=$enable_fanotify; want_fanotify=$enableval
+else
+  want_fanotify="yes"
+fi
+
+have_fanotify="no"
+
+if test "$cross_compiling" = no; then
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether setpgrp takes no argument" >&5
+$as_echo_n "checking whether setpgrp takes no argument... " >&6; }
+if ${ac_cv_func_setpgrp_void+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test "$cross_compiling" = yes; then :
+  as_fn_error $? "cannot check setpgrp when cross compiling" "$LINENO" 5
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+/* If this system has a BSD-style setpgrp which takes arguments,
+  setpgrp(1, 1) will fail with ESRCH and return -1, in that case
+  exit successfully. */
+  return setpgrp (1,1) != -1;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  ac_cv_func_setpgrp_void=no
+else
+  ac_cv_func_setpgrp_void=yes
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_func_setpgrp_void" >&5
+$as_echo "$ac_cv_func_setpgrp_void" >&6; }
+if test $ac_cv_func_setpgrp_void = yes; then
+
+$as_echo "#define SETPGRP_VOID 1" >>confdefs.h
+
+fi
+
+else
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether setpgrp takes no argument" >&5
+$as_echo_n "checking whether setpgrp takes no argument... " >&6; }
+if ${ac_cv_func_setpgrp_void+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <unistd.h>
+
+int
+main ()
+{
+
+ if (setpgrp(1,1) == -1)
+   exit (0);
+ else
+   exit (1);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_func_setpgrp_void=no
+else
+  ac_cv_func_setpgrp_void=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_func_setpgrp_void" >&5
+$as_echo "$ac_cv_func_setpgrp_void" >&6; }
+if test $ac_cv_func_setpgrp_void = yes; then
+ $as_echo "#define SETPGRP_VOID 1" >>confdefs.h
+
+fi
+fi
+
+# Check whether --enable-milter was given.
+if test "${enable_milter+set}" = set; then :
+  enableval=$enable_milter; have_milter=$enableval
+else
+  have_milter="no"
+fi
+
+
+
+# iconv.m4 serial 21
+
+
+
+
+
+
+
+
+
+
+if test "x$with_iconv" != "xno"; then
+
+
+
+
+
+
+
+
+    use_additional=yes
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+
+    eval additional_includedir=\"$includedir\"
+    eval additional_libdir=\"$libdir\"
+
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+
+# Check whether --with-libiconv-prefix was given.
+if test "${with_libiconv_prefix+set}" = set; then :
+  withval=$with_libiconv_prefix;
+    if test "X$withval" = "Xno"; then
+      use_additional=no
+    else
+      additional_compat_libdir=
+      if test "X$withval" = "X"; then
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+
+          eval additional_includedir=\"$includedir\"
+          eval additional_libdir=\"$libdir\"
+
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      else
+        additional_includedir="$withval/include"
+        additional_libdir="$withval/$acl_libdirstem"
+	if test "X$acl_libdirstem" != "Xlib"; then
+		additional_compat_libdir="-L$withval/lib"
+	fi
+      fi
+    fi
+
+fi
+
+      LIBICONV=
+  LTLIBICONV=
+  INCICONV=
+  LIBICONV_PREFIX=
+  rpathdirs=
+  ltrpathdirs=
+  names_already_handled=
+  names_next_round='iconv '
+  while test -n "$names_next_round"; do
+    names_this_round="$names_next_round"
+    names_next_round=
+    for name in $names_this_round; do
+      already_handled=
+      for n in $names_already_handled; do
+        if test "$n" = "$name"; then
+          already_handled=yes
+          break
+        fi
+      done
+      if test -z "$already_handled"; then
+        names_already_handled="$names_already_handled $name"
+                        uppername=`echo "$name" | sed -e 'y|abcdefghijklmnopqrstuvwxyz./-|ABCDEFGHIJKLMNOPQRSTUVWXYZ___|'`
+        eval value=\"\$HAVE_LIB$uppername\"
+        if test -n "$value"; then
+          if test "$value" = yes; then
+            eval value=\"\$LIB$uppername\"
+            test -z "$value" || LIBICONV="${LIBICONV}${LIBICONV:+ }$value"
+            eval value=\"\$LTLIB$uppername\"
+            test -z "$value" || LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$value"
+          else
+                                    :
+          fi
+        else
+                              found_dir=
+          found_la=
+          found_so=
+          found_a=
+          eval libname=\"$acl_libname_spec\"    # typically: libname=lib$name
+          if test -n "$acl_shlibext"; then
+            shrext=".$acl_shlibext"             # typically: shrext=.so
+          else
+            shrext=
+          fi
+          if test $use_additional = yes; then
+            dir="$additional_libdir"
+                                    if test -n "$acl_shlibext"; then
+              if test -f "$dir/$libname$shrext"; then
+                found_dir="$dir"
+                found_so="$dir/$libname$shrext"
+              else
+                if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
+                  ver=`(cd "$dir" && \
+                        for f in "$libname$shrext".*; do echo "$f"; done \
+                        | sed -e "s,^$libname$shrext\\\\.,," \
+                        | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
+                        | sed 1q ) 2>/dev/null`
+                  if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
+                    found_dir="$dir"
+                    found_so="$dir/$libname$shrext.$ver"
+                  fi
+                else
+                  eval library_names=\"$acl_library_names_spec\"
+                  for f in $library_names; do
+                    if test -f "$dir/$f"; then
+                      found_dir="$dir"
+                      found_so="$dir/$f"
+                      break
+                    fi
+                  done
+                fi
+              fi
+            fi
+                        if test "X$found_dir" = "X"; then
+              if test -f "$dir/$libname.$acl_libext"; then
+                found_dir="$dir"
+                found_a="$dir/$libname.$acl_libext"
+              fi
+            fi
+            if test "X$found_dir" != "X"; then
+              if test -f "$dir/$libname.la"; then
+                found_la="$dir/$libname.la"
+              fi
+            fi
+          fi
+          if test "X$found_dir" = "X"; then
+            compat_libdir=
+            if test "X$acl_libdirstem" != "Xlib"; then
+		compat_libdir=-L'${exec_prefix}'/lib
+	    fi
+            for x in $LDFLAGS $LTLIBICONV $compat_libdir $additional_compat_libdir; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+              case "$x" in
+                -L*)
+                  dir=`echo "X$x" | sed -e 's/^X-L//'`
+                                    if test -n "$acl_shlibext"; then
+                    if test -f "$dir/$libname$shrext"; then
+                      found_dir="$dir"
+                      found_so="$dir/$libname$shrext"
+                    else
+                      if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
+                        ver=`(cd "$dir" && \
+                              for f in "$libname$shrext".*; do echo "$f"; done \
+                              | sed -e "s,^$libname$shrext\\\\.,," \
+                              | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
+                              | sed 1q ) 2>/dev/null`
+                        if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
+                          found_dir="$dir"
+                          found_so="$dir/$libname$shrext.$ver"
+                        fi
+                      else
+                        eval library_names=\"$acl_library_names_spec\"
+                        for f in $library_names; do
+                          if test -f "$dir/$f"; then
+                            found_dir="$dir"
+                            found_so="$dir/$f"
+                            break
+                          fi
+                        done
+                      fi
+                    fi
+                  fi
+                                    if test "X$found_dir" = "X"; then
+                    if test -f "$dir/$libname.$acl_libext"; then
+                      found_dir="$dir"
+                      found_a="$dir/$libname.$acl_libext"
+                    fi
+                  fi
+                  if test "X$found_dir" != "X"; then
+                    if test -f "$dir/$libname.la"; then
+                      found_la="$dir/$libname.la"
+                    fi
+                  fi
+                  ;;
+              esac
+              if test "X$found_dir" != "X"; then
+                break
+              fi
+            done
+          fi
+          if test "X$found_dir" != "X"; then
+                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$found_dir -l$name"
+            if test "X$found_so" != "X"; then
+                                                        if test "$enable_rpath" = no || test "X$found_dir" = "X/usr/$acl_libdirstem"; then
+                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
+              else
+                                                                                haveit=
+                for x in $ltrpathdirs; do
+                  if test "X$x" = "X$found_dir"; then
+                    haveit=yes
+                    break
+                  fi
+                done
+                if test -z "$haveit"; then
+                  ltrpathdirs="$ltrpathdirs $found_dir"
+                fi
+                                if test "$acl_hardcode_direct" = yes; then
+                                                      LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
+                else
+                  if test -n "$acl_hardcode_libdir_flag_spec" && test "$acl_hardcode_minus_L" = no; then
+                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
+                                                            haveit=
+                    for x in $rpathdirs; do
+                      if test "X$x" = "X$found_dir"; then
+                        haveit=yes
+                        break
+                      fi
+                    done
+                    if test -z "$haveit"; then
+                      rpathdirs="$rpathdirs $found_dir"
+                    fi
+                  else
+                                                                                haveit=
+                    for x in $LDFLAGS $LIBICONV; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+                      if test "X$x" = "X-L$found_dir"; then
+                        haveit=yes
+                        break
+                      fi
+                    done
+                    if test -z "$haveit"; then
+                      LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir"
+                    fi
+                    if test "$acl_hardcode_minus_L" != no; then
+                                                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
+                    else
+                                                                                                                                                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
+                    fi
+                  fi
+                fi
+              fi
+            else
+              if test "X$found_a" != "X"; then
+                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_a"
+              else
+                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir -l$name"
+              fi
+            fi
+                        additional_includedir=
+            case "$found_dir" in
+              */$acl_libdirstem | */$acl_libdirstem/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
+                LIBICONV_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+	     */lib | */lib/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
+                LIBICONV_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+            esac
+            if test "X$additional_includedir" != "X"; then
+                                                                                                                if test "X$additional_includedir" != "X/usr/include"; then
+                haveit=
+                if test "X$additional_includedir" = "X/usr/local/include"; then
+                  if test -n "$GCC"; then
+                    case $host_os in
+                      linux* | gnu* | k*bsd*-gnu) haveit=yes;;
+                    esac
+                  fi
+                fi
+                if test -z "$haveit"; then
+                  for x in $CPPFLAGS $INCICONV; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+                    if test "X$x" = "X-I$additional_includedir"; then
+                      haveit=yes
+                      break
+                    fi
+                  done
+                  if test -z "$haveit"; then
+                    if test -d "$additional_includedir"; then
+                                            INCICONV="${INCICONV}${INCICONV:+ }-I$additional_includedir"
+                    fi
+                  fi
+                fi
+              fi
+            fi
+                        if test -n "$found_la"; then
+                                                        save_libdir="$libdir"
+              case "$found_la" in
+                */* | *\\*) . "$found_la" ;;
+                *) . "./$found_la" ;;
+              esac
+              libdir="$save_libdir"
+                            for dep in $dependency_libs; do
+                case "$dep" in
+                  -L*)
+                    additional_libdir=`echo "X$dep" | sed -e 's/^X-L//'`
+                                                                                                                                                                if test "X$additional_libdir" != "X/usr/$acl_libdirstem"; then
+                      haveit=
+                      if test "X$additional_libdir" = "X/usr/local/$acl_libdirstem"; then
+                        if test -n "$GCC"; then
+                          case $host_os in
+                            linux* | gnu* | k*bsd*-gnu) haveit=yes;;
+                          esac
+                        fi
+                      fi
+                      if test -z "$haveit"; then
+                        haveit=
+                        for x in $LDFLAGS $LIBICONV; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+                          if test "X$x" = "X-L$additional_libdir"; then
+                            haveit=yes
+                            break
+                          fi
+                        done
+                        if test -z "$haveit"; then
+                          if test -d "$additional_libdir"; then
+                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }-L$additional_libdir"
+                          fi
+                        fi
+                        haveit=
+                        for x in $LDFLAGS $LTLIBICONV; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+                          if test "X$x" = "X-L$additional_libdir"; then
+                            haveit=yes
+                            break
+                          fi
+                        done
+                        if test -z "$haveit"; then
+                          if test -d "$additional_libdir"; then
+                                                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$additional_libdir"
+                          fi
+                        fi
+                      fi
+                    fi
+                    ;;
+                  -R*)
+                    dir=`echo "X$dep" | sed -e 's/^X-R//'`
+                    if test "$enable_rpath" != no; then
+                                                                  haveit=
+                      for x in $rpathdirs; do
+                        if test "X$x" = "X$dir"; then
+                          haveit=yes
+                          break
+                        fi
+                      done
+                      if test -z "$haveit"; then
+                        rpathdirs="$rpathdirs $dir"
+                      fi
+                                                                  haveit=
+                      for x in $ltrpathdirs; do
+                        if test "X$x" = "X$dir"; then
+                          haveit=yes
+                          break
+                        fi
+                      done
+                      if test -z "$haveit"; then
+                        ltrpathdirs="$ltrpathdirs $dir"
+                      fi
+                    fi
+                    ;;
+                  -l*)
+                                        names_next_round="$names_next_round "`echo "X$dep" | sed -e 's/^X-l//'`
+                    ;;
+                  *.la)
+                                                                                names_next_round="$names_next_round "`echo "X$dep" | sed -e 's,^X.*/,,' -e 's,^lib,,' -e 's,\.la$,,'`
+                    ;;
+                  *)
+                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$dep"
+                    LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$dep"
+                    ;;
+                esac
+              done
+            fi
+          else
+                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
+            LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-l$name"
+          fi
+        fi
+      fi
+    done
+  done
+  if test "X$rpathdirs" != "X"; then
+    if test -n "$acl_hardcode_libdir_separator"; then
+                        alldirs=
+      for found_dir in $rpathdirs; do
+        alldirs="${alldirs}${alldirs:+$acl_hardcode_libdir_separator}$found_dir"
+      done
+            acl_save_libdir="$libdir"
+      libdir="$alldirs"
+      eval flag=\"$acl_hardcode_libdir_flag_spec\"
+      libdir="$acl_save_libdir"
+      LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
+    else
+            for found_dir in $rpathdirs; do
+        acl_save_libdir="$libdir"
+        libdir="$found_dir"
+        eval flag=\"$acl_hardcode_libdir_flag_spec\"
+        libdir="$acl_save_libdir"
+        LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
+      done
+    fi
+  fi
+  if test "X$ltrpathdirs" != "X"; then
+            for found_dir in $ltrpathdirs; do
+      LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-R$found_dir"
+    done
+  fi
+
+
+
+
+
+
+
+          am_save_CPPFLAGS="$CPPFLAGS"
+
+  for element in $INCICONV; do
+    haveit=
+    for x in $CPPFLAGS; do
+
+  acl_save_prefix="$prefix"
+  prefix="$acl_final_prefix"
+  acl_save_exec_prefix="$exec_prefix"
+  exec_prefix="$acl_final_exec_prefix"
+  eval x=\"$x\"
+  exec_prefix="$acl_save_exec_prefix"
+  prefix="$acl_save_prefix"
+
+      if test "X$x" = "X$element"; then
+        haveit=yes
+        break
+      fi
+    done
+    if test -z "$haveit"; then
+      CPPFLAGS="${CPPFLAGS}${CPPFLAGS:+ }$element"
+    fi
+  done
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
+$as_echo_n "checking for iconv... " >&6; }
+if ${am_cv_func_iconv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    am_cv_func_iconv="no, consider installing GNU libiconv"
+    am_cv_lib_iconv=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdlib.h>
+#include <iconv.h>
+
+int
+main ()
+{
+iconv_t cd = iconv_open("","");
+           iconv(cd,NULL,NULL,NULL,NULL);
+           iconv_close(cd);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  am_cv_func_iconv=yes
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+    if test "$am_cv_func_iconv" != yes; then
+      am_save_LIBS="$LIBS"
+      LIBS="$LIBS $LIBICONV"
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdlib.h>
+#include <iconv.h>
+
+int
+main ()
+{
+iconv_t cd = iconv_open("","");
+             iconv(cd,NULL,NULL,NULL,NULL);
+             iconv_close(cd);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  am_cv_lib_iconv=yes
+        am_cv_func_iconv=yes
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      LIBS="$am_save_LIBS"
+    fi
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_func_iconv" >&5
+$as_echo "$am_cv_func_iconv" >&6; }
+  if test "$am_cv_func_iconv" = yes; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for working iconv" >&5
+$as_echo_n "checking for working iconv... " >&6; }
+if ${am_cv_func_iconv_works+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+                  am_save_LIBS="$LIBS"
+      if test $am_cv_lib_iconv = yes; then
+        LIBS="$LIBS $LIBICONV"
+      fi
+      am_cv_func_iconv_works=no
+      for ac_iconv_const in '' 'const'; do
+        if test "$cross_compiling" = yes; then :
+  case "$host_os" in
+             aix* | hpux*) am_cv_func_iconv_works="guessing no" ;;
+             *)            am_cv_func_iconv_works="guessing yes" ;;
+           esac
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <iconv.h>
+#include <string.h>
+
+#ifndef ICONV_CONST
+# define ICONV_CONST $ac_iconv_const
+#endif
+
+int
+main ()
+{
+int result = 0;
+  /* Test against AIX 5.1 bug: Failures are not distinguishable from successful
+     returns.  */
+  {
+    iconv_t cd_utf8_to_88591 = iconv_open ("ISO8859-1", "UTF-8");
+    if (cd_utf8_to_88591 != (iconv_t)(-1))
+      {
+        static ICONV_CONST char input[] = "\342\202\254"; /* EURO SIGN */
+        char buf[10];
+        ICONV_CONST char *inptr = input;
+        size_t inbytesleft = strlen (input);
+        char *outptr = buf;
+        size_t outbytesleft = sizeof (buf);
+        size_t res = iconv (cd_utf8_to_88591,
+                            &inptr, &inbytesleft,
+                            &outptr, &outbytesleft);
+        if (res == 0)
+          result |= 1;
+        iconv_close (cd_utf8_to_88591);
+      }
+  }
+  /* Test against Solaris 10 bug: Failures are not distinguishable from
+     successful returns.  */
+  {
+    iconv_t cd_ascii_to_88591 = iconv_open ("ISO8859-1", "646");
+    if (cd_ascii_to_88591 != (iconv_t)(-1))
+      {
+        static ICONV_CONST char input[] = "\263";
+        char buf[10];
+        ICONV_CONST char *inptr = input;
+        size_t inbytesleft = strlen (input);
+        char *outptr = buf;
+        size_t outbytesleft = sizeof (buf);
+        size_t res = iconv (cd_ascii_to_88591,
+                            &inptr, &inbytesleft,
+                            &outptr, &outbytesleft);
+        if (res == 0)
+          result |= 2;
+        iconv_close (cd_ascii_to_88591);
+      }
+  }
+  /* Test against AIX 6.1..7.1 bug: Buffer overrun.  */
+  {
+    iconv_t cd_88591_to_utf8 = iconv_open ("UTF-8", "ISO-8859-1");
+    if (cd_88591_to_utf8 != (iconv_t)(-1))
+      {
+        static ICONV_CONST char input[] = "\304";
+        static char buf[2] = { (char)0xDE, (char)0xAD };
+        ICONV_CONST char *inptr = input;
+        size_t inbytesleft = 1;
+        char *outptr = buf;
+        size_t outbytesleft = 1;
+        size_t res = iconv (cd_88591_to_utf8,
+                            &inptr, &inbytesleft,
+                            &outptr, &outbytesleft);
+        if (res != (size_t)(-1) || outptr - buf > 1 || buf[1] != (char)0xAD)
+          result |= 4;
+        iconv_close (cd_88591_to_utf8);
+      }
+  }
+#if 0 /* This bug could be worked around by the caller.  */
+  /* Test against HP-UX 11.11 bug: Positive return value instead of 0.  */
+  {
+    iconv_t cd_88591_to_utf8 = iconv_open ("utf8", "iso88591");
+    if (cd_88591_to_utf8 != (iconv_t)(-1))
+      {
+        static ICONV_CONST char input[] = "\304rger mit b\366sen B\374bchen ohne Augenma\337";
+        char buf[50];
+        ICONV_CONST char *inptr = input;
+        size_t inbytesleft = strlen (input);
+        char *outptr = buf;
+        size_t outbytesleft = sizeof (buf);
+        size_t res = iconv (cd_88591_to_utf8,
+                            &inptr, &inbytesleft,
+                            &outptr, &outbytesleft);
+        if ((int)res > 0)
+          result |= 8;
+        iconv_close (cd_88591_to_utf8);
+      }
+  }
+#endif
+  /* Test against HP-UX 11.11 bug: No converter from EUC-JP to UTF-8 is
+     provided.  */
+  {
+    /* Try standardized names.  */
+    iconv_t cd1 = iconv_open ("UTF-8", "EUC-JP");
+    /* Try IRIX, OSF/1 names.  */
+    iconv_t cd2 = iconv_open ("UTF-8", "eucJP");
+    /* Try AIX names.  */
+    iconv_t cd3 = iconv_open ("UTF-8", "IBM-eucJP");
+    /* Try HP-UX names.  */
+    iconv_t cd4 = iconv_open ("utf8", "eucJP");
+    if (cd1 == (iconv_t)(-1) && cd2 == (iconv_t)(-1)
+        && cd3 == (iconv_t)(-1) && cd4 == (iconv_t)(-1))
+      result |= 16;
+    if (cd1 != (iconv_t)(-1))
+      iconv_close (cd1);
+    if (cd2 != (iconv_t)(-1))
+      iconv_close (cd2);
+    if (cd3 != (iconv_t)(-1))
+      iconv_close (cd3);
+    if (cd4 != (iconv_t)(-1))
+      iconv_close (cd4);
+  }
+  return result;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  am_cv_func_iconv_works=yes
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+        test "$am_cv_func_iconv_works" = no || break
+      done
+      LIBS="$am_save_LIBS"
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_func_iconv_works" >&5
+$as_echo "$am_cv_func_iconv_works" >&6; }
+    case "$am_cv_func_iconv_works" in
+      *no) am_func_iconv=no am_cv_lib_iconv=no ;;
+      *)   am_func_iconv=yes ;;
+    esac
+  else
+    am_func_iconv=no am_cv_lib_iconv=no
+  fi
+  if test "$am_func_iconv" = yes; then
+
+$as_echo "#define HAVE_ICONV 1" >>confdefs.h
+
+  fi
+  if test "$am_cv_lib_iconv" = yes; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking how to link with libiconv" >&5
+$as_echo_n "checking how to link with libiconv... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBICONV" >&5
+$as_echo "$LIBICONV" >&6; }
+  else
+            CPPFLAGS="$am_save_CPPFLAGS"
+    LIBICONV=
+    LTLIBICONV=
+  fi
+
+
+
+  if test "$am_cv_func_iconv" = yes; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv declaration" >&5
+$as_echo_n "checking for iconv declaration... " >&6; }
+    if ${am_cv_proto_iconv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdlib.h>
+#include <iconv.h>
+extern
+#ifdef __cplusplus
+"C"
+#endif
+#if defined(__STDC__) || defined(_MSC_VER) || defined(__cplusplus)
+size_t iconv (iconv_t cd, char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);
+#else
+size_t iconv();
+#endif
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  am_cv_proto_iconv_arg1=""
+else
+  am_cv_proto_iconv_arg1="const"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+      am_cv_proto_iconv="extern size_t iconv (iconv_t cd, $am_cv_proto_iconv_arg1 char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);"
+fi
+
+    am_cv_proto_iconv=`echo "$am_cv_proto_iconv" | tr -s ' ' | sed -e 's/( /(/'`
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result:
+         $am_cv_proto_iconv" >&5
+$as_echo "
+         $am_cv_proto_iconv" >&6; }
+  else
+            am_cv_proto_iconv_arg1=""
+  fi
+
+cat >>confdefs.h <<_ACEOF
+#define ICONV_CONST $am_cv_proto_iconv_arg1
+_ACEOF
+
+
+
+  for ac_header in iconv.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "#include <stdlib.h>
+"
+if test "x$ac_cv_header_iconv_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ICONV_H 1
+_ACEOF
+
+fi
+
+done
+
+  if test "x$am_cv_func_iconv" = "xyes"; then
+    for ac_header in localcharset.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "localcharset.h" "ac_cv_header_localcharset_h" "$ac_includes_default"
+if test "x$ac_cv_header_localcharset_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LOCALCHARSET_H 1
+_ACEOF
+
+fi
+
+done
+
+    am_save_LIBS="$LIBS"
+    LIBS="${LIBS} ${LIBICONV}"
+    for ac_func in locale_charset
+do :
+  ac_fn_c_check_func "$LINENO" "locale_charset" "ac_cv_func_locale_charset"
+if test "x$ac_cv_func_locale_charset" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LOCALE_CHARSET 1
+_ACEOF
+
+fi
+done
+
+    LIBS="${am_save_LIBS}"
+    if test "x$ac_cv_func_locale_charset" != "xyes"; then
+      # If locale_charset() is not in libiconv, we have to find libcharset.
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for locale_charset in -lcharset" >&5
+$as_echo_n "checking for locale_charset in -lcharset... " >&6; }
+if ${ac_cv_lib_charset_locale_charset+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcharset  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char locale_charset ();
+int
+main ()
+{
+return locale_charset ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_charset_locale_charset=yes
+else
+  ac_cv_lib_charset_locale_charset=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_charset_locale_charset" >&5
+$as_echo "$ac_cv_lib_charset_locale_charset" >&6; }
+if test "x$ac_cv_lib_charset_locale_charset" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBCHARSET 1
+_ACEOF
+
+  LIBS="-lcharset $LIBS"
+
+fi
+
+    fi
+  fi
+fi
+
+have_pthreads=no
+ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = xyes; then :
+  have_pthreads=yes
+fi
+
+
+
+# Check whether --enable-pthreads was given.
+if test "${enable_pthreads+set}" = set; then :
+  enableval=$enable_pthreads; have_pthreads=$enableval
+fi
+
+
+# Check whether --enable-cr was given.
+if test "${enable_cr+set}" = set; then :
+  enableval=$enable_cr; use_cr=$enableval
+fi
+
+
+# Check whether --enable-id-check was given.
+if test "${enable_id_check+set}" = set; then :
+  enableval=$enable_id_check; use_id=$enableval
+else
+  use_id="no"
+fi
+
+
+# Check whether --enable-yp-check was given.
+if test "${enable_yp_check+set}" = set; then :
+  enableval=$enable_yp_check; use_yp=$enableval
+else
+  use_yp="no"
+fi
+
+
+# Check whether --enable-yp-check was given.
+if test "${enable_yp_check+set}" = set; then :
+  enableval=$enable_yp_check; use_yp=$enableval
+else
+  use_yp="no"
+fi
+
+
+
+# Check whether --with-user was given.
+if test "${with_user+set}" = set; then :
+  withval=$with_user; clamav_user="$withval"
+else
+  clamav_user="clamav"
+fi
+
+
+
+# Check whether --with-group was given.
+if test "${with_group+set}" = set; then :
+  withval=$with_group; clamav_group="$withval"
+else
+  clamav_group="clamav"
+fi
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define CLAMAVUSER "$clamav_user"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define CLAMAVGROUP "$clamav_group"
+_ACEOF
+
+
+if test "$enable_debug" = "yes"; then
+  VERSION_SUFFIX="$VERSION_SUFFIX-debug"
+
+$as_echo "#define CL_DEBUG 1" >>confdefs.h
+
+else
+
+$as_echo "#define NDEBUG 1" >>confdefs.h
+
+fi
+
+
+# Check whether --with-version was given.
+if test "${with_version+set}" = set; then :
+  withval=$with_version; VERSION="$withval"
+fi
+
+
+# Check whether --enable-no-cache was given.
+if test "${enable_no_cache+set}" = set; then :
+  enableval=$enable_no_cache; enable_nocache=$enableval
+else
+  enable_nocache="no"
+fi
+
+
+if test "$enable_nocache" = "yes"; then
+
+$as_echo "#define FRESHCLAM_NO_CACHE 1" >>confdefs.h
+
+fi
+
+
+# Check whether --enable-dns-fix was given.
+if test "${enable_dns_fix+set}" = set; then :
+  enableval=$enable_dns_fix; enable_dnsfix=$enableval
+else
+  enable_dnsfix="no"
+fi
+
+
+if test "$enable_dnsfix" = "yes"; then
+
+$as_echo "#define FRESHCLAM_DNS_FIX 1" >>confdefs.h
+
+fi
+
+# Check whether --enable-bigstack was given.
+if test "${enable_bigstack+set}" = set; then :
+  enableval=$enable_bigstack; enable_bigstack=$enableval
+else
+  enable_bigstack="no"
+fi
+
+
+if test "$enable_bigstack" = "yes"; then
+
+$as_echo "#define C_BIGSTACK 1" >>confdefs.h
+
+fi
+
+
+# Check whether --with-dbdir was given.
+if test "${with_dbdir+set}" = set; then :
+  withval=$with_dbdir; db_dir="$withval"
+else
+  db_dir="_default_"
+fi
+
+
+if test "$db_dir" = "_default_"
+then
+    if test "$prefix" = "NONE"
+    then
+	db_dir="$ac_default_prefix/share/clamav"
+    else
+	db_dir="$prefix/share/clamav"
+    fi
+fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define DATADIR "$db_dir"
+_ACEOF
+
+DBDIR="$db_dir"
+
+
+cfg_dir=`echo $sysconfdir | grep prefix`
+
+if test -n "$cfg_dir"; then
+    if test "$prefix" = "NONE"
+    then
+	cfg_dir="$ac_default_prefix/etc"
+    else
+	cfg_dir="$prefix/etc"
+    fi
+else
+    cfg_dir="$sysconfdir"
+fi
+
+CFGDIR=$cfg_dir
+
+
+cat >>confdefs.h <<_ACEOF
+#define CONFDIR "$cfg_dir"
+_ACEOF
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether in_port_t is defined" >&5
+$as_echo_n "checking whether in_port_t is defined... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <netinet/in.h>
+
+int
+main ()
+{
+in_port_t pt; pt = 0; return pt;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_IN_PORT_T 1" >>confdefs.h
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for in_addr_t definition" >&5
+$as_echo_n "checking for in_addr_t definition... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <netinet/in.h>
+
+int
+main ()
+{
+ in_addr_t pt; pt = 0; return pt;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_IN_ADDR_T 1" >>confdefs.h
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+case "$target_os" in
+linux*)
+
+$as_echo "#define C_LINUX 1" >>confdefs.h
+
+    have_fanotify="no"
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+	if test "$want_fanotify" = "yes"; then
+	    ac_fn_c_check_header_mongrel "$LINENO" "sys/fanotify.h" "ac_cv_header_sys_fanotify_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_fanotify_h" = xyes; then :
+
+$as_echo "#define FANOTIFY 1" >>confdefs.h
+
+                have_fanotify="yes"
+fi
+
+
+	fi
+    fi
+    ;;
+kfreebsd*-gnu)
+
+$as_echo "#define C_KFREEBSD_GNU 1" >>confdefs.h
+
+    if test "$have_pthreads" = "yes"; then
+       THREAD_LIBS="-lpthread"
+       TH_SAFE="-thread-safe"
+    fi
+    ;;
+solaris*)
+    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lresolv"
+    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_SOLARIS 1" >>confdefs.h
+
+    ;;
+freebsd[45]*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread -lc_r"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+freebsd*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lthr"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+dragonfly*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+openbsd*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+bsdi*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+netbsd*)
+     if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+     fi
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+bsd*)
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: Unknown BSD detected. Disabling thread support." >&5
+$as_echo "Unknown BSD detected. Disabling thread support." >&6; }
+    have_pthreads="no"
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+    ;;
+beos*)
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: BeOS detected. Disabling thread support." >&5
+$as_echo "BeOS detected. Disabling thread support." >&6; }
+    have_pthreads="no"
+
+$as_echo "#define C_BEOS 1" >>confdefs.h
+
+    ;;
+x86:Interix*)
+
+$as_echo "#define C_INTERIX 1" >>confdefs.h
+
+    ;;
+darwin*)
+
+$as_echo "#define C_BSD 1" >>confdefs.h
+
+
+$as_echo "#define C_DARWIN 1" >>confdefs.h
+
+
+$as_echo "#define BIND_8_COMPAT 1" >>confdefs.h
+
+
+$as_echo "#define CLAMAUTH 1" >>confdefs.h
+
+    use_netinfo="yes"
+    ;;
+os2*)
+    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lsyslog"
+    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
+    CLAMD_LIBS="$CLAMD_LIBS -lsyslog"
+    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsyslog"
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_OS2 1" >>confdefs.h
+
+    ;;
+sco*)
+                    ;;
+hpux*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+    fi
+
+$as_echo "#define C_HPUX 1" >>confdefs.h
+
+    if test "$have_mempool" = "yes"; then
+	LDFLAGS="$LDFLAGS -Wl,+pd,1M"
+    fi
+    ;;
+aix*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+
+$as_echo "#define _THREAD_SAFE 1" >>confdefs.h
+
+    fi
+
+$as_echo "#define C_AIX 1" >>confdefs.h
+
+    ;;
+*-*-osf*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	TH_SAFE="-thread-safe"
+
+$as_echo "#define _POSIX_PII_SOCKET 1" >>confdefs.h
+
+    fi
+
+$as_echo "#define C_OSF 1" >>confdefs.h
+
+    ;;
+nto-qnx*)
+
+$as_echo "#define C_QNX6 1" >>confdefs.h
+
+    ;;
+irix*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+    fi
+    LIBS="$LIBS -lgen"
+
+$as_echo "#define C_IRIX 1" >>confdefs.h
+
+    ;;
+interix*)
+
+$as_echo "#define C_INTERIX 1" >>confdefs.h
+
+    if test "$test_clamav" = "yes"; then
+	if test ! -r /etc/passwd; then
+	   test_clamav="no"
+	fi
+    fi
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lpthread"
+	TH_SAFE="-thread-safe"
+    fi
+    ;;
+gnu*)
+
+$as_echo "#define C_GNU_HURD 1" >>confdefs.h
+
+    if test "$have_pthreads" = "yes"; then
+       THREAD_LIBS="-lpthread"
+       TH_SAFE="-thread-safe"
+    fi
+    ;;
+*)
+    ;;
+esac
+
 if test "$have_milter" = "yes"; then
 
         save_LIBS="$LIBS"
@@ -24876,6 +26491,1099 @@ fi
 else
   HAVE_MILTER_TRUE='#'
   HAVE_MILTER_FALSE=
+fi
+
+
+if test "$have_pthreads" = "yes"
+then
+    save_LIBS="$LIBS"
+    LIBS="$THREAD_LIBS $LIBS"
+    for ac_func in sched_yield pthread_yield
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+    LIBS="$save_LIBS"
+
+$as_echo "#define BUILD_CLAMD 1" >>confdefs.h
+
+
+$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
+
+
+$as_echo "#define _REENTRANT 1" >>confdefs.h
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ctime_r" >&5
+$as_echo_n "checking for ctime_r... " >&6; }
+if test "$ac_cv_func_ctime_r" = "yes"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	#include <time.h>
+
+int
+main ()
+{
+
+	char buf[31];
+	time_t t;
+	ctime_r(&t, buf, 30);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	ac_cv_ctime_args=3
+
+$as_echo "#define HAVE_CTIME_R_3 1" >>confdefs.h
+
+
+else
+
+	ac_cv_ctime_args=2
+
+$as_echo "#define HAVE_CTIME_R_2 1" >>confdefs.h
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, and it takes $ac_cv_ctime_args arguments" >&5
+$as_echo "yes, and it takes $ac_cv_ctime_args arguments" >&6; }
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t" >&5
+$as_echo_n "checking for socklen_t... " >&6; }
+if ${ac_cv_socklen_t+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    ac_cv_socklen_t=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	#include <sys/types.h>
+        #include <sys/socket.h>
+
+int
+main ()
+{
+
+	socklen_t len;
+        getpeername(0,0,&len);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	ac_cv_socklen_t=yes
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_socklen_t" >&5
+$as_echo "$ac_cv_socklen_t" >&6; }
+    if test $ac_cv_socklen_t = no; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t equivalent" >&5
+$as_echo_n "checking for socklen_t equivalent... " >&6; }
+    if ${ac_cv_socklen_t_equiv+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+	ac_cv_socklen_t_equiv=int
+        for t in int size_t unsigned long "unsigned long"; do
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <sys/types.h>
+		#include <sys/socket.h>
+
+int
+main ()
+{
+
+		$t len;
+		getpeername(0,0,&len);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		ac_cv_socklen_t_equiv="$t"
+		break
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	done
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_socklen_t_equiv" >&5
+$as_echo "$ac_cv_socklen_t_equiv" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define socklen_t $ac_cv_socklen_t_equiv
+_ACEOF
+
+fi
+
+if test "$test_clamav" = "yes"
+then
+        if test "$use_id" = "no"
+    then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user in /etc/passwd" >&5
+$as_echo_n "checking for $clamav_user in /etc/passwd... " >&6; }
+	if test -r /etc/passwd; then
+	    clamavuser=`cat /etc/passwd|grep "^$clamav_user:"`
+	    clamavgroup=`cat /etc/group|grep "^$clamav_group:"`
+	fi
+    else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using id" >&5
+$as_echo_n "checking for $clamav_user using id... " >&6; }
+	id $clamav_user > /dev/null 2>&1
+	if test "$?" = 0 ; then
+	    clamavuser=1
+	    # Extract the first word of "getent", so it can be a program name with args.
+set dummy getent; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_GETENT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $GETENT in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_GETENT="$GETENT" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_GETENT="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+GETENT=$ac_cv_path_GETENT
+if test -n "$GETENT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GETENT" >&5
+$as_echo "$GETENT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+	    if test -n "$GETENT" ; then
+		clamavgroup=`$GETENT group | grep "^${clamav_group}:"`
+	    else
+		clamavgroup=`cat /etc/group|grep $clamav_group`
+	    fi
+	fi
+    fi
+
+    if test "$use_netinfo" = "yes"
+    then
+	if test -x /usr/bin/dscl; then
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using dscl" >&5
+$as_echo_n "checking for $clamav_user using dscl... " >&6; }
+	    clamavuser=`/usr/bin/dscl . -list /Users |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/dscl . -list /Groups |grep ${clamav_group}`
+	else
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using netinfo" >&5
+$as_echo_n "checking for $clamav_user using netinfo... " >&6; }
+	    clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+	fi
+    fi
+
+    if test "$use_yp" = "yes"
+    then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using ypmatch" >&5
+$as_echo_n "checking for $clamav_user using ypmatch... " >&6; }
+        clamavuser=`ypmatch ${clamav_user} passwd`
+        clamavgroup=`ypmatch ${clamav_group} group`
+    fi
+
+    if test -z "$clamavuser" || test -z "$clamavgroup"
+    then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	as_fn_error $? "User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !" "$LINENO" 5
+    else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, user $clamav_user and group $clamav_group" >&5
+$as_echo "yes, user $clamav_user and group $clamav_group" >&6; }
+        CLAMAVUSER="$clamav_user"
+        CLAMAVGROUP="$clamav_group"
+
+
+    fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via __attribute__((packed))" >&5
+$as_echo_n "checking for structure packing via __attribute__((packed))... " >&6; }
+if ${have_cv_attrib_packed+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+#ifdef __GNUC__
+		 struct { int i __attribute__((packed)); } s;
+		 #else
+		 #error Only checking for packed attribute on gcc-like compilers
+		 #endif
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  have_cv_attrib_packed=yes
+else
+  have_cv_attrib_packed=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_attrib_packed" >&5
+$as_echo "$have_cv_attrib_packed" >&6; }
+
+if test "$have_cv_attrib_packed" = no; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via pragma" >&5
+$as_echo_n "checking for structure packing via pragma... " >&6; }
+	if ${have_cv_pragma_pack+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+		if test "$cross_compiling" = yes; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See \`config.log' for more details" "$LINENO" 5; }
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			    int main(int argc, char **argv) {
+#pragma pack(1)			/* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_cv_pragma_pack=yes
+else
+  have_cv_pragma_pack=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_pragma_pack" >&5
+$as_echo "$have_cv_pragma_pack" >&6; }
+	if test "$have_cv_pragma_pack" = yes; then
+
+$as_echo "#define HAVE_PRAGMA_PACK 1" >>confdefs.h
+
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via hppa/hp-ux pragma" >&5
+$as_echo_n "checking for structure packing via hppa/hp-ux pragma... " >&6; }
+		if ${have_cv_pragma_pack_hpux+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+			if test "$cross_compiling" = yes; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See \`config.log' for more details" "$LINENO" 5; }
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+			/* hppa/hp-ux wants pragma outside of function */
+#pragma pack 1 /* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			    int main(int argc, char **argv) {
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_cv_pragma_pack_hpux=yes
+else
+  have_cv_pragma_pack_hpux=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_pragma_pack_hpux" >&5
+$as_echo "$have_cv_pragma_pack_hpux" >&6; }
+
+$as_echo "#define HAVE_PRAGMA_PACK_HPPA 1" >>confdefs.h
+
+	fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for type aligning via __attribute__((aligned))" >&5
+$as_echo_n "checking for type aligning via __attribute__((aligned))... " >&6; }
+if ${have_cv_attrib_aligned+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+typedef int cl_aligned_int __attribute__((aligned));
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  have_cv_attrib_aligned=yes
+else
+  have_cv_attrib_aligned=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_attrib_aligned" >&5
+$as_echo "$have_cv_attrib_aligned" >&6; }
+
+if test "$have_cv_attrib_packed" = no -a "$have_cv_pragma_pack" = no -a "$have_cv_pragma_pack_hpux" = no; then
+	as_fn_error $? "Need to know how to pack structures with this compiler" "$LINENO" 5
+fi
+
+if test "$have_cv_attrib_packed" = yes; then
+
+$as_echo "#define HAVE_ATTRIB_PACKED 1" >>confdefs.h
+
+fi
+
+if test "$have_cv_attrib_aligned" = yes; then
+
+$as_echo "#define HAVE_ATTRIB_ALIGNED 1" >>confdefs.h
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking that structure packing works" >&5
+$as_echo_n "checking that structure packing works... " >&6; }
+if ${have_cv_struct_pack+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    if test "$cross_compiling" = yes; then :
+  have_cv_struct_pack=yes
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c __attribute__((packed)); long l __attribute__((packed)); } s;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+struct { char c; long l;} s2;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1) /* has to be in column 1 ! */
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1 /* has to be in column 1 ! */
+#endif
+
+struct { char c; long l; } __attribute__((packed)) s3;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+    int main(int argc, char **argv) {
+        if (sizeof(s)!=sizeof(s.c)+sizeof(s.l))
+	    return 1;
+	if (sizeof(s) != sizeof(s3))
+	    return 2;
+	return (sizeof(s2) >= sizeof(s)) ? 0 : 3;
+    }
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_cv_struct_pack=yes
+else
+  have_cv_struct_pack=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_struct_pack" >&5
+$as_echo "$have_cv_struct_pack" >&6; }
+
+if test "$have_cv_struct_pack" = "no"; then
+    as_fn_error $? "Structure packing seems to be available, but is not working with this compiler" "$LINENO" 5
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for fd_set" >&5
+$as_echo_n "checking for fd_set... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/select.h>
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "fd_mask" >/dev/null 2>&1; then :
+  have_fd_set=yes
+fi
+rm -f conftest*
+
+if test "$have_fd_set" = yes; then
+
+$as_echo "#define HAVE_SYS_SELECT_H 1" >>confdefs.h
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in sys/select.h" >&5
+$as_echo "yes, found in sys/select.h" >&6; }
+else
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/time.h>
+			#include <sys/types.h>
+			#ifdef HAVE_UNISTD_H
+			#include <unistd.h>
+			#endif
+int
+main ()
+{
+fd_set readMask, writeMask;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  have_fd_set=yes
+else
+  have_fd_set=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+	if test "$have_fd_set" = yes; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in sys/types.h" >&5
+$as_echo "yes, found in sys/types.h" >&6; }
+	else
+
+$as_echo "#define NO_FD_SET 1" >>confdefs.h
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking default FD_SETSIZE value" >&5
+$as_echo_n "checking default FD_SETSIZE value... " >&6; }
+if test "$cross_compiling" = yes; then :
+  DEFAULT_FD_SETSIZE=256
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/time.h>
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <errno.h>
+int main(void) {
+        FILE *fp = fopen("conftestval", "w");
+	if(fp) {
+		if(fprintf (fp, "%d\n", FD_SETSIZE) < 1)  {
+			perror("fprintf failed");
+			return errno;
+		}
+	} else {
+		perror("fopen failed");
+		return errno;
+	}
+        return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  DEFAULT_FD_SETSIZE=`cat conftestval`
+else
+  DEFAULT_FD_SETSIZE=256
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $DEFAULT_FD_SETSIZE" >&5
+$as_echo "$DEFAULT_FD_SETSIZE" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_FD_SETSIZE $DEFAULT_FD_SETSIZE
+_ACEOF
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking stat64" >&5
+$as_echo_n "checking stat64... " >&6; }
+if test "$cross_compiling" = yes; then :
+  enable_stat64=no
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+
+int main(void) {
+    struct stat64 sb;
+
+    if (stat64(".", &sb) == -1)
+        return errno;
+
+    return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  enable_stat64=yes
+else
+  enable_stat64=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+if test "$enable_stat64" != "no"; then
+
+$as_echo "#define HAVE_STAT64 1" >>confdefs.h
+
+CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stat64" >&5
+$as_echo "$enable_stat64" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether signed right shift is sign extended" >&5
+$as_echo_n "checking whether signed right shift is sign extended... " >&6; }
+if test "$cross_compiling" = yes; then :
+  have_signed_rightshift_extended=no
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int main(void){int a=-1;int b=a>>1;return(a!=b);}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_signed_rightshift_extended=yes
+else
+  have_signed_rightshift_extended=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+if test $have_signed_rightshift_extended = yes; then
+
+$as_echo "#define HAVE_SAR 1" >>confdefs.h
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_signed_rightshift_extended" >&5
+$as_echo "$have_signed_rightshift_extended" >&6; };
+
+
+for ac_func in recvmsg sendmsg
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for msg_control field in struct msghdr" >&5
+$as_echo_n "checking for msg_control field in struct msghdr... " >&6; }
+if ${ac_cv_have_control_in_msghdr+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#define _XOPEN_SOURCE 500
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <sys/socket.h>
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
+int
+main ()
+{
+
+#ifdef msg_control
+#error msg_control defined
+#endif
+struct msghdr m;
+m.msg_control = 0;
+return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+   ac_cv_have_control_in_msghdr="yes"
+else
+   ac_cv_have_control_in_msghdr="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_control_in_msghdr" >&5
+$as_echo "$ac_cv_have_control_in_msghdr" >&6; }
+if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking BSD 4.4 / RFC2292 style fd passing" >&5
+$as_echo_n "checking BSD 4.4 / RFC2292 style fd passing... " >&6; }
+    # Check whether --enable-fdpassing was given.
+if test "${enable_fdpassing+set}" = set; then :
+  enableval=$enable_fdpassing; want_fdpassing=$enableval
+else
+  want_fdpassing="yes"
+fi
+
+
+    if test "x$want_fdpassing" = "xyes"; then
+                if test "$cross_compiling" = yes; then :
+  have_fdpass=0
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+#include <signal.h>
+#include <sys/socket.h>
+
+#if !defined CMSG_SPACE || !defined CMSG_LEN
+#ifndef ALIGN
+#define ALIGN(len) len
+#endif
+
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(len) (ALIGN(sizeof(struct cmsghdr)) + ALIGN(len))
+#endif
+
+#ifndef CMSG_LEN
+#define CMSG_LEN(len) (ALIGN(sizeof(struct cmsghdr)) + len)
+#endif
+#endif
+
+#define TEST "test"
+
+static int send_fd(int s, int fd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    struct iovec iov[1];
+    char dummy[] = "";
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len = 1;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    /* must send/receive at least one byte */
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    if (sendmsg(s, &msg, 0) == -1) {
+        perror("sendmsg");
+        close(s);
+        return -1;
+    }
+    return 0;
+}
+
+static int testfd(int desc)
+{
+    char buf[256];
+    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
+        fprintf(stderr, "test data not received correctly!");
+        return 1;
+    }
+    return memcmp(buf, TEST, sizeof(TEST));
+}
+
+static int recv_fd(int desc)
+{
+    unsigned char buf[CMSG_SPACE(sizeof(int))];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    struct iovec iov[1];
+    char dummy;
+    int ret=2;
+
+    memset(&msg, 0, sizeof(msg));
+    iov[0].iov_base = &dummy;
+    iov[0].iov_len = 1;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    if (recvmsg(desc, &msg, 0) == -1) {
+        perror("recvmsg failed!");
+        return -1;
+    }
+    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+        fprintf(stderr, "control message truncated");
+        return -1;
+    }
+    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+            cmsg->cmsg_level == SOL_SOCKET &&
+            cmsg->cmsg_type == SCM_RIGHTS) {
+            int fd = *(int *)CMSG_DATA(cmsg);
+            ret = testfd(fd);
+            close(fd);
+        }
+    }
+    return ret;
+}
+
+int main(void)
+{
+    int fd[2];
+    int pip[2];
+    pid_t pid;
+    int status;
+
+    if(pipe(pip)) {
+        perror("pipe");
+        return 1;
+    }
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
+        perror("socketpair");
+        return 1;
+    }
+
+    if((pid=fork()) < 0) {
+        perror("fork");
+    } else if (!pid) {
+        exit( recv_fd(fd[1]) );
+    } else {
+        /* parent */
+        if(send_fd(fd[0], pip[0]) == -1) {
+            kill(pid, 9);
+            waitpid(pid, NULL, 0);
+            return 2;
+        }
+        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
+		close(pip[1]);
+		return -1;
+	}
+        close(pip[1]);
+        waitpid(pid, &status, 0);
+    }
+    return status;
+}
+
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_fdpass=1; fdpass_need_xopen=0
+else
+  have_fdpass=0
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+        if test $have_fdpass = 0; then
+            if test "$cross_compiling" = yes; then :
+  have_fdpass=0
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#define _XOPEN_SOURCE 500
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+#include <signal.h>
+#include <sys/socket.h>
+
+#if !defined CMSG_SPACE || !defined CMSG_LEN
+#ifndef ALIGN
+#define ALIGN(len) len
+#endif
+
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(len) (ALIGN(sizeof(struct cmsghdr)) + ALIGN(len))
+#endif
+
+#ifndef CMSG_LEN
+#define CMSG_LEN(len) (ALIGN(sizeof(struct cmsghdr)) + len)
+#endif
+#endif
+
+#define TEST "test"
+
+static int send_fd(int s, int fd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    struct iovec iov[1];
+    char dummy[] = "";
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len = 1;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    /* must send/receive at least one byte */
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    if (sendmsg(s, &msg, 0) == -1) {
+        perror("sendmsg");
+        close(s);
+        return -1;
+    }
+    return 0;
+}
+
+static int testfd(int desc)
+{
+    char buf[256];
+    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
+        fprintf(stderr, "test data not received correctly!");
+        return 1;
+    }
+    return memcmp(buf, TEST, sizeof(TEST));
+}
+
+static int recv_fd(int desc)
+{
+    unsigned char buf[CMSG_SPACE(sizeof(int))];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    struct iovec iov[1];
+    char dummy;
+    int ret=2;
+
+    memset(&msg, 0, sizeof(msg));
+    iov[0].iov_base = &dummy;
+    iov[0].iov_len = 1;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    if (recvmsg(desc, &msg, 0) == -1) {
+        perror("recvmsg failed!");
+        return -1;
+    }
+    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+        fprintf(stderr, "control message truncated");
+        return -1;
+    }
+    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+            cmsg->cmsg_level == SOL_SOCKET &&
+            cmsg->cmsg_type == SCM_RIGHTS) {
+            int fd = *(int *)CMSG_DATA(cmsg);
+            ret = testfd(fd);
+            close(fd);
+        }
+    }
+    return ret;
+}
+
+int main(void)
+{
+    int fd[2];
+    int pip[2];
+    pid_t pid;
+    int status;
+
+    if(pipe(pip)) {
+        perror("pipe");
+        return 1;
+    }
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
+        perror("socketpair");
+        return 1;
+    }
+
+    if((pid=fork()) < 0) {
+        perror("fork");
+    } else if (!pid) {
+        exit( recv_fd(fd[1]) );
+    } else {
+        /* parent */
+        if(send_fd(fd[0], pip[0]) == -1) {
+            kill(pid, 9);
+            waitpid(pid, NULL, 0);
+            return 2;
+        }
+        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
+		close(pip[1]);
+		return -1;
+	}
+        close(pip[1]);
+        waitpid(pid, &status, 0);
+    }
+    return status;
+}
+
+
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  have_fdpass=1; fdpass_need_xopen=1
+else
+  have_fdpass=0
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+        fi
+
+        if test $have_fdpass = 1; then
+
+$as_echo "#define HAVE_FD_PASSING 1" >>confdefs.h
+
+            if test $fdpass_need_xopen = 1; then
+
+$as_echo "#define FDPASS_NEED_XOPEN 1" >>confdefs.h
+
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, by defining _XOPEN_SOURCE" >&5
+$as_echo "yes, by defining _XOPEN_SOURCE" >&6; }
+            else
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+            fi
+        else
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+        fi
+
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
+$as_echo "disabled" >&6; }
+    fi
 fi
 
 
@@ -26490,6 +29198,30 @@ else
 fi
 
 
+# Check whether --enable-distcheck-werror was given.
+if test "${enable_distcheck_werror+set}" = set; then :
+  enableval=$enable_distcheck_werror; enable_distcheckwerror=$enableval
+else
+  enable_distcheckwerror="no"
+fi
+
+
+# Enable distcheck warnings and Werror only for gcc versions that support them,
+# and only after we've run the configure tests.
+# Some configure tests fail (like checking for cos in -lm) if we enable these
+# Werror flags for configure too (for example -Wstrict-prototypes makes
+# configure think that -lm doesn't have cos, hence its in libc).
+WERR_CFLAGS=
+WERR_CFLAGS_MILTER=
+if test "x$enable_distcheckwerror" = "xyes"; then
+    if test "$distcheck_enable_flags" = "1"; then
+	WERR_COMMON="-Wno-pointer-sign -Werror-implicit-function-declaration -Werror -Wextra -Wall -Wno-error=strict-aliasing -Wno-error=bad-function-cast -Wbad-function-cast -Wcast-align -Wendif-labels -Wfloat-equal -Wformat=2 -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wno-error=missing-prototypes -Wnested-externs -Wno-error=nested-externs -Wpointer-arith -Wstrict-prototypes -Wno-error=strict-prototypes -Wno-switch -Wno-switch-enum -Wundef -Wstrict-overflow=1 -Winit-self -Wmissing-include-dirs -Wdeclaration-after-statement -Waggregate-return -Wmissing-format-attribute -Wno-error=missing-format-attribute -Wno-error=type-limits -Wno-error=unused-but-set-variable -Wno-error=unused-function -Wno-error=unused-value -Wno-error=unused-variable -Wcast-qual -Wno-error=cast-qual -Wno-error=sign-compare -Wshadow -Wno-error=shadow -Wno-error=uninitialized -fdiagnostics-show-option -Wno-unused-parameter -Wno-error=unreachable-code -Winvalid-pch -Wno-error=invalid-pch -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -Wstack-protector -Wno-error=aggregate-return"
+	WERR_CFLAGS="$WERR_COMMON -Wwrite-strings"
+	WERR_CFLAGS_MILTER="$WERR_COMMON -Wno-error=format-nonliteral"
+    fi
+fi
+
+
 
 
 # Check whether --enable-llvm was given.
@@ -26703,1327 +29435,6 @@ fi
 
 
 
-
-case "$target_os" in
-linux*)
-
-$as_echo "#define C_LINUX 1" >>confdefs.h
-
-    have_fanotify="no"
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-	if test "$want_fanotify" = "yes"; then
-	    ac_fn_c_check_header_mongrel "$LINENO" "sys/fanotify.h" "ac_cv_header_sys_fanotify_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_fanotify_h" = xyes; then :
-
-$as_echo "#define FANOTIFY 1" >>confdefs.h
-
-                have_fanotify="yes"
-fi
-
-
-	fi
-    fi
-    ;;
-kfreebsd*-gnu)
-
-$as_echo "#define C_KFREEBSD_GNU 1" >>confdefs.h
-
-    if test "$have_pthreads" = "yes"; then
-       THREAD_LIBS="-lpthread"
-       TH_SAFE="-thread-safe"
-    fi
-    ;;
-solaris*)
-    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lresolv"
-    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_SOLARIS 1" >>confdefs.h
-
-    ;;
-freebsd[45]*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-pthread -lc_r"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-freebsd*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lthr"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-dragonfly*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-pthread"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-openbsd*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-pthread"
-	CLAMD_LIBS="$CLAMD_LIBS -pthread"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-bsdi*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-pthread"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-netbsd*)
-     if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-     fi
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-bsd*)
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: Unknown BSD detected. Disabling thread support." >&5
-$as_echo "Unknown BSD detected. Disabling thread support." >&6; }
-    have_pthreads="no"
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-    ;;
-beos*)
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: BeOS detected. Disabling thread support." >&5
-$as_echo "BeOS detected. Disabling thread support." >&6; }
-    have_pthreads="no"
-
-$as_echo "#define C_BEOS 1" >>confdefs.h
-
-    ;;
-x86:Interix*)
-
-$as_echo "#define C_INTERIX 1" >>confdefs.h
-
-    ;;
-darwin*)
-
-$as_echo "#define C_BSD 1" >>confdefs.h
-
-
-$as_echo "#define C_DARWIN 1" >>confdefs.h
-
-
-$as_echo "#define BIND_8_COMPAT 1" >>confdefs.h
-
-
-$as_echo "#define CLAMAUTH 1" >>confdefs.h
-
-    use_netinfo="yes"
-    ;;
-os2*)
-    CLAMDSCAN_LIBS="$CLAMDSCAN_LIBS -lsyslog"
-    FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
-    CLAMD_LIBS="$CLAMD_LIBS -lsyslog"
-    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsyslog"
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_OS2 1" >>confdefs.h
-
-    ;;
-sco*)
-                    ;;
-hpux*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-    fi
-
-$as_echo "#define C_HPUX 1" >>confdefs.h
-
-    if test "$have_mempool" = "yes"; then
-	LDFLAGS="$LDFLAGS -Wl,+pd,1M"
-    fi
-    ;;
-aix*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-
-$as_echo "#define _THREAD_SAFE 1" >>confdefs.h
-
-    fi
-
-$as_echo "#define C_AIX 1" >>confdefs.h
-
-    ;;
-*-*-osf*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-pthread"
-	TH_SAFE="-thread-safe"
-
-$as_echo "#define _POSIX_PII_SOCKET 1" >>confdefs.h
-
-    fi
-
-$as_echo "#define C_OSF 1" >>confdefs.h
-
-    ;;
-nto-qnx*)
-
-$as_echo "#define C_QNX6 1" >>confdefs.h
-
-    ;;
-irix*)
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-    fi
-    LIBS="$LIBS -lgen"
-
-$as_echo "#define C_IRIX 1" >>confdefs.h
-
-    ;;
-interix*)
-
-$as_echo "#define C_INTERIX 1" >>confdefs.h
-
-    if test "$test_clamav" = "yes"; then
-	if test ! -r /etc/passwd; then
-	   test_clamav="no"
-	fi
-    fi
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-    fi
-    ;;
-gnu*)
-
-$as_echo "#define C_GNU_HURD 1" >>confdefs.h
-
-    if test "$have_pthreads" = "yes"; then
-       THREAD_LIBS="-lpthread"
-       TH_SAFE="-thread-safe"
-    fi
-    ;;
-*)
-    ;;
-esac
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ctime_r" >&5
-$as_echo_n "checking for ctime_r... " >&6; }
-if test "$ac_cv_func_ctime_r" = "yes"; then
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-	#include <time.h>
-
-int
-main ()
-{
-
-	char buf[31];
-	time_t t;
-	ctime_r(&t, buf, 30);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-	ac_cv_ctime_args=3
-
-$as_echo "#define HAVE_CTIME_R_3 1" >>confdefs.h
-
-
-else
-
-	ac_cv_ctime_args=2
-
-$as_echo "#define HAVE_CTIME_R_2 1" >>confdefs.h
-
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, and it takes $ac_cv_ctime_args arguments" >&5
-$as_echo "yes, and it takes $ac_cv_ctime_args arguments" >&6; }
-fi
-
-
-for ac_func in recvmsg sendmsg
-do :
-  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
-ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-done
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for msg_control field in struct msghdr" >&5
-$as_echo_n "checking for msg_control field in struct msghdr... " >&6; }
-if ${ac_cv_have_control_in_msghdr+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#define _XOPEN_SOURCE 500
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <sys/socket.h>
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
-
-int
-main ()
-{
-
-#ifdef msg_control
-#error msg_control defined
-#endif
-struct msghdr m;
-m.msg_control = 0;
-return 0;
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-   ac_cv_have_control_in_msghdr="yes"
-else
-   ac_cv_have_control_in_msghdr="no"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_control_in_msghdr" >&5
-$as_echo "$ac_cv_have_control_in_msghdr" >&6; }
-if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking BSD 4.4 / RFC2292 style fd passing" >&5
-$as_echo_n "checking BSD 4.4 / RFC2292 style fd passing... " >&6; }
-    # Check whether --enable-fdpassing was given.
-if test "${enable_fdpassing+set}" = set; then :
-  enableval=$enable_fdpassing; want_fdpassing=$enableval
-else
-  want_fdpassing="yes"
-fi
-
-
-    if test "x$want_fdpassing" = "xyes"; then
-                if test "$cross_compiling" = yes; then :
-  have_fdpass=0
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <sys/wait.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
-#include <signal.h>
-#include <sys/socket.h>
-
-#if !defined CMSG_SPACE || !defined CMSG_LEN
-#ifndef ALIGN
-#define ALIGN(len) len
-#endif
-
-#ifndef CMSG_SPACE
-#define CMSG_SPACE(len) (ALIGN(sizeof(struct cmsghdr)) + ALIGN(len))
-#endif
-
-#ifndef CMSG_LEN
-#define CMSG_LEN(len) (ALIGN(sizeof(struct cmsghdr)) + len)
-#endif
-#endif
-
-#define TEST "test"
-
-static int send_fd(int s, int fd)
-{
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    struct iovec iov[1];
-    char dummy[] = "";
-
-    iov[0].iov_base = dummy;
-    iov[0].iov_len = 1;
-
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_control = fdbuf;
-    /* must send/receive at least one byte */
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    msg.msg_controllen = CMSG_LEN(sizeof(int));
-
-    cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-    *(int *)CMSG_DATA(cmsg) = fd;
-
-    if (sendmsg(s, &msg, 0) == -1) {
-        perror("sendmsg");
-        close(s);
-        return -1;
-    }
-    return 0;
-}
-
-static int testfd(int desc)
-{
-    char buf[256];
-    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
-        fprintf(stderr, "test data not received correctly!");
-        return 1;
-    }
-    return memcmp(buf, TEST, sizeof(TEST));
-}
-
-static int recv_fd(int desc)
-{
-    unsigned char buf[CMSG_SPACE(sizeof(int))];
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    struct iovec iov[1];
-    char dummy;
-    int ret=2;
-
-    memset(&msg, 0, sizeof(msg));
-    iov[0].iov_base = &dummy;
-    iov[0].iov_len = 1;
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    msg.msg_control = buf;
-    msg.msg_controllen = sizeof(buf);
-
-    if (recvmsg(desc, &msg, 0) == -1) {
-        perror("recvmsg failed!");
-        return -1;
-    }
-    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-        fprintf(stderr, "control message truncated");
-        return -1;
-    }
-    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
-            cmsg->cmsg_level == SOL_SOCKET &&
-            cmsg->cmsg_type == SCM_RIGHTS) {
-            int fd = *(int *)CMSG_DATA(cmsg);
-            ret = testfd(fd);
-            close(fd);
-        }
-    }
-    return ret;
-}
-
-int main(void)
-{
-    int fd[2];
-    int pip[2];
-    pid_t pid;
-    int status;
-
-    if(pipe(pip)) {
-        perror("pipe");
-        return 1;
-    }
-
-    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
-        perror("socketpair");
-        return 1;
-    }
-
-    if((pid=fork()) < 0) {
-        perror("fork");
-    } else if (!pid) {
-        exit( recv_fd(fd[1]) );
-    } else {
-        /* parent */
-        if(send_fd(fd[0], pip[0]) == -1) {
-            kill(pid, 9);
-            waitpid(pid, NULL, 0);
-            return 2;
-        }
-        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
-		close(pip[1]);
-		return -1;
-	}
-        close(pip[1]);
-        waitpid(pid, &status, 0);
-    }
-    return status;
-}
-
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_fdpass=1; fdpass_need_xopen=0
-else
-  have_fdpass=0
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-        if test $have_fdpass = 0; then
-            if test "$cross_compiling" = yes; then :
-  have_fdpass=0
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#define _XOPEN_SOURCE 500
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <sys/wait.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
-#include <signal.h>
-#include <sys/socket.h>
-
-#if !defined CMSG_SPACE || !defined CMSG_LEN
-#ifndef ALIGN
-#define ALIGN(len) len
-#endif
-
-#ifndef CMSG_SPACE
-#define CMSG_SPACE(len) (ALIGN(sizeof(struct cmsghdr)) + ALIGN(len))
-#endif
-
-#ifndef CMSG_LEN
-#define CMSG_LEN(len) (ALIGN(sizeof(struct cmsghdr)) + len)
-#endif
-#endif
-
-#define TEST "test"
-
-static int send_fd(int s, int fd)
-{
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    struct iovec iov[1];
-    char dummy[] = "";
-
-    iov[0].iov_base = dummy;
-    iov[0].iov_len = 1;
-
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_control = fdbuf;
-    /* must send/receive at least one byte */
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    msg.msg_controllen = CMSG_LEN(sizeof(int));
-
-    cmsg = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level = SOL_SOCKET;
-    cmsg->cmsg_type = SCM_RIGHTS;
-    *(int *)CMSG_DATA(cmsg) = fd;
-
-    if (sendmsg(s, &msg, 0) == -1) {
-        perror("sendmsg");
-        close(s);
-        return -1;
-    }
-    return 0;
-}
-
-static int testfd(int desc)
-{
-    char buf[256];
-    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
-        fprintf(stderr, "test data not received correctly!");
-        return 1;
-    }
-    return memcmp(buf, TEST, sizeof(TEST));
-}
-
-static int recv_fd(int desc)
-{
-    unsigned char buf[CMSG_SPACE(sizeof(int))];
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    struct iovec iov[1];
-    char dummy;
-    int ret=2;
-
-    memset(&msg, 0, sizeof(msg));
-    iov[0].iov_base = &dummy;
-    iov[0].iov_len = 1;
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    msg.msg_control = buf;
-    msg.msg_controllen = sizeof(buf);
-
-    if (recvmsg(desc, &msg, 0) == -1) {
-        perror("recvmsg failed!");
-        return -1;
-    }
-    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-        fprintf(stderr, "control message truncated");
-        return -1;
-    }
-    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
-            cmsg->cmsg_level == SOL_SOCKET &&
-            cmsg->cmsg_type == SCM_RIGHTS) {
-            int fd = *(int *)CMSG_DATA(cmsg);
-            ret = testfd(fd);
-            close(fd);
-        }
-    }
-    return ret;
-}
-
-int main(void)
-{
-    int fd[2];
-    int pip[2];
-    pid_t pid;
-    int status;
-
-    if(pipe(pip)) {
-        perror("pipe");
-        return 1;
-    }
-
-    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
-        perror("socketpair");
-        return 1;
-    }
-
-    if((pid=fork()) < 0) {
-        perror("fork");
-    } else if (!pid) {
-        exit( recv_fd(fd[1]) );
-    } else {
-        /* parent */
-        if(send_fd(fd[0], pip[0]) == -1) {
-            kill(pid, 9);
-            waitpid(pid, NULL, 0);
-            return 2;
-        }
-        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
-		close(pip[1]);
-		return -1;
-	}
-        close(pip[1]);
-        waitpid(pid, &status, 0);
-    }
-    return status;
-}
-
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_fdpass=1; fdpass_need_xopen=1
-else
-  have_fdpass=0
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-        fi
-
-        if test $have_fdpass = 1; then
-
-$as_echo "#define HAVE_FD_PASSING 1" >>confdefs.h
-
-            if test $fdpass_need_xopen = 1; then
-
-$as_echo "#define FDPASS_NEED_XOPEN 1" >>confdefs.h
-
-                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, by defining _XOPEN_SOURCE" >&5
-$as_echo "yes, by defining _XOPEN_SOURCE" >&6; }
-            else
-                { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-            fi
-        else
-            { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-        fi
-
-    else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
-$as_echo "disabled" >&6; }
-    fi
-fi
-
-
-
-
-# Check whether --enable-strni was given.
-if test "${enable_strni+set}" = set; then :
-  enableval=$enable_strni; enable_strni=$enableval
-else
-  enable_strni="no"
-fi
-
-
-if test "$enable_strni" = "yes"; then
-
-$as_echo "#define HAVE_STRNI 1" >>confdefs.h
-
-
-fi
-
-
-
-
-have_pthreads=no
-ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
-if test "x$ac_cv_header_pthread_h" = xyes; then :
-  have_pthreads=yes
-fi
-
-
-
-# Check whether --enable-pthreads was given.
-if test "${enable_pthreads+set}" = set; then :
-  enableval=$enable_pthreads; have_pthreads=$enableval
-fi
-
-
-# Check whether --enable-cr was given.
-if test "${enable_cr+set}" = set; then :
-  enableval=$enable_cr; use_cr=$enableval
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether in_port_t is defined" >&5
-$as_echo_n "checking whether in_port_t is defined... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netinet/in.h>
-
-int
-main ()
-{
-in_port_t pt; pt = 0; return pt;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_IN_PORT_T 1" >>confdefs.h
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for in_addr_t definition" >&5
-$as_echo_n "checking for in_addr_t definition... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netinet/in.h>
-
-int
-main ()
-{
- in_addr_t pt; pt = 0; return pt;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_IN_ADDR_T 1" >>confdefs.h
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-if test "$have_pthreads" = "yes"
-then
-    save_LIBS="$LIBS"
-    LIBS="$THREAD_LIBS $LIBS"
-    for ac_func in sched_yield pthread_yield
-do :
-  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
-ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-done
-
-    LIBS="$save_LIBS"
-
-$as_echo "#define BUILD_CLAMD 1" >>confdefs.h
-
-
-$as_echo "#define CL_THREAD_SAFE 1" >>confdefs.h
-
-
-$as_echo "#define _REENTRANT 1" >>confdefs.h
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t" >&5
-$as_echo_n "checking for socklen_t... " >&6; }
-if ${ac_cv_socklen_t+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-    ac_cv_socklen_t=no
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-	#include <sys/types.h>
-        #include <sys/socket.h>
-
-int
-main ()
-{
-
-	socklen_t len;
-        getpeername(0,0,&len);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-	ac_cv_socklen_t=yes
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_socklen_t" >&5
-$as_echo "$ac_cv_socklen_t" >&6; }
-    if test $ac_cv_socklen_t = no; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t equivalent" >&5
-$as_echo_n "checking for socklen_t equivalent... " >&6; }
-    if ${ac_cv_socklen_t_equiv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	ac_cv_socklen_t_equiv=int
-        for t in int size_t unsigned long "unsigned long"; do
-	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-		#include <sys/types.h>
-		#include <sys/socket.h>
-
-int
-main ()
-{
-
-		$t len;
-		getpeername(0,0,&len);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		ac_cv_socklen_t_equiv="$t"
-		break
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-	done
-
-fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_socklen_t_equiv" >&5
-$as_echo "$ac_cv_socklen_t_equiv" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define socklen_t $ac_cv_socklen_t_equiv
-_ACEOF
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via __attribute__((packed))" >&5
-$as_echo_n "checking for structure packing via __attribute__((packed))... " >&6; }
-if ${have_cv_attrib_packed+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-#ifdef __GNUC__
-		 struct { int i __attribute__((packed)); } s;
-		 #else
-		 #error Only checking for packed attribute on gcc-like compilers
-		 #endif
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  have_cv_attrib_packed=yes
-else
-  have_cv_attrib_packed=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_attrib_packed" >&5
-$as_echo "$have_cv_attrib_packed" >&6; }
-
-if test "$have_cv_attrib_packed" = no; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via pragma" >&5
-$as_echo_n "checking for structure packing via pragma... " >&6; }
-	if ${have_cv_pragma_pack+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		if test "$cross_compiling" = yes; then :
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "cannot run test program while cross compiling
-See \`config.log' for more details" "$LINENO" 5; }
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-			    int main(int argc, char **argv) {
-#pragma pack(1)			/* has to be in column 1 ! */
-			struct { char c; long l; } s;
-			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_cv_pragma_pack=yes
-else
-  have_cv_pragma_pack=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-fi
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_pragma_pack" >&5
-$as_echo "$have_cv_pragma_pack" >&6; }
-	if test "$have_cv_pragma_pack" = yes; then
-
-$as_echo "#define HAVE_PRAGMA_PACK 1" >>confdefs.h
-
-	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for structure packing via hppa/hp-ux pragma" >&5
-$as_echo_n "checking for structure packing via hppa/hp-ux pragma... " >&6; }
-		if ${have_cv_pragma_pack_hpux+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-			if test "$cross_compiling" = yes; then :
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "cannot run test program while cross compiling
-See \`config.log' for more details" "$LINENO" 5; }
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-			/* hppa/hp-ux wants pragma outside of function */
-#pragma pack 1 /* has to be in column 1 ! */
-			struct { char c; long l; } s;
-			    int main(int argc, char **argv) {
-			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_cv_pragma_pack_hpux=yes
-else
-  have_cv_pragma_pack_hpux=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-fi
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_pragma_pack_hpux" >&5
-$as_echo "$have_cv_pragma_pack_hpux" >&6; }
-
-$as_echo "#define HAVE_PRAGMA_PACK_HPPA 1" >>confdefs.h
-
-	fi
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for type aligning via __attribute__((aligned))" >&5
-$as_echo_n "checking for type aligning via __attribute__((aligned))... " >&6; }
-if ${have_cv_attrib_aligned+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-typedef int cl_aligned_int __attribute__((aligned));
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  have_cv_attrib_aligned=yes
-else
-  have_cv_attrib_aligned=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_attrib_aligned" >&5
-$as_echo "$have_cv_attrib_aligned" >&6; }
-
-if test "$have_cv_attrib_packed" = no -a "$have_cv_pragma_pack" = no -a "$have_cv_pragma_pack_hpux" = no; then
-	as_fn_error $? "Need to know how to pack structures with this compiler" "$LINENO" 5
-fi
-
-if test "$have_cv_attrib_packed" = yes; then
-
-$as_echo "#define HAVE_ATTRIB_PACKED 1" >>confdefs.h
-
-fi
-
-if test "$have_cv_attrib_aligned" = yes; then
-
-$as_echo "#define HAVE_ATTRIB_ALIGNED 1" >>confdefs.h
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking that structure packing works" >&5
-$as_echo_n "checking that structure packing works... " >&6; }
-if ${have_cv_struct_pack+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-    if test "$cross_compiling" = yes; then :
-  have_cv_struct_pack=yes
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#ifndef HAVE_ATTRIB_PACKED
-#define __attribute__(x)
-#endif
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(1) /* has to be in column 1 ! */
-#endif
-#ifdef HAVE_PRAGMA_PACK_HPPA
-#pragma pack 1 /* has to be in column 1 ! */
-#endif
-
-struct { char c __attribute__((packed)); long l __attribute__((packed)); } s;
-
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack()
-#endif
-#ifdef HAVE_PRAGMA_PACK_HPPA
-#pragma pack
-#endif
-
-struct { char c; long l;} s2;
-
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack(1) /* has to be in column 1 ! */
-#endif
-#ifdef HAVE_PRAGMA_PACK_HPPA
-#pragma pack 1 /* has to be in column 1 ! */
-#endif
-
-struct { char c; long l; } __attribute__((packed)) s3;
-
-#ifdef HAVE_PRAGMA_PACK
-#pragma pack()
-#endif
-#ifdef HAVE_PRAGMA_PACK_HPPA
-#pragma pack
-#endif
-
-    int main(int argc, char **argv) {
-        if (sizeof(s)!=sizeof(s.c)+sizeof(s.l))
-	    return 1;
-	if (sizeof(s) != sizeof(s3))
-	    return 2;
-	return (sizeof(s2) >= sizeof(s)) ? 0 : 3;
-    }
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_cv_struct_pack=yes
-else
-  have_cv_struct_pack=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_struct_pack" >&5
-$as_echo "$have_cv_struct_pack" >&6; }
-
-if test "$have_cv_struct_pack" = "no"; then
-    as_fn_error $? "Structure packing seems to be available, but is not working with this compiler" "$LINENO" 5
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for fd_set" >&5
-$as_echo_n "checking for fd_set... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/select.h>
-
-_ACEOF
-if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
-  $EGREP "fd_mask" >/dev/null 2>&1; then :
-  have_fd_set=yes
-fi
-rm -f conftest*
-
-if test "$have_fd_set" = yes; then
-
-$as_echo "#define HAVE_SYS_SELECT_H 1" >>confdefs.h
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in sys/select.h" >&5
-$as_echo "yes, found in sys/select.h" >&6; }
-else
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/time.h>
-			#include <sys/types.h>
-			#ifdef HAVE_UNISTD_H
-			#include <unistd.h>
-			#endif
-int
-main ()
-{
-fd_set readMask, writeMask;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  have_fd_set=yes
-else
-  have_fd_set=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-	if test "$have_fd_set" = yes; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in sys/types.h" >&5
-$as_echo "yes, found in sys/types.h" >&6; }
-	else
-
-$as_echo "#define NO_FD_SET 1" >>confdefs.h
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	fi
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking default FD_SETSIZE value" >&5
-$as_echo_n "checking default FD_SETSIZE value... " >&6; }
-if test "$cross_compiling" = yes; then :
-  DEFAULT_FD_SETSIZE=256
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/time.h>
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <errno.h>
-int main(void) {
-        FILE *fp = fopen("conftestval", "w");
-	if(fp) {
-		if(fprintf (fp, "%d\n", FD_SETSIZE) < 1)  {
-			perror("fprintf failed");
-			return errno;
-		}
-	} else {
-		perror("fopen failed");
-		return errno;
-	}
-        return 0;
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  DEFAULT_FD_SETSIZE=`cat conftestval`
-else
-  DEFAULT_FD_SETSIZE=256
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $DEFAULT_FD_SETSIZE" >&5
-$as_echo "$DEFAULT_FD_SETSIZE" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define DEFAULT_FD_SETSIZE $DEFAULT_FD_SETSIZE
-_ACEOF
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking stat64" >&5
-$as_echo_n "checking stat64... " >&6; }
-if test "$cross_compiling" = yes; then :
-  enable_stat64=no
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
-
-int main(void) {
-    struct stat64 sb;
-
-    if (stat64(".", &sb) == -1)
-        return errno;
-
-    return 0;
-}
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  enable_stat64=yes
-else
-  enable_stat64=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-if test "$enable_stat64" != "no"; then
-
-$as_echo "#define HAVE_STAT64 1" >>confdefs.h
-
-CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stat64" >&5
-$as_echo "$enable_stat64" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether signed right shift is sign extended" >&5
-$as_echo_n "checking whether signed right shift is sign extended... " >&6; }
-if test "$cross_compiling" = yes; then :
-  have_signed_rightshift_extended=no
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-int main(void){int a=-1;int b=a>>1;return(a!=b);}
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_signed_rightshift_extended=yes
-else
-  have_signed_rightshift_extended=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-if test $have_signed_rightshift_extended = yes; then
-
-$as_echo "#define HAVE_SAR 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_signed_rightshift_extended" >&5
-$as_echo "$have_signed_rightshift_extended" >&6; };
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking LFS safe fts implementation" >&5
 $as_echo_n "checking LFS safe fts implementation... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -28065,1506 +29476,6 @@ $as_echo "#define HAVE_SYSTEM_LFS_FTS 0" >>confdefs.h
 
 	lfs_fts_msg="internal, libc's is not LFS compatible"
 fi
-
-
-# iconv.m4 serial 21
-
-
-
-
-
-
-
-
-
-
-# iconv.m4 serial 21
-
-
-
-
-
-
-
-
-
-
-if test "x$with_iconv" != "xno"; then
-
-
-
-
-
-
-
-
-    use_additional=yes
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-
-    eval additional_includedir=\"$includedir\"
-    eval additional_libdir=\"$libdir\"
-
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-
-# Check whether --with-libiconv-prefix was given.
-if test "${with_libiconv_prefix+set}" = set; then :
-  withval=$with_libiconv_prefix;
-    if test "X$withval" = "Xno"; then
-      use_additional=no
-    else
-      additional_compat_libdir=
-      if test "X$withval" = "X"; then
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-
-          eval additional_includedir=\"$includedir\"
-          eval additional_libdir=\"$libdir\"
-
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      else
-        additional_includedir="$withval/include"
-        additional_libdir="$withval/$acl_libdirstem"
-	if test "X$acl_libdirstem" != "Xlib"; then
-		additional_compat_libdir="-L$withval/lib"
-	fi
-      fi
-    fi
-
-fi
-
-      LIBICONV=
-  LTLIBICONV=
-  INCICONV=
-  LIBICONV_PREFIX=
-  rpathdirs=
-  ltrpathdirs=
-  names_already_handled=
-  names_next_round='iconv '
-  while test -n "$names_next_round"; do
-    names_this_round="$names_next_round"
-    names_next_round=
-    for name in $names_this_round; do
-      already_handled=
-      for n in $names_already_handled; do
-        if test "$n" = "$name"; then
-          already_handled=yes
-          break
-        fi
-      done
-      if test -z "$already_handled"; then
-        names_already_handled="$names_already_handled $name"
-                        uppername=`echo "$name" | sed -e 'y|abcdefghijklmnopqrstuvwxyz./-|ABCDEFGHIJKLMNOPQRSTUVWXYZ___|'`
-        eval value=\"\$HAVE_LIB$uppername\"
-        if test -n "$value"; then
-          if test "$value" = yes; then
-            eval value=\"\$LIB$uppername\"
-            test -z "$value" || LIBICONV="${LIBICONV}${LIBICONV:+ }$value"
-            eval value=\"\$LTLIB$uppername\"
-            test -z "$value" || LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$value"
-          else
-                                    :
-          fi
-        else
-                              found_dir=
-          found_la=
-          found_so=
-          found_a=
-          eval libname=\"$acl_libname_spec\"    # typically: libname=lib$name
-          if test -n "$acl_shlibext"; then
-            shrext=".$acl_shlibext"             # typically: shrext=.so
-          else
-            shrext=
-          fi
-          if test $use_additional = yes; then
-            dir="$additional_libdir"
-                                    if test -n "$acl_shlibext"; then
-              if test -f "$dir/$libname$shrext"; then
-                found_dir="$dir"
-                found_so="$dir/$libname$shrext"
-              else
-                if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
-                  ver=`(cd "$dir" && \
-                        for f in "$libname$shrext".*; do echo "$f"; done \
-                        | sed -e "s,^$libname$shrext\\\\.,," \
-                        | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
-                        | sed 1q ) 2>/dev/null`
-                  if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
-                    found_dir="$dir"
-                    found_so="$dir/$libname$shrext.$ver"
-                  fi
-                else
-                  eval library_names=\"$acl_library_names_spec\"
-                  for f in $library_names; do
-                    if test -f "$dir/$f"; then
-                      found_dir="$dir"
-                      found_so="$dir/$f"
-                      break
-                    fi
-                  done
-                fi
-              fi
-            fi
-                        if test "X$found_dir" = "X"; then
-              if test -f "$dir/$libname.$acl_libext"; then
-                found_dir="$dir"
-                found_a="$dir/$libname.$acl_libext"
-              fi
-            fi
-            if test "X$found_dir" != "X"; then
-              if test -f "$dir/$libname.la"; then
-                found_la="$dir/$libname.la"
-              fi
-            fi
-          fi
-          if test "X$found_dir" = "X"; then
-            compat_libdir=
-            if test "X$acl_libdirstem" != "Xlib"; then
-		compat_libdir=-L'${exec_prefix}'/lib
-	    fi
-            for x in $LDFLAGS $LTLIBICONV $compat_libdir $additional_compat_libdir; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-              case "$x" in
-                -L*)
-                  dir=`echo "X$x" | sed -e 's/^X-L//'`
-                                    if test -n "$acl_shlibext"; then
-                    if test -f "$dir/$libname$shrext"; then
-                      found_dir="$dir"
-                      found_so="$dir/$libname$shrext"
-                    else
-                      if test "$acl_library_names_spec" = '$libname$shrext$versuffix'; then
-                        ver=`(cd "$dir" && \
-                              for f in "$libname$shrext".*; do echo "$f"; done \
-                              | sed -e "s,^$libname$shrext\\\\.,," \
-                              | sort -t '.' -n -r -k1,1 -k2,2 -k3,3 -k4,4 -k5,5 \
-                              | sed 1q ) 2>/dev/null`
-                        if test -n "$ver" && test -f "$dir/$libname$shrext.$ver"; then
-                          found_dir="$dir"
-                          found_so="$dir/$libname$shrext.$ver"
-                        fi
-                      else
-                        eval library_names=\"$acl_library_names_spec\"
-                        for f in $library_names; do
-                          if test -f "$dir/$f"; then
-                            found_dir="$dir"
-                            found_so="$dir/$f"
-                            break
-                          fi
-                        done
-                      fi
-                    fi
-                  fi
-                                    if test "X$found_dir" = "X"; then
-                    if test -f "$dir/$libname.$acl_libext"; then
-                      found_dir="$dir"
-                      found_a="$dir/$libname.$acl_libext"
-                    fi
-                  fi
-                  if test "X$found_dir" != "X"; then
-                    if test -f "$dir/$libname.la"; then
-                      found_la="$dir/$libname.la"
-                    fi
-                  fi
-                  ;;
-              esac
-              if test "X$found_dir" != "X"; then
-                break
-              fi
-            done
-          fi
-          if test "X$found_dir" != "X"; then
-                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$found_dir -l$name"
-            if test "X$found_so" != "X"; then
-                                                        if test "$enable_rpath" = no || test "X$found_dir" = "X/usr/$acl_libdirstem"; then
-                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-              else
-                                                                                haveit=
-                for x in $ltrpathdirs; do
-                  if test "X$x" = "X$found_dir"; then
-                    haveit=yes
-                    break
-                  fi
-                done
-                if test -z "$haveit"; then
-                  ltrpathdirs="$ltrpathdirs $found_dir"
-                fi
-                                if test "$acl_hardcode_direct" = yes; then
-                                                      LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                else
-                  if test -n "$acl_hardcode_libdir_flag_spec" && test "$acl_hardcode_minus_L" = no; then
-                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                                                            haveit=
-                    for x in $rpathdirs; do
-                      if test "X$x" = "X$found_dir"; then
-                        haveit=yes
-                        break
-                      fi
-                    done
-                    if test -z "$haveit"; then
-                      rpathdirs="$rpathdirs $found_dir"
-                    fi
-                  else
-                                                                                haveit=
-                    for x in $LDFLAGS $LIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                      if test "X$x" = "X-L$found_dir"; then
-                        haveit=yes
-                        break
-                      fi
-                    done
-                    if test -z "$haveit"; then
-                      LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir"
-                    fi
-                    if test "$acl_hardcode_minus_L" != no; then
-                                                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$found_so"
-                    else
-                                                                                                                                                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
-                    fi
-                  fi
-                fi
-              fi
-            else
-              if test "X$found_a" != "X"; then
-                                LIBICONV="${LIBICONV}${LIBICONV:+ }$found_a"
-              else
-                                                LIBICONV="${LIBICONV}${LIBICONV:+ }-L$found_dir -l$name"
-              fi
-            fi
-                        additional_includedir=
-            case "$found_dir" in
-              */$acl_libdirstem | */$acl_libdirstem/)
-                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
-                LIBICONV_PREFIX="$basedir"
-                additional_includedir="$basedir/include"
-                ;;
-	     */lib | */lib/)
-                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
-                LIBICONV_PREFIX="$basedir"
-                additional_includedir="$basedir/include"
-                ;;
-            esac
-            if test "X$additional_includedir" != "X"; then
-                                                                                                                if test "X$additional_includedir" != "X/usr/include"; then
-                haveit=
-                if test "X$additional_includedir" = "X/usr/local/include"; then
-                  if test -n "$GCC"; then
-                    case $host_os in
-                      linux* | gnu* | k*bsd*-gnu) haveit=yes;;
-                    esac
-                  fi
-                fi
-                if test -z "$haveit"; then
-                  for x in $CPPFLAGS $INCICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                    if test "X$x" = "X-I$additional_includedir"; then
-                      haveit=yes
-                      break
-                    fi
-                  done
-                  if test -z "$haveit"; then
-                    if test -d "$additional_includedir"; then
-                                            INCICONV="${INCICONV}${INCICONV:+ }-I$additional_includedir"
-                    fi
-                  fi
-                fi
-              fi
-            fi
-                        if test -n "$found_la"; then
-                                                        save_libdir="$libdir"
-              case "$found_la" in
-                */* | *\\*) . "$found_la" ;;
-                *) . "./$found_la" ;;
-              esac
-              libdir="$save_libdir"
-                            for dep in $dependency_libs; do
-                case "$dep" in
-                  -L*)
-                    additional_libdir=`echo "X$dep" | sed -e 's/^X-L//'`
-                                                                                                                                                                if test "X$additional_libdir" != "X/usr/$acl_libdirstem"; then
-                      haveit=
-                      if test "X$additional_libdir" = "X/usr/local/$acl_libdirstem"; then
-                        if test -n "$GCC"; then
-                          case $host_os in
-                            linux* | gnu* | k*bsd*-gnu) haveit=yes;;
-                          esac
-                        fi
-                      fi
-                      if test -z "$haveit"; then
-                        haveit=
-                        for x in $LDFLAGS $LIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                          if test "X$x" = "X-L$additional_libdir"; then
-                            haveit=yes
-                            break
-                          fi
-                        done
-                        if test -z "$haveit"; then
-                          if test -d "$additional_libdir"; then
-                                                        LIBICONV="${LIBICONV}${LIBICONV:+ }-L$additional_libdir"
-                          fi
-                        fi
-                        haveit=
-                        for x in $LDFLAGS $LTLIBICONV; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-                          if test "X$x" = "X-L$additional_libdir"; then
-                            haveit=yes
-                            break
-                          fi
-                        done
-                        if test -z "$haveit"; then
-                          if test -d "$additional_libdir"; then
-                                                        LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-L$additional_libdir"
-                          fi
-                        fi
-                      fi
-                    fi
-                    ;;
-                  -R*)
-                    dir=`echo "X$dep" | sed -e 's/^X-R//'`
-                    if test "$enable_rpath" != no; then
-                                                                  haveit=
-                      for x in $rpathdirs; do
-                        if test "X$x" = "X$dir"; then
-                          haveit=yes
-                          break
-                        fi
-                      done
-                      if test -z "$haveit"; then
-                        rpathdirs="$rpathdirs $dir"
-                      fi
-                                                                  haveit=
-                      for x in $ltrpathdirs; do
-                        if test "X$x" = "X$dir"; then
-                          haveit=yes
-                          break
-                        fi
-                      done
-                      if test -z "$haveit"; then
-                        ltrpathdirs="$ltrpathdirs $dir"
-                      fi
-                    fi
-                    ;;
-                  -l*)
-                                        names_next_round="$names_next_round "`echo "X$dep" | sed -e 's/^X-l//'`
-                    ;;
-                  *.la)
-                                                                                names_next_round="$names_next_round "`echo "X$dep" | sed -e 's,^X.*/,,' -e 's,^lib,,' -e 's,\.la$,,'`
-                    ;;
-                  *)
-                                        LIBICONV="${LIBICONV}${LIBICONV:+ }$dep"
-                    LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }$dep"
-                    ;;
-                esac
-              done
-            fi
-          else
-                                                            LIBICONV="${LIBICONV}${LIBICONV:+ }-l$name"
-            LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-l$name"
-          fi
-        fi
-      fi
-    done
-  done
-  if test "X$rpathdirs" != "X"; then
-    if test -n "$acl_hardcode_libdir_separator"; then
-                        alldirs=
-      for found_dir in $rpathdirs; do
-        alldirs="${alldirs}${alldirs:+$acl_hardcode_libdir_separator}$found_dir"
-      done
-            acl_save_libdir="$libdir"
-      libdir="$alldirs"
-      eval flag=\"$acl_hardcode_libdir_flag_spec\"
-      libdir="$acl_save_libdir"
-      LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
-    else
-            for found_dir in $rpathdirs; do
-        acl_save_libdir="$libdir"
-        libdir="$found_dir"
-        eval flag=\"$acl_hardcode_libdir_flag_spec\"
-        libdir="$acl_save_libdir"
-        LIBICONV="${LIBICONV}${LIBICONV:+ }$flag"
-      done
-    fi
-  fi
-  if test "X$ltrpathdirs" != "X"; then
-            for found_dir in $ltrpathdirs; do
-      LTLIBICONV="${LTLIBICONV}${LTLIBICONV:+ }-R$found_dir"
-    done
-  fi
-
-
-
-
-
-
-
-          am_save_CPPFLAGS="$CPPFLAGS"
-
-  for element in $INCICONV; do
-    haveit=
-    for x in $CPPFLAGS; do
-
-  acl_save_prefix="$prefix"
-  prefix="$acl_final_prefix"
-  acl_save_exec_prefix="$exec_prefix"
-  exec_prefix="$acl_final_exec_prefix"
-  eval x=\"$x\"
-  exec_prefix="$acl_save_exec_prefix"
-  prefix="$acl_save_prefix"
-
-      if test "X$x" = "X$element"; then
-        haveit=yes
-        break
-      fi
-    done
-    if test -z "$haveit"; then
-      CPPFLAGS="${CPPFLAGS}${CPPFLAGS:+ }$element"
-    fi
-  done
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv" >&5
-$as_echo_n "checking for iconv... " >&6; }
-if ${am_cv_func_iconv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-    am_cv_func_iconv="no, consider installing GNU libiconv"
-    am_cv_lib_iconv=no
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdlib.h>
-#include <iconv.h>
-
-int
-main ()
-{
-iconv_t cd = iconv_open("","");
-           iconv(cd,NULL,NULL,NULL,NULL);
-           iconv_close(cd);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  am_cv_func_iconv=yes
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-    if test "$am_cv_func_iconv" != yes; then
-      am_save_LIBS="$LIBS"
-      LIBS="$LIBS $LIBICONV"
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdlib.h>
-#include <iconv.h>
-
-int
-main ()
-{
-iconv_t cd = iconv_open("","");
-             iconv(cd,NULL,NULL,NULL,NULL);
-             iconv_close(cd);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  am_cv_lib_iconv=yes
-        am_cv_func_iconv=yes
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-      LIBS="$am_save_LIBS"
-    fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_func_iconv" >&5
-$as_echo "$am_cv_func_iconv" >&6; }
-  if test "$am_cv_func_iconv" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for working iconv" >&5
-$as_echo_n "checking for working iconv... " >&6; }
-if ${am_cv_func_iconv_works+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-                  am_save_LIBS="$LIBS"
-      if test $am_cv_lib_iconv = yes; then
-        LIBS="$LIBS $LIBICONV"
-      fi
-      am_cv_func_iconv_works=no
-      for ac_iconv_const in '' 'const'; do
-        if test "$cross_compiling" = yes; then :
-  case "$host_os" in
-             aix* | hpux*) am_cv_func_iconv_works="guessing no" ;;
-             *)            am_cv_func_iconv_works="guessing yes" ;;
-           esac
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <iconv.h>
-#include <string.h>
-
-#ifndef ICONV_CONST
-# define ICONV_CONST $ac_iconv_const
-#endif
-
-int
-main ()
-{
-int result = 0;
-  /* Test against AIX 5.1 bug: Failures are not distinguishable from successful
-     returns.  */
-  {
-    iconv_t cd_utf8_to_88591 = iconv_open ("ISO8859-1", "UTF-8");
-    if (cd_utf8_to_88591 != (iconv_t)(-1))
-      {
-        static ICONV_CONST char input[] = "\342\202\254"; /* EURO SIGN */
-        char buf[10];
-        ICONV_CONST char *inptr = input;
-        size_t inbytesleft = strlen (input);
-        char *outptr = buf;
-        size_t outbytesleft = sizeof (buf);
-        size_t res = iconv (cd_utf8_to_88591,
-                            &inptr, &inbytesleft,
-                            &outptr, &outbytesleft);
-        if (res == 0)
-          result |= 1;
-        iconv_close (cd_utf8_to_88591);
-      }
-  }
-  /* Test against Solaris 10 bug: Failures are not distinguishable from
-     successful returns.  */
-  {
-    iconv_t cd_ascii_to_88591 = iconv_open ("ISO8859-1", "646");
-    if (cd_ascii_to_88591 != (iconv_t)(-1))
-      {
-        static ICONV_CONST char input[] = "\263";
-        char buf[10];
-        ICONV_CONST char *inptr = input;
-        size_t inbytesleft = strlen (input);
-        char *outptr = buf;
-        size_t outbytesleft = sizeof (buf);
-        size_t res = iconv (cd_ascii_to_88591,
-                            &inptr, &inbytesleft,
-                            &outptr, &outbytesleft);
-        if (res == 0)
-          result |= 2;
-        iconv_close (cd_ascii_to_88591);
-      }
-  }
-  /* Test against AIX 6.1..7.1 bug: Buffer overrun.  */
-  {
-    iconv_t cd_88591_to_utf8 = iconv_open ("UTF-8", "ISO-8859-1");
-    if (cd_88591_to_utf8 != (iconv_t)(-1))
-      {
-        static ICONV_CONST char input[] = "\304";
-        static char buf[2] = { (char)0xDE, (char)0xAD };
-        ICONV_CONST char *inptr = input;
-        size_t inbytesleft = 1;
-        char *outptr = buf;
-        size_t outbytesleft = 1;
-        size_t res = iconv (cd_88591_to_utf8,
-                            &inptr, &inbytesleft,
-                            &outptr, &outbytesleft);
-        if (res != (size_t)(-1) || outptr - buf > 1 || buf[1] != (char)0xAD)
-          result |= 4;
-        iconv_close (cd_88591_to_utf8);
-      }
-  }
-#if 0 /* This bug could be worked around by the caller.  */
-  /* Test against HP-UX 11.11 bug: Positive return value instead of 0.  */
-  {
-    iconv_t cd_88591_to_utf8 = iconv_open ("utf8", "iso88591");
-    if (cd_88591_to_utf8 != (iconv_t)(-1))
-      {
-        static ICONV_CONST char input[] = "\304rger mit b\366sen B\374bchen ohne Augenma\337";
-        char buf[50];
-        ICONV_CONST char *inptr = input;
-        size_t inbytesleft = strlen (input);
-        char *outptr = buf;
-        size_t outbytesleft = sizeof (buf);
-        size_t res = iconv (cd_88591_to_utf8,
-                            &inptr, &inbytesleft,
-                            &outptr, &outbytesleft);
-        if ((int)res > 0)
-          result |= 8;
-        iconv_close (cd_88591_to_utf8);
-      }
-  }
-#endif
-  /* Test against HP-UX 11.11 bug: No converter from EUC-JP to UTF-8 is
-     provided.  */
-  {
-    /* Try standardized names.  */
-    iconv_t cd1 = iconv_open ("UTF-8", "EUC-JP");
-    /* Try IRIX, OSF/1 names.  */
-    iconv_t cd2 = iconv_open ("UTF-8", "eucJP");
-    /* Try AIX names.  */
-    iconv_t cd3 = iconv_open ("UTF-8", "IBM-eucJP");
-    /* Try HP-UX names.  */
-    iconv_t cd4 = iconv_open ("utf8", "eucJP");
-    if (cd1 == (iconv_t)(-1) && cd2 == (iconv_t)(-1)
-        && cd3 == (iconv_t)(-1) && cd4 == (iconv_t)(-1))
-      result |= 16;
-    if (cd1 != (iconv_t)(-1))
-      iconv_close (cd1);
-    if (cd2 != (iconv_t)(-1))
-      iconv_close (cd2);
-    if (cd3 != (iconv_t)(-1))
-      iconv_close (cd3);
-    if (cd4 != (iconv_t)(-1))
-      iconv_close (cd4);
-  }
-  return result;
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  am_cv_func_iconv_works=yes
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-        test "$am_cv_func_iconv_works" = no || break
-      done
-      LIBS="$am_save_LIBS"
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_func_iconv_works" >&5
-$as_echo "$am_cv_func_iconv_works" >&6; }
-    case "$am_cv_func_iconv_works" in
-      *no) am_func_iconv=no am_cv_lib_iconv=no ;;
-      *)   am_func_iconv=yes ;;
-    esac
-  else
-    am_func_iconv=no am_cv_lib_iconv=no
-  fi
-  if test "$am_func_iconv" = yes; then
-
-$as_echo "#define HAVE_ICONV 1" >>confdefs.h
-
-  fi
-  if test "$am_cv_lib_iconv" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking how to link with libiconv" >&5
-$as_echo_n "checking how to link with libiconv... " >&6; }
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBICONV" >&5
-$as_echo "$LIBICONV" >&6; }
-  else
-            CPPFLAGS="$am_save_CPPFLAGS"
-    LIBICONV=
-    LTLIBICONV=
-  fi
-
-
-
-  if test "$am_cv_func_iconv" = yes; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for iconv declaration" >&5
-$as_echo_n "checking for iconv declaration... " >&6; }
-    if ${am_cv_proto_iconv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <stdlib.h>
-#include <iconv.h>
-extern
-#ifdef __cplusplus
-"C"
-#endif
-#if defined(__STDC__) || defined(_MSC_VER) || defined(__cplusplus)
-size_t iconv (iconv_t cd, char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);
-#else
-size_t iconv();
-#endif
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  am_cv_proto_iconv_arg1=""
-else
-  am_cv_proto_iconv_arg1="const"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-      am_cv_proto_iconv="extern size_t iconv (iconv_t cd, $am_cv_proto_iconv_arg1 char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);"
-fi
-
-    am_cv_proto_iconv=`echo "$am_cv_proto_iconv" | tr -s ' ' | sed -e 's/( /(/'`
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result:
-         $am_cv_proto_iconv" >&5
-$as_echo "
-         $am_cv_proto_iconv" >&6; }
-  else
-            am_cv_proto_iconv_arg1=""
-  fi
-
-cat >>confdefs.h <<_ACEOF
-#define ICONV_CONST $am_cv_proto_iconv_arg1
-_ACEOF
-
-
-
-  for ac_header in iconv.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "#include <stdlib.h>
-"
-if test "x$ac_cv_header_iconv_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_ICONV_H 1
-_ACEOF
-
-fi
-
-done
-
-  if test "x$am_cv_func_iconv" = "xyes"; then
-    for ac_header in localcharset.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "localcharset.h" "ac_cv_header_localcharset_h" "$ac_includes_default"
-if test "x$ac_cv_header_localcharset_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LOCALCHARSET_H 1
-_ACEOF
-
-fi
-
-done
-
-    am_save_LIBS="$LIBS"
-    LIBS="${LIBS} ${LIBICONV}"
-    for ac_func in locale_charset
-do :
-  ac_fn_c_check_func "$LINENO" "locale_charset" "ac_cv_func_locale_charset"
-if test "x$ac_cv_func_locale_charset" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LOCALE_CHARSET 1
-_ACEOF
-
-fi
-done
-
-    LIBS="${am_save_LIBS}"
-    if test "x$ac_cv_func_locale_charset" != "xyes"; then
-      # If locale_charset() is not in libiconv, we have to find libcharset.
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for locale_charset in -lcharset" >&5
-$as_echo_n "checking for locale_charset in -lcharset... " >&6; }
-if ${ac_cv_lib_charset_locale_charset+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcharset  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char locale_charset ();
-int
-main ()
-{
-return locale_charset ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_charset_locale_charset=yes
-else
-  ac_cv_lib_charset_locale_charset=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_charset_locale_charset" >&5
-$as_echo "$ac_cv_lib_charset_locale_charset" >&6; }
-if test "x$ac_cv_lib_charset_locale_charset" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCHARSET 1
-_ACEOF
-
-  LIBS="-lcharset $LIBS"
-
-fi
-
-    fi
-  fi
-fi
-
-
-
-# Check whether --with-dbdir was given.
-if test "${with_dbdir+set}" = set; then :
-  withval=$with_dbdir; db_dir="$withval"
-else
-  db_dir="_default_"
-fi
-
-
-if test "$db_dir" = "_default_"
-then
-    if test "$prefix" = "NONE"
-    then
-	db_dir="$ac_default_prefix/share/clamav"
-    else
-	db_dir="$prefix/share/clamav"
-    fi
-fi
-
-
-cat >>confdefs.h <<_ACEOF
-#define DATADIR "$db_dir"
-_ACEOF
-
-DBDIR="$db_dir"
-
-
-
-# Check whether --enable-clamonacc was given.
-if test "${enable_clamonacc+set}" = set; then :
-  enableval=$enable_clamonacc; enable_clamonacc=$enableval
-else
-  enable_clamonacc="auto"
-fi
-
-
-if test "$enable_libclamav_only" != yes; then
-
-if test "$enable_clamonacc" != "no"; then
-
-
-        case "${host_os}" in
-        	linux*)
-			 if test x$enable_clamonacc != xno; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-			;;
-		*)
-			if test "$enable_clamonacc" == "yes"; then
-				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
-			fi
-			 if test x$enable_clamonacc == xno; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-                        ;;
-	esac
-else
-	 if test x$enable_clamonacc == xyes; then
-  BUILD_CLAMONACC_TRUE=
-  BUILD_CLAMONACC_FALSE='#'
-else
-  BUILD_CLAMONACC_TRUE='#'
-  BUILD_CLAMONACC_FALSE=
-fi
-
-fi
-fi
-
-
-if test "x$enable_libclamav_only" = "xno"; then
-# Check whether --enable-ipv6 was given.
-if test "${enable_ipv6+set}" = set; then :
-  enableval=$enable_ipv6; want_ipv6=$enableval
-else
-  want_ipv6="yes"
-fi
-
-
-if test "$want_ipv6" = "yes"
-then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for IPv6 support" >&5
-$as_echo_n "checking for IPv6 support... " >&6; }
-    if ${have_cv_ipv6+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		if test "$cross_compiling" = yes; then :
-  have_cv_ipv6=no
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-		    #include <sys/types.h>
-		    #include <sys/socket.h>
-		    #include <netdb.h>
-		    #include <unistd.h>
-		    int main(int argc, char **argv)
-		    {
-			    struct addrinfo *res, hints;
-			    int sd;
-
-			if((sd = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
-			    return 1;
-			close(sd);
-			/* also check if getaddrinfo() handles AF_UNSPEC -- bb#1196 */
-			memset(&hints, 0, sizeof(hints));
-			hints.ai_family = AF_UNSPEC;
-			if(getaddrinfo("127.0.0.1", NULL, &hints, &res) < 0)
-			    return 1;
-			freeaddrinfo(res);
-			return 0;
-		    }
-
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  have_cv_ipv6=yes
-else
-  have_cv_ipv6=no
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_cv_ipv6" >&5
-$as_echo "$have_cv_ipv6" >&6; }
-    if test "$have_cv_ipv6" = yes; then
-
-$as_echo "#define SUPPORT_IPv6 1" >>confdefs.h
-
-    fi
-fi
-
-
-
-# Check whether --enable-dns was given.
-if test "${enable_dns+set}" = set; then :
-  enableval=$enable_dns; want_dns=$enableval
-else
-  want_dns=yes
-
-fi
-
-if test $want_dns = yes; then
-    ac_cv_have_lresolv=no
-    ac_fn_c_check_header_compile "$LINENO" "resolv.h" "ac_cv_header_resolv_h" "
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-
-"
-if test "x$ac_cv_header_resolv_h" = xyes; then :
-
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dn_expand in std libs" >&5
-$as_echo_n "checking for dn_expand in std libs... " >&6; }
-if ${ac_cv_have_lresolv_std+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-	    	ac_cv_have_lresolv_std='no'
-	        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-int main() { return (long)dn_expand; }
-
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-		    ac_cv_have_lresolv_std='yes'
-		    ac_cv_have_lresolv=''
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_lresolv_std" >&5
-$as_echo "$ac_cv_have_lresolv_std" >&6; }
-	    if test "x$ac_cv_have_lresolv" = "xno"; then
-	    bklibs=$LIBS
-	    LIBS=-lresolv
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dn_expand in -lresolv" >&5
-$as_echo_n "checking for dn_expand in -lresolv... " >&6; }
-if ${ac_cv_have_lresolv_lresolv+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-		ac_cv_have_lresolv_lresolv='yes'
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-int main() { return (long)dn_expand; }
-
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-		    ac_cv_have_lresolv_lresolv='yes'
-		    ac_cv_have_lresolv=' -lresolv'
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_have_lresolv_lresolv" >&5
-$as_echo "$ac_cv_have_lresolv_lresolv" >&6; }
-	    LIBS=$bklibs;
-	    fi
-
-else
-   ac_cv_have_lresolv=no
-fi
-
-
-    if test "x$ac_cv_have_lresolv" != "xno"; then
-    	FRESHCLAM_LIBS="$FRESHCLAM_LIBS$ac_cv_have_lresolv"
-
-$as_echo "#define HAVE_RESOLV_H 1" >>confdefs.h
-
-    else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: ****** DNS support disabled" >&5
-$as_echo "$as_me: WARNING: ****** DNS support disabled" >&2;}
-    fi
-fi
-
-
-
-# Check whether --enable-fanotify was given.
-if test "${enable_fanotify+set}" = set; then :
-  enableval=$enable_fanotify; want_fanotify=$enableval
-else
-  want_fanotify="yes"
-fi
-
-have_fanotify="no"
-
-if test "$cross_compiling" = no; then
- { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether setpgrp takes no argument" >&5
-$as_echo_n "checking whether setpgrp takes no argument... " >&6; }
-if ${ac_cv_func_setpgrp_void+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test "$cross_compiling" = yes; then :
-  as_fn_error $? "cannot check setpgrp when cross compiling" "$LINENO" 5
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$ac_includes_default
-int
-main ()
-{
-/* If this system has a BSD-style setpgrp which takes arguments,
-  setpgrp(1, 1) will fail with ESRCH and return -1, in that case
-  exit successfully. */
-  return setpgrp (1,1) != -1;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  ac_cv_func_setpgrp_void=no
-else
-  ac_cv_func_setpgrp_void=yes
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_func_setpgrp_void" >&5
-$as_echo "$ac_cv_func_setpgrp_void" >&6; }
-if test $ac_cv_func_setpgrp_void = yes; then
-
-$as_echo "#define SETPGRP_VOID 1" >>confdefs.h
-
-fi
-
-else
- { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether setpgrp takes no argument" >&5
-$as_echo_n "checking whether setpgrp takes no argument... " >&6; }
-if ${ac_cv_func_setpgrp_void+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <unistd.h>
-
-int
-main ()
-{
-
- if (setpgrp(1,1) == -1)
-   exit (0);
- else
-   exit (1);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_func_setpgrp_void=no
-else
-  ac_cv_func_setpgrp_void=yes
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_func_setpgrp_void" >&5
-$as_echo "$ac_cv_func_setpgrp_void" >&6; }
-if test $ac_cv_func_setpgrp_void = yes; then
- $as_echo "#define SETPGRP_VOID 1" >>confdefs.h
-
-fi
-fi
-
-# Check whether --enable-milter was given.
-if test "${enable_milter+set}" = set; then :
-  enableval=$enable_milter; have_milter=$enableval
-else
-  have_milter="no"
-fi
-
-
-# Check whether --enable-id-check was given.
-if test "${enable_id_check+set}" = set; then :
-  enableval=$enable_id_check; use_id=$enableval
-else
-  use_id="no"
-fi
-
-
-# Check whether --enable-yp-check was given.
-if test "${enable_yp_check+set}" = set; then :
-  enableval=$enable_yp_check; use_yp=$enableval
-else
-  use_yp="no"
-fi
-
-
-# Check whether --enable-yp-check was given.
-if test "${enable_yp_check+set}" = set; then :
-  enableval=$enable_yp_check; use_yp=$enableval
-else
-  use_yp="no"
-fi
-
-
-
-# Check whether --with-user was given.
-if test "${with_user+set}" = set; then :
-  withval=$with_user; clamav_user="$withval"
-else
-  clamav_user="clamav"
-fi
-
-
-
-# Check whether --with-group was given.
-if test "${with_group+set}" = set; then :
-  withval=$with_group; clamav_group="$withval"
-else
-  clamav_group="clamav"
-fi
-
-
-
-cat >>confdefs.h <<_ACEOF
-#define CLAMAVUSER "$clamav_user"
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
-#define CLAMAVGROUP "$clamav_group"
-_ACEOF
-
-
-if test "$enable_debug" = "yes"; then
-  VERSION_SUFFIX="$VERSION_SUFFIX-debug"
-
-$as_echo "#define CL_DEBUG 1" >>confdefs.h
-
-else
-
-$as_echo "#define NDEBUG 1" >>confdefs.h
-
-fi
-
-
-# Check whether --with-version was given.
-if test "${with_version+set}" = set; then :
-  withval=$with_version; VERSION="$withval"
-fi
-
-
-# Check whether --enable-no-cache was given.
-if test "${enable_no_cache+set}" = set; then :
-  enableval=$enable_no_cache; enable_nocache=$enableval
-else
-  enable_nocache="no"
-fi
-
-
-if test "$enable_nocache" = "yes"; then
-
-$as_echo "#define FRESHCLAM_NO_CACHE 1" >>confdefs.h
-
-fi
-
-
-# Check whether --enable-dns-fix was given.
-if test "${enable_dns_fix+set}" = set; then :
-  enableval=$enable_dns_fix; enable_dnsfix=$enableval
-else
-  enable_dnsfix="no"
-fi
-
-
-if test "$enable_dnsfix" = "yes"; then
-
-$as_echo "#define FRESHCLAM_DNS_FIX 1" >>confdefs.h
-
-fi
-
-# Check whether --enable-bigstack was given.
-if test "${enable_bigstack+set}" = set; then :
-  enableval=$enable_bigstack; enable_bigstack=$enableval
-else
-  enable_bigstack="no"
-fi
-
-
-if test "$enable_bigstack" = "yes"; then
-
-$as_echo "#define C_BIGSTACK 1" >>confdefs.h
-
-fi
-
-cfg_dir=`echo $sysconfdir | grep prefix`
-
-if test -n "$cfg_dir"; then
-    if test "$prefix" = "NONE"
-    then
-	cfg_dir="$ac_default_prefix/etc"
-    else
-	cfg_dir="$prefix/etc"
-    fi
-else
-    cfg_dir="$sysconfdir"
-fi
-
-CFGDIR=$cfg_dir
-
-
-cat >>confdefs.h <<_ACEOF
-#define CONFDIR "$cfg_dir"
-_ACEOF
-
-
-if test "$test_clamav" = "yes"
-then
-        if test "$use_id" = "no"
-    then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user in /etc/passwd" >&5
-$as_echo_n "checking for $clamav_user in /etc/passwd... " >&6; }
-	if test -r /etc/passwd; then
-	    clamavuser=`cat /etc/passwd|grep "^$clamav_user:"`
-	    clamavgroup=`cat /etc/group|grep "^$clamav_group:"`
-	fi
-    else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using id" >&5
-$as_echo_n "checking for $clamav_user using id... " >&6; }
-	id $clamav_user > /dev/null 2>&1
-	if test "$?" = 0 ; then
-	    clamavuser=1
-	    # Extract the first word of "getent", so it can be a program name with args.
-set dummy getent; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_GETENT+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $GETENT in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_GETENT="$GETENT" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_GETENT="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-GETENT=$ac_cv_path_GETENT
-if test -n "$GETENT"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GETENT" >&5
-$as_echo "$GETENT" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-	    if test -n "$GETENT" ; then
-		clamavgroup=`$GETENT group | grep "^${clamav_group}:"`
-	    else
-		clamavgroup=`cat /etc/group|grep $clamav_group`
-	    fi
-	fi
-    fi
-
-    if test "$use_netinfo" = "yes"
-    then
-	if test -x /usr/bin/dscl; then
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using dscl" >&5
-$as_echo_n "checking for $clamav_user using dscl... " >&6; }
-	    clamavuser=`/usr/bin/dscl . -list /Users |grep ${clamav_user}`
-	    clamavgroup=`/usr/bin/dscl . -list /Groups |grep ${clamav_group}`
-	else
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using netinfo" >&5
-$as_echo_n "checking for $clamav_user using netinfo... " >&6; }
-	    clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
-	    clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
-	fi
-    fi
-
-    if test "$use_yp" = "yes"
-    then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $clamav_user using ypmatch" >&5
-$as_echo_n "checking for $clamav_user using ypmatch... " >&6; }
-        clamavuser=`ypmatch ${clamav_user} passwd`
-        clamavgroup=`ypmatch ${clamav_group} group`
-    fi
-
-    if test -z "$clamavuser" || test -z "$clamavgroup"
-    then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	as_fn_error $? "User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !" "$LINENO" 5
-    else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, user $clamav_user and group $clamav_group" >&5
-$as_echo "yes, user $clamav_user and group $clamav_group" >&6; }
-        CLAMAVUSER="$clamav_user"
-        CLAMAVGROUP="$clamav_group"
-
-
-    fi
-fi
-
-# Check whether --enable-distcheck-werror was given.
-if test "${enable_distcheck_werror+set}" = set; then :
-  enableval=$enable_distcheck_werror; enable_distcheckwerror=$enableval
-else
-  enable_distcheckwerror="no"
-fi
-
-
-# Enable distcheck warnings and Werror only for gcc versions that support them,
-# and only after we've run the configure tests.
-# Some configure tests fail (like checking for cos in -lm) if we enable these
-# Werror flags for configure too (for example -Wstrict-prototypes makes
-# configure think that -lm doesn't have cos, hence its in libc).
-WERR_CFLAGS=
-WERR_CFLAGS_MILTER=
-if test "x$enable_distcheckwerror" = "xyes"; then
-    if test "$distcheck_enable_flags" = "1"; then
-	WERR_COMMON="-Wno-pointer-sign -Werror-implicit-function-declaration -Werror -Wextra -Wall -Wno-error=strict-aliasing -Wno-error=bad-function-cast -Wbad-function-cast -Wcast-align -Wendif-labels -Wfloat-equal -Wformat=2 -Wformat-security -Wmissing-declarations -Wmissing-prototypes -Wno-error=missing-prototypes -Wnested-externs -Wno-error=nested-externs -Wpointer-arith -Wstrict-prototypes -Wno-error=strict-prototypes -Wno-switch -Wno-switch-enum -Wundef -Wstrict-overflow=1 -Winit-self -Wmissing-include-dirs -Wdeclaration-after-statement -Waggregate-return -Wmissing-format-attribute -Wno-error=missing-format-attribute -Wno-error=type-limits -Wno-error=unused-but-set-variable -Wno-error=unused-function -Wno-error=unused-value -Wno-error=unused-variable -Wcast-qual -Wno-error=cast-qual -Wno-error=sign-compare -Wshadow -Wno-error=shadow -Wno-error=uninitialized -fdiagnostics-show-option -Wno-unused-parameter -Wno-error=unreachable-code -Winvalid-pch -Wno-error=invalid-pch -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -Wstack-protector -Wno-error=aggregate-return"
-	WERR_CFLAGS="$WERR_COMMON -Wwrite-strings"
-	WERR_CFLAGS_MILTER="$WERR_COMMON -Wno-error=format-nonliteral"
-    fi
-fi
-
-
 
 # PRELUDE
 # Check whether --enable-prelude was given.
@@ -29874,6 +29785,57 @@ fi
 esac
 
 
+# Check whether --enable-clamonacc was given.
+if test "${enable_clamonacc+set}" = set; then :
+  enableval=$enable_clamonacc; enable_clamonacc=$enableval
+else
+  enable_clamonacc="auto"
+fi
+
+
+if test "$enable_libclamav_only" != yes; then
+
+if test "$enable_clamonacc" != "no"; then
+
+
+        case "${host_os}" in
+        	linux*)
+			 if test x$enable_clamonacc != xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+			;;
+		*)
+			if test "$enable_clamonacc" == "yes"; then
+				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
+			fi
+			 if test x$enable_clamonacc == xno; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+                        ;;
+	esac
+else
+	 if test x$enable_clamonacc == xyes; then
+  BUILD_CLAMONACC_TRUE=
+  BUILD_CLAMONACC_FALSE='#'
+else
+  BUILD_CLAMONACC_TRUE='#'
+  BUILD_CLAMONACC_FALSE=
+fi
+
+fi
+fi
+
+
 
 have_curl="no"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl installation" >&5
@@ -30131,7 +30093,23 @@ fi
 
 
 
+# Check whether --enable-strni was given.
+if test "${enable_strni+set}" = set; then :
+  enableval=$enable_strni; enable_strni=$enableval
+else
+  enable_strni="no"
 fi
+
+
+if test "$enable_strni" = "yes"; then
+
+$as_echo "#define HAVE_STRNI 1" >>confdefs.h
+
+
+fi
+
+
+
 
 if test "x$use_internal_mspack" = "xyes"; then
     mspack_msg="Internal"
