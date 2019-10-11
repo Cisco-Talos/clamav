@@ -141,6 +141,10 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
         // which we could also match on, but we just ignore those fields
         // for blacklist certs for now
 
+        // TODO the rule format allows the exponent to be specified as well,
+        // but that gets ignored when CRB rules are parsed (and set to a fixed
+        // value), so ignore that field when looking at certs
+
         // TODO Handle the case where these items aren't specified in a CRB
         // rule entry - substitute in default values instead (or make the
         // crb parser not permit leaving these fields blank).
@@ -148,8 +152,7 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
         if (i->isBlacklisted &&
             !memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
             !memcmp(i->serial, x509->serial, sizeof(i->serial)) &&
-            !mp_cmp(&x509->n, &i->n) &&
-            !mp_cmp(&x509->e, &i->e)) {
+            !mp_cmp(&x509->n, &i->n)) {
             return i;
         }
     }
