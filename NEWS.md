@@ -7,6 +7,13 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.101.5 is a security patch release that addresses the following issues.
 
+- Signature load time is significantly reduced by changing to a more efficient
+  algorithm for loading signature patterns and allocating the AC trie.
+  Patch courtesy of Alberto Wu.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Alberto Wu
 -
 
 ## 0.101.4
