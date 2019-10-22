@@ -9,6 +9,10 @@ ClamAV 0.102.1 is a security patch release to address the following issues.
 
 ### Bug fixes
 
+- Introduced a new configure option to statically link libjson-c with libclamav.
+  Static linking with libjson is highly recommended to prevent crashes in
+  applications that use libclamav alongside another JSON parsing library.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:
