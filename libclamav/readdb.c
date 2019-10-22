@@ -2971,25 +2971,25 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         }
 
         if (tokens_count > CRT_TOKENS - 2) {
-            if (!cli_isnumber(tokens[CRT_TOKENS-1])) {
+            if (!cli_isnumber(tokens[CRT_TOKENS - 2])) {
                 cli_errmsg("cli_loadcrt: line %u: Invalid minimum feature level\n", (unsigned int)line);
                 ret = CL_EMALFDB;
                 goto end;
             }
-            if ((unsigned int)atoi(tokens[CRT_TOKENS-1]) > cl_retflevel()) {
+            if ((unsigned int)atoi(tokens[CRT_TOKENS - 2]) > cl_retflevel()) {
                 cli_dbgmsg("cli_loadcrt: Cert %s not loaded (required f-level: %u)\n", tokens[0], cl_retflevel());
                 continue;
             }
 
             if (tokens_count == CRT_TOKENS) {
-                if (!cli_isnumber(tokens[CRT_TOKENS])) {
+                if (!cli_isnumber(tokens[CRT_TOKENS - 1])) {
                     cli_errmsg("cli_loadcrt: line %u: Invalid maximum feature level\n", (unsigned int)line);
                     ret = CL_EMALFDB;
                     goto end;
                 }
 
-                if ((unsigned int)atoi(tokens[CRT_TOKENS]) < cl_retflevel()) {
-                    cli_dbgmsg("cli_ladcrt: Cert %s not loaded (maximum f-level: %s)\n", tokens[0], tokens[CRT_TOKENS]);
+                if ((unsigned int)atoi(tokens[CRT_TOKENS - 1]) < cl_retflevel()) {
+                    cli_dbgmsg("cli_ladcrt: Cert %s not loaded (maximum f-level: %s)\n", tokens[0], tokens[CRT_TOKENS - 1]);
                     continue;
                 }
             }
