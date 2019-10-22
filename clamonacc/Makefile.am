@@ -18,7 +18,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-bin_PROGRAMS = clamonacc
+sbin_PROGRAMS = clamonacc
 
 clamonacc_SOURCES = \
     $(top_srcdir)/shared/output.c \
