@@ -133,7 +133,7 @@ libclamav_internal_utils_la_SOURCES=str.c\
 
 libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
-libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @PCRE_LIBS@
 
 libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 					conv.c \
@@ -160,7 +160,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @PCRE_LIBS@
 SUBDIRS=
 
 if ENABLE_LLVM
@@ -240,7 +240,7 @@ MSPACK_CFLAGS = $(LIBMSPACK_CFLAGS)
 MSPACKLIBADD = $(LIBMSPACK_LIBS)
 MSPACKDEP =
 
-libmspack/Makefile: 
+libmspack/Makefile:
 .PHONY: distdir distclean maintainer-clean
 distdir:
 	echo "make distdir requires --with-system-libmspack=no"

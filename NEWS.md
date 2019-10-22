@@ -11,6 +11,10 @@ ClamAV 0.101.5 is a security patch release that addresses the following issues.
   algorithm for loading signature patterns and allocating the AC trie.
   Patch courtesy of Alberto Wu.
 
+- Introduced a new configure option to statically link libjson-c with libclamav.
+  Static linking with libjson is highly recommended to prevent crashes in
+  applications that use libclamav alongside another JSON parsing library.
+
 Special thanks to the following for code contributions and bug reports:
 
 - Alberto Wu

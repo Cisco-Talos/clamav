@@ -247,7 +247,7 @@ AC_MSG_NOTICE([Summary of optional tools])
 CL_MSG_STATUS([clamdtop    ],[$CURSES_LIBS],[$enable_clamdtop])
 CL_MSG_STATUS([milter      ],[yes],[$have_milter])
 if test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"; then
-    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME), libcurl-devel found at $LIBCURL_HOME)], [yes])
+    CL_MSG_STATUS([clamsubmit  ], [yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking), libcurl-devel found at $LIBCURL_HOME)], [yes])
 else
     if test "X$have_curl" != "Xyes" && test "X$have_json" != "Xyes"; then
         CL_MSG_STATUS([clamsubmit  ], [no (missing libjson-c-dev AND libcurl-devel. Use the website to submit FPs/FNs.)], [no])
@@ -284,7 +284,7 @@ CL_MSG_STATUS([bzip2       ],[$bzip_check],[$want_bzip2])
 CL_MSG_STATUS([zlib        ],[$ZLIB_HOME],[yes])
 CL_MSG_STATUS([unrar       ],[$want_unrar],[$want_unrar])
 if test "X$have_json" = "Xyes"; then
-    CL_MSG_STATUS([preclass    ],[yes (libjson-c-dev found at $LIBJSON_HOME)],[yes])
+    CL_MSG_STATUS([preclass    ],[yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking)],[yes])
 else
     CL_MSG_STATUS([preclass    ],[no (missing libjson-c-dev)],[no])
 fi
@@ -307,21 +307,29 @@ CL_MSG_STATUS([fts         ],[yes],[$lfs_fts_msg])
 # 4.0.x, and 4.1.0 are the known buggy versions
 # 3.4 doesn't have the bug
 if test "x$gcc_check" != "xyes"; then
-	AC_MSG_WARN([
+    AC_MSG_WARN([
 ****** Optimizations disabled to avoid compiler bugs
 ****** The resulting binaries will be slow!
 ****** It is recommended to either upgrade or downgrade your compiler
-])
+    ])
 fi
 
 if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" || test "x$bzip_check" != "xok" ; then
-AC_MSG_WARN([
+    AC_MSG_WARN([
 ****** WARNING:
 ****** You are cross compiling to a different host or you are
 ****** linking to bugged system libraries or you have manually
 ****** disabled important configure checks.
 ****** Please be aware that this build may be badly broken.
 ****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
-])
+    ])
 fi
 
+if test "X$have_json" = "Xyes" && test "x$json_linking" = "xdynamic"; then
+    AC_MSG_WARN([
+****** libjson-c is known to share symbol names with other JSON libraries
+****** which may result in crashes for applications that use libclamav.
+****** Consider using --with-libjson-static=[path/to/libjson-c.a],
+****** providing a json-c library that was compiled with CFLAGS="-fPIC".
+    ])
+fi
