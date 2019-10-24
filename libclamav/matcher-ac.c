@@ -172,7 +172,6 @@ static int patt_cmp_fn(const struct cli_ac_patt *a, const struct cli_ac_patt *b)
     return 0;
 }
 
-
 static int sort_list_fn(const void *a, const void *b) {
     const struct cli_ac_node *node_a = (*(const struct cli_ac_list **)a)->node;
     const struct cli_ac_node *node_b = (*(const struct cli_ac_list **)b)->node;
@@ -180,24 +179,56 @@ static int sort_list_fn(const void *a, const void *b) {
     const struct cli_ac_patt *patt_b = (*(const struct cli_ac_list **)b)->me;
     int res;
 
-    /* 1. Group by owning node */
+    /* 1. Group by owning node
+     * (this is for assigning entries to nodes) */
     RETURN_RES_IF_NE(node_a, node_b);
 
-    /* 2. Group together equal pattern in a node */
+    /* 2. Group together equal pattern in a node
+     * (this is for building the next_same list) */
     res = patt_cmp_fn(patt_a, patt_b);
     if(res)
 	return res;
 
-    /* 3. Sort equal patterns in a node by partno in ascending order */
+    /* 3. Sort equal patterns in a node by partno in ascending order
+     * (this is required by the matcher) */
     RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
+
+    /* 4. Keep close patterns close
+     * (this is for performace) */
+    RETURN_RES_IF_NE(patt_a, patt_b);
 
     return 0;
 }
 
 static int sort_heads_by_partno_fn(const void *a, const void *b) {
-    const struct cli_ac_patt *patt_a = (*(const struct cli_ac_list **)a)->me;
-    const struct cli_ac_patt *patt_b = (*(const struct cli_ac_list **)b)->me;
+    const struct cli_ac_list *list_a = *(const struct cli_ac_list **)a;
+    const struct cli_ac_list *list_b = *(const struct cli_ac_list **)b;
+    const struct cli_ac_patt *patt_a = list_a->me;
+    const struct cli_ac_patt *patt_b = list_b->me;
+
+    /* 1. Sort heads by partno
+     * (this is required by the matcher) */
     RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
+
+    /* 2. Place longer lists earlier
+     * (this is for performance) */
+
+    while(1) {
+        if(!list_a->next_same) {
+	    if(!list_b->next_same)
+		break;
+            return +1;
+	}
+        if(!list_b->next_same)
+            return -1;
+        list_a = list_a->next_same;
+        list_b = list_b->next_same;
+    }
+
+    /* 3. Keep close patterns close
+     * (this is for performace) */
+    RETURN_RES_IF_NE(patt_a, patt_b);
+
     return 0;
 }
 
@@ -211,9 +242,9 @@ static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int 
 	int ret = patt_cmp_fn(prev->me, listtable[i]->me);
 	if(ret) {
 	    /* This is a new head of a next_same chain */
+	    prev = listtable[i];
 	    if(i != nheads) {
 		/* Move heads towards the beginning of the table */
-		prev = listtable[i];
 		listtable[i] = listtable[nheads];
 		listtable[nheads] = prev;
 	    }
