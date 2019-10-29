@@ -7,6 +7,12 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.101.5 is a security patch release that addresses the following issues.
 
+- Added the zip scanning improvements found in v0.102.0 where it scans files
+  using zip records from a sorted catalogue which provides deduplication of
+  file records resulting in faster extraction and scan time and reducing the
+  likelihood of alerting on non-malicious duplicate file entries as overlapping
+  files.
+
 - Signature load time is significantly reduced by changing to a more efficient
   algorithm for loading signature patterns and allocating the AC trie.
   Patch courtesy of Alberto Wu.
