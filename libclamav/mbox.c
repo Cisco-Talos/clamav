@@ -3,7 +3,7 @@
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
+ *
  *  Acknowledgements: Some ideas came from Stephen White <stephen@earth.li>,
  *                    Michael Dankov <misha@btrc.ru>, Gianluigi Tiesi <sherpya@netfarm.it>,
  *                    Everton da Silva Marques, Thomas Lamy <Thomas.Lamy@in-online.net>,
@@ -586,7 +586,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 		 */
 		messageDestroy(body);
 	}
-	
+
 	if((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
 	   (*ctx->virname == NULL || SCAN_ALLMATCHES)) {
 	    retcode = cli_append_virus(ctx, "Heuristics.Phishing.Email");
@@ -1840,8 +1840,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 * must be listed here */
 						break;
 					default:
-						/* this is a subtype that we 
-						 * don't handle anyway, 
+						/* this is a subtype that we
+						 * don't handle anyway,
 						 * don't store */
 						if(messages[multiparts]) {
 							messageDestroy(messages[multiparts]);
@@ -3617,7 +3617,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
     src = cursrc = fmap_need_off_once(map, *at, input_len);
 
 /*	we check for eof from the result of GETC()
- *	if(feof(fin)) 
+ *	if(feof(fin))
 		return NULL;*/
     if(!src) {
 	cli_dbgmsg("getline_from_mbox: fmap need failed\n");
@@ -3629,7 +3629,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
     }
 
     curbuf = buffer;
-	
+
     for(i=0; i<buffer_len-1; i++) {
 	char c;
 
@@ -3666,7 +3666,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
     }
     *at += cursrc - src;
     *curbuf = '\0';
-    
+
     return buffer;
 }
 
@@ -3873,7 +3873,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
 		thisobj = messageGetJObj(aMessage);
 		if (thisobj == NULL) {
-			cli_errmsg("Cannot get message preclass object\n");
+			cli_dbgmsg("Cannot get message preclass object\n");
 			*rc = -1;
 			return mainMessage;
 		}
