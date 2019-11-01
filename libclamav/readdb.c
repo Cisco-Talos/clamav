@@ -3016,6 +3016,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             memcpy(ca.serial, serial, sizeof(ca.serial));
             free(serial);
         } else {
+            ca.ignore_serial = 1;
             memset(ca.serial, 0xca, sizeof(ca.serial));
         }
         pubkey = cli_hex2str(tokens[4]);

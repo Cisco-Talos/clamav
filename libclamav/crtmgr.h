@@ -49,6 +49,9 @@ typedef struct cli_crt_t {
     uint8_t subject[SHA1_HASH_SIZE];
     uint8_t issuer[SHA1_HASH_SIZE];
     uint8_t serial[SHA1_HASH_SIZE];
+    /* The serial hash is an optional CRB field, so ignore_serial will be
+     * set for certs backing CRB rules where this is the case */
+    int ignore_serial;
     /* tbshash holds the hash we'll use for verification with data in the sig,
      * so it must have at least enough space for the largest hash in
      * cli_crt_hashtype */

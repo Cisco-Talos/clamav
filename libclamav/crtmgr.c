@@ -70,26 +70,34 @@ void cli_crt_clear(cli_crt *x509)
  * There are two ways that things get added to the whitelist - through the CRB
  * rules, and through embedded signatures / catalog files that we parse.  CRB
  * rules don't currently allow the issuer and hashtype to be specified, so the
- * code sets those to sentinel values (0xcacacaca repeating and
- * CLI_HASHTYPE_ANY respectively).  There are two ways we'd like to use this
- * function:
+ * code sets those to sentinel values (0xca repeating and CLI_HASHTYPE_ANY
+ * respectively). Also, the exponent field gets set to a fixed value for CRB
+ * rules, and the serial number field is allowed to be empty as well (in this
+ * case it will get set to 0xca repeating).
+ *
+ * There are two ways we'd like to use this function:
  * 
  *  - To see whether x509 already exists in m (when adding new CRB sig certs
  *    and when adding certs that are embedded in Authenticode signatures) to
  *    prevent duplicate entries. In this case, we want to take x509's
- *    hashtype and issuer field into account, so a CRB sig cert entry isn't
- *    returned for an embedded cert duplicate check, and so that two embedded
- *    certs with different hash types or issuers aren't treated as being the
- *    same.
+ *    hashtype, issuer, serial, and exponent field into account, so a CRB sig
+ *    cert entry isn't returned for an embedded cert duplicate check, and so
+ *    that two embedded certs with different hash types, issuers, serials, or
+ *    exponents aren't treated as being the same. A non-NULL return when used
+ *    this way means that the cert need not be added to the trust store.
  * 
  *  - To see whether a CRB sig matches against x509, deeming it worthy to be
  *    added to the trust store.  In this case, we don't want to compare
  *    hashtype and issuer, since the embedded sig will have the actual values
- *    and the CRB sig cert will have placeholder values.
+ *    and the CRB sig cert will have placeholder values. A non-NULL return
+ *    value when used this way means that the cert doesn't match against an
+ *    existing CRB rule and should not be added to the trust store.
  * 
  * Use crb_crts_only to distinguish between the two cases.  If True, it will
  * ignore all crts not added from CRB rules and ignore x509's issuer and
- * hashtype fields */
+ * hashtype fields.
+ *
+ */
 cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
 {
     cli_crt *i;
@@ -107,10 +115,20 @@ cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
             /* Almost all of the rules in m will be CRB rules, so optimize for
              * the case where we are trying to determine whether an embedded
              * cert already exists in m (by checking the hashtype first). Do
-             * the issuer check here too to simplify the code. */
+             * the other non-CRB rule cert checks here too to simplify the
+             * code. */
 
             if (x509->hashtype != i->hashtype ||
-                memcmp(x509->issuer, i->issuer, sizeof(i->issuer))) {
+                memcmp(x509->issuer, i->issuer, sizeof(i->issuer)) ||
+                x509->ignore_serial != i->ignore_serial ||
+                mp_cmp(&x509->e, &i->e)) {
+                continue;
+            }
+
+        }
+
+        if (!i->ignore_serial) {
+            if (memcmp(x509->serial, i->serial, sizeof(i->serial))) {
                 continue;
             }
         }
@@ -121,9 +139,7 @@ cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
             (i->codeSign | x509->codeSign) == i->codeSign &&
             (i->timeSign | x509->timeSign) == i->timeSign &&
             !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
-            !memcmp(x509->serial, i->serial, sizeof(i->serial)) &&
-            !mp_cmp(&x509->n, &i->n) &&
-            !mp_cmp(&x509->e, &i->e)) {
+            !mp_cmp(&x509->n, &i->n)) {
             return i;
         }
     }
@@ -134,8 +150,15 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
 {
     cli_crt *i;
     for (i = m->crts; i; i = i->next) {
-        // The CRB rules are based on subject, serial, and public key,
-        // so do blacklist queries based on those fields
+        /* The CRB rules are based on subject, serial, and public key,
+         * so do blacklist lookups based on those fields. The serial
+         * number field can also be blank, which effectively blacklists
+         * all possible serial numbers using the specified subject and
+         * public key. Sometimes when people go to have their cert
+         * renewed, they'll opt to have the subject and public key be
+         * the same, but the CA must issue a new serial number for the
+         * new cert. A blank issuer in a CRB rule allows blacklisting
+         * all of these at once. */
 
         // TODO the rule format specifies CodeSign / TimeSign / CertSign
         // which we could also match on, but we just ignore those fields
@@ -145,16 +168,18 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
         // but that gets ignored when CRB rules are parsed (and set to a fixed
         // value), so ignore that field when looking at certs
 
-        // TODO Handle the case where these items aren't specified in a CRB
-        // rule entry - substitute in default values instead (or make the
-        // crb parser not permit leaving these fields blank).
-
-        if (i->isBlacklisted &&
-            !memcmp(i->subject, x509->subject, sizeof(i->subject)) &&
-            !memcmp(i->serial, x509->serial, sizeof(i->serial)) &&
-            !mp_cmp(&x509->n, &i->n)) {
-            return i;
+        if (!i->isBlacklisted ||
+            memcmp(i->subject, x509->subject, sizeof(i->subject)) ||
+            mp_cmp(&x509->n, &i->n)) {
+            continue;
         }
+
+        if (!i->ignore_serial) {
+            if (memcmp(i->serial, x509->serial, sizeof(i->serial))) {
+                continue;
+            }
+        }
+        return i;
     }
     return NULL;
 }
@@ -215,6 +240,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
     memcpy(i->serial, x509->serial, sizeof(i->serial));
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
     memcpy(i->tbshash, x509->tbshash, sizeof(i->tbshash));
+    i->ignore_serial = x509->ignore_serial;
     i->not_before    = x509->not_before;
     i->not_after     = x509->not_after;
     i->hashtype      = x509->hashtype;
