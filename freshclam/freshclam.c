@@ -230,7 +230,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     logg("*download_complete_callback:   fc_context->bTestDatabases   : %u\n", fc_context->bBytecodeEnabled);
     logg("*download_complete_callback:   fc_context->bBytecodeEnabled : %u\n", fc_context->bBytecodeEnabled);
 
-    printf("Testing database: '%s' ...\n", dbFilename);
+    logg("Testing database: '%s' ...\n", dbFilename);
 
     if (fc_context->bTestDatabases) {
 #ifdef WIN32
@@ -368,9 +368,9 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 done:
 
     if (FC_SUCCESS == status) {
-        printf("Database test passed.\n");
+        logg("Database test passed.\n");
     } else {
-        printf("Database test FAILED.\n");
+        logg("!Database test FAILED.\n");
     }
 
     g_sigchildWait = 1;
