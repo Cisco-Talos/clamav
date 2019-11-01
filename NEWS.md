@@ -13,7 +13,7 @@ ClamAV 0.102.1 is a security patch release to address the following issues.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
--
+- Reio Remma
 
 ## 0.102.0
 
