@@ -311,15 +311,6 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
     struct dirent *dent;
     char *extension = NULL;
 
-    char currDir[PATH_MAX];
-
-    /* Store CWD */
-    if (!getcwd(currDir, PATH_MAX)) {
-        logg("!getcwd() failed\n");
-        status = FC_EDIRECTORY;
-        goto done;
-    }
-
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
         logg("!Can't change dir to %s\n", g_databaseDirectory);
@@ -365,16 +356,6 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
 done:
     if (NULL != dir) {
         closedir(dir);
-    }
-
-    if (currDir[0] != '\0') {
-        /* Restore CWD */
-        if (chdir(currDir)) {
-            logg("!Failed to change back to original directory %s\n", currDir);
-            status = FC_EDIRECTORY;
-            goto done;
-        }
-        logg("*Current working dir restored to %s\n", currDir);
     }
 
     return status;
@@ -607,12 +588,9 @@ fc_error_t fc_update_database(
     fc_error_t status = FC_EARG;
 
     char *dbFilename = NULL;
-    char currDir[PATH_MAX];
     int signo    = 0;
     long attempt = 1;
     uint32_t i;
-
-    currDir[0] = '\0';
 
     if ((NULL == database) || (NULL == serverList) || (NULL == bUpdated)) {
         logg("^fc_update_database: Invalid arguments.\n");
@@ -620,13 +598,6 @@ fc_error_t fc_update_database(
     }
 
     *bUpdated = 0;
-
-    /* Store CWD */
-    if (!getcwd(currDir, PATH_MAX)) {
-        logg("!getcwd() failed\n");
-        status = FC_EDIRECTORY;
-        goto done;
-    }
 
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
@@ -698,16 +669,6 @@ done:
         free(dbFilename);
     }
 
-    if (currDir[0] != '\0') {
-        /* Restore CWD */
-        if (chdir(currDir)) {
-            logg("!Failed to change back to original directory %s\n", currDir);
-            status = FC_EDIRECTORY;
-            goto done;
-        }
-        logg("*Current working dir restored to %s\n", currDir);
-    }
-
     return status;
 }
 
@@ -770,11 +731,8 @@ fc_error_t fc_download_url_database(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char currDir[PATH_MAX];
     long attempt     = 1;
     char *dbFilename = NULL;
-
-    currDir[0] = '\0';
 
     if ((NULL == urlDatabase) || (NULL == bUpdated)) {
         logg("^fc_download_url_database: Invalid arguments.\n");
@@ -782,13 +740,6 @@ fc_error_t fc_download_url_database(
     }
 
     *bUpdated = 0;
-
-    /* Store CWD */
-    if (!getcwd(currDir, PATH_MAX)) {
-        logg("!getcwd() failed\n");
-        status = FC_EDIRECTORY;
-        goto done;
-    }
 
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
@@ -850,16 +801,6 @@ done:
 
     if (NULL != dbFilename) {
         free(dbFilename);
-    }
-
-    if (currDir[0] != '\0') {
-        /* Restore CWD */
-        if (chdir(currDir)) {
-            logg("!Failed to change back to original directory %s\n", currDir);
-            status = FC_EDIRECTORY;
-            goto done;
-        }
-        logg("*Current working dir restored to %s\n", currDir);
     }
 
     return status;
