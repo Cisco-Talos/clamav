@@ -23294,7 +23294,23 @@ else
 	ZLIB_LIBS=$pkg_cv_ZLIB_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	FOUND_ZLIB=1
+
+            FOUND_ZLIB=1
+            $as_echo "#define HAVE_LIBZ 1" >>confdefs.h
+
+            for ac_header in zlib.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ZLIB_H 1
+_ACEOF
+
+fi
+
+done
+
+
 fi
 fi
 
