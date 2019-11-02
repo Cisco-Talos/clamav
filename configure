@@ -6062,7 +6062,7 @@ PACKAGE_VERSION_NUM=`printf "0x%02x%02x%02x" "$major" "$minor" "$patch"`
 
 
 LC_CURRENT=9
-LC_REVISION=4
+LC_REVISION=5
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -6083,7 +6083,7 @@ _ACEOF
 
 
 LFC_CURRENT=2
-LFC_REVISION=0
+LFC_REVISION=1
 LFC_AGE=0
 LIBFRESHCLAM_VERSION="$LFC_CURRENT":"$LFC_REVISION":"$LFC_AGE"
 
@@ -23294,7 +23294,23 @@ else
 	ZLIB_LIBS=$pkg_cv_ZLIB_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	FOUND_ZLIB=1
+
+            FOUND_ZLIB=1
+            $as_echo "#define HAVE_LIBZ 1" >>confdefs.h
+
+            for ac_header in zlib.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ZLIB_H 1
+_ACEOF
+
+fi
+
+done
+
+
 fi
 fi
 
