@@ -15,7 +15,11 @@ AC_ARG_WITH([zlib],
 FOUND_ZLIB=0
 if test "x$ZLIB_HOME" = "x"; then
     PKG_CHECK_MODULES([ZLIB],[zlib],
-        [FOUND_ZLIB=1],
+        [
+            FOUND_ZLIB=1
+            AC_DEFINE(HAVE_LIBZ, 1)
+            AC_CHECK_HEADERS([zlib.h])
+        ],
         [:])
 fi
 
