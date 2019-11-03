@@ -62,7 +62,8 @@ int main(int argc, char **argv)
 {
     int ds, dms, ret, infected = 0, err = 0;
     struct timeval t1, t2;
-    time_t starttime;
+	time_t date_start, date_end;
+
     struct optstruct *opts;
     const struct optstruct *opt;
     char buffer[26];
@@ -142,9 +143,7 @@ int main(int argc, char **argv)
     sigaction(SIGPIPE, &sigact, NULL);
 #endif
 
-    time(&starttime);
-    /* ctime() does \n, but I need it once more */
-
+	date_start = time(NULL);
     gettimeofday(&t1, NULL);
 
     ret = client(opts, &infected, &err);
@@ -152,6 +151,9 @@ int main(int argc, char **argv)
 
     /* TODO: Implement STATUS in clamd */
     if (!optget(opts, "no-summary")->enabled) {
+		struct tm tmp;
+
+		date_end = time(NULL);
         gettimeofday(&t2, NULL);
         ds  = t2.tv_sec - t1.tv_sec;
         dms = t2.tv_usec - t1.tv_usec;
@@ -168,10 +170,26 @@ int main(int argc, char **argv)
             logg("Not moved: %d\n", notmoved);
         }
         logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms / 1000, ds / 60, ds % 60);
-        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t1.tv_sec));
+
+#ifdef _WIN32
+		if (0 != localtime_s(&tmp, &date_start)) {
+#else
+		if (!localtime_r(&date_start, &tmp)) {
+#endif
+			logg("!Failed to get local time for Start Date.\n");
+		}
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
         logg("Start Date: %s\n", buffer);
-        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t2.tv_sec));
-        logg("End Date: %s\n", buffer);
+
+#ifdef _WIN32
+		if (0 != localtime_s(&tmp, &date_end)) {
+#else
+		if (!localtime_r(&date_end, &tmp)) {
+#endif
+			logg("!Failed to get local time for End Date.\n");
+		}
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
+        logg("End Date:   %s\n", buffer);
     }
 
     logg_close();

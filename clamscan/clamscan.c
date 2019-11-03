@@ -62,6 +62,8 @@ int main(int argc, char **argv)
     int ds, dms, ret;
     double mb, rmb;
     struct timeval t1, t2;
+	time_t date_start, date_end;
+
     char buffer[26];
 #ifndef _WIN32
     sigset_t sigset;
@@ -155,13 +157,16 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
+	date_start = time(NULL);
     gettimeofday(&t1, NULL);
 
     ret = scanmanager(opts);
 
     if (!optget(opts, "no-summary")->enabled) {
-        gettimeofday(&t2, NULL);
+		struct tm tmp;
 
+		date_end = time(NULL);
+        gettimeofday(&t2, NULL);
         ds  = t2.tv_sec - t1.tv_sec;
         dms = t2.tv_usec - t1.tv_usec;
         ds -= (dms < 0) ? (1) : (0);
@@ -185,10 +190,26 @@ int main(int argc, char **argv)
         rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
         logg("Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
         logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
-        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t1.tv_sec));
-        logg("Start Date: %s\n", buffer);
-        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", localtime(&t2.tv_sec));
-        logg("End Date: %s\n", buffer);
+
+#ifdef _WIN32
+		if (0 != localtime_s(&tmp, &date_start)) {
+#else
+		if (!localtime_r(&date_start, &tmp)) {
+#endif
+			logg("!Failed to get local time for Start Date.\n");
+		}
+		strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
+		logg("Start Date: %s\n", buffer);
+
+#ifdef _WIN32
+		if (0 != localtime_s(&tmp, &date_end)) {
+#else
+		if (!localtime_r(&date_end, &tmp)) {
+#endif
+			logg("!Failed to get local time for End Date.\n");
+		}
+		strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
+        logg("End Date:   %s\n", buffer);
     }
 
     optfree(opts);
