@@ -33,7 +33,9 @@
 #include <stdint.h>
 #endif
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,13 +56,16 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #endif
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include <assert.h>
 #include <errno.h>
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "shared/misc.h"
+#include "platform.h"
 
 /* Types, prototypes and globals*/
 typedef struct connection {
@@ -411,13 +416,19 @@ static void cleanup(void)
             wrefresh(status_bar_window);
         }
         rm_windows();
-        endwin();
+#ifndef _WIN32
+		endwin();
+#endif // !_WIN32
     }
     curses_inited = 0;
     for (i = 0; i < global.num_clamd; i++) {
         if (global.conn[i].sd && global.conn[i].sd != -1) {
             send_string_noreconn(&global.conn[i], "nEND\n");
-            close(global.conn[i].sd);
+#ifndef WIN32
+			close(global.conn[i].sd);
+#else
+			closesocket(global.conn[i].sd);
+#endif
         }
         free(global.conn[i].version);
         free(global.conn[i].remote);
@@ -637,7 +648,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
             perror("connect");
-            close(s);
+			close(s);
             return -1;
         }
 
@@ -673,7 +684,11 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, p->ai_addr, p->ai_addrlen)) {
             perror("connect");
+#ifndef WIN32
             close(s);
+#else
+			closesocket(s);
+#endif
             continue;
         }
 
@@ -753,8 +768,13 @@ static void reconnect(conn_t *conn)
     if (++tries > 3) {
         EXIT_PROGRAM(RECONNECT_FAIL);
     }
-    if (conn->sd != -1)
-        close(conn->sd);
+	if (conn->sd != -1) {
+#ifndef WIN32
+		close(conn->sd);
+#else
+		closesocket(conn->sd);
+#endif
+	}
     if (make_connection(conn->remote, conn) < 0) {
         print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
         EXIT_PROGRAM(RECONNECT_FAIL);
@@ -778,7 +798,11 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
             print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
             /* it could be a timeout, be nice and send an END */
             send_string_noreconn(conn, "nEND\n");
-            close(conn->sd);
+#ifndef WIN32
+			close(conn->sd);
+#else
+			closesocket(conn->sd);
+#endif
             conn->sd = -1;
             return 0;
         } else {

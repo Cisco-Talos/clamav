@@ -41,6 +41,7 @@ Source: "x64\Release\clamd.exe"; DestDir: "{app}"; DestName: "clamd.exe"; Check:
 Source: "x64\Release\clamdscan.exe"; DestDir: "{app}"; DestName: "clamdscan.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\clamscan.exe"; DestDir: "{app}"; DestName: "clamscan.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\clamsubmit.exe"; DestDir: "{app}"; DestName: "clamsubmit.exe"; Check: Is64BitInstallMode
+Source: "x64\Release\clamdtop.exe"; DestDir: "{app}"; DestName: "clamdtop.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\freshclam.exe"; DestDir: "{app}"; DestName: "freshclam.exe"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: Is64BitInstallMode
@@ -67,6 +68,7 @@ Source: "Win32\Release\clamd.exe"; DestDir: "{app}"; DestName: "clamd.exe"; Chec
 Source: "Win32\Release\clamdscan.exe"; DestDir: "{app}"; DestName: "clamdscan.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\clamscan.exe"; DestDir: "{app}"; DestName: "clamscan.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\clamsubmit.exe"; DestDir: "{app}"; DestName: "clamsubmit.exe"; Check: not Is64BitInstallMode
+Source: "Win32\Release\clamdtop.exe"; DestDir: "{app}"; DestName: "clamdtop.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\freshclam.exe"; DestDir: "{app}"; DestName: "freshclam.exe"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: not Is64BitInstallMode

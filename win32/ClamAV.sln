@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.757
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamavcxx", "libclamavcxx.vcxproj", "{3AE8051D-A188-4B11-95A4-14B8F0C290CB}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -78,6 +78,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libfreshclam", "libfreshcla
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamsubmit", "clamsubmit.vcxproj", "{C5E9CE80-3D09-4EE2-8538-1E95476E6B1C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{09D341E9-7372-46E9-B0D7-CAAF77984190} = {09D341E9-7372-46E9-B0D7-CAAF77984190}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamdtop", "clamdtop.vcxproj", "{622FB77F-B911-4359-B755-267D3880E75D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{09D341E9-7372-46E9-B0D7-CAAF77984190} = {09D341E9-7372-46E9-B0D7-CAAF77984190}
 	EndProjectSection
@@ -234,6 +239,14 @@ Global
 		{C5E9CE80-3D09-4EE2-8538-1E95476E6B1C}.Release|Win32.Build.0 = Release|Win32
 		{C5E9CE80-3D09-4EE2-8538-1E95476E6B1C}.Release|x64.ActiveCfg = Release|x64
 		{C5E9CE80-3D09-4EE2-8538-1E95476E6B1C}.Release|x64.Build.0 = Release|x64
+		{622FB77F-B911-4359-B755-267D3880E75D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{622FB77F-B911-4359-B755-267D3880E75D}.Debug|Win32.Build.0 = Debug|Win32
+		{622FB77F-B911-4359-B755-267D3880E75D}.Debug|x64.ActiveCfg = Debug|x64
+		{622FB77F-B911-4359-B755-267D3880E75D}.Debug|x64.Build.0 = Debug|x64
+		{622FB77F-B911-4359-B755-267D3880E75D}.Release|Win32.ActiveCfg = Release|Win32
+		{622FB77F-B911-4359-B755-267D3880E75D}.Release|Win32.Build.0 = Release|Win32
+		{622FB77F-B911-4359-B755-267D3880E75D}.Release|x64.ActiveCfg = Release|x64
+		{622FB77F-B911-4359-B755-267D3880E75D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

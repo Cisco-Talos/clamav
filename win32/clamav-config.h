@@ -597,4 +597,8 @@
 /* YARA */
 #define HAVE_YARA 1
 
+/* Curses */
+#define HAVE_LIBPDCURSES 1
+#define CURSES_INCLUDE <curses.h>
+
 #include "platform.h"
