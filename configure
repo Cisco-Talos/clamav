@@ -978,6 +978,7 @@ enable_xml
 with_xml
 with_openssl
 with_libjson
+with_libjson_static
 with_pcre
 with_system_libmspack
 enable_maintainer_mode
@@ -1764,6 +1765,8 @@ Optional Packages:
   --with-libjson[=DIR]    path to directory containing libjson
                           [default=/usr/local or /usr if not found in
                           /usr/local]
+  --with-libjson-static=DIR
+                          path to libjson-c.a static library
   --with-pcre[=DIR]       path to directory containing libpcre library,
                           prioritizes PCRE2 over PCRE [default=search PATH
                           environment variable]
@@ -22520,20 +22523,21 @@ $as_echo_n "checking for libjson installation... " >&6; }
 # Check whether --with-libjson was given.
 if test "${with_libjson+set}" = set; then :
   withval=$with_libjson;
-find_json="no"
-if test "X$withval" = "Xyes"; then
-    find_json="yes"
-else
-    if test "X$withval" != "Xno"; then
-        if test -f "${withval}/include/json/json.h" -o -f "${withval}/include/json-c/json.h"; then
-            LIBJSON_HOME="$withval"
-            have_json_header="yes"
+        find_json="no"
+        if test "X$withval" = "Xyes"; then
+            find_json="yes"
+        else
+            if test "X$withval" != "Xno"; then
+                if test -f "${withval}/include/json/json.h" -o -f "${withval}/include/json-c/json.h"; then
+                    LIBJSON_HOME="$withval"
+                    have_json_header="yes"
+                fi
+            fi
         fi
-    fi
-fi
 
 else
   find_json="yes"
+
 fi
 
 
@@ -22576,12 +22580,13 @@ $as_echo "$as_me: WARNING: json header lost." >&2;}
         CFLAGS="$CFLAGS $JSON_CPPFLAGS"
     fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_object_get_ex" >&5
-$as_echo_n "checking for library containing json_object_object_get_ex... " >&6; }
-if ${ac_cv_search_json_object_object_get_ex+:} false; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_object_get_ex in -ljson-c" >&5
+$as_echo_n "checking for json_object_object_get_ex in -ljson-c... " >&6; }
+if ${ac_cv_lib_json_c_json_object_object_get_ex+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljson-c  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -22600,47 +22605,76 @@ return json_object_object_get_ex ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' json-c json; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_json_object_object_get_ex=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_json_c_json_object_object_get_ex=yes
+else
+  ac_cv_lib_json_c_json_object_object_get_ex=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_json_object_object_get_ex+:} false; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
 fi
-done
-if ${ac_cv_search_json_object_object_get_ex+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_c_json_object_object_get_ex" >&5
+$as_echo "$ac_cv_lib_json_c_json_object_object_get_ex" >&6; }
+if test "x$ac_cv_lib_json_c_json_object_object_get_ex" = xyes; then :
+
+                        have_json="yes"
+            have_deprecated_json="no"
+            json_libname="json-c"
 
 else
-  ac_cv_search_json_object_object_get_ex=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_object_get_ex" >&5
-$as_echo "$ac_cv_search_json_object_object_get_ex" >&6; }
-ac_res=$ac_cv_search_json_object_object_get_ex
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
-        have_json="yes"
-        have_deprecated_json="no"
-else
-
-        have_json="no"
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing json_object_object_get" >&5
-$as_echo_n "checking for library containing json_object_object_get... " >&6; }
-if ${ac_cv_search_json_object_object_get+:} false; then :
+                        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_object_get_ex in -ljson" >&5
+$as_echo_n "checking for json_object_object_get_ex in -ljson... " >&6; }
+if ${ac_cv_lib_json_json_object_object_get_ex+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljson  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char json_object_object_get_ex ();
+int
+main ()
+{
+return json_object_object_get_ex ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_json_json_object_object_get_ex=yes
+else
+  ac_cv_lib_json_json_object_object_get_ex=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_json_object_object_get_ex" >&5
+$as_echo "$ac_cv_lib_json_json_object_object_get_ex" >&6; }
+if test "x$ac_cv_lib_json_json_object_object_get_ex" = xyes; then :
+
+                                        have_json="yes"
+                    have_deprecated_json="no"
+                    json_libname="json"
+
+else
+
+                                        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_object_get in -ljson-c" >&5
+$as_echo_n "checking for json_object_object_get in -ljson-c... " >&6; }
+if ${ac_cv_lib_json_c_json_object_object_get+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljson-c  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -22659,40 +22693,83 @@ return json_object_object_get ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' json-c json; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_json_object_object_get=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_json_c_json_object_object_get=yes
+else
+  ac_cv_lib_json_c_json_object_object_get=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_json_object_object_get+:} false; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
 fi
-done
-if ${ac_cv_search_json_object_object_get+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_c_json_object_object_get" >&5
+$as_echo "$ac_cv_lib_json_c_json_object_object_get" >&6; }
+if test "x$ac_cv_lib_json_c_json_object_object_get" = xyes; then :
+
+                                                        have_json="yes"
+                            have_deprecated_json="yes"
+                            json_libname="json-c"
 
 else
-  ac_cv_search_json_object_object_get=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_json_object_object_get" >&5
-$as_echo "$ac_cv_search_json_object_object_get" >&6; }
-ac_res=$ac_cv_search_json_object_object_get
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
-            have_json="yes"
-            have_deprecated_json="yes"
+                                                        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for json_object_object_get in -ljson" >&5
+$as_echo_n "checking for json_object_object_get in -ljson... " >&6; }
+if ${ac_cv_lib_json_json_object_object_get+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ljson  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char json_object_object_get ();
+int
+main ()
+{
+return json_object_object_get ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_json_json_object_object_get=yes
+else
+  ac_cv_lib_json_json_object_object_get=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_json_json_object_object_get" >&5
+$as_echo "$ac_cv_lib_json_json_object_object_get" >&6; }
+if test "x$ac_cv_lib_json_json_object_object_get" = xyes; then :
+
+                                                                        have_json="yes"
+                                    have_deprecated_json="yes"
+                                    json_libname="json"
+
+else
+
+                                                                        have_json="no"
+                                    as_fn_error $? "Unable to find libjson library." "$LINENO" 5
+
 
 fi
+
+
+
+fi
+
+
+
+fi
+
 
 
 fi
@@ -22711,7 +22788,22 @@ $as_echo "#define HAVE_JSON 1" >>confdefs.h
 $as_echo "#define HAVE_DEPRECATED_JSON 1" >>confdefs.h
 
     fi
-    JSON_LIBS="$LIBS"
+
+
+# Check whether --with-libjson-static was given.
+if test "${with_libjson_static+set}" = set; then :
+  withval=$with_libjson_static;
+            json_linking="static"
+            JSON_LIBS="$withval $LIBS"
+
+else
+
+            json_linking="dynamic"
+            JSON_LIBS="-l${json_libname} $LIBS"
+
+
+fi
+
 fi
 
 LIBS="$save_LIBS"
@@ -36874,13 +36966,13 @@ fi
 
    $as_echo_n "              clamsubmit  : "
    if test "xyes" = "xno"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (disabled)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking) (disabled)"
 elif test "xyes" = "xyes"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking)"
 elif test "xyes" = "x"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking)"
 else
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (yes)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking) (yes)"
 fi
 
     else
@@ -37098,13 +37190,13 @@ if test "X$have_json" = "Xyes"; then
 
    $as_echo_n "              preclass    : "
    if test "xyes" = "xno"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (disabled)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking) (disabled)"
 elif test "xyes" = "xyes"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking)"
 elif test "xyes" = "x"; then :
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking)"
 else
-  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME) (yes)"
+  $as_echo "yes (libjson-c-dev found at $LIBJSON_HOME, linking=$json_linking) (yes)"
 fi
 
 else
@@ -37225,27 +37317,27 @@ fi
 # 4.0.x, and 4.1.0 are the known buggy versions
 # 3.4 doesn't have the bug
 if test "x$gcc_check" != "xyes"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
 ****** Optimizations disabled to avoid compiler bugs
 ****** The resulting binaries will be slow!
 ****** It is recommended to either upgrade or downgrade your compiler
-" >&5
+    " >&5
 $as_echo "$as_me: WARNING:
 ****** Optimizations disabled to avoid compiler bugs
 ****** The resulting binaries will be slow!
 ****** It is recommended to either upgrade or downgrade your compiler
-" >&2;}
+    " >&2;}
 fi
 
 if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$bzip_check" != "xok" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
 ****** WARNING:
 ****** You are cross compiling to a different host or you are
 ****** linking to bugged system libraries or you have manually
 ****** disabled important configure checks.
 ****** Please be aware that this build may be badly broken.
 ****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
-" >&5
+    " >&5
 $as_echo "$as_me: WARNING:
 ****** WARNING:
 ****** You are cross compiling to a different host or you are
@@ -37253,6 +37345,20 @@ $as_echo "$as_me: WARNING:
 ****** disabled important configure checks.
 ****** Please be aware that this build may be badly broken.
 ****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
-" >&2;}
+    " >&2;}
 fi
 
+if test "X$have_json" = "Xyes" && test "x$json_linking" = "xdynamic"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
+****** libjson-c is known to share symbol names with other JSON libraries
+****** which may result in crashes for applications that use libclamav.
+****** Consider using --with-libjson-static=path/to/libjson-c.a,
+****** providing a json-c library that was compiled with CFLAGS=\"-fPIC\".
+    " >&5
+$as_echo "$as_me: WARNING:
+****** libjson-c is known to share symbol names with other JSON libraries
+****** which may result in crashes for applications that use libclamav.
+****** Consider using --with-libjson-static=path/to/libjson-c.a,
+****** providing a json-c library that was compiled with CFLAGS=\"-fPIC\".
+    " >&2;}
+fi

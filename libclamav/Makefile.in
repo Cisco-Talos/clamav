@@ -1233,7 +1233,7 @@ libclamav_internal_utils_la_SOURCES = str.c\
 
 libclamav_internal_utils_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_la_CFLAGS = $(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
-libclamav_internal_utils_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+libclamav_internal_utils_la_LIBADD = @SSL_LIBS@ @PCRE_LIBS@
 libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 					conv.c \
 					conv.h \
@@ -1259,7 +1259,7 @@ libclamav_internal_utils_nothreads_la_SOURCES = str.c\
 
 libclamav_internal_utils_nothreads_la_LDFLAGS = -static @SSL_LDFLAGS@ @JSON_LDFLAGS@
 libclamav_internal_utils_nothreads_la_CFLAGS = $(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@
+libclamav_internal_utils_nothreads_la_LIBADD = @SSL_LIBS@ @PCRE_LIBS@
 SUBDIRS = $(am__append_6)
 @ENABLE_LLVM_FALSE@LLVMLIBADD = libclamav_nocxx.la
 @ENABLE_LLVM_TRUE@LLVMLIBADD = c++/libclamavcxx.la -lstdc++ -lm
