@@ -35,5 +35,6 @@ struct s_info {
 extern struct s_info info;
 extern short recursion, bell;
 extern short printinfected, printclean;
+extern int multiscan_jobs;
 
 #endif

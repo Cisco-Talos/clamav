@@ -56,6 +56,7 @@ void help(void);
 struct s_info info;
 short recursion = 0, bell = 0;
 short printinfected = 0, printclean = 1;
+int multiscan_jobs;
 
 int main(int argc, char **argv)
 {
@@ -153,6 +154,8 @@ int main(int argc, char **argv)
         exit(2);
     }
 
+    multiscan_jobs = optget(opts, "multiscan")->numarg;
+
     memset(&info, 0, sizeof(struct s_info));
 
     gettimeofday(&t1, NULL);
@@ -218,6 +221,7 @@ void help(void)
     mprintf("    --infected            -i             Only print infected files\n");
     mprintf("    --suppress-ok-results -o             Skip printing OK files\n");
     mprintf("    --bell                               Sound bell on virus detection\n");
+    mprintf("    --multiscan=#n        -m             Number of parallel jobs to spawn (MULTISCAN mode)\n");
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
