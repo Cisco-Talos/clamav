@@ -1772,7 +1772,7 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
-    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname))) {
         (*sigs)--;
         if (ret == CL_BREAK)
             return CL_SUCCESS;
@@ -3383,7 +3383,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     newtable[ytable->tbl_cnt - 1] = new;
     ytable->table                 = newtable;
 
-    if (CL_SUCCESS != (ret = ytable_add_attrib(ytable, NULL, "*", 0)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = ytable_add_attrib(ytable, NULL, "*", 0))) {
         cli_yaramsg("ytable_add_string: failed to add default offset\n");
         free(new->hexstr);
         free(new);
@@ -3428,7 +3428,7 @@ static int yara_hexstr_verify(YR_STRING *string, const char *hexstr, uint32_t *l
     }
 
     /* Long Check: Attempt to load hexstr */
-    if (CL_SUCCESS != (ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", 0, lsigid, options)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = cli_sigopts_handler(engine->test_root, "test-hex", hexstr, 0, 0, 0, "*", 0, lsigid, options))) {
         if (ret == CL_EMALFDB) {
             cli_warnmsg("load_oneyara[verify]: recovered from database loading error\n");
             /* TODO: if necessary, reset testing matcher if error occurs */
@@ -3693,7 +3693,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         /* modifier handler */
         if (STRING_IS_NO_CASE(string)) {
             cli_yaramsg("STRING_IS_NO_CASE         %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "i", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "i", 1))) {
                 cli_warnmsg("load_oneyara: failed to add 'nocase' sigopt\n");
                 str_error++;
                 break;
@@ -3701,7 +3701,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         }
         if (STRING_IS_ASCII(string)) {
             cli_yaramsg("STRING_IS_ASCII           %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "a", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "a", 1))) {
                 cli_warnmsg("load_oneyara: failed to add 'ascii' sigopt\n");
                 str_error++;
                 break;
@@ -3715,7 +3715,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 str_error++;
                 break;
             }
-            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "w", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "w", 1))) {
                 cli_warnmsg("load_oneyara: failed to add 'wide' sigopt\n");
                 str_error++;
                 break;
@@ -3723,7 +3723,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         }
         if (STRING_IS_FULL_WORD(string)) {
             cli_yaramsg("STRING_IS_FULL_WORD       %s\n", STRING_IS_SINGLE_MATCH(string) ? "yes" : "no");
-            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "f", 1)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = ytable_add_attrib(&ytable, NULL, "f", 1))) {
                 cli_warnmsg("load_oneyara: failed to add 'fullword' sigopt\n");
                 str_error++;
                 break;
@@ -3835,7 +3835,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     target_str = cli_strdup(YARATARGET0);
 
     memset(&tdb, 0, sizeof(tdb));
-    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, target_str, newident)) != CL_SUCCESS) {
+    if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, target_str, newident))) {
         ytable_delete(&ytable);
         free(logic);
         free(target_str);
@@ -3917,7 +3917,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if (CL_SUCCESS != (ret = cli_sigopts_handler(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options)) != CL_SUCCESS) {
+        if (CL_SUCCESS != (ret = cli_sigopts_handler(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options))) {
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
