@@ -3840,7 +3840,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
         thisobj = messageGetJObj(aMessage);
         if (thisobj == NULL) {
-            cli_errmsg("Cannot get message preclass object\n");
+            cli_dbgmsg("Cannot get message preclass object\n");
             *rc = -1;
             return mainMessage;
         }
