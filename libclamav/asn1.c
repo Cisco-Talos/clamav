@@ -94,6 +94,9 @@
 #define OID_1_3_6_1_4_1_311_2_4_1 "\x2b\x06\x01\x04\x01\x82\x37\x02\x04\x01"
 #define OID_nestedSignatures OID_1_3_6_1_4_1_311_2_4_1
 
+#define OID_1_3_6_1_4_1_311_3_3_1 "\x2b\x06\x01\x04\x01\x82\x37\x03\x03\x01"
+#define OID_RFC3161_countersignature OID_1_3_6_1_4_1_311_3_3_1
+
 #define OID_1_3_6_1_4_1_311_10_1 "\x2b\x06\x01\x04\x01\x82\x37\x0a\x01"
 #define OID_szOID_CTL OID_1_3_6_1_4_1_311_10_1
 
@@ -2059,7 +2062,9 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
             // and the presence of those doesn't seem to mess up verification
             // through the Windows API, so just skip those
 
-            if (deeper.size != lenof(OID_countersignature) && deeper.size != lenof(OID_nestedSignatures)) {
+            if (deeper.size != lenof(OID_countersignature) &&
+                deeper.size != lenof(OID_nestedSignatures) &&
+                deeper.size != lenof(OID_RFC3161_countersignature)) {
                 continue;
             }
 
@@ -2069,11 +2074,22 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                 break;
             }
 
-            if (!memcmp(deeper.content, OID_countersignature, deeper.size))
+            if (deeper.size == lenof(OID_countersignature) &&
+                !memcmp(deeper.content, OID_countersignature, lenof(OID_countersignature))) {
+
                 content = 0; /* counterSignature */
-            else if (!memcmp(deeper.content, OID_nestedSignatures, deeper.size))
+
+            } else if (deeper.size == lenof(OID_nestedSignatures) &&
+                       !memcmp(deeper.content, OID_nestedSignatures, lenof(OID_nestedSignatures))) {
+
                 content = 1; /* nested */
-            else {
+
+            } else if (deeper.size == lenof(OID_RFC3161_countersignature) &&
+                       !memcmp(deeper.content, OID_RFC3161_countersignature, lenof(OID_RFC3161_countersignature))) {
+
+                content = 2; /* RFC3161 Counter Signature */
+
+            } else {
                 continue;
             }
 
@@ -2103,15 +2119,23 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
 
                 result |= 1;
 
-            } else { /* nestedSignature */
+            } else if (content == 1) { /* nestedSignature */
 
                 // TODO Support parsing these out in the future
                 cli_dbgmsg("asn1_parse_mscat: nested signatures detected but parsing them is not currently supported\n");
 
                 deeper.size = 0;
                 result |= 2;
+            } else if (content == 2) {
+
+                // TODO Support verifying these in the future
+                cli_dbgmsg("asn1_parse_mscat: RFC3161 timestamping countersignature detected but parsing them is not currently supported\n");
+
+                deeper.size = 0;
+                result |= 4;
             }
             if (deeper.size) {
+
                 cli_dbgmsg("asn1_parse_mscat: extra data in unauthenticated attribute\n");
                 dsize = 1;
                 break;
