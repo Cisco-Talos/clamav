@@ -910,6 +910,10 @@ size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
 
 int cli_isnumber(const char *str)
 {
+    if (NULL == str) {
+        return 0;
+    }
+
     while (*str)
         if (!strchr("0123456789", *str++))
             return 0;
