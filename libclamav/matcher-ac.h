@@ -108,7 +108,11 @@ struct cli_ac_patt {
 
 struct cli_ac_list {
     struct cli_ac_patt *me;
-    struct cli_ac_list *next, *next_same;
+    union {
+        struct cli_ac_node *node;
+        struct cli_ac_list *next;
+    };
+    struct cli_ac_list *next_same;
 };
 
 struct cli_ac_node {

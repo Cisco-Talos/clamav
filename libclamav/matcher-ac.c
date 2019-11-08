@@ -104,7 +104,8 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         cli_errmsg("cli_ac_addpatt: Can't allocate memory for list node\n");
         return CL_EMEM;
     }
-    new->me = pattern;
+    new->me   = pattern;
+    new->node = pt;
 
     root->ac_lists++;
     newtable = MPOOL_REALLOC(root->mempool, root->ac_listtable, root->ac_lists * sizeof(struct cli_ac_list *));
@@ -117,111 +118,183 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
 
     root->ac_listtable                     = newtable;
     root->ac_listtable[root->ac_lists - 1] = new;
+    return CL_SUCCESS;
+}
 
-    ph           = pt->list;
-    ph_add_after = ph_prev = NULL;
-    while (ph) {
-        php = ph->me;
-        if (!ph_add_after && php->partno <= pattern->partno && (!ph->next || ph->next->me->partno > pattern->partno))
-            ph_add_after = ph;
-        if ((php->length[0] == pattern->length[0]) && (php->prefix_length[0] == pattern->prefix_length[0]) && (php->ch[0] == pattern->ch[0]) && (php->ch[1] == pattern->ch[1]) && (php->boundary == pattern->boundary)) {
-            if (!memcmp(php->pattern, pattern->pattern, php->length[0] * sizeof(uint16_t)) && !memcmp(php->prefix, pattern->prefix, php->prefix_length[0] * sizeof(uint16_t))) {
-                if (!php->special && !pattern->special) {
-                    match = 1;
-                } else if (php->special == pattern->special) {
-                    match = 1;
-                    for (i = 0; i < php->special; i++) {
-                        a1 = php->special_table[i];
-                        a2 = pattern->special_table[i];
+#define RETURN_RES_IF_NE(uia, uib) \
+    do {                           \
+        if (uia < uib) return -1;  \
+        if (uia > uib) return +1;  \
+    } while (0)
 
-                        if (a1->num != a2->num) {
-                            match = 0;
-                            break;
-                        }
+static int patt_cmp_fn(const struct cli_ac_patt *a, const struct cli_ac_patt *b)
+{
+    unsigned int i;
+    int res;
+    RETURN_RES_IF_NE(a->length[0], b->length[0]);
+    RETURN_RES_IF_NE(a->prefix_length[0], b->prefix_length[0]);
+    RETURN_RES_IF_NE(a->ch[0], b->ch[0]);
+    RETURN_RES_IF_NE(a->ch[1], b->ch[1]);
+    RETURN_RES_IF_NE(a->boundary, b->boundary);
 
-                        if (a1->negative != a2->negative) {
-                            match = 0;
-                            break;
-                        }
+    res = memcmp(a->pattern, b->pattern, a->length[0] * sizeof(uint16_t));
+    if (res) return res;
+    res = memcmp(a->prefix, b->prefix, a->prefix_length[0] * sizeof(uint16_t));
+    if (res) return res;
 
-                        if (a1->type != a2->type) {
-                            match = 0;
-                            break;
-                        } else if (a1->type == AC_SPECIAL_ALT_CHAR) {
-                            if (memcmp((a1->alt).byte, (a2->alt).byte, a1->num)) {
-                                match = 0;
-                                break;
-                            }
-                        } else if (a1->type == AC_SPECIAL_ALT_STR_FIXED) {
-                            if (a1->len != a2->len) {
-                                match = 0;
-                                break;
-                            }
+    RETURN_RES_IF_NE(a->special, b->special);
+    if (!a->special && !b->special)
+        return 0;
 
-                            for (j = 0; j < a1->num; j++) {
-                                if (memcmp((a1->alt).f_str[j], (a2->alt).f_str[j], a1->len[0]))
-                                    break;
-                            }
+    for (i = 0; i < a->special; i++) {
+        struct cli_ac_special *spcl_a = a->special_table[i], *spcl_b = b->special_table[i];
 
-                            if (j < a1->num) {
-                                match = 0;
-                                break;
-                            }
-                        } else if (a1->type == AC_SPECIAL_ALT_STR) {
-                            b1 = (a1->alt).v_str;
-                            b2 = (a2->alt).v_str;
-                            while (b1 && b2) {
-                                if ((b1->len != b2->len) || memcmp(b1->str, b2->str, b1->len))
-                                    break;
-                                b1 = b1->next;
-                                b2 = b2->next;
-                            }
+        RETURN_RES_IF_NE(spcl_a->num, spcl_b->num);
+        RETURN_RES_IF_NE(spcl_a->negative, spcl_b->negative);
+        RETURN_RES_IF_NE(spcl_a->type, spcl_b->type);
 
-                            if (b1 || b2) {
-                                match = 0;
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    match = 0;
-                }
+        if (spcl_a->type == AC_SPECIAL_ALT_CHAR) {
+            res = memcmp((spcl_a->alt).byte, (spcl_b->alt).byte, spcl_a->num);
+            if (res) return res;
+        } else if (spcl_a->type == AC_SPECIAL_ALT_STR_FIXED) {
+            unsigned int j;
+            RETURN_RES_IF_NE(spcl_a->len[0], spcl_b->len[0]);
+            for (j = 0; j < spcl_a->num; j++) {
+                res = memcmp((spcl_a->alt).f_str[j], (spcl_b->alt).f_str[j], spcl_a->len[0]);
+                if (res) return res;
+            }
+        } else if (spcl_a->type == AC_SPECIAL_ALT_STR) {
+            struct cli_alt_node *alt_a = (spcl_a->alt).v_str, *alt_b = (spcl_b->alt).v_str;
+            while (alt_a && alt_b) {
+                RETURN_RES_IF_NE(alt_a->len, alt_b->len);
+                res = memcmp(alt_a->str, alt_b->str, alt_a->len);
+                if (res) return res;
+                alt_a = alt_a->next;
+                alt_b = alt_b->next;
+            }
+            RETURN_RES_IF_NE(alt_a, alt_b);
+        }
+    }
+    return 0;
+}
 
-                if (match) {
-                    if (pattern->partno < php->partno) {
-                        new->next_same = ph;
-                        if (ph_prev)
-                            ph_prev->next = ph->next;
-                        else
-                            pt->list = ph->next;
+static int sort_list_fn(const void *a, const void *b)
+{
+    const struct cli_ac_node *node_a = (*(const struct cli_ac_list **)a)->node;
+    const struct cli_ac_node *node_b = (*(const struct cli_ac_list **)b)->node;
+    const struct cli_ac_patt *patt_a = (*(const struct cli_ac_list **)a)->me;
+    const struct cli_ac_patt *patt_b = (*(const struct cli_ac_list **)b)->me;
+    int res;
 
-                        ph->next = NULL;
-                        break;
-                    } else {
-                        while (ph->next_same && ph->next_same->me->partno < pattern->partno)
-                            ph = ph->next_same;
+    /* 1. Group by owning node
+     * (this is for assigning entries to nodes) */
+    RETURN_RES_IF_NE(node_a, node_b);
 
-                        new->next_same = ph->next_same;
-                        ph->next_same  = new;
-                        return CL_SUCCESS;
-                    }
-                }
+    /* 2. Group together equal pattern in a node
+     * (this is for building the next_same list) */
+    res = patt_cmp_fn(patt_a, patt_b);
+    if (res)
+        return res;
+
+    /* 3. Sort equal patterns in a node by partno in ascending order
+     * (this is required by the matcher) */
+    RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
+
+    /* 4. Keep close patterns close
+     * (this is for performace) */
+    RETURN_RES_IF_NE(patt_a, patt_b);
+
+    return 0;
+}
+
+static int sort_heads_by_partno_fn(const void *a, const void *b)
+{
+    const struct cli_ac_list *list_a = *(const struct cli_ac_list **)a;
+    const struct cli_ac_list *list_b = *(const struct cli_ac_list **)b;
+    const struct cli_ac_patt *patt_a = list_a->me;
+    const struct cli_ac_patt *patt_b = list_b->me;
+
+    /* 1. Sort heads by partno
+     * (this is required by the matcher) */
+    RETURN_RES_IF_NE(patt_a->partno, patt_b->partno);
+
+    /* 2. Place longer lists earlier
+     * (this is for performance) */
+
+    while (1) {
+        if (!list_a->next_same) {
+            if (!list_b->next_same)
+                break;
+            return +1;
+        }
+        if (!list_b->next_same)
+            return -1;
+        list_a = list_a->next_same;
+        list_b = list_b->next_same;
+    }
+
+    /* 3. Keep close patterns close
+     * (this is for performace) */
+    RETURN_RES_IF_NE(patt_a, patt_b);
+
+    return 0;
+}
+
+static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int nentries)
+{
+    struct cli_ac_list *prev = listtable[0];
+    struct cli_ac_node *node = prev->node;
+    unsigned int i, nheads = 1;
+
+    /* Link equal patterns in the next_same list (entries are already sorted by partno asc) */
+    for (i = 1; i < nentries; i++) {
+        int ret = patt_cmp_fn(prev->me, listtable[i]->me);
+        if (ret) {
+            /* This is a new head of a next_same chain */
+            prev = listtable[i];
+            if (i != nheads) {
+                /* Move heads towards the beginning of the table */
+                listtable[i]      = listtable[nheads];
+                listtable[nheads] = prev;
+            }
+            nheads++;
+        } else {
+            prev->next_same = listtable[i];
+            prev->next      = NULL;
+            prev            = listtable[i];
+        }
+    }
+
+    cli_qsort(listtable, nheads, sizeof(listtable[0]), sort_heads_by_partno_fn);
+
+    /* Link heads in the next list */
+    node->list = listtable[0];
+    for (i = 1; i < nheads; i++)
+        listtable[i - 1]->next = listtable[i];
+    listtable[nheads - 1]->next = NULL;
+}
+
+static void link_lists(struct cli_matcher *root)
+{
+    struct cli_ac_node *curnode;
+    unsigned int i, grouplen;
+
+    if (!root->ac_lists)
+        return;
+
+    /* Group the list by owning node, pattern equality and sort by partno */
+    cli_qsort(root->ac_listtable, root->ac_lists, sizeof(root->ac_listtable[0]), sort_list_fn);
+
+    curnode = root->ac_listtable[0]->node;
+    for (i = 1, grouplen = 1; i <= root->ac_lists; i++, grouplen++) {
+        if (i == root->ac_lists || root->ac_listtable[i]->node != curnode) {
+            link_node_lists(&root->ac_listtable[i - grouplen], grouplen);
+            if (i < root->ac_lists) {
+                grouplen = 0;
+                curnode  = root->ac_listtable[i]->node;
             }
         }
-
-        ph_prev = ph;
-        ph      = ph->next;
     }
-
-    if (ph_add_after) {
-        new->next          = ph_add_after->next;
-        ph_add_after->next = new;
-    } else {
-        new->next = pt->list;
-        pt->list  = new;
-    }
-
-    return CL_SUCCESS;
 }
 
 static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_t i, uint16_t len)
@@ -494,6 +567,8 @@ cl_error_t cli_ac_buildtrie(struct cli_matcher *root)
 
     if (root->filter)
         cli_dbgmsg("Using filter for trie %d\n", root->type);
+
+    link_lists(root);
 
     return ac_maketrans(root);
 }
