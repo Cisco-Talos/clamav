@@ -5631,11 +5631,6 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         goto finish;
     }
 
-    /* Security to End of header */
-    hlen = peinfo->hdr_size - at;
-    add_chunk_to_hash_list(at, hlen);
-    at += hlen;
-
     if (sec_dir_offset) {
 
         // Verify that we have all the bytes we expect in the authenticode sig
@@ -5646,12 +5641,14 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
             goto finish;
         }
 
-        // Hash everything from the end of the header to the start of the
-        // security section
+        // Hash everything else up to the start of the security section. Allow
+        // the case where at == sec_dir_offset without adding another region
+        // to hash, since this could technically be valid (although I haven't
+        // verified this).
         if (at < sec_dir_offset) {
             hlen = sec_dir_offset - at;
             add_chunk_to_hash_list(at, hlen);
-        } else {
+        } else if(at > sec_dir_offset) {
             cli_dbgmsg("cli_check_auth_header: security directory offset appears to overlap with the PE header\n");
             goto finish;
         }
@@ -5705,8 +5702,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     } else {
 
-        // Hash everything from the end of the header to the end of the
-        // file
+        // Hash everything else
         if (at < fsize) {
             hlen = fsize - at;
             add_chunk_to_hash_list(at, hlen);
