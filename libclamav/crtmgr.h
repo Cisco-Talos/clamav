@@ -41,6 +41,13 @@ typedef enum { VRFY_CODE,
 #define CRT_RAWMAXLEN 64
 #endif
 
+/* If CRT_RAWMAXLEN is > 256 it will break the way raw data is stored. If
+   larger values are needed, we will need to update the code (ex: look at
+   map_raw) */
+#if CRT_RAWMAXLEN > 256
+#error CRT_RAWMAXLEN cannot be greater than 256
+#endif
+
 typedef struct cli_crt_t {
     char *name;
     uint8_t raw_subject[CRT_RAWMAXLEN];
