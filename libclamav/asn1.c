@@ -611,17 +611,33 @@ static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size,
     t.tm_min = n;
     ptr += 2;
 
-    n = asn1_getnum(ptr);
-    if (n < 0 || n > 59) {
-        cli_dbgmsg("asn1_get_time: invalid second %u\n", n);
-        return 1;
-    }
-    t.tm_sec = n;
-    ptr += 2;
+    if (*ptr == 'Z') {
+        /* NOTE: RFC5280 requires that the UTCDate fields in X509 certs
+         * include the seconds (it's optional in the UTCDate definition),
+         * but one CA time-stamping cert used by ~1,700 samples on VirusTotal
+         * omits the seconds. These samples still validate successfully,
+         * though, so allow it here.
+         *
+         * In this case we will have fmap'd in two extra bytes unrelated to
+         * the UTCDate (and failed if there weren't two bytes afterward),
+         * but that shouldn't have an affect in practice since there will
+         * always be more signature data following the UTCDate data that we
+         * parse. */
+        t.tm_sec = 0;
 
-    if (*ptr != 'Z') {
-        cli_dbgmsg("asn1_get_time: expected UTC time 'Z', got '%c'\n", *ptr);
-        return 1;
+    } else {
+        n = asn1_getnum(ptr);
+        if (n < 0 || n > 59) {
+            cli_dbgmsg("asn1_get_time: invalid second %u\n", n);
+            return 1;
+        }
+        t.tm_sec = n;
+        ptr += 2;
+
+        if (*ptr != 'Z') {
+            cli_dbgmsg("asn1_get_time: expected UTC time 'Z', got '%c'\n", *ptr);
+            return 1;
+        }
     }
 
     *tm       = mktime(&t);
@@ -986,7 +1002,11 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         continue;
                     }
                     if (!memcmp("\x55\x1d\x13", id.content, 3)) {
-                        /* Basic Constraints 2.5.29.19 */
+                        /* Basic Constraints 2.5.29.19
+                         *
+                         * BasicConstraints ::= SEQUENCE {
+                         *      cA                      BOOLEAN DEFAULT FALSE,
+                         *      pathLenConstraint       INTEGER (0..MAX) OPTIONAL } */
                         struct cli_asn1 constr;
                         if (asn1_expect_objtype(map, value.content, &value.size, &constr, ASN1_TYPE_SEQUENCE)) {
                             exts.size = 1;
@@ -995,20 +1015,33 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
                         if (!constr.size)
                             x509.certSign = 0;
                         else {
-                            if (asn1_expect_objtype(map, constr.content, &constr.size, &ext, ASN1_TYPE_BOOLEAN)) {
+                            if (asn1_get_obj(map, constr.content, &constr.size, &ext)) {
                                 exts.size = 1;
                                 break;
                             }
-                            if (ext.size != 1) {
-                                cli_dbgmsg("asn1_get_x509: wrong bool size in basic constraint %u\n", ext.size);
+                            if (ext.type == ASN1_TYPE_BOOLEAN) {
+
+                                if (ext.size != 1) {
+                                    cli_dbgmsg("asn1_get_x509: wrong bool size in basic constraint %u\n", ext.size);
+                                    exts.size = 1;
+                                    break;
+                                }
+
+                                if (!fmap_need_ptr_once(map, ext.content, 1)) {
+                                    exts.size = 1;
+                                    break;
+                                }
+                                x509.certSign = (((uint8_t *)(ext.content))[0] != 0);
+
+                            } else if (ext.type == ASN1_TYPE_INTEGER) {
+                                /* In this case, assume cA is missing and
+                                 * pathLenConstraint is present. Default cA
+                                 * to False. */
+                                x509.certSign = 0;
+                            } else {
                                 exts.size = 1;
                                 break;
                             }
-                            if (!fmap_need_ptr_once(map, ext.content, 1)) {
-                                exts.size = 1;
-                                break;
-                            }
-                            x509.certSign = (((uint8_t *)(ext.content))[0] != 0);
                         }
                     }
                 }
