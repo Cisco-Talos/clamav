@@ -235,11 +235,11 @@ static blob *getHrefs(message *m, tag_arguments_t *hrefs);
 static void hrefs_done(blob *b, tag_arguments_t *hrefs);
 static void checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
-static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx);
-static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx);
-static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx);
-static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx);
-static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx);
+static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc);
+static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound);
+static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound);
+static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound);
+static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound);
 
 /* Maximum line length according to RFC2821 */
 #define RFC2821LENGTH 1000
@@ -772,7 +772,7 @@ doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 }
 
 static bool
-hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx)
+hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound)
 {
 
     if (line) {
@@ -785,6 +785,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx)
         if ((*lineFoldCnt) >= HEURISTIC_EMAIL_MAX_LINE_FOLDS_PER_HEADER) {
             if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
                 cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxLineFoldCnt");
+                *heuristicFound = TRUE;
             }
 
             return TRUE;
@@ -794,12 +795,13 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx)
 }
 
 static bool
-haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx)
+haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound)
 {
 
     if (totalLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES) {
         if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxHeaderBytes");
+            *heuristicFound = TRUE;
         }
 
         return TRUE;
@@ -808,12 +810,13 @@ haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx)
 }
 
 static bool
-haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx)
+haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound)
 {
 
     if (totalHeaderCnt > HEURISTIC_EMAIL_MAX_HEADERS) {
         if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxEmailHeaders");
+            *heuristicFound = TRUE;
         }
 
         return TRUE;
@@ -822,12 +825,13 @@ haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx)
 }
 
 static bool
-haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx)
+haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc)
 {
 
     if (mimePartCnt >= HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE) {
         if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEPartsPerMessage");
+            *rc = VIRUS;
         }
 
         return TRUE;
@@ -836,12 +840,13 @@ haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx)
 }
 
 static bool
-haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx)
+haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound)
 {
 
     if (argCnt >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) {
         if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEArguments");
+            *heuristicFound = TRUE;
         }
 
         return TRUE;
@@ -902,8 +907,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
             continue;
         }
 
-        if (hitLineFoldCnt(line, &lineFoldCnt, ctx)) {
-            *heuristicFound = TRUE;
+        if (hitLineFoldCnt(line, &lineFoldCnt, ctx, heuristicFound)) {
             break;
         }
 
@@ -950,8 +954,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                         DO_VERIFY_POINTER(header);
 
                         totalHeaderCnt++;
-                        if (haveTooManyEmailHeaders(totalHeaderCnt, ctx)) {
-                            *heuristicFound = TRUE;
+                        if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
@@ -1040,8 +1043,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
                 if (lineAdded) {
                     totalHeaderBytes += strlen(line);
-                    if (haveTooManyHeaderBytes(totalHeaderBytes, ctx)) {
-                        *heuristicFound = TRUE;
+                    if (haveTooManyHeaderBytes(totalHeaderBytes, ctx, heuristicFound)) {
                         break;
                     }
                 }
@@ -1072,8 +1074,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
                     if (0 == needContinue) {
                         totalHeaderCnt++;
-                        if (haveTooManyEmailHeaders(totalHeaderCnt, ctx)) {
-                            *heuristicFound = TRUE;
+                        if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
@@ -1208,8 +1209,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
             continue;
         }
 
-        if (hitLineFoldCnt(line, &lineFoldCnt, m->ctx)) {
-            *heuristicFound = TRUE;
+        if (hitLineFoldCnt(line, &lineFoldCnt, m->ctx, heuristicFound)) {
             break;
         }
 
@@ -1286,8 +1286,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                 }
 
                 if (lineAdded) {
-                    if (haveTooManyHeaderBytes(fulllinelength, m->ctx)) {
-                        *heuristicFound = TRUE;
+                    if (haveTooManyHeaderBytes(fulllinelength, m->ctx, heuristicFound)) {
                         break;
                     }
                 }
@@ -1309,8 +1308,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                 }
 
                 totalHeaderCnt++;
-                if (haveTooManyEmailHeaders(totalHeaderCnt, m->ctx)) {
-                    *heuristicFound = TRUE;
+                if (haveTooManyEmailHeaders(totalHeaderCnt, m->ctx, heuristicFound)) {
                     break;
                 }
                 if (parseEmailHeader(ret, fullline, rfc821, m->ctx, heuristicFound) < 0) {
@@ -2212,9 +2210,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                 free((char *)boundary);
 
-                if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx)) {
+                if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx, &rc)) {
                     DO_FREE(messages);
-                    rc = VIRUS;
                     break;
                 }
 
@@ -3293,8 +3290,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
                     argCnt++;
-                    if (haveTooManyMIMEArguments(argCnt, ctx)) {
-                        *heuristicFound = TRUE;
+                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound )) {
                         break;
                     }
                     messageAddArguments(m, buf);
