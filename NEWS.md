@@ -7,16 +7,34 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.102.1 is a security patch release to address the following issues.
 
-### Bug fixes
+- Fix for the following vulnerability affecting 0.102.0 and 0.101.4 and prior:
+  - [CVE-2019-15961](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-15961)
+    A Denial-of-Service (DoS) vulnerability may occur when scanning a specially
+    crafted email file as a result of excessively long scan times. The issue is
+    resolved by implementing several maximums in parsing MIME messages and by
+    optimizing use of memory allocation.
+
+- Build system fixes to build clamav-milter, to correctly link with libxml2 when
+  detected, and to correctly detect fanotify for on-access scanning feature
+  support.
+
+- Signature load time is significantly reduced by changing to a more efficient
+  algorithm for loading signature patterns and allocating the AC trie.
+  Patch courtesy of Alberto Wu.
 
 - Introduced a new configure option to statically link libjson-c with libclamav.
   Static linking with libjson is highly recommended to prevent crashes in
   applications that use libclamav alongside another JSON parsing library.
 
-### Acknowledgements
+- Null-dereference fix in email parser when using the `--gen-json` metadata
+  option.
 
-The ClamAV team thanks the following individuals for their code submissions:
+- Fixes for Authenticode parsing and certificate signature (.crb database) bugs.
 
+Special thanks to the following for code contributions and bug reports:
+
+- Alberto Wu
+- Joran Dirk Greef
 - Reio Remma
 
 ## 0.102.0
