@@ -635,7 +635,7 @@ cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion
                 /* See whether the hash matches those loaded in from .cat files
                  * (associated with the .CAB file type) */
                 if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection via catalog file\n");
+                    cli_dbgmsg("cli_checkfp(sha1): Found .CAB false positive detection via catalog file\n");
                     return CL_CLEAN;
                 }
             }
@@ -649,6 +649,12 @@ cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion
                 }
                 if (cli_hm_scan_wild(&shash256[SHA256_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
                     cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+                    return CL_CLEAN;
+                }
+                /* See whether the hash matches those loaded in from .cat files
+                 * (associated with the .CAB file type) */
+                if (cli_hm_scan(&shash256[SHA256_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                    cli_dbgmsg("cli_checkfp(sha256): Found .CAB false positive detection via catalog file\n");
                     return CL_CLEAN;
                 }
             }

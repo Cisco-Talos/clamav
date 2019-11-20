@@ -5526,7 +5526,7 @@ static int sort_sects(const void *first, const void *second)
     return (a->raw - b->raw);
 }
 
-/* Check the given PE file for an authenticode signature and return CL_CLEAN if
+/* Check the given PE file for an authenticode signature and return whether
  * the signature is valid.  There are two cases that this function should
  * handle:
  * - A PE file has an embedded Authenticode section
@@ -5544,7 +5544,7 @@ static int sort_sects(const void *first, const void *second)
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     size_t at;
-    unsigned int i, hlen;
+    unsigned int i, j, hlen;
     size_t fsize;
     fmap_t *map   = *ctx->fmap;
     void *hashctx = NULL;
@@ -5552,7 +5552,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     struct cli_mapped_region *regions = NULL;
     unsigned int nregions;
     cl_error_t ret = CL_EVERIFY;
-    uint8_t authsha1[SHA1_HASH_SIZE];
+    uint8_t authsha[SHA256_HASH_SIZE];
     uint32_t sec_dir_offset;
     uint32_t sec_dir_size;
     struct cli_exe_info _peinfo;
@@ -5583,8 +5583,12 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // As an optimization, check the security DataDirectory here and if
     // it's less than 8-bytes (and we aren't relying on this code to compute
     // the section hashes), bail out if we don't have any Authenticode hashes
-    // loaded from .cat files
-    if (sec_dir_size < 8 && !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2)) {
+    // loaded from .cat files. The value 2 in these calls is the sentinel value
+    // for the 'PE' .cat Authenticode hash file type.
+    if (sec_dir_size < 8 && \
+        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && \
+        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, 2))
+    {
         ret = CL_BREAK;
         goto finish;
     }
@@ -5710,37 +5714,55 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     // At this point we should compute the SHA1 authenticode hash to see
     // whether we've had any hashes added from external catalog files
-    // TODO Is it gauranteed that the hashing algorithm will be SHA1?  If
-    // not, figure out how to handle that case
-    hashctx = cl_hash_init("sha1");
-    if (NULL == hashctx) {
-        ret = CL_EMEM;
-        goto finish;
-    }
+    static const struct supported_hashes {
+        const enum CLI_HASH_TYPE hashtype;
+        const char *hashctx_name;
+    } supported_hashes[] = {
+        {CLI_HASH_SHA1, "sha1"},
+        {CLI_HASH_SHA256, "sha256"},
+    };
 
-    for (i = 0; i < nregions; i++) {
-        const uint8_t *hptr;
-        if (0 == regions[i].size) {
+    for (i = 0; i < (sizeof(supported_hashes)/sizeof(supported_hashes[0])); i++)
+    {
+        const enum CLI_HASH_TYPE hashtype = supported_hashes[i].hashtype;
+        const char *hashctx_name = supported_hashes[i].hashctx_name;
+
+        if (!cli_hm_have_size(ctx->engine->hm_fp, hashtype, 2))
+        {
             continue;
         }
-        if (!(hptr = fmap_need_off_once(map, regions[i].offset, regions[i].size))) {
-            break;
+
+        hashctx = cl_hash_init(hashctx_name);
+
+        if (NULL == hashctx) {
+            ret = CL_EMEM;
+            goto finish;
         }
 
-        cl_update_hash(hashctx, hptr, regions[i].size);
-    }
+        for (j = 0; j < nregions; j++) {
+            const uint8_t *hptr;
+            if (0 == regions[j].size) {
+                continue;
+            }
+            if (!(hptr = fmap_need_off_once(map, regions[j].offset, regions[j].size))) {
+                break;
+            }
 
-    if (i != nregions) {
-        goto finish;
-    }
+            cl_update_hash(hashctx, hptr, regions[j].size);
+        }
 
-    cl_finish_hash(hashctx, authsha1);
-    hashctx = NULL;
+        if (j != nregions) {
+            goto finish;
+        }
 
-    if (cli_hm_scan(authsha1, 2, NULL, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-        cli_dbgmsg("cli_check_auth_header: PE file trusted by catalog file\n");
-        ret = CL_CLEAN;
-        goto finish;
+        cl_finish_hash(hashctx, authsha);
+        hashctx = NULL;
+
+        if (cli_hm_scan(authsha, 2, NULL, ctx->engine->hm_fp, hashtype) == CL_VIRUS) {
+            cli_dbgmsg("cli_check_auth_header: PE file trusted by catalog file (%s)\n", hashctx_name);
+            ret = CL_VERIFIED;
+            goto finish;
+        }
     }
 
     ret = CL_EVERIFY;
