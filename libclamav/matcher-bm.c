@@ -50,7 +50,7 @@
 #define OPTIMIZE_HAS_AVX 2 
 
 // hardcoded until hardware_detection init function has a place.
-uint8_t runtime_detection = OPTIMIZE_HAS_SSE4_2;
+uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT;
 
 // function table:
 void (* const stringSearch[]) (const uint32_t, const uint32_t, uint32_t *,
