@@ -1,8 +1,8 @@
 /*
+ *
  *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
- *
- *  Authors: Tomasz Kojm
+ * *  Authors: Tomasz Kojm
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <setjmp.h>
+#include <immintrin.h>
+
 #include "clamav.h"
 #include "memory.h"
 #include "others.h"
@@ -39,6 +42,20 @@
 #define BM_MIN_LENGTH 3
 #define BM_BLOCK_SIZE 3
 #define HASH(a, b, c) (211 * a + 37 * b + c)
+
+#define OPTIMIZE_MAX_OPTIONS 2
+#define OPTIMIZE_USE_DEFAULT 0
+#define OPTIMIZE_HAS_SSE4_2 1
+// AVX is not implemented yet, example only.
+#define OPTIMIZE_HAS_AVX 2 
+
+// hardcoded until hardware_detection init function has a place.
+uint8_t runtime_detection = OPTIMIZE_HAS_SSE4_2;
+
+// function table:
+void (* const stringSearch[]) (const uint32_t, const uint32_t, uint32_t *,
+      uint32_t *, uint8_t *, const unsigned char *, const unsigned char *)
+      = {charSearch_C, charSearch_sse4_2};
 
 cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset)
 {
@@ -342,13 +359,12 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
                     pt = p->pattern;
                 }
 
-                found = 1;
-                for (j = 0; j < p->length + p->prefix_length && off < length; j++, off++) {
-                    if (bp[j] != pt[j]) {
-                        found = 0;
-                        break;
-                    }
-                }
+
+//		UNCOMMENT "if" for to check within range: 
+//		if (runtime_detection < OPTIMIZE_MAX_OPTIONS)
+		   if (off < length)
+		   stringSearch[runtime_detection] ( length, p->length + p->prefix_length, 
+			 &j, &off, &found, bp, pt);
 
                 if (found && (p->boundary & BM_BOUNDARY_EOL)) {
                     if (off != length) {
@@ -417,4 +433,68 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
     if (viruses_found)
         return CL_VIRUS;
     return CL_CLEAN;
+}
+
+// Functions for instrinsics jump table:
+void optimize_scanbuf_init()
+{
+	// default to C code.
+	uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT; 
+
+	// set jmp table index:
+	if (__builtin_cpu_supports("sse4.2"))
+		runtime_detection = OPTIMIZE_HAS_SSE4_2;
+//	This one is only here for an example:
+//_	if (__builtin_cpu_supports("avx"))
+//		runtime_detection = OPTIMIZE_HAS_AVX;
+
+}
+
+void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
+			uint8_t *found, const unsigned char *bp, const unsigned char *pt)
+{
+	// Original program code, just moved here.
+	*found = 1;
+	for (*j = 0; *j < l && *off < length; *j++, *off++) {
+	    if (bp[*j] != pt[*j]) {
+		*found = 0;
+		break;
+	    }
+	}
+}
+
+void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
+			uint8_t *found, const unsigned char *bp, const unsigned char *pt)
+{
+    *found = 0;
+    for (*j = 0; *j < length && *j < l ;)
+    {
+       // make sure that we are not going past either end of any array.
+       if (*j >= length - 16 || *j >= l -16)
+       {
+	  if ( length >= 16 && l >= 16)
+	  {
+	     *j = (length < l) ? length -16 : l -16;
+	     __m128i xbp = _mm_loadu_si128((__m128i*) &bp[*j]);
+	     __m128i xpt = _mm_loadu_si128((__m128i*) &pt[*j]);
+	     *j += _mm_cmpistri(xbp, xpt, 
+	    	_SIDD_UBYTE_OPS |_SIDD_CMP_EQUAL_EACH | _SIDD_NEGATIVE_POLARITY);
+	     break;
+	  }
+       }
+
+       __m128i xbp = _mm_loadu_si128((__m128i*) &bp[*j]);
+       __m128i xpt = _mm_loadu_si128((__m128i*) &pt[*j]);
+       uint8_t y = _mm_cmpistri(xbp, xpt, 
+	    _SIDD_UBYTE_OPS |_SIDD_CMP_EQUAL_EACH | _SIDD_NEGATIVE_POLARITY);
+       *j += y;
+
+       // if y is not 16 then either the end of the string is reached or
+       // a character miss-match has been detected.
+       if ( y != 16 )
+	       break;
+    }
+       // set found and offset based on our results.
+       *found = ( length == l && *j == length ) ? 1 : 0;
+       *off += *j;
 }

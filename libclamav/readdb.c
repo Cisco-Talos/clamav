@@ -4520,6 +4520,9 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
     struct db_ll_entry *iter;
     struct db_ll_entry *next;
 
+    // call hw detection for cli_bm_scanbuff optimization:
+    optimize_scanbuf_init();
+
     cli_dbgmsg("Loading databases from %s\n", dirname);
 
     if ((dd = opendir(dirname)) == NULL) {
@@ -4705,6 +4708,9 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 {
     STATBUF sb;
     int ret;
+
+    // call hw detection for cli_bm_scanbuff:
+    optimize_scanbuf_init();
 
     if (!engine) {
         cli_errmsg("cl_load: engine == NULL\n");
