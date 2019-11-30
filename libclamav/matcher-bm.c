@@ -439,7 +439,7 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
 void optimize_scanbuf_init()
 {
 	// default to C code.
-	uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT; 
+//	runtime_detection = OPTIMIZE_USE_DEFAULT; 
 
 	// set jmp table index:
 	if (__builtin_cpu_supports("sse4.2"))
