@@ -2,7 +2,7 @@
  *
  *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
- * *  Authors: Tomasz Kojm
+ *  Authors: Tomasz Kojm
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <setjmp.h>
 #include <immintrin.h>
 
 #include "clamav.h"
@@ -49,7 +48,7 @@
 // AVX is not implemented yet, example only.
 #define OPTIMIZE_HAS_AVX 2 
 
-// hardcoded until hardware_detection init function has a place.
+// Set to default:
 uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT;
 
 // function table:
@@ -435,19 +434,13 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
     return CL_CLEAN;
 }
 
-// Functions for instrinsics jump table:
+// Functions for hardware specific optimizations:
+
 void optimize_scanbuf_init()
 {
-	// default to C code.
-//	runtime_detection = OPTIMIZE_USE_DEFAULT; 
-
 	// set jmp table index:
 	if (__builtin_cpu_supports("sse4.2"))
 		runtime_detection = OPTIMIZE_HAS_SSE4_2;
-//	This one is only here for an example:
-//_	if (__builtin_cpu_supports("avx"))
-//		runtime_detection = OPTIMIZE_HAS_AVX;
-
 }
 
 void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
@@ -494,7 +487,6 @@ void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uin
        if ( y != 16 )
 	       break;
     }
-       // set found and offset based on our results.
        *found = ( length == l && *j == length ) ? 1 : 0;
        *off += *j;
 }
