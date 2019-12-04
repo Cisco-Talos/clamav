@@ -540,6 +540,11 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
         }
     }
 
+    if (subsigid) {
+        free(subsigid);
+        subsigid = NULL;
+    }
+
     if (ret == CL_SUCCESS && viruses_found) {
         return CL_VIRUS;
     }
