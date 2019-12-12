@@ -59,6 +59,7 @@ Source: "C:\clam_dependencies\x64\lib\libxml2.dll"; DestDir: "{app}"; DestName: 
 Source: "C:\clam_dependencies\x64\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: Is64BitInstallMode
+Source: "C:\clam_dependencies\x64\lib\pdcurses.dll"; DestDir: "{app}"; DestName: "pdcurses.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: Is64BitInstallMode
 
 ; x86 files here, first one should be marked 'solidbreak'
@@ -86,6 +87,7 @@ Source: "C:\clam_dependencies\Win32\lib\libxml2.dll"; DestDir: "{app}"; DestName
 Source: "C:\clam_dependencies\Win32\lib\nghttp2.dll"; DestDir: "{app}"; DestName: "nghttp2.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\pcre2-8.dll"; DestDir: "{app}"; DestName: "pcre2-8.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\pthreadVC2.dll"; DestDir: "{app}"; DestName: "pthreadVC2.dll"; Check: not Is64BitInstallMode
+Source: "C:\clam_dependencies\Win32\lib\pdcurses.dll"; DestDir: "{app}"; DestName: "pdcurses.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\vcredist\vc_redist.x86.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not Is64BitInstallMode
 
 ; Place all common files here, first one should be marked 'solidbreak'
