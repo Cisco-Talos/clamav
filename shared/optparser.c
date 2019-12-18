@@ -97,6 +97,8 @@ const struct clam_option __clam_options[] = {
     {NULL, "no-summary", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", ""},
     {NULL, "file-list", 'f', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", ""},
     {NULL, "infected", 'i', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "ping", 'p', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
+    {NULL, "wait", 'w', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "suppress-ok-results", 'o', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
     {NULL, "move", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "copy", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
