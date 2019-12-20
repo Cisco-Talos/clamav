@@ -154,6 +154,123 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
     return ret;
 }
 
+/* pings clamd at the specified interval the number of time specified
+ * return 0 on a succesful connection, 1 upon timeout, -1 on error */
+int16_t onas_ping_clamd(struct onas_context **ctx)
+{
+
+    uint64_t attempts           = 0;
+    uint64_t interval           = 0;
+    char *attempt_str           = NULL;
+    char *interval_str          = NULL;
+    char *errchk                = NULL;
+    uint64_t i                  = 0;
+    const struct optstruct *opt = NULL;
+    int64_t sockd, len;
+    CURL *curl = NULL;
+    CURLcode curlcode;
+    cl_error_t err = CL_SUCCESS;
+    int b_remote = 0;
+    uint16_t ret = 0;
+    char* buff = NULL;
+    int64_t timeout;
+
+    if (ctx == NULL) {
+        logg("!null parameter was passed\n");
+        return -1;
+    }
+
+    timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+
+    b_remote = onas_check_remote(ctx, &err);
+    if (CL_SUCCESS != err) {
+        logg("*ClamClient: could not check to see if daemon was remote... PINGing again...\n");
+    }
+
+    if (!b_remote) {
+        curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "LocalSocket")->strarg, 0, timeout);
+    } else {
+        curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
+        if (CURLE_OK != curlcode) {
+            logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+            /* curl cleanup done in onas_curl_init on error */
+            ret = -1;
+            goto done;
+        }
+    }
+
+    /* ping command takes the form --ping [attempts[:interval]] */
+    if (opt = optget((*ctx)->opts, "ping")) {
+        if (attempt_str = cli_strdup(opt->strarg)) {
+            if (NULL == attempt_str) {
+                logg("!could not allocate memory for string\n");
+                ret = -1;
+                goto done;
+            }
+            interval_str = strchr(attempt_str, ':');
+            if (interval_str[0] != '\0') {
+                interval_str[0] = '\0';
+                interval_str++;
+                interval = cli_strntoul(interval_str, strlen(interval_str), &errchk, 10);
+                if (interval_str + strlen(interval_str) > errchk) {
+                    logg("^interval_str would go past end of buffer\n");
+                    ret = -1;
+                    goto done;
+                }
+            } else {
+                interval = ONAS_DEFAULT_PING_INTERVAL;
+            }
+            attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
+            if (attempt_str + strlen(attempt_str) > errchk) {
+                logg("^attmept_str would go past end of buffer\n");
+                ret = -1;
+                goto done;
+            }
+        } else {
+            attempts = ONAS_DEFAULT_PING_ATTEMPTS;
+            interval = ONAS_DEFAULT_PING_INTERVAL;
+        }
+    }
+
+    do {
+        curlcode = curl_easy_perform(curl);
+        if (CURLE_OK != curlcode) {
+            logg("*ClamClient: could not connect to clam daemon, %s\n", curl_easy_strerror(curlcode));
+        } else if (CURLE_OK == onas_sendln(curl, "zPING", 5, timeout)) {
+
+            if (!optget((*ctx)->opts, "wait")->enabled) {
+                    logg("PONG\n");
+            }
+
+            ret = 0;
+            goto done;
+        }
+
+        if (i + 1 < attempts) {
+            logg("*PINGing again in %lu seconds\n", interval);
+            sleep(interval);
+        }
+        i++;
+    } while (i < attempts);
+
+    /* timed out */
+    ret = 1;
+done:
+    if (curl) {
+        curl_easy_cleanup(curl);
+    }
+
+    if (attempt_str) {
+        free(attempt_str);
+    }
+
+    attempt_str  = NULL;
+    interval_str = NULL;
+    errchk       = NULL;
+
+    return ret;
+}
+
 /**
  * @brief initialises a curl connection for the onaccess client; curl must be initialised globally before use
  *

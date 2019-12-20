@@ -27,6 +27,9 @@
 #include "shared/optparser.h"
 #include "../clamonacc.h"
 
+#define ONAS_DEFAULT_PING_INTERVAL 1
+#define ONAS_DEFAULT_PING_ATTEMPTS 30
+
 enum {
     CONT,
     MULTI,
@@ -42,5 +45,6 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 int onas_get_clamd_version(struct onas_context **ctx);
 cl_error_t onas_setup_client(struct onas_context **ctx);
 int onas_check_remote(struct onas_context **ctx, cl_error_t *err);
+int16_t onas_ping_clamd(struct onas_context **ctx);
 
 #endif

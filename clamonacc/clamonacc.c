@@ -312,12 +312,6 @@ static int startup_checks(struct onas_context *ctx)
         goto done;
     }
 
-    if (optget(ctx->opts, "version")->enabled) {
-        onas_print_server_version(&ctx);
-        ret = 2;
-        goto done;
-    }
-
 #if defined(FANOTIFY)
     ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
     if (ctx->fan_fd < 0) {
@@ -333,6 +327,28 @@ static int startup_checks(struct onas_context *ctx)
     if (curl_global_init(CURL_GLOBAL_NOTHING)) {
         ret = 2;
         goto done;
+    }
+
+    if (optget(ctx->opts, "version")->enabled) {
+        onas_print_server_version(&ctx);
+        ret = 2;
+        goto done;
+    }
+
+    if (optget(ctx->opts, "ping")->enabled && !optget(ctx->opts, "wait")->enabled) {
+        onas_ping_clamd(&ctx);
+        ret = 2;
+        goto done;
+    }
+
+    if (optget(ctx->opts, "wait")->enabled) {
+        ret = onas_ping_clamd(&ctx);
+        if (ret == 0) {
+            ret = 0;
+        } else {
+            ret = 2;
+            goto done;
+        }
     }
 
     if (0 == onas_check_remote(&ctx, &err)) {
@@ -371,7 +387,9 @@ void help(void)
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
-    mprintf("    --exclude-list=FILE   -e FILE     Exclude directories from FILE\n");
+    mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
+    mprintf("    --ping                 -p A[:I]    Ping clamd A times at optional interval I.\n");
+    mprintf("    --wait                 -w          Wait for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
