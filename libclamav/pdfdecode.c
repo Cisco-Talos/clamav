@@ -68,6 +68,8 @@
 
 #define PDFTOKEN_FLAG_XREF 0x1
 
+#define INFLATE_CHUNK_SIZE (1024 * 256)
+
 struct pdf_token {
     uint32_t flags;   /* tracking flags */
     uint32_t success; /* successfully decoded filters */
@@ -564,11 +566,12 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
     UNUSEDPARAM(obj);
 
-    if (!(decoded = cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
+    capacity = INFLATE_CHUNK_SIZE;
+
+    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
-    capacity = BUFSIZ;
 
     while (offset < length) {
         uint8_t srclen = content[offset++];
@@ -581,16 +584,17 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 break;
             }
             if (declen + srclen + 1 > capacity) {
-                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
+
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS)
                     break;
 
-                if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+                if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
                     break;
                 }
                 decoded = temp;
-                capacity += BUFSIZ;
+                capacity += INFLATE_CHUNK_SIZE;
             }
 
             memcpy(decoded + declen, content + offset, srclen + 1);
@@ -605,16 +609,18 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 break;
             }
             if (declen + (257 - srclen) + 1 > capacity) {
-                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
+                if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS) {
+                    cli_dbgmsg("cli_pdf: required buffer size to inflate compressed filter exceeds maximum: %u\n", capacity + INFLATE_CHUNK_SIZE);
                     break;
+                }
 
-                if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+                if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
                     break;
                 }
                 decoded = temp;
-                capacity += BUFSIZ;
+                capacity += INFLATE_CHUNK_SIZE;
             }
 
             memset(decoded + declen, content[offset], 257 - srclen);
@@ -626,6 +632,15 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                        (unsigned long)offset, (long unsigned)(token->length - offset));
             break;
         }
+    }
+
+    if (rc == CL_SUCCESS) {
+        /* Shrink output buffer to final the decoded data length to minimize RAM usage */
+        if (!(temp = cli_realloc(decoded, declen))) {
+            cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+            rc = CL_EMEM;
+        }
+        decoded = temp;
     }
 
     if (rc == CL_SUCCESS) {
@@ -684,17 +699,18 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
             return CL_SUCCESS;
     }
 
-    if (!(decoded = (uint8_t *)cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
+    capacity = INFLATE_CHUNK_SIZE;
+
+    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
-    capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
     stream.next_in   = (Bytef *)content;
     stream.avail_in  = length;
     stream.next_out  = (Bytef *)decoded;
-    stream.avail_out = BUFSIZ;
+    stream.avail_out = INFLATE_CHUNK_SIZE;
 
     zstat = inflateInit(&stream);
     if (zstat != Z_OK) {
@@ -706,7 +722,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     /* initial inflate */
     zstat = inflate(&stream, Z_NO_FLUSH);
     /* check if nothing written whatsoever */
-    if ((zstat != Z_OK) && (stream.avail_out == BUFSIZ)) {
+    if ((zstat != Z_OK) && (stream.avail_out == INFLATE_CHUNK_SIZE)) {
         /* skip till EOL, and try inflating from there, sometimes
          * PDFs contain extra whitespace */
         uint8_t *q = decode_nextlinestart(content, length);
@@ -736,19 +752,21 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     while (zstat == Z_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
-            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
+            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS) {
+                cli_dbgmsg("cli_pdf: required buffer size to inflate compressed filter exceeds maximum: %u\n", capacity + INFLATE_CHUNK_SIZE);
                 break;
+            }
 
-            if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+            if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                 cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                 rc = CL_EMEM;
                 break;
             }
             decoded          = temp;
             stream.next_out  = decoded + capacity;
-            stream.avail_out = BUFSIZ;
-            declen += BUFSIZ;
-            capacity += BUFSIZ;
+            stream.avail_out = INFLATE_CHUNK_SIZE;
+            declen += INFLATE_CHUNK_SIZE;
+            capacity += INFLATE_CHUNK_SIZE;
         }
 
         /* continue inflation */
@@ -756,7 +774,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     }
 
     /* add stream end fragment to decoded length */
-    declen += (BUFSIZ - stream.avail_out);
+    declen += (INFLATE_CHUNK_SIZE - stream.avail_out);
 
     /* error handling */
     switch (zstat) {
@@ -793,6 +811,15 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
     }
 
     (void)inflateEnd(&stream);
+
+    if (rc == CL_SUCCESS) {
+        /* Shrink output buffer to final the decoded data length to minimize RAM usage */
+        if (!(temp = cli_realloc(decoded, declen))) {
+            cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+            rc = CL_EMEM;
+        }
+        decoded = temp;
+    }
 
     if (rc == CL_SUCCESS) {
         free(token->content);
@@ -950,17 +977,18 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
             return CL_SUCCESS;
     }
 
-    if (!(decoded = (uint8_t *)cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
+    capacity = INFLATE_CHUNK_SIZE;
+
+    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
-    capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
     stream.next_in   = content;
     stream.avail_in  = length;
     stream.next_out  = decoded;
-    stream.avail_out = BUFSIZ;
+    stream.avail_out = INFLATE_CHUNK_SIZE;
     if (echg)
         stream.flags |= LZW_FLAG_EARLYCHG;
 
@@ -974,7 +1002,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     /* initial inflate */
     lzwstat = lzwInflate(&stream);
     /* check if nothing written whatsoever */
-    if ((lzwstat != Z_OK) && (stream.avail_out == BUFSIZ)) {
+    if ((lzwstat != Z_OK) && (stream.avail_out == INFLATE_CHUNK_SIZE)) {
         /* skip till EOL, and try inflating from there, sometimes
          * PDFs contain extra whitespace */
         uint8_t *q = decode_nextlinestart(content, length);
@@ -1004,19 +1032,21 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     while (lzwstat == Z_OK && stream.avail_in) {
         /* extend output capacity if needed,*/
         if (stream.avail_out == 0) {
-            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + BUFSIZ, 0, 0)) != CL_SUCCESS)
+            if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS) {
+                cli_dbgmsg("cli_pdf: required buffer size to inflate compressed filter exceeds maximum: %u\n", capacity + INFLATE_CHUNK_SIZE);
                 break;
+            }
 
-            if (!(temp = cli_realloc(decoded, capacity + BUFSIZ))) {
+            if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                 cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                 rc = CL_EMEM;
                 break;
             }
             decoded          = temp;
             stream.next_out  = decoded + capacity;
-            stream.avail_out = BUFSIZ;
-            declen += BUFSIZ;
-            capacity += BUFSIZ;
+            stream.avail_out = INFLATE_CHUNK_SIZE;
+            declen += INFLATE_CHUNK_SIZE;
+            capacity += INFLATE_CHUNK_SIZE;
         }
 
         /* continue inflation */
@@ -1024,7 +1054,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     }
 
     /* add stream end fragment to decoded length */
-    declen += (BUFSIZ - stream.avail_out);
+    declen += (INFLATE_CHUNK_SIZE - stream.avail_out);
 
     /* error handling */
     switch (lzwstat) {
@@ -1062,6 +1092,15 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
     }
 
     (void)lzwInflateEnd(&stream);
+
+    if (rc == CL_SUCCESS) {
+        /* Shrink output buffer to final the decoded data length to minimize RAM usage */
+        if (!(temp = cli_realloc(decoded, declen))) {
+            cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
+            rc = CL_EMEM;
+        }
+        decoded = temp;
+    }
 
     if (rc == CL_SUCCESS) {
         free(token->content);
