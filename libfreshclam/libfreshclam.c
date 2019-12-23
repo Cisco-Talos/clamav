@@ -235,17 +235,6 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         goto done;
     }
 
-    /* Validate that the temp directory exists, and store it. */
-    if (LSTAT(fcConfig->tempDirectory, &statbuf) == -1) {
-        logg("!Temp directory does not exist: %s\n", fcConfig->tempDirectory);
-        status = FC_EDIRECTORY;
-        goto done;
-    }
-    if (!S_ISDIR(statbuf.st_mode)) {
-        logg("!Temp directory is not a directory: %s\n", fcConfig->tempDirectory);
-        status = FC_EDIRECTORY;
-        goto done;
-    }
     g_tempDirectory = cli_strdup(fcConfig->tempDirectory);
 
     g_maxAttempts    = fcConfig->maxAttempts;

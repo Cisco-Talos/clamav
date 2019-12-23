@@ -750,10 +750,7 @@ static fc_error_t initialize(struct optstruct *opts)
     cl_error_t cl_init_retcode;
     fc_config fcConfig;
     char *tempDirectory = NULL;
-    size_t tempDirectoryLen;
     const struct optstruct *logFileOpt = NULL;
-
-    STATBUF statbuf;
 
     memset(&fcConfig, 0, sizeof(fc_config));
 
@@ -862,24 +859,8 @@ static fc_error_t initialize(struct optstruct *opts)
     fcConfig.databaseDirectory = optget(opts, "DatabaseDirectory")->strarg;
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
-    tempDirectoryLen = strlen(fcConfig.databaseDirectory) + strlen(PATHSEP) + strlen("tmp") + 1; /* mdir/fname\0 */
-    tempDirectory    = (char *)cli_calloc(tempDirectoryLen, sizeof(char));
-    if (!tempDirectory) {
-        mprintf("!initialize: out of memory\n");
-        status = FC_EMEM;
-        goto done;
-    }
-    snprintf(tempDirectory, tempDirectoryLen, "%s" PATHSEP "tmp", fcConfig.databaseDirectory);
+    tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
     fcConfig.tempDirectory = tempDirectory;
-
-    if (LSTAT(tempDirectory, &statbuf) == -1) {
-        if (0 != mkdir(tempDirectory, 0755)) {
-            logg("!Can't create temporary directory %s\n", tempDirectory);
-            logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
-            status = FC_EDBDIRACCESS;
-            goto done;
-        }
-    }
 
     /* Store the path of the temp directory so we can delete it later. */
     strncpy(g_freshclamTempDirectory, fcConfig.tempDirectory, sizeof(g_freshclamTempDirectory));
@@ -1411,6 +1392,8 @@ fc_error_t perform_database_update(
     uint32_t nUpdated      = 0;
     uint32_t nTotalUpdated = 0;
 
+    STATBUF statbuf;
+
     if (NULL == serverList) {
         mprintf("!perform_database_update: Invalid arguments.\n");
         goto done;
@@ -1436,6 +1419,18 @@ fc_error_t perform_database_update(
      * Query DNS (if enabled) to get Update Info.
      */
     (void)fc_dns_query_update_info(dnsUpdateInfoServer, &dnsUpdateInfo, &newVersion);
+
+    /*
+     * Create a temp directory to use for the update process.
+     */
+    if (LSTAT(g_freshclamTempDirectory, &statbuf) == -1) {
+        if (0 != mkdir(g_freshclamTempDirectory, 0755)) {
+            logg("!Can't create temporary directory %s\n", g_freshclamTempDirectory);
+            logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+    }
 
     if ((NULL != databaseList) && (0 < nDatabases)) {
         /*
@@ -1497,6 +1492,12 @@ fc_error_t perform_database_update(
 
 done:
 
+    if (LSTAT(g_freshclamTempDirectory, &statbuf) != -1) {
+        /* Remove temp directory */
+        if (*g_freshclamTempDirectory) {
+            cli_rmdirs(g_freshclamTempDirectory);
+        }
+    }
     if (NULL != dnsUpdateInfo) {
         free(dnsUpdateInfo);
     }
