@@ -1080,15 +1080,25 @@ static fc_error_t getcvd(
     }
 
     if (cvd->version < remoteVersion) {
-        logg("^Mirror %s is not synchronized.\n", server);
-        if (cvd->version < remoteVersion - 1) {
-            logg("!Downloaded database version is more than 1 version older than the version advertised in DNS TXT record.\n");
+        if (cvd->version == remoteVersion - 1) {
+            logg("*The %s database downloaded from %s is one version older than advertised in the DNS TXT record.\n",
+                cvdfile,
+                server);
+
+            /*
+             * Tolerate an off-by-one version mismatch.
+             * Chances are the new version was just published and the CDN is still updating.
+             */
+            status = FC_SUCCESS;
+            goto done;
+        }
+        else {
+            logg("!The %s database downloaded from %s is more than one version older than the version advertised in the DNS TXT record.\n",
+                cvdfile,
+                server);
             status = FC_EMIRRORNOTSYNC;
             goto done;
         }
-
-        status = FC_UPTODATE;
-        goto done;
     }
 
     status = FC_SUCCESS;
@@ -1999,7 +2009,7 @@ fc_error_t updatedb(
         }
     }
 
-/*
+    /*
      * Replace original database with new database.
      */
 #ifdef _WIN32
