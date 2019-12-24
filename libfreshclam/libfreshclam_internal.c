@@ -166,7 +166,7 @@ static void printBytes(curl_off_t bytes)
         double megabytes = bytes / (double)(1024 * 1024);
         fprintf(stdout, "%.02fMiB", megabytes);
     } else if (bytes / 1024 > 1) {
-        double kilobytes = bytes / (double)(1024 * 1024);
+        double kilobytes = bytes / (double)(1024);
         fprintf(stdout, "%.02fKiB", kilobytes);
     } else {
         fprintf(stdout, "%" CURL_FORMAT_CURL_OFF_T "B", bytes);
@@ -187,7 +187,7 @@ static int xferinfo(void *prog,
     TIMETYPE remtime               = 0;
 
     uint32_t i                = 0;
-    uint32_t totalNumDots     = 40;
+    uint32_t totalNumDots     = 30;
     uint32_t numDots          = 0;
     double fractiondownloaded = 0.0;
 
@@ -203,11 +203,14 @@ static int xferinfo(void *prog,
     xferProg->lastRunTime = curtime;
     remtime               = (curtime * 1 / fractiondownloaded) - curtime;
 
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7l");
+#endif
 #ifdef TIME_IN_US
     if (fractiondownloaded <= 0.0) {
         fprintf(stdout, "Time: %.1fs ", curtime / 1000000.0);
     } else {
-        fprintf(stdout, "Time: %.1fs, ETA; %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
+        fprintf(stdout, "Time: %.1fs, ETA: %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
     }
 #else
     if (fractiondownloaded <= 0.0) {
@@ -244,11 +247,14 @@ static int xferinfo(void *prog,
     }
 
     if (NowDownloaded < TotalToDownload) {
-        fprintf(stdout, "  \r");
+        fprintf(stdout, "     \r");
     } else {
-        fprintf(stdout, "  \n");
+        fprintf(stdout, "     \n");
         xferProg->bComplete = 1;
     }
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7h");
+#endif
     fflush(stdout);
 
     return 0;

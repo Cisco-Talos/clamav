@@ -257,6 +257,7 @@ CLAMAV_PRIVATE {
     cl_base64_decode;
     cl_base64_encode;
     cli_sanitize_filepath;
+    cli_gentemp_with_prefix;
 
     __cli_strcasestr;
     __cli_strndup;
