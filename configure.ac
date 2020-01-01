@@ -23,8 +23,6 @@ AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [0.102.2], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
-dnl put configure auxiliary into config
-AC_CONFIG_AUX_DIR([config])
 
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
@@ -44,13 +42,12 @@ dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
 AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
-
+AC_USE_SYSTEM_EXTENSIONS
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
-AC_USE_SYSTEM_EXTENSIONS
 
 m4_include([m4/reorganization/version.m4])
 

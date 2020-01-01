@@ -19,12 +19,13 @@ AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([1.9 -Wall -Wportability foreign no-define color-tests tar-pax])
+AM_INIT_AUTOMAKE([1.11 subdir-objects -Wall -Wportability foreign no-define color-tests tar-pax])
 AM_SILENT_RULES([yes])
 
 cxxset=${CXXFLAGS+set}
 AC_PROG_CXX
 AC_C_BIGENDIAN
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 if test "$cxxset" != set; then
 # don't use the default -O2 -g because -g bloats the C++ binaries too much
