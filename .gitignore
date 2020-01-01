@@ -1,23 +1,247 @@
-*~
-autom4te.cache/*
-clamav-config
-clamav-config.h
-config.log
-config.status
+# CMake
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# http://www.gnu.org/software/automake
+Makefile.in
+/config/ar-lib
+/config/test-driver
+/config/ylwrap
+/libclamav/c++/config/ar-lib
+/mdate-sh
+/py-compile
+
+# http://www.gnu.org/software/autoconf
+autom4te.cache
+/autoscan.log
+/autoscan-*.log
+/configure
+/libclamav/c++/configure
+/configure.scan
+/aclocal.m4
+/config/compile
+/config/config.guess
+/config/config.log
+/config/config.status
+/config/config.sub
+/config/depcomp
+/config/install-sh
+/config/missing
+/libclamav/c++/aclocal.m4
+/libclamav/c++/config/compile
+/libclamav/c++/config/config.guess
+/libclamav/c++/config/config.log
+/libclamav/c++/config/config.status
+/libclamav/c++/config/config.sub
+/libclamav/c++/config/depcomp
+/libclamav/c++/config/install-sh
+/libclamav/c++/config/missing
+/stamp-h1
 .deps
+.libs
+
+# https://www.gnu.org/software/libtool/
+/config/ltmain.sh
+/libclamav/c++/config/ltmain.sh
+/libltdl
+
+# http://www.gnu.org/software/m4/
+m4/ltdl.m4
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+libclamav/c++/m4/libtool.m4
+libclamav/c++/m4/ltoptions.m4
+libclamav/c++/m4/ltsugar.m4
+libclamav/c++/m4/ltversion.m4
+libclamav/c++/m4/lt~obsolete.m4
+
+# C Prerequisites
+*.d
+
+# C Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# C Linker output
+*.ilk
+*.map
+*.exp
+
+# C Precompiled Headers
+*.gch
+*.pch
+
+# C Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# C Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# C Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# C Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# C Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Editor save files
+*~
+
+# Vim Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Vim Session
+Session.vim
+
+# Vim Temporary
+.netrwhist
+*~
+# Vim Auto-generated tag files
+tags
+# Vim Persistent undo
+[._]*.un~
+
+# VScode config
+.vscode
+
+# Build directories
+install/*
+build/*
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+# Visual Studio 2017 auto generated files
+Generated\ Files/
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace Files
+*.e2e
+
+# gcov profiling files
 *.gcda
 *.gcno
+
+# ClamAV build system generated files
+ClamAV.VC.db
 libclamav.pc
-.libs
-libtool
-*.l[oa]
-*.[oa]
+clamav-config.h
+!win32/clamav-config.h
 platform.h
-stamp-h1
-*.swp
-TAGS
+!win32/platform.h
 /target.h
-libclamav/c++/autom4te.cache/*
 libclamav/c++/FileCheck
 libclamav/c++/count
 libclamav/c++/clamavcxx-config.h
@@ -51,15 +275,3 @@ libclamav/c++/llvmunittest_VMCore
 libclamav/c++/not
 libclamav/c++/tblgen
 libclamav/c++/llvm/tools/llvmc/plugins/Base/Base.td
-*.lib
-*.pdb
-*.exe
-*.iobj
-*.exp
-*.ipdb
-*.dll
-*.obj
-*.opendb
-.vscode
-install/*
-build/*
