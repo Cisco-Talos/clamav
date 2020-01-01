@@ -690,7 +690,7 @@ libclamav_la_SOURCES += bignum.h\
         tomsfastmath/sqr/fp_sqr_comba_small_set.c\
 	tomsfastmath/sqr/fp_sqrmod.c
 
-.PHONY: version.h.tmp
+.PHONY2: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
 	$(AM_V_GEN) if test -f version.h.static; then\
