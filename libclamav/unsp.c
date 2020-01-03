@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -42,13 +42,13 @@
 ** - Fetch all the nspacked samples from the zoo and run extensive testing
 ** - Add bound checks
 ** - Test against the zoo again
-** - Perform regression testing against the full zoo 
+** - Perform regression testing against the full zoo
 ** - check nested
 ** - look at the 64bit version (one of these days)
 **
 */
 
-/* 
+/*
 
    FIXME: clean this rubbish
 

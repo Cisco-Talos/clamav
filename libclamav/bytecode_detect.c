@@ -1,7 +1,7 @@
 /*
  *  Detect environment for bytecode.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -175,7 +175,7 @@ static void detect_os_features(uint8_t *os_features)
 }
 #endif
 
-/* OS features : 
+/* OS features :
  * Linux: PaX << 2| SELinux << 1| mmap-RWX
  * Other:                         mmap-RWX */
 

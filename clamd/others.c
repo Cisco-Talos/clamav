@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -278,7 +278,7 @@ read_fd_data(struct fd_buf *buf)
         return -1;
 
         /* Read the pending packet, it may contain more than one command, but
-     * that is to the cmdparser to handle. 
+     * that is to the cmdparser to handle.
      * It will handle 1st command, and then move leftover to beginning of buffer
      */
 #ifdef HAVE_FD_PASSING
@@ -509,7 +509,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
      *  - can poll any number of FDs
      *  - can notify of both data available / socket disconnected events
      *  - when it says POLLIN it is guaranteed that a following recv() won't
-     *  block (select may say that data is available to read, but a following 
+     *  block (select may say that data is available to read, but a following
      *  recv() may still block according to the manpage
      */
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB
@@ -135,7 +135,7 @@ static int isremote(const struct optstruct *opts)
             ret = bind(s, p->ai_addr, p->ai_addrlen);
             if (ret) {
                 if (errno == EADDRINUSE) {
-                    /* 
+                    /*
                      * If we can't bind, then either we're attempting to listen on an IP that isn't
                      * ours or that clamd is already listening on.
                      */
@@ -161,7 +161,7 @@ static int isremote(const struct optstruct *opts)
 }
 
 /* Turns a relative path into an absolute one
- * Returns a pointer to the path (which must be 
+ * Returns a pointer to the path (which must be
  * freed by the caller) or NULL on error */
 static char *makeabs(const char *basepath)
 {

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -21,7 +21,7 @@
 
 /*
 ** spin.c
-** 
+**
 ** 19/07/2k5 - Finally started coding something
 ** 21/07/2k5 - Works, started clearing the mess
 ** 31/07/2k5 - Porting to libclamav

@@ -1,7 +1,7 @@
 /*
  *  Execute ClamAV bytecode.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -276,9 +276,9 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 /*
  *
  * p, p+1, p+2, p+3 <- gt
-    CHECK_EQ((p)&1, 0); 
-    CHECK_EQ((p)&3, 0); 
-    CHECK_EQ((p)&7, 0); 
+    CHECK_EQ((p)&1, 0);
+    CHECK_EQ((p)&3, 0);
+    CHECK_EQ((p)&7, 0);
 */
 #define WRITE8(p, x)             \
     CHECK_GT(func->numBytes, p); \

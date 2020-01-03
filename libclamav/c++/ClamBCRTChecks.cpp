@@ -1,7 +1,7 @@
 /*
  *  Compile LLVM bytecode to ClamAV bytecode.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin, Kevin Lin
@@ -686,7 +686,7 @@ namespace llvm {
               Constant *func_rterr = BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error",
                                                                                        rterrTy);
               AbrtBB = BasicBlock::Create(BB->getContext(), "rterr.trig", BB->getParent());
-              
+
               PN = PHINode::Create(Type::getInt32Ty(BB->getContext()),HINT(1) "",
                                    AbrtBB);
               if (MDDbgKind) {

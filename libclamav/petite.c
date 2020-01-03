@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -21,7 +21,7 @@
 
 /*
 ** petitep.c
-** 
+**
 ** 09/07/2k4 - Dumped and reversed
 ** 10/07/2k4 - Very 1st approach
 ** 10/07/2k4 - PE stuff and main loop

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Author: aCaB
@@ -66,7 +66,7 @@ void recvlninit(struct RCVLN *s, int sockd)
 }
 
 /* Receives a full (terminated with \0) line from a socket
- * Sets rbol to the begin of the received line, and optionally 
+ * Sets rbol to the begin of the received line, and optionally
  * reol to the end of line.
  * Should be called repeatedly until all input is consumed
  * Returns:

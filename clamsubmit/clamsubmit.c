@@ -45,7 +45,7 @@ void usage(char *name)
     printf("\n");
     printf("                       Clam AntiVirus: Malware and False Positive Reporting Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    %s -hHinpVvd?\n", name);
     printf("\n");

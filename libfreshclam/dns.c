@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2004-2007 Tomasz Kojm <tkojm@clamav.net>2004 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -65,7 +65,7 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
         /*  The DNS server in the SpeedTouch Alcatel 510 modem can't
          *  handle a TXT-query, but it can resolve an ANY-query to a
          *  TXT-record, so we try an ANY-query now.  The thing we try
-         *  to resolve normally only has a TXT-record anyway.  
+         *  to resolve normally only has a TXT-record anyway.
          */
         memset(answer, 0, PACKETSZ);
         if (qtype == T_TXT)

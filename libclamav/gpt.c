@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
  *
@@ -180,7 +180,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         } else if (gpt_validate_header(ctx, shdr, sectorsize)) {
             cli_dbgmsg("cli_scangpt: Secondary GPT header is invalid\n");
         }
-        /* check that the two partition table crc32 checksum match, 
+        /* check that the two partition table crc32 checksum match,
          * may want a different hashing function */
         else if (phdr.tableCRC32 != shdr.tableCRC32) {
             cli_dbgmsg("cli_scangpt: Primary and secondary GPT header table CRC32 differ\n");

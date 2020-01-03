@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2013 Sourcefire, Inc.
  *
  *  Authors: David Raynor <draynor@sourcefire.com>
@@ -250,7 +250,7 @@ typedef struct hfsPlusCatalogThread hfsPlusCatalogThread;
 #define HFSPLUS_RECTYPE_FILE 0x0002
 #define HFSPLUS_RECTYPE_FOLDERTHREAD 0x0003
 #define HFSPLUS_RECTYPE_FILETHREAD 0x0004
-/* HFS types are similar 
+/* HFS types are similar
 #define HFS_RECTYPE_FOLDER       0x0100
 #define HFS_RECTYPE_FILE         0x0200
 #define HFS_RECTYPE_FOLDERTHREAD 0x0300

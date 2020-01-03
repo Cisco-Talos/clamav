@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
  *
@@ -79,7 +79,7 @@ struct apm_driver_desc_map {
 };
 
 /* 512(136)-byte partition info, big endian;
- * both the partition table and the individual partitions use this 
+ * both the partition table and the individual partitions use this
  * struct to describe their details
  */
 struct apm_partition_info {
