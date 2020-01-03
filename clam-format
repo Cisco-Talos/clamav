@@ -31,7 +31,7 @@ clang-format -i -verbose libclamav/jsparse/*.h
 clang-format -i -verbose libclamav/lzw/*.c
 clang-format -i -verbose libclamav/lzw/*.h
 clang-format -i -verbose libclamav/nsis/nulsft.*
-clang-format -i -verbose libclamunrar_iface/*.c
+clang-format -i -verbose libclamunrar_iface/*.cpp
 clang-format -i -verbose libclamunrar_iface/*.h
 clang-format -i -verbose libfreshclam/*.c
 clang-format -i -verbose libfreshclam/*.h
@@ -50,8 +50,6 @@ clang-format -i -verbose win32/compat/*.h
 clang-format -i -verbose win32/*.h
 
 # Undo changes to specific files (whitelist)
-git checkout clamd/fts.c
-git checkout clamd/priv_fts.h
 git checkout libclamav/iana_cctld.h
 git checkout libclamav/bytecode_api_decl.c
 git checkout libclamav/bytecode_api_impl.h
@@ -77,3 +75,5 @@ git checkout libclamav/inflate64_priv.h
 git checkout shared/queue.h
 git checkout clamonacc/c-thread-pool/thpool.c
 git checkout clamonacc/c-thread-pool/thpool.h
+git checkout clamonacc/misc/fts.c
+git checkout clamonacc/misc/priv_fts.h

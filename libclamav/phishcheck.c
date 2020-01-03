@@ -1493,7 +1493,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
      */
     /* Provide copies of the oirinal URL's, because domainlist_match() may modify the buffer,
        and we don't want that to happen in this case. */
-    realData    = cli_strdup(urls->realLink.data);
+    realData = cli_strdup(urls->realLink.data);
     if (!realData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary real link string.\n");
         return CL_PHISH_CLEAN;

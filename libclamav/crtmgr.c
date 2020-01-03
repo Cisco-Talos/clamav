@@ -124,7 +124,6 @@ cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
                 mp_cmp(&x509->e, &i->e)) {
                 continue;
             }
-
         }
 
         if (!i->ignore_serial) {

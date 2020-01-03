@@ -588,8 +588,8 @@ fc_error_t fc_update_database(
     fc_error_t status = FC_EARG;
 
     char *dbFilename = NULL;
-    int signo    = 0;
-    long attempt = 1;
+    int signo        = 0;
+    long attempt     = 1;
     uint32_t i;
 
     if ((NULL == database) || (NULL == serverList) || (NULL == bUpdated)) {
