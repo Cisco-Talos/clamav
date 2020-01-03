@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+#  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #  Copyright (C) 2007-2013 Sourcefire, Inc.
 #  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
 #
@@ -510,7 +510,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 xmlconfig = @xmlconfig@
-EXTRA_DIST = html $(top_srcdir)/docs/man/*.in  
+EXTRA_DIST = html $(top_srcdir)/docs/man/*.in
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 \
 	man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 \
 	man/clamav-milter.conf.5 man/freshclam.conf.5 man/clamconf.1 \
