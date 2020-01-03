@@ -1,10 +1,10 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
- * 
- *  Summary: Normalise HTML text. Decode MS Script Encoder protection. 
+ *
+ *  Summary: Normalise HTML text. Decode MS Script Encoder protection.
  *           The ScrEnc decoder was initially based upon an analysis by Andreas Marx.
  *
  *  This program is free software; you can redistribute it and/or modify

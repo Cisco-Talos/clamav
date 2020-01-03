@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -521,7 +521,7 @@ char *get_ip(const char *ip)
      *     2) IPv4:Port
      *     3) IPv6
      *     4) [IPv6]:Port
-     * 
+     *
      * Use of IPv6:Port is incorrect. An IPv6 address must be enclosed in brackets.
      */
 
@@ -1230,7 +1230,7 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n");
     printf("\n");

@@ -1,19 +1,19 @@
 /*
  * YARA rule parser for ClamAV
- * 
- * Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- * 
+ *
+ * Copyright (C) 2014-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *
  * Authors: Steven Morgan
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 2 as published by the
  * Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with
  * this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
@@ -660,7 +660,7 @@ identifier
             object != (YR_OBJECT*) -2 &&    // not a rule identifier
             object->type == OBJECT_TYPE_STRUCTURE)
         {
-#if REAL_YARA 
+#if REAL_YARA
          field = yr_object_lookup_field(object, $3);
 #endif
           if (field != NULL)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -64,6 +64,6 @@ extern struct CPOOL *cp;
  * mode: c
  * c-basic-offset: 4
  * tab-width: 8
- * End: 
- * vim: set cindent smartindent autoindent softtabstop=4 shiftwidth=4 tabstop=8: 
+ * End:
+ * vim: set cindent smartindent autoindent softtabstop=4 shiftwidth=4 tabstop=8:
  */

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -21,7 +21,7 @@
 
 /*
 ** defsg.c
-** 
+**
 ** 02/08/2k4 - Dumped and reversed
 ** 02/08/2k4 - Done coding
 ** 03/08/2k4 - Cleaning and securing

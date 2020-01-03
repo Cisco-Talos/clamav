@@ -1,7 +1,7 @@
 /*
  *  JIT compile ClamAV bytecode.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1057,7 +1057,7 @@ private:
     }
 
     // Insert code that calls \arg CF->FHandler if \arg FailCond is true.
-    void InsertVerify(Value *FailCond, BasicBlock *&Fail, Function *FHandler, 
+    void InsertVerify(Value *FailCond, BasicBlock *&Fail, Function *FHandler,
 		      Function *F) {
 	if (!Fail) {
 	    Fail = BasicBlock::Create(Context, "fail", F);
@@ -1192,7 +1192,7 @@ public:
 	if (i < mdnodes.size()) {
 	    if (mdnodes[i])
 		return mdnodes[i];
-	} else 
+	} else
 	    mdnodes.resize(i+1);
 	assert(i < mdnodes.size());
 	const struct cli_bc_dbgnode *node = &bc->dbgnodes[i];

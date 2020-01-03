@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014-2019 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2020 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Shawn Webb
  *
@@ -24,17 +24,17 @@
 extern char hostid[37];
 
 /**
- * @brief 
- * 
- * @return int 
+ * @brief
+ *
+ * @return int
  */
 int is_valid_hostid(void);
 
 /**
  * @brief Get the hostid object
- * 
- * @param cbdata 
- * @return char* 
+ *
+ * @param cbdata
+ * @return char*
  */
 char *get_hostid(void *cbdata);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2011-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB
@@ -76,7 +76,7 @@ void cli_crt_clear(cli_crt *x509)
  * case it will get set to 0xca repeating).
  *
  * There are two ways we'd like to use this function:
- * 
+ *
  *  - To see whether x509 already exists in m (when adding new CRB sig certs
  *    and when adding certs that are embedded in Authenticode signatures) to
  *    prevent duplicate entries. In this case, we want to take x509's
@@ -85,14 +85,14 @@ void cli_crt_clear(cli_crt *x509)
  *    that two embedded certs with different hash types, issuers, serials, or
  *    exponents aren't treated as being the same. A non-NULL return when used
  *    this way means that the cert need not be added to the trust store.
- * 
+ *
  *  - To see whether a CRB sig matches against x509, deeming it worthy to be
  *    added to the trust store.  In this case, we don't want to compare
  *    hashtype and issuer, since the embedded sig will have the actual values
  *    and the CRB sig cert will have placeholder values. A non-NULL return
  *    value when used this way means that the cert doesn't match against an
  *    existing CRB rule and should not be added to the trust store.
- * 
+ *
  * Use crb_crts_only to distinguish between the two cases.  If True, it will
  * ignore all crts not added from CRB rules and ignore x509's issuer and
  * hashtype fields.

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, aCaB
@@ -71,7 +71,7 @@ extern struct sockaddr_un nixsock;
 
 static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN"};
 
-/* Connects to clamd 
+/* Connects to clamd
  * Returns a FD or -1 on error */
 int dconnect()
 {

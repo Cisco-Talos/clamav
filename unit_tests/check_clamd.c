@@ -1,7 +1,7 @@
 /*
  *  Unit tests for clamd.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -158,7 +158,7 @@ static void commands_teardown(void)
 enum idsession_support {
     IDS_OK, /* accepted */
     IDS_REJECT,
-    /* after sending this message, clamd will reply,  then accept 
+    /* after sending this message, clamd will reply,  then accept
      * no further commands, but still reply to all active commands */
     IDS_END /* the END command */
 };
@@ -527,7 +527,7 @@ START_TEST(test_fildes)
     tst_fildes(nsend, nsend_len, fd, nreply, nreply_len, closefd, singlemsg);
 
     if (!closefd) {
-        /* closefd: 
+        /* closefd:
 	 *  1 - close fd right after sending
 	 *  0 - close fd after receiving reply */
         close(fd);
