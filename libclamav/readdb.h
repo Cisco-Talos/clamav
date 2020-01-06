@@ -31,6 +31,8 @@
 #include "str.h"
 #include "cvd.h"
 
+#define MAX_LDB_SUBSIGS 64
+
 struct cli_matcher;
 
 /* NOTE: We don't include .info in CLI_DBEXT because they are only used for
