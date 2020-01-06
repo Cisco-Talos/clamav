@@ -88,8 +88,6 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "yara_lexer.h"
 #endif
 
-#define MAX_LDB_SUBSIGS 64
-
 char *cli_virname(const char *virname, unsigned int official)
 {
     char *newname, *pt;
