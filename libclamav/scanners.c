@@ -784,7 +784,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
             if ((status == CL_VIRUS) || (status == CL_BREAK)) {
                 break;
             }
-
             /* Check if we've already exceeded the scan limit */
             if (cli_checklimits("EGG", ctx, 0, 0, 0))
                 break;
@@ -1015,6 +1014,7 @@ static int cli_scanarj(cli_ctx *ctx, off_t sfx_offset)
     }
 
     do {
+
         metadata.filename = NULL;
         ret               = cli_unarj_prepare_file(dir, &metadata);
         if (ret != CL_SUCCESS) {
@@ -3990,6 +3990,9 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
             if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
                 ret = cli_parsepng(ctx);
+		
+            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
+                ret = cli_parsegif(ctx);
 
             if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
                 ret = cli_parsetiff(ctx);
@@ -4002,7 +4005,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_PNG:
-            if (SCAN_HEURISTICS)
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
                 ret = cli_parsepng(ctx);
             break;
 

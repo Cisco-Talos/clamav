@@ -453,9 +453,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     out_area.offset = 0;
 
                     /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode
-			     * (multibyte characters will not be exactly handled, but that is not a problem).
-			     * However when detecting whether a file is HTML or not, we need exact conversion.
-			     * (just eliminating zeros and matching would introduce false positives */
+		     * (multibyte characters will not be exactly handled, but that is not a problem).
+		     * However when detecting whether a file is HTML or not, we need exact conversion.
+		     * (just eliminating zeros and matching would introduce false positives */
                     if (encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
                         if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
                             return ret;
