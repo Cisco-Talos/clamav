@@ -3803,15 +3803,12 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 ret = cli_parsepng(ctx);
 
             if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsegif(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
                 ret = cli_parsetiff(ctx);
 
             break;
 
         case CL_TYPE_GIF:
-            if (SCAN_HEURISTICS)
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_GIF))
                 ret = cli_parsegif(ctx);
             break;
 
