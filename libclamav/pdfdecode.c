@@ -296,10 +296,13 @@ static size_t pdf_decodestream_internal(
 
             case OBJ_FILTER_JPX:
                 if (!filter) filter = "JPXDECODE";
+                /*fallthrough*/
             case OBJ_FILTER_DCT:
                 if (!filter) filter = "DCTDECODE";
+                /*fallthrough*/
             case OBJ_FILTER_FAX:
                 if (!filter) filter = "FAXDECODE";
+                /*fallthrough*/
             case OBJ_FILTER_JBIG2:
                 if (!filter) filter = "JBIG2DECODE";
 
