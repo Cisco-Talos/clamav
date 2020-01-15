@@ -42,15 +42,15 @@
 START_TEST(test_unescape_simple)
 {
     char *str = cli_unescape("");
-    fail_unless(str && strlen(str) == 0, "cli_unescape empty string");
+    ck_assert_msg(str && strlen(str) == 0, "cli_unescape empty string");
     free(str);
 
     str = cli_unescape("1");
-    fail_unless(str && !strcmp(str, "1"), "cli_unescape one char");
+    ck_assert_msg(str && !strcmp(str, "1"), "cli_unescape one char");
     free(str);
 
     str = cli_unescape("tesT");
-    fail_unless(str && !strcmp(str, "tesT"), "cli_unescape simple string");
+    ck_assert_msg(str && !strcmp(str, "tesT"), "cli_unescape simple string");
     free(str);
 }
 END_TEST
@@ -58,19 +58,19 @@ END_TEST
 START_TEST(test_unescape_hex)
 {
     char *str = cli_unescape("%5a");
-    fail_unless(str && !strcmp(str, "\x5a"), "cli_unescape hex");
+    ck_assert_msg(str && !strcmp(str, "\x5a"), "cli_unescape hex");
     free(str);
 
     str = cli_unescape("%b5%8");
-    fail_unless(str && !strcmp(str, "\xb5%8"), "cli_unescape truncated");
+    ck_assert_msg(str && !strcmp(str, "\xb5%8"), "cli_unescape truncated");
     free(str);
 
     str = cli_unescape("%b5%");
-    fail_unless(str && !strcmp(str, "\xb5%"), "cli_unescape truncated/2");
+    ck_assert_msg(str && !strcmp(str, "\xb5%"), "cli_unescape truncated/2");
     free(str);
 
     str = cli_unescape("%00");
-    fail_unless(str && !strcmp(str, "\x1"), "cli_unescape %00");
+    ck_assert_msg(str && !strcmp(str, "\x1"), "cli_unescape %00");
     free(str);
 }
 END_TEST
@@ -79,16 +79,16 @@ START_TEST(test_unescape_unicode)
 {
     char *str = cli_unescape("%u05D0");
     /* unicode is converted to utf-8 representation */
-    fail_unless(str && !strcmp(str, "\xd7\x90"), "cli_unescape unicode aleph");
+    ck_assert_msg(str && !strcmp(str, "\xd7\x90"), "cli_unescape unicode aleph");
     free(str);
 
     str = cli_unescape("%u00a2%u007f%u0080%u07ff%u0800%ue000");
-    fail_unless(str && !strcmp(str, "\xc2\xa2\x7f\xc2\x80\xdf\xbf\xe0\xa0\x80\xee\x80\x80"),
+    ck_assert_msg(str && !strcmp(str, "\xc2\xa2\x7f\xc2\x80\xdf\xbf\xe0\xa0\x80\xee\x80\x80"),
                 "cli_unescape utf-8 test");
     free(str);
 
     str = cli_unescape("%%u123%u12%u1%u%u1234");
-    fail_unless(str && !strcmp(str, "%%u123%u12%u1%u\xe1\x88\xb4"),
+    ck_assert_msg(str && !strcmp(str, "%%u123%u12%u1%u\xe1\x88\xb4"),
                 "cli_unescape unicode truncated");
 
     free(str);
@@ -111,26 +111,26 @@ static void buf_teardown(void)
 
 START_TEST(test_append_len)
 {
-    fail_unless(textbuffer_append_len(&buf, "test", 3) != -1, "tbuf append");
-    fail_unless(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
+    ck_assert_msg(textbuffer_append_len(&buf, "test", 3) != -1, "tbuf append");
+    ck_assert_msg(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
     errmsg_expected();
-    fail_unless(textbuffer_append_len(&buf, "test", CLI_MAX_ALLOCATION) == -1, "tbuf append");
-    fail_unless(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
+    ck_assert_msg(textbuffer_append_len(&buf, "test", CLI_MAX_ALLOCATION) == -1, "tbuf append");
+    ck_assert_msg(buf.data && !strncmp(buf.data, "tes", 3), "textbuffer_append_len");
 }
 END_TEST
 
 START_TEST(test_append)
 {
-    fail_unless(textbuffer_append(&buf, "test") != -1, "tbuf append");
-    fail_unless(textbuffer_putc(&buf, '\0') != -1, "tbuf putc");
-    fail_unless(buf.data && !strcmp(buf.data, "test"), "textbuffer_append");
+    ck_assert_msg(textbuffer_append(&buf, "test") != -1, "tbuf append");
+    ck_assert_msg(textbuffer_putc(&buf, '\0') != -1, "tbuf putc");
+    ck_assert_msg(buf.data && !strcmp(buf.data, "test"), "textbuffer_append");
 }
 END_TEST
 
 START_TEST(test_putc)
 {
-    fail_unless(textbuffer_putc(&buf, '\x5a') != -1, "tbuf putc");
-    fail_unless(buf.data && buf.data[0] == '\x5a', "textbuffer_putc");
+    ck_assert_msg(textbuffer_putc(&buf, '\x5a') != -1, "tbuf putc");
+    ck_assert_msg(buf.data && buf.data[0] == '\x5a', "textbuffer_putc");
 }
 END_TEST
 
@@ -141,10 +141,10 @@ START_TEST(test_normalize)
     int rc;
 
     rc = cli_textbuffer_append_normalize(&buf, str, strlen(str));
-    fail_unless(rc != -1, "normalize");
+    ck_assert_msg(rc != -1, "normalize");
 
-    fail_unless(textbuffer_putc(&buf, '\0') != -1, "putc \\0");
-    fail_unless(buf.data && !strcmp(buf.data, expected), "normalized text");
+    ck_assert_msg(textbuffer_putc(&buf, '\0') != -1, "putc \\0");
+    ck_assert_msg(buf.data && !strcmp(buf.data, expected), "normalized text");
 }
 END_TEST
 
@@ -156,17 +156,16 @@ START_TEST(hex2str)
     const char inp2[] = "ag0026";
 
     r = cli_hex2str(inp1);
-    fail_unless(!!r, "cli_hex2str NULL");
-    fail_unless(!memcmp(r, out1, sizeof(out1) - 1),
+    ck_assert_msg(!!r, "cli_hex2str NULL");
+    ck_assert_msg(!memcmp(r, out1, sizeof(out1) - 1),
                 "cli_hex2str invalid output");
     free(r);
 
     r = cli_hex2str(inp2);
-    fail_unless(!r, "cli_hex2str on invalid input");
+    ck_assert_msg(!r, "cli_hex2str on invalid input");
 }
 END_TEST
 
-#ifdef CHECK_HAVE_LOOPS
 static struct base64lines {
     const char *line;
     const char *decoded;
@@ -190,10 +189,10 @@ START_TEST(test_base64)
     unsigned char buf[1024];
     const struct base64lines *test = &base64tests[_i];
     message *m                     = messageCreate();
-    fail_unless(!!m, "Unable to create message");
+    ck_assert_msg(!!m, "Unable to create message");
 
     ret = decodeLine(m, BASE64, test->line, buf, sizeof(buf));
-    fail_unless(!!ret, "unable to decode line");
+    ck_assert_msg(!!ret, "unable to decode line");
 
     ret2 = base64Flush(m, ret);
 
@@ -201,9 +200,9 @@ START_TEST(test_base64)
         ret2 = ret;
     *ret2 = '\0';
     len   = ret2 - buf;
-    fail_unless_fmt(len == test->len, "invalid base64 decoded length: %u expected %u (%s)\n",
+    ck_assert_msg(len == test->len, "invalid base64 decoded length: %u expected %u (%s)\n",
                     len, test->len, buf);
-    fail_unless_fmt(!memcmp(buf, test->decoded, test->len),
+    ck_assert_msg(!memcmp(buf, test->decoded, test->len),
                     "invalid base64 decoded data: %s, expected:%s\n",
                     buf, test->decoded);
     messageDestroy(m);
@@ -245,13 +244,12 @@ static unsigned u16_len(const char *s)
 START_TEST(test_u16_u8)
 {
     char *result = cli_utf16_to_utf8(u16_tests[_i].u16, u16_len(u16_tests[_i].u16), UTF16_LE);
-    fail_unless(!!result, "cli_utf16_to_utf8 non-null");
-    fail_unless_fmt(!strcmp(result, u16_tests[_i].u8), "utf16_to_8 %d failed, expected: %s, got %s", _i, u16_tests[_i].u8, result);
+    ck_assert_msg(!!result, "cli_utf16_to_utf8 non-null");
+    ck_assert_msg(!strcmp(result, u16_tests[_i].u8), "utf16_to_8 %d failed, expected: %s, got %s", _i, u16_tests[_i].u8, result);
     free(result);
 }
 END_TEST
 
-#endif
 
 Suite *test_str_suite(void)
 {
@@ -275,14 +273,13 @@ Suite *test_str_suite(void)
     tc_str = tcase_create("str functions");
     suite_add_tcase(s, tc_str);
     tcase_add_test(tc_str, hex2str);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_str, test_u16_u8, 0, sizeof(u16_tests) / sizeof(u16_tests[0]));
-#endif
 
     tc_decodeline = tcase_create("decodeline");
     suite_add_tcase(s, tc_decodeline);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_decodeline, test_base64, 0, sizeof(base64tests) / sizeof(base64tests[0]));
-#endif
+
     return s;
 }
