@@ -71,21 +71,21 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
     cctx.virname = &virname;
     cctx.engine = engine = cl_engine_new();
-    fail_unless(!!cctx.engine, "cannot create engine");
+    ck_assert_msg(!!cctx.engine, "cannot create engine");
     rc = cl_engine_compile(engine);
-    fail_unless(!rc, "cannot compile engine");
+    ck_assert_msg(!rc, "cannot compile engine");
     cctx.fmap = cli_calloc(sizeof(fmap_t *), engine->maxreclevel + 2);
-    fail_unless(!!cctx.fmap, "cannot allocate fmap");
+    ck_assert_msg(!!cctx.fmap, "cannot allocate fmap");
 
-    fail_unless(fd >= 0, "retmagic open failed");
+    ck_assert_msg(fd >= 0, "retmagic open failed");
     f = fdopen(fd, "r");
-    fail_unless(!!f, "retmagic fdopen failed");
+    ck_assert_msg(!!f, "retmagic fdopen failed");
 
     cl_debug();
 
     if (!nojit) {
         rc = cli_bytecode_init(&bcs);
-        fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
+        ck_assert_msg(rc == CL_SUCCESS, "cli_bytecode_init failed");
     } else {
         bcs.engine = NULL;
     }
@@ -94,22 +94,22 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     bcs.count   = 1;
 
     rc = cli_bytecode_load(&bc, f, NULL, 1, 0);
-    fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
+    ck_assert_msg(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
     if (testmode && have_clamjit)
         engine->bytecode_mode = CL_BYTECODE_MODE_TEST;
 
     rc = cli_bytecode_prepare2(engine, &bcs, BYTECODE_ENGINE_MASK);
-    fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
+    ck_assert_msg(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
     if (have_clamjit && !nojit && nojit != -1 && !testmode) {
-        fail_unless(bc.state == bc_jit, "preparing for JIT failed");
+        ck_assert_msg(bc.state == bc_jit, "preparing for JIT failed");
     }
 
     ctx                   = cli_bytecode_context_alloc();
     ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 10000;
-    fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
+    ck_assert_msg(!!ctx, "cli_bytecode_context_alloc failed");
 
     ctx->ctx = &cctx;
     if (infile) {
@@ -117,9 +117,9 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         fdin = open(filestr, O_RDONLY);
         if (fdin < 0 && errno == ENOENT)
             fdin = open_testfile(infile);
-        fail_unless(fdin >= 0, "failed to open infile");
+        ck_assert_msg(fdin >= 0, "failed to open infile");
         map = fmap(fdin, 0, 0);
-        fail_unless(!!map, "unable to fmap infile");
+        ck_assert_msg(!!map, "unable to fmap infile");
         if (pedata)
             ctx->hooks.pedata = pedata;
         ctx->sections = sections;
@@ -128,16 +128,16 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
     rc = cli_bytecode_run(&bcs, &bc, ctx);
-    fail_unless_fmt(rc == fail, "cli_bytecode_run failed, expected: %u, have: %u\n",
+    ck_assert_msg(rc == fail, "cli_bytecode_run failed, expected: %u, have: %u\n",
                     fail, rc);
 
     if (rc == CL_SUCCESS) {
         v = cli_bytecode_context_getresult_int(ctx);
-        fail_unless_fmt(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
+        ck_assert_msg(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
                         expected, v);
     }
     if (infile && expectedvirname) {
-        fail_unless(ctx->virname &&
+        ck_assert_msg(ctx->virname &&
                         !strcmp(ctx->virname, expectedvirname),
                     "Invalid virname, expected: %s\n", expectedvirname);
     }
@@ -489,18 +489,18 @@ static void runload(const char *dbname, struct cl_engine *engine, unsigned signo
         srcdir = SRCDIR;
     }
     str = cli_malloc(strlen(dbname) + strlen(srcdir) + 2);
-    fail_unless(!!str, "cli_malloc");
+    ck_assert_msg(!!str, "cli_malloc");
     sprintf(str, "%s/%s", srcdir, dbname);
 
     rc = cl_load(str, engine, &signo, CL_DB_STDOPT);
-    fail_unless_fmt(rc == CL_SUCCESS, "failed to load %s: %s\n",
+    ck_assert_msg(rc == CL_SUCCESS, "failed to load %s: %s\n",
                     dbname, cl_strerror(rc));
-    fail_unless_fmt(signo == signoexp, "different number of signatures loaded, expected %u, got %u\n",
+    ck_assert_msg(signo == signoexp, "different number of signatures loaded, expected %u, got %u\n",
                     signoexp, signo);
     free(str);
 
     rc = cl_engine_compile(engine);
-    fail_unless_fmt(rc == CL_SUCCESS, "failed to load %s: %s\n",
+    ck_assert_msg(rc == CL_SUCCESS, "failed to load %s: %s\n",
                     dbname, cl_strerror(rc));
 }
 
@@ -509,7 +509,7 @@ START_TEST(test_load_bytecode_jit)
     struct cl_engine *engine;
     cl_init(CL_INIT_DEFAULT);
     engine = cl_engine_new();
-    fail_unless(!!engine, "failed to create engine\n");
+    ck_assert_msg(!!engine, "failed to create engine\n");
 
     runload("input/bytecode.cvd", engine, 5);
 
@@ -523,7 +523,7 @@ START_TEST(test_load_bytecode_int)
     cl_init(CL_INIT_DEFAULT);
     engine                  = cl_engine_new();
     engine->dconf->bytecode = BYTECODE_INTERPRETER;
-    fail_unless(!!engine, "failed to create engine\n");
+    ck_assert_msg(!!engine, "failed to create engine\n");
 
     runload("input/bytecode.cvd", engine, 5);
 
@@ -541,7 +541,7 @@ static void *thread(void *arg)
 {
     struct cl_engine *engine;
     engine = cl_engine_new();
-    fail_unless(!!engine, "failed to create engine\n");
+    ck_assert_msg(!!engine, "failed to create engine\n");
     /* run all cl_load at once, to maximize chance of a crash
      * in case of a race condition */
     pthread_barrier_wait(&barrier);

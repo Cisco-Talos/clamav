@@ -46,7 +46,7 @@ static size_t cb_called = 0;
 
 static cl_error_t cb_fail(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
 {
-    fail("this pattern is not supposed to have a suffix");
+    ck_abort_msg("this pattern is not supposed to have a suffix");
     return CL_EMEM;
 }
 
@@ -54,7 +54,7 @@ static cl_error_t cb_expect_single(void *cbdata, const char *suffix, size_t len,
 {
     const char *expected = cbdata;
     cb_called++;
-    fail_unless_fmt(suffix && strcmp(suffix, expected) == 0,
+    ck_assert_msg(suffix && strcmp(suffix, expected) == 0,
                     "suffix mismatch, was: %s, expected: %s\n", suffix, expected);
     return CL_SUCCESS;
 }
@@ -68,11 +68,11 @@ START_TEST(empty)
 
     errmsg_expected();
     preg = malloc(sizeof(*regex.preg));
-    fail_unless(!!preg, "malloc");
+    ck_assert_msg(!!preg, "malloc");
     rc = cli_regex2suffix(pattern, preg, cb_fail, NULL);
     free(preg);
-    fail_unless(rc == REG_EMPTY, "empty pattern");
-    fail_unless(cb_called == 0, "callback shouldn't be called");
+    ck_assert_msg(rc == REG_EMPTY, "empty pattern");
+    ck_assert_msg(cb_called == 0, "callback shouldn't be called");
 }
 END_TEST
 
@@ -83,12 +83,12 @@ START_TEST(one)
     regex_t *preg;
 
     preg = malloc(sizeof(*regex.preg));
-    fail_unless(!!preg, "malloc");
+    ck_assert_msg(!!preg, "malloc");
     rc = cli_regex2suffix(pattern, preg, cb_expect_single, pattern);
-    fail_unless(rc == 0, "single character pattern");
+    ck_assert_msg(rc == 0, "single character pattern");
     cli_regfree(preg);
     free(preg);
-    fail_unless(cb_called == 1, "callback should be called once");
+    ck_assert_msg(cb_called == 1, "callback should be called once");
 }
 END_TEST
 
@@ -104,18 +104,17 @@ static const char **tests[] = {
 static cl_error_t cb_expect_multi(void *cbdata, const char *suffix, size_t len, const struct regex_list *r)
 {
     const char **exp = cbdata;
-    fail_unless(!!exp, "expected data");
+    ck_assert_msg(!!exp, "expected data");
     exp++;
-    fail_unless_fmt(!!*exp, "expected no suffix, got: %s\n", suffix);
-    fail_unless_fmt(!!exp[cb_called], "expected less suffixes, but already got: %d\n", cb_called);
-    fail_unless_fmt(strcmp(exp[cb_called], suffix) == 0,
+    ck_assert_msg(!!*exp, "expected no suffix, got: %s\n", suffix);
+    ck_assert_msg(!!exp[cb_called], "expected less suffixes, but already got: %d\n", cb_called);
+    ck_assert_msg(strcmp(exp[cb_called], suffix) == 0,
                     "suffix mismatch, was: %s, expected: %s\n", suffix, exp[cb_called]);
-    fail_unless_fmt(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
+    ck_assert_msg(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
     cb_called++;
     return CL_SUCCESS;
 }
 
-#ifdef CHECK_HAVE_LOOPS
 START_TEST(test_suffix)
 {
     int rc;
@@ -124,20 +123,19 @@ START_TEST(test_suffix)
     size_t n            = 0;
     const char **p      = tests[_i];
 
-    fail_unless(!!pattern, "test pattern");
+    ck_assert_msg(!!pattern, "test pattern");
     preg = malloc(sizeof(*regex.preg));
-    fail_unless(!!preg, "malloc");
+    ck_assert_msg(!!preg, "malloc");
     rc = cli_regex2suffix(pattern, preg, cb_expect_multi, tests[_i]);
-    fail_unless(rc == 0, "single character pattern");
+    ck_assert_msg(rc == 0, "single character pattern");
     cli_regfree(preg);
     free(preg);
     p++;
     while (*p++) n++;
-    fail_unless_fmt(cb_called == n,
+    ck_assert_msg(cb_called == n,
                     "suffix number mismatch, expected: %d, was: %d\n", n, cb_called);
 }
 END_TEST
-#endif /* CHECK_HAVE_LOOPS */
 
 static void setup(void)
 {
@@ -157,7 +155,7 @@ static void rsetup(void)
     matcher.mempool = mpool_create();
 #endif
     rc = init_regex_list(&matcher, 1);
-    fail_unless(rc == 0, "init_regex_list");
+    ck_assert_msg(rc == 0, "init_regex_list");
 }
 
 static void rteardown(void)
@@ -231,7 +229,6 @@ static const struct rtest {
     {NULL, "http://key.com%00fake.example.com", "https://key.com", 0},
     {NULL, "http://key.com.example.com", "key.com.invalid", 0}};
 
-#ifdef CHECK_HAVE_LOOPS
 START_TEST(regex_list_match_test)
 {
     const char *info;
@@ -240,42 +237,41 @@ START_TEST(regex_list_match_test)
     int rc;
 
     if (!rtest->pattern) {
-        fail_unless(rtest->result != 1,
+        ck_assert_msg(rtest->result != 1,
                     "whitelist test must have pattern set");
         /* this test entry is not meant for whitelist testing */
         return;
     }
 
-    fail_unless(rtest->result == 0 || rtest->result == 1 || rtest->result == 4,
+    ck_assert_msg(rtest->result == 0 || rtest->result == 1 || rtest->result == 4,
                 "whitelist test result must be either 0 or 1 or 4");
     pattern = cli_strdup(rtest->pattern);
-    fail_unless(!!pattern, "cli_strdup");
+    ck_assert_msg(!!pattern, "cli_strdup");
 
     rc = regex_list_add_pattern(&matcher, pattern);
     if (rtest->result == 4) {
-        fail_unless(rc, "regex_list_add_pattern should return error");
+        ck_assert_msg(rc, "regex_list_add_pattern should return error");
         free(pattern);
         return;
     } else
-        fail_unless(rc == 0, "regex_list_add_pattern");
+        ck_assert_msg(rc == 0, "regex_list_add_pattern");
     free(pattern);
 
     matcher.list_loaded = 1;
 
     rc = cli_build_regex_list(&matcher);
-    fail_unless(rc == 0, "cli_build_regex_list");
+    ck_assert_msg(rc == 0, "cli_build_regex_list");
 
-    fail_unless(is_regex_ok(&matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(&matcher), "is_regex_ok");
 
     realurl = cli_strdup(rtest->realurl);
     rc      = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
-    fail_unless(rc == rtest->result, "regex_list_match");
+    ck_assert_msg(rc == rtest->result, "regex_list_match");
     /* regex_list_match is not supposed to modify realurl in this case */
-    fail_unless(!strcmp(realurl, rtest->realurl), "realurl altered");
+    ck_assert_msg(!strcmp(realurl, rtest->realurl), "realurl altered");
     free(realurl);
 }
 END_TEST
-#endif /* CHECK_HAVE_LOOPS */
 
 static struct cl_engine *engine;
 static int loaded_2 = 0;
@@ -287,55 +283,55 @@ static void psetup_impl(int load2)
     unsigned signo = 0;
 
     engine = cl_engine_new();
-    fail_unless(!!engine, "cl_engine_new");
+    ck_assert_msg(!!engine, "cl_engine_new");
 
     phishing_init(engine);
-    fail_unless(!!engine->phishcheck, "phishing_init");
+    ck_assert_msg(!!engine->phishcheck, "phishing_init");
 
     rc = init_domainlist(engine);
-    fail_unless(rc == 0, "init_domainlist");
+    ck_assert_msg(rc == 0, "init_domainlist");
 
     f = fdopen(open_testfile("input/daily.pdb"), "r");
-    fail_unless(!!f, "fopen daily.pdb");
+    ck_assert_msg(!!f, "fopen daily.pdb");
 
     rc = load_regex_matcher(engine, engine->domainlist_matcher, f, &signo, 0, 0, NULL, 1);
-    fail_unless(rc == 0, "load_regex_matcher");
+    ck_assert_msg(rc == 0, "load_regex_matcher");
     fclose(f);
 
-    fail_unless_fmt(signo == 201, "Incorrect number of signatures: %u, expected %u", signo, 201);
+    ck_assert_msg(signo == 201, "Incorrect number of signatures: %u, expected %u", signo, 201);
 
     if (load2) {
         f = fdopen(open_testfile("input/daily.gdb"), "r");
-        fail_unless(!!f, "fopen daily.gdb");
+        ck_assert_msg(!!f, "fopen daily.gdb");
 
         signo = 0;
         rc    = load_regex_matcher(engine, engine->domainlist_matcher, f, &signo, 0, 0, NULL, 1);
-        fail_unless(rc == 0, "load_regex_matcher");
+        ck_assert_msg(rc == 0, "load_regex_matcher");
         fclose(f);
 
-        fail_unless_fmt(signo == 4, "Incorrect number of signatures: %u, expected %u", signo, 4);
+        ck_assert_msg(signo == 4, "Incorrect number of signatures: %u, expected %u", signo, 4);
     }
     loaded_2 = load2;
 
     rc = init_whitelist(engine);
-    fail_unless(rc == 0, "init_whitelist");
+    ck_assert_msg(rc == 0, "init_whitelist");
 
     f     = fdopen(open_testfile("input/daily.wdb"), "r");
     signo = 0;
     rc    = load_regex_matcher(engine, engine->whitelist_matcher, f, &signo, 0, 1, NULL, 1);
-    fail_unless(rc == 0, "load_regex_matcher");
+    ck_assert_msg(rc == 0, "load_regex_matcher");
     fclose(f);
 
-    fail_unless_fmt(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
+    ck_assert_msg(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
 
     rc = cli_build_regex_list(engine->whitelist_matcher);
-    fail_unless(rc == 0, "cli_build_regex_list");
+    ck_assert_msg(rc == 0, "cli_build_regex_list");
 
     rc = cli_build_regex_list(engine->domainlist_matcher);
-    fail_unless(rc == 0, "cli_build_regex_list");
+    ck_assert_msg(rc == 0, "cli_build_regex_list");
 
-    fail_unless(is_regex_ok(engine->whitelist_matcher), "is_regex_ok");
-    fail_unless(is_regex_ok(engine->domainlist_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->whitelist_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->domainlist_matcher), "is_regex_ok");
 }
 
 static void psetup(void)
@@ -370,16 +366,16 @@ static void do_phishing_test(const struct rtest *rtest)
     ctx.options = &options;
 
     realurl = cli_strdup(rtest->realurl);
-    fail_unless(!!realurl, "cli_strdup");
+    ck_assert_msg(!!realurl, "cli_strdup");
 
     hrefs.count = 1;
     hrefs.value = cli_malloc(sizeof(*hrefs.value));
-    fail_unless(!!hrefs.value, "cli_malloc");
+    ck_assert_msg(!!hrefs.value, "cli_malloc");
     hrefs.value[0] = (unsigned char *)realurl;
     hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
-    fail_unless(!!hrefs.contents, "cli_malloc");
+    ck_assert_msg(!!hrefs.contents, "cli_malloc");
     hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
-    fail_unless(!!hrefs.tag, "cli_malloc");
+    ck_assert_msg(!!hrefs.tag, "cli_malloc");
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
@@ -389,34 +385,34 @@ static void do_phishing_test(const struct rtest *rtest)
     rc = phishingScan(&ctx, &hrefs);
 
     html_tag_arg_free(&hrefs);
-    fail_unless(rc == CL_CLEAN, "phishingScan");
+    ck_assert_msg(rc == CL_CLEAN, "phishingScan");
     switch (rtest->result) {
         case 0:
-            fail_unless_fmt(ctx.found_possibly_unwanted,
+            ck_assert_msg(ctx.found_possibly_unwanted,
                             "this should be phishing, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 1:
-            fail_unless_fmt(!ctx.found_possibly_unwanted,
+            ck_assert_msg(!ctx.found_possibly_unwanted,
                             "this should be whitelisted, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 2:
-            fail_unless_fmt(!ctx.found_possibly_unwanted,
+            ck_assert_msg(!ctx.found_possibly_unwanted,
                             "this should be clean, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 3:
             if (!loaded_2)
-                fail_unless_fmt(!ctx.found_possibly_unwanted,
+                ck_assert_msg(!ctx.found_possibly_unwanted,
                                 "this should be clean, realURL: %s, displayURL: %s",
                                 rtest->realurl, rtest->displayurl);
             else {
-                fail_unless_fmt(ctx.found_possibly_unwanted,
+                ck_assert_msg(ctx.found_possibly_unwanted,
                                 "this should be blacklisted, realURL: %s, displayURL: %s",
                                 rtest->realurl, rtest->displayurl);
                 if (*ctx.virname)
-                    fail_unless_fmt(!strstr((const char *)*ctx.virname, "Blacklisted"),
+                    ck_assert_msg(!strstr((const char *)*ctx.virname, "Blacklisted"),
                                     "should be blacklisted, but is: %s\n", ctx.virname);
             }
             break;
@@ -437,16 +433,16 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     ctx.options = &options;
 
     realurl = cli_strdup(rtest->realurl);
-    fail_unless(!!realurl, "cli_strdup");
+    ck_assert_msg(!!realurl, "cli_strdup");
 
     hrefs.count = 1;
     hrefs.value = cli_malloc(sizeof(*hrefs.value));
-    fail_unless(!!hrefs.value, "cli_malloc");
+    ck_assert_msg(!!hrefs.value, "cli_malloc");
     hrefs.value[0] = (unsigned char *)realurl;
     hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
-    fail_unless(!!hrefs.contents, "cli_malloc");
+    ck_assert_msg(!!hrefs.contents, "cli_malloc");
     hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
-    fail_unless(!!hrefs.tag, "cli_malloc");
+    ck_assert_msg(!!hrefs.tag, "cli_malloc");
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
@@ -457,41 +453,40 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     rc = phishingScan(&ctx, &hrefs);
 
     html_tag_arg_free(&hrefs);
-    fail_unless(rc == CL_CLEAN, "phishingScan");
+    ck_assert_msg(rc == CL_CLEAN, "phishingScan");
     switch (rtest->result) {
         case 0:
-            fail_unless_fmt(ctx.num_viruses,
+            ck_assert_msg(ctx.num_viruses,
                             "this should be phishing, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 1:
-            fail_unless_fmt(!ctx.num_viruses,
+            ck_assert_msg(!ctx.num_viruses,
                             "this should be whitelisted, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 2:
-            fail_unless_fmt(!ctx.num_viruses,
+            ck_assert_msg(!ctx.num_viruses,
                             "this should be clean, realURL: %s, displayURL: %s",
                             rtest->realurl, rtest->displayurl);
             break;
         case 3:
             if (!loaded_2)
-                fail_unless_fmt(!ctx.num_viruses,
+                ck_assert_msg(!ctx.num_viruses,
                                 "this should be clean, realURL: %s, displayURL: %s",
                                 rtest->realurl, rtest->displayurl);
             else {
-                fail_unless_fmt(ctx.num_viruses,
+                ck_assert_msg(ctx.num_viruses,
                                 "this should be blacklisted, realURL: %s, displayURL: %s",
                                 rtest->realurl, rtest->displayurl);
                 if (*ctx.virname)
-                    fail_unless_fmt(!strstr((const char *)*ctx.virname, "Blacklisted"),
+                    ck_assert_msg(!strstr((const char *)*ctx.virname, "Blacklisted"),
                                     "should be blacklisted, but is: %s\n", ctx.virname);
             }
             break;
     }
 }
 
-#ifdef CHECK_HAVE_LOOPS
 START_TEST(phishingScan_test)
 {
     do_phishing_test(&rtests[_i]);
@@ -503,9 +498,7 @@ START_TEST(phishingScan_test_allscan)
     do_phishing_test_allscan(&rtests[_i]);
 }
 END_TEST
-#endif
 
-#ifdef CHECK_HAVE_LOOPS
 static struct uc {
     const char *in;
     const char *host;
@@ -534,9 +527,9 @@ START_TEST(test_url_canon)
     struct uc *u = &uc[_i];
 
     cli_url_canon(u->in, strlen(u->in), urlbuff, sizeof(urlbuff), &host, &host_len, &path, &path_len);
-    fail_unless(!!host && !!path, "null results\n");
-    fail_unless_fmt(!strcmp(u->host, host), "host incorrect: %s\n", host);
-    fail_unless_fmt(!strcmp(u->path, path), "path incorrect: %s\n", path);
+    ck_assert_msg(!!host && !!path, "null results\n");
+    ck_assert_msg(!strcmp(u->host, host), "host incorrect: %s\n", host);
+    ck_assert_msg(!strcmp(u->path, path), "path incorrect: %s\n", path);
 }
 END_TEST
 
@@ -556,23 +549,22 @@ START_TEST(test_regexes)
     struct regex_test *tst = &rg[_i];
     int match;
 
-    fail_unless(cli_regcomp(&reg, tst->regex, REG_EXTENDED | REG_NOSUB) == 0, "cli_regcomp");
+    ck_assert_msg(cli_regcomp(&reg, tst->regex, REG_EXTENDED | REG_NOSUB) == 0, "cli_regcomp");
     match = (cli_regexec(&reg, tst->text, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-    fail_unless_fmt(match == tst->match, "cli_regexec failed for %s and %s\n", tst->regex, tst->text);
+    ck_assert_msg(match == tst->match, "cli_regexec failed for %s and %s\n", tst->regex, tst->text);
     cli_regfree(&reg);
 }
 END_TEST
-#endif
 
 START_TEST(phishing_fake_test)
 {
     char buf[4096];
     FILE *f = fdopen(open_testfile("input/daily.pdb"), "r");
-    fail_unless(!!f, "fopen daily.pdb");
+    ck_assert_msg(!!f, "fopen daily.pdb");
     while (fgets(buf, sizeof(buf), f)) {
         struct rtest rtest;
         const char *pdb = strchr(buf, ':');
-        fail_unless(!!pdb, "missing : in pdb");
+        ck_assert_msg(!!pdb, "missing : in pdb");
         rtest.realurl    = pdb;
         rtest.displayurl = pdb;
         rtest.result     = 2;
@@ -589,11 +581,11 @@ START_TEST(phishing_fake_test_allscan)
 {
     char buf[4096];
     FILE *f = fdopen(open_testfile("input/daily.pdb"), "r");
-    fail_unless(!!f, "fopen daily.pdb");
+    ck_assert_msg(!!f, "fopen daily.pdb");
     while (fgets(buf, sizeof(buf), f)) {
         struct rtest rtest;
         const char *pdb = strchr(buf, ':');
-        fail_unless(!!pdb, "missing : in pdb");
+        ck_assert_msg(!!pdb, "missing : in pdb");
         rtest.realurl    = pdb;
         rtest.displayurl = pdb;
         rtest.result     = 2;
@@ -616,42 +608,42 @@ Suite *test_regex_suite(void)
     tcase_add_checked_fixture(tc_api, setup, teardown);
     tcase_add_test(tc_api, empty);
     tcase_add_test(tc_api, one);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_api, test_suffix, 0, sizeof(tests) / sizeof(tests[0]));
-#endif
+
     tc_matching = tcase_create("regex_list");
     suite_add_tcase(s, tc_matching);
     tcase_add_checked_fixture(tc_matching, rsetup, rteardown);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_matching, regex_list_match_test, 0, sizeof(rtests) / sizeof(rtests[0]));
-#endif
+
     tc_phish = tcase_create("phishingScan");
     suite_add_tcase(s, tc_phish);
     tcase_add_unchecked_fixture(tc_phish, psetup, pteardown);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests) / sizeof(rtests[0]));
     tcase_add_loop_test(tc_phish, phishingScan_test_allscan, 0, sizeof(rtests) / sizeof(rtests[0]));
-#endif
+
     tcase_add_test(tc_phish, phishing_fake_test);
     tcase_add_test(tc_phish, phishing_fake_test_allscan);
 
     tc_phish2 = tcase_create("phishingScan with 2 dbs");
     suite_add_tcase(s, tc_phish2);
     tcase_add_unchecked_fixture(tc_phish2, psetup2, pteardown);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests) / sizeof(rtests[0]));
     tcase_add_loop_test(tc_phish2, phishingScan_test_allscan, 0, sizeof(rtests) / sizeof(rtests[0]));
-#endif
+
     tcase_add_test(tc_phish2, phishing_fake_test);
     tcase_add_test(tc_phish2, phishing_fake_test_allscan);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_phish, test_url_canon, 0, sizeof(uc) / sizeof(uc[0]));
-#endif
+
 
     tc_regex = tcase_create("cli_regcomp/execute");
     suite_add_tcase(s, tc_regex);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_regex, test_regexes, 0, sizeof(rg) / sizeof(rg[0]));
-#endif
+
     return s;
 }

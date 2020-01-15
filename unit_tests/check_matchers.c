@@ -169,9 +169,9 @@ static void setup(void)
     ctx.virname = &virname;
     ctx.fmap    = &thefmap;
     ctx.engine  = cl_engine_new();
-    fail_unless(!!ctx.engine, "cl_engine_new() failed");
+    ck_assert_msg(!!ctx.engine, "cl_engine_new() failed");
     root = (struct cli_matcher *)MPOOL_CALLOC(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
 #ifdef USE_MPOOL
     root->mempool = ctx.engine->mempool;
 #endif
@@ -192,35 +192,35 @@ START_TEST(test_ac_scanbuff)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
     root->ac_only = 1;
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
 
     for (i = 0; ac_testdata[i].data; i++) {
         ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     }
 
     ret = cli_ac_buildtrie(root);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for (i = 0; ac_testdata[i].data; i++) {
         ret = cli_ac_scanbuff((const unsigned char *)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
-        fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
-        fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+        ck_assert_msg(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
-        fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+        ck_assert_msg(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
     }
 
     cli_ac_freedata(&mdata);
@@ -235,35 +235,35 @@ START_TEST(test_ac_scanbuff_allscan)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
     root->ac_only = 1;
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_init() failed");
 
     for (i = 0; ac_testdata[i].data; i++) {
         ret = cli_parse_add(root, ac_testdata[i].virname, ac_testdata[i].hexsig, 0, 0, 0, "*", 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     }
 
     ret = cli_ac_buildtrie(root);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for (i = 0; ac_testdata[i].data; i++) {
         ret = cli_ac_scanbuff((const unsigned char *)ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
-        fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
-        fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+        ck_assert_msg(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
-        fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+        ck_assert_msg(ret == CL_VIRUS, "cli_scanbuff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
         if (ctx.num_viruses)
             ctx.num_viruses = 0;
     }
@@ -280,35 +280,35 @@ START_TEST(test_ac_scanbuff_ex)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
     root->ac_only = 1;
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
 
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
         ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
     }
 
     ret = cli_ac_buildtrie(root);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
         ret = cli_ac_scanbuff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
-        fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+        ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
         if (ac_sigopts_testdata[i].expected_result == CL_VIRUS)
-            fail_unless_fmt(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
+            ck_assert_msg(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+        ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
     }
 
     cli_ac_freedata(&mdata);
@@ -323,35 +323,35 @@ START_TEST(test_ac_scanbuff_allscan_ex)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
     root->ac_only = 1;
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH, 1);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_init() failed");
 
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
         ret = cli_sigopts_handler(root, ac_sigopts_testdata[i].virname, ac_sigopts_testdata[i].hexsig, ac_sigopts_testdata[i].sigopts, 0, 0, ac_sigopts_testdata[i].offset, 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_sigopts_handler() failed");
     }
 
     ret = cli_ac_buildtrie(root);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_buildtrie() failed");
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_initdata() failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
         ret = cli_ac_scanbuff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
-        fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+        ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
         if (ac_sigopts_testdata[i].expected_result == CL_VIRUS)
-            fail_unless_fmt(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
+            ck_assert_msg(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+        ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
         if (ctx.num_viruses)
             ctx.num_viruses = 0;
     }
@@ -367,25 +367,25 @@ START_TEST(test_bm_scanbuff)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_bm_init(root);
-    fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_bm_init() failed");
 
     ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
-    fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
-    fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
+    ck_assert_msg(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
+    ck_assert_msg(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
 END_TEST
 
@@ -396,25 +396,25 @@ START_TEST(test_bm_scanbuff_allscan)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_bm_init(root);
-    fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_bm_init() failed");
 
     ret = cli_parse_add(root, "Sig1", "deadbabe", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     ret = cli_parse_add(root, "Sig2", "deadbeef", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, 0, "*", 0, NULL, 0);
-    fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "cli_parse_add() failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     ret = cli_bm_scanbuff((const unsigned char *)"blah\xde\xad\xbe\xef", 12, &virname, NULL, root, 0, NULL, NULL, NULL);
-    fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
-    fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
+    ck_assert_msg(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
+    ck_assert_msg(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
 }
 END_TEST
 
@@ -429,45 +429,45 @@ START_TEST(test_pcre_scanbuff)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_pcre_init();
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
 
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
 
         hexsig = cli_calloc(hexlen, sizeof(char));
-        fail_unless(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
+        ck_assert_msg(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
 
         strncat(hexsig, PCRE_BYPASS, hexlen);
         strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
 
         ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, pcre_testdata[i].sigopts, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
         free(hexsig);
     }
 
     ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
 
     // recomputate offsets
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
     ctx.options->general &= ~CL_SCAN_GENERAL_ALLMATCHES; /* make sure all-match is disabled */
     for (i = 0; pcre_testdata[i].data; i++) {
         ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
-        fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
+        ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
         if (pcre_testdata[i].expected_result == CL_VIRUS)
-            fail_unless_fmt(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
+            ck_assert_msg(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
+        ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
     }
 
     cli_ac_freedata(&mdata);
@@ -483,45 +483,45 @@ START_TEST(test_pcre_scanbuff_allscan)
     int ret;
 
     root = ctx.engine->root[0];
-    fail_unless(root != NULL, "root == NULL");
+    ck_assert_msg(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
     root->mempool = mpool_create();
 #endif
     ret = cli_pcre_init();
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_init() failed");
 
     for (i = 0; pcre_testdata[i].data; i++) {
         hexlen = strlen(PCRE_BYPASS) + strlen(pcre_testdata[i].hexsig) + 1;
 
         hexsig = cli_calloc(hexlen, sizeof(char));
-        fail_unless(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
+        ck_assert_msg(hexsig != NULL, "[pcre] failed to prepend bypass (out-of-memory)");
 
         strncat(hexsig, PCRE_BYPASS, hexlen);
         strncat(hexsig, pcre_testdata[i].hexsig, hexlen);
 
         ret = cli_parse_add(root, pcre_testdata[i].virname, hexsig, 0, 0, 0, pcre_testdata[i].offset, 0, NULL, 0);
-        fail_unless(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
+        ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_parse_add() failed");
         free(hexsig);
     }
 
     ret = cli_pcre_build(root, CLI_DEFAULT_PCRE_MATCH_LIMIT, CLI_DEFAULT_PCRE_RECMATCH_LIMIT, NULL);
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_pcre_build() failed");
 
     // recomputate offsets
 
     ret = cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
-    fail_unless(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
+    ck_assert_msg(ret == CL_SUCCESS, "[pcre] cli_ac_initdata() failed");
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for (i = 0; pcre_testdata[i].data; i++) {
         ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
-        fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
+        ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
         if (pcre_testdata[i].expected_result == CL_VIRUS)
-            fail_unless_fmt(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
+            ck_assert_msg(!strncmp(virname, pcre_testdata[i].virname, strlen(pcre_testdata[i].virname)), "[pcre] Dataset %u matched with %s", i, virname);
 
         ret = cli_scanbuff((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
-        fail_unless_fmt(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
+        ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_scanbuff() failed for %s", pcre_testdata[i].virname);
         /* num_virus field add to test case struct */
         if (ctx.num_viruses)
             ctx.num_viruses = 0;

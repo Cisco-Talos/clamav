@@ -211,20 +211,20 @@ START_TEST(test_disasm_basic)
     off_t size;
     STATBUF st;
 
-    fail_unless(fd != -1, "mkstemp failed");
+    ck_assert_msg(fd != -1, "mkstemp failed");
     ref = open_testfile("input/disasmref.bin");
-    fail_unless(FSTAT(ref, &st) != -1, "fstat failed");
+    ck_assert_msg(FSTAT(ref, &st) != -1, "fstat failed");
     disasmbuf(buf, sizeof(buf), fd);
     size = lseek(fd, 0, SEEK_CUR);
-    fail_unless_fmt(size == st.st_size, "disasm size mismatch(value %u, expected: %u)", size, st.st_size);
+    ck_assert_msg(size == st.st_size, "disasm size mismatch(value %u, expected: %u)", size, st.st_size);
     lseek(fd, 0, SEEK_SET);
     d = malloc(size * 2);
-    fail_unless_fmt(d != NULL, "disasm malloc(%u) failed", size);
-    fail_unless(read(ref, d, size) == size, "disasm reference read failed");
-    fail_unless(read(fd, d + size, size) == size, "disasm read failed");
+    ck_assert_msg(d != NULL, "disasm malloc(%u) failed", size);
+    ck_assert_msg(read(ref, d, size) == size, "disasm reference read failed");
+    ck_assert_msg(read(fd, d + size, size) == size, "disasm read failed");
     close(fd);
     close(ref);
-    fail_unless(!memcmp(d, d + size, size), "disasm data doesn't match the reference");
+    ck_assert_msg(!memcmp(d, d + size, size), "disasm data doesn't match the reference");
     free(d);
     unlink(file);
 }
