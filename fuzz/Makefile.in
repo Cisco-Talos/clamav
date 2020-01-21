@@ -233,14 +233,14 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
-standalone_fuzz_target_runner_a_AR = $(AR) $(ARFLAGS)
-standalone_fuzz_target_runner_a_LIBADD =
-am__dist_standalone_fuzz_target_runner_a_SOURCES_DIST =  \
+libstandalone_fuzz_target_runner_a_AR = $(AR) $(ARFLAGS)
+libstandalone_fuzz_target_runner_a_LIBADD =
+am__dist_libstandalone_fuzz_target_runner_a_SOURCES_DIST =  \
 	standalone_fuzz_target_runner.cpp
-@ENABLE_FUZZ_TRUE@dist_standalone_fuzz_target_runner_a_OBJECTS =  \
+@ENABLE_FUZZ_TRUE@dist_libstandalone_fuzz_target_runner_a_OBJECTS =  \
 @ENABLE_FUZZ_TRUE@	standalone_fuzz_target_runner.$(OBJEXT)
-standalone_fuzz_target_runner_a_OBJECTS =  \
-	$(dist_standalone_fuzz_target_runner_a_OBJECTS)
+libstandalone_fuzz_target_runner_a_OBJECTS =  \
+	$(dist_libstandalone_fuzz_target_runner_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(fuzzdir)"
 PROGRAMS = $(fuzz_PROGRAMS)
 am__dist_clamav_dbload_CDB_fuzzer_SOURCES_DIST =  \
@@ -594,7 +594,7 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(dist_standalone_fuzz_target_runner_a_SOURCES) \
+SOURCES = $(dist_libstandalone_fuzz_target_runner_a_SOURCES) \
 	$(dist_clamav_dbload_CDB_fuzzer_SOURCES) \
 	$(dist_clamav_dbload_CFG_fuzzer_SOURCES) \
 	$(dist_clamav_dbload_CRB_fuzzer_SOURCES) \
@@ -635,7 +635,7 @@ SOURCES = $(dist_standalone_fuzz_target_runner_a_SOURCES) \
 	$(dist_clamav_scanmap_XMLDOCS_fuzzer_SOURCES) \
 	$(dist_clamav_scanmap_fuzzer_SOURCES)
 DIST_SOURCES =  \
-	$(am__dist_standalone_fuzz_target_runner_a_SOURCES_DIST) \
+	$(am__dist_libstandalone_fuzz_target_runner_a_SOURCES_DIST) \
 	$(am__dist_clamav_dbload_CDB_fuzzer_SOURCES_DIST) \
 	$(am__dist_clamav_dbload_CFG_fuzzer_SOURCES_DIST) \
 	$(am__dist_clamav_dbload_CRB_fuzzer_SOURCES_DIST) \
@@ -967,8 +967,8 @@ xmlconfig = @xmlconfig@
 @ENABLE_FUZZ_TRUE@    @SSL_LDFLAGS@
 
 @ENABLE_FUZZ_TRUE@fuzzdir = "fuzz-targets"
-@ENABLE_FUZZ_TRUE@dist_standalone_fuzz_target_runner_a_SOURCES = standalone_fuzz_target_runner.cpp
-@ENABLE_FUZZ_TRUE@noinst_LIBRARIES = standalone_fuzz_target_runner.a
+@ENABLE_FUZZ_TRUE@dist_libstandalone_fuzz_target_runner_a_SOURCES = standalone_fuzz_target_runner.cpp
+@ENABLE_FUZZ_TRUE@noinst_LIBRARIES = libstandalone_fuzz_target_runner.a
 @ENABLE_FUZZ_TRUE@dist_clamav_scanmap_fuzzer_SOURCES = clamav_scanmap_fuzzer.cpp
 @ENABLE_FUZZ_TRUE@clamav_scanmap_fuzzer_LDADD = $(LIB_FUZZING_ENGINE_DEPRECATED) @SSL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libclamav/libclammspack.la
 @ENABLE_FUZZ_TRUE@dist_clamav_scanmap_ARCHIVE_fuzzer_SOURCES = clamav_scanmap_fuzzer.cpp
@@ -1123,10 +1123,10 @@ $(am__aclocal_m4_deps):
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 
-standalone_fuzz_target_runner.a: $(standalone_fuzz_target_runner_a_OBJECTS) $(standalone_fuzz_target_runner_a_DEPENDENCIES) $(EXTRA_standalone_fuzz_target_runner_a_DEPENDENCIES) 
-	$(AM_V_at)-rm -f standalone_fuzz_target_runner.a
-	$(AM_V_AR)$(standalone_fuzz_target_runner_a_AR) standalone_fuzz_target_runner.a $(standalone_fuzz_target_runner_a_OBJECTS) $(standalone_fuzz_target_runner_a_LIBADD)
-	$(AM_V_at)$(RANLIB) standalone_fuzz_target_runner.a
+libstandalone_fuzz_target_runner.a: $(libstandalone_fuzz_target_runner_a_OBJECTS) $(libstandalone_fuzz_target_runner_a_DEPENDENCIES) $(EXTRA_libstandalone_fuzz_target_runner_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libstandalone_fuzz_target_runner.a
+	$(AM_V_AR)$(libstandalone_fuzz_target_runner_a_AR) libstandalone_fuzz_target_runner.a $(libstandalone_fuzz_target_runner_a_OBJECTS) $(libstandalone_fuzz_target_runner_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libstandalone_fuzz_target_runner.a
 install-fuzzPROGRAMS: $(fuzz_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(fuzz_PROGRAMS)'; test -n "$(fuzzdir)" || list=; \
@@ -2153,7 +2153,7 @@ uninstall-am: uninstall-fuzzPROGRAMS
 .PRECIOUS: Makefile
 
 
-@ENABLE_FUZZ_TRUE@LIB_FUZZING_ENGINE_DEPRECATED ?= standalone_fuzz_target_runner.a
+@ENABLE_FUZZ_TRUE@LIB_FUZZING_ENGINE_DEPRECATED ?= libstandalone_fuzz_target_runner.a
 
 @ENABLE_FUZZ_TRUE@all: $(LIB_FUZZING_ENGINE_DEPRECATED)
 

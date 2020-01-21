@@ -4620,7 +4620,7 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 @USE_INTERNAL_MSPACK_FALSE@distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
 
-.PHONY: version.h.tmp
+.PHONY2: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
 	$(AM_V_GEN) if test -f version.h.static; then\
