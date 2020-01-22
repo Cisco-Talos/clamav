@@ -2632,7 +2632,9 @@ int isuuencodebegin(const char *line)
 #if HAVE_JSON
 json_object *messageGetJObj(message *m)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        return NULL;
+    }
 
     if (m->jobj == NULL)
         m->jobj = cli_jsonobj(NULL, NULL);
