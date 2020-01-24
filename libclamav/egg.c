@@ -2846,10 +2846,6 @@ void cli_egg_close(void* hArchive)
     }
 
     handle = (egg_handle*)hArchive;
-    if (CL_SUCCESS != EGG_VALIDATE_HANDLE(handle)) {
-        cli_errmsg("cli_egg_close: Invalid handle values!\n");
-        return;
-    }
 
     egg_free_egg_handle(handle);
 
