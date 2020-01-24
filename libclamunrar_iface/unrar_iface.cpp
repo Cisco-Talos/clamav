@@ -135,6 +135,7 @@ static cl_unrar_error_t unrar_retcode(int retcode)
         }
         case ERAR_EOPEN: {
             unrar_dbgmsg("unrar_retcode: Volume open error.\n");
+            status = UNRAR_EOPEN;
             break;
         }
         case ERAR_ECREATE: {

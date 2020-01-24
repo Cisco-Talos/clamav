@@ -276,6 +276,9 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
         if (unrar_ret == UNRAR_EMEM) {
             status = CL_EMEM;
             goto done;
+        } else if (unrar_ret == UNRAR_EOPEN) {
+            status = CL_EOPEN;
+            goto done;
         } else {
             status = CL_EFORMAT;
             goto done;
@@ -2871,11 +2874,15 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                             cli_set_container(ctx, CL_TYPE_RAR, csize);
                             cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int)fpt->offset);
 
-                            if ((ctx->sub_filepath == NULL) || (fpt->offset != 0)) {
+#ifdef _WIN32
+                            if ((fpt->offset != 0) || (SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
+#else
+                            if ((fpt->offset != 0) || (SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != access(ctx->sub_filepath, R_OK))) {
+#endif
                                 /*
-                             * If map is not file-backed, or offset is not at the start of the file...
-                             * ...have to dump to file for scanrar.
-                             */
+                                 * If map is not file-backed, or offset is not at the start of the file...
+                                 * ...have to dump to file for scanrar.
+                                 */
                                 nret = fmap_dump_to_file(map, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, fpt->offset, fpt->offset + csize);
                                 if (nret != CL_SUCCESS) {
                                     cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
@@ -2893,6 +2900,25 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 
                             /* scan file */
                             nret = cli_scanrar(filepath, fd, ctx);
+
+                            if ((NULL == tmpname) && (CL_EOPEN == nret)) {
+                                /*
+                                 * Failed to open the file using the original filename.
+                                 * Try writing the file descriptor to a temp file and try again.
+                                 */
+                                nret = fmap_dump_to_file(map, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, fpt->offset, fpt->offset + csize);
+                                if (nret != CL_SUCCESS) {
+                                    cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                                    ret        = nret;
+                                    break_loop = 1;
+                                    break;
+                                }
+                                filepath = tmpname;
+                                fd       = tmpfd;
+
+                                /* try to scan again */
+                                nret = cli_scanrar(filepath, fd, ctx);
+                            }
 
                             if (tmpfd != -1) {
                                 /* If dumped tempfile, need to cleanup */
@@ -3521,7 +3547,11 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
                 char *tmpname = NULL;
                 int tmpfd     = -1;
 
-                if (ctx->sub_filepath == NULL) {
+#ifdef _WIN32
+                if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
+#else
+                if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != access(ctx->sub_filepath, R_OK))) {
+#endif
                     /* If map is not file-backed have to dump to file for scanrar. */
                     ret = fmap_dump_to_file(*ctx->fmap, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
                     if (ret != CL_SUCCESS) {
@@ -3538,6 +3568,23 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
                 /* scan file */
                 ret = cli_scanrar(filepath, fd, ctx);
+
+                if ((NULL == tmpname) && (CL_EOPEN == ret)) {
+                    /*
+                     * Failed to open the file using the original filename.
+                     * Try writing the file descriptor to a temp file and try again.
+                     */
+                    ret = fmap_dump_to_file(*ctx->fmap, ctx->sub_filepath, ctx->engine->tmpdir, &tmpname, &tmpfd, 0, SIZE_MAX);
+                    if (ret != CL_SUCCESS) {
+                        cli_dbgmsg("cli_scanraw: failed to generate temporary file.\n");
+                        break;
+                    }
+                    filepath = tmpname;
+                    fd       = tmpfd;
+
+                    /* try to scan again */
+                    ret = cli_scanrar(filepath, fd, ctx);
+                }
 
                 if (tmpfd != -1) {
                     /* If dumped tempfile, need to cleanup */
@@ -4265,17 +4312,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         }
     }
 
-    /* Best effort to determine the filename if not provided.
-     * May still be NULL if filename could not be determined. */
-    if (filepath == NULL) {
-        char *fpath = NULL;
-
-        if (desc >= 0) {
-            (void)cli_get_filepath_from_filedesc(desc, &fpath);
-        }
-
-        ctx.target_filepath = fpath;
-    } else {
+    if (filepath != NULL) {
         ctx.target_filepath = strdup(filepath);
     }
 
