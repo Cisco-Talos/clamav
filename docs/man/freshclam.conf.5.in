@@ -199,9 +199,9 @@ Timeout in seconds when connecting to database server.
 Default: 10
 .TP
 \fBReceiveTimeout NUMBER\fR
-Timeout in seconds when reading from database server.
+Timeout in seconds when reading from database server. 0 means no timeout.
 .br
-Default: 60
+Default: 0
 .TP
 \fBSafeBrowsing BOOL\fR
 This option enables support for Google Safe Browsing. When activated for the first time, freshclam will download a new database file (safebrowsing.cvd) which will be automatically loaded by clamd and clamscan during the next reload, provided that the heuristic phishing detection is turned on. This database includes information about websites that may be phishing sites or possible sources of malware. When using this option, it's mandatory to run freshclam at least every 30 minutes. Freshclam uses the ClamAV's mirror infrastructure to distribute the database and its updates but all the contents are provided under Google's terms of use. See https://support.google.com/code/answer/70015 and https://www.clamav.net/documents/safebrowsing for more information.
