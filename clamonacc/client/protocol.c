@@ -147,7 +147,10 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t ti
             fd = 0;
         }
     }
-    if (result = onas_sendln(curl, "zFILDES", 8, timeout)) {
+
+    result = onas_sendln(curl, "zFILDES", 8, timeout);
+
+    if (result) {
         logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
         ret = -1;
         goto fd_out;

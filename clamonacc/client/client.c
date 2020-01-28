@@ -81,13 +81,11 @@ void onas_print_server_version(struct onas_context **ctx)
  * Returns 0 if clamd is local, non zero if clamd is remote */
 int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 {
-    int s, ret;
+    int ret;
     const struct optstruct *opt;
     CURL *curl;
     CURLcode curlcode;
     char *ipaddr = NULL;
-    struct addrinfo hints, *info, *p;
-    int res;
     int64_t timeout;
 
     timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
@@ -166,13 +164,11 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     char *errchk                = NULL;
     uint64_t i                  = 0;
     const struct optstruct *opt = NULL;
-    int64_t sockd, len;
     CURL *curl = NULL;
     CURLcode curlcode;
     cl_error_t err = CL_SUCCESS;
     int b_remote = 0;
     uint16_t ret = 0;
-    char* buff = NULL;
     int64_t timeout;
 
     if (ctx == NULL) {
@@ -200,8 +196,11 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     }
 
     /* ping command takes the form --ping [attempts[:interval]] */
-    if (opt = optget((*ctx)->opts, "ping")) {
-        if (attempt_str = cli_strdup(opt->strarg)) {
+    opt = optget((*ctx)->opts, "ping");
+
+    if (opt) {
+        attempt_str = cli_strdup(opt->strarg);
+        if (attempt_str) {
             if (NULL == attempt_str) {
                 logg("!could not allocate memory for string\n");
                 ret = -1;
@@ -457,7 +456,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     CURLcode curlcode;
     cl_error_t err = CL_SUCCESS;
     int b_remote;
-    int len, sockd;
+    int len;
     struct RCVLN rcv;
     int64_t timeout;
 
@@ -525,7 +524,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     CURL *curl        = NULL;
     CURLcode curlcode = CURLE_OK;
     int errors        = 0;
-    int sockd, ret;
+    int ret;
 
     *infected = 0;
 

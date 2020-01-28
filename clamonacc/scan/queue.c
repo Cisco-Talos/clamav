@@ -146,11 +146,7 @@ void *onas_scan_queue_th(void *arg)
     /* not a ton of use for context right now, but perhaps in the future we can pass in more options */
     struct onas_context *ctx = (struct onas_context *)arg;
     sigset_t sigset;
-    struct sigaction act;
-    const struct optstruct *pt;
-    int ret, len, idx;
-
-    cl_error_t err;
+    int ret;
 
     /* ignore all signals except SIGUSR2 */
     sigfillset(&sigset);
@@ -286,7 +282,7 @@ cl_error_t onas_scan_queue_start(struct onas_context **ctx)
     return CL_SUCCESS;
 }
 
-static void onas_scan_queue_exit(void *arg)
+static void onas_scan_queue_exit(__attribute__ ((unused)) void *arg)
 {
 
     logg("*ClamScanQueue: onas_scan_queue_exit()\n");

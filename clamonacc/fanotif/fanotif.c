@@ -64,12 +64,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 {
 
     const struct optstruct *pt;
-    short int scan;
-    unsigned int sizelimit = 0, extinfo;
     uint64_t fan_mask      = FAN_EVENT_ON_CHILD;
-
-    pthread_attr_t ddd_attr;
-    struct ddd_thrarg *ddd_tharg = NULL;
 
     ddd_pid = 0;
 
@@ -130,8 +125,6 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         logg("*ClamFanotif: file size limit disabled\n");
     }
 
-    extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
-
     return CL_SUCCESS;
 }
 
@@ -140,14 +133,12 @@ int onas_fan_eloop(struct onas_context **ctx)
     int ret     = 0;
     int err_cnt = 0;
     short int scan;
-    STATBUF sb;
     fd_set rfds;
     char buf[4096];
     ssize_t bread;
     struct fanotify_event_metadata *fmd;
     char fname[1024];
-    int len, check, fres;
-    char err[128];
+    int len, check;
 
     FD_ZERO(&rfds);
     FD_SET((*ctx)->fan_fd, &rfds);

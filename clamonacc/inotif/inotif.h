@@ -25,6 +25,7 @@
 
 #include "shared/optparser.h"
 #include "libclamav/clamav.h"
+#include "clamonacc.h"
 
 /*
  * Extra options for onas_scan_th().

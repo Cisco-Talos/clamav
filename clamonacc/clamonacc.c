@@ -145,6 +145,7 @@ int main(int argc, char **argv)
             if (CL_SUCCESS == onas_check_client_connection(&ctx)) {
                 break;
             }
+            __attribute__ ((fallthrough));
         case CL_BREAK:
             ret = 0;
             logg("*Clamonacc: not setting up client\n");

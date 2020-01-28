@@ -222,7 +222,7 @@ void free_opt_list(char **opt_list, int entries)
 {
 
     int i = 0;
-    for (i; i < entries; i++) {
+    for (i = 0; i < entries; i++) {
         if (opt_list[i]) {
             free(opt_list[i]);
             opt_list[i] = NULL;
