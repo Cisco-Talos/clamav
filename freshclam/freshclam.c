@@ -752,6 +752,8 @@ static fc_error_t initialize(struct optstruct *opts)
     char *tempDirectory = NULL;
     const struct optstruct *logFileOpt = NULL;
 
+    STATBUF statbuf;
+
     memset(&fcConfig, 0, sizeof(fc_config));
 
     if (NULL == opts) {
