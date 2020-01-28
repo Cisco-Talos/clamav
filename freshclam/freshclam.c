@@ -647,7 +647,7 @@ static fc_error_t switch_user(const char *dbowner)
     struct passwd *user;
 
     if (NULL == dbowner) {
-        logg("*No DatabaseOwner specified. Freshclam wlil run as the current user.\n");
+        logg("*No DatabaseOwner specified. Freshclam will run as the current user.\n");
         status = FC_SUCCESS;
         goto done;
     }
@@ -769,6 +769,56 @@ static fc_error_t initialize(struct optstruct *opts)
         }
     }
 
+    /*
+     * Verify that the database directory exists.
+     * Create database directory if missing.
+     */
+    fcConfig.databaseDirectory = optget(opts, "DatabaseDirectory")->strarg;
+
+    if (LSTAT(fcConfig.databaseDirectory, &statbuf) == -1) {
+#ifdef HAVE_PWD_H
+        struct passwd *user;
+#endif
+
+        logg("Creating missing database directory: %s\n", fcConfig.databaseDirectory);
+
+        if (0 != mkdir(fcConfig.databaseDirectory, 0755)) {
+            logg("!Failed to create database directory: %s\n", fcConfig.databaseDirectory);
+            logg("Manually prepare the database directory, or re-run freshclam with higher privileges.\n");
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+
+#ifdef HAVE_PWD_H
+        if (!geteuid()) {
+            /* Running as root user, will assign ownership of database directory to DatabaseOwner */
+            errno = 0;
+            if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
+                logg("ERROR: Failed to get information about user \"%s\".\n",
+                    optget(opts, "DatabaseOwner")->strarg);
+                if (errno == 0) {
+                    logg("Create the \"%s\" user account for freshclam to use, or set the DatabaseOwner config option in freshclam.conf to a different user.\n",
+                        optget(opts, "DatabaseOwner")->strarg);
+                    logg("For more information, see https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source\n");
+                } else {
+                    logg("An unexpected error occurred when attempting to query the \"%s\" user account.\n",
+                        optget(opts, "DatabaseOwner")->strarg);
+                }
+                status = FC_EDBDIRACCESS;
+                goto done;
+            }
+
+            if (chown(fcConfig.databaseDirectory, user->pw_uid, user->pw_gid)) {
+                logg("!Failed to change database directory ownership to user %s. Error: %s\n", optget(opts, "DatabaseOwner")->strarg, strerror(errno));
+                status = FC_EDBDIRACCESS;
+                goto done;
+            }
+
+            logg("Assigned ownership of database directory to user \"%s\".\n", optget(opts, "DatabaseOwner")->strarg);
+        }
+#endif
+    }
+
 #ifdef HAVE_PWD_H
     /*
      * freshclam shouldn't work with root privileges.
@@ -855,8 +905,6 @@ static fc_error_t initialize(struct optstruct *opts)
 
     if ((optget(opts, "LocalIPAddress"))->enabled)
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
-
-    fcConfig.databaseDirectory = optget(opts, "DatabaseDirectory")->strarg;
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
     tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
