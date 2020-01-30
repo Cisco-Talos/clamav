@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
@@ -2632,7 +2632,9 @@ int isuuencodebegin(const char *line)
 #if HAVE_JSON
 json_object *messageGetJObj(message *m)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        return NULL;
+    }
 
     if (m->jobj == NULL)
         m->jobj = cli_jsonobj(NULL, NULL);

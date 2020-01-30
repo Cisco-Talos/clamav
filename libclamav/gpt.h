@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2014-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Kevin Lin <klin@sourcefire.com>
  *
@@ -28,7 +28,7 @@
 #include "clamav-types.h"
 #include "others.h"
 
-/* GPT sector size is normally 512 bytes be can be set to much larger 
+/* GPT sector size is normally 512 bytes be can be set to much larger
  * values. Sector size for GPT can be found by the offset the GPT header
  * signature is located (marking the beginning of the second sector.
 */

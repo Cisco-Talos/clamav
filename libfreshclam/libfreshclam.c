@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -235,17 +235,6 @@ fc_error_t fc_initialize(fc_config *fcConfig)
         goto done;
     }
 
-    /* Validate that the temp directory exists, and store it. */
-    if (LSTAT(fcConfig->tempDirectory, &statbuf) == -1) {
-        logg("!Temp directory does not exist: %s\n", fcConfig->tempDirectory);
-        status = FC_EDIRECTORY;
-        goto done;
-    }
-    if (!S_ISDIR(statbuf.st_mode)) {
-        logg("!Temp directory is not a directory: %s\n", fcConfig->tempDirectory);
-        status = FC_EDIRECTORY;
-        goto done;
-    }
     g_tempDirectory = cli_strdup(fcConfig->tempDirectory);
 
     g_maxAttempts    = fcConfig->maxAttempts;
@@ -588,8 +577,8 @@ fc_error_t fc_update_database(
     fc_error_t status = FC_EARG;
 
     char *dbFilename = NULL;
-    int signo    = 0;
-    long attempt = 1;
+    int signo        = 0;
+    long attempt     = 1;
     uint32_t i;
 
     if ((NULL == database) || (NULL == serverList) || (NULL == bUpdated)) {

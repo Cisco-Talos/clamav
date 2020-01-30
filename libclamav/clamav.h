@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -160,10 +160,11 @@ struct cl_scan_options {
 };
 
 /* general */
-#define CL_SCAN_GENERAL_ALLMATCHES                  0x1 /* scan in all-match mode */
-#define CL_SCAN_GENERAL_COLLECT_METADATA            0x2 /* collect metadata (--gen-json) */
-#define CL_SCAN_GENERAL_HEURISTICS                  0x4 /* option to enable heuristic alerts */
-#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8 /* allow heuristic match to take precedence. */
+#define CL_SCAN_GENERAL_ALLMATCHES                  0x1  /* scan in all-match mode */
+#define CL_SCAN_GENERAL_COLLECT_METADATA            0x2  /* collect metadata (--gen-json) */
+#define CL_SCAN_GENERAL_HEURISTICS                  0x4  /* option to enable heuristic alerts */
+#define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence. */
+#define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files. */
 
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1

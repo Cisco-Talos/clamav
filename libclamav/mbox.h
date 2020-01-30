@@ -1,9 +1,9 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne
- * 
+ *
  *  Acknowledgements: Some ideas came from Stephen White <stephen@earth.li>,
  *                    Michael Dankov <misha@btrc.ru>, Gianluigi Tiesi <sherpya@netfarm.it>,
  *                    Everton da Silva Marques, Thomas Lamy <Thomas.Lamy@in-online.net>,

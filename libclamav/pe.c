@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu, Tomasz Kojm, Andrew Williams
@@ -5648,7 +5648,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         if (at < sec_dir_offset) {
             hlen = sec_dir_offset - at;
             add_chunk_to_hash_list(at, hlen);
-        } else if(at > sec_dir_offset) {
+        } else if (at > sec_dir_offset) {
             cli_dbgmsg("cli_check_auth_header: security directory offset appears to overlap with the PE header\n");
             goto finish;
         }

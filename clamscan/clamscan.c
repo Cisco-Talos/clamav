@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int ds, dms, ret;
     double mb, rmb;
     struct timeval t1, t2;
-	time_t date_start, date_end;
+    time_t date_start, date_end;
 
     char buffer[26];
 #ifndef _WIN32
@@ -157,15 +157,15 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
-	date_start = time(NULL);
+    date_start = time(NULL);
     gettimeofday(&t1, NULL);
 
     ret = scanmanager(opts);
 
     if (!optget(opts, "no-summary")->enabled) {
-		struct tm tmp;
+        struct tm tmp;
 
-		date_end = time(NULL);
+        date_end = time(NULL);
         gettimeofday(&t2, NULL);
         ds  = t2.tv_sec - t1.tv_sec;
         dms = t2.tv_usec - t1.tv_usec;
@@ -192,23 +192,23 @@ int main(int argc, char **argv)
         logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
 
 #ifdef _WIN32
-		if (0 != localtime_s(&tmp, &date_start)) {
+        if (0 != localtime_s(&tmp, &date_start)) {
 #else
-		if (!localtime_r(&date_start, &tmp)) {
+        if (!localtime_r(&date_start, &tmp)) {
 #endif
-			logg("!Failed to get local time for Start Date.\n");
-		}
-		strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
-		logg("Start Date: %s\n", buffer);
+            logg("!Failed to get local time for Start Date.\n");
+        }
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
+        logg("Start Date: %s\n", buffer);
 
 #ifdef _WIN32
-		if (0 != localtime_s(&tmp, &date_end)) {
+        if (0 != localtime_s(&tmp, &date_end)) {
 #else
-		if (!localtime_r(&date_end, &tmp)) {
+        if (!localtime_r(&date_end, &tmp)) {
 #endif
-			logg("!Failed to get local time for End Date.\n");
-		}
-		strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
+            logg("!Failed to get local time for End Date.\n");
+        }
+        strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
         logg("End Date:   %s\n", buffer);
     }
 
@@ -224,7 +224,7 @@ void help(void)
     mprintf("\n");
     mprintf("                       Clam AntiVirus: Scanner %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    clamscan [options] [file/directory/-]\n");
     mprintf("\n");

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne, Török Edvin
@@ -3118,7 +3118,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         if (retval != CL_SUCCESS) {
             if (retval != CL_BREAK) {
                 cli_dbgmsg("pdf_find_and_parse_objs_in_objstm: Fewer objects in stream than expected: %u found, %u expected.\n",
-                        objstm->nobjs_found, objstm->n);
+                           objstm->nobjs_found, objstm->n);
                 badobjects++;
                 pdf->stats.ninvalidobjs++;
             }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -1074,15 +1074,15 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         logg("HTML support disabled.\n");
     }
 
-    #ifdef PRELUDE
-    if (optget(opts, "PreludeEnable")->enabled){
-        if ((opt = optget(opts, "PreludeAnalyzerName"))->enabled){
+#ifdef PRELUDE
+    if (optget(opts, "PreludeEnable")->enabled) {
+        if ((opt = optget(opts, "PreludeAnalyzerName"))->enabled) {
             prelude_initialize_client(opt->strarg);
         } else {
             prelude_initialize_client("ClamAV");
         }
     }
-    #endif
+#endif
 
     if (optget(opts, "ScanXMLDOCS")->enabled) {
         logg("XMLDOCS support enabled.\n");

@@ -1,7 +1,7 @@
 /*
  *  Unit tests for clamd.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -53,7 +53,6 @@
 #include "libclamav/clamav.h"
 #include "libclamav/version.h"
 
-#ifdef CHECK_HAVE_LOOPS
 
 static int sockd;
 #define SOCKET "clamd-test.socket"
@@ -68,10 +67,10 @@ static void conn_setup_mayfail(int may)
     sockd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockd == -1 && (may && (errno == EMFILE || errno == ENFILE)))
         return;
-    fail_unless_fmt(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
+    ck_assert_msg(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
 
     rc = connect(sockd, (struct sockaddr *)&nixsock, (socklen_t)sizeof(nixsock));
-    fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
+    ck_assert_msg(rc != -1, "Unable to connect(): %s\n", strerror(errno));
 
     signal(SIGPIPE, SIG_IGN);
 }
@@ -86,7 +85,7 @@ static int conn_tcp(int port)
     struct sockaddr_in server;
     int rc;
     int sd = socket(AF_INET, SOCK_STREAM, 0);
-    fail_unless_fmt(sd != -1, "Unable to create socket: %s\n", strerror(errno));
+    ck_assert_msg(sd != -1, "Unable to create socket: %s\n", strerror(errno));
 
     memset(&server, 0, sizeof(server));
     server.sin_family      = AF_INET;
@@ -94,7 +93,7 @@ static int conn_tcp(int port)
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     rc = connect(sd, (struct sockaddr *)&server, (socklen_t)sizeof(server));
-    fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
+    ck_assert_msg(rc != -1, "Unable to connect(): %s\n", strerror(errno));
     return sd;
 }
 
@@ -128,16 +127,16 @@ static void commands_setup(void)
     const char *nonempty = "NONEMPTYFILE";
     int fd               = open(NONEXISTENT, O_RDONLY);
     if (fd != -1) close(fd);
-    fail_unless(fd == -1, "Nonexistent file exists!\n");
+    ck_assert_msg(fd == -1, "Nonexistent file exists!\n");
 
     fd = open(ACCDENIED, O_CREAT | O_WRONLY, S_IWUSR);
-    fail_unless_fmt(fd != -1,
+    ck_assert_msg(fd != -1,
                     "Failed to create file for access denied tests: %s\n", strerror(errno));
 
-    fail_unless_fmt(fchmod(fd, S_IWUSR) != -1,
+    ck_assert_msg(fchmod(fd, S_IWUSR) != -1,
                     "Failed to chmod: %s\n", strerror(errno));
     /* must not be empty file */
-    fail_unless_fmt((size_t)write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
+    ck_assert_msg((size_t)write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
                     "Failed to write into testfile: %s\n", strerror(errno));
     close(fd);
 
@@ -158,7 +157,7 @@ static void commands_teardown(void)
 enum idsession_support {
     IDS_OK, /* accepted */
     IDS_REJECT,
-    /* after sending this message, clamd will reply,  then accept 
+    /* after sending this message, clamd will reply,  then accept
      * no further commands, but still reply to all active commands */
     IDS_END /* the END command */
 };
@@ -213,10 +212,10 @@ static void *recvpartial(int sd, size_t *len, int partial)
         if (off + BUFSIZ > *len) {
             *len += BUFSIZ + 1;
             buf = realloc(buf, *len);
-            fail_unless(!!buf, "Cannot realloc buffer\n");
+            ck_assert_msg(!!buf, "Cannot realloc buffer\n");
         }
         rc = recv(sd, buf + off, BUFSIZ, 0);
-        fail_unless_fmt(rc != -1, "recv() failed: %s\n", strerror(errno));
+        ck_assert_msg(rc != -1, "recv() failed: %s\n", strerror(errno));
         off += rc;
     } while (rc && (!partial || !memchr(buf, '\0', off)));
     *len      = off;
@@ -235,24 +234,23 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
     ssize_t rc;
 
     rc = send(sockd, cmd, len, 0);
-    fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
+    ck_assert_msg((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
 
     if (extra) {
         rc = send(sockd, extra, strlen(extra), 0);
-        fail_unless_fmt((size_t)rc == strlen(extra), "Unable to send() extra for %s: %s\n", cmd, strerror(errno));
+        ck_assert_msg((size_t)rc == strlen(extra), "Unable to send() extra for %s: %s\n", cmd, strerror(errno));
     }
     shutdown(sockd, SHUT_WR);
     recvdata = recvfull(sockd, &len);
 
-    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
+    ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
                     len, expect_len, recvdata, expect);
 
     rc = memcmp(recvdata, expect, expect_len);
-    fail_unless_fmt(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
+    ck_assert_msg(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
     free(recvdata);
 }
 
-#ifdef CHECK_HAVE_LOOPS
 START_TEST(test_basic_commands)
 {
     struct basic_test *test = &basic_tests[_i];
@@ -314,7 +312,6 @@ START_TEST(test_compat_commands)
     }
 }
 END_TEST
-#endif
 
 #define EXPECT_INSTREAM "stream: ClamAV-Test-File.UNOFFICIAL FOUND\n"
 #define EXPECT_INSTREAM0 "stream: ClamAV-Test-File.UNOFFICIAL FOUND"
@@ -328,18 +325,18 @@ START_TEST(test_stats)
 
     conn_setup();
     rc = send(sockd, "nSTATS\n", len, 0);
-    fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
+    ck_assert_msg((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 
-    fail_unless_fmt(len > strlen(STATS_REPLY), "Reply has wrong size: %lu, minimum %lu, reply: %s\n",
+    ck_assert_msg(len > strlen(STATS_REPLY), "Reply has wrong size: %lu, minimum %lu, reply: %s\n",
                     len, strlen(STATS_REPLY), recvdata);
 
     if (len > strlen(STATS_REPLY))
         len = strlen(STATS_REPLY);
     rc = strncmp(recvdata, STATS_REPLY, len);
 
-    fail_unless_fmt(rc == 0, "Wrong reply: %s\n", recvdata);
+    ck_assert_msg(rc == 0, "Wrong reply: %s\n", recvdata);
     free(recvdata);
     conn_teardown();
 }
@@ -350,16 +347,16 @@ static size_t prepare_instream(char *buf, size_t off, size_t buflen)
     STATBUF stbuf;
     int fd, nread;
     uint32_t chunk;
-    fail_unless_fmt(CLAMSTAT(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
+    ck_assert_msg(CLAMSTAT(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
 
     fd = open(SCANFILE, O_RDONLY);
-    fail_unless_fmt(fd != -1, "open failed: %s\n", strerror(errno));
+    ck_assert_msg(fd != -1, "open failed: %s\n", strerror(errno));
 
     chunk = htonl(stbuf.st_size);
     memcpy(&buf[off], &chunk, sizeof(chunk));
     off += 4;
     nread = read(fd, &buf[off], buflen - off - 4);
-    fail_unless_fmt(nread == stbuf.st_size, "read failed: %d != %d, %s\n", nread, stbuf.st_size, strerror(errno));
+    ck_assert_msg(nread == stbuf.st_size, "read failed: %d != %d, %s\n", nread, stbuf.st_size, strerror(errno));
     off += nread;
     buf[off++] = 0;
     buf[off++] = 0;
@@ -380,16 +377,16 @@ START_TEST(test_instream)
     off = prepare_instream(buf, off, sizeof(buf));
 
     conn_setup();
-    fail_unless((size_t)send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
+    ck_assert_msg((size_t)send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 
     expect_len = strlen(EXPECT_INSTREAM);
-    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s\n",
+    ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s\n",
                     len, expect_len, recvdata);
 
     rc = memcmp(recvdata, EXPECT_INSTREAM, expect_len);
-    fail_unless_fmt(!rc, "Wrong reply for command INSTREAM: |%s|, expected: |%s|\n", recvdata, EXPECT_INSTREAM);
+    ck_assert_msg(!rc, "Wrong reply for command INSTREAM: |%s|, expected: |%s|\n", recvdata, EXPECT_INSTREAM);
     free(recvdata);
 
     conn_teardown();
@@ -412,7 +409,7 @@ static int sendmsg_fd(int sockd, const char *mesg, size_t msg_len, int fd, int s
         iov[0].iov_len  = 1;
     } else {
         /* send single message with ancillary data */
-        fail_unless(msg_len < sizeof(dummy) - 1, "message too large");
+        ck_assert_msg(msg_len < sizeof(dummy) - 1, "message too large");
         memcpy(dummy, mesg, msg_len);
         dummy[msg_len]  = '\0';
         iov[0].iov_base = dummy;
@@ -447,7 +444,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
     int rc;
 
     conn_setup();
-    fail_unless_fmt(sendmsg_fd(sockd, cmd, len, fd, singlemsg) != -1,
+    ck_assert_msg(sendmsg_fd(sockd, cmd, len, fd, singlemsg) != -1,
                     "Failed to sendmsg: %s\n", strerror(errno));
 
     if (closefd)
@@ -456,17 +453,17 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
     recvdata = recvfull(sockd, &len);
     p        = strchr(recvdata, ':');
 
-    fail_unless_fmt(!!p, "Reply doesn't contain ':' : %s\n", recvdata);
+    ck_assert_msg(!!p, "Reply doesn't contain ':' : %s\n", recvdata);
     *p++ = '\0';
 
-    fail_unless_fmt(sscanf(recvdata, "fd[%u]", &rc) == 1, "Reply doesn't contain fd: %s\n", recvdata);
+    ck_assert_msg(sscanf(recvdata, "fd[%u]", &rc) == 1, "Reply doesn't contain fd: %s\n", recvdata);
 
     len -= p - recvdata;
-    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
+    ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
                     len, expect_len, p, expect);
 
     rc = memcmp(p, expect, expect_len);
-    fail_unless_fmt(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, p, expect);
+    ck_assert_msg(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, p, expect);
     free(recvdata);
     conn_teardown();
 }
@@ -488,7 +485,6 @@ static struct cmds {
         {"nFILDES", '\n', CLEANFILE, CLEANFDREPLY},
         {"zFILDES", '\0', CLEANFILE, CLEANFDREPLY}};
 
-#ifdef CHECK_HAVE_LOOPS
 START_TEST(test_fildes)
 {
     char nreply[BUFSIZ], nsend[BUFSIZ];
@@ -522,19 +518,18 @@ START_TEST(test_fildes)
     nsend_len  = snprintf(nsend, sizeof(nsend), "%s%c", cmd->cmd, cmd->term);
 
     fd = open(cmd->file, O_RDONLY);
-    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
+    ck_assert_msg(fd != -1, "Failed to open: %s\n", strerror(errno));
 
     tst_fildes(nsend, nsend_len, fd, nreply, nreply_len, closefd, singlemsg);
 
     if (!closefd) {
-        /* closefd: 
+        /* closefd:
 	 *  1 - close fd right after sending
 	 *  0 - close fd after receiving reply */
         close(fd);
     }
 }
 END_TEST
-#endif
 
 START_TEST(test_fildes_many)
 {
@@ -542,9 +537,9 @@ START_TEST(test_fildes_many)
     int dummyfd, i, killed = 0;
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
-    fail_unless_fmt(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
+    ck_assert_msg(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
 
-    fail_unless_fmt(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
+    ck_assert_msg(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
     for (i = 0; i < 1024; i++) {
         if (sendmsg_fd(sockd, "zFILDES", sizeof("zFILDES"), dummyfd, 1) == -1) {
             killed = 1;
@@ -573,12 +568,12 @@ START_TEST(test_fildes_unwanted)
 
     /* send a 'zVERSION\0' including the ancillary data.
      * The \0 is from the extra char needed when sending ancillary data */
-    fail_unless_fmt(sendmsg_fd(sockd, "zIDSESSION", strlen("zIDSESSION"), dummyfd, 1) != -1,
+    ck_assert_msg(sendmsg_fd(sockd, "zIDSESSION", strlen("zIDSESSION"), dummyfd, 1) != -1,
                     "sendmsg failed: %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 
-    fail_unless_fmt(!strcmp(recvdata, "1: PROTOCOL ERROR: ancillary data sent without FILDES. ERROR"),
+    ck_assert_msg(!strcmp(recvdata, "1: PROTOCOL ERROR: ancillary data sent without FILDES. ERROR"),
                     "Wrong reply: %s\n", recvdata);
 
     free(recvdata);
@@ -596,21 +591,21 @@ START_TEST(test_idsession_stress)
 
     conn_setup();
 
-    fail_unless_fmt(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
+    ck_assert_msg(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
                     "send() failed: %s\n", strerror(errno));
     for (i = 0; i < 1024; i++) {
         snprintf(buf, sizeof(buf), "%u", (unsigned)(i + 1));
-        fail_unless(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
+        ck_assert_msg(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
                     "send failed: %s\n", strerror(errno));
         data = recvpartial(sockd, &len, 1);
         p    = strchr(data, ':');
-        fail_unless_fmt(!!p, "wrong VERSION reply (%u): %s\n", i, data);
+        ck_assert_msg(!!p, "wrong VERSION reply (%u): %s\n", i, data);
         *p++ = '\0';
-        fail_unless_fmt(*p == ' ', "wrong VERSION reply (%u): %s\n", i, p);
+        ck_assert_msg(*p == ' ', "wrong VERSION reply (%u): %s\n", i, p);
         *p++ = '\0';
 
-        fail_unless_fmt(!strcmp(p, VERSION_REPLY), "wrong VERSION reply: %s\n", data);
-        fail_unless_fmt(!strcmp(data, buf), "wrong IDSESSION id: %s\n", data);
+        ck_assert_msg(!strcmp(p, VERSION_REPLY), "wrong VERSION reply: %s\n", data);
+        ck_assert_msg(!strcmp(data, buf), "wrong IDSESSION id: %s\n", data);
 
         free(data);
     }
@@ -628,12 +623,12 @@ START_TEST(test_connections)
     struct rlimit rlim;
     int *sock;
     int nf, maxfd = 0;
-    fail_unless_fmt(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
+    ck_assert_msg(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
                     "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
     nf   = rlim.rlim_cur - 5;
     sock = malloc(sizeof(int) * nf);
 
-    fail_unless(!!sock, "malloc failed\n");
+    ck_assert_msg(!!sock, "malloc failed\n");
 
     for (i = 0; i < nf; i++) {
         /* just open connections, and let them time out */
@@ -647,7 +642,7 @@ START_TEST(test_connections)
             maxfd = sockd;
     }
     rc = fork();
-    fail_unless(rc != -1, "fork() failed: %s\n", strerror(errno));
+    ck_assert_msg(rc != -1, "fork() failed: %s\n", strerror(errno));
     if (rc == 0) {
         char dummy;
         int ret;
@@ -696,13 +691,13 @@ START_TEST(test_stream)
 
     infd = open(SCANFILE, O_RDONLY);
 
-    fail_unless_fmt(infd != -1, "open failed: %s\n", strerror(errno));
+    ck_assert_msg(infd != -1, "open failed: %s\n", strerror(errno));
     conn_setup();
-    fail_unless_fmt(
+    ck_assert_msg(
         send(sockd, "zSTREAM", sizeof("zSTREAM"), 0) == sizeof("zSTREAM"),
         "send failed: %s\n", strerror(errno));
     recvdata = recvpartial(sockd, &len, 1);
-    fail_unless_fmt(sscanf(recvdata, "PORT %u\n", &port) == 1,
+    ck_assert_msg(sscanf(recvdata, "PORT %u\n", &port) == 1,
                     "Wrong stream reply: %s\n", recvdata);
 
     free(recvdata);
@@ -711,15 +706,15 @@ START_TEST(test_stream)
     do {
         nread = read(infd, buf, sizeof(buf));
         if (nread > 0)
-            fail_unless_fmt(send(streamsd, buf, nread, 0) == nread,
+            ck_assert_msg(send(streamsd, buf, nread, 0) == nread,
                             "send failed: %s\n", strerror(errno));
     } while (nread > 0 || (nread == -1 && errno == EINTR));
-    fail_unless_fmt(nread != -1, "read failed: %s\n", strerror(errno));
+    ck_assert_msg(nread != -1, "read failed: %s\n", strerror(errno));
     close(infd);
     close(streamsd);
 
     recvdata = recvfull(sockd, &len);
-    fail_unless_fmt(!strcmp(recvdata, "stream: ClamAV-Test-File.UNOFFICIAL FOUND"),
+    ck_assert_msg(!strcmp(recvdata, "stream: ClamAV-Test-File.UNOFFICIAL FOUND"),
                     "Wrong reply: %s\n", recvdata);
     free(recvdata);
 
@@ -743,13 +738,13 @@ static void test_idsession_commands(int split, int instream)
         if (test->skiproot && isroot)
             continue;
         if (test->ids == IDS_OK) {
-            fail_unless(p + strlen(test->command) + 2 < buf + sizeof(buf), "Buffer too small");
+            ck_assert_msg(p + strlen(test->command) + 2 < buf + sizeof(buf), "Buffer too small");
             *p++ = 'z';
             strcpy(p, test->command);
             p += strlen(test->command);
             *p++ = '\0';
             if (test->extra) {
-                fail_unless(p + strlen(test->extra) < buf + sizeof(buf), "Buffer too small");
+                ck_assert_msg(p + strlen(test->extra) < buf + sizeof(buf), "Buffer too small");
                 strcpy(p, test->extra);
                 p += strlen(test->extra);
             }
@@ -759,12 +754,12 @@ static void test_idsession_commands(int split, int instream)
             uint32_t chunk;
             /* IDS_END - in middle of other commands, perfect for inserting
 	     * INSTREAM */
-            fail_unless(p + sizeof(INSTREAM_CMD) + 544 < buf + sizeof(buf), "Buffer too small");
+            ck_assert_msg(p + sizeof(INSTREAM_CMD) + 544 < buf + sizeof(buf), "Buffer too small");
             memcpy(p, INSTREAM_CMD, sizeof(INSTREAM_CMD));
             p += sizeof(INSTREAM_CMD);
             p += prepare_instream(p, 0, 552);
             replies[j++] = EXPECT_INSTREAM0;
-            fail_unless(p + sizeof(INSTREAM_CMD) + 16388 < buf + sizeof(buf), "Buffer too small");
+            ck_assert_msg(p + sizeof(INSTREAM_CMD) + 16388 < buf + sizeof(buf), "Buffer too small");
             memcpy(p, INSTREAM_CMD, sizeof(INSTREAM_CMD));
             p += sizeof(INSTREAM_CMD);
             chunk = htonl(16384);
@@ -779,16 +774,16 @@ static void test_idsession_commands(int split, int instream)
             replies[j++] = "stream: OK";
         }
     }
-    fail_unless(p + sizeof(END_CMD) < buf + sizeof(buf), "Buffer too small");
+    ck_assert_msg(p + sizeof(END_CMD) < buf + sizeof(buf), "Buffer too small");
     memcpy(p, END_CMD, sizeof(END_CMD));
     p += sizeof(END_CMD);
 
     if (split) {
         /* test corner-cases: 1-byte sends */
         for (i = 0; i < (size_t)(p - buf); i++)
-            fail_unless((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %u, %s\n", i, strerror(errno));
+            ck_assert_msg((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %u, %s\n", i, strerror(errno));
     } else {
-        fail_unless(send(sockd, buf, p - buf, 0) == p - buf, "send() failed: %s\n", strerror(errno));
+        ck_assert_msg(send(sockd, buf, p - buf, 0) == p - buf, "send() failed: %s\n", strerror(errno));
     }
     recvdata = recvfull(sockd, &len);
     p        = recvdata;
@@ -799,13 +794,13 @@ static void test_idsession_commands(int split, int instream)
         if (test->ids == IDS_OK) {
             unsigned id;
             char *q = strchr(p, ':');
-            fail_unless_fmt(!!q, "No ID in reply: %s\n", p);
+            ck_assert_msg(!!q, "No ID in reply: %s\n", p);
             *q = '\0';
-            fail_unless_fmt(sscanf(p, "%u", &id) == 1, "Wrong ID in reply: %s\n", p);
-            fail_unless(id > 0, "ID cannot be zero");
-            fail_unless_fmt(id <= j, "ID too big: %u, max: %u\n", id, j);
+            ck_assert_msg(sscanf(p, "%u", &id) == 1, "Wrong ID in reply: %s\n", p);
+            ck_assert_msg(id > 0, "ID cannot be zero");
+            ck_assert_msg(id <= j, "ID too big: %u, max: %u\n", id, j);
             q += 2;
-            fail_unless_fmt(!strcmp(q, replies[id - 1]),
+            ck_assert_msg(!strcmp(q, replies[id - 1]),
                             "Wrong ID reply for ID %u: %s, expected %s\n",
                             id,
                             q, replies[id - 1]);
@@ -820,15 +815,15 @@ static void test_idsession_commands(int split, int instream)
 START_TEST(test_idsession)
 {
     conn_setup();
-    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+    ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
                     "send() failed: %s\n", strerror(errno));
     test_idsession_commands(0, 0);
     conn_setup();
-    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+    ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
                     "send() failed: %s\n", strerror(errno));
     test_idsession_commands(1, 0);
     conn_setup();
-    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+    ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
                     "send() failed: %s\n", strerror(errno));
     test_idsession_commands(0, 1);
 }
@@ -841,11 +836,11 @@ static Suite *test_clamd_suite(void)
     tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
-#ifdef CHECK_HAVE_LOOPS
+
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests) / sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_compat_commands, 0, sizeof(basic_tests) / sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_fildes, 0, 4 * sizeof(fildes_cmds) / sizeof(fildes_cmds[0]));
-#endif
+
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
     tcase_add_test(tc_commands, test_stream);
@@ -877,12 +872,3 @@ int main(void)
     srunner_free(sr);
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-#else
-int main(void)
-{
-    puts("\n*** Check version too old, clamd tests not run!\n");
-    /* tell automake the test was skipped */
-    return 77;
-}
-#endif

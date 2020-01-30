@@ -1,7 +1,7 @@
 /*
  * Interface to libclamunrar
  *
- * Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Trog, Torok Edvin, Tomasz Kojm, Micah Snyder
@@ -50,7 +50,8 @@ typedef enum cl_unrar_error_tag {
     UNRAR_BREAK,
     UNRAR_ENCRYPTED,
     UNRAR_EMEM,
-    UNRAR_ERR
+    UNRAR_ERR,
+    UNRAR_EOPEN
 } cl_unrar_error_t;
 
 typedef struct unrar_metadata_tag {

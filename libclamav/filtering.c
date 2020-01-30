@@ -1,7 +1,7 @@
 /*
  *  A fast filter for static patterns.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -44,7 +44,7 @@
  * pattern1: atu
  * pattern2: bzf
  * pattern3: xat
- * 
+ *
  * filter accepts:
  * [abx][tza][uft]
  *
@@ -54,11 +54,11 @@
  * It doesn't however accept:
  * aaa, atz, ...
  *
- * This is implemented by having a bit-level state-machine with MAXSOPATLEN (=32) states, 
+ * This is implemented by having a bit-level state-machine with MAXSOPATLEN (=32) states,
  * each active bit meaning that a state is active.
- * 
- * The states are activated sequentially, eachtransition decision is made 
- * considering if we can accept the character at position X. 
+ *
+ * The states are activated sequentially, eachtransition decision is made
+ * considering if we can accept the character at position X.
  * Since we can start a match at any position, position 0 is
  * reactivated each time.
  * When the last position is activated, the filter reports a match.
@@ -70,8 +70,8 @@
  *
  *  /\    (a|b|x)        (t|z|a)        (u|f|t)
  * [S1] ---------> [S2] -------> [S3] ---------> [S4] -> match
- *  \_______________/             |               
- *  \_____________________________/               
+ *  \_______________/             |
+ *  \_____________________________/
  *
  *
  * But we are tracking multiple active states at each time (or run N automatons
@@ -125,7 +125,7 @@
  *    otherwise the filter will happily accept 000000000000.
  *
  * To optimize cache usage there are 2 end filters, one character (fits L1), and one qgram
- * based (fits L2), both must match for the filter to consider it a match.   
+ * based (fits L2), both must match for the filter to consider it a match.
  *
  *
  */

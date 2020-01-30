@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -166,7 +166,7 @@ static void printBytes(curl_off_t bytes)
         double megabytes = bytes / (double)(1024 * 1024);
         fprintf(stdout, "%.02fMiB", megabytes);
     } else if (bytes / 1024 > 1) {
-        double kilobytes = bytes / (double)(1024 * 1024);
+        double kilobytes = bytes / (double)(1024);
         fprintf(stdout, "%.02fKiB", kilobytes);
     } else {
         fprintf(stdout, "%" CURL_FORMAT_CURL_OFF_T "B", bytes);
@@ -187,7 +187,7 @@ static int xferinfo(void *prog,
     TIMETYPE remtime               = 0;
 
     uint32_t i                = 0;
-    uint32_t totalNumDots     = 40;
+    uint32_t totalNumDots     = 30;
     uint32_t numDots          = 0;
     double fractiondownloaded = 0.0;
 
@@ -203,11 +203,14 @@ static int xferinfo(void *prog,
     xferProg->lastRunTime = curtime;
     remtime               = (curtime * 1 / fractiondownloaded) - curtime;
 
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7l");
+#endif
 #ifdef TIME_IN_US
     if (fractiondownloaded <= 0.0) {
         fprintf(stdout, "Time: %.1fs ", curtime / 1000000.0);
     } else {
-        fprintf(stdout, "Time: %.1fs, ETA; %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
+        fprintf(stdout, "Time: %.1fs, ETA: %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
     }
 #else
     if (fractiondownloaded <= 0.0) {
@@ -244,11 +247,14 @@ static int xferinfo(void *prog,
     }
 
     if (NowDownloaded < TotalToDownload) {
-        fprintf(stdout, "  \r");
+        fprintf(stdout, "     \r");
     } else {
-        fprintf(stdout, "  \n");
+        fprintf(stdout, "     \n");
         xferProg->bComplete = 1;
     }
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7h");
+#endif
     fflush(stdout);
 
     return 0;
@@ -1080,15 +1086,25 @@ static fc_error_t getcvd(
     }
 
     if (cvd->version < remoteVersion) {
-        logg("^Mirror %s is not synchronized.\n", server);
-        if (cvd->version < remoteVersion - 1) {
-            logg("!Downloaded database version is more than 1 version older than the version advertised in DNS TXT record.\n");
+        if (cvd->version == remoteVersion - 1) {
+            logg("*The %s database downloaded from %s is one version older than advertised in the DNS TXT record.\n",
+                cvdfile,
+                server);
+
+            /*
+             * Tolerate an off-by-one version mismatch.
+             * Chances are the new version was just published and the CDN is still updating.
+             */
+            status = FC_SUCCESS;
+            goto done;
+        }
+        else {
+            logg("!The %s database downloaded from %s is more than one version older than the version advertised in the DNS TXT record.\n",
+                cvdfile,
+                server);
             status = FC_EMIRRORNOTSYNC;
             goto done;
         }
-
-        status = FC_UPTODATE;
-        goto done;
     }
 
     status = FC_SUCCESS;
@@ -1999,7 +2015,7 @@ fc_error_t updatedb(
         }
     }
 
-/*
+    /*
      * Replace original database with new database.
      */
 #ifdef _WIN32

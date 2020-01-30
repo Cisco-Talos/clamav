@@ -1,7 +1,7 @@
 /*
  *  Detect phishing, based on URL spoofing detection.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1493,7 +1493,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine, struct ur
      */
     /* Provide copies of the oirinal URL's, because domainlist_match() may modify the buffer,
        and we don't want that to happen in this case. */
-    realData    = cli_strdup(urls->realLink.data);
+    realData = cli_strdup(urls->realLink.data);
     if (!realData) {
         cli_errmsg("Phishcheck: Failed to allocate memory for temporary real link string.\n");
         return CL_PHISH_CLEAN;

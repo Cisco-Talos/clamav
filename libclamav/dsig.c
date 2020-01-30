@@ -1,10 +1,10 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
- * 
- *  Acknowledgements: The idea of number encoding comes from yyyRSA by 
+ *
+ *  Acknowledgements: The idea of number encoding comes from yyyRSA by
  *                    Erik Thiele.
  *
  *  This program is free software; you can redistribute it and/or modify

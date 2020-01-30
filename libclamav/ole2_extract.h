@@ -1,11 +1,11 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
- * 
+ *
  *  Summary: Extract component parts of OLE2 files (e.g. MS Office Documents).
- * 
+ *
  *  Acknowledgements: Some ideas and algorithms were based upon OpenOffice and libgsf.
  *
  *  This program is free software; you can redistribute it and/or modify

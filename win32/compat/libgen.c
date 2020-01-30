@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -22,7 +22,7 @@
 #include <string.h>
 #include "libgen.h"
 
-/* 
+/*
 Note: an exact implementation of is not really possible, but this is good enough for us
 
 *path*				*dirname*		    *basename*

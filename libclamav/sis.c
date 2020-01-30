@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Alberto Wu
@@ -139,7 +139,7 @@ enum {
             memcpy(buff, buff + smax - sleft, sleft);                        \
             size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
             smax       = tmp;                                                \
-            if (((size_t) -1) == tmp) {                                                 \
+            if (((size_t)-1) == tmp) {                                       \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \
                 FREE(alangs);                                                \
                 FREE(ptrs);                                                  \
@@ -169,7 +169,7 @@ enum {
         }                                                       \
         pos += (N)-sleft;                                       \
         size_t tmp = fmap_readn(map, buff, pos, BUFSIZ);        \
-        if (((size_t) -1) == tmp) {                                        \
+        if (((size_t)-1) == tmp) {                              \
             cli_dbgmsg("SIS: Read failed during SKIP\n");       \
             free(alangs);                                       \
             return CL_CLEAN;                                    \

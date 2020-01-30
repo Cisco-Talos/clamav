@@ -1,13 +1,13 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
- * 
+ *
  *  Summary: Hash-table and -set data structures.
- * 
- *  Acknowledgements: hash32shift() is an implementation of Thomas Wang's 
- * 	                  32-bit integer hash function: 
+ *
+ *  Acknowledgements: hash32shift() is an implementation of Thomas Wang's
+ * 	                  32-bit integer hash function:
  * 	                  http://www.cris.com/~Ttwang/tech/inthash.htm
  *
  *  This program is free software; you can redistribute it and/or modify

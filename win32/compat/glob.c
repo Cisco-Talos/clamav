@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2010-2013 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
@@ -24,7 +24,7 @@
 
 #include <malloc.h>
 
-/* 
+/*
     I GIVE UP! The CRT is b0rked and cannot be helped.
 
     The documentation suggests to handle globbing automagically via linking in

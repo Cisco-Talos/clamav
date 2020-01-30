@@ -33,30 +33,23 @@ static int fpu_words = FPU_ENDIAN_INITME;
 
 /* extern void cl_free(struct cl_engine *engine); */
 START_TEST(test_cl_free)
-/*
-    struct cl_engine *engine = NULL;
-    cl_free(NULL);
-*/
-END_TEST
-
-/* extern struct cl_engine *cl_dup(struct cl_engine *engine); */
-START_TEST(test_cl_dup)
-/*
-    struct cl_engine *engine;
-    fail_unless(NULL == cl_dup(NULL), "cl_dup null pointer");
-    */
+{
+    // struct cl_engine *engine = NULL;
+    // cl_free(NULL);
+}
 END_TEST
 
 /* extern int cl_build(struct cl_engine *engine); */
 START_TEST(test_cl_build)
-/*
-    struct cl_engine *engine;
-    fail_unless(CL_ENULLARG == cl_build(NULL), "cl_build null pointer");
-    engine = calloc(sizeof(struct cl_engine),1);
-    fail_unless(engine, "cl_build calloc");
-    fail_unless(CL_ENULLARG == cl_build(engine), "cl_build(engine) with null ->root");
-    */
-/*    engine->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *)); */
+{
+    // struct cl_engine *engine;
+    // ck_assert_msg(CL_ENULLARG == cl_build(NULL), "cl_build null pointer");
+    // engine = calloc(sizeof(struct cl_engine),1);
+    // ck_assert_msg(engine, "cl_build calloc");
+    // ck_assert_msg(CL_ENULLARG == cl_build(engine), "cl_build(engine) with null ->root");
+
+    // engine->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+}
 END_TEST
 
 /* extern void cl_debug(void); */
@@ -65,18 +58,20 @@ START_TEST(test_cl_debug)
     int old_status = cli_debug_flag;
     cli_debug_flag = 0;
     cl_debug();
-    fail_unless(1 == cli_debug_flag, "cl_debug failed to set cli_debug_flag");
+    ck_assert_msg(1 == cli_debug_flag, "cl_debug failed to set cli_debug_flag");
 
     cli_debug_flag = 1;
     cl_debug();
-    fail_unless(1 == cli_debug_flag, "cl_debug failed when flag was already set");
+    ck_assert_msg(1 == cli_debug_flag, "cl_debug failed when flag was already set");
     cli_debug_flag = old_status;
 }
 END_TEST
 
 /* extern const char *cl_retdbdir(void); */
 START_TEST(test_cl_retdbdir)
-fail_unless(!strcmp(DATADIR, cl_retdbdir()), "cl_retdbdir");
+{
+    ck_assert_msg(!strcmp(DATADIR, cl_retdbdir()), "cl_retdbdir");
+}
 END_TEST
 
 #ifndef REPO_VERSION
@@ -87,80 +82,81 @@ END_TEST
 START_TEST(test_cl_retver)
 {
     const char *ver = cl_retver();
-    fail_unless(!strcmp(REPO_VERSION "" VERSION_SUFFIX, ver), "cl_retver");
-    fail_unless(strcspn(ver, "012345789") < strlen(ver),
+    ck_assert_msg(!strcmp(REPO_VERSION "" VERSION_SUFFIX, ver), "cl_retver");
+    ck_assert_msg(strcspn(ver, "012345789") < strlen(ver),
                 "cl_retver must have a number");
 }
 END_TEST
 
 /* extern void cl_cvdfree(struct cl_cvd *cvd); */
 START_TEST(test_cl_cvdfree)
-/*
-    struct cl_cvd *cvd1, *cvd2;
+{
+    // struct cl_cvd *cvd1, *cvd2;
 
-    cvd1 = malloc(sizeof(struct cl_cvd));
-    fail_unless(cvd1, "cvd malloc");
-    cl_cvdfree(cvd1);
+    // cvd1 = malloc(sizeof(struct cl_cvd));
+    // ck_assert_msg(cvd1, "cvd malloc");
+    // cl_cvdfree(cvd1);
 
-    cvd2 = malloc(sizeof(struct cl_cvd));
-    cvd2->time = malloc(1);
-    cvd2->md5 = malloc(1);
-    cvd2->dsig= malloc(1);
-    cvd2->builder = malloc(1);
-    fail_unless(cvd2, "cvd malloc");
-    fail_unless(cvd2->time, "cvd malloc");
-    fail_unless(cvd2->md5, "cvd malloc");
-    fail_unless(cvd2->dsig, "cvd malloc");
-    fail_unless(cvd2->builder, "cvd malloc");
-    cl_cvdfree(cvd2);
-    cl_cvdfree(NULL);
-*/
+    // cvd2 = malloc(sizeof(struct cl_cvd));
+    // cvd2->time = malloc(1);
+    // cvd2->md5 = malloc(1);
+    // cvd2->dsig= malloc(1);
+    // cvd2->builder = malloc(1);
+    // ck_assert_msg(cvd2, "cvd malloc");
+    // ck_assert_msg(cvd2->time, "cvd malloc");
+    // ck_assert_msg(cvd2->md5, "cvd malloc");
+    // ck_assert_msg(cvd2->dsig, "cvd malloc");
+    // ck_assert_msg(cvd2->builder, "cvd malloc");
+    // cl_cvdfree(cvd2);
+    // cl_cvdfree(NULL);
+}
 END_TEST
 
 /* extern int cl_statfree(struct cl_stat *dbstat); */
 START_TEST(test_cl_statfree)
-/*
-    struct cl_stat *stat;
-    fail_unless(CL_ENULLARG == cl_statfree(NULL), "cl_statfree(NULL)");
+{
+    // struct cl_stat *stat;
+    // ck_assert_msg(CL_ENULLARG == cl_statfree(NULL), "cl_statfree(NULL)");
 
-    stat = malloc(sizeof(struct cl_stat));
-    fail_unless(NULL != stat, "malloc");
-    fail_unless(CL_SUCCESS == cl_statfree(stat), "cl_statfree(empty_struct)");
+    // stat = malloc(sizeof(struct cl_stat));
+    // ck_assert_msg(NULL != stat, "malloc");
+    // ck_assert_msg(CL_SUCCESS == cl_statfree(stat), "cl_statfree(empty_struct)");
 
-    stat = malloc(sizeof(struct cl_stat));
-    fail_unless(NULL != stat, "malloc");
-    stat->stattab = strdup("test");
-    fail_unless(NULL != stat->stattab, "strdup");
-    fail_unless(CL_SUCCESS == cl_statfree(stat), "cl_statfree(stat with stattab)");
+    // stat = malloc(sizeof(struct cl_stat));
+    // ck_assert_msg(NULL != stat, "malloc");
+    // stat->stattab = strdup("test");
+    // ck_assert_msg(NULL != stat->stattab, "strdup");
+    // ck_assert_msg(CL_SUCCESS == cl_statfree(stat), "cl_statfree(stat with stattab)");
 
-    stat = malloc(sizeof(struct cl_stat));
-    fail_unless(NULL != stat, "malloc");
-    stat->stattab = NULL;
-    fail_unless(CL_SUCCESS == cl_statfree(stat), "cl_statfree(stat with stattab) set to NULL");
-*/
+    // stat = malloc(sizeof(struct cl_stat));
+    // ck_assert_msg(NULL != stat, "malloc");
+    // stat->stattab = NULL;
+    // ck_assert_msg(CL_SUCCESS == cl_statfree(stat), "cl_statfree(stat with stattab) set to NULL");
+}
 END_TEST
 
 /* extern unsigned int cl_retflevel(void); */
 START_TEST(test_cl_retflevel)
+{}
 END_TEST
 
 /* extern struct cl_cvd *cl_cvdhead(const char *file); */
 START_TEST(test_cl_cvdhead)
-/*
-    fail_unless(NULL == cl_cvdhead(NULL), "cl_cvdhead(null)");
-    fail_unless(NULL == cl_cvdhead("input/cl_cvdhead/1.txt"), "cl_cvdhead(515 byte file, all nulls)");
-*/
-/* the data read from the file is passed to cl_cvdparse, test cases for that are separate */
+{
+    // ck_assert_msg(NULL == cl_cvdhead(NULL), "cl_cvdhead(null)");
+    // ck_assert_msg(NULL == cl_cvdhead("input/cl_cvdhead/1.txt"), "cl_cvdhead(515 byte file, all nulls)");
+    /* the data read from the file is passed to cl_cvdparse, test cases for that are separate */
+}
 END_TEST
 
 /* extern struct cl_cvd *cl_cvdparse(const char *head); */
 START_TEST(test_cl_cvdparse)
+{}
 END_TEST
 
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
 static struct cl_engine *g_engine;
 
-#ifdef CHECK_HAVE_LOOPS
 /* int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, struct cl_scan_options* options) */
 START_TEST(test_cl_scandesc)
 {
@@ -180,8 +176,8 @@ START_TEST(test_cl_scandesc)
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scandesc failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
@@ -207,8 +203,8 @@ START_TEST(test_cl_scandesc_allscan)
     cli_dbgmsg("scan end (scandesc) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scandesc_allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scandesc_allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
@@ -235,8 +231,8 @@ START_TEST(test_cl_scanfile)
     cli_dbgmsg("scan end (scanfile) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
 }
 END_TEST
@@ -262,8 +258,8 @@ START_TEST(test_cl_scanfile_allscan)
     cli_dbgmsg("scan end (scanfile_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
 }
 END_TEST
@@ -289,8 +285,8 @@ START_TEST(test_cl_scanfile_callback)
     cli_dbgmsg("scan end (scanfile_cb) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile_cb failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
 }
 END_TEST
@@ -317,8 +313,8 @@ START_TEST(test_cl_scanfile_callback_allscan)
     cli_dbgmsg("scan end (scanfile_cb_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_cb_allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile_cb_allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
 }
 END_TEST
@@ -343,8 +339,8 @@ START_TEST(test_cl_scandesc_callback)
     cli_dbgmsg("scan end (scandesc_cb) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
@@ -371,37 +367,41 @@ START_TEST(test_cl_scandesc_callback_allscan)
     cli_dbgmsg("scan end (scandesc_cb_allscan) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanfile_allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
 END_TEST
 
-#endif
-
 /* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
 START_TEST(test_cl_load)
+{}
 END_TEST
 
 /* int cl_cvdverify(const char *file) */
 START_TEST(test_cl_cvdverify)
+{}
 END_TEST
 
 /* int cl_statinidir(const char *dirname, struct cl_stat *dbstat) */
 START_TEST(test_cl_statinidir)
+{}
 END_TEST
 
 /* int cl_statchkdir(const struct cl_stat *dbstat) */
 START_TEST(test_cl_statchkdir)
+{}
 END_TEST
 
 /* void cl_settempdir(const char *dir, short leavetemps) */
 START_TEST(test_cl_settempdir)
+{}
 END_TEST
 
 /* const char *cl_strerror(int clerror) */
 START_TEST(test_cl_strerror)
+{}
 END_TEST
 
 static char **testfiles     = NULL;
@@ -441,7 +441,7 @@ static void init_testfiles(void)
     int expect = expected_testfiles;
 
     DIR *d = opendir(OBJDIR "/../test");
-    fail_unless(!!d, "opendir");
+    ck_assert_msg(!!d, "opendir");
     if (!d)
         return;
     testfiles   = NULL;
@@ -451,14 +451,14 @@ static void init_testfiles(void)
             continue;
         i++;
         testfiles = cli_realloc(testfiles, i * sizeof(*testfiles));
-        fail_unless(!!testfiles, "cli_realloc");
+        ck_assert_msg(!!testfiles, "cli_realloc");
         testfiles[i - 1] = strdup(dirent->d_name);
     }
     testfiles_n = i;
     if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
         expect--;
     expect -= skip_files();
-    fail_unless_fmt(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
+    ck_assert_msg(testfiles_n == expect, "testfiles: %d != %d", testfiles_n, expect);
 
     closedir(d);
 }
@@ -483,13 +483,13 @@ static void engine_setup(void)
 
     init_testfiles();
     if (!inited)
-        fail_unless(cl_init(CL_INIT_DEFAULT) == 0, "cl_init");
+        ck_assert_msg(cl_init(CL_INIT_DEFAULT) == 0, "cl_init");
     inited   = 1;
     g_engine = cl_engine_new();
-    fail_unless(!!g_engine, "engine");
-    fail_unless_fmt(cl_load(hdb, g_engine, &sigs, CL_DB_STDOPT) == 0, "cl_load %s", hdb);
-    fail_unless(sigs == 1, "sigs");
-    fail_unless(cl_engine_compile(g_engine) == 0, "cl_engine_compile");
+    ck_assert_msg(!!g_engine, "engine");
+    ck_assert_msg(cl_load(hdb, g_engine, &sigs, CL_DB_STDOPT) == 0, "cl_load %s", hdb);
+    ck_assert_msg(sigs == 1, "sigs");
+    ck_assert_msg(cl_engine_compile(g_engine) == 0, "cl_engine_compile");
 }
 
 static void engine_teardown(void)
@@ -503,16 +503,15 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     int fd;
     STATBUF st;
 
-    fail_unless(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
+    ck_assert_msg(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
     snprintf(file, fsize, OBJDIR "/../test/%s", testfiles[i]);
 
     fd = open(file, O_RDONLY);
-    fail_unless(fd > 0, "open");
-    fail_unless(FSTAT(fd, &st) == 0, "fstat");
+    ck_assert_msg(fd > 0, "open");
+    ck_assert_msg(FSTAT(fd, &st) == 0, "fstat");
     *size = st.st_size;
     return fd;
 }
-#ifdef CHECK_HAVE_LOOPS
 
 static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
@@ -535,15 +534,15 @@ START_TEST(test_cl_scanmap_callback_handle)
     int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_handle(&fd, 0, size, pread_cb, 1);
-    fail_unless(!!map, "cl_fmap_open_handle");
+    ck_assert_msg(!!map, "cl_fmap_open_handle");
 
     cli_dbgmsg("scanning (handle) %s\n", file);
     ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
@@ -566,15 +565,15 @@ START_TEST(test_cl_scanmap_callback_handle_allscan)
     int fd = get_test_file(_i, file, sizeof(file), &size);
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_handle(&fd, 0, size, pread_cb, 1);
-    fail_unless(!!map, "cl_fmap_open_handle %s");
+    ck_assert_msg(!!map, "cl_fmap_open_handle %s");
 
     cli_dbgmsg("scanning (handle) allscan %s\n", file);
     ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (handle) allscan %s\n", file);
 
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
     close(fd);
 }
@@ -597,18 +596,18 @@ START_TEST(test_cl_scanmap_callback_mem)
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
     mem = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-    fail_unless(mem != MAP_FAILED, "mmap");
+    ck_assert_msg(mem != MAP_FAILED, "mmap");
 
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_memory(mem, size);
-    fail_unless(!!map, "cl_fmap_open_mem");
+    ck_assert_msg(!!map, "cl_fmap_open_mem");
 
     cli_dbgmsg("scanning (mem) %s\n", file);
     ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) %s\n", file);
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     }
     close(fd);
     cl_fmap_close(map);
@@ -635,36 +634,34 @@ START_TEST(test_cl_scanmap_callback_mem_allscan)
     int fd = get_test_file(_i, file, sizeof(file), &size);
 
     mem = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-    fail_unless(mem != MAP_FAILED, "mmap");
+    ck_assert_msg(mem != MAP_FAILED, "mmap");
 
     /* intentionally use different way than scanners.c for testing */
     map = cl_fmap_open_memory(mem, size);
-    fail_unless(!!map, "cl_fmap_open_mem %s");
+    ck_assert_msg(!!map, "cl_fmap_open_mem %s");
 
     cli_dbgmsg("scanning (mem) allscan %s\n", file);
     ret = cl_scanmap_callback(map, file, &virname, &scanned, g_engine, &options, NULL);
     cli_dbgmsg("scan end (mem) allscan %s\n", file);
     if (!FALSE_NEGATIVE) {
-        fail_unless_fmt(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
-        fail_unless_fmt(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
+        ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
+        ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s for %s", virname, file);
     }
     close(fd);
     cl_fmap_close(map);
     munmap(mem, size);
 }
 END_TEST
-#endif
 
 static Suite *test_cl_suite(void)
 {
-    Suite *s           = suite_create("cl_api");
-    TCase *tc_cl       = tcase_create("cl_dup");
-    TCase *tc_cl_scan  = tcase_create("cl_scan");
+    Suite *s           = suite_create("cl_suite");
+    TCase *tc_cl       = tcase_create("cl_api");
+    TCase *tc_cl_scan  = tcase_create("cl_scan_api");
     char *user_timeout = NULL;
     int expect         = expected_testfiles;
     suite_add_tcase(s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
-    tcase_add_test(tc_cl, test_cl_dup);
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);
     tcase_add_test(tc_cl, test_cl_retdbdir);
@@ -683,7 +680,7 @@ static Suite *test_cl_suite(void)
 
     suite_add_tcase(s, tc_cl_scan);
     tcase_add_checked_fixture(tc_cl_scan, engine_setup, engine_teardown);
-#ifdef CHECK_HAVE_LOOPS
+
     if (get_fpu_endian() == FPU_ENDIAN_UNKNOWN)
         expect--;
     expect -= skip_files();
@@ -708,7 +705,6 @@ static Suite *test_cl_suite(void)
     } else {
         printf("Using default test timeout; alter by setting 'T' env var (in seconds)\n");
     }
-#endif
     return s;
 }
 
@@ -725,8 +721,8 @@ static void data_setup(void)
 
     data  = malloc(sizeof(le_data) * DATA_REP);
     data2 = malloc(sizeof(le_data) * DATA_REP);
-    fail_unless(!!data, "unable to allocate memory for fixture");
-    fail_unless(!!data2, "unable to allocate memory for fixture");
+    ck_assert_msg(!!data, "unable to allocate memory for fixture");
+    ck_assert_msg(!!data2, "unable to allocate memory for fixture");
     p = data;
     /* make multiple copies of le_data, we need to run readint tests in a loop, so we need
          * to give it some data to run it on */
@@ -743,7 +739,6 @@ static void data_teardown(void)
     free(data2);
 }
 
-#ifdef CHECK_HAVE_LOOPS
 /* test reading with different alignments, _i is parameter from tcase_add_loop_test */
 START_TEST(test_cli_readint16)
 {
@@ -752,12 +747,12 @@ START_TEST(test_cli_readint16)
     /* read 2 bytes apart, start is not always aligned*/
     for (j = _i; j <= DATA_REP * sizeof(le_data) - 2; j += 2) {
         value = le_expected[j & 3];
-        fail_unless(cli_readint16(&data[j]) == value, "(1) data read must be little endian");
+        ck_assert_msg(cli_readint16(&data[j]) == value, "(1) data read must be little endian");
     }
     /* read 2 bytes apart, always aligned*/
     for (j = 0; j <= DATA_REP * sizeof(le_data) - 2; j += 2) {
         value = le_expected[j & 3];
-        fail_unless(cli_readint16(&data[j]) == value, "(2) data read must be little endian");
+        ck_assert_msg(cli_readint16(&data[j]) == value, "(2) data read must be little endian");
     }
 }
 END_TEST
@@ -769,12 +764,12 @@ START_TEST(test_cli_readint32)
     int32_t value = le_expected[_i & 3];
     /* read 4 bytes apart, start is not always aligned*/
     for (j = _i; j < DATA_REP * sizeof(le_data) - 4; j += 4) {
-        fail_unless(cli_readint32(&data[j]) == value, "(1) data read must be little endian");
+        ck_assert_msg(cli_readint32(&data[j]) == value, "(1) data read must be little endian");
     }
     value = le_expected[0];
     /* read 4 bytes apart, always aligned*/
     for (j = 0; j < DATA_REP * sizeof(le_data) - 4; j += 4) {
-        fail_unless(cli_readint32(&data[j]) == value, "(2) data read must be little endian");
+        ck_assert_msg(cli_readint32(&data[j]) == value, "(2) data read must be little endian");
     }
 }
 END_TEST
@@ -788,14 +783,14 @@ START_TEST(test_cli_writeint32)
         cli_writeint32(&data2[j], 0x12345678);
     }
     for (j = _i; j < DATA_REP * sizeof(le_data) - 4; j += 4) {
-        fail_unless(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
+        ck_assert_msg(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
     }
     /* write 4 bytes apart, always aligned*/
     for (j = 0; j < DATA_REP * sizeof(le_data) - 4; j += 4) {
         cli_writeint32(&data2[j], 0x12345678);
     }
     for (j = 0; j < DATA_REP * sizeof(le_data) - 4; j += 4) {
-        fail_unless(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
+        ck_assert_msg(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
     }
 }
 END_TEST
@@ -830,7 +825,7 @@ static const size_t dsig_tests_cnt = sizeof(dsig_tests) / sizeof(dsig_tests[0]);
 
 START_TEST(test_cli_dsig)
 {
-    fail_unless(cli_versig(dsig_tests[_i].md5, dsig_tests[_i].dsig) == dsig_tests[_i].result,
+    ck_assert_msg(cli_versig(dsig_tests[_i].md5, dsig_tests[_i].dsig) == dsig_tests[_i].result,
                 "digital signature verification test failed");
 }
 END_TEST
@@ -868,18 +863,18 @@ START_TEST(test_sha256)
     memset(buf, 0x61, sizeof(buf));
 
     cl_sha256(tv1, sizeof(tv1), hsha256, NULL);
-    fail_unless(!memcmp(hsha256, res256[0], sizeof(hsha256)), "sha256 test vector #1 failed");
+    ck_assert_msg(!memcmp(hsha256, res256[0], sizeof(hsha256)), "sha256 test vector #1 failed");
 
     cl_sha256(tv2, sizeof(tv2), hsha256, NULL);
-    fail_unless(!memcmp(hsha256, res256[1], sizeof(hsha256)), "sha256 test vector #2 failed");
+    ck_assert_msg(!memcmp(hsha256, res256[1], sizeof(hsha256)), "sha256 test vector #2 failed");
 
     sha256 = cl_hash_init("sha256");
-    fail_unless(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
+    ck_assert_msg(sha256 != NULL, "Could not create EVP_MD_CTX for sha256");
 
     for (i = 0; i < 1000; i++)
         cl_update_hash(sha256, buf, sizeof(buf));
     cl_finish_hash(sha256, hsha256);
-    fail_unless(!memcmp(hsha256, res256[2], sizeof(hsha256)), "sha256 test vector #3 failed");
+    ck_assert_msg(!memcmp(hsha256, res256[2], sizeof(hsha256)), "sha256 test vector #3 failed");
 }
 END_TEST
 
@@ -890,90 +885,90 @@ START_TEST(test_sanitize_path)
 
     unsanitized = "";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL != sanitized, "sanitize_path: Empty path test failed");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: Empty path test failed");
 
     unsanitized = NULL;
     sanitized   = cli_sanitize_filepath(unsanitized, 0);
-    fail_if(NULL != sanitized, "sanitize_path: NULL path #1 test failed");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: NULL path #1 test failed");
 
     unsanitized = NULL;
     sanitized   = cli_sanitize_filepath(unsanitized, 50);
-    fail_if(NULL != sanitized, "sanitize_path: NULL path #2 test failed");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: NULL path #2 test failed");
 
     unsanitized = "badlen";
     sanitized   = cli_sanitize_filepath(unsanitized, 0);
-    fail_if(NULL != sanitized, "sanitize_path: Zero/bad path length test failed");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: Zero/bad path length test failed");
 
     unsanitized = ".." PATHSEP;
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL");
 
     unsanitized = "." PATHSEP;
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL (2)");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL (2)");
 
     unsanitized = PATHSEP;
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL != sanitized, "sanitize_path: sanitized path should have been NULL (3)");
+    ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL (3)");
 
     unsanitized = ".." PATHSEP "relative_bad_1";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative_bad_1"), "sanitize_path: bad relative path test #1 failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative_bad_1"), "sanitize_path: bad relative path test #1 failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP ".." PATHSEP "good";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "good"), "sanitize_path: good relative path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "good"), "sanitize_path: good relative path test failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP ".." PATHSEP ".." PATHSEP "bad_2";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_2"), "sanitize_path: bad relative path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_2"), "sanitize_path: bad relative path test failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "." PATHSEP ".." PATHSEP ".." PATHSEP "bad_current";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_current"), "sanitize_path: bad relative current path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_current"), "sanitize_path: bad relative current path test failed");
     free(sanitized);
 
     unsanitized = "relative/../../bad_win_posix_path";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative/../bad_win_posix_path"), "sanitize_path: bad relative win posix path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative/../bad_win_posix_path"), "sanitize_path: bad relative win posix path test failed");
     free(sanitized);
 
     unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP ".." PATHSEP "bad";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "bad"), "sanitize_path: bad absolute path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "bad"), "sanitize_path: bad absolute path test failed");
     free(sanitized);
 
     unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP "good";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "good"), "sanitize_path: good absolute path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "good"), "sanitize_path: good absolute path test failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "normal";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP "normal"), "sanitize_path: relative normal path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "normal"), "sanitize_path: relative normal path test failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP PATHSEP "doublesep";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP "doublesep"), "sanitize_path: relative double sep path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "doublesep"), "sanitize_path: relative double sep path test failed");
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "shortname" PATHSEP "1";
     sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    fail_if(NULL == sanitized);
-    fail_unless(!strcmp(sanitized, "relative" PATHSEP "shortname" PATHSEP "1"), "sanitize_path: relative short name path test failed");
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "shortname" PATHSEP "1"), "sanitize_path: relative short name path test failed");
     free(sanitized);
 }
 END_TEST
@@ -1000,7 +995,6 @@ static Suite *test_cli_suite(void)
 
     return s;
 }
-#endif /* CHECK_HAVE_LOOPS */
 
 void errmsg_expected(void)
 {
@@ -1019,11 +1013,11 @@ int open_testfile(const char *name)
     }
 
     str = cli_malloc(strlen(name) + strlen(srcdir) + 2);
-    fail_unless(!!str, "cli_malloc");
+    ck_assert_msg(!!str, "cli_malloc");
     sprintf(str, "%s/%s", srcdir, name);
 
     fd = open(str, O_RDONLY);
-    fail_unless_fmt(fd >= 0, "open() failed: %s", str);
+    ck_assert_msg(fd >= 0, "open() failed: %s", str);
     free(str);
     return fd;
 }
@@ -1034,9 +1028,9 @@ void diff_file_mem(int fd, const char *ref, size_t len)
     size_t p, reflen = len;
     char *buf = cli_malloc(len);
 
-    fail_unless_fmt(!!buf, "unable to malloc buffer: %d", len);
+    ck_assert_msg(!!buf, "unable to malloc buffer: %d", len);
     p = read(fd, buf, len);
-    fail_unless_fmt(p == len, "file is smaller: %lu, expected: %lu", p, len);
+    ck_assert_msg(p == len, "file is smaller: %lu, expected: %lu", p, len);
     p = 0;
     while (len > 0) {
         c1 = ref[p];
@@ -1047,10 +1041,10 @@ void diff_file_mem(int fd, const char *ref, size_t len)
         len--;
     }
     if (len > 0)
-        fail_unless_fmt(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
+        ck_assert_msg(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
     free(buf);
     p = lseek(fd, 0, SEEK_END);
-    fail_unless_fmt(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
+    ck_assert_msg(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
     close(fd);
 }
 
@@ -1059,14 +1053,14 @@ void diff_files(int fd, int ref_fd)
     char *ref;
     ssize_t nread;
     off_t siz = lseek(ref_fd, 0, SEEK_END);
-    fail_unless_fmt(siz != -1, "lseek failed");
+    ck_assert_msg(siz != -1, "lseek failed");
 
     ref = cli_malloc(siz);
-    fail_unless_fmt(!!ref, "unable to malloc buffer: %d", siz);
+    ck_assert_msg(!!ref, "unable to malloc buffer: %d", siz);
 
-    fail_unless_fmt(lseek(ref_fd, 0, SEEK_SET) == 0, "lseek failed");
+    ck_assert_msg(lseek(ref_fd, 0, SEEK_SET) == 0, "lseek failed");
     nread = read(ref_fd, ref, siz);
-    fail_unless_fmt(nread == siz, "short read, expected: %ld, was: %ld", siz, nread);
+    ck_assert_msg(nread == siz, "short read, expected: %ld, was: %ld", siz, nread);
     close(ref_fd);
     diff_file_mem(fd, ref, siz);
     free(ref);
@@ -1085,10 +1079,10 @@ void dconf_setup(void)
     dconf = NULL;
 #ifdef USE_MPOOL
     pool = mpool_create();
-    fail_unless(!!pool, "unable to create pool");
+    ck_assert_msg(!!pool, "unable to create pool");
 #endif
     dconf = cli_mpool_dconf_init(pool);
-    fail_unless(!!dconf, "failed to init dconf");
+    ck_assert_msg(!!dconf, "failed to init dconf");
 }
 
 void dconf_teardown(void)
@@ -1135,11 +1129,8 @@ int main(void)
     check_version_compatible();
     s  = test_cl_suite();
     sr = srunner_create(s);
-#ifdef CHECK_HAVE_LOOPS
+
     srunner_add_suite(sr, test_cli_suite());
-#else
-    printf("*** Warning ***: your check version is too old,\nseveral important tests will not execute\n");
-#endif
     srunner_add_suite(sr, test_jsnorm_suite());
     srunner_add_suite(sr, test_str_suite());
     srunner_add_suite(sr, test_regex_suite());

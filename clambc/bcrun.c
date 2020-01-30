@@ -1,7 +1,7 @@
 /*
  *  ClamAV bytecode handler tool.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -49,7 +49,7 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Bytecode Testing Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clambc <file> [function] [param1 ...]\n");
     printf("\n");

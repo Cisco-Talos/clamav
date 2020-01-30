@@ -1,7 +1,7 @@
 /*
  * Fuzz target for cl_scanmap_callback()
  *
- * Copyright (C) 2018-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2018-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Authors: Micah Snyder, Alex Gaynor
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,14 +65,14 @@ public:
 ClamAVState kClamAVState;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    
+
     struct cl_scan_options scanopts = {0};
-    
+
     cl_fmap_t *clamav_data = cl_fmap_open_memory(data, size);
 
     memset(&scanopts, 0, sizeof(struct cl_scan_options));
 
-    scanopts.parse |= 
+    scanopts.parse |=
 #if defined(CLAMAV_FUZZ_ARCHIVE)
         CL_SCAN_PARSE_ARCHIVE;
 #elif defined(CLAMAV_FUZZ_MAIL)

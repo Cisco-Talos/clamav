@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -80,7 +80,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Daemon %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamd [options]\n");
     printf("\n");
@@ -98,7 +98,7 @@ static struct optstruct *opts;
 
 /* When running under valgrind and daemonizing, valgrind incorrectly reports
  * leaks from the engine, because it can't see that all the memory is still
- * reachable (some pointers are stored mangled in the JIT). 
+ * reachable (some pointers are stored mangled in the JIT).
  * So free the engine on exit from the parent too (during daemonize)
  */
 static struct cl_engine *gengine = NULL;

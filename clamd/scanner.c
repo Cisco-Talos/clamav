@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Török Edvin
@@ -391,7 +391,7 @@ int scanfd(
     context.filename = fdstr;
     context.virsize  = 0;
     context.scandata = NULL;
-    ret              = cl_scandesc_callback(fd, NULL, &virname, scanned, engine, options, &context);
+    ret              = cl_scandesc_callback(fd, conn->filename, &virname, scanned, engine, options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(conn->group)) {
@@ -564,7 +564,7 @@ int scanstream(
         context.filename = peer_addr;
         context.virsize  = 0;
         context.scandata = NULL;
-        ret              = cl_scandesc_callback(tmpd, NULL, &virname, scanned, engine, options, &context);
+        ret              = cl_scandesc_callback(tmpd, tmpname, &virname, scanned, engine, options, &context);
         thrmgr_setactivetask(NULL, NULL);
     } else {
         ret = -1;

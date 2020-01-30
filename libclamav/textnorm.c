@@ -1,7 +1,7 @@
 /*
  *  Generic text normalizer.
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -89,7 +89,7 @@ static const enum normalize_action char_action[256] = {
     IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN, IGN};
 
 /* Normalizes the text at @buf of length @buf_len, @buf can include \0 characters.
- * Stores the normalized text in @state's buffer. 
+ * Stores the normalized text in @state's buffer.
  * Returns how many bytes it consumed of the input. */
 size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char *buf, const size_t buf_len)
 {

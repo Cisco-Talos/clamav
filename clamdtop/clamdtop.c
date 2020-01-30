@@ -1,7 +1,7 @@
 /*
  *  ClamdTOP
  *
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -417,7 +417,7 @@ static void cleanup(void)
         }
         rm_windows();
 #ifndef _WIN32
-		endwin();
+        endwin();
 #endif // !_WIN32
     }
     curses_inited = 0;
@@ -425,9 +425,9 @@ static void cleanup(void)
         if (global.conn[i].sd && global.conn[i].sd != -1) {
             send_string_noreconn(&global.conn[i], "nEND\n");
 #ifndef WIN32
-			close(global.conn[i].sd);
+            close(global.conn[i].sd);
 #else
-			closesocket(global.conn[i].sd);
+            closesocket(global.conn[i].sd);
 #endif
         }
         free(global.conn[i].version);
@@ -532,7 +532,7 @@ char *get_ip(const char *ip)
      *     2) IPv4:Port
      *     3) IPv6
      *     4) [IPv6]:Port
-     * 
+     *
      * Use of IPv6:Port is incorrect. An IPv6 address must be enclosed in brackets.
      */
 
@@ -648,7 +648,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
             perror("connect");
-			close(s);
+            close(s);
             return -1;
         }
 
@@ -687,7 +687,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 #ifndef WIN32
             close(s);
 #else
-			closesocket(s);
+            closesocket(s);
 #endif
             continue;
         }
@@ -768,13 +768,13 @@ static void reconnect(conn_t *conn)
     if (++tries > 3) {
         EXIT_PROGRAM(RECONNECT_FAIL);
     }
-	if (conn->sd != -1) {
+    if (conn->sd != -1) {
 #ifndef WIN32
-		close(conn->sd);
+        close(conn->sd);
 #else
-		closesocket(conn->sd);
+        closesocket(conn->sd);
 #endif
-	}
+    }
     if (make_connection(conn->remote, conn) < 0) {
         print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
         EXIT_PROGRAM(RECONNECT_FAIL);
@@ -799,9 +799,9 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
             /* it could be a timeout, be nice and send an END */
             send_string_noreconn(conn, "nEND\n");
 #ifndef WIN32
-			close(conn->sd);
+            close(conn->sd);
 #else
-			closesocket(conn->sd);
+            closesocket(conn->sd);
 #endif
             conn->sd = -1;
             return 0;
@@ -1254,7 +1254,7 @@ static void help(void)
     printf("\n");
     printf("                       Clam AntiVirus: Monitoring Tool %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n");
     printf("\n");

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Michal 'GiM' Spadlinski
@@ -751,7 +751,7 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 
 /**
  * @brief 	Unpack MEW 11 packed PE file
- * 
+ *
  * @param src 		buffer to unpack
  * @param off 		offset of diff
  * @param ssize 	pe section size

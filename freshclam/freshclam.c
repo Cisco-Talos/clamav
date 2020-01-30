@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -139,7 +139,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Database Updater %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2019 Cisco Systems, Inc.\n");
+    printf("           (C) 2020 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    freshclam [options]\n");
     printf("\n");
@@ -647,7 +647,7 @@ static fc_error_t switch_user(const char *dbowner)
     struct passwd *user;
 
     if (NULL == dbowner) {
-        logg("*No DatabaseOwner specified. Freshclam wlil run as the current user.\n");
+        logg("*No DatabaseOwner specified. Freshclam will run as the current user.\n");
         status = FC_SUCCESS;
         goto done;
     }
@@ -750,7 +750,6 @@ static fc_error_t initialize(struct optstruct *opts)
     cl_error_t cl_init_retcode;
     fc_config fcConfig;
     char *tempDirectory = NULL;
-    size_t tempDirectoryLen;
     const struct optstruct *logFileOpt = NULL;
 
     STATBUF statbuf;
@@ -770,6 +769,56 @@ static fc_error_t initialize(struct optstruct *opts)
         } else {
             g_foreground = 0;
         }
+    }
+
+    /*
+     * Verify that the database directory exists.
+     * Create database directory if missing.
+     */
+    fcConfig.databaseDirectory = optget(opts, "DatabaseDirectory")->strarg;
+
+    if (LSTAT(fcConfig.databaseDirectory, &statbuf) == -1) {
+#ifdef HAVE_PWD_H
+        struct passwd *user;
+#endif
+
+        logg("Creating missing database directory: %s\n", fcConfig.databaseDirectory);
+
+        if (0 != mkdir(fcConfig.databaseDirectory, 0755)) {
+            logg("!Failed to create database directory: %s\n", fcConfig.databaseDirectory);
+            logg("Manually prepare the database directory, or re-run freshclam with higher privileges.\n");
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+
+#ifdef HAVE_PWD_H
+        if (!geteuid()) {
+            /* Running as root user, will assign ownership of database directory to DatabaseOwner */
+            errno = 0;
+            if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
+                logg("ERROR: Failed to get information about user \"%s\".\n",
+                    optget(opts, "DatabaseOwner")->strarg);
+                if (errno == 0) {
+                    logg("Create the \"%s\" user account for freshclam to use, or set the DatabaseOwner config option in freshclam.conf to a different user.\n",
+                        optget(opts, "DatabaseOwner")->strarg);
+                    logg("For more information, see https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source\n");
+                } else {
+                    logg("An unexpected error occurred when attempting to query the \"%s\" user account.\n",
+                        optget(opts, "DatabaseOwner")->strarg);
+                }
+                status = FC_EDBDIRACCESS;
+                goto done;
+            }
+
+            if (chown(fcConfig.databaseDirectory, user->pw_uid, user->pw_gid)) {
+                logg("!Failed to change database directory ownership to user %s. Error: %s\n", optget(opts, "DatabaseOwner")->strarg, strerror(errno));
+                status = FC_EDBDIRACCESS;
+                goto done;
+            }
+
+            logg("Assigned ownership of database directory to user \"%s\".\n", optget(opts, "DatabaseOwner")->strarg);
+        }
+#endif
     }
 
 #ifdef HAVE_PWD_H
@@ -859,27 +908,9 @@ static fc_error_t initialize(struct optstruct *opts)
     if ((optget(opts, "LocalIPAddress"))->enabled)
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
 
-    fcConfig.databaseDirectory = optget(opts, "DatabaseDirectory")->strarg;
-
     /* Select a path for the temp directory:  databaseDirectory/tmp */
-    tempDirectoryLen = strlen(fcConfig.databaseDirectory) + strlen(PATHSEP) + strlen("tmp") + 1; /* mdir/fname\0 */
-    tempDirectory    = (char *)cli_calloc(tempDirectoryLen, sizeof(char));
-    if (!tempDirectory) {
-        mprintf("!initialize: out of memory\n");
-        status = FC_EMEM;
-        goto done;
-    }
-    snprintf(tempDirectory, tempDirectoryLen, "%s" PATHSEP "tmp", fcConfig.databaseDirectory);
+    tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
     fcConfig.tempDirectory = tempDirectory;
-
-    if (LSTAT(tempDirectory, &statbuf) == -1) {
-        if (0 != mkdir(tempDirectory, 0755)) {
-            logg("!Can't create temporary directory %s\n", tempDirectory);
-            logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
-            status = FC_EDBDIRACCESS;
-            goto done;
-        }
-    }
 
     /* Store the path of the temp directory so we can delete it later. */
     strncpy(g_freshclamTempDirectory, fcConfig.tempDirectory, sizeof(g_freshclamTempDirectory));
@@ -1411,6 +1442,8 @@ fc_error_t perform_database_update(
     uint32_t nUpdated      = 0;
     uint32_t nTotalUpdated = 0;
 
+    STATBUF statbuf;
+
     if (NULL == serverList) {
         mprintf("!perform_database_update: Invalid arguments.\n");
         goto done;
@@ -1436,6 +1469,18 @@ fc_error_t perform_database_update(
      * Query DNS (if enabled) to get Update Info.
      */
     (void)fc_dns_query_update_info(dnsUpdateInfoServer, &dnsUpdateInfo, &newVersion);
+
+    /*
+     * Create a temp directory to use for the update process.
+     */
+    if (LSTAT(g_freshclamTempDirectory, &statbuf) == -1) {
+        if (0 != mkdir(g_freshclamTempDirectory, 0755)) {
+            logg("!Can't create temporary directory %s\n", g_freshclamTempDirectory);
+            logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+            status = FC_EDBDIRACCESS;
+            goto done;
+        }
+    }
 
     if ((NULL != databaseList) && (0 < nDatabases)) {
         /*
@@ -1497,6 +1542,12 @@ fc_error_t perform_database_update(
 
 done:
 
+    if (LSTAT(g_freshclamTempDirectory, &statbuf) != -1) {
+        /* Remove temp directory */
+        if (*g_freshclamTempDirectory) {
+            cli_rmdirs(g_freshclamTempDirectory);
+        }
+    }
     if (NULL != dnsUpdateInfo) {
         free(dnsUpdateInfo);
     }

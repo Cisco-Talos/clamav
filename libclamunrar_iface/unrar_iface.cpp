@@ -1,7 +1,7 @@
 /*
  * Interface to libclamunrar
  *
- * Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  * Authors: Trog, Torok Edvin, Tomasz Kojm, Micah Snyder
@@ -135,6 +135,7 @@ static cl_unrar_error_t unrar_retcode(int retcode)
         }
         case ERAR_EOPEN: {
             unrar_dbgmsg("unrar_retcode: Volume open error.\n");
+            status = UNRAR_EOPEN;
             break;
         }
         case ERAR_ECREATE: {

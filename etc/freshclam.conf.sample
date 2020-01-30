@@ -170,8 +170,8 @@ DatabaseMirror database.clamav.net
 #ConnectTimeout 60
 
 # Timeout in seconds when reading from database server.
-# Default: 60
-#ReceiveTimeout 300
+# Default: 0
+#ReceiveTimeout 1800
 
 # With this option enabled, freshclam will attempt to load new
 # databases into memory to make sure they are properly handled

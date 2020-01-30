@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  EGG is an archive format created by ESTsoft used by their ALZip
  *  archiving software.
@@ -2846,10 +2846,6 @@ void cli_egg_close(void* hArchive)
     }
 
     handle = (egg_handle*)hArchive;
-    if (CL_SUCCESS != EGG_VALIDATE_HANDLE(handle)) {
-        cli_errmsg("cli_egg_close: Invalid handle values!\n");
-        return;
-    }
 
     egg_free_egg_handle(handle);
 
