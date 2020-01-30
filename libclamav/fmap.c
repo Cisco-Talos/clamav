@@ -230,7 +230,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     }
 
     pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(fmap_t) + (pages - 1) * sizeof(uint32_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
+    hdrsz = fmap_align_to(sizeof(fmap_t) + (pages - 1) * sizeof(uint64_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
     mapsz = pages * pgsz + hdrsz;
 
 #ifndef ANONYMOUS_MAP
@@ -351,12 +351,17 @@ static void fmap_aging(fmap_t *m)
 #endif
 }
 
-static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count)
+static int fmap_readpage(fmap_t *m, uint64_t first_page, uint32_t count, uint32_t lock_count)
 {
     size_t readsz = 0, eintr_off;
     char *pptr    = NULL, errtxt[256];
-    uint32_t s;
-    unsigned int i, page = first_page, force_read = 0;
+    uint32_t sbitmap;
+    uint64_t i, page = first_page, force_read = 0;
+
+    if ((size_t)(m->real_len) > (size_t)(UINT_MAX)) {
+        cli_dbgmsg("fmap_readage: size of file exceeds total prefaultible page size (unpacked file is too large)\n");
+        return 1;
+    }
 
     fmap_lock;
     for (i = 0; i < count; i++) { /* prefault */
@@ -377,14 +382,14 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
             /* we count one page too much to flush pending reads */
             if (!pptr) return 0; /* if we have any */
             force_read = 1;
-        } else if ((s = fmap_bitmap[page]) & FM_MASK_PAGED) {
+        } else if ((sbitmap = fmap_bitmap[page]) & FM_MASK_PAGED) {
             /* page already paged */
             if (lock) {
                 /* we want locking */
-                if (s & FM_MASK_LOCKED) {
+                if (sbitmap & FM_MASK_LOCKED) {
                     /* page already locked */
-                    s &= FM_MASK_COUNT;
-                    if (s == FM_MASK_COUNT) { /* lock count already at max: fial! */
+                    sbitmap &= FM_MASK_COUNT;
+                    if (sbitmap == FM_MASK_COUNT) { /* lock count already at max: fial! */
                         cli_errmsg("fmap_readpage: lock count exceeded\n");
                         return 1;
                     }
@@ -394,7 +399,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
                     fmap_bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
             } else {
                 /* we don't want locking */
-                if (!(s & FM_MASK_LOCKED)) {
+                if (!(sbitmap & FM_MASK_LOCKED)) {
                     /* page is not locked: we reset aging to max */
                     fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
                 }
@@ -478,7 +483,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 
 static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
 {
-    unsigned int first_page, last_page, lock_count;
+    uint64_t first_page, last_page, lock_count;
     char *ret;
 
     if (!len)

@@ -1269,7 +1269,7 @@ static int cli_scanbzip(cli_ctx *ctx)
 static int cli_scanbzip(cli_ctx *ctx)
 {
     int ret = CL_CLEAN, fd, rc;
-    unsigned long int size = 0;
+    uint64_t size = 0;
     char *tmpname;
     bz_stream strm;
     size_t off = 0;
