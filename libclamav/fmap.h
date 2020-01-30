@@ -47,8 +47,8 @@ struct cl_fmap {
     /* internal */
     time_t mtime;
     unsigned int pages;
-    unsigned int hdrsz;
-    unsigned int pgsz;
+    uint64_t hdrsz;
+    uint64_t pgsz;
     unsigned int paged;
     unsigned short aging;
     unsigned short dont_cache_flag;
