@@ -1584,9 +1584,14 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
             cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
 
             /* It's ok if we couldn't decode the stream,
-             *   make a best effort to keep parsing. */
-            if (CL_EPARSE == rc)
+             *   make a best effort to keep parsing...
+             *   Unless we were unable to allocate memory.*/
+            if (CL_EMEM == rc) {
+                goto err;
+            }
+            if (CL_EPARSE == rc) {
                 rc = CL_SUCCESS;
+            }
 
             if (NULL != objstm) {
                 /*
@@ -1764,11 +1769,14 @@ done:
         }
     }
 
+err:
     close(fout);
 
-    if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
-        if (cli_unlink(fullname) && rc != CL_VIRUS)
-            rc = CL_EUNLINK;
+    if (CL_EMEM != rc) {
+        if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
+            if (cli_unlink(fullname) && rc != CL_VIRUS)
+                rc = CL_EUNLINK;
+    }
 
     return rc;
 }
@@ -3481,7 +3489,10 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     objs_found = pdf.nobjs;
     rc         = pdf_find_and_extract_objs(&pdf, &alerts);
 
-    if (pdf.nobjs <= objs_found) {
+    if (CL_EMEM == rc) {
+        cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs had an allocation failure\n");
+        goto err;
+    } else if (pdf.nobjs <= objs_found) {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs did not find any new objects!\n");
     } else {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs found %d new objects.\n", pdf.nobjs - objs_found);
@@ -3532,6 +3543,7 @@ done:
     pdf_export_json(&pdf);
 #endif
 
+err:
     if (pdf.objstms) {
         for (i = 0; i < pdf.nobjstms; i++) {
             if (pdf.objstms[i]) {

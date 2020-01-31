@@ -3108,7 +3108,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
                         cli_warnmsg("cli_scanraw: Type %u not handled in fpt loop\n", fpt->type);
                 }
 
-            if (nret == CL_VIRUS || break_loop)
+            if (nret == CL_VIRUS || nret == CL_EMEM || break_loop)
                 break;
 
             fpt = fpt->next;
@@ -3493,13 +3493,15 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     if (type != CL_TYPE_IGNORED && ctx->engine->sdb) {
-        if ((ret = cli_scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash)) == CL_VIRUS) {
+        ret = cli_scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
+        if (ret == CL_EMEM || ret == CL_VIRUS) {
             ret = cli_checkfp(hash, hashed_size, ctx);
             cli_bitset_free(ctx->hook_lsig_matches);
             ctx->hook_lsig_matches = old_hook_lsig_matches;
             return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
         }
     }
+
 
     ctx->recursion++;
     perf_nested_start(ctx, PERFT_CONTAINER, PERFT_SCAN);
