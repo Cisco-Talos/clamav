@@ -955,6 +955,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
+                            DO_FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
@@ -1067,6 +1068,8 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 {
                     char *header     = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
+                    DO_VERIFY_POINTER(header);
+
                     needContinue     = (header[strlen(header) - 1] == ';');
                     if (0 == needContinue) {
                         needContinue = (line && (count_quotes(header) & 1));
@@ -1075,6 +1078,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (0 == needContinue) {
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
+                            DO_FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
