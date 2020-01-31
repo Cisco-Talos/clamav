@@ -296,10 +296,13 @@ static size_t pdf_decodestream_internal(
 
             case OBJ_FILTER_JPX:
                 if (!filter) filter = "JPXDECODE";
+                /* fallthrough */
             case OBJ_FILTER_DCT:
                 if (!filter) filter = "DCTDECODE";
+                /* fallthrough */
             case OBJ_FILTER_FAX:
                 if (!filter) filter = "FAXDECODE";
+                /* fallthrough */
             case OBJ_FILTER_JBIG2:
                 if (!filter) filter = "JBIG2DECODE";
 
@@ -639,8 +642,9 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
         if (!(temp = cli_realloc(decoded, declen))) {
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;
+        } else {
+            decoded = temp;
         }
-        decoded = temp;
     }
 
     if (rc == CL_SUCCESS) {
@@ -817,8 +821,9 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
         if (!(temp = cli_realloc(decoded, declen))) {
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;
+        } else {
+            decoded = temp;
         }
-        decoded = temp;
     }
 
     if (rc == CL_SUCCESS) {
@@ -1098,8 +1103,9 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         if (!(temp = cli_realloc(decoded, declen))) {
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;
+        } else {
+            decoded = temp;
         }
-        decoded = temp;
     }
 
     if (rc == CL_SUCCESS) {
