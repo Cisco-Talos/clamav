@@ -7,11 +7,56 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.102.2 is a bug patch release to address the following issues.
 
--
+- [CVE-2020-3123](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3123):
+  An Denial-of-Service (DoS) condition may occur when using the optional credit
+  card data-loss-prevention (DLP) feature. Improper bounds checking of an
+  unsigned variable resulted in an out-of-bounds read which causes a crash.
+
+- Significantly improved scan speed of PDF files on Windows.
+
+- Re-applied a fix to alleviate file access issues when scanning RAR files in
+  downstream projects that use libclamav where the scanning engine is operating
+  in a low-privelege process. This bug was originally fixed in 0.101.2 and the
+  fix was mistakenly omitted from 0.102.0.
+
+- Fixed an issue wherein freshclam failed to update if the database version
+  downloaded is 1 version older than advertised. This situation may occur after
+  a new database version is published. The issue affected users downloading the
+  whole CVD database file.
+
+- Changed the default freshclam ReceiveTimeout setting to 0 (infinite).
+  The ReceiveTimeout had caused needless database update failures for users with
+  slower internet connections.
+
+- Correctly display number of kilobytes (KiB) in progress bar and reduced the
+  size of the progress bar to accomodate 80-char width terminals.
+
+- Fixed an issue where running freshclam manually causes a daemonized freshclam
+  process to fail when it updates because the manual instance deletes the
+  temporary download directory. Freshclam temporary files will now download to a
+  unique directory created at the time of an update instead of using a hardcoded
+  directory created/destroyed at the program start/exit.
+
+- Fix for Freshclam's OnOutdatedExecute config option.
+
+- Fixes a memory leak in the error condition handling for the email parser.
+
+- Improved bound checking and error handling in ARJ archive parser.
+
+- Improved error handling in PDF parser.
+
+- Fix for memory leak in byte-compare signature handler.
+
+- Updates to the unit test suite to support libcheck 0.13.
+
+- Updates to support autoconf 2.69 and automake 1.15.
 
 Special thanks to the following for code contributions and bug reports:
 
--
+- Antoine Deschênes
+- Eric Lindblad
+- Gianluigi Tiesi
+- Tuomo Soini
 
 ## 0.102.1
 
@@ -198,6 +243,92 @@ Finally, we'd like to thank Joe McGrath for building our quality assurance test 
 and for working diligently to ensure knowledge transfer up until his last day
 on the team. Working with you was a pleasure, Joe, and we wish you the best
 of luck in your next adventure!
+
+## 0.101.5
+
+ClamAV 0.101.5 is a security patch release that addresses the following issues.
+
+- Fix for the following vulnerability affecting 0.102.0 and 0.101.4 and prior:
+  - [CVE-2019-15961](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-15961)
+    A Denial-of-Service (DoS) vulnerability may occur when scanning a specially
+    crafted email file as a result of excessively long scan times. The issue is
+    resolved by implementing several maximums in parsing MIME messages and by
+    optimizing use of memory allocation.
+
+- Added the zip scanning improvements found in v0.102.0 where it scans files
+  using zip records from a sorted catalogue which provides deduplication of
+  file records resulting in faster extraction and scan time and reducing the
+  likelihood of alerting on non-malicious duplicate file entries as overlapping
+  files.
+
+- Signature load time is significantly reduced by changing to a more efficient
+  algorithm for loading signature patterns and allocating the AC trie.
+  Patch courtesy of Alberto Wu.
+
+- Introduced a new configure option to statically link libjson-c with libclamav.
+  Static linking with libjson is highly recommended to prevent crashes in
+  applications that use libclamav alongside another JSON parsing library.
+
+- Null-dereference fix in email parser when using the `--gen-json` metadata
+  option.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Alberto Wu
+- Joran Dirk Greef
+
+## 0.101.4
+
+ClamAV 0.101.4 is a security patch release that addresses the following issues.
+
+- An out of bounds write was possible within ClamAV's NSIS bzip2 library when
+  attempting decompression in cases where the number of selectors exceeded the
+  max limit set by the library (CVE-2019-12900). The issue has been resolved
+  by respecting that limit.
+
+  Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
+
+- The zip bomb vulnerability mitigated in 0.101.3 has been assigned the
+  CVE identifier CVE-2019-12625. Unfortunately, a workaround for the zip-bomb
+  mitigation was immediately identified. To remediate the zip-bomb scantime
+  issue, a scan time limit has been introduced in 0.101.4. This limit now
+  resolves ClamAV's vulnerability to CVE-2019-12625.
+
+  The default scan time limit is 2 minutes (120000 milliseconds).
+
+  To customize the time limit:
+
+  - use the `clamscan` `--max-scantime` option
+  - use the `clamd` `MaxScanTime` config option
+
+  Libclamav users may customize the time limit using the `cl_engine_set_num`
+  function. For example:
+
+  ```c
+      cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, time_limit_milliseconds)
+  ```
+
+  Thanks to David Fifield for reviewing the zip-bomb mitigation in 0.101.3
+  and reporting the issue.
+
+## 0.101.3
+
+ClamAV 0.101.3 is a patch release to address a vulnerability to non-recursive
+zip bombs.
+
+A Denial-of-Service (DoS) vulnerability may occur when scanning a zip bomb as a
+result of excessively long scan times. The issue is resolved by detecting the
+overlapping local file headers which characterize the non-recursive zip bomb
+described by David Fifield,
+[here](https://www.bamsoftware.com/hacks/zipbomb/).
+
+Thank you to Hanno Böck for reporting the issue as it relates to ClamAV,
+[here](https://bugzilla.clamav.net/show_bug.cgi?id=12356).
+
+Also included in 0.101.3:
+
+- Update of bundled the libmspack library from 0.8alpha to 0.10alpha, to
+  address a buffer overflow vulnerability in libmspack < 0.9.1α.
 
 ## 0.101.2
 
