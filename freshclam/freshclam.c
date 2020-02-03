@@ -1832,7 +1832,7 @@ int main(int argc, char **argv)
             bPrivate ? 0 : optget(opts, "ScriptedUpdates")->enabled,
             bPrune,
             optget(opts, "OnUpdateExecute")->enabled ? optget(opts, "OnUpdateExecute")->strarg : NULL,
-            optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnUpdateExecute")->strarg : NULL,
+            optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnOutdatedExecute")->strarg : NULL,
             optget(opts, "daemon")->enabled,
             optget(opts, "NotifyClamd")->active ? optget(opts, "NotifyClamd")->strarg : NULL,
             &fc_context);
