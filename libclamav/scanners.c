@@ -3692,7 +3692,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml(ctx);
             break;
-
         case CL_TYPE_HTML_UTF16:
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml_utf16(ctx);
@@ -3958,6 +3957,8 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_TEXT_UTF16LE:
         case CL_TYPE_TEXT_UTF8:
             perf_nested_start(ctx, PERFT_SCRIPT, PERFT_SCAN);
+            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
+                ret = cli_scanhtml(ctx);
             if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALLMATCHES) && SCAN_PARSE_HTML)
                 ret = cli_scanscript(ctx);
             if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_get_container(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
