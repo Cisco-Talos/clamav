@@ -1712,6 +1712,7 @@ cl_error_t cli_ac_scanbuff(
     int type = CL_CLEAN;
     struct cli_ac_result *newres;
     int rc;
+    int ret;
 
     if (!root->ac_root)
         return CL_CLEAN;
@@ -1923,8 +1924,10 @@ cl_error_t cli_ac_scanbuff(
                                         continue;
                                     } else {
                                         if (ctx && SCAN_ALLMATCHES) {
-                                            cli_append_virus(ctx, (const char *)pt->virname);
-                                            viruses_found = 1;
+                                            ret = cli_append_virus(ctx, (const char *)pt->virname);
+                                            if(ret == CL_VIRUS) {
+                                                viruses_found = 1;
+                                            }
                                         }
                                         if (virname)
                                             *virname = pt->virname;
@@ -1978,8 +1981,10 @@ cl_error_t cli_ac_scanbuff(
                                     continue;
                                 } else {
                                     if (ctx && SCAN_ALLMATCHES) {
-                                        cli_append_virus(ctx, (const char *)pt->virname);
-                                        viruses_found = 1;
+                                        ret = cli_append_virus(ctx, (const char *)pt->virname);
+                                        if(ret == CL_VIRUS) {
+                                            viruses_found = 1;
+                                        }
                                     }
 
                                     if (virname)
