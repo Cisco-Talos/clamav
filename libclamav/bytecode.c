@@ -3360,7 +3360,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
             printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
             break;
         case OP_BC_ICMP_ULT:
-            printf("%d = (%d > %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+            printf("%d = (%d < %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
             break;
         case OP_BC_ICMP_ULE:
             printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
