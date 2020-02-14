@@ -778,8 +778,13 @@ namespace llvm {
 
       bool checkCond(Instruction *ICI, Instruction *I, bool equal)
       {
+#if LLVM_VERSION < 35
           for (Value::use_iterator JU=ICI->use_begin(),JUE=ICI->use_end();
                JU != JUE; ++JU) {
+#else
+          for (Value::user_iterator JU=ICI->user_begin(),JUE=ICI->user_end();
+               JU != JUE; ++JU) {
+#endif
               Value *JU_V = *JU;
               if (BranchInst *BI = dyn_cast<BranchInst>(JU_V)) {
                   if (!BI->isConditional())
@@ -802,8 +807,13 @@ namespace llvm {
 
       bool checkCondition(Instruction *CI, Instruction *I)
       {
+#if LLVM_VERSION < 35
           for (Value::use_iterator U=CI->use_begin(),UE=CI->use_end();
                U != UE; ++U) {
+#else
+          for (Value::user_iterator U=CI->user_begin(),UE=CI->user_end();
+               U != UE; ++U) {
+#endif
               Value *U_V = *U;
               if (ICmpInst *ICI = dyn_cast<ICmpInst>(U_V)) {
                   if (ICI->getOperand(0)->stripPointerCasts() == CI &&
