@@ -45,6 +45,463 @@
 
 static int fpu_words = FPU_ENDIAN_INITME;
 
+const char *autoit_functions[] = {
+    "ABS",
+    "ACOS",
+    "ADLIBREGISTER",
+    "ADLIBUNREGISTER",
+    "ASC",
+    "ASCW",
+    "ASIN",
+    "ASSIGN",
+    "ATAN",
+    "AUTOITSETOPTION",
+    "AUTOITWINGETTITLE",
+    "AUTOITWINSETTITLE",
+    "BEEP",
+    "BINARY",
+    "BINARYLEN",
+    "BINARYMID",
+    "BINARYTOSTRING",
+    "BITAND",
+    "BITNOT",
+    "BITOR",
+    "BITROTATE",
+    "BITSHIFT",
+    "BITXOR",
+    "BLOCKINPUT",
+    "BREAK",
+    "CALL",
+    "CDTRAY",
+    "CEILING",
+    "CHR",
+    "CHRW",
+    "CLIPGET",
+    "CLIPPUT",
+    "CONSOLEREAD",
+    "CONSOLEWRITE",
+    "CONSOLEWRITEERROR",
+    "CONTROLCLICK",
+    "CONTROLCOMMAND",
+    "CONTROLDISABLE",
+    "CONTROLENABLE",
+    "CONTROLFOCUS",
+    "CONTROLGETFOCUS",
+    "CONTROLGETHANDLE",
+    "CONTROLGETPOS",
+    "CONTROLGETTEXT",
+    "CONTROLHIDE",
+    "CONTROLLISTVIEW",
+    "CONTROLMOVE",
+    "CONTROLSEND",
+    "CONTROLSETTEXT",
+    "CONTROLSHOW",
+    "CONTROLTREEVIEW",
+    "COS",
+    "DEC",
+    "DIRCOPY",
+    "DIRCREATE",
+    "DIRGETSIZE",
+    "DIRMOVE",
+    "DIRREMOVE",
+    "DLLCALL",
+    "DLLCALLADDRESS",
+    "DLLCALLBACKFREE",
+    "DLLCALLBACKGETPTR",
+    "DLLCALLBACKREGISTER",
+    "DLLCLOSE",
+    "DLLOPEN",
+    "DLLSTRUCTCREATE",
+    "DLLSTRUCTGETDATA",
+    "DLLSTRUCTGETPTR",
+    "DLLSTRUCTGETSIZE",
+    "DLLSTRUCTSETDATA",
+    "DRIVEGETDRIVE",
+    "DRIVEGETFILESYSTEM",
+    "DRIVEGETLABEL",
+    "DRIVEGETSERIAL",
+    "DRIVEGETTYPE",
+    "DRIVEMAPADD",
+    "DRIVEMAPDEL",
+    "DRIVEMAPGET",
+    "DRIVESETLABEL",
+    "DRIVESPACEFREE",
+    "DRIVESPACETOTAL",
+    "DRIVESTATUS",
+    "ENVGET",
+    "ENVSET",
+    "ENVUPDATE",
+    "EVAL",
+    "EXECUTE",
+    "EXP",
+    "FILECHANGEDIR",
+    "UNKNOWN_89",
+    "FILECLOSE",
+    "FILECOPY",
+    "FILECREATENTFSLINK",
+    "FILECREATESHORTCUT",
+    "FILEDELETE",
+    "FILEEXISTS",
+    "FILEFINDFIRSTFILE",
+    "FILEFINDNEXTFILE",
+    "FILEFLUSH",
+    "FILEGETATTRIB",
+    "FILEGETENCODING",
+    "FILEGETLONGNAME",
+    "FILEGETPOS",
+    "FILEGETSHORTCUT",
+    "FILEGETSHORTNAME",
+    "FILEGETSIZE",
+    "FILEGETTIME",
+    "FILEGETVERSION",
+    "FILEINSTALL",
+    "FILEMOVE",
+    "FILEOPEN",
+    "FILEOPENDIALOG",
+    "FILEREAD",
+    "FILEREADLINE",
+    "FILEREADTOARRAY",
+    "FILERECYCLE",
+    "FILERECYCLEEMPTY",
+    "FILESAVEDIALOG",
+    "FILESELECTFOLDER",
+    "FILESETATTRIB",
+    "FILESETEND",
+    "FILESETPOS",
+    "FILESETTIME",
+    "FILEWRITE",
+    "FILEWRITELINE",
+    "FLOOR",
+    "FTPSETPROXY",
+    "FUNCNAME",
+    "GUICREATE",
+    "GUICTRLCREATEAVI",
+    "GUICTRLCREATEBUTTON",
+    "GUICTRLCREATECHECKBOX",
+    "GUICTRLCREATECOMBO",
+    "GUICTRLCREATECONTEXTMENU",
+    "GUICTRLCREATEDATE",
+    "GUICTRLCREATEDUMMY",
+    "GUICTRLCREATEEDIT",
+    "GUICTRLCREATEGRAPHIC",
+    "GUICTRLCREATEGROUP",
+    "GUICTRLCREATEICON",
+    "GUICTRLCREATEINPUT",
+    "GUICTRLCREATELABEL",
+    "GUICTRLCREATELIST",
+    "GUICTRLCREATELISTVIEW",
+    "GUICTRLCREATELISTVIEWITEM",
+    "GUICTRLCREATEMENU",
+    "GUICTRLCREATEMENUITEM",
+    "GUICTRLCREATEMONTHCAL",
+    "GUICTRLCREATEOBJ",
+    "GUICTRLCREATEPIC",
+    "GUICTRLCREATEPROGRESS",
+    "GUICTRLCREATERADIO",
+    "GUICTRLCREATESLIDER",
+    "GUICTRLCREATETAB",
+    "GUICTRLCREATETABITEM",
+    "GUICTRLCREATETREEVIEW",
+    "GUICTRLCREATETREEVIEWITEM",
+    "GUICTRLCREATEUPDOWN",
+    "GUICTRLDELETE",
+    "GUICTRLGETHANDLE",
+    "GUICTRLGETSTATE",
+    "GUICTRLREAD",
+    "GUICTRLRECVMSG",
+    "GUICTRLREGISTERLISTVIEWSORT",
+    "GUICTRLSENDMSG",
+    "GUICTRLSENDTODUMMY",
+    "GUICTRLSETBKCOLOR",
+    "GUICTRLSETCOLOR",
+    "GUICTRLSETCURSOR",
+    "GUICTRLSETDATA",
+    "GUICTRLSETDEFBKCOLOR",
+    "GUICTRLSETDEFCOLOR",
+    "GUICTRLSETFONT",
+    "GUICTRLSETGRAPHIC",
+    "GUICTRLSETIMAGE",
+    "GUICTRLSETLIMIT",
+    "GUICTRLSETONEVENT",
+    "GUICTRLSETPOS",
+    "GUICTRLSETRESIZING",
+    "GUICTRLSETSTATE",
+    "GUICTRLSETSTYLE",
+    "GUICTRLSETTIP",
+    "GUIDELETE",
+    "GUIGETCURSORINFO",
+    "GUIGETMSG",
+    "GUIGETSTYLE",
+    "GUIREGISTERMSG",
+    "GUISETACCELERATORS",
+    "GUISETBKCOLOR",
+    "GUISETCOORD",
+    "GUISETCURSOR",
+    "GUISETFONT",
+    "GUISETHELP",
+    "GUISETICON",
+    "GUISETONEVENT",
+    "GUISETSTATE",
+    "GUISETSTYLE",
+    "GUISTARTGROUP",
+    "GUISWITCH",
+    "HEX",
+    "HOTKEYSET",
+    "HTTPSETPROXY",
+    "HTTPSETUSERAGENT",
+    "HWND",
+    "INETCLOSE",
+    "INETGET",
+    "INETGETINFO",
+    "INETGETSIZE",
+    "INETREAD",
+    "INIDELETE",
+    "INIREAD",
+    "INIREADSECTION",
+    "INIREADSECTIONNAMES",
+    "INIRENAMESECTION",
+    "INIWRITE",
+    "INIWRITESECTION",
+    "INPUTBOX",
+    "INT",
+    "ISADMIN",
+    "ISARRAY",
+    "ISBINARY",
+    "ISBOOL",
+    "ISDECLARED",
+    "ISDLLSTRUCT",
+    "ISFLOAT",
+    "ISFUNC",
+    "ISHWND",
+    "ISINT",
+    "ISKEYWORD",
+    "UNKNOWN_229",
+    "ISNUMBER",
+    "ISOBJ",
+    "ISPTR",
+    "ISSTRING",
+    "LOG",
+    "MEMGETSTATS",
+    "UNKNOWN_235",
+    "UNKNOWN_236",
+    "UNKNOWN_237",
+    "UNKNOWN_238",
+    "MOD",
+    "MOUSECLICK",
+    "MOUSECLICKDRAG",
+    "MOUSEDOWN",
+    "MOUSEGETCURSOR",
+    "MOUSEGETPOS",
+    "MOUSEMOVE",
+    "MOUSEUP",
+    "MOUSEWHEEL",
+    "MSGBOX",
+    "NUMBER",
+    "OBJCREATE",
+    "OBJCREATEINTERFACE",
+    "OBJEVENT",
+    "OBJGET",
+    "OBJNAME",
+    "ONAUTOITEXITREGISTER",
+    "ONAUTOITEXITUNREGISTER",
+    "OPT",
+    "PING",
+    "PIXELCHECKSUM",
+    "PIXELGETCOLOR",
+    "PIXELSEARCH",
+    "PROCESSCLOSE",
+    "PROCESSEXISTS",
+    "PROCESSGETSTATS",
+    "PROCESSLIST",
+    "PROCESSSETPRIORITY",
+    "PROCESSWAIT",
+    "PROCESSWAITCLOSE",
+    "PROGRESSOFF",
+    "PROGRESSON",
+    "PROGRESSSET",
+    "PTR",
+    "RANDOM",
+    "REGDELETE",
+    "REGENUMKEY",
+    "REGENUMVAL",
+    "REGREAD",
+    "REGWRITE",
+    "ROUND",
+    "RUN",
+    "RUNAS",
+    "RUNASWAIT",
+    "RUNWAIT",
+    "SEND",
+    "SENDKEEPACTIVE",
+    "SETERROR",
+    "SETEXTENDED",
+    "SHELLEXECUTE",
+    "SHELLEXECUTEWAIT",
+    "SHUTDOWN",
+    "SIN",
+    "SLEEP",
+    "SOUNDPLAY",
+    "SOUNDSETWAVEVOLUME",
+    "SPLASHIMAGEON",
+    "SPLASHOFF",
+    "SPLASHTEXTON",
+    "SQRT",
+    "SRANDOM",
+    "STATUSBARGETTEXT",
+    "STDERRREAD",
+    "STDINWRITE",
+    "STDIOCLOSE",
+    "STDOUTREAD",
+    "STRING",
+    "STRINGADDCR",
+    "STRINGCOMPARE",
+    "STRINGFORMAT",
+    "STRINGFROMASCIIARRAY",
+    "STRINGINSTR",
+    "STRINGISALNUM",
+    "STRINGISALPHA",
+    "STRINGISASCII",
+    "STRINGISDIGIT",
+    "STRINGISFLOAT",
+    "STRINGISINT",
+    "STRINGISLOWER",
+    "STRINGISSPACE",
+    "STRINGISUPPER",
+    "STRINGISXDIGIT",
+    "STRINGLEFT",
+    "STRINGLEN",
+    "STRINGLOWER",
+    "STRINGMID",
+    "STRINGREGEXP",
+    "STRINGREGEXPREPLACE",
+    "STRINGREPLACE",
+    "STRINGREVERSE",
+    "STRINGRIGHT",
+    "STRINGSPLIT",
+    "STRINGSTRIPCR",
+    "STRINGSTRIPWS",
+    "STRINGTOASCIIARRAY",
+    "STRINGTOBINARY",
+    "STRINGTRIMLEFT",
+    "STRINGTRIMRIGHT",
+    "STRINGUPPER",
+    "TAN",
+    "TCPACCEPT",
+    "TCPCLOSESOCKET",
+    "TCPCONNECT",
+    "TCPLISTEN",
+    "TCPNAMETOIP",
+    "TCPRECV",
+    "TCPSEND",
+    "TCPSHUTDOWN,",
+    "TCPSTARTUP,",
+    "TIMERDIFF",
+    "TIMERINIT",
+    "TOOLTIP",
+    "TRAYCREATEITEM",
+    "TRAYCREATEMENU",
+    "TRAYGETMSG",
+    "TRAYITEMDELETE",
+    "TRAYITEMGETHANDLE",
+    "TRAYITEMGETSTATE",
+    "TRAYITEMGETTEXT",
+    "TRAYITEMSETONEVENT",
+    "TRAYITEMSETSTATE",
+    "TRAYITEMSETTEXT",
+    "TRAYSETCLICK",
+    "TRAYSETICON",
+    "TRAYSETONEVENT",
+    "TRAYSETPAUSEICON",
+    "TRAYSETSTATE",
+    "TRAYSETTOOLTIP",
+    "TRAYTIP",
+    "UBOUND",
+    "UDPBIND",
+    "UDPCLOSESOCKET",
+    "UDPOPEN",
+    "UDPRECV",
+    "UDPSEND",
+    "UNKNOWN_375",
+    "UNKNOWN_376",
+    "VARGETTYPE",
+    "WINACTIVATE",
+    "WINACTIVE",
+    "WINCLOSE",
+    "WINEXISTS",
+    "WINFLASH",
+    "WINGETCARETPOS",
+    "WINGETCLASSLIST",
+    "WINGETCLIENTSIZE",
+    "WINGETHANDLE",
+    "WINGETPOS",
+    "WINGETPROCESS",
+    "WINGETSTATE",
+    "WINGETTEXT",
+    "WINGETTITLE",
+    "WINKILL",
+    "WINLIST",
+    "WINMENUSELECTITEM",
+    "WINMINIMIZEALL",
+    "WINMINIMIZEALLUNDO",
+    "WINMOVE",
+    "WINSETONTOP",
+    "WINSETSTATE",
+    "WINSETTITLE",
+    "WINSETTRANS",
+    "WINWAIT",
+    "WINWAITACTIVE",
+    "WINWAITCLOSE",
+    "WINWAITNOTACTIVE"
+};
+
+const char *autoit_keywords[] = {
+    "UNKNOWN_0",
+    "AND",
+    "OR",
+    "NOT",
+    "IF",
+    "THEN",
+    "ELSE",
+    "ELSEIF",
+    "ENDIF",
+    "WHILE",
+    "WEND",
+    "DO",
+    "UNTIL",
+    "FOR",
+    "NEXT",
+    "TO",
+    "STEP",
+    "IN",
+    "EXITLOOP",
+    "CONTINUELOOP",
+    "SELECT",
+    "CASE",
+    "ENDSELECT",
+    "SWITCH",
+    "ENDSWITCH",
+    "CONTINUECASE",
+    "DIM",
+    "REDIM",
+    "LOCAL",
+    "GLOBAL",
+    "CONST",
+    "STATIC",
+    "FUNC",
+    "ENDFUNC",
+    "RETURN",
+    "EXIT",
+    "BYREF",
+    "WITH",
+    "ENDWITH",
+    "TRUE",
+    "FALSE",
+    "DEFAULT",
+    "NULL",
+    "UNKNOWN_43",
+    "ENUM",
+};
+
 /* FIXME: use unicode detection and normalization from edwin */
 static unsigned int u2a(uint8_t *dest, unsigned int len)
 {
@@ -157,6 +614,7 @@ struct UNP {
 
 static uint32_t getbits(struct UNP *UNP, uint32_t size)
 {
+    //cli_dbgmsg("In getbits, (size: %u, bits_avail: %u, UNP->cur_input: %u)\n", size, UNP->bits_avail, UNP->cur_input);
     UNP->bitmap.half.h = 0;
     if (size > UNP->bits_avail && ((size - UNP->bits_avail - 1) / 16 + 1) * 2 > UNP->csize - UNP->cur_input) {
         cli_dbgmsg("autoit: getbits() - not enough bits available\n");
@@ -165,6 +623,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size)
     }
     while (size) {
         if (!UNP->bits_avail) {
+            //cli_dbgmsg("cur_input: %u (size: %u)\n", UNP->cur_input, size);
             UNP->bitmap.half.l |= UNP->inputbuf[UNP->cur_input++] << 8;
             UNP->bitmap.half.l |= UNP->inputbuf[UNP->cur_input++];
             UNP->bits_avail = 16;
@@ -325,6 +784,12 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         }
                     }
                     bs += 3 + addme;
+
+                    /* If getbits set UNP.error, bail out here, since otherwise
+                     * the data we'd write out would be garbage */
+                    if (UNP.error) {
+                        break;
+                    }
 
                     if (!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
                         !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output - bb], bs)) {
@@ -522,7 +987,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             return (det ? CL_VIRUS : CL_CLEAN);
         /*     LAME_decrypt(buf, 4, 0x18ee); waste of time */
         if (cli_readint32(base) != 0x52ca436b) {
-            cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+            cli_dbgmsg("autoit: no FILE magic found, giving up (got 0x%08x)\n", cli_readint32(base));
             return (det ? CL_VIRUS : CL_CLEAN);
         }
 
@@ -595,6 +1060,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         }
 
         files++;
+
         if (!(UNP.inputbuf = cli_malloc(UNP.csize)))
             return CL_EMEM;
         if (!fmap_need_ptr_once(map, base, UNP.csize)) {
@@ -654,6 +1120,13 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                     }
                     bs += 3 + addme;
 
+                    /* If getbits set UNP.error, bail out here, since otherwise
+                     * the data we'd write out would be garbage */
+                    if (UNP.error) {
+                        break;
+                    }
+
+                    //cli_dbgmsg("cur_output: %u, bs: %u, bb: %u\n", UNP.cur_output, bs, bb);
                     if (!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
                         !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output - bb], bs)) {
                         UNP.error = 1;
@@ -687,6 +1160,8 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         }
 
         if (script) {
+            /* From here on, we'll reuse csize to be the size of the
+             * output buffer */
             UNP.csize = UNP.usize;
             if (!(buf = cli_malloc(UNP.csize))) {
                 free(UNP.outputbuf);
@@ -702,6 +1177,74 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                 uint8_t op;
 
                 switch ((op = UNP.outputbuf[UNP.cur_input++])) {
+                    case 0: /* keyword ID */ {
+                        uint32_t keyword_id;
+                        uint32_t keyword_len;
+                        if (UNP.cur_input >= UNP.usize - 4) {
+                            UNP.error = 1;
+                            cli_dbgmsg("autoit: too few bytes present - expected enough for a keyword ID\n");
+                            break;
+                        }
+                        keyword_id  = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+                        if (keyword_id >= (sizeof(autoit_keywords) / sizeof(autoit_keywords[0]))) {
+                            UNP.error = 1;
+                            cli_dbgmsg("autoit: unknown AutoIT keyword ID: 0x%x\n", keyword_id);
+                            break;
+                        }
+                        UNP.cur_input += 4;
+                        keyword_len = strlen(autoit_keywords[keyword_id]);
+                        if (UNP.cur_output + keyword_len + 2 >= UNP.csize) {
+                            uint8_t *newout;
+                            UNP.csize += 512;
+                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                                UNP.error = 1;
+                                break;
+                            }
+                            buf = newout;
+                        }
+                        if (cli_debug_flag) {
+                            if (0 == memcmp(autoit_keywords[keyword_id], "UNKNOWN", MIN(strlen("UNKNOWN"), keyword_len))) {
+                                cli_dbgmsg("autoit: encountered use of unknown keyword ID: %s\n", autoit_keywords[keyword_id]);
+                            }
+                        }
+                        snprintf((char *)&buf[UNP.cur_output], keyword_len + 2, "%s ", autoit_keywords[keyword_id]);
+                        UNP.cur_output += keyword_len + 1;
+                        break;
+                    }
+                    case 1: /* function ID */ {
+                        uint32_t function_id;
+                        uint32_t function_len;
+                        if (UNP.cur_input >= UNP.usize - 4) {
+                            UNP.error = 1;
+                            cli_dbgmsg("autoit: too few bytes present - expected enough for a function ID\n");
+                            break;
+                        }
+                        function_id  = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+                        if (function_id >= (sizeof(autoit_functions) / sizeof(autoit_functions[0]))) {
+                            UNP.error = 1;
+                            cli_dbgmsg("autoit: unknown AutoIT function ID: 0x%x\n", function_id);
+                            break;
+                        }
+                        UNP.cur_input += 4;
+                        function_len = strlen(autoit_functions[function_id]);
+                        if (UNP.cur_output + function_len + 2 >= UNP.csize) {
+                            uint8_t *newout;
+                            UNP.csize += 512;
+                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                                UNP.error = 1;
+                                break;
+                            }
+                            buf = newout;
+                        }
+                        if (cli_debug_flag) {
+                            if (0 == memcmp(autoit_functions[function_id], "UNKNOWN", MIN(strlen("UNKNOWN"), function_len))) {
+                                cli_dbgmsg("autoit: encountered use of unknown function ID: %s\n", autoit_functions[function_id]);
+                            }
+                        }
+                        snprintf((char *)&buf[UNP.cur_output], function_len + 2, "%s ", autoit_functions[function_id]);
+                        UNP.cur_output += function_len + 1;
+                        break;
+                    }
                     case 5: /* <INT> */
                         if (UNP.cur_input >= UNP.usize - 4) {
                             UNP.error = 1;
