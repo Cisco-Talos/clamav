@@ -2070,5 +2070,9 @@ static struct cli_element entities_htable_elements[] = {
     {NULL, 0, 0},
     {NULL, 0, 0},
 };
+#ifndef PROFILE_HASHTABLE
 const struct cli_hashtable entities_htable = {
+#else
+struct cli_hashtable entities_htable = {
+#endif
     entities_htable_elements, 2048, 743, 1638};
