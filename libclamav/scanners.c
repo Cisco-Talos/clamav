@@ -3281,7 +3281,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     cli_file_t dettype = 0;
     uint8_t typercg    = 1;
     size_t hashed_size;
-    unsigned char hash[16] = {'\0'};
+    unsigned char *hash = NULL;
     bitset_t *old_hook_lsig_matches;
     const char *filetype;
     int cache_clean = 0, res;
@@ -3313,6 +3313,10 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         emax_reached(ctx);
         early_ret_from_magicscan(CL_CLEAN);
     }
+
+    hash = (*ctx->fmap)->maphash;
+    hashed_size = (*ctx->fmap)->len;
+
     old_hook_lsig_matches = ctx->hook_lsig_matches;
     if (type == CL_TYPE_PART_ANY) {
         typercg = 0;
@@ -3414,17 +3418,13 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA /* ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && ctx->wrkproperty != NULL */) {
         char hashstr[33];
-        ret = cache_get_MD5(hash, ctx);
-        if (ret != CL_SUCCESS) {
-            early_ret_from_magicscan(ret);
-        }
         snprintf(hashstr, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
                  hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
                  hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
 
         ret = cli_jsonstr(ctx->wrkproperty, "FileMD5", hashstr);
         if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE)
-            memset(hash, 0, sizeof(hash));
+            memset(hash, 0, 16);
         if (ret != CL_SUCCESS) {
             early_ret_from_magicscan(ret);
         }
@@ -3440,8 +3440,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 
     perf_stop(ctx, PERFT_CACHE);
-    hashed_size = (*ctx->fmap)->len;
-    memcpy((*ctx->fmap)->maphash, hash, 16);
     ctx->hook_lsig_matches = NULL;
 
     if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev)) || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */

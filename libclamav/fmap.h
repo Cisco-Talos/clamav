@@ -217,4 +217,6 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
  */
 int fmap_fd(fmap_t *m);
 
+cl_error_t fmap_get_MD5(unsigned char *hash, fmap_t *map);
+
 #endif

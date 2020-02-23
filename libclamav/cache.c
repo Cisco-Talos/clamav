@@ -940,47 +940,10 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
     return;
 }
 
-int cache_get_MD5(unsigned char *hash, cli_ctx *ctx)
-{
-    fmap_t *map;
-    size_t todo, at = 0;
-    void *hashctx;
-
-    map  = *ctx->fmap;
-    todo = map->len;
-
-    hashctx = cl_hash_init("md5");
-    if (!(hashctx))
-        return CL_VIRUS;
-
-    while (todo) {
-        const void *buf;
-        size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
-
-        if (!(buf = fmap_need_off_once(map, at, readme))) {
-            cl_hash_destroy(hashctx);
-            return CL_EREAD;
-        }
-
-        todo -= readme;
-        at += readme;
-
-        if (cl_update_hash(hashctx, (void *)buf, readme)) {
-            cl_hash_destroy(hashctx);
-            cli_errmsg("cache_check: error reading while generating hash!\n");
-            return CL_EREAD;
-        }
-    }
-
-    cl_finish_hash(hashctx, hash);
-
-    return CL_CLEAN;
-}
-
 /* Hashes a file onto the provided buffer and looks it up the cache.
    Returns CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error,
    and returns CL_EREAD if unrecoverable */
-int cache_check(unsigned char *hash, cli_ctx *ctx)
+cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx)
 {
     fmap_t *map;
     int ret;
@@ -992,10 +955,6 @@ int cache_check(unsigned char *hash, cli_ctx *ctx)
         cli_dbgmsg("cache_check: Caching disabled. Returning CL_VIRUS.\n");
         return CL_VIRUS;
     }
-
-    ret = cache_get_MD5(hash, ctx);
-    if (ret != CL_CLEAN)
-        return ret;
 
     map = *ctx->fmap;
     ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);

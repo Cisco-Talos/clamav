@@ -67,6 +67,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
 {
     STATBUF st;
     fmap_t *m;
+    unsigned char hash[16] = {'\0'};
 
     *empty = 0;
     if (FSTAT(fd, &st)) {
@@ -89,6 +90,13 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
         return NULL;
     m->mtime        = st.st_mtime;
     m->handle_is_fd = 1;
+
+    /* Calculate the fmap hash to be used by the FP check later */
+    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
+        return NULL;
+    }
+    memcpy(m->maphash, hash, 16);
+
     return m;
 }
 #else
@@ -159,6 +167,13 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
     m->fh           = fh;
     m->mh           = mh;
     m->unmap        = unmap_win32;
+
+    /* Calculate the fmap hash to be used by the FP check later */
+    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
+        return NULL;
+    }
+    memcpy(m->maphash, hash, 16);
+
     return m;
 }
 #endif /* _WIN32 */
@@ -870,4 +885,41 @@ int fmap_fd(fmap_t *m)
 extern void cl_fmap_close(cl_fmap_t *map)
 {
     funmap(map);
+}
+
+cl_error_t fmap_get_MD5(unsigned char *hash, fmap_t *map)
+{
+    size_t todo, at = 0;
+    void *hashctx;
+
+    todo = map->len;
+
+    hashctx = cl_hash_init("md5");
+    if (!(hashctx)) {
+        cli_errmsg("ctx_get_MD5: error initializing new md5 hash!\n");
+        return CL_ERROR;
+    }
+
+    while (todo) {
+        const void *buf;
+        size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
+
+        if (!(buf = fmap_need_off_once(map, at, readme))) {
+            cl_hash_destroy(hashctx);
+            return CL_EREAD;
+        }
+
+        todo -= readme;
+        at += readme;
+
+        if (cl_update_hash(hashctx, (void *)buf, readme)) {
+            cl_hash_destroy(hashctx);
+            cli_errmsg("ctx_get_MD5: error reading while generating hash!\n");
+            return CL_EREAD;
+        }
+    }
+
+    cl_finish_hash(hashctx, hash);
+
+    return CL_CLEAN;
 }

@@ -763,14 +763,15 @@ cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly
 {
     cl_error_t ret = CL_EMEM;
     int empty;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap; /* Store off the parent fmap */
 
+    /* Perform scan with child fmap */
     if ((*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty))) {
         ret                  = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
         map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
         funmap(*ctx->fmap);
     }
-    *ctx->fmap = map;
+    *ctx->fmap = map; /* Restore the parent fmap */
     if (empty)
         return CL_CLEAN;
     return ret;

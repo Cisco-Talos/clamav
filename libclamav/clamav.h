@@ -119,6 +119,7 @@ typedef enum cl_error_t {
     CL_ESTATE,
 
     CL_VERIFIED, /* The binary has been deemed trusted */
+    CL_ERROR,    /* Unspecified / generic error */
 
     /* no error codes below this line please */
     CL_ELAST_ERROR
