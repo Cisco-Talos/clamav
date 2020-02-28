@@ -11,6 +11,11 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 ### Notable changes
 
+Support for Adobe Reader X pdf encryption, an overhaul of PNG scanning to
+detect PNG specific exploits, and a major change to GIF parsing which makes
+it more tolerant to problematic files and adds the ability to scan overlays,
+all thanks to work and patches submitted by Aldo Mazzeo.
+
 ### Other improvements
 
 - Added ability for freshclam and clamsubmit to override default use of openssl
@@ -28,6 +33,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
+- Aldo Mazzeo
 - Sebastian A. Siewior
 - Reio Remma
 
