@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+#  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #  Copyright (C) 2007-2013 Sourcefire, Inc.
 #  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
 #
@@ -325,8 +325,8 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(top_srcdir)/docs/man/sigtool.1.in \
 	$(top_srcdir)/libclammspack/config.h.in COPYING config/ar-lib \
 	config/compile config/config.guess config/config.rpath \
-	config/config.sub config/install-sh config/ltmain.sh \
-	config/missing config/ylwrap
+	config/config.sub config/depcomp config/install-sh \
+	config/ltmain.sh config/missing config/ylwrap
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)

@@ -29946,6 +29946,8 @@ fi
 
 
 have_curl="no"
+if test "$enable_libclamav_only" != "yes"; then
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcurl installation" >&5
 $as_echo_n "checking for libcurl installation... " >&6; }
 
@@ -30158,6 +30160,7 @@ fi
 
 
 
+fi
 
 
 
