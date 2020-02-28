@@ -47,7 +47,6 @@ struct cl_fmap {
     /* internal */
     time_t mtime;
     unsigned int pages;
-    uint64_t hdrsz;
     uint64_t pgsz;
     unsigned int paged;
     unsigned short aging;
@@ -82,11 +81,21 @@ struct cl_fmap {
     HANDLE mh;
 #endif
     unsigned char maphash[16];
-    uint32_t placeholder_for_bitmap;
+    uint32_t *bitmap;
 };
 
 fmap_t *fmap(int fd, off_t offset, size_t len);
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty);
+
+/**
+ * @brief Create a new fmap view into another fmap.
+ *
+ * @param map       The parent fmap.
+ * @param offset    Offset for the start of the new fmap into the parent fmap.
+ * @param length    Length of the data from the offset for the new fmap.
+ * @return fmap_t*  NULL if failure, an allocated fmap that must be free'd if success.
+ */
+fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length);
 
 static inline void funmap(fmap_t *m)
 {
@@ -105,9 +114,7 @@ static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
 
 static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
 {
-    return (m->data ? (const char *)ptr - (const char *)m->data
-                    : (const char *)ptr - (const char *)m - m->hdrsz) -
-           m->nested_offset;
+    return ((const char *)ptr - (const char *)m->data) - m->nested_offset;
 }
 
 static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)

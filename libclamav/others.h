@@ -167,7 +167,7 @@ typedef struct cli_ctx_tag {
     cli_ctx_container *containers; /* set container type after recurse */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
-    fmap_t **fmap;
+    fmap_t **fmap; /* pointer to current fmap in an allocated array, incremented with recursion depth */
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;

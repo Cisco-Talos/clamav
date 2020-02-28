@@ -2612,10 +2612,12 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
                 free(tmpname);
+                ctx->recursion--;
                 return CL_EUNLINK;
             }
         }
         free(tmpname);
+        ctx->recursion--;
         return CL_VIRUS;
     }
     ctx->recursion--;
@@ -3314,7 +3316,7 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
         early_ret_from_magicscan(CL_CLEAN);
     }
 
-    hash = (*ctx->fmap)->maphash;
+    hash        = (*ctx->fmap)->maphash;
     hashed_size = (*ctx->fmap)->len;
 
     old_hook_lsig_matches = ctx->hook_lsig_matches;
@@ -3499,7 +3501,6 @@ static int magic_scandesc(cli_ctx *ctx, cli_file_t type)
             return magic_scandesc_cleanup(ctx, type, hash, hashed_size, cache_clean, ret, parent_property);
         }
     }
-
 
     ctx->recursion++;
     perf_nested_start(ctx, PERFT_CONTAINER, PERFT_SCAN);
@@ -4183,25 +4184,22 @@ int cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_
 /* For map scans that are not forced to disk */
 int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type)
 {
-    off_t old_off       = map->nested_offset;
-    size_t old_len      = map->len;
-    size_t old_real_len = map->real_len;
-    int ret             = CL_CLEAN;
+    int ret = CL_CLEAN;
 
-    cli_dbgmsg("cli_map_scandesc: [%ld, +%lu), [%ld, +%lu)\n",
-               (long)old_off, (unsigned long)old_len,
-               (long)offset, (unsigned long)length);
-    if (offset < 0 || (size_t)offset >= old_len) {
+    cli_dbgmsg("cli_map_scandesc: [%zu, +%zu), [" STDi64 ", +%zu)\n",
+               map->nested_offset, map->len,
+               (int64_t)offset, length);
+    if (offset < 0 || (size_t)offset >= map->len) {
         cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
         return CL_CLEAN;
     }
 
     if (!length)
-        length = old_len - offset;
-    if (length > old_len - offset) {
+        length = map->len - offset;
+    if (length > map->len - offset) {
         cli_dbgmsg("Data truncated: %zu -> %zu\n",
-                   length, old_len - (size_t)offset);
-        length = old_len - (size_t)offset;
+                   length, map->len - (size_t)offset);
+        length = map->len - (size_t)offset;
     }
 
     if (length <= 5) {
@@ -4209,26 +4207,19 @@ int cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, 
         return CL_CLEAN;
     }
     ctx->fmap++;
-    *ctx->fmap = map;
-    /* can't change offset because then we'd have to discard/move cached
-     * data, instead use another offset to reuse the already cached data */
-    map->nested_offset += offset;
-    map->len      = length;
-    map->real_len = map->nested_offset + length;
-    if (CLI_ISCONTAINED(old_off, old_len, map->nested_offset, map->len)) {
-        ret = magic_scandesc(ctx, type);
-    } else {
-        long long len1, len2;
-        len1 = old_off + old_len;
-        len2 = map->nested_offset + map->len;
-        cli_warnmsg("internal map error: %lu, %llu; %lu, %llu\n", (long unsigned)old_off,
-                    (long long unsigned)len1, (long unsigned)map->offset, (long long unsigned)len2);
+    *ctx->fmap = fmap_duplicate(map, offset, length);
+    if (NULL == *ctx->fmap) {
+        cli_dbgmsg("Failed to duplicate fmap for scan of fmap subsection\n");
+        ctx->fmap--;
+        return CL_CLEAN;
     }
 
+    ret = magic_scandesc(ctx, type);
+
+    free(*ctx->fmap); /* This fmap is just a duplicate, free with free() */
+    *ctx->fmap = NULL;
     ctx->fmap--;
-    map->nested_offset = old_off;
-    map->len           = old_len;
-    map->real_len      = old_real_len;
+
     return ret;
 }
 
