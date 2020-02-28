@@ -1,6 +1,8 @@
 dnl Check for libcurl
 
 have_curl="no"
+if test "$enable_libclamav_only" != "yes"; then
+
 AC_MSG_CHECKING([for libcurl installation])
 
 AC_ARG_WITH([libcurl],
@@ -98,3 +100,4 @@ fi
 
 AC_SUBST([CLAMSUBMIT_LIBS])
 AC_SUBST([CLAMSUBMIT_CFLAGS])
+fi
