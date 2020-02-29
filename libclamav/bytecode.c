@@ -226,6 +226,9 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->maps  = NULL;
     ctx->nmaps = 0;
 
+    /* Use input_switch() to free the extracted file fmap, if one exists */
+    cli_bcapi_input_switch(ctx, 0);
+
 #if HAVE_JSON
     free((json_object **)(ctx->jsonobjs));
     ctx->jsonobjs  = NULL;

@@ -1473,26 +1473,54 @@ int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
 {
     fmap_t *map;
-    if (ctx->extracted_file_input == (unsigned int)extracted_file)
-        return 0;
-    if (!extracted_file) {
-        cli_dbgmsg("bytecode api: input switched back to main file\n");
-        ctx->fmap                 = ctx->save_map;
+    if (0 == extracted_file) {
+        /*
+         * Set input back to original fmap.
+         */
+        if (0 == ctx->extracted_file_input) {
+            /* Input already set to original fmap, nothing to do. */
+            return 0;
+        }
+
+        /* Free the fmap used for the extracted file */
+        funmap(ctx->fmap);
+
+        /* Restore pointer to original fmap */
+        cli_bytecode_context_setfile(ctx, ctx->save_map);
+        ctx->save_map = NULL;
+
         ctx->extracted_file_input = 0;
+        cli_dbgmsg("bytecode api: input switched back to main file\n");
+        return 0;
+    } else {
+        /*
+         * Set input to extracted file.
+         */
+        if (1 == ctx->extracted_file_input) {
+            /* Input already set to extracted file, nothing to do. */
+            return 0;
+        }
+
+        if (ctx->outfd < 0) {
+            /* no valid fd to switch to use for fmap */
+            return -1;
+        }
+
+        /* Create fmap for the extracted file */
+        map = fmap(ctx->outfd, 0, 0);
+        if (!map) {
+            cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
+            return -1;
+        }
+
+        /* Save off pointer to original fmap */
+        ctx->save_map = ctx->fmap;
+        cli_bytecode_context_setfile(ctx, map);
+
+        ctx->extracted_file_input = 1;
+        cli_dbgmsg("bytecode api: input switched to extracted file\n");
         return 0;
     }
-    if (ctx->outfd < 0)
-        return -1;
-    map = fmap(ctx->outfd, 0, 0);
-    if (!map) {
-        cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
-        return -1;
-    }
-    ctx->save_map = ctx->fmap;
-    cli_bytecode_context_setfile(ctx, map);
-    ctx->extracted_file_input = 1;
-    cli_dbgmsg("bytecode api: input switched to extracted file\n");
-    return 0;
 }
 
 uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx, struct cli_environment *env, uint32_t len)

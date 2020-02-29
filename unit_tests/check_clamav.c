@@ -84,7 +84,7 @@ START_TEST(test_cl_retver)
     const char *ver = cl_retver();
     ck_assert_msg(!strcmp(REPO_VERSION "" VERSION_SUFFIX, ver), "cl_retver");
     ck_assert_msg(strcspn(ver, "012345789") < strlen(ver),
-                "cl_retver must have a number");
+                  "cl_retver must have a number");
 }
 END_TEST
 
@@ -137,7 +137,8 @@ END_TEST
 
 /* extern unsigned int cl_retflevel(void); */
 START_TEST(test_cl_retflevel)
-{}
+{
+}
 END_TEST
 
 /* extern struct cl_cvd *cl_cvdhead(const char *file); */
@@ -151,7 +152,8 @@ END_TEST
 
 /* extern struct cl_cvd *cl_cvdparse(const char *head); */
 START_TEST(test_cl_cvdparse)
-{}
+{
+}
 END_TEST
 
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
@@ -376,32 +378,38 @@ END_TEST
 
 /* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
 START_TEST(test_cl_load)
-{}
+{
+}
 END_TEST
 
 /* int cl_cvdverify(const char *file) */
 START_TEST(test_cl_cvdverify)
-{}
+{
+}
 END_TEST
 
 /* int cl_statinidir(const char *dirname, struct cl_stat *dbstat) */
 START_TEST(test_cl_statinidir)
-{}
+{
+}
 END_TEST
 
 /* int cl_statchkdir(const struct cl_stat *dbstat) */
 START_TEST(test_cl_statchkdir)
-{}
+{
+}
 END_TEST
 
 /* void cl_settempdir(const char *dir, short leavetemps) */
 START_TEST(test_cl_settempdir)
-{}
+{
+}
 END_TEST
 
 /* const char *cl_strerror(int clerror) */
 START_TEST(test_cl_strerror)
-{}
+{
+}
 END_TEST
 
 static char **testfiles     = NULL;
@@ -544,6 +552,7 @@ START_TEST(test_cl_scanmap_callback_handle)
         ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
         ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
+    cl_fmap_close(map);
     close(fd);
 }
 END_TEST
@@ -575,6 +584,7 @@ START_TEST(test_cl_scanmap_callback_handle_allscan)
         ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
         ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
+    cl_fmap_close(map);
     close(fd);
 }
 END_TEST
@@ -826,7 +836,7 @@ static const size_t dsig_tests_cnt = sizeof(dsig_tests) / sizeof(dsig_tests[0]);
 START_TEST(test_cli_dsig)
 {
     ck_assert_msg(cli_versig(dsig_tests[_i].md5, dsig_tests[_i].dsig) == dsig_tests[_i].result,
-                "digital signature verification test failed");
+                  "digital signature verification test failed");
 }
 END_TEST
 
