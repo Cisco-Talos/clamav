@@ -2001,6 +2001,9 @@ done:
     if (NULL != urlDatabaseList) {
         free_string_list(urlDatabaseList, nUrlDatabases);
     }
+    if (NULL != serverList) {
+        free_string_list(serverList, nServers);
+    }
     if (NULL != opts) {
         optfree(opts);
     }
