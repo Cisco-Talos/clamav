@@ -119,6 +119,7 @@ int main(int argc, char **argv)
     clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
     if (clamdopts == NULL) {
         logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+        optfree((struct optstruct *)opts);
         return 2;
     }
     ctx->clamdopts = clamdopts;

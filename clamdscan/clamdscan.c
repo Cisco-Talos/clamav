@@ -83,6 +83,7 @@ int main(int argc, char **argv)
 
     if ((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
         logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+        optfree(opts);
         return 2;
     }
 
