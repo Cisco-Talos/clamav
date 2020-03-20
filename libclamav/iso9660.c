@@ -59,7 +59,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     char *tmpf;
     int fd, ret = CL_SUCCESS;
 
-    if (cli_gentempfd(iso->ctx->engine->tmpdir, &tmpf, &fd) != CL_SUCCESS)
+    if (cli_gentempfd(iso->ctx->sub_tmpdir, &tmpf, &fd) != CL_SUCCESS)
         return CL_ETMPFILE;
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
@@ -82,7 +82,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     }
 
     if (!len)
-        ret = cli_magic_scandesc(fd, tmpf, iso->ctx);
+        ret = cli_magic_scandesc(fd, tmpf, iso->ctx, iso->buf);
 
     close(fd);
     if (!iso->ctx->engine->keeptmp) {

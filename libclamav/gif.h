@@ -24,6 +24,6 @@
 
 #include "others.h"
 
-int cli_parsegif(cli_ctx *ctx);
+cl_error_t cli_parsegif(cli_ctx *ctx);
 
 #endif

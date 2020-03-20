@@ -1585,7 +1585,7 @@ int cli_scan_ole10(int fd, cli_ctx *ctx)
         if (!read_uint32(fd, &object_size, FALSE))
             return CL_CLEAN;
     }
-    if (!(fullname = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL))) {
+    if (!(fullname = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
         return CL_EMEM;
     }
     ofd = open(fullname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL,
@@ -1598,7 +1598,7 @@ int cli_scan_ole10(int fd, cli_ctx *ctx)
     cli_dbgmsg("cli_decode_ole_object: decoding to %s\n", fullname);
     ole_copy_file_data(fd, ofd, object_size);
     lseek(ofd, 0, SEEK_SET);
-    ret = cli_magic_scandesc(ofd, fullname, ctx);
+    ret = cli_magic_scandesc(ofd, fullname, ctx, NULL);
     close(ofd);
     if (ctx && !ctx->engine->keeptmp)
         if (cli_unlink(fullname))
@@ -1762,7 +1762,7 @@ cli_ppt_vba_read(int ifd, cli_ctx *ctx)
     const char *ret;
 
     /* Create a directory to store the extracted OLE2 objects */
-    dir = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL);
+    dir = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL);
     if (dir == NULL)
         return NULL;
     if (mkdir(dir, 0700)) {

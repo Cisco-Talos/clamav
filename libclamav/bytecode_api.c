@@ -552,7 +552,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
             size_t csize = cli_get_container_size(cctx, -2);
             cli_set_container(cctx, ctx->containertype, csize);
         }
-        res = cli_magic_scandesc(ctx->outfd, ctx->tempfile, cctx);
+        res = cli_magic_scandesc(ctx->outfd, ctx->tempfile, cctx, NULL);
         cctx->recursion--;
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);
@@ -1728,7 +1728,7 @@ int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
         }
 
         /* Create fmap for the extracted file */
-        map = fmap(ctx->outfd, 0, 0);
+        map = fmap(ctx->outfd, 0, 0, NULL);
         if (!map) {
             cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
             return -1;

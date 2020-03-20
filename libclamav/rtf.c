@@ -246,7 +246,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
         cli_dbgmsg("Decoding ole object\n");
         ret = cli_scan_ole10(data->fd, ctx);
     } else if (data->fd > 0)
-        ret = cli_magic_scandesc(data->fd, data->name, ctx);
+        ret = cli_magic_scandesc(data->fd, data->name, ctx, NULL);
     if (data->fd > 0)
         close(data->fd);
     data->fd = -1;
@@ -526,7 +526,7 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(tempname = cli_gentemp(ctx->sub_tmpdir)))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {

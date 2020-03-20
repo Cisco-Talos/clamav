@@ -67,7 +67,6 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize);
 static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize);
-static void gpt_printName(uint16_t name[], const char *msg);
 static void gpt_printGUID(uint8_t GUID[], const char *msg);
 static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 
@@ -328,9 +327,13 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         } else if (((gpe.lastLBA + 1) * sectorsize) > maplen) {
             /* partition exists outside bounds of the file map */
         } else {
+            char *namestr = NULL;
+
+            namestr = (char *)cli_utf16toascii((char *)gpe.name, 72);
+
             /* print partition entry data for debug */
             cli_dbgmsg("GPT Partition Entry %u:\n", i);
-            gpt_printName(gpe.name, "Name");
+            cli_dbgmsg("Name: %s\n", namestr);
             gpt_printGUID(gpe.typeGUID, "Type GUID");
             gpt_printGUID(gpe.uniqueGUID, "Unique GUID");
             cli_dbgmsg("Attributes: %llx\n", (long long unsigned)gpe.attributes);
@@ -341,7 +344,10 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             /* send the partition to cli_map_scan */
             part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
+            ret       = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+            if (NULL != namestr) {
+                free(namestr);
+            }
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -565,16 +571,6 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
     UNUSEDPARAM(sectorsize);
     return;
 #endif
-}
-
-static void gpt_printName(uint16_t name[], const char *msg)
-{
-    char *namestr;
-
-    namestr = (char *)cli_utf16toascii((char *)name, 72);
-    cli_dbgmsg("%s: %s\n", msg, namestr);
-
-    free(namestr);
 }
 
 static void gpt_printGUID(uint8_t GUID[], const char *msg)

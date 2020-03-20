@@ -223,7 +223,7 @@ int cli_scanapm(cli_ctx *ctx)
                    apentry.pBlockStart, apentry.pBlockCount, (long unsigned)partoff, (long unsigned)partsize);
 
         /* send the partition to cli_map_scan */
-        ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
+        ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;

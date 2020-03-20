@@ -108,7 +108,7 @@ static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
     return pread((int)(ssize_t)handle, buf, count, offset);
 }
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
 {
     STATBUF st;
     fmap_t *m              = NULL;
@@ -143,6 +143,14 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
     }
     memcpy(m->maphash, hash, 16);
 
+    if (NULL != name) {
+        m->name = cli_strdup(name);
+        if (NULL == m->name) {
+            funmap(m);
+            return NULL;
+        }
+    }
+
     return m;
 }
 #else
@@ -156,11 +164,14 @@ static void unmap_win32(fmap_t *m)
         if (NULL != m->mh) {
             CloseHandle(m->mh);
         }
+        if (NULL != m->name) {
+            free(m->name);
+        }
         free((void *)m);
     }
 }
 
-fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
+fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
 { /* WIN32 */
     unsigned int pages, mapsz;
     int pgsz = cli_getpagesize();
@@ -228,13 +239,21 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty)
     }
     memcpy(m->maphash, hash, 16);
 
+    if (NULL != name) {
+        m->name = cli_strdup(name);
+        if (NULL == m->name) {
+            funmap(m);
+            return NULL;
+        }
+    }
+
     return m;
 }
 #endif /* _WIN32 */
 
 /* vvvvv SHARED STUFF BELOW vvvvv */
 
-fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length)
+fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length, const char *name)
 {
     cl_error_t status        = CL_ERROR;
     cl_fmap_t *duplicate_map = NULL;
@@ -275,6 +294,16 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length)
     }
     memcpy(duplicate_map->maphash, hash, 16);
 
+    if (NULL != name) {
+        map->name = cli_strdup(name);
+        if (NULL == map->name) {
+            funmap(map);
+            return NULL;
+        }
+    } else {
+        map->name = NULL;
+    }
+
     status = CL_SUCCESS;
 
 done:
@@ -286,6 +315,17 @@ done:
     }
 
     return duplicate_map;
+}
+
+void free_duplicate_fmap(cl_fmap_t *map)
+{
+    if (NULL != map) {
+        if (NULL != map->name) {
+            free(map->name);
+            map->name = NULL;
+        }
+        free(map);
+    }
 }
 
 static void unmap_handle(fmap_t *m)
@@ -302,6 +342,9 @@ static void unmap_handle(fmap_t *m)
         if (NULL != m->bitmap) {
             free(m->bitmap);
             m->bitmap = NULL;
+        }
+        if (NULL != m->name) {
+            free(m->name);
         }
         free((void *)m);
     }
@@ -687,6 +730,9 @@ static void unmap_mmap(fmap_t *m)
 static void unmap_malloc(fmap_t *m)
 {
     if (NULL != m) {
+        if (NULL != m->name) {
+            free(m->name);
+        }
         free((void *)m);
     }
 }
@@ -787,7 +833,7 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len);
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint);
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
-extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
+fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 {
     int pgsz     = cli_getpagesize();
     cl_fmap_t *m = cli_calloc(1, sizeof(*m));
@@ -805,7 +851,21 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
     m->need_offstr = mem_need_offstr;
     m->gets        = mem_gets;
     m->unneed_off  = mem_unneed_off;
+
+    if (NULL != name) {
+        m->name = cli_strdup(name);
+        if (NULL == m->name) {
+            free(m);
+            return NULL;
+        }
+    }
+
     return m;
+}
+
+extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
+{
+    return (cl_fmap_t *)fmap_open_memory(start, len, NULL);
 }
 
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock)
@@ -865,10 +925,10 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     return dst;
 }
 
-fmap_t *fmap(int fd, off_t offset, size_t len)
+fmap_t *fmap(int fd, off_t offset, size_t len, const char *name)
 {
     int unused;
-    return fmap_check_empty(fd, offset, len, &unused);
+    return fmap_check_empty(fd, offset, len, &unused, name);
 }
 
 static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al)

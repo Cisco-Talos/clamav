@@ -60,14 +60,14 @@
 
 #ifdef CLI_PERF_LOGGING
 
-static inline void PERF_LOG_FILTER(int32_t pos, int32_t length, int8_t trie)
+static inline void perf_log_filter(int32_t pos, int32_t length, int8_t trie)
 {
     cli_perf_log_add(RAW_BYTES_SCANNED, length);
     cli_perf_log_add(FILTER_BYTES_SCANNED, length - pos);
     cli_perf_log_count2(TRIE_SCANNED, trie, length - pos);
 }
 
-static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length)
+static inline int perf_log_tries(int8_t acmode, int8_t bm_called, int32_t length)
 {
     if (bm_called)
         cli_perf_log_add(BM_SCANNED, length);
@@ -77,14 +77,14 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 
 #else
-static inline void PERF_LOG_FILTER(int32_t pos, uint32_t length, int8_t trie)
+static inline void perf_log_filter(int32_t pos, uint32_t length, int8_t trie)
 {
     UNUSEDPARAM(pos);
     UNUSEDPARAM(length);
     UNUSEDPARAM(trie);
 }
 
-static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length)
+static inline int perf_log_tries(int8_t acmode, int8_t bm_called, int32_t length)
 {
     UNUSEDPARAM(acmode);
     UNUSEDPARAM(bm_called);
@@ -121,16 +121,16 @@ static inline int matcher_run(const struct cli_matcher *root,
             /*  for safety always scan last maxpatlen bytes */
             pos = length - root->maxpatlen - 1;
             if (pos < 0) pos = 0;
-            PERF_LOG_FILTER(pos, length, root->type);
+            perf_log_filter(pos, length, root->type);
         } else {
             /* must not cut buffer for 64[4-4]6161, because we must be able to check
-	     * 64! */
+             * 64! */
             pos = info.first_match - root->maxpatlen - 1;
             if (pos < 0) pos = 0;
-            PERF_LOG_FILTER(pos, length, root->type);
+            perf_log_filter(pos, length, root->type);
         }
     } else {
-        PERF_LOG_FILTER(0, length, root->type);
+        perf_log_filter(0, length, root->type);
     }
 
     orig_length = length;
@@ -140,11 +140,11 @@ static inline int matcher_run(const struct cli_matcher *root,
     buffer += pos;
     offset += pos;
     if (!root->ac_only) {
-        PERF_LOG_TRIES(0, 1, length);
+        perf_log_tries(0, 1, length);
         if (root->bm_offmode) {
             /* Don't use prefiltering for BM offset mode, since BM keeps tracks
-	     * of offsets itself, and doesn't work if we skip chunks of input
-	     * data */
+             * of offsets itself, and doesn't work if we skip chunks of input
+             * data */
             ret = cli_bm_scanbuff(orig_buffer, orig_length, virname, NULL, root, orig_offset, tinfo, offdata, ctx);
         } else {
             ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, tinfo, offdata, ctx);
@@ -163,7 +163,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             }
         }
     }
-    PERF_LOG_TRIES(acmode, 0, length);
+    perf_log_tries(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
     if (ret != CL_CLEAN) {
         if (ret == CL_VIRUS) {
@@ -759,14 +759,14 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     return ret;
 }
 
-cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
+cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
 {
     cl_error_t ret = CL_EMEM;
     int empty;
     fmap_t *map = *ctx->fmap; /* Store off the parent fmap for easy reference */
 
     ctx->fmap++; /* Perform scan with child fmap */
-    if (NULL != (*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty))) {
+    if (NULL != (*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty, name))) {
         ret                  = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
         map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
         funmap(*ctx->fmap);
@@ -795,7 +795,7 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
     return 1;
 }
 
-static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
+static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     unsigned evalcnt            = 0;
     uint64_t evalids            = 0;
@@ -803,7 +803,7 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     char *exp                   = ac_lsig->u.logic;
     char *exp_end               = exp + strlen(exp);
-    int rc;
+    cl_error_t rc;
 
     rc = cli_ac_chkmacro(root, acdata, lsid);
     if (rc != CL_SUCCESS)
@@ -826,7 +826,7 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
         }
 
         if (hash && ac_lsig->tdb.handlertype) {
-            if (memcmp(ctx->handlertype_hash, hash, 16)) {
+            if (0 != memcmp(ctx->handlertype_hash, hash, 16)) {
                 ctx->recursion++;
                 memcpy(ctx->handlertype_hash, hash, 16);
                 if (cli_magic_scandesc_type(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
@@ -1038,7 +1038,8 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     if (!ftonly) {
-        if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
+        if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) ||
+            (ret = cli_ac_caloff(groot, &gdata, &info))) {
             cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
@@ -1056,7 +1057,8 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     if (troot) {
-        if ((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, &info))) {
+        if ((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) ||
+            (ret = cli_ac_caloff(troot, &tdata, &info))) {
             if (!ftonly) {
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
@@ -1108,7 +1110,10 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
 
     if (!ftonly && hdb) {
         if (!refhash) {
-            if (cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) || cli_hm_have_size(fp, CLI_HASH_MD5, map->len) || cli_hm_have_wild(hdb, CLI_HASH_MD5) || cli_hm_have_wild(fp, CLI_HASH_MD5)) {
+            if (cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) ||
+                cli_hm_have_size(fp, CLI_HASH_MD5, map->len) ||
+                cli_hm_have_wild(hdb, CLI_HASH_MD5) ||
+                cli_hm_have_wild(fp, CLI_HASH_MD5)) {
                 compute_hash[CLI_HASH_MD5] = 1;
             } else {
                 compute_hash[CLI_HASH_MD5] = 0;
@@ -1118,13 +1123,19 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
             memcpy(digest[CLI_HASH_MD5], refhash, 16);
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA1) || cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA1)) {
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) ||
+            cli_hm_have_wild(hdb, CLI_HASH_SHA1) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) ||
+            cli_hm_have_wild(fp, CLI_HASH_SHA1)) {
             compute_hash[CLI_HASH_SHA1] = 1;
         } else {
             compute_hash[CLI_HASH_SHA1] = 0;
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA256) || cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) ||
+            cli_hm_have_wild(hdb, CLI_HASH_SHA256) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) ||
+            cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
             compute_hash[CLI_HASH_SHA256] = 1;
         } else {
             compute_hash[CLI_HASH_SHA256] = 0;

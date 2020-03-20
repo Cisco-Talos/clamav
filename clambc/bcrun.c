@@ -431,7 +431,7 @@ int main(int argc, char *argv[])
                 optfree(opts);
                 exit(5);
             }
-            map = fmap(fd, 0, 0);
+            map = fmap(fd, 0, 0, opt->strarg);
             if (!map) {
                 fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
                 exit(5);

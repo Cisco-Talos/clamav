@@ -126,7 +126,7 @@
     }
 
 #define CLI_UNPTEMP(NAME, FREEME)                                                       \
-    if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {                               \
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {                               \
         cli_exe_info_destroy(peinfo);                                                   \
         cli_multifree FREEME;                                                           \
         return CL_EMEM;                                                                 \
@@ -206,7 +206,7 @@
             lseek(ndesc, 0, SEEK_SET);                                                        \
             cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                             \
             SHA_OFF;                                                                          \
-            if (cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) {                       \
+            if (cli_magic_scandesc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {                 \
                 close(ndesc);                                                                 \
                 SHA_RESET;                                                                    \
                 CLI_TMPUNLK();                                                                \
@@ -3979,7 +3979,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if ((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
+        if ((ret = cli_magic_scandesc(ndesc, tempfile, ctx, NULL)) == CL_VIRUS) {
             close(ndesc);
             SHA_RESET;
             CLI_TMPUNLK();

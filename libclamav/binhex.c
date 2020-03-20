@@ -68,10 +68,10 @@ int cli_binhex(cli_ctx *ctx)
     cli_dbgmsg("in cli_binhex\n");
     if (!map->len) return CL_CLEAN;
 
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &dname, &datafd)) != CL_SUCCESS)
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &dname, &datafd)) != CL_SUCCESS)
         return ret;
 
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &rname, &resfd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &rname, &resfd)) != CL_SUCCESS) {
         close(datafd);
         if (cli_unlink(dname)) ret = CL_EUNLINK;
         free(dname);
@@ -122,7 +122,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scandesc(datafd, dname, ctx);
+                    ret = cli_magic_scandesc(datafd, dname, ctx, NULL);
                     if (ret == CL_VIRUS) break;
                 }
                 if (dec_done)
@@ -168,7 +168,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scandesc(resfd, rname, ctx);
+                    ret = cli_magic_scandesc(resfd, rname, ctx, NULL);
                     break;
                 }
             }
@@ -180,7 +180,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scandesc(datafd, dname, ctx);
+                    ret = cli_magic_scandesc(datafd, dname, ctx, NULL);
                 } else if (write_phase == IN_RES) {
                     cli_dbgmsg("cli_binhex: scanning partially extracted resource fork\n");
                     if (lseek(resfd, 0, SEEK_SET) == -1) {
@@ -188,7 +188,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scandesc(resfd, rname, ctx);
+                    ret = cli_magic_scandesc(resfd, rname, ctx, NULL);
                 }
                 break;
             }

@@ -234,7 +234,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
         free(ctx.containers);
         free(ctx.fmap);
         close(fd);
@@ -354,7 +354,7 @@ static int htmlnorm(const struct optstruct *opts)
         return -1;
     }
 
-    if ((map = fmap(fd, 0, 0))) {
+    if ((map = fmap(fd, 0, 0, optget(opts, "html-normalise")->strarg))) {
         html_normalise_map(map, ".", NULL, NULL);
         funmap(map);
     } else
@@ -388,7 +388,7 @@ static int asciinorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(map = fmap(fd, 0, 0))) {
+    if (!(map = fmap(fd, 0, 0, fname))) {
         mprintf("!fmap: Could not map fd %d\n", fd);
         close(fd);
         free(norm_buff);
@@ -2259,7 +2259,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
     }
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, NULL))) {
         free(ctx.containers);
         free(ctx.fmap);
         cl_engine_free(engine);
@@ -3456,7 +3456,7 @@ static int dumpcerts(const struct optstruct *opts)
 
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
         free(ctx.containers);
         free(ctx.fmap);
         close(fd);

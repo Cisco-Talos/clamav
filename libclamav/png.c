@@ -40,7 +40,7 @@
 
 #define BUFFER_SIZE 128000 /* size of read block  */
 
-int cli_parsepng(cli_ctx *ctx)
+cl_error_t cli_parsepng(cli_ctx *ctx)
 {
     uint64_t sz     = 0;
     char chunkid[5] = {'\0', '\0', '\0', '\0', '\0'};

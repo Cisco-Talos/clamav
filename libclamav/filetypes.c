@@ -357,7 +357,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
-                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
+                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_TYPE_ANY) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
                                     /* falls-through to additional filetyping */
@@ -405,8 +405,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 
     if (ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
         /* HTML files may contain special characters and could be
-	 * misidentified as BINARY_DATA by cli_filetype()
-	 */
+         * misidentified as BINARY_DATA by cli_filetype()
+         */
         root = engine->root[0];
         if (!root)
             return ret;
@@ -437,8 +437,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 const char *encoding;
 
                 /* check if we can autodetect this encoding.
-		     * If we can't don't try to detect HTML sig, since
-		     * we just tried that above, and failed */
+                 * If we can't don't try to detect HTML sig, since
+                 * we just tried that above, and failed */
                 if ((encoding = encoding_detect_bom(buff, bread))) {
                     unsigned char decodedbuff[(MAGIC_BUFFER_SIZE + 1) * 2];
                     m_area_t in_area, out_area;
@@ -453,9 +453,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     out_area.offset = 0;
 
                     /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode
-		     * (multibyte characters will not be exactly handled, but that is not a problem).
-		     * However when detecting whether a file is HTML or not, we need exact conversion.
-		     * (just eliminating zeros and matching would introduce false positives */
+                     * (multibyte characters will not be exactly handled, but that is not a problem).
+                     * However when detecting whether a file is HTML or not, we need exact conversion.
+                     * (just eliminating zeros and matching would introduce false positives */
                     if (encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
                         if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
                             return ret;

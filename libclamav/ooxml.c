@@ -106,7 +106,7 @@ static size_t num_ooxml_hwp_keys = sizeof(ooxml_hwp_keys) / sizeof(struct key_en
 
 // clang-format on
 
-static int ooxml_updatelimits(int fd, cli_ctx *ctx)
+static cl_error_t ooxml_updatelimits(int fd, cli_ctx *ctx)
 {
     STATBUF sb;
     if (FSTAT(fd, &sb) == -1) {
@@ -117,9 +117,9 @@ static int ooxml_updatelimits(int fd, cli_ctx *ctx)
     return cli_updatelimits(ctx, sb.st_size);
 }
 
-static int ooxml_parse_document(int fd, cli_ctx *ctx)
+static cl_error_t ooxml_parse_document(int fd, cli_ctx *ctx)
 {
-    int ret                 = CL_SUCCESS;
+    cl_error_t ret                 = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     cli_dbgmsg("in ooxml_parse_document\n");
@@ -145,11 +145,12 @@ static int ooxml_parse_document(int fd, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
 {
-    int ret;
+    cl_error_t ret;
 
     UNUSEDPARAM(filepath);
+    UNUSEDPARAM(name);
 
     cli_dbgmsg("in ooxml_core_cb\n");
     ret = ooxml_parse_document(fd, ctx);
@@ -161,11 +162,12 @@ static int ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
 {
-    int ret;
+    cl_error_t ret;
 
     UNUSEDPARAM(filepath);
+    UNUSEDPARAM(name);
 
     cli_dbgmsg("in ooxml_extn_cb\n");
     ret = ooxml_parse_document(fd, ctx);
@@ -177,16 +179,18 @@ static int ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx)
     return ret;
 }
 
-static int ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
 {
-    int ret = CL_SUCCESS, tmp, toval = 0, state;
+    cl_error_t ret = CL_SUCCESS;
+    int tmp, toval = 0, state;
     int core = 0, extn = 0, cust = 0, dsig = 0;
     int mcore = 0, mextn = 0, mcust = 0;
-    const xmlChar *name, *value, *CT, *PN;
+    const xmlChar *localname, *value, *CT, *PN;
     xmlTextReaderPtr reader = NULL;
     uint32_t loff;
 
     UNUSEDPARAM(filepath);
+    UNUSEDPARAM(name);
 
     unsigned long sav_scansize    = ctx->scansize;
     unsigned int sav_scannedfiles = ctx->scannedfiles;
@@ -218,26 +222,26 @@ static int ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx)
             goto ooxml_content_exit;
         }
 
-        name = xmlTextReaderConstLocalName(reader);
-        if (name == NULL) continue;
+        localname = xmlTextReaderConstLocalName(reader);
+        if (localname == NULL) continue;
 
-        if (strcmp((const char *)name, "Override")) continue;
+        if (strcmp((const char *)localname, "Override")) continue;
 
         if (xmlTextReaderHasAttributes(reader) != 1) continue;
 
         CT = PN = NULL;
         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
-            name  = xmlTextReaderConstLocalName(reader);
+            localname  = xmlTextReaderConstLocalName(reader);
             value = xmlTextReaderConstValue(reader);
-            if (name == NULL || value == NULL) continue;
+            if (localname == NULL || value == NULL) continue;
 
-            if (!xmlStrcmp(name, (const xmlChar *)"ContentType")) {
+            if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
                 CT = value;
-            } else if (!xmlStrcmp(name, (const xmlChar *)"PartName")) {
+            } else if (!xmlStrcmp(localname, (const xmlChar *)"PartName")) {
                 PN = value;
             }
 
-            cli_dbgmsg("%s: %s\n", name, value);
+            cli_dbgmsg("%s: %s\n", localname, value);
         }
 
         if (!CT && !PN) continue;
@@ -346,12 +350,13 @@ ooxml_content_exit:
     return ret;
 }
 
-static int ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx)
+static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
 {
-    int ret                 = CL_SUCCESS;
+    cl_error_t ret          = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     UNUSEDPARAM(filepath);
+    UNUSEDPARAM(name);
 
     cli_dbgmsg("in ooxml_hwp_cb\n");
 
@@ -378,24 +383,24 @@ static int ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx)
 
 #endif /* HAVE_LIBXML2 && HAVE_JSON */
 
-int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
+cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
 {
     struct zip_requests requests;
-    int ret;
+    cl_error_t ret;
 
     memset(&requests, 0, sizeof(struct zip_requests));
 
     if ((ret = unzip_search_add(&requests, "xl/", 3)) != CL_SUCCESS) {
-        return CL_SUCCESS;
+        return CL_TYPE_ANY;
     }
     if ((ret = unzip_search_add(&requests, "ppt/", 4)) != CL_SUCCESS) {
-        return CL_SUCCESS;
+        return CL_TYPE_ANY;
     }
     if ((ret = unzip_search_add(&requests, "word/", 5)) != CL_SUCCESS) {
-        return CL_SUCCESS;
+        return CL_TYPE_ANY;
     }
     if ((ret = unzip_search_add(&requests, "Contents/content.hpf", 22)) != CL_SUCCESS) {
-        return CL_SUCCESS;
+        return CL_TYPE_ANY;
     }
 
     if ((ret = unzip_search(ctx, map, &requests)) == CL_VIRUS) {
@@ -409,18 +414,18 @@ int cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
             case 3:
                 return CL_TYPE_OOXML_HWP;
             default:
-                return CL_SUCCESS;
+                return CL_TYPE_ANY;
         }
     }
 
-    return CL_SUCCESS;
+    return CL_TYPE_ANY;
 }
 
-int cli_process_ooxml(cli_ctx *ctx, int type)
+cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
 {
 #if HAVE_LIBXML2 && HAVE_JSON
     uint32_t loff = 0;
-    int ret       = CL_SUCCESS;
+    cl_error_t ret       = CL_SUCCESS;
 
     cli_dbgmsg("in cli_process_ooxml\n");
     if (!ctx) {

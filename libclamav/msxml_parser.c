@@ -400,7 +400,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                             cli_msxmlmsg("BINARY CALLBACK DATA!\n");
 
-                            if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+                            if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                                 return ret;
                             }
@@ -444,7 +444,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                                 break;
                             }
 
-                            if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &of)) != CL_SUCCESS) {
+                            if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
                                 cli_warnmsg("msxml_parse_element: failed to create temporary file %s\n", tempfile);
                                 free(decoded);
                                 return ret;
@@ -462,7 +462,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                             cli_dbgmsg("msxml_parse_element: extracted binary data to %s\n", tempfile);
 
-                            ret = cli_magic_scandesc(of, tempfile, ctx);
+                            ret = cli_magic_scandesc(of, tempfile, ctx, NULL);
                             close(of);
                             if (!(ctx->engine->keeptmp))
                                 cli_unlink(tempfile);

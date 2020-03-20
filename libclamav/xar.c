@@ -308,13 +308,13 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
-            rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
+            rc = cli_mem_scandesc(subdoc, subdoc_len, ctx, NULL);
             if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
 
             /* make a file to leave if --leave-temps in effect */
             if (ctx->engine->keeptmp) {
-                if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
                     cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
@@ -515,7 +515,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx);
+    rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx, NULL);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
             goto exit_toc;
@@ -523,7 +523,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* make a file to leave if --leave-temps in effect */
     if (ctx->engine->keeptmp) {
-        if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
@@ -572,7 +572,7 @@ int cli_scanxar(cli_ctx *ctx)
 
         at = offset + hdr.toc_length_compressed + hdr.size;
 
-        if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't generate temporary file.\n");
             goto exit_reader;
         }
@@ -843,7 +843,7 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
 
-            rc = cli_magic_scandesc(fd, tmpname, ctx);
+            rc = cli_magic_scandesc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));

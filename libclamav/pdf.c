@@ -1060,7 +1060,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
 
     map = *ctx->fmap;
     if (fd != -1) {
-        map = fmap(fd, 0, 0);
+        map = fmap(fd, 0, 0, NULL);
         if (!map) {
             cli_dbgmsg("run_pdf_hooks: can't mmap pdf extracted obj\n");
             map = *ctx->fmap;
@@ -1412,7 +1412,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     cli_writen(fout, s.out, s.out_pos);
 
     lseek(fout, 0, SEEK_SET);
-    rc = cli_magic_scandesc(fout, fullname, pdf->ctx);
+    rc = cli_magic_scandesc(fout, fullname, pdf->ctx, NULL);
     close(fout);
 
     if (!pdf->ctx->engine->keeptmp)
@@ -1422,7 +1422,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     return rc;
 }
 
-int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
+cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
     cli_ctx *ctx = pdf->ctx;
     char fullname[NAME_MAX + 1];
@@ -1801,7 +1801,7 @@ done:
 
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
-        rc2 = cli_magic_scandesc(fout, fullname, pdf->ctx);
+        rc2 = cli_magic_scandesc(fout, fullname, pdf->ctx, NULL);
         if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
             rc = rc2;
 
@@ -3424,7 +3424,7 @@ done:
  *
  * @return int      Returns cl_error_t status value.
  */
-int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
+cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
     cl_error_t rc = CL_SUCCESS;
     struct pdf_struct pdf;

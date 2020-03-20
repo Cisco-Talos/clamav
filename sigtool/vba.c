@@ -114,7 +114,7 @@ cli_ctx *convenience_ctx(int fd)
     ctx->options->general |= CL_SCAN_GENERAL_HEURISTICS;
     ctx->options->parse = ~(0);
 
-    if (!(*ctx->fmap = fmap(fd, 0, 0))) {
+    if (!(*ctx->fmap = fmap(fd, 0, 0, NULL))) {
         printf("convenience_ctx: fmap failed\n");
         goto done;
     }

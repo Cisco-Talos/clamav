@@ -1024,7 +1024,6 @@ char *cli_newfilepath(const char *dir, const char *fname)
 {
     char *fullpath;
     const char *mdir;
-    int i;
     size_t len;
 
     mdir = dir ? dir : cli_gettmpdir();
@@ -1037,7 +1036,6 @@ char *cli_newfilepath(const char *dir, const char *fname)
     len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
     fullpath = (char *)cli_calloc(len, sizeof(char));
     if (!fullpath) {
-        free(fname);
         cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
         return NULL;
     }

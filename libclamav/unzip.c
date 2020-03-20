@@ -50,6 +50,7 @@
 #include "matcher.h"
 #include "fmap.h"
 #include "json_api.h"
+#include "str.h"
 
 #define UNZIP_PRIVATE
 #include "unzip.h"
@@ -78,6 +79,7 @@ struct zip_record {
     uint16_t method;
     uint16_t flags;
     int encrypted;
+    char *original_filename;
 };
 
 static int wrap_inflateinit2(void *a, int b)
@@ -108,23 +110,31 @@ static cl_error_t unz(
     unsigned int *num_files_unzipped,
     cli_ctx *ctx,
     char *tmpd,
-    zip_cb zcb)
+    zip_cb zcb,
+    const char *original_filename)
 {
-    char name[1024], obuf[BUFSIZ];
-    char *tempfile = name;
+    char obuf[BUFSIZ];
+    char *tempfile = NULL;
     int out_file, ret = CL_CLEAN;
     int res        = 1;
     size_t written = 0;
 
     if (tmpd) {
-        snprintf(name, sizeof(name), "%s" PATHSEP "zip.%03u", tmpd, *num_files_unzipped);
-        name[sizeof(name) - 1] = '\0';
+        if (ctx->engine->keeptmp && (NULL != original_filename)) {
+            if (!(tempfile = cli_gentemp_with_prefix(tmpd, original_filename))) return CL_EMEM;
+        } else {
+            if (!(tempfile = cli_gentemp(tmpd))) return CL_EMEM;
+        }
     } else {
-        if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
+        if (ctx->engine->keeptmp && (NULL != original_filename)) {
+            if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, original_filename))) return CL_EMEM;
+        } else {
+            if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+        }
     }
     if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
         cli_warnmsg("cli_unzip: failed to create temporary file %s\n", tempfile);
-        if (!tmpd) free(tempfile);
+        free(tempfile);
         return CL_ETMPFILE;
     }
     switch (method) {
@@ -132,7 +142,7 @@ static cl_error_t unz(
             if (csize < usize) {
                 unsigned int fake = *num_files_unzipped + 1;
                 cli_dbgmsg("cli_unzip: attempting to inflate stored file with inconsistent size\n");
-                if ((ret = unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx, tmpd, zcb)) == CL_CLEAN) {
+                if ((ret = unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx, tmpd, zcb, original_filename)) == CL_CLEAN) {
                     (*num_files_unzipped)++;
                     res = fake - (*num_files_unzipped);
                 } else
@@ -336,23 +346,22 @@ static cl_error_t unz(
         cli_dbgmsg("cli_unzip: extracted to %s\n", tempfile);
         if (lseek(out_file, 0, SEEK_SET) == -1) {
             cli_dbgmsg("cli_unzip: call to lseek() failed\n");
-            if (!(tmpd))
-                free(tempfile);
+            free(tempfile);
             close(out_file);
             return CL_ESEEK;
         }
-        ret = zcb(out_file, tempfile, ctx);
+        ret = zcb(out_file, tempfile, ctx, original_filename);
         close(out_file);
         if (!ctx->engine->keeptmp)
             if (cli_unlink(tempfile)) ret = CL_EUNLINK;
-        if (!tmpd) free(tempfile);
+        free(tempfile);
         return ret;
     }
 
     close(out_file);
     if (!ctx->engine->keeptmp)
         if (cli_unlink(tempfile)) ret = CL_EUNLINK;
-    if (!tmpd) free(tempfile);
+    free(tempfile);
     cli_dbgmsg("cli_unzip: extraction failed\n");
     return ret;
 }
@@ -418,7 +427,8 @@ static inline cl_error_t zdecrypt(
     unsigned int *num_files_unzipped,
     cli_ctx *ctx,
     char *tmpd,
-    zip_cb zcb)
+    zip_cb zcb,
+    const char *original_filename)
 {
     cl_error_t ret;
     int v = 0;
@@ -494,7 +504,7 @@ static inline cl_error_t zdecrypt(
                 snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03u", tmpd, *num_files_unzipped);
                 name[sizeof(name) - 1] = '\0';
             } else {
-                if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
+                if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
             }
             if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
@@ -528,7 +538,7 @@ static inline cl_error_t zdecrypt(
             cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
             /* decrypt data to new fmap -> buffer */
-            if (!(dcypt_map = fmap(out_file, 0, total))) {
+            if (!(dcypt_map = fmap(out_file, 0, total, NULL))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);
                 ret = CL_EMAP;
                 goto zd_clean;
@@ -542,7 +552,7 @@ static inline cl_error_t zdecrypt(
             }
 
             /* call unz on decrypted output */
-            ret = unz(dcypt_zip, csize - SIZEOF_ENCRYPTION_HEADER, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb);
+            ret = unz(dcypt_zip, csize - SIZEOF_ENCRYPTION_HEADER, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb, original_filename);
 
             /* clean-up and return */
             funmap(dcypt_map);
@@ -602,6 +612,7 @@ static unsigned int parse_local_file_header(
 {
     const uint8_t *local_header, *zip;
     char name[256];
+    char *original_filename = NULL;
     uint32_t csize, usize;
     int virus_found = 0;
 
@@ -626,12 +637,15 @@ static unsigned int parse_local_file_header(
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
         return 0;
     }
-    if (ctx->engine->cdb || cli_debug_flag) {
+    if (ctx->engine->cdb || cli_debug_flag || ctx->engine->keeptmp || ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) {
         uint32_t nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
         const char *src;
         if (nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
             memcpy(name, zip, nsize);
-            name[nsize] = '\0';
+            name[nsize]       = '\0';
+            if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
+                original_filename = NULL;
+            }
         } else
             name[0] = '\0';
     }
@@ -702,12 +716,16 @@ static unsigned int parse_local_file_header(
         if (NULL == record) {
             if (LOCAL_HEADER_flags & F_ENCR) {
                 if (fmap_need_ptr_once(map, zip, csize))
-                    *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb);
+                    *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb, original_filename);
             } else {
                 if (fmap_need_ptr_once(map, zip, csize))
-                    *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb);
+                    *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb, original_filename);
             }
         } else {
+            if ((NULL == original_filename) ||
+                (CL_SUCCESS != cli_basename(original_filename, strlen(original_filename), &record->original_filename))) {
+                record->original_filename = NULL;
+            }
             record->local_header_offset = loff;
             record->local_header_size   = zip - local_header;
             record->compressed_size     = csize;
@@ -719,6 +737,10 @@ static unsigned int parse_local_file_header(
 
         zip += csize;
         zsize -= csize;
+    }
+
+    if (NULL != original_filename) {
+        free(original_filename);
     }
 
     if (virus_found != 0)
@@ -1093,15 +1115,6 @@ cl_error_t cli_unzip(cli_ctx *ctx)
         ret = CL_CLEAN;
         goto done;
     }
-    if (!(tmpd = cli_gentemp(ctx->engine->tmpdir))) {
-        ret = CL_ETMPDIR;
-        goto done;
-    }
-    if (mkdir(tmpd, 0700)) {
-        cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
-        ret = CL_ETMPDIR;
-        goto done;
-    }
 
     for (coff = fsize - 22; coff > 0; coff--) { /* sizeof(EOC)==22 */
         if (!(ptr = fmap_need_off_once(map, coff, 20)))
@@ -1159,7 +1172,8 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                         &num_files_unzipped,
                         ctx,
                         tmpd,
-                        zip_scan_cb);
+                        zip_scan_cb,
+                        zip_catalogue[i].original_filename);
             } else {
                 if (fmap_need_ptr_once(map, compressed_data, zip_catalogue[i].compressed_size))
                     ret = unz(
@@ -1171,7 +1185,8 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                         &num_files_unzipped,
                         ctx,
                         tmpd,
-                        zip_scan_cb);
+                        zip_scan_cb,
+                        zip_catalogue[i].original_filename);
             }
 
             file_count++;
@@ -1243,6 +1258,13 @@ cl_error_t cli_unzip(cli_ctx *ctx)
 done:
 
     if (NULL != zip_catalogue) {
+        /* Clean up zip record resources */
+        for (i = 0; i < records_count; i++) {
+            if (NULL != zip_catalogue[i].original_filename) {
+                free(zip_catalogue[i].original_filename);
+                zip_catalogue[i].original_filename = NULL;
+            }
+        }
         free(zip_catalogue);
         zip_catalogue = NULL;
     }

@@ -340,6 +340,8 @@ typedef struct cli_stats_sections {
 /**
  * @brief Set a numerical engine option.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine            An initialized scan engine.
  * @param cl_engine_field   A CL_ENGINE option.
  * @param num               The new engine option value.
@@ -361,6 +363,11 @@ extern long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engin
 
 /**
  * @brief Set a string engine option.
+ *
+ * If the string option has already been set, the existing string will be free'd
+ * and the new string will replace it.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine            An initialized scan engine.
  * @param cl_engine_field   A CL_ENGINE option.
@@ -394,6 +401,8 @@ extern struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engin
 
 /**
  * @brief Apply settings from a settings structure to a scan engine.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine        A scan engine.
  * @param settings      The settings.
@@ -471,6 +480,8 @@ typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
 /**
  * @brief Set a custom pre-cache callback function.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -494,6 +505,8 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
 typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
 /**
  * @brief Set a custom pre-scan callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -520,6 +533,8 @@ typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, vo
 /**
  * @brief Set a custom post-scan callback function.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -542,6 +557,8 @@ extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_sca
 typedef void (*clcb_virus_found)(int fd, const char *virname, void *context);
 /**
  * @brief Set a custom virus-found callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -567,6 +584,8 @@ extern void cl_engine_set_clcb_virus_found(struct cl_engine *engine, clcb_virus_
 typedef int (*clcb_sigload)(const char *type, const char *name, unsigned int custom, void *context);
 /**
  * @brief Set a custom signature-load callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -628,6 +647,8 @@ typedef void (*clcb_hash)(int fd, unsigned long long size, const unsigned char *
 /**
  * @brief Set a custom hash stats callback function.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -657,6 +678,8 @@ typedef cl_error_t (*clcb_meta)(const char *container_type, unsigned long fsize_
 /**
  * @brief Set a custom archive metadata matching callback function.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -675,6 +698,8 @@ extern void cl_engine_set_clcb_meta(struct cl_engine *engine, clcb_meta callback
 typedef int (*clcb_file_props)(const char *j_propstr, int rc, void *cbdata);
 /**
  * @brief Set a custom file properties callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -697,6 +722,8 @@ extern void cl_engine_set_clcb_file_props(struct cl_engine *engine, clcb_file_pr
  * The data must persist at least until `clcb_stats_submit()` is called, or
  * `clcb_stats_flush()` is called (optional).
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine The scanning engine.
  * @param cbdata The statistics data. Probably a pointer to a malloc'd struct.
  */
@@ -715,6 +742,8 @@ typedef void (*clcb_stats_add_sample)(const char *virname, const unsigned char *
 /**
  * @brief Set a custom callback function to add sample metadata to a statistics report.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -731,6 +760,8 @@ extern void cl_engine_set_clcb_stats_add_sample(struct cl_engine *engine, clcb_s
 typedef void (*clcb_stats_remove_sample)(const char *virname, const unsigned char *md5, size_t size, void *cbdata);
 /**
  * @brief Set a custom callback function to remove sample metadata from a statistics report.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -766,6 +797,8 @@ typedef void (*clcb_stats_submit)(struct cl_engine *engine, void *cbdata);
 /**
  * @brief Set a custom callback function to submit the statistics report.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -781,6 +814,8 @@ typedef void (*clcb_stats_flush)(struct cl_engine *engine, void *cbdata);
 /**
  * @brief Set a custom callback function to flush/free the statistics report data.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -794,6 +829,8 @@ extern void cl_engine_set_clcb_stats_flush(struct cl_engine *engine, clcb_stats_
 typedef size_t (*clcb_stats_get_num)(void *cbdata);
 /**
  * @brief Set a custom callback function to get the number of samples listed in the statistics report.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -809,6 +846,8 @@ typedef size_t (*clcb_stats_get_size)(void *cbdata);
 /**
  * @brief Set a custom callback function to get the size of memory used to store the statistics report.
  *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
  */
@@ -822,6 +861,8 @@ extern void cl_engine_set_clcb_stats_get_size(struct cl_engine *engine, clcb_sta
 typedef char *(*clcb_stats_get_hostid)(void *cbdata);
 /**
  * @brief Set a custom callback function to get the machine's unique host ID.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
  *
  * @param engine    The initialized scanning engine.
  * @param callback  The callback function pointer.
@@ -850,7 +891,7 @@ extern void cl_engine_stats_enable(struct cl_engine *engine);
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
+extern cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a file descriptor.
@@ -866,7 +907,7 @@ extern int cl_scandesc(int desc, const char *filename, const char **virname, uns
  * @param[in/out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /**
  * @brief Scan a file, given a filename.
@@ -878,7 +919,7 @@ extern int cl_scandesc_callback(int desc, const char *filename, const char **vir
  * @param scanoptions       Scanning options.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
+extern cl_error_t cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions);
 
 /**
  * @brief Scan a file, given a filename.
@@ -893,7 +934,7 @@ extern int cl_scanfile(const char *filename, const char **virname, unsigned long
  * @param[in/out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return cl_error_t       CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-extern int cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /* ----------------------------------------------------------------------------
  * Database handling.
@@ -1122,7 +1163,7 @@ extern void cl_fmap_close(cl_fmap_t *);
  *                      signature matched. Another CL_E* error code if an
  *                      error occured.
  */
-extern int cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
+extern cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context);
 
 /* ----------------------------------------------------------------------------
  * Crypto/hashing functions

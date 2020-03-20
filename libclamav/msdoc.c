@@ -57,7 +57,8 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     char *buf, *p1, *p2;
     off_t offset;
     size_t inlen, outlen, nonrev, sz2;
-    int i, attempt;
+    size_t i;
+    int attempt;
     iconv_t cd;
 #else
     UNUSEDPARAM(encoding);
@@ -705,7 +706,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     off_t foff = offset, psoff = 0;
     uint32_t poffset;
     int ret;
-    unsigned int i;
+    uint32_t i;
 
     cli_dbgmsg("in ole2_summary_propset_json\n");
 
@@ -894,7 +895,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_ESTAT;
     }
 
-    sctx.sfmap = fmap(fd, 0, statbuf.st_size);
+    sctx.sfmap = fmap(fd, 0, statbuf.st_size, NULL);
     if (!sctx.sfmap) {
         cli_dbgmsg("ole2_summary_json: failed to get fmap\n");
         return CL_EMAP;

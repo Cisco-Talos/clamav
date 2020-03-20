@@ -521,7 +521,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
     memset(&nsist, 0, sizeof(struct nsis_st));
 
     nsist.off = offset;
-    if (!(nsist.dir = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(nsist.dir = cli_gentemp(ctx->sub_tmpdir)))
         return CL_ETMPDIR;
     if (mkdir(nsist.dir, 0700)) {
         cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
@@ -546,9 +546,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
                 return CL_ESEEK;
             }
             if (nsist.fno == 1)
-                ret = cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL);
+                ret = cli_scandesc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, NULL); /// TODO: Extract file names
             else
-                ret = cli_magic_scandesc(nsist.ofd, nsist.ofn, ctx);
+                ret = cli_magic_scandesc(nsist.ofd, nsist.ofn, ctx, NULL); /// TODO: Extract file names
             close(nsist.ofd);
             if (!ctx->engine->keeptmp)
                 if (cli_unlink(nsist.ofn)) ret = CL_EUNLINK;

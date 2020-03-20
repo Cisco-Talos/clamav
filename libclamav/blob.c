@@ -505,7 +505,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
         close(fb->fd);
         return;
     }
-    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->engine->tmpdir : NULL, fullname);
+    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->sub_tmpdir : NULL, fullname);
     if (fb->b.data)
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);
@@ -649,7 +649,7 @@ int fileblobScan(const fileblob *fb)
         virus_found = 1;
     }
 
-    rc = cli_magic_scandesc(fb->fd, fb->fullname, fb->ctx);
+    rc = cli_magic_scandesc(fb->fd, fb->fullname, fb->ctx, fb->b.name);
     if (rc == CL_VIRUS || virus_found != 0) {
         cli_dbgmsg("%s is infected\n", fb->fullname);
         return CL_VIRUS;

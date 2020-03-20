@@ -156,7 +156,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* Create temp folder for contents */
-    if (!(dirname = cli_gentemp(ctx->engine->tmpdir))) {
+    if (!(dirname = cli_gentemp(ctx->sub_tmpdir))) {
         return CL_ETMPDIR;
     }
     if (mkdir(dirname, 0700)) {
@@ -178,8 +178,8 @@ int cli_scandmg(cli_ctx *ctx)
         }
     }
 
-    /* scan XML with cli_map_scandesc */
-    ret = cli_map_scan(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY);
+    /* scan XML with cli_map_scan */
+    ret = cli_map_scan(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -1082,7 +1082,8 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
 
     /* If okay so far, scan rebuilt partition */
     if (ret == CL_CLEAN) {
-        ret = cli_partition_scandesc(ofd, outfile, ctx);
+        /* Have to keep partition typing separate */
+        ret = cli_base_scandesc(ofd, outfile, ctx, CL_TYPE_PART_ANY, NULL);
     }
 
     close(ofd);

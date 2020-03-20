@@ -808,12 +808,12 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
             free(UNP.inputbuf);
             /* Sometimes the autoit exe is in turn packed/lamed with a runtime compressor and similar shit.
-       * However, since the autoit script doesn't compress a second time very well, chances are we're
-       * still able to match the headers and unpack something (see sample 0811129)
-       * I'd rather unpack something (although possibly highly corrupted) than nothing at all
-       *
-       * - Fortuna audaces iuvat -
-       */
+             * However, since the autoit script doesn't compress a second time very well, chances are we're
+             * still able to match the headers and unpack something (see sample 0811129)
+             * I'd rather unpack something (although possibly highly corrupted) than nothing at all
+             *
+             * - Fortuna audaces iuvat -
+             */
             if (UNP.error) {
                 cli_dbgmsg("autoit: decompression error after %u bytes  - partial file may exist\n", UNP.cur_output);
                 UNP.usize = UNP.cur_output;
@@ -858,7 +858,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scandesc(i, tempfile, ctx) == CL_VIRUS) {
+        if (cli_magic_scandesc(i, tempfile, ctx, NULL) == CL_VIRUS) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)
@@ -1467,7 +1467,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scandesc(i, tempfile, ctx) == CL_VIRUS) {
+        if (cli_magic_scandesc(i, tempfile, ctx, NULL) == CL_VIRUS) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)
@@ -1499,7 +1499,7 @@ int cli_scanautoit(cli_ctx *ctx, off_t offset)
     if (!(version = fmap_need_off_once(map, offset, sizeof(*version))))
         return CL_EREAD;
 
-    if (!(tmpd = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(tmpd = cli_gentemp(ctx->sub_tmpdir)))
         return CL_ETMPDIR;
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("autoit: Can't create temporary directory %s\n", tmpd);

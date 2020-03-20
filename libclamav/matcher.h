@@ -58,17 +58,19 @@ void cli_targetinfo_destroy(struct cli_target_info *info);
 #define CLI_MATCH_NIBBLE_HIGH 0x0300
 #define CLI_MATCH_NIBBLE_LOW  0x0400
 
-#define CLI_TDB_UINT        0
-#define CLI_TDB_RANGE       1
-#define CLI_TDB_STR         2
-#define CLI_TDB_RANGE2      3
-#define CLI_TDB_FTYPE       4
-#define CLI_TDB_FTYPE_EXPR  5
+typedef enum tdb_type {
+    CLI_TDB_UINT,
+    CLI_TDB_RANGE,
+    CLI_TDB_STR,
+    CLI_TDB_RANGE2,
+    CLI_TDB_FTYPE,
+    CLI_TDB_FTYPE_EXPR
+} tdb_type_t;
 
 struct cli_lsig_tdb {
     uint32_t       *val, *range;
     char           *str;
-    uint32_t       cnt[3];
+    tdb_type_t     cnt[3];
     uint32_t       subsigs;
 
     const uint32_t *target;
@@ -90,14 +92,17 @@ struct cli_lsig_tdb {
 
 #define CLI_LSIG_FLAG_PRIVATE 0x01
 
+typedef enum lsig_type {
+    CLI_LSIG_NORMAL,
+    CLI_YARA_NORMAL,
+    CLI_YARA_OFFSET
+} lsig_type_t;
+
 struct cli_bc;
 struct cli_ac_lsig {
-#define CLI_LSIG_NORMAL 0
-#define CLI_YARA_NORMAL 1
-#define CLI_YARA_OFFSET 2
     uint32_t id;
     unsigned bc_idx;
-    uint8_t type;
+    lsig_type_t type;
     uint8_t flag;
     union {
         char *logic;
@@ -215,11 +220,74 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
 
 // clang-format on
 
+/**
+ * @brief Non-magic scan matching using a file buffer for input.  Older API
+ *
+ * This function is lower-level, requiring a call to `cli_exp_eval()` after the
+ * match to evaluate logical signatures and yara rules.
+ *
+ * This function does not perform file type magic identification and does not use
+ * the file format scanners.
+ *
+ * @param buffer    The buffer to be matched.
+ * @param length    The length of the buffer or amount of bytets to match.
+ * @param offset    Offset into the buffer from which to start matching.
+ * @param ctx       The scanning context.
+ * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param acdata    [in/out] A list of pattern maching data structs to contain match results, one for each pattern matching trie.
+ * @return cl_error_t
+ */
 cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
-cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres);
+/**
+ * @brief Non-magic scan matching using a file descriptor for input.
+ *
+ * This function does not perform file type magic identification and does not use
+ * the file format scanners.
+ *
+ * This function uses the newer cli_fmap_scandesc() scanning API.
+ *
+ * @param desc      File descriptor to be used for input
+ * @param ctx       The scanning context.
+ * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param ftonly    Boolean indicating if the scan is for file-type detection only.
+ * @param ftoffset  [out] A list of file type signature matches with their corresponding offsets.
+ * @param acmode    Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
+ * @param acres     [out] A list of cli_ac_result AC pattern matching results.
+ * @param name      (optional) Original name of the file (to set fmap name metadata)
+ * @return cl_error_t
+ */
+cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name);
+
+/**
+ * @brief Non-magic scan matching of the current fmap in the scan context.  Newer API.
+ *
+ * This API will invoke cli_exp_eval() for you.
+ *
+ * @param ctx       The scanning context.
+ * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param ftonly    Boolean indicating if the scan is for file-type detection only.
+ * @param ftoffset  [out] A list of file type signature matches with their corresponding offsets.
+ * @param acmode    Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
+ * @param acres     [out] A list of cli_ac_result AC pattern matching results.
+ * @param refhash   MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.
+ * @return cl_error_t
+ */
 cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);
+
+/**
+ * @brief Evaluate logical signatures and yara rules given the AC matching results
+ * from cli_scanbuff() / matcher_run().
+ *
+ * @param ctx           The scanning context.
+ * @param root          The AC trie root to match with.
+ * @param acdata        AC match results for a specific AC trie.
+ * @param target_info   File metadata used to evaluate logical sig and yara rule options.
+ * @param hash          Reference hash of the current file, used to limit recursion for the HandlerType logical signature FTM feature.
+ * @return cl_error_t
+ */
 cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash);
+
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 cl_error_t cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);

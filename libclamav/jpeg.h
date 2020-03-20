@@ -24,6 +24,6 @@
 
 #include "others.h"
 
-int cli_parsejpeg(cli_ctx *ctx);
+cl_error_t cli_parsejpeg(cli_ctx *ctx);
 
 #endif

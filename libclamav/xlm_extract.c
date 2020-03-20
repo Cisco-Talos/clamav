@@ -4378,7 +4378,7 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
         ctx->recursion += 1;
         cli_set_container(ctx, CL_TYPE_MSOLE2, 0); //TODO: set correct container size
 
-        if (cli_scandesc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL) == CL_VIRUS) {
+        if (cli_scandesc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
             ctx->recursion -= 1;
             ret = CL_VIRUS;
             goto done;

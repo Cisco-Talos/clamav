@@ -45,7 +45,7 @@
         return CL_EPARSE;                                            \
     }
 
-int cli_parsejpeg(cli_ctx *ctx)
+cl_error_t cli_parsejpeg(cli_ctx *ctx)
 {
     fmap_t *map = *ctx->fmap;
     unsigned char marker, prev_marker, prev_segment = 0, v1, v2, buff[8];

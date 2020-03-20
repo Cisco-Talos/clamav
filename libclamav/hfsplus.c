@@ -434,7 +434,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     }
     else {
         if (ret == CL_CLEAN) {
-            ret = cli_magic_scandesc(ofd, tmpname, ctx);
+            ret = cli_magic_scandesc(ofd, tmpname, ctx, orig_filename);
         }
 
         if (!ctx->engine->keeptmp) {
@@ -1336,7 +1336,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             cli_dbgmsg("hfsplus_walk_catalog: Extracted to %s\n", tmpname);
 
                             /* if successful so far, scan the output */
-                            ret = cli_magic_scandesc(ofd, tmpname, ctx);
+                            ret = cli_magic_scandesc(ofd, tmpname, ctx, name_utf8);
 
                             if (ret == CL_VIRUS) {
                                 has_alerts = 1;
@@ -1495,7 +1495,7 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
 
 
     /* Create temp folder for contents */
-    if (!(targetdir = cli_gentemp(ctx->engine->tmpdir))) {
+    if (!(targetdir = cli_gentemp(ctx->sub_tmpdir))) {
         cli_errmsg("cli_scandmg: cli_gentemp failed\n");
         ret = CL_ETMPDIR;
         goto freeHeader;

@@ -22,6 +22,6 @@
 
 #include "others.h"
 
-int cli_parsepng(cli_ctx *ctx);
+cl_error_t cli_parsepng(cli_ctx *ctx);
 
 #endif

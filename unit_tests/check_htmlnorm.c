@@ -115,7 +115,7 @@ START_TEST(test_htmlnorm_api)
     fd = open_testfile(tests[_i].input);
     ck_assert_msg(fd > 0, "open_testfile failed");
 
-    map = fmap(fd, 0, 0);
+    map = fmap(fd, 0, 0, tests[_i].input);
     ck_assert_msg(!!map, "fmap failed");
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
@@ -151,7 +151,7 @@ START_TEST(test_screnc_nullterminate)
     fmap_t *map;
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
-    map = fmap(fd, 0, 0);
+    map = fmap(fd, 0, 0, "screnc_test");
     ck_assert_msg(!!map, "fmap failed");
     ck_assert_msg(html_screnc_decode(map, dir) == 1, "html_screnc_decode failed");
     funmap(map);

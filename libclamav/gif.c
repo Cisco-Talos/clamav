@@ -80,14 +80,14 @@ struct gif_image_desc {
         }                                                               \
     }
 
-int cli_parsegif(cli_ctx *ctx)
+cl_error_t cli_parsegif(cli_ctx *ctx)
 {
     fmap_t *map         = *ctx->fmap;
     unsigned char v     = 0;
     unsigned int offset = 6;
     struct gif_screen_desc screen_desc;
     struct gif_image_desc image_desc;
-    int retVal = CL_SUCCESS;
+    cl_error_t retVal = CL_SUCCESS;
 
     cli_dbgmsg("in cli_parsegif()\n");
 
@@ -151,7 +151,7 @@ scan_overlay:
 
     // Is there an overlay?
     if (offset < map->len) {
-        int recRetVal = cli_map_scan(map, offset, map->len - offset, ctx, CL_TYPE_ANY);
+        cl_error_t recRetVal = cli_map_scan(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
         retVal        = recRetVal != CL_SUCCESS ? recRetVal : retVal;
     }
 

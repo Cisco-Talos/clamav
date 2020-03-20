@@ -1065,8 +1065,8 @@ char *cli_utf16toascii(const char *str, unsigned int length)
 char *cli_utf16_to_utf8(const char *utf16, size_t length, encoding_t type)
 {
     /* utf8 -
-   * 4 bytes for utf16 high+low surrogate (4 bytes input)
-   * 3 bytes for utf16 otherwise (2 bytes input) */
+     * 4 bytes for utf16 high+low surrogate (4 bytes input)
+     * 3 bytes for utf16 otherwise (2 bytes input) */
     size_t i, j;
     size_t needed = length * 3 / 2 + 2;
     char *s2;

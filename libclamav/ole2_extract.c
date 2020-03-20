@@ -1326,7 +1326,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
             return CL_ESTAT;
         }
 
-        input = fmap(fd, 0, statbuf.st_size);
+        input = fmap(fd, 0, statbuf.st_size, NULL);
         if (!input) {
             cli_dbgmsg("scan_mso_stream: Failed to get fmap for input stream\n");
             return CL_EMAP;
@@ -1334,7 +1334,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* reserve tempfile for output and scanning */
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("scan_mso_stream: Can't generate temporary file\n");
         funmap(input);
         return ret;
@@ -1425,7 +1425,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* scanning inflated stream */
-    ret = cli_magic_scandesc(ofd, tmpname, ctx);
+    ret = cli_magic_scandesc(ofd, tmpname, ctx, NULL);
 
     /* clean-up */
 mso_end:
@@ -1459,7 +1459,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
     }
     print_ole2_property(prop);
 
-    if (!(tempfile = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL)))
+    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL)))
         return CL_EMEM;
 
     if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
@@ -1627,7 +1627,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
         ret = scan_mso_stream(ofd, ctx);
     } else {
         /* Normal File Scan */
-        ret = cli_magic_scandesc(ofd, tempfile, ctx);
+        ret = cli_magic_scandesc(ofd, tempfile, ctx, NULL);
     }
     if (name)
         free(name);

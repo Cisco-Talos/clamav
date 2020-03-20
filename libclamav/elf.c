@@ -881,7 +881,7 @@ int cli_unpackelf(cli_ctx *ctx)
                     cli_dbgmsg("cli_scanelf: Unpacked and rebuilt executable\n");
                 lseek(ndesc, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning rebuilt ELF file *****\n");
-                if (cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) {
+                if (cli_magic_scandesc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {
                     close(ndesc);
                     CLI_TMPUNLK();
                     free(tempfile);

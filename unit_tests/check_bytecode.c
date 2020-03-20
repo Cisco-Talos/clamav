@@ -118,7 +118,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         if (fdin < 0 && errno == ENOENT)
             fdin = open_testfile(infile);
         ck_assert_msg(fdin >= 0, "failed to open infile");
-        map = fmap(fdin, 0, 0);
+        map = fmap(fdin, 0, 0, filestr);
         ck_assert_msg(!!map, "unable to fmap infile");
         if (pedata)
             ctx->hooks.pedata = pedata;
