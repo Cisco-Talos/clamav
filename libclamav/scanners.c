@@ -4368,11 +4368,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_parsetiff(ctx);
             break;
 
-        case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
-            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
-                ret = cli_scanpdf(ctx, 0);
-            break;
-
         case CL_TYPE_CRYPTFF:
             if (DCONF_OTHER & OTHER_CONF_CRYPTFF)
                 ret = cli_scancryptff(ctx);
@@ -4556,6 +4551,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
         case CL_TYPE_BINARY_DATA:
             ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+            break;
+        case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
+            if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
+                ret = cli_scanpdf(ctx, 0);
             break;
         default:
             break;
