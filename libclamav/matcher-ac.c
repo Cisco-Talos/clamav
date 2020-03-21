@@ -1887,7 +1887,9 @@ cl_error_t cli_ac_scanbuff(
                                     if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
                                         cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
                                         type = pt->type;
-                                        if (ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
+                                        if (ftoffset &&
+                                            (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) &&
+                                            (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
                                             /* FIXME: the first offset in the array is most likely the correct one but
                                              * it may happen it is not
                                              */

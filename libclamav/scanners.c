@@ -2979,6 +2979,11 @@ static cl_error_t cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cl
     struct cli_exe_info peinfo;
     unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
     fmap_t *map = *ctx->fmap;
+#if HAVE_JSON
+    struct json_object *parent_property = NULL;
+#else
+    void *parent_property = NULL;
+#endif
 
     if (ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel) {
         cli_check_blockmax(ctx, CL_EMAXREC);
@@ -3003,12 +3008,47 @@ static cl_error_t cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cl
         while (fpt) {
             /* set current level as container AFTER recursing */
             cli_set_container(ctx, fpt->type, map->len);
+            if (fpt->offset > 0) {
+                /*
+                 * Scan embedded file types.
+                 */
 #if HAVE_JSON
-            if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
-                cli_jsonstr(ctx->wrkproperty, "EvaluatedFileType", cli_ftname(fpt->type));
-            }
+                if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
+                    json_object *arrobj;
+
+                    parent_property = ctx->wrkproperty;
+                    if (!json_object_object_get_ex(parent_property, "EmbeddedObjects", &arrobj)) {
+                        arrobj = json_object_new_array();
+                        if (NULL == arrobj) {
+                            cli_errmsg("cli_scanraw: no memory for json properties object\n");
+                            nret = CL_EMEM;
+                            break;
+                        }
+                        json_object_object_add(parent_property, "EmbeddedObjects", arrobj);
+                    }
+                    ctx->wrkproperty = json_object_new_object();
+                    if (NULL == ctx->wrkproperty) {
+                        cli_errmsg("cli_scanraw: no memory for json properties object\n");
+                        nret = CL_EMEM;
+                        break;
+                    }
+                    json_object_array_add(arrobj, ctx->wrkproperty);
+
+                    ret = cli_jsonstr(ctx->wrkproperty, "FileType", cli_ftname(fpt->type));
+                    if (ret != CL_SUCCESS) {
+                        cli_errmsg("cli_scanraw: failed to add string to json object\n");
+                        nret = CL_EMEM;
+                        break;
+                    }
+
+                    ret = cli_jsonint64(ctx->wrkproperty, "Offset", (int64_t)fpt->offset);
+                    if (ret != CL_SUCCESS) {
+                        cli_errmsg("cli_scanraw: failed to add int to json object\n");
+                        nret = CL_EMEM;
+                        break;
+                    }
+                }
 #endif
-            if (fpt->offset)
                 switch (fpt->type) {
                     case CL_TYPE_MHTML:
                         if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX)) {
@@ -3286,11 +3326,19 @@ static cl_error_t cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cl
                     default:
                         cli_warnmsg("cli_scanraw: Type %u not handled in fpt loop\n", fpt->type);
                 }
+            }
 
             if (nret == CL_VIRUS || nret == CL_EMEM || break_loop)
                 break;
 
             fpt = fpt->next;
+
+#if HAVE_JSON
+            if (NULL != parent_property) {
+                ctx->wrkproperty = (struct json_object *)(parent_property);
+                parent_property  = NULL;
+            }
+#endif
         }
 
         if (nret != CL_VIRUS)
@@ -3321,6 +3369,12 @@ static cl_error_t cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cl
         ctx->recursion--;
         ret = nret;
     }
+
+#if HAVE_JSON
+    if (NULL != parent_property) {
+        ctx->wrkproperty = (struct json_object *)(parent_property);
+    }
+#endif
 
     while (ftoffset) {
         fpt      = ftoffset;
@@ -3572,8 +3626,7 @@ static cl_error_t magic_scandesc(cli_ctx *ctx, cli_file_t type)
     }
 #endif
 
-    hashed_size = 0;
-    ret         = dispatch_prescan(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    ret = dispatch_prescan(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
     if (run_cleanup) {
         if (ret == CL_VIRUS) {
             ret = cli_checkfp(hash, hashed_size, ctx);
@@ -3609,9 +3662,6 @@ static cl_error_t magic_scandesc(cli_ctx *ctx, cli_file_t type)
 
     if (res != CL_VIRUS) {
         perf_stop(ctx, PERFT_CACHE);
-#if HAVE_JSON
-        ctx->wrkproperty = parent_property;
-#endif
         cli_dbgmsg("magic_scandesc: returning %d %s (no post, no cache)\n", ret, __AT__);
         goto early_ret;
     }
@@ -4198,17 +4248,11 @@ static cl_error_t magic_scandesc(cli_ctx *ctx, cli_file_t type)
         case CL_EREAD:
         case CL_EUNPACK:
             cli_dbgmsg("Descriptor[%d]: %s\n", fmap_fd(*ctx->fmap), cl_strerror(ret));
-#if HAVE_JSON
-            ctx->wrkproperty = parent_property;
-#endif
             ret = CL_CLEAN;
             goto done;
         case CL_CLEAN:
             cache_clean = 1;
-#if HAVE_JSON
-            ctx->wrkproperty = parent_property;
-#endif
-            ret = CL_CLEAN;
+            ret         = CL_CLEAN;
             goto done;
         default:
             goto done;
@@ -4276,6 +4320,12 @@ early_ret:
         free((void *)ctx->sub_tmpdir);
         ctx->sub_tmpdir = old_temp_path;
     }
+
+#if HAVE_JSON
+    if (NULL != parent_property) {
+        ctx->wrkproperty = (struct json_object *)(parent_property);
+    }
+#endif
 
     return ret;
 }
@@ -4647,7 +4697,11 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         }
 
         /* serialize json properties to string */
+#ifdef JSON_C_TO_STRING_NOSLASHESCAPE
         jstring = json_object_to_json_string_ext(ctx.properties, JSON_C_TO_STRING_PRETTY | JSON_C_TO_STRING_NOSLASHESCAPE);
+#else
+        jstring = json_object_to_json_string_ext(ctx.properties, JSON_C_TO_STRING_PRETTY);
+#endif
         if (NULL == jstring) {
             cli_errmsg("scan_common: no memory for json serialization.\n");
             rc = CL_EMEM;

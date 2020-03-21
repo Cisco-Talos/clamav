@@ -94,22 +94,22 @@ static inline int perf_log_tries(int8_t acmode, int8_t bm_called, int32_t length
 }
 #endif
 
-static inline int matcher_run(const struct cli_matcher *root,
-                              const unsigned char *buffer, uint32_t length,
-                              const char **virname, struct cli_ac_data *mdata,
-                              uint32_t offset,
-                              const struct cli_target_info *tinfo,
-                              cli_file_t ftype,
-                              struct cli_matched_type **ftoffset,
-                              unsigned int acmode,
-                              unsigned int pcremode,
-                              struct cli_ac_result **acres,
-                              fmap_t *map,
-                              struct cli_bm_off *offdata,
-                              struct cli_pcre_off *poffdata,
-                              cli_ctx *ctx)
+static inline cl_error_t matcher_run(const struct cli_matcher *root,
+                                     const unsigned char *buffer, uint32_t length,
+                                     const char **virname, struct cli_ac_data *mdata,
+                                     uint32_t offset,
+                                     const struct cli_target_info *tinfo,
+                                     cli_file_t ftype,
+                                     struct cli_matched_type **ftoffset,
+                                     unsigned int acmode,
+                                     unsigned int pcremode,
+                                     struct cli_ac_result **acres,
+                                     fmap_t *map,
+                                     struct cli_bm_off *offdata,
+                                     struct cli_pcre_off *poffdata,
+                                     cli_ctx *ctx)
 {
-    int ret, saved_ret = CL_CLEAN;
+    cl_error_t ret, saved_ret = CL_CLEAN;
     int32_t pos = 0;
     struct filter_match_info info;
     uint32_t orig_length, orig_offset;
@@ -696,7 +696,7 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
     return CL_VIRUS;
 }
 
-static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
+static cl_error_t matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
 {
     icon_groupset iconset;
 
@@ -719,7 +719,7 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t grp1len,
                             const uint8_t *grp2, int32_t grp2len)
 {
-    int ret;
+    cl_error_t ret;
     char group1[128], group2[128];
     const char **oldvirname;
     struct cli_exe_info info;
@@ -756,7 +756,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     ret                            = matchicon(ctx->ctx, &info, group1[0] ? group1 : NULL,
                     group2[0] ? group2 : NULL);
     ((cli_ctx *)ctx->ctx)->virname = oldvirname;
-    return ret;
+    return (int32_t)ret;
 }
 
 cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
@@ -866,10 +866,10 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
 }
 
 #ifdef HAVE_YARA
-static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
+static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
-    int rc;
+    cl_error_t rc;
     YR_SCAN_CONTEXT context;
 
     (void)hash;
