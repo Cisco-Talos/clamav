@@ -434,7 +434,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     }
     else {
         if (ret == CL_CLEAN) {
-            ret = cli_magic_scandesc(ofd, tmpname, ctx, orig_filename);
+            ret = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename);
         }
 
         if (!ctx->engine->keeptmp) {
@@ -985,7 +985,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                         cli_errmsg("hfsplus_walk_catalog: failed to convert UTF-16BE to UTF-8\n");
                         name_utf8 = NULL;
                     }
-                    cli_errmsg("hfsplus_walk_catalog: Extracting file %s\n", name_utf8);
+                    cli_dbgmsg("hfsplus_walk_catalog: Extracting file %s\n", name_utf8);
                 }
             }
             /* Copy type (after key, which is after keylength field) */
@@ -1336,7 +1336,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             cli_dbgmsg("hfsplus_walk_catalog: Extracted to %s\n", tmpname);
 
                             /* if successful so far, scan the output */
-                            ret = cli_magic_scandesc(ofd, tmpname, ctx, name_utf8);
+                            ret = cli_magic_scan_desc(ofd, tmpname, ctx, name_utf8);
 
                             if (ret == CL_VIRUS) {
                                 has_alerts = 1;

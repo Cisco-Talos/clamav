@@ -44,7 +44,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 {
     uint64_t sz     = 0;
     char chunkid[5] = {'\0', '\0', '\0', '\0', '\0'};
-    int32_t toread = 0, toread_check = 0;
+    size_t toread = 0, toread_check = 0;
     int32_t c         = 0;
     int32_t have_IEND = 0, have_PLTE = 0;
     uint64_t zhead     = 1; /* 0x10000 indicates both zlib header bytes read */
@@ -105,6 +105,10 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
         toread       = (sz > BUFFER_SIZE) ? BUFFER_SIZE : sz;
         toread_check = fmap_readn(map, buffer, offset, toread);
+        if ((size_t)-1 == toread_check) {
+            cli_dbgmsg("PNG: Failed to read from map.\n");
+            return CL_EPARSE;
+        }
         if (toread > toread_check) {
             cli_dbgmsg("PNG: EOF while reading data\n");
             return CL_EPARSE;
@@ -232,6 +236,14 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
                         toread       = MIN(sizeof(buffer), left_comp_read);
                         toread_check = fmap_readn(map, buffer, offset, toread);
+                        if ((size_t)-1 == toread_check) {
+                            cli_dbgmsg("PNG: Failed to read from map.\n");
+                            if (outbuf) {
+                                free(outbuf);
+                                outbuf = NULL;
+                            }
+                            return CL_EPARSE;
+                        }
                         if (toread > toread_check) {
                             cli_dbgmsg("PNG: EOF while reading data\n");
                             if (outbuf) {
@@ -304,7 +316,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
             // Is there an overlay?
             if (have_IEND && (map->len - (offset + 4) > 0))
-                return cli_map_scan(map, offset + 4, map->len - (offset + 4), ctx, CL_TYPE_ANY);
+                return cli_magic_scan_nested_fmap_type(map, offset + 4, map->len - (offset + 4), ctx, CL_TYPE_ANY, NULL);
 
             return CL_SUCCESS;
         }

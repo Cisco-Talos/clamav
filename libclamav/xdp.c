@@ -160,7 +160,7 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
                         break;
                     }
 
-                    rc = cli_mem_scandesc(decoded, decodedlen, ctx, NULL);
+                    rc = cli_magic_scan_buff(decoded, decodedlen, ctx, NULL);
                     free(decoded);
                     if (rc != CL_SUCCESS || rc == CL_BREAK) {
                         xmlFree((void *)value);

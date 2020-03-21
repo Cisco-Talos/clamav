@@ -1425,7 +1425,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* scanning inflated stream */
-    ret = cli_magic_scandesc(ofd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL);
 
     /* clean-up */
 mso_end:
@@ -1627,7 +1627,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
         ret = scan_mso_stream(ofd, ctx);
     } else {
         /* Normal File Scan */
-        ret = cli_magic_scandesc(ofd, tempfile, ctx, NULL);
+        ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL);
     }
     if (name)
         free(name);

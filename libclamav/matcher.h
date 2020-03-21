@@ -237,7 +237,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
  * @param acdata    [in/out] A list of pattern maching data structs to contain match results, one for each pattern matching trie.
  * @return cl_error_t
  */
-cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
+cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
 /**
  * @brief Non-magic scan matching using a file descriptor for input.
@@ -245,7 +245,7 @@ cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t o
  * This function does not perform file type magic identification and does not use
  * the file format scanners.
  *
- * This function uses the newer cli_fmap_scandesc() scanning API.
+ * This function uses the newer cli_scan_fmap() scanning API.
  *
  * @param desc      File descriptor to be used for input
  * @param ctx       The scanning context.
@@ -257,7 +257,7 @@ cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t o
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return cl_error_t
  */
-cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name);
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name);
 
 /**
  * @brief Non-magic scan matching of the current fmap in the scan context.  Newer API.
@@ -273,11 +273,11 @@ cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly
  * @param refhash   MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.
  * @return cl_error_t
  */
-cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);
+cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);
 
 /**
  * @brief Evaluate logical signatures and yara rules given the AC matching results
- * from cli_scanbuff() / matcher_run().
+ * from cli_scan_buff() / matcher_run().
  *
  * @param ctx           The scanning context.
  * @param root          The AC trie root to match with.

@@ -173,8 +173,8 @@ CLAMAV_PRIVATE {
     cli_bm_scanbuff;
     cli_bm_free;
     cli_initroots;
-    cli_scanbuff;
-    cli_fmap_scandesc;
+    cli_scan_buff;
+    cli_scan_fmap;
     cli_check_auth_header;
     cli_genhash_pe;
     html_screnc_decode;

@@ -496,7 +496,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             return CL_EWRITE;
                         }
                         free(decomp);
-                        if (cli_magic_scandesc(fd, ofn, ctx, NULL) == CL_VIRUS) {
+                        if (cli_magic_scan_desc(fd, ofn, ctx, NULL) == CL_VIRUS) {
                             close(fd);
                             FREE(ptrs);
                             free(alangs);
@@ -805,7 +805,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 break;
                             }
                             free(dst);
-                            if (cli_magic_scandesc(fd, tempf, ctx, NULL) == CL_VIRUS) {
+                            if (cli_magic_scan_desc(fd, tempf, ctx, NULL) == CL_VIRUS) {
                                 close(fd);
                                 return CL_VIRUS;
                             }

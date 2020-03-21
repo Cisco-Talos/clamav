@@ -160,7 +160,7 @@ EXPORTS cli_initroots @44261 NONAME
 EXPORTS cli_hex2str @44262 NONAME
 EXPORTS cli_hex2ui @44263 NONAME
 EXPORTS mpool_getstats @44264 NONAME
-EXPORTS cli_fmap_scandesc @44265 NONAME
+EXPORTS cli_scan_fmap @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME

@@ -258,7 +258,7 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
     return ret;
 }
 
-cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
+cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
     cl_error_t ret = CL_CLEAN;
     unsigned int i = 0, j = 0, viruses_found = 0;
@@ -268,7 +268,7 @@ cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t o
     const struct cl_engine *engine = ctx->engine;
 
     if (!engine) {
-        cli_errmsg("cli_scanbuff: engine == NULL\n");
+        cli_errmsg("cli_scan_buff: engine == NULL\n");
         return CL_ENULLARG;
     }
 
@@ -759,7 +759,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     return (int32_t)ret;
 }
 
-cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
 {
     cl_error_t ret = CL_EMEM;
     int empty;
@@ -767,7 +767,7 @@ cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly
 
     ctx->fmap++; /* Perform scan with child fmap */
     if (NULL != (*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty, name))) {
-        ret                  = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
+        ret                  = cli_scan_fmap(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
         map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
         funmap(*ctx->fmap);
     }
@@ -829,7 +829,7 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
             if (0 != memcmp(ctx->handlertype_hash, hash, 16)) {
                 ctx->recursion++;
                 memcpy(ctx->handlertype_hash, hash, 16);
-                if (cli_magic_scandesc_type(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
+                if (cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
                     ctx->recursion--;
                     return CL_VIRUS;
                 }
@@ -920,7 +920,7 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
     return CL_CLEAN;
 }
 
-cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
+cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
     const unsigned char *buff;
     cl_error_t ret = CL_CLEAN, type = CL_CLEAN;
@@ -940,7 +940,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     void *md5ctx, *sha1ctx, *sha256ctx;
 
     if (!ctx->engine) {
-        cli_errmsg("cli_scandesc: engine == NULL\n");
+        cli_errmsg("cli_scan_desc: engine == NULL\n");
         return CL_ENULLARG;
     }
 
@@ -996,7 +996,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     cli_targetinfo(&info, i, map);
 
     if (-1 == info.status) {
-        cli_dbgmsg("cli_fmap_scandesc: Failed to successfully parse the executable header. "
+        cli_dbgmsg("cli_scan_fmap: Failed to successfully parse the executable header. "
                    "Scan features will be disabled, such as "
                    "NDB/LDB subsigs using EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n, "
                    "fuzzy icon matching, "
@@ -1005,7 +1005,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     /* If it's a PE, check the Authenticode header.  This would be more
-     * appropriate in cli_scanpe, but cli_scanraw->cli_fmap_scandesc gets
+     * appropriate in cli_scanpe, but scanraw->cli_scan_fmap gets
      * called first for PEs, and we want to determine the whitelist/blacklist
      * status early on so we can skip things like embedded PE extraction
      * (which is broken for signed binaries within signed binaries).

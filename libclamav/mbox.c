@@ -410,7 +410,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
 	 *
-	 * TODO: It would be better if we called cli_scandir here rather than
+	 * TODO: It would be better if we called cli_magic_scan_dir here rather than
 	 * in cli_scanmail. Then we could improve the way mailboxes with more
 	 * than one message is handled, e.g. giving a better indication of
 	 * which message within the mailbox is infected
@@ -484,7 +484,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 				 * Starting a new message, throw away all the
 				 * information about the old one. It would
 				 * be best to be able to scan this message
-				 * now, but cli_scanfile needs arguments
+				 * now, but cli_magic_scan_file needs arguments
 				 * that haven't been passed here so it can't be
 				 * called
 				 */
@@ -562,7 +562,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     break;
                 case FAIL:
                     /*
-					 * beware: cli_magic_scandesc(),
+					 * beware: cli_magic_scan_desc(),
 					 * changes this into CL_CLEAN, so only
 					 * use it to inform the higher levels
 					 * that we couldn't decode it because
@@ -4097,7 +4097,7 @@ isBounceStart(mbox_ctx *mctx, const char *line)
             return FALSE;
         return TRUE;
     }
-    return (bool)(cli_filetype((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL);
+    return (bool)(cli_compare_ftm_file((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL);
 }
 
 /*

@@ -451,8 +451,7 @@ const char *autoit_functions[] = {
     "WINWAIT",
     "WINWAITACTIVE",
     "WINWAITCLOSE",
-    "WINWAITNOTACTIVE"
-};
+    "WINWAITNOTACTIVE"};
 
 const char *autoit_keywords[] = {
     "UNKNOWN_0",
@@ -858,7 +857,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scandesc(i, tempfile, ctx, NULL) == CL_VIRUS) {
+        if (cli_magic_scan_desc(i, tempfile, ctx, NULL) == CL_VIRUS) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)
@@ -1185,7 +1184,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             cli_dbgmsg("autoit: too few bytes present - expected enough for a keyword ID\n");
                             break;
                         }
-                        keyword_id  = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+                        keyword_id = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
                         if (keyword_id >= (sizeof(autoit_keywords) / sizeof(autoit_keywords[0]))) {
                             UNP.error = 1;
                             cli_dbgmsg("autoit: unknown AutoIT keyword ID: 0x%x\n", keyword_id);
@@ -1219,7 +1218,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             cli_dbgmsg("autoit: too few bytes present - expected enough for a function ID\n");
                             break;
                         }
-                        function_id  = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+                        function_id = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
                         if (function_id >= (sizeof(autoit_functions) / sizeof(autoit_functions[0]))) {
                             UNP.error = 1;
                             cli_dbgmsg("autoit: unknown AutoIT function ID: 0x%x\n", function_id);
@@ -1467,7 +1466,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scandesc(i, tempfile, ctx, NULL) == CL_VIRUS) {
+        if (cli_magic_scan_desc(i, tempfile, ctx, NULL) == CL_VIRUS) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)

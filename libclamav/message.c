@@ -1133,7 +1133,7 @@ messageIsEncoding(message *m)
         m->encoding = m->body_last;
     else if ((m->bounce == NULL) && m->ctx &&
              (strncasecmp(line, "Received: ", 10) == 0) &&
-             (cli_filetype((const unsigned char *)line, strlen(line), m->ctx->engine) == CL_TYPE_MAIL))
+             (cli_compare_ftm_file((const unsigned char *)line, strlen(line), m->ctx->engine) == CL_TYPE_MAIL))
         m->bounce = m->body_last;
     /* Not needed with fast track visa technology */
     /*else if((m->uuencode == NULL) && isuuencodebegin(line))
@@ -1732,7 +1732,7 @@ bounceBegin(message *m)
 	const text *t_line;
 
 	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if(cli_filetype(t_line->t_text, strlen(t_line->t_text)) == CL_TYPE_MAIL)
+		if(cli_compare_ftm_file(t_line->t_text, strlen(t_line->t_text)) == CL_TYPE_MAIL)
 			return t_line;
 
 	return NULL;

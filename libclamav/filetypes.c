@@ -138,8 +138,6 @@ static const struct ftmap_s {
 };
 // clang-format on
 
-cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-
 cli_file_t cli_ftcode(const char *name)
 {
     unsigned int i;
@@ -184,7 +182,7 @@ void cli_ftfree(const struct cl_engine *engine)
     }
 }
 
-cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
+cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
 {
     struct cli_ftype *ptype = engine->ptypes;
 
@@ -202,7 +200,7 @@ cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const stru
     return CL_TYPE_PART_ANY;
 }
 
-cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
+cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
 {
     struct cli_ftype *ftype = engine->ftypes;
 
@@ -273,7 +271,7 @@ const struct ooxml_ftcodes {
         }                                                                       \
     } while (0)
 
-cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
+cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
 {
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
@@ -284,7 +282,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     struct cli_ac_data mdata;
 
     if (!engine) {
-        cli_errmsg("cli_filetype2: engine == NULL\n");
+        cli_errmsg("cli_determine_fmap_type: engine == NULL\n");
         return CL_TYPE_ERROR;
     }
 
@@ -302,7 +300,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     if (buff) {
         sret = cli_memcpy(buffer, buff, bread);
         if (sret) {
-            cli_errmsg("cli_filetype2: fileread error!\n");
+            cli_errmsg("cli_determine_fmap_type: fileread error!\n");
             return CL_TYPE_ERROR;
         }
         sret = 0;
@@ -311,9 +309,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     }
 
     if (basetype == CL_TYPE_PART_ANY) { /* typing a partition */
-        ret = cli_partitiontype(buff, bread, engine);
+        ret = cli_compare_ftm_partition(buff, bread, engine);
     } else { /* typing a file */
-        ret = cli_filetype(buff, bread, engine);
+        ret = cli_compare_ftm_file(buff, bread, engine);
 
         if (ret == CL_TYPE_BINARY_DATA) {
             switch (is_tar(buff, bread)) {
@@ -376,7 +374,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         zread = MIN(MAGIC_BUFFER_SIZE, map->len - zoff);
                         zbuff = fmap_need_off_once(map, zoff, zread);
                         if (zbuff == NULL) {
-                            cli_dbgmsg("cli_filetype2: error mapping data for OOXML check\n");
+                            cli_dbgmsg("cli_determine_fmap_type: error mapping data for OOXML check\n");
                             return CL_TYPE_ERROR;
                         }
                         zoff += zread;
@@ -405,7 +403,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 
     if (ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
         /* HTML files may contain special characters and could be
-         * misidentified as BINARY_DATA by cli_filetype()
+         * misidentified as BINARY_DATA by cli_compare_ftm_file()
          */
         root = engine->root[0];
         if (!root)
@@ -463,7 +461,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         if (out_area.length > 0) {
                             sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
                             if (sret == CL_TYPE_HTML) {
-                                cli_dbgmsg("cli_filetype2: detected HTML signature in Unicode file\n");
+                                cli_dbgmsg("cli_determine_fmap_type: detected HTML signature in Unicode file\n");
                                 /* htmlnorm is able to handle any unicode now, since it skips null chars */
                                 ret = CL_TYPE_HTML;
                             }

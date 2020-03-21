@@ -151,7 +151,7 @@ scan_overlay:
 
     // Is there an overlay?
     if (offset < map->len) {
-        cl_error_t recRetVal = cli_map_scan(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
+        cl_error_t recRetVal = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
         retVal        = recRetVal != CL_SUCCESS ? recRetVal : retVal;
     }
 

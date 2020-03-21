@@ -2265,7 +2265,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
         cl_engine_free(engine);
         return;
     }
-    ret = cli_fmap_scandesc(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+    ret = cli_scan_fmap(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
     res = acres;
     while (res) {
         matches++;

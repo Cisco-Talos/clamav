@@ -298,7 +298,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         max_prtns = ctx->engine->maxpartitions;
     }
 
-    /* use the partition tables to pass partitions to cli_map_scan */
+    /* use the partition tables to pass partitions to cli_magic_scan_nested_fmap_type */
     pos = hdr.tableStartLBA * sectorsize;
     for (i = 0; i < max_prtns; ++i) {
         /* read in partition entry */
@@ -341,10 +341,10 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
                        (long long unsigned)gpe.firstLBA, (long long unsigned)(gpe.firstLBA * sectorsize),
                        (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA + 1) * sectorsize));
 
-            /* send the partition to cli_map_scan */
+            /* send the partition to cli_magic_scan_nested_fmap_type */
             part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+            ret       = cli_magic_scan_nested_fmap_type(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
             if (NULL != namestr) {
                 free(namestr);
             }

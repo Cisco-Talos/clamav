@@ -408,7 +408,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
 
-        ret = cli_scanfile(tmp_fname, ctx, cab_f->filename);
+        ret = cli_magic_scan_file(tmp_fname, ctx, cab_f->filename);
         if (CL_EOPEN == ret) {
             ret = CL_CLEAN;
         } else if (CL_VIRUS == ret) {
@@ -511,7 +511,7 @@ int cli_scanmschm(cli_ctx *ctx)
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
 
-        ret = cli_scanfile(tmp_fname, ctx, mschm_f->filename);
+        ret = cli_magic_scan_file(tmp_fname, ctx, mschm_f->filename);
         if (CL_EOPEN == ret) {
             ret = CL_CLEAN;
         } else if (CL_VIRUS == ret) {

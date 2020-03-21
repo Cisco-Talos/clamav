@@ -279,7 +279,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
      ctx - pointer to cli_ctx
   Returns:
      CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALLMATCHES), or no subdocument
-     other - error return code from cli_mem_scandesc()
+     other - error return code from cli_magic_scan_buff()
 */
 static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
 {
@@ -308,7 +308,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
-            rc = cli_mem_scandesc(subdoc, subdoc_len, ctx, NULL);
+            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL);
             if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
 
@@ -515,7 +515,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx, NULL);
+    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
             goto exit_toc;
@@ -775,7 +775,7 @@ int cli_scanxar(cli_ctx *ctx)
             default:
             case CL_TYPE_BZ:
             case CL_TYPE_XZ:
-                /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
+                /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scan_desc does the rest */
                 do_extract_cksum = 0;
                 {
                     size_t writelen = MIN(map->len - at, length);
@@ -843,14 +843,14 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
 
-            rc = cli_magic_scandesc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
+            rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));
                     if (!SCAN_ALLMATCHES)
                         goto exit_tmpfile;
                 } else if (rc != CL_BREAK) {
-                    cli_dbgmsg("cli_scanxar: cli_magic_scandesc error %i\n", rc);
+                    cli_dbgmsg("cli_scanxar: cli_magic_scan_desc error %i\n", rc);
                     goto exit_tmpfile;
                 }
             }

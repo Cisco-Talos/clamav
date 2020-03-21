@@ -38,7 +38,7 @@
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return cl_error_t
  */
-cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type, const char *name);
+cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type, const char *name);
 
 /**
  * @brief Scan a tempfile / sub-file of _any_ type, passing in the fd, filepath (if available), and the scanning context.
@@ -49,40 +49,25 @@ cl_error_t cli_base_scandesc(int desc, const char *filepath, cli_ctx *ctx, cli_f
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-cl_error_t cli_magic_scandesc(int desc, const char *filepath, cli_ctx *ctx, const char *name);
+cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, const char *name);
 
 /**
- * @brief Shim to make magic_scandesc callable outside of scanners.c.
+ * @brief Perform a magic scan on the current ctx.
  *
  * @param ctx       Scanning context structure.
  * @param type      CL_TYPE of data to be scanned.
  * @return int      CL_SUCCESS, or an error code.
  */
-cl_error_t cli_magic_scandesc_type(cli_ctx *ctx, cli_file_t type);
-
-/**
- * @brief   Scan an offset/length into a file map.
- *
- * Magic-scan some portion of an existing fmap.
- *
- * @param map       File map.
- * @param offset    Offset into file map.
- * @param length    Length from offset.
- * @param ctx       Scanning context structure.
- * @param type      CL_TYPE of data to be scanned.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return int      CL_SUCCESS, or an error code.
- */
-cl_error_t cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name);
+cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type);
 
 /**
  * @brief   Scan an offset/length into a file map.
  *
  * Useful for scanning files or other type-able data embedded plainly in an existing fmap.
  *
- * Makes use of cli_map_scandesc() for map scans when not forced to disk,
+ * Makes use of magic_scan_nested_fmap_type() for map scans when not forced to disk,
  * or if force-to-disk IS enabled, it will write the file to a temp file and then
- * will scan with cli_base_scandesc().
+ * will scan with cli_magic_scan_desc_type().
  *
  * @param map       File map.
  * @param offset    Offset into file map.
@@ -92,12 +77,12 @@ cl_error_t cli_map_scandesc(cl_fmap_t *map, off_t offset, size_t length, cli_ctx
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-cl_error_t cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name);
+cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name);
 
 /**
- * @brief   Convenience wrapper for cli_map_scan().
+ * @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().
  *
- * Creates an fmap and calls cli_map_scan() for you, with type CL_TYPE_ANY.
+ * Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.
  *
  * @param buffer    Pointer to the buffer to be scanned.
  * @param length    Size in bytes of the buffer being scanned.
@@ -105,7 +90,7 @@ cl_error_t cli_map_scan(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ct
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-cl_error_t cli_mem_scandesc(const void *buffer, size_t length, cli_ctx *ctx, const char *name);
+cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name);
 
 cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx);
 
@@ -119,6 +104,17 @@ cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx);
  * @param original_name (optional) Original name of the file (to set fmap name metadata)
  * @return cl_error_t
  */
-cl_error_t cli_scanfile(const char *filename, cli_ctx *ctx, const char *original_name);
+cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name);
+
+/**
+ * @brief   Internal function to recursively scan a directory.
+ *
+ * This function will do a magic scan of each file in a directory, given the path.
+ *
+ * @param dirname       Filepath of the directory to be scanned.
+ * @param ctx           Scanning context structure.
+ * @return cl_error_t
+ */
+cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx);
 
 #endif

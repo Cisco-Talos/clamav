@@ -246,7 +246,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
         cli_dbgmsg("Decoding ole object\n");
         ret = cli_scan_ole10(data->fd, ctx);
     } else if (data->fd > 0)
-        ret = cli_magic_scandesc(data->fd, data->name, ctx, NULL);
+        ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL);
     if (data->fd > 0)
         close(data->fd);
     data->fd = -1;

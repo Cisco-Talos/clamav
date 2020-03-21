@@ -222,8 +222,8 @@ int cli_scanapm(cli_ctx *ctx)
         cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
                    apentry.pBlockStart, apentry.pBlockCount, (long unsigned)partoff, (long unsigned)partsize);
 
-        /* send the partition to cli_map_scan */
-        ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
+        /* send the partition to cli_magic_scan_nested_fmap_type */
+        ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
