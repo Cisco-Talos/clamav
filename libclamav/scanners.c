@@ -2031,6 +2031,10 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
         snprintf(fullname, 1024, "%s" PATHSEP "rfc2397", tempname);
         ret = cli_magic_scan_dir(fullname, ctx);
+        if (CL_EOPEN == ret) {
+            /* If the directory doesn't exist, that's fine */
+            ret = CL_CLEAN;
+        }
     }
 
     if (!ctx->engine->keeptmp)
