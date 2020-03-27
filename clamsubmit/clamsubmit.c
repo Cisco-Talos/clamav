@@ -17,9 +17,7 @@
 #include "libclamav/others.h"
 #include "shared/misc.h"
 #include "shared/getopt.h"
-#if defined(C_DARWIN) || defined(_WIN32)
 #include "shared/cert_util.h"
-#endif
 
 #define OPTS "e:p:n:N:V:H:h?v?d"
 
@@ -256,6 +254,8 @@ int main(int argc, char *argv[])
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
     }
+#else
+    set_tls_ca_bundle(clam_curl);
 #endif
 
     /*** The GET malware|fp ***/
@@ -417,6 +417,8 @@ int main(int argc, char *argv[])
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
     }
+#else
+    set_tls_ca_bundle(aws_curl);
 #endif
 
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "key", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);

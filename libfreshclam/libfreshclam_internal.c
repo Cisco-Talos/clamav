@@ -426,6 +426,8 @@ static fc_error_t create_curl_handle(
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
         logg("*create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
     }
+#else
+    set_tls_ca_bundle(curl);
 #endif
 
     *curlHandle = curl;

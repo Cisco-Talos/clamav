@@ -22,6 +22,15 @@
 /* As defined by ub-common-name in https://www.ietf.org/rfc/rfc3280.txt */
 #define X509_COMMON_NAME_MAX_LEN (64)
 
+#if !(defined(C_DARWIN) || defined(_WIN32))
+/**
+ * @brief Set the tls ca bundle to a custom value using the CURL_CA_BUNDLE env var
+ *
+ * @param curl Pointer to the curl connection handle.
+ */
+void set_tls_ca_bundle(CURL *curl);
+#endif
+
 /**
  * @brief Load system and trusted root certificates into memory. Any errors
  *        while loading trusted certificates will be ignored. If error checking

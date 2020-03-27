@@ -13,6 +13,13 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 ### Other improvements
 
+- Added ability for freshclam and clamsubmit to override default use of openssl
+  CA bundle with a custom CA bundle. On Linux/Unix platforms (excluding macOS),
+  users may specify a custom CA bundle by setting the CURL_CA_BUNDLE environment
+  variable. On macOS and Windows, users are expected to add CA certificates to
+  their respective system's keychain/certificate store.
+  Patch courtesy of Sebastian A. Siewior
+
 ### Bug fixes
 
 ### New Requirements
@@ -21,6 +28,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
+- Sebastian A. Siewior
 - Reio Remma
 
 ## 0.102.0
