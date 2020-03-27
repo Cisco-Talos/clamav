@@ -1652,7 +1652,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
     int ofd;
     z_stream stream;
     unsigned char inbuff[PPT_LZW_BUFFSIZE], outbuff[PPT_LZW_BUFFSIZE];
-    char fullname[NAME_MAX + 1];
+    char fullname[PATH_MAX + 1];
 
     snprintf(fullname, sizeof(fullname) - 1, "%s" PATHSEP "ppt%.8lx.doc",
              dir, (long)lseek(fd, 0L, SEEK_CUR));
@@ -1762,7 +1762,7 @@ cli_ppt_vba_read(int ifd, cli_ctx *ctx)
     const char *ret;
 
     /* Create a directory to store the extracted OLE2 objects */
-    dir = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL);
+    dir = cli_gentemp_with_prefix(ctx ? ctx->sub_tmpdir : NULL, "ppt-ole2-tmp");
     if (dir == NULL)
         return NULL;
     if (mkdir(dir, 0700)) {
@@ -2170,11 +2170,13 @@ cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
     return buff;
 }
 
-/*
- * Keep reading bytes until we reach a NUL. Returns 0 if none is found
+/**
+ * @brief Keep reading bytes until we reach a NUL.
+ *
+ * @param fd   File descriptor
+ * @return int Returns FALSE if none is found, else TRUE
  */
-static int
-skip_past_nul(int fd)
+static int skip_past_nul(int fd)
 {
     char *end;
     char smallbuf[128];

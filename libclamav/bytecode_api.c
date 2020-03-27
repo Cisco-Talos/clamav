@@ -1182,7 +1182,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
     b->state      = state;
     if (!ctx->jsnormdir) {
         cli_ctx *cctx  = (cli_ctx *)ctx->ctx;
-        ctx->jsnormdir = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
+        ctx->jsnormdir = cli_gentemp_with_prefix(cctx ? cctx->engine->tmpdir : NULL, "normalized-js");
         if (ctx->jsnormdir) {
             if (mkdir(ctx->jsnormdir, 0700)) {
                 cli_dbgmsg("js: can't create temp dir %s\n", ctx->jsnormdir);

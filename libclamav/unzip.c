@@ -504,7 +504,7 @@ static inline cl_error_t zdecrypt(
                 snprintf(name, sizeof(name), "%s" PATHSEP "zip.decrypt.%03u", tmpd, *num_files_unzipped);
                 name[sizeof(name) - 1] = '\0';
             } else {
-                if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+                if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "zip-decrypt"))) return CL_EMEM;
             }
             if ((out_file = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create temporary file %s\n", tempfile);
@@ -642,7 +642,7 @@ static unsigned int parse_local_file_header(
         const char *src;
         if (nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
             memcpy(name, zip, nsize);
-            name[nsize]       = '\0';
+            name[nsize] = '\0';
             if (CL_SUCCESS != cli_basename(name, nsize, &original_filename)) {
                 original_filename = NULL;
             }

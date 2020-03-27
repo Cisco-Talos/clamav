@@ -3560,7 +3560,7 @@ rfc1341(mbox_ctx *mctx, message *m)
     char *arg, *id, *number, *total, *oldfilename;
     const char *tmpdir = NULL;
     int n;
-    char pdir[NAME_MAX + 1];
+    char pdir[PATH_MAX + 1];
     unsigned char md5_val[16];
     char *md5_hex;
 
@@ -3658,7 +3658,7 @@ rfc1341(mbox_ctx *mctx, message *m)
 		 */
         if ((n == t) && ((dd = opendir(pdir)) != NULL)) {
             FILE *fout;
-            char outname[NAME_MAX + 1];
+            char outname[PATH_MAX + 1];
             time_t now;
 
             sanitiseName(id);

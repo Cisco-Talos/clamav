@@ -64,7 +64,7 @@ int cli_scansis(cli_ctx *ctx)
 
     cli_dbgmsg("in scansis()\n");
 
-    if (!(tmpd = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "sis-tmp")))
         return CL_ETMPDIR;
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("SIS: Can't create temporary directory %s\n", tmpd);

@@ -959,7 +959,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx, off_t sfx_offset)
     memset(&metadata, 0, sizeof(arj_metadata_t));
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "arj-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -1976,7 +1976,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         return CL_CLEAN;
     }
 
-    if (!(tempname = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "html-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {
@@ -2248,7 +2248,7 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
-    if (!(tempname = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "html-utf16-tmp")))
         return CL_EMEM;
 
     if ((fd = open(tempname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
@@ -2315,7 +2315,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
         return CL_EMAXREC;
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "ole2-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -2376,7 +2376,7 @@ static cl_error_t cli_scantar(cli_ctx *ctx, unsigned int posix)
     cli_dbgmsg("in cli_scantar()\n");
 
     /* generate temporary directory */
-    if (!(dir = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tar-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -2401,7 +2401,7 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    if (!(tempname = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "screnc-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {
@@ -2458,7 +2458,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
         return CL_EMEM;
     }
 
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(tempfile = cli_gentemp_with_prefix(ctx->sub_tmpdir, "cryptff"))) {
         free(dest);
         return CL_EMEM;
     }
@@ -2503,7 +2503,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
 static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp(ctx->sub_tmpdir);
+    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "pdf-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -2526,7 +2526,7 @@ static cl_error_t cli_scanpdf(cli_ctx *ctx, off_t offset)
 static cl_error_t cli_scantnef(cli_ctx *ctx)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp(ctx->sub_tmpdir);
+    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "tnef-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -2552,7 +2552,7 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
 static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
 {
     cl_error_t ret;
-    char *dir = cli_gentemp(ctx->sub_tmpdir);
+    char *dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "uuencoded-tmp");
 
     if (!dir)
         return CL_EMEM;
@@ -2584,7 +2584,7 @@ static cl_error_t cli_scanmail(cli_ctx *ctx)
     cli_dbgmsg("Starting cli_scanmail(), recursion = %u\n", ctx->recursion);
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "mail-tmp")))
         return CL_EMEM;
 
     if (mkdir(dir, 0700)) {
@@ -2718,7 +2718,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     fmap_t *map = *ctx->fmap;
     unsigned int corrupted_input;
 
-    tmpname = cli_gentemp(ctx->sub_tmpdir);
+    tmpname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "embedded-pe");
     if (!tmpname)
         return CL_EMEM;
 
@@ -3517,7 +3517,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             /*
              * The fmap has no name or we failed to get the basename.
              */
-            new_temp_path = cli_gentemp_with_prefix(ctx->sub_tmpdir, "scantemp");
+            new_temp_path = cli_gentemp(ctx->sub_tmpdir);
             if (NULL == new_temp_path) {
                 cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
                 ret = CL_EMEM;

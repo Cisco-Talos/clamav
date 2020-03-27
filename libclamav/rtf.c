@@ -492,6 +492,8 @@ static void cleanup_stack(struct stack* stack, struct rtf_state* state, cli_ctx*
     cleanup_stack(&stack, &state, ctx);  \
     if (!ctx->engine->keeptmp)           \
         cli_rmdirs(tempname);            \
+    else                                 \
+        rmdir(tempname);                 \
     free(tempname);                      \
     free(stack.states);
 
@@ -526,7 +528,7 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "rtf-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {

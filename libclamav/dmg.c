@@ -156,7 +156,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* Create temp folder for contents */
-    if (!(dirname = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(dirname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "dmg-tmp"))) {
         return CL_ETMPDIR;
     }
     if (mkdir(dirname, 0700)) {
@@ -990,7 +990,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     unsigned long projected_size;
     int ret        = CL_CLEAN, ofd;
     uint8_t sorted = 1, writeable_data = 0;
-    char outfile[NAME_MAX + 1];
+    char outfile[PATH_MAX + 1];
 
     /* First loop, fix endian-ness and check if already sorted */
     for (i = 0; i < mish_set->mish->blockDataCount; i++) {

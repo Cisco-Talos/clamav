@@ -763,7 +763,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
 
     if (!tempd)
         return;
-    if (!(fname = cli_gentemp(tempd)))
+    if (!(fname = cli_gentemp_with_prefix(tempd, "bmp")))
         return;
     if (!(f = fopen(fname, "wb"))) {
         cli_unlink(fname);

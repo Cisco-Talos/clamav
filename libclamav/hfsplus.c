@@ -1495,7 +1495,7 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
 
 
     /* Create temp folder for contents */
-    if (!(targetdir = cli_gentemp(ctx->sub_tmpdir))) {
+    if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {
         cli_errmsg("cli_scandmg: cli_gentemp failed\n");
         ret = CL_ETMPDIR;
         goto freeHeader;

@@ -1415,7 +1415,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     rc = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
     close(fout);
 
-    if (!pdf->ctx->engine->keeptmp)
+    if (!pdf->ctx->engine->keeptmp || (s.out_pos == 0))
         if (cli_unlink(fullname) && rc != CL_VIRUS)
             rc = CL_EUNLINK;
 
@@ -1425,7 +1425,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
 cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
     cli_ctx *ctx = pdf->ctx;
-    char fullname[NAME_MAX + 1];
+    char fullname[PATH_MAX + 1];
     int fout      = -1;
     size_t sum    = 0;
     cl_error_t rc = CL_SUCCESS;

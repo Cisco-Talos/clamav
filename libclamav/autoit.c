@@ -1498,7 +1498,7 @@ int cli_scanautoit(cli_ctx *ctx, off_t offset)
     if (!(version = fmap_need_off_once(map, offset, sizeof(*version))))
         return CL_EREAD;
 
-    if (!(tmpd = cli_gentemp(ctx->sub_tmpdir)))
+    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "autoit-tmp")))
         return CL_ETMPDIR;
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("autoit: Can't create temporary directory %s\n", tmpd);
