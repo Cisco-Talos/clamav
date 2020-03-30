@@ -523,7 +523,8 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 
 char *get_ip(const char *ip)
 {
-    char *dupip, *p1;
+    char *dupip = NULL;
+    char *p1 = NULL;
     unsigned int i;
 
     /*
@@ -552,6 +553,7 @@ char *get_ip(const char *ip)
 
         p1 = strdup(dupip + 1);
         free(dupip);
+        dupip = NULL;
         return p1;
     }
 
@@ -602,6 +604,10 @@ char *make_ip(const char *host, const char *port)
     size_t len;
     int ipv6;
 
+    if (!host || !port){
+        return NULL;
+    }
+
     len = strlen(host) + strlen(port);
 
     ipv6 = (strchr(host, ':') != NULL);
@@ -622,12 +628,16 @@ static int make_connection_real(const char *soname, conn_t *conn)
     int s = -1;
     struct timeval tv;
     char *port       = NULL;
-    char *pt         = strdup(soname);
+    char *pt         = NULL;
     const char *host = pt;
     struct addrinfo hints, *res = NULL, *p;
     int err;
+    int ret = 0;
 
-    OOM_CHECK(pt);
+    if(soname) {
+        pt = strdup(soname);
+        OOM_CHECK(pt);
+    }
     conn->tcp = 0;
 
 #ifndef _WIN32
@@ -637,7 +647,8 @@ static int make_connection_real(const char *soname, conn_t *conn)
         s = socket(AF_UNIX, SOCK_STREAM, 0);
         if (s < 0) {
             perror("socket");
-            return -1;
+            ret = -1;
+            goto done;
         }
 
         memset(&addr, 0, sizeof(addr));
@@ -649,7 +660,8 @@ static int make_connection_real(const char *soname, conn_t *conn)
         if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
             perror("connect");
             close(s);
-            return -1;
+            ret = -1;
+            goto done;
         }
 
         goto end;
@@ -662,8 +674,10 @@ static int make_connection_real(const char *soname, conn_t *conn)
     hints.ai_flags    = AI_PASSIVE;
 
     host = get_ip(soname);
-    if (!(host))
-        return -1;
+    if (!(host)) {
+        ret = -1;
+        goto done;
+    }
 
     port = get_port(soname);
 
@@ -672,7 +686,8 @@ static int make_connection_real(const char *soname, conn_t *conn)
     print_con_info(conn, "Looking up: %s:%s\n", host, port ? port : "3310");
     if ((err = getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))) {
         print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n", host, port ? port : "3310", gai_strerror(err));
-        return -1;
+        ret = -1;
+        goto done;
     }
 
     for (p = res; p != NULL; p = p->ai_next) {
@@ -695,35 +710,58 @@ static int make_connection_real(const char *soname, conn_t *conn)
         break;
     }
 
-    free(pt);
 
-    if (res)
-        freeaddrinfo(res);
-
-    if (p == NULL)
-        return -1;
-
-end:
-    if (conn->remote != soname) {
-        /* when we reconnect, they are the same */
-        if (conn->remote)
-            free(conn->remote);
-
-        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
+    if (p == NULL) {
+        ret = -1;
+        goto done;
     }
-    if (port)
-        free(port);
+end:
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
     tv.tv_sec  = 30;
     tv.tv_usec = 0;
     setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    return 0;
+
+done:
+    if (NULL != res) {
+        freeaddrinfo(res);
+        res = NULL;
+    }
+
+    if (NULL != pt) {
+        free(pt);
+        pt = NULL;
+    }
+
+    if (NULL != host) {
+        free(host);
+        host = NULL;
+    }
+
+    if (NULL != port) {
+        free(port);
+        port = NULL;
+    }
+
+    if (conn->remote != soname) {
+        /* when we reconnect, they are the same */
+        if (NULL != conn->remote) {
+            free(conn->remote);
+            conn->remote = NULL;
+        }
+        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
+    }
+
+    return ret;
 }
 
 static int make_connection(const char *soname, conn_t *conn)
 {
     int rc;
+
+    if (!soname) {
+        return -1;
+    }
 
     if ((rc = make_connection_real(soname, conn)))
         return rc;
@@ -1360,10 +1398,15 @@ static void setup_connections(int argc, char *argv[])
     OOM_CHECK(global.conn);
 
     for (i = 0; i < global.num_clamd; i++) {
-        const char *soname  = conn ? conn : opts->filename[i];
+        const char *soname;
+        if (!conn && !opts->filename) {
+            soname = NULL;
+        } else {
+            soname  = conn ? conn : opts->filename[i];
+        }
         global.conn[i].line = i + 1;
         if (make_connection(soname, &global.conn[i]) < 0) {
-            EXIT_PROGRAM(FAIL_INITIAL_CONN);
+                    EXIT_PROGRAM(FAIL_INITIAL_CONN);
         }
     }
 
