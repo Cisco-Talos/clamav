@@ -1578,7 +1578,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     if (input == NULL)
         return OK;
 
-    htmlDoc = htmlReadMemory((char *)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    htmlDoc = htmlReadMemory((char *)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS | HTML_PARSE_NOWARNING);
     if (htmlDoc == NULL) {
         cli_dbgmsg("parseRootMHTML: cannot initialize read html document\n");
 #if HAVE_JSON
@@ -2322,7 +2322,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 #if HAVE_JSON
                             /* Send root HTML file for preclassification */
                             if (mctx->ctx->wrkproperty)
-                                parseRootMHTML(mctx, aMessage, aText);
+                                (void)parseRootMHTML(mctx, aMessage, aText);
 #endif
                             rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
                             if ((rc == OK) && aMessage) {
@@ -4487,7 +4487,11 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
         fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 #if HAVE_JSON
         json_object *arrobj;
+#if (JSON_C_MAJOR_VERSION == 0) && (JSON_C_MINOR_VERSION < 13)
+        int arrlen = 0;
+#else
         size_t arrlen = 0;
+#endif
 
         if (thisobj != NULL) {
             /* attempt to determine container size - prevents incorrect type reporting */
@@ -4514,7 +4518,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
             /* attempt to acquire container type */
             if (json_object_object_get_ex(mctx->ctx->wrkproperty, "ContainedObjects", &arrobj)) {
-                if (json_object_array_length(arrobj) > ((int)arrlen)) {
+                if (json_object_array_length(arrobj) > arrlen) {
                     entry = json_object_array_get_idx(arrobj, arrlen);
                 }
             }
