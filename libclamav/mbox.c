@@ -3583,7 +3583,7 @@ rfc1341(mbox_ctx *mctx, message *m)
 
     snprintf(pdir, sizeof(pdir) - 1, "%s" PATHSEP "clamav-partial", tmpdir);
 
-    if ((mkdir(pdir, S_IRWXU) < 0) && (errno != EEXIST)) {
+    if ((mkdir(pdir, S_IRUSR | S_IWUSR) < 0) && (errno != EEXIST)) {
         cli_errmsg("Can't create the directory '%s'\n", pdir);
         free(id);
         return -1;
@@ -4528,7 +4528,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                     dtype = json_object_get_string(entry);
                 }
             }
-            cli_jsonint(thisobj, "ContainedObjectsIndex", (uint32_t)arrlen);
+            cli_jsonint(thisobj, "ContainedObjectsIndex", (int32_t)arrlen);
             cli_jsonstr(thisobj, "ClamAVFileType", dtype ? dtype : "UNKNOWN");
         }
 #endif

@@ -833,7 +833,7 @@ handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx
     if (name)
         free(name);
 
-    ofd = open(newname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU);
+    ofd = open(newname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR);
     if (ofd < 0) {
         cli_errmsg("OLE2 [handler_writefile]: failed to create file: %s\n", newname);
         return CL_SUCCESS;
@@ -1462,7 +1462,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
     if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL)))
         return CL_EMEM;
 
-    if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+    if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         cli_dbgmsg("OLE2: Can't create file %s\n", tempfile);
         free(tempfile);
         return CL_ECREAT;

@@ -2251,7 +2251,7 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
     if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "html-utf16-tmp")))
         return CL_EMEM;
 
-    if ((fd = open(tempname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+    if ((fd = open(tempname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         cli_errmsg("cli_scanhtml_utf16: Can't create file %s\n", tempname);
         free(tempname);
         return CL_EOPEN;
@@ -2463,7 +2463,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
         return CL_EMEM;
     }
 
-    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         cli_errmsg("CryptFF: Can't create file %s\n", tempfile);
         free(dest);
         free(tempfile);
@@ -2722,7 +2722,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     if (!tmpname)
         return CL_EMEM;
 
-    if ((fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+    if ((fd = open(tmpname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         cli_errmsg("cli_scanembpe: Can't create file %s\n", tmpname);
         free(tmpname);
         return CL_ECREAT;

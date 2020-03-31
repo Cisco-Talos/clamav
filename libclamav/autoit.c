@@ -836,7 +836,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
         snprintf(tempfile, 1023, "%s" PATHSEP "autoit.%.3u", tmpd, files);
         tempfile[1023] = '\0';
-        if ((i = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+        if ((i = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
             cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
             free(UNP.outputbuf);
             return CL_ECREAT;
@@ -1445,7 +1445,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
         snprintf(tempfile, 1023, "%s" PATHSEP "autoit.%.3u", tmpd, files);
         tempfile[1023] = '\0';
-        if ((i = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+        if ((i = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
             cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
             free(buf);
             return CL_ECREAT;

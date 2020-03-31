@@ -458,7 +458,7 @@ static int utf16decode(const struct optstruct *opts)
     }
     sprintf(newname, "%s.ascii", fname);
 
-    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) < 0) {
+    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) < 0) {
         mprintf("!utf16decode: Can't create file %s\n", newname);
         free(newname);
         close(fd1);

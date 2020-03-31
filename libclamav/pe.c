@@ -125,18 +125,18 @@
         return CL_CLEAN;                                       \
     }
 
-#define CLI_UNPTEMP(NAME, FREEME)                                                       \
-    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {                                   \
-        cli_exe_info_destroy(peinfo);                                                   \
-        cli_multifree FREEME;                                                           \
-        return CL_EMEM;                                                                 \
-    }                                                                                   \
-    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) { \
-        cli_dbgmsg(NAME ": Can't create file %s\n", tempfile);                          \
-        free(tempfile);                                                                 \
-        cli_exe_info_destroy(peinfo);                                                   \
-        cli_multifree FREEME;                                                           \
-        return CL_ECREAT;                                                               \
+#define CLI_UNPTEMP(NAME, FREEME)                                                                 \
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {                                             \
+        cli_exe_info_destroy(peinfo);                                                             \
+        cli_multifree FREEME;                                                                     \
+        return CL_EMEM;                                                                           \
+    }                                                                                             \
+    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) { \
+        cli_dbgmsg(NAME ": Can't create file %s\n", tempfile);                                    \
+        free(tempfile);                                                                           \
+        cli_exe_info_destroy(peinfo);                                                             \
+        cli_multifree FREEME;                                                                     \
+        return CL_ECREAT;                                                                         \
     }
 
 #define CLI_TMPUNLK()               \

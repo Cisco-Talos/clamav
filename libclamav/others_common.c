@@ -434,7 +434,7 @@ int cli_filecopy(const char *src, const char *dest)
     if ((s = open(src, O_RDONLY | O_BINARY)) == -1)
         return -1;
 
-    if ((d = open(dest, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, S_IRWXU)) == -1) {
+    if ((d = open(dest, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
         close(s);
         return -1;
     }
@@ -1051,7 +1051,7 @@ cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
     if (!*name)
         return CL_EMEM;
 
-    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
     /*
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
@@ -1111,7 +1111,7 @@ cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name,
     if (!*name)
         return CL_EMEM;
 
-    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
     /*
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
@@ -1123,7 +1123,7 @@ cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name,
             *name = cli_gentemp(dir);
             if (!*name)
                 return CL_EMEM;
-            *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+            *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
             if (*fd == -1) {
                 cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
                 free(*name);
