@@ -485,14 +485,14 @@ static void cleanup_stack(struct stack* stack, struct rtf_state* state, cli_ctx*
     }
 }
 
-#define SCAN_CLEANUP                    \
-    if (state.cb_data && state.cb_end)  \
-        state.cb_end(&state, ctx);      \
-    tableDestroy(actiontable);          \
-    cleanup_stack(&stack, &state, ctx); \
-    if (!ctx->engine->keeptmp)          \
-        cli_rmdirs(tempname);           \
-    free(tempname);                     \
+#define SCAN_CLEANUP                     \
+    if (state.cb_data && state.cb_end)   \
+        ret = state.cb_end(&state, ctx); \
+    tableDestroy(actiontable);           \
+    cleanup_stack(&stack, &state, ctx);  \
+    if (!ctx->engine->keeptmp)           \
+        cli_rmdirs(tempname);            \
+    free(tempname);                      \
     free(stack.states);
 
 int cli_scanrtf(cli_ctx* ctx)
