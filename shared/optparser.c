@@ -368,7 +368,7 @@ const struct clam_option __clam_options[] = {
 
     {"ForceToDisk", "force-to-disk", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option causes memory or nested map scans to dump the content to disk.\nIf you turn on this option, more data is written to disk and is available\nwhen the leave-temps option is enabled at the cost of more disk writes.", "no"},
 
-    {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nIn this version, this field only affects the scan time of ZIP archives.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},
+    {"MaxScanTime", "max-scantime", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of time a scan may take to complete.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result allow scanning\nof certain files to lock up the scanning process/threads resulting in a Denial of Service.\nThe value is in milliseconds.", "120000"},
 
     {"MaxScanSize", "max-scansize", 0, CLOPT_TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "100M"},
 
