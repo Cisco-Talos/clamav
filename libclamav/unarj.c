@@ -834,18 +834,16 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     uint16_t header_size, count;
     arj_main_hdr_t main_hdr;
     const char *filename = NULL;
-    const char *comment = NULL;
-    off_t header_offset;
+    const char *comment  = NULL;
     struct text_norm_state fnstate, comstate;
-    unsigned char *fnnorm = NULL;
+    unsigned char *fnnorm  = NULL;
     unsigned char *comnorm = NULL;
-    uint32_t ret = TRUE;
+    uint32_t ret           = TRUE;
 
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return FALSE;
 
     metadata->offset += 2;
-    header_offset = metadata->offset;
     header_size   = le16_to_host(header_size);
     cli_dbgmsg("Header Size: %d\n", header_size);
     if (header_size == 0) {
@@ -882,8 +880,8 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         metadata->offset += main_hdr.first_hdr_size - 30;
     }
 
-    fnnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+    fnnorm   = cli_calloc(sizeof(unsigned char), header_size + 1);
+    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
     if (!filename) {
         cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
         ret = FALSE;
@@ -892,7 +890,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     metadata->offset += CLI_STRNLEN(filename, header_size) + 1;
 
     comnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
     if (!comment || !comnorm) {
         cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
         ret = FALSE;
@@ -903,8 +901,8 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     text_normalize_init(&fnstate, fnnorm, header_size);
     text_normalize_init(&comstate, comnorm, header_size);
 
-    text_normalize_buffer(&fnstate, filename, metadata->offset);
-    text_normalize_buffer(&comstate, comment, metadata->offset);
+    text_normalize_buffer(&fnstate, (const unsigned char *)filename, header_size);
+    text_normalize_buffer(&comstate, (const unsigned char *)comment, header_size);
 
     cli_dbgmsg("Filename: %s\n", fnnorm);
     cli_dbgmsg("Comment: %s\n", comnorm);
@@ -947,9 +945,9 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     const char *filename, *comment;
     arj_file_hdr_t file_hdr;
     struct text_norm_state fnstate, comstate;
-    unsigned char *fnnorm = NULL;
+    unsigned char *fnnorm  = NULL;
     unsigned char *comnorm = NULL;
-    uint32_t ret = CL_SUCCESS;
+    uint32_t ret           = CL_SUCCESS;
 
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return CL_EFORMAT;
@@ -999,8 +997,8 @@ static int arj_read_file_header(arj_metadata_t *metadata)
         metadata->offset += file_hdr.first_hdr_size - 30;
     }
 
-    fnnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+    fnnorm   = cli_calloc(sizeof(unsigned char), header_size + 1);
+    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
     if (!filename) {
         cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
         ret = FALSE;
@@ -1009,7 +1007,7 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     metadata->offset += CLI_STRNLEN(filename, header_size) + 1;
 
     comnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size);
+    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
     if (!comment) {
         cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
         ret = FALSE;
@@ -1020,8 +1018,8 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     text_normalize_init(&fnstate, fnnorm, header_size);
     text_normalize_init(&comstate, comnorm, header_size);
 
-    text_normalize_buffer(&fnstate, filename, metadata->offset);
-    text_normalize_buffer(&comstate, comment, metadata->offset);
+    text_normalize_buffer(&fnstate, (const unsigned char *)filename, header_size);
+    text_normalize_buffer(&comstate, (const unsigned char *)comment, header_size);
 
     cli_dbgmsg("Filename: %s\n", fnnorm);
     cli_dbgmsg("Comment: %s\n", comnorm);
@@ -1037,7 +1035,7 @@ static int arj_read_file_header(arj_metadata_t *metadata)
             if (metadata->filename)
                 free(metadata->filename);
             metadata->filename = NULL;
-            ret = CL_EFORMAT;
+            ret                = CL_EFORMAT;
             goto done;
         }
         count = cli_readint16(countp);
@@ -1055,11 +1053,11 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     metadata->encrypted = ((file_hdr.flags & GARBLE_FLAG) != 0) ? TRUE : FALSE;
     metadata->ofd       = -1;
     if (!metadata->filename) {
-        ret =  CL_EMEM;
+        ret = CL_EMEM;
         goto done;
     }
 
-    done:
+done:
 
     if (fnnorm) {
         free(fnnorm);
