@@ -2818,10 +2818,8 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
-    // TODO I think this causes embedded file extraction to stop when a
-    // signature has matched in cli_fmap_scandesc, which wouldn't be what
-    // we want if allmatch is specified.
-    if (ret >= CL_TYPENO) {
+    // If allmatch is specified, we need to scan embedded files as well.
+    if ((ret >= CL_TYPENO) || (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)) {
         perf_nested_start(ctx, PERFT_RAWTYPENO, PERFT_SCAN);
         ctx->recursion++;
         fpt = ftoffset;
