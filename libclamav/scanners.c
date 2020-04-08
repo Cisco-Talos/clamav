@@ -4742,6 +4742,9 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
                     if (pc_map) {
                         cli_bytecode_context_setctx(bc_ctx, &ctx);
                         rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
+                        if (!map) {
+                            funmap(pc_map);
+                        }
                     }
                     cli_bytecode_context_destroy(bc_ctx);
                 }
