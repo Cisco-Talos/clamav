@@ -245,6 +245,9 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
         if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
             cli_dbgmsg("ishield-msi: failed to create file %s\n", tempfile);
             free(tempfile);
+            if (NULL != filename) {
+                free(filename);
+            }
             return CL_ECREAT;
         }
 

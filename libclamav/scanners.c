@@ -4653,7 +4653,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
         (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename))) {
         /* Include the basename in the temp directory */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
-        new_temp_prefix     = calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             return CL_EMEM;
@@ -4663,7 +4663,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     } else {
         /* Just use date */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
-        new_temp_prefix     = calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             return CL_EMEM;

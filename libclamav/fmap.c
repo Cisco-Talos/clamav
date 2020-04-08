@@ -210,20 +210,17 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     }
     if (!(mh = CreateFileMapping(fh, NULL, PAGE_READONLY, (DWORD)((len >> 31) >> 1), (DWORD)len, NULL))) {
         cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
-        CloseHandle(fh);
         return NULL;
     }
     if (!(data = MapViewOfFile(mh, FILE_MAP_READ, (DWORD)((offset >> 31) >> 1), (DWORD)(offset), len))) {
         cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
         CloseHandle(mh);
-        CloseHandle(fh);
         return NULL;
     }
     if (!(m = cl_fmap_open_memory(data, len))) {
         cli_errmsg("fmap: cannot allocate fmap_t\n", fd);
         UnmapViewOfFile(data);
         CloseHandle(mh);
-        CloseHandle(fh);
         return NULL;
     }
     m->handle       = (void *)(size_t)fd;
@@ -295,13 +292,13 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length, const char *
     memcpy(duplicate_map->maphash, hash, 16);
 
     if (NULL != name) {
-        map->name = cli_strdup(name);
-        if (NULL == map->name) {
-            funmap(map);
+        duplicate_map->name = cli_strdup(name);
+        if (NULL == duplicate_map->name) {
+            free(duplicate_map);
             return NULL;
         }
     } else {
-        map->name = NULL;
+        duplicate_map->name = NULL;
     }
 
     status = CL_SUCCESS;
@@ -384,7 +381,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     }
 
     m->bitmap = cli_calloc(1, bitmap_size);
-    if (!m) {
+    if (!m->bitmap) {
         cli_warnmsg("fmap: map header allocation failed\n");
         goto done;
     }
@@ -411,10 +408,6 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
 #endif /* ANONYMOUS_MAP */
     if (!use_aging) {
         m->data = (fmap_t *)cli_malloc(mapsz);
-        if (!(m->data)) {
-            cli_warnmsg("fmap: map allocation failed\n");
-            goto done;
-        }
     }
     if (!m->data) {
         cli_warnmsg("fmap: map allocation failed\n");

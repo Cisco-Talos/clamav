@@ -1621,6 +1621,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
                             goto abort;
                         }
+                        file_tmp_o1->fd = -1;
 
                         /* Create rfc2397 directory if it doesn't already exist */
                         snprintf(filename, 1024, "%s" PATHSEP "rfc2397", dirname);
