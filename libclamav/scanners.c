@@ -2812,7 +2812,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
     }
 
     perf_start(ctx, PERFT_RAW);
-    if (typercg)
+    if (typercg && type != CL_TYPE_GPT)
         acmode |= AC_SCAN_FT;
 
     ret = cli_fmap_scandesc(ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode, NULL, refhash);

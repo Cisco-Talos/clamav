@@ -24,9 +24,15 @@
 #ifndef _ENTITIES_H
 #define _ENTITIES_H
 
-#include "clamav-types.h"
+#include "clamav-config.h"
 
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
+
+#include "clamav-types.h"
 #include "hashtab.h"
+#include "htmlnorm.h"
 
 #define UCS4_1234 "UCS-4BE"
 #define UCS4_4321 "UCS-4LE"
@@ -65,5 +71,17 @@ unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t d
 const char* entity_norm(struct entity_conv* conv, const unsigned char* entity);
 const char* encoding_detect_bom(const unsigned char* bom, const size_t length);
 int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_encoding, m_area_t* out_m_area);
+
+/**
+ * @brief Convert string to UTF-8, given Windows codepage.
+ *
+ * @param in                string buffer
+ * @param in_size           length of string buffer in bytes
+ * @param codepage          Windows code page https://docs.microsoft.com/en-us/windows/desktop/Intl/code-page-identifiers)
+ * @param [out] out         pointer to receive malloc'ed utf-8 buffer.
+ * @param [out] out_size    pointer to receive size of utf-8 buffer, not including null terminating character.
+ * @return cl_error_t   CL_SUCCESS if success. CL_BREAK if unable to because iconv is unavailable.  Other error code if outright failure.
+ */
+cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size);
 
 #endif

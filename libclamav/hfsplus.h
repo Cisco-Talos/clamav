@@ -250,6 +250,7 @@ typedef struct hfsPlusCatalogThread hfsPlusCatalogThread;
 #define HFSPLUS_RECTYPE_FILE 0x0002
 #define HFSPLUS_RECTYPE_FOLDERTHREAD 0x0003
 #define HFSPLUS_RECTYPE_FILETHREAD 0x0004
+#define HFSPLUS_RECTYPE_INLINE_DATA_ATTRIBUTE 0x0010
 /* HFS types are similar
 #define HFS_RECTYPE_FOLDER       0x0100
 #define HFS_RECTYPE_FILE         0x0200
@@ -272,6 +273,78 @@ typedef struct hfsPlusExtentKey hfsPlusExtentKey;
 #define HFSPLUS_FORKTYPE_DATA 0x00
 #define HFSPLUS_FORKTYPE_RSRC 0xFF
 
+/* Attribute structures */
+struct hfsPlusAttributeKey {
+    uint16_t keyLength;
+    uint16_t pad;
+    uint32_t cnid;
+    uint32_t startBlock;
+    uint16_t nameLength;
+} __attribute__((__packed__));
+typedef struct hfsPlusAttributeKey hfsPlusAttributeKey;
+
+struct hfsPlusAttributeRecord {
+    uint32_t recordType;
+    uint32_t reserved1;
+    uint32_t reserved2;
+    uint32_t attributeSize;
+} __attribute__((__packed__));
+typedef struct hfsPlusAttributeRecord hfsPlusAttributeRecord;
+
+struct hfsPlusCompressionHeader {
+    uint32_t magic;
+    uint32_t compressionType;
+    uint64_t fileSize;
+} __attribute__((__packed__));
+typedef struct hfsPlusCompressionHeader hfsPlusCompressionHeader;
+
+/* Resource structures */
+struct hfsPlusResourceHeader {
+    uint32_t dataOffset;
+    uint32_t mapOffset;
+    uint32_t dataLength;
+    uint32_t mapLength;
+} __attribute__((__packed__));
+typedef struct hfsPlusResourceHeader hfsPlusResourceHeader;
+
+struct hfsPlusResourceMap {
+    uint8_t  reserved1[16];
+    uint32_t reserved2;
+    uint16_t reserved3;
+    uint16_t resourceForkAttributes;
+    uint16_t typeListOffset;
+    uint16_t nameListOffset;
+    int16_t  typeCount;
+} __attribute__((__packed__));
+typedef struct hfsPlusResourceMap hfsPlusResourceMap;
+
+struct hfsPlusResourceType {
+    char     type[4];
+    uint16_t instanceCount;
+    uint16_t referenceListOffset;
+} __attribute__((__packed__));
+typedef struct hfsPlusResourceType hfsPlusResourceType;
+
+struct hfsPlusReferenceEntry {
+    uint16_t resourceId;
+    int16_t  resourceNameOffset;
+    uint8_t  resourceAttributes;
+    uint8_t  resourceDataOffset[3];
+    uint32_t reserved1;
+} __attribute__((__packed__));
+typedef struct hfsPlusReferenceEntry hfsPlusReferenceEntry;
+
+struct hfsPlusResourceBlockTable {
+    uint32_t offset;
+    uint32_t length;
+} __attribute__((__packed__));
+typedef struct hfsPlusResourceBlockTable hfsPlusResourceBlockTable;
+
+
+#define HFSPLUS_COMPRESSION_INLINE 0x03
+#define HFSPLUS_COMPRESSION_RESOURCE 0x04
+
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
@@ -286,6 +359,6 @@ typedef struct hfsPlusExtentKey hfsPlusExtentKey;
 /* Maximum number of catalog leaf nodes to scan for records */
 #define HFSPLUS_NODE_LIMIT 1000
 
-int cli_scanhfsplus(cli_ctx *ctx);
+cl_error_t cli_scanhfsplus(cli_ctx *ctx);
 
 #endif
