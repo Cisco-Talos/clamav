@@ -490,11 +490,15 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
         }
 
         /*
-         * TODO: Free up any malloced metadata...
+         * Free up any malloced metadata...
          */
         if (metadata.filename != NULL) {
             free(metadata.filename);
             metadata.filename = NULL;
+        }
+        if (NULL != filename_base) {
+            free(filename_base);
+            filename_base = NULL;
         }
 
     } while (status == CL_CLEAN);
@@ -4740,8 +4744,14 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
                     }
 
                     if (pc_map) {
+                        ctx.fmap++;
+                        ctx.recursion++;
+                        *ctx.fmap = pc_map;
                         cli_bytecode_context_setctx(bc_ctx, &ctx);
                         rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
+                        *ctx.fmap = NULL;
+                        ctx.fmap--;
+                        ctx.recursion--;
                         if (!map) {
                             funmap(pc_map);
                         }

@@ -1037,6 +1037,9 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 int fmap_fd(fmap_t *m)
 {
     int fd;
+    if (NULL == m) {
+        cli_errmsg("fmap_fd: Attempted to get fd for NULL fmap\n");
+    }
     if (!m->handle_is_fd)
         return -1;
     fd = (int)(ptrdiff_t)m->handle;

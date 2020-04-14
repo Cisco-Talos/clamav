@@ -615,10 +615,11 @@ static unsigned int parse_local_file_header(
     char *original_filename = NULL;
     uint32_t csize, usize;
     int virus_found = 0;
+    unsigned int size_of_fileheader_and_data = 0;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
         cli_dbgmsg("cli_unzip: local header - out of file\n");
-        return 0;
+        goto done;
     }
     if (LOCAL_HEADER_magic != ZIP_MAGIC_LOCAL_FILE_HEADER) {
         if (!central_header)
@@ -626,7 +627,7 @@ static unsigned int parse_local_file_header(
         else
             cli_dbgmsg("cli_unzip: local header - bad magic\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-        return 0;
+        goto done;
     }
 
     zip = local_header + SIZEOF_LOCAL_HEADER;
@@ -635,7 +636,7 @@ static unsigned int parse_local_file_header(
     if (zsize <= LOCAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: local header - fname out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-        return 0;
+        goto done;
     }
     if (ctx->engine->cdb || cli_debug_flag || ctx->engine->keeptmp || ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) {
         uint32_t nsize = (LOCAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : LOCAL_HEADER_flen;
@@ -660,7 +661,7 @@ static unsigned int parse_local_file_header(
     if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32, NULL) == CL_VIRUS) {
         *ret = CL_VIRUS;
         if (!SCAN_ALLMATCHES)
-            return 0;
+            goto done;
         virus_found = 1;
     }
 
@@ -668,7 +669,7 @@ static unsigned int parse_local_file_header(
         cli_dbgmsg("cli_unzip: local header - header has got unusable masked data\n");
         /* FIXME: need to find/craft a sample */
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-        return 0;
+        goto done;
     }
 
     if (detect_encrypted && (LOCAL_HEADER_flags & F_ENCR) && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
@@ -676,7 +677,7 @@ static unsigned int parse_local_file_header(
         *ret = cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
         if ((*ret == CL_VIRUS && !SCAN_ALLMATCHES) || *ret != CL_CLEAN) {
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-            return 0;
+            goto done;
         }
         virus_found = 1;
     }
@@ -685,7 +686,7 @@ static unsigned int parse_local_file_header(
         cli_dbgmsg("cli_unzip: local header - has data desc\n");
         if (!central_header) {
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-            return 0;
+            goto done;
         } else {
             usize = CENTRAL_HEADER_usize;
             csize = CENTRAL_HEADER_csize;
@@ -698,7 +699,7 @@ static unsigned int parse_local_file_header(
     if (zsize <= LOCAL_HEADER_elen) {
         cli_dbgmsg("cli_unzip: local header - extra out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-        return 0;
+        goto done;
     }
     zip += LOCAL_HEADER_elen;
     zsize -= LOCAL_HEADER_elen;
@@ -709,7 +710,7 @@ static unsigned int parse_local_file_header(
         if (zsize < csize) {
             cli_dbgmsg("cli_unzip: local header - stream out of file\n");
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
-            return 0;
+            goto done;
         }
 
         /* Don't actually unzip if we're just collecting the file record information (offset, sizes) */
@@ -739,32 +740,37 @@ static unsigned int parse_local_file_header(
         zsize -= csize;
     }
 
-    if (NULL != original_filename) {
-        free(original_filename);
-    }
-
-    if (virus_found != 0)
-        *ret = CL_VIRUS;
-
     fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER); /* unneed now. block is guaranteed to exists till the next need */
     if (LOCAL_HEADER_flags & F_USEDD) {
         if (zsize < 12) {
             cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
-            return 0;
+            goto done;
         }
         zsize -= 12;
         if (fmap_need_ptr_once(map, zip, 4)) {
             if (cli_readint32(zip) == ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED) {
                 if (zsize < 4) {
                     cli_dbgmsg("cli_unzip: local header - data desc out of file\n");
-                    return 0;
+                    goto done;
                 }
                 zip += 4;
             }
         }
         zip += 12;
     }
-    return zip - local_header;
+
+    /* Success */
+    size_of_fileheader_and_data = zip - local_header;
+
+done:
+    if (NULL != original_filename) {
+        free(original_filename);
+    }
+
+    if ((NULL != ret) && (0 != virus_found))
+        *ret = CL_VIRUS;
+
+    return size_of_fileheader_and_data;
 }
 
 /**
