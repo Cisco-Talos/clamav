@@ -636,7 +636,42 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 }
 #endif
 
+/**
+ * @brief Append an alert.
+ *
+ * An FP-check will verify that the file is not whitelisted.
+ * The whitelist check does not happen before the scan because file whitelisting
+ * is so infrequent that such action would be detrimental to performance.
+ *
+ * TODO: Replace implementation with severity scale, and severity threshold
+ * wherein signatures that do not meet the threshold are documented in JSON
+ * metadata but do not halt the scan.
+ *
+ * @param ctx       The scan context.
+ * @param virname   The alert name.
+ * @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue.
+ */
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname);
+
+/**
+ * @brief Append a PUA (low severity) alert.
+ *
+ * This function will return CLEAN unless in all-match or Heuristic-precedence
+ * modes. The intention is for the scan to continue in case something more
+ * malicious is found.
+ *
+ * TODO: Replace implementation with severity scale, and severity threshold
+ * wherein signatures that do not meet the threshold are documented in JSON
+ * metadata but do not halt the scan.
+ *
+ * BUG: In normal scan mode (see above), the alert is not FP-checked!
+ *
+ * @param ctx       The scan context.
+ * @param virname   The alert name.
+ * @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue.
+ */
+cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
+
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx);
@@ -853,7 +888,6 @@ int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *, const void *), void *arg);
 cl_error_t cli_checktimelimit(cli_ctx *ctx);
-cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

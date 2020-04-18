@@ -1032,6 +1032,7 @@ static fc_error_t getcvd(
     int logerr)
 {
     fc_error_t ret;
+    cl_error_t cl_ret;
     fc_error_t status = FC_EARG;
 
     struct cl_cvd *cvd           = NULL;
@@ -1068,13 +1069,13 @@ static fc_error_t getcvd(
         goto done;
     }
 
-    if ((ret = cl_cvdverify(tmpfile_with_extension))) {
-        logg("!getcvd: Verification: %s\n", cl_strerror(ret));
+    if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile_with_extension))) {
+        logg("!getcvd: Verification: %s\n", cl_strerror(cl_ret));
         status = FC_EBADCVD;
         goto done;
     }
 
-    if (!(cvd = cl_cvdhead(tmpfile_with_extension))) {
+    if (NULL == (cvd = cl_cvdhead(tmpfile_with_extension))) {
         logg("!getcvd: Can't read CVD header of new %s database.\n", cvdfile);
         status = FC_EBADCVD;
         goto done;

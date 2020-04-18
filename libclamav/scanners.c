@@ -3495,6 +3495,12 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         goto early_ret;
     }
 
+    if ((*ctx->fmap)->len <= 5) {
+        cli_dbgmsg("cli_magic_scandesc: File is too too small (%zu bytes), ignoring.\n", (*ctx->fmap)->len);
+        ret = CL_CLEAN;
+        goto early_ret;
+    }
+
     if (cli_updatelimits(ctx, (*ctx->fmap)->len) != CL_CLEAN) {
         emax_reached(ctx);
         ret = CL_CLEAN;
@@ -4273,7 +4279,6 @@ done:
 #endif
 
     if (ret == CL_CLEAN && ctx->found_possibly_unwanted) {
-        cli_virus_found_cb(ctx);
         cb_retcode = CL_VIRUS;
     } else {
         if (ret == CL_CLEAN && ctx->num_viruses != 0)
@@ -4554,10 +4559,9 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
 }
 
 /**
- * @brief   The main function to initiate a scan, that may be invoked with a file descriptor or a file map.
+ * @brief   The main function to initiate a scan of an fmap.
  *
- * @param desc              File descriptor of an open file. The caller must provide this or the map.
- * @param map               File map. The caller must provide this or the desc.
+ * @param map               File map.
  * @param filepath          (optional, recommended) filepath of the open file descriptor or file map.
  * @param[out] virname      Will be set to a statically allocated (i.e. needs not be freed) signature name if the scan matches against a signature.
  * @param[out] scanned      The number of bytes scanned.
@@ -4566,11 +4570,10 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  * @param[inout] context    An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
-static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
+static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
     cli_ctx ctx;
-    int rc;
-    STATBUF sb;
+    cl_error_t rc;
 
     char *target_basename = NULL;
     char *new_temp_prefix = NULL;
@@ -4580,17 +4583,13 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     time_t current_time;
     struct tm tm_struct;
 
-    /* We have a limit of around 2.17GB (INT_MAX - 2). Enforce it here. */
-    if (map != NULL) {
-        if ((size_t)(map->real_len) > (size_t)(INT_MAX - 2))
-            return CL_CLEAN;
-    } else {
-        if (FSTAT(desc, &sb))
-            return CL_ESTAT;
-
-        if ((unsigned long long)(sb.st_size) > (unsigned long long)(INT_MAX - 2))
-            return CL_CLEAN;
+    if (NULL == map) {
+        return CL_ENULLARG;
     }
+
+    /* We have a limit of around 2.17GB (INT_MAX - 2). Enforce it here. */
+    if ((size_t)(map->real_len) > (size_t)(INT_MAX - 2))
+        return CL_CLEAN;
 
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine  = engine;
@@ -4605,13 +4604,23 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     cli_set_container(&ctx, CL_TYPE_ANY, 0);
     ctx.dconf  = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
-    ctx.fmap   = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 2);
+    ctx.fmap   = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 3);
     if (!ctx.fmap)
         return CL_EMEM;
     if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
         free(ctx.fmap);
         return CL_EMEM;
     }
+
+    /*
+     * The first fmap in ctx.fmap must be NULL so we can fmap-- while not NULL.
+     * But we need an fmap to be set so we can append viruses or report the
+     * fmap's file descriptor in the virus found callback (like for deferred
+     * low-seveerity alerts).
+     */
+    ctx.fmap++;
+    *ctx.fmap = map;
+
     perf_init(&ctx);
 
     if (ctx.engine->maxscantime != 0) {
@@ -4691,8 +4700,12 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     }
 
     cli_logg_setup(&ctx);
-    rc = map ? cli_magic_scan_nested_fmap_type(map, 0, map->len, &ctx, CL_TYPE_ANY, target_basename)
-             : cli_magic_scan_desc(desc, ctx.target_filepath, &ctx, target_basename);
+
+    rc = cli_magic_scan_nested_fmap_type(map, 0, map->len, &ctx, CL_TYPE_ANY, target_basename);
+
+    if (rc == CL_CLEAN && ctx.found_possibly_unwanted) {
+        cli_virus_found_cb(&ctx);
+    }
 
 #if HAVE_JSON
     if (ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && (ctx.properties != NULL)) {
@@ -4732,30 +4745,8 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
                     cli_errmsg("scan_common: can't allocate memory for bc_ctx\n");
                     rc = CL_EMEM;
                 } else {
-                    fmap_t *pc_map = map;
-
-                    if (!pc_map) {
-                        perf_start(&ctx, PERFT_MAP);
-                        if (!(pc_map = fmap(desc, 0, sb.st_size, NULL))) {
-                            perf_stop(&ctx, PERFT_MAP);
-                            rc = CL_EMEM;
-                        }
-                        perf_stop(&ctx, PERFT_MAP);
-                    }
-
-                    if (pc_map) {
-                        ctx.fmap++;
-                        ctx.recursion++;
-                        *ctx.fmap = pc_map;
-                        cli_bytecode_context_setctx(bc_ctx, &ctx);
-                        rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, pc_map);
-                        *ctx.fmap = NULL;
-                        ctx.fmap--;
-                        ctx.recursion--;
-                        if (!map) {
-                            funmap(pc_map);
-                        }
-                    }
+                    cli_bytecode_context_setctx(bc_ctx, &ctx);
+                    rc = cli_bytecode_runhook(&ctx, ctx.engine, bc_ctx, BC_PRECLASS, map);
                     cli_bytecode_context_destroy(bc_ctx);
                 }
 
@@ -4822,6 +4813,7 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
     }
     free(ctx.containers);
     cli_bitset_free(ctx.hook_lsig_matches);
+    ctx.fmap--; /* Restore original fmap pointer */
     free(ctx.fmap);
     free(ctx.options);
     cli_logg_unsetup();
@@ -4832,12 +4824,48 @@ static cl_error_t scan_common(int desc, cl_fmap_t *map, const char *filepath, co
 
 cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
-    return scan_common(desc, NULL, filename, virname, scanned, engine, scanoptions, context);
+    cl_error_t status = CL_SUCCESS;
+    cl_fmap_t *map    = NULL;
+    STATBUF sb;
+    char *filename_base = NULL;
+
+    if (FSTAT(desc, &sb) == -1) {
+        cli_errmsg("cl_scandesc_callback: Can't fstat descriptor %d\n", desc);
+        status = CL_ESTAT;
+        goto done;
+    }
+    if (sb.st_size <= 5) {
+        cli_dbgmsg("cl_scandesc_callback: File too small (%u bytes), ignoring\n", (unsigned int)sb.st_size);
+        status = CL_CLEAN;
+        goto done;
+    }
+
+    if (NULL != filename) {
+        (void)cli_basename(filename, strlen(filename), &filename_base);
+    }
+
+    if (NULL == (map = fmap(desc, 0, sb.st_size, filename_base))) {
+        cli_errmsg("CRITICAL: fmap() failed\n");
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = scan_common(map, filename, virname, scanned, engine, scanoptions, context);
+
+done:
+    if (NULL != map) {
+        funmap(map);
+    }
+    if (NULL != filename_base) {
+        free(filename_base);
+    }
+
+    return status;
 }
 
 cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
-    return scan_common(-1, map, filename, virname, scanned, engine, scanoptions, context);
+    return scan_common(map, filename, virname, scanned, engine, scanoptions, context);
 }
 
 cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx)

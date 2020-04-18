@@ -4701,7 +4701,7 @@ done:
     return ret;
 }
 
-int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
+cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
 {
     STATBUF sb;
     int ret;
@@ -4799,7 +4799,7 @@ const char *cl_retdbdir(void)
     return DATADIR;
 }
 
-int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
+cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 {
     DIR *dd;
     struct dirent *dent;
@@ -4953,9 +4953,8 @@ void cli_pwdb_list_free(struct cl_engine *engine, struct cli_pwdb *pwdb)
     }
 }
 
-int cl_statfree(struct cl_stat *dbstat)
+cl_error_t cl_statfree(struct cl_stat *dbstat)
 {
-
     if (dbstat) {
 
 #ifdef _WIN32
@@ -4990,7 +4989,7 @@ int cl_statfree(struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
-int cl_engine_free(struct cl_engine *engine)
+cl_error_t cl_engine_free(struct cl_engine *engine)
 {
     unsigned int i, j;
     struct cli_matcher *root;
@@ -5190,10 +5189,10 @@ int cl_engine_free(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-int cl_engine_compile(struct cl_engine *engine)
+cl_error_t cl_engine_compile(struct cl_engine *engine)
 {
     unsigned int i;
-    int ret;
+    cl_error_t ret;
     struct cli_matcher *root;
 
     if (!engine)
@@ -5288,7 +5287,7 @@ int cl_engine_compile(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-int cl_engine_addref(struct cl_engine *engine)
+cl_error_t cl_engine_addref(struct cl_engine *engine)
 {
     if (!engine) {
         cli_errmsg("cl_engine_addref: engine == NULL\n");
@@ -5372,13 +5371,13 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
     return CL_SUCCESS;
 }
 
-int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
+cl_error_t cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
 {
     STATBUF sb;
     char fname[1024];
     struct dirent *dent;
     DIR *dd;
-    int ret;
+    cl_error_t ret;
 
     if (!sigs)
         return CL_ENULLARG;

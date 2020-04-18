@@ -1039,9 +1039,11 @@ int fmap_fd(fmap_t *m)
     int fd;
     if (NULL == m) {
         cli_errmsg("fmap_fd: Attempted to get fd for NULL fmap\n");
-    }
-    if (!m->handle_is_fd)
         return -1;
+    }
+    if (!m->handle_is_fd) {
+        return -1;
+    }
     fd = (int)(ptrdiff_t)m->handle;
     lseek(fd, 0, SEEK_SET);
     return fd;

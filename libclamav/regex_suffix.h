@@ -29,6 +29,19 @@ struct regex_list {
     regex_t *preg;
     struct regex_list *nxt;
 };
+
 typedef cl_error_t (*suffix_callback)(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex);
+
+/**
+ * @brief Build a suffix tree given a regex pattern
+ *
+ * @param pattern The regex pattern
+ * @param pregs
+ * @param cb
+ * @param cbdata
+ * @return cl_error_t May return a clam error type or may return a regex error integer.
+ *         TODO: separate regex error code from clam error code into out param.
+ */
 cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata);
+
 #endif

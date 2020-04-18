@@ -629,7 +629,6 @@ static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
     ht->tail = regex;
 }
 
-/* returns 0 on success, clamav error code otherwise */
 static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
     struct regex_matcher *matcher = cbdata;

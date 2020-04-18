@@ -284,9 +284,9 @@ const char *cl_strerror(int clerror)
     }
 }
 
-int cl_init(unsigned int initoptions)
+cl_error_t cl_init(unsigned int initoptions)
 {
-    int rc;
+    cl_error_t rc;
     struct timeval tv;
     unsigned int pid = (unsigned int)getpid();
 
@@ -470,7 +470,7 @@ struct cl_engine *cl_engine_new(void)
     return new;
 }
 
-int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
+cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
 {
     if (!engine)
         return CL_ENULLARG;
@@ -731,7 +731,7 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
     }
 }
 
-int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
+cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
 {
     if (!engine)
         return CL_ENULLARG;
@@ -853,7 +853,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     return settings;
 }
 
-int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
+cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
     engine->ac_only            = settings->ac_only;
     engine->ac_mindepth        = settings->ac_mindepth;
@@ -927,7 +927,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     return CL_SUCCESS;
 }
 
-int cl_engine_settings_free(struct cl_settings *settings)
+cl_error_t cl_engine_settings_free(struct cl_settings *settings)
 {
     if (!settings)
         return CL_ENULLARG;
@@ -1134,11 +1134,11 @@ void cli_virus_found_cb(cli_ctx *ctx)
 
 cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
 {
-    if (SCAN_ALLMATCHES)
+    if (SCAN_ALLMATCHES) {
         return cli_append_virus(ctx, virname);
-    else if (SCAN_HEURISTIC_PRECEDENCE)
+    } else if (SCAN_HEURISTIC_PRECEDENCE) {
         return cli_append_virus(ctx, virname);
-    else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
+    } else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
         ctx->found_possibly_unwanted = 1;
         ctx->num_viruses++;
         *ctx->virname = virname;
@@ -1148,13 +1148,19 @@ cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
 
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
 {
-    if (ctx->virname == NULL)
+    if (ctx->virname == NULL) {
         return CL_CLEAN;
-    if (ctx->fmap != NULL && (*ctx->fmap) != NULL && CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))
+    }
+    if ((ctx->fmap != NULL) &&
+        ((*ctx->fmap) != NULL) &&
+        (CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))) {
         return CL_CLEAN;
-    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0)
-        if (SCAN_HEURISTIC_PRECEDENCE)
+    }
+    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0) {
+        if (SCAN_HEURISTIC_PRECEDENCE) {
             return CL_CLEAN;
+        }
+    }
     if (ctx->limit_exceeded == 0 || SCAN_ALLMATCHES) {
         ctx->num_viruses++;
         *ctx->virname = virname;

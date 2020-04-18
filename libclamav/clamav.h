@@ -263,7 +263,7 @@ void cl_cleanup_crypto(void);
  * @param initoptions   Unused.
  * @return cl_error_t   CL_SUCCESS if everything initalized correctly.
  */
-extern int cl_init(unsigned int initoptions);
+extern cl_error_t cl_init(unsigned int initoptions);
 
 /**
  * @brief Allocate a new scanning engine and initialize default settings.
@@ -349,7 +349,7 @@ typedef struct cli_stats_sections {
  * @return cl_error_t       CL_EARG if the field number was incorrect.
  * @return cl_error_t       CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
+extern cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
 /**
  * @brief Get a numerical engine option.
@@ -377,7 +377,7 @@ extern long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engin
  * @return cl_error_t       CL_EMEM if a memory allocation error occurred.
  * @return cl_error_t       CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str);
+extern cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str);
 
 /**
  * @brief Get a string engine option.
@@ -409,7 +409,7 @@ extern struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engin
  * @return cl_error_t   CL_SUCCESS if successful.
  * @return cl_error_t   CL_EMEM if a memory allocation error occurred.
  */
-extern int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings);
+extern cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings);
 
 /**
  * @brief Free a settings struct pointer.
@@ -418,7 +418,7 @@ extern int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
  * @return cl_error_t   CL_SUCCESS if successful.
  * @return cl_error_t   CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_settings_free(struct cl_settings *settings);
+extern cl_error_t cl_engine_settings_free(struct cl_settings *settings);
 
 /**
  * @brief Prepare the scanning engine.
@@ -430,7 +430,7 @@ extern int cl_engine_settings_free(struct cl_settings *settings);
  * @return cl_error_t   CL_SUCCESS if successful.
  * @return cl_error_t   CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_compile(struct cl_engine *engine);
+extern cl_error_t cl_engine_compile(struct cl_engine *engine);
 
 /**
  * @brief Add a reference count to the engine.
@@ -444,7 +444,7 @@ extern int cl_engine_compile(struct cl_engine *engine);
  * @return cl_error_t   CL_SUCCESS if successful.
  * @return cl_error_t   CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_addref(struct cl_engine *engine);
+extern cl_error_t cl_engine_addref(struct cl_engine *engine);
 
 /**
  * @brief Free an engine.
@@ -456,7 +456,7 @@ extern int cl_engine_addref(struct cl_engine *engine);
  * @return cl_error_t   CL_SUCCESS if successful.
  * @return cl_error_t   CL_ENULLARG null arguments were provided.
  */
-extern int cl_engine_free(struct cl_engine *engine);
+extern cl_error_t cl_engine_free(struct cl_engine *engine);
 
 /* ----------------------------------------------------------------------------
  * Callback function type definitions.
@@ -939,7 +939,7 @@ extern cl_error_t cl_scanfile_callback(const char *filename, const char **virnam
 /* ----------------------------------------------------------------------------
  * Database handling.
  */
-extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);
+extern cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);
 extern const char *cl_retdbdir(void);
 
 /* ----------------------------------------------------------------------------
@@ -987,7 +987,7 @@ extern struct cl_cvd *cl_cvdparse(const char *head);
  * @param file          Filepath of CVD file.
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error code.
  */
-extern int cl_cvdverify(const char *file);
+extern cl_error_t cl_cvdverify(const char *file);
 
 /**
  * @brief Free a CVD header struct.
@@ -1017,7 +1017,7 @@ struct cl_stat {
  * @param[out] dbstat   dbstat handle.
  * @return cl_error_t   CL_SUCCESS if successfully initialized.
  */
-extern int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+extern cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat);
 
 /**
  * @brief Check the database directory for changes.
@@ -1035,7 +1035,7 @@ extern int cl_statchkdir(const struct cl_stat *dbstat);
  * @return cl_error_t   CL_SUCCESS
  * @return cl_error_t   CL_ENULLARG
  */
-extern int cl_statfree(struct cl_stat *dbstat);
+extern cl_error_t cl_statfree(struct cl_stat *dbstat);
 
 /**
  * @brief Count the number of signatures in a database file or directory.
@@ -1045,7 +1045,7 @@ extern int cl_statfree(struct cl_stat *dbstat);
  * @param[out] sigs     The number of sigs.
  * @return cl_error_t   CL_SUCCESS if success, else a CL_E* error type.
  */
-extern int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs);
+extern cl_error_t cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs);
 
 /* ----------------------------------------------------------------------------
  * Software versions.

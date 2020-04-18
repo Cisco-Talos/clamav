@@ -25,6 +25,12 @@ ClamAV 0.103.0 includes the following improvements and changes.
   limited when compared with `clamdtop` on Linux. PDCurses is required to
   build `clamdtop.exe` for ClamAV on Windows.
 
+- The phishing detection module will now print "Suspicious link found!" along
+  with the "Real URL" and "Display URL" each time phishing is detected. In a
+  future version, we would like to print out alert-related metadata like this
+  at the end of a scan, but for now this detail will help users understand why
+  a given file is being flagged as phishing.
+
 ### Other improvements
 
 - Added ability for freshclam and clamsubmit to override default use of openssl
@@ -43,6 +49,10 @@ ClamAV 0.103.0 includes the following improvements and changes.
 ### Bug fixes
 
 - Fixed behavior of `freshclam --quiet` option.
+
+- Fixed an error in the heuristic alert mechanism that would cause a single
+  detection within an archive to alert once for every subsequent file scanned,
+  potentially resulting in thousands of alerts for a single scan.
 
 ### New Requirements
 
