@@ -963,6 +963,7 @@ done:
     return sanitized_filepath;
 }
 
+#define SHORT_HASH_LENGTH 10
 char *cli_genfname(const char *prefix)
 {
     char *sanitized_prefix = NULL;
@@ -974,7 +975,7 @@ char *cli_genfname(const char *prefix)
 
     if (prefix && (strlen(prefix) > 0)) {
         sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix));
-        len              = strlen(sanitized_prefix) + strlen(".") + 5 + 1; /* {prefix}.{5}\0 */
+        len              = strlen(sanitized_prefix) + strlen(".") + SHORT_HASH_LENGTH + 1; /* {prefix}.{SHORT_HASH_LENGTH}\0 */
     } else {
         len = strlen("clamav-") + 48 + strlen(".tmp") + 1; /* clamav-{48}.tmp\0 */
     }
@@ -1008,7 +1009,7 @@ char *cli_genfname(const char *prefix)
 
     if (sanitized_prefix) {
         if (strlen(sanitized_prefix) > 0) {
-            snprintf(fname, len, "%s.%.*s", sanitized_prefix, 5, tmp);
+            snprintf(fname, len, "%s.%.*s", sanitized_prefix, SHORT_HASH_LENGTH, tmp);
         }
         free(sanitized_prefix);
     } else {
