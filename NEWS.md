@@ -7,11 +7,19 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.102.3 is a bug patch release to address the following issues.
 
+- [CVE-2020-3327](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3327):
+  Fix a vulnerability in the ARJ archive parsing module in ClamAV 0.102.2 that
+  could cause a Denial-of-Service (DoS) condition. Improper bounds checking of
+  an unsigned variable results in an out-of-bounds read which causes a crash.
+
+  Special thanks to Daehui Chang and Fady Othman for helping identify the ARJ
+  parsing vulnerability.
+
+- Fix "Attempt to allocate 0 bytes" error when parsing some PDF documents.
+
+- Fix a couple of minor memory leaks.
+
 - Updated libclamunrar to UnRAR 5.9.2.
-
-Special thanks to the following for code contributions and bug reports:
-
--
 
 ## 0.102.2
 
