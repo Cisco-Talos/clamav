@@ -7,7 +7,7 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.102.3 is a bug patch release to address the following issues.
 
--
+- Updated libclamunrar to UnRAR 5.9.2.
 
 Special thanks to the following for code contributions and bug reports:
 
