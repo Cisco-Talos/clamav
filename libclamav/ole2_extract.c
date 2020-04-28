@@ -227,27 +227,27 @@ int ole2_list_delete(ole2_list_t *list)
 
 static unsigned char magic_id[] = {0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
 
-static char *
-get_property_name2(char *name, int size)
+char *
+cli_ole2_get_property_name2(const char *name, int size)
 {
     int i, j;
     char *newname;
 
-    if (*name == 0 || size <= 0 || size > 128) {
+    if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
     newname = (char *)cli_malloc(size * 7);
     if (!newname) {
-        cli_errmsg("OLE2 [get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7);
+        cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7);
         return NULL;
     }
     j = 0;
     /* size-2 to ignore trailing NULL */
     for (i = 0; i < size - 2; i += 2) {
-        if ((!(name[i] & 0x80)) && isprint(name[i])) {
+        if ((!(name[i] & 0x80)) && isprint(name[i]) && name[i + 1] == 0) {
             newname[j++] = tolower(name[i]);
         } else {
-            if (name[i] < 10 && name[i] >= 0) {
+            if (name[i] < 10 && name[i] >= 0 && name[i + 1] == 0) {
                 newname[j++] = '_';
                 newname[j++] = name[i] + '0';
             } else {
@@ -293,7 +293,7 @@ get_property_name(char *name, int size)
         oname += 2;
         if (u > 0x1040) {
             free(newname);
-            return get_property_name2(name, size);
+            return cli_ole2_get_property_name2(name, size);
         }
         lo = u % 64;
         u >>= 6;
@@ -723,7 +723,7 @@ ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
 #if HAVE_JSON
                     if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                         if (!json_object_object_get_ex(ctx->wrkproperty, "DigitalSignatures", NULL)) {
-                            name = get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
+                            name = cli_ole2_get_property_name2(prop_block[idx].name, prop_block[idx].name_size);
                             if (name) {
                                 if (!strcmp(name, "_xmlsignatures") || !strcmp(name, "_signatures")) {
                                     cli_jsonbool(ctx->wrkproperty, "HasDigitalSignatures", 1);
@@ -811,8 +811,9 @@ handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx
         cli_dbgmsg("OLE2 [handler_writefile]: property name too long: %d\n", prop->name_size);
         return CL_SUCCESS;
     }
-    name = get_property_name2(prop->name, prop->name_size);
+    name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
+        cli_dbgmsg("Storing %s in uniq\n", name);
         if (CL_SUCCESS != uniq_add(hdr->U, name, strlen(name), &hash, &cnt)) {
             free(name);
             cli_dbgmsg("OLE2 [handler_writefile]: too many property names added to uniq store.\n");
@@ -929,7 +930,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
 #if HAVE_JSON
     json_object *arrobj, *strmobj;
 
-    name = get_property_name2(prop->name, prop->name_size);
+    name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
         if (SCAN_COLLECT_METADATA && ctx->wrkproperty != NULL) {
             arrobj = cli_jsonarray(ctx->wrkproperty, "Streams");
@@ -958,7 +959,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
 
     if (!hdr->has_vba) {
         if (!name)
-            name = get_property_name2(prop->name, prop->name_size);
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         if (name) {
             if (!strcmp(name, "_vba_project") || !strcmp(name, "powerpoint document") || !strcmp(name, "worddocument") || !strcmp(name, "_1_ole10native"))
                 hdr->has_vba = 1;
@@ -971,7 +972,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
      */
     if (!hdr->is_hwp) {
         if (!name)
-            name = get_property_name2(prop->name, prop->name_size);
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         if (name) {
             if (!strcmp(name, "fileheader")) {
                 hwp_check = (unsigned char *)cli_calloc(1, 1 << hdr->log2_big_block_size);
@@ -1239,7 +1240,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 
     if (cli_debug_flag) {
         if (!name)
-            name = get_property_name2(prop->name, prop->name_size);
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
@@ -1347,7 +1348,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
     /* JSON Output Summary Information */
     if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
         if (!name)
-            name = get_property_name2(prop->name, prop->name_size);
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         if (name) {
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
@@ -1385,7 +1386,7 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 
     if (hdr->is_hwp) {
         if (!name)
-            name = get_property_name2(prop->name, prop->name_size);
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd, tempfile);
     } else if (is_mso < 0) {
         ret = CL_ESEEK;

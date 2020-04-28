@@ -49,6 +49,10 @@
 #define UNDECIDED_16_LE UTF16_LE
 #define UNDECIDED_8 "ISO-8859-1"
 
+#define CODEPAGE_ISO8859_1 28591
+#define CODEPAGE_UTF16_LE  1200
+#define CODEPAGE_UTF16_BE  1201
+
 #define MAX_ENTITY_SIZE 22
 
 struct entity_conv {

@@ -780,7 +780,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
     size_t out_utf8_size = 0;
 
 #if defined(HAVE_ICONV)
-    iconv_t conv = NULL;
+    iconv_t conv = (iconv_t) -1;
 #elif defined(WIN32)
     LPWSTR lpWideCharStr = NULL;
     int cchWideChar      = 0;
@@ -937,6 +937,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             for (i = 0; i < NUMCODEPAGES; ++i) {
                 if (codepage == codepage_entries[i].codepage) {
                     encoding = codepage_entries[i].encoding;
+                    break;
                 } else if (codepage < codepage_entries[i].codepage) {
                     break; /* fail-out early, requires sorted array */
                 }
@@ -1019,6 +1020,12 @@ done:
 #if defined(WIN32) && !defined(HAVE_ICONV)
     if (NULL != lpWideCharStr) {
         free(lpWideCharStr);
+    }
+#endif
+
+#if defined(HAVE_ICONV)
+    if (conv != (iconv_t) -1) {
+        iconv_close(conv);
     }
 #endif
 

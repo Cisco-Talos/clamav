@@ -1537,6 +1537,133 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS : CL_CLEAN;
 }
 
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
+/**
+ * Find a file in a directory tree.
+ * \param filename Name of the file to find
+ * \param dir Directory path where to find the file
+ * \param A pointer to the string to store the result into
+ * \param Size of the string to store the result in
+ */
+cl_error_t find_file(const char* filename, const char *dir, char *result, size_t result_size)
+{
+    DIR *dd;
+    struct dirent *dent;
+    char fullname[PATH_MAX];
+    cl_error_t ret;
+    size_t len;
+    STATBUF statbuf;
+
+    if (!result) {
+        return CL_ENULLARG;
+    }
+
+    if ((dd = opendir(dir)) != NULL) {
+        while ((dent = readdir(dd))) {
+            if (dent->d_ino) {
+                if (strcmp(dent->d_name, ".") != 0 && strcmp(dent->d_name, "..") != 0) {
+
+                    snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s", dir, dent->d_name);
+                    fullname[sizeof(fullname) - 1] = '\0';
+
+                    /* stat the file */
+                    if (LSTAT(fullname, &statbuf) != -1) {
+                        if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+                            ret = find_file(filename, fullname, result, result_size);
+                            if (ret == CL_SUCCESS) {
+                                closedir(dd);
+                                return ret;
+                            }
+                        }
+                        else if (S_ISREG(statbuf.st_mode)) {
+                            if (strcmp(dent->d_name, filename) == 0) {
+                                len = min(strlen(dir) + 1, result_size);               
+                                memcpy(result, dir, len);
+                                result[len - 1] = '\0';
+                                closedir(dd);
+                                return CL_SUCCESS;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        closedir(dd);
+    }
+
+    return CL_EOPEN;
+}
+
+/**
+ * Scan an OLE directory for a VBA project.
+ * Contrary to cli_vba_scandir, this function uses the dir file to locate VBA modules.
+ */
+static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct uniq *U)
+{
+    cl_error_t ret = CL_SUCCESS;
+    uint32_t hashcnt = 0;
+	char *hash = NULL;
+    char path[PATH_MAX];
+    char filename[PATH_MAX];
+    int tempfd = -1;
+
+    if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
+        cli_dbgmsg("cli_vba_scandir_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
+        return ret;
+    }
+
+    while (hashcnt) {
+		//Find the directory containing the extracted dir file. This is complicated
+		//because ClamAV doesn't use the file names from the OLE file, but temporary names,
+		//and we have neither the complete path of the dir file in the OLE container,
+		//nor the mapping of the temporary directory names to their OLE names.
+        snprintf(filename, sizeof(filename), "%s_%u", hash, hashcnt);
+        filename[sizeof(filename) - 1] = '\0';
+
+        if (CL_SUCCESS == find_file(filename, dirname, path, sizeof(path))) {
+            cli_dbgmsg("cli_vba_scandir_new: Found dir file: %s\n", path);
+            if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd)) != CL_SUCCESS) {
+                //FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
+                //       OLE2 archive, we don't know if we have the right file. The only thing we can do is
+                //       iterate all of them until one succeeds.
+                cli_dbgmsg("cli_vba_scandir_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int) ret);
+                ret = CL_SUCCESS;
+                hashcnt--;
+                continue;
+            }
+
+            if (lseek(tempfd, 0, SEEK_SET) != 0) {
+                cli_dbgmsg("cli_vba_scandir_new: Failed to seek to beginning of temporary VBA project file\n");
+                ret = CL_ESEEK;
+                goto done;
+            }
+
+            ctx->recursion += 1;
+            cli_set_container(ctx, CL_TYPE_MSOLE2, 0); //TODO: set correct container size
+
+            if (cli_scandesc(tempfd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL) == CL_VIRUS) {
+                ctx->recursion -= 1;
+                ret = CL_VIRUS;
+                goto done;
+            }
+
+            close(tempfd);
+            tempfd = -1;
+            ctx->recursion -= 1;
+        }
+
+        hashcnt--;
+    }
+
+done:
+    if (tempfd != -1) {
+        close(tempfd);
+        tempfd = -1;
+    }
+    return ret;
+}
+
 static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
     cl_error_t ret = CL_CLEAN;
@@ -2193,6 +2320,9 @@ static int cli_scanole2(cli_ctx *ctx)
         ctx->recursion++;
 
         ret = cli_vba_scandir(dir, ctx, vba);
+        if (ret != CL_VIRUS) {
+            ret = cli_vba_scandir_new(dir, ctx, vba);
+        }
         uniq_free(vba);
         if (ret != CL_VIRUS)
             if (cli_scandir(dir, ctx) == CL_VIRUS)
