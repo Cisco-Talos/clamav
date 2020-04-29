@@ -308,18 +308,18 @@ am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	xdp.h mbr.c mbr.h gpt.c gpt.h apm.c apm.h prtn_intxn.c \
 	prtn_intxn.h json_api.c json_api.h xz_iface.c xz_iface.h \
 	sf_base64decode.c sf_base64decode.h hfsplus.c hfsplus.h swf.c \
-	swf.h jpeg.c jpeg.h png.c png.h iso9660.c iso9660.h arc4.c \
-	gif.c gif.h arc4.h rijndael.c rijndael.h crtmgr.c crtmgr.h \
-	asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h stats_json.c \
-	stats_json.h hostid.c hostid.h openioc.c openioc.h msdoc.c \
-	msdoc.h matcher-pcre.c matcher-pcre.h regex_pcre.c \
-	regex_pcre.h msxml.c msxml.h msxml_parser.c msxml_parser.h \
-	tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c lzw/lzwdec.h \
-	matcher-byte-comp.c matcher-byte-comp.h egg.c egg.h \
-	yara_arena.c yara_arena.h yara_compiler.c yara_compiler.h \
-	yara_exec.c yara_exec.h yara_hash.c yara_hash.h yara_grammar.y \
-	yara_lexer.l yara_lexer.h yara_parser.c yara_parser.h \
-	yara_clam.h bignum.h bignum_fast.h \
+	swf.h gif.c gif.h jpeg.c jpeg.h png.c png.h iso9660.c \
+	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
+	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
+	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
+	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
+	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
+	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
+	lzw/lzwdec.h matcher-byte-comp.c matcher-byte-comp.h egg.c \
+	egg.h yara_arena.c yara_arena.h yara_compiler.c \
+	yara_compiler.h yara_exec.c yara_exec.h yara_hash.c \
+	yara_hash.h yara_grammar.y yara_lexer.l yara_lexer.h \
+	yara_parser.c yara_parser.h yara_clam.h bignum.h bignum_fast.h \
 	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
 	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
 	tomsfastmath/addsub/fp_cmp_d.c \
@@ -451,17 +451,17 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-json_api.lo libclamav_la-xz_iface.lo \
 	libclamav_la-sf_base64decode.lo libclamav_la-hfsplus.lo \
 	libclamav_la-swf.lo libclamav_la-gif.lo libclamav_la-jpeg.lo \
-	libclamav_la-png.lo libclamav_la-iso9660.lo libclamav_la-arc4.lo \
-	libclamav_la-rijndael.lo libclamav_la-crtmgr.lo \
-	libclamav_la-asn1.lo libclamav_la-fpu.lo libclamav_la-stats.lo \
-	libclamav_la-www.lo libclamav_la-stats_json.lo \
-	libclamav_la-hostid.lo libclamav_la-openioc.lo \
-	libclamav_la-msdoc.lo libclamav_la-matcher-pcre.lo \
-	libclamav_la-regex_pcre.lo libclamav_la-msxml.lo \
-	libclamav_la-msxml_parser.lo libclamav_la-tiff.lo \
-	libclamav_la-hwp.lo libclamav_la-lzwdec.lo \
-	libclamav_la-matcher-byte-comp.lo libclamav_la-egg.lo \
-	$(am__objects_1) libclamav_la-fp_add.lo \
+	libclamav_la-png.lo libclamav_la-iso9660.lo \
+	libclamav_la-arc4.lo libclamav_la-rijndael.lo \
+	libclamav_la-crtmgr.lo libclamav_la-asn1.lo \
+	libclamav_la-fpu.lo libclamav_la-stats.lo libclamav_la-www.lo \
+	libclamav_la-stats_json.lo libclamav_la-hostid.lo \
+	libclamav_la-openioc.lo libclamav_la-msdoc.lo \
+	libclamav_la-matcher-pcre.lo libclamav_la-regex_pcre.lo \
+	libclamav_la-msxml.lo libclamav_la-msxml_parser.lo \
+	libclamav_la-tiff.lo libclamav_la-hwp.lo \
+	libclamav_la-lzwdec.lo libclamav_la-matcher-byte-comp.lo \
+	libclamav_la-egg.lo $(am__objects_1) libclamav_la-fp_add.lo \
 	libclamav_la-fp_add_d.lo libclamav_la-fp_addmod.lo \
 	libclamav_la-fp_cmp.lo libclamav_la-fp_cmp_d.lo \
 	libclamav_la-fp_cmp_mag.lo libclamav_la-fp_sub.lo \
@@ -1382,18 +1382,18 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	xar.c xar.h xdp.c xdp.h mbr.c mbr.h gpt.c gpt.h apm.c apm.h \
 	prtn_intxn.c prtn_intxn.h json_api.c json_api.h xz_iface.c \
 	xz_iface.h sf_base64decode.c sf_base64decode.h hfsplus.c \
-	hfsplus.h swf.c swf.h gif.c gif.h jpeg.c jpeg.h png.c png.h iso9660.c \
-	iso9660.h arc4.c arc4.h rijndael.c rijndael.h crtmgr.c \
-	crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h www.c www.h \
-	stats_json.c stats_json.h hostid.c hostid.h openioc.c \
-	openioc.h msdoc.c msdoc.h matcher-pcre.c matcher-pcre.h \
-	regex_pcre.c regex_pcre.h msxml.c msxml.h msxml_parser.c \
-	msxml_parser.h tiff.c tiff.h hwp.c hwp.h lzw/lzwdec.c \
-	lzw/lzwdec.h matcher-byte-comp.c matcher-byte-comp.h egg.c \
-	egg.h $(am__append_9) bignum.h bignum_fast.h \
-	tomsfastmath/addsub/fp_add.c tomsfastmath/addsub/fp_add_d.c \
-	tomsfastmath/addsub/fp_addmod.c tomsfastmath/addsub/fp_cmp.c \
-	tomsfastmath/addsub/fp_cmp_d.c \
+	hfsplus.h swf.c swf.h gif.c gif.h jpeg.c jpeg.h png.c png.h \
+	iso9660.c iso9660.h arc4.c arc4.h rijndael.c rijndael.h \
+	crtmgr.c crtmgr.h asn1.c asn1.h fpu.c fpu.h stats.c stats.h \
+	www.c www.h stats_json.c stats_json.h hostid.c hostid.h \
+	openioc.c openioc.h msdoc.c msdoc.h matcher-pcre.c \
+	matcher-pcre.h regex_pcre.c regex_pcre.h msxml.c msxml.h \
+	msxml_parser.c msxml_parser.h tiff.c tiff.h hwp.c hwp.h \
+	lzw/lzwdec.c lzw/lzwdec.h matcher-byte-comp.c \
+	matcher-byte-comp.h egg.c egg.h $(am__append_9) bignum.h \
+	bignum_fast.h tomsfastmath/addsub/fp_add.c \
+	tomsfastmath/addsub/fp_add_d.c tomsfastmath/addsub/fp_addmod.c \
+	tomsfastmath/addsub/fp_cmp.c tomsfastmath/addsub/fp_cmp_d.c \
 	tomsfastmath/addsub/fp_cmp_mag.c tomsfastmath/addsub/fp_sub.c \
 	tomsfastmath/addsub/fp_sub_d.c tomsfastmath/addsub/fp_submod.c \
 	tomsfastmath/addsub/s_fp_add.c tomsfastmath/addsub/s_fp_sub.c \

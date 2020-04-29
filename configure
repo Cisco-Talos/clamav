@@ -18272,7 +18272,7 @@ else
 fi
 
 
- if test x$enable_libclamav_only == xyes; then
+ if test x$enable_libclamav_only = xyes; then
   BUILD_LIBCLAMAV_ONLY_TRUE=
   BUILD_LIBCLAMAV_ONLY_FALSE='#'
 else
@@ -18281,8 +18281,8 @@ else
 fi
 
 
-if test "$enable_libclamav_only" == "yes"; then
-         if test x$enable_libclamav_only == xno; then
+if test "$enable_libclamav_only" = "yes"; then
+         if test x$enable_libclamav_only = xno; then
   BUILD_CLAMONACC_TRUE=
   BUILD_CLAMONACC_FALSE='#'
 else
@@ -29918,10 +29918,10 @@ fi
 
 			;;
 		*)
-			if test "$enable_clamonacc" == "yes"; then
+			if test "$enable_clamonacc" = "yes"; then
 				as_fn_error $? "Clamonacc was explicitly requested, but the platform ($host_os) you are trying to build on is not currently supported for this tool." "$LINENO" 5
 			fi
-			 if test x$enable_clamonacc == xno; then
+			 if test x$enable_clamonacc = xno; then
   BUILD_CLAMONACC_TRUE=
   BUILD_CLAMONACC_FALSE='#'
 else
@@ -29932,7 +29932,7 @@ fi
                         ;;
 	esac
 else
-	 if test x$enable_clamonacc == xyes; then
+	 if test x$enable_clamonacc = xyes; then
   BUILD_CLAMONACC_TRUE=
   BUILD_CLAMONACC_FALSE='#'
 else
