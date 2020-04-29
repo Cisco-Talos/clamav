@@ -59,17 +59,19 @@ struct entity_conv {
     unsigned char entity_buff[MAX_ENTITY_SIZE + 2];
 };
 
-enum encodings { E_UCS4,
-                 E_UTF16,
-                 E_UCS4_1234,
-                 E_UCS4_4321,
-                 E_UCS4_2143,
-                 E_UCS4_3412,
-                 E_UTF16_BE,
-                 E_UTF16_LE,
-                 E_UTF8,
-                 E_UNKNOWN,
-                 E_OTHER };
+typedef enum encodings {
+    E_UCS4,
+    E_UTF16,
+    E_UCS4_1234,
+    E_UCS4_4321,
+    E_UCS4_2143,
+    E_UCS4_3412,
+    E_UTF16_BE,
+    E_UTF16_LE,
+    E_UTF8,
+    E_UNKNOWN,
+    E_OTHER
+} encoding_t;
 
 unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size);
 const char* entity_norm(struct entity_conv* conv, const unsigned char* entity);
@@ -87,5 +89,11 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
  * @return cl_error_t   CL_SUCCESS if success. CL_BREAK if unable to because iconv is unavailable.  Other error code if outright failure.
  */
 cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size);
+
+char *cli_utf16toascii(const char *str, unsigned int length);
+
+char *cli_utf16_to_utf8(const char *utf16, size_t length, encoding_t type);
+
+int cli_isutf8(const char *buf, unsigned int len);
 
 #endif

@@ -69,6 +69,7 @@
 #include "textnorm.h"
 #include "json_api.h"
 #include "conv.h"
+#include "entconv.h"
 
 char *pdf_convert_utf(char *begin, size_t sz);
 
@@ -127,7 +128,7 @@ char *pdf_convert_utf(char *begin, size_t sz)
         break;
     }
 #else
-    outbuf = cli_utf16_to_utf8(buf, sz, UTF16_BOM);
+    outbuf = cli_utf16_to_utf8(buf, sz, E_UTF16);
     if (!outbuf) {
         free(buf);
         return NULL;

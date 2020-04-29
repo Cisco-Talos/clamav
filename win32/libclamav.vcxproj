@@ -409,6 +409,7 @@
     <ClCompile Include="..\libclamav\upx.c" />
     <ClCompile Include="..\libclamav\uuencode.c" />
     <ClCompile Include="..\libclamav\vba_extract.c" />
+    <ClCompile Include="..\libclamav\xlm_extract.c" />
     <ClCompile Include="..\libclamav\version.c" />
     <ClCompile Include="..\libclamav\wwunpack.c" />
     <ClCompile Include="..\libclamav\xar.c" />

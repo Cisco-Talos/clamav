@@ -26,6 +26,7 @@
 #include "iso9660.h"
 #include "fmap.h"
 #include "str.h"
+#include "entconv.h"
 #include "hashtab.h"
 
 typedef struct {
@@ -104,7 +105,7 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len)
         memcpy(iso->buf, src, len);
         iso->buf[len]     = '\0';
         iso->buf[len + 1] = '\0';
-        utf8              = cli_utf16_to_utf8(iso->buf, len, UTF16_BE);
+        utf8              = cli_utf16_to_utf8(iso->buf, len, E_UTF16_BE);
         uutf8             = utf8 ? utf8 : "";
         strncpy(iso->buf, uutf8, sizeof(iso->buf));
         iso->buf[sizeof(iso->buf) - 1] = '\0';

@@ -59,6 +59,7 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "str.h"
+#include "entconv.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "arc4.h"

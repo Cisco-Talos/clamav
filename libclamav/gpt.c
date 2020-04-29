@@ -36,6 +36,7 @@
 #include "gpt.h"
 #include "mbr.h"
 #include "str.h"
+#include "entconv.h"
 #include "prtn_intxn.h"
 #include "scanners.h"
 #include "dconf.h"

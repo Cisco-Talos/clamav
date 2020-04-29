@@ -312,6 +312,8 @@ libclamav_la_SOURCES = \
 	ole2_extract.h \
 	vba_extract.c \
 	vba_extract.h \
+    xlm_extract.c \
+    xlm_extract.h \
 	msexpand.c \
 	msexpand.h \
 	pe.c \

@@ -266,13 +266,13 @@ am__libclamav_la_SOURCES_DIST = matcher-ac.c matcher-ac.h matcher-bm.c \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	msexpand.c msexpand.h pe.c pe.h pe_icons.c pe_icons.h \
-	pe_structs.h disasm.c disasm.h disasm-common.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h libmspack.c libmspack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
+	xlm_extract.c xlm_extract.h msexpand.c msexpand.h pe.c pe.h \
+	pe_icons.c pe_icons.h pe_structs.h disasm.c disasm.h \
+	disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h \
+	libmspack.c libmspack.h rebuildpe.c rebuildpe.h petite.c \
+	petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
+	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
+	line.c line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
 	inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
 	special.c special.h binhex.c binhex.h is_tar.c is_tar.h tnef.c \
 	tnef.h autoit.c autoit.h unarj.c unarj.h nsis/bzlib.c \
@@ -399,26 +399,26 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-rtf.lo libclamav_la-blob.lo libclamav_la-mbox.lo \
 	libclamav_la-message.lo libclamav_la-table.lo \
 	libclamav_la-text.lo libclamav_la-ole2_extract.lo \
-	libclamav_la-vba_extract.lo libclamav_la-msexpand.lo \
-	libclamav_la-pe.lo libclamav_la-pe_icons.lo \
-	libclamav_la-disasm.lo libclamav_la-upx.lo \
-	libclamav_la-htmlnorm.lo libclamav_la-libmspack.lo \
-	libclamav_la-rebuildpe.lo libclamav_la-petite.lo \
-	libclamav_la-wwunpack.lo libclamav_la-unsp.lo \
-	libclamav_la-aspack.lo libclamav_la-packlibs.lo \
-	libclamav_la-fsg.lo libclamav_la-mew.lo libclamav_la-upack.lo \
-	libclamav_la-line.lo libclamav_la-untar.lo \
-	libclamav_la-unzip.lo libclamav_la-ooxml.lo \
-	libclamav_la-inflate64.lo libclamav_la-special.lo \
-	libclamav_la-binhex.lo libclamav_la-is_tar.lo \
-	libclamav_la-tnef.lo libclamav_la-autoit.lo \
-	libclamav_la-unarj.lo libclamav_la-bzlib.lo \
-	libclamav_la-nulsft.lo libclamav_la-infblock.lo \
-	libclamav_la-pdf.lo libclamav_la-pdfng.lo \
-	libclamav_la-pdfdecode.lo libclamav_la-spin.lo \
-	libclamav_la-yc.lo libclamav_la-elf.lo libclamav_la-execs.lo \
-	libclamav_la-sis.lo libclamav_la-uuencode.lo \
-	libclamav_la-phishcheck.lo \
+	libclamav_la-vba_extract.lo libclamav_la-xlm_extract.lo \
+	libclamav_la-msexpand.lo libclamav_la-pe.lo \
+	libclamav_la-pe_icons.lo libclamav_la-disasm.lo \
+	libclamav_la-upx.lo libclamav_la-htmlnorm.lo \
+	libclamav_la-libmspack.lo libclamav_la-rebuildpe.lo \
+	libclamav_la-petite.lo libclamav_la-wwunpack.lo \
+	libclamav_la-unsp.lo libclamav_la-aspack.lo \
+	libclamav_la-packlibs.lo libclamav_la-fsg.lo \
+	libclamav_la-mew.lo libclamav_la-upack.lo libclamav_la-line.lo \
+	libclamav_la-untar.lo libclamav_la-unzip.lo \
+	libclamav_la-ooxml.lo libclamav_la-inflate64.lo \
+	libclamav_la-special.lo libclamav_la-binhex.lo \
+	libclamav_la-is_tar.lo libclamav_la-tnef.lo \
+	libclamav_la-autoit.lo libclamav_la-unarj.lo \
+	libclamav_la-bzlib.lo libclamav_la-nulsft.lo \
+	libclamav_la-infblock.lo libclamav_la-pdf.lo \
+	libclamav_la-pdfng.lo libclamav_la-pdfdecode.lo \
+	libclamav_la-spin.lo libclamav_la-yc.lo libclamav_la-elf.lo \
+	libclamav_la-execs.lo libclamav_la-sis.lo \
+	libclamav_la-uuencode.lo libclamav_la-phishcheck.lo \
 	libclamav_la-phish_domaincheck_db.lo \
 	libclamav_la-phish_whitelist.lo libclamav_la-regex_list.lo \
 	libclamav_la-regex_suffix.lo libclamav_la-entconv.lo \
@@ -1340,13 +1340,13 @@ libclamav_la_SOURCES = matcher-ac.c matcher-ac.h matcher-bm.c \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	msexpand.c msexpand.h pe.c pe.h pe_icons.c pe_icons.h \
-	pe_structs.h disasm.c disasm.h disasm-common.h disasmpriv.h \
-	upx.c upx.h htmlnorm.c htmlnorm.h libmspack.c libmspack.h \
-	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
-	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
-	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
-	line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
+	xlm_extract.c xlm_extract.h msexpand.c msexpand.h pe.c pe.h \
+	pe_icons.c pe_icons.h pe_structs.h disasm.c disasm.h \
+	disasm-common.h disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h \
+	libmspack.c libmspack.h rebuildpe.c rebuildpe.h petite.c \
+	petite.h wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
+	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
+	line.c line.h untar.c untar.h unzip.c unzip.h ooxml.c ooxml.h \
 	inflate64.c inflate64.h inffixed64.h inflate64_priv.h \
 	special.c special.h binhex.c binhex.h is_tar.c is_tar.h tnef.c \
 	tnef.h autoit.c autoit.h unarj.c unarj.h nsis/bzlib.c \
@@ -1821,6 +1821,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-www.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xdp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xlm_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-xz_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_arena.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-yara_compiler.Plo@am__quote@
@@ -2058,6 +2059,13 @@ libclamav_la-vba_extract.lo: vba_extract.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='vba_extract.c' object='libclamav_la-vba_extract.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-vba_extract.lo `test -f 'vba_extract.c' || echo '$(srcdir)/'`vba_extract.c
+
+libclamav_la-xlm_extract.lo: xlm_extract.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-xlm_extract.lo -MD -MP -MF $(DEPDIR)/libclamav_la-xlm_extract.Tpo -c -o libclamav_la-xlm_extract.lo `test -f 'xlm_extract.c' || echo '$(srcdir)/'`xlm_extract.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-xlm_extract.Tpo $(DEPDIR)/libclamav_la-xlm_extract.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xlm_extract.c' object='libclamav_la-xlm_extract.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-xlm_extract.lo `test -f 'xlm_extract.c' || echo '$(srcdir)/'`xlm_extract.c
 
 libclamav_la-msexpand.lo: msexpand.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-msexpand.lo -MD -MP -MF $(DEPDIR)/libclamav_la-msexpand.Tpo -c -o libclamav_la-msexpand.lo `test -f 'msexpand.c' || echo '$(srcdir)/'`msexpand.c

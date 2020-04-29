@@ -75,6 +75,7 @@
 #include "unsp.h"
 #include "scanners.h"
 #include "str.h"
+#include "entconv.h"
 #include "execs.h"
 #include "mew.h"
 #include "upack.h"

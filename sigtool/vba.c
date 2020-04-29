@@ -1092,6 +1092,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
     char *dir;
     int ret = CL_CLEAN, desc;
     cli_ctx *ctx;
+    int has_vba =  0, has_xlm = 0;
 
     fname = NULL;
     if ((dd = opendir(dirname)) != NULL) {
@@ -1116,8 +1117,8 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                             }
                         } else {
                             if (S_ISREG(statbuf.st_mode)) {
-                                struct uniq *vba = NULL;
-                                tmpdir           = cli_gettmpdir();
+                                struct uniq *files = NULL;
+                                tmpdir             = cli_gettmpdir();
 
                                 /* generate the temporary directory */
                                 dir = cli_gentemp(tmpdir);
@@ -1151,7 +1152,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                                     free(dir);
                                     return 1;
                                 }
-                                if ((ret = cli_ole2_extract(dir, ctx, &vba))) {
+                                if ((ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm))) {
                                     printf("ERROR %s\n", cl_strerror(ret));
                                     destroy_ctx(desc, ctx);
                                     cli_rmdirs(dir);
@@ -1161,8 +1162,8 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                                     return ret;
                                 }
 
-                                if (vba)
-                                    sigtool_vba_scandir(dir, hex_output, vba);
+                                if (has_vba && files)
+                                    sigtool_vba_scandir(dir, hex_output, files);
                                 destroy_ctx(desc, ctx);
                                 cli_rmdirs(dir);
                                 free(dir);

@@ -1037,3 +1037,145 @@ done:
 
     return status;
 }
+
+char *cli_utf16toascii(const char *str, unsigned int length)
+{
+    char *decoded;
+    unsigned int i, j;
+
+    if (length < 2) {
+        cli_dbgmsg("cli_utf16toascii: length < 2\n");
+        return NULL;
+    }
+
+    if (length % 2)
+        length--;
+
+    if (!(decoded = cli_calloc(length / 2 + 1, sizeof(char))))
+        return NULL;
+
+    for (i = 0, j = 0; i < length; i += 2, j++) {
+        decoded[j] = ((unsigned char)str[i + 1]) << 4;
+        decoded[j] += str[i];
+    }
+
+    return decoded;
+}
+
+char *cli_utf16_to_utf8(const char *utf16, size_t length, encoding_t type)
+{
+    /* utf8 -
+   * 4 bytes for utf16 high+low surrogate (4 bytes input)
+   * 3 bytes for utf16 otherwise (2 bytes input) */
+    size_t i, j;
+    size_t needed = length * 3 / 2 + 2;
+    char *s2;
+
+    if (length < 2)
+        return cli_strdup("");
+    if (length % 2) {
+        cli_warnmsg("utf16 length is not multiple of two: %lu\n", (long)length);
+        length--;
+    }
+
+    s2 = cli_malloc(needed);
+    if (!s2)
+        return NULL;
+
+    i = 0;
+
+    if ((utf16[0] == '\xff' && utf16[1] == '\xfe') ||
+        (utf16[0] == '\xfe' && utf16[1] == '\xff')) {
+        i += 2;
+        if (type == E_UTF16)
+            type = (utf16[0] == '\xff') ? E_UTF16_LE : E_UTF16_BE;
+    } else if (type == E_UTF16) {
+        type = E_UTF16_BE;
+    }
+
+    for (j = 0; i < length && j < needed; i += 2) {
+        uint16_t c = cli_readint16(&utf16[i]);
+        if (type == E_UTF16_BE)
+            c = cbswap16(c);
+        if (c < 0x80) {
+            s2[j++] = c;
+        } else if (c < 0x800) {
+            s2[j]     = 0xc0 | (c >> 6);
+            s2[j + 1] = 0x80 | (c & 0x3f);
+            j += 2;
+        } else if (c < 0xd800 || c >= 0xe000) {
+            s2[j]     = 0xe0 | (c >> 12);
+            s2[j + 1] = 0x80 | ((c >> 6) & 0x3f);
+            s2[j + 2] = 0x80 | (c & 0x3f);
+            j += 3;
+        } else if (c < 0xdc00 && i + 3 < length) {
+            uint16_t c2;
+            /* UTF16 high+low surrogate */
+            c  = c - 0xd800 + 0x40;
+            c2 = i + 3 < length ? cli_readint16(&utf16[i + 2]) : 0;
+            c2 -= 0xdc00;
+            s2[j]     = 0xf0 | (c >> 8);
+            s2[j + 1] = 0x80 | ((c >> 2) & 0x3f);
+            s2[j + 2] = 0x80 | ((c & 3) << 4) | (c2 >> 6);
+            s2[j + 3] = 0x80 | (c2 & 0x3f);
+            j += 4;
+            i += 2;
+        } else {
+            cli_dbgmsg("UTF16 surrogate encountered at wrong pos\n");
+            /* invalid char */
+            s2[j++] = 0xef;
+            s2[j++] = 0xbf;
+            s2[j++] = 0xbd;
+        }
+    }
+    if (j >= needed)
+        j = needed - 1;
+    s2[j] = '\0';
+    return s2;
+}
+
+int cli_isutf8(const char *buf, unsigned int len)
+{
+    unsigned int i, j;
+
+    for (i = 0; i < len; i++) {
+        if ((buf[i] & 0x80) == 0) { /* 0xxxxxxx is plain ASCII */
+            continue;
+        } else if ((buf[i] & 0x40) == 0) { /* 10xxxxxx never 1st byte */
+            return 0;
+        } else {
+            unsigned int following;
+
+            if ((buf[i] & 0x20) == 0) { /* 110xxxxx */
+                /* c = buf[i] & 0x1f; */
+                following = 1;
+            } else if ((buf[i] & 0x10) == 0) { /* 1110xxxx */
+                /* c = buf[i] & 0x0f; */
+                following = 2;
+            } else if ((buf[i] & 0x08) == 0) { /* 11110xxx */
+                /* c = buf[i] & 0x07; */
+                following = 3;
+            } else if ((buf[i] & 0x04) == 0) { /* 111110xx */
+                /* c = buf[i] & 0x03; */
+                following = 4;
+            } else if ((buf[i] & 0x02) == 0) { /* 1111110x */
+                /* c = buf[i] & 0x01; */
+                following = 5;
+            } else {
+                return 0;
+            }
+
+            for (j = 0; j < following; j++) {
+                if (++i >= len)
+                    return 0;
+
+                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
+                    return 0;
+
+                /* c = (c << 6) + (buf[i] & 0x3f); */
+            }
+        }
+    }
+
+    return 1;
+}

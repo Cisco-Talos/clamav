@@ -34,6 +34,7 @@
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
+#include "../libclamav/entconv.h"
 #include "../libclamav/mbox.h"
 #include "../libclamav/message.h"
 #include "../libclamav/jsparse/textbuf.h"
@@ -243,7 +244,7 @@ static unsigned u16_len(const char *s)
 
 START_TEST(test_u16_u8)
 {
-    char *result = cli_utf16_to_utf8(u16_tests[_i].u16, u16_len(u16_tests[_i].u16), UTF16_LE);
+    char *result = cli_utf16_to_utf8(u16_tests[_i].u16, u16_len(u16_tests[_i].u16), E_UTF16_LE);
     ck_assert_msg(!!result, "cli_utf16_to_utf8 non-null");
     ck_assert_msg(!strcmp(result, u16_tests[_i].u8), "utf16_to_8 %d failed, expected: %s, got %s", _i, u16_tests[_i].u8, result);
     free(result);

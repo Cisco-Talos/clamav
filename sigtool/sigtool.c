@@ -75,6 +75,7 @@
 #include "libclamav/readdb.h"
 #include "libclamav/others.h"
 #include "libclamav/pe.h"
+#include "libclamav/entconv.h"
 
 #define MAX_DEL_LOOKAHEAD 5000
 
@@ -1721,8 +1722,9 @@ static int vbadump(const struct optstruct *opts)
     int fd, hex_output;
     char *dir;
     const char *pt;
-    struct uniq *vba = NULL;
+    struct uniq *files = NULL;
     cli_ctx *ctx;
+    int has_vba = 0, has_xlm = 0;
 
     if (optget(opts, "vba-hex")->enabled) {
         hex_output = 1;
@@ -1755,7 +1757,7 @@ static int vbadump(const struct optstruct *opts)
         free(dir);
         return -1;
     }
-    if (cli_ole2_extract(dir, ctx, &vba)) {
+    if (cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm)) {
         destroy_ctx(-1, ctx);
         cli_rmdirs(dir);
         free(dir);
@@ -1763,8 +1765,8 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
     destroy_ctx(-1, ctx);
-    if (vba)
-        sigtool_vba_scandir(dir, hex_output, vba);
+    if (has_vba && files)
+        sigtool_vba_scandir(dir, hex_output, files);
     cli_rmdirs(dir);
     free(dir);
     close(fd);

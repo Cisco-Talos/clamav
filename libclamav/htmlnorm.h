@@ -25,6 +25,10 @@
 #ifndef __HTMLNORM_H
 #define __HTMLNORM_H
 
+#include "clamav-types.h"
+#include "fmap.h"
+#include "dconf.h"
+
 typedef struct tag_arguments_tag {
     int count;
     int scanContents;

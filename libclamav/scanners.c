@@ -59,6 +59,7 @@
 #include "matcher.h"
 #include "ole2_extract.h"
 #include "vba_extract.h"
+#include "xlm_extract.h"
 #include "msexpand.h"
 #include "mbox.h"
 #include "libmspack.h"
@@ -74,6 +75,7 @@
 #include "sis.h"
 #include "pdf.h"
 #include "str.h"
+#include "entconv.h"
 #include "rtf.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "unarj.h"
@@ -1703,7 +1705,6 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                 close(fd);
                 hasmacros++;
                 if (!data) {
-                    cli_dbgmsg("VBADir: WARNING: VBA project '%s_%u' decompressed to NULL\n", vba_project->name[i], j);
                 } else {
                     /* cli_dbgmsg("Project content:\n%s", data); */
                     if (ctx->scanned)
@@ -1937,10 +1938,51 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
     closedir(dd);
 #if HAVE_JSON
-    if (hasmacros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL))
+    if (hasmacros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
         cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+        json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
+        if (macro_languages) {
+            cli_jsonstr(macro_languages, NULL, "VBA");
+        } else {
+            cli_dbgmsg("[cli_scan_vbadir] Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
+        }
+    }
 #endif
     if (SCAN_HEURISTIC_MACROS && hasmacros) {
+        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
+        if (ret == CL_VIRUS)
+            viruses_found++;
+    }
+    if (SCAN_ALLMATCHES && viruses_found)
+        return CL_VIRUS;
+    return ret;
+}
+
+static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
+{
+    cl_error_t ret             = CL_CLEAN;
+    char *hash                 = NULL;
+    uint32_t hashcnt           = 0;
+    unsigned int viruses_found = 0;
+    char STR_WORKBOOK[]        = "workbook";
+    char STR_BOOK[]            = "book";
+
+    cli_dbgmsg("XLMDir: %s\n", dirname);
+
+    if (CL_SUCCESS != (ret = uniq_get(U, STR_WORKBOOK, sizeof(STR_WORKBOOK) - 1, &hash, &hashcnt))) {
+        if (CL_SUCCESS != (ret = uniq_get(U, STR_BOOK, sizeof(STR_BOOK) - 1, &hash, &hashcnt))) {
+            cli_dbgmsg("XLMDir: uniq_get('%s') failed with ret code (%d)!\n", STR_BOOK, ret);
+            return ret;
+        }
+    }
+
+    for (; hashcnt > 0; hashcnt--) {
+        if ((ret = cli_xlm_extract_macros(dirname, ctx, U, hash, hashcnt)) != CL_SUCCESS) {
+            return ret;
+        }
+    }
+
+    if (SCAN_HEURISTIC_MACROS) {
         ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
         if (ret == CL_VIRUS)
             viruses_found++;
@@ -2289,8 +2331,9 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
 static int cli_scanole2(cli_ctx *ctx)
 {
     char *dir;
-    int ret          = CL_CLEAN;
-    struct uniq *vba = NULL;
+    int ret            = CL_CLEAN;
+    struct uniq *files = NULL;
+    int has_vba = 0, has_xlm = 0;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
@@ -2307,7 +2350,7 @@ static int cli_scanole2(cli_ctx *ctx)
         return CL_ETMPDIR;
     }
 
-    ret = cli_ole2_extract(dir, ctx, &vba);
+    ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm);
     if (ret != CL_CLEAN && ret != CL_VIRUS) {
         cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -2316,18 +2359,33 @@ static int cli_scanole2(cli_ctx *ctx)
         return ret;
     }
 
-    if (vba) {
+    if (has_vba && files) {
         ctx->recursion++;
 
-        ret = cli_vba_scandir(dir, ctx, vba);
+        ret = cli_vba_scandir(dir, ctx, files);
         if (ret != CL_VIRUS) {
-            ret = cli_vba_scandir_new(dir, ctx, vba);
+            ret = cli_vba_scandir_new(dir, ctx, files);
         }
-        uniq_free(vba);
+
         if (ret != CL_VIRUS)
             if (cli_scandir(dir, ctx) == CL_VIRUS)
                 ret = CL_VIRUS;
         ctx->recursion--;
+    }
+
+    if (has_xlm && files) {
+        ctx->recursion++;
+
+        ret = cli_xlm_scandir(dir, ctx, files);
+        if (ret != CL_VIRUS)
+            if (cli_scandir(dir, ctx) == CL_VIRUS)
+                ret = CL_VIRUS;
+        ctx->recursion--;
+    }
+
+    if (files) {
+        uniq_free(files);
+        files = NULL;
     }
 
     if (!ctx->engine->keeptmp)

@@ -40,6 +40,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <stdbool.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -111,6 +112,7 @@ typedef struct ole2_header_tag {
     struct uniq *U;
     fmap_t *map;
     int has_vba;
+    int has_xlm;
     hwp5_header_t *is_hwp;
 } ole2_header_t;
 
@@ -919,6 +921,226 @@ handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx
     return CL_SUCCESS;
 }
 
+enum biff_parser_states {
+    BIFF_PARSER_INITIAL,
+    BIFF_PARSER_EXPECTING_2ND_TAG_BYTE,
+    BIFF_PARSER_EXPECTING_1ST_LENGTH_BYTE,
+    BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE,
+    BIFF_PARSER_NAME_RECORD,
+    BIFF_PARSER_BOUNDSHEET_RECORD,
+    BIFF_PARSER_DATA,
+};
+
+struct biff_parser_state {
+    enum biff_parser_states state;
+    uint16_t opcode;
+    uint16_t length;
+    uint16_t data_offset;
+    uint8_t tmp;
+};
+
+/**
+ * Scan through a buffer of BIFF records and find PARSERNAME, BOUNDSHEET records (Which indicate XLM  macros).
+ * BIFF streams follow the format OOLLDDDDDDDDD..., where OO is the opcode (little endian 16 bit value),
+ * LL is the data length (little endian 16 bit value), followed by LL bytes of data. Records are defined in 
+ * the MICROSOFT OFFICE EXCEL 97-2007 BINARY FILE FORMAT SPECIFICATION.
+ *
+ * \param state The parser state.
+ * \param buff The buffer.
+ * \param len The buffer's size in bytes.
+ * \param ctx The ClamAV context for emitting JSON about the document.
+ * \returns true if a macro has been found, false otherwise.
+ */
+static bool
+scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, size_t len, cli_ctx *ctx)
+{
+    size_t i;
+    bool found_macro = false;
+
+    for (i = 0; i < len; ++i) {
+        switch (state->state) {
+            case BIFF_PARSER_INITIAL:
+                state->opcode = buff[i];
+                state->state  = BIFF_PARSER_EXPECTING_2ND_TAG_BYTE;
+                break;
+            case BIFF_PARSER_EXPECTING_2ND_TAG_BYTE:
+                state->opcode |= buff[i] << 8;
+                state->state = BIFF_PARSER_EXPECTING_1ST_LENGTH_BYTE;
+                break;
+            case BIFF_PARSER_EXPECTING_1ST_LENGTH_BYTE:
+                state->length = buff[i];
+                state->state  = BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE;
+                break;
+            case BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE:
+                state->length |= buff[i] << 8;
+                state->data_offset = 0;
+                switch (state->opcode) {
+                    case 0x85:
+                        state->state = BIFF_PARSER_BOUNDSHEET_RECORD;
+                        break;
+                    case 0x18:
+                        state->state = BIFF_PARSER_NAME_RECORD;
+                        break;
+                    default:
+                        state->state = BIFF_PARSER_DATA;
+                        break;
+                }
+                if (state->length == 0) {
+                    state->state = BIFF_PARSER_INITIAL;
+                }
+                break;
+            default:
+                switch (state->state) {
+#if HAVE_JSON
+                    case BIFF_PARSER_NAME_RECORD:
+                        if (state->data_offset == 0) {
+                            state->tmp = buff[i] & 0x20;
+                        } else if ((state->data_offset == 14 || state->data_offset == 15) && state->tmp) {
+                            if (buff[i] == 1 || buff[i] == 2) {
+                                if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+                                    json_object *indicators = cli_jsonarray(ctx->wrkproperty, "MacroIndicators");
+                                    if (indicators) {
+                                        cli_jsonstr(indicators, NULL, "autorun");
+                                    } else {
+                                        cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"autorun\" entry to MacroIndicators JSON array\n");
+                                    }
+                                }
+                            }
+
+                            if (buff[i] != 0) {
+                                state->tmp = 0;
+                            }
+                        }
+                        break;
+#endif
+                    case BIFF_PARSER_BOUNDSHEET_RECORD:
+                        if (state->data_offset == 4) {
+                            state->tmp = buff[i];
+                        } else if (state->data_offset == 5 && buff[i] == 1) { //Excel 4.0 macro sheet
+                            cli_dbgmsg("[scan_biff_for_xlm_macros] Found XLM macro sheet\n");
+#if HAVE_JSON
+                            if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+                                cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
+                                json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
+                                if (macro_languages) {
+                                    cli_jsonstr(macro_languages, NULL, "XLM");
+                                } else {
+                                    cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"XLM\" entry to MacroLanguages JSON array\n");
+                                }
+                                if (state->tmp == 1 || state->tmp == 2) {
+                                    json_object *indicators = cli_jsonarray(ctx->wrkproperty, "MacroIndicators");
+                                    if (indicators) {
+                                        cli_jsonstr(indicators, NULL, "hidden");
+                                    } else {
+                                        cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"hidden\" entry to MacroIndicators JSON array\n");
+                                    }
+                                }
+                            }
+#endif
+                            found_macro = true;
+                        }
+                        break;
+                    case BIFF_PARSER_DATA:
+                        break;
+                    default:
+                        //Should never arrive here
+                        cli_errmsg("[scan_biff_for_xlm_macros] Unexpected state value %d\n", (int)state->state);
+                        break;
+                }
+                state->data_offset += 1;
+
+                if (state->data_offset >= state->length) {
+                    state->state = BIFF_PARSER_INITIAL;
+                }
+        }
+    }
+    return found_macro;
+}
+
+/**
+ * Scan for XLM (Excel 4.0) macro sheets in an OLE2 Workbook stream.
+ * The stream should be encoded with <= BIFF8.
+ */
+static int
+scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+{
+    unsigned char *buff = NULL;
+    int32_t current_block;
+    size_t len, offset;
+    bitset_t *blk_bitset = NULL;
+    struct biff_parser_state state;
+    bool found_macro = false;
+
+    UNUSEDPARAM(ctx);
+    UNUSEDPARAM(dir);
+
+    if (prop->type != 2) {
+        /* Not a file */
+        goto done;
+    }
+
+    state.state   = BIFF_PARSER_INITIAL;
+    current_block = prop->start_block;
+    len           = prop->size;
+
+    buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
+    if (!buff) {
+        cli_errmsg("OLE2 [scan_for_xlm_macros]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+        goto done;
+    }
+    blk_bitset = cli_bitset_init();
+    if (!blk_bitset) {
+        cli_errmsg("OLE2 [scan_for_xlm_macros]: init bitset failed\n");
+        goto done;
+    }
+    while ((current_block >= 0) && (len > 0)) {
+        if (current_block > (int32_t)hdr->max_block_no) {
+            cli_dbgmsg("OLE2 [scan_for_xlm_macros]: Max block number for file size exceeded: %d\n", current_block);
+            goto done;
+        }
+        /* Check we aren't in a loop */
+        if (cli_bitset_test(blk_bitset, (unsigned long)current_block)) {
+            /* Loop in block list */
+            cli_dbgmsg("OLE2 [scan_for_xlm_macros]: Block list loop detected\n");
+            goto done;
+        }
+        if (!cli_bitset_set(blk_bitset, (unsigned long)current_block)) {
+            goto done;
+        }
+        if (prop->size < (int64_t)hdr->sbat_cutoff) {
+            /* Small block file */
+            if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
+                cli_dbgmsg("OLE2 [scan_for_xlm_macros]: ole2_get_sbat_data_block failed\n");
+                goto done;
+            }
+            /* buff now contains the block with N small blocks in it */
+            offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+
+            found_macro = scan_biff_for_xlm_macros(&state, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size), ctx) || found_macro;
+            len -= MIN(len, 1 << hdr->log2_small_block_size);
+            current_block = ole2_get_next_sbat_block(hdr, current_block);
+        } else {
+            /* Big block file */
+            if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
+                goto done;
+            }
+
+            found_macro   = scan_biff_for_xlm_macros(&state, buff, MIN(len, (1 << hdr->log2_big_block_size)), ctx) || found_macro;
+            current_block = ole2_get_next_block_number(hdr, current_block);
+            len -= MIN(len, (1 << hdr->log2_big_block_size));
+        }
+    }
+
+done:
+    if (buff) {
+        free(buff);
+    }
+    if (blk_bitset) {
+        cli_bitset_free(blk_bitset);
+    }
+    return found_macro;
+}
+
 /* enum file Handler - checks for VBA presence */
 static int
 handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
@@ -1032,6 +1254,16 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
 
                 free(hwp_check);
             }
+        }
+    }
+
+    if (!hdr->has_xlm) {
+        if (!name) {
+            name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
+
+        if (name && (strcmp(name, "workbook") == 0 || strcmp(name, "book") == 0)) {
+            hdr->has_xlm = scan_for_xlm_macros(hdr, prop, dir, ctx);
         }
     }
 
@@ -1475,7 +1707,7 @@ ole2_read_header(int fd, ole2_header_t *hdr)
 }
 #endif
 
-int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
+int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm)
 {
     ole2_header_t hdr;
     int ret = CL_CLEAN;
@@ -1568,6 +1800,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 
     /* PASS 1 : Count files and check for VBA */
     hdr.has_vba = 0;
+    hdr.has_xlm = 0;
     ret         = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
@@ -1586,7 +1819,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
     }
 
     /* If there's no VBA we scan OTF */
-    if (hdr.has_vba) {
+    if (hdr.has_vba || hdr.has_xlm) {
         /* PASS 2/A : VBA scan */
         cli_dbgmsg("OLE2: VBA project found\n");
         if (!(hdr.U = uniq_init(file_count))) {
@@ -1596,8 +1829,14 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
         }
         file_count = 0;
         ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
-        ret  = CL_CLEAN;
-        *vba = hdr.U;
+        ret    = CL_CLEAN;
+        *files = hdr.U;
+        if (has_vba) {
+            *has_vba = hdr.has_vba;
+        }
+        if (has_xlm) {
+            *has_xlm = hdr.has_xlm;
+        }
     } else {
         cli_dbgmsg("OLE2: no VBA projects found\n");
         /* PASS 2/B : OTF scan */
