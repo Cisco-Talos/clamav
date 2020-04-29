@@ -70,10 +70,13 @@ int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override)
 
     if (!L->init) {
         L->p_cnt = LZMA_PROPS_SIZE;
-        if (size_override)
+        if (size_override) {
+            L->s_cnt = 0;
             L->usize = size_override;
-        else
+        } else {
             L->s_cnt = 8;
+            L->usize = 0;
+        }
         L->init = 1;
     } else if (size_override)
         cli_warnmsg("cli_LzmaInit: ignoring late size override\n");
@@ -89,7 +92,7 @@ int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override)
     while (L->s_cnt) {
         uint64_t c = (uint64_t)lzma_getbyte(L, &fail);
         if (fail) return LZMA_RESULT_OK;
-        L->usize = c << (8 * (8 - L->s_cnt));
+        L->usize |= c << (8 * (8 - L->s_cnt));
         L->s_cnt--;
     }
 

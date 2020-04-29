@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2019 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
 
  *  Authors: Török Edvin, Kevin Lin
@@ -232,6 +232,37 @@ enum bc_json_type {
     JSON_TYPE_OBJECT,   /* */
     JSON_TYPE_ARRAY,    /* */
     JSON_TYPE_STRING    /* */
+};
+
+/**
+\group_adt
+  * LZMA return codes
+  */
+enum lzma_returncode {
+    LZMA_RESULT_OK         = 0, /* Function completed successfully */
+    LZMA_RESULT_DATA_ERROR = 1, /* The LZMA stream contained invalid data */
+    LZMA_STREAM_END        = 2  /* The LZMA stream ended unexpectedly */
+};
+
+/**
+\group adt
+ * Bzip2 return codes
+ */
+enum bzip2_returncode {
+    BZIP2_OK               = 0,  /* Function returned without error */
+    BZIP2_SEQUENCE_ERROR   = -1,
+    BZIP2_PARAM_ERROR      = -2,
+    BZIP2_MEM_ERROR        = -3,
+    BZIP2_DATA_ERROR       = -4,
+    BZIP2_DATA_ERROR_MAGIC = -5,
+    BZIP2_IO_ERROR         = -6,
+    BZIP2_UNEXPECTED_EOF   = -7,
+    BZIP2_OUTBUFF_FULL     = -8,
+    BZIP2_CONFIG_ERROR     = -9,
+    BZIP2_RUN_OK           = 1,
+    BZIP2_FLUSH_OK         = 2,
+    BZIP2_FINISH_OK        = 3,
+    BZIP2_STREAM_END       = 4
 };
 
 /**
@@ -1339,5 +1370,83 @@ int32_t json_get_int(int32_t objid);
 uint32_t engine_scan_options_ex(const uint8_t* option_name, uint32_t name_len);
 
 /* ----------------- END 0.101 APIs ---------------------------------- */
+/* ----------------- BEGIN 0.103 APIs -------------------------------- */
+
+/**
+\group_adt
+  * Initializes LZMA data structures for decompressing data
+  * 'from_buffer' and writing uncompressed data 'to_buffer'.
+  * This function expects the LZMA data to be prefixed with an 'LZMA_ALONE' header: 
+  * - One byte of lzma parameters lc, lp and pb converted into a byte value like this: lc + 9 * (5 * pb + lp).
+  *   lc The number of high bits of the previous byte to use as a context for literal encoding.
+  *   lp The number of low bits of the dictionary position to include in literal_pos_state.
+  *   pb The number of low bits of the dictionary position to include in pos_state.
+  * - Four bytes of dictionary size. In case of doubt you can set this to zero.
+  * - Eight bytes of uncompressed size. Can be set to -1 if the size is unknown
+  *   and the lzma stream is terminated with an end marker.
+  * @param[in] from_buffer ID of buffer_pipe to read compressed data from
+  * @param[in] to_buffer ID of buffer_pipe to write decompressed data to
+  * @return ID of newly created lzma data structure, <0 on failure.
+  */
+int32_t lzma_init(int32_t from, int32_t to);
+
+/**
+\group_adt
+  * Decompress all available data in the input buffer, and write to output buffer.
+  * Stops when the input buffer becomes empty, or write buffer becomes full.
+  * This function can be called repeatedly on success after filling the input
+  * buffer, and flushing the output buffer.
+  * The lzma stream is done processing when 0 bytes are available from output
+  * buffer, and input buffer is not empty.
+  * @param[in] id ID of lzma data structure.
+  * @return 0 on success, lzma error code otherwise.
+  */
+int32_t lzma_process(int32_t id);
+
+/**
+\group_adt
+  * Deallocates lzma data structure.
+  * Using the lzma data structure after this will result in an error.
+  * All lzma data structures are automatically deallocated when bytecode
+  * finishes execution.
+  * @param[in] id ID of lzma data structure
+  * @return 0 on success.
+  */
+int32_t lzma_done(int32_t id);
+
+/**
+\group_adt
+  * Initializes Bzip2 data structures for decompressing data
+  * 'from_buffer' and writing uncompressed data 'to_buffer'.
+  * @param[in] from_buffer ID of buffer_pipe to read compressed data from
+  * @param[in] to_buffer ID of buffer_pipe to write decompressed data to
+  * @return ID of newly created bzip2 data structure, <0 on failure.
+  */
+int32_t bzip2_init(int32_t from, int32_t to);
+
+/**
+\group_adt
+  * Decompress all available data in the input buffer, and write to output buffer.
+  * Stops when the input buffer becomes empty, or write buffer becomes full.
+  * This function can be called repeatedly on success after filling the input
+  * buffer, and flushing the output buffer.
+  * The bzip2 stream is done processing when 0 bytes are available from output
+  * buffer, and input buffer is not empty.
+  * @param[in] id ID of lzma data structure.
+  * @return 0 on success, bzip2 error code otherwise.
+  */
+int32_t bzip2_process(int32_t id);
+
+/**
+\group_adt
+  * Deallocates bzip2 data structure.
+  * Using the bzip2 data structure after this will result in an error.
+  * All bzip2 data structures are automatically deallocated when bytecode
+  * finishes execution.
+  * @param[in] id ID of bzip2 data structure
+  * @return 0 on success.
+  */
+int32_t bzip2_done(int32_t id);
+/* ----------------- END 0.103 APIs ---------------------------------- */
 #endif
 #endif

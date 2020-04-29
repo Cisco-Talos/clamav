@@ -51,8 +51,12 @@
 #include "hashtab.h"
 #include "str.h"
 #include "filetypes.h"
+#include "lzma_iface.h"
 #if HAVE_JSON
 #include "json.h"
+#endif
+#if HAVE_BZLIB_H
+#include <bzlib.h>
 #endif
 
 #define EV ctx->bc_events
@@ -60,6 +64,20 @@
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define API_MISUSE() cli_event_error_str(EV, "API misuse @" TOSTRING(__LINE__))
+
+struct bc_lzma {
+    struct CLI_LZMA stream;
+    int32_t from;
+    int32_t to;
+};
+
+#if HAVE_BZLIB_H
+struct bc_bzip2 {
+    bz_stream stream;
+    int32_t from;
+    int32_t to;
+};
+#endif
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -926,6 +944,209 @@ int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx, int32_t id)
         cli_dbgmsg("bytecode api: inflateEnd: %s\n", b->stream.msg);
     b->from = b->to = -1;
     return ret;
+}
+
+int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
+{
+    int ret;
+    struct bc_lzma *b;
+    unsigned n = ctx->nlzmas + 1;
+    unsigned avail_in_orig;
+
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to)) {
+        cli_dbgmsg("bytecode api: lzma_init: invalid buffers!\n");
+        return -1;
+    }
+
+    avail_in_orig = cli_bcapi_buffer_pipe_read_avail(ctx, from);
+    if (avail_in_orig < LZMA_PROPS_SIZE + 8) {
+        cli_dbgmsg("bytecode api: lzma_init: not enough bytes in pipe to read LZMA header!\n");
+        return -1;
+    }
+
+    b = cli_realloc(ctx->lzmas, sizeof(*ctx->lzmas) * n);
+    if (!b) {
+        return -1;
+    }
+    ctx->lzmas  = b;
+    ctx->nlzmas = n;
+    b           = &b[n - 1];
+
+    b->from = from;
+    b->to   = to;
+    memset(&b->stream, 0, sizeof(b->stream));
+
+    b->stream.avail_in = avail_in_orig;
+    b->stream.next_in  = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    if ((ret = cli_LzmaInit(&b->stream, 0)) != LZMA_RESULT_OK) {
+        cli_dbgmsg("bytecode api: LzmaInit: Failed to initialize LZMA decompressor: %d!\n", ret);
+        cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+        return ret;
+    }
+
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    return n - 1;
+}
+
+static struct bc_lzma *get_lzma(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || (unsigned int)id >= ctx->nlzmas || !ctx->lzmas)
+        return NULL;
+    return &ctx->lzmas[id];
+}
+
+int32_t cli_bcapi_lzma_process(struct cli_bc_ctx *ctx, int32_t id)
+{
+    int ret;
+    unsigned avail_in_orig, avail_out_orig;
+    struct bc_lzma *b = get_lzma(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+
+    b->stream.avail_in = avail_in_orig =
+        cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    b->stream.avail_out = avail_out_orig =
+        cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
+    b->stream.next_out = (uint8_t *)cli_bcapi_buffer_pipe_write_get(ctx, b->to,
+                                                                    b->stream.avail_out);
+
+    if (!b->stream.avail_in || !b->stream.avail_out || !b->stream.next_in || !b->stream.next_out)
+        return -1;
+
+    ret = cli_LzmaDecode(&b->stream);
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    cli_bcapi_buffer_pipe_write_stopped(ctx, b->to, avail_out_orig - b->stream.avail_out);
+
+    if (ret != LZMA_RESULT_OK && ret != LZMA_STREAM_END) {
+        cli_dbgmsg("bytecode api: LzmaDecode: Error %d while decoding\n", ret);
+        cli_bcapi_lzma_done(ctx, id);
+    }
+
+    return ret;
+}
+
+int32_t cli_bcapi_lzma_done(struct cli_bc_ctx *ctx, int32_t id)
+{
+    struct bc_lzma *b = get_lzma(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+    cli_LzmaShutdown(&b->stream);
+    b->from = b->to = -1;
+    return 0;
+}
+
+int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
+{
+#if HAVE_BZLIB_H
+    int ret;
+    struct bc_bzip2 *b;
+    unsigned n = ctx->nbzip2s + 1;
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to)) {
+        cli_dbgmsg("bytecode api: bzip2_init: invalid buffers!\n");
+        return -1;
+    }
+    b = cli_realloc(ctx->bzip2s, sizeof(*ctx->bzip2s) * n);
+    if (!b) {
+        return -1;
+    }
+    ctx->bzip2s  = b;
+    ctx->nbzip2s = n;
+    b            = &b[n - 1];
+
+    b->from = from;
+    b->to   = to;
+    memset(&b->stream, 0, sizeof(b->stream));
+    ret = BZ2_bzDecompressInit(&b->stream, 0, 0);
+    switch (ret) {
+        case BZ_CONFIG_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Library has been mis-compiled!\n");
+            return -1;
+        case BZ_PARAM_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Invalid arguments!\n");
+            return -1;
+        case BZ_MEM_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Insufficient memory available!\n");
+            return -1;
+        case BZ_OK:
+            break;
+        default:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: unknown error %d\n", ret);
+            return -1;
+    }
+
+    return n - 1;
+#else
+    return -1;
+#endif
+}
+
+#if HAVE_BZLIB_H
+static struct bc_bzip2 *get_bzip2(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || (unsigned int)id >= ctx->nbzip2s || !ctx->bzip2s)
+        return NULL;
+    return &ctx->bzip2s[id];
+}
+#endif
+
+int32_t cli_bcapi_bzip2_process(struct cli_bc_ctx *ctx, int32_t id)
+{
+#if HAVE_BZLIB_H
+    int ret;
+    unsigned avail_in_orig, avail_out_orig;
+    struct bc_bzip2 *b = get_bzip2(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+
+    b->stream.avail_in = avail_in_orig =
+        cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    b->stream.avail_out = avail_out_orig =
+        cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
+
+    b->stream.next_out = (char *)cli_bcapi_buffer_pipe_write_get(ctx, b->to,
+                                                                 b->stream.avail_out);
+
+    if (!b->stream.avail_in || !b->stream.avail_out || !b->stream.next_in || !b->stream.next_out)
+        return -1;
+    /* try hard to extract data, skipping over corrupted data */
+    ret = BZ2_bzDecompress(&b->stream);
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    cli_bcapi_buffer_pipe_write_stopped(ctx, b->to, avail_out_orig - b->stream.avail_out);
+
+    /* check if nothing written whatsoever */
+    if ((ret != BZ_OK) && (b->stream.avail_out == avail_out_orig)) {
+        /* Inflation failed */
+        cli_errmsg("cli_bcapi_bzip2_process: failed to decompress data\n");
+    }
+
+    return ret;
+#else
+    return -1;
+#endif
+}
+
+int32_t cli_bcapi_bzip2_done(struct cli_bc_ctx *ctx, int32_t id)
+{
+#if HAVE_BZLIB_H
+    struct bc_bzip2 *b = get_bzip2(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+    BZ2_bzDecompressEnd(&b->stream);
+    b->from = b->to = -1;
+    return 0;
+#else
+    return -1;
+#endif
 }
 
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx, int32_t id)
