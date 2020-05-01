@@ -295,10 +295,13 @@ void CommandData::ProcessSwitch(const wchar *Switch)
           if (Switch[2]=='-' && Switch[3]==0)
             GenerateArcName=0;
           else
-          {
-            GenerateArcName=true;
-            wcsncpyz(GenerateMask,Switch+2,ASIZE(GenerateMask));
-          }
+            if (toupperw(Switch[2])=='F')
+              wcsncpyz(DefGenerateMask,Switch+3,ASIZE(DefGenerateMask));
+            else
+            {
+              GenerateArcName=true;
+              wcsncpyz(GenerateMask,Switch+2,ASIZE(GenerateMask));
+            }
           break;
 #endif
         case 'I':
@@ -373,11 +376,11 @@ void CommandData::ProcessSwitch(const wchar *Switch)
         default:
           if (Switch[1]=='+')
           {
-            InclFileAttr|=GetExclAttr(Switch+2);
+            InclFileAttr|=GetExclAttr(Switch+2,InclDir);
             InclAttrSet=true;
           }
           else
-            ExclFileAttr|=GetExclAttr(Switch+1);
+            ExclFileAttr|=GetExclAttr(Switch+1,ExclDir);
           break;
       }
       break;
@@ -825,39 +828,7 @@ void CommandData::ProcessSwitch(const wchar *Switch)
           SetTimeFilters(Switch+2,false,false);
           break;
         case 'S':
-          {
-            EXTTIME_MODE Mode=EXTTIME_HIGH3;
-            bool CommonMode=Switch[2]>='0' && Switch[2]<='4';
-            if (CommonMode)
-              Mode=(EXTTIME_MODE)(Switch[2]-'0');
-            if (Mode==EXTTIME_HIGH1 || Mode==EXTTIME_HIGH2) // '2' and '3' not supported anymore.
-              Mode=EXTTIME_HIGH3;
-            if (Switch[2]=='-')
-              Mode=EXTTIME_NONE;
-            if (CommonMode || Switch[2]=='-' || Switch[2]=='+' || Switch[2]==0)
-              xmtime=xctime=xatime=Mode;
-            else
-            {
-              if (Switch[3]>='0' && Switch[3]<='4')
-                Mode=(EXTTIME_MODE)(Switch[3]-'0');
-              if (Mode==EXTTIME_HIGH1 || Mode==EXTTIME_HIGH2) // '2' and '3' not supported anymore.
-                Mode=EXTTIME_HIGH3;
-              if (Switch[3]=='-')
-                Mode=EXTTIME_NONE;
-              switch(toupperw(Switch[2]))
-              {
-                case 'M':
-                  xmtime=Mode;
-                  break;
-                case 'C':
-                  xctime=Mode;
-                  break;
-                case 'A':
-                  xatime=Mode;
-                  break;
-              }
-            }
-          }
+          SetStoreTimeMode(Switch+2);
           break;
         case '-':
           Test=false;
@@ -960,7 +931,10 @@ void CommandData::ProcessCommand()
   if (wcschr(L"AFUMD",*Command)==NULL)
   {
     if (GenerateArcName)
-      GenerateArchiveName(ArcName,ASIZE(ArcName),GenerateMask,false);
+    {
+      const wchar *Mask=*GenerateMask!=0 ? GenerateMask:DefGenerateMask;
+      GenerateArchiveName(ArcName,ASIZE(ArcName),Mask,false);
+    }
 
     StringList ArcMasks;
     ArcMasks.AddString(ArcName);
@@ -979,7 +953,6 @@ void CommandData::ProcessCommand()
     case 'X':
     case 'E':
     case 'T':
-    case 'I':
       {
         CmdExtract Extract(this);
         Extract.DoExtract();
@@ -1022,7 +995,7 @@ bool CommandData::IsSwitch(int Ch)
 
 
 #ifndef SFX_MODULE
-uint CommandData::GetExclAttr(const wchar *Str)
+uint CommandData::GetExclAttr(const wchar *Str,bool &Dir)
 {
   if (IsDigit(*Str))
     return wcstol(Str,NULL,0);
@@ -1032,10 +1005,10 @@ uint CommandData::GetExclAttr(const wchar *Str)
   {
     switch(toupperw(*Str))
     {
-#ifdef _UNIX
       case 'D':
-        Attr|=S_IFDIR;
+        Dir=true;
         break;
+#ifdef _UNIX
       case 'V':
         Attr|=S_IFCHR;
         break;
@@ -1048,9 +1021,6 @@ uint CommandData::GetExclAttr(const wchar *Str)
         break;
       case 'S':
         Attr|=0x4;
-        break;
-      case 'D':
-        Attr|=0x10;
         break;
       case 'A':
         Attr|=0x20;

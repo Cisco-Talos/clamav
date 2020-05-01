@@ -345,7 +345,7 @@ void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bo
       mprintf(L"\n%12ls: %ls",St(MListHostOS),HostOS);
 
     mprintf(L"\n%12ls: RAR %ls(v%d) -m%d -md=%d%s",St(MListCompInfo),
-            Format==RARFMT15 ? L"3.0":L"5.0",
+            Format==RARFMT15 ? L"1.5":L"5.0",
             hd.UnpVer==VER_UNKNOWN ? 0 : hd.UnpVer,hd.Method,
             hd.WinSize>=0x100000 ? hd.WinSize/0x100000:hd.WinSize/0x400,
             hd.WinSize>=0x100000 ? L"M":L"K");
