@@ -15,6 +15,12 @@ ClamAV 0.102.3 is a bug patch release to address the following issues.
   Special thanks to Daehui Chang and Fady Othman for helping identify the ARJ
   parsing vulnerability.
 
+- [CVE-2020-3341](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3341):
+  Fix a vulnerability in the PDF parsing module in ClamAV 0.101 - 0.102.2 that
+  could cause a Denial-of-Service (DoS) condition. Improper size checking of
+  a buffer used to initialize AES decryption routines results in an out-of-
+  bounds read which may cause a crash. Bug found by OSS-Fuzz.
+
 - Fix "Attempt to allocate 0 bytes" error when parsing some PDF documents.
 
 - Fix a couple of minor memory leaks.
