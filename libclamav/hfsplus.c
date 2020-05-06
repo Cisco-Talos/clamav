@@ -139,18 +139,18 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
 
     /* Start with volume header, 512 bytes at offset 1024 */
     if ((*ctx->fmap)->len < 1536) {
-        cli_dbgmsg("cli_scanhfsplus: too short for HFS+\n");
+        cli_dbgmsg("hfsplus_volumeheader: too short for HFS+\n");
         return CL_EFORMAT;
     }
     mPtr = fmap_need_off_once(*ctx->fmap, 1024, 512);
     if (!mPtr) {
-        cli_errmsg("cli_scanhfsplus: cannot read header from map\n");
+        cli_errmsg("hfsplus_volumeheader: cannot read header from map\n");
         return CL_EMAP;
     }
 
     volHeader = cli_malloc(sizeof(hfsPlusVolumeHeader));
     if (!volHeader) {
-        cli_errmsg("cli_scanhfsplus: header malloc failed\n");
+        cli_errmsg("hfsplus_volumeheader: header malloc failed\n");
         return CL_EMEM;
     }
     *header = volHeader;
@@ -159,11 +159,11 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
     volHeader->signature = be16_to_host(volHeader->signature);
     volHeader->version   = be16_to_host(volHeader->version);
     if ((volHeader->signature == 0x482B) && (volHeader->version == 4)) {
-        cli_dbgmsg("cli_scanhfsplus: HFS+ signature matched\n");
+        cli_dbgmsg("hfsplus_volumeheader: HFS+ signature matched\n");
     } else if ((volHeader->signature == 0x4858) && (volHeader->version == 5)) {
-        cli_dbgmsg("cli_scanhfsplus: HFSX v5 signature matched\n");
+        cli_dbgmsg("hfsplus_volumeheader: HFSX v5 signature matched\n");
     } else {
-        cli_dbgmsg("cli_scanhfsplus: no matching signature\n");
+        cli_dbgmsg("hfsplus_volumeheader: no matching signature\n");
         return CL_EFORMAT;
     }
     /* skip fields that will definitely be ignored */
@@ -183,11 +183,11 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
 
     /* Block Size must be power of 2 between 512 and 1 MB */
     if ((volHeader->blockSize < 512) || (volHeader->blockSize > (1 << 20))) {
-        cli_dbgmsg("cli_scanhfsplus: Invalid blocksize\n");
+        cli_dbgmsg("hfsplus_volumeheader: Invalid blocksize\n");
         return CL_EFORMAT;
     }
     if (volHeader->blockSize & (volHeader->blockSize - 1)) {
-        cli_dbgmsg("cli_scanhfsplus: Invalid blocksize\n");
+        cli_dbgmsg("hfsplus_volumeheader: Invalid blocksize\n");
         return CL_EFORMAT;
     }
 
@@ -246,7 +246,7 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
     }
     mPtr = fmap_need_off_once(*ctx->fmap, offset, volHeader->blockSize);
     if (!mPtr) {
-        cli_dbgmsg("hfsplus_header: %s: headerNode is out-of-range\n", name);
+        cli_dbgmsg("hfsplus_readheader: %s: headerNode is out-of-range\n", name);
         return CL_EFORMAT;
     }
 
@@ -255,11 +255,11 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
     nodedescriptor_to_host(nodeDesc);
     nodedescriptor_print(name, nodeDesc);
     if (nodeDesc->kind != HFS_NODEKIND_HEADER) {
-        cli_dbgmsg("hfsplus_header: %s: headerNode not header kind\n", name);
+        cli_dbgmsg("hfsplus_readheader: %s: headerNode not header kind\n", name);
         return CL_EFORMAT;
     }
     if ((nodeDesc->bLink != 0) || (nodeDesc->height != 0) || (nodeDesc->numRecords != 3)) {
-        cli_dbgmsg("hfsplus_header: %s: Invalid headerNode\n", name);
+        cli_dbgmsg("hfsplus_readheader: %s: Invalid headerNode\n", name);
         return CL_EFORMAT;
     }
 
@@ -269,26 +269,26 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
     headerrecord_print(name, headerRec);
 
     if ((headerRec->nodeSize < minSize) || (headerRec->nodeSize > maxSize)) {
-        cli_dbgmsg("hfsplus_header: %s: Invalid nodesize\n", name);
+        cli_dbgmsg("hfsplus_readheader: %s: Invalid nodesize\n", name);
         return CL_EFORMAT;
     }
     if (headerRec->nodeSize & (headerRec->nodeSize - 1)) {
-        cli_dbgmsg("hfsplus_header: %s: Invalid nodesize\n", name);
+        cli_dbgmsg("hfsplus_readheader: %s: Invalid nodesize\n", name);
         return CL_EFORMAT;
     }
     /* KeyLength must be between 6 and 516 for catalog */
     if (headerType == HFS_FILETREE_CATALOG) {
         if ((headerRec->maxKeyLength < 6) || (headerRec->maxKeyLength > 516)) {
-            cli_dbgmsg("hfsplus_header: %s: Invalid cat maxKeyLength\n", name);
+            cli_dbgmsg("hfsplus_readheader: %s: Invalid cat maxKeyLength\n", name);
             return CL_EFORMAT;
         }
         if (headerRec->maxKeyLength > (headerRec->nodeSize / 2)) {
-            cli_dbgmsg("hfsplus_header: %s: Invalid cat maxKeyLength based on nodeSize\n", name);
+            cli_dbgmsg("hfsplus_readheader: %s: Invalid cat maxKeyLength based on nodeSize\n", name);
             return CL_EFORMAT;
         }
     } else if (headerType == HFS_FILETREE_EXTENTS) {
         if (headerRec->maxKeyLength != 10) {
-            cli_dbgmsg("hfsplus_header: %s: Invalid ext maxKeyLength\n", name);
+            cli_dbgmsg("hfsplus_readheader: %s: Invalid ext maxKeyLength\n", name);
             return CL_EFORMAT;
         }
     }
@@ -330,7 +330,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
 
     /* bad record checks */
     if (!fork || (fork->logicalSize == 0) || (fork->totalBlocks == 0)) {
-        cli_dbgmsg("hfsplus_dumpfile: Empty file.\n");
+        cli_dbgmsg("hfsplus_scanfile: Empty file.\n");
         return CL_CLEAN;
     }
 
@@ -338,7 +338,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     targetSize = fork->logicalSize;
 #if SIZEOF_LONG < 8
     if (targetSize > ULONG_MAX) {
-        cli_dbgmsg("hfsplus_dumpfile: File too large for limit check.\n");
+        cli_dbgmsg("hfsplus_scanfile: File too large for limit check.\n");
         return CL_EFORMAT;
     }
 #endif
@@ -350,47 +350,47 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     /* open file */
     ret = cli_gentempfd(dirname, &tmpname, &ofd);
     if (ret != CL_CLEAN) {
-        cli_dbgmsg("hfsplus_dumpfile: Cannot generate temporary file.\n");
+        cli_dbgmsg("hfsplus_scanfile: Cannot generate temporary file.\n");
         return ret;
     }
-    cli_dbgmsg("hfsplus_dumpfile: Extracting to %s\n", tmpname);
+    cli_dbgmsg("hfsplus_scanfile: Extracting to %s\n", tmpname);
 
     ext = 0;
     /* Dump file, extent by extent */
     do {
         uint32_t currBlock, endBlock, outputSize = 0;
         if (targetSize == 0) {
-            cli_dbgmsg("hfsplus_dumpfile: output complete\n");
+            cli_dbgmsg("hfsplus_scanfile: output complete\n");
             break;
         }
         if (outputBlocks >= fork->totalBlocks) {
-            cli_dbgmsg("hfsplus_dumpfile: output all blocks, remaining size " STDu64 "\n", targetSize);
+            cli_dbgmsg("hfsplus_scanfile: output all blocks, remaining size " STDu64 "\n", targetSize);
             break;
         }
         /* Prepare extent */
         if (ext < 8) {
             currExt = &(fork->extents[ext]);
-            cli_dbgmsg("hfsplus_dumpfile: extent %u\n", ext);
+            cli_dbgmsg("hfsplus_scanfile: extent %u\n", ext);
         } else {
-            cli_dbgmsg("hfsplus_dumpfile: need next extent from ExtentOverflow\n");
+            cli_dbgmsg("hfsplus_scanfile: need next extent from ExtentOverflow\n");
             /* Not implemented yet */
             ret = CL_EFORMAT;
             break;
         }
         /* have extent, so validate and get block range */
         if ((currExt->startBlock == 0) || (currExt->blockCount == 0)) {
-            cli_dbgmsg("hfsplus_dumpfile: next extent empty, done\n");
+            cli_dbgmsg("hfsplus_scanfile: next extent empty, done\n");
             break;
         }
         if ((currExt->startBlock & 0x10000000) && (currExt->blockCount & 0x10000000)) {
-            cli_dbgmsg("hfsplus_dumpfile: next extent illegal!\n");
+            cli_dbgmsg("hfsplus_scanfile: next extent illegal!\n");
             ret = CL_EFORMAT;
             break;
         }
         currBlock = currExt->startBlock;
         endBlock  = currExt->startBlock + currExt->blockCount - 1;
         if ((currBlock > volHeader->totalBlocks) || (endBlock > volHeader->totalBlocks) || (currExt->blockCount > volHeader->totalBlocks)) {
-            cli_dbgmsg("hfsplus_dumpfile: bad extent!\n");
+            cli_dbgmsg("hfsplus_scanfile: bad extent!\n");
             ret = CL_EFORMAT;
             break;
         }
@@ -402,13 +402,13 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
             /* move map to next block */
             mPtr = fmap_need_off_once(*ctx->fmap, offset, volHeader->blockSize);
             if (!mPtr) {
-                cli_errmsg("hfsplus_dumpfile: map error\n");
+                cli_errmsg("hfsplus_scanfile: map error\n");
                 ret = CL_EMAP;
                 break;
             }
             written = cli_writen(ofd, mPtr, to_write);
             if (written != to_write) {
-                cli_errmsg("hfsplus_dumpfile: write error\n");
+                cli_errmsg("hfsplus_scanfile: write error\n");
                 ret = CL_EWRITE;
                 break;
             }
@@ -416,11 +416,11 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
             outputSize += to_write;
             currBlock++;
             if (targetSize == 0) {
-                cli_dbgmsg("hfsplus_dumpfile: all data written\n");
+                cli_dbgmsg("hfsplus_scanfile: all data written\n");
                 break;
             }
             if (outputBlocks >= fork->totalBlocks) {
-                cli_dbgmsg("hfsplus_dumpfile: output all blocks, remaining size " STDu64 "\n", targetSize);
+                cli_dbgmsg("hfsplus_scanfile: output all blocks, remaining size " STDu64 "\n", targetSize);
                 break;
             }
         }
@@ -461,15 +461,15 @@ static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader
 
     catFork = &(volHeader->catalogFile);
     if (catFork->totalBlocks >= volHeader->totalBlocks) {
-        cli_dbgmsg("hfsplus_getnodelimit: catFork totalBlocks too large!\n");
+        cli_dbgmsg("hfsplus_validate_catalog: catFork totalBlocks too large!\n");
         return CL_EFORMAT;
     }
     if (catFork->logicalSize > (catFork->totalBlocks * volHeader->blockSize)) {
-        cli_dbgmsg("hfsplus_getnodelimit: catFork logicalSize too large!\n");
+        cli_dbgmsg("hfsplus_validate_catalog: catFork logicalSize too large!\n");
         return CL_EFORMAT;
     }
     if (catFork->logicalSize < (catHeader->totalNodes * catHeader->nodeSize)) {
-        cli_dbgmsg("hfsplus_getnodelimit: too many nodes for catFile\n");
+        cli_dbgmsg("hfsplus_validate_catalog: too many nodes for catFile\n");
         return CL_EFORMAT;
     }
 
@@ -493,14 +493,6 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
     if (!attrHeader) {
         return CL_EARG;
     }
-
-    if (record) {
-        if (!recordSize) {
-            cli_warnmsg("hfsplus_check_attribute: record buffer passed, but recordSize == NULL\n");
-            return CL_EARG;
-        }
-    }
-
 
     nodeLimit = MIN(attrHeader->totalNodes, HFSPLUS_NODE_LIMIT);
     thisNode  = attrHeader->firstLeafNode;
@@ -1109,16 +1101,16 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 if (z_ret != Z_OK) {
                                     switch (z_ret) {
                                         case Z_MEM_ERROR:
-                                            cli_dbgmsg("bytecode api: inflateInit2: out of memory!\n");
+                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2: out of memory!\n");
                                             break;
                                         case Z_VERSION_ERROR:
-                                            cli_dbgmsg("bytecode api: inflateinit2: zlib version error!\n");
+                                            cli_dbgmsg("hfsplus_walk_catalog: inflateinit2: zlib version error!\n");
                                             break;
                                         case Z_STREAM_ERROR:
-                                            cli_dbgmsg("bytecode api: inflateinit2: zlib stream error!\n");
+                                            cli_dbgmsg("hfsplus_walk_catalog: inflateinit2: zlib stream error!\n");
                                             break;
                                         default:
-                                            cli_dbgmsg("bytecode api: inflateInit2: unknown error %d\n", ret);
+                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2: unknown error %d\n", ret);
                                             break;
                                     }
 
@@ -1136,7 +1128,6 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 z_ret = inflateEnd(&stream);
                                 if (z_ret == Z_STREAM_ERROR) {
                                     cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", ret);
-                                    ret = CL_EFORMAT;
                                 }
 
                                 written = cli_writen(ofd, uncompressed, header.fileSize);
@@ -1178,6 +1169,12 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 if (resourceFile) {
                                     free(resourceFile);
                                 }
+                                break;
+                            }
+
+                            if (NULL == resourceFile) {
+                                cli_dbgmsg("hfsplus_walk_catalog: Error: hfsplus_scanfile returned no resource file\n");
+                                ret = CL_EFORMAT;
                                 break;
                             }
 
@@ -1313,15 +1310,13 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 }
                             }
 
-                            if (resourceFile) {
-                                if (!ctx->engine->keeptmp) {
-                                    if (cli_unlink(resourceFile)) {
-                                        ret = CL_EUNLINK;
-                                    }
+                            if (!ctx->engine->keeptmp) {
+                                if (cli_unlink(resourceFile)) {
+                                    ret = CL_EUNLINK;
                                 }
-                                free(resourceFile);
-                                resourceFile = NULL;
                             }
+                            free(resourceFile);
+                            resourceFile = NULL;
 
                             cli_dbgmsg("hfsplus_walk_catalog: Resource compression not implemented\n");
                             break;
@@ -1496,16 +1491,16 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
 
     /* Create temp folder for contents */
     if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {
-        cli_errmsg("cli_scandmg: cli_gentemp failed\n");
+        cli_errmsg("cli_scanhfsplus: cli_gentemp failed\n");
         ret = CL_ETMPDIR;
         goto freeHeader;
     }
     if (mkdir(targetdir, 0700)) {
-        cli_errmsg("cli_scandmg: Cannot create temporary directory %s\n", targetdir);
+        cli_errmsg("cli_scanhfsplus: Cannot create temporary directory %s\n", targetdir);
         ret = CL_ETMPDIR;
         goto freeDirname;
     }
-    cli_dbgmsg("cli_scandmg: Extracting into %s\n", targetdir);
+    cli_dbgmsg("cli_scanhfsplus: Extracting into %s\n", targetdir);
 
     /* Can build and scan catalog file if we want ***
     ret = hfsplus_scanfile(ctx, volHeader, &extentFileHeader, &(volHeader->catalogFile), targetdir);
@@ -1513,16 +1508,16 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
     if (ret == CL_SUCCESS) {
         ret = hfsplus_validate_catalog(ctx, volHeader, &catFileHeader);
         if (ret == CL_SUCCESS) {
-            cli_dbgmsg("cli_scandmg: validation successful\n");
+            cli_dbgmsg("cli_scanhfsplus: validation successful\n");
         } else {
-            cli_dbgmsg("cli_scandmg: validation returned %d : %s\n", ret, cl_strerror(ret));
+            cli_dbgmsg("cli_scanhfsplus: validation returned %d : %s\n", ret, cl_strerror(ret));
         }
     }
 
     /* Walk through catalog to identify files to scan */
     if (ret == CL_SUCCESS) {
         ret = hfsplus_walk_catalog(ctx, volHeader, &catFileHeader, &extentFileHeader, hasAttributesFileHeader ? &attributesFileHeader : NULL, targetdir);
-        cli_dbgmsg("cli_scandmg: walk catalog finished\n");
+        cli_dbgmsg("cli_scanhfsplus: walk catalog finished\n");
     }
 
     /* Clean up extracted content, if needed */

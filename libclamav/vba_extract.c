@@ -668,7 +668,7 @@ cl_error_t
                 }
                 else {
                     if (memcmp(&data[projecthelpfilepath_offset], &data[data_offset], size) != 0) {
-                        CLI_WRITEN("REM WARNING: PROJECTHELPFILEPATH and PROJECTHELPFILEPATH2 contents differ\n", 78);
+                        CLI_WRITEN("REM WARNING: PROJECTHELPFILEPATH and PROJECTHELPFILEPATH2 contents differ\n", 74);
                     }
                 }
 

@@ -4405,5 +4405,10 @@ done:
         data = NULL;
     }
 
+    if (tempfile != NULL) {
+        free(tempfile);
+        tempfile = NULL;
+    }
+
     return ret;
 }

@@ -1080,6 +1080,7 @@ scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_c
     }
 
     state.state   = BIFF_PARSER_INITIAL;
+    state.length  = 0;
     current_block = prop->start_block;
     len           = prop->size;
 
