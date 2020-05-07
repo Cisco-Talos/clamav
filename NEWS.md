@@ -55,6 +55,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Jonathan Sabbe
 - Reio Remma
 - Sebastian A. Siewior
+- Ángel
 
 ## 0.102.2
 

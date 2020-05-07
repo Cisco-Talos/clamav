@@ -157,9 +157,9 @@ void virusaction(const char *filename, const char *virname,
 
     pthread_mutex_lock(&virusaction_lock);
     /* We can only call async-signal-safe functions after fork(). */
-    pid = fork();
+    pid = vfork();
     if (pid == 0) { /* child */
-        exit(execle("/bin/sh", "sh", "-c", buffer_cmd, NULL, env));
+        _exit(execle("/bin/sh", "sh", "-c", buffer_cmd, NULL, env));
     } else if (pid > 0) { /* parent */
         pthread_mutex_unlock(&virusaction_lock);
         while (waitpid(pid, NULL, 0) == -1 && errno == EINTR) continue;
