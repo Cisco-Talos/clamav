@@ -1232,6 +1232,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                         (void*)eggFile->comments,
                         sizeof(char**) * (eggFile->nComments + 1));
                     if (NULL == comments_tmp) {
+                        free(comment);
                         status = CL_EMEM;
                         goto done;
                     }
@@ -1681,6 +1682,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
                     (void*)handle->files,
                     sizeof(egg_file*) * (handle->nFiles + 1));
                 if (NULL == files_tmp) {
+                    egg_free_egg_file(found_file);
                     status = CL_EMEM;
                     goto done;
                 }
@@ -1709,6 +1711,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
                         (void*)handle->blocks,
                         sizeof(egg_block*) * (handle->nBlocks + 1));
                     if (NULL == blocks_tmp) {
+                        egg_free_egg_block(found_block);
                         status = CL_EMEM;
                         goto done;
                     }
@@ -1733,6 +1736,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
                             (void*)eggFile->blocks,
                             sizeof(egg_block*) * (eggFile->nBlocks + 1));
                         if (NULL == blocks_tmp) {
+                            egg_free_egg_block(found_block);
                             status = CL_EMEM;
                             goto done;
                         }
@@ -1806,6 +1810,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
                 (void*)handle->comments,
                 sizeof(char**) * (handle->nComments + 1));
             if (NULL == comments_tmp) {
+                free(comment);
                 status = CL_EMEM;
                 goto done;
             }
@@ -1942,6 +1947,7 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
     uint32_t declen = 0, capacity = 0;
 
     z_stream stream;
+    int stream_initialized = 0;
     int zstat;
 
     if (NULL == compressed || compressed_size == 0 || NULL == decompressed || NULL == decompressed_size) {
@@ -1973,6 +1979,7 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
         status = CL_EMEM;
         goto done;
     }
+    stream_initialized = 1;
 
     /* initial inflate */
     zstat = inflate(&stream, Z_NO_FLUSH);
@@ -2045,7 +2052,9 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
 
 done:
 
-    (void)inflateEnd(&stream);
+    if (stream_initialized) {
+        (void)inflateEnd(&stream);
+    }
 
     if (CL_SUCCESS != status) {
         free(decoded);

@@ -1378,7 +1378,7 @@ static fc_error_t buildcld(
 {
     fc_error_t status = FC_EARG;
 
-    char olddir[PATH_MAX];
+    char olddir[PATH_MAX] = {0};
     char info[DB_FILENAME_MAX];
     char buff[CVD_HEADER_SIZE + 1];
     char *pt;

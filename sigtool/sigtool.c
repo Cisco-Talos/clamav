@@ -2852,7 +2852,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[2], '-')) {
-            sz = cli_strtokenize(tokens[2], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[2], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2873,7 +2873,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[4], '-')) {
-            sz = cli_strtokenize(tokens[4], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[4], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2893,7 +2893,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[5], '-')) {
-            sz = cli_strtokenize(tokens[5], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[5], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2926,7 +2926,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[7], '-')) {
-            sz = cli_strtokenize(tokens[7], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[7], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;

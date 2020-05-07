@@ -186,6 +186,7 @@ static void cli_rarload(void)
         !(cli_unrar_close = (void (*)(void *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_close"))) {
         /* ideally we should never land here, we'd better warn so */
         cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
+        lt_dlclose(rhandle);
         return;
     }
     have_rar = 1;

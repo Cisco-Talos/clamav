@@ -1748,8 +1748,10 @@ int main(int argc, char **argv)
         }
         if (!optget(opts, "Bytecode")->enabled) {
             if (FC_SUCCESS != (ret = string_list_add("bytecode", &optOutList, &nOptOuts))) {
-                free_string_list(optOutList, nOptOuts);
+                free_string_list(optInList, nOptIns);
                 optInList = NULL;
+                free_string_list(optOutList, nOptOuts);
+                optOutList = NULL;
 
                 mprintf("!Failed to add bytecode to list of opt-out databases.\n");
                 status = ret;

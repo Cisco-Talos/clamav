@@ -2143,7 +2143,6 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-    return ret;
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_scanhwpml()\n");
