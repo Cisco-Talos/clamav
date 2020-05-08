@@ -594,7 +594,6 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
 {
     cl_error_t status = CL_EPARSE;
 
-    char* comment            = NULL;
     char* comment_utf8       = NULL;
     size_t comment_utf8_size = 0;
 
@@ -635,20 +634,12 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
             goto done;
         }
     }
-    comment = comment_utf8;
+    cli_dbgmsg("egg_parse_comment_header: comment:          %s\n", comment_utf8);
 
-    cli_dbgmsg("egg_parse_comment_header: comment:          %s\n", comment);
-
-    *commentInfo = comment;
+    *commentInfo = comment_utf8;
     status       = CL_SUCCESS;
 
 done:
-    if (CL_SUCCESS != status) {
-        if (comment) {
-            free(comment);
-        }
-    }
-
     return status;
 }
 
@@ -1230,7 +1221,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
 
                     comments_tmp = (char**)cli_realloc(
                         (void*)eggFile->comments,
-                        sizeof(char**) * (eggFile->nComments + 1));
+                        sizeof(char*) * (eggFile->nComments + 1));
                     if (NULL == comments_tmp) {
                         free(comment);
                         status = CL_EMEM;
@@ -1808,7 +1799,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
 
             comments_tmp = (char**)cli_realloc(
                 (void*)handle->comments,
-                sizeof(char**) * (handle->nComments + 1));
+                sizeof(char*) * (handle->nComments + 1));
             if (NULL == comments_tmp) {
                 free(comment);
                 status = CL_EMEM;
@@ -2188,6 +2179,7 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
     uint32_t declen = 0, capacity = 0;
 
     struct CLI_LZMA stream;
+    int stream_initialized = 0;
     int lzmastat;
 
     if (NULL == compressed || compressed_size == 0 || NULL == decompressed || NULL == decompressed_size) {
@@ -2219,6 +2211,7 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
         status = CL_EMEM;
         goto done;
     }
+    stream_initialized = 1;
 
     /* initial inflate */
     lzmastat = cli_LzmaDecode(&stream);
@@ -2284,7 +2277,9 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
 
 done:
 
-    (void)cli_LzmaShutdown(&stream);
+    if (stream_initialized) {
+        (void)cli_LzmaShutdown(&stream);
+    }
 
     if (CL_SUCCESS != status) {
         free(decoded);
@@ -2529,7 +2524,9 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
     status                = CL_SUCCESS;
 
 done:
-    handle->fileExtractionIndex += 1;
+    if (NULL != handle) {
+        handle->fileExtractionIndex += 1;
+    }
 
     if (CL_SUCCESS != status) {
         /* Free buffer */

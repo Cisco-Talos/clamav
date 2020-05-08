@@ -208,7 +208,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
 
     reverse_string(bufrev);
-    filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len) != -1;
+    filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
     if (filter_search_rc == -1) {
         free(buffer);
         free(bufrev);

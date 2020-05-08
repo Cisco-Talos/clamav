@@ -280,6 +280,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                         status = FC_ETESTFAIL;
                         goto done;
                     }
+                    break;
                 }
                 case 0: {
                     /*
@@ -450,13 +451,6 @@ static fc_error_t get_server_node(
     status     = FC_SUCCESS;
 
 done:
-
-    if (FC_SUCCESS != status) {
-        if (NULL != url) {
-            free(url);
-        }
-    }
-
     return status;
 }
 
@@ -1363,7 +1357,7 @@ static fc_error_t executeIfNewVersion(
             }
             version++;
         }
-        char *modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
+        modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
         if (NULL == modifiedCommand) {
             logg("!executeIfNewVersion: Can't allocate memory for modifiedCommand\n");
             status = FC_EMEM;

@@ -2020,9 +2020,8 @@ fc_error_t updatedb(
         }
         snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, newLocalFilename);
         if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            free(tmpfile_with_extension);
-
             logg("!updatedb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+            free(tmpfile_with_extension);
             status = FC_EDBDIRACCESS;
             goto done;
         }
@@ -2229,9 +2228,8 @@ fc_error_t updatecustomdb(
         }
         snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, databaseName);
         if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            free(tmpfile_with_extension);
-
             logg("!updatecustomdb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+            free(tmpfile_with_extension);
             status = FC_EDBDIRACCESS;
             goto done;
         }
