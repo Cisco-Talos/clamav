@@ -423,7 +423,7 @@ static void cleanup(void)
     curses_inited = 0;
     for (i = 0; i < global.num_clamd; i++) {
         if (global.conn[i].sd && global.conn[i].sd != -1) {
-            send_string_noreconn(&global.conn[i], "nEND\n");
+            (void)send_string_noreconn(&global.conn[i], "nEND\n");
 #ifndef WIN32
             close(global.conn[i].sd);
 #else
@@ -564,16 +564,13 @@ char *get_ip(const char *ip)
         p1++;
     }
 
-    if (i == 0 || i > 1)
+    if (i == 0 || i > 1) {
         return dupip;
-
-    if (i == 1) {
+    } else {
         p1  = strchr(dupip, ':');
         *p1 = '\0';
         return dupip;
     }
-
-    return dupip;
 }
 
 char *get_port(const char *ip)
@@ -595,6 +592,7 @@ char *get_port(const char *ip)
         return p;
     }
 
+    free(dupip);
     return NULL;
 }
 
@@ -634,10 +632,9 @@ static int make_connection_real(const char *soname, conn_t *conn)
     int err;
     int ret = 0;
 
-    if(soname) {
-        pt = strdup(soname);
-        OOM_CHECK(pt);
-    }
+    pt = strdup(soname);
+    OOM_CHECK(pt);
+
     conn->tcp = 0;
 
 #ifndef _WIN32
@@ -733,6 +730,15 @@ done:
         pt = NULL;
     }
 
+    if (conn->remote != soname) {
+        /* when we reconnect, they are the same */
+        if (NULL != conn->remote) {
+            free(conn->remote);
+            conn->remote = NULL;
+        }
+        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
+    }
+
     if (NULL != host) {
         free(host);
         host = NULL;
@@ -741,15 +747,6 @@ done:
     if (NULL != port) {
         free(port);
         port = NULL;
-    }
-
-    if (conn->remote != soname) {
-        /* when we reconnect, they are the same */
-        if (NULL != conn->remote) {
-            free(conn->remote);
-            conn->remote = NULL;
-        }
-        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
     }
 
     return ret;
@@ -835,7 +832,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
         if (nread <= 0) {
             print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
             /* it could be a timeout, be nice and send an END */
-            send_string_noreconn(conn, "nEND\n");
+            (void)send_string_noreconn(conn, "nEND\n");
 #ifndef WIN32
             close(conn->sd);
 #else
