@@ -480,7 +480,7 @@ cl_error_t
         size = le32_to_host(*(uint32_t *) &data[data_offset]);
         data_offset += 4;
 
-        if (data_offset + size > data_len) {
+        if (size > data_len - data_offset) {
             cli_warnmsg("vba_readdir_new: Record stretches past the end of the file\n");
             ret = CL_EREAD;
             goto done;
@@ -803,6 +803,13 @@ cl_error_t
                 CLI_WRITEN("\nREM MODULENAMEUNICODE: ", 24);
                 size = le32_to_host(*(uint32_t *) &data[data_offset]);
                 data_offset += 4;
+
+                if (size > data_len - data_offset) {
+                    cli_dbgmsg("vba_readdir_new: MODULENAMEUNICODE stretches past the end of the file\n");
+                    ret = CL_EREAD;
+                    goto done;
+                }
+
                 if (size > 0) {
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *) &data[data_offset], size, CODEPAGE_UTF16_LE, &utf16_name, &utf16_name_size)) {
                         CLI_WRITEN(utf16_name, utf16_name_size);
@@ -813,12 +820,11 @@ cl_error_t
                 }
                 data_offset += size;
 
-                if (mbcs_name && utf16_name && 
-                    (mbcs_name_size != utf16_name_size || 
+                if (mbcs_name && utf16_name &&
+                    (mbcs_name_size != utf16_name_size ||
                      memcmp(mbcs_name, utf16_name, mbcs_name_size) != 0))
                 {
                     CLI_WRITEN("\nREM WARNING: MODULENAME and MODULENAMEUNICODE differ", 53);
-
                 }
 
                 if (mbcs_name) {
@@ -841,6 +847,13 @@ cl_error_t
                 CLI_WRITEN("\nREM MODULESTREAMNAME: ", 23);
                 size = le32_to_host(*(uint32_t *) &data[data_offset]);
                 data_offset += 4;
+
+                if (size > data_len - data_offset) {
+                    cli_dbgmsg("vba_readdir_new: MODULESTREAMNAME stretches past the end of the file\n");
+                    ret = CL_EREAD;
+                    goto done;
+                }
+
                 if (size > 0) {
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *) &data[data_offset], size, codepage, &mbcs_name, &mbcs_name_size)) {
                         CLI_WRITEN(mbcs_name, mbcs_name_size);
@@ -875,8 +888,8 @@ cl_error_t
                 }
                 data_offset += module_stream_name_size;
 
-                if (mbcs_name && utf16_name && 
-                    (mbcs_name_size != utf16_name_size || 
+                if (mbcs_name && utf16_name &&
+                    (mbcs_name_size != utf16_name_size ||
                      memcmp(mbcs_name, utf16_name, mbcs_name_size) != 0))
                 {
                     CLI_WRITEN("\nREM WARNING: MODULESTREAMNAME and MODULESTREAMNAMEUNICODE differ", 65);
@@ -903,6 +916,13 @@ cl_error_t
                 CLI_WRITEN("\nREM MODULEDOCSTRING: ", 22);
                 size = le32_to_host(*(uint32_t *) &data[data_offset]);
                 data_offset += 4;
+
+                if (size > data_len - data_offset) {
+                    cli_dbgmsg("vba_readdir_new: MODULEDOCSTRING stretches past the end of the file\n");
+                    ret = CL_EREAD;
+                    goto done;
+                }
+
                 if (size > 0) {
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *) &data[data_offset], size, codepage, &mbcs_name, &mbcs_name_size)) {
                         CLI_WRITEN(mbcs_name, mbcs_name_size);
@@ -926,6 +946,13 @@ cl_error_t
                 CLI_WRITEN("\nREM MODULEDOCSTRINGUNICODE: ", 29);
                 size = le32_to_host(*(uint32_t *) &data[data_offset]);
                 data_offset += 4;
+
+                if (size > data_len - data_offset) {
+                    cli_dbgmsg("vba_readdir_new: MODULEDOCSTRINGUNICODE stretches past the end of the file\n");
+                    ret = CL_EREAD;
+                    goto done;
+                }
+
                 if (size > 0) {
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *) &data[data_offset], size, CODEPAGE_UTF16_LE, &utf16_name, &utf16_name_size)) {
                         CLI_WRITEN(utf16_name, utf16_name_size);
@@ -936,8 +963,8 @@ cl_error_t
                 }
                 data_offset += size;
 
-                if (mbcs_name && utf16_name && 
-                    (mbcs_name_size != utf16_name_size || 
+                if (mbcs_name && utf16_name &&
+                    (mbcs_name_size != utf16_name_size ||
                      memcmp(mbcs_name, utf16_name, mbcs_name_size) != 0))
                 {
                     CLI_WRITEN("\nREM WARNING: MODULEDOCSTRING and MODULEDOCSTRINGUNICODE differ", 63);
@@ -1082,7 +1109,7 @@ cl_error_t
                     }
                 }
 
-                CLI_WRITEN("\nREM ##################################################\n", 56); 
+                CLI_WRITEN("\nREM ##################################################\n", 56);
 
                 stream_name = cli_ole2_get_property_name2((const char *) module_stream_name, (int) (module_stream_name_size + 2));
                 char *module_hash;
