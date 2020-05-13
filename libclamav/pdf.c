@@ -1090,8 +1090,9 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
     int nrounds;
 
     cli_dbgmsg("aes_decrypt: key length: %d, data length: %zu\n", key_n, *length);
-    if (key_n > 32) {
-        cli_dbgmsg("aes_decrypt: key length is %d!\n", key_n * 8);
+    if (!(key_n == 16 || key_n == 24 || key_n == 32)) {
+        cli_dbgmsg("aes_decrypt: invalid key length: %u!\n", key_n * 8);
+        noisy_warnmsg("aes_decrypt: invalid key length: %u!\n", key_n * 8);
         return;
     }
 
@@ -1167,7 +1168,12 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
     struct arc4_state arc4;
 
     if (!length || !*length || !in) {
-        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u\n", id >> 8, id & 0xff);
+        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u:  Invalid arguments.\n", id >> 8, id & 0xff);
+        return NULL;
+    }
+
+    if (NULL == pdf->key || 0 == pdf->keylen) {
+        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u:  PDF key never identified.\n", id >> 8, id & 0xff);
         return NULL;
     }
 
@@ -1208,7 +1214,10 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
         case ENC_V2:
             cli_dbgmsg("cli_pdf: enc is v2\n");
             memcpy(q, in, *length);
-            arc4_init(&arc4, result, n);
+            if (false == arc4_init(&arc4, result, n)) {
+                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                return NULL;
+            }
             arc4_apply(&arc4, q, (unsigned)*length); /* TODO: may truncate for very large lengths */
 
             noisy_msg(pdf, "decrypt_any: decrypted ARC4 data\n");
@@ -2803,7 +2812,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         if (R == 2) {
             /* 7.6.3.3 Algorithm 4 */
             memcpy(data, key_padding, 32);
-            arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen);
+            if (false == arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen)) {
+                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                return;
+            }
             arc4_apply(&arc4, (uint8_t *)data, 32);
             dbg_printhex("computed U (R2)", data, 32);
             if (!memcmp(data, U, 32))
@@ -2822,7 +2834,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             cl_hash_data("md5", d, 32 + pdf->fileIDlen, result, NULL);
             memcpy(data, pdf->key, len);
 
-            arc4_init(&arc4, (const uint8_t *)data, len);
+            if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                return;
+            }
             arc4_apply(&arc4, result, 16);
             for (i = 1; i <= 19; i++) {
                 unsigned j;
@@ -2830,7 +2845,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 for (j = 0; j < len; j++)
                     data[j] = pdf->key[j] ^ i;
 
-                arc4_init(&arc4, (const uint8_t *)data, len);
+                if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                    noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                    return;
+                }
                 arc4_apply(&arc4, result, 16);
             }
 
