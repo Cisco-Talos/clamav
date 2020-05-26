@@ -166,6 +166,7 @@ static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
     return rhandle;
 }
 
+#if 0
 static void cli_rarload(void)
 {
     lt_dlhandle rhandle;
@@ -190,6 +191,196 @@ static void cli_rarload(void)
     }
     have_rar = 1;
 }
+
+#else
+
+#include <archive.h>
+#include <archive_entry.h>
+
+static cl_unrar_error_t la_cli_unrar_open(const char *filename,
+					  void **hArchive, char **comment,
+					  uint32_t *comment_size,
+					  uint8_t debug_flag)
+{
+	struct archive *a;
+	int ret;
+
+	if (!filename || !hArchive || !comment || !comment_size)
+		return UNRAR_ERR;
+
+	*hArchive = NULL;
+	*comment = NULL;
+	*comment_size = 0;
+
+	a = archive_read_new();
+	if (!a) {
+		cli_errmsg("archive_read_new() failed\n");
+		return UNRAR_ERR;
+	}
+	ret = archive_read_support_format_rar(a);
+	if (ret != ARCHIVE_OK) {
+		cli_errmsg("archive_read_support_format_rar() failed: %s\n",
+			   archive_error_string(a));
+		goto err;
+	}
+	ret = archive_read_open_filename(a, filename, 10240);
+	if (ret != ARCHIVE_OK) {
+		cli_errmsg("archive_read_open_filename() failed: %s\n",
+			   archive_error_string(a));
+		goto err;
+	}
+	*hArchive = a;
+
+	cli_dbgmsg("Open %s\n", filename);
+
+	return UNRAR_OK;
+err:
+	archive_read_free(a);
+	return UNRAR_ERR;
+}
+
+static cl_unrar_error_t la_cli_unrar_peek_file_header(void *hArchive,
+						      unrar_metadata_t *file_metadata)
+{
+	struct archive *a = hArchive;
+	struct archive_entry *entry;
+	const char *fname;
+	mode_t type;
+	int ret;
+
+	if (!hArchive || !file_metadata)
+		return UNRAR_ERR;
+
+	memset(file_metadata, 0, sizeof(*file_metadata));
+
+	ret = archive_read_next_header(a, &entry);
+	if (ret == ARCHIVE_EOF) {
+		cli_dbgmsg("Peek, archive ended.\n");
+		return UNRAR_BREAK;
+	}
+	if (ret < ARCHIVE_OK) {
+		cli_errmsg("Peek failed: %d - %s\n",
+		       archive_errno(a),
+		       archive_error_string(a));
+		return UNRAR_ERR;
+	}
+
+	fname = archive_entry_pathname(entry);
+	if (fname)
+		file_metadata->filename = strdup(fname);
+	file_metadata->unpack_size = archive_entry_size(entry);
+
+	type = archive_entry_filetype(entry);
+	if (type == AE_IFREG) {
+		/* regular file */
+	} else if (type == AE_IFDIR) {
+		file_metadata->is_dir = 1;
+	}
+
+	/* An uneducated guess guess */
+	file_metadata->pack_size = file_metadata->unpack_size / 2;
+
+	if (archive_entry_is_encrypted(entry))
+		file_metadata->encrypted = 1;
+
+	cli_dbgmsg("Peek, name %s unpaked size %d %s\n",
+		   file_metadata->filename,
+		   file_metadata->unpack_size,
+		   file_metadata->is_dir ? "directory" : "file");
+#if 0
+	file_metadata->crc         = headerData.FileCRC;
+	file_metadata->method      = headerData.Method;
+#endif
+	return UNRAR_OK;
+}
+
+static cl_unrar_error_t la_cli_unrar_extract_file(void *hArchive,
+						  const char *destPath,
+						  char *outputBuffer)
+{
+	struct archive *a = hArchive;
+	const void *buff;
+	int64_t offset;
+	size_t size;
+	ssize_t wr;
+	int fd;
+	int ret;
+
+	fd = open(destPath, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	if (fd < 0) {
+		cli_errmsg("Exract, failed to create %s: %m\n",
+			   destPath);
+		return UNRAR_ERR;
+	}
+
+	for (;;) {
+		ret = archive_read_data_block(a, &buff, &size, &offset);
+		if (ret == ARCHIVE_EOF)
+			break;
+
+		if (ret < ARCHIVE_OK) {
+			cli_errmsg("Exract, failed unpack: %d %s\n",
+				   archive_errno(a),
+				   archive_error_string(a));
+			goto err_out;
+		}
+
+		wr = pwrite(fd, buff, size, offset);
+		if (wr != size) {
+			cli_errmsg("Exract, failed to write %d of %d to %s: %m\n",
+				   wr, size, destPath);
+			goto err_out;
+		}
+	}
+	close(fd);
+
+	cli_dbgmsg("Unpack to %s done\n", destPath);
+	return UNRAR_OK;
+
+err_out:
+	close(fd);
+	unlink(destPath);
+	return UNRAR_ERR;
+}
+
+static cl_unrar_error_t la_cli_unrar_skip_file(void *hArchive)
+{
+	struct archive *a = hArchive;
+	int ret;
+
+	cli_dbgmsg("Skipping...\n");
+	ret = archive_read_data_skip(a);
+	if (ret < ARCHIVE_OK) {
+		cli_errmsg("Skipping failed, %d %s\n",
+			   archive_errno(a), archive_error_string(a));
+		return UNRAR_ERR;
+	}
+
+	return UNRAR_OK;
+}
+
+static void la_cli_unrar_close(void *hArchive)
+{
+	struct archive *a = hArchive;
+
+	cli_dbgmsg("Close.\n");
+	archive_read_free(a);
+}
+
+static void cli_rarload(void)
+{
+	is_rar_inited = 1;
+
+	cli_unrar_open = la_cli_unrar_open;
+	cli_unrar_peek_file_header = la_cli_unrar_peek_file_header;
+	cli_unrar_extract_file = la_cli_unrar_extract_file;
+	cli_unrar_skip_file = la_cli_unrar_skip_file;
+	cli_unrar_close = la_cli_unrar_close;
+
+	have_rar = 1;
+}
+
+#endif
 
 void cl_debug(void)
 {
