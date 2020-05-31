@@ -53,7 +53,7 @@ void execute(const char *type, const char *text, int bDaemonized)
     }
 
 #ifdef _WIN32
-    if (spawnlp(_P_NOWAIT, text, text, NULL) == -1) {
+    if (system(text) == -1) {
         logg("^%s: couldn't execute \"%s\".\n", type, text);
         return;
     }
