@@ -160,16 +160,30 @@ struct xfer_progress {
     CURL *curl;
 };
 
-static void printBytes(curl_off_t bytes)
+static void printTime(double seconds)
 {
-    if (bytes / (1024 * 1024) > 1) {
-        double megabytes = bytes / (double)(1024 * 1024);
-        fprintf(stdout, "%.02fMiB", megabytes);
-    } else if (bytes / 1024 > 1) {
-        double kilobytes = bytes / (double)(1024);
-        fprintf(stdout, "%.02fKiB", kilobytes);
+    if (seconds >= 3600) {
+        fprintf(stdout, "%2.0fh %02.0fm", trunc(seconds / 3600), trunc(fmod(seconds, 3600.0) / 60));
+    } else if (seconds >= 60) {
+        fprintf(stdout, "%2.0fm %02.0fs", trunc(seconds / 60), trunc(fmod(seconds, 60.0)));
     } else {
-        fprintf(stdout, "%" CURL_FORMAT_CURL_OFF_T "B", bytes);
+        fprintf(stdout, "%6.1fs", seconds);
+    }    
+}
+
+static void printBytes(curl_off_t bytes, int bPad)
+{
+    if (bytes >= (1024 * 1024)) {
+        const char *format = bPad ? "%7.02fMiB" : "%.02fMiB";
+        double megabytes = bytes / (double)(1024 * 1024);
+        fprintf(stdout, format, megabytes);
+    } else if (bytes >= 1024) {
+        const char *format = bPad ? "%7.02fKiB" : "%.02fKiB";
+        double kilobytes = bytes / (double)(1024);
+        fprintf(stdout, format, kilobytes);
+    } else {
+        const char *format = bPad ? "%9" CURL_FORMAT_CURL_OFF_T "B" : "%" CURL_FORMAT_CURL_OFF_T "B";
+        fprintf(stdout, format, bytes);
     }
 }
 
@@ -187,7 +201,7 @@ static int xferinfo(void *prog,
     TIMETYPE remtime               = 0;
 
     uint32_t i                = 0;
-    uint32_t totalNumDots     = 30;
+    uint32_t totalNumDots     = 25;
     uint32_t numDots          = 0;
     double fractiondownloaded = 0.0;
 
@@ -201,22 +215,34 @@ static int xferinfo(void *prog,
     curl_easy_getinfo(curl, TIMEOPT, &curtime);
 
     xferProg->lastRunTime = curtime;
-    remtime               = (curtime * 1 / fractiondownloaded) - curtime;
+    remtime               = (curtime / fractiondownloaded) - curtime;
 
 #ifndef _WIN32
     fprintf(stdout, "\e[?7l");
 #endif
 #ifdef TIME_IN_US
     if (fractiondownloaded <= 0.0) {
-        fprintf(stdout, "Time: %.1fs ", curtime / 1000000.0);
+        fprintf(stdout, "Time: ");
+        printTime(curtime / 1000000.0);
+        fprintf(stdout, "               ");
     } else {
-        fprintf(stdout, "Time: %.1fs, ETA: %.1fs ", curtime / 1000000.0, remtime / 1000000.0);
+        fprintf(stdout, "Time: ");
+        printTime(curtime / 1000000.0);
+        fprintf(stdout, ", ETA: ");
+        printTime(remtime / 1000000.0);
+        fprintf(stdout, " ");
     }
 #else
     if (fractiondownloaded <= 0.0) {
-        fprintf(stdout, "Time: %.1fs ", curtime);
+        fprintf(stdout, "Time: ");
+        printTime(curtime);
+        fprintf(stdout, "               ");
     } else {
-        fprintf(stdout, "Time: %.1fs, ETA: %.1fs ", curtime, remtime);
+        fprintf(stdout, "Time: ");
+        printTime(curtime);
+        fprintf(stdout, ", ETA: ");
+        printTime(remtime);
+        fprintf(stdout, " ");
     }
 #endif
 
@@ -226,30 +252,30 @@ static int xferinfo(void *prog,
             for (i = 0; i < numDots - 1; i++) {
                 fprintf(stdout, "=");
             }
-            fprintf(stdout, ">");
-            i++;
         }
+        fprintf(stdout, ">");
+        i++;
     }
     for (; i < totalNumDots; i++) {
-        printf(" ");
+        fprintf(stdout, " ");
     }
 
     fprintf(stdout, "] ");
 
     if (TotalToUpload > 0.0) {
-        printBytes(NowUploaded);
+        printBytes(NowUploaded, 1);
         fprintf(stdout, "/");
-        printBytes(TotalToUpload);
+        printBytes(TotalToUpload, 0);
     } else if (TotalToDownload > 0.0) {
-        printBytes(NowDownloaded);
+        printBytes(NowDownloaded, 1);
         fprintf(stdout, "/");
-        printBytes(TotalToDownload);
+        printBytes(TotalToDownload, 0);
     }
 
     if (NowDownloaded < TotalToDownload) {
-        fprintf(stdout, "     \r");
+        fprintf(stdout, "\r");
     } else {
-        fprintf(stdout, "     \n");
+        fprintf(stdout, "\n");
         xferProg->bComplete = 1;
     }
 #ifndef _WIN32
