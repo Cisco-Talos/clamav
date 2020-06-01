@@ -552,7 +552,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        if ((ret = statinidir_th(dbdir))) {
+        if ((ret = statinidir(dbdir))) {
             logg("!%s\n", cl_strerror(ret));
             ret = 1;
             break;
@@ -744,7 +744,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
+        ret = recvloop(lsockets, nlsockets, engine, dboptions, opts);
 
     } while (0);
 
