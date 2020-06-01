@@ -3,6 +3,12 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.102.4
+
+ClamAV 0.102.4 is a bug patch release to address the following issues.
+
+-
+
 ## 0.102.3
 
 ClamAV 0.102.3 is a bug patch release to address the following issues.
