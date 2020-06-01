@@ -295,7 +295,7 @@ int cli_parsepng(cli_ctx *ctx)
 
             if (ityp == 3) {
                 if ((sz > 256 || sz > nplte) && !have_PLTE) {
-                    cli_append_virus(ctx, "Heuristics.CVE-2004-0597");
+                    cli_append_virus(ctx, "Heuristics.PNG.CVE-2004-0597");
                     return CL_VIRUS;
                 }
 
@@ -309,4 +309,5 @@ int cli_parsepng(cli_ctx *ctx)
             return CL_SUCCESS;
         }
     }
+    return CL_SUCCESS;
 }
