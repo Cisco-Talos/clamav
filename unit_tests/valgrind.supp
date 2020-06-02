@@ -196,7 +196,7 @@
    obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
    fun:send
    fun:fds_poll_recv
-   fun:recvloop_th
+   fun:recvloop
    obj:/lib/libthr.so.3
 }
 {
@@ -207,7 +207,7 @@
    obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
    fun:poll
    fun:fds_poll_recv
-   fun:recvloop_th
+   fun:recvloop
    ...
 }
 {
