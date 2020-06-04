@@ -46,6 +46,13 @@ ClamAV 0.103.0 includes the following improvements and changes.
 - The `clamonacc` on-access scanning daemon for Linux now installs to `sbin`
   instead of `bin`.
 
+- Improvements to the freshclam progress bar so the width of the text does not
+  shift around as information changes and will not spill exceed 80-characters
+  even on very slow connections. Time is now displayed in Xm XXs (or Xh XXm)
+  for values of 60 seconds or more. Bytes display now changes units at the
+  proper 1024 B/KiB instead of 2048 B/KiB.
+  Patch courtesy of loblolly986.
+
 ### Bug fixes
 
 - Fixed behavior of `freshclam --quiet` option.
