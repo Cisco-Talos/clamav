@@ -50,6 +50,10 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 - Fixed behavior of `freshclam --quiet` option.
 
+- Fixed behavior of `freshclam`'s `OnUpdateExecute` config option on Windows
+  when in daemon-mode so it can handle multiple arguments.
+  Patch courtesy of loblolly986.
+
 - Fixed an error in the heuristic alert mechanism that would cause a single
   detection within an archive to alert once for every subsequent file scanned,
   potentially resulting in thousands of alerts for a single scan.
@@ -61,11 +65,12 @@ ClamAV 0.103.0 includes the following improvements and changes.
 The ClamAV team thanks the following individuals for their code submissions:
 
 - Aldo Mazzeo
+- Ángel
 - John Schember
 - Jonathan Sabbe
+- loblolly986
 - Reio Remma
 - Sebastian A. Siewior
-- Ángel
 
 ## 0.102.2
 
