@@ -215,7 +215,6 @@ static int xferinfo(void *prog,
     curl_easy_getinfo(curl, TIMEOPT, &curtime);
 
     xferProg->lastRunTime = curtime;
-    remtime               = (curtime / fractiondownloaded) - curtime;
 
 #ifndef _WIN32
     fprintf(stdout, "\e[?7l");
@@ -226,6 +225,7 @@ static int xferinfo(void *prog,
         printTime(curtime / 1000000.0);
         fprintf(stdout, "               ");
     } else {
+        remtime = (curtime / fractiondownloaded) - curtime;
         fprintf(stdout, "Time: ");
         printTime(curtime / 1000000.0);
         fprintf(stdout, ", ETA: ");
@@ -238,6 +238,7 @@ static int xferinfo(void *prog,
         printTime(curtime);
         fprintf(stdout, "               ");
     } else {
+        remtime = (curtime / fractiondownloaded) - curtime;
         fprintf(stdout, "Time: ");
         printTime(curtime);
         fprintf(stdout, ", ETA: ");
@@ -262,15 +263,9 @@ static int xferinfo(void *prog,
 
     fprintf(stdout, "] ");
 
-    if (TotalToUpload > 0.0) {
-        printBytes(NowUploaded, 1);
-        fprintf(stdout, "/");
-        printBytes(TotalToUpload, 0);
-    } else if (TotalToDownload > 0.0) {
-        printBytes(NowDownloaded, 1);
-        fprintf(stdout, "/");
-        printBytes(TotalToDownload, 0);
-    }
+    printBytes(NowDownloaded, 1);
+    fprintf(stdout, "/");
+    printBytes(TotalToDownload, 0);
 
     if (NowDownloaded < TotalToDownload) {
         fprintf(stdout, "\r");
