@@ -196,7 +196,7 @@ static char *clamd_header = NULL;
  * LIVETHR - sum of live threads
  * IDLETHR - sum of idle threads
  */
-#define SUMHEAD "NO CONNTIME LIV IDL QUEUE  MAXQ   MEM HOST           ENGINE DBVER DBTIME"
+#define SUMHEAD "NO CONNTIME LIV IDL QUEUE  MAXQ   MEM HOST           ENGINE  DBVER DBTIME"
 
 static void resize(void)
 {
@@ -1050,13 +1050,13 @@ static int output_stats(struct stats *stats, unsigned idx)
 
     memset(line, ' ', maxx + 1);
     if (!stats->stats_unsupp) {
-        snprintf(line, maxx - 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                  stats->live, stats->idle,
                  stats->current_q, stats->biggest_queue,
                  mem,
                  stats->remote, stats->engine_version, stats->db_version, timbuf);
     } else {
-        snprintf(line, maxx - 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                  stats->remote, stats->engine_version, stats->db_version, timbuf);
     }
     line[maxx]         = '\0';
@@ -1079,7 +1079,7 @@ static int output_stats(struct stats *stats, unsigned idx)
         mvwprintw(win, i++, 0, "%s", line);
         wattroff(win, COLOR_PAIR(queue_header_color));
         mvwprintw(win, i++, 0, "Primary threads: ");
-        snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->prim_live, stats->prim_idle, stats->prim_max);
+        snprintf(buf, sizeof(buf), "live%3u idle%3u max%3u", stats->prim_live, stats->prim_idle, stats->prim_max);
         print_colored(win, buf);
         show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
         /*		mvwprintw(win, i++, 0, "Multiscan pool : ");
