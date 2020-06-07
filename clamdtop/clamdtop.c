@@ -55,8 +55,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#endif
-#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <assert.h>
@@ -100,7 +98,7 @@ struct stats {
     /* queue */
     unsigned biggest_queue, current_q;
     double mem; /* in megabytes */
-    unsigned long lheapu, lmmapu, ltotalu, ltotalf, lreleasable, lpoolu, lpoolt;
+    double heapu, mmapu, totalu, totalf, releasable, pools_used, pools_total;
     unsigned pools_cnt;
 };
 
@@ -132,7 +130,8 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
     } while (0)
 
 static struct global_stats global;
-static int curses_inited   = 1;
+static SCREEN *curses_scr  = NULL;
+static int curses_inited   = 0;
 static int maxystats       = 0;
 static int detail_selected = -1;
 
@@ -182,11 +181,12 @@ static WINDOW *mem_window        = NULL;
 
 static const char *status_bar_keys[10];
 static unsigned maxy = 0, maxx = 0;
-static char *queue_header = NULL;
-static char *clamd_header = NULL;
+static char *queue_header       = NULL;
+static char *multi_queue_header = NULL;
+static char *clamd_header       = NULL;
 
-#define CMDHEAD " COMMAND        QUEUEDSINCE   FILE"
-#define CMDHEAD2 " # COMMAND     QUEUEDSINCE   FILE"
+#define CMDHEAD  " COMMAND       QUEUEDSINCE    FILE"
+#define CMDHEAD2 "NO COMMAND     QUEUEDSINCE    FILE"
 
 /*
  * CLAMD - which local/remote clamd this is
@@ -196,7 +196,7 @@ static char *clamd_header = NULL;
  * LIVETHR - sum of live threads
  * IDLETHR - sum of idle threads
  */
-#define SUMHEAD "NO CONNTIME LIV IDL QUEUE  MAXQ   MEM HOST           ENGINE DBVER DBTIME"
+#define SUMHEAD "NO CONNTIME LIV IDL QUEUE  MAXQ   MEM ENGINE  DBVER DBTIME        HOST"
 
 static void resize(void)
 {
@@ -214,16 +214,27 @@ static void resize(void)
     clamd_header = malloc(maxx + 1);
     OOM_CHECK(clamd_header);
     assert(clamd_header && queue_header);
-    strncpy(queue_header, global.num_clamd > 1 ? CMDHEAD2 : CMDHEAD, maxx);
+    strncpy(queue_header, CMDHEAD, maxx);
     strncpy(clamd_header, SUMHEAD, maxx);
     queue_header[maxx] = '\0';
     clamd_header[maxx] = '\0';
-    p                  = queue_header + strlen(queue_header);
+    p = queue_header + strlen(queue_header);
     while (p < queue_header + maxx)
         *p++ = ' ';
     p = clamd_header + strlen(clamd_header);
     while (p < clamd_header + maxx)
         *p++ = ' ';
+    if (global.num_clamd > 1) {
+        free(multi_queue_header);
+        multi_queue_header = malloc(maxx + 1);
+        OOM_CHECK(multi_queue_header);
+        assert(multi_queue_header);
+        strncpy(multi_queue_header, CMDHEAD2, maxx);
+        multi_queue_header[maxx] = '\0';
+        p = multi_queue_header + strlen(multi_queue_header);
+        while (p < multi_queue_header + maxx)
+            *p++ = ' ';
+    }
 }
 
 static void rm_windows(void)
@@ -280,7 +291,12 @@ static void init_ncurses(int num_clamd, int use_default)
 {
     int default_bg = use_default ? DEFAULT_COLOR : COLOR_BLACK;
     int default_fg = use_default ? DEFAULT_COLOR : COLOR_WHITE;
-    initscr();
+
+    /* newterm() allows us to free curses-allocated memory with delscreen() */
+    if (!(curses_scr = newterm(NULL, stdout, stdin))) {
+        fprintf(stderr, "Failed to initialize curses\n");
+        exit(EXIT_FAILURE);
+    }
     curses_inited = 1;
 
     start_color();
@@ -360,7 +376,7 @@ static void header(void)
         }
         mvwprintw(status_bar_window, 0, x, "%s", s);
         wattroff(status_bar_window, A_REVERSE);
-        x += strlen(status_bar_keys[i]) + 1;
+        x += strlen(s) + 1;
     }
     wrefresh(status_bar_window);
 }
@@ -416,9 +432,8 @@ static void cleanup(void)
             wrefresh(status_bar_window);
         }
         rm_windows();
-#ifndef _WIN32
         endwin();
-#endif // !_WIN32
+        delscreen(curses_scr);
     }
     curses_inited = 0;
     for (i = 0; i < global.num_clamd; i++) {
@@ -436,6 +451,8 @@ static void cleanup(void)
     free(global.all_stats);
     free(global.conn);
     free(queue_header);
+    if (global.num_clamd > 1)
+        free(multi_queue_header);
     free(clamd_header);
     if (!normal_exit) {
         fprintf(stderr, "Abnormal program termination");
@@ -505,12 +522,15 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     if (stats_head_window) {
-        char *buf = malloc(maxx);
+        char *buf = malloc(maxx + 1);
+        char *nl  = NULL;
         OOM_CHECK(buf);
-        memset(buf, ' ', maxx);
-        vsnprintf(buf, maxx - 1, fmt, ap);
+        memset(buf, ' ', maxx + 1);
+        vsnprintf(buf, maxx + 1, fmt, ap);
+        if ((nl = strrchr(buf, '\n')) != NULL)
+            *nl = ' ';
         buf[strlen(buf)] = ' ';
-        buf[maxx - 1]    = '\0';
+        buf[maxx]        = '\0';
         wattron(stats_head_window, ERROR_ATTR);
         mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
         wattroff(stats_head_window, ERROR_ATTR);
@@ -624,9 +644,9 @@ static int make_connection_real(const char *soname, conn_t *conn)
 {
     int s = -1;
     struct timeval tv;
-    char *port       = NULL;
-    char *pt         = NULL;
-    const char *host = pt;
+    char *port = NULL;
+    char *pt   = NULL;
+    char *host = pt;
     struct addrinfo hints, *res = NULL, *p;
     int err;
     int ret = 0;
@@ -681,7 +701,8 @@ static int make_connection_real(const char *soname, conn_t *conn)
 
     print_con_info(conn, "Looking up: %s:%s\n", host, port ? port : "3310");
     if ((err = getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))) {
-        print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n", host, port ? port : "3310", gai_strerror(err));
+        print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n",
+                       host, port ? port : "3310", gai_strerror(err));
         ret = -1;
         goto done;
     }
@@ -706,17 +727,26 @@ static int make_connection_real(const char *soname, conn_t *conn)
         break;
     }
 
-
     if (p == NULL) {
         ret = -1;
         goto done;
     }
+
 end:
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
     tv.tv_sec  = 30;
     tv.tv_usec = 0;
     setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    if (conn->remote != soname) {
+        /* when we reconnect, they are the same */
+        if (NULL != conn->remote) {
+            free(conn->remote);
+            conn->remote = NULL;
+        }
+        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
+    }
 
 done:
     if (NULL != res) {
@@ -727,15 +757,6 @@ done:
     if (NULL != pt) {
         free(pt);
         pt = NULL;
-    }
-
-    if (conn->remote != soname) {
-        /* when we reconnect, they are the same */
-        if (NULL != conn->remote) {
-            free(conn->remote);
-            conn->remote = NULL;
-        }
-        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
     }
 
     if (NULL != host) {
@@ -865,6 +886,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
 static void output_queue(size_t line, ssize_t max)
 {
     ssize_t i, j;
+    int tasks_truncd            = 0;
     struct task *tasks          = global.tasks;
     struct task *filtered_tasks = calloc(global.n, sizeof(*filtered_tasks));
     OOM_CHECK(filtered_tasks);
@@ -875,14 +897,17 @@ static void output_queue(size_t line, ssize_t max)
     }
 
     wattron(stats_window, COLOR_PAIR(queue_header_color));
-    mvwprintw(stats_window, line++, 0, "%s", queue_header);
-    wattroff(stats_window, COLOR_PAIR(queue_header_color));
-    if (max >= j)
-        max = j;
+    if (detail_selected == -1 && global.num_clamd > 1)
+        mvwprintw(stats_window, line, 0, "%s", multi_queue_header);
     else
+        mvwprintw(stats_window, line, 0, "%s", queue_header);
+    wattroff(stats_window, COLOR_PAIR(queue_header_color));
+    if (max < j) {
         --max;
+        tasks_truncd = 1;
+    }
     if (max < 0) max = 0;
-    for (i = 0; i < max; i++) {
+    for (i = 0; i < j && i < max; i++) {
         char *cmde;
         assert(tasks);
         cmde = strchr(filtered_tasks[i].line, ' ');
@@ -894,20 +919,32 @@ static void output_queue(size_t line, ssize_t max)
             if (filtered_tasks[i].line + 15 > cmde)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
-                ++filstart;
+                size_t oldline = ++line;
+                char *nl = strrchr(++filstart, '\n');
+                if (nl != NULL)
+                    *nl = '\0';
+                wattron(stats_window, A_BOLD);
                 if (detail_selected == -1 && global.num_clamd > 1)
-                    mvwprintw(stats_window, line + i, 0, "%2u %s", filtered_tasks[i].clamd_no, cmd + 1);
+                    mvwprintw(stats_window, line, 0, "%2u %s", filtered_tasks[i].clamd_no, cmd + 1);
                 else
-                    mvwprintw(stats_window, line + i, 0, " %s", cmd + 1);
-                mvwprintw(stats_window, line + i, 15, "%10.03fs", filtered_tasks[i].tim);
-                mvwprintw(stats_window, line + i, 30, "%s", filstart);
+                    mvwprintw(stats_window, line, 0, " %s", cmd + 1);
+                wattroff(stats_window, A_BOLD);
+                mvwprintw(stats_window, line, 15, "%10.03fs", filtered_tasks[i].tim);
+                mvwprintw(stats_window, line, 30, "%s", filstart);
+                line = getcury(stats_window);
+                if (line > oldline)
+                    max -= line - oldline;
+                if (!tasks_truncd && max < j) {
+                    --max;
+                    tasks_truncd = 1;
+                }
             }
         }
     }
-    if (max < j) {
+    if (tasks_truncd) {
         /* in summary mode we can only show a max amount of tasks */
         wattron(stats_window, A_DIM | COLOR_PAIR(header_color));
-        mvwprintw(stats_window, line + i, 0, "*** %u more task(s) not shown ***", (unsigned)(j - max));
+        mvwprintw(stats_window, maxystats - 1, 0, "*** %u more task(s) not shown ***", (unsigned)(j - i));
         wattroff(stats_window, A_DIM | COLOR_PAIR(header_color));
     }
     free(filtered_tasks);
@@ -943,12 +980,12 @@ static void output_memstats(struct stats *stats)
     int blink = 0;
 
     werase(mem_window);
-    if (stats->mem > 0 || (stats->mem >= 0 && (stats->lpoolt > 0))) {
+    if (stats->mem > 0 || (stats->mem >= 0 && (stats->pools_total > 0))) {
         box(mem_window, 0, 0);
 
         if (stats->mem > 0)
-            snprintf(buf, sizeof(buf), "heap %4luM mmap %4luM unused %3luM",
-                     stats->lheapu / 1000, stats->lmmapu / 1000, stats->lreleasable / 1000);
+            snprintf(buf, sizeof(buf), "heap %4.0fM mmap %4.0fM unused%4.0fM",
+                     stats->heapu, stats->mmapu, stats->releasable);
         else
             snprintf(buf, sizeof(buf), "heap   N/A mmap   N/A unused  N/A");
         mvwprintw(mem_window, 1, 1, "Mem:  ");
@@ -956,23 +993,24 @@ static void output_memstats(struct stats *stats)
 
         mvwprintw(mem_window, 2, 1, "Libc: ");
         if (stats->mem > 0)
-            snprintf(buf, sizeof(buf), "used %4luM free %4luM total %4luM",
-                     stats->ltotalu / 1000, stats->ltotalf / 1000, (stats->ltotalu + stats->ltotalf) / 1000);
+            snprintf(buf, sizeof(buf), "used %4.0fM free %4.0fM total %4.0fM",
+                     stats->totalu, stats->totalf, stats->totalu + stats->totalf);
         else
             snprintf(buf, sizeof(buf), "used   N/A free   N/A total   N/A");
         print_colored(mem_window, buf);
 
         mvwprintw(mem_window, 3, 1, "Pool: ");
-        snprintf(buf, sizeof(buf), "count %4u used %4luM total %4luM",
-                 stats->pools_cnt, stats->lpoolu / 1000, stats->lpoolt / 1000);
+        snprintf(buf, sizeof(buf), "count %4u used %4.0fM total %4.0fM",
+                 stats->pools_cnt, stats->pools_used, stats->pools_total);
         print_colored(mem_window, buf);
 
-        totalmem = stats->lheapu + stats->lmmapu + stats->lpoolt;
+        totalmem = (stats->heapu + stats->mmapu + stats->pools_total) * 1000;
         if (totalmem > biggest_mem) {
             biggest_mem = totalmem;
             blink       = 1;
         }
-        show_bar(mem_window, 4, totalmem, stats->lmmapu + stats->lreleasable + stats->lpoolt - stats->lpoolu,
+        show_bar(mem_window, 4, totalmem,
+                 (stats->mmapu + stats->releasable + stats->pools_total - stats->pools_used) * 1000,
                  biggest_mem, blink);
     }
     wrefresh(mem_window);
@@ -980,40 +1018,31 @@ static void output_memstats(struct stats *stats)
 
 static void parse_memstats(const char *line, struct stats *stats)
 {
-    double heapu, mmapu, totalu, totalf, releasable, pools_used, pools_total;
-
     if (sscanf(line, " heap %lfM mmap %lfM used %lfM free %lfM releasable %lfM pools %u pools_used %lfM pools_total %lfM",
-               &heapu, &mmapu, &totalu, &totalf, &releasable, &stats->pools_cnt, &pools_used, &pools_total) != 8) {
+               &stats->heapu, &stats->mmapu, &stats->totalu, &stats->totalf, &stats->releasable,
+               &stats->pools_cnt, &stats->pools_used, &stats->pools_total) != 8) {
         if (sscanf(line, " heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %lfM pools_total %lfM",
-                   &stats->pools_cnt, &pools_used, &pools_total) != 3) {
+                   &stats->pools_cnt, &stats->pools_used, &stats->pools_total) != 3) {
             stats->mem = -1;
             return;
         }
-        stats->lpoolu = pools_used * 1000;
-        stats->lpoolt = pools_total * 1000;
-        stats->mem    = 0;
+        stats->mem = 0;
         return;
     }
-    stats->lheapu      = heapu * 1000;
-    stats->lmmapu      = mmapu * 1000;
-    stats->ltotalu     = totalu * 1000;
-    stats->ltotalf     = totalf * 1000;
-    stats->lreleasable = releasable * 1000;
-    stats->lpoolu      = pools_used * 1000;
-    stats->lpoolt      = pools_total * 1000;
-    stats->mem         = heapu + mmapu + pools_total;
+    stats->mem = stats->heapu + stats->mmapu + stats->pools_total;
 }
 
 static int output_stats(struct stats *stats, unsigned idx)
 {
     char buf[128];
-    char timbuf[15];
+    char timbuf[14];
     int blink = 0;
     size_t i  = 0;
     char mem[6];
     WINDOW *win = stats_head_window;
     int sel     = detail_is_selected(idx);
     char *line  = malloc(maxx + 1);
+    int len     = 0;
 
     OOM_CHECK(line);
 
@@ -1021,20 +1050,25 @@ static int output_stats(struct stats *stats, unsigned idx)
         strncpy(mem, "N/A", sizeof(mem));
         mem[sizeof(mem) - 1] = '\0';
     } else {
+        const char *format;
         char c;
         double s;
-        if (stats->mem > 999.0) {
+        if (stats->mem >= 1024) {
             c = 'G';
             s = stats->mem / 1024.0;
         } else {
             c = 'M';
             s = stats->mem;
         }
-        snprintf(mem, sizeof(mem), "%7.3f", s);
-        i = 4;
-        if (mem[i - 1] == '.') i--;
-        mem[i++] = c;
-        mem[i]   = '\0';
+        if (s >= 99.95)
+            format = "%.0f%c";
+        else if (s >= 9.995)
+            format = "%.1f%c";
+        else
+            format = "%.2f%c";
+
+        snprintf(mem, sizeof(mem), format, s, c);
+        mem[sizeof(mem) - 1] = '\0';
     }
     i = idx + 1;
 
@@ -1042,7 +1076,7 @@ static int output_stats(struct stats *stats, unsigned idx)
         strncpy(timbuf, "N/A", sizeof(timbuf));
         timbuf[sizeof(timbuf) - 1] = '\0';
     } else
-        snprintf(timbuf, sizeof(timbuf), "%04u-%02u-%02u %02uh",
+        snprintf(timbuf, sizeof(timbuf), "%04u-%02u-%02uT%02u",
                  1900 + stats->db_time.tm_year,
                  stats->db_time.tm_mon + 1,
                  stats->db_time.tm_mday,
@@ -1050,14 +1084,16 @@ static int output_stats(struct stats *stats, unsigned idx)
 
     memset(line, ' ', maxx + 1);
     if (!stats->stats_unsupp) {
-        snprintf(line, maxx - 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
-                 stats->live, stats->idle,
-                 stats->current_q, stats->biggest_queue,
-                 mem,
-                 stats->remote, stats->engine_version, stats->db_version, timbuf);
+        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-7s %5s %-13s %s",
+                       idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+                       stats->live, stats->idle,
+                       stats->current_q, stats->biggest_queue,
+                       mem,
+                       stats->engine_version, stats->db_version, timbuf, stats->remote);
     } else {
-        snprintf(line, maxx - 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
-                 stats->remote, stats->engine_version, stats->db_version, timbuf);
+        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-7s %5s %-13s %s",
+                       idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+                       stats->engine_version, stats->db_version, timbuf, stats->remote);
     }
     line[maxx]         = '\0';
     line[strlen(line)] = ' ';
@@ -1068,18 +1104,23 @@ static int output_stats(struct stats *stats, unsigned idx)
     if (sel) {
         wattroff(win, COLOR_PAIR(selected_color));
     }
+    if ((unsigned) len > maxx) {
+        wattron(win, A_DIM | COLOR_PAIR(header_color));
+        mvwprintw(win, i, maxx - 3, "...");
+        wattroff(win, A_DIM | COLOR_PAIR(header_color));
+    }
     win = stats_window;
     i   = 0;
     if (sel && !stats->stats_unsupp) {
         memset(line, ' ', maxx + 1);
-        snprintf(line, maxx - 1, "Details for Clamd version: %s", stats->version);
+        snprintf(line, maxx + 1, "Details for Clamd version: %s", stats->version);
         line[maxx]         = '\0';
         line[strlen(line)] = ' ';
         wattron(win, COLOR_PAIR(queue_header_color));
         mvwprintw(win, i++, 0, "%s", line);
         wattroff(win, COLOR_PAIR(queue_header_color));
         mvwprintw(win, i++, 0, "Primary threads: ");
-        snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->prim_live, stats->prim_idle, stats->prim_max);
+        snprintf(buf, sizeof(buf), "live%3u idle%3u max%3u", stats->prim_live, stats->prim_idle, stats->prim_max);
         print_colored(win, buf);
         show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
         /*		mvwprintw(win, i++, 0, "Multiscan pool : ");
@@ -1160,7 +1201,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
     if (*p) p++;
     /* keep only base version, and cut -exp, and -gittags */
     pstart = p;
-    while (*p && *p != '-' && *p != '/')
+    while (*p && *p != ' ' && *p != '-' && *p != '/')
         p++;
 
     stats->engine_version = malloc(p - pstart + 1);
@@ -1451,12 +1492,12 @@ static int show_help(void)
     explain("QUEUE", "Number of items in queue");
     explain("MAXQ", "Maximum number of items observed in queue");
     explain("MEM", "Total memory usage (if available)");
-    explain("HOST", "Which clamd, local means unix socket");
     explain("ENGINE", "Engine version");
     explain("DBVER", "Database version");
     explain("DBTIME", "Database publish time");
+    explain("HOST", "Which clamd, local means unix socket");
     explain("Primary threads", "Threadpool used to receive commands");
-    explain("Multiscan pool", "Threadpool used for multiscan");
+    /*explain("Multiscan pool", "Threadpool used for multiscan");*/
     explain("live", "Executing commands, or scanning");
     explain("idle", "Waiting for commands, will exit after idle_timeout");
     explain("max", "Maximum number of threads configured for this pool");
