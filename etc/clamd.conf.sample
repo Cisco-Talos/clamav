@@ -196,6 +196,15 @@ Example
 # Default: 600 (10 min)
 #SelfCheck 600
 
+# Enable non-blocking (multi-threaded/concurrent) database reloads. This feature
+# will temporarily load a second scanning engine while scanning continues using
+# the first engine. Once loaded, the new engine takes over. The old engine is
+# removed as soon as all scans using the old engine have completed. This feature
+# requires more RAM, so this option is provided in case users are willing to
+# block scans during reload in exchange for lower RAM requirements.
+# Default: yes
+#ConcurrentDatabaseReload no
+
 # Execute a command when virus is found. In the command string %v will
 # be replaced with the virus name.
 # Default: no

@@ -271,6 +271,8 @@ const struct clam_option __clam_options[] = {
 
     {"SelfCheck", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 600, NULL, 0, OPT_CLAMD, "This option specifies the time intervals (in seconds) in which clamd\nshould perform a database check.", "600"},
 
+    {"ConcurrentDatabaseReload", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enable non-blocking (multi-threaded/concurrent) database reloads. This feature \nwill temporarily load a second scanning engine while scanning continues using \nthe first engine. Once loaded, the new engine takes over. The old engine is \nremoved as soon as all scans using the old engine have completed. This feature \nrequires more RAM, so this option is provided in case users are willing to \nblock scans during reload in exchange for lower RAM requirements.", "yes"},
+
     {"DisableCache", "disable-cache", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option allows you to disable clamd's caching feature.", "no"},
 
     {"VirusEvent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Execute a command when a virus is found. In the command string %v will be\nreplaced with the virus name. Additionally, two environment variables will\nbe defined: $CLAM_VIRUSEVENT_FILENAME and $CLAM_VIRUSEVENT_VIRUSNAME.", "/usr/bin/mailx -s \"ClamAV VIRUS ALERT: %v\" alert < /dev/null"},
