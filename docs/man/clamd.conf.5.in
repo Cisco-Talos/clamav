@@ -234,6 +234,11 @@ should perform a database check.
 .br
 Default: 600
 .TP
+\fBConcurrentDatabaseReload BOOL\fR
+Enable non-blocking (multi-threaded/concurrent) database reloads. This feature will temporarily load a second scanning engine while scanning continues using the first engine. Once loaded, the new engine takes over. The old engine is removed as soon as all scans using the old engine have completed. This feature requires more RAM, so this option is provided in case users are willing to block scans during reload in exchange for lower RAM requirements.
+.br
+Default: yes
+.TP
 \fBVirusEvent COMMAND\fR
 Execute a command when a virus is found. In the command string %v will be
 replaced with the virus name. Additionally, two environment variables will
@@ -398,7 +403,7 @@ Default: 3
 .TP
 \fBStructuredCCOnly BOOL\fR
 With this option enabled the DLP module will search for valid Credit Card\nnumbers only. Debit and Private Label cards will not be searched.
-.br 
+.br
 Default: No
 .TP
 \fBStructuredMinSSNCount NUMBER\fR

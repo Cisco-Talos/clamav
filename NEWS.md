@@ -9,6 +9,24 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 ### Major changes
 
+- Clamd can now reload the signature database without blocking scanning.
+  This multi-threaded database reload improvement was made possible thanks to
+  a community effort.
+
+  Non-blocking database reloads are now the default behavior. Some systems that
+  are more contrained on RAM may need to disable non-blocking reloads as it will
+  temporarily consume 2x as much memory. For this purpose we have added a new
+  clamd config option `ConcurrentDatabaseReload` which may be set to `no`.
+
+  Special thanks to the following for making this feature a reality:
+  - Alberto Wu
+  - Alexander Sulfrian
+  - Arjen de Korte
+  - David Heidelberg
+  - Ged Haywood
+
+  Thank you all for your patience waiting for this feature.
+
 ### Notable changes
 
 - The DLP module has been enhanced with additional credit card ranges and a new

@@ -359,6 +359,44 @@ void thrmgr_destroy(threadpool_t *threadpool)
     return;
 }
 
+void thrmgr_wait_for_threads(threadpool_t *threadpool) {
+    if (!threadpool) {
+        return;
+    }
+    if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
+        logg("!Mutex lock failed\n");
+        exit(-1);
+    }
+    if (threadpool->state != POOL_VALID) {
+        if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+            logg("!Mutex unlock failed\n");
+            exit(-1);
+        }
+        return;
+    }
+
+    /* wait for threads to exit */
+    if (threadpool->thr_alive > 0) {
+        if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
+            pthread_mutex_unlock(&threadpool->pool_mutex);
+            return;
+        }
+    }
+    while (threadpool->thr_alive > 0) {
+        if (pthread_cond_wait(&threadpool->pool_cond, &threadpool->pool_mutex) != 0) {
+            pthread_mutex_unlock(&threadpool->pool_mutex);
+            return;
+        }
+    }
+
+    /* Ok threads all exited, we can release the lock */
+    if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+        logg("!Mutex unlock failed\n");
+        exit(-1);
+    }
+    return;
+}
+
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void (*handler)(void *))
 {
     threadpool_t *threadpool;

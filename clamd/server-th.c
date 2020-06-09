@@ -86,9 +86,9 @@ time_t reloaded_time         = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup                   = 0;
 
-static pthread_mutex_t rldstage_mutex = PTHREAD_MUTEX_INITIALIZER;
-static reload_stage_t reload_stage    = RELOAD_STAGE__IDLE; /* protected by rldstage_mutex */
-struct cl_engine *g_newengine         = NULL;               /* protected by rldstage_mutex */
+static pthread_mutex_t reload_stage_mutex = PTHREAD_MUTEX_INITIALIZER;
+static reload_stage_t reload_stage        = RELOAD_STAGE__IDLE; /* protected by reload_stage_mutex */
+struct cl_engine *g_newengine             = NULL;               /* protected by reload_stage_mutex */
 
 extern pthread_mutex_t logg_mutex;
 static struct cl_stat dbstat;
@@ -265,10 +265,10 @@ done:
         }
     }
 
-    pthread_mutex_lock(&rldstage_mutex);
+    pthread_mutex_lock(&reload_stage_mutex);
     reload_stage = RELOAD_STAGE__NEW_DB_AVAILABLE; /* New DB available */
     g_newengine  = engine;
-    pthread_mutex_unlock(&rldstage_mutex);
+    pthread_mutex_unlock(&reload_stage_mutex);
 
 #ifdef _WIN32
     SetEvent(event_wake_recv);
@@ -284,12 +284,12 @@ done:
 /**
  * @brief Reload the database.
  *
- * @param engine        The current scan engine, used to copy the settings.
- * @param dboptions     The current database options, used to copy the options.
- * @param opts          The command line options, used to get the database directory.
- * @return cl_error_t   CL_SUCCESS if the reload thread was successfully started. This does not mean that the database has reloaded successfully.
+ * @param[in/out] engine    The current scan engine, used to copy the settings.
+ * @param dboptions         The current database options, used to copy the options.
+ * @param opts              The command line options, used to get the database directory.
+ * @return cl_error_t       CL_SUCCESS if the reload thread was successfully started. This does not mean that the database has reloaded successfully.
  */
-static cl_error_t reload_db(struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
+static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, const struct optstruct *opts, threadpool_t *thr_pool)
 {
     cl_error_t status = CL_EMALFDB;
     cl_error_t retval;
@@ -297,7 +297,7 @@ static cl_error_t reload_db(struct cl_engine *engine, unsigned int dboptions, co
     pthread_t th;
     pthread_attr_t th_attr;
 
-    if (NULL == opts) {
+    if (NULL == opts || NULL == engine) {
         logg("!reload_db: Invalid arguments, unable to load signature databases.\n");
         status = CL_EARG;
         goto done;
@@ -313,9 +313,9 @@ static cl_error_t reload_db(struct cl_engine *engine, unsigned int dboptions, co
 
     rldata->dboptions = dboptions;
 
-    if (engine) {
+    if (*engine) {
         /* copy current settings */
-        rldata->settings = cl_engine_settings_copy(engine);
+        rldata->settings = cl_engine_settings_copy(*engine);
         if (!rldata->settings) {
             logg("!Can't make a copy of the current engine settings\n");
             goto done;
@@ -339,18 +339,63 @@ static cl_error_t reload_db(struct cl_engine *engine, unsigned int dboptions, co
         goto done;
     }
 
+    if (*engine) {
+        if (!optget(opts, "ConcurrentDatabaseReload")->enabled) {
+            /*
+             * If concurrent reload disabled, we'll NULL out the current engine and deref it.
+             * It will only actually be free'd once the last scan finishes.
+             */
+            thrmgr_setactiveengine(NULL);
+            cl_engine_free(*engine);
+            *engine = NULL;
+
+            /* Wait for all scans to finish */
+            thrmgr_wait_for_threads(thr_pool);
+        }
+    }
+
     if (pthread_attr_init(&th_attr)) {
         logg("!Failed to init reload thread attributes\n");
         goto done;
     }
 
-    pthread_attr_setdetachstate(&th_attr, PTHREAD_CREATE_DETACHED);
+    if (optget(opts, "ConcurrentDatabaseReload")->enabled) {
+        /* For concurrent reloads: set detached, so we don't leak thread resources */
+        pthread_attr_setdetachstate(&th_attr, PTHREAD_CREATE_DETACHED);
+    }
+
     retval = pthread_create(&th, &th_attr, reload_th, rldata);
     if (pthread_attr_destroy(&th_attr))
         logg("^Failed to release reload thread attributes\n");
     if (retval) {
         logg("!Failed to spawn reload thread\n");
         goto done;
+    }
+
+    if (!optget(opts, "ConcurrentDatabaseReload")->enabled) {
+        /* For non-concurrent reloads: join the thread */
+        int join_ret = pthread_join(th, NULL);
+        switch (join_ret) {
+            case 0:
+                logg("Database reload completed.\n");
+                break;
+
+            case EDEADLK:
+                logg("!A deadlock was detected when waiting for the database reload thread.\n");
+                goto done;
+
+            case ESRCH:
+                logg("!Failed to find database reload thread.\n");
+                goto done;
+
+            case EINVAL:
+                logg("!The database reload thread is not a joinable thread.\n");
+                goto done;
+
+            default:
+                logg("!An unknown error occured when waiting for the database reload thread: %d\n", join_ret);
+                goto done;
+        }
     }
 
     status = CL_SUCCESS;
@@ -1269,7 +1314,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
         logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int)val);
 
-        if(optget(opts, "StructuredCCOnly")->enabled)
+        if (optget(opts, "StructuredCCOnly")->enabled)
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
 
         if ((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
@@ -1675,35 +1720,51 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         /* DB reload */
         pthread_mutex_lock(&reload_mutex);
         if (reload) {
+            pthread_mutex_unlock(&reload_mutex);
             /* Reload was requested */
-            pthread_mutex_lock(&rldstage_mutex);
+            pthread_mutex_lock(&reload_stage_mutex);
             if (reload_stage == RELOAD_STAGE__IDLE) {
                 /* Reloading not already taking place */
                 reload_stage = RELOAD_STAGE__RELOADING;
-                if (CL_SUCCESS != reload_db(engine, dboptions, opts)) {
+                pthread_mutex_unlock(&reload_stage_mutex);
+                if (CL_SUCCESS != reload_db(&engine, dboptions, opts, thr_pool)) {
                     logg("^Database reload setup failed, keeping the previous instance\n");
-                    reload       = 0;
+                    pthread_mutex_lock(&reload_mutex);
+                    reload = 0;
+                    pthread_mutex_unlock(&reload_mutex);
+                    pthread_mutex_lock(&reload_stage_mutex);
                     reload_stage = RELOAD_STAGE__IDLE;
+                    pthread_mutex_unlock(&reload_stage_mutex);
                 }
-            } else if (reload_stage == RELOAD_STAGE__NEW_DB_AVAILABLE) {
+                pthread_mutex_lock(&reload_stage_mutex);
+            }
+            if (reload_stage == RELOAD_STAGE__NEW_DB_AVAILABLE) {
                 /* New database available */
                 if (g_newengine) {
                     /* Reload succeeded */
                     logg("Activating the newly loaded database...\n");
                     thrmgr_setactiveengine(g_newengine);
-                    cl_engine_free(engine);
+                    if (optget(opts, "ConcurrentDatabaseReload")->enabled) {
+                        /* If concurrent database reload, we now need to free the old engine. */
+                        cl_engine_free(engine);
+                    }
                     engine      = g_newengine;
                     g_newengine = NULL;
                 } else {
                     logg("^Database reload failed, keeping the previous instance\n");
                 }
                 reload_stage = RELOAD_STAGE__IDLE;
-                reload       = 0;
+                pthread_mutex_unlock(&reload_stage_mutex);
+                pthread_mutex_lock(&reload_mutex);
+                reload = 0;
+                pthread_mutex_unlock(&reload_mutex);
                 time(&reloaded_time);
+            } else {
+                pthread_mutex_unlock(&reload_stage_mutex);
             }
-            pthread_mutex_unlock(&rldstage_mutex);
+        } else {
+            pthread_mutex_unlock(&reload_mutex);
         }
-        pthread_mutex_unlock(&reload_mutex);
     }
 
     pthread_mutex_lock(&exit_mutex);
