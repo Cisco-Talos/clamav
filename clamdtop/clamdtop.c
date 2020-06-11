@@ -505,12 +505,15 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     if (stats_head_window) {
-        char *buf = malloc(maxx);
+        char *buf = malloc(maxx + 1);
+	char *nl = NULL;
         OOM_CHECK(buf);
-        memset(buf, ' ', maxx);
-        vsnprintf(buf, maxx - 1, fmt, ap);
+        memset(buf, ' ', maxx + 1);
+        vsnprintf(buf, maxx + 1, fmt, ap);
+	if ((nl = strchr(buf, '\n')) != NULL)
+            *nl = ' ';
         buf[strlen(buf)] = ' ';
-        buf[maxx - 1]    = '\0';
+        buf[maxx]    = '\0';
         wattron(stats_head_window, ERROR_ATTR);
         mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
         wattroff(stats_head_window, ERROR_ATTR);
