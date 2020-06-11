@@ -1072,7 +1072,7 @@ static int output_stats(struct stats *stats, unsigned idx)
     i   = 0;
     if (sel && !stats->stats_unsupp) {
         memset(line, ' ', maxx + 1);
-        snprintf(line, maxx - 1, "Details for Clamd version: %s", stats->version);
+        snprintf(line, maxx + 1, "Details for Clamd version: %s", stats->version);
         line[maxx]         = '\0';
         line[strlen(line)] = ' ';
         wattron(win, COLOR_PAIR(queue_header_color));
