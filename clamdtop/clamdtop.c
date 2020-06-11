@@ -506,11 +506,11 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
     va_start(ap, fmt);
     if (stats_head_window) {
         char *buf = malloc(maxx + 1);
-	char *nl = NULL;
+        char *nl  = NULL;
         OOM_CHECK(buf);
         memset(buf, ' ', maxx + 1);
         vsnprintf(buf, maxx + 1, fmt, ap);
-	if ((nl = strchr(buf, '\n')) != NULL)
+        if ((nl = strchr(buf, '\n')) != NULL)
             *nl = ' ';
         buf[strlen(buf)] = ' ';
         buf[maxx]    = '\0';
