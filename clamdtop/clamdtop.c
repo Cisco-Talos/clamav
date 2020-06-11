@@ -513,7 +513,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
         if ((nl = strchr(buf, '\n')) != NULL)
             *nl = ' ';
         buf[strlen(buf)] = ' ';
-        buf[maxx]    = '\0';
+        buf[maxx]        = '\0';
         wattron(stats_head_window, ERROR_ATTR);
         mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
         wattroff(stats_head_window, ERROR_ATTR);
