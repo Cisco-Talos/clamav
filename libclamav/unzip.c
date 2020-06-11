@@ -957,6 +957,7 @@ cl_error_t index_the_central_directory(
     struct zip_record *curr_record   = NULL;
     struct zip_record *prev_record   = NULL;
     uint32_t num_overlapping_files   = 0;
+    int virus_found = 0;
 
     if (NULL == catalogue || NULL == num_records) {
         cli_errmsg("index_the_central_directory: Invalid NULL arguments\n");
@@ -986,6 +987,15 @@ cl_error_t index_the_central_directory(
                                                             NULL, // tmpd not required
                                                             NULL,
                                                             &(zip_catalogue[records_count])))) {
+        if (ret == CL_VIRUS) {
+            if (SCAN_ALLMATCHES)
+                virus_found = 1;
+            else {
+                status = CL_VIRUS;
+                goto done;
+            }
+        }
+
         index++;
 
         if (cli_checktimelimit(ctx) != CL_SUCCESS) {
@@ -1020,6 +1030,15 @@ cl_error_t index_the_central_directory(
             num_record_blocks++;
             /* zero out the memory for the new records */
             memset(&(zip_catalogue[records_count]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
+        }
+    }
+
+    if (ret == CL_VIRUS) {
+        if (SCAN_ALLMATCHES)
+	    virus_found = 1;
+        else {
+            status = CL_VIRUS;
+            goto done;
         }
     }
 
@@ -1090,6 +1109,8 @@ done:
         }
     }
 
+    if (virus_found) status = CL_VIRUS;
+
     return status;
 }
 
@@ -1147,7 +1168,11 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             &zip_catalogue,
             &records_count);
         if (CL_SUCCESS != ret) {
-            goto done;
+	    if (CL_VIRUS == ret && SCAN_ALLMATCHES)
+               virus_found = 1;
+	    else {
+	        goto done;
+            }
         }
 
         /*
