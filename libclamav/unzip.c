@@ -1252,7 +1252,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     if (virus_found == 1) {
         ret = CL_VIRUS;
     }
-    if (num_files_unzipped <= (file_count / 4)) { /* FIXME: make up a sane ratio or remove the whole logic */
+    if (0 < num_files_unzipped && num_files_unzipped <= (file_count / 4)) { /* FIXME: make up a sane ratio or remove the whole logic */    
         file_count = 0;
         while ((ret == CL_CLEAN) &&
                (lhoff < fsize) &&
