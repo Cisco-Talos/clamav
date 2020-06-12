@@ -510,7 +510,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
         OOM_CHECK(buf);
         memset(buf, ' ', maxx + 1);
         vsnprintf(buf, maxx + 1, fmt, ap);
-        if ((nl = strchr(buf, '\n')) != NULL)
+        if ((nl = strrchr(buf, '\n')) != NULL)
             *nl = ' ';
         buf[strlen(buf)] = ' ';
         buf[maxx]        = '\0';
@@ -880,12 +880,10 @@ static void output_queue(size_t line, ssize_t max)
     wattron(stats_window, COLOR_PAIR(queue_header_color));
     mvwprintw(stats_window, line++, 0, "%s", queue_header);
     wattroff(stats_window, COLOR_PAIR(queue_header_color));
-    if (max >= j)
-        max = j;
-    else
+    if (max < j)
         --max;
     if (max < 0) max = 0;
-    for (i = 0; i < max; i++) {
+    for (i = 0; i < j && i < max; i++) {
         char *cmde;
         assert(tasks);
         cmde = strchr(filtered_tasks[i].line, ' ');
@@ -897,20 +895,26 @@ static void output_queue(size_t line, ssize_t max)
             if (filtered_tasks[i].line + 15 > cmde)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
-                ++filstart;
+                size_t oldline = (line += i);
+                char *nl = strrchr(++filstart, '\n');
+                if (nl != NULL)
+                    *nl = '\0';
                 if (detail_selected == -1 && global.num_clamd > 1)
-                    mvwprintw(stats_window, line + i, 0, "%2u %s", filtered_tasks[i].clamd_no, cmd + 1);
+                    mvwprintw(stats_window, line, 0, "%2u %s", filtered_tasks[i].clamd_no, cmd + 1);
                 else
-                    mvwprintw(stats_window, line + i, 0, " %s", cmd + 1);
-                mvwprintw(stats_window, line + i, 15, "%10.03fs", filtered_tasks[i].tim);
-                mvwprintw(stats_window, line + i, 30, "%s", filstart);
+                    mvwprintw(stats_window, line, 0, " %s", cmd + 1);
+                mvwprintw(stats_window, line, 15, "%10.03fs", filtered_tasks[i].tim);
+                mvwprintw(stats_window, line, 30, "%s", filstart);
+                line = getcury(stats_window);
+                if (line > oldline)
+                    max -= line - oldline;
             }
         }
     }
     if (max < j) {
         /* in summary mode we can only show a max amount of tasks */
         wattron(stats_window, A_DIM | COLOR_PAIR(header_color));
-        mvwprintw(stats_window, line + i, 0, "*** %u more task(s) not shown ***", (unsigned)(j - max));
+        mvwprintw(stats_window, maxystats - 1, 0, "*** %u more task(s) not shown ***", (unsigned)(j - max));
         wattroff(stats_window, A_DIM | COLOR_PAIR(header_color));
     }
     free(filtered_tasks);
