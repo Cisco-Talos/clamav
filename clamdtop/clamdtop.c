@@ -185,8 +185,8 @@ static unsigned maxy = 0, maxx = 0;
 static char *queue_header = NULL;
 static char *clamd_header = NULL;
 
-#define CMDHEAD " COMMAND        QUEUEDSINCE   FILE"
-#define CMDHEAD2 " # COMMAND     QUEUEDSINCE   FILE"
+#define CMDHEAD  " COMMAND       QUEUEDSINCE    FILE"
+#define CMDHEAD2 " # COMMAND     QUEUEDSINCE    FILE"
 
 /*
  * CLAMD - which local/remote clamd this is
