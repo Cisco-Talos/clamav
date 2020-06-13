@@ -895,7 +895,7 @@ static void output_queue(size_t line, ssize_t max)
             if (filtered_tasks[i].line + 15 > cmde)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
-                size_t oldline = (line += i);
+                size_t oldline = line;
                 char *nl = strrchr(++filstart, '\n');
                 if (nl != NULL)
                     *nl = '\0';
@@ -908,6 +908,7 @@ static void output_queue(size_t line, ssize_t max)
                 line = getcury(stats_window);
                 if (line > oldline)
                     max -= line - oldline;
+                line++;
             }
         }
     }
