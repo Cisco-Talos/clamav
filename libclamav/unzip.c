@@ -614,7 +614,7 @@ static unsigned int parse_local_file_header(
     char name[256];
     char *original_filename = NULL;
     uint32_t csize, usize;
-    int virus_found = 0;
+    int virus_found                          = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
@@ -957,7 +957,7 @@ cl_error_t index_the_central_directory(
     struct zip_record *curr_record   = NULL;
     struct zip_record *prev_record   = NULL;
     uint32_t num_overlapping_files   = 0;
-    int virus_found = 0;
+    int virus_found                  = 0;
 
     if (NULL == catalogue || NULL == num_records) {
         cli_errmsg("index_the_central_directory: Invalid NULL arguments\n");
@@ -1035,7 +1035,7 @@ cl_error_t index_the_central_directory(
 
     if (ret == CL_VIRUS) {
         if (SCAN_ALLMATCHES)
-	    virus_found = 1;
+            virus_found = 1;
         else {
             status = CL_VIRUS;
             goto done;
@@ -1168,10 +1168,10 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             &zip_catalogue,
             &records_count);
         if (CL_SUCCESS != ret) {
-	    if (CL_VIRUS == ret && SCAN_ALLMATCHES)
-               virus_found = 1;
-	    else {
-	        goto done;
+            if (CL_VIRUS == ret && SCAN_ALLMATCHES)
+                virus_found = 1;
+            else {
+                goto done;
             }
         }
 
