@@ -1446,9 +1446,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
                         int64_t increment = 0;
 
-                        if (hex && (value >> 32) * 16 < INT32_MAX) {
+                        if (hex && value < INT64_MAX / 16) {
                             value *= 16;
-                        } else if ((value >> 32) * 10 < INT32_MAX) {
+                        } else if (value < INT64_MAX / 10) {
                             value *= 10;
                         } else {
                             html_output_c(file_buff_o2, value);
@@ -1735,7 +1735,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     state = HTML_RFC2397_DATA;
                     break;
                 case HTML_ESCAPE_CHAR:
-                    if ((value >> 32) * 16 < INT32_MAX) {
+                    if (value < INT64_MAX / 16) {
                         value *= 16;
                     } else {
                         state      = next_state;
