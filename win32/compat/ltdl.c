@@ -65,3 +65,15 @@ const lt_dlinfo *lt_dlgetinfo(lt_dlhandle handle)
 {
     return &dlinfo;
 }
+
+int lt_dlclose (lt_dlhandle handle)
+{
+    int ret;
+    ret = FreeLibrary(handle);
+    if (0 == ret)
+    {
+        lasterr = GetLastError();
+        return 1;
+    }
+    return 0;
+}

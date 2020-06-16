@@ -564,13 +564,12 @@ char *get_ip(const char *ip)
         p1++;
     }
 
-    if (i == 0 || i > 1) {
-        return dupip;
-    } else {
+    if (i == 1) {
         p1  = strchr(dupip, ':');
         *p1 = '\0';
-        return dupip;
     }
+
+    return dupip;
 }
 
 char *get_port(const char *ip)
