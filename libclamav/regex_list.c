@@ -157,7 +157,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     char *buffer         = NULL;
     char *bufrev         = NULL;
     cl_error_t rc        = CL_SUCCESS;
-    int filter_search_rc = 0;
+    //int filter_search_rc = 0;
     int root;
     struct cli_ac_data mdata;
     struct cli_ac_result *res = NULL;
@@ -208,15 +208,39 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         return CL_EMEM;
 
     reverse_string(bufrev);
-    filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
-    if (filter_search_rc == -1) {
-        free(buffer);
-        free(bufrev);
-        /* filter says this suffix doesn't match.
-			 * The filter has false positives, but no false
-			 * negatives */
-        return CL_SUCCESS;
-    }
+    // TODO Add this back in once we improve the regex parsing code that finds
+    // suffixes to add to the filter.
+    //
+    // Reviewing Coverity bug reports we found that the return value to this
+    // filter_search call was effectively being ignored, causing no filtering
+    // to occur. Fixing this issue resulted in a unit test that uses the
+    // following match list regex to fail when searching for `ebay.com`.:
+    //
+    // .+\\.paypal\\.(com|de|fr|it)([/?].*)?:.+\\.ebay\\.(at|be|ca|ch|co\\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\\.(au|cn|hk|my|sg))?)/
+    //
+    // After investigating further, this is because the regex_list_add_pattern
+    // call, which parses the regex for suffixes and attempts to add these to
+    // the filter, can't handle the `com(\\.(au|cn|hk|my|sg))?` portion of
+    // the regex. As a result, it only adds `ebay.at`, `ebay.be`, `ebay.ca`, up
+    // through `ebay.pl` into the filter). With the commented out code below
+    // uncommented, these suffixes not existing in the filter are treated as
+    // there not being a corresponding regex for ebay.com, causing no regex
+    // rules to be evaluated against the URL.
+    //
+    // We should get the regex parsing code working (and ensure it handles any
+    // other complex cases in daily.cdb) before re-enabling this code. The code
+    // has had no effect for 12+ years at this point, though, so it's probably
+    // safe to wait a bit longer without it.
+    //
+    //filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
+    //if (filter_search_rc == -1) {
+    //    free(buffer);
+    //    free(bufrev);
+    //    /* filter says this suffix doesn't match.
+    //     * The filter has false positives, but no false
+    //     * negatives */
+    //    return CL_SUCCESS;
+    //}
 
     rc = cli_ac_scanbuff((const unsigned char *)bufrev, buffer_len, NULL, (void *)&regex, &res, &matcher->suffixes, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
     free(bufrev);
