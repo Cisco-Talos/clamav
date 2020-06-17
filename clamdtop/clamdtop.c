@@ -132,7 +132,7 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
     } while (0)
 
 static struct global_stats global;
-static int curses_inited   = 1;
+static int curses_inited   = 0;
 static int maxystats       = 0;
 static int detail_selected = -1;
 
@@ -720,6 +720,15 @@ end:
     tv.tv_sec  = 30;
     tv.tv_usec = 0;
     setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    if (conn->remote != soname) {
+        /* when we reconnect, they are the same */
+        if (NULL != conn->remote) {
+            free(conn->remote);
+            conn->remote = NULL;
+        }
+        conn->remote = make_ip(host, (port != NULL) ? port : "3310");
+    }
 
 done:
     if (NULL != res) {
