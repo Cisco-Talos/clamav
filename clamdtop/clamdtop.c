@@ -55,8 +55,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#endif
-#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <assert.h>
@@ -629,7 +627,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
     struct timeval tv;
     char *port       = NULL;
     char *pt         = NULL;
-    const char *host = pt;
+    char *host       = pt;
     struct addrinfo hints, *res = NULL, *p;
     int err;
     int ret = 0;
@@ -709,11 +707,11 @@ static int make_connection_real(const char *soname, conn_t *conn)
         break;
     }
 
-
     if (p == NULL) {
         ret = -1;
         goto done;
     }
+
 end:
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
@@ -877,6 +875,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
 static void output_queue(size_t line, ssize_t max)
 {
     ssize_t i, j;
+    int tasks_truncd            = 0;
     struct task *tasks          = global.tasks;
     struct task *filtered_tasks = calloc(global.n, sizeof(*filtered_tasks));
     OOM_CHECK(filtered_tasks);
@@ -887,10 +886,12 @@ static void output_queue(size_t line, ssize_t max)
     }
 
     wattron(stats_window, COLOR_PAIR(queue_header_color));
-    mvwprintw(stats_window, line++, 0, "%s", queue_header);
+    mvwprintw(stats_window, line, 0, "%s", queue_header);
     wattroff(stats_window, COLOR_PAIR(queue_header_color));
-    if (max < j)
+    if (max < j) {
         --max;
+        tasks_truncd = 1;
+    }
     if (max < 0) max = 0;
     for (i = 0; i < j && i < max; i++) {
         char *cmde;
@@ -904,7 +905,7 @@ static void output_queue(size_t line, ssize_t max)
             if (filtered_tasks[i].line + 15 > cmde)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
-                size_t oldline = line;
+                size_t oldline = ++line;
                 char *nl = strrchr(++filstart, '\n');
                 if (nl != NULL)
                     *nl = '\0';
@@ -917,14 +918,17 @@ static void output_queue(size_t line, ssize_t max)
                 line = getcury(stats_window);
                 if (line > oldline)
                     max -= line - oldline;
-                line++;
+                if (!tasks_truncd && max < j) {
+                    --max;
+                    tasks_truncd = 1;
+                }
             }
         }
     }
-    if (max < j) {
+    if (tasks_truncd) {
         /* in summary mode we can only show a max amount of tasks */
         wattron(stats_window, A_DIM | COLOR_PAIR(header_color));
-        mvwprintw(stats_window, maxystats - 1, 0, "*** %u more task(s) not shown ***", (unsigned)(j - max));
+        mvwprintw(stats_window, maxystats - 1, 0, "*** %u more task(s) not shown ***", (unsigned)(j - i));
         wattroff(stats_window, A_DIM | COLOR_PAIR(header_color));
     }
     free(filtered_tasks);
@@ -1067,13 +1071,13 @@ static int output_stats(struct stats *stats, unsigned idx)
 
     memset(line, ' ', maxx + 1);
     if (!stats->stats_unsupp) {
-        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-7s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                  stats->live, stats->idle,
                  stats->current_q, stats->biggest_queue,
                  mem,
                  stats->remote, stats->engine_version, stats->db_version, timbuf);
     } else {
-        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-7s %5s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                  stats->remote, stats->engine_version, stats->db_version, timbuf);
     }
     line[maxx]         = '\0';
