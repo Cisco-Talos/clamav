@@ -2081,14 +2081,16 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
     enc = cli_memstr(s, length, "/Encrypt", 8);
     if (enc) {
         char *newID;
+        unsigned int newIDlen = 0;
 
         pdf->flags |= 1 << ENCRYPTED_PDF;
         pdf_parse_encrypt(pdf, enc, s + length - enc);
-        newID = pdf_readstring(s, length, "/ID", &pdf->fileIDlen, NULL, 0);
+        newID = pdf_readstring(s, length, "/ID", &newIDlen, NULL, 0);
 
         if (newID) {
             free(pdf->fileID);
             pdf->fileID = newID;
+            pdf->fileIDlen = newIDlen;
         }
     }
 }
