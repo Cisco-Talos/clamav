@@ -24,6 +24,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   - Arjen de Korte
   - David Heidelberg
   - Ged Haywood
+  - Julius Plenz
 
   Thank you all for your patience waiting for this feature.
 

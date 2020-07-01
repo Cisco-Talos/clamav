@@ -72,7 +72,7 @@ typedef enum {
 struct reload_th_t {
     struct cl_settings *settings;
     char *dbdir;
-    int dboptions;
+    unsigned int dboptions;
 };
 
 /*
@@ -221,19 +221,20 @@ static void *reload_th(void *arg)
     logg("Reading databases from %s\n", rldata->dbdir);
 
     if (NULL == (engine = cl_engine_new())) {
-        logg("!Can't initialize antivirus engine\n");
+        logg("!reload_th: Can't initialize antivirus engine\n");
         goto done;
     }
 
     retval = cl_engine_settings_apply(engine, rldata->settings);
     if (CL_SUCCESS != retval) {
-        logg("^Can't apply previous engine settings: %s\n", cl_strerror(retval));
-        logg("^Using default engine settings\n");
+        logg("!reload_th: Failed to apply previous engine settings: %s\n", cl_strerror(retval));
+        status = CL_EMEM;
+        goto done;
     }
 
     retval = cl_load(rldata->dbdir, engine, &sigs, rldata->dboptions);
     if (CL_SUCCESS != retval) {
-        logg("!reload_th: database load failed: %s\n", cl_strerror(retval));
+        logg("!reload_th: Database load failed: %s\n", cl_strerror(retval));
         goto done;
     }
 
