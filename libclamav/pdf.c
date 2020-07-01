@@ -182,7 +182,7 @@ static const char *findNextNonWSBack(const char *q, const char *start)
  * @brief   Searching FORwards, find the next character that is not a whitespace.
  *
  * @param q         Index to start from (at the end of the search space)
- * @param start     Beginning of the search space.
+ * @param end       End of the search space.
  *
  * @return const char*  Address of the final non-whitespace character OR the same address as the start.
  */
@@ -283,10 +283,10 @@ done:
  *        objects, and increments nobj.
  *
  * Indirect objects in a stream DON'T begin with "obj" and end with "endobj".
- * Instead, they have an obj ID and an offset from the first object to point you
+ * Instead, they have an objid and an offset from the first object to point you
  * right at them.
  *
- * If found, objstm->current will be updated to the next obj id.
+ * If found, objstm->current will be updated to the next objid.
  *
  * All objects in an object stream are indirect and thus do not begin or start
  * with "obj" or "endobj".  Instead, the object stream takes the following
@@ -348,7 +348,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     /* This object is in a stream, not in the regular map buffer. */
     obj->objstm = objstm;
 
-    /* objstm->current_pair points directly to the obj id */
+    /* objstm->current_pair points directly to the objid */
     if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
         /* Failed to find objid */
         cli_dbgmsg("pdf_findobj_in_objstm: Failed to find objid for obj in object stream\n");
@@ -361,7 +361,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     }
     objid = (unsigned long)temp_long;
 
-    /* Find the obj offset that appears just after the obj id*/
+    /* Find the obj offset that appears just after the objid*/
     while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
         index++;
         bytes_remaining--;
@@ -413,7 +413,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
          *
          * To do so, we will need to parse the next obj pair.
          */
-        /* objstm->current_pair points directly to the obj id */
+        /* objstm->current_pair points directly to the objid */
         index           = objstm->streambuf + objstm->current_pair;
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
@@ -429,7 +429,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         }
         next_objid = (unsigned long)temp_long;
 
-        /* Find the obj offset that appears just after the obj id*/
+        /* Find the obj offset that appears just after the objid*/
         while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
             index++;
             bytes_remaining--;
@@ -1557,8 +1557,6 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             xref = 1;
         }
 
-        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
         /*
          * Identify the DecodeParms, if available.
          */
@@ -1697,8 +1695,6 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             goto done;
         }
 
-        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
     } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
         const char *q2;
         const char *q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
@@ -1740,6 +1736,21 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                         out = decrypted;
                     }
                 }
+
+#if HAVE_JSON
+                if ((pdf->ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) && pdf->ctx->wrkproperty != NULL) {
+                    struct json_object *pdfobj, *jbig2arr;
+
+                    if (NULL == (pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats"))) {
+                        cli_errmsg("pdf_extract_obj: failed to get PDFStats JSON object\n");
+                    } else if (NULL == (jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects"))) {
+                        cli_errmsg("pdf_extract_obj: failed to get JavascriptObjects JSON object\n");
+                    } else {
+                        cli_jsonint_array(jbig2arr, obj->id >> 8);
+                    }
+                }
+#endif
+                pdf->stats.njs++;
 
                 if (filter_writen(pdf, obj, fout, out, js_len, (size_t *)&sum) != js_len) {
                     rc = CL_EWRITE;
@@ -1893,7 +1904,7 @@ static struct pdfname_action pdfname_actions[] = {
     {"R", OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
     {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NAMEFLAG_HEURISTIC, NULL},
     {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NAMEFLAG_HEURISTIC, NULL},
-    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC, JavaScript_cb},
+    {"JavaScript", OBJ_JAVASCRIPT, STATE_ANY, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC, JavaScript_cb},
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
     {"S", OBJ_DICT, STATE_NONE, STATE_S, NAMEFLAG_HEURISTIC, NULL},
     {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
@@ -2431,12 +2442,25 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                         cli_dbgmsg("pdf_parseobj: found %s stored in indirect object %lu %lu\n", pdfname, objid >> 8, objid & 0xff);
                         obj2 = find_obj(pdf, obj, objid);
                         if (obj2) {
-                            enum pdf_objflags flag =
-                                objstate == STATE_JAVASCRIPT ? OBJ_JAVASCRIPT : objstate == STATE_OPENACTION ? OBJ_OPENACTION :
+                            enum pdf_objflags flag = OBJ_STREAM;
 
-                                                                                                             OBJ_CONTENTS;
-                            obj2->flags |= 1 << flag;
-                            obj->flags &= ~(1 << flag);
+                            switch (objstate) {
+                                case STATE_JAVASCRIPT:
+                                    flag = OBJ_JAVASCRIPT;
+                                    break;
+                                case STATE_OPENACTION:
+                                    flag = OBJ_OPENACTION;
+                                    break;
+                                case STATE_CONTENTS:
+                                    flag = OBJ_CONTENTS;
+                                    break;
+                                default:
+                                    cli_dbgmsg("pdf_parseobj: Unexpected object type\n");
+                                    return;
+                            }
+
+                            obj->flags &= ~(1 << flag); /* Disable flag for current object ...                   */
+                            obj2->flags |= 1 << flag;   /* ... and set the flag for the indirect object instead! */
                         } else {
                             pdfobj_flag(pdf, obj, BAD_INDOBJ);
                         }
@@ -3624,7 +3648,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     /*
      * Find and extract all objects in the PDF.
-     * New experimental recursive methodology that adds objects from object streams.
+     * This methodology adds objects from object streams.
      */
     objs_found = pdf.nobjs;
     rc         = pdf_find_and_extract_objs(&pdf, &alerts);
@@ -4022,31 +4046,16 @@ static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 #if HAVE_JSON
 static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
-    cli_ctx *ctx = pdf->ctx;
-    struct json_object *pdfobj, *jbig2arr;
-
+    UNUSEDPARAM(pdf);
+    UNUSEDPARAM(obj);
     UNUSEDPARAM(act);
 
-    if (!(pdf))
-        return;
-
-    if (!(SCAN_COLLECT_METADATA))
-        return;
-
-    if (!(pdf->ctx->wrkproperty))
-        return;
-
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
-    if (!(pdfobj))
-        return;
-
-    jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects");
-    if (!(jbig2arr))
-        return;
-
-    cli_jsonint_array(jbig2arr, obj->id >> 8);
-
-    pdf->stats.njs++;
+    /*
+     * Don't record the pdf->stats or JSON now, we'll look for the actual
+     * Javascript in the object when we extract it later. This is to prevent
+     * false positives when objects reference an indirect object which doesn't
+     * actually have any content.
+     */
 }
 #endif
 
