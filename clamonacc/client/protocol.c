@@ -54,6 +54,7 @@
 #endif
 
 #include "libclamav/clamav.h"
+#include "libclamav/others.h"
 #include "shared/actions.h"
 #include "shared/output.h"
 #include "shared/misc.h"
@@ -191,6 +192,22 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
     onas_recvlninit(&rcv, curl);
 
+    cl_error_t ret;
+    char *real_filename = NULL;
+
+    if (filename) {
+        ret = cli_realpath((const char *) filename, &real_filename);
+        if (CL_SUCCESS != ret) {
+            logg("Failed to determine real filename of %s.\n", filename);
+            if (ret_code) {
+                *ret_code = CL_EACCES;
+            }
+            infected = -1;
+            goto done;
+        }
+        filename = real_filename;
+    }
+
     if (ret_code) {
         *ret_code = CL_SUCCESS;
     }
@@ -204,7 +221,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 if (ret_code) {
                     *ret_code = CL_ENULLARG;
                 }
-                return -1;
+                infected = -1;
+                goto done;
             }
             len = strlen(filename) + strlen(scancmd[scantype]) + 3;
             if (!(bol = malloc(len))) {
@@ -212,7 +230,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 if (ret_code) {
                     *ret_code = CL_EMEM;
                 }
-                return -1;
+                infected = -1;
+                goto done;
             }
             sprintf(bol, "z%s %s", scancmd[scantype], filename);
             if (onas_sendln(curl, bol, len, timeout)) {
@@ -220,7 +239,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                     *ret_code = CL_EWRITE;
                 }
                 free(bol);
-                return -1;
+                infected = -1;
+                goto done;
             }
             free(bol);
             break;
@@ -241,7 +261,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
         *printok = 0;
         if (errors)
             (*errors)++;
-        return len;
+        infected = len;
+        goto done;
     }
 
     while ((len = onas_recvln(&rcv, &bol, &eol, timeout))) {
@@ -249,7 +270,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             if (ret_code) {
                 *ret_code = CL_EREAD;
             }
-            return -1;
+            infected = -1;
+            goto done;
         }
         beenthere = 1;
         if (!filename) {
@@ -281,7 +303,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 if (ret_code) {
                     *ret_code = CL_EPARSE;
                 }
-                return -1;
+                infected = -1;
+                goto done;
 
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 static char last_filename[PATH_MAX + 1] = {'\0'};
@@ -378,7 +401,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             if (ret_code) {
                 *ret_code = CL_EACCES;
             }
-            return -1;
+            infected = -1;
+            goto done;
         }
         if (CLAMSTAT(filename, &sb) == -1) {
             logg("~%s: stat() failed with %s, clamd may not be responding\n",
@@ -386,15 +410,22 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
             if (ret_code) {
                 *ret_code = CL_EACCES;
             }
-            return -1;
+            infected = -1;
+            goto done;
         }
         if (!S_ISDIR(sb.st_mode)) {
             logg("~%s: no reply from clamd\n", filename);
             if (ret_code) {
                 *ret_code = CL_EACCES;
             }
-            return -1;
+            infected = -1;
+            goto done;
         }
+    }
+
+done:
+    if (NULL != real_filename) {
+        free(real_filename);
     }
     return infected;
 }

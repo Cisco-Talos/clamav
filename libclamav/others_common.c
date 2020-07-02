@@ -1104,12 +1104,8 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 
 cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 {
-    cl_error_t status = CL_EARG;
-
-    if (NULL == filepath) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
-        goto done;
-    }
+    cl_error_t status        = CL_EARG;
+    char *evaluated_filepath = NULL;
 
 #ifdef __linux__
     char fname[PATH_MAX];
@@ -1118,6 +1114,11 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     ssize_t linksz;
 
     memset(&fname, 0, PATH_MAX);
+
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
 
     snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
     link[sizeof(link) - 1] = '\0';
@@ -1131,8 +1132,8 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     /* Success. Add null terminator */
     fname[linksz] = '\0';
 
-    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
-    if (NULL == *filepath) {
+    evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
+    if (NULL == evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
         goto done;
@@ -1142,59 +1143,135 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     char fname[PATH_MAX];
     memset(&fname, 0, PATH_MAX);
 
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
     if (fcntl(desc, F_GETPATH, &fname) < 0) {
         printf("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
 
-    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
-    if (NULL == *filepath) {
+    evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
+    if (NULL == evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
         goto done;
     }
 
 #elif _WIN32
-    DWORD dwRet    = 0;
-    intptr_t hFile = _get_osfhandle(desc);
+    DWORD dwRet                   = 0;
+    intptr_t hFile                = _get_osfhandle(desc);
+    char *long_evaluated_filepath = NULL;
 
-    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_NT);
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
+    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_DOS);
     if (dwRet == 0) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
 
-    *filepath = calloc(dwRet + 1, 1);
-    if (NULL == *filepath) {
+    long_evaluated_filepath = calloc(dwRet + 1, 1);
+    if (NULL == long_evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate %u bytes to store filename\n", dwRet + 1);
         status = CL_EMEM;
         goto done;
     }
 
-    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, *filepath, dwRet + 1, VOLUME_NAME_NT);
+    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, long_evaluated_filepath, dwRet + 1, VOLUME_NAME_DOS);
     if (dwRet == 0) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
-        free(*filepath);
-        *filepath = NULL;
-        status    = CL_EOPEN;
+        free(long_evaluated_filepath);
+        long_evaluated_filepath = NULL;
+        status                  = CL_EOPEN;
         goto done;
     }
+
+    evaluated_filepath = calloc(strlen(long_evaluated_filepath) - strlen("\\\\?\\") + 1, 1);
+    if (NULL == evaluated_filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate %u bytes to store filename\n", dwRet + 1);
+        status = CL_EMEM;
+        goto done;
+    }
+    memcpy(evaluated_filepath,
+           long_evaluated_filepath + strlen("\\\\?\\"),
+           strlen(long_evaluated_filepath) - strlen("\\\\?\\"));
 
 #else
 
     cli_dbgmsg("cli_get_filepath_from_filedesc: No mechanism implemented to determine filename from file descriptor.\n");
-    *filepath = NULL;
-    status    = CL_BREAK;
+    status = CL_BREAK;
     goto done;
 
 #endif
 
     cli_dbgmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, *filepath);
-    status = CL_SUCCESS;
+    status    = CL_SUCCESS;
+    *filepath = evaluated_filepath;
 
 done:
+
+#ifdef _WIN32
+    if (NULL != long_evaluated_filepath) {
+        free(long_evaluated_filepath);
+    }
+#endif
+    return status;
+}
+
+cl_error_t cli_realpath(const char *file_name, char **real_filename)
+{
+    char *real_file_path = NULL;
+    cl_error_t status    = CL_EARG;
+#ifdef _WIN32
+    int desc = -1;
+#endif
+
+    cli_dbgmsg("Checking realpath of %s\n", file_name);
+
+    if (NULL == file_name || NULL == real_filename) {
+        cli_warnmsg("cli_realpath: Invalid arguments.\n");
+        goto done;
+    }
+
+#ifndef _WIN32
+
+    real_file_path = realpath(file_name, NULL);
+    if (NULL == real_file_path) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+#else
+
+    if ((desc = safe_open(file_name, O_RDONLY | O_BINARY)) == -1) {
+        cli_warnmsg("Can't open file %s: %s\n", file_name, strerror(errno));
+        status = CL_EOPEN;
+        goto done;
+    }
+
+    status = cli_get_filepath_from_filedesc(desc, &real_file_path);
+
+#endif
+
+    *real_filename = real_file_path;
+
+done:
+
+#ifdef _WIN32
+    if (-1 != desc) {
+        close(desc);
+    }
+#endif
 
     return status;
 }

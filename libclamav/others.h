@@ -903,4 +903,18 @@ const char *cli_strerror(int errnum, char *buf, size_t len);
  */
 cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
 
+/**
+ * @brief   Attempt to get the real path of a provided path (evaluating symlinks).
+ *
+ * Caller is responsible for free'ing the file path.
+ * On posix systems this just calls realpath() under the hood.
+ * On Win32, it opens a handle and uses cli_get_filepath_from_filedesc()
+ * to get the real path.
+ *
+ * @param desc          A file path to evaluate.
+ * @param char*         [out] A malloced string containing the real path.
+ * @return cl_error_t   CL_SUCCESS if found, else an error code.
+ */
+cl_error_t cli_realpath(const char *file_name, char **real_filename);
+
 #endif
