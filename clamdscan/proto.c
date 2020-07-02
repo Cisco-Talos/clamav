@@ -262,9 +262,23 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     char *bol, *eol;
     struct RCVLN rcv;
     STATBUF sb;
+    cl_error_t ret;
+    char *real_filename = NULL;
 
-    if (filename && chkpath(filename))
-        return 0;
+    if (filename) {
+        ret = cli_realpath((const char *) filename, &real_filename);
+        if (CL_SUCCESS != ret) {
+            logg("Failed to determine real filename of %s.\n", filename);
+            infected = -1;
+            goto done;
+        }
+        filename = real_filename;
+
+        if (1 == chkpath(filename)) {
+            goto done;
+        }
+    }
+
     recvlninit(&rcv, sockd);
 
     switch (scantype) {
@@ -273,17 +287,20 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
         case ALLMATCH:
             if (!filename) {
                 logg("Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
-                return -1;
+                infected = -1;
+                goto done;
             }
             len = strlen(filename) + strlen(scancmd[scantype]) + 3;
             if (!(bol = malloc(len))) {
                 logg("!Cannot allocate a command buffer: %s\n", strerror(errno));
-                return -1;
+                infected = -1;
+                goto done;
             }
             sprintf(bol, "z%s %s", scancmd[scantype], filename);
             if (sendln(sockd, bol, len)) {
                 free(bol);
-                return -1;
+                infected = -1;
+                goto done;
             }
             free(bol);
             break;
@@ -304,11 +321,15 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
         *printok = 0;
         if (errors)
             (*errors)++;
-        return len;
+        infected = len;
+        goto done;
     }
 
     while ((len = recvln(&rcv, &bol, &eol))) {
-        if (len == -1) return -1;
+        if (len == -1) {
+            infected = -1;
+            goto done;
+        }
         beenthere = 1;
         if (!filename) logg("~%s\n", bol);
         if (len > 7) {
@@ -328,7 +349,8 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                          (scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" : scancmd[scantype]);
                 else
                     logg("Failed to parse reply: \"%s\"\n", bol);
-                return -1;
+                infected = -1;
+                goto done;
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 static char last_filename[PATH_MAX + 1] = {'\0'};
                 *(eol - 7)                              = 0;
@@ -369,17 +391,25 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     if (!beenthere) {
         if (!filename) {
             logg("STDIN: noreply from clamd\n.");
-            return -1;
+            infected = -1;
+            goto done;
         }
         if (CLAMSTAT(filename, &sb) == -1) {
             logg("~%s: stat() failed with %s, clamd may not be responding\n",
                  filename, strerror(errno));
-            return -1;
+            infected = -1;
+            goto done;
         }
         if (!S_ISDIR(sb.st_mode)) {
             logg("~%s: no reply from clamd\n", filename);
-            return -1;
+            infected = -1;
+            goto done;
         }
+    }
+
+done:
+    if (NULL != real_filename) {
+        free(real_filename);
     }
     return infected;
 }

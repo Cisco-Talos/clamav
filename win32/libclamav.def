@@ -188,6 +188,7 @@ EXPORTS __cli_strndup @44389 NONAME
 EXPORTS __cli_strnlen @44390 NONAME
 EXPORTS __cli_strnstr @44391 NONAME
 EXPORTS cli_gentemp_with_prefix @44392 NONAME
+EXPORTS cli_basename @44393 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME
@@ -274,3 +275,4 @@ EXPORTS cli_sigperf_events_destroy @44350 NONAME
 EXPORTS cli_cache_init @44351 NONAME
 EXPORTS cli_cache_destroy @44352 NONAME
 EXPORTS cli_strntoul @44353 NONAME
+EXPORTS cli_realpath @44354 NONAME

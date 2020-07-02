@@ -287,7 +287,8 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
-    int ret = 0, fd, included;
+    cl_error_t ret = CL_SUCCESS;
+    int fd, included;
     unsigned i;
     const struct optstruct *opt;
     const char *virname = NULL;
@@ -295,13 +296,28 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     struct metachain chain;
     struct clamscan_cb_data data;
 
+    char *real_filename = NULL;
+
+    if (NULL == filename || NULL == engine || NULL == opts || NULL == options) {
+        logg("scanfile: Invalid args.\n");
+        ret = CL_EARG;
+        goto done;
+    }
+
+    ret = cli_realpath((const char *) filename, &real_filename);
+    if (CL_SUCCESS != ret) {
+        logg("Failed to determine real filename of %s.\n", filename);
+        goto done;
+    }
+    filename = real_filename;
+
     if ((opt = optget(opts, "exclude"))->enabled) {
         while (opt) {
             if (match_regex(filename, opt->strarg) == 1) {
                 if (!printinfected)
                     logg("~%s: Excluded\n", filename);
 
-                return;
+                goto done;
             }
 
             opt = opt->nextarg;
@@ -324,7 +340,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if (!printinfected)
                 logg("~%s: Excluded\n", filename);
 
-            return;
+            goto done;
         }
     }
 
@@ -335,14 +351,14 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if (!printinfected)
                 logg("~%s: Excluded (/proc)\n", filename);
 
-            return;
+            goto done;
         }
 #endif
         if (!sb.st_size) {
             if (!printinfected)
                 logg("~%s: Empty file\n", filename);
 
-            return;
+            goto done;
         }
 
         info.rblocks += sb.st_size / CL_COUNT_PRECISION;
@@ -355,7 +371,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 logg("~%s: Access denied\n", filename);
 
             info.errors++;
-            return;
+            goto done;
         }
     }
 #endif
@@ -369,7 +385,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 free(chain.chains);
                 logg("Unable to allocate memory in scanfile()\n");
                 info.errors++;
-                return;
+                goto done;
             }
             chain.nchains = 1;
         }
@@ -380,7 +396,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
         logg("^Can't open file %s: %s\n", filename, strerror(errno));
         info.errors++;
-        return;
+        goto done;
     }
 
     data.chain    = &chain;
@@ -421,6 +437,12 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     if (ret == CL_VIRUS && action)
         action(filename);
+
+done:
+    if (NULL != real_filename) {
+        free(real_filename);
+    }
+    return;
 }
 
 static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options, unsigned int depth, dev_t dev)
