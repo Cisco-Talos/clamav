@@ -7,7 +7,15 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.102.4 is a bug patch release to address the following issues.
 
--
+- [CVE-2020-3350](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3350):
+  Fix a vulnerability wherein a malicious user could replace a scan target's
+  directory with a symlink to another path to trick clamscan, clamdscan, or
+  clamonacc into removing or moving a different file (eg. a critical system
+  file). The issue would affect users that use the --move or --remove options
+  for clamscan, clamdscan, and clamonacc.
+
+  For more information about AV quarantine attacks using links, see the
+  [RACK911 Lab's report](https://www.rack911labs.com/research/exploiting-almost-every-antivirus-software).
 
 ## 0.102.3
 
