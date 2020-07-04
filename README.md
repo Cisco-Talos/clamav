@@ -33,6 +33,11 @@ to get started!
 
 ## Installation Instructions
 
+### Docker
+
+ClamAV can be run using Docker, see [README.Docker.md](README.Docker.md) and
+our images on [docker hub](https://hub.docker.com/r/clamav/clamav).
+
 #### Build from Source
 
 For compile and install instructions with CMake, please see

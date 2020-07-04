@@ -1,0 +1,10 @@
+build/
+configure.ac
+COPYING*
+examples/
+INSTALL*
+Jenkinsfile
+Makefile.am
+m4/
+README.md
+win32/
