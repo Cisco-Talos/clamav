@@ -307,6 +307,8 @@ Default: 5000
 .TP
 \fBBytecodeUnsigned BOOL\fR
 Allow loading bytecode from outside digitally signed .c[lv]d files.
+**Caution**: You should NEVER run bytecode signatures from untrusted sources.
+Doing so may result in arbitrary code execution.
 .br
 Default: no
 .TP

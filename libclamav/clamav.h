@@ -140,7 +140,7 @@ typedef enum cl_error_t {
 #define CL_DB_OFFICIAL_ONLY     0x1000
 #define CL_DB_BYTECODE          0x2000
 #define CL_DB_SIGNED            0x4000  /* internal */
-#define CL_DB_BYTECODE_UNSIGNED 0x8000
+#define CL_DB_BYTECODE_UNSIGNED 0x8000  /* Caution: You should never run bytecode signatures from untrusted sources. Doing so may result in arbitrary code execution. */
 #define CL_DB_UNSIGNED          0x10000 /* internal */
 #define CL_DB_BYTECODE_STATS    0x20000
 #define CL_DB_ENHANCED          0x40000

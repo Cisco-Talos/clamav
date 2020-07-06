@@ -100,7 +100,7 @@ Only scan file/directory matching regular expression. These options can be used 
 With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
 .TP
 \fB\-\-bytecode\-unsigned[=yes/no(*)]\fR
-Allow loading bytecode from outside digitally signed .c[lv]d files.
+Allow loading bytecode from outside digitally signed .c[lv]d files. **Caution**: You should NEVER run bytecode signatures from untrusted sources. Doing so may result in arbitrary code execution.
 .TP
 \fB\-\-bytecode\-timeout=N\fR
 Set bytecode timeout in milliseconds (default: 5000 = 5s)

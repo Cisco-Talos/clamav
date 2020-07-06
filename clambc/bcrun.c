@@ -67,6 +67,8 @@ static void help(void)
     printf("    --statistics=bytecode             Collect and print bytecode execution statistics\n");
     printf("    file                              File to test\n");
     printf("\n");
+    printf("**Caution**: You should NEVER run bytecode signatures from untrusted sources.\nDoing so may result in arbitrary code execution.\n");
+    printf("\n");
     return;
 }
 

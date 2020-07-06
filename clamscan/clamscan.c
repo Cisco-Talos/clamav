@@ -263,6 +263,8 @@ void help(void)
     mprintf("\n");
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-unsigned[=yes/no(*)]      Load unsigned bytecode\n");
+    mprintf("                                         **Caution**: You should NEVER run bytecode signatures from untrusted sources.\n");
+    mprintf("                                         Doing so may result in arbitrary code execution.\n");
     mprintf("    --bytecode-timeout=N                 Set bytecode timeout (in milliseconds)\n");
     mprintf("    --statistics[=none(*)/bytecode/pcre] Collect and print execution statistics\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");

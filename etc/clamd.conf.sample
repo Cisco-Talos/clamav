@@ -769,6 +769,12 @@ Example
 # Default: TrustSigned
 #BytecodeSecurity TrustSigned
 
+# Allow loading bytecode from outside digitally signed .c[lv]d files.
+# **Caution**: You should NEVER run bytecode signatures from untrusted sources.
+# Doing so may result in arbitrary code execution.
+# Default: no
+#BytecodeUnsigned yes
+
 # Set bytecode timeout in milliseconds.
 #
 # Default: 5000
