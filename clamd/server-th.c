@@ -1142,7 +1142,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if (optget(opts, "AlertEncryptedArchive")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
-            logg("Alerting of encrypted archives _and_ documents enabled.\n");
+            logg("Alerting of encrypted archives enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
         } else {
             logg("^Encrypted archive alerting requested, but archive support "
