@@ -17,6 +17,13 @@ ClamAV 0.102.4 is a bug patch release to address the following issues.
   For more information about AV quarantine attacks using links, see the
   [RACK911 Lab's report](https://www.rack911labs.com/research/exploiting-almost-every-antivirus-software).
 
+- [CVE-2020-3327](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3327):
+  Fix a vulnerability in the ARJ archive parsing module in ClamAV 0.102.3 that
+  could cause a Denial-of-Service (DoS) condition. Improper bounds checking
+  results in an out-of-bounds read which could cause a crash.
+  The previous fix for this CVE in 0.102.3 was incomplete. This fix correctly
+  resolves the issue.
+
 ## 0.102.3
 
 ClamAV 0.102.3 is a bug patch release to address the following issues.
