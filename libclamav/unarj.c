@@ -840,11 +840,17 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     unsigned char *comnorm = NULL;
     uint32_t ret           = TRUE;
 
+    size_t filename_max_len = 0;
+    size_t filename_len     = 0;
+    size_t comment_max_len  = 0;
+    size_t comment_len      = 0;
+    size_t orig_offset      = metadata->offset;
+
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return FALSE;
 
     metadata->offset += 2;
-    header_size   = le16_to_host(header_size);
+    header_size = le16_to_host(header_size);
     cli_dbgmsg("Header Size: %d\n", header_size);
     if (header_size == 0) {
         /* End of archive */
@@ -853,6 +859,11 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     }
     if (header_size > HEADERSIZE_MAX) {
         cli_dbgmsg("arj_read_header: invalid header_size: %u\n ", header_size);
+        ret = FALSE;
+        goto done;
+    }
+    if ((header_size + sizeof(header_size)) > (metadata->map->real_len - metadata->offset)) {
+        cli_dbgmsg("arj_read_header: invalid header_size: %u, exceeds length of file.\n", header_size);
         ret = FALSE;
         goto done;
     }
@@ -880,29 +891,47 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         metadata->offset += main_hdr.first_hdr_size - 30;
     }
 
-    fnnorm   = cli_calloc(sizeof(unsigned char), header_size + 1);
-    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
-    if (!filename) {
-        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
+    filename_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
+    if (filename_max_len > header_size) {
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
         ret = FALSE;
         goto done;
     }
-    metadata->offset += CLI_STRNLEN(filename, header_size) + 1;
+    if (filename_max_len > 0) {
+        fnnorm   = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
+        if (!filename || !fnnorm) {
+            cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
+            ret = FALSE;
+            goto done;
+        }
+        filename_len = CLI_STRNLEN(filename, filename_max_len);
+    }
+    metadata->offset += filename_len + 1;
 
-    comnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
-    if (!comment || !comnorm) {
-        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
+    comment_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
+    if (comment_max_len > header_size) {
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
         ret = FALSE;
         goto done;
     }
-    metadata->offset += CLI_STRNLEN(comment, header_size) + 1;
+    if (comment_max_len > 0) {
+        comnorm = cli_calloc(sizeof(unsigned char), comment_max_len + 1);
+        comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
+        if (!comment || !comnorm) {
+            cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
+            ret = FALSE;
+            goto done;
+        }
+        comment_len = CLI_STRNLEN(comment, comment_max_len);
+    }
+    metadata->offset += comment_len + 1;
 
-    text_normalize_init(&fnstate, fnnorm, header_size);
-    text_normalize_init(&comstate, comnorm, header_size);
+    text_normalize_init(&fnstate, fnnorm, filename_max_len);
+    text_normalize_init(&comstate, comnorm, comment_max_len);
 
-    text_normalize_buffer(&fnstate, (const unsigned char *)filename, header_size);
-    text_normalize_buffer(&comstate, (const unsigned char *)comment, header_size);
+    text_normalize_buffer(&fnstate, (const unsigned char *)filename, filename_len);
+    text_normalize_buffer(&comstate, (const unsigned char *)comment, comment_len);
 
     cli_dbgmsg("Filename: %s\n", fnnorm);
     cli_dbgmsg("Comment: %s\n", comnorm);
@@ -949,6 +978,12 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     unsigned char *comnorm = NULL;
     uint32_t ret           = CL_SUCCESS;
 
+    size_t filename_max_len = 0;
+    size_t filename_len     = 0;
+    size_t comment_max_len  = 0;
+    size_t comment_len      = 0;
+    size_t orig_offset      = metadata->offset;
+
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return CL_EFORMAT;
     header_size = le16_to_host(header_size);
@@ -965,7 +1000,11 @@ static int arj_read_file_header(arj_metadata_t *metadata)
         ret = CL_EFORMAT;
         goto done;
     }
-
+    if ((header_size + sizeof(header_size)) > (metadata->map->real_len - metadata->offset)) {
+        cli_dbgmsg("arj_read_file_header: invalid header_size: %u, exceeds length of file.\n", header_size);
+        ret = FALSE;
+        goto done;
+    }
     if (fmap_readn(metadata->map, &file_hdr, metadata->offset, 30) != 30) {
         ret = CL_EFORMAT;
         goto done;
@@ -997,33 +1036,51 @@ static int arj_read_file_header(arj_metadata_t *metadata)
         metadata->offset += file_hdr.first_hdr_size - 30;
     }
 
-    fnnorm   = cli_calloc(sizeof(unsigned char), header_size + 1);
-    filename = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
-    if (!filename) {
-        cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
+    filename_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
+    if (filename_max_len > header_size) {
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
         ret = FALSE;
         goto done;
     }
-    metadata->offset += CLI_STRNLEN(filename, header_size) + 1;
+    if (filename_max_len > 0) {
+        fnnorm   = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
+        if (!filename || !fnnorm) {
+            cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
+            ret = FALSE;
+            goto done;
+        }
+        filename_len = CLI_STRNLEN(filename, filename_max_len);
+    }
+    metadata->offset += filename_len + 1;
 
-    comnorm = cli_calloc(sizeof(unsigned char), header_size + 1);
-    comment = fmap_need_offstr(metadata->map, metadata->offset, header_size + 1);
-    if (!comment) {
-        cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
+    comment_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
+    if (comment_max_len > header_size) {
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
         ret = FALSE;
         goto done;
     }
-    metadata->offset += CLI_STRNLEN(comment, header_size) + 1;
+    if (comment_max_len > 0) {
+        comnorm = cli_calloc(sizeof(unsigned char), comment_max_len + 1);
+        comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
+        if (!comment || !comnorm) {
+            cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
+            ret = FALSE;
+            goto done;
+        }
+        comment_len += CLI_STRNLEN(comment, comment_max_len);
+    }
+    metadata->offset += comment_len + 1;
 
-    text_normalize_init(&fnstate, fnnorm, header_size);
-    text_normalize_init(&comstate, comnorm, header_size);
+    text_normalize_init(&fnstate, fnnorm, filename_max_len);
+    text_normalize_init(&comstate, comnorm, comment_max_len);
 
-    text_normalize_buffer(&fnstate, (const unsigned char *)filename, header_size);
-    text_normalize_buffer(&comstate, (const unsigned char *)comment, header_size);
+    text_normalize_buffer(&fnstate, (const unsigned char *)filename, filename_len);
+    text_normalize_buffer(&comstate, (const unsigned char *)comment, comment_len);
 
     cli_dbgmsg("Filename: %s\n", fnnorm);
     cli_dbgmsg("Comment: %s\n", comnorm);
-    metadata->filename = CLI_STRNDUP(filename, header_size);
+    metadata->filename = CLI_STRNDUP(filename, filename_len);
 
     /* Skip CRC */
     metadata->offset += 4;
