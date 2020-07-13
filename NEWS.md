@@ -24,6 +24,15 @@ ClamAV 0.102.4 is a bug patch release to address the following issues.
   The previous fix for this CVE in 0.102.3 was incomplete. This fix correctly
   resolves the issue.
 
+- [CVE-2020-3481](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3481):
+  Fix a vulnerability in the EGG archive module in ClamAV 0.102.0 - 0.102.3
+  could cause a Denial-of-Service (DoS) condition. Improper error handling
+  may result in a crash due to a NULL pointer dereference.
+  This vulnerability is mitigated for those using the official ClamAV
+  signature databases because the file type signatures in daily.cvd
+  will not enable the EGG archive parser in versions affected by the
+  vulnerability.
+
 ## 0.102.3
 
 ClamAV 0.102.3 is a bug patch release to address the following issues.
