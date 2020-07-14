@@ -176,7 +176,7 @@ blobGetFilename(const blob *b)
 int blobAddData(blob *b, const unsigned char *data, size_t len)
 {
 #if HAVE_CLI_GETPAGESIZE
-    static int pagesize;
+    static int pagesize = 0;
     int growth;
 #endif
 
@@ -225,6 +225,10 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = growth;
         b->data = cli_malloc(growth);
+        if (NULL == b->data){
+            b->size = 0;
+            return -1;
+        }
     } else if (b->size < b->len + (off_t)len) {
         unsigned char *p = cli_realloc(b->data, b->size + growth);
 
@@ -241,6 +245,10 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = (off_t)len * 4;
         b->data = cli_malloc(b->size);
+        if (NULL == b->data){
+            b->size = 0;
+            return -1;
+        }
     } else if (b->size < b->len + (off_t)len) {
         unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
 
@@ -255,6 +263,9 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
     if (b->data) {
         memcpy(&b->data[b->len], data, len);
         b->len += (off_t)len;
+    } else {
+        b->size = 0;
+        return -1;
     }
     return 0;
 }
@@ -309,8 +320,9 @@ void blobClose(blob *b)
         } else {
             unsigned char *ptr = cli_realloc(b->data, b->len);
 
-            if (ptr == NULL)
+            if (ptr == NULL) {
                 return;
+            }
 
             cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
                        (unsigned long)(b->size - b->len),

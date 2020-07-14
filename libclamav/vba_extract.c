@@ -374,6 +374,10 @@ cl_error_t
     char *tempfile = NULL;
     uint16_t codepage = CODEPAGE_ISO8859_1;
     unsigned i;
+    char *mbcs_name = NULL, *utf16_name = NULL;
+    size_t mbcs_name_size = 0, utf16_name_size = 0;
+    unsigned char *module_data = NULL, *module_data_utf8 = NULL;
+    size_t module_data_size = 0, module_data_utf8_size = 0;
 
     if (dir == NULL || hash == NULL || tempfd == NULL) {
         return CL_EARG;
@@ -773,8 +777,6 @@ cl_error_t
             }
             //MS-OVBA 2.3.4.2.3.2 MODULE record
             case 0x0019: {
-                char *mbcs_name = NULL, *utf16_name = NULL;
-                size_t mbcs_name_size, utf16_name_size;
 
                 //MS-OVBA 2.3.4.2.3.2.1 MODULENAME
                 CLI_WRITEN("\n\nREM MODULENAME: ", 18);
@@ -1136,9 +1138,6 @@ cl_error_t
                         continue;
                     }
 
-                    unsigned char *module_data, *module_data_utf8 = NULL;
-                    size_t module_data_size = 0, module_data_utf8_size;
-
                     module_data = cli_vba_inflate(module_fd, module_offset, &module_data_size);
                     if (!module_data) {
                         cli_dbgmsg("cli_vba_readdir_new: Failed to extract module data\n");
@@ -1186,6 +1185,8 @@ cl_error_t
 
 #undef CLI_WRITEN
 #undef CLI_WRITENHEX
+#undef CLI_WRITEN_MBCS
+#undef CLI_WRITEN_UTF16LE
 
 done:
     if (fd >= 0) {
@@ -1203,6 +1204,22 @@ done:
     if (ret != CL_SUCCESS && *tempfd >= 0) {
         close(*tempfd);
         *tempfd = -1;
+    }
+    if (utf16_name) {
+        free(utf16_name);
+        utf16_name = NULL;
+    }
+    if (mbcs_name) {
+        free(mbcs_name);
+        mbcs_name = NULL;
+    }
+    if (module_data){
+        free(module_data);
+        module_data = NULL;
+    }
+    if (module_data_utf8){
+        free(module_data_utf8);
+        module_data_utf8 = NULL;
     }
 
     return ret;

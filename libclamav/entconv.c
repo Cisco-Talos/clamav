@@ -787,7 +787,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 #endif
 
     if (NULL == in || in_size == 0 || NULL == out || NULL == out_size) {
-        cli_dbgmsg("egg_filename_to_utf8: Invalid args.\n");
+        cli_dbgmsg("cli_codepage_to_utf8: Invalid args.\n");
         status = CL_EARG;
         goto done;
     }
@@ -804,7 +804,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             out_utf8_size = in_size;
             out_utf8      = cli_calloc(1, out_utf8_size + 1);
             if (NULL == out_utf8) {
-                cli_errmsg("egg_filename_to_utf8: Failure allocating buffer for utf8 filename.\n");
+                cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 filename.\n");
                 status = CL_EMEM;
                 goto done;
             }
@@ -829,7 +829,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
 
                 if (byte_count != sigbit_count) {
-                    cli_dbgmsg("egg_filename_to_utf8: cleaning out %d bytes from incomplete "
+                    cli_dbgmsg("cli_codepage_to_utf8: cleaning out %d bytes from incomplete "
                                "utf-8 character length %d\n",
                                byte_count, sigbit_count);
                     for (; byte_count > 0; byte_count--, track++) {
@@ -859,14 +859,14 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     NULL,
                     0);
                 if (0 == cchWideChar) {
-                    cli_dbgmsg("egg_filename_to_utf8: failed to determine string size needed for ansi to widechar conversion.\n");
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for ansi to widechar conversion.\n");
                     status = CL_EPARSE;
                     goto done;
                 }
 
-                lpWideCharStr = malloc((cchWideChar + 1) * sizeof(WCHAR));
+                lpWideCharStr = cli_malloc((cchWideChar + 1) * sizeof(WCHAR));
                 if (NULL == lpWideCharStr) {
-                    cli_dbgmsg("egg_filename_to_utf8: failed to allocate memory for wide char string.\n");
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
                     status = CL_EMEM;
                     goto done;
                 }
@@ -879,7 +879,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     lpWideCharStr,
                     cchWideChar + 1);
                 if (0 == cchWideChar) {
-                    cli_dbgmsg("egg_filename_to_utf8: failed to convert multibyte string to widechars.\n");
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to convert multibyte string to widechars.\n");
                     status = CL_EPARSE;
                     goto done;
                 }
@@ -901,14 +901,14 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 NULL,
                 NULL);
             if (0 == out_utf8_size) {
-                cli_dbgmsg("egg_filename_to_utf8: failed to determine string size needed for widechar conversion.\n");
+                cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for widechar conversion.\n");
                 status = CL_EPARSE;
                 goto done;
             }
 
-            out_utf8 = malloc(out_utf8_size + 1);
+            out_utf8 = cli_malloc(out_utf8_size + 1);
             if (NULL == lpWideCharStr) {
-                cli_dbgmsg("egg_filename_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
+                cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
                 status = CL_EMEM;
                 goto done;
             }
@@ -923,7 +923,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 NULL,
                 NULL);
             if (0 == out_utf8_size) {
-                cli_dbgmsg("egg_filename_to_utf8: failed to convert widechar string to utf-8.\n");
+                cli_dbgmsg("cli_codepage_to_utf8: failed to convert widechar string to utf-8.\n");
                 status = CL_EPARSE;
                 goto done;
             }
@@ -943,9 +943,18 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
             }
 
+            if (NULL == encoding){
+                cli_dbgmsg("cli_codepage_to_utf8: Invalid codepage parameter passed in.\n");
+                goto done;
+            }
+
             for (attempt = 1; attempt <= 3; attempt++) {
-                char* out_utf8_tmp;
-                char* out_utf8_index;
+                char * inbuf = in;
+                size_t inbufsize = inbytesleft;
+                size_t iconvRet = -1;
+
+                char* out_utf8_tmp = NULL;
+                char* out_utf8_index = NULL;
 
                 /* Charset to UTF-8 should never exceed in_size * 6;
                  * We can shrink final buffer after the conversion, if needed. */
@@ -956,32 +965,36 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 out_utf8 = cli_calloc(1, out_utf8_size + 1);
                 if (NULL == out_utf8) {
-                    cli_errmsg("egg_filename_to_utf8: Failure allocating buffer for utf8 data.\n");
+                    cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 data.\n");
                     status = CL_EMEM;
+                    goto done;
                 }
                 out_utf8_index = out_utf8;
 
                 conv = iconv_open("UTF-8//TRANSLIT", encoding);
                 if (conv == (iconv_t)-1) {
-                    cli_warnmsg("egg_filename_to_utf8: Failed to open iconv.\n");
+                    cli_warnmsg("cli_codepage_to_utf8: Failed to open iconv.\n");
                     goto done;
                 }
 
-                if ((size_t)-1 == iconv(conv, &in, &inbytesleft, &out_utf8_index, &outbytesleft)) {
+                iconvRet = iconv(conv, &inbuf, &inbufsize, &out_utf8_index, &outbytesleft);
+                iconv_close(conv);
+                conv = (iconv_t) -1;
+                if ((size_t)-1 == iconvRet){
                     switch (errno) {
                         case E2BIG:
-                            cli_warnmsg("egg_filename_to_utf8: iconv error: There is not sufficient room at *outbuf.\n");
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: There is not sufficient room at *outbuf.\n");
                             free(out_utf8);
                             out_utf8 = NULL;
                             continue; /* Try again, with a larger buffer. */
                         case EILSEQ:
-                            cli_warnmsg("egg_filename_to_utf8: iconv error: An invalid multibyte sequence has been encountered in the input.\n");
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: An invalid multibyte sequence has been encountered in the input.\n");
                             break;
                         case EINVAL:
-                            cli_warnmsg("egg_filename_to_utf8: iconv error: An incomplete multibyte sequence has been encountered in the input.\n");
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: An incomplete multibyte sequence has been encountered in the input.\n");
                             break;
                         default:
-                            cli_warnmsg("egg_filename_to_utf8: iconv error: Unexpected error code %d.\n", errno);
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: Unexpected error code %d.\n", errno);
                     }
                     status = CL_EPARSE;
                     goto done;
@@ -990,7 +1003,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 /* iconv succeeded, but probably didn't use the whole buffer. Free up the extra memory. */
                 out_utf8_tmp = cli_realloc(out_utf8, out_utf8_size - outbytesleft + 1);
                 if (NULL == out_utf8_tmp) {
-                    cli_errmsg("egg_filename_to_utf8: failure cli_realloc'ing converted filename.\n");
+                    cli_errmsg("cli_codepage_to_utf8: failure cli_realloc'ing converted filename.\n");
                     status = CL_EMEM;
                     goto done;
                 }
