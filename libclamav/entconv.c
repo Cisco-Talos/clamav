@@ -931,7 +931,6 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 #elif defined(HAVE_ICONV)
 
             uint32_t attempt, i;
-            size_t inbytesleft, outbytesleft;
             const char* encoding = NULL;
 
             for (i = 0; i < NUMCODEPAGES; ++i) {
@@ -950,8 +949,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
             for (attempt = 1; attempt <= 3; attempt++) {
                 char * inbuf = in;
-                size_t inbufsize = inbytesleft;
+                size_t inbufsize = in_size;
                 size_t iconvRet = -1;
+                size_t outbytesleft = 0;
 
                 char* out_utf8_tmp = NULL;
                 char* out_utf8_index = NULL;
@@ -960,7 +960,6 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                  * We can shrink final buffer after the conversion, if needed. */
                 out_utf8_size = (in_size * 2) * attempt;
 
-                inbytesleft  = in_size;
                 outbytesleft = out_utf8_size;
 
                 out_utf8 = cli_calloc(1, out_utf8_size + 1);
