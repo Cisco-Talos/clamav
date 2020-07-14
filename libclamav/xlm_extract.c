@@ -3713,8 +3713,7 @@ typedef enum ptg_expr {
 
 } ptg_expr;
 
-static const char *
-get_function_name(unsigned index)
+static const char * get_function_name(unsigned index)
 {
     if (index < sizeof(FUNCTIONS) / sizeof(FUNCTIONS[0])) {
         return FUNCTIONS[index];
@@ -3726,23 +3725,22 @@ get_function_name(unsigned index)
     }
 }
 
-static int
-parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_size)
+static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
 {
-    unsigned data_pos   = 0;
-    unsigned buffer_pos = 0;
+    cl_error_t status = CL_EFORMAT;
+    unsigned data_pos = 0;
     int len;
+    size_t size_written;
 
     while (data_pos < data_size) {
         ptg_expr ptg = data[data_pos] & 0x7f;
 
         if (((uint8_t)data[data_pos]) < sizeof(TOKENS) / sizeof(TOKENS[0])) {
-            int len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " %s", TOKENS[ptg]);
+            len = fprintf(out_file, " %s", TOKENS[ptg]);
             if (len < 0) {
                 cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting token name\n");
                 goto done;
             }
-            buffer_pos += len;
         }
 
         switch (ptg) {
@@ -3772,32 +3770,39 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                     size_t utf8_size = 0;
                     //TODO: Is this really times two here? Or is the string length in bytes?
                     size_t str_len = data[data_pos + 1] * 2;
-                    if (str_len > buffer_size - buffer_pos) {
-                        str_len = buffer_size - buffer_pos;
+                    if (str_len > data_size - data_pos) {
+                        str_len = data_size - data_pos;
                     }
                     if (CL_SUCCESS == cli_codepage_to_utf8(&data[data_pos + 3], str_len, 1200, &utf8, &utf8_size)) {
-                        size_t copy_size = min(buffer_size - buffer_pos, utf8_size);
-                        memcpy(&buffer[buffer_pos], utf8, copy_size);
-                        buffer_pos += copy_size;
-                        free(utf8);
+                        if (0 < utf8_size) {
+                            size_written = fwrite(utf8, 1, utf8_size, out_file);
+                            free(utf8);
+                            if (size_written < utf8_size) {
+                                cli_dbgmsg("[cli_xlm_extract_macros] Error writing STRING record message with UTF16LE content\n");
+                                goto done;
+                            }
+                        }
                     } else {
                         cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Failed to decode UTF16LE string in formula\n");
-                        len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, "<Failed to decode UTF16LE string>");
+                        len = fprintf(out_file, "<Failed to decode UTF16LE string>");
                         if (len < 0) {
                             cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgStr message with UTF16LE content\n");
                             goto done;
                         }
-
-                        buffer_pos += len;
                     }
                 } else if (data[data_pos + 2] == 0 && data_pos + 2 + data[data_pos + 1] <= data_size) {
                     unsigned str_len = data[data_pos + 1];
-                    if (str_len > buffer_size - buffer_pos) {
-                        str_len = buffer_size - buffer_pos;
+                    if (str_len > data_size - data_pos) {
+                        str_len = data_size - data_pos;
                     }
-                    memcpy(&buffer[buffer_pos], &data[data_pos], str_len);
-                    buffer_pos += str_len;
-                    data_pos += 3 + data[data_pos + 1];
+                    if (0 < str_len) {
+                        size_written = fwrite(&data[data_pos], 1, str_len, out_file);
+                        if (size_written < str_len) {
+                            cli_dbgmsg("[cli_xlm_extract_macros] Error writing STRING record message with UTF16LE content\n");
+                            goto done;
+                        }
+                    }
+                    data_pos += 3 + str_len;
                 }
                 break;
             case ptgAttr:
@@ -3807,20 +3812,21 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 }
 
                 if (data[data_pos + 1] & 0x40) {
+                    uint16_t coffset;
+
                     if (data_pos + 3 >= data_size) {
                         cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Malformed ptgAttrChoose record\n");
                         goto done;
                     }
 
-                    uint16_t coffset = data[data_pos + 2] | (data[data_pos + 3] << 8);
+                    coffset = data[data_pos + 2] | (data[data_pos + 3] << 8);
 
-                    len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " CHOOSE (%u)", (unsigned)(coffset + 1));
+                    len = fprintf(out_file, " CHOOSE (%u)", (unsigned)(coffset + 1));
                     if (len < 0) {
                         cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgAttr message\n");
                         goto done;
                     }
 
-                    buffer_pos += len;
                     data_pos += 4 + 2 * (coffset + 1);
                 } else {
                     data_pos += 4;
@@ -3831,12 +3837,13 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Malformed ptgBool record\n");
                     goto done;
                 }
-                len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " %s", data[data_pos + 1] ? "TRUE" : "FALSE");
+
+                len = fprintf(out_file, " %s", data[data_pos + 1] ? "TRUE" : "FALSE");
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgBool message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 2;
                 break;
             case ptgInt:
@@ -3844,12 +3851,13 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Malformed ptgInt record\n");
                     goto done;
                 }
-                len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " %d", data[data_pos + 1] | (data[data_pos + 2] << 8));
+
+                len = fprintf(out_file, " %d", data[data_pos + 1] | (data[data_pos + 2] << 8));
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgInt message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 3;
                 break;
             case ptgFunc:
@@ -3862,12 +3870,13 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
 
                 uint16_t func_id      = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 const char *func_name = get_function_name(func_id);
-                len                   = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " %s (0x%04x)", func_name == NULL ? "<unknown function>" : func_name, func_id);
+
+                len = fprintf(out_file, " %s (0x%04x)", func_name == NULL ? "<unknown function>" : func_name, func_id);
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgFunc message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 3;
                 break;
             }
@@ -3881,17 +3890,18 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
 
                 uint16_t func_id      = data[data_pos + 2] | (data[data_pos + 3] << 8);
                 const char *func_name = get_function_name(func_id);
-                len                   = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " args %u func %s (0x%04x)",
-                               (unsigned)data[data_pos + 1],
-                               func_name == NULL ? "<unknown function>" : func_name,
-                               func_id);
+
+                len = fprintf(
+                    out_file,
+                    " args %u func %s (0x%04x)",
+                    (unsigned)data[data_pos + 1],
+                    func_name == NULL ? "<unknown function>" : func_name,
+                    func_id);
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgFuncVar message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 4;
                 if (func_id == 0x806d) {
                     data_pos += 9;
@@ -3905,15 +3915,13 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 }
 
                 uint32_t val = data[data_pos + 1] | (data[data_pos + 2] << 8) | (data[data_pos + 3] << 16) | (data[data_pos + 4] << 24);
-                len          = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " 0x%08x",
-                               val);
+
+                len = fprintf(out_file, " 0x%08x", val);
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgName message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 5;
                 break;
             }
@@ -3924,15 +3932,13 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 }
 
                 double val = *(double *)&data[data_pos + 1];
-                len        = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " %f",
-                               val);
+
+                len = fprintf(out_file, " %f", val);
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgNum message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 9;
                 break;
             }
@@ -3942,12 +3948,12 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                     goto done;
                 }
 
-                len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " REFERENCE-EXPRESSION");
+                len = fprintf(out_file, " REFERENCE-EXPRESSION");
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgMemArea message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 7;
                 break;
             }
@@ -3959,12 +3965,12 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 uint16_t row    = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 uint16_t column = data[data_pos + 3] | (data[data_pos + 4] << 8);
 
-                len = snprintf(&buffer[buffer_pos], buffer_size - buffer_pos, " R%uC%u", (unsigned)(row + 1), (unsigned)(column + 1));
+                len = fprintf(out_file, " R%uC%u", (unsigned)(row + 1), (unsigned)(column + 1));
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgExp message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 5;
                 break;
             }
@@ -3978,18 +3984,17 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 uint16_t row    = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 uint16_t column = data[data_pos + 3] | (data[data_pos + 4] << 8);
 
-                len = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " R%s%uC%s%u",
-                               (row & (1 << 14)) ? "~" : "",
-                               (unsigned)((row & 0x3fff) + ((row & (1 << 14)) ? 0 : 1)),
-                               (row & (1 << 15)) ? "~" : "",
-                               (unsigned)(column + ((row & (1 << 15)) ? 0 : 1)));
+                len = fprintf(
+                    out_file,
+                    " R%s%uC%s%u",
+                    (row & (1 << 14)) ? "~" : "",
+                    (unsigned)((row & 0x3fff) + ((row & (1 << 14)) ? 0 : 1)),
+                    (row & (1 << 15)) ? "~" : "",
+                    (unsigned)(column + ((row & (1 << 15)) ? 0 : 1)));
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgRef message\n");
                     goto done;
                 }
-                buffer_pos += len;
                 data_pos += 5;
                 break;
             }
@@ -4003,22 +4008,23 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 uint16_t column1 = data[data_pos + 3] | (data[data_pos + 4] << 8);
                 uint16_t row2    = data[data_pos + 5] | (data[data_pos + 6] << 8);
                 uint16_t column2 = data[data_pos + 7] | (data[data_pos + 8] << 8);
-                len              = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " R%s%uC%s%u:R%s%uC%s%u",
-                               (row1 & (1 << 14)) ? "~" : "",
-                               (unsigned)((row1 & 0x3fff) + ((row1 & (1 << 14)) ? 0 : 1)),
-                               (row1 & (1 << 15)) ? "~" : "",
-                               (unsigned)(column1 + ((row1 & (1 << 15)) ? 0 : 1)),
-                               (row2 & (1 << 14)) ? "~" : "",
-                               (unsigned)((row2 & 0x3fff) + ((row2 & (1 << 14)) ? 0 : 1)),
-                               (row2 & (1 << 15)) ? "~" : "",
-                               (unsigned)(column2 + ((row2 & (1 << 15)) ? 0 : 1)));
+
+                len = fprintf(
+                    out_file,
+                    " R%s%uC%s%u:R%s%uC%s%u",
+                    (row1 & (1 << 14)) ? "~" : "",
+                    (unsigned)((row1 & 0x3fff) + ((row1 & (1 << 14)) ? 0 : 1)),
+                    (row1 & (1 << 15)) ? "~" : "",
+                    (unsigned)(column1 + ((row1 & (1 << 15)) ? 0 : 1)),
+                    (row2 & (1 << 14)) ? "~" : "",
+                    (unsigned)((row2 & 0x3fff) + ((row2 & (1 << 14)) ? 0 : 1)),
+                    (row2 & (1 << 15)) ? "~" : "",
+                    (unsigned)(column2 + ((row2 & (1 << 15)) ? 0 : 1)));
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgArea message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 9;
                 break;
             }
@@ -4032,18 +4038,18 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
                 uint16_t row    = data[data_pos + 3] | (data[data_pos + 4] << 8);
                 uint16_t column = data[data_pos + 5] | (data[data_pos + 6] << 8);
 
-                len = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " R%s%uC%s%u",
-                               (row & (1 << 14)) ? "~" : "",
-                               (unsigned)((row & 0x3fff) + ((row & (1 << 14)) ? 0 : 1)),
-                               (row & (1 << 15)) ? "~" : "",
-                               (unsigned)(column + ((row & (1 << 15)) ? 0 : 1)));
+                len = fprintf(
+                    out_file,
+                    " R%s%uC%s%u",
+                    (row & (1 << 14)) ? "~" : "",
+                    (unsigned)((row & 0x3fff) + ((row & (1 << 14)) ? 0 : 1)),
+                    (row & (1 << 15)) ? "~" : "",
+                    (unsigned)(column + ((row & (1 << 15)) ? 0 : 1)));
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgRef3d message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 7;
                 break;
             }
@@ -4055,15 +4061,15 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
 
                 uint16_t name = data[data_pos + 3] | (data[data_pos + 4] << 8);
 
-                len = snprintf(&buffer[buffer_pos],
-                               buffer_size - buffer_pos,
-                               " NAMEIDX %u",
-                               (unsigned)name);
+                len = fprintf(
+                    out_file,
+                    " NAMEIDX %u",
+                    (unsigned)name);
                 if (len < 0) {
                     cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Error formatting ptgNameX message\n");
                     goto done;
                 }
-                buffer_pos += len;
+
                 data_pos += 7;
                 break;
             }
@@ -4073,8 +4079,10 @@ parse_formula(char buffer[], unsigned buffer_size, char data[], unsigned data_si
         }
     }
 
+    status = CL_SUCCESS;
+
 done:
-    return buffer_pos;
+    return status;
 }
 
 cl_error_t
@@ -4082,13 +4090,13 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
 {
     char fullname[PATH_MAX];
     int in_fd = -1, out_fd = -1;
+    FILE *out_file = NULL;
     cl_error_t ret = CL_SUCCESS;
     const char *opcode_name;
     char *tempfile = NULL;
-    char buf[1024];
     char *data = NULL;
     int len;
-    int len2;
+    size_t size_written;
     struct {
         uint16_t opcode;
         uint16_t length;
@@ -4108,7 +4116,13 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
     }
 
     if ((ret = cli_gentempfd(dir, &tempfile, &out_fd)) != CL_SUCCESS) {
-        cli_dbgmsg("[cli_xlm_extract_macros] Failed to open output file\n");
+        cli_dbgmsg("[cli_xlm_extract_macros] Failed to open output file descriptor\n");
+        goto done;
+    }
+
+    out_file = fdopen(out_fd, "wb");
+    if (NULL == out_file) {
+        cli_dbgmsg("[cli_xlm_extract_macros] Failed to open output file pointer\n");
         goto done;
     }
 
@@ -4126,7 +4140,7 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
 
     cli_dbgmsg("[cli_xlm_extract_macros] Extracting macros to %s\n", tempfile);
 
-    while ((ret = cli_readn(in_fd, &biff_header, sizeof(biff_header))) == sizeof(biff_header)) {
+    while (sizeof(biff_header) == cli_readn(in_fd, &biff_header, sizeof(biff_header))) {
         biff_header.opcode = le16_to_host(biff_header.opcode);
         biff_header.length = le16_to_host(biff_header.length);
 
@@ -4136,13 +4150,13 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
             opcode_name = NULL;
         }
 
-        len = snprintf(buf, sizeof(buf), "%04x %6d   %s", biff_header.opcode, biff_header.length, opcode_name == NULL ? "<unknown>" : opcode_name);
-
+        len = fprintf(out_file, "%04x %6d   %s", biff_header.opcode, biff_header.length, opcode_name == NULL ? "<unknown>" : opcode_name);
         if (len < 0) {
             cli_dbgmsg("[cli_xlm_extract_macros] Error formatting opcode message\n");
             ret = CL_EFORMAT;
             goto done;
         }
+        len = 0;
 
         if (biff_header.length > BIFF8_MAX_RECORD_LENGTH) {
             cli_dbgmsg("[cli_xlm_extract_macros] Record size exceeds maximum allowed\n");
@@ -4168,27 +4182,24 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
                     formula_header.row    = data[0] | (data[1] << 8);
                     formula_header.column = data[2] | (data[3] << 8);
                     formula_header.length = data[20] | (data[21] << 8);
-                    len2                  = snprintf(&buf[len],
-                                    sizeof(buf) - len, " - R%dC%d len=%d ",
-                                    (unsigned)(formula_header.row + 1),
-                                    (unsigned)(formula_header.column + 1),
-                                    formula_header.length);
-                    if (len2 < 0) {
+
+                    len = fprintf(
+                        out_file,
+                        " - R%dC%d len=%d ",
+                        (unsigned)(formula_header.row + 1),
+                        (unsigned)(formula_header.column + 1),
+                        formula_header.length);
+                    if (len < 0) {
                         cli_dbgmsg("[cli_xlm_extract_macros] Error formatting FORMULA record message\n");
                         ret = CL_EFORMAT;
                         goto done;
                     }
 
-                    len += len2;
-
-                    len2 = parse_formula(&buf[len], sizeof(buf) - len, &data[22], biff_header.length - 21);
-                    if (len2 < 0) {
+                    ret = parse_formula(out_file, &data[22], biff_header.length - 21);
+                    if (CL_SUCCESS != ret) {
                         cli_dbgmsg("[cli_xlm_extract_macros] Error parsing formula in FORMULA record message\n");
-                        ret = CL_EFORMAT;
                         goto done;
                     }
-
-                    len += len2;
                 }
 
                 break;
@@ -4209,20 +4220,20 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
                                 name = "?";
                                 break;
                         }
-                        len2 = snprintf(&buf[len], sizeof(buf) - len, " - built-in-name %u %s", (unsigned)code, name);
+
+                        len = fprintf(out_file, " - built-in-name %u %s", (unsigned)code, name);
                     } else {
                         int name_len  = data[3] | (data[4] << 8);
                         size_t offset = data[14] != 0 ? 14 : 15;
                         name_len      = min(name_len, (int)(biff_header.length - offset));
-                        len2          = snprintf(&buf[len], sizeof(buf) - len, " - %.*s", name_len, &data[offset]);
+
+                        len = fprintf(out_file, " - %.*s", name_len, &data[offset]);
                     }
-                    if (len2 < 0) {
+                    if (len < 0) {
                         cli_dbgmsg("[cli_xlm_extract_macros] Error formatting NAME record message\n");
                         ret = CL_EFORMAT;
                         goto done;
                     }
-                    len += len2;
-
                 } else {
                     cli_dbgmsg("[cli_xlm_extract_macros] Skipping broken NAME record (length %u)\n", biff_header.length);
                 }
@@ -4266,15 +4277,12 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
                             break;
                     }
 
-                    len2 = snprintf(&buf[len], sizeof(buf) - len, " - %s, %s", sheet_type, sheet_state);
-
-                    if (len2 < 0) {
+                    len = fprintf(out_file, " - %s, %s", sheet_type, sheet_state);
+                    if (len < 0) {
                         cli_dbgmsg("[cli_xlm_extract_macros] Error formatting BOUNDSHEET record message\n");
                         ret = CL_EFORMAT;
                         break;
                     }
-
-                    len += len2;
                 } else {
                     cli_dbgmsg("[cli_xlm_extract_macros] Skipping broken BOUNDSHEET record (length %u)\n", biff_header.length);
                 }
@@ -4296,47 +4304,43 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
                     }
 
                     if (!(flags & 0x1)) { //String is compressed
-                        len2 = snprintf(&buf[len], sizeof(buf) - len, " - \"%.*s\"", (int)(biff_header.length - 3), &data[6]);
-                        if (len2 < 0) {
+                        len = fprintf(out_file, " - \"%.*s\"", (int)(biff_header.length - 3), &data[6]);
+                        if (len < 0) {
                             cli_dbgmsg("[cli_xlm_extract_macros] Error formatting STRING record message with ANSI content\n");
                             ret = CL_EFORMAT;
                             break;
                         }
-                        len += len2;
                     } else {
                         char *utf8       = NULL;
                         size_t utf8_size = 0;
-                        len2             = snprintf(&buf[len], sizeof(buf) - len, " - ");
 
-                        if (len2 < 0) {
+                        len = fprintf(out_file, " - ");
+                        if (len < 0) {
                             cli_dbgmsg("[cli_xlm_extract_macros] Error formatting STRING record message with UTF16 content\n");
                             ret = CL_EFORMAT;
                             break;
                         }
-
-                        len += len2;
 
                         if (string_length > biff_header.length - 3) {
                             string_length = biff_header.length - 3;
                         }
 
                         if (CL_SUCCESS == cli_codepage_to_utf8(&data[3], string_length, 1200, &utf8, &utf8_size)) {
-                            size_t copy_size = utf8_size;
-                            if (copy_size > sizeof(buf) - len) {
-                                copy_size = sizeof(buf) - len;
+                            if (0 < utf8_size) {
+                                size_written = fwrite(utf8, 1, utf8_size, out_file);
+                                free(utf8);
+                                if (size_written < utf8_size) {
+                                    cli_dbgmsg("[cli_xlm_extract_macros] Error writing STRING record message with UTF16LE content\n");
+                                    goto done;
+                                }
                             }
-                            memcpy(&buf[len], utf8, copy_size);
-                            len += copy_size;
-                            free(utf8);
                         } else {
                             cli_dbgmsg("[cli_xlm_extract_macros] Failed to decode UTF16LE string\n");
-                            len2 = snprintf(&buf[len], sizeof(buf) - len, "<Failed to decode UTF16LE string>");
-                            if (len2 < 0) {
+                            len = fprintf(out_file, "<Failed to decode UTF16LE string>");
+                            if (len < 0) {
                                 cli_dbgmsg("[cli_xlm_extract_macros] Error formatting STRING record message with UTF16LE content\n");
                                 goto done;
                             }
-
-                            len += len2;
                         }
                     }
                 } else {
@@ -4351,14 +4355,9 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
             }
         }
 
-        if ((size_t)len < sizeof(buf)) {
-            buf[len] = '\n';
-            len += 1;
-        }
-
-        if (((int)cli_writen(out_fd, buf, len)) != len) {
-            cli_dbgmsg("[cli_xlm_extract_macros] Failed to write output\n");
-            ret = CL_EWRITE;
+        len = fputc('\n', out_file);
+        if (len == EOF) {
+            cli_dbgmsg("[cli_xlm_extract_macros] Error writing new line to out file\n");
             goto done;
         }
     }
@@ -4396,8 +4395,13 @@ done:
     }
 
     if (out_fd != -1) {
-        close(out_fd);
-        out_fd = -1;
+        if (NULL != out_file) {
+            fclose(out_file);
+            out_file = NULL;
+        } else {
+            close(out_fd);
+            out_fd = -1;
+        }
     }
 
     if (data != NULL) {
