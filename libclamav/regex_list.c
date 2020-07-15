@@ -472,6 +472,9 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         if (!*buffer)
             continue; /* skip empty lines */
 
+        if (buffer[0] == '#')
+            continue;
+
         if (functionality_level_check(buffer))
             continue;
 

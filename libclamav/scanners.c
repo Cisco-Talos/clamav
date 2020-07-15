@@ -272,37 +272,35 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
 
     /* If the archive header had a comment, write it to the comment dir. */
     if ((comment != NULL) && (comment_size > 0)) {
-        int comment_fd = -1;
-        if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, "comments"))) {
-            status = CL_EMEM;
-            goto done;
+
+        if (ctx->engine->keeptmp) {
+            int comment_fd = -1;
+            if (!(comment_fullpath = cli_gentemp_with_prefix(ctx->sub_tmpdir, "comments"))) {
+                status = CL_EMEM;
+                goto done;
+            }
+
+            comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
+            if (comment_fd < 0) {
+                cli_dbgmsg("RAR: ERROR: Failed to open output file\n");
+            } else {
+                cli_dbgmsg("RAR: Writing the archive comment to temp file: %s\n", comment_fullpath);
+                if (0 == write(comment_fd, comment, comment_size)) {
+                    cli_dbgmsg("RAR: ERROR: Failed to write to output file\n");
+                }
+                close(comment_fd);
+            }
         }
 
-        comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
-        if (comment_fd < 0) {
-            cli_dbgmsg("RAR: ERROR: Failed to open output file\n");
-        } else {
-            cli_dbgmsg("RAR: Writing the archive comment to temp file: %s\n", comment_fullpath);
-            if (0 == write(comment_fd, comment, comment_size)) {
-                cli_dbgmsg("RAR: ERROR: Failed to write to output file\n");
-            } else {
-                /* Scan the comment file */
-                status = cli_magic_scan_file(comment_fullpath, ctx, NULL);
+        /* Scan the comment */
+        status = cli_magic_scan_buff(comment, comment_size, ctx, NULL);
 
-                /* Delete the tempfile if not --leave-temps */
-                if (!ctx->engine->keeptmp)
-                    if (cli_unlink(comment_fullpath))
-                        cli_dbgmsg("RAR: Failed to unlink the extracted comment file: %s\n", comment_fullpath);
-
-                if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
-                    status = CL_CLEAN;
-                    viruses_found++;
-                }
-                if ((status == CL_VIRUS) || (status == CL_BREAK)) {
-                    goto done;
-                }
-            }
-            close(comment_fd);
+        if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
+            status = CL_CLEAN;
+            viruses_found++;
+        }
+        if ((status == CL_VIRUS) || (status == CL_BREAK)) {
+            goto done;
         }
     }
 
@@ -657,7 +655,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                     goto done;
                 }
                 free(prefix);
-                prefix = NULL;
 
                 comment_fd = open(comment_fullpath, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600);
                 if (comment_fd < 0) {
@@ -666,10 +663,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx, size_t sfx_offset)
                     cli_dbgmsg("EGG: Writing the archive comment to temp file: %s\n", comment_fullpath);
                     if (0 == write(comment_fd, comments[i], nComments)) {
                         cli_dbgmsg("EGG: ERROR: Failed to write to output file\n");
-                    } else {
-                        close(comment_fd);
-                        comment_fd = -1;
                     }
+                    close(comment_fd);
                 }
                 free(comment_fullpath);
                 comment_fullpath = NULL;
@@ -3471,7 +3466,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     void *parent_property = NULL;
 #endif
 
-    char *fmap_basename = NULL;
     char *old_temp_path = NULL;
     char *new_temp_path = NULL;
 
@@ -3509,6 +3503,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (ctx->engine->keeptmp) {
+        char *fmap_basename = NULL;
         /*
          * Keep-temp enabled, so create a sub-directory to provide extraction directory recursion.
          */
@@ -3518,6 +3513,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
              * The fmap has a name, lets include it in the new sub-directory.
              */
             new_temp_path = cli_gentemp_with_prefix(ctx->sub_tmpdir, fmap_basename);
+            free(fmap_basename);
             if (NULL == new_temp_path) {
                 cli_errmsg("cli_magic_scan: Failed to generate temp directory name.\n");
                 ret = CL_EMEM;
@@ -4582,6 +4578,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     time_t current_time;
     struct tm tm_struct;
+    fmap_t **fmap_head = NULL;
 
     if (NULL == map) {
         return CL_ENULLARG;
@@ -4599,17 +4596,21 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
     ctx.found_possibly_unwanted = 0;
     ctx.containers              = cli_calloc(sizeof(cli_ctx_container), ctx.engine->maxreclevel + 2);
-    if (!ctx.containers)
-        return CL_EMEM;
+    if (!ctx.containers) {
+        rc = CL_EMEM;
+        goto done;
+    }
     cli_set_container(&ctx, CL_TYPE_ANY, 0);
     ctx.dconf  = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
-    ctx.fmap   = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 3);
-    if (!ctx.fmap)
-        return CL_EMEM;
+    fmap_head   = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 3);
+    if (!fmap_head) {
+        rc = CL_EMEM;
+        goto done;
+    }
     if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
-        free(ctx.fmap);
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
 
     /*
@@ -4618,7 +4619,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
      * fmap's file descriptor in the virus found callback (like for deferred
      * low-seveerity alerts).
      */
-    ctx.fmap++;
+    ctx.fmap = fmap_head + 1;
     *ctx.fmap = map;
 
     perf_init(&ctx);
@@ -4658,7 +4659,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     if (!localtime_r(&current_time, &tm_struct)) {
 #endif
         cli_errmsg("scan_common: Failed to get local time.\n");
-        return CL_ESTAT;
+        rc = CL_ESTAT;
+        goto done;
     }
 
     if ((ctx.engine->keeptmp) &&
@@ -4669,7 +4671,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
-            return CL_EMEM;
+            rc = CL_EMEM;
+            goto done;
         }
         strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-", &tm_struct);
         strcpy(new_temp_prefix + strlen("YYYYMMDD_HHMMSS-"), target_basename);
@@ -4679,7 +4682,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
-            return CL_EMEM;
+            rc = CL_EMEM;
+            goto done;
         }
         strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
     }
@@ -4689,14 +4693,16 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     free(new_temp_prefix);
     if (NULL == new_temp_path) {
         cli_errmsg("scan_common: Failed to generate temp directory name.\n");
-        return CL_EMEM;
+        rc = CL_EMEM;
+        goto done;
     }
 
     ctx.sub_tmpdir = new_temp_path;
 
     if (mkdir(ctx.sub_tmpdir, 0700)) {
         cli_errmsg("Can't create temporary directory for scan: %s.\n", ctx.sub_tmpdir);
-        return CL_EACCES;
+        rc = CL_EACCES;
+        goto done;
     }
 
     cli_logg_setup(&ctx);
@@ -4801,6 +4807,9 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         }
     }
 
+    cli_logg_unsetup();
+
+done:
     if (NULL != ctx.sub_tmpdir) {
         if (!ctx.engine->keeptmp) {
             (void)cli_rmdirs(ctx.sub_tmpdir);
@@ -4808,16 +4817,33 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         free(ctx.sub_tmpdir);
     }
 
+    if (NULL != target_basename) {
+        free(target_basename);
+    }
+
     if (NULL != ctx.target_filepath) {
         free(ctx.target_filepath);
     }
-    free(ctx.containers);
-    cli_bitset_free(ctx.hook_lsig_matches);
-    ctx.fmap--; /* Restore original fmap pointer */
-    free(ctx.fmap);
-    free(ctx.options);
-    cli_logg_unsetup();
-    perf_done(&ctx);
+
+    if (NULL != ctx.perf) {
+        perf_done(&ctx);
+    }
+
+    if (NULL != ctx.hook_lsig_matches) {
+        cli_bitset_free(ctx.hook_lsig_matches);
+    }
+
+    if (NULL != fmap_head) {
+        free(fmap_head);
+    }
+
+    if (NULL != ctx.containers) {
+        free(ctx.containers);
+    }
+
+    if (NULL != ctx.options) {
+        free(ctx.options);
+    }
 
     return rc;
 }

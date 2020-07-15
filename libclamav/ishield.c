@@ -241,7 +241,12 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
 
         /* FIXMEISHIELD: cleanup the spam below */
         cli_dbgmsg("ishield-msi: File %s (csize: %llx, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, (long long)csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
-        if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) return CL_EMEM;
+        if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+            if (NULL != filename) {
+                free(filename);
+            }
+            return CL_EMEM;
+        }
         if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
             cli_dbgmsg("ishield-msi: failed to create file %s\n", tempfile);
             free(tempfile);

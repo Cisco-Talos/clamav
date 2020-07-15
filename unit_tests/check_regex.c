@@ -219,11 +219,16 @@ static const struct rtest {
      "http://www.paypal.com", "pics.ebay.com", RTR_WHITELISTED},
     {NULL, "http://somefakeurl.example.com", "someotherdomain-key.com", RTR_CLEAN},
     {NULL, "http://somefakeurl.example.com", "someotherdomain.key.com", RTR_PHISH},
-    {NULL, "http://1.test.example.com/something", "test", RTR_BLACKLISTED},
-    {NULL, "http://1.test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@1.test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@1.test.example.com/2/test", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@1.test.example.com/", "test", RTR_BLACKLISTED},
+    {NULL, "http://malware-test.example.com/something", "test", RTR_BLACKLISTED},
+    {NULL, "http://phishing-test.example.com/something", "test", RTR_BLACKLISTED},
+    {NULL, "http://sub.malware-test.example.com/2", "test", RTR_BLACKLISTED},
+    {NULL, "http://sub.phishing-test.example.com/2", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@malware-test.example.com/2", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@phishing-test.example.com/2", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@malware-test.example.com/2/test", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@phishing-test.example.com/2/test", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@malware-test.example.com/", "test", RTR_BLACKLISTED},
+    {NULL, "http://user@phishing-test.example.com/", "test", RTR_BLACKLISTED},
     {NULL, "http://x.exe", "http:///x.exe", RTR_CLEAN},
     {".+\\.ebayrtm\\.com([/?].*)?:[^.]+\\.ebay\\.(de|com|co\\.uk)/",
      "http://srx.main.ebayrtm.com",
@@ -430,8 +435,17 @@ static void do_phishing_test(const struct rtest *rtest)
                               "this should be blacklisted, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
                 if (*ctx.virname) {
-                    char *phishingFound = strstr((const char *)*ctx.virname, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
-                    ck_assert_msg(phishingFound != NULL, "\n\t should be: Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net,\n\t but is:    %s\n", *ctx.virname);
+                    char *phishingFound = NULL;
+                    char *detectionName = NULL;
+                    if (strstr(rtest->realurl, "malware-test")) {
+                        detectionName = "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
+
+                    } else if (strstr(rtest->realurl, "phishing-test")) {
+                        detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
+                    }
+                    ck_assert_msg(detectionName != NULL, "\n\t Blacklist test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
+                    phishingFound = strstr((const char *)*ctx.virname, detectionName);
+                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
                 }
             }
             break;
@@ -512,8 +526,17 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
                               "this should be blacklisted, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
                 if (*ctx.virname) {
-                    char *phishingFound = strstr((const char *)*ctx.virname, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
-                    ck_assert_msg(phishingFound != NULL, "\n\t should be: Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net,\n\t but is:    %s\n", *ctx.virname);
+                    char *phishingFound = NULL;
+                    char *detectionName = NULL;
+                    if (strstr(rtest->realurl, "malware-test")) {
+                        detectionName = "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
+
+                    } else if (strstr(rtest->realurl, "phishing-test")) {
+                        detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
+                    }
+                    ck_assert_msg(detectionName != NULL, "\n\t Blacklist test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
+                    phishingFound = strstr((const char *)*ctx.virname, detectionName);
+                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
                 }
             }
             break;

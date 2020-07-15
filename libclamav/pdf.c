@@ -1265,6 +1265,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
             memcpy(q, in, *length);
             if (false == arc4_init(&arc4, result, n)) {
                 noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                free(q);
                 return NULL;
             }
             arc4_apply(&arc4, q, (unsigned)*length); /* TODO: may truncate for very large lengths */
@@ -1281,10 +1282,6 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
             break;
         case ENC_AESV3:
             cli_dbgmsg("decrypt_any: enc is aesv3\n");
-            if (pdf->keylen == 0) {
-                cli_dbgmsg("decrypt_any: no key\n");
-                return NULL;
-            }
 
             aes_256cbc_decrypt((const unsigned char *)in, length, q, pdf->key, pdf->keylen, 1);
 

@@ -1208,10 +1208,13 @@ static cl_error_t hash_match(const struct regex_matcher* rlist,
                     break;
                 case '1':
                     *phishing_verdict = CL_PHISH_HASH1;
+                    break;
                 case '2':
                     *phishing_verdict = CL_PHISH_HASH2;
+                    break;
                 default:
                     *phishing_verdict = CL_PHISH_HASH0;
+                    break;
             }
         }
     }
