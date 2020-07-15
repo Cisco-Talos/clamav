@@ -98,12 +98,15 @@ static void sanitname(char *name)
 int cli_scancpio_old(cli_ctx *ctx)
 {
     struct cpio_hdr_old hdr_old;
+    char * fmap_name = NULL;
     char name[513];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;
     int ret         = CL_CLEAN, conv;
     off_t pos       = 0;
     int virus_found = 0;
+
+    memset(name, 0, sizeof(name));
 
     while (fmap_readn(*ctx->fmap, &hdr_old, pos, sizeof(hdr_old)) == sizeof(hdr_old)) {
         pos += sizeof(hdr_old);
@@ -144,6 +147,8 @@ int cli_scancpio_old(cli_ctx *ctx)
                 pos += hdr_namesize - namesize;
             } else if (hdr_namesize % 2)
                 pos++;
+
+            fmap_name = &name;
         }
         filesize = (uint32_t)((uint32_t)EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
         cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
@@ -163,7 +168,7 @@ int cli_scancpio_old(cli_ctx *ctx)
             if (ret == CL_EMAXFILES) {
                 goto leave;
             } else if (ret == CL_SUCCESS) {
-                ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
+                ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, fmap_name);
                 if (ret == CL_VIRUS) {
                     if (!SCAN_ALLMATCHES)
                         return ret;
