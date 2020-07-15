@@ -625,15 +625,16 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
             }
 
-            if (NULL == encoding){
+            if (NULL == encoding) {
                 cli_dbgmsg("egg_filename_to_utf8: Invalid codepage parameter passed in.\n");
                 goto done;
             }
 
             for (attempt = 1; attempt <= 3; attempt++) {
-                char* out_utf8_tmp = NULL;
-                char * inbuf = in;
-                size_t iconvRet = -1;
+                char* out_utf8_index = NULL;
+                char* out_utf8_tmp   = NULL;
+                char* inbuf          = in;
+                size_t iconvRet      = -1;
 
                 /* Charset to UTF-8 should never exceed in_size * 6;
                  * We can shrink final buffer after the conversion, if needed. */
@@ -642,7 +643,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 inbytesleft  = in_size;
                 outbytesleft = out_utf8_size;
 
-                out_utf8 = cli_calloc(1, out_utf8_size + 1);
+                out_utf8 = out_utf8_index = cli_calloc(1, out_utf8_size + 1);
                 if (NULL == out_utf8) {
                     cli_errmsg("egg_filename_to_utf8: Failure allocating buffer for utf8 data.\n");
                     status = CL_EMEM;
@@ -654,9 +655,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     goto done;
                 }
 
-                iconvRet = iconv(conv, &inbuf, &inbytesleft, &out_utf8, &outbytesleft);
+                iconvRet = iconv(conv, &inbuf, &inbytesleft, &out_utf8_index, &outbytesleft);
                 iconv_close(conv);
-                conv = (iconv_t) -1;
+                conv = (iconv_t)-1;
                 if ((size_t)-1 == iconvRet) {
                     switch (errno) {
                         case E2BIG:
@@ -686,6 +687,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
                 out_utf8      = out_utf8_tmp;
                 out_utf8_size = out_utf8_size - outbytesleft;
+                break;
             }
 
 #else

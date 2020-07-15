@@ -265,7 +265,6 @@
    fun:internal_ascii_loop
    fun:__gconv_transform_internal_ascii
    fun:wcsrtombs
-   fun:wcsrtombs
    ...
 }
 {
@@ -273,14 +272,12 @@
    Memcheck:Cond
    fun:__wcsnlen_avx2
    fun:wcsrtombs
-   fun:wcsrtombs
    ...
 }
 {
    unrar-wcsrtombs-3
    Memcheck:Cond
    fun:__wcsnlen_sse4_1
-   fun:wcsrtombs
    fun:wcsrtombs
    ...
 }

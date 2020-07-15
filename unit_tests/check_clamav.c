@@ -973,6 +973,26 @@ START_TEST(test_sanitize_path)
 }
 END_TEST
 
+cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size);
+
+START_TEST(test_cli_codepage_to_utf8)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
+
+    ret = cli_codepage_to_utf8("\x00\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21\x00\x00", 26, 1201, &utf8, &utf8_size);
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_LE to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_LE to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(0 == strcmp(utf8, "Hello world!"), "sanitize_path: '%s' doesn't match '%s'", utf8, "Hello world!");
+
+    if (NULL != utf8) {
+        free(utf8);
+        utf8 = NULL;
+    }
+}
+END_TEST
+
 static Suite *test_cli_suite(void)
 {
     Suite *s               = suite_create("cli");
@@ -992,6 +1012,7 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase(s, tc_cli_assorted);
     tcase_add_test(tc_cli_assorted, test_sanitize_path);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8);
 
     return s;
 }
