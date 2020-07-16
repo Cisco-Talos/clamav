@@ -1944,7 +1944,13 @@ static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
     for (; hashcnt > 0; hashcnt--) {
         if ((ret = cli_xlm_extract_macros(dirname, ctx, U, hash, hashcnt)) != CL_SUCCESS) {
-            return ret;
+            switch (ret) {
+                case CL_VIRUS:
+                case CL_EMEM:
+                    return ret;
+                default:
+                    cli_dbgmsg("XLMDir: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
+            }
         }
     }
 
@@ -4035,7 +4041,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
             if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
                 ret = cli_parsepng(ctx);
-		
+
             if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
                 ret = cli_parsegif(ctx);
 

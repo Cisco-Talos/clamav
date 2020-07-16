@@ -3713,7 +3713,7 @@ typedef enum ptg_expr {
 
 } ptg_expr;
 
-static const char * get_function_name(unsigned index)
+static const char *get_function_name(unsigned index)
 {
     if (index < sizeof(FUNCTIONS) / sizeof(FUNCTIONS[0])) {
         return FUNCTIONS[index];
@@ -4085,8 +4085,7 @@ done:
     return status;
 }
 
-cl_error_t
-cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which)
+cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which)
 {
     char fullname[PATH_MAX];
     int in_fd = -1, out_fd = -1;
@@ -4094,9 +4093,10 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
     cl_error_t ret = CL_SUCCESS;
     const char *opcode_name;
     char *tempfile = NULL;
-    char *data = NULL;
+    char *data     = NULL;
     int len;
     size_t size_written;
+    size_t size_read;
     struct {
         uint16_t opcode;
         uint16_t length;
@@ -4140,7 +4140,7 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
 
     cli_dbgmsg("[cli_xlm_extract_macros] Extracting macros to %s\n", tempfile);
 
-    while (sizeof(biff_header) == cli_readn(in_fd, &biff_header, sizeof(biff_header))) {
+    while (sizeof(biff_header) == (size_read = cli_readn(in_fd, &biff_header, sizeof(biff_header)))) {
         biff_header.opcode = le16_to_host(biff_header.opcode);
         biff_header.length = le16_to_host(biff_header.length);
 
@@ -4362,11 +4362,7 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
         }
     }
 
-    if (ret < 0) {
-        ret = CL_EREAD;
-        goto done;
-    }
-
+    /* Scan the extracted content */
     if (out_fd != -1) {
         if (lseek(out_fd, 0, SEEK_SET) != 0) {
             cli_dbgmsg("cli_xlm_extract_macros: Failed to seek to beginning of temporary file\n");
@@ -4386,6 +4382,13 @@ cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash
         ctx->recursion -= 1;
     }
 
+    /* If a read failed, return with an error. */
+    if (size_read == (size_t)-1) {
+        cli_dbgmsg("cli_xlm_extract_macros: Read error occured when trying to read BIFF header. Truncated or malformed XLM macro file?\n");
+        ret = CL_EREAD;
+        goto done;
+    }
+
     ret = CL_SUCCESS;
 
 done:
@@ -4394,14 +4397,12 @@ done:
         in_fd = -1;
     }
 
-    if (out_fd != -1) {
-        if (NULL != out_file) {
-            fclose(out_file);
-            out_file = NULL;
-        } else {
-            close(out_fd);
-            out_fd = -1;
-        }
+    if (NULL != out_file) {
+        fclose(out_file);
+        out_file = NULL;
+    } else if (-1 != out_fd) {
+        close(out_fd);
+        out_fd = -1;
     }
 
     if (data != NULL) {
