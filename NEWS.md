@@ -92,6 +92,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 
 - Aldo Mazzeo
 - Ángel
+- Jamie Biggar
 - John Schember
 - Jonathan Sabbe
 - loblolly986
