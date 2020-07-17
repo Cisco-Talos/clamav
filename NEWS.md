@@ -105,6 +105,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Ángel
 - Clement Lecigne
 - Jamie Biggar
+- Jan Smutny
 - John Schember
 - Jonathan Sabbe
 - lutianxiong
