@@ -71,7 +71,12 @@ ClamAV 0.103.0 includes the following improvements and changes.
   even on very slow connections. Time is now displayed in Xm XXs (or Xh XXm)
   for values of 60 seconds or more. Bytes display now changes units at the
   proper 1024 B/KiB instead of 2048 B/KiB.
-  Patch courtesy of loblolly986.
+  Patch courtesy of Zachary Murden.
+
+- Improve column alignment and line wrap rendering for ClamdTOP. Also fixed
+  an issue on Windows where ClamdTOP would occasionally disconnect from clamd
+  and fail to reconnect.
+  Patch courtesy of Zachary Murden.
 
 ### Bug fixes
 
@@ -79,7 +84,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 - Fixed behavior of `freshclam`'s `OnUpdateExecute` config option on Windows
   when in daemon-mode so it can handle multiple arguments.
-  Patch courtesy of loblolly986.
+  Patch courtesy of Zachary Murden.
 
 - Fixed an error in the heuristic alert mechanism that would cause a single
   detection within an archive to alert once for every subsequent file scanned,
@@ -102,10 +107,10 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Jamie Biggar
 - John Schember
 - Jonathan Sabbe
-- loblolly986
 - lutianxiong
 - Reio Remma
 - Sebastian A. Siewior
+- Zachary Murden
 
 ## 0.102.2
 
