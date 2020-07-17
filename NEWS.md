@@ -97,6 +97,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - John Schember
 - Jonathan Sabbe
 - loblolly986
+- lutianxiong
 - Reio Remma
 - Sebastian A. Siewior
 
