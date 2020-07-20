@@ -637,9 +637,9 @@ static int make_connection_real(const char *soname, conn_t *conn)
 {
     int s = -1;
     struct timeval tv;
-    char *port       = NULL;
-    char *pt         = NULL;
-    char *host       = pt;
+    char *port = NULL;
+    char *pt   = NULL;
+    char *host = pt;
     struct addrinfo hints, *res = NULL, *p;
     int err;
     int ret = 0;
