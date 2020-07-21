@@ -233,7 +233,7 @@ rules
     | rules rule
     | rules import
     | rules error rule      /* on error skip until next rule..*/
-    | rules error 'include' /* .. or include statement */
+    | rules error "include" /* .. or include statement */
     ;
 
 
