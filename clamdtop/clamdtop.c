@@ -130,6 +130,7 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
     } while (0)
 
 static struct global_stats global;
+static SCREEN *curses_scr  = NULL;
 static int curses_inited   = 0;
 static int maxystats       = 0;
 static int detail_selected = -1;
@@ -290,7 +291,12 @@ static void init_ncurses(int num_clamd, int use_default)
 {
     int default_bg = use_default ? DEFAULT_COLOR : COLOR_BLACK;
     int default_fg = use_default ? DEFAULT_COLOR : COLOR_WHITE;
-    initscr();
+
+    /* newterm() allows us to free curses-allocated memory with delscreen() */
+    if (!(curses_scr = newterm(NULL, stdout, stdin))) {
+        fprintf(stderr, "Failed to initialize curses\n");
+        exit(EXIT_FAILURE);
+    }
     curses_inited = 1;
 
     start_color();
@@ -427,6 +433,7 @@ static void cleanup(void)
         }
         rm_windows();
         endwin();
+        delscreen(curses_scr);
     }
     curses_inited = 0;
     for (i = 0; i < global.num_clamd; i++) {
