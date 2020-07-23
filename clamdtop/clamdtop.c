@@ -98,7 +98,7 @@ struct stats {
     /* queue */
     unsigned biggest_queue, current_q;
     double mem; /* in megabytes */
-    unsigned long lheapu, lmmapu, ltotalu, ltotalf, lreleasable, lpoolu, lpoolt;
+    double heapu, mmapu, totalu, totalf, releasable, pools_used, pools_total;
     unsigned pools_cnt;
 };
 
@@ -694,7 +694,8 @@ static int make_connection_real(const char *soname, conn_t *conn)
 
     print_con_info(conn, "Looking up: %s:%s\n", host, port ? port : "3310");
     if ((err = getaddrinfo(host, (port != NULL) ? port : "3310", &hints, &res))) {
-        print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n", host, port ? port : "3310", gai_strerror(err));
+        print_con_info(conn, "Could not look up %s:%s, getaddrinfo returned: %s\n",
+                       host, port ? port : "3310", gai_strerror(err));
         ret = -1;
         goto done;
     }
@@ -972,12 +973,12 @@ static void output_memstats(struct stats *stats)
     int blink = 0;
 
     werase(mem_window);
-    if (stats->mem > 0 || (stats->mem >= 0 && (stats->lpoolt > 0))) {
+    if (stats->mem > 0 || (stats->mem >= 0 && (stats->pools_total > 0))) {
         box(mem_window, 0, 0);
 
         if (stats->mem > 0)
-            snprintf(buf, sizeof(buf), "heap %4luM mmap %4luM unused %3luM",
-                     stats->lheapu / 1000, stats->lmmapu / 1000, stats->lreleasable / 1000);
+            snprintf(buf, sizeof(buf), "heap %4.0fM mmap %4.0fM unused%4.0fM",
+                     stats->heapu, stats->mmapu, stats->releasable);
         else
             snprintf(buf, sizeof(buf), "heap   N/A mmap   N/A unused  N/A");
         mvwprintw(mem_window, 1, 1, "Mem:  ");
@@ -985,23 +986,24 @@ static void output_memstats(struct stats *stats)
 
         mvwprintw(mem_window, 2, 1, "Libc: ");
         if (stats->mem > 0)
-            snprintf(buf, sizeof(buf), "used %4luM free %4luM total %4luM",
-                     stats->ltotalu / 1000, stats->ltotalf / 1000, (stats->ltotalu + stats->ltotalf) / 1000);
+            snprintf(buf, sizeof(buf), "used %4.0fM free %4.0fM total %4.0fM",
+                     stats->totalu, stats->totalf, stats->totalu + stats->totalf);
         else
             snprintf(buf, sizeof(buf), "used   N/A free   N/A total   N/A");
         print_colored(mem_window, buf);
 
         mvwprintw(mem_window, 3, 1, "Pool: ");
-        snprintf(buf, sizeof(buf), "count %4u used %4luM total %4luM",
-                 stats->pools_cnt, stats->lpoolu / 1000, stats->lpoolt / 1000);
+        snprintf(buf, sizeof(buf), "count %4u used %4.0fM total %4.0fM",
+                 stats->pools_cnt, stats->pools_used, stats->pools_total);
         print_colored(mem_window, buf);
 
-        totalmem = stats->lheapu + stats->lmmapu + stats->lpoolt;
+        totalmem = (stats->heapu + stats->mmapu + stats->pools_total) * 1000;
         if (totalmem > biggest_mem) {
             biggest_mem = totalmem;
             blink       = 1;
         }
-        show_bar(mem_window, 4, totalmem, stats->lmmapu + stats->lreleasable + stats->lpoolt - stats->lpoolu,
+        show_bar(mem_window, 4, totalmem,
+                 (stats->mmapu + stats->releasable + stats->pools_total - stats->pools_used) * 1000,
                  biggest_mem, blink);
     }
     wrefresh(mem_window);
@@ -1009,28 +1011,18 @@ static void output_memstats(struct stats *stats)
 
 static void parse_memstats(const char *line, struct stats *stats)
 {
-    double heapu, mmapu, totalu, totalf, releasable, pools_used, pools_total;
-
     if (sscanf(line, " heap %lfM mmap %lfM used %lfM free %lfM releasable %lfM pools %u pools_used %lfM pools_total %lfM",
-               &heapu, &mmapu, &totalu, &totalf, &releasable, &stats->pools_cnt, &pools_used, &pools_total) != 8) {
+               &stats->heapu, &stats->mmapu, &stats->totalu, &stats->totalf, &stats->releasable,
+               &stats->pools_cnt, &stats->pools_used, &stats->pools_total) != 8) {
         if (sscanf(line, " heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %lfM pools_total %lfM",
-                   &stats->pools_cnt, &pools_used, &pools_total) != 3) {
+                   &stats->pools_cnt, &stats->pools_used, &stats->pools_total) != 3) {
             stats->mem = -1;
             return;
         }
-        stats->lpoolu = pools_used * 1000;
-        stats->lpoolt = pools_total * 1000;
-        stats->mem    = 0;
+        stats->mem = 0;
         return;
     }
-    stats->lheapu      = heapu * 1000;
-    stats->lmmapu      = mmapu * 1000;
-    stats->ltotalu     = totalu * 1000;
-    stats->ltotalf     = totalf * 1000;
-    stats->lreleasable = releasable * 1000;
-    stats->lpoolu      = pools_used * 1000;
-    stats->lpoolt      = pools_total * 1000;
-    stats->mem         = heapu + mmapu + pools_total;
+    stats->mem = stats->heapu + stats->mmapu + stats->pools_total;
 }
 
 static int output_stats(struct stats *stats, unsigned idx)
@@ -1043,7 +1035,7 @@ static int output_stats(struct stats *stats, unsigned idx)
     WINDOW *win = stats_head_window;
     int sel     = detail_is_selected(idx);
     char *line  = malloc(maxx + 1);
-    int len = 0;
+    int len     = 0;
 
     OOM_CHECK(line);
 
@@ -1051,20 +1043,25 @@ static int output_stats(struct stats *stats, unsigned idx)
         strncpy(mem, "N/A", sizeof(mem));
         mem[sizeof(mem) - 1] = '\0';
     } else {
+        const char *format;
         char c;
         double s;
-        if (stats->mem > 999.0) {
+        if (stats->mem >= 1024) {
             c = 'G';
             s = stats->mem / 1024.0;
         } else {
             c = 'M';
             s = stats->mem;
         }
-        snprintf(mem, sizeof(mem), "%7.3f", s);
-        i = 4;
-        if (mem[i - 1] == '.') i--;
-        mem[i++] = c;
-        mem[i]   = '\0';
+        if (s >= 99.95)
+            format = "%.0f%c";
+        else if (s >= 9.995)
+            format = "%.1f%c";
+        else
+            format = "%.2f%c";
+
+        snprintf(mem, sizeof(mem), format, s, c);
+        mem[sizeof(mem) - 1] = '\0';
     }
     i = idx + 1;
 
@@ -1080,13 +1077,15 @@ static int output_stats(struct stats *stats, unsigned idx)
 
     memset(line, ' ', maxx + 1);
     if (!stats->stats_unsupp) {
-        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-7s %5s %-13s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-7s %5s %-13s %s",
+                       idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                        stats->live, stats->idle,
                        stats->current_q, stats->biggest_queue,
                        mem,
                        stats->engine_version, stats->db_version, timbuf, stats->remote);
     } else {
-        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-7s %5s %-13s %s", idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
+        len = snprintf(line, maxx + 1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-7s %5s %-13s %s",
+                       idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                        stats->engine_version, stats->db_version, timbuf, stats->remote);
     }
     line[maxx]         = '\0';
@@ -1098,7 +1097,7 @@ static int output_stats(struct stats *stats, unsigned idx)
     if (sel) {
         wattroff(win, COLOR_PAIR(selected_color));
     }
-    if (len > maxx) {
+    if ((unsigned) len > maxx) {
         wattron(win, A_DIM | COLOR_PAIR(header_color));
         mvwprintw(win, i, maxx - 3, "...");
         wattroff(win, A_DIM | COLOR_PAIR(header_color));
@@ -1195,7 +1194,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
     if (*p) p++;
     /* keep only base version, and cut -exp, and -gittags */
     pstart = p;
-    while (*p && *p != '-' && *p != '/')
+    while (*p && *p != ' ' && *p != '-' && *p != '/')
         p++;
 
     stats->engine_version = malloc(p - pstart + 1);
