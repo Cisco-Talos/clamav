@@ -4363,24 +4363,21 @@ cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U,
     }
 
     /* Scan the extracted content */
-    if (out_fd != -1) {
-        if (lseek(out_fd, 0, SEEK_SET) != 0) {
-            cli_dbgmsg("cli_xlm_extract_macros: Failed to seek to beginning of temporary file\n");
-            ret = CL_ESEEK;
-            goto done;
-        }
-
-        ctx->recursion += 1;
-        cli_set_container(ctx, CL_TYPE_MSOLE2, 0); //TODO: set correct container size
-
-        if (cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
-            ctx->recursion -= 1;
-            ret = CL_VIRUS;
-            goto done;
-        }
-
-        ctx->recursion -= 1;
+    if (lseek(out_fd, 0, SEEK_SET) != 0) {
+        cli_dbgmsg("cli_xlm_extract_macros: Failed to seek to beginning of temporary file\n");
+        ret = CL_ESEEK;
+        goto done;
     }
+
+    ctx->recursion += 1;
+    cli_set_container(ctx, CL_TYPE_MSOLE2, 0); //TODO: set correct container size
+
+    if (cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
+        ctx->recursion -= 1;
+        ret = CL_VIRUS;
+        goto done;
+    }
+    ctx->recursion -= 1;
 
     /* If a read failed, return with an error. */
     if (size_read == (size_t)-1) {
