@@ -759,6 +759,9 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
                     /* Key name obfuscated with hex characters */
                     nhex++;
                     if (p1 > end - 3) {
+                        if (endchar) {
+                            *endchar = end;
+                        }
                         return res;
                     }
 
