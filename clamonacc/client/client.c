@@ -164,11 +164,11 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     char *errchk                = NULL;
     uint64_t i                  = 0;
     const struct optstruct *opt = NULL;
-    CURL *curl = NULL;
+    CURL *curl                  = NULL;
     CURLcode curlcode;
     cl_error_t err = CL_SUCCESS;
-    int b_remote = 0;
-    uint16_t ret = 0;
+    int b_remote   = 0;
+    uint16_t ret   = 0;
     int64_t timeout;
 
     if (ctx == NULL) {
@@ -238,7 +238,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
         } else if (CURLE_OK == onas_sendln(curl, "zPING", 5, timeout)) {
 
             if (!optget((*ctx)->opts, "wait")->enabled) {
-                    logg("PONG\n");
+                logg("PONG\n");
             }
 
             ret = 0;

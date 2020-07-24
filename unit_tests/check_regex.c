@@ -287,8 +287,8 @@ START_TEST(regex_list_match_test)
 
     ck_assert_msg(is_regex_ok(&matcher), "is_regex_ok");
 
-    realurl  = cli_strdup(rtest->realurl);
-    rc = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
+    realurl = cli_strdup(rtest->realurl);
+    rc      = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
     ck_assert_msg(rc == rtest->result, "regex_list_match");
     /* regex_list_match is not supposed to modify realurl in this case */
     ck_assert_msg(!strcmp(realurl, rtest->realurl), "realurl altered");

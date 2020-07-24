@@ -1092,7 +1092,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
     char *dir;
     int ret = CL_CLEAN, desc;
     cli_ctx *ctx;
-    int has_vba =  0, has_xlm = 0;
+    int has_vba = 0, has_xlm = 0;
 
     fname = NULL;
     if ((dd = opendir(dirname)) != NULL) {

@@ -749,7 +749,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
     return;
 }
 
-static void onas_ddd_exit(__attribute__ ((unused)) void *arg)
+static void onas_ddd_exit(__attribute__((unused)) void *arg)
 {
     logg("*ClamInotif: onas_ddd_exit()\n");
 

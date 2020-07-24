@@ -53,7 +53,6 @@
 #include "libclamav/clamav.h"
 #include "libclamav/version.h"
 
-
 static int sockd;
 #define SOCKET "clamd-test.socket"
 static void conn_setup_mayfail(int may)
@@ -131,13 +130,13 @@ static void commands_setup(void)
 
     fd = open(ACCDENIED, O_CREAT | O_WRONLY, S_IWUSR);
     ck_assert_msg(fd != -1,
-                    "Failed to create file for access denied tests: %s\n", strerror(errno));
+                  "Failed to create file for access denied tests: %s\n", strerror(errno));
 
     ck_assert_msg(fchmod(fd, S_IWUSR) != -1,
-                    "Failed to chmod: %s\n", strerror(errno));
+                  "Failed to chmod: %s\n", strerror(errno));
     /* must not be empty file */
     ck_assert_msg((size_t)write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
-                    "Failed to write into testfile: %s\n", strerror(errno));
+                  "Failed to write into testfile: %s\n", strerror(errno));
     close(fd);
 
     /* skip access denied tests when run as root, as root will ignore
@@ -244,7 +243,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
     recvdata = recvfull(sockd, &len);
 
     ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
-                    len, expect_len, recvdata, expect);
+                  len, expect_len, recvdata, expect);
 
     rc = memcmp(recvdata, expect, expect_len);
     ck_assert_msg(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
@@ -330,7 +329,7 @@ START_TEST(test_stats)
     recvdata = recvfull(sockd, &len);
 
     ck_assert_msg(len > strlen(STATS_REPLY), "Reply has wrong size: %lu, minimum %lu, reply: %s\n",
-                    len, strlen(STATS_REPLY), recvdata);
+                  len, strlen(STATS_REPLY), recvdata);
 
     if (len > strlen(STATS_REPLY))
         len = strlen(STATS_REPLY);
@@ -383,7 +382,7 @@ START_TEST(test_instream)
 
     expect_len = strlen(EXPECT_INSTREAM);
     ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s\n",
-                    len, expect_len, recvdata);
+                  len, expect_len, recvdata);
 
     rc = memcmp(recvdata, EXPECT_INSTREAM, expect_len);
     ck_assert_msg(!rc, "Wrong reply for command INSTREAM: |%s|, expected: |%s|\n", recvdata, EXPECT_INSTREAM);
@@ -445,7 +444,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
 
     conn_setup();
     ck_assert_msg(sendmsg_fd(sockd, cmd, len, fd, singlemsg) != -1,
-                    "Failed to sendmsg: %s\n", strerror(errno));
+                  "Failed to sendmsg: %s\n", strerror(errno));
 
     if (closefd)
         close(fd);
@@ -460,7 +459,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
 
     len -= p - recvdata;
     ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
-                    len, expect_len, p, expect);
+                  len, expect_len, p, expect);
 
     rc = memcmp(p, expect, expect_len);
     ck_assert_msg(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, p, expect);
@@ -569,12 +568,12 @@ START_TEST(test_fildes_unwanted)
     /* send a 'zVERSION\0' including the ancillary data.
      * The \0 is from the extra char needed when sending ancillary data */
     ck_assert_msg(sendmsg_fd(sockd, "zIDSESSION", strlen("zIDSESSION"), dummyfd, 1) != -1,
-                    "sendmsg failed: %s\n", strerror(errno));
+                  "sendmsg failed: %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 
     ck_assert_msg(!strcmp(recvdata, "1: PROTOCOL ERROR: ancillary data sent without FILDES. ERROR"),
-                    "Wrong reply: %s\n", recvdata);
+                  "Wrong reply: %s\n", recvdata);
 
     free(recvdata);
     close(dummyfd);
@@ -592,11 +591,11 @@ START_TEST(test_idsession_stress)
     conn_setup();
 
     ck_assert_msg(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
-                    "send() failed: %s\n", strerror(errno));
+                  "send() failed: %s\n", strerror(errno));
     for (i = 0; i < 1024; i++) {
         snprintf(buf, sizeof(buf), "%u", (unsigned)(i + 1));
         ck_assert_msg(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
-                    "send failed: %s\n", strerror(errno));
+                      "send failed: %s\n", strerror(errno));
         data = recvpartial(sockd, &len, 1);
         p    = strchr(data, ':');
         ck_assert_msg(!!p, "wrong VERSION reply (%u): %s\n", i, data);
@@ -624,7 +623,7 @@ START_TEST(test_connections)
     int *sock;
     int nf, maxfd = 0;
     ck_assert_msg(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
-                    "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
+                  "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
     nf   = rlim.rlim_cur - 5;
     sock = malloc(sizeof(int) * nf);
 
@@ -698,7 +697,7 @@ START_TEST(test_stream)
         "send failed: %s\n", strerror(errno));
     recvdata = recvpartial(sockd, &len, 1);
     ck_assert_msg(sscanf(recvdata, "PORT %u\n", &port) == 1,
-                    "Wrong stream reply: %s\n", recvdata);
+                  "Wrong stream reply: %s\n", recvdata);
 
     free(recvdata);
     streamsd = conn_tcp(port);
@@ -707,7 +706,7 @@ START_TEST(test_stream)
         nread = read(infd, buf, sizeof(buf));
         if (nread > 0)
             ck_assert_msg(send(streamsd, buf, nread, 0) == nread,
-                            "send failed: %s\n", strerror(errno));
+                          "send failed: %s\n", strerror(errno));
     } while (nread > 0 || (nread == -1 && errno == EINTR));
     ck_assert_msg(nread != -1, "read failed: %s\n", strerror(errno));
     close(infd);
@@ -715,7 +714,7 @@ START_TEST(test_stream)
 
     recvdata = recvfull(sockd, &len);
     ck_assert_msg(!strcmp(recvdata, "stream: ClamAV-Test-File.UNOFFICIAL FOUND"),
-                    "Wrong reply: %s\n", recvdata);
+                  "Wrong reply: %s\n", recvdata);
     free(recvdata);
 
     conn_teardown();
@@ -801,9 +800,9 @@ static void test_idsession_commands(int split, int instream)
             ck_assert_msg(id <= j, "ID too big: %u, max: %u\n", id, j);
             q += 2;
             ck_assert_msg(!strcmp(q, replies[id - 1]),
-                            "Wrong ID reply for ID %u: %s, expected %s\n",
-                            id,
-                            q, replies[id - 1]);
+                          "Wrong ID reply for ID %u: %s, expected %s\n",
+                          id,
+                          q, replies[id - 1]);
             p = q + strlen(q) + 1;
         }
     }
@@ -816,15 +815,15 @@ START_TEST(test_idsession)
 {
     conn_setup();
     ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
-                    "send() failed: %s\n", strerror(errno));
+                  "send() failed: %s\n", strerror(errno));
     test_idsession_commands(0, 0);
     conn_setup();
     ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
-                    "send() failed: %s\n", strerror(errno));
+                  "send() failed: %s\n", strerror(errno));
     test_idsession_commands(1, 0);
     conn_setup();
     ck_assert_msg((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
-                    "send() failed: %s\n", strerror(errno));
+                  "send() failed: %s\n", strerror(errno));
     test_idsession_commands(0, 1);
 }
 END_TEST

@@ -85,12 +85,12 @@ START_TEST(test_unescape_unicode)
 
     str = cli_unescape("%u00a2%u007f%u0080%u07ff%u0800%ue000");
     ck_assert_msg(str && !strcmp(str, "\xc2\xa2\x7f\xc2\x80\xdf\xbf\xe0\xa0\x80\xee\x80\x80"),
-                "cli_unescape utf-8 test");
+                  "cli_unescape utf-8 test");
     free(str);
 
     str = cli_unescape("%%u123%u12%u1%u%u1234");
     ck_assert_msg(str && !strcmp(str, "%%u123%u12%u1%u\xe1\x88\xb4"),
-                "cli_unescape unicode truncated");
+                  "cli_unescape unicode truncated");
 
     free(str);
 }
@@ -159,7 +159,7 @@ START_TEST(hex2str)
     r = cli_hex2str(inp1);
     ck_assert_msg(!!r, "cli_hex2str NULL");
     ck_assert_msg(!memcmp(r, out1, sizeof(out1) - 1),
-                "cli_hex2str invalid output");
+                  "cli_hex2str invalid output");
     free(r);
 
     r = cli_hex2str(inp2);
@@ -202,10 +202,10 @@ START_TEST(test_base64)
     *ret2 = '\0';
     len   = ret2 - buf;
     ck_assert_msg(len == test->len, "invalid base64 decoded length: %u expected %u (%s)\n",
-                    len, test->len, buf);
+                  len, test->len, buf);
     ck_assert_msg(!memcmp(buf, test->decoded, test->len),
-                    "invalid base64 decoded data: %s, expected:%s\n",
-                    buf, test->decoded);
+                  "invalid base64 decoded data: %s, expected:%s\n",
+                  buf, test->decoded);
     messageDestroy(m);
 }
 END_TEST
@@ -250,7 +250,6 @@ START_TEST(test_u16_u8)
     free(result);
 }
 END_TEST
-
 
 Suite *test_str_suite(void)
 {

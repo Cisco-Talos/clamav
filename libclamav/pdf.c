@@ -2097,7 +2097,7 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
 
         if (newID) {
             free(pdf->fileID);
-            pdf->fileID = newID;
+            pdf->fileID    = newID;
             pdf->fileIDlen = newIDlen;
         }
     }

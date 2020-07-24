@@ -64,7 +64,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 {
 
     const struct optstruct *pt;
-    uint64_t fan_mask      = FAN_EVENT_ON_CHILD;
+    uint64_t fan_mask = FAN_EVENT_ON_CHILD;
 
     ddd_pid = 0;
 

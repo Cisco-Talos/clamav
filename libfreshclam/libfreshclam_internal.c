@@ -168,18 +168,18 @@ static void printTime(double seconds)
         fprintf(stdout, "%2.0fm %02.0fs", trunc(seconds / 60), trunc(fmod(seconds, 60.0)));
     } else {
         fprintf(stdout, "%6.1fs", seconds);
-    }    
+    }
 }
 
 static void printBytes(curl_off_t bytes, int bPad)
 {
     if (bytes >= (1024 * 1024)) {
         const char *format = bPad ? "%7.02fMiB" : "%.02fMiB";
-        double megabytes = bytes / (double)(1024 * 1024);
+        double megabytes   = bytes / (double)(1024 * 1024);
         fprintf(stdout, format, megabytes);
     } else if (bytes >= 1024) {
         const char *format = bPad ? "%7.02fKiB" : "%.02fKiB";
-        double kilobytes = bytes / (double)(1024);
+        double kilobytes   = bytes / (double)(1024);
         fprintf(stdout, format, kilobytes);
     } else {
         const char *format = bPad ? "%9" CURL_FORMAT_CURL_OFF_T "B" : "%" CURL_FORMAT_CURL_OFF_T "B";
@@ -1112,8 +1112,8 @@ static fc_error_t getcvd(
     if (cvd->version < remoteVersion) {
         if (cvd->version == remoteVersion - 1) {
             logg("*The %s database downloaded from %s is one version older than advertised in the DNS TXT record.\n",
-                cvdfile,
-                server);
+                 cvdfile,
+                 server);
 
             /*
              * Tolerate an off-by-one version mismatch.
@@ -1121,11 +1121,10 @@ static fc_error_t getcvd(
              */
             status = FC_SUCCESS;
             goto done;
-        }
-        else {
+        } else {
             logg("!The %s database downloaded from %s is more than one version older than the version advertised in the DNS TXT record.\n",
-                cvdfile,
-                server);
+                 cvdfile,
+                 server);
             status = FC_EMIRRORNOTSYNC;
             goto done;
         }

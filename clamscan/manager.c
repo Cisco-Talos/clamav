@@ -304,7 +304,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         goto done;
     }
 
-    ret = cli_realpath((const char *) filename, &real_filename);
+    ret = cli_realpath((const char *)filename, &real_filename);
     if (CL_SUCCESS != ret) {
         logg("Failed to determine real filename of %s.\n", filename);
         goto done;

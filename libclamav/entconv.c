@@ -948,9 +948,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             }
 
             for (attempt = 1; attempt <= 3; attempt++) {
-                char * inbuf = in;
-                size_t inbufsize = in_size;
-                size_t iconvRet = -1;
+                char* inbuf         = in;
+                size_t inbufsize    = in_size;
+                size_t iconvRet     = -1;
                 size_t outbytesleft = 0;
 
                 char* out_utf8_tmp   = NULL;

@@ -185,7 +185,7 @@ static char *queue_header       = NULL;
 static char *multi_queue_header = NULL;
 static char *clamd_header       = NULL;
 
-#define CMDHEAD  " COMMAND       QUEUEDSINCE    FILE"
+#define CMDHEAD " COMMAND       QUEUEDSINCE    FILE"
 #define CMDHEAD2 "NO COMMAND     QUEUEDSINCE    FILE"
 
 /*
@@ -218,7 +218,7 @@ static void resize(void)
     strncpy(clamd_header, SUMHEAD, maxx);
     queue_header[maxx] = '\0';
     clamd_header[maxx] = '\0';
-    p = queue_header + strlen(queue_header);
+    p                  = queue_header + strlen(queue_header);
     while (p < queue_header + maxx)
         *p++ = ' ';
     p = clamd_header + strlen(clamd_header);
@@ -231,7 +231,7 @@ static void resize(void)
         assert(multi_queue_header);
         strncpy(multi_queue_header, CMDHEAD2, maxx);
         multi_queue_header[maxx] = '\0';
-        p = multi_queue_header + strlen(multi_queue_header);
+        p                        = multi_queue_header + strlen(multi_queue_header);
         while (p < multi_queue_header + maxx)
             *p++ = ' ';
     }
@@ -354,10 +354,12 @@ static void header(void)
     wprintw(header_window, "%s", ctime(&t));
     wrefresh(header_window);
 
-    /*	win_start(version_window, version_color);
-	mvwprintw(version_window, 0, 0, "Connected to: ");
-	print_colored(version_window, clamd_version ? clamd_version : "Unknown");
-	wrefresh(version_window);*/
+    /*
+    win_start(version_window, version_color);
+    mvwprintw(version_window, 0, 0, "Connected to: ");
+    print_colored(version_window, clamd_version ? clamd_version : "Unknown");
+    wrefresh(version_window);
+    */
 
     werase(status_bar_window);
     for (i = 0; i < sizeof(status_bar_keys) / sizeof(status_bar_keys[0]); i++) {
@@ -544,7 +546,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 char *get_ip(const char *ip)
 {
     char *dupip = NULL;
-    char *p1 = NULL;
+    char *p1    = NULL;
     unsigned int i;
 
     /*
@@ -621,7 +623,7 @@ char *make_ip(const char *host, const char *port)
     size_t len;
     int ipv6;
 
-    if (!host || !port){
+    if (!host || !port) {
         return NULL;
     }
 
@@ -920,7 +922,7 @@ static void output_queue(size_t line, ssize_t max)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
                 size_t oldline = ++line;
-                char *nl = strrchr(++filstart, '\n');
+                char *nl       = strrchr(++filstart, '\n');
                 if (nl != NULL)
                     *nl = '\0';
                 wattron(stats_window, A_BOLD);
@@ -1104,7 +1106,7 @@ static int output_stats(struct stats *stats, unsigned idx)
     if (sel) {
         wattroff(win, COLOR_PAIR(selected_color));
     }
-    if ((unsigned) len > maxx) {
+    if ((unsigned)len > maxx) {
         wattron(win, A_DIM | COLOR_PAIR(header_color));
         mvwprintw(win, i, maxx - 3, "...");
         wattroff(win, A_DIM | COLOR_PAIR(header_color));
@@ -1123,10 +1125,12 @@ static int output_stats(struct stats *stats, unsigned idx)
         snprintf(buf, sizeof(buf), "live%3u idle%3u max%3u", stats->prim_live, stats->prim_idle, stats->prim_max);
         print_colored(win, buf);
         show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
-        /*		mvwprintw(win, i++, 0, "Multiscan pool : ");
-		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->live, stats->idle, stats->max);
-		print_colored(win, buf);
-		show_bar(win, i++, stats->live, stats->idle, stats->max, 0);*/
+        /*
+        mvwprintw(win, i++, 0, "Multiscan pool : ");
+        snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->live, stats->idle, stats->max);
+        print_colored(win, buf);
+        show_bar(win, i++, stats->live, stats->idle, stats->max, 0);
+        */
 
         blink = 0;
         if (stats->current_q > stats->biggest_queue) {
@@ -1262,14 +1266,16 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
         }
         for (j = 1; j < strlen(buf); j++)
             buf[j] = tolower(buf[j]);
-        /*	mvwprintw(win, i, 0, "%s", buf);
-		if(!val) {
-			i++;
-			continue;
-		}
-		waddch(win, ':');
-		print_colored(win, val);
-		i++;*/
+        /*
+        mvwprintw(win, i, 0, "%s", buf);
+        if(!val) {
+            i++;
+            continue;
+        }
+        waddch(win, ':');
+        print_colored(win, val);
+        i++;
+        */
         if (!strncmp("State", buf, 5)) {
             if (strstr(val, "PRIMARY")) {
                 /* primary thread pool */
@@ -1336,7 +1342,7 @@ static void help(void)
     printf("    --help                 -h         Show this help\n");
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
-    printf("    --defaultcolors	       -d         Use default terminal colors\n");
+    printf("    --defaultcolors        -d         Use default terminal colors\n");
     printf("    host[:port]                       Connect to clamd on host at port (default 3310)\n");
     printf("    /path/to/clamd.socket             Connect to clamd over a local socket\n");
     printf("\n");
@@ -1439,11 +1445,11 @@ static void setup_connections(int argc, char *argv[])
         if (!conn && !opts->filename) {
             soname = NULL;
         } else {
-            soname  = conn ? conn : opts->filename[i];
+            soname = conn ? conn : opts->filename[i];
         }
         global.conn[i].line = i + 1;
         if (make_connection(soname, &global.conn[i]) < 0) {
-                    EXIT_PROGRAM(FAIL_INITIAL_CONN);
+            EXIT_PROGRAM(FAIL_INITIAL_CONN);
         }
     }
 
@@ -1519,7 +1525,7 @@ static int show_help(void)
     do {
         ch = getch();
         /* we do need to exit on resize, because the text scroll out of
-		 * view */
+         * view */
     } while (ch == -1 /*|| ch == KEY_RESIZE*/);
     return ch == KEY_RESIZE ? KEY_RESIZE : -1;
 }

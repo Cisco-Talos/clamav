@@ -32,5 +32,4 @@ cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx);
 int cli_cache_init(struct cl_engine *engine);
 void cli_cache_destroy(struct cl_engine *engine);
 
-
 #endif

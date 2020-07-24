@@ -98,7 +98,7 @@ static void sanitname(char *name)
 int cli_scancpio_old(cli_ctx *ctx)
 {
     struct cpio_hdr_old hdr_old;
-    char * fmap_name = NULL;
+    char *fmap_name = NULL;
     char name[513];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;

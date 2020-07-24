@@ -236,7 +236,7 @@ static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data
             fres = CLAMSTAT(curr->fts_path, &sb);
 
             if (event_data->sizelimit) {
-                if (fres != 0 || (uint64_t) sb.st_size > event_data->sizelimit) {
+                if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
                     /* okay to skip w/o allow/deny since dir comes from inotify
 					 * events and (probably) won't block w/ protection enabled */
                     event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
@@ -272,7 +272,7 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 
     fres = CLAMSTAT(pathname, &sb);
     if (event_data->sizelimit) {
-        if (fres != 0 || (uint64_t) sb.st_size > event_data->sizelimit) {
+        if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
             /* don't skip so we avoid lockups, but don't scan either;
 			 * while it should be obvious, this will unconditionally set
 			 * the bit in the map to 0 regardless of original orientation */

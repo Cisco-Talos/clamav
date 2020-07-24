@@ -154,9 +154,9 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     struct regex_list *regex;
     size_t real_len, display_len, buffer_len;
 
-    char *buffer         = NULL;
-    char *bufrev         = NULL;
-    cl_error_t rc        = CL_SUCCESS;
+    char *buffer  = NULL;
+    char *bufrev  = NULL;
+    cl_error_t rc = CL_SUCCESS;
     //int filter_search_rc = 0;
     int root;
     struct cli_ac_data mdata;

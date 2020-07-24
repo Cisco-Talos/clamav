@@ -249,7 +249,7 @@ enum lzma_returncode {
  * Bzip2 return codes
  */
 enum bzip2_returncode {
-    BZIP2_OK               = 0,  /* Function returned without error */
+    BZIP2_OK               = 0, /* Function returned without error */
     BZIP2_SEQUENCE_ERROR   = -1,
     BZIP2_PARAM_ERROR      = -2,
     BZIP2_MEM_ERROR        = -3,

@@ -199,7 +199,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     char *real_filename = NULL;
 
     if (filename) {
-        ret = cli_realpath((const char *) filename, &real_filename);
+        ret = cli_realpath((const char *)filename, &real_filename);
         if (CL_SUCCESS != ret) {
             logg("Failed to determine real filename of %s.\n", filename);
             if (ret_code) {

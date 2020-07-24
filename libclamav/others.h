@@ -150,9 +150,9 @@ typedef struct cli_ctx_container_tag {
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;      /**< (optional) The filepath of the original scan target */
-    const char *sub_filepath;   /**< (optional) The filepath of the current file being parsed. May be a temp file. */
-    char *sub_tmpdir;           /**< The directory to store tmp files at this recursion depth. */
+    char *target_filepath;    /**< (optional) The filepath of the original scan target */
+    const char *sub_filepath; /**< (optional) The filepath of the current file being parsed. May be a temp file. */
+    char *sub_tmpdir;         /**< The directory to store tmp files at this recursion depth. */
     const char **virname;
     unsigned int num_viruses;
     unsigned long int *scanned;

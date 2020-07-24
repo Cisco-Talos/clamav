@@ -266,7 +266,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     char *real_filename = NULL;
 
     if (filename) {
-        ret = cli_realpath((const char *) filename, &real_filename);
+        ret = cli_realpath((const char *)filename, &real_filename);
         if (CL_SUCCESS != ret) {
             logg("Failed to determine real filename of %s.\n", filename);
             infected = -1;

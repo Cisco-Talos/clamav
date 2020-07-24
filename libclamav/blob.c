@@ -225,7 +225,7 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = growth;
         b->data = cli_malloc(growth);
-        if (NULL == b->data){
+        if (NULL == b->data) {
             b->size = 0;
             return -1;
         }
@@ -245,7 +245,7 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = (off_t)len * 4;
         b->data = cli_malloc(b->size);
-        if (NULL == b->data){
+        if (NULL == b->data) {
             b->size = 0;
             return -1;
         }

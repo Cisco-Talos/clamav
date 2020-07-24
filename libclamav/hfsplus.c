@@ -37,7 +37,7 @@
 #include "scanners.h"
 #include "entconv.h"
 
-#define DECMPFS_HEADER_MAGIC    0x636d7066
+#define DECMPFS_HEADER_MAGIC 0x636d7066
 #define DECMPFS_HEADER_MAGIC_LE 0x66706d63
 
 static void headerrecord_to_host(hfsHeaderRecord *);
@@ -51,12 +51,12 @@ static int hfsplus_volumeheader(cli_ctx *, hfsPlusVolumeHeader **);
 static int hfsplus_readheader(cli_ctx *, hfsPlusVolumeHeader *, hfsNodeDescriptor *,
                               hfsHeaderRecord *, int, const char *);
 static cl_error_t hfsplus_scanfile(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
-                            hfsPlusForkData *, const char *, char **, char *);
+                                   hfsPlusForkData *, const char *, char **, char *);
 static int hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
 static int hfsplus_fetch_node(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
                               hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *);
 static cl_error_t hfsplus_walk_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
-                                hfsHeaderRecord *, hfsHeaderRecord *, const char *);
+                                       hfsHeaderRecord *, hfsHeaderRecord *, const char *);
 
 /* Header Record : fix endianness for useful fields */
 static void headerrecord_to_host(hfsHeaderRecord *hdr)
@@ -315,7 +315,7 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
  * @return cl_error_t
  */
 static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *extHeader,
-                                   hfsPlusForkData *fork, const char *dirname, char** filename, char *orig_filename)
+                                   hfsPlusForkData *fork, const char *dirname, char **filename, char *orig_filename)
 {
     hfsPlusExtentDescriptor *currExt;
     const uint8_t *mPtr = NULL;
@@ -431,8 +431,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     /* if successful so far, scan the output */
     if (filename) {
         *filename = tmpname;
-    }
-    else {
+    } else {
         if (ret == CL_CLEAN) {
             ret = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename);
         }
@@ -484,7 +483,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
     uint8_t *nodeBuf = NULL;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     cl_error_t ret = CL_SUCCESS;
-    int foundAttr = 0;
+    int foundAttr  = 0;
 
     if (found) {
         *found = 0;
@@ -564,14 +563,14 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
             recordStart = nextStart;
             if (recordStart + sizeof(attrKey) >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_check_attribute: Not enough data for an attribute key at location %x for %u!\n",
-                    nextStart, recordNum);
+                           nextStart, recordNum);
                 ret = CL_EFORMAT;
                 break;
             }
 
             memcpy(&attrKey, &nodeBuf[recordStart], sizeof(attrKey));
-            attrKey.keyLength = be16_to_host(attrKey.keyLength);
-            attrKey.cnid = be32_to_host(attrKey.cnid);
+            attrKey.keyLength  = be16_to_host(attrKey.keyLength);
+            attrKey.cnid       = be32_to_host(attrKey.cnid);
             attrKey.startBlock = be32_to_host(attrKey.startBlock);
             attrKey.nameLength = be16_to_host(attrKey.nameLength);
 
@@ -594,7 +593,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
 
             if (attrKey.cnid == expectedCnid && attrKey.nameLength * 2 == nameLen && memcmp(&nodeBuf[recordStart + 14], name, nameLen) == 0) {
                 memcpy(&attrRec, &(nodeBuf[recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength * 2]), sizeof(attrRec));
-                attrRec.recordType = be32_to_host(attrRec.recordType);
+                attrRec.recordType    = be32_to_host(attrRec.recordType);
                 attrRec.attributeSize = be32_to_host(attrRec.attributeSize);
 
                 if (attrRec.recordType != HFSPLUS_RECTYPE_INLINE_DATA_ATTRIBUTE) {
@@ -614,7 +613,7 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
                 memcpy(record, &(nodeBuf[recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength * 2 + sizeof(attrRec)]), attrRec.attributeSize);
                 *recordSize = attrRec.attributeSize;
 
-                ret = CL_SUCCESS;
+                ret       = CL_SUCCESS;
                 foundAttr = 1;
                 break;
             }
@@ -639,7 +638,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
     uint32_t curBlock;
     uint32_t extentNum = 0, realFileBlock;
     uint32_t readSize;
-    size_t fileOffset  = 0;
+    size_t fileOffset = 0;
     uint32_t searchBlock;
     uint32_t buffOffset = 0;
 
@@ -667,7 +666,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
 
     for (curBlock = startBlock; curBlock <= endBlock; ++curBlock) {
 
-        foundBlock = 0;
+        foundBlock  = 0;
         searchBlock = curBlock;
         /* Find which extent has that block */
         for (extentNum = 0; extentNum < 8; extentNum++) {
@@ -707,12 +706,11 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
             return CL_EFORMAT;
         }
         fileOffset = realFileBlock * volHeader->blockSize;
-        readSize = volHeader->blockSize;
+        readSize   = volHeader->blockSize;
 
         if (curBlock == startBlock) {
             fileOffset += startOffset;
-        }
-        else if (curBlock == endBlock) {
+        } else if (curBlock == endBlock) {
             readSize = endSize;
         }
 
@@ -734,7 +732,7 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     hfsPlusReferenceEntry entry;
     int i;
     int cmpfInstanceIdx = -1;
-    int curInstanceIdx = 0;
+    int curInstanceIdx  = 0;
     size_t dataOffset;
     uint32_t dataLength;
     cl_error_t ret = CL_SUCCESS;
@@ -751,9 +749,9 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     }
 
     resourceHeader.dataOffset = be32_to_host(resourceHeader.dataOffset);
-    resourceHeader.mapOffset = be32_to_host(resourceHeader.mapOffset);
+    resourceHeader.mapOffset  = be32_to_host(resourceHeader.mapOffset);
     resourceHeader.dataLength = be32_to_host(resourceHeader.dataLength);
-    resourceHeader.mapLength = be32_to_host(resourceHeader.mapLength);
+    resourceHeader.mapLength  = be32_to_host(resourceHeader.mapLength);
 
     //TODO: Need to get offset of cmpf resource in data stream
 
@@ -770,9 +768,9 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     }
 
     resourceMap.resourceForkAttributes = be16_to_host(resourceMap.resourceForkAttributes);
-    resourceMap.typeListOffset = be16_to_host(resourceMap.typeListOffset);
-    resourceMap.nameListOffset = be16_to_host(resourceMap.nameListOffset);
-    resourceMap.typeCount = be16_to_host(resourceMap.typeCount);
+    resourceMap.typeListOffset         = be16_to_host(resourceMap.typeListOffset);
+    resourceMap.nameListOffset         = be16_to_host(resourceMap.nameListOffset);
+    resourceMap.typeCount              = be16_to_host(resourceMap.typeCount);
 
     for (i = 0; i < resourceMap.typeCount + 1; ++i) {
         if (cli_readn(fd, &resourceType, sizeof(resourceType)) != sizeof(resourceType)) {
@@ -780,7 +778,7 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
             ret = CL_EREAD;
             goto done;
         }
-        resourceType.instanceCount = be16_to_host(resourceType.instanceCount);
+        resourceType.instanceCount       = be16_to_host(resourceType.instanceCount);
         resourceType.referenceListOffset = be16_to_host(resourceType.referenceListOffset);
 
         if (memcmp(resourceType.type, "cmpf", 4) == 0) {
@@ -848,7 +846,7 @@ static int hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResource
     }
 
     *numBlocks = le32_to_host(*numBlocks); //Let's do a little little endian just for fun, shall we?
-    *table = cli_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
+    *table     = cli_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
     if (!*table) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to allocate memory for block table\n");
         return CL_EMEM;
@@ -868,23 +866,22 @@ static int hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResource
     return CL_SUCCESS;
 }
 
-
 /* Given the catalog and other details, scan all the volume contents */
 static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
-                                hfsHeaderRecord *extHeader, hfsHeaderRecord *attrHeader, const char *dirname)
+                                       hfsHeaderRecord *extHeader, hfsHeaderRecord *attrHeader, const char *dirname)
 {
     cl_error_t ret          = CL_SUCCESS;
     unsigned int has_alerts = 0;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     uint16_t nodeSize, recordNum, topOfOffsets;
     uint16_t recordStart, nextDist, nextStart;
-    uint8_t *nodeBuf = NULL;
+    uint8_t *nodeBuf                = NULL;
     const uint8_t COMPRESSED_ATTR[] = {0, 'c', 0, 'o', 0, 'm', 0, '.', 0, 'a', 0, 'p', 0, 'p', 0, 'l', 0, 'e', 0, '.', 0, 'd', 0, 'e', 0, 'c', 0, 'm', 0, 'p', 0, 'f', 0, 's'};
-    char *tmpname = NULL;
-    uint8_t *uncompressed = NULL;
-    int ofd = -1;
-    char* name_utf8       = NULL;
-    size_t name_utf8_size = 0;
+    char *tmpname                   = NULL;
+    uint8_t *uncompressed           = NULL;
+    int ofd                         = -1;
+    char *name_utf8                 = NULL;
+    size_t name_utf8_size           = 0;
 
     nodeLimit = MIN(catHeader->totalNodes, HFSPLUS_NODE_LIMIT);
     thisNode  = catHeader->firstLeafNode;
@@ -968,12 +965,12 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             /* Collect filename  */
             if (keylen >= 6) {
                 uint16_t name_length = (nodeBuf[recordStart + 2 + 4] << 8) | nodeBuf[recordStart + 2 + 4 + 1];
-                char *index = (char*)&nodeBuf[recordStart + 2 + 4 + 2];
+                char *index          = (char *)&nodeBuf[recordStart + 2 + 4 + 2];
                 if ((name_length > 0) && (name_length * 2 <= keylen - 2 - 4)) {
                     /*
                      * The name is contained in nodeBuf[recordStart + 2 + 4 + 2 : recordStart + 2 + 4 + 2 + name_length * 2] encoded as UTF-16BE.
                      */
-                    if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, name_length * 2, 1201, &name_utf8, &name_utf8_size)) {
+                    if (CL_SUCCESS != cli_codepage_to_utf8((char *)index, name_length * 2, 1201, &name_utf8, &name_utf8_size)) {
                         cli_errmsg("hfsplus_walk_catalog: failed to convert UTF-16BE to UTF-8\n");
                         name_utf8 = NULL;
                     }
@@ -1002,7 +999,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             memcpy(&fileRec, &(nodeBuf[recordStart + keylen + 2]), sizeof(hfsPlusCatalogFile));
 
             /* Only scan files */
-            fileRec.fileID = be32_to_host(fileRec.fileID);
+            fileRec.fileID               = be32_to_host(fileRec.fileID);
             fileRec.permissions.fileMode = be16_to_host(fileRec.permissions.fileMode);
             if ((fileRec.permissions.fileMode & HFS_MODE_TYPEMASK) == HFS_MODE_FILE) {
                 int compressed = 0;
@@ -1034,9 +1031,9 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                     //According to the doc, it should be in big endian.
 
                     if (header.magic == DECMPFS_HEADER_MAGIC_LE) {
-                        header.magic = cbswap32(header.magic);
+                        header.magic           = cbswap32(header.magic);
                         header.compressionType = cbswap32(header.compressionType);
-                        header.fileSize = cbswap64(header.fileSize);
+                        header.fileSize        = cbswap64(header.fileSize);
                     }
 
                     if (header.magic != DECMPFS_HEADER_MAGIC) {
@@ -1071,8 +1068,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 }
 
                                 written = cli_writen(ofd, &attribute[sizeof(header) + 1], header.fileSize);
-                            }
-                            else {
+                            } else {
                                 z_stream stream;
                                 int z_ret;
 
@@ -1089,13 +1085,13 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                     break;
                                 }
 
-                                stream.zalloc = Z_NULL;
-                                stream.zfree = Z_NULL;
-                                stream.opaque = Z_NULL;
-                                stream.avail_in = attributeSize - sizeof(header);
-                                stream.next_in = &attribute[sizeof(header)];
+                                stream.zalloc    = Z_NULL;
+                                stream.zfree     = Z_NULL;
+                                stream.opaque    = Z_NULL;
+                                stream.avail_in  = attributeSize - sizeof(header);
+                                stream.next_in   = &attribute[sizeof(header)];
                                 stream.avail_out = header.fileSize;
-                                stream.next_out = uncompressed;
+                                stream.next_out  = uncompressed;
 
                                 z_ret = inflateInit2(&stream, 15 /* maximum windowBits size */);
                                 if (z_ret != Z_OK) {
@@ -1151,8 +1147,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             //resource, that its type is correct, and that its
                             //name is cmpf.
                             char *resourceFile = NULL;
-                            int ifd = -1;
-                            size_t written = 0;
+                            int ifd            = -1;
+                            size_t written     = 0;
 
                             //4096 is an approximative value, there should be
                             //at least 16 (resource header) + 30 (map header) +
@@ -1181,36 +1177,31 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             if ((ifd = safe_open(resourceFile, O_RDONLY | O_BINARY)) == -1) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to open temporary file %s\n", resourceFile);
                                 ret = CL_EOPEN;
-                            }
-                            else {
+                            } else {
                                 size_t resourceLen;
                                 if ((ret = hfsplus_seek_to_cmpf_resource(ifd, &resourceLen)) != CL_SUCCESS) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to find cmpf resource in resource fork\n");
-                                }
-                                else {
+                                } else {
                                     hfsPlusResourceBlockTable *table = NULL;
                                     uint32_t numBlocks;
                                     uint32_t dataOffset = lseek(ifd, 0, SEEK_CUR);
 
                                     if ((ret = hfsplus_read_block_table(ifd, &numBlocks, &table)) != CL_SUCCESS) {
                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to read block table\n");
-                                    }
-                                    else {
+                                    } else {
                                         uint8_t block[4096];
                                         uint8_t uncompressed[4096];
                                         unsigned curBlock;
-
 
                                         for (curBlock = 0; ret == CL_SUCCESS && curBlock < numBlocks; ++curBlock) {
                                             off_t blockOffset = dataOffset + table[curBlock].offset;
                                             size_t curOffset;
                                             size_t readLen;
                                             z_stream stream;
-                                            int streamBeginning = 1;
+                                            int streamBeginning  = 1;
                                             int streamCompressed = 0;
 
                                             cli_dbgmsg("Handling block %u of %" PRIu32 " at offset %" PRIi64 " (size %u)\n", curBlock, numBlocks, (int64_t)blockOffset, table[curBlock].length);
-
 
                                             if (lseek(ifd, blockOffset, SEEK_SET) != blockOffset) {
                                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to seek to beginning of block\n");
@@ -1235,13 +1226,13 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                                     if (streamCompressed) {
                                                         cli_dbgmsg("Current stream is compressed\n");
-                                                        stream.zalloc = Z_NULL;
-                                                        stream.zfree = Z_NULL;
-                                                        stream.opaque = Z_NULL;
-                                                        stream.avail_in = readLen;
-                                                        stream.next_in = block;
+                                                        stream.zalloc    = Z_NULL;
+                                                        stream.zfree     = Z_NULL;
+                                                        stream.opaque    = Z_NULL;
+                                                        stream.avail_in  = readLen;
+                                                        stream.next_in   = block;
                                                         stream.avail_out = sizeof(uncompressed);
-                                                        stream.next_out = uncompressed;
+                                                        stream.next_out  = uncompressed;
 
                                                         if ((ret = inflateInit2(&stream, 15)) != Z_OK) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: inflateInit2 failed (%d)\n", ret);
@@ -1252,10 +1243,10 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 }
 
                                                 if (streamCompressed) {
-                                                    stream.avail_in = readLen;
-                                                    stream.next_in = block;
+                                                    stream.avail_in  = readLen;
+                                                    stream.next_in   = block;
                                                     stream.avail_out = sizeof(uncompressed);
-                                                    stream.next_out = uncompressed;
+                                                    stream.next_out  = uncompressed;
 
                                                     while (stream.avail_in > 0) {
                                                         ret = inflate(&stream, Z_NO_FLUSH);
@@ -1272,10 +1263,9 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         }
                                                         written += sizeof(uncompressed) - stream.avail_out;
                                                         stream.avail_out = sizeof(uncompressed);
-                                                        stream.next_out = uncompressed;
+                                                        stream.next_out  = uncompressed;
                                                     }
-                                                }
-                                                else {
+                                                } else {
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {
                                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
                                                         ret = CL_EWRITE;
@@ -1292,8 +1282,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                 if ((ret = inflateEnd(&stream)) != Z_OK) {
                                                     cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", ret);
                                                     ret = CL_EFORMAT;
-                                                }
-                                                else {
+                                                } else {
                                                     ret = CL_SUCCESS;
                                                 }
                                             }
@@ -1305,7 +1294,6 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                             free(table);
                                             table = NULL;
                                         }
-
                                     }
                                 }
                             }
@@ -1482,12 +1470,10 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
     ret = hfsplus_readheader(ctx, volHeader, &attributesFileDesc, &attributesFileHeader, HFS_FILETREE_ATTRIBUTES, "attributesFile");
     if (ret == CL_SUCCESS) {
         hasAttributesFileHeader = 1;
-    }
-    else {
+    } else {
         hasAttributesFileHeader = 0;
-        ret = CL_SUCCESS;
+        ret                     = CL_SUCCESS;
     }
-
 
     /* Create temp folder for contents */
     if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {

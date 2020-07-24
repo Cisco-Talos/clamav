@@ -308,18 +308,18 @@ struct hfsPlusResourceHeader {
 typedef struct hfsPlusResourceHeader hfsPlusResourceHeader;
 
 struct hfsPlusResourceMap {
-    uint8_t  reserved1[16];
+    uint8_t reserved1[16];
     uint32_t reserved2;
     uint16_t reserved3;
     uint16_t resourceForkAttributes;
     uint16_t typeListOffset;
     uint16_t nameListOffset;
-    int16_t  typeCount;
+    int16_t typeCount;
 } __attribute__((__packed__));
 typedef struct hfsPlusResourceMap hfsPlusResourceMap;
 
 struct hfsPlusResourceType {
-    char     type[4];
+    char type[4];
     uint16_t instanceCount;
     uint16_t referenceListOffset;
 } __attribute__((__packed__));
@@ -327,9 +327,9 @@ typedef struct hfsPlusResourceType hfsPlusResourceType;
 
 struct hfsPlusReferenceEntry {
     uint16_t resourceId;
-    int16_t  resourceNameOffset;
-    uint8_t  resourceAttributes;
-    uint8_t  resourceDataOffset[3];
+    int16_t resourceNameOffset;
+    uint8_t resourceAttributes;
+    uint8_t resourceDataOffset[3];
     uint32_t reserved1;
 } __attribute__((__packed__));
 typedef struct hfsPlusReferenceEntry hfsPlusReferenceEntry;
@@ -340,10 +340,8 @@ struct hfsPlusResourceBlockTable {
 } __attribute__((__packed__));
 typedef struct hfsPlusResourceBlockTable hfsPlusResourceBlockTable;
 
-
 #define HFSPLUS_COMPRESSION_INLINE 0x03
 #define HFSPLUS_COMPRESSION_RESOURCE 0x04
-
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()

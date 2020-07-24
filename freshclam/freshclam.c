@@ -745,7 +745,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fc_error_t status = FC_EARG;
     cl_error_t cl_init_retcode;
     fc_config fcConfig;
-    char *tempDirectory = NULL;
+    char *tempDirectory                = NULL;
     const struct optstruct *logFileOpt = NULL;
 
     STATBUF statbuf;
@@ -793,14 +793,14 @@ static fc_error_t initialize(struct optstruct *opts)
             errno = 0;
             if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
                 logg("ERROR: Failed to get information about user \"%s\".\n",
-                    optget(opts, "DatabaseOwner")->strarg);
+                     optget(opts, "DatabaseOwner")->strarg);
                 if (errno == 0) {
                     logg("Create the \"%s\" user account for freshclam to use, or set the DatabaseOwner config option in freshclam.conf to a different user.\n",
-                        optget(opts, "DatabaseOwner")->strarg);
+                         optget(opts, "DatabaseOwner")->strarg);
                     logg("For more information, see https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source\n");
                 } else {
                     logg("An unexpected error occurred when attempting to query the \"%s\" user account.\n",
-                        optget(opts, "DatabaseOwner")->strarg);
+                         optget(opts, "DatabaseOwner")->strarg);
                 }
                 status = FC_EDBDIRACCESS;
                 goto done;
@@ -911,7 +911,7 @@ static fc_error_t initialize(struct optstruct *opts)
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
-    tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
+    tempDirectory          = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
     fcConfig.tempDirectory = tempDirectory;
 
     /* Store the path of the temp directory so we can delete it later. */

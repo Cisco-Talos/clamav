@@ -4609,7 +4609,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     cli_set_container(&ctx, CL_TYPE_ANY, 0);
     ctx.dconf  = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
-    fmap_head   = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 3);
+    fmap_head  = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 3);
     if (!fmap_head) {
         rc = CL_EMEM;
         goto done;
@@ -4625,7 +4625,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
      * fmap's file descriptor in the virus found callback (like for deferred
      * low-seveerity alerts).
      */
-    ctx.fmap = fmap_head + 1;
+    ctx.fmap  = fmap_head + 1;
     *ctx.fmap = map;
 
     perf_init(&ctx);

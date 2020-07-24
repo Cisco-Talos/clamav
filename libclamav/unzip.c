@@ -614,7 +614,7 @@ static unsigned int parse_local_file_header(
     char name[256];
     char *original_filename = NULL;
     uint32_t csize, usize;
-    int virus_found = 0;
+    int virus_found                          = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {

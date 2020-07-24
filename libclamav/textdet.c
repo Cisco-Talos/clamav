@@ -86,8 +86,7 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
     if ((len >= 3) &&
         (buf[0] == 0xEF) &&
         (buf[1] == 0xBB) &&
-        (buf[2] == 0xBF))
-    {
+        (buf[2] == 0xBF)) {
         return 0;
     }
 

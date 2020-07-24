@@ -207,7 +207,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
             offadjust      = offset + sz - 8;
             left_comp_read = MIN(map->len - offset + sz - 8, sz);
 
-            zstrm.next_in  = (uint8_t *) buffer;
+            zstrm.next_in  = (uint8_t *)buffer;
             zstrm.avail_in = MIN(toread, left_comp_read);
             left_comp_read -= zstrm.avail_in;
 
@@ -254,12 +254,12 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                         }
                         toread = toread_check;
                         offset += toread;
-                        zstrm.next_in  = (uint8_t *) buffer;
+                        zstrm.next_in  = (uint8_t *)buffer;
                         zstrm.avail_in = toread;
                         left_comp_read -= toread;
                     }
 
-                    zstrm.next_out  = (uint8_t *) outbuf;
+                    zstrm.next_out  = (uint8_t *)outbuf;
                     zstrm.avail_out = BUFFER_SIZE;
                     err             = inflate(&zstrm, Z_NO_FLUSH);
                     uncomp_data += (BUFFER_SIZE - zstrm.avail_out);

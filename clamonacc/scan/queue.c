@@ -282,7 +282,7 @@ cl_error_t onas_scan_queue_start(struct onas_context **ctx)
     return CL_SUCCESS;
 }
 
-static void onas_scan_queue_exit(__attribute__ ((unused)) void *arg)
+static void onas_scan_queue_exit(__attribute__((unused)) void *arg)
 {
 
     logg("*ClamScanQueue: onas_scan_queue_exit()\n");

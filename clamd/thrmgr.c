@@ -359,7 +359,8 @@ void thrmgr_destroy(threadpool_t *threadpool)
     return;
 }
 
-void thrmgr_wait_for_threads(threadpool_t *threadpool) {
+void thrmgr_wait_for_threads(threadpool_t *threadpool)
+{
     if (!threadpool) {
         return;
     }
