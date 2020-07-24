@@ -72,7 +72,6 @@
 #include "lzma_iface.h"
 
 #include "egg.h"
-#include "msdoc.h"
 #include "entconv.h"
 
 #ifndef WCHAR
@@ -619,9 +618,9 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
     if (extraField->bit_flag & COMMENT_HEADER_FLAGS_MULTIBYTE_CODEPAGE_INSTEAD_OF_UTF8) {
         /*
          * Unlike with filenames, the multibyte string codepage (or "locale") is not present in comment headers.
-         * Try conversion with codepage 65001.
+         * Try conversion with CODEPAGE_UTF8.
          */
-        if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, size, 65001, &comment_utf8, &comment_utf8_size)) {
+        if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, size, CODEPAGE_UTF8, &comment_utf8, &comment_utf8_size)) {
             cli_dbgmsg("egg_parse_comment_header: failed to convert codepage \"0\" to UTF-8\n");
             comment_utf8 = cli_genfname(NULL);
         }
@@ -1163,7 +1162,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                  * - 949 (Korean Unified Code)
                  * - 932 (Japanese Shift-JIS) */
                 if (0 == codepage) {
-                    if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, name_size, 65001, &name_utf8, &name_utf8_size)) {
+                    if (CL_SUCCESS != cli_codepage_to_utf8((char*)index, name_size, CODEPAGE_UTF8, &name_utf8, &name_utf8_size)) {
                         cli_dbgmsg("egg_parse_file_extra_field: failed to convert codepage \"0\" to UTF-8\n");
                         name_utf8 = cli_genfname(NULL);
                     }

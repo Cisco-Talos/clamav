@@ -47,6 +47,7 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "json_api.h"
+#include "entconv.h"
 
 #if HAVE_JSON
 static char *
@@ -64,7 +65,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     UNUSEDPARAM(encoding);
 #endif
     /* applies in the both case */
-    if (sctx->codepage == 20127 || sctx->codepage == 65001) {
+    if (sctx->codepage == 20127 || sctx->codepage == CODEPAGE_UTF8) {
         char *track;
         size_t bcnt, scnt;
 
@@ -74,7 +75,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         memcpy(outbuf, begin, sz);
 
         track = outbuf + sz - 1;
-        if ((sctx->codepage == 65001) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
+        if ((sctx->codepage == CODEPAGE_UTF8) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
             /* locate the start of the last character */
             for (bcnt = 1; (track != outbuf); track--, bcnt++) {
                 if (((uint8_t)*track & 0xC0) != 0x80)

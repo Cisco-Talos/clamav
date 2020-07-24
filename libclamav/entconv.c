@@ -780,7 +780,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
     size_t out_utf8_size = 0;
 
 #if defined(HAVE_ICONV)
-    iconv_t conv = (iconv_t) -1;
+    iconv_t conv = (iconv_t)-1;
 #elif defined(WIN32)
     LPWSTR lpWideCharStr = NULL;
     int cchWideChar      = 0;
@@ -796,8 +796,8 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
     *out_size = 0;
 
     switch (codepage) {
-        case 20127:   /* US-ASCII (7-bit) */
-        case 65001: { /* Unicode (UTF-8) */
+        case CODEPAGE_US_7BIT_ASCII: /* US-ASCII (7-bit) */
+        case CODEPAGE_UTF8: {        /* Unicode (UTF-8) */
             char* track;
             int byte_count, sigbit_count;
 
@@ -811,7 +811,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             memcpy(out_utf8, in, in_size);
 
             track = out_utf8 + in_size - 1;
-            if ((codepage == 65001) && (*track & 0x80)) {
+            if ((codepage == CODEPAGE_UTF8) && (*track & 0x80)) {
                 /*
                  * UTF-8 with a most significant bit.
                  */
@@ -847,7 +847,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
              * Do conversion using native Win32 APIs.
              */
 
-            if (1200 != codepage) { /* not already UTF16-LE (Windows Unicode) */
+            if (CODEPAGE_UTF16_LE != codepage) { /* not already UTF16-LE (Windows Unicode) */
                 /*
                  * First, Convert from codepage -> UCS-2 LE with MultiByteToWideChar(codepage)
                  */
@@ -942,7 +942,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 }
             }
 
-            if (NULL == encoding){
+            if (NULL == encoding) {
                 cli_dbgmsg("cli_codepage_to_utf8: Invalid codepage parameter passed in.\n");
                 goto done;
             }
@@ -953,7 +953,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 size_t iconvRet = -1;
                 size_t outbytesleft = 0;
 
-                char* out_utf8_tmp = NULL;
+                char* out_utf8_tmp   = NULL;
                 char* out_utf8_index = NULL;
 
                 /* Charset to UTF-8 should never exceed in_size * 6;
@@ -978,8 +978,8 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 iconvRet = iconv(conv, &inbuf, &inbufsize, &out_utf8_index, &outbytesleft);
                 iconv_close(conv);
-                conv = (iconv_t) -1;
-                if ((size_t)-1 == iconvRet){
+                conv = (iconv_t)-1;
+                if ((size_t)-1 == iconvRet) {
                     switch (errno) {
                         case E2BIG:
                             cli_warnmsg("cli_codepage_to_utf8: iconv error: There is not sufficient room at *outbuf.\n");
@@ -1036,7 +1036,7 @@ done:
 #endif
 
 #if defined(HAVE_ICONV)
-    if (conv != (iconv_t) -1) {
+    if (conv != (iconv_t)-1) {
         iconv_close(conv);
     }
 #endif
@@ -1050,9 +1050,9 @@ done:
     return status;
 }
 
-char *cli_utf16toascii(const char *str, unsigned int length)
+char* cli_utf16toascii(const char* str, unsigned int length)
 {
-    char *decoded;
+    char* decoded;
     unsigned int i, j;
 
     if (length < 2) {
@@ -1074,14 +1074,14 @@ char *cli_utf16toascii(const char *str, unsigned int length)
     return decoded;
 }
 
-char *cli_utf16_to_utf8(const char *utf16, size_t length, encoding_t type)
+char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
 {
     /* utf8 -
      * 4 bytes for utf16 high+low surrogate (4 bytes input)
      * 3 bytes for utf16 otherwise (2 bytes input) */
     size_t i, j;
     size_t needed = length * 3 / 2 + 2;
-    char *s2;
+    char* s2;
 
     if (length < 2)
         return cli_strdup("");
@@ -1146,7 +1146,7 @@ char *cli_utf16_to_utf8(const char *utf16, size_t length, encoding_t type)
     return s2;
 }
 
-int cli_isutf8(const char *buf, unsigned int len)
+int cli_isutf8(const char* buf, unsigned int len)
 {
     unsigned int i, j;
 
