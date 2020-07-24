@@ -897,10 +897,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     sigset_t sigset;
     struct rlimit rlim;
 #endif
-    mode_t old_umask;
     const struct optstruct *opt;
     char buff[BUFFSIZE + 1];
-    pid_t mainpid;
     int idletimeout;
     unsigned long long val;
     size_t i, j, rr_last = 0;
@@ -1347,23 +1345,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         logg("Self checking every %u seconds.\n", selfchk);
     }
 
-    /* save the PID */
-    mainpid = getpid();
-    if ((opt = optget(opts, "PidFile"))->enabled) {
-        FILE *fd;
-        old_umask = umask(0002);
-        if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            logg("!Can't save PID in file %s\n", opt->strarg);
-        } else {
-            if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
-                logg("!Can't save PID in file %s\n", opt->strarg);
-            }
-            fclose(fd);
-        }
-        umask(old_umask);
-    }
-
-    logg("*Listening daemon: PID: %u\n", (unsigned int)mainpid);
+    logg("*Listening daemon: PID: %u\n", (unsigned int)getpid());
     max_threads               = optget(opts, "MaxThreads")->numarg;
     max_queue                 = optget(opts, "MaxQueue")->numarg;
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;

@@ -49,6 +49,10 @@
 #include "clamfi.h"
 #include "whitelist.h"
 
+#ifndef _WIN32
+#include <sys/wait.h>
+#endif
+
 struct smfiDesc descr;
 struct optstruct *opts;
 
@@ -83,25 +87,10 @@ int main(int argc, char **argv)
     const struct optstruct *opt;
     time_t currtime;
     mode_t umsk;
-    int ret;
+    pid_t parentPid = getpid();
 
     sigset_t sigset;
     struct sigaction act;
-
-    sigfillset(&sigset);
-    sigdelset(&sigset, SIGUSR1);
-    sigdelset(&sigset, SIGFPE);
-    sigdelset(&sigset, SIGILL);
-    sigdelset(&sigset, SIGSEGV);
-#ifdef SIGBUS
-    sigdelset(&sigset, SIGBUS);
-#endif
-    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-    memset(&act, 0, sizeof(struct sigaction));
-    act.sa_handler = milter_exit;
-    sigfillset(&(act.sa_mask));
-    sigaction(SIGUSR1, &act, NULL);
-    sigaction(SIGSEGV, &act, NULL);
 
     cl_initialize_crypto();
 
@@ -299,40 +288,6 @@ int main(int argc, char **argv)
         }
     }
 
-    if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
-        struct passwd *user = NULL;
-        if ((user = getpwnam(opt->strarg)) == NULL) {
-            fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
-            optfree(opts);
-            return 1;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(opt->strarg, user->pw_gid)) {
-            fprintf(stderr, "ERROR: initgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#endif
-        if (setgid(user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
-            optfree(opts);
-            return 1;
-        }
-
-        if (setuid(user->pw_uid)) {
-            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
-            optfree(opts);
-            return 1;
-        }
-    }
-
     logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
     logg_time    = optget(opts, "LogTime")->enabled;
     logg_size    = optget(opts, "LogFileMaxSize")->numarg;
@@ -401,8 +356,9 @@ int main(int argc, char **argv)
 
     multircpt = optget(opts, "SupportMultipleRecipients")->enabled;
 
+#ifndef _WIN32
     if (!optget(opts, "Foreground")->enabled) {
-        if (daemonize() == -1) {
+        if (-1 == daemonize_parent_wait()) {
             logg("!daemonize() failed\n");
             localnets_free();
             whitelist_free();
@@ -411,9 +367,27 @@ int main(int argc, char **argv)
             optfree(opts);
             return 1;
         }
-        if (chdir("/") == -1)
+        if (chdir("/") == -1) {
             logg("^Can't change current working directory to root\n");
+        }
     }
+
+    sigfillset(&sigset);
+    sigdelset(&sigset, SIGUSR1);
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS
+    sigdelset(&sigset, SIGBUS);
+#endif
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+    memset(&act, 0, sizeof(struct sigaction));
+    act.sa_handler = milter_exit;
+    sigfillset(&(act.sa_mask));
+    sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGSEGV, &act, NULL);
+
+#endif /* _WIN32 */
 
     maxfilesize = optget(opts, "MaxFileSize")->numarg;
     if (!maxfilesize) {
@@ -435,17 +409,72 @@ int main(int argc, char **argv)
     if ((opt = optget(opts, "PidFile"))->enabled) {
         FILE *fd;
         mode_t old_umask = umask(0002);
+        int err = 0;
 
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
             logg("!Can't save PID in file %s\n", opt->strarg);
+            err = 1;
         } else {
             if (fprintf(fd, "%u\n", (unsigned int)getpid()) < 0) {
                 logg("!Can't save PID in file %s\n", opt->strarg);
+                err = 1;
             }
             fclose(fd);
         }
         umask(old_umask);
+
+        if (err){
+            localnets_free();
+            whitelist_free();
+            logg_close();
+            optfree(opts);
+            return 2;
+        }
     }
+
+
+    if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
+        struct passwd *user = NULL;
+        if ((user = getpwnam(opt->strarg)) == NULL) {
+            fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
+            optfree(opts);
+            return 1;
+        }
+
+#ifdef HAVE_INITGROUPS
+        if (initgroups(opt->strarg, user->pw_gid)) {
+            fprintf(stderr, "ERROR: initgroups() failed.\n");
+            optfree(opts);
+            return 1;
+        }
+#elif HAVE_SETGROUPS
+        if (setgroups(1, &user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgroups() failed.\n");
+            optfree(opts);
+            return 1;
+        }
+#endif
+        if (setgid(user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
+            optfree(opts);
+            return 1;
+        }
+
+        if (setuid(user->pw_uid)) {
+            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
+            optfree(opts);
+            return 1;
+        }
+    }
+
+#ifndef _WIN32
+    /* We have been daemonized, and initialization is done.  Signal
+     * the parent process so that it can exit cleanly.
+     */
+    if (parentPid != getpid()){ //we have been daemonized
+        daemonize_signal_parent(parentPid);
+    }   
+#endif
 
     return smfi_main();
 }

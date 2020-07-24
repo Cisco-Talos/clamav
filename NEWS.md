@@ -25,6 +25,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   - David Heidelberg
   - Ged Haywood
   - Julius Plenz
+  - Michael Orlitzky
 
   Thank you all for your patience waiting for this feature.
 
@@ -84,6 +85,11 @@ ClamAV 0.103.0 includes the following improvements and changes.
   detection within an archive to alert once for every subsequent file scanned,
   potentially resulting in thousands of alerts for a single scan.
 
+- Fixed clamd, clamav-milter, and freshclam to create PID files before
+  dropping privileges, to avoid the possibility of an unprivileged user
+  from changing the PID file so that a service manager will kill a different
+  process.  This change does make the services unable to clean up the PID
+  file on exit.
 ### New Requirements
 
 ### Acknowledgements

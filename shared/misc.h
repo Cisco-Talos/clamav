@@ -62,7 +62,26 @@ void print_version(const char *dbdir);
 int check_flevel(void);
 const char *filelist(const struct optstruct *opts, int *err);
 int filecopy(const char *src, const char *dest);
+
+/*Returns 0 on success (only the child process returns.*/
 int daemonize(void);
+
+/*closes stdin, stdout, stderr.  This is called by daemonize, but not
+ * daemonize_all_return.  Users of daemonize_all_return should call this
+ * when initialization is complete.*/
+int close_std_descriptors() ;
+/*Returns the return value of fork.  All processes return */
+int daemonize_all_return(void);
+/*Parent waits for a SIGINT or the child process to exit.  If
+ * it receives a SIGINT, it exits with exit code 0.  If the child
+ * exits (error), it exits with the child process's exit code.*/
+int daemonize_parent_wait();
+/*Sends a SIGINT to the parent process.  It also closes stdin, stdout, 
+ * and stderr.*/
+void daemonize_signal_parent(pid_t parentPid);
+
+
+
 const char *get_version(void);
 int match_regex(const char *filename, const char *pattern);
 int cli_is_abspath(const char *path);

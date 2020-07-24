@@ -120,18 +120,20 @@ sighandler(int sig)
     return;
 }
 
-static void writepid(const char *pidfile)
+static int writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
     old_umask = umask(0006);
     if ((fd = fopen(pidfile, "w")) == NULL) {
         logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+        return 1;
     } else {
         fprintf(fd, "%d\n", (int)getpid());
         fclose(fd);
     }
     umask(old_umask);
+    return 0;
 }
 
 static void help(void)
@@ -816,15 +818,21 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 
 #ifdef HAVE_PWD_H
-    /*
-     * freshclam shouldn't work with root privileges.
-     * Drop privileges to the DatabaseOwner user, if specified.
-     */
-    ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
-    if (FC_SUCCESS != ret) {
-        logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-        status = ret;
-        goto done;
+    /* Drop database privileges here if we are not planning on daemonizing.  If
+     * we are, we should wait until after we craete the PidFile to drop
+     * privileges.  That way, it is owned by root (or whoever started freshclam),
+     * and no one can change it.  */
+    if (!optget(opts, "daemon")->enabled) {
+        /*
+         * freshclam shouldn't work with root privileges.
+         * Drop privileges to the DatabaseOwner user, if specified.
+         */
+        ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
+        if (FC_SUCCESS != ret) {
+            logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+            status = ret;
+            goto done;
+        }
     }
 #endif /* HAVE_PWD_H */
 
@@ -1581,6 +1589,7 @@ int main(int argc, char **argv)
     struct sigaction oldact;
 #endif
     int i;
+    pid_t parentPid = getpid();
 
     if (check_flevel())
         exit(FC_EINIT);
@@ -1882,7 +1891,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
         /* fork into background */
         if (g_foreground == 0) {
-            if (daemonize() == -1) {
+            if (-1 == daemonize_parent_wait()) {
                 logg("!daemonize() failed\n");
                 status = FC_EFAILEDUPDATE;
                 goto done;
@@ -1894,8 +1903,34 @@ int main(int argc, char **argv)
         /* Write PID of daemon process to pidfile. */
         if ((opt = optget(opts, "PidFile"))->enabled) {
             g_pidfile = opt->strarg;
-            writepid(g_pidfile);
+            if (writepid(g_pidfile)){
+                status = FC_EINIT;
+                goto done;
+            }
         }
+
+#ifndef _WIN32
+        /* Signal the parent process that we have successfully
+         * written the PidFile.  If it does not get this signal, it
+         * will wait for our exit status (and we don't exit in daemon mode).
+         */
+        if (parentPid != getpid()){ //we have been daemonized
+            daemonize_signal_parent(parentPid);
+        }
+#endif
+
+#ifdef HAVE_PWD_H
+        /*
+         * freshclam shouldn't work with root privileges.
+         * Drop privileges to the DatabaseOwner user, if specified.
+         */
+        ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
+        if (FC_SUCCESS != ret) {
+            logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+            status = ret;
+            goto done;
+        }
+#endif /* HAVE_PWD_H */
 
         g_active_children = 0;
 

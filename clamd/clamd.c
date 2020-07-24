@@ -72,6 +72,12 @@
 #include "shared.h"
 #include "scanner.h"
 
+#include <sys/types.h>
+#ifndef WIN32
+#include <sys/wait.h>
+#endif
+
+
 short debug_mode = 0, logok = 0;
 short foreground = -1;
 
@@ -130,9 +136,12 @@ int main(int argc, char **argv)
     unsigned int i;
     int j;
     int num_fd;
+    pid_t parentPid = getpid();
 #ifdef C_LINUX
     STATBUF sb;
 #endif
+    pid_t mainpid = 0;
+    mode_t old_umask = 0;
 
     if (check_flevel())
         exit(1);
@@ -203,6 +212,100 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    /* initialize logger */
+    logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
+    logg_time    = optget(opts, "LogTime")->enabled;
+    logok        = optget(opts, "LogClean")->enabled;
+    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
+    logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
+    if (logg_size)
+        logg_rotate = optget(opts, "LogRotate")->enabled;
+    mprintf_send_timeout = optget(opts, "SendBufTimeout")->numarg;
+
+    if ((opt = optget(opts, "LogFile"))->enabled) {
+        char timestr[32];
+        logg_file = opt->strarg;
+        if (!cli_is_abspath(logg_file)) {
+            fprintf(stderr, "ERROR: LogFile requires full path.\n");
+            ret = 1;
+            return ret;
+        }
+        time(&currtime);
+        if (logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
+            fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
+            ret = 1;
+            return ret;
+        }
+    } else {
+        logg_file = NULL;
+    }
+
+
+#ifndef WIN32
+        /* fork into background */
+        if (foreground == -1) {
+            if (optget(opts, "Foreground")->enabled) {
+                foreground = 1;
+            } else {
+                foreground = 0;
+            }
+        }
+        if (foreground == 0) {
+            int daemonizeRet = 0;
+#ifdef C_BSD
+            /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
+            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
+                    logg("!fcntl for lsockets[] failed\n");
+                    close(lsockets[ret]);
+                    ret = 1;
+                    break;
+                }
+            }
+#endif
+            gengine = engine;
+            atexit(free_engine);
+            daemonizeRet = daemonize_parent_wait();
+            if (daemonizeRet < 0){
+                logg("!daemonize() failed: %s\n", strerror(errno));
+                return 1;
+            }
+            gengine = NULL;
+#ifdef C_BSD
+            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
+                    logg("!fcntl for lsockets[] failed\n");
+                    close(lsockets[ret]);
+                    ret = 1;
+                    break;
+                }
+            }
+#endif
+        }
+
+#endif
+
+    /* save the PID */
+    mainpid = getpid();
+    if ((opt = optget(opts, "PidFile"))->enabled) {
+        FILE *fd;
+        old_umask = umask(0002);
+        if ((fd = fopen(opt->strarg, "w")) == NULL) {
+            //logg("!Can't save PID in file %s\n", opt->strarg);
+            logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
+            exit(2);
+        } else {
+            if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
+                logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
+                //logg("!Can't save PID in file %s\n", opt->strarg);
+                fclose(fd);
+                exit(2);
+            }
+            fclose(fd);
+        }
+        umask(old_umask);
+    }
+
     /* drop privileges */
 #ifndef _WIN32
     if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
@@ -240,34 +343,8 @@ int main(int argc, char **argv)
     }
 #endif
 
-    /* initialize logger */
-    logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
-    logg_time    = optget(opts, "LogTime")->enabled;
-    logok        = optget(opts, "LogClean")->enabled;
-    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
-    logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
-    if (logg_size)
-        logg_rotate = optget(opts, "LogRotate")->enabled;
-    mprintf_send_timeout = optget(opts, "SendBufTimeout")->numarg;
 
     do { /* logger initialized */
-        if ((opt = optget(opts, "LogFile"))->enabled) {
-            char timestr[32];
-            logg_file = opt->strarg;
-            if (!cli_is_abspath(logg_file)) {
-                fprintf(stderr, "ERROR: LogFile requires full path.\n");
-                ret = 1;
-                break;
-            }
-            time(&currtime);
-            if (logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
-                fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
-                ret = 1;
-                break;
-            }
-        } else {
-            logg_file = NULL;
-        }
 
         if (optget(opts, "DevLiblog")->enabled)
             cl_set_clcb_msg(msg_callback);
@@ -694,48 +771,26 @@ int main(int argc, char **argv)
             }
         }
 
-        /* fork into background */
-        if (foreground == -1) {
-            if (optget(opts, "Foreground")->enabled) {
-                foreground = 1;
-            } else {
-                foreground = 0;
-            }
-        }
-        if (foreground == 0) {
-#ifdef C_BSD
-            /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
-#endif
-            gengine = engine;
-            atexit(free_engine);
-            if (daemonize() == -1) {
-                logg("!daemonize() failed: %s\n", strerror(errno));
-                ret = 1;
-                break;
-            }
-            gengine = NULL;
-#ifdef C_BSD
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
-#endif
-            if (!debug_mode)
-                if (chdir("/") == -1)
+        if (0 == foreground) {
+            if (!debug_mode) {
+                if (chdir("/") == -1) {
                     logg("^Can't change current working directory to root\n");
+                }
+            }
+
+#ifndef _WIN32
+
+            /*Since some of the logging is written to stderr, and some of it
+             * is written to a log file, close stdin, stderr, and stdout 
+             * now, since everything is initialized.*/
+
+            /*signal the parent process.*/
+            if (parentPid != getpid()){
+                daemonize_signal_parent(parentPid);
+            }
+#endif
         }
+
 #endif
 
         if (nlsockets == 0) {

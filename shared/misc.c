@@ -50,6 +50,12 @@
 #include "libclamav/version.h"
 #include "shared/misc.h"
 
+#include <signal.h>
+
+#ifndef WIN32
+#include <sys/wait.h>
+#endif
+
 #ifndef REPO_VERSION
 #define REPO_VERSION "exported"
 #endif
@@ -250,14 +256,12 @@ int filecopy(const char *src, const char *dest)
 #endif
 }
 
-int daemonize(void)
-{
+int close_std_descriptors() {
 #ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
     return -1;
 #else
+
     int fds[3], i;
-    pid_t pid;
 
     fds[0] = open("/dev/null", O_RDONLY);
     fds[1] = open("/dev/null", O_WRONLY);
@@ -284,18 +288,108 @@ int daemonize(void)
         if (fds[i] > 2)
             close(fds[i]);
 
-    pid = fork();
-
-    if (pid == -1)
-        return -1;
-
-    if (pid)
-        exit(0);
-
-    setsid();
     return 0;
 #endif
 }
+
+
+int daemonize_all_return(void) {
+#ifdef _WIN32
+    fputs("Background mode is not supported on your operating system\n", stderr);
+    return -1;
+#else
+    pid_t pid;
+
+    pid = fork();
+
+    if (0 == pid){
+        setsid();
+    }
+    return pid;
+
+#endif
+}
+
+int daemonize(void) {
+#ifdef _WIN32
+    fputs("Background mode is not supported on your operating system\n", stderr);
+    return -1;
+#else
+
+    int ret = 0;
+
+    ret = close_std_descriptors();
+    if (ret){
+        return ret;
+    }
+
+    ret = daemonize_all_return();
+    pid_t pid = (pid_t) ret;
+    /*parent process.*/
+    if (pid > 0){
+        exit(0);
+    }
+
+    return pid;
+#endif
+}
+
+
+static void daemonize_child_initialized_handler(int sig){
+    (void)(sig);
+    exit(0);
+}
+
+int daemonize_parent_wait(){
+#ifdef _WIN32
+    fputs("Background mode is not supported on your operating system\n", stderr);
+    return -1;
+#else
+
+    int daemonizePid = daemonize_all_return();
+    if (daemonizePid == -1) {
+        return -1;
+    } else if (daemonizePid){ //parent
+        /* The parent will wait until either the child process
+         * exits, or signals the parent that it's initialization is
+         * complete.  If it exits, it is due to an error condition,
+         * so the parent should exit with the same error code as the child.
+         * If the child signals the parent that initialization is complete, it
+         * the parent will exit from the signal handler (initDoneSignalHandler)
+         * with exit code 0.
+         */
+        struct sigaction sig;
+        memset(&sig, 0, sizeof(sig));
+        sigemptyset(&(sig.sa_mask));
+        sig.sa_handler = daemonize_child_initialized_handler;
+
+        if (0 != sigaction(SIGINT, &sig, NULL)){
+            perror("sigaction");
+            return -1;
+        }
+
+        int exitStatus;
+        wait(&exitStatus);
+        if (WIFEXITED(exitStatus)){ //error
+            exitStatus = WEXITSTATUS(exitStatus);
+            exit(exitStatus);
+        }
+
+    }
+    return 0;
+#endif
+}
+
+void daemonize_signal_parent(pid_t parentPid){
+#ifdef _WIN32
+    fputs("Background mode is not supported on your operating system\n", stderr);
+    return -1;
+#else
+    close_std_descriptors();
+    kill(parentPid, SIGINT) ;
+#endif
+}
+
 
 int match_regex(const char *filename, const char *pattern)
 {
