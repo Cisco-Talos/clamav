@@ -95,6 +95,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   from changing the PID file so that a service manager will kill a different
   process.  This change does make the services unable to clean up the PID
   file on exit.
+
 ### New Requirements
 
 ### Acknowledgements
@@ -103,6 +104,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 
 - Aldo Mazzeo
 - Ángel
+- Antonino Cangialosi
 - Clement Lecigne
 - Jamie Biggar
 - Jan Smutny
