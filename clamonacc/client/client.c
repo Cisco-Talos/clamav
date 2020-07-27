@@ -293,8 +293,10 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 
     if (!port) {
 
+#if ((LIBCURL_VERSION_MAJOR > 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 40))
         /* "ipaddr" is actually our unix socket path here */
         curlcode = curl_easy_setopt(*curl, CURLOPT_UNIX_SOCKET_PATH, ipaddr);
+#endif
         if (CURLE_OK != curlcode) {
             logg("!ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
             curl_easy_cleanup(*curl);

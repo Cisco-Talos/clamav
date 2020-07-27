@@ -387,3 +387,11 @@ if test "X$have_json" = "Xyes" && test "x$json_linking" = "xdynamic"; then
 ****** providing a json-c library that was compiled with CFLAGS="-fPIC".
     ])
 fi
+
+if test "x$clamonacc-curl" = "xdeprecated"; then
+    AC_MSG_WARN([m4_normalize([
+****** your libcurl (e.g. libcurl-devel) is older than the recommended version. Installing ClamAV with clamonacc requires libcurl 7.40 or higher to use fdpassing.
+****** fdpassing with clamonacc will be disabled on your system.
+****** for more information on ClamAV's on-access scanner, please read our documentation: https://www.clamav.net/documents/on-access-scanning#on-access-scanning
+    ])])
+fi

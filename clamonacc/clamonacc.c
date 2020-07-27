@@ -40,6 +40,8 @@
 #include <fcntl.h>
 #endif
 
+#include <curl/curl.h>
+
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "shared/output.h"
@@ -326,6 +328,14 @@ static int startup_checks(struct onas_context *ctx)
     }
 #endif
 
+#if ((LIBCURL_VERSION_MAJOR < 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 40))
+    if (optget(ctx->opts, "fdpass")->enabled || !optget(ctx->clamdopts, "TCPSocket")->enabled || !optget(ctx->clamdopts, "TCPAddr")->enabled) {
+	    logg("!Clamonacc: Version of curl is too low to use fdpassing. Please use tcp socket streaming instead\n.");
+	    ret = 2;
+	    goto done;
+    }
+#endif
+
     if (curl_global_init(CURL_GLOBAL_NOTHING)) {
         ret = 2;
         goto done;
@@ -368,6 +378,7 @@ static int startup_checks(struct onas_context *ctx)
             goto done;
         }
     }
+
 done:
     return ret;
 }
