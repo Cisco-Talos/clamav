@@ -1876,9 +1876,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     free((char *)boundary);
                     mimeType = NOMIME;
                     /*
-                 * The break means that we will still
-                 * check if the file contains a yEnc/binhex file
-                 */
+                     * The break means that we will still
+                     * check if the file contains a yEnc/binhex file
+                     */
                     break;
                 }
                 /*
@@ -2217,7 +2217,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 free((char *)boundary);
 
                 if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx, &rc)) {
-                    DO_FREE(messages);
+                    if (messages) {
+                        for (i = 0; i < multiparts; i++) {
+                            if (messages[i])
+                                messageDestroy(messages[i]);
+                        }
+                        free(messages);
+                        messages = NULL;
+                    }
                     break;
                 }
 
@@ -2254,10 +2261,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                 if (infected || ((multiparts == 0) && (aText == NULL))) {
                     if (messages) {
-                        for (i = 0; i < multiparts; i++)
+                        for (i = 0; i < multiparts; i++) {
                             if (messages[i])
                                 messageDestroy(messages[i]);
+                        }
                         free(messages);
+                        messages = NULL;
                     }
                     if (aText && (textIn == NULL))
                         textDestroy(aText);
@@ -2451,12 +2460,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     textDestroy(aText);
                 }
 
-                for (i = 0; i < multiparts; i++)
-                    if (messages[i])
-                        messageDestroy(messages[i]);
-
-                if (messages)
+                if (messages) {
+                    for (i = 0; i < multiparts; i++) {
+                        if (messages[i])
+                            messageDestroy(messages[i]);
+                    }
                     free(messages);
+                    messages = NULL;
+                }
 
 #if HAVE_JSON
                 mctx->wrkobj = saveobj;
@@ -2518,8 +2529,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                 if (mainMessage && (mainMessage != messageIn))
                     messageDestroy(mainMessage);
-                if (messages)
+
+                if (messages) {
+                    for (i = 0; i < multiparts; i++) {
+                        if (messages[i])
+                            messageDestroy(messages[i]);
+                    }
                     free(messages);
+                    messages = NULL;
+                }
 #if HAVE_JSON
                 mctx->wrkobj = saveobj;
 #endif
@@ -2567,7 +2585,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         if (messages) {
             /* "can't happen" */
             cli_warnmsg("messages != NULL\n");
+            for (i = 0; i < multiparts; i++) {
+                if (messages[i])
+                    messageDestroy(messages[i]);
+            }
             free(messages);
+            messages = NULL;
         }
     }
 
