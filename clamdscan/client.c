@@ -183,9 +183,9 @@ int16_t ping_clamd(const struct optstruct *opts)
     }
 
     /* ping command takes the form --ping [attempts[:interval]] */
-    if (opt = optget(opts, "ping")) {
-        if (attempt_str = cli_strdup(opt->strarg)) {
-            if (NULL == attempt_str) {
+    if (NULL != (opt = optget(opts, "ping"))) {
+        if (NULL != opt->strarg) {
+            if (NULL == (attempt_str = cli_strdup(opt->strarg))) {
                 logg("!could not allocate memory for string\n");
                 ret = -1;
                 goto done;
@@ -233,7 +233,7 @@ int16_t ping_clamd(const struct optstruct *opts)
         }
 
         if (i + 1 < attempts) {
-            logg("*PINGing again in %lu seconds\n", interval);
+            logg("*PINGing again in %" PRIu64 " seconds\n", interval);
             sleep(interval);
         }
         i++;

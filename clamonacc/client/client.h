@@ -46,5 +46,6 @@ int onas_get_clamd_version(struct onas_context **ctx);
 cl_error_t onas_setup_client(struct onas_context **ctx);
 int onas_check_remote(struct onas_context **ctx, cl_error_t *err);
 int16_t onas_ping_clamd(struct onas_context **ctx);
+int16_t ping_clamd(const struct optstruct *opts);
 
 #endif

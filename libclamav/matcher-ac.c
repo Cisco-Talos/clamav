@@ -91,13 +91,8 @@ static char boundary[256] = {
 
 static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
 {
-    struct cli_ac_list *ph, *new, *ph_prev, *ph_add_after;
+    struct cli_ac_list *new;
     struct cli_ac_list **newtable;
-    struct cli_ac_patt *php;
-    struct cli_ac_special *a1, *a2;
-    struct cli_alt_node *b1, *b2;
-    int match;
-    uint16_t i, j;
 
     new = (struct cli_ac_list *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {

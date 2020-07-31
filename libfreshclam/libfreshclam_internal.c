@@ -205,6 +205,9 @@ static int xferinfo(void *prog,
     uint32_t numDots          = 0;
     double fractiondownloaded = 0.0;
 
+    UNUSEDPARAM(TotalToUpload);
+    UNUSEDPARAM(NowUploaded);
+
     if ((TotalToDownload <= 0.0) || (xferProg->bComplete)) {
         return 0;
     }
