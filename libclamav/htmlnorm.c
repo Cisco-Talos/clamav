@@ -673,6 +673,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     uint32_t mbchar  = 0;
     uint32_t mbchar2 = 0;
 
+    /*
+     * Initialize stack buffers.
+     */
+    memset(filename, 0, sizeof(filename));
+    memset(tag, 0, sizeof(tag));
+    memset(tag_arg, 0, sizeof(tag_arg));
+    memset(tag_val, 0, sizeof(tag_val));
+    memset(entity_val, 0, sizeof(entity_val));
+
     tag_args.scanContents = 0; /* do we need to store the contents of <a></a>?*/
     contents.pos          = 0;
     if (!m_area) {
