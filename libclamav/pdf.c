@@ -1085,14 +1085,22 @@ static void aes_256cbc_decrypt(const unsigned char *in, size_t *length, unsigned
 {
     unsigned long rk[RKLENGTH(256)];
     unsigned char iv[16];
-    size_t len = *length;
+    size_t len = 0;
     unsigned char pad, i;
     int nrounds;
 
-    cli_dbgmsg("aes_decrypt: key length: %d, data length: %zu\n", key_n, *length);
+    if (in == NULL || length == NULL) {
+        cli_dbgmsg("aes_256cbc_decrypt: invalid NULL parameters!\n");
+        noisy_warnmsg("aes_256cbc_decrypt: invalid NULL parameters!\n");
+        return;
+    }
+
+    len = *length;
+
+    cli_dbgmsg("aes_256cbc_decrypt: key length: %d, data length: %zu\n", key_n, *length);
     if (!(key_n == 16 || key_n == 24 || key_n == 32)) {
-        cli_dbgmsg("aes_decrypt: invalid key length: %u!\n", key_n * 8);
-        noisy_warnmsg("aes_decrypt: invalid key length: %u!\n", key_n * 8);
+        cli_dbgmsg("aes_256cbc_decrypt: invalid key length: %u!\n", key_n * 8);
+        noisy_warnmsg("aes_256cbc_decrypt: invalid key length: %u!\n", key_n * 8);
         return;
     }
 
@@ -2867,7 +2875,6 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             size_t UE_len;
 
             /* Algorithm 3.2a could be used to recover encryption key */
-            password_empty = 1;
             cl_sha256(U + 40, 8, result2, NULL);
             UE_len = UE ? strlen(UE) : 0;
             if (UE_len != 32) {
@@ -2883,6 +2890,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 
                 aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
                 dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+                password_empty = 1;
             }
         }
     } else if (R == 6) {
@@ -2891,8 +2900,16 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         size_t pwlen    = 0;
         char password[] = "";
 
+        if (NULL == UE) {
+            cli_dbgmsg("check_user_password: Missing UE value!\n");
+            noisy_warnmsg("check_user_password: Missing UE value!\n");
+            return;
+        }
+
         compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
         if (!memcmp(U, validationkey, sizeof(validationkey))) {
+            size_t inLen = 32;
+
             compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
 
             pdf->keylen = 32;
@@ -2902,8 +2919,8 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 return;
             }
 
-            size_t inLen = 32;
             aes_256cbc_decrypt((const unsigned char *)UE, &inLen, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
+            dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
 
             password_empty = 1;
         }
@@ -2954,7 +2971,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             /* 7.6.3.3 Algorithm 4 */
             memcpy(data, key_padding, 32);
             if (false == arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen)) {
-                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                noisy_warnmsg("check_user_password: failed to init arc4\n");
                 return;
             }
             arc4_apply(&arc4, (uint8_t *)data, 32);
@@ -2976,7 +2993,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             memcpy(data, pdf->key, len);
 
             if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
-                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                noisy_warnmsg("check_user_password: failed to init arc4\n");
                 return;
             }
             arc4_apply(&arc4, result, 16);
@@ -2987,7 +3004,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                     data[j] = pdf->key[j] ^ i;
 
                 if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
-                    noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                    noisy_warnmsg("check_user_password: failed to init arc4\n");
                     return;
                 }
                 arc4_apply(&arc4, result, 16);
