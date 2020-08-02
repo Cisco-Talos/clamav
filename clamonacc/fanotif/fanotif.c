@@ -202,6 +202,10 @@ int onas_fan_eloop(struct onas_context **ctx)
 
         fmd = (struct fanotify_event_metadata *)buf;
         while (FAN_EVENT_OK(fmd, bread)) {
+            if (fmd->vers != FANOTIFY_METADATA_VERSION) {
+                logg("!ClamFanotif: Mismatch of fanotify metadata version.\n");
+                return 2;
+            }
             scan = 1;
             if (fmd->fd >= 0) {
                 sprintf(proc_fd_fname, "/proc/self/fd/%d", fmd->fd);
@@ -212,6 +216,20 @@ int onas_fan_eloop(struct onas_context **ctx)
                     logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
                     if (errno == EBADF) {
                         logg("ClamWorker: fd already closed ... recovering ...\n");
+                        // XXX If we continue here could we potentially get
+                        // into an infinite loop, since `fmd` gets reused?
+                        // It seems like we would need to add the following
+                        // line here to move to the next event:
+                        //
+                        // fmd = FAN_EVENT_NEXT(fmd, bread);
+                        //
+                        // Alternatively, if the intention really is to retry
+                        // with the same `fmd`, then we should add the logic
+                        // from below that only tries `(*ctx)->retry_attempts`
+                        // times if `(*ctx)->retry_on_error` is true. Also,
+                        // we should not close `fmd->fd` in this case, since
+                        // otherwise if the retry succeeds we would be passing
+                        // a closed file descriptor through to `onas_queue_event`
                         continue;
                     } else {
                         return 2;
@@ -231,6 +249,7 @@ int onas_fan_eloop(struct onas_context **ctx)
 
                     event_data = cli_calloc(1, sizeof(struct onas_scan_event));
                     if (NULL == event_data) {
+                        close(fmd->fd);
                         logg("!ClamFanotif: could not allocate memory for event data struct\n");
                         return 2;
                     }
@@ -243,21 +262,49 @@ int onas_fan_eloop(struct onas_context **ctx)
                     event_data->bool_opts |= ONAS_SCTH_B_FANOTIFY;
                     event_data->fmd = cli_malloc(sizeof(struct fanotify_event_metadata));
                     if (NULL == event_data->fmd) {
+                        close(fmd->fd);
+                        free(event_data);
                         logg("!ClamFanotif: could not allocate memory for event data struct fmd\n");
                         return 2;
                     }
                     memcpy(event_data->fmd, fmd, sizeof(struct fanotify_event_metadata));
                     event_data->pathname = cli_strdup(fname);
+                    if (NULL == event_data->pathname) {
+                        close(fmd->fd);
+                        free(event_data->fmd);
+                        free(event_data);
+                        logg("!ClamFanotif: could not allocate memory for event data struct pathname\n");
+                        return 2;
+                    }
 
                     logg("*ClamFanotif: attempting to feed consumer queue\n");
                     /* feed consumer queue */
                     if (CL_SUCCESS != onas_queue_event(event_data)) {
                         close(fmd->fd);
+                        free(event_data->pathname);
+                        free(event_data->fmd);
+                        free(event_data);
                         logg("!ClamFanotif: error occurred while feeding consumer queue ... \n");
                         if ((*ctx)->retry_on_error) {
                             err_cnt++;
                             if (err_cnt < (*ctx)->retry_attempts) {
                                 logg("ClamFanotif: ... recovering ...\n");
+                                // XXX If we continue here could we potentially get
+                                // into an infinite loop, since `fmd` gets reused?
+                                // It seems like we would need to add the following
+                                // line here:
+                                //
+                                // fmd = FAN_EVENT_NEXT(fmd, bread);
+                                //
+                                // Alternatively, if the intention is to resend
+                                // `event_data`, do we really need to recreate
+                                // it? Or can we just use the one we've already
+                                // generated? If so, just do the call to
+                                // `onas_queue_event` in it's own loop and don't
+                                // cleanup ecent_data between iterations. Regardless,
+                                // we shouldn't close `fmd->fd` here or else it
+                                // will pass a closed file descriptor to
+                                // `onas_queue_event` if the retry succeeds.
                                 continue;
                             }
                         }
@@ -271,6 +318,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                         res.response = FAN_ALLOW;
 
                         if (-1 == write((*ctx)->fan_fd, &res, sizeof(res))) {
+                            close(fmd->fd);
                             logg("!ClamFanotif: error occurred while excluding event\n");
                             return 2;
                         }

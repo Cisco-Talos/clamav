@@ -210,7 +210,7 @@ static void *reload_th(void *arg)
     cl_error_t status = CL_EMALFDB;
 
     struct reload_th_t *rldata = arg;
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     unsigned int sigs = 0;
     int retval;
 
@@ -296,7 +296,7 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
 {
     cl_error_t status = CL_EMALFDB;
     cl_error_t retval;
-    struct reload_th_t *rldata;
+    struct reload_th_t *rldata = NULL;
     pthread_t th;
     pthread_attr_t th_attr;
 

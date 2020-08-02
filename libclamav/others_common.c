@@ -1062,7 +1062,10 @@ char *cli_genfname(const char *prefix)
 
     fname = (char *)cli_calloc(len, sizeof(char));
     if (!fname) {
-        cli_dbgmsg("cli_genfname: out of memory\n");
+        cli_dbgmsg("cli_genfname: no memory left for fname\n");
+        if (NULL != sanitized_prefix) {
+            free(sanitized_prefix);
+        }
         return NULL;
     }
 
@@ -1083,7 +1086,10 @@ char *cli_genfname(const char *prefix)
 
     if (NULL == tmp) {
         free(fname);
-        cli_dbgmsg("cli_genfname: out of memory\n");
+        if (NULL != sanitized_prefix) {
+            free(sanitized_prefix);
+        }
+        cli_dbgmsg("cli_genfname: no memory left for cli_md5buff output\n");
         return NULL;
     }
 

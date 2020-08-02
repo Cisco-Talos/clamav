@@ -172,6 +172,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
     if (NULL == opt_file) {
         logg("!ClamMisc: could not open path list file `%s', %s\n", fname, errno ? strerror(errno) : "");
         *err = CL_EARG;
+        free(opt_list);
         return NULL;
     }
 

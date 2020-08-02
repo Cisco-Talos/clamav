@@ -883,14 +883,14 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
     ReadStruct *head = NULL;
     ReadStruct *curr = NULL;
-    DO_CALLOC(head, 1);
-    curr = head;
-
     cli_dbgmsg("parseEmailFile\n");
 
     ret = messageCreate();
     if (ret == NULL)
         return NULL;
+
+    DO_CALLOC(head, 1);
+    curr = head;
 
     strncpy(buffer, firstLine, sizeof(buffer) - 1);
     do {

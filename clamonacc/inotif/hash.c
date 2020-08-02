@@ -778,7 +778,10 @@ int onas_ht_rm_hierarchy(struct onas_ht *ht, const char *pathname, size_t len, i
         if (!(prntname = onas_get_parent(pathname, len))) return CL_EARG;
 
         prntlen = strlen(prntname);
-        if (onas_ht_rm_child(ht, prntname, prntlen, pathname, len)) return CL_EARG;
+        if (onas_ht_rm_child(ht, prntname, prntlen, pathname, len)) {
+            free(prntname);
+            return CL_EARG;
+        }
 
         free(prntname);
     }

@@ -351,7 +351,7 @@ void *onas_scan_worker(void *arg)
 		 * try to close it to resolve any potential lingering permissions event,
 		 * then move to cleanup */
         if (event_data->fmd) {
-            if (event_data->fmd->fd) {
+            if (event_data->fmd->fd >= 0) {
                 close(event_data->fmd->fd);
                 goto done;
             }
