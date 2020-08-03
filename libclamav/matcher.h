@@ -290,8 +290,8 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
 
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
-cl_error_t cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx);
-cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname);
+cl_error_t cli_checkfp(cli_ctx *ctx);
+cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion_cnt);
 
 cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
 

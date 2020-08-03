@@ -575,12 +575,12 @@ void cli_targetinfo_destroy(struct cli_target_info *info)
     info->status = 0;
 }
 
-cl_error_t cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
+cl_error_t cli_checkfp(cli_ctx *ctx)
 {
-    return cli_checkfp_virus(digest, size, ctx, NULL);
+    return cli_checkfp_virus(ctx, NULL, 0);
 }
 
-cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname)
+cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion_cnt)
 {
     char md5[33];
     unsigned int i;
@@ -590,6 +590,15 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
     uint8_t shash1[SHA1_HASH_SIZE * 2 + 1];
     uint8_t shash256[SHA256_HASH_SIZE * 2 + 1];
     int have_sha1, have_sha256;
+    unsigned char *digest;
+    size_t size;
+
+    if (*(ctx->fmap - recursion_cnt) == NULL) { /* first fmap in the list is always NULL */
+        return CL_VIRUS;
+    }
+
+    digest = (*(ctx->fmap - recursion_cnt))->maphash;
+    size = (*(ctx->fmap - recursion_cnt))->len;
 
     if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
@@ -607,7 +616,7 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
                    vname ? vname : "Name");
     }
 
-    map         = *ctx->fmap;
+    map         = *(ctx->fmap - recursion_cnt); /* traverse backwards in the fmap list by the number of times recurses*/
     have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
     have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
     if (have_sha1 || have_sha256) {
@@ -693,7 +702,7 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
         }
     }
 
-    return CL_VIRUS;
+    return cli_checkfp_virus(ctx, vname, recursion_cnt + 1);
 }
 
 static cl_error_t matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)

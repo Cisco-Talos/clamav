@@ -1154,7 +1154,7 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
     }
     if ((ctx->fmap != NULL) &&
         ((*ctx->fmap) != NULL) &&
-        (CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))) {
+        (CL_VIRUS != cli_checkfp_virus(ctx, virname, 0))) {
         return CL_CLEAN;
     }
     if (!SCAN_ALLMATCHES && ctx->num_viruses != 0) {

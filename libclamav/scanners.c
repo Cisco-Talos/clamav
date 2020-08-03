@@ -3645,7 +3645,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     ret = dispatch_prescan(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
     if (run_cleanup) {
         if (ret == CL_VIRUS) {
-            ret = cli_checkfp(hash, hashed_size, ctx);
+            ret = cli_checkfp(ctx);
             goto done;
         } else {
             ret = CL_CLEAN;
@@ -3695,7 +3695,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
         if (run_cleanup) {
             if (ret == CL_VIRUS) {
-                ret = cli_checkfp(hash, hashed_size, ctx);
+                ret = cli_checkfp(ctx);
             }
             goto done;
         }
@@ -3716,7 +3716,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
     if (run_cleanup) {
         if (ret == CL_VIRUS) {
-            ret = cli_checkfp(hash, hashed_size, ctx);
+            ret = cli_checkfp(ctx);
         }
         goto done;
     }
@@ -3736,7 +3736,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     if (type != CL_TYPE_IGNORED && ctx->engine->sdb) {
         ret = scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
         if (ret == CL_EMEM || ret == CL_VIRUS) {
-            ret = cli_checkfp(hash, hashed_size, ctx);
+            ret = cli_checkfp(ctx);
             cli_bitset_free(ctx->hook_lsig_matches);
             ctx->hook_lsig_matches = old_hook_lsig_matches;
             goto done;
@@ -4306,7 +4306,7 @@ done:
                 cli_append_virus(ctx, "Detected.By.Callback");
                 perf_stop(ctx, PERFT_POSTCB);
                 if (ret != CL_VIRUS) {
-                    ret = cli_checkfp(hash, hashed_size, ctx);
+                    ret = cli_checkfp(ctx);
                 }
                 break;
             case CL_CLEAN:
