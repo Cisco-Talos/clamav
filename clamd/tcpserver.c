@@ -126,6 +126,7 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
             for (i = 0; i < *nlsockets; i++)
                 close(sockets[i]);
 
+            freeaddrinfo(info);
             return -1;
         }
         sockets = t;

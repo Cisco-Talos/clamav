@@ -570,7 +570,7 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
 
         /* Printed File Name */
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + DI_PNAME), 40, "HWP3.x", &iret);
-        if (!str || (iret == CL_EMEM))
+        if (!str)
             return CL_EMEM;
 
         if (iret == CL_VIRUS)
@@ -582,7 +582,7 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
 
         /* Annotation */
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + DI_ANNOTE), 24, "HWP3.x", &iret);
-        if (!str || (iret == CL_EMEM))
+        if (!str)
             return CL_EMEM;
 
         if (iret == CL_VIRUS)
@@ -623,7 +623,7 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
 
     for (i = 0; i < NUM_DOCSUMMARY_FIELDS; i++) {
         str = convert_hstr_to_utf8((char *)(hwp3_ptr + hwp3_docsummary_fields[i].offset), 112, "HWP3.x", &iret);
-        if (!str || (iret == CL_EMEM))
+        if (!str)
             return CL_EMEM;
 
         if (iret == CL_VIRUS) {

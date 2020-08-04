@@ -125,8 +125,10 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
             hd->cfduid = mem;
         else if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
             hd->session = mem;
-        else
+        else {
             fprintf(stderr, "header_cb(): unrecognized cookie\n");
+            free(mem);
+        }
     }
     return len;
 }

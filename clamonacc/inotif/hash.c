@@ -725,6 +725,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
                     if (CL_EMEM == onas_add_hashnode_child(hnode, childlist->fts_name)) {
 
                         ret = CL_EMEM;
+                        onas_free_hashnode(hnode);
                         goto out;
                     }
                 }
@@ -734,12 +735,15 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
         struct onas_element *elem = onas_element_init(hnode, hnode->pathname, hnode->pathlen);
         if (!elem) {
             ret = CL_EMEM;
+            onas_free_hashnode(hnode);
             goto out;
         }
 
         if (onas_ht_insert(ht, elem)) {
-
             ret = -1;
+            /* Note: `onas_free_hashnode(hnode) will get called by the
+             *       `onas_free_element` call below */
+            onas_free_element(elem);
             goto out;
         }
     }

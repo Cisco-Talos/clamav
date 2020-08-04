@@ -580,8 +580,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     int64_t bin_value         = 0;
     int16_t compare_check     = 0;
     unsigned char *end_buf    = NULL;
-    unsigned char *buffer     = NULL;
-    unsigned char *tmp_buffer = NULL;
+    unsigned char *buffer     = NULL; /* Used for BE, non-binary comparisons */
+    unsigned char *tmp_buffer = NULL; /* Used for LE, non-binary comparisons */
 
     if (!f_buffer || !bm) {
         bcm_dbgmsg("cli_bcomp_compare_check: a param is null\n");
@@ -630,6 +630,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             tmp_buffer = cli_bcomp_normalize_buffer(buffer, byte_len, NULL, opt, 0);
             if (NULL == tmp_buffer) {
                 cli_errmsg("cli_bcomp_compare_check: unable to normalize temp, allocation failed\n");
+                free(buffer);
                 return CL_EMEM;
             }
         }
@@ -654,6 +655,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
                 free(tmp_buffer);
+                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: little endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
@@ -674,7 +676,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
         case CLI_BCOMP_HEX | CLI_BCOMP_BE:
             value = cli_strntol((char *)buffer, byte_len, (char **)&end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
-
+                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: big endian hex conversion unsuccessful\n");
                 return CL_CLEAN;
             }
@@ -694,9 +696,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
             /* it may be possible for the auto option to proc this */
 
-            if (buffer) {
-                free(buffer);
-            }
+            free(tmp_buffer);
+            free(buffer);
             bcm_dbgmsg("cli_bcomp_compare_check: auto detection found ascii decimal for specified little endian byte extraction, which is unsupported\n");
             return CL_CLEAN;
             break;
@@ -741,7 +742,6 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
-                    free(buffer);
                     return CL_EARG;
             }
             break;
@@ -765,7 +765,6 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
-                    free(buffer);
                     return CL_EARG;
             }
             break;
@@ -914,7 +913,6 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
     uint16_t opt_val          = 0;
     uint16_t hex              = 0;
     unsigned char *tmp_buffer = NULL;
-    unsigned char *hex_buffer = NULL;
 
     if (!buffer) {
         cli_errmsg("cli_bcomp_compare_check: unable to normalize temp buffer, params null\n");
@@ -949,6 +947,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
 
     opt_val = opt & 0x000F;
     if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
+        unsigned char *hex_buffer;
         norm_len   = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
         tmp_buffer = cli_calloc(norm_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
@@ -1018,6 +1017,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
         }
         tmp_buffer[norm_len] = '\0';
         bcm_dbgmsg("cli_bcomp_compare_check: normalized extracted bytes before comparison %.*s\n", norm_len, tmp_buffer);
+        free(hex_buffer);
     }
 
     return tmp_buffer;

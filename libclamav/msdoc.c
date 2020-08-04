@@ -433,13 +433,17 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
                     outstr2 = cl_base64_encode(outstr, strsize);
                     if (!outstr2) {
                         cli_dbgmsg("ole2_process_property: failed to convert to base64 string\n");
+                        free(outstr);
                         return CL_EMEM;
                     }
 
                     snprintf(b64jstr, PROPSTRLIMIT, "%s_base64", sctx->propname);
                     ret = cli_jsonbool(sctx->summary, b64jstr, 1);
-                    if (ret != CL_SUCCESS)
+                    if (ret != CL_SUCCESS) {
+                        free(outstr);
+                        free(outstr2);
                         return ret;
+                    }
                 }
 
                 ret = cli_jsonstr(sctx->summary, sctx->propname, outstr2);
