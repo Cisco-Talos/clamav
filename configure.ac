@@ -79,6 +79,12 @@ if test "$enable_experimental" = "yes"; then
   VERSION_SUFFIX="$VERSION_SUFFIX-exp"
 fi
 
+# Autoconf 2.70 will support this, and many distros patch it in,
+# but Autoconf 2.70 hasn't actually been released yet (it's in beta).
+AS_IF([test -z "${runstatedir}"], [runstatedir='${localstatedir}/run'])
+AC_SUBST([runstatedir])
+
+
 build_configure_args=`echo "$ac_configure_args" | sed -e 's/[\"]//g'`
 AC_SUBST([BUILD_CONFIGURE_FLAGS], [$build_configure_args])
 
