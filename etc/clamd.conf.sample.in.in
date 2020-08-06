@@ -74,7 +74,7 @@ Example
 # It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.
 # Default: disabled
-#PidFile /var/run/clamd.pid
+#PidFile @RUNSTATEDIR@/clamd.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).

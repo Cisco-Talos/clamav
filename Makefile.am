@@ -52,6 +52,17 @@ nodist_include_HEADERS = clamav-types.h clamav-version.h
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
 DISTCLEANFILES = target.h
 DISTCHECK_CONFIGURE_FLAGS=--enable-milter --disable-clamav --enable-all-jit-targets --enable-llvm=yes --with-system-llvm=no --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) CC="$(CC)" CXX="$(CXX)" YACC="$(YACC)" LEX="$(LEX)" AR="$(AR)" AS="$(AS)"
+
+
+# This command allows us to replace bindir, libdir, etc.
+# within our script and conf file. The example is taken
+# from the autoconf documentation and can be found in the
+# "Installation Directory Variables" section.
+editgnudirs = sed -e 's|@BINDIR[@]|$(bindir)|g' \
+                  -e 's|@SBINDIR[@]|$(sbindir)|g' \
+                  -e 's|@RUNSTATEDIR[@]|$(runstatedir)|g'
+export editgnudirs
+
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
 quick-check:

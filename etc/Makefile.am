@@ -18,11 +18,31 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = clamd.conf.sample freshclam.conf.sample clamav-milter.conf.sample
+EXTRA_DIST = clamd.conf.sample.in.in \
+             freshclam.conf.sample.in.in \
+             clamav-milter.conf.sample.in.in
 CFGINST = @CFGDIR@
 
 sysconf_DATA = clamd.conf.sample freshclam.conf.sample
 
+# Custom variable to simplify the "edit" rule below.
+sysconf_DATA_intermediate = clamd.conf.sample.in freshclam.conf.sample.in
+
 if HAVE_MILTER
 sysconf_DATA += clamav-milter.conf.sample
+sysconf_DATA_intermediate += clamav-milter.conf.sample.in
 endif
+
+# Otherwise these don't get cleaned up by "make distclean",
+# even though they are auto-generated.
+DISTCLEANFILES = $(sysconf_DATA) $(sysconf_DATA_intermediate)
+
+# This rule includes EVERY source/intermediate file as a dependency of
+# EVERY output file, which is clearly wrong, but it may be the best we
+# can do without duplication. At least it's the right kind of wrong,
+# and rebuilds too often rather than not often enough.
+$(sysconf_DATA): $(sysconf_DATA_intermediate) $(EXTRA_DIST) Makefile
+	rm -f $@ $@.tmp
+	$(editgnudirs) $@.in > $@.tmp
+	mv $@.tmp $@
+>>>>>>> ea2f2442b... etc: convert conf files to templates and make @VARIABLE@ substitutions.

@@ -198,7 +198,10 @@ AC_CONFIG_FILES([
                  libclamav.pc
                  platform.h
                  clamav-types.h
-                 clamav-version.h])
+                 clamav-version.h
+                 etc/clamd.conf.sample.in
+                 etc/clamav-milter.conf.sample.in
+                 etc/freshclam.conf.sample.in])
 if test "x$enable_libclamav_only" != "xyes"; then
     AC_CONFIG_FILES([
                      clamscan/Makefile

@@ -64,7 +64,7 @@ Example
 # also owned by root to keep other users from tampering with it.
 #
 # Default: disabled
-#PidFile /var/run/clamav-milter.pid
+#PidFile @RUNSTATEDIR@/clamav-milter.pid
 
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
