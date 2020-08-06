@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+
+# Note: the "Foreground" option in clamd.conf must be set to "no"
+command="@SBINDIR@/clamd"
+extra_started_commands="reload"
+
+# For now, must be manually synchronized with the PidFile variable
+# in clamd.conf.
+#
+# https://bugzilla.clamav.net/show_bug.cgi?id=12595
+#
+pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
+
+reload() {
+  ebegin "Reloading ${RC_SVCNAME}"
+  "@BINDIR@/clamdscan" --reload
+  eend $?
+}

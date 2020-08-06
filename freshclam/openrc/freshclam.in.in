@@ -1,0 +1,8 @@
+#!/sbin/openrc-run
+
+command="@BINDIR@/freshclam"
+pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
+
+# Ignore the value of "PidFile" set in freshclam.conf.
+command_args="-p ${pidfile}"
+command_args_background="--daemon"

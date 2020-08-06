@@ -1,0 +1,20 @@
+#!/sbin/openrc-run
+
+# Note: the "Foreground" option in clamav-milter.conf MUST
+# be set to "no".
+command="@SBINDIR@/clamav-milter"
+
+# For now, must be manually synchronized with the PidFile
+# variable in clamav-milter.conf.
+#
+# https://bugzilla.clamav.net/show_bug.cgi?id=12595
+#
+pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
+
+depend() {
+  # The milter can successfully launch without clamd, but it's not a
+  # great user experience to have the milter start accepting requests
+  # that it can't process. The "use" dependency below will start clamd
+  # before clamav-milter, so long as clamd is also present this runlevel.
+  use clamd
+}

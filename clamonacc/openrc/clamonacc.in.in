@@ -1,0 +1,18 @@
+#!/sbin/openrc-run
+
+command="@SBINDIR@/clamonacc"
+pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
+
+# clamonacc doesn't support a PID file at the moment, so we
+# run it in the foreground and let OpenRC background it.
+#
+# https://bugzilla.clamav.net/show_bug.cgi?id=12595
+#
+command_args="--foreground"
+command_background=true
+
+depend() {
+  # Unlike the milter, the on-access scanner will simply fail to start
+  # until clamd is available.
+  need clamd
+}
