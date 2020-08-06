@@ -195,26 +195,6 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
     onas_recvlninit(&rcv, curl);
 
-    cl_error_t ret;
-    char *real_filename = NULL;
-
-    if (filename) {
-        ret = cli_realpath((const char *)filename, &real_filename);
-        if (CL_SUCCESS != ret) {
-            logg("Failed to determine real filename of %s.\n", filename);
-            if (ret_code) {
-                *ret_code = CL_EACCES;
-            }
-            infected = -1;
-            goto done;
-        }
-        filename = real_filename;
-    }
-
-    if (ret_code) {
-        *ret_code = CL_SUCCESS;
-    }
-
     switch (scantype) {
         case MULTI:
         case CONT:
@@ -427,8 +407,5 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     }
 
 done:
-    if (NULL != real_filename) {
-        free(real_filename);
-    }
     return infected;
 }

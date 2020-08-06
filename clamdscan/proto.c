@@ -262,18 +262,8 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     char *bol, *eol;
     struct RCVLN rcv;
     STATBUF sb;
-    cl_error_t ret;
-    char *real_filename = NULL;
 
     if (filename) {
-        ret = cli_realpath((const char *)filename, &real_filename);
-        if (CL_SUCCESS != ret) {
-            logg("Failed to determine real filename of %s.\n", filename);
-            infected = -1;
-            goto done;
-        }
-        filename = real_filename;
-
         if (1 == chkpath(filename)) {
             goto done;
         }
@@ -408,9 +398,6 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
     }
 
 done:
-    if (NULL != real_filename) {
-        free(real_filename);
-    }
     return infected;
 }
 
