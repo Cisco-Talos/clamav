@@ -412,59 +412,81 @@ struct client_serial_data {
 
 /* FTW callback for scanning in non IDSESSION mode
  * Returns SUCCESS or BREAK on success, CL_EXXX on error */
-static int serial_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
+    int status = CL_EOPEN;
+
     struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
-    const char *f = filename;
+    const char *f       = filename;
+    char *real_filename = NULL;
 
     UNUSEDPARAM(sb);
 
-    if (chkpath(path))
-        return CL_SUCCESS;
+    if (reason != visit_directory_toplev) {
+        if (CL_SUCCESS != cli_realpath((const char *)path, &real_filename)) {
+            logg("*Failed to determine real filename of %s.\n", path);
+        } else {
+            path = real_filename;
+        }
+    }
+
+    if (chkpath(path)) {
+        status = CL_SUCCESS;
+        goto done;
+    }
     c->files++;
     switch (reason) {
         case error_stat:
             logg("!Can't access file %s\n", path);
             c->errors++;
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case error_mem:
             logg("!Memory allocation failed in ftw\n");
             c->errors++;
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         case warning_skipped_dir:
             logg("^Directory recursion limit reached\n");
         case warning_skipped_link:
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case warning_skipped_special:
             logg("^%s: Not supported file type\n", path);
             c->errors++;
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case visit_directory_toplev:
-            if (c->scantype >= STREAM)
-                return CL_SUCCESS;
-            f        = path;
-            filename = NULL;
+            if (c->scantype >= STREAM) {
+                status = CL_SUCCESS;
+                goto done;
+            }
+            f = path;
         case visit_file:
             break;
     }
 
     if ((sockd = dconnect()) < 0) {
-        if (filename) free(filename);
         c->errors++;
-        return CL_EOPEN;
+        goto done;
     }
     ret = dsresult(sockd, c->scantype, f, &c->printok, &c->errors);
-    if (filename) free(filename);
     closesocket(sockd);
     if (ret < 0) {
         c->errors++;
-        return CL_EOPEN;
+        goto done;
     }
     c->infected += ret;
-    if (reason == visit_directory_toplev)
-        return CL_BREAK;
-    return CL_SUCCESS;
+    if (reason == visit_directory_toplev) {
+        status = CL_BREAK;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+done:
+    free(filename);
+    return status;
 }
 
 /* Non-IDSESSION handler
@@ -571,43 +593,62 @@ static int dspresult(struct client_parallel_data *c)
 
 /* FTW callback for scanning in IDSESSION mode
  * Returns SUCCESS on success, CL_EXXX or BREAK on error */
-static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
+    cl_error_t status = CL_EOPEN;
+
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
-    struct SCANID *cid;
-    int res = CL_CLEAN;
+    struct SCANID *cid             = NULL;
+    int res                        = CL_CLEAN;
+
+    char *real_filename = NULL;
 
     UNUSEDPARAM(sb);
+    UNUSEDPARAM(path);
 
-    if (chkpath(path))
-        return CL_SUCCESS;
+    if (reason != visit_directory_toplev) {
+        if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
+            logg("*Failed to determine real filename of %s.\n", filename);
+        } else {
+            free(filename);
+            filename = real_filename;
+        }
+    }
+
+    if (chkpath(filename)) {
+        goto done;
+    }
     c->files++;
     switch (reason) {
         case error_stat:
-            logg("!Can't access file %s\n", path);
+            logg("!Can't access file %s\n", filename);
             c->errors++;
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case error_mem:
             logg("!Memory allocation failed in ftw\n");
             c->errors++;
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         case warning_skipped_dir:
             logg("^Directory recursion limit reached\n");
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case warning_skipped_special:
-            logg("^%s: Not supported file type\n", path);
+            logg("^%s: Not supported file type\n", filename);
             c->errors++;
         case warning_skipped_link:
         case visit_directory_toplev:
-            return CL_SUCCESS;
+            status = CL_SUCCESS;
+            goto done;
         case visit_file:
             break;
     }
 
     while (1) {
         /* consume all the available input to let some of the clamd
-	 * threads blocked on send() to be dead.
-	 * by doing so we shouldn't deadlock on the next recv() */
+	     * threads blocked on send() to be dead.
+	     * by doing so we shouldn't deadlock on the next recv() */
         fd_set rfds, wfds;
         FD_ZERO(&rfds);
         FD_SET(c->sockd, &rfds);
@@ -615,30 +656,19 @@ static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum
         FD_SET(c->sockd, &wfds);
         if (select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
             if (errno == EINTR) continue;
-            free(filename);
             logg("!select() failed during session: %s\n", strerror(errno));
-            return CL_BREAK;
+            status = CL_BREAK;
+            goto done;
         }
         if (FD_ISSET(c->sockd, &rfds)) {
             if (dspresult(c)) {
-                free(filename);
-                return CL_BREAK;
+                status = CL_BREAK;
+                goto done;
             } else
                 continue;
         }
         if (FD_ISSET(c->sockd, &wfds)) break;
     }
-
-    cid = (struct SCANID *)malloc(sizeof(struct SCANID));
-    if (!cid) {
-        free(filename);
-        logg("!Failed to allocate scanid entry: %s\n", strerror(errno));
-        return CL_BREAK;
-    }
-    cid->id   = ++c->lastid;
-    cid->file = filename;
-    cid->next = c->ids;
-    c->ids    = cid;
 
     switch (c->scantype) {
 #ifdef HAVE_FD_PASSING
@@ -653,13 +683,32 @@ static int parallel_callback(STATBUF *sb, char *filename, const char *path, enum
     if (res <= 0) {
         c->printok = 0;
         c->errors++;
-        c->ids = cid->next;
-        c->lastid--;
-        free(cid);
-        free(filename);
-        return res ? CL_BREAK : CL_SUCCESS;
+        status = res ? CL_BREAK : CL_SUCCESS;
+        goto done;
     }
-    return CL_SUCCESS;
+
+    cid = (struct SCANID *)malloc(sizeof(struct SCANID));
+    if (!cid) {
+        logg("!Failed to allocate scanid entry: %s\n", strerror(errno));
+        status = CL_BREAK;
+        goto done;
+    }
+
+    cid->id   = ++c->lastid;
+    cid->file = filename;
+    cid->next = c->ids;
+    c->ids    = cid;
+
+    /* Give up ownership of the filename to the client parralel scan ID list */
+    filename = NULL;
+
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != filename) {
+        free(filename);
+    }
+    return status;
 }
 
 /* IDSESSION handler

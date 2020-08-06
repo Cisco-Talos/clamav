@@ -696,7 +696,9 @@ int actsetup(const struct optstruct *opts)
 {
     int move = optget(opts, "move")->enabled;
     if (move || optget(opts, "copy")->enabled) {
+#ifndef _WIN32
         cl_error_t ret;
+#endif
         actarget = optget(opts, move ? "move" : "copy")->strarg;
 #ifndef _WIN32
         ret = cli_realpath((const char *)actarget, &actarget);

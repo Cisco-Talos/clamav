@@ -256,11 +256,9 @@ int filecopy(const char *src, const char *dest)
 #endif
 }
 
-int close_std_descriptors() {
-#ifdef _WIN32
-    return -1;
-#else
-
+#ifndef _WIN32
+int close_std_descriptors()
+{
     int fds[3], i;
 
     fds[0] = open("/dev/null", O_RDONLY);
@@ -289,67 +287,51 @@ int close_std_descriptors() {
             close(fds[i]);
 
     return 0;
-#endif
 }
 
-
-int daemonize_all_return(void) {
-#ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
-    return -1;
-#else
+int daemonize_all_return(void)
+{
     pid_t pid;
 
     pid = fork();
 
-    if (0 == pid){
+    if (0 == pid) {
         setsid();
     }
     return pid;
-
-#endif
 }
 
-int daemonize(void) {
-#ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
-    return -1;
-#else
-
+int daemonize(void)
+{
     int ret = 0;
 
     ret = close_std_descriptors();
-    if (ret){
+    if (ret) {
         return ret;
     }
 
-    ret = daemonize_all_return();
-    pid_t pid = (pid_t) ret;
+    ret       = daemonize_all_return();
+    pid_t pid = (pid_t)ret;
     /*parent process.*/
-    if (pid > 0){
+    if (pid > 0) {
         exit(0);
     }
 
     return pid;
-#endif
 }
 
-
-static void daemonize_child_initialized_handler(int sig){
+static void daemonize_child_initialized_handler(int sig)
+{
     (void)(sig);
     exit(0);
 }
 
-int daemonize_parent_wait(){
-#ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
-    return -1;
-#else
-
+int daemonize_parent_wait()
+{
     int daemonizePid = daemonize_all_return();
     if (daemonizePid == -1) {
         return -1;
-    } else if (daemonizePid){ //parent
+    } else if (daemonizePid) { //parent
         /* The parent will wait until either the child process
          * exits, or signals the parent that it's initialization is
          * complete.  If it exits, it is due to an error condition,
@@ -363,33 +345,27 @@ int daemonize_parent_wait(){
         sigemptyset(&(sig.sa_mask));
         sig.sa_handler = daemonize_child_initialized_handler;
 
-        if (0 != sigaction(SIGINT, &sig, NULL)){
+        if (0 != sigaction(SIGINT, &sig, NULL)) {
             perror("sigaction");
             return -1;
         }
 
         int exitStatus;
         wait(&exitStatus);
-        if (WIFEXITED(exitStatus)){ //error
+        if (WIFEXITED(exitStatus)) { //error
             exitStatus = WEXITSTATUS(exitStatus);
             exit(exitStatus);
         }
-
     }
     return 0;
-#endif
 }
 
-void daemonize_signal_parent(pid_t parentPid){
-#ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
-    return -1;
-#else
+void daemonize_signal_parent(pid_t parentPid)
+{
     close_std_descriptors();
-    kill(parentPid, SIGINT) ;
-#endif
+    kill(parentPid, SIGINT);
 }
-
+#endif
 
 int match_regex(const char *filename, const char *pattern)
 {
