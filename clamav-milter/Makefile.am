@@ -35,6 +35,24 @@ clamav_milter_SOURCES = \
 man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
+
+openrcdir = $(sysconfdir)/init.d
+
+# The next rule allows us to replace @RUNSTATEDIR@ and friends within
+# our OpenRC service scripts. This example is taken from the autoconf
+# documentation in the "Installation Directory Variables" section.
+openrc_SCRIPTS_src = openrc/clamav-milter.in.in
+openrc_SCRIPTS_intermediate = openrc/clamav-milter.in
+nodist_openrc_SCRIPTS = openrc/clamav-milter
+DISTCLEANFILES = $(nodist_openrc_SCRIPTS) $(openrc_SCRIPTS_intermediate)
+$(nodist_openrc_SCRIPTS): $(openrc_SCRIPTS_src) $(openrc_SCRIPTS_intermediate) Makefile
+	rm -f $@ $@.tmp
+	$(editgnudirs) $@.in > $@.tmp
+	mv $@.tmp $@
+
+EXTRA_DIST = $(openrc_SCRIPTS_src)
+
+
 endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@

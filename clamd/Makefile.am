@@ -44,6 +44,22 @@ if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-daemon.socket clamav-daemon.service
 endif
 
+openrcdir = $(sysconfdir)/init.d
+
+# The next rule allows us to replace @RUNSTATEDIR@ and friends within
+# our OpenRC service scripts. This example is taken from the autoconf
+# documentation in the "Installation Directory Variables" section.
+openrc_SCRIPTS_src = openrc/clamd.in.in
+openrc_SCRIPTS_intermediate = openrc/clamd.in
+nodist_openrc_SCRIPTS = openrc/clamd
+DISTCLEANFILES = $(nodist_openrc_SCRIPTS) $(openrc_SCRIPTS_intermediate)
+$(nodist_openrc_SCRIPTS): $(openrc_SCRIPTS_src) $(openrc_SCRIPTS_intermediate) Makefile
+	rm -f $@ $@.tmp
+	$(editgnudirs) $@.in > $@.tmp
+	mv $@.tmp $@
+
+EXTRA_DIST = $(openrc_SCRIPTS_src)
+
 LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMD_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 

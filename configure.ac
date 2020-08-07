@@ -211,10 +211,14 @@ if test "x$enable_libclamav_only" != "xyes"; then
                      clamd/Makefile
                      clamd/clamav-daemon.service
                      clamd/clamav-daemon.socket
+                     clamd/openrc/clamd.in
                      clamdscan/Makefile
                      clamsubmit/Makefile
+                     clamonacc/openrc/clamonacc.in
                      clamav-milter/Makefile
+                     clamav-milter/openrc/clamav-milter.in
                      freshclam/clamav-freshclam.service
+                     freshclam/openrc/freshclam.in
                      freshclam/Makefile
                      sigtool/Makefile
                      clamconf/Makefile

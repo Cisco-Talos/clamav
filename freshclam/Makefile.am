@@ -32,6 +32,23 @@ if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-freshclam.service
 endif
 
+openrcdir = $(sysconfdir)/init.d
+
+# The next rule allows us to replace @RUNSTATEDIR@ and friends within
+# our OpenRC service scripts. This example is taken from the autoconf
+# documentation in the "Installation Directory Variables" section.
+openrc_SCRIPTS_src = openrc/freshclam.in.in
+openrc_SCRIPTS_intermediate = openrc/freshclam.in
+nodist_openrc_SCRIPTS = openrc/freshclam
+DISTCLEANFILES = $(nodist_openrc_SCRIPTS) $(openrc_SCRIPTS_intermediate)
+$(nodist_openrc_SCRIPTS): $(openrc_SCRIPTS_src) $(openrc_SCRIPTS_intermediate) Makefile
+	rm -f $@ $@.tmp
+	$(editgnudirs) $@.in > $@.tmp
+	mv $@.tmp $@
+
+EXTRA_DIST = $(openrc_SCRIPTS_src)
+
+
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
