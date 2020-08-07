@@ -1632,10 +1632,10 @@ done:
     return ret;
 }
 
-static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
+static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U, int *hasmacros)
 {
     cl_error_t ret = CL_CLEAN;
-    int i, j, fd, hasmacros = 0;
+    int i, j, fd;
     size_t data_len;
     vba_project_t *vba_project;
     DIR *dd;
@@ -1669,7 +1669,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                 cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
                 data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
                 close(fd);
-                hasmacros++;
+                *hasmacros = *hasmacros + 1;
                 if (!data) {
                 } else {
                     /* cli_dbgmsg("Project content:\n%s", data); */
@@ -1695,9 +1695,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     }
 
                     if (vba_scandata(data, data_len, ctx) == CL_VIRUS) {
-                        if (SCAN_ALLMATCHES)
-                            viruses_found++;
-                        else {
+                        viruses_found++;
+                        if (!SCAN_ALLMATCHES) {
                             free(data);
                             ret = CL_VIRUS;
                             break;
@@ -1706,6 +1705,9 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     free(data);
                 }
             }
+
+            if (ret == CL_VIRUS && !SCAN_ALLMATCHES)
+                break;
         }
 
         cli_free_vba_project(vba_project);
@@ -1774,9 +1776,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     if (ctx->scanned)
                         *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
                     if (vba_scandata(data, vba_project->length[i], ctx) == CL_VIRUS) {
-                        if (SCAN_ALLMATCHES)
-                            viruses_found++;
-                        else {
+                        viruses_found++;
+                        if (!SCAN_ALLMATCHES) {
                             free(data);
                             ret = CL_VIRUS;
                             break;
@@ -1791,9 +1792,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             vba_project = NULL;
 
             if (ret == CL_VIRUS) {
-                if (SCAN_ALLMATCHES)
-                    viruses_found++;
-                else
+                viruses_found++;
+                if (!SCAN_ALLMATCHES)
                     break;
             }
             hashcnt--;
@@ -1883,10 +1883,9 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     /* stat the file */
                     if (LSTAT(fullname, &statbuf) != -1) {
                         if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-                            if (cli_vba_scandir(fullname, ctx, U) == CL_VIRUS) {
-                                if (SCAN_ALLMATCHES)
-                                    viruses_found++;
-                                else {
+                            if (cli_vba_scandir(fullname, ctx, U, hasmacros) == CL_VIRUS) {
+                                viruses_found++;
+                                if (!SCAN_ALLMATCHES) {
                                     ret = CL_VIRUS;
                                     free(fullname);
                                     break;
@@ -1904,7 +1903,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
     closedir(dd);
 #if HAVE_JSON
-    if (hasmacros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+    if (*hasmacros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
         cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
         json_object *macro_languages = cli_jsonarray(ctx->wrkproperty, "MacroLanguages");
         if (macro_languages) {
@@ -1914,7 +1913,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
         }
     }
 #endif
-    if (SCAN_HEURISTIC_MACROS && hasmacros) {
+    if (SCAN_HEURISTIC_MACROS && *hasmacros) {
         ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
         if (ret == CL_VIRUS)
             viruses_found++;
@@ -2309,67 +2308,111 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
 
 static cl_error_t cli_scanole2(cli_ctx *ctx)
 {
-    char *dir;
+    char *dir          = NULL;
     cl_error_t ret     = CL_CLEAN;
     struct uniq *files = NULL;
-    int has_vba = 0, has_xlm = 0;
+    int has_vba = 0, has_xlm = 0, has_macros = 0, viruses_found = 0;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
-    if (ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel)
-        return CL_EMAXREC;
+    if (ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel) {
+        ret = CL_EMAXREC;
+        goto done;
+    }
 
     /* generate the temporary directory */
-    if (!(dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "ole2-tmp")))
-        return CL_EMEM;
+    if (NULL == (dir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "ole2-tmp"))) {
+        ret = CL_EMEM;
+        goto done;
+    }
 
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("OLE2: Can't create temporary directory %s\n", dir);
         free(dir);
-        return CL_ETMPDIR;
+        ret = CL_ETMPDIR;
+        goto done;
     }
 
     ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm);
     if (ret != CL_CLEAN && ret != CL_VIRUS) {
         cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
-        if (!ctx->engine->keeptmp)
-            cli_rmdirs(dir);
-        free(dir);
-        return ret;
+        goto done;
+    }
+    if (CL_VIRUS == ret) {
+        viruses_found++;
+        if (!SCAN_ALLMATCHES) {
+            ctx->recursion--;
+            goto done;
+        }
     }
 
     if (has_vba && files) {
         ctx->recursion++;
 
-        ret = cli_vba_scandir(dir, ctx, files);
-        if (ret != CL_VIRUS) {
-            ret = cli_vba_scandir_new(dir, ctx, files);
+        ret = cli_vba_scandir(dir, ctx, files, &has_macros);
+        if (CL_VIRUS == ret) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
         }
 
-        if (ret != CL_VIRUS)
-            if (cli_magic_scan_dir(dir, ctx) == CL_VIRUS)
-                ret = CL_VIRUS;
+        ret = cli_vba_scandir_new(dir, ctx, files);
+        if (CL_VIRUS == ret) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        }
+
+        if (cli_magic_scan_dir(dir, ctx) == CL_VIRUS)
+            ret = CL_VIRUS;
+
         ctx->recursion--;
+    }
+
+    if (CL_VIRUS == ret) {
+        viruses_found++;
+        if (!SCAN_ALLMATCHES) {
+            goto done;
+        }
     }
 
     if (has_xlm && files) {
         ctx->recursion++;
 
         ret = cli_xlm_scandir(dir, ctx, files);
-        if (ret != CL_VIRUS)
-            if (cli_magic_scan_dir(dir, ctx) == CL_VIRUS)
-                ret = CL_VIRUS;
+        if (CL_VIRUS == ret) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        }
+
+        if (cli_magic_scan_dir(dir, ctx) == CL_VIRUS)
+            ret = CL_VIRUS;
+
         ctx->recursion--;
     }
 
-    if (files) {
-        uniq_free(files);
-        files = NULL;
+    if (viruses_found > 0) {
+        ret = CL_VIRUS;
     }
 
-    if (!ctx->engine->keeptmp)
-        cli_rmdirs(dir);
-    free(dir);
+done:
+    if (files) {
+        uniq_free(files);
+    }
+
+    if (NULL != dir) {
+        if (!ctx->engine->keeptmp)
+            cli_rmdirs(dir);
+        free(dir);
+    }
+
     return ret;
 }
 
@@ -3873,6 +3916,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 }
             }
 #endif
+            /* fall-through */
         case CL_TYPE_ZIP:
             if (SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
                 ret = cli_unzip(ctx);
@@ -4259,6 +4303,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_EMAXSIZE:
         case CL_EMAXFILES:
             cli_check_blockmax(ctx, ret);
+            /* fall-through */
         /* Malformed file cases */
         case CL_EFORMAT:
         case CL_EREAD:

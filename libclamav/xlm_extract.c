@@ -3790,6 +3790,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                             goto done;
                         }
                     }
+                    data_pos += 3 + str_len;
                 } else if (data[data_pos + 2] == 0 && data_pos + 2 + data[data_pos + 1] <= data_size) {
                     unsigned str_len = data[data_pos + 1];
                     if (str_len > data_size - data_pos) {
