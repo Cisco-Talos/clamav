@@ -4116,7 +4116,7 @@ cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U,
         goto done;
     }
 
-    if ((ret = cli_gentempfd(dir, &tempfile, &out_fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "xlm_macros", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[cli_xlm_extract_macros] Failed to open output file descriptor\n");
         goto done;
     }

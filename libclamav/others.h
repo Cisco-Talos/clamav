@@ -793,11 +793,16 @@ const char *cli_gettmpdir(void);
 /**
  * @brief Sanitize a relative path, so it cannot have a negative depth.
  *
- * Caller is responsible for freeing the filename.
+ * Caller is responsible for freeing the sanitized filepath.
+ * The optioal sanitized_filebase output param is a pointer into the filepath,
+ * if set, and does not need to be freed.
  *
- * @return char* filename or NULL.
+ * @param filepath                  The filepath to sanitize
+ * @param filepath_len              The length of the filepath
+ * @param[out] sanitized_filebase   Pointer to the basename portion of the sanitized filepath. (optional)
+ * @return char*
  */
-char *cli_sanitize_filepath(const char *filepath, size_t filepath_len);
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sanitized_filebase);
 
 /**
  * @brief Generate tempfile filename (no path) with a random MD5 hash.

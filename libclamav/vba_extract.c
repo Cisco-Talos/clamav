@@ -357,8 +357,7 @@ static size_t vba_normalize(unsigned char *buffer, size_t size)
  * Read a VBA project in an OLE directory.
  * Contrary to cli_vba_readdir, this function uses the dir file to locate VBA modules.
  */
-cl_error_t
-cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd)
+cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *hash, uint32_t which, int *tempfd, int *has_macros)
 {
     cl_error_t ret = CL_SUCCESS;
     char fullname[1024];
@@ -375,7 +374,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
     unsigned char *module_data = NULL, *module_data_utf8 = NULL;
     size_t module_data_size = 0, module_data_utf8_size = 0;
 
-    if (dir == NULL || hash == NULL || tempfd == NULL) {
+    if (dir == NULL || hash == NULL || tempfd == NULL || has_macros == NULL) {
         return CL_EARG;
     }
 
@@ -396,7 +395,9 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
         goto done;
     }
 
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, tempfd)) != CL_SUCCESS) {
+    *has_macros = *has_macros + 1;
+
+    if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "vba_project", &tempfile, tempfd)) != CL_SUCCESS) {
         cli_warnmsg("vba_readdir_new: VBA project cannot be dumped to file\n");
         goto done;
     }
@@ -418,7 +419,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
         for (i = 0; i < size; ++i) {                                                       \
             char buf[4];                                                                   \
             if (snprintf(buf, sizeof(buf), "%02x", (msg)[i]) != 2) {                       \
-                cli_warnmsg("vba_readdir_new: Failed to write nex data to output file\n"); \
+                cli_warnmsg("vba_readdir_new: Failed to write hex data to output file\n"); \
                 ret = CL_EWRITE;                                                           \
                 goto done;                                                                 \
             }                                                                              \
@@ -436,7 +437,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                 free(utf8);                                                                                          \
                 utf8 = NULL;                                                                                         \
             } else {                                                                                                 \
-                cli_errmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);      \
+                cli_dbgmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);      \
                 CLI_WRITEN("<error decoding string>", 23);                                                           \
             }                                                                                                        \
         }                                                                                                            \
@@ -452,7 +453,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                 free(utf8);                                                                                                   \
                 utf8 = NULL;                                                                                                  \
             } else {                                                                                                          \
-                cli_errmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");                                      \
+                cli_dbgmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");                                      \
                 CLI_WRITEN("<error decoding string>", 23);                                                                    \
             }                                                                                                                 \
         }                                                                                                                     \
@@ -779,7 +780,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], size, codepage, &mbcs_name, &mbcs_name_size)) {
                         CLI_WRITEN(mbcs_name, mbcs_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }
@@ -813,7 +814,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], size, CODEPAGE_UTF16_LE, &utf16_name, &utf16_name_size)) {
                         CLI_WRITEN(utf16_name, utf16_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }
@@ -862,7 +863,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], size, codepage, &mbcs_name, &mbcs_name_size)) {
                         CLI_WRITEN(mbcs_name, mbcs_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }
@@ -896,7 +897,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], module_stream_name_size, CODEPAGE_UTF16_LE, &utf16_name, &utf16_name_size)) {
                         CLI_WRITEN(utf16_name, utf16_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }
@@ -945,7 +946,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], size, codepage, &mbcs_name, &mbcs_name_size)) {
                         CLI_WRITEN(mbcs_name, mbcs_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert codepage %" PRIu16 " to UTF-8\n", codepage);
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }
@@ -978,7 +979,7 @@ cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, const char *h
                     if (CL_SUCCESS == cli_codepage_to_utf8((char *)&data[data_offset], size, CODEPAGE_UTF16_LE, &utf16_name, &utf16_name_size)) {
                         CLI_WRITEN(utf16_name, utf16_name_size);
                     } else {
-                        cli_errmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
+                        cli_dbgmsg("cli_vba_readdir_new: failed to convert UTF16LE to UTF-8\n");
                         CLI_WRITEN("<error decoding string>", 23);
                     }
                 }

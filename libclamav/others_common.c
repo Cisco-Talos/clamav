@@ -55,6 +55,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "str.h"
 #include "platform.h"
 #include "regex/regex.h"
 #include "ltdl.h"
@@ -849,7 +850,7 @@ unsigned int cli_rndnum(unsigned int max)
     return 1 + (unsigned int)(max * (rand() / (1.0 + RAND_MAX)));
 }
 
-char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sanitized_filebase)
 {
     uint32_t depth           = 0;
     size_t index             = 0;
@@ -900,9 +901,9 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
             }
 #ifdef _WIN32
             /*
-         * Windows' POSIX style API's accept both "/" and "\\" style path separators.
-         * The following checks using POSIX style path separators on Windows.
-         */
+             * Windows' POSIX style API's accept both "/" and "\\" style path separators.
+             * The following checks using POSIX style path separators on Windows.
+             */
         } else if (0 == strncmp(filepath + index, "/", strlen("/"))) {
             /*
              * Is "/".
@@ -931,17 +932,39 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
                 sanitized_index += strlen("../");
                 index += strlen("../");
                 depth--;
+
+                /* Convert path separator to Windows separator */
+                sanitized_filepath[sanitized_index - 1] = '\\';
             }
 #endif
         } else {
             /*
              * Is not "/", "./", or "../".
              */
+
             /* Find the next path separator. */
-            next_pathsep = CLI_STRNSTR(filepath + index, PATHSEP, filepath_len - index);
+#ifdef _WIN32
+            char *next_windows_pathsep = NULL;
+#endif
+            next_pathsep = CLI_STRNSTR(filepath + index, "/", filepath_len - index);
+
+#ifdef _WIN32
+            /* Check for both types of separators. */
+            next_windows_pathsep = CLI_STRNSTR(filepath + index, "\\", filepath_len - index);
+            if (NULL != next_windows_pathsep) {
+                if ((NULL == next_pathsep) || (next_windows_pathsep < next_pathsep)) {
+                    next_pathsep = next_windows_pathsep;
+                }
+            }
+#endif
             if (NULL == next_pathsep) {
                 /* No more path separators, copy the rest (filename) into the sanitized path */
                 strncpy(sanitized_filepath + sanitized_index, filepath + index, filepath_len - index);
+
+                if (NULL != sanitized_filebase) {
+                    /* Set output variable to point to the file base name */
+                    *sanitized_filebase = sanitized_filepath + sanitized_index;
+                }
                 break;
             }
             next_pathsep += strlen(PATHSEP); /* Include the path separator in the copy */
@@ -951,6 +974,11 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
             sanitized_index += next_pathsep - (filepath + index);
             index += next_pathsep - (filepath + index);
             depth++;
+
+#ifdef _WIN32
+            /* Convert path separator to Windows separator */
+            sanitized_filepath[sanitized_index - 1] = '\\';
+#endif
         }
     }
 
@@ -966,16 +994,19 @@ done:
 #define SHORT_HASH_LENGTH 10
 char *cli_genfname(const char *prefix)
 {
-    char *sanitized_prefix = NULL;
-    char *fname            = NULL;
+    char *sanitized_prefix      = NULL;
+    char *sanitized_prefix_base = NULL;
+    char *fname                 = NULL;
     unsigned char salt[16 + 32];
     char *tmp;
     int i;
     size_t len;
 
     if (prefix && (strlen(prefix) > 0)) {
-        sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix));
-        len              = strlen(sanitized_prefix) + strlen(".") + SHORT_HASH_LENGTH + 1; /* {prefix}.{SHORT_HASH_LENGTH}\0 */
+        sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix), &sanitized_prefix_base);
+    }
+    if (NULL != sanitized_prefix_base) {
+        len = strlen(sanitized_prefix_base) + strlen(".") + SHORT_HASH_LENGTH + 1; /* {prefix}.{SHORT_HASH_LENGTH}\0 */
     } else {
         len = strlen("clamav-") + 48 + strlen(".tmp") + 1; /* clamav-{48}.tmp\0 */
     }
@@ -1001,21 +1032,21 @@ char *cli_genfname(const char *prefix)
     pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
 
-    if (!tmp) {
+    if (NULL == tmp) {
         free(fname);
         cli_dbgmsg("cli_genfname: out of memory\n");
         return NULL;
     }
 
-    if (sanitized_prefix) {
-        if (strlen(sanitized_prefix) > 0) {
-            snprintf(fname, len, "%s.%.*s", sanitized_prefix, SHORT_HASH_LENGTH, tmp);
-        }
-        free(sanitized_prefix);
+    if (NULL != sanitized_prefix_base) {
+        snprintf(fname, len, "%s.%.*s", sanitized_prefix_base, SHORT_HASH_LENGTH, tmp);
     } else {
         snprintf(fname, len, "clamav-%s.tmp", tmp);
     }
 
+    if (NULL != sanitized_prefix) {
+        free(sanitized_prefix);
+    }
     free(tmp);
 
     return (fname);
