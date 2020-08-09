@@ -1668,7 +1668,8 @@ ole_copy_file_data(int s, int d, uint32_t len)
 
 int cli_scan_ole10(int fd, cli_ctx *ctx)
 {
-    int ofd, ret;
+    int ofd;
+    cl_error_t ret;
     uint32_t object_size;
     STATBUF statbuf;
     char *fullname;

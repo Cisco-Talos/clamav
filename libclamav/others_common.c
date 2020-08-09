@@ -861,6 +861,10 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sa
         goto done;
     }
 
+    if (NULL != sanitized_filebase) {
+        *sanitized_filebase = NULL;
+    }
+
     sanitized_filepath = cli_calloc(filepath_len + 1, sizeof(unsigned char));
     if (NULL == sanitized_filepath) {
         cli_dbgmsg("cli_sanitize_filepath: out of memory\n");
@@ -986,6 +990,9 @@ done:
     if ((NULL != sanitized_filepath) && (0 == strlen(sanitized_filepath))) {
         free(sanitized_filepath);
         sanitized_filepath = NULL;
+        if (NULL != sanitized_filebase) {
+            *sanitized_filebase = NULL;
+        }
     }
 
     return sanitized_filepath;

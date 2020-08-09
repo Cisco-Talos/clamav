@@ -1968,7 +1968,7 @@ done:
             viruses_found++;
     }
 
-    if (SCAN_ALLMATCHES && viruses_found) {
+    if (viruses_found > 0) {
         status = CL_VIRUS;
     }
     return status;
