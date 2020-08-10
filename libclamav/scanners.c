@@ -1614,7 +1614,7 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
             }
 #endif
             if (SCAN_HEURISTIC_MACROS && *has_macros) {
-                ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
+                ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
                 if (ret == CL_VIRUS) {
                     viruses_found++;
                     if (!SCAN_ALLMATCHES) {
@@ -1769,13 +1769,19 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                 continue;
             }
             if ((fullname = cli_ppt_vba_read(fd, ctx))) {
-                if (cli_magic_scan_dir(fullname, ctx) == CL_VIRUS) {
-                    status = CL_VIRUS;
-                    viruses_found++;
-                }
+                ret = cli_magic_scan_dir(fullname, ctx);
+
                 if (!ctx->engine->keeptmp)
                     cli_rmdirs(fullname);
                 free(fullname);
+
+                if (ret == CL_VIRUS) {
+                    status = CL_VIRUS;
+                    viruses_found++;
+                    if (!SCAN_ALLMATCHES) {
+                        break;
+                    }
+                }
             }
             close(fd);
             hashcnt--;
@@ -1919,7 +1925,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     fullname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
                     if (!fullname) {
                         cli_dbgmsg("cli_vba_scandir: Unable to allocate memory for fullname\n");
-                        ret = CL_EMEM;
+                        status = CL_EMEM;
                         break;
                     }
                     sprintf(fullname, "%s" PATHSEP "%s", dirname, dent->d_name);
@@ -1930,7 +1936,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                             if (cli_vba_scandir(fullname, ctx, U, has_macros) == CL_VIRUS) {
                                 viruses_found++;
                                 if (!SCAN_ALLMATCHES) {
-                                    ret = CL_VIRUS;
+                                    status = CL_VIRUS;
                                     free(fullname);
                                     break;
                                 }
@@ -1963,7 +1969,7 @@ done:
     }
 #endif
     if (SCAN_HEURISTIC_MACROS && *has_macros) {
-        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
+        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
         if (ret == CL_VIRUS)
             viruses_found++;
     }
@@ -2005,7 +2011,7 @@ static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq
     }
 
     if (SCAN_HEURISTIC_MACROS) {
-        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros");
+        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
         if (ret == CL_VIRUS)
             viruses_found++;
     }
@@ -2443,12 +2449,17 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     }
 
     if ((has_xlm || has_vba) && files) {
+        ctx->recursion++;
+
         if (CL_VIRUS == cli_magic_scan_dir(dir, ctx)) {
             viruses_found++;
             if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
                 goto done;
             }
         }
+
+        ctx->recursion--;
     }
 
 done:
