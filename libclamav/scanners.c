@@ -3106,10 +3106,19 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         return CL_EMAXREC;
     }
 
-    perf_start(ctx, PERFT_RAW);
-    if (typercg && type != CL_TYPE_GPT)
+    if ((typercg) &&
+        (type != CL_TYPE_GPT) &&
+        (type != CL_TYPE_CPIO_OLD) &&
+        (type != CL_TYPE_ZIP) &&
+        (type != CL_TYPE_OLD_TAR) &&
+        (type != CL_TYPE_POSIX_TAR)) {
+        /*
+         * Enable file type recognition scan mode if requested, except for some raw archive (non-compressed) types, etc.
+         */
         acmode |= AC_SCAN_FT;
+    }
 
+    perf_start(ctx, PERFT_RAW);
     ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, 0, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
@@ -3348,7 +3357,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                     case CL_TYPE_ISHIELD_MSI:
                         if (SCAN_PARSE_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
                             size_t csize = map->len - fpt->offset; /* not precise */
-                            cli_set_container(ctx, CL_TYPE_AUTOIT, csize);
+                            cli_set_container(ctx, CL_TYPE_ISHIELD_MSI, csize);
                             cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int)fpt->offset);
                             nret = cli_scanishield_msi(ctx, fpt->offset + 14);
                         }
@@ -3521,7 +3530,7 @@ static void emax_reached(cli_ctx *ctx)
 #define LINESTR2(x) LINESTR(x)
 #define __AT__ " at line " LINESTR2(__LINE__)
 
-static cl_error_t dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, unsigned char *hash, size_t hashed_size, int *run_cleanup)
+static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype, bitset_t *old_hook_lsig_matches, void *parent_property, unsigned char *hash, size_t hashed_size, int *run_cleanup)
 {
     cl_error_t res = CL_CLEAN;
 
@@ -3535,14 +3544,14 @@ static cl_error_t dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *f
         perf_start(ctx, PERFT_PRECB);
         switch (cb(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {
             case CL_BREAK:
-                cli_dbgmsg("cli_magic_scan_desc: file whitelisted by callback\n");
+                cli_dbgmsg("dispatch_prescan_callback: file whitelisted by callback\n");
                 perf_stop(ctx, PERFT_PRECB);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
                 /* returns CL_CLEAN */
                 *run_cleanup = 1;
                 break;
             case CL_VIRUS:
-                cli_dbgmsg("cli_magic_scan_desc: file blacklisted by callback\n");
+                cli_dbgmsg("dispatch_prescan_callback: file blacklisted by callback\n");
                 cli_append_virus(ctx, "Detected.By.Callback");
                 perf_stop(ctx, PERFT_PRECB);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
@@ -3552,7 +3561,7 @@ static cl_error_t dispatch_prescan(clcb_pre_scan cb, cli_ctx *ctx, const char *f
             case CL_CLEAN:
                 break;
             default:
-                cli_warnmsg("cli_magic_scan_desc: ignoring bad return code from callback\n");
+                cli_warnmsg("dispatch_prescan_callback: ignoring bad return code from callback\n");
         }
 
         perf_stop(ctx, PERFT_PRECB);
@@ -3749,7 +3758,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 #endif
 
-    ret = dispatch_prescan(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    ret = dispatch_prescan_callback(ctx->engine->cb_pre_cache, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
     if (run_cleanup) {
         if (ret == CL_VIRUS) {
             ret = cli_checkfp(ctx);
@@ -3799,7 +3808,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         } else
             cli_dbgmsg("cli_magic_scan: Raw mode: No support for special files\n");
 
-        ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+        ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
         if (run_cleanup) {
             if (ret == CL_VIRUS) {
                 ret = cli_checkfp(ctx);
@@ -3820,7 +3829,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         goto done;
     }
 
-    ret = dispatch_prescan(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
+    ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype, old_hook_lsig_matches, parent_property, hash, hashed_size, &run_cleanup);
     if (run_cleanup) {
         if (ret == CL_VIRUS) {
             ret = cli_checkfp(ctx);
