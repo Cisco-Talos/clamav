@@ -25,15 +25,25 @@
 #include <fcntl.h>
 #include <io.h>
 
-#include "clamav.h"
-#include "others.h"
-#include "shared/misc.h"
+#include <Windows.h>
+#include <WinNls.h>
+
+#include "clamav-types.h"
+
+#include "dirent.h"
+#include "w32_stat.h"
+
+static int is_abspath(const char *path)
+{
+    int len = strlen(path);
+    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len >= 2 && ((*path >= 'a' && *path <= 'z') || (*path >= 'A' && *path <= 'Z')) && path[1] == ':');
+}
 
 wchar_t *uncpath(const char *path)
 {
     DWORD len = 0;
     char utf8[PATH_MAX + 1];
-    wchar_t *stripme, *strip_from, *dest = cli_malloc((PATH_MAX + 1) * sizeof(wchar_t));
+    wchar_t *stripme, *strip_from, *dest = malloc((PATH_MAX + 1) * sizeof(wchar_t));
 
     if (!dest)
         return NULL;
@@ -42,7 +52,7 @@ wchar_t *uncpath(const char *path)
         /* NOT already UNC */
         memcpy(dest, L"\\\\?\\", 8);
 
-        if (!cli_is_abspath(path)) {
+        if (!is_abspath(path)) {
             /* Relative path */
             len = GetCurrentDirectoryW(PATH_MAX - 5, &dest[4]);
             if (!len || len > PATH_MAX - 5) {

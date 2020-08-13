@@ -11,13 +11,18 @@
 #endif
 
 #include <curl/curl.h>
+#include <json-c/json.h>
 
 #include "target.h"
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "shared/misc.h"
-#include "shared/getopt.h"
-#include "shared/cert_util.h"
+
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "misc.h"
+#include "getopt.h"
+#include "cert_util.h"
 
 #define OPTS "e:p:n:N:V:H:h?v?d"
 

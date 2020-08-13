@@ -12,8 +12,8 @@
 
 /* LZX decompression implementation */
 
-#include <system.h>
-#include <lzx.h>
+#include "system.h"
+#include "lzx.h"
 
 /* Microsoft's LZX document (in cab-sdk.exe) and their implementation
  * of the com.ms.util.cab Java package do not concur.
@@ -89,7 +89,7 @@
     READ_IF_NEEDED; b1 = *i_ptr++;      \
     INJECT_BITS((b1 << 8) | b0, 16);    \
 } while (0)
-#include <readbits.h>
+#include "readbits.h"
 
 /* import huffman-reading macros and code */
 #define TABLEBITS(tbl)      LZX_##tbl##_TABLEBITS
@@ -97,7 +97,7 @@
 #define HUFF_TABLE(tbl,idx) lzx->tbl##_table[idx]
 #define HUFF_LEN(tbl,idx)   lzx->tbl##_len[idx]
 #define HUFF_ERROR          return lzx->error = MSPACK_ERR_DECRUNCH
-#include <readhuff.h>
+#include "readhuff.h"
 
 /* BUILD_TABLE(tbl) builds a huffman lookup table from code lengths */
 #define BUILD_TABLE(tbl)                                                \
@@ -148,7 +148,7 @@ static int lzxd_read_lens(struct lzxd_stream *lzx, unsigned char *lens,
   int z;
 
   RESTORE_BITS;
-  
+
   /* read lengths for pretree (20 symbols, lengths stored in fixed 4 bits) */
   for (x = 0; x < 20; x++) {
     READ_BITS(y, 4);
@@ -463,7 +463,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
       j = 0; READ_BITS(i, 1); if (i) { READ_BITS(i, 16); READ_BITS(j, 16); }
       lzx->intel_filesize = (i << 16) | j;
       lzx->header_read = 1;
-    } 
+    }
 
     /* calculate size of frame: all frames are 32k except the final frame
      * which is 32kb or less. this can only be calculated when lzx->length
@@ -612,7 +612,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
               D(("match ran over window wrap"))
               return lzx->error = MSPACK_ERR_DECRUNCH;
             }
-            
+
             /* copy match */
             rundest = &window[window_posn];
             i = match_length;
@@ -667,7 +667,7 @@ int lzxd_decompress(struct lzxd_stream *lzx, off_t out_bytes) {
               if (lzx->LENGTH_empty) {
                 D(("LENGTH symbol needed but tree is empty"))
                 return lzx->error = MSPACK_ERR_DECRUNCH;
-              } 
+              }
               READ_HUFFSYM(LENGTH, length_footer);
               match_length += length_footer;
             }

@@ -73,6 +73,7 @@
 
 #include "egg.h"
 #include "entconv.h"
+#include "str.h"
 
 #ifndef WCHAR
 typedef uint16_t WCHAR;

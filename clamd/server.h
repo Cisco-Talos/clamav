@@ -26,10 +26,15 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+
 #include "thrmgr.h"
 #include "session.h"
+
 struct thrarg {
     int sid;
     struct cl_scan_options *options;

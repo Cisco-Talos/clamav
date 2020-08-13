@@ -89,14 +89,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_USRDLL;CL_DEBUG;THIS_IS_LIBCLAMAV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)compat;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4005;4996;4090;4244;4018;4101;4333;4146;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mspack.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -107,14 +107,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_USRDLL;CL_DEBUG;THIS_IS_LIBCLAMAV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)compat;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4005;4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>mspack.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -127,7 +127,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;THIS_IS_LIBCLAMAV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)compat;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4005;4996;4090;4244;4018;4101;4333;4146;</DisableSpecificWarnings>
     </ClCompile>
@@ -136,7 +136,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mspack.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
     </Link>
@@ -149,7 +149,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;THIS_IS_LIBCLAMAV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\libxml2;$(SolutionDir)3rdparty\libxml2\include;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)compat;$(SolutionDir)..;..\libclammspack\mspack;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4005;4996;4090;4244;4018;4101;4333;4146;4267;4334</DisableSpecificWarnings>
     </ClCompile>
@@ -158,7 +158,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mspack.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libmspack.lib;win32_compat.lib;ws2_32.lib;json-c.lib;libbz2.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;libxml2.lib;nghttp2.lib;pcre2-8.lib;pthreadVC2.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libclamav.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
@@ -183,7 +183,7 @@
     <ClCompile Include="..\libclamav\egg.c" />
     <ClCompile Include="..\libclamav\execs.c" />
     <ClCompile Include="..\libclamav\fpu.c" />
-    <ClCompile Include="..\libclamav\hostid.c" />
+    <ClCompile Include="..\libclamav\hostid_internal.c" />
     <ClCompile Include="..\libclamav\hwp.c" />
     <ClCompile Include="..\libclamav\matcher-byte-comp.c" />
     <ClCompile Include="..\libclamav\msdoc.c" />
@@ -383,7 +383,7 @@
     <ClCompile Include="..\libclamav\phishcheck.c" />
     <ClCompile Include="..\libclamav\phish_domaincheck_db.c" />
     <ClCompile Include="..\libclamav\phish_whitelist.c" />
-    <ClCompile Include="..\libclamav\prtn_intxn.c" />
+    <ClCompile Include="..\libclamav\partition_intersection.c" />
     <ClCompile Include="..\libclamav\regex\regcomp.c" />
     <ClCompile Include="..\libclamav\regex\regerror.c" />
     <ClCompile Include="..\libclamav\regex\regexec.c" />
@@ -419,26 +419,12 @@
     <ClCompile Include="..\libclamav\yara_arena.c" />
     <ClCompile Include="..\libclamav\yara_compiler.c" />
     <ClCompile Include="..\libclamav\yara_exec.c" />
-    <ClCompile Include="..\libclamav\yara_grammar.c" />
+    <ClCompile Include="compat\yara_grammar.c" />
     <ClCompile Include="..\libclamav\yara_hash.c" />
-    <ClCompile Include="..\libclamav\yara_lexer.c" />
+    <ClCompile Include="compat\yara_lexer.c" />
     <ClCompile Include="..\libclamav\yara_parser.c" />
     <ClCompile Include="..\libclamav\yc.c" />
-    <ClCompile Include="..\shared\getopt.c" />
-    <ClCompile Include="..\shared\misc.c" />
-    <ClCompile Include="compat\dirent.c" />
-    <ClCompile Include="compat\gettimeofday.c" />
-    <ClCompile Include="compat\glob.c" />
-    <ClCompile Include="compat\libclamav_main.c" />
-    <ClCompile Include="compat\libgen.c" />
-    <ClCompile Include="compat\ltdl.c" />
-    <ClCompile Include="compat\net.c" />
-    <ClCompile Include="compat\random.c" />
-    <ClCompile Include="compat\snprintf.c" />
-    <ClCompile Include="compat\strptime.c" />
-    <ClCompile Include="compat\utf8_util.c" />
-    <ClCompile Include="compat\w32_errno.c" />
-    <ClCompile Include="compat\w32_stat.c" />
+    <ClCompile Include="..\libclamav\libclamav_main.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libclamavcxx.vcxproj">
@@ -458,7 +444,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\libclamav\hostid.h" />
+    <ClInclude Include="..\libclamav\hostid_internal.h" />
     <ClInclude Include="..\libclamav\stats.h" />
     <ClInclude Include="..\libclamav\www.h" />
     <ClInclude Include="..\libclamav\xdp.h" />

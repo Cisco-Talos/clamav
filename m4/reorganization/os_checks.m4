@@ -7,7 +7,7 @@ linux*)
 	TH_SAFE="-thread-safe"
 	if test "$want_fanotify" = "yes"; then
 	    AC_CHECK_HEADER([sys/fanotify.h],
-               [AC_DEFINE([FANOTIFY],1,[use fanotify])
+               [AC_DEFINE([HAVE_SYS_FANOTIFY_H],1,[use fanotify])
                 have_fanotify="yes"],)
 	fi
     fi

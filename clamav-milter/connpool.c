@@ -36,9 +36,9 @@
 #include <time.h>
 #include <netdb.h>
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
 #include "connpool.h"
 #include "netcode.h"

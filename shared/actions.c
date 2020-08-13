@@ -46,13 +46,14 @@
 #include <errno.h>
 #include <libgen.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/str.h"
-#include "libclamav/others.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/actions.h"
+// libclamav
+#include "clamav.h"
+#include "str.h"
+#include "others.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+#include "actions.h"
 
 void (*action)(const char *) = NULL;
 unsigned int notmoved = 0, notremoved = 0;

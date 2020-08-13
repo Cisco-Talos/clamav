@@ -20,6 +20,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
 #define DEBUG_TYPE "clambc-rtcheck"
 #include "ClamBCModule.h"
 #include "ClamBCDiagnostics.h"

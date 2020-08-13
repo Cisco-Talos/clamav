@@ -28,7 +28,7 @@
 #define __EXTENSIONS__
 #endif
 /* must be first because it may define _XOPEN_SOURCE */
-#include "shared/fdpassing.h"
+#include "fdpassing.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,10 +45,14 @@
 #include <netdb.h>
 #include <sys/uio.h>
 
-#include "libclamav/clamav.h"
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "libclamav/others.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "output.h"
+#include "optparser.h"
+
 #include "netcode.h"
 
 #define strerror_print(msg) logg(msg ": %s\n", cli_strerror(errno, er, sizeof(er)))

@@ -35,13 +35,14 @@
 #include <time.h>
 #include <signal.h>
 
+// libclamav
 #include "clamav.h"
 
-#include "libclamav/clamav.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/optparser.h"
-#include "shared/actions.h"
+// shared
+#include "output.h"
+#include "misc.h"
+#include "optparser.h"
+#include "actions.h"
 
 #include "client.h"
 

@@ -72,7 +72,7 @@ git checkout libclamav/inffixed64.h
 git checkout libclamav/inflate64.h
 git checkout libclamav/inflate64.c
 git checkout libclamav/inflate64_priv.h
-git checkout shared/queue.h
+git checkout libclamav/queue.h
 git checkout clamonacc/c-thread-pool/thpool.c
 git checkout clamonacc/c-thread-pool/thpool.h
 git checkout clamonacc/misc/fts.c

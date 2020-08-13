@@ -98,18 +98,11 @@ typedef unsigned int in_addr_t;
 
 void w32_glob(int *argc_ptr, char ***argv_ptr);
 
-#undef DATADIR
-#undef CONFDIR
 #if !defined(THIS_IS_LIBCLAMAV) && defined(_MSC_VER)
 #define LIBCLAMAV_EXPORT __declspec(dllimport)
 #else
 #define LIBCLAMAV_EXPORT
 #endif
-LIBCLAMAV_EXPORT extern const char *DATADIR;
-LIBCLAMAV_EXPORT extern const char *CONFDIR;
-LIBCLAMAV_EXPORT extern const char *CONFDIR_CLAMD;
-LIBCLAMAV_EXPORT extern const char *CONFDIR_FRESHCLAM;
-LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
 #undef HAVE_CONFIG_H
 
 #ifdef OUT

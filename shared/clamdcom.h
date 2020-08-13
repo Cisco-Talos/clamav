@@ -30,7 +30,7 @@
 #include <sys/param.h>
 #endif
 
-#include "shared/misc.h"
+#include "misc.h"
 
 struct RCVLN {
     char buf[PATH_MAX + 1024]; /* FIXME must match that in clamd - bb1349 */

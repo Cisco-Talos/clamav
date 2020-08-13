@@ -30,7 +30,7 @@
 #endif
 
 /* must be first because it may define _XOPEN_SOURCE */
-#include "shared/fdpassing.h"
+#include "fdpassing.h"
 #include <stdio.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -52,12 +52,15 @@
 #include <netdb.h>
 #endif
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "shared/actions.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/clamdcom.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "actions.h"
+#include "output.h"
+#include "misc.h"
+#include "clamdcom.h"
 
 #include "proto.h"
 #include "client.h"

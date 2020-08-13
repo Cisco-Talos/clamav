@@ -40,15 +40,16 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+// libclamav
+#include "clamav.h"
+#include "cvd.h"
+#include "others.h" /* for cli_rmdirs() */
+#include "regex/regex.h"
+#include "version.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/cvd.h"
-#include "libclamav/others.h" /* for cli_rmdirs() */
-#include "libclamav/regex/regex.h"
-#include "libclamav/version.h"
-#include "shared/misc.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
 #include <signal.h>
 
@@ -68,8 +69,7 @@ const char *get_version(void)
     /* it is a release, or we have nothing better */
     return VERSION "" VERSION_SUFFIX;
 }
-/* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
-#ifndef CL_NOLIBCLAMAV
+
 char *freshdbdir(void)
 {
     struct cl_cvd *d1, *d2;
@@ -188,7 +188,6 @@ int check_flevel(void)
     }
     return 0;
 }
-#endif
 
 const char *filelist(const struct optstruct *opts, int *err)
 {

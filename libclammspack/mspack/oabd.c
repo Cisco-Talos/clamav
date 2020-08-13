@@ -22,10 +22,10 @@
 
 /* OAB decompression implementation */
 
-#include <system.h>
-#include <oab.h>
-#include <lzx.h>
-#include <crc32.h>
+#include "system.h"
+#include "oab.h"
+#include "lzx.h"
+#include "crc32.h"
 
 /* prototypes */
 static int oabd_decompress(struct msoab_decompressor *self, const char *input,

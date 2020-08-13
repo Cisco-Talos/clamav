@@ -38,9 +38,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/clamdcom.h"
+#include "optparser.h"
+#include "output.h"
+#include "clamdcom.h"
 
 #include "notify.h"
 

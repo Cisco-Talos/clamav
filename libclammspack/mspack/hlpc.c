@@ -9,8 +9,8 @@
 
 /* HLP compression implementation */
 
-#include <system.h>
-#include <hlp.h>
+#include "system.h"
+#include "hlp.h"
 
 struct mshlp_compressor *
   mspack_create_hlp_compressor(struct mspack_system *sys)

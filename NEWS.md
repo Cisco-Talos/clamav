@@ -51,6 +51,11 @@ ClamAV 0.103.0 includes the following improvements and changes.
   at the end of a scan, but for now this detail will help users understand why
   a given file is being flagged as phishing.
 
+- Added new *experimental* CMake build tooling. CMake is not yet recommended for
+  production builds. Our team would appreciate any assistance improving the
+  CMake build tooling so we can one day deprecate Autotools and remove the
+  Visual Studio solutions.
+
 ### Other improvements
 
 - Added ability for freshclam and clamsubmit to override default use of openssl
@@ -97,6 +102,13 @@ ClamAV 0.103.0 includes the following improvements and changes.
   file on exit.
 
 ### New Requirements
+
+- Autotools (automake, autoconf, m4, pkg-config, libtool) are now required in
+  order to build from a Git clone.
+  Users building from the release tarball should be unaffected.
+
+- Flex and Bison are now required in order to build from a Git clone.
+  Users building from the release tarball should be unaffected.
 
 ### Acknowledgements
 

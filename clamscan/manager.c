@@ -49,20 +49,23 @@
 #include <errno.h>
 #include <target.h>
 
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher-ac.h"
+#include "matcher-pcre.h"
+#include "str.h"
+#include "readdb.h"
+
+// shared
+#include "optparser.h"
+#include "actions.h"
+#include "output.h"
+#include "misc.h"
+
 #include "manager.h"
 #include "global.h"
 
-#include "shared/optparser.h"
-#include "shared/actions.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/matcher-ac.h"
-#include "libclamav/matcher-pcre.h"
-#include "libclamav/str.h"
-#include "libclamav/readdb.h"
 
 #ifdef C_LINUX
 dev_t procdev;

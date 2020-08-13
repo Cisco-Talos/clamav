@@ -45,16 +45,18 @@
 #endif
 #include <pthread.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/scanners.h"
-
-#include "shared/idmef_logging.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
+// libclamav
+#include "clamav.h"
 #include "others.h"
+#include "scanners.h"
+
+// shared
+#include "idmef_logging.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+
+#include "clamd_others.h"
 #include "scanner.h"
 #include "shared.h"
 #include "thrmgr.h"

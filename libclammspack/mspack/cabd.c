@@ -21,11 +21,11 @@
 
 /* CAB decompression implementation */
 
-#include <system.h>
-#include <cab.h>
-#include <mszip.h>
-#include <lzx.h>
-#include <qtm.h>
+#include "system.h"
+#include "cab.h"
+#include "mszip.h"
+#include "lzx.h"
+#include "qtm.h"
 
 /* Notes on compliance with cabinet specification:
  *
@@ -56,7 +56,7 @@
  * means each consecutive data block can have completely different
  * "uncompressed" sizes, ranging from 1 to 32768 bytes. However, in
  * reality, all data blocks in a folder decompress to exactly 32768 bytes,
- * excepting the final block. 
+ * excepting the final block.
  *
  * Given this situation, the decompression algorithms are designed to
  * realign their input bitstreams on 32768 output-byte boundaries, and
@@ -388,7 +388,7 @@ static int cabd_read_headers(struct mspack_system *sys,
   }
   else {
     cab->base.header_resv = 0;
-    folder_resv           = 0; 
+    folder_resv           = 0;
     cab->block_resv       = 0;
   }
 
@@ -574,7 +574,7 @@ static char *cabd_read_string(struct mspack_system *sys,
   *error = MSPACK_ERR_OK;
   return str;
 }
-    
+
 /***************************************
  * CABD_SEARCH, CABD_FIND
  ***************************************
@@ -627,7 +627,7 @@ static struct mscabd_cabinet *cabd_search(struct mscab_decompressor *base,
                      firstlen - filelen);
       }
     }
-    
+
     sys->close(fh);
   }
   else {
@@ -676,7 +676,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
     /* FAQ avoidance strategy */
     if ((offset == 0) && (EndGetI32(&buf[0]) == 0x28635349)) {
       sys->message(fh, "WARNING; found InstallShield header. Use unshield "
-                   "(https://github.com/twogood/unshield) to unpack this file"); 
+                   "(https://github.com/twogood/unshield) to unpack this file");
     }
 
     /* read through the entire buffer. */
@@ -759,7 +759,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
               sys->message(fh, largefile_msg);
               return MSPACK_ERR_OK;
             }
-#endif        
+#endif
           }
         }
 
@@ -786,7 +786,7 @@ static int cabd_find(struct mscab_decompressor_p *self, unsigned char *buf,
 
   return MSPACK_ERR_OK;
 }
-                                             
+
 /***************************************
  * CABD_MERGE, CABD_PREPEND, CABD_APPEND
  ***************************************
@@ -1220,7 +1220,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
   int avail, todo, outlen, ignore_cksum, ignore_blocksize;
 
   ignore_cksum = self->salvage ||
-    (self->fix_mszip && 
+    (self->fix_mszip &&
      ((self->d->comp_type & cffoldCOMPTYPE_MASK) == cffoldCOMPTYPE_MSZIP));
   ignore_blocksize = self->salvage;
 

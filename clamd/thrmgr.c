@@ -30,14 +30,17 @@
 #include <errno.h>
 #include <string.h>
 
-#include "shared/output.h"
-
-#include "libclamav/clamav.h"
-#include "thrmgr.h"
+// libclamav
+#include "clamav.h"
 #include "others.h"
 #include "mpool.h"
+
+// shared
+#include "output.h"
+
+#include "thrmgr.h"
+#include "clamd_others.h"
 #include "server.h"
-#include "libclamav/others.h"
 
 #ifdef HAVE_MALLINFO
 #include <malloc.h>

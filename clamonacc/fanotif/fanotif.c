@@ -22,7 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -36,13 +36,16 @@
 
 #include <sys/fanotify.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
+// libclamav
+#include "clamav.h"
+#include "scanners.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+// shared
+#include "optparser.h"
+#include "output.h"
 
-#include "clamd/server.h"
+// clamd
+#include "server.h"
 
 #include "../inotif/hash.h"
 #include "../inotif/inotif.h"
@@ -50,7 +53,7 @@
 #include "../client/client.h"
 
 #include "../scan/thread.h"
-#include "../scan/queue.h"
+#include "../scan/onas_queue.h"
 
 #include "../misc/utils.h"
 

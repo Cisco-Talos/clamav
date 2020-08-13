@@ -32,7 +32,7 @@
 #include <netinet/ip.h>
 #include <pthread.h>
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 struct CP_ENTRY {
     struct sockaddr *server;

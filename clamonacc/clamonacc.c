@@ -35,25 +35,28 @@
 #endif
 #include <time.h>
 #include <signal.h>
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
-#include <fcntl.h>
 #endif
+#include <fcntl.h>
 
 #include <curl/curl.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/optparser.h"
-#include "shared/actions.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "output.h"
+#include "misc.h"
+#include "optparser.h"
+#include "actions.h"
 
 #include "clamonacc.h"
 #include "client/client.h"
 #include "fanotif/fanotif.h"
 #include "inotif/inotif.h"
-#include "scan/queue.h"
+#include "scan/onas_queue.h"
 
 pthread_t ddd_pid        = 0;
 pthread_t scan_queue_pid = 0;
@@ -178,7 +181,7 @@ int main(int argc, char **argv)
             break;
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     /* Setup fanotify */
     switch (onas_setup_fanotif(&ctx)) {
         case CL_SUCCESS:
@@ -294,7 +297,7 @@ int onas_start_eloop(struct onas_context **ctx)
         return CL_EARG;
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     ret = onas_fan_eloop(ctx);
 #endif
 
@@ -304,7 +307,7 @@ int onas_start_eloop(struct onas_context **ctx)
 static int startup_checks(struct onas_context *ctx)
 {
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     char faerr[128];
 #endif
     int ret        = 0;
@@ -316,7 +319,7 @@ static int startup_checks(struct onas_context *ctx)
         goto done;
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
     if (ctx->fan_fd < 0) {
         logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));

@@ -9,8 +9,8 @@
 
 /* LIT compression implementation */
 
-#include <system.h>
-#include <lit.h>
+#include "system.h"
+#include "lit.h"
 
 struct mslit_compressor *
   mspack_create_lit_compressor(struct mspack_system *sys)

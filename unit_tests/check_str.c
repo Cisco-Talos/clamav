@@ -31,13 +31,15 @@
 #include <string.h>
 #include <check.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/str.h"
-#include "../libclamav/entconv.h"
-#include "../libclamav/mbox.h"
-#include "../libclamav/message.h"
-#include "../libclamav/jsparse/textbuf.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "str.h"
+#include "entconv.h"
+#include "mbox.h"
+#include "message.h"
+#include "jsparse/textbuf.h"
+
 #include "checks.h"
 
 START_TEST(test_unescape_simple)

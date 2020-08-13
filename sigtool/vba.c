@@ -33,11 +33,14 @@
 #include <dirent.h>
 #include <ctype.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/vba_extract.h"
-#include "libclamav/ole2_extract.h"
-#include "libclamav/readdb.h"
-#include "shared/output.h"
+// libclamav
+#include "clamav.h"
+#include "vba_extract.h"
+#include "ole2_extract.h"
+#include "readdb.h"
+
+// shared
+#include "output.h"
 
 #include "vba.h"
 

@@ -20,7 +20,7 @@
 #ifndef __EXECUTE_H
 #define __EXECUTE_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 extern int g_active_children;
 

@@ -17,7 +17,7 @@
 
 /* Minor modifications by acab@clamav.net */
 
-#define strncasecmp strnicmp
+#define strncasecmp _strnicmp
 #ifndef _LIBC
 //# include <config.h>
 #endif

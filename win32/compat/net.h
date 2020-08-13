@@ -22,8 +22,11 @@
 #ifndef __NET_H
 #define __NET_H
 
-typedef int socklen_t;
+/* Don't include clamav-config.h, because that brings in platform.h
+   and platform.h will make these functions recursive ;-). */
+#ifndef ssize_t
 typedef int ssize_t;
+#endif
 
 #define F_GETFL 1
 #define F_SETFL 2

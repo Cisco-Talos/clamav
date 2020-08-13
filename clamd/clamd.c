@@ -56,19 +56,21 @@
 
 #include "target.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/matcher-ac.h"
-#include "libclamav/readdb.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher-ac.h"
+#include "readdb.h"
 
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
 
 #include "server.h"
 #include "tcpserver.h"
 #include "localserver.h"
-#include "others.h"
+#include "clamd_others.h"
 #include "shared.h"
 #include "scanner.h"
 

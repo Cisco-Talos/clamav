@@ -33,7 +33,7 @@
 #include "clamav-types.h"
 #include "others.h"
 #include "apm.h"
-#include "prtn_intxn.h"
+#include "partition_intersection.h"
 #include "scanners.h"
 #include "dconf.h"
 
@@ -45,7 +45,7 @@
 #define apm_parsemsg(...) ;
 #endif
 
-static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school);
+static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school);
 
 int cli_scanapm(cli_ctx *ctx)
 {
@@ -134,7 +134,7 @@ int cli_scanapm(cli_ctx *ctx)
 
     /* check that the partition table fits in the space specified - HEURISTICS */
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = apm_prtn_intxn(ctx, &aptable, sectorsize, old_school);
+        ret = apm_partition_intersection(ctx, &aptable, sectorsize, old_school);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
@@ -239,9 +239,9 @@ int cli_scanapm(cli_ctx *ctx)
     return detection;
 }
 
-static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school)
+static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school)
 {
-    prtn_intxn_list_t prtncheck;
+    partition_intersection_list_t prtncheck;
     struct apm_partition_info apentry;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN;
@@ -249,7 +249,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
     uint32_t max_prtns = 0;
     int virus_found    = 0;
 
-    prtn_intxn_list_init(&prtncheck);
+    partition_intersection_list_init(&prtncheck);
 
     /* check engine maxpartitions limit */
     if (aptable->numPartitions < ctx->engine->maxpartitions) {
@@ -263,7 +263,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
         pos = i * sectorsize;
         if (fmap_readn(*ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
-            prtn_intxn_list_free(&prtncheck);
+            partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;
         }
 
@@ -283,7 +283,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
             }
         }
 
-        tmp = prtn_intxn_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
+        tmp = partition_intersection_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
         if (tmp != CL_CLEAN) {
             if (tmp == CL_VIRUS) {
                 apm_parsemsg("Name: %s\n", (char *)aptable.name);
@@ -308,7 +308,7 @@ static int apm_prtn_intxn(cli_ctx *ctx, struct apm_partition_info *aptable, size
     }
 
 leave:
-    prtn_intxn_list_free(&prtncheck);
+    partition_intersection_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;
     return ret;

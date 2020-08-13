@@ -23,24 +23,14 @@
 bin_PROGRAMS = clamscan
 
 clamscan_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/actions.c \
-    $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
     clamscan.c \
     global.h \
     manager.c \
     manager.h
 
 AM_CFLAGS=@WERR_CFLAGS@
-DEFS = @DEFS@ -DCL_NOTHREADS
-LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CLAMSCAN_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @CLAMSCAN_CPPFLAGS@
+DEFS = @DEFS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @THREAD_LIBS@ @CLAMSCAN_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @CLAMSCAN_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno

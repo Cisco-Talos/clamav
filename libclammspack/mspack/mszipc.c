@@ -12,7 +12,7 @@
 
 /* MS-ZIP compression implementation */
 
-#include <system.h>
-#include <mszip.h>
+#include "system.h"
+#include "mszip.h"
 
 /* todo */

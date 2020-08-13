@@ -1,0 +1,2 @@
+/* Define to `devel-"git describe --tags --always"' if building from a git repository. */
+#cmakedefine REPO_VERSION "devel-@REPO_VERSION@"

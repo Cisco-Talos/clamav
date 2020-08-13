@@ -9,8 +9,8 @@
 
 /* CHM decompression implementation */
 
-#include <system.h>
-#include <chm.h>
+#include "system.h"
+#include "chm.h"
 
 /* prototypes */
 static struct mschmd_header * chmd_open(
@@ -361,7 +361,7 @@ static int chmd_read_headers(struct mspack_system *sys, struct mspack_file *fh,
     D(("content section begins after file has ended"))
     return MSPACK_ERR_DATAFORMAT;
   }
-  
+
   /* ensure there are chunks and that chunk size is
    * large enough for signature and num_entries */
   if (chm->chunk_size < (pmgl_Entries + 2)) {
@@ -438,7 +438,7 @@ static int chmd_read_headers(struct mspack_system *sys, struct mspack_file *fh,
     if (EndGetI32(&chunk[pmgl_QuickRefSize]) < 2) {
       sys->message(fh, "WARNING; PMGL quickref area is too small");
     }
-    if (EndGetI32(&chunk[pmgl_QuickRefSize]) > 
+    if (EndGetI32(&chunk[pmgl_QuickRefSize]) >
         (chm->chunk_size - pmgl_Entries))
     {
       sys->message(fh, "WARNING; PMGL quickref area is too large");
@@ -631,7 +631,7 @@ static unsigned char *read_chunk(struct mschm_decompressor_p *self,
 
     /* check arguments - most are already checked by chmd_fast_find */
     if (chunk_num >= chm->num_chunks) return NULL;
-    
+
     /* ensure chunk cache is available */
     if (!chm->chunk_cache) {
         size_t size = sizeof(unsigned char *) * chm->num_chunks;
@@ -788,7 +788,7 @@ static int search_chunk(struct mschmd_header *chm,
      *   entry not found, stop now
      * - filename > all entries
      *   entry not found (PMGL) / maybe found (PMGI)
-     * - 
+     * -
      */
     *result = NULL;
     while (num_entries-- > 0) {
@@ -836,7 +836,7 @@ static int search_chunk(struct mschmd_header *chm,
 # define TOLOWER(x) tolower(x)
 #endif
 
-/* decodes a UTF-8 character from s[] into c. Will not read past e. 
+/* decodes a UTF-8 character from s[] into c. Will not read past e.
  * doesn't test that extension bytes are %10xxxxxx.
  * allows some overlong encodings.
  */
@@ -1235,7 +1235,7 @@ static int read_spaninfo(struct mschm_decompressor_p *self,
 {
     struct mspack_system *sys = self->system;
     unsigned char *data;
-    
+
     /* find SpanInfo file */
     int err = find_sys_file(self, sec, &sec->spaninfo, spaninfo_name);
     if (err) return MSPACK_ERR_DATAFORMAT;

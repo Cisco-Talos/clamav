@@ -33,7 +33,11 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <ctype.h>
+
 #include <zlib.h>
+#ifdef HAVE_JSON
+#include <json.h>
+#endif
 
 #include "clamav.h"
 
@@ -44,9 +48,6 @@
 #include "mbox.h"
 #endif
 #include "blob.h"
-#ifdef HAVE_JSON
-#include "json.h"
-#endif
 #include "ole2_extract.h"
 #include "entconv.h"
 

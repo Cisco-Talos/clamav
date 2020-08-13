@@ -23,20 +23,21 @@
 #include "clamav-config.h"
 #endif
 
-#include "clamav.h"
-#include "filetypes.h"
-#include "others.h"
-#include "unzip.h"
 #if HAVE_JSON
 #include "json.h"
 #endif
-#include "json_api.h"
-#include "msxml_parser.h"
-#include "ooxml.h"
 
 #if HAVE_LIBXML2
 #include <libxml/xmlreader.h>
 #endif
+
+#include "clamav.h"
+#include "filetypes.h"
+#include "others.h"
+#include "unzip.h"
+#include "json_api.h"
+#include "msxml_parser.h"
+#include "ooxml.h"
 
 #if HAVE_LIBXML2 && HAVE_JSON
 

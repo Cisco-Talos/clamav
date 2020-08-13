@@ -32,6 +32,9 @@ For detailed instructions specific to building ClamAV please investigate
 our the
 [Linux/Unix/Mac Install instructions in the User Manual](https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source).
 
+For instructions on how to build ClamAV using our new *experimental* CMake
+build tooling, see [INSTALL.cmake.md](INSTALL.cmake.md)
+
 #### Install from a binary package
 
 For binary package distribution installation instructions, head over to
@@ -55,6 +58,9 @@ directory.
 
 For details on how to use either option, head over to the
 [Windows Install instructions in the User Manual](https://www.clamav.net/documents/installing-clamav-on-windows).
+
+For instructions on how to build ClamAV using our new *experimental* CMake
+build tooling, see [INSTALL.cmake.md](INSTALL.cmake.md)
 
 ### Upgrading from a previous version
 

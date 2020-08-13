@@ -29,8 +29,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include "shared/output.h"
-#include "shared/optparser.h"
+#include "output.h"
+#include "optparser.h"
 #include "execute.h"
 
 #define MAX_CHILDREN 5

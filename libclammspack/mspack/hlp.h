@@ -10,7 +10,7 @@
 #ifndef MSPACK_HLP_H
 #define MSPACK_HLP_H 1
 
-#include <lzss.h>
+#include "lzss.h"
 
 /* generic HLP definitions */
 

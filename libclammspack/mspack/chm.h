@@ -10,7 +10,7 @@
 #ifndef MSPACK_CHM_H
 #define MSPACK_CHM_H 1
 
-#include <lzx.h>
+#include "lzx.h"
 
 /* generic CHM definitions */
 

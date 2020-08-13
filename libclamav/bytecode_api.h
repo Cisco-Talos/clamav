@@ -1333,36 +1333,36 @@ int32_t json_get_int(int32_t objid);
   * Check if any given scan option is enabled.
   * Returns non-zero if the following named options are set:
   *
-  * "general allmatch"                - all-match mode is enabled
-  * "general collect metadata"        - --gen-json is enabled
-  * "general heuristics"              - --gen-json is enabled
+  * "general allmatch"                  - all-match mode is enabled
+  * "general collect metadata"          - --gen-json is enabled
+  * "general heuristics"                - --gen-json is enabled
   *
-  * "parse archive"                   - archive parsing is enabled
-  * "parse pdf"                       - pdf parsing is enabled
-  * "parse swf"                       - swf parsing is enabled
-  * "parse hwp3"                      - hwp3 parsing is enabled
-  * "parse xmldocs"                   - xmldocs parsing is enabled
-  * "parse mail"                      - mail parsing is enabled
-  * "parse ole2"                      - ole2 parsing is enabled
-  * "parse html"                      - html parsing is enabled
-  * "parse pe"                        - pe parsing is enabled
+  * "parse archive"                     - archive parsing is enabled
+  * "parse pdf"                         - pdf parsing is enabled
+  * "parse swf"                         - swf parsing is enabled
+  * "parse hwp3"                        - hwp3 parsing is enabled
+  * "parse xmldocs"                     - xmldocs parsing is enabled
+  * "parse mail"                        - mail parsing is enabled
+  * "parse ole2"                        - ole2 parsing is enabled
+  * "parse html"                        - html parsing is enabled
+  * "parse pe"                          - pe parsing is enabled
   *
-  * "heuristic precedence"            - heuristic signatures are set to take precedence
-  * "heuristic broken"                - broken pe heuristic is enabled
-  * "heuristic exceeds max"           - heuristic for when max settings are exceeded is enabled
-  * "heuristic phishing ssl mismatch" - phishing ssl mismatch heuristic is enabled
-  * "heuristic phishing cloak"        - phishing cloak heuristic is enabled
-  * "heuristic macros"                - macros heuristic is enabled
-  * "heuristic encrypted"             - encrypted heuristic is enabled
-  * "heuristic partition intxn"       - macpartition intxnros heuristic is enabled
-  * "heuristic structured"            - structured heuristic is enabled
-  * "heuristic structured ssn normal" - structured ssn normal heuristic is enabled
+  * "heuristic precedence"              - heuristic signatures are set to take precedence
+  * "heuristic broken"                  - broken pe heuristic is enabled
+  * "heuristic exceeds max"             - heuristic for when max settings are exceeded is enabled
+  * "heuristic phishing ssl mismatch"   - phishing ssl mismatch heuristic is enabled
+  * "heuristic phishing cloak"          - phishing cloak heuristic is enabled
+  * "heuristic macros"                  - macros heuristic is enabled
+  * "heuristic encrypted"               - encrypted heuristic is enabled
+  * "heuristic partition intersection"  - macpartition intersectionros heuristic is enabled
+  * "heuristic structured"              - structured heuristic is enabled
+  * "heuristic structured ssn normal"   - structured ssn normal heuristic is enabled
   * "heuristic structured ssn stripped" - structured ssn stripped heuristic is enabled
   *
-  * "mail partial message"            - parsing of partial mail messages is enabled
+  * "mail partial message"              - parsing of partial mail messages is enabled
   *
-  * "dev collect sha"                 - --dev-collect-hashes is enabled
-  * "dev collect performance info"    - --dev-performance is enabled
+  * "dev collect sha"                   - --dev-collect-hashes is enabled
+  * "dev collect performance info"      - --dev-performance is enabled
   *
   * @param[in] scan_options enum value for desired scan option category.
   * @return CL_SCAN_<OPTION>_* flags

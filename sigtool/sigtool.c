@@ -55,27 +55,29 @@
 #include <termios.h>
 #endif
 
+// libclamav
+#include "clamav.h"
+#include "matcher.h"
+#include "cvd.h"
+#include "str.h"
+#include "ole2_extract.h"
+#include "htmlnorm.h"
+#include "textnorm.h"
+#include "default.h"
+#include "fmap.h"
+#include "readdb.h"
+#include "others.h"
+#include "pe.h"
+#include "entconv.h"
+
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
+#include "cdiff.h"
+#include "tar.h"
+
 #include "vba.h"
-
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
-#include "shared/cdiff.h"
-#include "shared/tar.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/matcher.h"
-#include "libclamav/cvd.h"
-#include "libclamav/str.h"
-#include "libclamav/ole2_extract.h"
-#include "libclamav/htmlnorm.h"
-#include "libclamav/textnorm.h"
-#include "libclamav/default.h"
-#include "libclamav/fmap.h"
-#include "libclamav/readdb.h"
-#include "libclamav/others.h"
-#include "libclamav/pe.h"
-#include "libclamav/entconv.h"
 
 #define MAX_DEL_LOOKAHEAD 5000
 

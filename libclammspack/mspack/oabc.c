@@ -9,8 +9,8 @@
 
 /* OAB compression implementation */
 
-#include <system.h>
-#include <oab.h>
+#include "system.h"
+#include "oab.h"
 
 struct msoab_compressor *
   mspack_create_oab_compressor(struct mspack_system *sys)

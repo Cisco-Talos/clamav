@@ -93,7 +93,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamunrar;$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <CompileAs>Default</CompileAs>
     </ClCompile>
@@ -112,7 +112,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamunrar;$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
       <CompileAs>Default</CompileAs>
     </ClCompile>
@@ -133,7 +133,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamunrar;$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <CompileAs>Default</CompileAs>
     </ClCompile>
@@ -156,7 +156,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libclamunrar;$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996;4267</DisableSpecificWarnings>
       <CompileAs>Default</CompileAs>
     </ClCompile>

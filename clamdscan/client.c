@@ -53,15 +53,17 @@
 #include <sys/uio.h>
 #endif
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/actions.h"
-#include "shared/clamdcom.h"
+// libclamav
+#include "clamav.h"
+#include "str.h"
+#include "others.h"
 
-#include "libclamav/str.h"
-#include "libclamav/others.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+#include "actions.h"
+#include "clamdcom.h"
 
 #include "client.h"
 #include "proto.h"

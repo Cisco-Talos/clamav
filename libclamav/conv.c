@@ -34,11 +34,12 @@
 
 #include <sys/types.h>
 
-#include "clamav.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
-#include "libclamav/conv.h"
+// libclamav
+#include "clamav.h"
+#include "conv.h"
 
 /** Get the expected decoded length of a base64-encoded string
  * @param[in] data Base64-encoded string

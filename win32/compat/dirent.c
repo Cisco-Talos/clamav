@@ -21,11 +21,12 @@
 
 #include <errno.h>
 
-#include "clamav.h"
-#include "others.h"
+#include <Windows.h>
+//#include "clamav.h"
+//#include "others.h"
 #include "dirent.h"
 #include "w32_stat.h"
-#include "shared/misc.h"
+//#include "misc.h"
 
 DIR *opendir(const char *name)
 {
@@ -42,7 +43,7 @@ DIR *opendir(const char *name)
         errno = ENOTDIR;
         return NULL;
     }
-    if (!(d = cli_malloc(sizeof(*d)))) {
+    if (!(d = malloc(sizeof(*d)))) {
         errno = ENOMEM;
         return NULL;
     }

@@ -35,6 +35,13 @@
 #include <math.h>
 #include <ctype.h>
 
+#if HAVE_JSON
+#include <json.h>
+#endif
+#if HAVE_BZLIB_H
+#include <bzlib.h>
+#endif
+
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -52,12 +59,6 @@
 #include "str.h"
 #include "filetypes.h"
 #include "lzma_iface.h"
-#if HAVE_JSON
-#include "json.h"
-#endif
-#if HAVE_BZLIB_H
-#include <bzlib.h>
-#endif
 
 #define EV ctx->bc_events
 
@@ -1644,7 +1645,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ? 1 : 0;
         } else if (cli_memstr(option_name_l, name_len, "encrypted doc", sizeof("encrypted doc"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC) ? 1 : 0;
-        } else if (cli_memstr(option_name_l, name_len, "partition intxn", sizeof("partition intxn"))) {
+        } else if (cli_memstr(option_name_l, name_len, "partition intersection", sizeof("partition intersection"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN) ? 1 : 0;
         } else if (cli_memstr(option_name_l, name_len, "structured", sizeof("structured"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED) ? 1 : 0;

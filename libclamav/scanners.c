@@ -50,6 +50,8 @@
 #define DCONF_MAIL ctx->dconf->mail
 #define DCONF_OTHER ctx->dconf->other
 
+#include <zlib.h>
+
 #include "clamav.h"
 #include "others.h"
 #include "dconf.h"
@@ -77,12 +79,10 @@
 #include "str.h"
 #include "entconv.h"
 #include "rtf.h"
-#include "libclamunrar_iface/unrar_iface.h"
 #include "unarj.h"
 #include "nsis/nulsft.h"
 #include "autoit.h"
 #include "textnorm.h"
-#include <zlib.h>
 #include "unzip.h"
 #include "dlp.h"
 #include "default.h"
@@ -114,6 +114,9 @@
 #include "msdoc.h"
 #include "execs.h"
 #include "egg.h"
+
+// libclamunrar_iface
+#include "unrar_iface.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>

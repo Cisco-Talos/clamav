@@ -39,17 +39,19 @@
 #include <sys/resource.h>
 #endif
 
+// libclamav
+#include "clamav.h"
 #include "others.h"
+#include "str.h"
+
+// shared
+#include "misc.h"
+#include "output.h"
+#include "actions.h"
+#include "optparser.h"
+
 #include "global.h"
 #include "manager.h"
-
-#include "shared/misc.h"
-#include "shared/output.h"
-#include "shared/actions.h"
-#include "shared/optparser.h"
-
-#include "libclamav/str.h"
-#include "libclamav/clamav.h"
 
 void help(void);
 

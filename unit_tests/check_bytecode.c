@@ -33,13 +33,16 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/bytecode.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "bytecode.h"
+#include "dconf.h"
+#include "bytecode_priv.h"
+#include "pe.h"
+
 #include "checks.h"
-#include "../libclamav/dconf.h"
-#include "../libclamav/bytecode_priv.h"
-#include "../libclamav/pe.h"
+
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
 #endif

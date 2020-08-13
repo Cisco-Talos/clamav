@@ -36,7 +36,7 @@
 #endif
 #include <resolv.h>
 
-#include "shared/output.h"
+#include "output.h"
 
 #ifndef PACKETSZ
 #define PACKETSZ 512

@@ -49,10 +49,14 @@
 #define CMD23 "GET / HTTP/2"
 #define CMD24 ""
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+
 #include "server.h"
-#include "others.h"
+#include "clamd_others.h"
 
 enum commands {
     COMMAND_UNKNOWN  = 0,

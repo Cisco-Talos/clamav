@@ -45,21 +45,23 @@
 #ifdef C_SOLARIS
 #include <stdio_ext.h>
 #endif
-#include "libclamav/clamav.h"
 
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "readdb.h"
 
-#include "shared/idmef_logging.h"
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
+#include "idmef_logging.h"
 
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
-#include "others.h"
+#include "clamd_others.h"
 #include "shared.h"
-#include "libclamav/others.h"
-#include "libclamav/readdb.h"
 
 #define BUFFSIZE 1024
 

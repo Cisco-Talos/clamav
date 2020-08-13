@@ -29,6 +29,10 @@
 #include <assert.h>
 #include <fcntl.h>
 
+#if HAVE_JSON
+#include "json.h"
+#endif
+
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"
@@ -41,9 +45,6 @@
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include "builtin_bytecodes.h"
-#if HAVE_JSON
-#include "json.h"
-#endif
 
 #ifndef MAX_TRACKED_BC
 #define MAX_TRACKED_BC 64

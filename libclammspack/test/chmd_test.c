@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include <mspack.h>
-#include <system.h>
+#include "system.h"
 
 #define __tf3(x) #x
 #define __tf2(x) __tf3(x)

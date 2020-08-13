@@ -42,6 +42,10 @@
 #include <zlib.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#include "libgen.h"
+#endif
+
 #include "clamav.h"
 #include "cvd.h"
 #ifdef HAVE_STRINGS_H
@@ -86,6 +90,10 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "yara_compiler.h"
 #include "yara_grammar.h"
 #include "yara_lexer.h"
+#endif
+
+#ifdef _WIN32
+static char DATABASE_DIRECTORY[MAX_PATH] = "";
 #endif
 
 char *cli_virname(const char *virname, unsigned int official)
@@ -4796,7 +4804,32 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 
 const char *cl_retdbdir(void)
 {
+#ifdef _WIN32
+    int have_ddir = 0;
+    char path[MAX_PATH] = "";
+    DWORD sizof;
+    HKEY key;
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\ClamAV", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\ClamAV", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
+        sizof = sizeof(path);
+        if (RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+            have_ddir = 1;
+            memcpy(DATABASE_DIRECTORY, path, sizof);
+        }
+        RegCloseKey(key);
+    }
+    if (!(have_ddir) && GetModuleFileName(NULL, path, sizeof(path))) {
+        char *dir = NULL;
+        path[sizeof(path) - 1] = '\0';
+        dir                    = dirname(path);
+        snprintf(DATABASE_DIRECTORY, sizeof(DATABASE_DIRECTORY), "%s\\database", dir);
+    }
+    DATABASE_DIRECTORY[sizeof(DATABASE_DIRECTORY) - 1] = '\0';
+
+    return (const char *)DATABASE_DIRECTORY;
+#else
     return DATADIR;
+#endif
 }
 
 cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)

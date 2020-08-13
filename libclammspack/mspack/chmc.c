@@ -1,3 +1,4 @@
+
 /* This file is part of libmspack.
  * (C) 2003-2004 Stuart Caie.
  *
@@ -9,8 +10,8 @@
 
 /* CHM compression implementation */
 
-#include <system.h>
-#include <chm.h>
+#include "system.h"
+#include "chm.h"
 
 struct mschm_compressor *
   mspack_create_chm_compressor(struct mspack_system *sys)

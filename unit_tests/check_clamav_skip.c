@@ -1,5 +1,7 @@
 #include <stdio.h>
-#include "../libclamav/clamav.h"
+
+// libclamav
+#include "clamav.h"
 
 int main(int argc, char **argv)
 {

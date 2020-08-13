@@ -24,9 +24,13 @@
 
 #include <sys/types.h>
 
-#include "libclamav/others.h"
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "optparser.h"
+
 #include "thrmgr.h"
 #include "session.h"
 

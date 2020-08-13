@@ -28,8 +28,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/uniq.h"
+// libclamav
+#include "clamav.h"
+#include "uniq.h"
+
 #include "checks.h"
 
 START_TEST(test_uniq_initfail)

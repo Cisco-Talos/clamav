@@ -41,7 +41,7 @@ limitations under the License.
 #ifndef _YARA_CLAM_H_
 #define _YARA_CLAM_H_
 
-#include "shared/queue.h"
+#include "queue.h"
 #include "yara_hash.h"
 #include "others.h"
 #include "str.h"

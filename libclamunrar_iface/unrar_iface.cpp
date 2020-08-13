@@ -33,8 +33,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "libclamunrar/rar.hpp"
-#include "libclamunrar/dll.hpp"
+#include "rar.hpp"
+#include "dll.hpp"
 
 extern "C" {
 

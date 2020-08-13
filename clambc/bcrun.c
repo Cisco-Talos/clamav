@@ -28,13 +28,16 @@
 #endif
 #include <stdlib.h>
 
+// libclamav
+#include "clamav.h"
+#include "dconf.h"
+#include "others.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
-#include "clamav.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
-#include "libclamav/dconf.h"
-#include "libclamav/others.h"
+
+// shared
+#include "optparser.h"
+#include "misc.h"
 
 #include <fcntl.h>
 #include <stdlib.h>

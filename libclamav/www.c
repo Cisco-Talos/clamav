@@ -50,9 +50,9 @@
 
 #include "platform.h"
 
-#include "libclamav/others.h"
-#include "libclamav/clamav.h"
-#include "libclamav/www.h"
+#include "others.h"
+#include "clamav.h"
+#include "www.h"
 
 int connect_host(const char *host, const char *port, uint32_t timeout, int useAsync)
 {

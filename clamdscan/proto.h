@@ -21,7 +21,7 @@
 
 #ifndef PROTO_H
 #define PROTO_H
-#include "shared/misc.h"
+#include "misc.h"
 
 int dconnect(void);
 int serial_client_scan(char *file, int scantype, int *infected, int *err, int maxlevel, int flags);

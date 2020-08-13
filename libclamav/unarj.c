@@ -37,6 +37,7 @@
 #include <ctype.h>
 
 #include "clamav.h"
+#include "str.h"
 #include "others.h"
 #include "unarj.h"
 #include "textnorm.h"

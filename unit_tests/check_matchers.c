@@ -26,14 +26,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/readdb.h"
-#include "../libclamav/matcher.h"
-#include "../libclamav/matcher-ac.h"
-#include "../libclamav/matcher-bm.h"
-#include "../libclamav/matcher-pcre.h"
-#include "../libclamav/others.h"
-#include "../libclamav/default.h"
+// libclamav
+#include "clamav.h"
+#include "readdb.h"
+#include "matcher.h"
+#include "matcher-ac.h"
+#include "matcher-bm.h"
+#include "matcher-pcre.h"
+#include "others.h"
+#include "default.h"
+
 #include "checks.h"
 
 static const struct ac_testdata_s {

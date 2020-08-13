@@ -20,7 +20,10 @@
 
 #include <string.h>
 
+// libclamav
 #include "others.h"
+
+#include "output.h"
 
 char hostid[37];
 

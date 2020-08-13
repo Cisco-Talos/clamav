@@ -94,8 +94,7 @@ limitations under the License.
 %option noinput
 %option nounput
 %option yylineno
-%option prefix="yara_yy"
-%option outfile="lex.yy.c"
+/* %option prefix="yara_yy" */
 
 %option verbose
 %option warn

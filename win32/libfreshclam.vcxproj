@@ -96,12 +96,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\shared;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
@@ -113,12 +113,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\shared;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
@@ -131,7 +131,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\shared;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -140,7 +140,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -152,7 +152,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)3rdparty\bzip2;$(SolutionDir)3rdparty\pcre2;$(SolutionDir)..\;$(SolutionDir)..\shared;$(SolutionDir)..\libfreshclam;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
     <Link>
@@ -161,7 +161,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration);$(CLAM_DEPENDENCIES)\$(PlatformName)\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;ws2_32.lib;pthreadVC2.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;libclamav.lib;Dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)libfreshclam.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
@@ -169,13 +169,7 @@
     <ClCompile Include="..\libfreshclam\dns.c" />
     <ClCompile Include="..\libfreshclam\libfreshclam.c" />
     <ClCompile Include="..\libfreshclam\libfreshclam_internal.c" />
-    <ClCompile Include="..\shared\cdiff.c" />
-    <ClCompile Include="..\shared\cert_util.c" />
-    <ClCompile Include="..\shared\misc.c" />
-    <ClCompile Include="..\shared\output.c" />
-    <ClCompile Include="..\shared\tar.c" />
-    <ClCompile Include="..\shared\win\cert_util_win.c" />
-    <ClCompile Include="compat\libfreshclam_main.c" />
+    <ClCompile Include="..\libfreshclam\libfreshclam_main.c" />
     <ClCompile Include="compat\resolv.c" />
     <ClCompile Include="compat\strptime.c" />
   </ItemGroup>
@@ -183,12 +177,6 @@
     <ClInclude Include="..\libfreshclam\dns.h" />
     <ClInclude Include="..\libfreshclam\libfreshclam.h" />
     <ClInclude Include="..\libfreshclam\libfreshclam_internal.h" />
-    <ClInclude Include="..\shared\cdiff.h" />
-    <ClInclude Include="..\shared\cert_util.h" />
-    <ClInclude Include="..\shared\cert_util_internal.h" />
-    <ClInclude Include="..\shared\misc.h" />
-    <ClInclude Include="..\shared\output.h" />
-    <ClInclude Include="..\shared\tar.h" />
     <ClInclude Include="compat\resolv.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

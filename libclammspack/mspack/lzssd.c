@@ -11,8 +11,8 @@
  * For further details, see the file COPYING.LIB distributed with libmspack
  */
 
-#include <system.h>
-#include <lzss.h>
+#include "system.h"
+#include "lzss.h"
 
 #define ENSURE_BYTES do {                               \
     if (i_ptr >= i_end) {                               \

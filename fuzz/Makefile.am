@@ -14,7 +14,7 @@ LIB_FUZZING_ENGINE_DEPRECATED ?= libstandalone_fuzz_target_runner.a
 
 AM_CPPFLAGS = \
     @SSL_CPPFLAGS@ \
-    -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav \
+    -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface \
     -std=c++11 -stdlib=libc++
 
 AM_LDFLAGS = \

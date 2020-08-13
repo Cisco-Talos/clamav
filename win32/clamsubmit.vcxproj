@@ -96,13 +96,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\libclamav;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\shared;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration)\;$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -112,13 +112,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\libclamav;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\shared;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration)\;$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -130,14 +130,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\libclamav;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\shared;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration)\;$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -150,14 +150,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>HAVE_STRUCT_TIMESPEC;WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\libclamav;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)compat;$(SolutionDir)..;$(SolutionDir)..\shared;$(SolutionDir)..\libclamav;$(SolutionDir)..\libclamunrar_iface;$(SolutionDir)3rdparty\pcre2;$(CLAM_DEPENDENCIES)\$(PlatformName)\include;$(CLAM_DEPENDENCIES)\$(PlatformName)\include\json-c;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>shared.lib;libclamav.lib;json-c.lib;libcrypto.lib;libcurl_imp.lib;libssh2.lib;libssl.lib;nghttp2.lib;zlibstatic.lib;ws2_32.lib;dnsapi.lib;Crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(PlatformName)\$(Configuration)\;$(CLAM_DEPENDENCIES)\$(PlatformName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -166,11 +166,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\clamsubmit\clamsubmit.c" />
-    <ClCompile Include="..\shared\cert_util.c" />
-    <ClCompile Include="..\shared\getopt.c" />
-    <ClCompile Include="..\shared\misc.c" />
-    <ClCompile Include="..\shared\output.c" />
-    <ClCompile Include="..\shared\win\cert_util_win.c" />
     <ClCompile Include="compat\gettimeofday.c" />
     <ClCompile Include="compat\glob.c" />
     <ClCompile Include="compat\net.c" />
@@ -182,12 +177,6 @@
     <ClCompile Include="compat\w32_stat.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\shared\cert_util.h" />
-    <ClInclude Include="..\shared\cert_util_internal.h" />
-    <ClInclude Include="..\shared\getopt.h" />
-    <ClInclude Include="..\shared\misc.h" />
-    <ClInclude Include="..\shared\optparser.h" />
-    <ClInclude Include="..\shared\output.h" />
     <ClInclude Include="compat\gettimeofday.h" />
     <ClInclude Include="compat\net.h" />
     <ClInclude Include="compat\random.h" />

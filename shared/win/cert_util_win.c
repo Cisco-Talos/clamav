@@ -29,10 +29,10 @@
 
 #include <curl/curl.h>
 
-#include "shared/output.h"
+#include "output.h"
 
-#include "shared/cert_util.h"
-#include "shared/cert_util_internal.h"
+#include "cert_util.h"
+#include "cert_util_internal.h"
 
 cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 {

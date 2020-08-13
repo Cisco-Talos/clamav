@@ -21,11 +21,15 @@
 #ifndef __ONAS_SCTH_H
 #define __ONAS_SCTH_H
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
 #endif
-#include "shared/optparser.h"
-#include "libclamav/clamav.h"
+
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
 
 #define ONAS_SCTH_B_DIR 0x01
 #define ONAS_SCTH_B_FILE 0x02
@@ -51,7 +55,7 @@ struct onas_scan_event {
     int64_t portnum;
     char *pathname;
     int fan_fd;
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     struct fanotify_event_metadata *fmd;
 #endif
     uint8_t retry_attempts;

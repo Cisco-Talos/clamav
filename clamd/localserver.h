@@ -22,7 +22,7 @@
 #ifndef __LOCALSERVER_H
 #define __LOCALSERVER_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 int localserver(const struct optstruct *opts);
 

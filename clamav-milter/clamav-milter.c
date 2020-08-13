@@ -37,12 +37,14 @@
 #include <time.h>
 #include <libmilter/mfapi.h>
 
+// libclamav
 #include "clamav.h"
+#include "default.h"
 
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
-#include "libclamav/default.h"
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
 
 #include "connpool.h"
 #include "netcode.h"

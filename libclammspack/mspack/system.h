@@ -19,7 +19,7 @@ extern "C" {
 # include <config.h>
 #endif
 
-#include <mspack.h>
+#include "mspack.h"
 
 /* assume <string.h> exists */
 #include <string.h>

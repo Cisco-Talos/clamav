@@ -65,30 +65,28 @@
 #include <zlib.h>
 #include <math.h>
 
-#if defined(C_DARWIN) || defined(_WIN32)
-#include <shared/cert_util.h>
-#endif
-
 #include <curl/curl.h>
 
 #include "target.h"
 
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "str.h"
+#include "cvd.h"
+#include "regex_list.h"
+
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "cdiff.h"
+#include "tar.h"
+#include "clamdcom.h"
+#include "cert_util.h"
+
 #include "libfreshclam.h"
 #include "libfreshclam_internal.h"
 #include "dns.h"
-
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/cdiff.h"
-#include "shared/tar.h"
-#include "shared/clamdcom.h"
-#include "shared/cert_util.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/str.h"
-#include "libclamav/cvd.h"
-#include "libclamav/regex_list.h"
 
 #define DB_FILENAME_MAX 60
 #define CVD_HEADER_SIZE 512

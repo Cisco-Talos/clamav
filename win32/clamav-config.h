@@ -87,7 +87,7 @@
 #define DEFAULT_FD_SETSIZE 1024
 
 /* use fanotify */
-/* #undef FANOTIFY */
+/* #undef HAVE_SYS_FANOTIFY_H */
 
 /* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
 /* #undef FDPASS_NEED_XOPEN */
@@ -245,7 +245,7 @@
 #define HAVE_LIMITS_H 1
 
 /* Define this if a modern libltdl is already installed */
-#define HAVE_LTDL 1
+/* #undef HAVE_LTDL 1 */
 
 /* Define to 1 if you have the <mach-o/dyld.h> header file. */
 /* #undef HAVE_MACH_O_DYLD_H */
@@ -575,6 +575,9 @@
 /* Define to `long int' if <sys/types.h> does not define. */
 /* #undef off_t */
 
+/* Define to `int' */
+typedef int ssize_t;
+
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is
    supported directly.  */
@@ -590,7 +593,7 @@
 #endif
 
 /* Define to "int" if <sys/socket.h> does not define. */
-/* #undef socklen_t */
+typedef int socklen_t;
 
 #define LLVM_VERSION 28
 

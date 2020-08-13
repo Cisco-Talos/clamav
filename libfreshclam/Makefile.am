@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
+libfreshclam_la_LIBADD = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @CURL_LIBS@ @SSL_LIBS@ @JSON_LIBS@ @LIBLTDL@ @THREAD_LIBS@ @LIBM@
 libfreshclam_la_DEPENDENCIES = @LTDLDEPS@
 libfreshclam_la_LDFLAGS = @CURL_LDFLAGS@ @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @LIBICONV@ $(XML_LIBS) -version-info @LIBFRESHCLAM_VERSION@ -no-undefined
 
@@ -30,53 +30,22 @@ endif
 
 AM_LIBTOOLFLAGS = --tag CXX
 
-EXTRA_DIST = libfreshclam.map
+EXTRA_DIST = libfreshclam.map libfreshclam_main.c
 
 include_HEADERS = libfreshclam.h
 
 libfreshclam_la_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/cdiff.c \
-    $(top_srcdir)/shared/cdiff.h \
-    $(top_srcdir)/shared/tar.c \
-    $(top_srcdir)/shared/tar.h \
-    $(top_srcdir)/shared/cert_util.c \
-    $(top_srcdir)/shared/cert_util.h \
-    $(top_srcdir)/shared/cert_util_internal.h \
     libfreshclam.c \
     libfreshclam_internal.c \
     libfreshclam_internal.h \
     dns.c \
     dns.h
 
-if MACOS
-    libfreshclam_la_SOURCES += \
-        $(top_srcdir)/shared/mac/cert_util_mac.m \
-        $(top_srcdir)/shared/cert_util.h
-endif
-if WINDOWS
-    libfreshclam_la_SOURCES += \
-        $(top_srcdir)/shared/win/cert_util_win.c \
-        $(top_srcdir)/shared/cert_util.h
-endif
-if LINUX
-    libfreshclam_la_SOURCES += \
-        $(top_srcdir)/shared/linux/cert_util_linux.c \
-        $(top_srcdir)/shared/cert_util.h
-endif
-
 lib_LTLIBRARIES = libfreshclam.la
 
 
 AM_CFLAGS=@WERR_CFLAGS@
-DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+DEFS = @DEFS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno

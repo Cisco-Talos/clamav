@@ -24,8 +24,8 @@
 #include <string.h>
 
 #include "clamav.h"
-#include "shared/misc.h"
-#include "shared/output.h"
+#include "misc.h"
+#include "output.h"
 
 #ifndef PRELUDE
 void prelude_logging(const char *filename, const char *virname, const char *virhash, int virsize)

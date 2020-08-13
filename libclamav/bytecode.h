@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include "fmap.h"
 #include "bytecode_detect.h"
+#include "platform.h"
 
 struct cli_dbio;
 struct cli_bc_ctx;
@@ -105,7 +106,7 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int have_clamjit;
+extern LIBCLAMAV_EXPORT int have_clamjit;
 #ifdef __cplusplus
 }
 #endif

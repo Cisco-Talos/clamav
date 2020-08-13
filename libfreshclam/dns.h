@@ -27,6 +27,7 @@
 #endif
 
 #ifdef HAVE_RESOLV_H
+#include <sys/types.h>
 #ifndef _WIN32
 #include <netinet/in.h>
 #include <arpa/nameser.h>

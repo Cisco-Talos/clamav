@@ -22,7 +22,7 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 int scanmanager(const struct optstruct *opts);
 

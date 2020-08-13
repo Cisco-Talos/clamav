@@ -40,7 +40,7 @@ AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
-AM_INIT_AUTOMAKE([1.11.1 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
+AM_INIT_AUTOMAKE([1.11.1 -Wall -Wportability -Wno-override subdir-objects std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
 AC_USE_SYSTEM_EXTENSIONS
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
@@ -198,6 +198,7 @@ if test "x$enable_libclamav_only" != "xyes"; then
                      clamscan/Makefile
                      database/Makefile
                      docs/Makefile
+                     shared/Makefile
                      clamd/Makefile
                      clamd/clamav-daemon.service
                      clamd/clamav-daemon.socket
@@ -232,7 +233,12 @@ if test "x$enable_libclamav_only" != "xyes"; then
 fi
 
 AM_COND_IF([BUILD_CLAMONACC],
-            [AC_CONFIG_FILES([clamonacc/Makefile])])
+    [AC_CONFIG_FILES([
+        clamonacc/Makefile
+        clamonacc/clamav-clamonacc.service
+        docs/man/clamonacc.8
+    ])
+])
 
 # Define variables needed to generate clamav-types.h.
 m4_include([m4/reorganization/types.m4])

@@ -51,14 +51,12 @@
 #include <syslog.h>
 #endif
 
-#include "output.h"
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/str.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "str.h"
 
-#ifdef CL_NOTHREADS
-#undef CL_THREAD_SAFE
-#endif
+#include "output.h"
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>

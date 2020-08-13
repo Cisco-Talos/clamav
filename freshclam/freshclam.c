@@ -22,8 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#include "libfreshclam/libfreshclam.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
@@ -51,15 +49,19 @@
 #endif
 
 #include "target.h"
+
+// libclamav
 #include "clamav.h"
-#include "libfreshclam/libfreshclam.h"
+#include "others.h"
+#include "str.h"
 
-#include "libclamav/others.h"
-#include "libclamav/str.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+// libfreshclam
+#include "libfreshclam.h"
 
 #include "execute.h"
 #include "notify.h"
@@ -214,7 +216,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     fc_error_t ret;
     fc_ctx *fc_context = (fc_ctx *)context;
 
-#ifndef WIN32
+#ifndef _WIN32
     char firstline[256];
     char lastline[256];
     int pipefd[2];
@@ -235,7 +237,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     logg("Testing database: '%s' ...\n", dbFilename);
 
     if (fc_context->bTestDatabases) {
-#ifdef WIN32
+#ifdef _WIN32
 
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);

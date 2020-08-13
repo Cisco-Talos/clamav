@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #ifdef HAVE_STRINGS_H
@@ -39,15 +40,23 @@
 #endif
 #include <ctype.h>
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
+// libclamav
+#include "clamav.h"
+#include "regex/regex.h"
+#include "default.h"
+#include "others.h"
 
-#include "libclamav/regex/regex.h"
-#include "libclamav/default.h"
-#include "libclamav/others.h"
-
+#include "optparser.h"
+#include "misc.h"
 #include "getopt.h"
+
+#ifdef _WIN32
+#include "libgen.h"
+#endif
+
+#ifdef _WIN32
+#define CLAMKEY "Software\\ClamAV"
+#endif
 
 #define MAXCMDOPTS 150
 
@@ -60,14 +69,45 @@
 #define FLAG_HIDDEN 4   /* don't print in clamconf --generate-config */
 #define FLAG_REG_CASE 8 /* case-sensitive regex matching */
 
+#ifdef _WIN32
+static bool is_initialized = false;
+
+#ifndef BACKUP_DATADIR
+#define BACKUP_DATADIR "C:\\ClamAV\\database"
+#endif
+#ifndef BACKUP_CONFDIR
+#define BACKUP_CONFDIR "C:\\ClamAV"
+#endif
+char _DATADIR[MAX_PATH]           = BACKUP_DATADIR;
+char _CONFDIR[MAX_PATH]           = BACKUP_CONFDIR;
+char _CONFDIR_CLAMD[MAX_PATH]     = BACKUP_CONFDIR "\\clamd.conf";
+char _CONFDIR_FRESHCLAM[MAX_PATH] = BACKUP_CONFDIR "\\freshclam.conf";
+char _CONFDIR_MILTER[MAX_PATH]    = BACKUP_CONFDIR "\\clamav-milter.conf";
+
+#define CONST_DATADIR           _DATADIR
+#define CONST_CONFDIR           _CONFDIR
+#define CONST_CONFDIR_CLAMD     _CONFDIR_CLAMD
+#define CONST_CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
+#define CONST_CONFDIR_MILTER    _CONFDIR_MILTER
+
+#else
+
+#define CONST_DATADIR           DATADIR
+#define CONST_CONFDIR           CONFDIR
+#define CONST_CONFDIR_CLAMD     CONFDIR_CLAMD
+#define CONST_CONFDIR_FRESHCLAM CONFDIR_FRESHCLAM
+#define CONST_CONFDIR_MILTER    CONFDIR_MILTER
+
+#endif
+
 const struct clam_option __clam_options[] = {
-    /* name,   longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
+    /* name, longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
 
     /* cmdline only */
     {NULL, "help", 'h', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", ""},
-    {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR_CLAMD, FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP | OPT_CLAMONACC, "", ""},
-    {NULL, "config-file", 0, CLOPT_TYPE_STRING, NULL, 0, CONFDIR_FRESHCLAM, FLAG_REQUIRED, OPT_FRESHCLAM, "", ""},
-    {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR_MILTER, FLAG_REQUIRED, OPT_MILTER, "", ""},
+    {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONST_CONFDIR_CLAMD, FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP | OPT_CLAMONACC, "", ""},
+    {NULL, "config-file", 0, CLOPT_TYPE_STRING, NULL, 0, CONST_CONFDIR_FRESHCLAM, FLAG_REQUIRED, OPT_FRESHCLAM, "", ""},
+    {NULL, "config-file", 'c', CLOPT_TYPE_STRING, NULL, 0, CONST_CONFDIR_MILTER, FLAG_REQUIRED, OPT_MILTER, "", ""},
     {NULL, "version", 'V', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC | OPT_CLAMONACC, "", ""},
     {NULL, "debug", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMBC | OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", ""},
     {NULL, "gen-json", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_SIGTOOL, "", ""},
@@ -88,7 +128,7 @@ const struct clam_option __clam_options[] = {
     {NULL, "stream", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "allmatch", 'z', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_CLAMONACC, "", ""},
     {NULL, "normalize", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMSCAN, "Perform HTML, script, and text normalization", ""},
-    {NULL, "database", 'd', CLOPT_TYPE_STRING, NULL, -1, DATADIR, FLAG_REQUIRED | FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""}, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
+    {NULL, "database", 'd', CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, FLAG_REQUIRED | FLAG_MULTIPLE, OPT_CLAMSCAN, "", ""}, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
     {NULL, "recursive", 'r', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", ""},
     {NULL, "gen-mdb", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "Always generate MDB entries for PE sections", ""},
     {NULL, "follow-dir-symlinks", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 1, NULL, 0, OPT_CLAMSCAN, "", ""},
@@ -128,8 +168,8 @@ const struct clam_option __clam_options[] = {
     {NULL, "unpack", 'u', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "unpack-current", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "info", 'i', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
-    {NULL, "list-sigs", 'l', CLOPT_TYPE_STRING, NULL, -1, DATADIR, 0, OPT_SIGTOOL, "", ""},
-    {NULL, "find-sigs", 'f', CLOPT_TYPE_STRING, NULL, -1, DATADIR, FLAG_REQUIRED, OPT_SIGTOOL, "", ""},
+    {NULL, "list-sigs", 'l', CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, 0, OPT_SIGTOOL, "", ""},
+    {NULL, "find-sigs", 'f', CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, FLAG_REQUIRED, OPT_SIGTOOL, "", ""},
     {NULL, "decode-sigs", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "test-sigs", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
     {NULL, "vba", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", ""},
@@ -141,7 +181,7 @@ const struct clam_option __clam_options[] = {
     {NULL, "hybrid", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "Create a hybrid (standard and bytecode) database file", ""},
     {NULL, "defaultcolors", 'd', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDTOP, "", ""},
 
-    {NULL, "config-dir", 'c', CLOPT_TYPE_STRING, NULL, 0, CONFDIR, FLAG_REQUIRED, OPT_CLAMCONF, "", ""},
+    {NULL, "config-dir", 'c', CLOPT_TYPE_STRING, NULL, 0, CONST_CONFDIR, FLAG_REQUIRED, OPT_CLAMCONF, "", ""},
     {NULL, "non-default", 'n', CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMCONF, "", ""},
     {NULL, "generate-config", 'g', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMCONF, "", ""},
 
@@ -218,7 +258,7 @@ const struct clam_option __clam_options[] = {
 
     {"TemporaryDirectory", "tempdir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_SIGTOOL, "This option allows you to change the default temporary directory.", "/tmp"},
 
-    {"DatabaseDirectory", "datadir", 0, CLOPT_TYPE_STRING, NULL, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_SIGTOOL, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav"},
+    {"DatabaseDirectory", "datadir", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_SIGTOOL, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav"},
 
     {"OfficialDatabaseOnly", "official-db-only", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Only load the official signatures published by the ClamAV project.", "no"},
 
@@ -489,7 +529,7 @@ const struct clam_option __clam_options[] = {
 
     {"HTTPUserAgent", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If your servers are behind a firewall/proxy which does a User-Agent\nfiltering you can use this option to force the use of a different\nUser-Agent header.", "default"},
 
-    {"NotifyClamd", "daemon-notify", 0, CLOPT_TYPE_STRING, NULL, -1, CONFDIR_CLAMD, 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes"},
+    {"NotifyClamd", "daemon-notify", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_CONFDIR_CLAMD, 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes"},
 
     {"OnUpdateExecute", "on-update-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update.", "command"},
 
@@ -595,6 +635,48 @@ const struct clam_option __clam_options[] = {
 
     {NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, NULL, NULL}};
 const struct clam_option *clam_options = __clam_options;
+
+#ifdef _WIN32
+void fix_paths(void)
+{
+    int have_ddir = 0, have_cdir = 0;
+    char path[MAX_PATH] = "";
+    DWORD sizof;
+    HKEY key;
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, CLAMKEY, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
+        sizof = sizeof(path);
+        if (RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+            have_ddir = 1;
+            memcpy(_DATADIR, path, sizof);
+        }
+        sizof = sizeof(path);
+        if (RegQueryValueEx(key, "ConfDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+            have_cdir = 1;
+            memcpy(_CONFDIR, path, sizof);
+        }
+        RegCloseKey(key);
+    }
+    if (!(have_ddir | have_cdir) && GetModuleFileName(NULL, path, sizeof(path))) {
+        char *dir;
+        path[sizeof(path) - 1] = '\0';
+        dir                    = dirname(path);
+        if (!have_ddir)
+            snprintf(_DATADIR, sizeof(_DATADIR), "%s\\database", dir);
+        if (!have_cdir) {
+            strncpy(_CONFDIR, dir, sizeof(_CONFDIR));
+            have_cdir = 1;
+        }
+    }
+    _DATADIR[sizeof(_DATADIR) - 1] = '\0';
+    _CONFDIR[sizeof(_CONFDIR) - 1] = '\0';
+    if (have_cdir) {
+        snprintf(_CONFDIR_CLAMD, sizeof(_CONFDIR_CLAMD), "%s\\%s", _CONFDIR, "clamd.conf");
+        snprintf(_CONFDIR_FRESHCLAM, sizeof(_CONFDIR_FRESHCLAM), "%s\\%s", _CONFDIR, "freshclam.conf");
+        snprintf(_CONFDIR_MILTER, sizeof(_CONFDIR_MILTER), "%s\\%s", _CONFDIR, "clamav-milter.conf");
+    }
+}
+#endif
 
 const struct optstruct *optget(const struct optstruct *opts, const char *name)
 {
@@ -816,6 +898,13 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     regex_t regex;
     long long numarg, lnumarg;
     int regflags = REG_EXTENDED | REG_NOSUB;
+
+#ifdef _WIN32
+    if (!is_initialized) {
+        fix_paths();
+        is_initialized = true;
+    }
+#endif
 
     if (oldopts)
         opts = oldopts;

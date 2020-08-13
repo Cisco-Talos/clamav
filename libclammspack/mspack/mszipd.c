@@ -12,8 +12,8 @@
 
 /* MS-ZIP decompression implementation. */
 
-#include <system.h>
-#include <mszip.h>
+#include "system.h"
+#include "mszip.h"
 
 /* import bit-reading macros and code */
 #define BITS_TYPE struct mszipd_stream
@@ -24,7 +24,7 @@
     READ_IF_NEEDED;             \
     INJECT_BITS(*i_ptr++, 8);   \
 } while (0)
-#include <readbits.h>
+#include "readbits.h"
 
 /* import huffman macros and code */
 #define TABLEBITS(tbl)      MSZIP_##tbl##_TABLEBITS
@@ -32,7 +32,7 @@
 #define HUFF_TABLE(tbl,idx) zip->tbl##_table[idx]
 #define HUFF_LEN(tbl,idx)   zip->tbl##_len[idx]
 #define HUFF_ERROR          return INF_ERR_HUFFSYM
-#include <readhuff.h>
+#include "readhuff.h"
 
 #define FLUSH_IF_NEEDED do {                            \
     if (zip->window_posn == MSZIP_FRAME_SIZE) {         \
@@ -232,7 +232,7 @@ static int inflate(struct mszipd_stream *zip) {
         RESTORE_BITS;
       }
 
-      /* now huffman lengths are read for either kind of block, 
+      /* now huffman lengths are read for either kind of block,
        * create huffman decoding tables */
       if (make_decode_table(MSZIP_LITERAL_MAXSYMBOLS, MSZIP_LITERAL_TABLEBITS,
                             &zip->LITERAL_len[0], &zip->LITERAL_table[0]))
@@ -270,7 +270,7 @@ static int inflate(struct mszipd_stream *zip) {
 
           /* match position is window position minus distance. If distance
            * is more than window position numerically, it must 'wrap
-           * around' the frame size. */ 
+           * around' the frame size. */
           match_posn = ((distance > zip->window_posn) ? MSZIP_FRAME_SIZE : 0)
             + zip->window_posn - distance;
 
@@ -326,7 +326,7 @@ static int inflate(struct mszipd_stream *zip) {
  * MSZIP only expands to the size of the window, the implementation used
  * simply keeps track of the amount of data flushed, and if more than 32k
  * is flushed, an error is raised.
- */  
+ */
 static int mszipd_flush_window(struct mszipd_stream *zip,
                                unsigned int data_flushed)
 {

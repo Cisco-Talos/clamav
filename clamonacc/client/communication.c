@@ -38,7 +38,7 @@
 #include <sys/socket.h>
 #endif
 
-#include "shared/output.h"
+#include "output.h"
 
 #include "communication.h"
 

@@ -27,8 +27,12 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "libclamav/regex/regex.h"
-#include "shared/output.h"
+// libclamav
+#include "regex/regex.h"
+
+// shared
+#include "output.h"
+
 #include "whitelist.h"
 
 struct WHLST {

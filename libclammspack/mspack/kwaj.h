@@ -10,7 +10,7 @@
 #ifndef MSPACK_KWAJ_H
 #define MSPACK_KWAJ_H 1
 
-#include <lzss.h>
+#include "lzss.h"
 
 /* generic KWAJ definitions */
 #define kwajh_Signature1 (0x00)

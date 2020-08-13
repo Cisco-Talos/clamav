@@ -117,7 +117,7 @@ if test "X$have_json" = "Xyes"; then
 
     dnl Determine linking method to json
     AC_ARG_WITH([libjson-static],
-        [AC_HELP_STRING([--with-libjson-static=DIR],[path to libjson-c.a static library])],
+        [AC_HELP_STRING([--with-libjson-static=FILE],[full file path for libjson-c.a static library])],
         [
             json_linking="static"
             JSON_LIBS="$withval $LIBS"

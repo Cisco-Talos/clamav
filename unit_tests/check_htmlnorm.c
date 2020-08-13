@@ -24,13 +24,15 @@
 #include <fcntl.h>
 #include <string.h>
 
+// libclamav
+#include "clamav.h"
+#include "fmap.h"
+#include "dconf.h"
+#include "htmlnorm.h"
+#include "others.h"
+#include "fmap.h"
+
 #include "checks.h"
-#include "../libclamav/clamav.h"
-#include "../libclamav/fmap.h"
-#include "../libclamav/dconf.h"
-#include "../libclamav/htmlnorm.h"
-#include "../libclamav/others.h"
-#include "../libclamav/fmap.h"
 
 static char *dir;
 

@@ -25,7 +25,7 @@
 #define CLAMDSCAN_DEFAULT_PING_INTERVAL 1
 #define CLAMDSCAN_DEFAULT_PING_ATTEMPTS 30
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 enum {
     CONT,

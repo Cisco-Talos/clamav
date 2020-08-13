@@ -39,20 +39,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef HAVE_JSON
+#include <json.h>
+#endif
+
 #include "clamav.h"
 #include "dconf.h"
 #include "filetypes.h"
 #include "fmap.h"
-#include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
 
-#ifdef HAVE_JSON
-#include "json.h"
-#endif
+#include "unrar_iface.h"
 
 #ifdef HAVE_YARA
 #include "yara_clam.h"
@@ -488,7 +489,7 @@ extern cl_unrar_error_t (*cli_unrar_extract_file)(void *hArchive, const char *de
 extern cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
 extern void (*cli_unrar_close)(void *hArchive);
 
-extern int have_rar;
+extern LIBCLAMAV_EXPORT int have_rar;
 
 #define SCAN_ALLMATCHES (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
 #define SCAN_COLLECT_METADATA (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)

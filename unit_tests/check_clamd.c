@@ -23,7 +23,6 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-#include "shared/fdpassing.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <fcntl.h>
@@ -49,9 +48,15 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <check.h>
+
+// libclamav
+#include "clamav.h"
+#include "version.h"
+
+// shared
+#include "fdpassing.h"
+
 #include "checks_common.h"
-#include "libclamav/clamav.h"
-#include "libclamav/version.h"
 
 static int sockd;
 #define SOCKET "clamd-test.socket"

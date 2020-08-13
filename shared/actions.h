@@ -28,7 +28,7 @@
 #ifndef ACTIONS_H
 #define ACTIONS_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 /**
  * @brief Callback function to perform the action requested when actsetup() was invoked.

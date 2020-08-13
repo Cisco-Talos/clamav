@@ -1,0 +1,608 @@
+/* clamav-config.h.cmake.in.  Autoconf compatibility layer for CMake.  */
+
+/* Define if building universal (internal helper macro) */
+#cmakedefine AC_APPLE_UNIVERSAL_BUILD 1
+
+/* mmap flag for anonymous maps */
+#cmakedefine ANONYMOUS_MAP @ANONYMOUS_MAP@
+
+/* bind 8 compatibility mode, required on some systems to get T_TXT, etc from nameser_compat.h */
+#cmakedefine BIND_8_COMPAT 1
+
+/* name of the clamav group */
+#define CLAMAVGROUP "@CLAMAV_GROUP@"
+
+/* name of the clamav user */
+#define CLAMAVUSER "@CLAMAV_USER@"
+
+/* enable debugging */
+#cmakedefine CL_DEBUG 1
+
+/* enable experimental code */
+#cmakedefine CL_EXPERIMENTAL 1
+
+/* thread safe */
+#cmakedefine CL_THREAD_SAFE 1
+
+/* curses header location */
+#cmakedefine CURSES_INCLUDE @CURSES_INCLUDE@
+
+/* os is aix */
+#cmakedefine C_AIX 1
+
+/* os is beos */
+#cmakedefine C_BEOS 1
+
+/* Increase thread stack size. */
+#cmakedefine C_BIGSTACK 1
+
+/* os is bsd flavor */
+#cmakedefine C_BSD 1
+
+/* os is darwin */
+#cmakedefine C_DARWIN 1
+
+/* target is gnu-hurd */
+#cmakedefine C_GNU_HURD 1
+
+/* os is hpux */
+#cmakedefine C_HPUX 1
+
+/* os is interix */
+#cmakedefine C_INTERIX 1
+
+/* os is irix */
+#cmakedefine C_IRIX 1
+
+/* target is kfreebsd-gnu */
+#cmakedefine C_KFREEBSD_GNU 1
+
+/* target is linux */
+#cmakedefine C_LINUX 1
+
+/* os is OS/2 */
+#cmakedefine C_OS2 1
+
+/* os is osf/tru64 */
+#cmakedefine C_OSF 1
+
+/* os is QNX 6.x.x */
+#cmakedefine C_QNX6 1
+
+/* os is solaris */
+#cmakedefine C_SOLARIS 1
+
+#ifndef _WIN32
+/* Path to virus database directory. */
+#define DATADIR "@DATABASE_DIRECTORY@"
+
+/* where to look for the config file */
+#define CONFDIR "@APP_CONFIG_DIRECTORY@"
+#endif
+
+/* Have sys/fanotify.h */
+#cmakedefine HAVE_SYS_FANOTIFY_H 1
+
+/* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
+#cmakedefine FDPASS_NEED_XOPEN 1
+
+/* file i/o buffer size */
+#cmakedefine FILEBUFF @FILEBUFF@
+
+/* scan buffer size */
+#cmakedefine SCANBUFF @SCANBUFF@
+
+/* enable workaround for broken DNS servers */
+#cmakedefine FRESHCLAM_DNS_FIX 1
+
+/* use "Cache-Control: no-cache" in freshclam */
+#cmakedefine FRESHCLAM_NO_CACHE 1
+
+/* attrib aligned */
+#cmakedefine HAVE_ATTRIB_ALIGNED 1
+
+/* attrib packed */
+#cmakedefine HAVE_ATTRIB_PACKED 1
+
+/* have bzip2 */
+#cmakedefine HAVE_BZLIB_H 1
+
+/* Define to 1 if you have the `ctime_r' function. */
+#cmakedefine HAVE_CTIME_R 1
+
+/* ctime_r takes 2 arguments */
+#cmakedefine HAVE_CTIME_R_2 1
+
+/* ctime_r takes 3 arguments */
+#cmakedefine HAVE_CTIME_R_3 1
+
+/* Define to 1 if you have the declaration of `cygwin_conv_path', and to 0 if
+   you don't. */
+#cmakedefine HAVE_DECL_CYGWIN_CONV_PATH 1
+
+/* Define to 1 if you have a deprecated version of the 'libjson' library
+   (-ljson). */
+#cmakedefine HAVE_DEPRECATED_JSON 1
+
+/* Define to 1 if you have the <dirent.h> header file. */
+#cmakedefine HAVE_DIRENT_H 1
+
+/* Define if you have the GNU dld library. */
+#cmakedefine HAVE_DLD 1
+
+/* Define to 1 if you have the <dld.h> header file. */
+#cmakedefine HAVE_DLD_H 1
+
+/* Define to 1 if you have the `dlerror' function. */
+#cmakedefine HAVE_DLERROR 1
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#cmakedefine HAVE_DLFCN_H 1
+
+/* Define to 1 if you have the <dl.h> header file. */
+#cmakedefine HAVE_DL_H 1
+
+/* Define if you have the _dyld_func_lookup function. */
+#cmakedefine HAVE_DYLD 1
+
+/* Define to 1 if you have the `enable_extended_FILE_stdio' function. */
+#cmakedefine HAVE_ENABLE_EXTENDED_FILE_STDIO 1
+
+/* Define to 1 if the system has the type `error_t'. */
+#cmakedefine HAVE_ERROR_T 1
+
+/* have working file descriptor passing support */
+#cmakedefine HAVE_FD_PASSING 1
+
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#cmakedefine HAVE_FSEEKO 1
+
+/* have getaddrinfo() */
+#cmakedefine HAVE_GETADDRINFO 1
+
+/* Define to 1 if you have the `getnameinfo' function. */
+#cmakedefine HAVE_GETNAMEINFO 1
+
+/* Define to 1 if getpagesize() is available */
+#cmakedefine HAVE_GETPAGESIZE 1
+
+/* Define to 1 if you have the <grp.h> header file. */
+#cmakedefine HAVE_GRP_H 1
+
+/* Define if you have the iconv() function and it works. */
+#cmakedefine HAVE_ICONV 1
+
+/* Define to 1 if you have the `initgroups' function. */
+#cmakedefine HAVE_INITGROUPS 1
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H 1
+
+/* Define to 1 if you have the 'libjson' library (-ljson). */
+#cmakedefine HAVE_JSON 1
+
+/* Define to '1' if you have the check.h library */
+#cmakedefine HAVE_LIBCHECK 1
+
+/* Define to '1' if you have the ncurses.h library */
+#cmakedefine HAVE_LIBNCURSES 1
+
+/* Define to '1' if you have the curses.h library */
+#cmakedefine HAVE_LIBPDCURSES 1
+
+/* Define to 1 if you have the `ssl' library (-lssl). */
+#cmakedefine HAVE_LIBSSL 1
+
+/* Define to 1 if you have the 'libxml2' library (-lxml2). */
+#cmakedefine HAVE_LIBXML2 1
+
+/* Define to 1 if you have the `z' library (-lz). */
+#cmakedefine HAVE_LIBZ 1
+
+/* Define to 1 if you have the <limits.h> header file. */
+#cmakedefine HAVE_LIMITS_H 1
+
+/* Define to 1 if you have the `madvise' function. */
+#cmakedefine HAVE_MADVISE 1
+
+/* Define to 1 if you have the `mallinfo' function. */
+#cmakedefine HAVE_MALLINFO 1
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#cmakedefine HAVE_MALLOC_H 1
+
+/* Define to 1 if you have the `mkstemp' function. */
+#cmakedefine HAVE_MKSTEMP 1
+
+/* Define to 1 if you have a working `mmap' system call that supports
+   MAP_PRIVATE. */
+#cmakedefine HAVE_MMAP 1
+
+/* Define to 1 if you have a pcre library (-lpcre). */
+#cmakedefine HAVE_PCRE 1
+
+/* Define to 1 if you using the pcre2 library. */
+#cmakedefine USING_PCRE2 1
+
+/* Define to 1 if you have the `poll' function. */
+#cmakedefine HAVE_POLL 1
+
+/* Define to 1 if you have the <poll.h> header file. */
+#cmakedefine HAVE_POLL_H 1
+
+/* "pragma pack" */
+#cmakedefine HAVE_PRAGMA_PACK 1
+
+/* "pragma pack hppa/hp-ux style" */
+#cmakedefine HAVE_PRAGMA_PACK_HPPA 1
+
+/* Define if libtool can extract symbol lists from object files. */
+#cmakedefine HAVE_PRELOADED_SYMBOLS 1
+
+/* Define to 1 if you have the <pthread.h> header file */
+#cmakedefine HAVE_PTHREAD_H 1
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#cmakedefine HAVE_PWD_H 1
+
+/* Define to 1 if you have the `readdir' function. */
+#cmakedefine HAVE_READDIR 1
+
+/* Define to 1 if you have the `recvmsg' function. */
+#cmakedefine HAVE_RECVMSG 1
+
+/* have resolv.h */
+#cmakedefine HAVE_RESOLV_H 1
+
+/* Define signed right shift implementation */
+#cmakedefine HAVE_SAR 1
+
+/* Define to 1 if you have the `sched_yield' function. */
+#cmakedefine HAVE_SCHED_YIELD 1
+
+/* Define to 1 if you have the `sendmsg' function. */
+#cmakedefine HAVE_SENDMSG 1
+
+/* Define to 1 if you have the `setgroups' function. */
+#cmakedefine HAVE_SETGROUPS 1
+
+/* Define to 1 if you have the `setsid' function. */
+#cmakedefine HAVE_SETSID 1
+
+/* Define to 1 if you have the `snprintf' function. */
+#cmakedefine HAVE_SNPRINTF 1
+
+/* enable stat64 */
+#cmakedefine HAVE_STAT64 1
+
+/* Define to 1 if you have the <stdbool.h> header file. */
+#cmakedefine HAVE_STDBOOL_H 1
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H 1
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H 1
+
+/* Define to 1 if you have the `strcasestr' function. */
+#cmakedefine HAVE_STRCASESTR 1
+
+/* Define to 1 if you have the `strerror_r' function. */
+#cmakedefine HAVE_STRERROR_R 1
+
+/* Define to 1 if you have the <strings.h> header file. */
+#cmakedefine HAVE_STRINGS_H 1
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H 1
+
+/* Define to 1 if you have the `strlcat' function. */
+#cmakedefine HAVE_STRLCAT 1
+
+/* Define to 1 if you have the `strlcpy' function. */
+#cmakedefine HAVE_STRLCPY 1
+
+/* Define to 1 if you have the `strndup' function. */
+#cmakedefine HAVE_STRNDUP 1
+
+/* using internal strn functions */
+#cmakedefine HAVE_STRNI 1
+
+/* Define to 1 if you have the `strnlen' function. */
+#cmakedefine HAVE_STRNLEN 1
+
+/* Define to 1 if you have the `strnstr' function. */
+#cmakedefine HAVE_STRNSTR 1
+
+/* Define to 1 if sysconf(_SC_PAGESIZE) is available */
+#cmakedefine HAVE_SYSCONF_SC_PAGESIZE 1
+
+/* Define to 1 if you have the `sysctlbyname' function. */
+#cmakedefine HAVE_SYSCTLBYNAME 1
+
+/* systemd is supported */
+#cmakedefine HAVE_SYSTEMD 1
+
+/* Use private fts() implementation which is LFS safe */
+#cmakedefine HAVE_SYSTEM_LFS_FTS 1
+
+/* Define to 1 if you have the <sys/cdefs.h> header file. */
+#cmakedefine HAVE_SYS_CDEFS_H 1
+
+/* Define to 1 if you have the <sys/dl.h> header file. */
+#cmakedefine HAVE_SYS_DL_H 1
+
+/* Define to 1 if you have the <sys/filio.h> header file. */
+#cmakedefine HAVE_SYS_FILIO_H 1
+
+/* Define to 1 if you have the <sys/inttypes.h> header file. */
+#cmakedefine HAVE_SYS_INTTYPES_H 1
+
+/* Define to 1 if you have the <sys/int_types.h> header file. */
+#cmakedefine HAVE_SYS_INT_TYPES_H 1
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#cmakedefine HAVE_SYS_MMAN_H 1
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#cmakedefine HAVE_SYS_PARAM_H 1
+
+/* Define to 1 if you have the <sys/queue.h> header file. */
+#cmakedefine HAVE_SYS_QUEUE_H 1
+
+/* "have <sys/select.h>" */
+#cmakedefine HAVE_SYS_SELECT_H 1
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H 1
+
+/* Define to 1 if you have the <sys/times.h> header file. */
+#cmakedefine HAVE_SYS_TIMES_H 1
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H 1
+
+/* Define to 1 if you have the <sys/uio.h> header file. */
+#cmakedefine HAVE_SYS_UIO_H 1
+
+/* Define to 1 if you have the <termios.h> header file. */
+#cmakedefine HAVE_TERMIOS_H 1
+
+/* Define to 1 if you have the `timegm' function. */
+#cmakedefine HAVE_TIMEGM 1
+
+/* Define this if uname(2) is POSIX */
+#cmakedefine HAVE_UNAME_SYSCALL 1
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H 1
+
+/* Define to 1 if you have the `vsnprintf' function. */
+#cmakedefine HAVE_VSNPRINTF 1
+
+/* This value is set to 1 to indicate that the system argz facility works */
+#cmakedefine HAVE_WORKING_ARGZ 1
+
+/* yara sources are compiled in */
+#cmakedefine HAVE_YARA 1
+
+/* Define to 1 if you have the <zlib.h> header file. */
+#cmakedefine HAVE_ZLIB_H 1
+
+/* For internal use only - DO NOT DEFINE */
+#cmakedefine HAVE__INTERNAL__SHA_COLLECT 1
+
+/* Define as const if the declaration of iconv() needs const. */
+#cmakedefine ICONV_CONST @ICONV_CONST@
+
+/* "Full clamav library version number" */
+#define LIBCLAMAV_FULLVER "@LIBCLAMAV_VERSION@"
+
+/* "Major clamav library version number" */
+#define LIBCLAMAV_MAJORVER @LIBCLAMAV_SOVERSION@
+
+/* "Full freshclam library version number" */
+#define LIBFRESHCLAM_FULLVER "@LIBFRESHCLAM_VERSION@"
+
+/* "Major freshclam library version number" */
+#define LIBFRESHCLAM_MAJORVER @LIBFRESHCLAM_SOVERSION@
+
+/* The archive extension */
+#define LT_LIBEXT "@CMAKE_STATIC_LIBRARY_SUFFIX@"
+
+/* The archive prefix */
+#define LT_LIBPREFIX "@CMAKE_STATIC_LIBRARY_PREFIX@"
+
+/* Define to the extension used for runtime loadable modules, say, ".so" or ".dylib". */
+#define LT_MODULE_EXT "@CMAKE_SHARED_LIBRARY_SUFFIX@"
+
+/* Define to the name of the environment variable that determines the run-time
+   module search path. */
+#ifdef _WIN32
+#define SEARCH_LIBDIR "@CMAKE_INSTALL_PREFIX@"
+#else
+#define SEARCH_LIBDIR "@CMAKE_INSTALL_FULL_LIBDIR@"
+#endif
+
+/* Define to the shared library suffix, say, ".dylib". */
+#define LT_SHARED_EXT "@CMAKE_SHARED_LIBRARY_SUFFIX@"
+
+/* disable assertions */
+#cmakedefine NDEBUG 1
+
+/* Define if dlsym() requires a leading underscore in symbol names. */
+#cmakedefine NEED_USCORE 1
+
+/* bzip funtions do not have bz2 prefix */
+#cmakedefine NOBZ2PREFIX 1
+
+/* "no fd_set" */
+#cmakedefine NO_FD_SET 1
+
+/* Name of package */
+#define PACKAGE "@PACKAGE_NAME@"
+
+/* Define to the address where bug reports for this package should be sent. */
+#cmakedefine PACKAGE_BUGREPORT "@PACKAGE_BUGREPORT@"
+
+/* Define to the full name of this package. */
+#cmakedefine PACKAGE_NAME "@PACKAGE_NAME@"
+
+/* Define to the full name and version of this package. */
+#cmakedefine PACKAGE_STRING "@PACKAGE_STRING@"
+
+/* Define to the one symbol short name of this package. */
+#cmakedefine PACKAGE_TARNAME "@PACKAGE_TARNAME@"
+
+/* Define to the home page for this package. */
+#cmakedefine PACKAGE_URL "@PACKAGE_URL@"
+
+/* Define to the version of this package. */
+#cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"
+
+/* Libprelude support enabled */
+#cmakedefine PRELUDE 1
+
+/* Define whether application use libtool >= 2.0 */
+#cmakedefine PRELUDE_APPLICATION_USE_LIBTOOL2 1
+
+/* Define to if the `setpgrp' function takes no argument. */
+#cmakedefine SETPGRP_VOID 1
+
+/* The number of bytes in type int */
+#cmakedefine SIZEOF_INT @SIZEOF_INT@
+
+/* The number of bytes in type long */
+#cmakedefine SIZEOF_LONG @SIZEOF_LONG@
+
+/* The number of bytes in type long long */
+#cmakedefine SIZEOF_LONG_LONG @SIZEOF_LONG_LONG@
+
+/* The number of bytes in type short */
+#cmakedefine SIZEOF_SHORT @SIZEOF_SHORT@
+
+/* The number of bytes in type void * */
+#define SIZEOF_VOID_P @CMAKE_SIZEOF_VOID_P@
+
+/* Define to if you have the ANSI C header files. */
+#cmakedefine STDC_HEADERS 1
+
+/* Support for IPv6 */
+#cmakedefine SUPPORT_IPv6 1
+
+/* enable memory pools */
+#cmakedefine USE_MPOOL 1
+
+/* use syslog */
+#cmakedefine USE_SYSLOG 1
+
+/* Enable extensions on AIX 3, Interix.  */
+#ifndef _ALL_SOURCE
+#cmakedefine _ALL_SOURCE 1
+#endif
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+#cmakedefine _GNU_SOURCE 1
+#endif
+/* Enable threading extensions on Solaris.  */
+#ifndef _POSIX_PTHREAD_SEMANTICS
+#cmakedefine _POSIX_PTHREAD_SEMANTICS 1
+#endif
+/* Enable extensions on HP NonStop.  */
+#ifndef _TANDEM_SOURCE
+#cmakedefine _TANDEM_SOURCE 1
+#endif
+/* Enable general extensions on Solaris.  */
+#ifndef __EXTENSIONS__
+#cmakedefine __EXTENSIONS__ 1
+#endif
+
+/* LLVM version (if found) */
+#cmakedefine LLVM_VERSION @LLVM_VERSION_MAJOR@@LLVM_VERSION_MINOR@
+
+/* Version number of package */
+#cmakedefine VERSION "@PACKAGE_VERSION@"
+
+/* Version suffix for package */
+#cmakedefine VERSION_SUFFIX "@VERSION_SUFFIX@"
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#cmakedefine WORDS_BIGENDIAN 1
+# endif
+#endif
+
+/* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
+   `char[]'. */
+#cmakedefine YYTEXT_POINTER 1
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#cmakedefine _LARGEFILE_SOURCE 1
+
+/* Define for large files, on AIX-style hosts. */
+#cmakedefine _LARGE_FILES 1
+
+/* Define to 1 if on MINIX. */
+#cmakedefine _MINIX 1
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#cmakedefine _POSIX_1_SOURCE 2
+
+/* POSIX compatibility */
+#cmakedefine _POSIX_PII_SOCKET 1
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#cmakedefine _POSIX_SOURCE 1
+
+/* thread safe */
+#cmakedefine _REENTRANT 1
+
+/* Define so that glibc/gnulib argp.h does not typedef error_t. */
+#cmakedefine __error_t_defined 1
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#define inline @INLINE_KEYWORD@
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#cmakedefine off_t @off_t@
+
+/* Define to `int' if <sys/types.h> does not define. */
+#cmakedefine ssize_t @ssize_t@
+
+/* Define to the equivalent of the C99 'restrict' keyword, or to
+   nothing if this is not supported.  Do not define if restrict is
+   supported directly.  */
+#cmakedefine restrict @restrict@
+
+/* Work around a bug in Sun C++: it does not support _Restrict or
+   __restrict__, even though the corresponding Sun C compiler ends up with
+   "#define restrict _Restrict" or "#define restrict __restrict__" in the
+   previous line.  Perhaps some future version of Sun C++ will work with
+   restrict; if so, hopefully it defines __RESTRICT like Sun C does.  */
+#if defined __SUNPRO_CC && !defined __RESTRICT
+# define _Restrict
+# define __restrict__
+#endif
+
+/* Define to "int" if <sys/socket.h> does not define. */
+#cmakedefine socklen_t @socklen_t@
+
+#include "platform.h"

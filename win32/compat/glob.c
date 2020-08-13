@@ -22,7 +22,9 @@
 #include "dirent.h"
 #include "libgen.h"
 
+#include <stdio.h>
 #include <malloc.h>
+#include <WinNls.h>
 
 /*
     I GIVE UP! The CRT is b0rked and cannot be helped.

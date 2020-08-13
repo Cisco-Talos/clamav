@@ -209,7 +209,7 @@ my %CONF = (
     'off_t' => -1,
     'restrict' => -1,
     'socklen_t' => -1,
-    'FANOTIFY' => -1
+    'HAVE_SYS_FANOTIFY_H' => -1
     );
 
 

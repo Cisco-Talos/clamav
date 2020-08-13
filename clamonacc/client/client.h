@@ -24,7 +24,7 @@
 
 #include <curl/curl.h>
 
-#include "shared/optparser.h"
+#include "optparser.h"
 #include "../clamonacc.h"
 
 #define ONAS_DEFAULT_PING_INTERVAL 1

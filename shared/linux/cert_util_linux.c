@@ -29,10 +29,9 @@
 
 #include <curl/curl.h>
 
-#include "shared/output.h"
-
-#include "shared/cert_util.h"
-#include "shared/cert_util_internal.h"
+#include "output.h"
+#include "cert_util.h"
+#include "cert_util_internal.h"
 
 void set_tls_ca_bundle(CURL *curl)
 {

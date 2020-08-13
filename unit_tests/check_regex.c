@@ -30,16 +30,18 @@
 #include <string.h>
 #include <check.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/mbox.h"
-#include "../libclamav/message.h"
-#include "../libclamav/htmlnorm.h"
-#include "../libclamav/phishcheck.h"
-#include "../libclamav/regex_suffix.h"
-#include "../libclamav/regex_list.h"
-#include "../libclamav/phish_domaincheck_db.h"
-#include "../libclamav/phish_whitelist.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "mbox.h"
+#include "message.h"
+#include "htmlnorm.h"
+#include "phishcheck.h"
+#include "regex_suffix.h"
+#include "regex_list.h"
+#include "phish_domaincheck_db.h"
+#include "phish_whitelist.h"
+
 #include "checks.h"
 
 static size_t cb_called = 0;

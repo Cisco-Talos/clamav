@@ -50,15 +50,17 @@
 #include <stddef.h>
 #include <limits.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/str.h"
-#include "libclamav/others.h"
-
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
+// libclamav
+#include "clamav.h"
+#include "str.h"
 #include "others.h"
+
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+
+#include "clamd_others.h"
 #include "scanner.h"
 #include "server.h"
 #include "session.h"

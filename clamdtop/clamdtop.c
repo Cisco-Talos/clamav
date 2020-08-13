@@ -60,10 +60,14 @@
 #include <assert.h>
 #include <errno.h>
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
 #include "platform.h"
+
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+#include "misc.h"
 
 /* Types, prototypes and globals*/
 typedef struct connection {
@@ -441,7 +445,7 @@ static void cleanup(void)
     for (i = 0; i < global.num_clamd; i++) {
         if (global.conn[i].sd && global.conn[i].sd != -1) {
             (void)send_string_noreconn(&global.conn[i], "nEND\n");
-#ifndef WIN32
+#ifndef _WIN32
             close(global.conn[i].sd);
 #else
             closesocket(global.conn[i].sd);
@@ -718,7 +722,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
         print_con_info(conn, "Connecting to: %s\n", soname);
         if (connect(s, p->ai_addr, p->ai_addrlen)) {
             perror("connect");
-#ifndef WIN32
+#ifndef _WIN32
             close(s);
 #else
             closesocket(s);
@@ -826,7 +830,7 @@ static void reconnect(conn_t *conn)
         EXIT_PROGRAM(RECONNECT_FAIL);
     }
     if (conn->sd != -1) {
-#ifndef WIN32
+#ifndef _WIN32
         close(conn->sd);
 #else
         closesocket(conn->sd);
@@ -855,7 +859,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
             print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
             /* it could be a timeout, be nice and send an END */
             (void)send_string_noreconn(conn, "nEND\n");
-#ifndef WIN32
+#ifndef _WIN32
             close(conn->sd);
 #else
             closesocket(conn->sd);

@@ -37,18 +37,21 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#include "shared/optparser.h"
-#include "shared/misc.h"
-
 #include "clamav-config.h"
-#include "libclamav/str.h"
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/readdb.h"
-#include "libclamav/bytecode.h"
-#include "libclamav/bytecode_detect.h"
 #include "target.h"
+
+// libclamav
+#include "clamav.h"
+#include "str.h"
+#include "others.h"
+#include "readdb.h"
+#include "bytecode.h"
+#include "bytecode_detect.h"
 #include "fpu.h"
+
+// shared
+#include "optparser.h"
+#include "misc.h"
 
 #ifndef _WIN32
 extern const struct clam_option *clam_options;

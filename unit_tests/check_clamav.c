@@ -17,14 +17,17 @@
 #include <libxml/parser.h>
 #endif
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/matcher.h"
-#include "../libclamav/version.h"
-#include "../libclamav/dsig.h"
-#include "../libclamav/fpu.h"
-#include "../platform.h"
-#include "../libclamav/entconv.h"
+#include "platform.h"
+
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher.h"
+#include "version.h"
+#include "dsig.h"
+#include "fpu.h"v
+#include "entconv.h"
+
 #include "checks.h"
 
 static int fpu_words = FPU_ENDIAN_INITME;

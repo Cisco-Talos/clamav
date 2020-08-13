@@ -27,10 +27,10 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "shared/cert_util.h"
-#include "shared/cert_util_internal.h"
+#include "cert_util.h"
+#include "cert_util_internal.h"
 
-#include "shared/output.h"
+#include "output.h"
 
 static cert_store_t _cert_store = {
     .mutex = PTHREAD_MUTEX_INITIALIZER};

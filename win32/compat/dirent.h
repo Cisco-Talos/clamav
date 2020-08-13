@@ -26,6 +26,12 @@
 #include "clamav-config.h"
 #endif
 
+#include <Windows.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 #define _DIRENT_HAVE_D_TYPE
 typedef unsigned short ino_t; /* WTF?!? */
 

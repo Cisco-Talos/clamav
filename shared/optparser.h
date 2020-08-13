@@ -40,6 +40,20 @@
 #define CLOPT_TYPE_NUMBER   2    /* raw number */
 #define CLOPT_TYPE_SIZE     3    /* number possibly followed by modifiers (M/m or K/k) */
 #define CLOPT_TYPE_BOOL     4    /* boolean */
+
+#ifdef _WIN32
+extern char _DATADIR[MAX_PATH];
+extern char _CONFDIR[MAX_PATH];
+extern char _CONFDIR_CLAMD[MAX_PATH];
+extern char _CONFDIR_FRESHCLAM[MAX_PATH];
+extern char _CONFDIR_MILTER[MAX_PATH];
+
+#define DATADIR           _DATADIR
+#define CONFDIR           _CONFDIR
+#define CONFDIR_CLAMD     _CONFDIR_CLAMD
+#define CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
+#define CONFDIR_MILTER    _CONFDIR_MILTER
+#endif
 // clang-format on
 
 struct optstruct {
