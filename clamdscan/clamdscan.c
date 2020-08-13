@@ -226,8 +226,8 @@ void help(void)
     mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
     mprintf("    --file-list=FILE    -f FILE        Scan files from FILE\n");
-    mprintf("    --ping              -p A[:I]       Ping clamd A times at optional interval I.\n");
-    mprintf("    --wait              -w             Wait for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.\n");
+    mprintf("    --ping              -p A[:I]       Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf("    --wait              -w             Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");

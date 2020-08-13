@@ -28,7 +28,7 @@
 #include "../clamonacc.h"
 
 #define ONAS_DEFAULT_PING_INTERVAL 1
-#define ONAS_DEFAULT_PING_ATTEMPTS 30
+#define ONAS_DEFAULT_PING_ATTEMPTS 31
 
 enum {
     CONT,

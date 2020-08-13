@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "-devel-${TODAY}")
+set(VERSION_SUFFIX "-rc")
 
 project( ClamAV
          VERSION "0.103.0"

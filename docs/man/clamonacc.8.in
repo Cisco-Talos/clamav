@@ -33,7 +33,10 @@ Watch directories from FILE.
 Exclude directories from FILE.
 .TP
 \fB\-p A[:I], \-\-ping A[:I]\fR
-Ping clamd A times at optional interval I.
+Ping clamd up to [A] times at optional interval [I] until it responds.
+.TP
+\fB\-w, \-\-wait\fR
+Wait up to 30 seconds for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.
 .TP
 \fB\-\-remove\fR
 Remove infected files. \fBBe careful.\fR

@@ -333,9 +333,9 @@ static int startup_checks(struct onas_context *ctx)
 
 #if ((LIBCURL_VERSION_MAJOR < 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 40))
     if (optget(ctx->opts, "fdpass")->enabled || !optget(ctx->clamdopts, "TCPSocket")->enabled || !optget(ctx->clamdopts, "TCPAddr")->enabled) {
-	    logg("!Clamonacc: Version of curl is too low to use fdpassing. Please use tcp socket streaming instead\n.");
-	    ret = 2;
-	    goto done;
+        logg("!Clamonacc: Version of curl is too low to use fdpassing. Please use tcp socket streaming instead\n.");
+        ret = 2;
+        goto done;
     }
 #endif
 
@@ -404,8 +404,8 @@ void help(void)
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
     mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
-    mprintf("    --ping                 -p A[:I]    Ping clamd A times at optional interval I.\n");
-    mprintf("    --wait                 -w          Wait for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.\n");
+    mprintf("    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf("    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");

@@ -1376,7 +1376,7 @@ uint32_t engine_scan_options_ex(const uint8_t* option_name, uint32_t name_len);
 \group_adt
   * Initializes LZMA data structures for decompressing data
   * 'from_buffer' and writing uncompressed data 'to_buffer'.
-  * This function expects the LZMA data to be prefixed with an 'LZMA_ALONE' header: 
+  * This function expects the LZMA data to be prefixed with an 'LZMA_ALONE' header:
   * - One byte of lzma parameters lc, lp and pb converted into a byte value like this: lc + 9 * (5 * pb + lp).
   *   lc The number of high bits of the previous byte to use as a context for literal encoding.
   *   lp The number of low bits of the dictionary position to include in literal_pos_state.
