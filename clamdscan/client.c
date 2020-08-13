@@ -193,7 +193,7 @@ int16_t ping_clamd(const struct optstruct *opts)
                 goto done;
             }
             interval_str = strchr(attempt_str, ':');
-            if (interval_str[0] != '\0') {
+            if ((NULL != interval_str) && (interval_str[0] != '\0')) {
                 interval_str[0] = '\0';
                 interval_str++;
                 interval = cli_strntoul(interval_str, strlen(interval_str), &errchk, 10);
