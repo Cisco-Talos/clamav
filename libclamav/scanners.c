@@ -1667,7 +1667,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 {
     cl_error_t status = CL_CLEAN;
     cl_error_t ret;
-    int i, j, fd;
+    int i, j;
     size_t data_len;
     vba_project_t *vba_project;
     DIR *dd = NULL;
@@ -1693,9 +1693,12 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
         for (i = 0; i < vba_project->count; i++) {
             for (j = 1; (unsigned int)j <= vba_project->colls[i]; j++) {
+                int fd = -1;
+
                 snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", vba_project->dir, vba_project->name[i], j);
                 vbaname[sizeof(vbaname) - 1] = '\0';
-                fd                           = open(vbaname, O_RDONLY | O_BINARY);
+
+                fd = open(vbaname, O_RDONLY | O_BINARY);
                 if (fd == -1) {
                     continue;
                 }
@@ -1761,9 +1764,12 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             goto done;
         }
         while (hashcnt) {
+            int fd = -1;
+
             snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
-            fd                           = open(vbaname, O_RDONLY | O_BINARY);
+
+            fd = open(vbaname, O_RDONLY | O_BINARY);
             if (fd == -1) {
                 hashcnt--;
                 continue;
@@ -1779,6 +1785,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                     status = CL_VIRUS;
                     viruses_found++;
                     if (!SCAN_ALLMATCHES) {
+                        close(fd);
                         break;
                     }
                 }
@@ -1795,9 +1802,12 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             goto done;
         }
         while (hashcnt) {
+            int fd = -1;
+
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
-            fd                           = open(vbaname, O_RDONLY | O_BINARY);
+
+            fd = open(vbaname, O_RDONLY | O_BINARY);
             if (fd == -1) {
                 hashcnt--;
                 continue;
@@ -1850,6 +1860,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             goto done;
         }
         while (hashcnt) {
+            int fd = -1;
+
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1869,6 +1881,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             goto done;
         }
         while (hashcnt) {
+            int fd = -1;
+
             snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -1895,6 +1909,8 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
         goto done;
     }
     while (hashcnt) {
+        int fd = -1;
+
         snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
         vbaname[sizeof(vbaname) - 1] = '\0';
 
@@ -2386,6 +2402,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     if (mkdir(dir, 0700)) {
         cli_dbgmsg("OLE2: Can't create temporary directory %s\n", dir);
         free(dir);
+        dir = NULL;
         ret = CL_ETMPDIR;
         goto done;
     }
