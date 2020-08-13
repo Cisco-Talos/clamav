@@ -3240,7 +3240,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                      *    the quotes, it doesn't handle
                      *    them properly
                      */
-                    while (isspace(*ptr))
+                    while (isspace((const unsigned char) *ptr))
                         ptr++;
                     if (ptr[0] == '\"')
                         ptr++;
@@ -3296,7 +3296,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                     }
                                 }
 
-                                while (*s && !isspace(*s))
+                                while (*s && !isspace((unsigned char) *s))
                                     s++;
                                 if (*s++ == '\0')
                                     break;
@@ -3404,7 +3404,7 @@ rfc822comments(const char *in, char *out)
 
     assert(out != in);
 
-    while (isspace(*in))
+    while (isspace((const unsigned char) *in))
         in++;
 
     if (out == NULL) {
