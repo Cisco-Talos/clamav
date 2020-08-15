@@ -241,7 +241,9 @@ int16_t ping_clamd(const struct optstruct *opts)
         i++;
     } while (i < attempts);
 
+    /* timed out */
     ret = 1;
+    logg("*PING timeout exceeded with no response from clamd\n");
 
 done:
     if (attempt_str) {
@@ -361,8 +363,14 @@ int client(const struct optstruct *opts, int *infected, int *err)
     const char *fname;
 
     if (optget(opts, "wait")->enabled) {
-        if (ping_clamd(opts) != 0) {
-            return 2;
+        int16_t ping_result = ping_clamd(opts);
+        switch (ping_result) {
+            case 0:
+                break;
+            case 1:
+                return (int)CL_ETIMEOUT;
+            default:
+                return (int)CL_ERROR;
         }
     }
 

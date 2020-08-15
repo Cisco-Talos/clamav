@@ -223,7 +223,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
             }
             attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
             if (attempt_str + strlen(attempt_str) > errchk) {
-                logg("^attmept_str would go past end of buffer\n");
+                logg("^attempt_str would go past end of buffer\n");
                 ret = -1;
                 goto done;
             }
@@ -256,6 +256,8 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
 
     /* timed out */
     ret = 1;
+    logg("*PING timeout exceeded with no response from clamd\n");
+
 done:
     if (curl) {
         curl_easy_cleanup(curl);
@@ -389,11 +391,6 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
     errno = 0;
 
     opts = (*ctx)->opts;
-
-    if (optget(opts, "verbose")->enabled) {
-        mprintf_verbose = 1;
-        logg_verbose    = 1;
-    }
 
     if (optget(opts, "infected")->enabled) {
         (*ctx)->printinfected = 1;

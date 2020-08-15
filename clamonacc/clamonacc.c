@@ -120,6 +120,11 @@ int main(int argc, char **argv)
     }
     ctx->opts = opts;
 
+    if (optget(opts, "verbose")->enabled) {
+        mprintf_verbose = 1;
+        logg_verbose    = 1;
+    }
+
     /* And our config file options */
     clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
     if (clamdopts == NULL) {
@@ -132,7 +137,10 @@ int main(int argc, char **argv)
     /* Make sure we're good to begin spinup */
     ret = startup_checks(ctx);
     if (ret) {
-        goto clean_up;
+        if (ret == (int)CL_BREAK) {
+            ret = 0;
+        }
+        goto done;
     }
 
 #ifndef _WIN32
@@ -151,17 +159,17 @@ int main(int argc, char **argv)
             if (CL_SUCCESS == onas_check_client_connection(&ctx)) {
                 break;
             }
-            __attribute__((fallthrough));
+            /* fall-through */
         case CL_BREAK:
             ret = 0;
             logg("*Clamonacc: not setting up client\n");
-            goto clean_up;
+            goto done;
             break;
         case CL_EARG:
         default:
             logg("!Clamonacc: can't setup client\n");
             ret = 2;
-            goto clean_up;
+            goto done;
             break;
     }
 
@@ -177,7 +185,7 @@ int main(int argc, char **argv)
         default:
             ret = 2;
             logg("!Clamonacc: can't setup event consumer queue\n");
-            goto clean_up;
+            goto done;
             break;
     }
 
@@ -188,13 +196,13 @@ int main(int argc, char **argv)
             break;
         case CL_BREAK:
             ret = 0;
-            goto clean_up;
+            goto done;
             break;
         case CL_EARG:
         default:
             mprintf("!Clamonacc: can't setup fanotify\n");
             ret = 2;
-            goto clean_up;
+            goto done;
             break;
     }
 
@@ -205,19 +213,19 @@ int main(int argc, char **argv)
                 break;
             case CL_BREAK:
                 ret = 0;
-                goto clean_up;
+                goto done;
                 break;
             case CL_EARG:
             default:
                 mprintf("!Clamonacc: can't setup fanotify\n");
                 ret = 2;
-                goto clean_up;
+                goto done;
                 break;
         }
     }
 #else
     mprintf("!Clamonacc: currently, this application only runs on linux systems with fanotify enabled\n");
-    goto clean_up;
+    goto done;
 #endif
 
     /* Setup signal handling */
@@ -228,8 +236,8 @@ int main(int argc, char **argv)
     /*  Kick off event loop(s) */
     ret = onas_start_eloop(&ctx);
 
+done:
     /* Clean up */
-clean_up:
     onas_cleanup(ctx);
     exit(ret);
 }
@@ -306,7 +314,6 @@ int onas_start_eloop(struct onas_context **ctx)
 
 static int startup_checks(struct onas_context *ctx)
 {
-
 #if defined(HAVE_SYS_FANOTIFY_H)
     char faerr[128];
 #endif
@@ -351,23 +358,37 @@ static int startup_checks(struct onas_context *ctx)
     }
 
     if (optget(ctx->opts, "ping")->enabled && !optget(ctx->opts, "wait")->enabled) {
-        onas_ping_clamd(&ctx);
-        ret = 2;
+        int16_t ping_result = onas_ping_clamd(&ctx);
+        switch (ping_result) {
+            case 0:
+                ret = (int)CL_BREAK;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                break;
+            default:
+                ret = 2;
+                break;
+        }
         goto done;
     }
 
     if (optget(ctx->opts, "wait")->enabled) {
-        ret = onas_ping_clamd(&ctx);
-        if (ret == 0) {
-            ret = 0;
-        } else {
-            ret = 2;
-            goto done;
+        int16_t ping_result = onas_ping_clamd(&ctx);
+        switch (ping_result) {
+            case 0:
+                ret = (int)CL_BREAK;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                goto done;
+            default:
+                ret = 2;
+                goto done;
         }
     }
 
     if (0 == onas_check_remote(&ctx, &err)) {
-
         if (CL_SUCCESS != err) {
             logg("!Clamonacc: daemon is local, but a connection could not be established\n");
             ret = 2;

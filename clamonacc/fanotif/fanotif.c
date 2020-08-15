@@ -140,6 +140,7 @@ int onas_fan_eloop(struct onas_context **ctx)
     char buf[4096];
     ssize_t bread;
     struct fanotify_event_metadata *fmd;
+    char proc_fd_fname[1024];
     char fname[1024];
     int len, check;
 
@@ -185,9 +186,9 @@ int onas_fan_eloop(struct onas_context **ctx)
         while (FAN_EVENT_OK(fmd, bread)) {
             scan = 1;
             if (fmd->fd >= 0) {
-                sprintf(fname, "/proc/self/fd/%d", fmd->fd);
+                sprintf(proc_fd_fname, "/proc/self/fd/%d", fmd->fd);
                 errno = 0;
-                len   = readlink(fname, fname, sizeof(fname) - 1);
+                len   = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
                     logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));

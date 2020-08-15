@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
         mprintf("!Can't parse command line options\n");
-        return 2;
+        exit(2);
     }
 
     if (optget(opts, "help")->enabled) {
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     if ((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
         logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
         optfree(opts);
-        return 2;
+        exit(2);
     }
 
     if (optget(opts, "verbose")->enabled) {
@@ -107,10 +107,21 @@ int main(int argc, char **argv)
     }
 
     if (optget(opts, "ping")->enabled && !optget(opts, "wait")->enabled) {
-        ping_clamd(opts);
+        int16_t ping_result = ping_clamd(opts);
+        switch (ping_result) {
+            case 0:
+                ret = 0;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                break;
+            default:
+                ret = (int)CL_ERROR;
+                break;
+        }
         optfree(opts);
         optfree(clamdopts);
-        exit(0);
+        exit(ret);
     }
 
     if (optget(opts, "infected")->enabled)

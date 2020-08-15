@@ -452,6 +452,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
             goto done;
         case warning_skipped_dir:
             logg("^Directory recursion limit reached\n");
+            /* fall-through */
         case warning_skipped_link:
             status = CL_SUCCESS;
             goto done;
@@ -640,6 +641,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         case warning_skipped_special:
             logg("^%s: Not supported file type\n", filename);
             c->errors++;
+            /* fall-through */
         case warning_skipped_link:
         case visit_directory_toplev:
             status = CL_SUCCESS;
