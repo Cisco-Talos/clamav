@@ -36,6 +36,8 @@ man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
 
+if INSTALL_OPENRC_SERVICES
+
 openrcdir = $(sysconfdir)/init.d
 
 # The next rule allows us to replace @RUNSTATEDIR@ and friends within
@@ -50,6 +52,7 @@ $(nodist_openrc_SCRIPTS): $(openrc_SCRIPTS_src) $(openrc_SCRIPTS_intermediate) M
 	$(editgnudirs) $@.in > $@.tmp
 	mv $@.tmp $@
 
+endif
 EXTRA_DIST = $(openrc_SCRIPTS_src)
 
 

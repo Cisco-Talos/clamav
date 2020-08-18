@@ -56,6 +56,8 @@ if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-clamonacc.service
 endif
 
+if INSTALL_OPENRC_SERVICES
+
 openrcdir = $(sysconfdir)/init.d
 
 # The next rules allow us to replace @RUNSTATEDIR@ and friends within
@@ -70,6 +72,7 @@ $(nodist_openrc_SCRIPTS): $(openrc_SCRIPTS_src) $(openrc_SCRIPTS_intermediate) M
 	$(editgnudirs) $@.in > $@.tmp
 	mv $@.tmp $@
 
+endif
 EXTRA_DIST = $(openrc_SCRIPTS_src)
 
 LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
