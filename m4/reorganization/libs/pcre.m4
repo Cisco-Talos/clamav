@@ -6,7 +6,9 @@ AC_ARG_WITH([pcre],[AS_HELP_STRING([--with-pcre@<:@=DIR@:>@],
     @<:@default=search PATH environment variable@:>@])],
   [pcreser=$withval],[pcreser="yes"])
 
-dnl determine if specified (or default) is valid
+dnl Look for pcre-config or pcre2-config within the specified path,
+dnl or (by default) in the system's default search path. This is
+dnl the only place the value of --with-pcre is used.
 case "$pcreser" in
 no)
   pcreconfig=""
@@ -43,7 +45,9 @@ yes)
   ;;
 esac
 
-dnl use pcre-config to check version, get cflags and libs
+dnl At this point we have either found pcre(2)-config, or not, and
+dnl the path to it is stored in $pcreconfig. If we found it, we use
+dnl it to get the PCRE version, CFLAGS, LIBS, et cetera.
 found_pcre="no"
 if test "x$pcreconfig" != "x"; then
     AC_MSG_CHECKING([pcre-config version])
