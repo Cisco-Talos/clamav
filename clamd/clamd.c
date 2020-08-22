@@ -45,6 +45,7 @@
 #endif
 #include <signal.h>
 #include <errno.h>
+#include <locale.h>
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -155,6 +156,9 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
+    if(!setlocale(LC_CTYPE, "")) {
+       mprintf("^Failed to set locale\n");
+    }
 #endif
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {

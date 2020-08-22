@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <locale.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -76,11 +77,16 @@ int main(int argc, char **argv)
     if (check_flevel())
         exit(2);
 
-#if !defined(_WIN32) && !defined(C_BEOS)
+#if !defined(_WIN32)
+    if(!setlocale(LC_CTYPE, "")) {
+        mprintf("^Failed to set locale\n");
+    }
+#if !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
-#endif
+#endif /* !C_BEOS */
+#endif /* !_WIN32 */
 
     cl_initialize_crypto();
 
