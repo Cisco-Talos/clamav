@@ -161,7 +161,7 @@ typedef struct arj_decode_tag {
     int status;
 } arj_decode_t;
 
-static int fill_buf(arj_decode_t *decode_data, int n)
+static cl_error_t fill_buf(arj_decode_t *decode_data, int n)
 {
     if (decode_data->status == CL_EFORMAT)
         return CL_EFORMAT;
@@ -195,7 +195,7 @@ static int fill_buf(arj_decode_t *decode_data, int n)
     return CL_SUCCESS;
 }
 
-static int init_getbits(arj_decode_t *decode_data)
+static cl_error_t init_getbits(arj_decode_t *decode_data)
 {
     decode_data->bit_buf     = 0;
     decode_data->sub_bit_buf = 0;
@@ -212,7 +212,7 @@ static unsigned short arj_getbits(arj_decode_t *decode_data, int n)
     return x;
 }
 
-static int decode_start(arj_decode_t *decode_data)
+static cl_error_t decode_start(arj_decode_t *decode_data)
 {
     decode_data->blocksize = 0;
     return init_getbits(decode_data);
@@ -229,8 +229,8 @@ static cl_error_t write_text(int ofd, unsigned char *data, size_t length)
     return CL_SUCCESS;
 }
 
-static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitlen, int tablebits,
-                      unsigned short *table, int tablesize)
+static cl_error_t make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitlen, int tablebits,
+                             unsigned short *table, int tablesize)
 {
     unsigned short count[17], weight[17], start[18], *p;
     unsigned int i, k, len, ch, jutbits, avail, nextcode, mask;
@@ -338,7 +338,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
     return CL_SUCCESS;
 }
 
-static int read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_special)
+static cl_error_t read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_special)
 {
     int i, n;
     short c;
@@ -394,7 +394,7 @@ static int read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_specia
     return CL_SUCCESS;
 }
 
-static int read_c_len(arj_decode_t *decode_data)
+static cl_error_t read_c_len(arj_decode_t *decode_data)
 {
     short i, c, n;
     unsigned short mask;
@@ -542,9 +542,9 @@ static uint16_t decode_p(arj_decode_t *decode_data)
     return j;
 }
 
-static int decode(arj_metadata_t *metadata)
+static cl_error_t decode(arj_metadata_t *metadata)
 {
-    int ret;
+    cl_error_t ret;
 
     arj_decode_t decode_data;
     uint32_t count = 0, out_ptr = 0;
@@ -696,9 +696,9 @@ static uint16_t decode_len(arj_decode_t *decode_data)
     return c;
 }
 
-static int decode_f(arj_metadata_t *metadata)
+static cl_error_t decode_f(arj_metadata_t *metadata)
 {
-    int ret;
+    cl_error_t ret;
 
     arj_decode_t decode_data, *dd;
     uint32_t count = 0, out_ptr = 0;
@@ -787,7 +787,7 @@ static int decode_f(arj_metadata_t *metadata)
     return CL_SUCCESS;
 }
 
-static int arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
+static cl_error_t arj_unstore(arj_metadata_t *metadata, int ofd, uint32_t len)
 {
     const unsigned char *data;
     uint32_t rem;
@@ -969,7 +969,7 @@ done:
     return ret;
 }
 
-static int arj_read_file_header(arj_metadata_t *metadata)
+static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
 {
     uint16_t header_size, count;
     const char *filename, *comment;
@@ -977,7 +977,7 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     struct text_norm_state fnstate, comstate;
     unsigned char *fnnorm  = NULL;
     unsigned char *comnorm = NULL;
-    uint32_t ret           = CL_SUCCESS;
+    cl_error_t ret         = CL_SUCCESS;
 
     size_t filename_max_len = 0;
     size_t filename_len     = 0;
@@ -1139,7 +1139,7 @@ done:
     return ret;
 }
 
-int cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off)
+cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off)
 {
     UNUSEDPARAM(dirname);
     cli_dbgmsg("in cli_unarj_open\n");
@@ -1156,7 +1156,7 @@ int cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, s
     return CL_SUCCESS;
 }
 
-int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
+cl_error_t cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
 {
     cli_dbgmsg("in cli_unarj_prepare_file\n");
     if (!metadata || !dirname) {
@@ -1170,9 +1170,9 @@ int cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata)
     return arj_read_file_header(metadata);
 }
 
-int cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
+cl_error_t cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata)
 {
-    int ret = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     char filename[1024];
 
     cli_dbgmsg("in cli_unarj_extract_file\n");
