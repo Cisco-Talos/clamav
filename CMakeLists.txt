@@ -612,7 +612,7 @@ if(APPLE)
     set(C_DARWIN 1)
 endif()
 
-include(config)
+include(CheckFmapFeatures)
 if(WIN32)
     set(USE_MPOOL 1)
 endif()
