@@ -490,6 +490,7 @@ int cli_scanxar(cli_ctx *ctx)
     }
     rc = inflate(&strm, Z_SYNC_FLUSH);
     if (rc != Z_OK && rc != Z_STREAM_END) {
+        inflateEnd(&strm);
         cli_dbgmsg("cli_scanxar:inflate error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
@@ -804,14 +805,22 @@ int cli_scanxar(cli_ctx *ctx)
                 }
         } /* end of switch */
 
+        if (a_hash_ctx != NULL) {
+            xar_hash_final(a_hash_ctx, result, a_hash);
+            a_hash_ctx = NULL;
+        } else if (rc == CL_SUCCESS) {
+            cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
+            cksum_fails++;
+        }
+        if (e_hash_ctx != NULL) {
+            xar_hash_final(e_hash_ctx, result, e_hash);
+            e_hash_ctx = NULL;
+        } else if (rc == CL_SUCCESS) {
+            cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
+            cksum_fails++;
+        }
+
         if (rc == CL_SUCCESS) {
-            if (a_hash_ctx != NULL) {
-                xar_hash_final(a_hash_ctx, result, a_hash);
-                a_hash_ctx = NULL;
-            } else {
-                cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
-                cksum_fails++;
-            }
             if (a_cksum != NULL) {
                 expected = cli_hex2str((char *)a_cksum);
                 if (xar_hash_check(a_hash, result, expected) != 0) {
@@ -823,13 +832,6 @@ int cli_scanxar(cli_ctx *ctx)
                 free(expected);
             }
 
-            if (e_hash_ctx != NULL) {
-                xar_hash_final(e_hash_ctx, result, e_hash);
-                e_hash_ctx = NULL;
-            } else {
-                cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
-                cksum_fails++;
-            }
             if (e_cksum != NULL) {
                 if (do_extract_cksum) {
                     expected = cli_hex2str((char *)e_cksum);
