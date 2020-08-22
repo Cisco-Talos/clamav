@@ -894,7 +894,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 
     filename_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (filename_max_len > header_size) {
-        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
         ret = FALSE;
         goto done;
     }
@@ -912,7 +912,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
 
     comment_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (comment_max_len > header_size) {
-        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
         ret = FALSE;
         goto done;
     }
@@ -1003,7 +1003,7 @@ static int arj_read_file_header(arj_metadata_t *metadata)
     }
     if ((header_size + sizeof(header_size)) > (metadata->map->real_len - metadata->offset)) {
         cli_dbgmsg("arj_read_file_header: invalid header_size: %u, exceeds length of file.\n", header_size);
-        ret = FALSE;
+        ret = CL_EFORMAT;
         goto done;
     }
     if (fmap_readn(metadata->map, &file_hdr, metadata->offset, 30) != 30) {
@@ -1039,16 +1039,21 @@ static int arj_read_file_header(arj_metadata_t *metadata)
 
     filename_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (filename_max_len > header_size) {
-        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
-        ret = FALSE;
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
+        ret = CL_EFORMAT;
         goto done;
     }
     if (filename_max_len > 0) {
-        fnnorm   = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
-        filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
-        if (!filename || !fnnorm) {
+        fnnorm = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        if (!fnnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
-            ret = FALSE;
+            ret = CL_EMEM;
+            goto done;
+        }
+        filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
+        if (!filename) {
+            cli_dbgmsg("UNARJ: Filename is out of file\n");
+            ret = CL_EFORMAT;
             goto done;
         }
         filename_len = CLI_STRNLEN(filename, filename_max_len);
@@ -1057,16 +1062,21 @@ static int arj_read_file_header(arj_metadata_t *metadata)
 
     comment_max_len = (header_size + sizeof(header_size)) - (metadata->offset - orig_offset);
     if (comment_max_len > header_size) {
-        cli_dbgmsg("UNARJ: Format error. First Header Size invalid");
-        ret = FALSE;
+        cli_dbgmsg("UNARJ: Format error. First Header Size invalid\n");
+        ret = CL_EFORMAT;
         goto done;
     }
     if (comment_max_len > 0) {
         comnorm = cli_calloc(sizeof(unsigned char), comment_max_len + 1);
-        comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
-        if (!comment || !comnorm) {
+        if (!comnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for comment\n");
-            ret = FALSE;
+            ret = CL_EMEM;
+            goto done;
+        }
+        comment = fmap_need_offstr(metadata->map, metadata->offset, comment_max_len + 1);
+        if (!comment) {
+            cli_dbgmsg("UNARJ: comment is out of file\n");
+            ret = CL_EFORMAT;
             goto done;
         }
         comment_len += CLI_STRNLEN(comment, comment_max_len);
