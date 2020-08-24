@@ -25,7 +25,7 @@
 #include "matcher.h"
 #include "version.h"
 #include "dsig.h"
-#include "fpu.h"v
+#include "fpu.h"
 #include "entconv.h"
 
 #include "checks.h"
