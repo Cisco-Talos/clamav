@@ -148,6 +148,10 @@ ClamAV 0.103.0 includes the following improvements and changes.
   types. This change reduces file type misclassification and improves scan time
   performance by reducing duplicated file scanning.
 
+- Use pkg-config to detect libpcre2-8 before resorting to pcre2-config or
+  pcre-config.
+  Patch courtesy of Michael Orlitzky.
+
 ### Bug fixes
 
 - Fixed issue scanning directories on Windows with `clamdscan.exe` that was
@@ -223,6 +227,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - John Schember
 - Jonathan Sabbe
 - lutianxiong
+- Michael Orlitzky
 - Reio Remma
 - Sebastian A. Siewior
 - Zachary Murden
