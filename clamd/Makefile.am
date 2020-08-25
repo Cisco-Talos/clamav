@@ -18,8 +18,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
-
 sbin_PROGRAMS = clamd
 
 clamd_SOURCES = \
@@ -44,8 +42,6 @@ AM_CFLAGS=@WERR_CFLAGS@
 
 if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-daemon.socket clamav-daemon.service
-endif
-
 endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMD_LIBS@ @THREAD_LIBS@

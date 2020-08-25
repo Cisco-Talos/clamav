@@ -24,7 +24,6 @@ my %CONF = (
     'AC_APPLE_UNIVERSAL_BUILD' => -1,
     'ANONYMOUS_MAP' => -1,
     'BIND_8_COMPAT' => -1,
-    'BUILD_CLAMD' => '1',
     'CLAMAVGROUP' => '"clamav"',
     'CLAMAVUSER' => '"clamav"',
     'CLAMUKO' => -1,

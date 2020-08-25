@@ -167,9 +167,7 @@ static void help(void)
     printf("    --no-dns                             Force old non-DNS verification method\n");
     printf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
-#ifdef BUILD_CLAMD
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
-#endif
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
     printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
@@ -1528,10 +1526,8 @@ fc_error_t perform_database_update(
     }
 
     if (0 < nTotalUpdated) {
-#ifdef BUILD_CLAMD
         if (NULL != notifyClamd)
             notify(notifyClamd);
-#endif
 
         if (NULL != onUpdateExecute) {
             execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
@@ -1905,7 +1901,7 @@ int main(int argc, char **argv)
         /* Write PID of daemon process to pidfile. */
         if ((opt = optget(opts, "PidFile"))->enabled) {
             g_pidfile = opt->strarg;
-            if (writepid(g_pidfile)){
+            if (writepid(g_pidfile)) {
                 status = FC_EINIT;
                 goto done;
             }
@@ -1916,7 +1912,7 @@ int main(int argc, char **argv)
          * written the PidFile.  If it does not get this signal, it
          * will wait for our exit status (and we don't exit in daemon mode).
          */
-        if (parentPid != getpid()){ //we have been daemonized
+        if (parentPid != getpid()) { //we have been daemonized
             daemonize_signal_parent(parentPid);
         }
 #endif

@@ -23,8 +23,6 @@ CFGINST = @CFGDIR@
 
 sysconf_DATA = clamd.conf.sample freshclam.conf.sample
 
-if BUILD_CLAMD
 if HAVE_MILTER
 sysconf_DATA += clamav-milter.conf.sample
-endif
 endif

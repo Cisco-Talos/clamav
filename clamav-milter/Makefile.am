@@ -18,7 +18,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
 if HAVE_MILTER
 
 sbin_PROGRAMS = clamav-milter
@@ -36,7 +35,6 @@ clamav_milter_SOURCES = \
 man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
-endif
 endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@

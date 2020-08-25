@@ -17,8 +17,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
-
 bin_PROGRAMS = clamdscan
 
 clamdscan_SOURCES = \
@@ -29,8 +27,6 @@ clamdscan_SOURCES = \
     client.h
 
 AM_CFLAGS=@WERR_CFLAGS@
-endif
-
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CLAMDSCAN_LIBS@ @THREAD_LIBS@

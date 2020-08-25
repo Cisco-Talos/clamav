@@ -11,9 +11,6 @@
 /* enable bind8 compatibility */
 /* #undef BIND_8_COMPAT */
 
-/* "build clamd" */
-#define BUILD_CLAMD 1
-
 /* name of the clamav group */
 #define CLAMAVGROUP "clamav"
 
