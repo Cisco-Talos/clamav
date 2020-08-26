@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <string.h>
 #include <check.h>
+#include <fcntl.h>
 
 // libclamav
 #include "clamav.h"
@@ -316,7 +317,7 @@ static void psetup_impl(int load2)
     rc = init_domainlist(engine);
     ck_assert_msg(rc == CL_SUCCESS, "init_domainlist");
 
-    f = fdopen(open_testfile("input/daily.pdb"), "r");
+    f = fdopen(open_testfile("input" PATHSEP "daily.pdb", O_RDONLY | O_BINARY), "r");
     ck_assert_msg(!!f, "fopen daily.pdb");
 
     rc = load_regex_matcher(engine, engine->domainlist_matcher, f, &signo, 0, 0, NULL, 1);
@@ -326,7 +327,7 @@ static void psetup_impl(int load2)
     ck_assert_msg(signo == 201, "Incorrect number of signatures: %u, expected %u", signo, 201);
 
     if (load2) {
-        f = fdopen(open_testfile("input/daily.gdb"), "r");
+        f = fdopen(open_testfile("input" PATHSEP "daily.gdb", O_RDONLY | O_BINARY), "r");
         ck_assert_msg(!!f, "fopen daily.gdb");
 
         signo = 0;
@@ -341,7 +342,7 @@ static void psetup_impl(int load2)
     rc = init_whitelist(engine);
     ck_assert_msg(rc == CL_SUCCESS, "init_whitelist");
 
-    f     = fdopen(open_testfile("input/daily.wdb"), "r");
+    f     = fdopen(open_testfile("input" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
     signo = 0;
     rc    = load_regex_matcher(engine, engine->whitelist_matcher, f, &signo, 0, 1, NULL, 1);
     ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
@@ -620,7 +621,7 @@ END_TEST
 START_TEST(phishing_fake_test)
 {
     char buf[4096];
-    FILE *f = fdopen(open_testfile("input/daily.pdb"), "r");
+    FILE *f = fdopen(open_testfile("input" PATHSEP "daily.pdb", O_RDONLY | O_BINARY), "r");
     ck_assert_msg(!!f, "fopen daily.pdb");
     while (fgets(buf, sizeof(buf), f)) {
         struct rtest rtest;
@@ -641,7 +642,7 @@ END_TEST
 START_TEST(phishing_fake_test_allscan)
 {
     char buf[4096];
-    FILE *f = fdopen(open_testfile("input/daily.pdb"), "r");
+    FILE *f = fdopen(open_testfile("input" PATHSEP "daily.pdb", O_RDONLY | O_BINARY), "r");
     ck_assert_msg(!!f, "fopen daily.pdb");
     while (fgets(buf, sizeof(buf), f)) {
         struct rtest rtest;

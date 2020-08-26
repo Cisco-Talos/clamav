@@ -38,6 +38,7 @@ _Known Issues / To-do:_
       - [libfreshclam dependencies](#libfreshclam-dependencies)
       - [Application dependencies](#application-dependencies)
       - [Dependency build options](#dependency-build-options)
+        - [libcheck](#libcheck)
         - [bzip2](#bzip2)
         - [zlib](#zlib)
         - [libxml2](#libxml2)
@@ -95,6 +96,12 @@ cmake .. -DCMAKE_BUILD_TYPE="Debug" -DOPTIMIZE=OFF
 cmake --build . --config Debug
 ```
 
+_Tip_: CMake provides four `CMAKE_BUILD_TYPE`s / options for `--config`):
+- Debug
+- Release
+- MinSizeRel
+- RelWithDebInfo
+
 ### Build and install to a specific install location (prefix)
 
 ```sh
@@ -113,7 +120,14 @@ cmake --build . --config Release
 
 ### Build and run tests
 
-_TODO_: We have not yet added unit test support for CMake.
+The option to build and run tests is enabled by default, which requires that
+you provide libcheck `check`, `check-devel`, `check-dev`, etc.
+
+If you're building with `ENABLE_LIBCLAMAV_ONLY=ON` or `ENABLE_APP=OFF`, then
+libcheck will still be required and you can still run the tests, but it will
+skip all app tests and only run the libclamav unit tests.
+
+If you wish to disable test support, then configure with `-DENABLE_TESTS=OFF`.
 
 - `-V`: Verbose
 
@@ -227,6 +241,10 @@ cmake --build . --config Debug
 - `ENABLE_EXAMPLES`: Build examples.
 
   _Default: `OFF`_
+
+- `ENABLE_TESTS`: Build examples.
+
+  _Default: `ON`_
 
 - `ENABLE_LIBCLAMAV_ONLY`: Build libclamav only. Excludes libfreshclam too!
 
@@ -366,6 +384,7 @@ $env:CLAMAV_DEPENDENCIES="$env:userprofile\.mussels\install\x64"
 cmake ..  -G "Visual Studio 15 2017" -A x64 `
     -DJSONC_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include\json-c"         `
     -DJSONC_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\json-c.lib"             `
+    -DENABLE_JSON_SHARED=OFF                                              `
     -DBZIP2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                `
     -DBZIP2_LIBRARY_RELEASE="$env:CLAMAV_DEPENDENCIES\lib\libbz2.lib"     `
     -DCURL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
@@ -384,6 +403,8 @@ cmake ..  -G "Visual Studio 15 2017" -A x64 `
     -DPThreadW32_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pthreadVC2.lib"    `
     -DZLIB_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
     -DZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\zlibstatic.lib"          `
+    -DLIBCHECK_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"             `
+    -DLIBCHECK_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\checkDynamic.lib"    `
     -DCMAKE_INSTALL_PREFIX="install"
 cmake --build . --config Release --target install
 copy $env:CLAMAV_DEPENDENCIES\lib\* .\install
@@ -440,6 +461,14 @@ For regular folk who want the ClamAV apps, you'll also need:
 
 If you have custom install paths for the dependencies on your system or are
 on Windows, you may need to use the following options...
+
+##### libcheck
+
+```sh
+  -DLIBCHECK_ROOT_DIR="_path to libcheck install root_"
+  -DLIBCHECK_INCLUDE_DIR="_filepath of libcheck header directory_"
+  -DLIBCHECK_LIBRARY="_filepath of libcheck library_"
+```
 
 ##### bzip2
 

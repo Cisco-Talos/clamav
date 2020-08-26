@@ -178,6 +178,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H 1
 
+/* Define to 1 if you have the <inttypes.h> header file (for libjson-c). */
+#cmakedefine JSON_C_HAVE_INTTYPES_H 1
+
 /* Define to 1 if you have the 'libjson' library (-ljson). */
 #cmakedefine HAVE_JSON 1
 
@@ -384,7 +387,7 @@
 #cmakedefine HAVE_WORKING_ARGZ 1
 
 /* yara sources are compiled in */
-#cmakedefine HAVE_YARA 1
+#define HAVE_YARA 1
 
 /* Define to 1 if you have the <zlib.h> header file. */
 #cmakedefine HAVE_ZLIB_H 1

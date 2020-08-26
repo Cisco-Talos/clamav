@@ -248,7 +248,7 @@ static struct scope *scope_done(struct scope *s)
 
 static const char *scope_declare(struct scope *s, const char *token, const size_t len, struct parser_state *state)
 {
-    const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, state->var_uniq++);
+    const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)(state->var_uniq++));
     /* cli_hashtab_insert either finds an already existing entry, or allocates a
 	 * new one, we return the allocated string */
     return el ? el->key : NULL;
@@ -266,21 +266,21 @@ static const char *scope_use(struct scope *s, const char *token, const size_t le
 	 * Later if we find a declaration it will automatically assign a uniq ID
 	 * to it. If not, we'll know that we have to push ID == -1 tokens to an
 	 * outer scope.*/
-    el = cli_hashtab_insert(&s->id_map, token, len, -1);
+    el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)-1);
     return el ? el->key : NULL;
 }
 
-static long scope_lookup(struct scope *s, const char *token, const size_t len)
+static size_t scope_lookup(struct scope *s, const char *token, const size_t len)
 {
     while (s) {
         const struct cli_element *el = cli_hashtab_find(&s->id_map, token, len);
-        if (el && el->data != -1) {
-            return el->data;
+        if (el && (size_t)el->data != (size_t)-1) {
+            return (size_t)el->data;
         }
         /* not found in current scope, try in outer scope */
         s = s->parent;
     }
-    return -1;
+    return (size_t)-1;
 }
 
 static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
@@ -381,12 +381,12 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
         case TOK_IDENTIFIER_NAME:
             output_space(lastchar, 'a', out);
             if (s) {
-                long id = scope_lookup(scope, s, strlen(s));
-                if (id == -1) {
+                size_t id = scope_lookup(scope, s, strlen(s));
+                if (id == (size_t)-1) {
                     /* identifier not normalized */
                     buf_outs(s, out);
                 } else {
-                    snprintf(sbuf, sizeof(sbuf), "n%03ld", id);
+                    snprintf(sbuf, sizeof(sbuf), "n%03zu", id);
                     buf_outs(sbuf, out);
                 }
             }
@@ -1660,7 +1660,7 @@ static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 {
     size_t len = MIN(5, scanner->insize - scanner->pos);
     while (len) {
-        const struct operator*kw = in_op_set(&scanner->in[scanner->pos], len);
+        const struct operator* kw = in_op_set(&scanner->in[scanner->pos], len);
         if (kw) {
             TOKEN_SET(lvalp, cstring, kw->name);
             scanner->pos += len;

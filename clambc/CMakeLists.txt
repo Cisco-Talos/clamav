@@ -1,10 +1,11 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     add_definitions(-DHAVE_STRUCT_TIMESPEC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
 
     # Windows compatibility headers
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)

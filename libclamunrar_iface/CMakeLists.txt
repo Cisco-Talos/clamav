@@ -1,5 +1,4 @@
-
-cmake_minimum_required( VERSION 3.13 )
+# Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -23,7 +22,7 @@ target_include_directories( clamunrar_iface_iface
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> )
 
-add_library( ClamAV::libclamunrar_iface_iface ALIAS clamunrar_iface_iface )
+add_library( ClamAV::libunrar_iface_iface ALIAS clamunrar_iface_iface )
 
 if(ENABLE_UNRAR)
     # The clamunrar_iface SHARED library.
@@ -38,7 +37,7 @@ if(ENABLE_UNRAR)
     target_include_directories( clamunrar_iface
         PRIVATE
             "${CMAKE_BINARY_DIR}" # For clamav-config.h
-            $<TARGET_PROPERTY:ClamAV::libclamunrar,INTERFACE_INCLUDE_DIRECTORIES>
+            $<TARGET_PROPERTY:ClamAV::libunrar,INTERFACE_INCLUDE_DIRECTORIES>
             $<TARGET_PROPERTY:ClamAV::libclamav,INTERFACE_INCLUDE_DIRECTORIES> )
 
     set_target_properties( clamunrar_iface PROPERTIES
@@ -51,9 +50,9 @@ if(ENABLE_UNRAR)
     # Private (internal-only) dependencies.
     target_link_libraries( clamunrar_iface
         PRIVATE
-            ClamAV::libclamunrar
+            ClamAV::libunrar
         PUBLIC
-            ClamAV::libclamunrar_iface_iface)
+            ClamAV::libunrar_iface_iface)
 
     if(WIN32)
         install(TARGETS clamunrar_iface DESTINATION ${CMAKE_INSTALL_PREFIX})
@@ -61,5 +60,5 @@ if(ENABLE_UNRAR)
         install(TARGETS clamunrar_iface DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
-    add_library( ClamAV::libclamunrar_iface ALIAS clamunrar_iface )
+    add_library( ClamAV::libunrar_iface ALIAS clamunrar_iface )
 endif()

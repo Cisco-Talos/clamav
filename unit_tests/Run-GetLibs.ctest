@@ -1,0 +1,1 @@
+include(GetLibs-${CTEST_CONFIGURATION_TYPE}.ctest)

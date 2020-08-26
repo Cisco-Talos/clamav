@@ -89,6 +89,10 @@ option(ENABLE_EXAMPLES
     "Build examples."
     ${ENABLE_EXAMPLES_DEFAULT})
 
+option(ENABLE_TESTS
+    "Build/enable unit tests."
+    ${ENABLE_TESTS_DEFAULT})
+
 option(ENABLE_LIBCLAMAV_ONLY
     "Build libclamav only. Excludes libfreshclam too!")
 

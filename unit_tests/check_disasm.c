@@ -29,9 +29,12 @@
 #include <check.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 // libclamav
 #include "clamav.h"
@@ -42,8 +45,10 @@
 
 START_TEST(test_disasm_basic)
 {
-    char file[]   = "disasmXXXXXX";
-    int fd        = mkstemp(file), ref;
+    int fd               = -1;
+    char *temp_file_path = NULL;
+    cli_gentempfd_with_prefix(NULL, "disasm", &temp_file_path, &fd);
+    int ref;
     uint8_t buf[] = {
         /* m00/rm000 - add [eax], al */
         0x00,
@@ -214,7 +219,7 @@ START_TEST(test_disasm_basic)
     STATBUF st;
 
     ck_assert_msg(fd != -1, "mkstemp failed");
-    ref = open_testfile("input/disasmref.bin");
+    ref = open_testfile("input" PATHSEP "disasmref.bin", O_RDONLY | O_BINARY);
     ck_assert_msg(FSTAT(ref, &st) != -1, "fstat failed");
     disasmbuf(buf, sizeof(buf), fd);
     size = lseek(fd, 0, SEEK_CUR);
@@ -228,7 +233,8 @@ START_TEST(test_disasm_basic)
     close(ref);
     ck_assert_msg(!memcmp(d, d + size, size), "disasm data doesn't match the reference");
     free(d);
-    unlink(file);
+    unlink(temp_file_path);
+    free(temp_file_path);
 }
 END_TEST
 

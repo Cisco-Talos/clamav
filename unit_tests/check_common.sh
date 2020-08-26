@@ -126,7 +126,7 @@ scan_failed() {
     die "$2";
 }
 
-# ----------- valgrind wrapper 
+# ----------- valgrind wrapper
 init_valgrind() {
     test "x$VG" = "x1" || { echo "*** valgrind tests skipped by default, use 'make check VG=1' to activate"; exit 77; }
     VALGRIND=`which ${VALGRIND-valgrind}` || true
@@ -145,7 +145,7 @@ init_helgrind() {
 end_valgrind() {
     VLOG=valgrind$1.log
     NRUNS=`grep -a "ERROR SUMMARY" $VLOG | wc -l`
-    if test $NRUNS -ne `grep -a "ERROR SUMMARY: 0 errors" $VLOG | wc -l` || 
+    if test $NRUNS -ne `grep -a "ERROR SUMMARY: 0 errors" $VLOG | wc -l` ||
 	test `grep -a "FATAL:" $VLOG|wc -l` -ne 0; then
 	cat $VLOG
 	die "Valgrind tests failed"
@@ -285,19 +285,19 @@ run_clamdscan() {
     rm -f clamdscan-fdpass.log clamdscan-multiscan-fdpass.log clamdscan-stream.log clamdscan-multiscan-stream.log
     set +e
     $CLAMDSCAN --quiet --config-file=test-clamd.conf $* --fdpass --log=clamdscan-fdpass.log
-    if test $? = 2; then 
+    if test $? = 2; then
 	die "Failed to run clamdscan (fdpass)!"
     fi
     $CLAMDSCAN --quiet --config-file=test-clamd.conf $* -m --fdpass --log=clamdscan-multiscan-fdpass.log
-    if test $? = 2; then 
+    if test $? = 2; then
         die "Failed to run clamdscan (fdpass + multiscan)!"
     fi
     $CLAMDSCAN --quiet --config-file=test-clamd.conf $* --stream --log=clamdscan-stream.log
-    if test $? = 2; then 
+    if test $? = 2; then
     	die "Failed to run clamdscan (instream)!"
     fi
     $CLAMDSCAN --quiet --config-file=test-clamd.conf $* -m --stream --log=clamdscan-multiscan-stream.log
-    if test $? = 2; then 
+    if test $? = 2; then
 	die "Failed to run clamdscan (instream + multiscan)!"
     fi
     set -e

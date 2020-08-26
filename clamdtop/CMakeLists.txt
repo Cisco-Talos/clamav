@@ -1,10 +1,11 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     add_definitions(-DHAVE_STRUCT_TIMESPEC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
 
     # Windows compatibility headers
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
@@ -29,6 +30,29 @@ target_link_libraries( clamdtop
         Curses::curses )
 if(WIN32)
     install(TARGETS clamdtop DESTINATION ${CMAKE_INSTALL_PREFIX})
+    # Also install shared library (DLL) dependencies
+    install(CODE [[
+        file(GET_RUNTIME_DEPENDENCIES
+            EXECUTABLES
+                $<TARGET_FILE:clamdtop>
+            RESOLVED_DEPENDENCIES_VAR _r_deps
+            UNRESOLVED_DEPENDENCIES_VAR _u_deps
+            DIRECTORIES
+                $<TARGET_FILE_DIR:Curses::curses>
+        )
+        foreach(_file ${_r_deps})
+            string(TOLOWER ${_file} _file_lower)
+            if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                file(INSTALL
+                    DESTINATION "${CMAKE_INSTALL_PREFIX}"
+                    TYPE SHARED_LIBRARY
+                    FOLLOW_SYMLINK_CHAIN
+                    FILES "${_file}"
+                )
+            endif()
+        endforeach()
+        #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
+    ]])
 else()
     install(TARGETS clamdtop DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

@@ -1,5 +1,4 @@
-
-cmake_minimum_required( VERSION 3.13 )
+# Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 add_compile_definitions(RARDLL)
 add_compile_definitions(WARN_DLOPEN_FAIL)
@@ -96,4 +95,4 @@ else()
     install(TARGETS clamunrar DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-add_library( ClamAV::libclamunrar ALIAS clamunrar )
+add_library( ClamAV::libunrar ALIAS clamunrar )

@@ -187,22 +187,80 @@ static void *load_module(const char *name, const char *featurename)
     void *rhandle;
 #endif
 
-    searchpath = SEARCH_LIBDIR;
-
-    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
-    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-        snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
-
 #ifdef _WIN32
+    /*
+     * First try a standard LoadLibraryA() without specifying a full path.
+     * For more information on the DLL search order, see:
+     *  https://docs.microsoft.com/en-us/windows/desktop/Dlls/dynamic-link-library-search-order
+     */
+    cli_dbgmsg("searching for %s\n", featurename);
+#else
+    /*
+     * First search using the provided SEARCH_LIBDIR (e.g. "<prefix>/lib")
+     * Known issue: If an older clamav version is already installed, the clamav
+     * unit tests using this function will load the older library version from
+     * the install path first.
+     */
+    searchpath = SEARCH_LIBDIR;
+    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
+#endif
+
+    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+#ifdef _WIN32
+        snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
         rhandle = LoadLibraryA(modulename);
 #else  // !_WIN32
-        rhandle         = dlopen(modulename, RTLD_NOW);
+        snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", searchpath, name, suffixes[i]);
+        rhandle = dlopen(modulename, RTLD_NOW);
 #endif // !_WIN32
         if (rhandle) {
             break;
         }
 
         cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+    }
+
+    if (NULL == rhandle) {
+        char *ld_library_path = NULL;
+        /*
+         * library not found.
+         * Try again using LD_LIBRARY_PATH environment variable for the path.
+         */
+        ld_library_path = getenv("LD_LIBRARY_PATH");
+        if (NULL != ld_library_path) {
+#define MAX_LIBRARY_PATHS 10
+            size_t token_index;
+            size_t tokens_count;
+            const char *tokens[MAX_LIBRARY_PATHS];
+
+            char *tokenized_library_path = NULL;
+
+            tokenized_library_path = strdup(ld_library_path);
+            tokens_count           = cli_strtokenize(tokenized_library_path, ':', MAX_LIBRARY_PATHS, tokens);
+
+            for (token_index = 0; token_index < tokens_count; token_index++) {
+                cli_dbgmsg("searching for %s, LD_LIBRARY_PATH: %s\n", featurename, tokens[token_index]);
+
+                for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+                    snprintf(modulename, sizeof(modulename), "%s" PATHSEP "%s%s", tokens[token_index], name, suffixes[i]);
+#ifdef _WIN32
+                    rhandle = LoadLibraryA(modulename);
+#else  // !_WIN32
+                    rhandle = dlopen(modulename, RTLD_NOW);
+#endif // !_WIN32
+                    if (rhandle) {
+                        break;
+                    }
+
+                    cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+                }
+
+                if (rhandle) {
+                    break;
+                }
+            }
+            free(tokenized_library_path);
+        }
     }
 
     if (NULL == rhandle) {

@@ -1,0 +1,385 @@
+# Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+
+#
+# Assemble additional split files found in unit_tests/.split
+#
+set(TESTFILES
+    clam-phish-exe
+)
+
+# Assemble split test file
+function(assemble_testfile test_file)
+    add_custom_command(OUTPUT ${test_file}
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../test/assemble_testfile.py
+            ${test_file}
+            --build_dir ${CMAKE_CURRENT_BINARY_DIR}
+            --split_dir ${CMAKE_CURRENT_SOURCE_DIR}/.split
+        COMMENT "Assembling test file ${test_file} of ${original}")
+    add_custom_target(tgt_${test_file} ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${test_file})
+    #install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${test_file} DESTINATION ${CMAKE_INSTALL_BINDIR})
+endfunction()
+
+foreach(TESTFILE ${TESTFILES})
+    assemble_testfile(${TESTFILE})
+endforeach()
+
+
+if(WIN32)
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    add_definitions(-DHAVE_STRUCT_TIMESPEC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
+
+    # Windows compatibility headers
+    include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
+endif()
+
+#
+# Programs used by tests
+#
+
+# preprocessor defines for test programs
+if(WIN32)
+    file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR} OBJDIR)
+    string(REPLACE "\\" "\\\\" OBJDIR ${OBJDIR})
+    file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR} BUILDDIR)
+    string(REPLACE "\\" "\\\\" BUILDDIR ${BUILDDIR})
+    file(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR} SRCDIR)
+    string(REPLACE "\\" "\\\\" SRCDIR ${SRCDIR})
+else()
+    set(OBJDIR ${CMAKE_CURRENT_BINARY_DIR})
+    set(BUILDDIR ${CMAKE_CURRENT_BINARY_DIR})
+    set(SRCDIR ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+if(ENABLE_APP)
+    # check_fpu_endian is used by the clamscan tests
+    add_executable(check_fpu_endian)
+    target_sources(check_fpu_endian
+        PRIVATE
+            checks.h
+            check_fpu_endian.c)
+    target_link_libraries(check_fpu_endian
+        PRIVATE
+            libcheck::check
+            clamav_obj
+            regex
+            lzma_sdk
+            yara
+            tomsfastmath
+            bytecode_runtime
+            ClamAV::libunrar_iface_iface
+            JSONC::jsonc
+            ClamAV::libmspack
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            ZLIB::ZLIB
+            BZip2::BZip2
+            PCRE2::pcre2
+            LibXml2::LibXml2)
+    target_include_directories(check_fpu_endian PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
+    target_compile_definitions(check_fpu_endian PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
+
+    # check_clamd is used by the clamd tests
+    add_executable(check_clamd)
+    target_sources(check_clamd
+        PRIVATE   check_clamd.c checks.h)
+    target_link_libraries(check_clamd
+        PRIVATE
+            libcheck::check
+            ClamAV::shared
+            clamav_obj
+            regex
+            lzma_sdk
+            yara
+            tomsfastmath
+            bytecode_runtime
+            ClamAV::libunrar_iface_iface
+            JSONC::jsonc
+            ClamAV::libmspack
+            OpenSSL::SSL
+            OpenSSL::Crypto
+            ZLIB::ZLIB
+            BZip2::BZip2
+            PCRE2::pcre2
+            LibXml2::LibXml2)
+    target_include_directories(check_clamd PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
+    target_compile_definitions(check_clamd PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
+    ADD_CUSTOM_COMMAND(TARGET check_clamd
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/.)
+endif()
+
+#
+# Test executables
+#
+add_executable(check_clamav)
+target_sources(check_clamav
+    PRIVATE
+        checks.h
+        check_bytecode.c
+        check_clamav.c
+        check_disasm.c
+        check_htmlnorm.c
+        check_jsnorm.c
+        check_matchers.c
+        check_regex.c
+        check_str.c
+        check_uniq.c)
+target_link_libraries(check_clamav
+    PRIVATE
+        libcheck::check
+        clamav_obj
+        regex
+        lzma_sdk
+        yara
+        tomsfastmath
+        bytecode_runtime
+        ClamAV::libunrar_iface_iface
+        JSONC::jsonc
+        ClamAV::libmspack
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ZLIB::ZLIB
+        BZip2::BZip2
+        PCRE2::pcre2
+        LibXml2::LibXml2)
+target_include_directories(check_clamav PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
+target_compile_definitions(check_clamav PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
+
+#
+# Paths to pass to our tests via environment variables
+#
+if(WIN32)
+    file(TO_NATIVE_PATH ${CMAKE_SOURCE_DIR}                                     SOURCE)
+    file(TO_NATIVE_PATH ${CMAKE_BINARY_DIR}                                     BUILD)
+    file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}                             TMP)
+
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_clamav.exe        CHECK_CLAMAV)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_clamd.exe         CHECK_CLAMD)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_fpu_endian.exe    CHECK_FPU_ENDIAN)
+
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clambc.exe              CLAMBC)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamd.exe               CLAMD)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdscan.exe           CLAMDSCAN)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdtop.exe            CLAMDTOP)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamscan.exe            CLAMSCAN)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamsubmit.exe          CLAMSUBMIT)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamconf.exe            CLAMCONF)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe           FRESHCLAM)
+    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe             SIGTOOL)
+else()
+    set(LD_LIBRARY_PATH    $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:ClamAV::libmspack:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar:$<TARGET_FILE_DIR:ClamAV::libfreshclam>:$ENV{LD_LIBRARY_PATH})
+
+    set(SOURCE             ${CMAKE_SOURCE_DIR})
+    set(BUILD              ${CMAKE_BINARY_DIR})
+    set(TMP                ${CMAKE_CURRENT_BINARY_DIR})
+
+    set(CHECK_CLAMAV       $<TARGET_FILE:check_clamav>)
+    set(CHECK_CLAMD        $<TARGET_FILE:check_clamd>)
+    set(CHECK_FPU_ENDIAN   $<TARGET_FILE:check_fpu_endian>)
+
+    set(CLAMBC             $<TARGET_FILE:clambc>)
+    set(CLAMD              $<TARGET_FILE:clamd>)
+    set(CLAMDSCAN          $<TARGET_FILE:clamdscan>)
+    set(CLAMDTOP           $<TARGET_FILE:clamdtop>)
+    set(CLAMSCAN           $<TARGET_FILE:clamscan>)
+    set(CLAMSUBMIT         $<TARGET_FILE:clamsubmit>)
+    set(CLAMCONF           $<TARGET_FILE:clamconf>)
+    set(FRESHCLAM          $<TARGET_FILE:freshclam-bin>)
+    set(SIGTOOL            $<TARGET_FILE:sigtool>)
+
+    set(CLAMAV_MILTER      $<TARGET_FILE:clamav-milter>)
+    set(CLAMONACC          $<TARGET_FILE:clamonacc>)
+endif()
+
+set(ENVIRONMENT
+    PYTHONTRACEMALLOC=1 VERSION=${PROJECT_VERSION}${VERSION_SUFFIX}
+    SOURCE=${SOURCE} BUILD=${BUILD} TMP=${TMP}
+    CK_FORK=no
+    CK_DEFAULT_TIMEOUT=60
+    LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
+    SOURCE=${SOURCE}
+    BUILD=${BUILD}
+    TMP=${TMP}
+    CHECK_CLAMAV=${CHECK_CLAMAV}
+    CHECK_CLAMD=${CHECK_CLAMD}
+    CHECK_FPU_ENDIAN=${CHECK_FPU_ENDIAN}
+    CLAMBC=${CLAMBC}
+    CLAMD=${CLAMD}
+    CLAMDSCAN=${CLAMDSCAN}
+    CLAMDTOP=${CLAMDTOP}
+    CLAMSCAN=${CLAMSCAN}
+    CLAMSUBMIT=${CLAMSUBMIT}
+    CLAMCONF=${CLAMCONF}
+    FRESHCLAM=${FRESHCLAM}
+    SIGTOOL=${SIGTOOL}
+    CLAMAV_MILTER=${CLAMAV_MILTER}
+    CLAMONACC=${CLAMONACC}
+)
+
+#
+# The Tests
+# ~~~~~~~~~
+#
+# Run all tests with: `ctest`
+#                 or: `ctest -V` for verbose output
+#
+# Run a specific test like this:
+#                     `ctest -V -R libclamav_valgrind_test`
+#
+add_test(NAME libclamav COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;libclamav_test.py
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(TEST libclamav PROPERTY ENVIRONMENT ${ENVIRONMENT})
+if(Valgrind_FOUND)
+    add_test(NAME libclamav_valgrind COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;libclamav_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+endif()
+
+if(ENABLE_APP)
+    add_test(NAME clamscan COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;clamscan_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST clamscan PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME clamscan_valgrind COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;clamscan_test.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST clamscan_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+
+    add_test(NAME clamd COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;clamd_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST clamd PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME clamd_valgrind COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;clamd_test.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST clamd_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+
+    add_test(NAME freshclam COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;freshclam_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST freshclam PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME freshclam_valgrind COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;freshclam_test.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST freshclam_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+
+    add_test(NAME sigtool COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;sigtool_test.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    set_property(TEST sigtool PROPERTY ENVIRONMENT ${ENVIRONMENT})
+    if(Valgrind_FOUND)
+        add_test(NAME sigtool_valgrind COMMAND ${Python3_EXECUTABLE} -m;unittest;--verbose;sigtool_test.py
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+        set_property(TEST sigtool_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
+    endif()
+endif()
+
+if(WIN32)
+    #
+    # Prepare a test install, with all our DLL dependencies co-located with our EXEs and DLLs
+    # Generate GetLibs-$<CONFIG>.ctest which will collect all required DLL and EXE dependencies when `ctest` is run.
+    #
+    if(ENABLE_APP)
+        set(GEN_SCRIPT [[
+            # Collect runtime DLL dependencies for our libs and apps
+            file(GET_RUNTIME_DEPENDENCIES
+                LIBRARIES
+                    $<TARGET_FILE:ClamAV::libclamav>
+                    $<TARGET_FILE:ClamAV::libfreshclam>
+                EXECUTABLES
+                    $<TARGET_FILE:check_clamav>
+                    $<TARGET_FILE:check_fpu_endian>
+                    $<TARGET_FILE:check_clamd>
+                    $<TARGET_FILE:clambc>
+                    $<TARGET_FILE:clamd>
+                    $<TARGET_FILE:clamdscan>
+                    $<TARGET_FILE:clamdtop>
+                    $<TARGET_FILE:clamscan>
+                    $<TARGET_FILE:clamsubmit>
+                    $<TARGET_FILE:clamconf>
+                    $<TARGET_FILE:freshclam-bin>
+                    $<TARGET_FILE:sigtool>
+                RESOLVED_DEPENDENCIES_VAR _r_deps
+                UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                DIRECTORIES
+                    $<TARGET_FILE_DIR:OpenSSL::SSL>
+                    $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                    $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                    $<TARGET_FILE_DIR:BZip2::BZip2>
+                    $<TARGET_FILE_DIR:PCRE2::pcre2>
+                    $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                    $<TARGET_FILE_DIR:CURL::libcurl>
+                    $<TARGET_FILE_DIR:JSONC::jsonc>
+                CONFLICTING_DEPENDENCIES_PREFIX CTEST_CONFLICTING_DEPENDENCIES
+            )
+            foreach(_file ${_r_deps})
+                string(TOLOWER ${_file} _file_lower)
+                if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                    message("Collecting DLL dependency: ${_file}")
+                    file(COPY ${_file} DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
+            endforeach()
+
+            # Collect our libs
+            file(COPY $<TARGET_FILE:ClamAV::libclamav> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libfreshclam> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libunrar> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libunrar_iface> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+
+            # Collect our apps
+            file(COPY $<TARGET_FILE:check_fpu_endian> DESTINATION $<TARGET_FILE_DIR:check_fpu_endian>)
+            file(COPY $<TARGET_FILE:check_clamd> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clambc> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamd> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamdscan> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamdtop> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamscan> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamsubmit> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:clamconf> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:freshclam-bin> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:sigtool> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+        ]])
+    else()
+        # We don't have libfreshclam unit tests, so no need to check if ENABLE_LIBCLAMAV_ONLY is enabled.
+        set(GEN_SCRIPT [[
+            # Collect runtime DLL dependencies for our libs
+            file(GET_RUNTIME_DEPENDENCIES
+                LIBRARIES
+                    $<TARGET_FILE:ClamAV::libclamav>
+                EXECUTABLES
+                    $<TARGET_FILE:check_clamav>
+                RESOLVED_DEPENDENCIES_VAR _r_deps
+                UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                DIRECTORIES
+                    $<TARGET_FILE_DIR:OpenSSL::SSL>
+                    $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                    $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                    $<TARGET_FILE_DIR:BZip2::BZip2>
+                    $<TARGET_FILE_DIR:PCRE2::pcre2>
+                    $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                    $<TARGET_FILE_DIR:JSONC::jsonc>
+                CONFLICTING_DEPENDENCIES_PREFIX CTEST_CONFLICTING_DEPENDENCIES
+            )
+            foreach(_file ${_r_deps})
+                string(TOLOWER ${_file} _file_lower)
+                if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                    message("DEPENDENCY: ${_file}")
+                    file(COPY ${_file} DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
+            endforeach()
+
+            # Collect our libs
+            file(COPY $<TARGET_FILE:ClamAV::libclamav> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libunrar> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+            file(COPY $<TARGET_FILE:ClamAV::libunrar_iface> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+        ]])
+    endif()
+
+    file(GENERATE OUTPUT GetLibs-$<CONFIG>.ctest CONTENT ${GEN_SCRIPT})
+    set_directory_properties(PROPERTIES TEST_INCLUDE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Run-GetLibs.ctest)
+endif()

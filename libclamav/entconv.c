@@ -112,7 +112,7 @@ const char* entity_norm(struct entity_conv* conv, const unsigned char* entity)
 {
     struct cli_element* e = cli_hashtab_find(&entities_htable, (const char*)entity, strlen((const char*)entity));
     if (e && e->key) {
-        unsigned char* out = u16_normalize(e->data, conv->entity_buff, sizeof(conv->entity_buff) - 1);
+        unsigned char* out = u16_normalize((uint16_t)e->data, conv->entity_buff, sizeof(conv->entity_buff) - 1);
         if (out) {
             *out++ = '\0';
             return (const char*)conv->entity_buff;
@@ -127,7 +127,7 @@ static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
     /* special case for these unusual byteorders */
     struct cli_element* e = cli_hashtab_find(&aliases_htable, fromcode, strlen(fromcode));
     if (e && e->key) {
-        *encoding = e->data;
+        *encoding = (enum encodings)e->data;
     } else {
         *encoding = E_OTHER;
     }
@@ -639,14 +639,14 @@ static iconv_t iconv_open_cached(const char* fromcode)
     }
 
     e = cli_hashtab_find(&cache->hashtab, fromcode, fromcode_len);
-    if (e && (e->data < 0 || (size_t)e->data > cache->len)) {
+    if (e && ((size_t)e->data == (size_t)-1 || (size_t)e->data > cache->len)) {
         e = NULL;
     }
     if (e) {
         size_t dummy_in, dummy_out;
         /* reset state */
-        iconv(cache->tab[e->data], NULL, &dummy_in, NULL, &dummy_out);
-        return cache->tab[e->data];
+        iconv(cache->tab[(size_t)e->data], NULL, &dummy_in, NULL, &dummy_out);
+        return cache->tab[(size_t)e->data];
     }
     cli_dbgmsg(MODULE_NAME "iconv not found in cache, for encoding:%s\n", fromcode);
     iconv_struct = iconv_open("UTF-16BE", (const char*)fromcode);
@@ -664,7 +664,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
             }
         }
 
-        cli_hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
+        cli_hashtab_insert(&cache->hashtab, fromcode, fromcode_len, (const cli_element_data)idx);
         cache->tab[idx] = iconv_struct;
         cli_dbgmsg(MODULE_NAME "iconv_open(),for:%s -> %p\n", fromcode, (void*)cache->tab[idx]);
         return cache->tab[idx];
@@ -850,41 +850,70 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 /*
                  * First, Convert from codepage -> UCS-2 LE with MultiByteToWideChar(codepage)
                  */
-                cchWideChar = MultiByteToWideChar(
-                    codepage,
-                    0,
-                    in,
-                    in_size,
-                    NULL,
-                    0);
-                if (0 == cchWideChar) {
-                    cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for ansi to widechar conversion.\n");
-                    status = CL_EPARSE;
-                    goto done;
-                }
+                if (CODEPAGE_UTF16_BE == codepage) {
+                    /*
+                     * MultiByteToWideChar() does not support conversions from UTF-16BE to UTF-16LE.
+                     * However, conversion is simply a matter of swapping the bytes for each WCHAR_T.
+                     * See: https://stackoverflow.com/questions/29054217/multibytetowidechar-for-unicode-code-pages-1200-1201-12000-12001
+                     */
+                    int i = 0;
 
-                lpWideCharStr = cli_malloc((cchWideChar + 1) * sizeof(WCHAR));
-                if (NULL == lpWideCharStr) {
-                    cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
-                    status = CL_EMEM;
-                    goto done;
-                }
+                    uint16_t* pCodeUnits = (uint16_t*)in;
+                    cchWideChar          = (int)in_size / 2;
 
-                cchWideChar = MultiByteToWideChar(
-                    codepage,
-                    0,
-                    in,
-                    in_size,
-                    lpWideCharStr,
-                    cchWideChar + 1);
-                if (0 == cchWideChar) {
-                    cli_dbgmsg("cli_codepage_to_utf8: failed to convert multibyte string to widechars.\n");
-                    status = CL_EPARSE;
-                    goto done;
-                }
+                    lpWideCharStr = cli_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
+                    if (NULL == lpWideCharStr) {
+                        cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
+                        status = CL_EMEM;
+                        goto done;
+                    }
 
-                in      = (char*)lpWideCharStr;
-                in_size = cchWideChar;
+                    for (i = 0; i < cchWideChar; i++) {
+                        lpWideCharStr[i] = (WCHAR)(
+                            ((pCodeUnits[i] << 8) & 0xFF00) |
+                            ((pCodeUnits[i] >> 8) & 0x00FF));
+                    }
+                    in = (char*)lpWideCharStr;
+                    /* in_size didn't change */
+
+                } else {
+                    cchWideChar = MultiByteToWideChar(
+                        codepage,
+                        0,
+                        in,
+                        (int)in_size,
+                        NULL,
+                        0);
+                    if (0 == cchWideChar) {
+                        DWORD error = GetLastError();
+                        cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for ansi to widechar conversion: %d.\n", error);
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+
+                    lpWideCharStr = cli_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
+                    if (NULL == lpWideCharStr) {
+                        cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
+                        status = CL_EMEM;
+                        goto done;
+                    }
+
+                    cchWideChar = MultiByteToWideChar(
+                        codepage,
+                        0,
+                        in,
+                        (int)in_size,
+                        lpWideCharStr,
+                        cchWideChar);
+                    if (0 == cchWideChar) {
+                        cli_dbgmsg("cli_codepage_to_utf8: failed to convert multibyte string to widechars.\n");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+
+                    in      = (char*)lpWideCharStr;
+                    in_size = cchWideChar * sizeof(WCHAR);
+                }
             }
 
             /*
@@ -894,7 +923,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 CP_UTF8,
                 0,
                 (LPCWCH)in,
-                in_size / sizeof(WCHAR),
+                (int)in_size / sizeof(WCHAR),
                 NULL,
                 0,
                 NULL,
@@ -905,7 +934,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 goto done;
             }
 
-            out_utf8 = cli_malloc(out_utf8_size + 1);
+            out_utf8 = cli_malloc(out_utf8_size + 1); /* Add a null terminator to this string */
             if (NULL == out_utf8) {
                 cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
                 status = CL_EMEM;
@@ -916,9 +945,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 CP_UTF8,
                 0,
                 (LPCWCH)in,
-                in_size / sizeof(WCHAR),
+                (int)in_size / sizeof(WCHAR),
                 out_utf8,
-                out_utf8_size,
+                (int)out_utf8_size,
                 NULL,
                 NULL);
             if (0 == out_utf8_size) {

@@ -20,6 +20,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#undef pid_t
 #include <check.h>
 #include <fcntl.h>
 #include <string.h>
@@ -60,11 +61,11 @@ static struct test {
     const char *jsref;
 } tests[] = {
     /* NULL means don't test it */
-    {"input/htmlnorm_buf.html", "buf.nocomment.ref", "buf.notags.ref", NULL},
-    {"input/htmlnorm_encode.html", "encode.nocomment.ref", NULL, "encode.js.ref"},
-    {"input/htmlnorm_js_test.html", "js.nocomment.ref", NULL, "js.js.ref"},
-    {"input/htmlnorm_test.html", "test.nocomment.ref", "test.notags.ref", NULL},
-    {"input/htmlnorm_urls.html", "urls.nocomment.ref", "urls.notags.ref", NULL}};
+    {"input" PATHSEP "htmlnorm_buf.html", "buf.nocomment.ref", "buf.notags.ref", NULL},
+    {"input" PATHSEP "htmlnorm_encode.html", "encode.nocomment.ref", NULL, "encode.js.ref"},
+    {"input" PATHSEP "htmlnorm_js_test.html", "js.nocomment.ref", NULL, "js.js.ref"},
+    {"input" PATHSEP "htmlnorm_test.html", "test.nocomment.ref", "test.notags.ref", NULL},
+    {"input" PATHSEP "htmlnorm_urls.html", "urls.nocomment.ref", "urls.notags.ref", NULL}};
 
 static void check_dir(const char *dire, const struct test *test)
 {
@@ -72,37 +73,34 @@ static void check_dir(const char *dire, const struct test *test)
     int fd, reffd;
 
     if (test->nocommentref) {
-        snprintf(filename, sizeof(filename), "%s/nocomment.html", dire);
-        fd = open(filename, O_RDONLY);
+        snprintf(filename, sizeof(filename), "%s" PATHSEP "nocomment.html", dire);
+        fd = open(filename, O_RDONLY | O_BINARY);
         ck_assert_msg(fd > 0, "unable to open: %s", filename);
-        reffd = open_testfile(test->nocommentref);
+        reffd = open_testfile(test->nocommentref, O_RDONLY | O_BINARY);
 
         diff_files(fd, reffd);
 
-        close(reffd);
-        close(fd);
+        /* diff_files will close both fd's */
     }
     if (test->notagsref) {
-        snprintf(filename, sizeof(filename), "%s/notags.html", dire);
-        fd = open(filename, O_RDONLY);
+        snprintf(filename, sizeof(filename), "%s" PATHSEP "notags.html", dire);
+        fd = open(filename, O_RDONLY | O_BINARY);
         ck_assert_msg(fd > 0, "unable to open: %s", filename);
-        reffd = open_testfile(test->notagsref);
+        reffd = open_testfile(test->notagsref, O_RDONLY | O_BINARY);
 
         diff_files(fd, reffd);
 
-        close(reffd);
-        close(fd);
+        /* diff_files will close both fd's */
     }
     if (test->jsref) {
-        snprintf(filename, sizeof(filename), "%s/javascript", dire);
-        fd = open(filename, O_RDONLY);
+        snprintf(filename, sizeof(filename), "%s" PATHSEP "javascript", dire);
+        fd = open(filename, O_RDONLY | O_BINARY);
         ck_assert_msg(fd > 0, "unable to open: %s", filename);
-        reffd = open_testfile(test->jsref);
+        reffd = open_testfile(test->jsref, O_RDONLY | O_BINARY);
 
         diff_files(fd, reffd);
 
-        close(reffd);
-        close(fd);
+        /* diff_files will close both fd's */
     }
 }
 
@@ -114,31 +112,31 @@ START_TEST(test_htmlnorm_api)
 
     memset(&hrefs, 0, sizeof(hrefs));
 
-    fd = open_testfile(tests[_i].input);
+    fd = open_testfile(tests[_i].input, O_RDONLY | O_BINARY);
     ck_assert_msg(fd > 0, "open_testfile failed");
 
     map = fmap(fd, 0, 0, tests[_i].input);
     ck_assert_msg(!!map, "fmap failed");
 
-    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
+    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
     ck_assert_msg(html_normalise_map(map, dir, NULL, dconf) == 1, "html_normalise_map failed");
     check_dir(dir, &tests[_i]);
-    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed");
+    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
 
-    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
+    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
     ck_assert_msg(html_normalise_map(map, dir, NULL, NULL) == 1, "html_normalise_map failed");
-    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed");
+    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
 
-    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
+    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
     ck_assert_msg(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
-    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed");
+    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
     html_tag_arg_free(&hrefs);
 
     memset(&hrefs, 0, sizeof(hrefs));
     hrefs.scanContents = 1;
-    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
+    ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed: %s", dir);
     ck_assert_msg(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
-    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed");
+    ck_assert_msg(cli_rmdirs(dir) == 0, "rmdirs failed: %s", dir);
     html_tag_arg_free(&hrefs);
 
     funmap(map);
@@ -149,7 +147,7 @@ END_TEST
 
 START_TEST(test_screnc_nullterminate)
 {
-    int fd = open_testfile("input/screnc_test");
+    int fd = open_testfile("input" PATHSEP "screnc_test", O_RDONLY | O_BINARY);
     fmap_t *map;
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");

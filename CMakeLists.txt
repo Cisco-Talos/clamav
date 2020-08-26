@@ -1,10 +1,11 @@
 # Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
+cmake_minimum_required( VERSION 3.14 )
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) and install(SCRIPT)
 
 # Change this on a release:
 #  During active development: set(VERSION_SUFFIX "-devel-${TODAY}")
@@ -82,6 +83,7 @@ set(ENABLE_APP_DEFAULT          ON)
 set(ENABLE_MILTER_DEFAULT       OFF)
 set(ENABLE_CLAMONACC_DEFAULT    ON)
 set(ENABLE_EXAMPLES_DEFAULT     OFF)
+set(ENABLE_TESTS_DEFAULT        ON)
 if(WIN32)
     set(ENABLE_DOCS_DEFAULT     OFF)
 else()
@@ -137,8 +139,24 @@ endif()
 # Use the `lib` prefix on Windows, to match previous ClamAV build
 #
 if(WIN32)
-   set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
-   set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+    set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+    set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+endif()
+
+#
+# Find Test dependencies
+#
+if(ENABLE_TESTS)
+    # Used for the libclamav unit test framework
+    find_package(Libcheck REQUIRED)
+
+    # Used to generate the test files and for the application feature test framework
+    find_package(Python3 REQUIRED)
+
+    # Check for valgrind. If it exists, we'll enable extra tests that use valgrind.
+    if(LINUX)
+        find_package(Valgrind)
+    endif()
 endif()
 
 #
@@ -211,7 +229,7 @@ if(BYTECODE_RUNTIME STREQUAL "llvm")
     endif()
 endif()
 
-# libfreshclam & app dependencies
+# libfreshclam & application dependencies
 if(NOT ENABLE_LIBCLAMAV_ONLY)
     find_package(CURL REQUIRED)
 
@@ -239,6 +257,7 @@ if(NOT ENABLE_LIBCLAMAV_ONLY)
                 set(HAVE_SYSTEMD 1)
             endif()
         endif()
+
     endif()
 endif()
 
@@ -283,9 +302,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 include(GNUInstallDirs)
-
-# For test scripts and documentation
-find_package(Python3)
 
 # Always use '-fPIC'/'-fPIE' option.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -341,6 +357,12 @@ check_include_file("inttypes.h"         HAVE_INTTYPES_H)
 check_include_file("sys/inttypes.h"     HAVE_SYS_INTTYPES_H)
 check_include_file("sys/int_types.h"    HAVE_SYS_INT_TYPES_H)
 check_include_file("stdint.h"           HAVE_STDINT_H)
+
+# this hack required to silence warnings on systems with inttypes.h
+# because json-c's inttypes header isn't generated for each system. Hooray C!
+if(HAVE_INTTYPES_H)
+    set(JSON_C_HAVE_INTTYPES_H 1)
+endif()
 
 include(CheckTypeSize)
 # Checks for typedefs, structures, and compiler characteristics.
@@ -730,6 +752,13 @@ if(ENABLE_EXAMPLES)
     add_subdirectory( examples )
 endif()
 
+include(CTest)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+if(ENABLE_TESTS)
+    add_subdirectory(test)
+    add_subdirectory(unit_tests)
+endif()
+
 if(ENABLE_DOCS)
     add_subdirectory( docs )
 endif()
@@ -760,6 +789,7 @@ ${b}        Shared library:     ${e}${ENABLE_SHARED_LIB}
 ${b}        Static library:     ${e}${ENABLE_STATIC_LIB}
 ${b}        Enable UnRAR:       ${e}${ENABLE_UNRAR}
 ${b}        Examples:           ${e}${ENABLE_EXAMPLES}
+${b}        Tests:              ${e}${ENABLE_TESTS}
 ${b}        Build man pages:    ${e}${ENABLE_DOCS}
 ${b}        Build doxygen HTML: ${e}${ENABLE_DOXYGEN}")
 if(NOT WIN32)
@@ -784,7 +814,14 @@ message(STATUS "${C}Engine Options${e} --
 ${b}        Bytecode Runtime:   ${e}
 ${_}            ${BYTECODE_RUNTIME}            ${e}")
 endif()
-
+if(ENABLE_TESTS)
+message(STATUS "${C}Test Dependencies${e} --
+${b}        Unit Test Framework:${e}
+${_}            libcheck        ${e}${LIBCHECK_INCLUDE_DIR}
+${_}                            ${e}${LIBCHECK_LIBRARY}
+${b}        Feature Test Framework:${e}
+${_}            python3         ${e}${Python3_EXECUTABLE}")
+endif()
 message(STATUS "${C}libclamav Dependencies${e} --
 ${b}        Compression support:${e}
 ${_}            bzip2           ${e}${BZIP2_INCLUDE_DIRS}
