@@ -40,7 +40,10 @@ dnl
       PCRE_CPPFLAGS="${PCRE_CPPFLAGS} ${PCRE_CFLAGS}"
 
       dnl The summary at the end of ./configure checks that this is non-empty.
-      PCRE_HOME="yes"
+      PCRE_HOME="pkg-config"
+      if test -n "${PCRE_LIBS}" || test -n "${PCRE_CFLAGS}"; then
+        PCRE_HOME="${PCRE_HOME} ( ${PCRE_LIBS} ${PCRE_CFLAGS} )"
+      fi
     ], [
       dnl We didn't find libpcre2 with pkg-config, fall back to pcre(2)-config.
       AC_PATH_PROG([pcreconfig], [pcre2-config])
