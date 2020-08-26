@@ -33,8 +33,11 @@ dnl
       have_pcre="yes"
       pcrelib="pcre2"
 
-      # PCRE_LIBS contains the output of "pkg-config --libs" here.
+      # PCRE_LIBS contains the output of "pkg-config --libs" here,
+      # and likewise for PCRE_CFLAGS which is even more of a misnomer,
+      # as pkg-config --cflags outputs preprocessor flags.
       LIBS="${LIBS} ${PCRE_LIBS}"
+      PCRE_CPPFLAGS="${PCRE_CPPFLAGS} ${PCRE_CFLAGS}"
 
       dnl The summary at the end of ./configure checks that this is non-empty.
       PCRE_HOME="yes"
