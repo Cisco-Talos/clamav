@@ -338,7 +338,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
         if (true != want_directory_handle) {
             if (i == tokens_count - 1) {
                 /* Change createfile options for our target file instead of an intermediate directory. */
-                desiredAccess  = FILE_ALL_ACCESS | DELETE;
+                desiredAccess  = FILE_GENERIC_READ | DELETE;
                 fileAttributes = FILE_ATTRIBUTE_NORMAL;
                 createOptions  = FILE_NON_DIRECTORY_FILE;
                 shareAccess    = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
