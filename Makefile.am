@@ -26,7 +26,7 @@ bin_SCRIPTS=clamav-config
 
 else
 SUBDIRS = libltdl libclamav shared libfreshclam clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test clamdtop clambc unit_tests
-EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.cmake.md INSTALL.autotools.md NEWS.md README.md cmake CMakeLists.txt CMakeOptions.cmake $(top_srcdir)/**/CMakeLists.txt libclammspack/config.h.in.cmake clamav-config.h.cmake.in target.h.cmake.in
+EXTRA_DIST = examples shared libclamav.pc.in COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.llvm COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.YARA COPYING.pcre platform.h.in libclamunrar libclamunrar_iface libclammspack clamdscan/clamdscan.map win32 ChangeLog.md INSTALL.cmake.md INSTALL.autotools.md NEWS.md README.md cmake CMakeLists.txt CMakeOptions.cmake $(top_srcdir)/**/CMakeLists.txt libclammspack/config.h.in.cmake clamav-config.h.cmake.in target.h.cmake.in autogen.sh
 
 bin_SCRIPTS=clamav-config
 
