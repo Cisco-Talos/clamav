@@ -413,14 +413,6 @@ on Windows, you may need to use the following options...
 
 ##### libpcre2
 
-Hints to find libcpre2 package:
-
-```sh
-  -DPCRE2_DIR="_path to libpcre2 install root_"
-```
-
-Or, explicitly set header & library paths:
-
 ```sh
   -DPCRE2_INCLUDE_DIR="_filepath of libpcre2 header directory_"
   -DPCRE2_LIBRARY="_filepath of libcpre2 library_"

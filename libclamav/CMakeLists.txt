@@ -43,6 +43,7 @@ set_target_properties(regex PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}")
 target_link_libraries( regex
     PRIVATE
+        PCRE2::pcre2
         JSONC::jsonc )
 
 add_library( lzma_sdk OBJECT )
@@ -99,6 +100,7 @@ set_target_properties(lzma_sdk PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}")
 target_link_libraries( lzma_sdk
     PRIVATE
+        PCRE2::pcre2
         JSONC::jsonc )
 
 bison_target( yara_grammar
@@ -135,6 +137,7 @@ set_target_properties(yara PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}")
 target_link_libraries( yara
     PRIVATE
+        PCRE2::pcre2
         JSONC::jsonc )
 
 add_library( tomsfastmath OBJECT )
@@ -229,6 +232,35 @@ target_include_directories( tomsfastmath
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 set_target_properties(tomsfastmath PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}")
+
+# Bytecode Runtime
+add_library( bytecode_runtime OBJECT )
+if(LLVM_FOUND)
+    target_sources( bytecode_runtime
+        PRIVATE
+            c++/detect.cpp
+            c++/ClamBCRTChecks.cpp
+            c++/bytecode2llvm.cpp
+            bytecode_priv.h
+            bytecode.h )
+    set_target_properties(bytecode_runtime PROPERTIES
+        COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}")
+else()
+    target_sources( bytecode_runtime
+        PRIVATE
+            bytecode_nojit.c
+            bytecode_priv.h
+            bytecode.h )
+    set_target_properties(bytecode_runtime PROPERTIES
+        COMPILE_FLAGS "${WARNCFLAGS}")
+endif()
+target_include_directories( bytecode_runtime
+    PRIVATE ${CMAKE_BINARY_DIR}
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
+target_link_libraries( bytecode_runtime
+    PRIVATE
+        PCRE2::pcre2
+        JSONC::jsonc )
 
 # clamav clamav_obj
 add_library( clamav_obj OBJECT )
@@ -445,34 +477,6 @@ target_sources( clamav_obj
 if(WIN32)
     target_sources( clamav_obj PRIVATE libclamav_main.c )
 endif()
-
-# Bytecode Runtime
-add_library( bytecode_runtime OBJECT )
-if(LLVM_FOUND)
-    target_sources( bytecode_runtime
-        PRIVATE
-            c++/detect.cpp
-            c++/ClamBCRTChecks.cpp
-            c++/bytecode2llvm.cpp
-            bytecode_priv.h
-            bytecode.h )
-    set_target_properties(bytecode_runtime PROPERTIES
-        COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}")
-else()
-    target_sources( bytecode_runtime
-        PRIVATE
-            bytecode_nojit.c
-            bytecode_priv.h
-            bytecode.h )
-    set_target_properties(bytecode_runtime PROPERTIES
-        COMPILE_FLAGS "${WARNCFLAGS}")
-endif()
-target_include_directories( bytecode_runtime
-    PRIVATE ${CMAKE_BINARY_DIR}
-    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-target_link_libraries( bytecode_runtime
-    PRIVATE
-        JSONC::jsonc )
 
 target_include_directories( clamav_obj
     PRIVATE   ${CMAKE_BINARY_DIR} ${JSONC_INCLUDE_DIRS}
