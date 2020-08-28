@@ -437,7 +437,8 @@ int cli_scanxar(cli_ctx *ctx)
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
     void *a_hash_ctx = NULL, *e_hash_ctx = NULL;
-    char result[SHA1_HASH_SIZE];
+    char e_hash_result[SHA1_HASH_SIZE];
+    char a_hash_result[SHA1_HASH_SIZE];
 
     memset(&strm, 0x00, sizeof(z_stream));
 
@@ -806,14 +807,14 @@ int cli_scanxar(cli_ctx *ctx)
         } /* end of switch */
 
         if (a_hash_ctx != NULL) {
-            xar_hash_final(a_hash_ctx, result, a_hash);
+            xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
             a_hash_ctx = NULL;
         } else if (rc == CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
             cksum_fails++;
         }
         if (e_hash_ctx != NULL) {
-            xar_hash_final(e_hash_ctx, result, e_hash);
+            xar_hash_final(e_hash_ctx, e_hash_result, e_hash);
             e_hash_ctx = NULL;
         } else if (rc == CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
@@ -823,7 +824,7 @@ int cli_scanxar(cli_ctx *ctx)
         if (rc == CL_SUCCESS) {
             if (a_cksum != NULL) {
                 expected = cli_hex2str((char *)a_cksum);
-                if (xar_hash_check(a_hash, result, expected) != 0) {
+                if (xar_hash_check(a_hash, a_hash_result, expected) != 0) {
                     cli_dbgmsg("cli_scanxar: archived-checksum mismatch.\n");
                     cksum_fails++;
                 } else {
@@ -835,7 +836,7 @@ int cli_scanxar(cli_ctx *ctx)
             if (e_cksum != NULL) {
                 if (do_extract_cksum) {
                     expected = cli_hex2str((char *)e_cksum);
-                    if (xar_hash_check(e_hash, result, expected) != 0) {
+                    if (xar_hash_check(e_hash, e_hash_result, expected) != 0) {
                         cli_dbgmsg("cli_scanxar: extracted-checksum mismatch.\n");
                         cksum_fails++;
                     } else {
@@ -871,9 +872,9 @@ int cli_scanxar(cli_ctx *ctx)
 exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
     if (a_hash_ctx != NULL)
-        xar_hash_final(a_hash_ctx, result, a_hash);
+        xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
     if (e_hash_ctx != NULL)
-        xar_hash_final(e_hash_ctx, result, e_hash);
+        xar_hash_final(e_hash_ctx, e_hash_result, e_hash);
 
 exit_reader:
     if (a_cksum != NULL)
