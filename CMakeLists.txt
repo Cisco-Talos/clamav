@@ -65,11 +65,12 @@ find_package(PkgConfig QUIET)
 # Find Build Tools
 #
 
-# Bison, Flex required to build Yara module for libclamav.
-find_package(BISON REQUIRED)
-find_package(FLEX  REQUIRED)
 if(MAINTAINER_MODE)
-    find_package(GPERF REQUIRED)
+    # Bison, Flex required to build Yara module for libclamav.
+    find_package(BISON REQUIRED)
+    find_package(FLEX  REQUIRED)
+    # TODO: Gperf required to generate JS-normalization code.
+    # find_package(GPERF REQUIRED)
 endif()
 
 #

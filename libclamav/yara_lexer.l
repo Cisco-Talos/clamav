@@ -95,6 +95,7 @@ limitations under the License.
 %option nounput
 %option yylineno
 /* %option prefix="yara_yy" */
+%option outfile="yara_lexer.c"
 
 %option verbose
 %option warn

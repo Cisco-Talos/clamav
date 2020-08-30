@@ -18,7 +18,7 @@ _Known Issues / To-do:_
   - The built-in LLVM runtime is not supported in the CMake tooling with no
     plans to add support. It will likely be removed when system-LLVM support
     is updated.
-- Complete the MAINTAINER_MODE option to generate files with GPerf.
+- Complete the MAINTAINER_MODE option to generate jsparse files with GPerf.
 
 - [Installation Instructions](#installation-instructions)
   - [CMake Basics](#cmake-basics)
@@ -243,6 +243,11 @@ cmake --build . --config Debug
 - `ENABLE_SYSTEMD`: Install systemd service files if systemd is found.
 
   _Default: `ON`_
+
+- `MAINTAINER_MODE`: Generate Yara lexer and grammar C source with Flex & Bison.
+  TODO: Also generate JS parse source with Gperf.
+
+  _Default: `OFF`_
 
 - `SYSTEMD_UNIT_DIR`: Install systemd service files to a specific directory.
   This will fail the build if systemd not found.

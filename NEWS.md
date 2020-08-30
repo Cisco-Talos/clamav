@@ -209,10 +209,6 @@ ClamAV 0.103.0 includes the following improvements and changes.
   you compile ClamAV, run `autogen.sh`.
   Users building with Autotools from the release tarball should be unaffected.
 
-- Flex and Bison are now required in order to build from a Git clone.
-  Flex and Bison are also required to build with CMake.
-  Users building with Autotools from the release tarball should be unaffected.
-
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:

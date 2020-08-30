@@ -419,9 +419,9 @@
     <ClCompile Include="..\libclamav\yara_arena.c" />
     <ClCompile Include="..\libclamav\yara_compiler.c" />
     <ClCompile Include="..\libclamav\yara_exec.c" />
-    <ClCompile Include="compat\yara_grammar.c" />
+    <ClCompile Include="..\libclamav\yara_grammar.c" />
     <ClCompile Include="..\libclamav\yara_hash.c" />
-    <ClCompile Include="compat\yara_lexer.c" />
+    <ClCompile Include="..\libclamav\yara_lexer.c" />
     <ClCompile Include="..\libclamav\yara_parser.c" />
     <ClCompile Include="..\libclamav\yc.c" />
     <ClCompile Include="..\libclamav\libclamav_main.c" />

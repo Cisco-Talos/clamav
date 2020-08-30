@@ -103,11 +103,13 @@ target_link_libraries( lzma_sdk
         PCRE2::pcre2
         JSONC::jsonc )
 
-bison_target( yara_grammar
-    yara_grammar.y ${CMAKE_CURRENT_BINARY_DIR}/yara_grammar.c )
-flex_target( yara_lexer
-    yara_lexer.l ${CMAKE_CURRENT_BINARY_DIR}/yara_lexer.c )
-add_flex_bison_dependency(yara_lexer yara_grammar)
+if(MAINTAINER_MODE)
+    bison_target( yara_grammar
+        yara_grammar.y ${CMAKE_CURRENT_SOURCE_DIR}/yara_grammar.c )
+    flex_target( yara_lexer
+        yara_lexer.l ${CMAKE_CURRENT_SOURCE_DIR}/yara_lexer.c )
+    add_flex_bison_dependency(yara_lexer yara_grammar)
+endif()
 
 add_library( yara OBJECT )
 target_sources( yara
@@ -126,6 +128,19 @@ target_sources( yara
         yara_hash.h
         yara_exec.h
         yara_parser.h )
+
+if(MAINTAINER_MODE)
+    target_sources( yara
+        PRIVATE
+            ${BISON_yara_grammar_OUTPUTS}
+            ${FLEX_yara_lexer_OUTPUTS} )
+else()
+    target_sources( yara
+        PRIVATE
+            yara_grammar.c
+            yara_lexer.c )
+endif()
+
 target_include_directories( yara
     PRIVATE
         ${CMAKE_BINARY_DIR}

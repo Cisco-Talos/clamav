@@ -120,6 +120,7 @@ limitations under the License.
 
 // %debug
 %name-prefix="yara_yy"
+%output "yara_grammar.c"
 %pure-parser
 %parse-param {void *yyscanner}
 %parse-param {YR_COMPILER* compiler}
