@@ -289,3 +289,11 @@
    fun:cli_binhex
    ...
 }
+{
+   unrar-wcsrtombs-4
+   Memcheck:Cond
+   fun:internal_utf8_loop
+   fun:__gconv_transform_internal_utf8
+   fun:wcsrtombs
+   ...
+}
