@@ -34,6 +34,9 @@
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <sys/socket.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/types.h>
 #endif
 #include <dirent.h>
 #include <fcntl.h>
@@ -325,7 +328,7 @@ static void daemonize_child_initialized_handler(int sig)
     exit(0);
 }
 
-int daemonize_parent_wait()
+int daemonize_parent_wait(const char * const user, const char * const log_file)
 {
     int daemonizePid = daemonize_all_return();
     if (daemonizePid == -1) {
@@ -349,6 +352,12 @@ int daemonize_parent_wait()
             return -1;
         }
 
+        if (NULL != user){
+            if (drop_privileges(user, log_file)){
+                return -1;
+            }
+        }
+
         int exitStatus;
         wait(&exitStatus);
         if (WIFEXITED(exitStatus)) { //error
@@ -364,7 +373,67 @@ void daemonize_signal_parent(pid_t parentPid)
     close_std_descriptors();
     kill(parentPid, SIGINT);
 }
+
+int drop_privileges( const char * const user_name, const char * const log_file) {
+    int ret = 1;
+
+    /*This function is called in a bunch of places, and rather than change the error checking
+     * in every function, we are just going to return success if there is no work to do.
+     */
+    if ((0 == geteuid()) && (NULL != user_name)){
+        struct passwd *user = NULL;
+
+        if ((user = getpwnam(user_name)) == NULL) {
+            logg("^Can't get information about user %s.\n", user_name);
+            fprintf(stderr, "ERROR: Can't get information about user %s.\n", user_name);
+            goto done;
+        }
+
+#ifdef HAVE_INITGROUPS
+        if (initgroups(user_name, user->pw_gid)) {
+            fprintf(stderr, "ERROR: initgroups() failed.\n");
+            logg("^initgroups() failed.\n");
+            goto done;
+        }
+#elif HAVE_SETGROUPS
+        if (setgroups(1, &user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgroups() failed.\n");
+            logg("^setgroups() failed.\n");
+            goto done;
+        }
 #endif
+
+        /*Change ownership of the log file to the user we are going to switch to.*/
+        if (NULL != log_file){
+            int ret = lchown(log_file, user->pw_uid, user->pw_gid);
+            if (ret){
+                fprintf(stderr, "ERROR: lchown to user '%s' failed on\n", user->pw_name);
+                fprintf(stderr, "log file '%s'.\n", log_file);
+                fprintf(stderr, "Error was '%s'\n", strerror(errno));
+                logg("^lchown to user '%s' failed on log file '%s'.  Error was '%s'\n", 
+                        user->pw_name, log_file, strerror(errno));
+                goto done;
+            }
+        }
+
+        if (setgid(user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
+            logg("^setgid(%d) failed.\n", (int)user->pw_gid);
+            goto done;
+        }
+
+        if (setuid(user->pw_uid)) {
+            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
+            logg("^setuid(%d) failed.\n", (int)user->pw_uid);
+            goto done;
+        }
+    }
+    ret = 0;
+
+done:
+    return ret;
+}
+#endif /*_WIN32*/
 
 int match_regex(const char *filename, const char *pattern)
 {

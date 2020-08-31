@@ -90,9 +90,13 @@ int main(int argc, char **argv)
     time_t currtime;
     mode_t umsk;
     pid_t parentPid = getpid();
+#ifndef _WIN32
+    int dropPrivRet = 0;
+#endif /* _WIN32 */
 
     sigset_t sigset;
     struct sigaction act;
+    const char * user_name = NULL;
 
     cl_initialize_crypto();
 
@@ -153,6 +157,10 @@ int main(int argc, char **argv)
         return 1;
     }
     free(pt);
+
+    if ((opt = optget(opts, "User"))->enabled){
+        user_name = opt->strarg;
+    }
 
     if ((opt = optget(opts, "Chroot"))->enabled) {
         if (chdir(opt->strarg) != 0) {
@@ -252,11 +260,11 @@ int main(int argc, char **argv)
             }
         }
 
-        if ((opt = optget(opts, "User"))->enabled) {
+        if (NULL != user_name) {
             struct passwd *user;
-            if ((user = getpwnam(opt->strarg)) == NULL) {
+            if ((user = getpwnam(user_name)) == NULL) {
                 logg("ERROR: Can't get information about user %s.\n",
-                     opt->strarg);
+                     user_name);
                 logg_close();
                 optfree(opts);
                 return 1;
@@ -360,7 +368,7 @@ int main(int argc, char **argv)
 
 #ifndef _WIN32
     if (!optget(opts, "Foreground")->enabled) {
-        if (-1 == daemonize_parent_wait()) {
+        if (-1 == daemonize_parent_wait(user_name, logg_file)) {
             logg("!daemonize() failed\n");
             localnets_free();
             whitelist_free();
@@ -425,6 +433,22 @@ int main(int argc, char **argv)
         }
         umask(old_umask);
 
+#ifndef _WIN32
+        if (0 == err){
+            /*If the file has already been created by a different user, it will just be
+             * rewritten by us, but not change the ownership, so do that explicitly.
+             */
+            if (0 == geteuid()){
+                struct passwd * pw = getpwuid(0);
+                int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+                if (ret){
+                    logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
+                    err = 1;
+                }
+            }
+        }
+#endif /*_WIN32*/
+
         if (err){
             localnets_free();
             whitelist_free();
@@ -434,42 +458,13 @@ int main(int argc, char **argv)
         }
     }
 
-
-    if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
-        struct passwd *user = NULL;
-        if ((user = getpwnam(opt->strarg)) == NULL) {
-            fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
-            optfree(opts);
-            return 1;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(opt->strarg, user->pw_gid)) {
-            fprintf(stderr, "ERROR: initgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#endif
-        if (setgid(user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
-            optfree(opts);
-            return 1;
-        }
-
-        if (setuid(user->pw_uid)) {
-            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
-            optfree(opts);
-            return 1;
-        }
+#ifndef _WIN32
+    dropPrivRet = drop_privileges(user_name, logg_file);
+    if (dropPrivRet){
+        optfree(opts);
+        return dropPrivRet;
     }
 
-#ifndef _WIN32
     /* We have been daemonized, and initialization is done.  Signal
      * the parent process so that it can exit cleanly.
      */

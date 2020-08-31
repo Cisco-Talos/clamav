@@ -126,6 +126,7 @@ int main(int argc, char **argv)
     struct passwd *user = NULL;
     struct sigaction sa;
     struct rlimit rlim;
+    int dropPrivRet = 0;
 #endif
     time_t currtime;
     const char *dbdir, *cfgfile;
@@ -144,6 +145,7 @@ int main(int argc, char **argv)
 #endif
     pid_t mainpid = 0;
     mode_t old_umask = 0;
+    const char * user_name = NULL;
 
     if (check_flevel())
         exit(1);
@@ -208,6 +210,10 @@ int main(int argc, char **argv)
     }
     free(pt);
 
+    if ((opt = optget(opts, "User"))->enabled){
+        user_name = opt->strarg;
+    }
+
     if (optget(opts, "version")->enabled) {
         print_version(optget(opts, "DatabaseDirectory")->strarg);
         optfree(opts);
@@ -267,7 +273,7 @@ int main(int argc, char **argv)
 #endif
             gengine = engine;
             atexit(free_engine);
-            daemonizeRet = daemonize_parent_wait();
+            daemonizeRet = daemonize_parent_wait(user_name, logg_file);
             if (daemonizeRet < 0){
                 logg("!daemonize() failed: %s\n", strerror(errno));
                 return 1;
@@ -306,45 +312,30 @@ int main(int argc, char **argv)
             fclose(fd);
         }
         umask(old_umask);
+
+#ifndef _WIN32
+        /*If the file has already been created by a different user, it will just be
+         * rewritten by us, but not change the ownership, so do that explicitly.
+         */
+        if (0 == geteuid()){
+            struct passwd * pw = getpwuid(0);
+            int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+            if (ret){
+                logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
+                exit(2);
+            }
+        }
+#endif /* _WIN32 */
     }
 
     /* drop privileges */
 #ifndef _WIN32
-    if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
-        if ((user = getpwnam(opt->strarg)) == NULL) {
-            fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
-            optfree(opts);
-            return 1;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(opt->strarg, user->pw_gid)) {
-            fprintf(stderr, "ERROR: initgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#endif
-
-        if (setgid(user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
-            optfree(opts);
-            return 1;
-        }
-
-        if (setuid(user->pw_uid)) {
-            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
-            optfree(opts);
-            return 1;
-        }
+    dropPrivRet = drop_privileges(user_name, logg_file);
+    if (dropPrivRet) {
+        optfree(opts);
+        return dropPrivRet;
     }
-#endif
-
+#endif /* _WIN32 */
 
     do { /* logger initialized */
 

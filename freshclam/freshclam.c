@@ -135,6 +135,21 @@ static int writepid(const char *pidfile)
         fclose(fd);
     }
     umask(old_umask);
+
+#ifndef _WIN32
+    /*If the file has already been created by a different user, it will just be
+     * rewritten by us, but not change the ownership, so do that explicitly.
+     */
+    if (0 == geteuid()){
+        struct passwd * pw = getpwuid(0);
+        int ret = lchown(pidfile, pw->pw_uid, pw->pw_gid);
+        if (ret){
+            logg("!Can't change ownership of PID file %s '%s'\n", pidfile, strerror(errno));
+            return 1;
+        }
+    }
+#endif /*_WIN32 */
+
     return 0;
 }
 
@@ -629,68 +644,6 @@ done:
 }
 
 /**
- * @brief Switch users to the DatabaseOwner, if specified.
- *
- * @param dbowner     A user account that will have write permissions in the database directory.
- * @return fc_error_t FC_SUCCESS if success.
- * @return fc_error_t FC_EARG if success.
- */
-static fc_error_t switch_user(const char *dbowner)
-{
-    fc_error_t status = FC_EARG;
-
-#ifdef HAVE_PWD_H
-    struct passwd *user;
-
-    if (NULL == dbowner) {
-        logg("*No DatabaseOwner specified. Freshclam will run as the current user.\n");
-        status = FC_SUCCESS;
-        goto done;
-    }
-
-    if (!geteuid()) {
-        if ((user = getpwnam(dbowner)) == NULL) {
-            logg("^Can't get information about user %s.\n", dbowner);
-            status = FC_ECONFIG;
-            goto done;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(dbowner, user->pw_gid)) {
-            logg("^initgroups() failed.\n");
-            status = FC_ECONFIG;
-            goto done;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            logg("^setgroups() failed.\n");
-            status = FC_ECONFIG;
-            goto done;
-        }
-#endif
-
-        if (setgid(user->pw_gid)) {
-            logg("^setgid(%d) failed.\n", (int)user->pw_gid);
-            status = FC_ECONFIG;
-            goto done;
-        }
-
-        if (setuid(user->pw_uid)) {
-            logg("^setuid(%d) failed.\n", (int)user->pw_uid);
-            status = FC_ECONFIG;
-            goto done;
-        }
-    }
-#endif /* HAVE_PWD_H */
-
-    status = FC_SUCCESS;
-
-done:
-
-    return status;
-}
-
-/**
  * @brief Get a list of strings for a given repeatable opt argument.
  *
  * @param opt           optstruct of repeatable argument to collect in a list.
@@ -826,11 +779,12 @@ static fc_error_t initialize(struct optstruct *opts)
         /*
          * freshclam shouldn't work with root privileges.
          * Drop privileges to the DatabaseOwner user, if specified.
+         * Pass NULL for the log file name, because it hasn't been created yet.
          */
-        ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
-        if (FC_SUCCESS != ret) {
+        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, NULL);
+        if (ret) {
             logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-            status = ret;
+            status = FC_ECONFIG;
             goto done;
         }
     }
@@ -1580,6 +1534,11 @@ int main(int argc, char **argv)
 
     int bPrune = 1;
 
+#ifdef HAVE_PWD_H
+    const struct optstruct *logFileOpt = NULL;
+    const char * logFileName = NULL;
+#endif /* HAVE_PWD_H */
+
     fc_ctx fc_context = {0};
 
 #ifndef _WIN32
@@ -1889,7 +1848,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
         /* fork into background */
         if (g_foreground == 0) {
-            if (-1 == daemonize_parent_wait()) {
+            if (-1 == daemonize_parent_wait(NULL, NULL)) {
                 logg("!daemonize() failed\n");
                 status = FC_EFAILEDUPDATE;
                 goto done;
@@ -1918,14 +1877,20 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef HAVE_PWD_H
+        /*  Get the log file name to pass it into drop_privileges.  */
+        logFileOpt = optget(opts, "UpdateLogFile");
+        if (logFileOpt->enabled) {
+           logFileName  = logFileOpt->strarg;
+        }
+
         /*
          * freshclam shouldn't work with root privileges.
          * Drop privileges to the DatabaseOwner user, if specified.
          */
-        ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
-        if (FC_SUCCESS != ret) {
+        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, logFileName);
+        if (0 != ret) {
             logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-            status = ret;
+            status = FC_ECONFIG;
             goto done;
         }
 #endif /* HAVE_PWD_H */
