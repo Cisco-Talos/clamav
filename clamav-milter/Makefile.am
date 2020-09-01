@@ -18,20 +18,11 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
 if HAVE_MILTER
 
 sbin_PROGRAMS = clamav-milter
 
 clamav_milter_SOURCES = \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
     whitelist.c \
     whitelist.h \
     connpool.c \
@@ -45,9 +36,7 @@ man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
 endif
-endif
 
-DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface -I$(top_srcdir)/shared -I$(top_srcdir) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 CLEANFILES=*.gcda *.gcno

@@ -66,6 +66,8 @@ typedef enum cli_file {
     CL_TYPE_SIS,
     CL_TYPE_SCRENC,
     CL_TYPE_GRAPHICS,
+    CL_TYPE_GIF,
+    CL_TYPE_PNG,
     CL_TYPE_RIFF,
     CL_TYPE_BINHEX,
     CL_TYPE_TNEF,
@@ -142,8 +144,9 @@ struct cli_matched_type {
 cli_file_t cli_ftcode(const char *name);
 const char *cli_ftname(cli_file_t code);
 void cli_ftfree(const struct cl_engine *engine);
-cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype);
+cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
+cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
+cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype);
 int cli_addtypesigs(struct cl_engine *engine);
 
 #endif

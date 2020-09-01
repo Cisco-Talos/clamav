@@ -59,6 +59,7 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "str.h"
+#include "entconv.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "arc4.h"
@@ -181,7 +182,7 @@ static const char *findNextNonWSBack(const char *q, const char *start)
  * @brief   Searching FORwards, find the next character that is not a whitespace.
  *
  * @param q         Index to start from (at the end of the search space)
- * @param start     Beginning of the search space.
+ * @param end       End of the search space.
  *
  * @return const char*  Address of the final non-whitespace character OR the same address as the start.
  */
@@ -282,10 +283,10 @@ done:
  *        objects, and increments nobj.
  *
  * Indirect objects in a stream DON'T begin with "obj" and end with "endobj".
- * Instead, they have an obj ID and an offset from the first object to point you
+ * Instead, they have an objid and an offset from the first object to point you
  * right at them.
  *
- * If found, objstm->current will be updated to the next obj id.
+ * If found, objstm->current will be updated to the next objid.
  *
  * All objects in an object stream are indirect and thus do not begin or start
  * with "obj" or "endobj".  Instead, the object stream takes the following
@@ -347,7 +348,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     /* This object is in a stream, not in the regular map buffer. */
     obj->objstm = objstm;
 
-    /* objstm->current_pair points directly to the obj id */
+    /* objstm->current_pair points directly to the objid */
     if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
         /* Failed to find objid */
         cli_dbgmsg("pdf_findobj_in_objstm: Failed to find objid for obj in object stream\n");
@@ -360,7 +361,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     }
     objid = (unsigned long)temp_long;
 
-    /* Find the obj offset that appears just after the obj id*/
+    /* Find the obj offset that appears just after the objid*/
     while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
         index++;
         bytes_remaining--;
@@ -412,7 +413,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
          *
          * To do so, we will need to parse the next obj pair.
          */
-        /* objstm->current_pair points directly to the obj id */
+        /* objstm->current_pair points directly to the objid */
         index           = objstm->streambuf + objstm->current_pair;
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
@@ -428,7 +429,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         }
         next_objid = (unsigned long)temp_long;
 
-        /* Find the obj offset that appears just after the obj id*/
+        /* Find the obj offset that appears just after the objid*/
         while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
             index++;
             bytes_remaining--;
@@ -1059,7 +1060,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
 
     map = *ctx->fmap;
     if (fd != -1) {
-        map = fmap(fd, 0, 0);
+        map = fmap(fd, 0, 0, NULL);
         if (!map) {
             cli_dbgmsg("run_pdf_hooks: can't mmap pdf extracted obj\n");
             map = *ctx->fmap;
@@ -1080,23 +1081,32 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
 
 static void dbg_printhex(const char *msg, const char *hex, unsigned len);
 
-static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *q, char *key, unsigned key_n, int has_iv)
+static void aes_256cbc_decrypt(const unsigned char *in, size_t *length, unsigned char *q, char *key, unsigned key_n, int has_iv)
 {
     unsigned long rk[RKLENGTH(256)];
     unsigned char iv[16];
-    size_t len = *length;
+    size_t len = 0;
     unsigned char pad, i;
     int nrounds;
 
-    cli_dbgmsg("aes_decrypt: key length: %d, data length: %zu\n", key_n, *length);
-    if (key_n > 32) {
-        cli_dbgmsg("aes_decrypt: key length is %d!\n", key_n * 8);
+    if (in == NULL || length == NULL) {
+        cli_dbgmsg("aes_256cbc_decrypt: invalid NULL parameters!\n");
+        noisy_warnmsg("aes_256cbc_decrypt: invalid NULL parameters!\n");
+        return;
+    }
+
+    len = *length;
+
+    cli_dbgmsg("aes_256cbc_decrypt: key length: %d, data length: %zu\n", key_n, *length);
+    if (!(key_n == 16 || key_n == 24 || key_n == 32)) {
+        cli_dbgmsg("aes_256cbc_decrypt: invalid key length: %u!\n", key_n * 8);
+        noisy_warnmsg("aes_256cbc_decrypt: invalid key length: %u!\n", key_n * 8);
         return;
     }
 
     if (len < 32) {
-        cli_dbgmsg("aes_decrypt: len is <32: %zu\n", len);
-        noisy_warnmsg("aes_decrypt: len is <32: %zu\n", len);
+        cli_dbgmsg("aes_256cbc_decrypt: len is <32: %zu\n", len);
+        noisy_warnmsg("aes_256cbc_decrypt: len is <32: %zu\n", len);
         return;
     }
 
@@ -1108,13 +1118,13 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         memset(iv, 0, sizeof(iv));
     }
 
-    cli_dbgmsg("aes_decrypt: Calling rijndaelSetupDecrypt\n");
+    cli_dbgmsg("aes_256cbc_decrypt: Calling rijndaelSetupDecrypt\n");
     nrounds = rijndaelSetupDecrypt(rk, (const unsigned char *)key, key_n * 8);
     if (!nrounds) {
-        cli_dbgmsg("aes_decrypt: nrounds = 0\n");
+        cli_dbgmsg("aes_256cbc_decrypt: nrounds = 0\n");
         return;
     }
-    cli_dbgmsg("aes_decrypt: Beginning rijndaelDecrypt\n");
+    cli_dbgmsg("aes_256cbc_decrypt: Beginning rijndaelDecrypt\n");
 
     while (len >= 16) {
         unsigned i;
@@ -1134,8 +1144,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         pad = q[-1];
 
         if (pad > 0x10) {
-            cli_dbgmsg("aes_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
-            noisy_warnmsg("aes_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
+            cli_dbgmsg("aes_256cbc_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
+            noisy_warnmsg("aes_256cbc_decrypt: bad pad: %x (extra len: %zu)\n", pad, len - 16);
             *length -= len;
             return;
         }
@@ -1143,8 +1153,8 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
         q -= pad;
         for (i = 1; i < pad; i++) {
             if (q[i] != pad) {
-                cli_dbgmsg("aes_decrypt: bad pad: %x != %x\n", q[i], pad);
-                noisy_warnmsg("aes_decrypt: bad pad: %x != %x\n", q[i], pad);
+                cli_dbgmsg("aes_256cbc_decrypt: bad pad: %x != %x\n", q[i], pad);
+                noisy_warnmsg("aes_256cbc_decrypt: bad pad: %x != %x\n", q[i], pad);
                 *length -= len;
 
                 return;
@@ -1156,7 +1166,56 @@ static void aes_decrypt(const unsigned char *in, size_t *length, unsigned char *
 
     *length -= len;
 
-    cli_dbgmsg("aes_decrypt: length is %zu\n", *length);
+    cli_dbgmsg("aes_256cbc_decrypt: length is %zu\n", *length);
+}
+
+static void aes_128cbc_encrypt(const unsigned char *in, size_t in_length, unsigned char *out, size_t *out_length, const unsigned char *key, size_t key_n, const unsigned char *iv)
+{
+    unsigned long rk[RKLENGTH(128)];
+    unsigned char real_iv[16] = {0};
+    int nrounds;
+    uint8_t i = 0;
+
+    cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: key length: %zu, data length: %zu\n", key_n, in_length);
+    if (key_n > 16) {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: key length is %zu!\n", key_n * 8);
+        return;
+    }
+
+    if (in_length < 16) {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: in_length is <16: %zu\n", in_length);
+        noisy_warnmsg("cli_pdf: aes_128cbc_encrypt: in_length is <16: %zu\n", in_length);
+        return;
+    }
+
+    cli_dbgmsg("aes_128cbc_encrypt: Calling rijndaelSetupEncrypt\n");
+    nrounds = rijndaelSetupEncrypt(rk, key, key_n * 8);
+    if (!nrounds) {
+        cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: nrounds = 0\n");
+        return;
+    }
+    cli_dbgmsg("aes_128cbc_encrypt: Beginning rijndaelEncrypt\n");
+
+    if (iv)
+        memcpy(real_iv, iv, sizeof(real_iv));
+
+    *out_length = 0;
+    while (in_length >= 16) {
+        for (i = 0; i < 16; i++)
+            real_iv[i] ^= in[i];
+
+        rijndaelEncrypt(rk, nrounds, real_iv, real_iv);
+
+        for (i = 0; i < 16; i++)
+            out[i] = real_iv[i];
+
+        out += 16;
+        *out_length += 16;
+        in += 16;
+        in_length -= 16;
+    }
+
+    cli_dbgmsg("cli_pdf: aes_128cbc_encrypt: length is %zu\n", *out_length);
 }
 
 char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *length, enum enc_method enc_method)
@@ -1166,7 +1225,12 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
     struct arc4_state arc4;
 
     if (!length || !*length || !in) {
-        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u\n", id >> 8, id & 0xff);
+        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u:  Invalid arguments.\n", id >> 8, id & 0xff);
+        return NULL;
+    }
+
+    if (NULL == pdf->key || 0 == pdf->keylen) {
+        noisy_warnmsg("decrypt_any: decrypt failed for obj %u %u:  PDF key never identified.\n", id >> 8, id & 0xff);
         return NULL;
     }
 
@@ -1207,7 +1271,11 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
         case ENC_V2:
             cli_dbgmsg("cli_pdf: enc is v2\n");
             memcpy(q, in, *length);
-            arc4_init(&arc4, result, n);
+            if (false == arc4_init(&arc4, result, n)) {
+                noisy_warnmsg("decrypt_any: failed to init arc4\n");
+                free(q);
+                return NULL;
+            }
             arc4_apply(&arc4, q, (unsigned)*length); /* TODO: may truncate for very large lengths */
 
             noisy_msg(pdf, "decrypt_any: decrypted ARC4 data\n");
@@ -1215,19 +1283,15 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
             break;
         case ENC_AESV2:
             cli_dbgmsg("cli_pdf: enc is aesv2\n");
-            aes_decrypt((const unsigned char *)in, length, q, (char *)result, n, 1);
+            aes_256cbc_decrypt((const unsigned char *)in, length, q, (char *)result, n, 1);
 
             noisy_msg(pdf, "decrypt_any: decrypted AES(v2) data\n");
 
             break;
         case ENC_AESV3:
             cli_dbgmsg("decrypt_any: enc is aesv3\n");
-            if (pdf->keylen == 0) {
-                cli_dbgmsg("decrypt_any: no key\n");
-                return NULL;
-            }
 
-            aes_decrypt((const unsigned char *)in, length, q, pdf->key, pdf->keylen, 1);
+            aes_256cbc_decrypt((const unsigned char *)in, length, q, pdf->key, pdf->keylen, 1);
 
             noisy_msg(pdf, "decrypted AES(v3) data\n");
 
@@ -1353,20 +1417,20 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     cli_writen(fout, s.out, s.out_pos);
 
     lseek(fout, 0, SEEK_SET);
-    rc = cli_magic_scandesc(fout, fullname, pdf->ctx);
+    rc = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
     close(fout);
 
-    if (!pdf->ctx->engine->keeptmp)
+    if (!pdf->ctx->engine->keeptmp || (s.out_pos == 0))
         if (cli_unlink(fullname) && rc != CL_VIRUS)
             rc = CL_EUNLINK;
 
     return rc;
 }
 
-int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
+cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
     cli_ctx *ctx = pdf->ctx;
-    char fullname[NAME_MAX + 1];
+    char fullname[PATH_MAX + 1];
     int fout      = -1;
     size_t sum    = 0;
     cl_error_t rc = CL_SUCCESS;
@@ -1498,8 +1562,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
             xref = 1;
         }
 
-        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
         /*
          * Identify the DecodeParms, if available.
          */
@@ -1584,9 +1646,14 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
             cli_dbgmsg("Error decoding stream! Error code: %d\n", rc);
 
             /* It's ok if we couldn't decode the stream,
-             *   make a best effort to keep parsing. */
-            if (CL_EPARSE == rc)
+             *   make a best effort to keep parsing...
+             *   Unless we were unable to allocate memory.*/
+            if (CL_EMEM == rc) {
+                goto err;
+            }
+            if (CL_EPARSE == rc) {
                 rc = CL_SUCCESS;
+            }
 
             if (NULL != objstm) {
                 /*
@@ -1633,8 +1700,6 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
             goto done;
         }
 
-        cli_dbgmsg("-------------EXPERIMENTAL-------------\n");
-
     } else if (obj->flags & (1 << OBJ_JAVASCRIPT)) {
         const char *q2;
         const char *q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
@@ -1676,6 +1741,21 @@ int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
                         out = decrypted;
                     }
                 }
+
+#if HAVE_JSON
+                if ((pdf->ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA) && pdf->ctx->wrkproperty != NULL) {
+                    struct json_object *pdfobj, *jbig2arr;
+
+                    if (NULL == (pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats"))) {
+                        cli_errmsg("pdf_extract_obj: failed to get PDFStats JSON object\n");
+                    } else if (NULL == (jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects"))) {
+                        cli_errmsg("pdf_extract_obj: failed to get JavascriptObjects JSON object\n");
+                    } else {
+                        cli_jsonint_array(jbig2arr, obj->id >> 8);
+                    }
+                }
+#endif
+                pdf->stats.njs++;
 
                 if (filter_writen(pdf, obj, fout, out, js_len, (size_t *)&sum) != js_len) {
                     rc = CL_EWRITE;
@@ -1737,7 +1817,7 @@ done:
 
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
-        rc2 = cli_magic_scandesc(fout, fullname, pdf->ctx);
+        rc2 = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
         if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
             rc = rc2;
 
@@ -1764,11 +1844,14 @@ done:
         }
     }
 
+err:
     close(fout);
 
-    if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
-        if (cli_unlink(fullname) && rc != CL_VIRUS)
-            rc = CL_EUNLINK;
+    if (CL_EMEM != rc) {
+        if (flags & PDF_EXTRACT_OBJ_SCAN && !pdf->ctx->engine->keeptmp)
+            if (cli_unlink(fullname) && rc != CL_VIRUS)
+                rc = CL_EUNLINK;
+    }
 
     return rc;
 }
@@ -1826,7 +1909,7 @@ static struct pdfname_action pdfname_actions[] = {
     {"R", OBJ_SIGNED, STATE_ANY, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
     {"Linearized", OBJ_DICT, STATE_NONE, STATE_LINEARIZED, NAMEFLAG_HEURISTIC, NULL},
     {"Filter", OBJ_HASFILTERS, STATE_ANY, STATE_FILTER, NAMEFLAG_HEURISTIC, NULL},
-    {"JavaScript", OBJ_JAVASCRIPT, STATE_S, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC, JavaScript_cb},
+    {"JavaScript", OBJ_JAVASCRIPT, STATE_ANY, STATE_JAVASCRIPT, NAMEFLAG_HEURISTIC, JavaScript_cb},
     {"Length", OBJ_DICT, STATE_FILTER, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
     {"S", OBJ_DICT, STATE_NONE, STATE_S, NAMEFLAG_HEURISTIC, NULL},
     {"Type", OBJ_DICT, STATE_NONE, STATE_NONE, NAMEFLAG_HEURISTIC, NULL},
@@ -2014,14 +2097,16 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
     enc = cli_memstr(s, length, "/Encrypt", 8);
     if (enc) {
         char *newID;
+        unsigned int newIDlen = 0;
 
         pdf->flags |= 1 << ENCRYPTED_PDF;
         pdf_parse_encrypt(pdf, enc, s + length - enc);
-        newID = pdf_readstring(s, length, "/ID", &pdf->fileIDlen, NULL, 0);
+        newID = pdf_readstring(s, length, "/ID", &newIDlen, NULL, 0);
 
         if (newID) {
             free(pdf->fileID);
-            pdf->fileID = newID;
+            pdf->fileID    = newID;
+            pdf->fileIDlen = newIDlen;
         }
     }
 }
@@ -2364,12 +2449,25 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                         cli_dbgmsg("pdf_parseobj: found %s stored in indirect object %lu %lu\n", pdfname, objid >> 8, objid & 0xff);
                         obj2 = find_obj(pdf, obj, objid);
                         if (obj2) {
-                            enum pdf_objflags flag =
-                                objstate == STATE_JAVASCRIPT ? OBJ_JAVASCRIPT : objstate == STATE_OPENACTION ? OBJ_OPENACTION :
+                            enum pdf_objflags flag = OBJ_STREAM;
 
-                                                                                                             OBJ_CONTENTS;
-                            obj2->flags |= 1 << flag;
-                            obj->flags &= ~(1 << flag);
+                            switch (objstate) {
+                                case STATE_JAVASCRIPT:
+                                    flag = OBJ_JAVASCRIPT;
+                                    break;
+                                case STATE_OPENACTION:
+                                    flag = OBJ_OPENACTION;
+                                    break;
+                                case STATE_CONTENTS:
+                                    flag = OBJ_CONTENTS;
+                                    break;
+                                default:
+                                    cli_dbgmsg("pdf_parseobj: Unexpected object type\n");
+                                    return;
+                            }
+
+                            obj->flags &= ~(1 << flag); /* Disable flag for current object ...                   */
+                            obj2->flags |= 1 << flag;   /* ... and set the flag for the indirect object instead! */
                         } else {
                             pdfobj_flag(pdf, obj, BAD_INDOBJ);
                         }
@@ -2704,6 +2802,53 @@ static void dbg_printhex(const char *msg, const char *hex, unsigned len)
     }
 }
 
+static void compute_hash_r6(const char *password, size_t pwlen, const unsigned char salt[16], unsigned char hash[32])
+{
+    unsigned char data[(128 + 64 + 48) * 64];
+    unsigned char block[64];
+    int32_t block_size = 32;
+    size_t in_data_len = 0, out_data_len;
+    int32_t i, j, sum;
+    uint8_t sha256[32], sha384[48], sha512[64];
+
+    memcpy(data, password, pwlen);
+    memcpy(data + pwlen, salt, 8);
+    cl_sha256(data, pwlen + 8, block, NULL);
+
+    for (i = 0; i < 64 || i < (data[(in_data_len * 64) - 1] + 32); i++) {
+        memcpy(data, password, pwlen);
+        memcpy(data + pwlen, block, block_size);
+        in_data_len = pwlen + block_size;
+        for (j = 1; j < 64; j++)
+            memcpy(data + j * in_data_len, data, in_data_len);
+
+        aes_128cbc_encrypt(data, in_data_len * 64, data, &out_data_len, block, 16, block + 16);
+
+        for (j = 0, sum = 0; j < 16; j++)
+            sum += data[j];
+
+        block_size = 32 + (sum % 3) * 16;
+        switch (block_size) {
+            case 32:
+                cl_sha256(data, in_data_len * 64, sha256, NULL);
+                memcpy(block, sha256, 32);
+                break;
+
+            case 48:
+                cl_sha384(data, in_data_len * 64, sha384, NULL);
+                memcpy(block, sha384, 48);
+                break;
+
+            case 64:
+                cl_sha512(data, in_data_len * 64, sha512, NULL);
+                memcpy(block, sha512, 64);
+                break;
+        }
+    }
+
+    memcpy(hash, block, 32);
+}
+
 static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                                 const char *U, int32_t P, int EM,
                                 const char *UE,
@@ -2730,7 +2875,6 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             size_t UE_len;
 
             /* Algorithm 3.2a could be used to recover encryption key */
-            password_empty = 1;
             cl_sha256(U + 40, 8, result2, NULL);
             UE_len = UE ? strlen(UE) : 0;
             if (UE_len != 32) {
@@ -2738,15 +2882,47 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(32);
+                pdf->key    = cli_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                     return;
                 }
 
-                aes_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
+                aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)result2, 32, 0);
                 dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+                password_empty = 1;
             }
+        }
+    } else if (R == 6) {
+        unsigned char hash[32], validationkey[32];
+
+        size_t pwlen    = 0;
+        char password[] = "";
+
+        if (NULL == UE) {
+            cli_dbgmsg("check_user_password: Missing UE value!\n");
+            noisy_warnmsg("check_user_password: Missing UE value!\n");
+            return;
+        }
+
+        compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
+        if (!memcmp(U, validationkey, sizeof(validationkey))) {
+            size_t inLen = 32;
+
+            compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
+
+            pdf->keylen = 32;
+            pdf->key    = cli_malloc(pdf->keylen);
+            if (!pdf->key) {
+                cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
+                return;
+            }
+
+            aes_256cbc_decrypt((const unsigned char *)UE, &inLen, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
+            dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+            password_empty = 1;
         }
     } else if ((R >= 2) && (R <= 4)) {
         unsigned char *d;
@@ -2794,7 +2970,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
         if (R == 2) {
             /* 7.6.3.3 Algorithm 4 */
             memcpy(data, key_padding, 32);
-            arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen);
+            if (false == arc4_init(&arc4, (const uint8_t *)(pdf->key), pdf->keylen)) {
+                noisy_warnmsg("check_user_password: failed to init arc4\n");
+                return;
+            }
             arc4_apply(&arc4, (uint8_t *)data, 32);
             dbg_printhex("computed U (R2)", data, 32);
             if (!memcmp(data, U, 32))
@@ -2813,7 +2992,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             cl_hash_data("md5", d, 32 + pdf->fileIDlen, result, NULL);
             memcpy(data, pdf->key, len);
 
-            arc4_init(&arc4, (const uint8_t *)data, len);
+            if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                noisy_warnmsg("check_user_password: failed to init arc4\n");
+                return;
+            }
             arc4_apply(&arc4, result, 16);
             for (i = 1; i <= 19; i++) {
                 unsigned j;
@@ -2821,7 +3003,10 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 for (j = 0; j < len; j++)
                     data[j] = pdf->key[j] ^ i;
 
-                arc4_init(&arc4, (const uint8_t *)data, len);
+                if (false == arc4_init(&arc4, (const uint8_t *)data, len)) {
+                    noisy_warnmsg("check_user_password: failed to init arc4\n");
+                    return;
+                }
                 arc4_apply(&arc4, result, 16);
             }
 
@@ -2921,12 +3106,6 @@ void pdf_handle_enc(struct pdf_struct *pdf)
         pdf->enc_method_string       = ENC_UNKNOWN;
         pdf->enc_method_stream       = ENC_UNKNOWN;
         pdf->enc_method_embeddedfile = ENC_UNKNOWN;
-        P                            = pdf_readint(q, len, "/P");
-        if (P == ~0u) {
-            cli_dbgmsg("pdf_handle_enc: invalid P\n");
-            noisy_warnmsg("pdf_handle_enc: invalid P\n");
-            break;
-        }
 
         q2 = cli_memstr(q, len, "/Standard", 9);
         if (!q2) {
@@ -2955,10 +3134,19 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             break;
         }
 
-        if ((R > 5) || (R < 2)) {
-            cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..5]\n");
-            noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..5]\n");
+        if ((R > 6) || (R < 2)) {
+            cli_dbgmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
+            noisy_warnmsg("pdf_handle_enc: R value outside supported range [2..6]\n");
             break;
+        }
+
+        P = pdf_readint(q, len, "/P");
+        if (R < 6) { // P field doesn't seem to be required for R6.
+            if (P == ~0u) {
+                cli_dbgmsg("pdf_handle_enc: invalid P\n");
+                noisy_warnmsg("pdf_handle_enc: invalid P\n");
+                break;
+            }
         }
 
         if (R < 5)
@@ -2970,7 +3158,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             pdf->enc_method_stream       = ENC_V2;
             pdf->enc_method_string       = ENC_V2;
             pdf->enc_method_embeddedfile = ENC_V2;
-        } else if (R == 4 || R == 5) {
+        } else if (R == 4 || R == 5 || R == 6) {
             EM        = pdf_readbool(q, len, "/EncryptMetadata", 1);
             StmF      = pdf_readval(q, len, "/StmF");
             StrF      = pdf_readval(q, len, "/StrF");
@@ -3276,7 +3464,7 @@ done:
  *
  * @return int      Returns cl_error_t status value.
  */
-int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
+cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
     cl_error_t rc = CL_SUCCESS;
     struct pdf_struct pdf;
@@ -3476,12 +3664,15 @@ int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     /*
      * Find and extract all objects in the PDF.
-     * New experimental recursive methodology that adds objects from object streams.
+     * This methodology adds objects from object streams.
      */
     objs_found = pdf.nobjs;
     rc         = pdf_find_and_extract_objs(&pdf, &alerts);
 
-    if (pdf.nobjs <= objs_found) {
+    if (CL_EMEM == rc) {
+        cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs had an allocation failure\n");
+        goto err;
+    } else if (pdf.nobjs <= objs_found) {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs did not find any new objects!\n");
     } else {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs found %d new objects.\n", pdf.nobjs - objs_found);
@@ -3532,6 +3723,7 @@ done:
     pdf_export_json(&pdf);
 #endif
 
+err:
     if (pdf.objstms) {
         for (i = 0; i < pdf.nobjstms; i++) {
             if (pdf.objstms[i]) {
@@ -3870,31 +4062,16 @@ static void Sig_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_a
 #if HAVE_JSON
 static void JavaScript_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname_action *act)
 {
-    cli_ctx *ctx = pdf->ctx;
-    struct json_object *pdfobj, *jbig2arr;
-
+    UNUSEDPARAM(pdf);
+    UNUSEDPARAM(obj);
     UNUSEDPARAM(act);
 
-    if (!(pdf))
-        return;
-
-    if (!(SCAN_COLLECT_METADATA))
-        return;
-
-    if (!(pdf->ctx->wrkproperty))
-        return;
-
-    pdfobj = cli_jsonobj(pdf->ctx->wrkproperty, "PDFStats");
-    if (!(pdfobj))
-        return;
-
-    jbig2arr = cli_jsonarray(pdfobj, "JavascriptObjects");
-    if (!(jbig2arr))
-        return;
-
-    cli_jsonint_array(jbig2arr, obj->id >> 8);
-
-    pdf->stats.njs++;
+    /*
+     * Don't record the pdf->stats or JSON now, we'll look for the actual
+     * Javascript in the object when we extract it later. This is to prevent
+     * false positives when objects reference an indirect object which doesn't
+     * actually have any content.
+     */
 }
 #endif
 

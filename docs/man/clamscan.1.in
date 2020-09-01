@@ -1,35 +1,35 @@
 .TH "clamscan" "1" "December 4, 2013" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
-.LP 
+.LP
 clamscan \- scan files and directories for viruses
 .SH "SYNOPSIS"
-.LP 
+.LP
 clamscan [options] [file/directory/\-]
 .SH "DESCRIPTION"
-.LP 
+.LP
 clamscan is a command line anti\-virus scanner.
 .SH "OPTIONS"
-.LP 
+.LP
 Most of the options are simple switches which enable or disable some features. Options marked with [=yes/no(*)] can be optionally followed by =yes/=no; if they get called without the boolean argument the scanner will assume 'yes'. The asterisk marks the default internal setting for a given option.
-.TP 
+.TP
 \fB\-h, \-\-help\fR
 Print help information and exit.
-.TP 
+.TP
 \fB\-V, \-\-version\fR
 Print version number and exit.
-.TP 
+.TP
 \fB\-v, \-\-verbose\fR
 Be verbose.
 .TP
 \fB\-a, \-\-archive\-verbose\fR
 Show filenames inside scanned archives
-.TP 
+.TP
 \fB\-\-debug\fR
 Display debug messages from libclamav.
-.TP 
+.TP
 \fB\-\-quiet\fR
 Be quiet (only print error messages).
-.TP 
+.TP
 \fB\-\-stdout\fR
 Write all messages (except for libclamav output) to the standard output (stdout).
 .TP
@@ -50,91 +50,91 @@ Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAV
 .TP
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
-.TP 
+.TP
 \fB\-\-gen\-json\fR
 Generate JSON description of scanned file(s). JSON will be printed and also dropped to the temp directory if --leave-temps is enabled.
-.TP 
+.TP
 \fB\-d FILE/DIR, \-\-database=FILE/DIR\fR
 Load virus database from FILE or load all virus database files from DIR.
-.TP 
+.TP
 \fB\-\-official\-db\-only=[yes/no(*)]\fR
 Only load the official signatures published by the ClamAV project.
-.TP 
+.TP
 \fB\-l FILE, \-\-log=FILE\fR
 Save scan report to FILE.
-.TP 
+.TP
 \fB\-r, \-\-recursive\fR
 Scan directories recursively. All the subdirectories in the given directory will be scanned.
-.TP 
+.TP
 \fB\-z, \-\-allmatch\fR
 After a match, continue scanning within the file for additional matches.
-.TP 
+.TP
 \fB\-\-cross\-fs=[yes(*)/no]\fR
 Scan files and directories on other filesystems.
-.TP 
+.TP
 \fB\-\-follow\-dir\-symlinks=[0/1(*)/2]\fR
 Follow directory symlinks. There are 3 options: 0 - never follow directory symlinks, 1 (default) - only follow directory symlinks, which are passed as direct arguments to clamscan. 2 - always follow directory symlinks.
-.TP 
+.TP
 \fB\-\-follow\-file\-symlinks=[0/1(*)/2]\fR
 Follow file symlinks. There are 3 options: 0 - never follow file symlinks, 1 (default) - only follow file symlinks, which are passed as direct arguments to clamscan. 2 - always follow file symlinks.
-.TP 
+.TP
 \fB\-f FILE, \-\-file\-list=FILE\fR
 Scan files listed line by line in FILE.
-.TP 
+.TP
 \fB\-\-remove[=yes/no(*)]\fR
 Remove infected files. \fBBe careful!\fR
-.TP 
+.TP
 \fB\-\-move=DIRECTORY\fR
 Move infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
-.TP 
+.TP
 \fB\-\-copy=DIRECTORY\fR
 Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
-.TP 
+.TP
 \fB\-\-exclude=REGEX, \-\-exclude\-dir=REGEX\fR
 Don't scan file/directory names matching regular expression. These options can be used multiple times.
-.TP 
+.TP
 \fB\-\-include=REGEX, \-\-include\-dir=REGEX\fR
 Only scan file/directory matching regular expression. These options can be used multiple times.
-.TP 
+.TP
 \fB\-\-bytecode[=yes(*)/no]\fR
 With this option enabled ClamAV will load bytecode from the database. It is highly recommended you keep this option turned on, otherwise you may miss detections for many new viruses.
-.TP 
+.TP
 \fB\-\-bytecode\-unsigned[=yes/no(*)]\fR
-Allow loading bytecode from outside digitally signed .c[lv]d files.
-.TP 
+Allow loading bytecode from outside digitally signed .c[lv]d files. **Caution**: You should NEVER run bytecode signatures from untrusted sources. Doing so may result in arbitrary code execution.
+.TP
 \fB\-\-bytecode\-timeout=N\fR
 Set bytecode timeout in milliseconds (default: 5000 = 5s)
-.TP 
+.TP
 \fB\-\-statistics[=none(*)/bytecode/pcre]\fR
 Collect and print execution statistics.
-.TP 
+.TP
 \fB\-\-detect\-pua[=yes/no(*)]\fR
 Detect Possibly Unwanted Applications.
-.TP 
+.TP
 \fB\-\-exclude\-pua=CATEGORY\fR
 Exclude a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
-.TP 
+.TP
 \fB\-\-include\-pua=CATEGORY\fR
 Only include a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
-.TP 
+.TP
 \fB\-\-detect\-structured[=yes/no(*)]\fR
 Use the DLP (Data Loss Prevention) module to detect SSN and Credit Card numbers inside documents/text files.
-.TP 
+.TP
 \fB\-\-structured\-ssn\-format=X\fR
 X=0: search for valid SSNs formatted as xxx-yy-zzzz (normal); X=1: search for valid SSNs formatted as xxxyyzzzz (stripped); X=2: search for both formats. Default is 0.
-.TP 
+.TP
 \fB\-\-structured\-ssn\-count=#n\fR
 This option sets the lowest number of Social Security Numbers found in a file to generate a detect (default: 3).
-.TP 
+.TP
 \fB\-\-structured\-cc\-count=#n\fR
 This option sets the lowest number of Credit Card numbers found in a file to generate a detect (default: 3).
-.TP 
+.TP
 \fB\-\-scan\-mail[=yes(*)/no]\fR
 Scan mail files. If you turn off this option, the original files will still be scanned, but without parsing individual messages/attachments.
-.TP 
+.TP
 \fB\-\-phishing\-sigs[=yes(*)/no]\fR
 Enable email signature-based phishing detection.
-.TP 
+.TP
 \fB\-\-phishing\-scan\-urls[=yes(*)/no]\fR
 Enable URL signature-based phishing detection (Phishing.Heuristics.Email.*)
 .TP
@@ -145,53 +145,53 @@ In some cases (eg. complex malware, exploits in graphic files, and others), Clam
 Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
 .TP
 \fB\-\-normalize[=yes(*)/no]\fR
-Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility. 
-.TP 
+Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility.
+.TP
 \fB\-\-scan\-pe[=yes(*)/no]\fR
 PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. If you turn off this option, the original files will still be scanned but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-elf[=yes(*)/no]\fR
 Executable and Linking Format is a standard format for UN*X executables. This option controls the ELF support. If you turn it off, the original files will still be scanned but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-ole2[=yes(*)/no]\fR
 Scan Microsoft Office documents and .msi files. If you turn off this option, the original files will still be scanned but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-pdf[=yes(*)/no]\fR
 Scan within PDF files. If you turn off this option, the original files will still be scanned, but without decoding and additional processing.
 .TP
 \fB\-\-scan\-swf[=yes(*)/no]\fR
 Scan SWF files. If you turn off this option, the original files will still be scanned but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-html[=yes(*)/no]\fR
 Detect, normalize/decrypt and scan HTML files and embedded scripts. If you turn off this option, the original files will still be scanned, but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-xmldocs[=yes(*)/no]\fR
 Scan xml-based document files supported by libclamav. If you turn off this option, the original files will still be scanned, but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-hwp3[=yes(*)/no]\fR
 Scan HWP3 files. If you turn off this option, the original files will still be scanned, but without additional processing.
-.TP 
+.TP
 \fB\-\-scan\-archive[=yes(*)/no]\fR
 Scan archives supported by libclamav. If you turn off this option, the original files will still be scanned, but without unpacking and additional processing.
-.TP 
+.TP
 \fB\-\-alert\-broken[=yes/no(*)]\fR
 Alert on broken executable files (PE & ELF).
-.TP 
+.TP
 \fB\-\-alert\-encrypted[=yes/no(*)]\fR
 Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).
-.TP 
+.TP
 \fB\-\-alert\-encrypted-archive[=yes/no(*)]\fR
 Alert on encrypted archives (encrypted .zip, .7zip, .rar, .pdf).
-.TP 
+.TP
 \fB\-\-alert\-encrypted-doc[=yes/no(*)]\fR
 Alert on encrypted documents (encrypted .zip, .7zip, .rar, .pdf).
-.TP 
+.TP
 \fB\-\-alert\-macros[=yes/no(*)]\fR
 Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
-.TP 
+.TP
 \fB\-\-alert\-exceeds\-max[=yes/no(*)]\fR
 Alert on files that exceed max file size, max scan size, or max recursion limit (Heuristics.Limits.Exceeded).
-.TP 
+.TP
 \fB\-\-alert\-phishing\-ssl[=yes/no(*)]\fR
 Alert on emails containing SSL mismatches in URLs (might lead to false positives!).
 .TP
@@ -200,19 +200,22 @@ Alert on emails containing cloaked URLs (might lead to some false positives).
 .TP
 \fB\-\-alert\-partition\-intersection[=yes/no(*)]\fR
 Detect partition intersections in raw disk images using heuristics.
-.TP 
+.TP
+\fB\-\-max\-scantime=#n\fR
+The maximum time to scan before giving up. The value is in milliseconds. The value of 0 disables the limit. This option protects your system against DoS attacks (default: 120000 = 120s or 2min)
+.TP
 \fB\-\-max\-filesize=#n\fR
 Extract and scan at most #n bytes from each archive. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
-.TP 
+.TP
 \fB\-\-max\-scansize=#n\fR
 Extract and scan at most #n bytes from each archive. The size the archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward max-scansize. You may pass the value in kilobytes in format xK or xk, or megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: <4 GB)
 .TP
 \fB\-\-max\-files=#n\fR
 Extract at most #n files from each scanned file (when this is an archive, a document or another kind of container). This option protects your system against DoS attacks (default: 10000)
-.TP 
+.TP
 \fB\-\-max\-recursion=#n\fR
 Set archive recursion level limit. This option protects your system against DoS attacks (default: 16).
-.TP 
+.TP
 \fB\-\-max\-dir\-recursion=#n\fR
 Maximum depth directories are scanned at (default: 15).
 
@@ -253,43 +256,43 @@ Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.
 .SH "EXAMPLES"
-.LP 
-.TP 
+.LP
+.TP
 (0) Scan a single file:
 
 \fBclamscan file\fR
-.TP 
+.TP
 (1) Scan a current working directory:
 
 \fBclamscan\fR
-.TP 
+.TP
 (2) Scan all files (and subdirectories) in /home:
 
 \fBclamscan \-r /home\fR
-.TP 
+.TP
 (3) Load database from a file:
 
 \fBclamscan \-d /tmp/newclamdb \-r /tmp\fR
-.TP 
+.TP
 (4) Scan a data stream:
 
 \fBcat testfile | clamscan \-\fR
-.TP 
+.TP
 (5) Scan a mail spool directory:
 
 \fBclamscan \-r /var/spool/mail\fR
 .SH "RETURN CODES"
-.LP 
+.LP
 0 : No virus found.
-.TP 
+.TP
 1 : Virus(es) found.
-.TP 
+.TP
 2 : Some error(s) occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
-.LP 
+.LP
 Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>
 .SH "SEE ALSO"
-.LP 
+.LP
 clamdscan(1), freshclam(1), freshclam.conf(5)

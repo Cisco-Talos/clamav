@@ -28,10 +28,8 @@
 void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx);
 /* Removes a hash from the cache */
 void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine);
-int cache_check(unsigned char *hash, cli_ctx *ctx);
+cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx);
 int cli_cache_init(struct cl_engine *engine);
 void cli_cache_destroy(struct cl_engine *engine);
-
-int cache_get_MD5(unsigned char *hash, cli_ctx *ctx);
 
 #endif

@@ -22,7 +22,7 @@
  *  OpenSSL library under certain conditions as described in each
  *  individual source file, and distribute linked combinations
  *  including the two.
- *  
+ *
  *  You must obey the GNU General Public License in all respects
  *  for all of the code used other than OpenSSL.  If you modify
  *  file(s) with this exception, you may extend this exception to your
@@ -64,7 +64,7 @@ static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
     size_t nwritten = 0;
     ssize_t writeret;
 
-    if (cli_gentempfd(ctx->engine->tmpdir, &filename, &fd) != CL_SUCCESS)
+    if (cli_gentempfd(ctx->sub_tmpdir, &filename, &fd) != CL_SUCCESS)
         return NULL;
 
     while (nwritten < sz) {
@@ -90,7 +90,7 @@ static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz)
     return filename;
 }
 
-int cli_scanxdp(cli_ctx *ctx)
+cl_error_t cli_scanxdp(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
     xmlTextReaderPtr reader = NULL;
@@ -160,7 +160,7 @@ int cli_scanxdp(cli_ctx *ctx)
                         break;
                     }
 
-                    rc = cli_mem_scandesc(decoded, decodedlen, ctx);
+                    rc = cli_magic_scan_buff(decoded, decodedlen, ctx, NULL);
                     free(decoded);
                     if (rc != CL_SUCCESS || rc == CL_BREAK) {
                         xmlFree((void *)value);

@@ -133,7 +133,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     char *tmpname;
     int fd;
 
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_errmsg("scanzws: Can't generate temporary file\n");
         return ret;
     }
@@ -286,7 +286,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, (long long unsigned)outsize);
     }
 
-    ret = cli_magic_scandesc(fd, tmpname, ctx);
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
 
     close(fd);
     if (!(ctx->engine->keeptmp)) {
@@ -310,7 +310,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     char *tmpname;
     int fd;
 
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_errmsg("scancws: Can't generate temporary file\n");
         return ret;
     }
@@ -419,7 +419,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, outsize);
     }
 
-    ret = cli_magic_scandesc(fd, tmpname, ctx);
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
 
     close(fd);
     if (!ctx->engine->keeptmp) {

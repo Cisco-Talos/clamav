@@ -92,7 +92,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
         remain = len;
 
     /* reserve tempfile for output and callback */
-    if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
+    if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd)) != CL_SUCCESS) {
         cli_errmsg("%s: Can't generate temporary file\n", parent);
         return ret;
     }
@@ -175,7 +175,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
         ret = cb(cbdata, ofd, tmpname, ctx);
     } else {
         /* default to scanning what we got */
-        ret = cli_magic_scandesc(ofd, tmpname, ctx);
+        ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL);
     }
 
     /* clean-up */
@@ -293,8 +293,8 @@ cl_error_t cli_scanhwpole2(cli_ctx *ctx)
     else
         cli_dbgmsg("HWPOLE2: Matched uncompressed prefix and size: %u == %u\n", usize, asize);
 
-    return cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_ANY);
-    //return cli_map_scandesc(map, 4, 0, ctx, CL_TYPE_OLE2);
+    return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx, CL_TYPE_ANY, NULL);
+    //return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx, CL_TYPE_OLE2);
 }
 
 /*** HWP5 ***/
@@ -377,7 +377,7 @@ static cl_error_t hwp5_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, filepath, ctx);
+    return cli_magic_scan_desc(fd, filepath, ctx, NULL);
 }
 
 cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, int fd, const char *filepath)
@@ -397,7 +397,7 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
 
             if (hwp5->flags & HWP5_PASSWORD) {
                 cli_dbgmsg("HWP5.x: Password encrypted stream, scanning as-is\n");
-                return cli_magic_scandesc(fd, filepath, ctx);
+                return cli_magic_scan_desc(fd, filepath, ctx, name);
             }
 
             if (hwp5->flags & HWP5_COMPRESSED) {
@@ -414,7 +414,7 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
                     return CL_ESTAT;
                 }
 
-                input = fmap(fd, 0, statbuf.st_size);
+                input = fmap(fd, 0, statbuf.st_size, NULL);
                 if (!input) {
                     cli_errmsg("HWP5.x: Failed to get fmap for input stream\n");
                     return CL_EMAP;
@@ -440,7 +440,7 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
     }
 
     /* normal streams */
-    return cli_magic_scandesc(fd, filepath, ctx);
+    return cli_magic_scan_desc(fd, filepath, ctx, name);
 }
 
 /*** HWP3 ***/
@@ -1645,7 +1645,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
 #endif
             /* 32 bytes for extra data fields */
             if (infolen > 0)
-                ret = cli_map_scan(map, *offset + 32, infolen - 32, ctx, CL_TYPE_ANY);
+                ret = cli_magic_scan_nested_fmap_type(map, *offset + 32, infolen - 32, ctx, CL_TYPE_ANY, NULL);
             break;
         case 2: /* OLE2 Data */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: OLE2 Data\n", infoloc);
@@ -1654,7 +1654,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
                 cli_jsonstr(entry, "Type", "OLE2 Data");
 #endif
             if (infolen > 0)
-                ret = cli_map_scan(map, *offset, infolen, ctx, CL_TYPE_ANY);
+                ret = cli_magic_scan_nested_fmap_type(map, *offset, infolen, ctx, CL_TYPE_ANY, NULL);
             break;
         case 3: /* Hypertext/Hyperlink Information */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Hypertext/Hyperlink Information\n", infoloc);
@@ -1682,7 +1682,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
                 hwp3_debug("HWP3.x: Information Block[%llu]: %d: NAME: %s\n", infoloc, i, field);
 #endif
                 /* scanning macros - TODO - check numbers */
-                ret = cli_map_scan(map, *offset + (617 * i) + 288, 325, ctx, CL_TYPE_ANY);
+                ret = cli_magic_scan_nested_fmap_type(map, *offset + (617 * i) + 288, 325, ctx, CL_TYPE_ANY, NULL);
             }
             break;
         case 4: /* Presentation Information */
@@ -1719,7 +1719,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
 #endif
             /* 324 bytes for extra data fields */
             if (infolen > 0)
-                ret = cli_map_scan(map, *offset + 324, infolen - 324, ctx, CL_TYPE_ANY);
+                ret = cli_magic_scan_nested_fmap_type(map, *offset + 324, infolen - 324, ctx, CL_TYPE_ANY, NULL);
             break;
         case 0x100: /* Table Extension */
             hwp3_debug("HWP3.x: Information Block[%llu]: TYPE: Table Extension\n", infoloc);
@@ -1740,7 +1740,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
         default:
             cli_warnmsg("HWP3.x: Information Block[%llu]: TYPE: UNKNOWN(%u)\n", infoloc, infoid);
             if (infolen > 0)
-                ret = cli_map_scan(map, *offset, infolen, ctx, CL_TYPE_ANY);
+                ret = cli_magic_scan_nested_fmap_type(map, *offset, infolen, ctx, CL_TYPE_ANY, NULL);
     }
 
     *offset += infolen;
@@ -1774,7 +1774,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
                 return CL_ESTAT;
             }
 
-            map = dmap = fmap(fd, 0, statbuf.st_size);
+            map = dmap = fmap(fd, 0, statbuf.st_size, NULL);
             if (!map) {
                 cli_errmsg("HWP3.x: Failed to get fmap for uncompressed stream\n");
                 return CL_EMAP;
@@ -1810,6 +1810,8 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
         new_offset = offset + (2 + nfonts * 40);
         if ((new_offset <= offset) || (new_offset >= map->len)) {
             cli_errmsg("HWP3.x: Font Entry: number of fonts is too high, invalid. %u\n", nfonts);
+            if (dmap)
+                funmap(dmap);
             return CL_EPARSE;
         }
         offset = new_offset;
@@ -1831,6 +1833,8 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     new_offset = offset + (2 + nstyles * 238);
     if ((new_offset <= offset) || (new_offset >= map->len)) {
         cli_errmsg("HWP3.x: Font Entry: number of font styles is too high, invalid. %u\n", nstyles);
+        if (dmap)
+            funmap(dmap);
         return CL_EPARSE;
     }
     offset += (2 + nstyles * 238);
@@ -1859,8 +1863,8 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
         cl_error_t subret = ret;
         size_t dlen       = offset - start;
 
-        ret = cli_map_scandesc(map, start, dlen, ctx, CL_TYPE_ANY);
-        //ret = cli_map_scandesc(map, 0, 0, ctx, CL_TYPE_ANY);
+        ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL);
+        //ret = cli_magic_scan_nested_fmap_type(map, 0, 0, ctx, CL_TYPE_ANY);
 
         if (ret == CL_SUCCESS)
             ret = subret;
@@ -1974,7 +1978,7 @@ static cl_error_t hwpml_scan_cb(void *cbdata, int fd, const char *filepath, cli_
     if (fd < 0 || !ctx)
         return CL_ENULLARG;
 
-    return cli_magic_scandesc(fd, filepath, ctx);
+    return cli_magic_scan_desc(fd, filepath, ctx, NULL);
 }
 
 static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, int num_attribs, struct attrib_entry *attribs, void *cbdata)
@@ -2010,7 +2014,7 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
     /* decode the binary data if needed - base64 */
     if (enc < 0) {
         cli_errmsg("HWPML: Unrecognized encoding method\n");
-        return cli_magic_scandesc(fd, filepath, ctx);
+        return cli_magic_scan_desc(fd, filepath, ctx, NULL);
     } else if (enc == 1) {
         STATBUF statbuf;
         fmap_t *input;
@@ -2026,7 +2030,7 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
             return CL_ESTAT;
         }
 
-        if (!(input = fmap(fd, 0, statbuf.st_size))) {
+        if (!(input = fmap(fd, 0, statbuf.st_size, NULL))) {
             cli_errmsg("HWPML: Failed to get fmap for binary data\n");
             return CL_EMAP;
         }
@@ -2042,11 +2046,11 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
         funmap(input);
         if (!decoded) {
             cli_errmsg("HWPML: Failed to get base64 decode binary data\n");
-            return cli_magic_scandesc(fd, filepath, ctx);
+            return cli_magic_scan_desc(fd, filepath, ctx, NULL);
         }
 
         /* open file for writing and scanning */
-        if ((ret = cli_gentempfd(ctx->engine->tmpdir, &tempfile, &df)) != CL_SUCCESS) {
+        if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &df)) != CL_SUCCESS) {
             cli_warnmsg("HWPML: Failed to create temporary file for decoded stream scanning\n");
             return ret;
         }
@@ -2078,7 +2082,7 @@ static cl_error_t hwpml_binary_cb(int fd, const char *filepath, cli_ctx *ctx, in
             goto hwpml_end;
         }
 
-        input = fmap(fd, 0, statbuf.st_size);
+        input = fmap(fd, 0, statbuf.st_size, NULL);
         if (!input) {
             cli_errmsg("HWPML: Failed to get fmap for binary data\n");
             ret = CL_EMAP;
@@ -2139,7 +2143,6 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);
-    return ret;
 #else
     UNUSEDPARAM(ctx);
     cli_dbgmsg("in cli_scanhwpml()\n");

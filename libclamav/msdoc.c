@@ -47,6 +47,7 @@
 #include "scanners.h"
 #include "fmap.h"
 #include "json_api.h"
+#include "entconv.h"
 
 #if HAVE_JSON
 static char *
@@ -57,13 +58,14 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
     char *buf, *p1, *p2;
     off_t offset;
     size_t inlen, outlen, nonrev, sz2;
-    int i, attempt;
+    size_t i;
+    int attempt;
     iconv_t cd;
 #else
     UNUSEDPARAM(encoding);
 #endif
     /* applies in the both case */
-    if (sctx->codepage == 20127 || sctx->codepage == 65001) {
+    if (sctx->codepage == 20127 || sctx->codepage == CODEPAGE_UTF8) {
         char *track;
         size_t bcnt, scnt;
 
@@ -73,7 +75,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
         memcpy(outbuf, begin, sz);
 
         track = outbuf + sz - 1;
-        if ((sctx->codepage == 65001) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
+        if ((sctx->codepage == CODEPAGE_UTF8) && (*track & 0x80)) { /* UTF-8 with a most significant bit */
             /* locate the start of the last character */
             for (bcnt = 1; (track != outbuf); track--, bcnt++) {
                 if (((uint8_t)*track & 0xC0) != 0x80)
@@ -705,7 +707,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     off_t foff = offset, psoff = 0;
     uint32_t poffset;
     int ret;
-    unsigned int i;
+    uint32_t i;
 
     cli_dbgmsg("in ole2_summary_propset_json\n");
 
@@ -894,7 +896,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         return CL_ESTAT;
     }
 
-    sctx.sfmap = fmap(fd, 0, statbuf.st_size);
+    sctx.sfmap = fmap(fd, 0, statbuf.st_size, NULL);
     if (!sctx.sfmap) {
         cli_dbgmsg("ole2_summary_json: failed to get fmap\n");
         return CL_EMAP;

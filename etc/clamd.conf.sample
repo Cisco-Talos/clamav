@@ -70,6 +70,9 @@ Example
 
 # This option allows you to save a process identifier of the listening
 # daemon (main thread).
+# This file will be owned by root, as long as clamd was started by root.
+# It is recommended that the directory where this file is stored is
+# also owned by root to keep other users from tampering with it.
 # Default: disabled
 #PidFile /var/run/clamd.pid
 
@@ -195,6 +198,15 @@ Example
 # Perform a database check.
 # Default: 600 (10 min)
 #SelfCheck 600
+
+# Enable non-blocking (multi-threaded/concurrent) database reloads. This feature
+# will temporarily load a second scanning engine while scanning continues using
+# the first engine. Once loaded, the new engine takes over. The old engine is
+# removed as soon as all scans using the old engine have completed. This feature
+# requires more RAM, so this option is provided in case users are willing to
+# block scans during reload in exchange for lower RAM requirements.
+# Default: yes
+#ConcurrentDatabaseReload no
 
 # Execute a command when virus is found. In the command string %v will
 # be replaced with the virus name.
@@ -430,6 +442,11 @@ Example
 # to generate a detect.
 # Default: 3
 #StructuredMinCreditCardCount 5
+
+# With this option enabled the DLP module will search for valid Credit Card
+# numbers only. Debit and Private Label cards will not be searched.
+# Default: no
+#StructuredCCOnly yes
 
 # This option sets the lowest number of Social Security Numbers found
 # in a file to generate a detect.
@@ -754,6 +771,12 @@ Example
 #
 # Default: TrustSigned
 #BytecodeSecurity TrustSigned
+
+# Allow loading bytecode from outside digitally signed .c[lv]d files.
+# **Caution**: You should NEVER run bytecode signatures from untrusted sources.
+# Doing so may result in arbitrary code execution.
+# Default: no
+#BytecodeUnsigned yes
 
 # Set bytecode timeout in milliseconds.
 #

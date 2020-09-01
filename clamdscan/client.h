@@ -22,7 +22,10 @@
 #ifndef __CLIENT_H
 #define __CLIENT_H
 
-#include "shared/optparser.h"
+#define CLAMDSCAN_DEFAULT_PING_INTERVAL 1
+#define CLAMDSCAN_DEFAULT_PING_ATTEMPTS 31
+
+#include "optparser.h"
 
 enum {
     CONT,
@@ -36,5 +39,6 @@ enum {
 int client(const struct optstruct *opts, int *infected, int *err);
 int get_clamd_version(const struct optstruct *opts);
 int reload_clamd_database(const struct optstruct *opts);
+int16_t ping_clamd(const struct optstruct *opts);
 
 #endif

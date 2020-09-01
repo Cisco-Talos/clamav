@@ -55,16 +55,15 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "str.h"
 #include "platform.h"
 #include "regex/regex.h"
-#include "ltdl.h"
 #include "matcher-ac.h"
+#include "str.h"
+
+#define MSGBUFSIZ 8192
 
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
-
-#ifdef CL_NOTHREADS
-#undef CL_THREAD_SAFE
-#endif
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
@@ -139,7 +138,7 @@ void cl_set_clcb_msg(clcb_msg callback)
 #define MSGCODE(buff, len, x)                             \
     va_list args;                                         \
     size_t len = sizeof(x) - 1;                           \
-    char buff[BUFSIZ];                                    \
+    char buff[MSGBUFSIZ];                                 \
     strncpy(buff, x, len);                                \
     va_start(args, str);                                  \
     vsnprintf(buff + len, sizeof(buff) - len, str, args); \
@@ -432,7 +431,7 @@ int cli_filecopy(const char *src, const char *dest)
     if ((s = open(src, O_RDONLY | O_BINARY)) == -1)
         return -1;
 
-    if ((d = open(dest, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, S_IRWXU)) == -1) {
+    if ((d = open(dest, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) == -1) {
         close(s);
         return -1;
     }
@@ -527,9 +526,9 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 
         if ((flags & FOLLOW_SYMLINK_MASK) != FOLLOW_SYMLINK_MASK) {
             /* Following only one of directory/file symlinks, or none, may
-	     * need to lstat.
-	     * If we're following both file and directory symlinks, we don't need
-	     * to lstat(), we can just stat() directly.*/
+	         * need to lstat.
+	         * If we're following both file and directory symlinks, we don't need
+	         * to lstat(), we can just stat() directly.*/
             if (*ft != ft_link) {
                 /* need to lstat to determine if it is a symlink */
                 if (LSTAT(fname, statbuf) == -1)
@@ -560,7 +559,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
         if (S_ISDIR(statbuf->st_mode) &&
             (*ft != ft_link || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
             /* A directory, or (a symlink to a directory and we're following dir
-	     * symlinks) */
+	         * symlinks) */
             *ft = ft_directory;
         } else if (S_ISREG(statbuf->st_mode) &&
                    (*ft != ft_link || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
@@ -619,7 +618,7 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
         char *pathend;
         /* trim slashes so that dir and dir/ behave the same when
-	 * they are symlinks, and we are not following symlinks */
+	     * they are symlinks, and we are not following symlinks */
 #ifndef _WIN32
         while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
 #endif
@@ -680,7 +679,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
                 case DT_LNK:
                     if (!(flags & FOLLOW_SYMLINK_MASK)) {
                         /* we don't follow symlinks, don't bother
-			 * stating it */
+			             * stating it */
                         errno = 0;
                         continue;
                     }
@@ -847,7 +846,7 @@ unsigned int cli_rndnum(unsigned int max)
     return 1 + (unsigned int)(max * (rand() / (1.0 + RAND_MAX)));
 }
 
-char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sanitized_filebase)
 {
     uint32_t depth           = 0;
     size_t index             = 0;
@@ -856,6 +855,10 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
 
     if ((NULL == filepath) || (0 == filepath_len) || (PATH_MAX < filepath_len)) {
         goto done;
+    }
+
+    if (NULL != sanitized_filebase) {
+        *sanitized_filebase = NULL;
     }
 
     sanitized_filepath = cli_calloc(filepath_len + 1, sizeof(unsigned char));
@@ -898,9 +901,9 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
             }
 #ifdef _WIN32
             /*
-         * Windows' POSIX style API's accept both "/" and "\\" style path separators.
-         * The following checks using POSIX style path separators on Windows.
-         */
+             * Windows' POSIX style API's accept both "/" and "\\" style path separators.
+             * The following checks using POSIX style path separators on Windows.
+             */
         } else if (0 == strncmp(filepath + index, "/", strlen("/"))) {
             /*
              * Is "/".
@@ -929,17 +932,39 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
                 sanitized_index += strlen("../");
                 index += strlen("../");
                 depth--;
+
+                /* Convert path separator to Windows separator */
+                sanitized_filepath[sanitized_index - 1] = '\\';
             }
 #endif
         } else {
             /*
              * Is not "/", "./", or "../".
              */
+
             /* Find the next path separator. */
-            next_pathsep = CLI_STRNSTR(filepath + index, PATHSEP, filepath_len - index);
+#ifdef _WIN32
+            char *next_windows_pathsep = NULL;
+#endif
+            next_pathsep = CLI_STRNSTR(filepath + index, "/", filepath_len - index);
+
+#ifdef _WIN32
+            /* Check for both types of separators. */
+            next_windows_pathsep = CLI_STRNSTR(filepath + index, "\\", filepath_len - index);
+            if (NULL != next_windows_pathsep) {
+                if ((NULL == next_pathsep) || (next_windows_pathsep < next_pathsep)) {
+                    next_pathsep = next_windows_pathsep;
+                }
+            }
+#endif
             if (NULL == next_pathsep) {
                 /* No more path separators, copy the rest (filename) into the sanitized path */
                 strncpy(sanitized_filepath + sanitized_index, filepath + index, filepath_len - index);
+
+                if (NULL != sanitized_filebase) {
+                    /* Set output variable to point to the file base name */
+                    *sanitized_filebase = sanitized_filepath + sanitized_index;
+                }
                 break;
             }
             next_pathsep += strlen(PATHSEP); /* Include the path separator in the copy */
@@ -949,6 +974,11 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len)
             sanitized_index += next_pathsep - (filepath + index);
             index += next_pathsep - (filepath + index);
             depth++;
+
+#ifdef _WIN32
+            /* Convert path separator to Windows separator */
+            sanitized_filepath[sanitized_index - 1] = '\\';
+#endif
         }
     }
 
@@ -956,23 +986,30 @@ done:
     if ((NULL != sanitized_filepath) && (0 == strlen(sanitized_filepath))) {
         free(sanitized_filepath);
         sanitized_filepath = NULL;
+        if (NULL != sanitized_filebase) {
+            *sanitized_filebase = NULL;
+        }
     }
 
     return sanitized_filepath;
 }
 
+#define SHORT_HASH_LENGTH 10
 char *cli_genfname(const char *prefix)
 {
-    char *sanitized_prefix = NULL;
-    char *fname            = NULL;
+    char *sanitized_prefix      = NULL;
+    char *sanitized_prefix_base = NULL;
+    char *fname                 = NULL;
     unsigned char salt[16 + 32];
     char *tmp;
     int i;
     size_t len;
 
     if (prefix && (strlen(prefix) > 0)) {
-        sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix));
-        len              = strlen(sanitized_prefix) + strlen(".") + 5 + 1; /* {prefix}.{5}\0 */
+        sanitized_prefix = cli_sanitize_filepath(prefix, strlen(prefix), &sanitized_prefix_base);
+    }
+    if (NULL != sanitized_prefix_base) {
+        len = strlen(sanitized_prefix_base) + strlen(".") + SHORT_HASH_LENGTH + 1; /* {prefix}.{SHORT_HASH_LENGTH}\0 */
     } else {
         len = strlen("clamav-") + 48 + strlen(".tmp") + 1; /* clamav-{48}.tmp\0 */
     }
@@ -998,24 +1035,70 @@ char *cli_genfname(const char *prefix)
     pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
 
-    if (!tmp) {
+    if (NULL == tmp) {
         free(fname);
         cli_dbgmsg("cli_genfname: out of memory\n");
         return NULL;
     }
 
-    if (sanitized_prefix) {
-        if (strlen(sanitized_prefix) > 0) {
-            snprintf(fname, len, "%s.%.*s", sanitized_prefix, 5, tmp);
-        }
-        free(sanitized_prefix);
+    if (NULL != sanitized_prefix_base) {
+        snprintf(fname, len, "%s.%.*s", sanitized_prefix_base, SHORT_HASH_LENGTH, tmp);
     } else {
         snprintf(fname, len, "clamav-%s.tmp", tmp);
     }
 
+    if (NULL != sanitized_prefix) {
+        free(sanitized_prefix);
+    }
     free(tmp);
 
     return (fname);
+}
+
+char *cli_newfilepath(const char *dir, const char *fname)
+{
+    char *fullpath;
+    const char *mdir;
+    size_t len;
+
+    mdir = dir ? dir : cli_gettmpdir();
+
+    if (!fname) {
+        cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
+    fullpath = (char *)cli_calloc(len, sizeof(char));
+    if (!fullpath) {
+        cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
+        return NULL;
+    }
+
+    snprintf(fullpath, len, "%s" PATHSEP "%s", mdir, fname);
+
+    return (fullpath);
+}
+
+cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
+{
+    *name = cli_newfilepath(dir, fname);
+    if (!*name)
+        return CL_EMEM;
+
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
+    /*
+     * EEXIST is almost impossible to occur, so we just treat it as other
+     * errors
+     */
+    if (*fd == -1) {
+        cli_errmsg("cli_newfilepathfd: Can't create file %s: %s\n", *name, strerror(errno));
+        free(*name);
+        *name = NULL;
+        return CL_ECREAT;
+    }
+
+    return CL_SUCCESS;
 }
 
 char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
@@ -1029,7 +1112,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
 
     fname = cli_genfname(prefix);
     if (!fname) {
-        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        cli_dbgmsg("cli_gentemp_with_prefix('%s'): out of memory\n", mdir);
         return NULL;
     }
 
@@ -1037,7 +1120,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
     fullpath = (char *)cli_calloc(len, sizeof(char));
     if (!fullpath) {
         free(fname);
-        cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+        cli_dbgmsg("cli_gentemp_with_prefix('%s'): out of memory\n", mdir);
         return NULL;
     }
 
@@ -1063,7 +1146,7 @@ cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name,
     if (!*name)
         return CL_EMEM;
 
-    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+    *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
     /*
      * EEXIST is almost impossible to occur, so we just treat it as other
      * errors
@@ -1075,7 +1158,7 @@ cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name,
             *name = cli_gentemp(dir);
             if (!*name)
                 return CL_EMEM;
-            *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRWXU);
+            *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
             if (*fd == -1) {
                 cli_errmsg("cli_gentempfd_with_prefix: Can't create temporary file %s: %s\n", *name, strerror(errno));
                 free(*name);
@@ -1104,12 +1187,8 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 
 cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 {
-    cl_error_t status = CL_EARG;
-
-    if (NULL == filepath) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
-        goto done;
-    }
+    cl_error_t status        = CL_EARG;
+    char *evaluated_filepath = NULL;
 
 #ifdef __linux__
     char fname[PATH_MAX];
@@ -1118,6 +1197,11 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     ssize_t linksz;
 
     memset(&fname, 0, PATH_MAX);
+
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
 
     snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
     link[sizeof(link) - 1] = '\0';
@@ -1131,8 +1215,8 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     /* Success. Add null terminator */
     fname[linksz] = '\0';
 
-    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
-    if (NULL == *filepath) {
+    evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
+    if (NULL == evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
         goto done;
@@ -1142,59 +1226,135 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     char fname[PATH_MAX];
     memset(&fname, 0, PATH_MAX);
 
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
     if (fcntl(desc, F_GETPATH, &fname) < 0) {
         printf("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
 
-    *filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
-    if (NULL == *filepath) {
+    evaluated_filepath = CLI_STRNDUP(fname, CLI_STRNLEN(fname, PATH_MAX));
+    if (NULL == evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate memory to store filename\n");
         status = CL_EMEM;
         goto done;
     }
 
 #elif _WIN32
-    DWORD dwRet    = 0;
-    intptr_t hFile = _get_osfhandle(desc);
+    DWORD dwRet                   = 0;
+    intptr_t hFile                = _get_osfhandle(desc);
+    char *long_evaluated_filepath = NULL;
 
-    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_NT);
+    if (NULL == filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Invalid args.\n");
+        goto done;
+    }
+
+    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, NULL, 0, VOLUME_NAME_DOS);
     if (dwRet == 0) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
 
-    *filepath = calloc(dwRet + 1, 1);
-    if (NULL == *filepath) {
+    long_evaluated_filepath = calloc(dwRet + 1, 1);
+    if (NULL == long_evaluated_filepath) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate %u bytes to store filename\n", dwRet + 1);
         status = CL_EMEM;
         goto done;
     }
 
-    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, *filepath, dwRet + 1, VOLUME_NAME_NT);
+    dwRet = GetFinalPathNameByHandleA((HANDLE)hFile, long_evaluated_filepath, dwRet + 1, VOLUME_NAME_DOS);
     if (dwRet == 0) {
         cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
-        free(*filepath);
-        *filepath = NULL;
-        status    = CL_EOPEN;
+        free(long_evaluated_filepath);
+        long_evaluated_filepath = NULL;
+        status                  = CL_EOPEN;
         goto done;
     }
+
+    evaluated_filepath = calloc(strlen(long_evaluated_filepath) - strlen("\\\\?\\") + 1, 1);
+    if (NULL == evaluated_filepath) {
+        cli_errmsg("cli_get_filepath_from_filedesc: Failed to allocate %u bytes to store filename\n", dwRet + 1);
+        status = CL_EMEM;
+        goto done;
+    }
+    memcpy(evaluated_filepath,
+           long_evaluated_filepath + strlen("\\\\?\\"),
+           strlen(long_evaluated_filepath) - strlen("\\\\?\\"));
 
 #else
 
     cli_dbgmsg("cli_get_filepath_from_filedesc: No mechanism implemented to determine filename from file descriptor.\n");
-    *filepath = NULL;
-    status    = CL_BREAK;
+    status = CL_BREAK;
     goto done;
 
 #endif
 
     cli_dbgmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, *filepath);
-    status = CL_SUCCESS;
+    status    = CL_SUCCESS;
+    *filepath = evaluated_filepath;
 
 done:
+
+#ifdef _WIN32
+    if (NULL != long_evaluated_filepath) {
+        free(long_evaluated_filepath);
+    }
+#endif
+    return status;
+}
+
+cl_error_t cli_realpath(const char *file_name, char **real_filename)
+{
+    char *real_file_path = NULL;
+    cl_error_t status    = CL_EARG;
+#ifdef _WIN32
+    int desc = -1;
+#endif
+
+    cli_dbgmsg("Checking realpath of %s\n", file_name);
+
+    if (NULL == file_name || NULL == real_filename) {
+        cli_warnmsg("cli_realpath: Invalid arguments.\n");
+        goto done;
+    }
+
+#ifndef _WIN32
+
+    real_file_path = realpath(file_name, NULL);
+    if (NULL == real_file_path) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+#else
+
+    if ((desc = safe_open(file_name, O_RDONLY | O_BINARY)) == -1) {
+        cli_warnmsg("Can't open file %s: %s\n", file_name, strerror(errno));
+        status = CL_EOPEN;
+        goto done;
+    }
+
+    status = cli_get_filepath_from_filedesc(desc, &real_file_path);
+
+#endif
+
+    *real_filename = real_file_path;
+
+done:
+
+#ifdef _WIN32
+    if (-1 != desc) {
+        close(desc);
+    }
+#endif
 
     return status;
 }

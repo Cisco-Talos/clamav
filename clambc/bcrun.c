@@ -28,13 +28,16 @@
 #endif
 #include <stdlib.h>
 
+// libclamav
+#include "clamav.h"
+#include "dconf.h"
+#include "others.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
-#include "clamav.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
-#include "libclamav/dconf.h"
-#include "libclamav/others.h"
+
+// shared
+#include "optparser.h"
+#include "misc.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -66,6 +69,8 @@ static void help(void)
     printf("    --no-trace-showsource  -s         Don't show source line during tracing\n");
     printf("    --statistics=bytecode             Collect and print bytecode execution statistics\n");
     printf("    file                              File to test\n");
+    printf("\n");
+    printf("**Caution**: You should NEVER run bytecode signatures from untrusted sources.\nDoing so may result in arbitrary code execution.\n");
     printf("\n");
     return;
 }
@@ -431,7 +436,7 @@ int main(int argc, char *argv[])
                 optfree(opts);
                 exit(5);
             }
-            map = fmap(fd, 0, 0);
+            map = fmap(fd, 0, 0, opt->strarg);
             if (!map) {
                 fprintf(stderr, "Unable to map input file %s\n", opt->strarg);
                 exit(5);

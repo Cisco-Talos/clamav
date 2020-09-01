@@ -21,39 +21,29 @@
 sbin_PROGRAMS = clamonacc
 
 clamonacc_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/actions.c \
-    $(top_srcdir)/shared/actions.h \
     clamonacc.c \
     clamonacc.h \
-    ./client/client.c \
-    ./client/client.h \
-    ./client/protocol.c \
-    ./client/protocol.h \
-    ./client/communication.c \
-    ./client/communication.h \
-    ./inotif/inotif.c \
-    ./inotif/inotif.h \
-    ./fanotif/fanotif.c \
-    ./fanotif/fanotif.h \
-    ./inotif/hash.c \
-    ./inotif/hash.h \
-    ./misc/utils.c \
-    ./misc/utils.h \
-    ./misc/priv_fts.h \
-    ./scan/thread.c \
-    ./scan/thread.h \
-    ./scan/queue.c \
-    ./scan/queue.h \
-    ./c-thread-pool/thpool.c \
-    ./c-thread-pool/thpool.h
+    client/client.c \
+    client/client.h \
+    client/protocol.c \
+    client/protocol.h \
+    client/communication.c \
+    client/communication.h \
+    inotif/inotif.c \
+    inotif/inotif.h \
+    fanotif/fanotif.c \
+    fanotif/fanotif.h \
+    inotif/hash.c \
+    inotif/hash.h \
+    misc/utils.c \
+    misc/utils.h \
+    misc/priv_fts.h \
+    scan/thread.c \
+    scan/thread.h \
+    scan/onas_queue.c \
+    scan/onas_queue.h \
+    c-thread-pool/thpool.c \
+    c-thread-pool/thpool.h
 
 
 if !SYSTEM_LFS_FTS
@@ -62,9 +52,12 @@ endif
 
 AM_CFLAGS=@WERR_CFLAGS@
 
-DEFS = @DEFS@ -DCL_NOLIBCLAMAV
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamonacc -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+if INSTALL_SYSTEMD_UNITS
+systemdsystemunit_DATA = clamav-clamonacc.service
+endif
+
+LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamonacc -I$(top_srcdir)/shared -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

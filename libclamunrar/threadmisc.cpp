@@ -1,7 +1,3 @@
-// Typically we use the same global thread pool for all RAR modules.
-static ThreadPool *GlobalPool=NULL;
-static uint GlobalPoolUseCount=0;
-
 static inline bool CriticalSectionCreate(CRITSECT_HANDLE *CritSection)
 {
 #ifdef _WIN_ALL
@@ -40,53 +36,6 @@ static inline void CriticalSectionEnd(CRITSECT_HANDLE *CritSection)
 #elif defined(_UNIX)
   pthread_mutex_unlock(CritSection);
 #endif
-}
-
-
-static struct GlobalPoolCreateSync
-{
-  CRITSECT_HANDLE CritSection;
-  GlobalPoolCreateSync()  { CriticalSectionCreate(&CritSection); }
-  ~GlobalPoolCreateSync() { CriticalSectionDelete(&CritSection); }
-} PoolCreateSync;
-
-
-ThreadPool* CreateThreadPool()
-{
-#ifdef RARDLL
-  // We use a simple thread pool, which does not allow to add tasks from
-  // different functions and threads in the same time. It is ok for RAR,
-  // but UnRAR.dll can be used in multithreaded environment. So we return
-  // a new pool for UnRAR.dll every time.
-  return new ThreadPool(MaxPoolThreads);
-#else
-  // Reuse the existing pool for RAR.
-  CriticalSectionStart(&PoolCreateSync.CritSection); 
-  
-  if (GlobalPoolUseCount++ == 0)
-    GlobalPool=new ThreadPool(MaxPoolThreads);
-
-  CriticalSectionEnd(&PoolCreateSync.CritSection); 
-  return GlobalPool;
-#endif
-}
-
-
-void DestroyThreadPool(ThreadPool *Pool)
-{
-  if (Pool!=NULL)
-  {
-#ifdef RARDLL
-    delete Pool;
-#else
-    CriticalSectionStart(&PoolCreateSync.CritSection); 
-
-    if (Pool==GlobalPool && GlobalPoolUseCount > 0 && --GlobalPoolUseCount == 0)
-      delete GlobalPool;
-
-    CriticalSectionEnd(&PoolCreateSync.CritSection); 
-#endif
-  }
 }
 
 

@@ -35,13 +35,14 @@
 #include <time.h>
 #include <signal.h>
 
+// libclamav
 #include "clamav.h"
 
-#include "libclamav/clamav.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/optparser.h"
-#include "shared/actions.h"
+// shared
+#include "output.h"
+#include "misc.h"
+#include "optparser.h"
+#include "actions.h"
 
 #include "client.h"
 
@@ -73,7 +74,7 @@ int main(int argc, char **argv)
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
         mprintf("!Can't parse command line options\n");
-        return 2;
+        exit(2);
     }
 
     if (optget(opts, "help")->enabled) {
@@ -83,7 +84,8 @@ int main(int argc, char **argv)
 
     if ((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
         logg("!Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
-        return 2;
+        optfree(opts);
+        exit(2);
     }
 
     if (optget(opts, "verbose")->enabled) {
@@ -102,6 +104,24 @@ int main(int argc, char **argv)
         optfree(opts);
         optfree(clamdopts);
         exit(0);
+    }
+
+    if (optget(opts, "ping")->enabled && !optget(opts, "wait")->enabled) {
+        int16_t ping_result = ping_clamd(opts);
+        switch (ping_result) {
+            case 0:
+                ret = 0;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                break;
+            default:
+                ret = (int)CL_ERROR;
+                break;
+        }
+        optfree(opts);
+        optfree(clamdopts);
+        exit(ret);
     }
 
     if (optget(opts, "infected")->enabled)
@@ -217,6 +237,8 @@ void help(void)
     mprintf("                                       (this help is always written to stdout)\n");
     mprintf("    --log=FILE          -l FILE        Save scan report in FILE\n");
     mprintf("    --file-list=FILE    -f FILE        Scan files from FILE\n");
+    mprintf("    --ping              -p A[:I]       Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf("    --wait              -w             Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");

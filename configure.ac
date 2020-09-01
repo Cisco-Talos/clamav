@@ -22,9 +22,7 @@ AC_PREREQ([2.59])
 
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.103.0-devel], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
-dnl put configure auxiliary into config
-AC_CONFIG_AUX_DIR([config])
+AC_INIT([ClamAV], [0.103.0-rc2], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
@@ -42,15 +40,14 @@ AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
-AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
+AM_INIT_AUTOMAKE([1.11.1 -Wall -Wportability -Wno-override subdir-objects std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
-
+AC_USE_SYSTEM_EXTENSIONS
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
-AC_USE_SYSTEM_EXTENSIONS
 
 m4_include([m4/reorganization/version.m4])
 
@@ -201,6 +198,7 @@ if test "x$enable_libclamav_only" != "xyes"; then
                      clamscan/Makefile
                      database/Makefile
                      docs/Makefile
+                     shared/Makefile
                      clamd/Makefile
                      clamd/clamav-daemon.service
                      clamd/clamav-daemon.socket
@@ -235,7 +233,12 @@ if test "x$enable_libclamav_only" != "xyes"; then
 fi
 
 AM_COND_IF([BUILD_CLAMONACC],
-            [AC_CONFIG_FILES([clamonacc/Makefile])])
+    [AC_CONFIG_FILES([
+        clamonacc/Makefile
+        clamonacc/clamav-clamonacc.service
+        docs/man/clamonacc.8
+    ])
+])
 
 # Define variables needed to generate clamav-types.h.
 m4_include([m4/reorganization/types.m4])
@@ -389,4 +392,12 @@ if test "X$have_json" = "Xyes" && test "x$json_linking" = "xdynamic"; then
 ****** Consider using --with-libjson-static=[path/to/libjson-c.a],
 ****** providing a json-c library that was compiled with CFLAGS="-fPIC".
     ])
+fi
+
+if test "x$clamonacc-curl" = "xdeprecated"; then
+    AC_MSG_WARN([m4_normalize([
+****** your libcurl (e.g. libcurl-devel) is older than the recommended version. Installing ClamAV with clamonacc requires libcurl 7.40 or higher to use fdpassing.
+****** fdpassing with clamonacc will be disabled on your system.
+****** for more information on ClamAV's on-access scanner, please read our documentation: https://www.clamav.net/documents/on-access-scanning#on-access-scanning
+    ])])
 fi

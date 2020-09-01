@@ -21,21 +21,15 @@
 bin_PROGRAMS = clamconf
 
 clamconf_SOURCES = \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
     clamconf.c
 
 AM_CFLAGS=@WERR_CFLAGS@ @SSL_CPPFLAGS@
 
-DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = @CLAMCONF_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav\
+DEFS = @DEFS@
+AM_CPPFLAGS = @CLAMCONF_CPPFLAGS@ -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface \
 	      @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@\
 	      -DBUILD_CPPFLAGS="\"$(CPPFLAGS)\"" -DBUILD_CFLAGS="\"$(CFLAGS)\""\
 	      -DBUILD_CXXFLAGS="\"$(CXXFLAGS)\"" -DBUILD_LDFLAGS="\"$(LDFLAGS)\""\
 	      -DBUILD_CONFIGURE_FLAGS="\"$(BUILD_CONFIGURE_FLAGS)\""
-LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMCONF_LIBS@ @CLAMD_LIBS@ @THREAD_LIBS@ @LIBCLAMAV_LIBS@ @ZLIB_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMCONF_LIBS@ @CLAMD_LIBS@ @THREAD_LIBS@ @LIBCLAMAV_LIBS@ @ZLIB_LIBS@
 CLEANFILES=*.gcda *.gcno

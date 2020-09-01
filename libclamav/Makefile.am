@@ -19,6 +19,7 @@
 #  MA 02110-1301, USA.
 
 AM_YFLAGS = -d
+AM_LFLAGS = -d
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 AM_CFLAGS=@WERR_CFLAGS@
 lib_LTLIBRARIES =
@@ -89,7 +90,7 @@ libclamunrar_la_SOURCES = \
 lib_LTLIBRARIES += libclamunrar.la
 EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map
 
-
+libclamunrar_iface_la_CXXFLAGS = $(AM_CPPFLAGS) -I@top_srcdir@/libclamunrar
 libclamunrar_iface_la_LIBADD = libclamunrar.la
 libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
@@ -108,72 +109,11 @@ IFACELIBADD = -dlopen libclamunrar_iface.la
 IFACEDEP = libclamunrar_iface.la
 endif
 
-libclamav_internal_utils_la_SOURCES=str.c\
-				    str.h\
-					conv.c \
-					conv.h \
-					crypto.c \
-					clamav.h \
-				    iowrap.c \
-				    iowrap.h \
-				    others_common.c \
-				    others.h \
-				    qsort.c \
-				    regex/strlcpy.c \
-				    regex/regcomp.c \
-				    regex/regerror.c \
-				    regex/regexec.c \
-				    regex/regfree.c \
-				    regex/cclass.h \
-				    regex/cname.h \
-				    regex/regex.h \
-				    regex/regex2.h \
-				    regex/utils.h \
-					strlcat.c
-
-libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
-libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS)  -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
-libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @PCRE_LIBS@
-
-libclamav_internal_utils_nothreads_la_SOURCES=str.c\
-					conv.c \
-					conv.h \
-					crypto.c \
-					clamav.h \
-				    str.h\
-				    iowrap.c \
-				    iowrap.h \
-				    others_common.c \
-				    others.h \
-				    qsort.c \
-				    regex/strlcpy.c \
-				    regex/regcomp.c \
-				    regex/regerror.c \
-				    regex/regexec.c \
-				    regex/regfree.c \
-				    regex/cclass.h \
-				    regex/cname.h \
-				    regex/regex.h \
-				    regex/regex2.h \
-				    regex/utils.h \
-					strlcat.c
-
-libclamav_internal_utils_nothreads_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
-libclamav_internal_utils_nothreads_la_CFLAGS=$(AM_CFLAGS) -DCL_NOTHREADS @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-libclamav_internal_utils_nothreads_la_LIBADD=@SSL_LIBS@ @PCRE_LIBS@
-SUBDIRS=
-
-if ENABLE_LLVM
-LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
-LLVMDEP=c++/libclamavcxx.la
-SUBDIRS+=c++
-else
-LLVMLIBADD=libclamav_nocxx.la
-LLVMDEP=libclamav_nocxx.la
-c++/Makefile: c++/Makefile.nollvm.in
-	$(AM_V_at) cp $< $@
-distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
-endif
+# We need libclamunrar_iface in the include path even if we don't build it,
+# because we #include "unrar_iface.h"
+# We still want to support unrar if it is later provided, which is why we don't
+# just wrap all the unrar scanners code with #ifdefs.
+IFACE_CFLAGS = -I@top_srcdir@/libclamunrar_iface
 
 if USE_INTERNAL_MSPACK
 # libmspack version: 0.8alpha (1:0:1)
@@ -254,16 +194,57 @@ maintainer-clean:
 distclean-recursive distdir maintainer-clean-recursive: libmspack/Makefile
 endif
 
+libclamav_internal_utils_la_SOURCES= \
+	conv.c \
+	conv.h \
+	crypto.c \
+	iowrap.c \
+	iowrap.h \
+	others_common.c \
+	others.h \
+	qsort.c \
+	regex/cclass.h \
+	regex/cname.h \
+	regex/regcomp.c \
+	regex/regerror.c \
+	regex/regex.h \
+	regex/regex2.h \
+	regex/regexec.c \
+	regex/regfree.c \
+	regex/strlcpy.c \
+	regex/utils.h \
+	str.c \
+	str.h \
+	strlcat.c
+
+libclamav_internal_utils_la_LDFLAGS=-static @SSL_LDFLAGS@ @JSON_LDFLAGS@
+libclamav_internal_utils_la_CFLAGS=$(AM_CFLAGS) $(IFACE_CFLAGS) -fPIC -DPIC @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
+libclamav_internal_utils_la_LIBADD=@SSL_LIBS@ @PCRE_LIBS@
+
+SUBDIRS=
+
+if ENABLE_LLVM
+LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
+LLVMDEP=c++/libclamavcxx.la
+SUBDIRS+=c++
+else
+LLVMLIBADD=libclamav_nocxx.la
+LLVMDEP=libclamav_nocxx.la
+c++/Makefile: c++/Makefile.nollvm.in
+	$(AM_V_at) cp $< $@
+distclean-recursive distdir maintainer-clean-recursive: c++/Makefile
+endif
+
 if ENABLE_YARA
 YARA_CFLAGS=-DHAVE_YARA
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
-libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@
+libclamav_nocxx_la_CFLAGS=$(AM_CFLAGS) $(IFACE_CFLAGS) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@
 
 libclamav_la_LIBADD = @SSL_LIBS@ @JSON_LIBS@ @PCRE_LIBS@ @LIBCLAMAV_LIBS@ @ZLIB_LIBS@ @LIBLTDL@ $(XML_LIBS) $(IFACELIBADD) $(MSPACKLIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @THREAD_LIBS@ @LIBM@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) $(MSPACKDEP) libclamav_internal_utils.la
-libclamav_la_CFLAGS = $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
+libclamav_la_CFLAGS = $(IFACE_CFLAGS) $(MSPACK_CFLAGS) $(AM_CFLAGS) $(YARA_CFLAGS) -DSEARCH_LIBDIR=\"$(libdir)\" @LIBCLAMAV_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @ZLIB_CFLAGS@ @PCRE_CPPFLAGS@ @XML_CPPFLAGS@
 libclamav_la_LDFLAGS = @SSL_LDFLAGS@ @TH_SAFE@ @JSON_LDFLAGS@ @LIBICONV@ $(XML_LIBS) -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -312,6 +293,8 @@ libclamav_la_SOURCES = \
 	ole2_extract.h \
 	vba_extract.c \
 	vba_extract.h \
+    xlm_extract.c \
+    xlm_extract.h \
 	msexpand.c \
 	msexpand.h \
 	pe.c \
@@ -526,8 +509,8 @@ libclamav_la_SOURCES = \
 	gpt.h \
 	apm.c \
 	apm.h \
-	prtn_intxn.c \
-	prtn_intxn.h \
+	partition_intersection.c \
+	partition_intersection.h \
 	json_api.c\
 	json_api.h\
 	xz_iface.c \
@@ -538,6 +521,8 @@ libclamav_la_SOURCES = \
 	hfsplus.h \
 	swf.c \
 	swf.h \
+	gif.c \
+	gif.h \
 	jpeg.c \
 	jpeg.h \
 	png.c \
@@ -560,8 +545,8 @@ libclamav_la_SOURCES = \
 	www.h \
 	stats_json.c \
 	stats_json.h \
-	hostid.c \
-	hostid.h \
+	hostid_internal.c \
+	hostid_internal.h \
 	openioc.c \
 	openioc.h \
 	msdoc.c \
@@ -583,7 +568,8 @@ libclamav_la_SOURCES = \
 	matcher-byte-comp.c \
 	matcher-byte-comp.h \
 	egg.c \
-	egg.h
+	egg.h \
+	queue.h
 
 if ENABLE_YARA
 libclamav_la_SOURCES += yara_arena.c \
@@ -604,89 +590,89 @@ endif
 
 libclamav_la_SOURCES += bignum.h\
 	bignum_fast.h\
-        tomsfastmath/addsub/fp_add.c\
-        tomsfastmath/addsub/fp_add_d.c\
-        tomsfastmath/addsub/fp_addmod.c\
-        tomsfastmath/addsub/fp_cmp.c\
-        tomsfastmath/addsub/fp_cmp_d.c\
-        tomsfastmath/addsub/fp_cmp_mag.c\
-        tomsfastmath/addsub/fp_sub.c\
-        tomsfastmath/addsub/fp_sub_d.c\
-        tomsfastmath/addsub/fp_submod.c\
-        tomsfastmath/addsub/s_fp_add.c\
-        tomsfastmath/addsub/s_fp_sub.c\
-        tomsfastmath/bin/fp_radix_size.c\
-        tomsfastmath/bin/fp_read_radix.c\
-        tomsfastmath/bin/fp_read_signed_bin.c\
-        tomsfastmath/bin/fp_read_unsigned_bin.c\
-        tomsfastmath/bin/fp_reverse.c\
-        tomsfastmath/bin/fp_s_rmap.c\
-        tomsfastmath/bin/fp_signed_bin_size.c\
-        tomsfastmath/bin/fp_to_signed_bin.c\
-        tomsfastmath/bin/fp_to_unsigned_bin.c\
-        tomsfastmath/bin/fp_toradix.c\
-        tomsfastmath/bin/fp_toradix_n.c\
-        tomsfastmath/bin/fp_unsigned_bin_size.c\
-        tomsfastmath/bit/fp_cnt_lsb.c\
-        tomsfastmath/bit/fp_count_bits.c\
-        tomsfastmath/bit/fp_div_2.c\
-        tomsfastmath/bit/fp_div_2d.c\
-        tomsfastmath/bit/fp_lshd.c\
-        tomsfastmath/bit/fp_mod_2d.c\
-        tomsfastmath/bit/fp_rshd.c\
-        tomsfastmath/divide/fp_div.c\
-        tomsfastmath/divide/fp_div_d.c\
-        tomsfastmath/divide/fp_mod.c\
-        tomsfastmath/divide/fp_mod_d.c\
-        tomsfastmath/exptmod/fp_2expt.c\
-        tomsfastmath/exptmod/fp_exptmod.c\
-        tomsfastmath/misc/fp_ident.c\
-        tomsfastmath/misc/fp_set.c\
-        tomsfastmath/mont/fp_montgomery_calc_normalization.c\
-        tomsfastmath/mont/fp_montgomery_reduce.c\
-        tomsfastmath/mont/fp_montgomery_setup.c\
-        tomsfastmath/mul/fp_mul.c\
-        tomsfastmath/mul/fp_mul_comba.c\
-        tomsfastmath/mul/fp_mul_2.c\
-        tomsfastmath/mul/fp_mul_2d.c\
-        tomsfastmath/mul/fp_mul_comba_12.c\
-        tomsfastmath/mul/fp_mul_comba_17.c\
-        tomsfastmath/mul/fp_mul_comba_20.c\
-        tomsfastmath/mul/fp_mul_comba_24.c\
-        tomsfastmath/mul/fp_mul_comba_28.c\
-        tomsfastmath/mul/fp_mul_comba_3.c\
-        tomsfastmath/mul/fp_mul_comba_32.c\
-        tomsfastmath/mul/fp_mul_comba_4.c\
-        tomsfastmath/mul/fp_mul_comba_48.c\
-        tomsfastmath/mul/fp_mul_comba_6.c\
-        tomsfastmath/mul/fp_mul_comba_64.c\
-        tomsfastmath/mul/fp_mul_comba_7.c\
-        tomsfastmath/mul/fp_mul_comba_8.c\
-        tomsfastmath/mul/fp_mul_comba_9.c\
-        tomsfastmath/mul/fp_mul_comba_small_set.c\
-        tomsfastmath/mul/fp_mul_d.c\
-        tomsfastmath/mul/fp_mulmod.c\
-        tomsfastmath/numtheory/fp_invmod.c\
-        tomsfastmath/sqr/fp_sqr.c\
-        tomsfastmath/sqr/fp_sqr_comba_12.c\
-        tomsfastmath/sqr/fp_sqr_comba_17.c\
-        tomsfastmath/sqr/fp_sqr_comba_20.c\
-        tomsfastmath/sqr/fp_sqr_comba_24.c\
-        tomsfastmath/sqr/fp_sqr_comba_28.c\
-        tomsfastmath/sqr/fp_sqr_comba_3.c\
-        tomsfastmath/sqr/fp_sqr_comba_32.c\
-        tomsfastmath/sqr/fp_sqr_comba_4.c\
-        tomsfastmath/sqr/fp_sqr_comba_48.c\
-        tomsfastmath/sqr/fp_sqr_comba_6.c\
-        tomsfastmath/sqr/fp_sqr_comba_64.c\
-        tomsfastmath/sqr/fp_sqr_comba_7.c\
-        tomsfastmath/sqr/fp_sqr_comba_8.c\
-        tomsfastmath/sqr/fp_sqr_comba_9.c\
-        tomsfastmath/sqr/fp_sqr_comba_generic.c\
-        tomsfastmath/sqr/fp_sqr_comba_small_set.c\
+	tomsfastmath/addsub/fp_add.c\
+	tomsfastmath/addsub/fp_add_d.c\
+	tomsfastmath/addsub/fp_addmod.c\
+	tomsfastmath/addsub/fp_cmp.c\
+	tomsfastmath/addsub/fp_cmp_d.c\
+	tomsfastmath/addsub/fp_cmp_mag.c\
+	tomsfastmath/addsub/fp_sub.c\
+	tomsfastmath/addsub/fp_sub_d.c\
+	tomsfastmath/addsub/fp_submod.c\
+	tomsfastmath/addsub/s_fp_add.c\
+	tomsfastmath/addsub/s_fp_sub.c\
+	tomsfastmath/bin/fp_radix_size.c\
+	tomsfastmath/bin/fp_read_radix.c\
+	tomsfastmath/bin/fp_read_signed_bin.c\
+	tomsfastmath/bin/fp_read_unsigned_bin.c\
+	tomsfastmath/bin/fp_reverse.c\
+	tomsfastmath/bin/fp_s_rmap.c\
+	tomsfastmath/bin/fp_signed_bin_size.c\
+	tomsfastmath/bin/fp_to_signed_bin.c\
+	tomsfastmath/bin/fp_to_unsigned_bin.c\
+	tomsfastmath/bin/fp_toradix.c\
+	tomsfastmath/bin/fp_toradix_n.c\
+	tomsfastmath/bin/fp_unsigned_bin_size.c\
+	tomsfastmath/bit/fp_cnt_lsb.c\
+	tomsfastmath/bit/fp_count_bits.c\
+	tomsfastmath/bit/fp_div_2.c\
+	tomsfastmath/bit/fp_div_2d.c\
+	tomsfastmath/bit/fp_lshd.c\
+	tomsfastmath/bit/fp_mod_2d.c\
+	tomsfastmath/bit/fp_rshd.c\
+	tomsfastmath/divide/fp_div.c\
+	tomsfastmath/divide/fp_div_d.c\
+	tomsfastmath/divide/fp_mod.c\
+	tomsfastmath/divide/fp_mod_d.c\
+	tomsfastmath/exptmod/fp_2expt.c\
+	tomsfastmath/exptmod/fp_exptmod.c\
+	tomsfastmath/misc/fp_ident.c\
+	tomsfastmath/misc/fp_set.c\
+	tomsfastmath/mont/fp_montgomery_calc_normalization.c\
+	tomsfastmath/mont/fp_montgomery_reduce.c\
+	tomsfastmath/mont/fp_montgomery_setup.c\
+	tomsfastmath/mul/fp_mul.c\
+	tomsfastmath/mul/fp_mul_comba.c\
+	tomsfastmath/mul/fp_mul_2.c\
+	tomsfastmath/mul/fp_mul_2d.c\
+	tomsfastmath/mul/fp_mul_comba_12.c\
+	tomsfastmath/mul/fp_mul_comba_17.c\
+	tomsfastmath/mul/fp_mul_comba_20.c\
+	tomsfastmath/mul/fp_mul_comba_24.c\
+	tomsfastmath/mul/fp_mul_comba_28.c\
+	tomsfastmath/mul/fp_mul_comba_3.c\
+	tomsfastmath/mul/fp_mul_comba_32.c\
+	tomsfastmath/mul/fp_mul_comba_4.c\
+	tomsfastmath/mul/fp_mul_comba_48.c\
+	tomsfastmath/mul/fp_mul_comba_6.c\
+	tomsfastmath/mul/fp_mul_comba_64.c\
+	tomsfastmath/mul/fp_mul_comba_7.c\
+	tomsfastmath/mul/fp_mul_comba_8.c\
+	tomsfastmath/mul/fp_mul_comba_9.c\
+	tomsfastmath/mul/fp_mul_comba_small_set.c\
+	tomsfastmath/mul/fp_mul_d.c\
+	tomsfastmath/mul/fp_mulmod.c\
+	tomsfastmath/numtheory/fp_invmod.c\
+	tomsfastmath/sqr/fp_sqr.c\
+	tomsfastmath/sqr/fp_sqr_comba_12.c\
+	tomsfastmath/sqr/fp_sqr_comba_17.c\
+	tomsfastmath/sqr/fp_sqr_comba_20.c\
+	tomsfastmath/sqr/fp_sqr_comba_24.c\
+	tomsfastmath/sqr/fp_sqr_comba_28.c\
+	tomsfastmath/sqr/fp_sqr_comba_3.c\
+	tomsfastmath/sqr/fp_sqr_comba_32.c\
+	tomsfastmath/sqr/fp_sqr_comba_4.c\
+	tomsfastmath/sqr/fp_sqr_comba_48.c\
+	tomsfastmath/sqr/fp_sqr_comba_6.c\
+	tomsfastmath/sqr/fp_sqr_comba_64.c\
+	tomsfastmath/sqr/fp_sqr_comba_7.c\
+	tomsfastmath/sqr/fp_sqr_comba_8.c\
+	tomsfastmath/sqr/fp_sqr_comba_9.c\
+	tomsfastmath/sqr/fp_sqr_comba_generic.c\
+	tomsfastmath/sqr/fp_sqr_comba_small_set.c\
 	tomsfastmath/sqr/fp_sqrmod.c
 
-.PHONY: version.h.tmp
+.PHONY2: version.h.tmp
 version.c: version.h
 version.h: version.h.tmp
 	$(AM_V_GEN) if test -f version.h.static; then\
@@ -709,13 +695,16 @@ version.h.tmp:
 	fi
 
 lib_LTLIBRARIES += libclamav.la
-noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
-EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map \
+noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_nocxx.la
+EXTRA_DIST += regex/engine.c tomsfastmath/sqr/fp_sqr_comba.c tomsfastmath/mul/fp_mul_comba.c libclamav.map libclamav_main.c \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
-	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
+	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf version.h.in
 COMMON_CLEANFILES+=version.h version.h.tmp *.gcda *.gcno
+
+BUILT_SOURCES = yara_grammar.h
+
 if MAINTAINER_MODE
-BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
+BUILT_SOURCES += jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 
 GPERF_FLAGS=-E -t -L ANSI-C -C -F ', TOK_ERROR' -c
 

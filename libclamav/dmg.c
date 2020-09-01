@@ -156,7 +156,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* Create temp folder for contents */
-    if (!(dirname = cli_gentemp(ctx->engine->tmpdir))) {
+    if (!(dirname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "dmg-tmp"))) {
         return CL_ETMPDIR;
     }
     if (mkdir(dirname, 0700)) {
@@ -178,8 +178,8 @@ int cli_scandmg(cli_ctx *ctx)
         }
     }
 
-    /* scan XML with cli_map_scandesc */
-    ret = cli_map_scan(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY);
+    /* scan XML with cli_magic_scan_nested_fmap_type */
+    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -990,7 +990,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     unsigned long projected_size;
     int ret        = CL_CLEAN, ofd;
     uint8_t sorted = 1, writeable_data = 0;
-    char outfile[NAME_MAX + 1];
+    char outfile[PATH_MAX + 1];
 
     /* First loop, fix endian-ness and check if already sorted */
     for (i = 0; i < mish_set->mish->blockDataCount; i++) {
@@ -1082,7 +1082,8 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
 
     /* If okay so far, scan rebuilt partition */
     if (ret == CL_CLEAN) {
-        ret = cli_partition_scandesc(ofd, outfile, ctx);
+        /* Have to keep partition typing separate */
+        ret = cli_magic_scan_desc_type(ofd, outfile, ctx, CL_TYPE_PART_ANY, NULL);
     }
 
     close(ofd);
@@ -1114,7 +1115,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
     cli_dbgmsg("cli_scandmg: Extracting XML as %s\n", xmlfile);
 
     /* Write out TOC XML */
-    if ((ofd = open(xmlfile, O_CREAT | O_RDWR | O_EXCL | O_TRUNC | O_BINARY, S_IRWXU)) < 0) {
+    if ((ofd = open(xmlfile, O_CREAT | O_RDWR | O_EXCL | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         char err[128];
         cli_errmsg("cli_scandmg: Can't create temporary file %s: %s\n",
                    xmlfile, cli_strerror(errno, err, sizeof(err)));

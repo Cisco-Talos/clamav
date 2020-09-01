@@ -9,8 +9,8 @@
 
 /* HLP decompression implementation */
 
-#include <system.h>
-#include <hlp.h>
+#include "system.h"
+#include "hlp.h"
 
 struct mshlp_decompressor *
   mspack_create_hlp_decompressor(struct mspack_system *sys)

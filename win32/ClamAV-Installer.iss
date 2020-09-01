@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.103.0-devel
+OutputBaseFilename=ClamAV-0.103.0-rc2
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 
@@ -47,7 +47,7 @@ Source: "x64\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dll"
 Source: "x64\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamunrar_iface.dll"; DestDir: "{app}"; DestName: "libclamunrar_iface.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\libclamunrar.dll"; DestDir: "{app}"; DestName: "libclamunrar.dll"; Check: Is64BitInstallMode
-Source: "x64\Release\mspack.dll"; DestDir: "{app}"; DestName: "mspack.dll"; Check: Is64BitInstallMode
+Source: "x64\Release\libmspack.dll"; DestDir: "{app}"; DestName: "libmspack.dll"; Check: Is64BitInstallMode
 Source: "x64\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: Is64BitInstallMode
 Source: "C:\clam_dependencies\x64\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: Is64BitInstallMode
@@ -75,7 +75,7 @@ Source: "Win32\Release\libclamav.dll"; DestDir: "{app}"; DestName: "libclamav.dl
 Source: "Win32\Release\libfreshclam.dll"; DestDir: "{app}"; DestName: "libfreshclam.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamunrar_iface.dll"; DestDir: "{app}"; DestName: "libclamunrar_iface.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\libclamunrar.dll"; DestDir: "{app}"; DestName: "libclamunrar.dll"; Check: not Is64BitInstallMode
-Source: "Win32\Release\mspack.dll"; DestDir: "{app}"; DestName: "mspack.dll"; Check: not Is64BitInstallMode
+Source: "Win32\Release\libmspack.dll"; DestDir: "{app}"; DestName: "libmspack.dll"; Check: not Is64BitInstallMode
 Source: "Win32\Release\sigtool.exe"; DestDir: "{app}"; DestName: "sigtool.exe"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\json-c.dll"; DestDir: "{app}"; DestName: "json-c.dll"; Check: not Is64BitInstallMode
 Source: "C:\clam_dependencies\Win32\lib\libbz2.dll"; DestDir: "{app}"; DestName: "libbz2.dll"; Check: not Is64BitInstallMode

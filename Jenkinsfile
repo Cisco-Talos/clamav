@@ -7,7 +7,7 @@ properties(
                        defaultValue: "${env.BRANCH_NAME}",
                        description: 'clamav-devel branch'),
                 string(name: 'VERSION',
-                       defaultValue: '0.103.0-devel',
+                       defaultValue: '0.103.0-rc2',
                        description: 'ClamAV version string'),
                 string(name: 'BUILD_BRANCH',
                        defaultValue: 'build-0.103',
@@ -78,7 +78,8 @@ node('master') {
                             [$class: 'StringParameterValue', name: 'TEST_BRANCH', value: "${params.TEST_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"],
+                            [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
                         ]
                     )
                     echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
@@ -97,7 +98,8 @@ node('master') {
                         [$class: 'StringParameterValue', name: 'TEST_BRANCH', value: "${params.TEST_CUSTOM_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                        [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
+                        [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
                     ]
                 )
                 echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
@@ -119,6 +121,7 @@ node('master') {
                         [$class: 'StringParameterValue', name: 'FUZZ_TEST_BRANCH', value: "${params.FUZZ_TEST_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'FUZZ_BRANCH', value: "${params.FUZZ_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
                     ]
                 )
                 echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
@@ -133,7 +136,8 @@ node('master') {
                     parameters: [
                         [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
+                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
                     ]
                 )
                 echo "test-pipelines/appcheck #${appcheckResult.number} succeeded."

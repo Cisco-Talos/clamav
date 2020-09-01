@@ -45,16 +45,18 @@
 #endif
 #include <pthread.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/scanners.h"
-
-#include "shared/idmef_logging.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
+// libclamav
+#include "clamav.h"
 #include "others.h"
+#include "scanners.h"
+
+// shared
+#include "idmef_logging.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+
+#include "clamd_others.h"
 #include "scanner.h"
 #include "shared.h"
 #include "thrmgr.h"
@@ -133,13 +135,25 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
 }
 
 #define BUFFSIZE 1024
-int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname           = NULL;
     int ret;
     int type = scandata->type;
     struct cb_context context;
+    char *real_filename = NULL;
+
+    if (NULL != filename) {
+        if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
+            conn_reply_errno(scandata->conn, msg, "real-path check failed:");
+            logg("^Failed to determine real path for: %s\n", filename);
+            scandata->errors++;
+            return CL_SUCCESS;
+        }
+        free(filename);
+        filename = real_filename;
+    }
 
     /* detect disconnected socket,
      * this should NOT detect half-shutdown sockets (SHUT_WR) */
@@ -190,8 +204,8 @@ int scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_rea
             break;
     }
 
-        /* check whether the file is excluded */
 #ifdef C_LINUX
+    /* check whether the file is excluded */
     if (procdev && sb && (sb->st_dev == procdev)) {
         free(filename);
         return CL_SUCCESS;

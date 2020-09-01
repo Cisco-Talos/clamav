@@ -27,10 +27,24 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include "shared/output.h"
+#include <curl/curl.h>
 
-#include "shared/cert_util.h"
-#include "shared/cert_util_internal.h"
+#include "output.h"
+#include "cert_util.h"
+#include "cert_util_internal.h"
+
+void set_tls_ca_bundle(CURL *curl)
+{
+    char *ca_bundle;
+
+    ca_bundle = getenv("CURL_CA_BUNDLE");
+    if (ca_bundle == NULL)
+        return;
+
+    if (curl_easy_setopt(curl, CURLOPT_CAINFO, ca_bundle) != CURLE_OK) {
+        fprintf(stderr, "Failed to set CURLOPT_CAINFO!\n");
+    }
+}
 
 cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 {

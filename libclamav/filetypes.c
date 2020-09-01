@@ -84,6 +84,8 @@ static const struct ftmap_s {
     { "CL_TYPE_SIS",          CL_TYPE_SIS          },
     { "CL_TYPE_SCRENC",       CL_TYPE_SCRENC       },
     { "CL_TYPE_GRAPHICS",     CL_TYPE_GRAPHICS     },
+    { "CL_TYPE_GIF",          CL_TYPE_GIF          },
+    { "CL_TYPE_PNG",          CL_TYPE_PNG          },
     { "CL_TYPE_RIFF",         CL_TYPE_RIFF         },
     { "CL_TYPE_BINHEX",       CL_TYPE_BINHEX       },
     { "CL_TYPE_TNEF",         CL_TYPE_TNEF         },
@@ -136,8 +138,6 @@ static const struct ftmap_s {
 };
 // clang-format on
 
-cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
-
 cli_file_t cli_ftcode(const char *name)
 {
     unsigned int i;
@@ -182,7 +182,7 @@ void cli_ftfree(const struct cl_engine *engine)
     }
 }
 
-cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
+cli_file_t cli_compare_ftm_partition(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
 {
     struct cli_ftype *ptype = engine->ptypes;
 
@@ -200,7 +200,7 @@ cli_file_t cli_partitiontype(const unsigned char *buf, size_t buflen, const stru
     return CL_TYPE_PART_ANY;
 }
 
-cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
+cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const struct cl_engine *engine)
 {
     struct cli_ftype *ftype = engine->ftypes;
 
@@ -271,7 +271,7 @@ const struct ooxml_ftcodes {
         }                                                                       \
     } while (0)
 
-cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
+cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, cli_file_t basetype)
 {
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
@@ -282,7 +282,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     struct cli_ac_data mdata;
 
     if (!engine) {
-        cli_errmsg("cli_filetype2: engine == NULL\n");
+        cli_errmsg("cli_determine_fmap_type: engine == NULL\n");
         return CL_TYPE_ERROR;
     }
 
@@ -300,7 +300,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     if (buff) {
         sret = cli_memcpy(buffer, buff, bread);
         if (sret) {
-            cli_errmsg("cli_filetype2: fileread error!\n");
+            cli_errmsg("cli_determine_fmap_type: fileread error!\n");
             return CL_TYPE_ERROR;
         }
         sret = 0;
@@ -309,9 +309,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
     }
 
     if (basetype == CL_TYPE_PART_ANY) { /* typing a partition */
-        ret = cli_partitiontype(buff, bread, engine);
+        ret = cli_compare_ftm_partition(buff, bread, engine);
     } else { /* typing a file */
-        ret = cli_filetype(buff, bread, engine);
+        ret = cli_compare_ftm_file(buff, bread, engine);
 
         if (ret == CL_TYPE_BINARY_DATA) {
             switch (is_tar(buff, bread)) {
@@ -355,7 +355,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                             /* if likely, check full archive */
                             if (likely_ooxml) {
                                 cli_dbgmsg("Likely OOXML, checking additional zip headers\n");
-                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_SUCCESS) {
+                                if ((ret2 = cli_ooxml_filetype(NULL, map)) != CL_TYPE_ANY) {
                                     /* either an error or retyping has occurred, return error or just CL_TYPE_ZIP? */
                                     OOXML_FTIDENTIFIED(ret2);
                                     /* falls-through to additional filetyping */
@@ -374,7 +374,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         zread = MIN(MAGIC_BUFFER_SIZE, map->len - zoff);
                         zbuff = fmap_need_off_once(map, zoff, zread);
                         if (zbuff == NULL) {
-                            cli_dbgmsg("cli_filetype2: error mapping data for OOXML check\n");
+                            cli_dbgmsg("cli_determine_fmap_type: error mapping data for OOXML check\n");
                             return CL_TYPE_ERROR;
                         }
                         zoff += zread;
@@ -403,8 +403,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
 
     if (ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
         /* HTML files may contain special characters and could be
-	 * misidentified as BINARY_DATA by cli_filetype()
-	 */
+         * misidentified as BINARY_DATA by cli_compare_ftm_file()
+         */
         root = engine->root[0];
         if (!root)
             return ret;
@@ -435,8 +435,8 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                 const char *encoding;
 
                 /* check if we can autodetect this encoding.
-		     * If we can't don't try to detect HTML sig, since
-		     * we just tried that above, and failed */
+                 * If we can't don't try to detect HTML sig, since
+                 * we just tried that above, and failed */
                 if ((encoding = encoding_detect_bom(buff, bread))) {
                     unsigned char decodedbuff[(MAGIC_BUFFER_SIZE + 1) * 2];
                     m_area_t in_area, out_area;
@@ -451,9 +451,9 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                     out_area.offset = 0;
 
                     /* in htmlnorm we simply skip over \0 chars, allowing HTML parsing in any unicode
-			     * (multibyte characters will not be exactly handled, but that is not a problem).
-			     * However when detecting whether a file is HTML or not, we need exact conversion.
-			     * (just eliminating zeros and matching would introduce false positives */
+                     * (multibyte characters will not be exactly handled, but that is not a problem).
+                     * However when detecting whether a file is HTML or not, we need exact conversion.
+                     * (just eliminating zeros and matching would introduce false positives */
                     if (encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
                         if (cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))
                             return ret;
@@ -461,7 +461,7 @@ cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine, cli_file_t
                         if (out_area.length > 0) {
                             sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, NULL, NULL, engine->root[0], &mdata, 0, 0, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
                             if (sret == CL_TYPE_HTML) {
-                                cli_dbgmsg("cli_filetype2: detected HTML signature in Unicode file\n");
+                                cli_dbgmsg("cli_determine_fmap_type: detected HTML signature in Unicode file\n");
                                 /* htmlnorm is able to handle any unicode now, since it skips null chars */
                                 ret = CL_TYPE_HTML;
                             }

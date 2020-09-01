@@ -35,6 +35,13 @@
 #include <math.h>
 #include <ctype.h>
 
+#if HAVE_JSON
+#include <json.h>
+#endif
+#if HAVE_BZLIB_H
+#include <bzlib.h>
+#endif
+
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode.h"
@@ -51,15 +58,27 @@
 #include "hashtab.h"
 #include "str.h"
 #include "filetypes.h"
-#if HAVE_JSON
-#include "json.h"
-#endif
+#include "lzma_iface.h"
 
 #define EV ctx->bc_events
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 #define API_MISUSE() cli_event_error_str(EV, "API misuse @" TOSTRING(__LINE__))
+
+struct bc_lzma {
+    struct CLI_LZMA stream;
+    int32_t from;
+    int32_t to;
+};
+
+#if HAVE_BZLIB_H
+struct bc_bzip2 {
+    bz_stream stream;
+    int32_t from;
+    int32_t to;
+};
+#endif
 
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
@@ -534,7 +553,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
             size_t csize = cli_get_container_size(cctx, -2);
             cli_set_container(cctx, ctx->containertype, csize);
         }
-        res = cli_magic_scandesc(ctx->outfd, ctx->tempfile, cctx);
+        res = cli_magic_scan_desc(ctx->outfd, ctx->tempfile, cctx, NULL);
         cctx->recursion--;
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);
@@ -928,6 +947,209 @@ int32_t cli_bcapi_inflate_done(struct cli_bc_ctx *ctx, int32_t id)
     return ret;
 }
 
+int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
+{
+    int ret;
+    struct bc_lzma *b;
+    unsigned n = ctx->nlzmas + 1;
+    unsigned avail_in_orig;
+
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to)) {
+        cli_dbgmsg("bytecode api: lzma_init: invalid buffers!\n");
+        return -1;
+    }
+
+    avail_in_orig = cli_bcapi_buffer_pipe_read_avail(ctx, from);
+    if (avail_in_orig < LZMA_PROPS_SIZE + 8) {
+        cli_dbgmsg("bytecode api: lzma_init: not enough bytes in pipe to read LZMA header!\n");
+        return -1;
+    }
+
+    b = cli_realloc(ctx->lzmas, sizeof(*ctx->lzmas) * n);
+    if (!b) {
+        return -1;
+    }
+    ctx->lzmas  = b;
+    ctx->nlzmas = n;
+    b           = &b[n - 1];
+
+    b->from = from;
+    b->to   = to;
+    memset(&b->stream, 0, sizeof(b->stream));
+
+    b->stream.avail_in = avail_in_orig;
+    b->stream.next_in  = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    if ((ret = cli_LzmaInit(&b->stream, 0)) != LZMA_RESULT_OK) {
+        cli_dbgmsg("bytecode api: LzmaInit: Failed to initialize LZMA decompressor: %d!\n", ret);
+        cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+        return ret;
+    }
+
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    return n - 1;
+}
+
+static struct bc_lzma *get_lzma(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || (unsigned int)id >= ctx->nlzmas || !ctx->lzmas)
+        return NULL;
+    return &ctx->lzmas[id];
+}
+
+int32_t cli_bcapi_lzma_process(struct cli_bc_ctx *ctx, int32_t id)
+{
+    int ret;
+    unsigned avail_in_orig, avail_out_orig;
+    struct bc_lzma *b = get_lzma(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+
+    b->stream.avail_in = avail_in_orig =
+        cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    b->stream.avail_out = avail_out_orig =
+        cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
+    b->stream.next_out = (uint8_t *)cli_bcapi_buffer_pipe_write_get(ctx, b->to,
+                                                                    b->stream.avail_out);
+
+    if (!b->stream.avail_in || !b->stream.avail_out || !b->stream.next_in || !b->stream.next_out)
+        return -1;
+
+    ret = cli_LzmaDecode(&b->stream);
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    cli_bcapi_buffer_pipe_write_stopped(ctx, b->to, avail_out_orig - b->stream.avail_out);
+
+    if (ret != LZMA_RESULT_OK && ret != LZMA_STREAM_END) {
+        cli_dbgmsg("bytecode api: LzmaDecode: Error %d while decoding\n", ret);
+        cli_bcapi_lzma_done(ctx, id);
+    }
+
+    return ret;
+}
+
+int32_t cli_bcapi_lzma_done(struct cli_bc_ctx *ctx, int32_t id)
+{
+    struct bc_lzma *b = get_lzma(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+    cli_LzmaShutdown(&b->stream);
+    b->from = b->to = -1;
+    return 0;
+}
+
+int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
+{
+#if HAVE_BZLIB_H
+    int ret;
+    struct bc_bzip2 *b;
+    unsigned n = ctx->nbzip2s + 1;
+    if (!get_buffer(ctx, from) || !get_buffer(ctx, to)) {
+        cli_dbgmsg("bytecode api: bzip2_init: invalid buffers!\n");
+        return -1;
+    }
+    b = cli_realloc(ctx->bzip2s, sizeof(*ctx->bzip2s) * n);
+    if (!b) {
+        return -1;
+    }
+    ctx->bzip2s  = b;
+    ctx->nbzip2s = n;
+    b            = &b[n - 1];
+
+    b->from = from;
+    b->to   = to;
+    memset(&b->stream, 0, sizeof(b->stream));
+    ret = BZ2_bzDecompressInit(&b->stream, 0, 0);
+    switch (ret) {
+        case BZ_CONFIG_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Library has been mis-compiled!\n");
+            return -1;
+        case BZ_PARAM_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Invalid arguments!\n");
+            return -1;
+        case BZ_MEM_ERROR:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: Insufficient memory available!\n");
+            return -1;
+        case BZ_OK:
+            break;
+        default:
+            cli_dbgmsg("bytecode api: BZ2_bzDecompressInit: unknown error %d\n", ret);
+            return -1;
+    }
+
+    return n - 1;
+#else
+    return -1;
+#endif
+}
+
+#if HAVE_BZLIB_H
+static struct bc_bzip2 *get_bzip2(struct cli_bc_ctx *ctx, int32_t id)
+{
+    if (id < 0 || (unsigned int)id >= ctx->nbzip2s || !ctx->bzip2s)
+        return NULL;
+    return &ctx->bzip2s[id];
+}
+#endif
+
+int32_t cli_bcapi_bzip2_process(struct cli_bc_ctx *ctx, int32_t id)
+{
+#if HAVE_BZLIB_H
+    int ret;
+    unsigned avail_in_orig, avail_out_orig;
+    struct bc_bzip2 *b = get_bzip2(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+
+    b->stream.avail_in = avail_in_orig =
+        cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
+
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
+
+    b->stream.avail_out = avail_out_orig =
+        cli_bcapi_buffer_pipe_write_avail(ctx, b->to);
+
+    b->stream.next_out = (char *)cli_bcapi_buffer_pipe_write_get(ctx, b->to,
+                                                                 b->stream.avail_out);
+
+    if (!b->stream.avail_in || !b->stream.avail_out || !b->stream.next_in || !b->stream.next_out)
+        return -1;
+    /* try hard to extract data, skipping over corrupted data */
+    ret = BZ2_bzDecompress(&b->stream);
+    cli_bcapi_buffer_pipe_read_stopped(ctx, b->from, avail_in_orig - b->stream.avail_in);
+    cli_bcapi_buffer_pipe_write_stopped(ctx, b->to, avail_out_orig - b->stream.avail_out);
+
+    /* check if nothing written whatsoever */
+    if ((ret != BZ_OK) && (b->stream.avail_out == avail_out_orig)) {
+        /* Inflation failed */
+        cli_errmsg("cli_bcapi_bzip2_process: failed to decompress data\n");
+    }
+
+    return ret;
+#else
+    return -1;
+#endif
+}
+
+int32_t cli_bcapi_bzip2_done(struct cli_bc_ctx *ctx, int32_t id)
+{
+#if HAVE_BZLIB_H
+    struct bc_bzip2 *b = get_bzip2(ctx, id);
+    if (!b || b->from == -1 || b->to == -1)
+        return -1;
+    BZ2_bzDecompressEnd(&b->stream);
+    b->from = b->to = -1;
+    return 0;
+#else
+    return -1;
+#endif
+}
+
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx, int32_t id)
 {
     int32_t line = id >> 8;
@@ -961,7 +1183,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
     b->state      = state;
     if (!ctx->jsnormdir) {
         cli_ctx *cctx  = (cli_ctx *)ctx->ctx;
-        ctx->jsnormdir = cli_gentemp(cctx ? cctx->engine->tmpdir : NULL);
+        ctx->jsnormdir = cli_gentemp_with_prefix(cctx ? cctx->engine->tmpdir : NULL, "normalized-js");
         if (ctx->jsnormdir) {
             if (mkdir(ctx->jsnormdir, 0700)) {
                 cli_dbgmsg("js: can't create temp dir %s\n", ctx->jsnormdir);
@@ -1423,7 +1645,7 @@ uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t 
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) ? 1 : 0;
         } else if (cli_memstr(option_name_l, name_len, "encrypted doc", sizeof("encrypted doc"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_ENCRYPTED_DOC) ? 1 : 0;
-        } else if (cli_memstr(option_name_l, name_len, "partition intxn", sizeof("partition intxn"))) {
+        } else if (cli_memstr(option_name_l, name_len, "partition intersection", sizeof("partition intersection"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_PARTITION_INTXN) ? 1 : 0;
         } else if (cli_memstr(option_name_l, name_len, "structured", sizeof("structured"))) {
             result = (cctx->options->heuristic & CL_SCAN_HEURISTIC_STRUCTURED) ? 1 : 0;
@@ -1473,26 +1695,54 @@ int32_t cli_bcapi_extract_set_container(struct cli_bc_ctx *ctx, uint32_t ftype)
 int32_t cli_bcapi_input_switch(struct cli_bc_ctx *ctx, int32_t extracted_file)
 {
     fmap_t *map;
-    if (ctx->extracted_file_input == (unsigned int)extracted_file)
-        return 0;
-    if (!extracted_file) {
-        cli_dbgmsg("bytecode api: input switched back to main file\n");
-        ctx->fmap                 = ctx->save_map;
+    if (0 == extracted_file) {
+        /*
+         * Set input back to original fmap.
+         */
+        if (0 == ctx->extracted_file_input) {
+            /* Input already set to original fmap, nothing to do. */
+            return 0;
+        }
+
+        /* Free the fmap used for the extracted file */
+        funmap(ctx->fmap);
+
+        /* Restore pointer to original fmap */
+        cli_bytecode_context_setfile(ctx, ctx->save_map);
+        ctx->save_map = NULL;
+
         ctx->extracted_file_input = 0;
+        cli_dbgmsg("bytecode api: input switched back to main file\n");
+        return 0;
+    } else {
+        /*
+         * Set input to extracted file.
+         */
+        if (1 == ctx->extracted_file_input) {
+            /* Input already set to extracted file, nothing to do. */
+            return 0;
+        }
+
+        if (ctx->outfd < 0) {
+            /* no valid fd to switch to use for fmap */
+            return -1;
+        }
+
+        /* Create fmap for the extracted file */
+        map = fmap(ctx->outfd, 0, 0, NULL);
+        if (!map) {
+            cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
+            return -1;
+        }
+
+        /* Save off pointer to original fmap */
+        ctx->save_map = ctx->fmap;
+        cli_bytecode_context_setfile(ctx, map);
+
+        ctx->extracted_file_input = 1;
+        cli_dbgmsg("bytecode api: input switched to extracted file\n");
         return 0;
     }
-    if (ctx->outfd < 0)
-        return -1;
-    map = fmap(ctx->outfd, 0, 0);
-    if (!map) {
-        cli_warnmsg("can't mmap() extracted temporary file %s\n", ctx->tempfile);
-        return -1;
-    }
-    ctx->save_map = ctx->fmap;
-    cli_bytecode_context_setfile(ctx, map);
-    ctx->extracted_file_input = 1;
-    cli_dbgmsg("bytecode api: input switched to extracted file\n");
-    return 0;
 }
 
 uint32_t cli_bcapi_get_environment(struct cli_bc_ctx *ctx, struct cli_environment *env, uint32_t len)

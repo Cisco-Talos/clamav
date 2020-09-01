@@ -35,7 +35,7 @@ struct tiff_ifd {
     uint32_t value;
 };
 
-int cli_parsetiff(cli_ctx *ctx)
+cl_error_t cli_parsetiff(cli_ctx *ctx)
 {
     fmap_t *map = *ctx->fmap;
     unsigned char magic[4];

@@ -246,7 +246,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
         cli_dbgmsg("Decoding ole object\n");
         ret = cli_scan_ole10(data->fd, ctx);
     } else if (data->fd > 0)
-        ret = cli_magic_scandesc(data->fd, data->name, ctx);
+        ret = cli_magic_scan_desc(data->fd, data->name, ctx, NULL);
     if (data->fd > 0)
         close(data->fd);
     data->fd = -1;
@@ -485,14 +485,16 @@ static void cleanup_stack(struct stack* stack, struct rtf_state* state, cli_ctx*
     }
 }
 
-#define SCAN_CLEANUP                    \
-    if (state.cb_data && state.cb_end)  \
-        state.cb_end(&state, ctx);      \
-    tableDestroy(actiontable);          \
-    cleanup_stack(&stack, &state, ctx); \
-    if (!ctx->engine->keeptmp)          \
-        cli_rmdirs(tempname);           \
-    free(tempname);                     \
+#define SCAN_CLEANUP                     \
+    if (state.cb_data && state.cb_end)   \
+        ret = state.cb_end(&state, ctx); \
+    tableDestroy(actiontable);           \
+    cleanup_stack(&stack, &state, ctx);  \
+    if (!ctx->engine->keeptmp)           \
+        cli_rmdirs(tempname);            \
+    else                                 \
+        rmdir(tempname);                 \
+    free(tempname);                      \
     free(stack.states);
 
 int cli_scanrtf(cli_ctx* ctx)
@@ -526,7 +528,7 @@ int cli_scanrtf(cli_ctx* ctx)
         return CL_EMEM;
     }
 
-    if (!(tempname = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(tempname = cli_gentemp_with_prefix(ctx->sub_tmpdir, "rtf-tmp")))
         return CL_EMEM;
 
     if (mkdir(tempname, 0700)) {

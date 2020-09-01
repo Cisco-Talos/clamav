@@ -127,33 +127,34 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
 struct iin_map_struct {
     uint32_t iin_start;
     uint32_t iin_end;
-    uint8_t card_len;
+    uint8_t card_min;
+    uint8_t card_max;
+    uint8_t is_cc;
     uint8_t luhn;
     const char *iin_name;
 };
 
-/* Maestro card range, 550000-699999, encompasses ranges
-   of several other cards including Discover and UnionPay.
-*/
-
 static struct iin_map_struct iin_map[] = {
-    {100000, 199999, 15, 1, "UATP"},
-    {300000, 305999, 14, 1, "Diner's Club - Carte Blanche"},
-    {309500, 309599, 14, 1, "Diner's Club International"},
-    {340000, 349999, 15, 1, "American Express"},
-    {352800, 358999, 16, 1, "JCB"},
-    {360000, 369999, 14, 1, "Diner's Club International"},
-    {370000, 379999, 15, 1, "American Express"},
-    {380000, 399999, 16, 1, "Diner's Club International"},
-    {400000, 499999, 16, 1, "Visa"},
-    {500000, 509999, 16, 1, "Maestro"},
-    {510000, 559999, 16, 1, "Master Card"},
-    {560000, 699999, 16, 1, "Maestro/Discover/UnionPay/etc."},
+    {100000, 199999, 13, 15, 0, 1, "UATP"},
+    {222100, 272099, 16, 16, 1, 1, "Mastercard 2016"},
+    {300000, 305999, 14, 16, 1, 1, "Diner's Club - Carte Blanche"},
+    {309500, 309599, 14, 16, 1, 1, "Diner's Club International"},
+    {340000, 349999, 15, 15, 1, 1, "American Express"},
+    {352800, 358999, 16, 16, 1, 1, "JCB"},
+    {360000, 369999, 14, 16, 1, 1, "Diner's Club International"},
+    {370000, 379999, 15, 15, 1, 1, "American Express"},
+    {380000, 399999, 16, 16, 1, 1, "Diner's Club International"},
+    {400000, 499999, 16, 16, 1, 1, "Visa"},
+    {500000, 509999, 16, 16, 0, 1, "Maestro"},
+    {510000, 559999, 16, 16, 1, 1, "Master Card"},
+    {601100, 601199, 16, 16, 1, 1, "Discover"},
+    {622126, 622926, 16, 16, 1, 1, "China Union Pay"},
+    {624000, 626999, 16, 16, 1, 1, "China Union Pay"},
+    {628200, 628899, 16, 16, 1, 1, "China Union Pay"},
+    {644000, 659999, 16, 16, 1, 1, "Discover 2009"},
     {0}};
 
-/* Fixme: some card ranges can have lengths other than 16 */
-
-static const struct iin_map_struct *get_iin(char *digits)
+static const struct iin_map_struct *get_iin(char *digits, int cc_only)
 {
     uint32_t iin = atoi(digits);
     int i        = 0;
@@ -161,7 +162,7 @@ static const struct iin_map_struct *get_iin(char *digits)
     while (iin_map[i].iin_start != 0) {
         if (iin < iin_map[i].iin_start)
             break;
-        if (iin <= iin_map[i].iin_end) {
+        if (iin <= iin_map[i].iin_end && (cc_only == 0 || iin_map[i].is_cc == 1)) {
             cli_dbgmsg("Credit card IIN %s matched range for %s\n", digits, iin_map[i].iin_name);
             return &iin_map[i];
         }
@@ -171,13 +172,14 @@ static const struct iin_map_struct *get_iin(char *digits)
     return NULL;
 }
 
-int dlp_is_valid_cc(const unsigned char *buffer, size_t length)
+int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
 {
-    int mult   = 0;
-    int sum    = 0;
-    size_t i   = 0;
-    int val    = 0;
-    int digits = 0;
+    int mult      = 0;
+    int sum       = 0;
+    size_t i      = 0;
+    ssize_t j     = 0;
+    int val       = 0;
+    size_t digits = 0;
     char cc_digits[20];
     size_t pad_allowance = MAX_CC_BREAKS;
     const struct iin_map_struct *iin;
@@ -212,12 +214,12 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length)
         return 0;
 
     /* See if it is a valid IIN. */
-    iin = get_iin(cc_digits);
+    iin = get_iin(cc_digits, cc_only);
     if (iin == NULL)
         return 0;
 
     /* Look for the remaining needed digits. */
-    for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_len; i++) {
+    for (/*same 'i' from previous for-loop*/; i < length && digits < iin->card_max; i++) {
         if (isdigit(buffer[i]) == 0) {
             if (buffer[i] == ' ' || buffer[i] == '-')
                 if (pad_allowance-- > 0)
@@ -228,13 +230,13 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length)
         digits++;
     }
 
-    // should be !isdigit(buffer[i]) ?
-    if (digits < 13 || (i < length && isdigit(buffer[i])))
+    if (digits < iin->card_min || (i < length && isdigit(buffer[i])))
         return 0;
 
+    j = (ssize_t)i;
     //figure out luhn digits
-    for (i = digits - 1; i >= 0; i--) {
-        val = cc_digits[i] - '0';
+    for (j = digits - 1; j >= 0; j--) {
+        val = cc_digits[j] - '0';
         if (mult) {
             if ((val *= 2) > 9) val -= 9;
         }
@@ -250,7 +252,7 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length)
     return 1;
 }
 
-static int contains_cc(const unsigned char *buffer, size_t length, int detmode)
+static int contains_cc(const unsigned char *buffer, size_t length, int detmode, int cc_only)
 {
     const unsigned char *idx;
     const unsigned char *end;
@@ -262,9 +264,10 @@ static int contains_cc(const unsigned char *buffer, size_t length, int detmode)
 
     end = buffer + length;
     idx = buffer;
+
     while (idx < end) {
         if (isdigit(*idx)) {
-            if ((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer)) == 1) {
+            if ((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer), cc_only) == 1) {
                 if (detmode == DETECT_MODE_DETECT)
                     return 1;
                 else {
@@ -282,14 +285,14 @@ static int contains_cc(const unsigned char *buffer, size_t length, int detmode)
     return count;
 }
 
-int dlp_get_cc_count(const unsigned char *buffer, size_t length)
+int dlp_get_cc_count(const unsigned char *buffer, size_t length, int cc_only)
 {
-    return contains_cc(buffer, length, DETECT_MODE_COUNT);
+    return contains_cc(buffer, length, DETECT_MODE_COUNT, cc_only);
 }
 
-int dlp_has_cc(const unsigned char *buffer, size_t length)
+int dlp_has_cc(const unsigned char *buffer, size_t length, int cc_only)
 {
-    return contains_cc(buffer, length, DETECT_MODE_DETECT);
+    return contains_cc(buffer, length, DETECT_MODE_DETECT, cc_only);
 }
 
 int dlp_is_valid_ssn(const unsigned char *buffer, size_t length, int format)

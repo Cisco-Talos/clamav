@@ -36,14 +36,16 @@
 #include <unistd.h>
 #endif
 
-#include "libclamav/clamav.h"
-#include "libclamav/str.h"
+// libclamav
+#include "clamav.h"
+#include "str.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
-#include "others.h"
+#include "clamd_others.h"
 #include "server.h"
 #include "localserver.h"
 
@@ -114,6 +116,7 @@ int localserver(const struct optstruct *opts)
 
         if (stat(sockdir, &sb)) {
             if (errno == ENOENT) {
+                mode_t old_umask;
                 mode_t sock_mode;
                 if (optget(opts, "LocalSocketMode")->enabled) {
                     char *end;
@@ -128,6 +131,7 @@ int localserver(const struct optstruct *opts)
                     sock_mode = 0777;
                 }
 
+                old_umask = umask(0011); /* allow mode 777 for socket directory */
                 if (mkdir(sockdir, sock_mode)) {
                     logg("!LOCAL: Could not create socket directory: %s: %s\n", sockdir, strerror(errno));
                     if (errno == ENOENT) {
@@ -136,6 +140,7 @@ int localserver(const struct optstruct *opts)
                 } else {
                     logg("Localserver: Creating socket directory: %s\n", sockdir);
                 }
+                umask(old_umask); /* restore umask */
             }
         }
         free(sockdir);

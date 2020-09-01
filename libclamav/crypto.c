@@ -64,8 +64,8 @@
 #include "clamav.h"
 #include "default.h"
 #include "others.h"
-#include "libclamav/conv.h"
-#include "libclamav/str.h"
+#include "conv.h"
+#include "str.h"
 #include "iowrap.h"
 
 #if defined(_WIN32)

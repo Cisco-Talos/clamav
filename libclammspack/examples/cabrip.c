@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <mspack.h>
-#include <system.h>
+#include "system.h"
 
 #if HAVE_FSEEKO
 # define fseek fseeko

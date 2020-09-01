@@ -10,9 +10,9 @@
 #ifndef MSPACK_LIT_H
 #define MSPACK_LIT_H 1
 
-#include <lzx.h>
-#include <des.h>
-#include <sha.h>
+#include "lzx.h"
+#include "des.h"
+#include "sha.h"
 
 /* generic LIT definitions */
 

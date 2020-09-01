@@ -60,14 +60,14 @@
 
 #ifdef CLI_PERF_LOGGING
 
-static inline void PERF_LOG_FILTER(int32_t pos, int32_t length, int8_t trie)
+static inline void perf_log_filter(int32_t pos, int32_t length, int8_t trie)
 {
     cli_perf_log_add(RAW_BYTES_SCANNED, length);
     cli_perf_log_add(FILTER_BYTES_SCANNED, length - pos);
     cli_perf_log_count2(TRIE_SCANNED, trie, length - pos);
 }
 
-static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length)
+static inline int perf_log_tries(int8_t acmode, int8_t bm_called, int32_t length)
 {
     if (bm_called)
         cli_perf_log_add(BM_SCANNED, length);
@@ -77,14 +77,14 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 
 #else
-static inline void PERF_LOG_FILTER(int32_t pos, uint32_t length, int8_t trie)
+static inline void perf_log_filter(int32_t pos, uint32_t length, int8_t trie)
 {
     UNUSEDPARAM(pos);
     UNUSEDPARAM(length);
     UNUSEDPARAM(trie);
 }
 
-static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length)
+static inline int perf_log_tries(int8_t acmode, int8_t bm_called, int32_t length)
 {
     UNUSEDPARAM(acmode);
     UNUSEDPARAM(bm_called);
@@ -94,22 +94,22 @@ static inline int PERF_LOG_TRIES(int8_t acmode, int8_t bm_called, int32_t length
 }
 #endif
 
-static inline int matcher_run(const struct cli_matcher *root,
-                              const unsigned char *buffer, uint32_t length,
-                              const char **virname, struct cli_ac_data *mdata,
-                              uint32_t offset,
-                              const struct cli_target_info *tinfo,
-                              cli_file_t ftype,
-                              struct cli_matched_type **ftoffset,
-                              unsigned int acmode,
-                              unsigned int pcremode,
-                              struct cli_ac_result **acres,
-                              fmap_t *map,
-                              struct cli_bm_off *offdata,
-                              struct cli_pcre_off *poffdata,
-                              cli_ctx *ctx)
+static inline cl_error_t matcher_run(const struct cli_matcher *root,
+                                     const unsigned char *buffer, uint32_t length,
+                                     const char **virname, struct cli_ac_data *mdata,
+                                     uint32_t offset,
+                                     const struct cli_target_info *tinfo,
+                                     cli_file_t ftype,
+                                     struct cli_matched_type **ftoffset,
+                                     unsigned int acmode,
+                                     unsigned int pcremode,
+                                     struct cli_ac_result **acres,
+                                     fmap_t *map,
+                                     struct cli_bm_off *offdata,
+                                     struct cli_pcre_off *poffdata,
+                                     cli_ctx *ctx)
 {
-    int ret, saved_ret = CL_CLEAN;
+    cl_error_t ret, saved_ret = CL_CLEAN;
     int32_t pos = 0;
     struct filter_match_info info;
     uint32_t orig_length, orig_offset;
@@ -121,16 +121,16 @@ static inline int matcher_run(const struct cli_matcher *root,
             /*  for safety always scan last maxpatlen bytes */
             pos = length - root->maxpatlen - 1;
             if (pos < 0) pos = 0;
-            PERF_LOG_FILTER(pos, length, root->type);
+            perf_log_filter(pos, length, root->type);
         } else {
             /* must not cut buffer for 64[4-4]6161, because we must be able to check
-	     * 64! */
+             * 64! */
             pos = info.first_match - root->maxpatlen - 1;
             if (pos < 0) pos = 0;
-            PERF_LOG_FILTER(pos, length, root->type);
+            perf_log_filter(pos, length, root->type);
         }
     } else {
-        PERF_LOG_FILTER(0, length, root->type);
+        perf_log_filter(0, length, root->type);
     }
 
     orig_length = length;
@@ -140,11 +140,11 @@ static inline int matcher_run(const struct cli_matcher *root,
     buffer += pos;
     offset += pos;
     if (!root->ac_only) {
-        PERF_LOG_TRIES(0, 1, length);
+        perf_log_tries(0, 1, length);
         if (root->bm_offmode) {
             /* Don't use prefiltering for BM offset mode, since BM keeps tracks
-	     * of offsets itself, and doesn't work if we skip chunks of input
-	     * data */
+             * of offsets itself, and doesn't work if we skip chunks of input
+             * data */
             ret = cli_bm_scanbuff(orig_buffer, orig_length, virname, NULL, root, orig_offset, tinfo, offdata, ctx);
         } else {
             ret = cli_bm_scanbuff(buffer, length, virname, NULL, root, offset, tinfo, offdata, ctx);
@@ -163,7 +163,7 @@ static inline int matcher_run(const struct cli_matcher *root,
             }
         }
     }
-    PERF_LOG_TRIES(acmode, 0, length);
+    perf_log_tries(acmode, 0, length);
     ret = cli_ac_scanbuff(buffer, length, virname, NULL, acres, root, mdata, offset, ftype, ftoffset, acmode, ctx);
     if (ret != CL_CLEAN) {
         if (ret == CL_VIRUS) {
@@ -258,7 +258,7 @@ static inline int matcher_run(const struct cli_matcher *root,
     return ret;
 }
 
-cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
+cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
     cl_error_t ret = CL_CLEAN;
     unsigned int i = 0, j = 0, viruses_found = 0;
@@ -268,7 +268,7 @@ cl_error_t cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t o
     const struct cl_engine *engine = ctx->engine;
 
     if (!engine) {
-        cli_errmsg("cli_scanbuff: engine == NULL\n");
+        cli_errmsg("cli_scan_buff: engine == NULL\n");
         return CL_ENULLARG;
     }
 
@@ -575,12 +575,12 @@ void cli_targetinfo_destroy(struct cli_target_info *info)
     info->status = 0;
 }
 
-cl_error_t cli_checkfp(unsigned char *digest, size_t size, cli_ctx *ctx)
+cl_error_t cli_checkfp(cli_ctx *ctx)
 {
-    return cli_checkfp_virus(digest, size, ctx, NULL);
+    return cli_checkfp_virus(ctx, NULL, 0);
 }
 
-cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, const char *vname)
+cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion_cnt)
 {
     char md5[33];
     unsigned int i;
@@ -590,6 +590,15 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
     uint8_t shash1[SHA1_HASH_SIZE * 2 + 1];
     uint8_t shash256[SHA256_HASH_SIZE * 2 + 1];
     int have_sha1, have_sha256;
+    unsigned char *digest;
+    size_t size;
+
+    if (*(ctx->fmap - recursion_cnt) == NULL) { /* first fmap in the list is always NULL */
+        return CL_VIRUS;
+    }
+
+    digest = (*(ctx->fmap - recursion_cnt))->maphash;
+    size = (*(ctx->fmap - recursion_cnt))->len;
 
     if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
@@ -607,7 +616,7 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
                    vname ? vname : "Name");
     }
 
-    map         = *ctx->fmap;
+    map         = *(ctx->fmap - recursion_cnt); /* traverse backwards in the fmap list by the number of times recurses*/
     have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
     have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
     if (have_sha1 || have_sha256) {
@@ -693,10 +702,10 @@ cl_error_t cli_checkfp_virus(unsigned char *digest, size_t size, cli_ctx *ctx, c
         }
     }
 
-    return CL_VIRUS;
+    return cli_checkfp_virus(ctx, vname, recursion_cnt + 1);
 }
 
-static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
+static cl_error_t matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
 {
     icon_groupset iconset;
 
@@ -719,7 +728,7 @@ static int matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp
 int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t grp1len,
                             const uint8_t *grp2, int32_t grp2len)
 {
-    int ret;
+    cl_error_t ret;
     char group1[128], group2[128];
     const char **oldvirname;
     struct cli_exe_info info;
@@ -756,21 +765,23 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     ret                            = matchicon(ctx->ctx, &info, group1[0] ? group1 : NULL,
                     group2[0] ? group2 : NULL);
     ((cli_ctx *)ctx->ctx)->virname = oldvirname;
-    return ret;
+    return (int32_t)ret;
 }
 
-cl_error_t cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres)
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
 {
     cl_error_t ret = CL_EMEM;
     int empty;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap; /* Store off the parent fmap for easy reference */
 
-    if ((*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty))) {
-        ret                  = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
+    ctx->fmap++; /* Perform scan with child fmap */
+    if (NULL != (*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty, name))) {
+        ret                  = cli_scan_fmap(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
         map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
         funmap(*ctx->fmap);
     }
-    *ctx->fmap = map;
+    ctx->fmap--; /* Restore the parent fmap */
+
     if (empty)
         return CL_CLEAN;
     return ret;
@@ -793,7 +804,7 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
     return 1;
 }
 
-static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
+static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     unsigned evalcnt            = 0;
     uint64_t evalids            = 0;
@@ -801,7 +812,7 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     char *exp                   = ac_lsig->u.logic;
     char *exp_end               = exp + strlen(exp);
-    int rc;
+    cl_error_t rc;
 
     rc = cli_ac_chkmacro(root, acdata, lsid);
     if (rc != CL_SUCCESS)
@@ -824,10 +835,10 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
         }
 
         if (hash && ac_lsig->tdb.handlertype) {
-            if (memcmp(ctx->handlertype_hash, hash, 16)) {
+            if (0 != memcmp(ctx->handlertype_hash, hash, 16)) {
                 ctx->recursion++;
                 memcpy(ctx->handlertype_hash, hash, 16);
-                if (cli_magic_scandesc_type(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
+                if (cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
                     ctx->recursion--;
                     return CL_VIRUS;
                 }
@@ -864,10 +875,10 @@ static int lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data 
 }
 
 #ifdef HAVE_YARA
-static int yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
+static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
-    int rc;
+    cl_error_t rc;
     YR_SCAN_CONTEXT context;
 
     (void)hash;
@@ -918,7 +929,7 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
     return CL_CLEAN;
 }
 
-cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
+cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash)
 {
     const unsigned char *buff;
     cl_error_t ret = CL_CLEAN, type = CL_CLEAN;
@@ -938,7 +949,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     void *md5ctx, *sha1ctx, *sha256ctx;
 
     if (!ctx->engine) {
-        cli_errmsg("cli_scandesc: engine == NULL\n");
+        cli_errmsg("cli_scan_desc: engine == NULL\n");
         return CL_ENULLARG;
     }
 
@@ -994,7 +1005,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     cli_targetinfo(&info, i, map);
 
     if (-1 == info.status) {
-        cli_dbgmsg("cli_fmap_scandesc: Failed to successfully parse the executable header. "
+        cli_dbgmsg("cli_scan_fmap: Failed to successfully parse the executable header. "
                    "Scan features will be disabled, such as "
                    "NDB/LDB subsigs using EOF-n/EP+n/EP-n/Sx+n/SEx/SL+n, "
                    "fuzzy icon matching, "
@@ -1003,7 +1014,7 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     /* If it's a PE, check the Authenticode header.  This would be more
-     * appropriate in cli_scanpe, but cli_scanraw->cli_fmap_scandesc gets
+     * appropriate in cli_scanpe, but scanraw->cli_scan_fmap gets
      * called first for PEs, and we want to determine the whitelist/blacklist
      * status early on so we can skip things like embedded PE extraction
      * (which is broken for signed binaries within signed binaries).
@@ -1036,7 +1047,8 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     if (!ftonly) {
-        if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, &info))) {
+        if ((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) ||
+            (ret = cli_ac_caloff(groot, &gdata, &info))) {
             cli_targetinfo_destroy(&info);
             cl_hash_destroy(md5ctx);
             cl_hash_destroy(sha1ctx);
@@ -1054,7 +1066,8 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
     }
 
     if (troot) {
-        if ((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, &info))) {
+        if ((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) ||
+            (ret = cli_ac_caloff(troot, &tdata, &info))) {
             if (!ftonly) {
                 cli_ac_freedata(&gdata);
                 cli_pcre_freeoff(&gpoff);
@@ -1106,7 +1119,10 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
 
     if (!ftonly && hdb) {
         if (!refhash) {
-            if (cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) || cli_hm_have_size(fp, CLI_HASH_MD5, map->len) || cli_hm_have_wild(hdb, CLI_HASH_MD5) || cli_hm_have_wild(fp, CLI_HASH_MD5)) {
+            if (cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) ||
+                cli_hm_have_size(fp, CLI_HASH_MD5, map->len) ||
+                cli_hm_have_wild(hdb, CLI_HASH_MD5) ||
+                cli_hm_have_wild(fp, CLI_HASH_MD5)) {
                 compute_hash[CLI_HASH_MD5] = 1;
             } else {
                 compute_hash[CLI_HASH_MD5] = 0;
@@ -1116,13 +1132,19 @@ cl_error_t cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, str
             memcpy(digest[CLI_HASH_MD5], refhash, 16);
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA1) || cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA1)) {
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) ||
+            cli_hm_have_wild(hdb, CLI_HASH_SHA1) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) ||
+            cli_hm_have_wild(fp, CLI_HASH_SHA1)) {
             compute_hash[CLI_HASH_SHA1] = 1;
         } else {
             compute_hash[CLI_HASH_SHA1] = 0;
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(hdb, CLI_HASH_SHA256) || cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) || cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) ||
+            cli_hm_have_wild(hdb, CLI_HASH_SHA256) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) ||
+            cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
             compute_hash[CLI_HASH_SHA256] = 1;
         } else {
             compute_hash[CLI_HASH_SHA256] = 0;

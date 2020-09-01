@@ -22,6 +22,10 @@
 #ifndef __UTF8_UTIL_H
 #define __UTF8_UTIL_H
 
+#include <stdio.h>
+#include <stddef.h>
+#include <malloc.h>
+
 char *cli_to_utf8_maybe_alloc(const char *s);
 char *cli_strdup_to_utf8(const char *s);
 

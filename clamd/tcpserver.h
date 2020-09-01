@@ -22,7 +22,7 @@
 #ifndef __TCPSERVER_H
 #define __TCPSERVER_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 
 int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struct optstruct *opts);
 

@@ -198,6 +198,10 @@ struct cli_bc_ctx {
     unsigned filewritten;
     unsigned found;
     unsigned ninflates;
+    unsigned nlzmas;
+#if HAVE_BZLIB_H
+    unsigned nbzip2s;
+#endif
     bc_dbg_callback_trace trace;
     bc_dbg_callback_trace_op trace_op;
     bc_dbg_callback_trace_val trace_val;
@@ -211,6 +215,10 @@ struct cli_bc_ctx {
     unsigned col;
     mpool_t *mpool;
     struct bc_inflate *inflates;
+    struct bc_lzma *lzmas;
+#if HAVE_BZLIB_H
+    struct bc_bzip2 *bzip2s;
+#endif
     struct bc_buffer *buffers;
     unsigned nbuffers;
     unsigned nhashsets;

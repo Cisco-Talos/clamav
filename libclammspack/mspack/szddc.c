@@ -9,8 +9,8 @@
 
 /* SZDD compression implementation */
 
-#include <system.h>
-#include <szdd.h>
+#include "system.h"
+#include "szdd.h"
 
 struct msszdd_compressor *
   mspack_create_szdd_compressor(struct mspack_system *sys)

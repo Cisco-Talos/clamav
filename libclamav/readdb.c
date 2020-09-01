@@ -42,6 +42,10 @@
 #include <zlib.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#include "libgen.h"
+#endif
+
 #include "clamav.h"
 #include "cvd.h"
 #ifdef HAVE_STRINGS_H
@@ -88,7 +92,9 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "yara_lexer.h"
 #endif
 
-#define MAX_LDB_SUBSIGS 64
+#ifdef _WIN32
+static char DATABASE_DIRECTORY[MAX_PATH] = "";
+#endif
 
 char *cli_virname(const char *virname, unsigned int official)
 {
@@ -3127,13 +3133,15 @@ static int cli_loadmscat(FILE *fs, const char *dbname, struct cl_engine *engine,
         return 0;
     }
 
-    if (!(map = fmap(fileno(fs), 0, 0))) {
+    if (!(map = fmap(fileno(fs), 0, 0, dbname))) {
         cli_dbgmsg("Can't map cat: %s\n", dbname);
         return 0;
     }
 
-    if (asn1_load_mscat(map, engine))
+    if (asn1_load_mscat(map, engine)) {
         cli_dbgmsg("Failed to load certificates from cat: %s\n", dbname);
+    }
+
     funmap(map);
     return 0;
 }
@@ -4704,7 +4712,7 @@ done:
     return ret;
 }
 
-int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
+cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
 {
     STATBUF sb;
     int ret;
@@ -4802,10 +4810,35 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 
 const char *cl_retdbdir(void)
 {
+#ifdef _WIN32
+    int have_ddir = 0;
+    char path[MAX_PATH] = "";
+    DWORD sizof;
+    HKEY key;
+
+    if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, "Software\\ClamAV", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS || RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\ClamAV", 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS) {
+        sizof = sizeof(path);
+        if (RegQueryValueEx(key, "DataDir", 0, NULL, path, &sizof) == ERROR_SUCCESS) {
+            have_ddir = 1;
+            memcpy(DATABASE_DIRECTORY, path, sizof);
+        }
+        RegCloseKey(key);
+    }
+    if (!(have_ddir) && GetModuleFileName(NULL, path, sizeof(path))) {
+        char *dir = NULL;
+        path[sizeof(path) - 1] = '\0';
+        dir                    = dirname(path);
+        snprintf(DATABASE_DIRECTORY, sizeof(DATABASE_DIRECTORY), "%s\\database", dir);
+    }
+    DATABASE_DIRECTORY[sizeof(DATABASE_DIRECTORY) - 1] = '\0';
+
+    return (const char *)DATABASE_DIRECTORY;
+#else
     return DATADIR;
+#endif
 }
 
-int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
+cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 {
     DIR *dd;
     struct dirent *dent;
@@ -4959,9 +4992,8 @@ void cli_pwdb_list_free(struct cl_engine *engine, struct cli_pwdb *pwdb)
     }
 }
 
-int cl_statfree(struct cl_stat *dbstat)
+cl_error_t cl_statfree(struct cl_stat *dbstat)
 {
-
     if (dbstat) {
 
 #ifdef _WIN32
@@ -4996,7 +5028,7 @@ int cl_statfree(struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
-int cl_engine_free(struct cl_engine *engine)
+cl_error_t cl_engine_free(struct cl_engine *engine)
 {
     unsigned int i, j;
     struct cli_matcher *root;
@@ -5196,10 +5228,10 @@ int cl_engine_free(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-int cl_engine_compile(struct cl_engine *engine)
+cl_error_t cl_engine_compile(struct cl_engine *engine)
 {
     unsigned int i;
-    int ret;
+    cl_error_t ret;
     struct cli_matcher *root;
 
     if (!engine)
@@ -5294,7 +5326,7 @@ int cl_engine_compile(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-int cl_engine_addref(struct cl_engine *engine)
+cl_error_t cl_engine_addref(struct cl_engine *engine)
 {
     if (!engine) {
         cli_errmsg("cl_engine_addref: engine == NULL\n");
@@ -5378,13 +5410,13 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
     return CL_SUCCESS;
 }
 
-int cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
+cl_error_t cl_countsigs(const char *path, unsigned int countoptions, unsigned int *sigs)
 {
     STATBUF sb;
     char fname[1024];
     struct dirent *dent;
     DIR *dd;
-    int ret;
+    cl_error_t ret;
 
     if (!sigs)
         return CL_ENULLARG;

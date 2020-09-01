@@ -29,6 +29,10 @@
 #include <assert.h>
 #include <fcntl.h>
 
+#if HAVE_JSON
+#include "json.h"
+#endif
+
 #include "dconf.h"
 #include "clamav.h"
 #include "others.h"
@@ -41,9 +45,6 @@
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
 #include "builtin_bytecodes.h"
-#if HAVE_JSON
-#include "json.h"
-#endif
 
 #ifndef MAX_TRACKED_BC
 #define MAX_TRACKED_BC 64
@@ -164,12 +165,12 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "javascript", ctx->jsnormdir);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                ret = cli_scandesc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL);
+                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
                     else
-                        ret = cli_scandesc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL);
+                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
                 }
                 close(fd);
             }
@@ -201,6 +202,20 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     ctx->inflates  = NULL;
     ctx->ninflates = 0;
 
+    for (i = 0; i < ctx->nlzmas; i++)
+        cli_bcapi_lzma_done(ctx, i);
+    free(ctx->lzmas);
+    ctx->lzmas  = NULL;
+    ctx->nlzmas = 0;
+
+#if HAVE_BZLIB_H
+    for (i = 0; i < ctx->nbzip2s; i++)
+        cli_bcapi_bzip2_done(ctx, i);
+    free(ctx->bzip2s);
+    ctx->bzip2s  = NULL;
+    ctx->nbzip2s = 0;
+#endif
+
     for (i = 0; i < ctx->nbuffers; i++)
         cli_bcapi_buffer_pipe_done(ctx, i);
     free(ctx->buffers);
@@ -225,6 +240,9 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
     free(ctx->maps);
     ctx->maps  = NULL;
     ctx->nmaps = 0;
+
+    /* Use input_switch() to free the extracted file fmap, if one exists */
+    cli_bcapi_input_switch(ctx, 0);
 
 #if HAVE_JSON
     free((json_object **)(ctx->jsonobjs));
@@ -2889,7 +2907,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
                 lseek(fd, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning unpacked file ******\n");
                 cctx->recursion++;
-                ret = cli_magic_scandesc(fd, tempfile, cctx);
+                ret = cli_magic_scan_desc(fd, tempfile, cctx, NULL);
                 cctx->recursion--;
                 if (!cctx->engine->keeptmp)
                     if (ftruncate(fd, 0) == -1)
@@ -3360,7 +3378,7 @@ void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
             printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
             break;
         case OP_BC_ICMP_ULT:
-            printf("%d = (%d > %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
+            printf("%d = (%d < %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);
             break;
         case OP_BC_ICMP_ULE:
             printf("%d = (%d >= %d)", inst->dest, inst->u.binop[0], inst->u.binop[1]);

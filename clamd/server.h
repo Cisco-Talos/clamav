@@ -26,10 +26,15 @@
 #include <time.h>
 #include <pthread.h>
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+
 #include "thrmgr.h"
 #include "session.h"
+
 struct thrarg {
     int sid;
     struct cl_scan_options *options;
@@ -37,8 +42,8 @@ struct thrarg {
     const struct cl_engine *engine;
 };
 
-int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
-int statinidir_th(const char *dirname);
+int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
+int statinidir(const char *dirname);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);

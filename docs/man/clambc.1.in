@@ -5,45 +5,51 @@ clambc \- Bytecode Analysis and Testing Tool
 .PP
 clambc <file> [function] [param1 ...]
 .SH DESCRIPTION
+Bytecode signatures are a platform independent executable plugin format that
+extend ClamAV's malware detection capabilities. This tool is provided for
+signature authors and ClamAV developers to test bytecode signatures and bytecode
+runtime performance. **Caution**: You should NEVER run bytecode signatures from
+untrusted sources. Doing so may result in arbitrary code execution.
+.SH "OPTIONS"
 .TP
 \fB\-\-help\fR                 \fB\-h\fR
-Show help
+Show help.
 .TP
 \fB\-\-version\fR              \fB\-V\fR
 Show version
 .TP
 \fB\-\-debug\fR
-Show debug
+Show debug.
 .TP
 \fB\-\-force\-interpreter\fR   \fB\-f\fR
-Force using the interpreter instead of the JIT
+Force using the interpreter instead of the JIT.
 .TP
 \fB\-\-trust\-bytecode\fR      \fB\-t\fR
-Trust loaded bytecode (default yes)
+Trust loaded bytecode (default yes).
 .TP
 \fB\-\-info\fR                 \fB\-i\fR
-Print information about bytecode
+Print information about bytecode.
 .TP
 \fB\-\-printsrc\fR             \fB\-p\fR
-Print bytecode source
+Print bytecode source.
 .TP
 \fB\-\-printbcir\fR            \fB\-c\fR
-Print IR of bytecode signature
+Print IR of bytecode signature.
 .TP
 \fB\-\-input\fR                \fB\-r\fR
-Input file to run the bytecode on
+Input file to run the bytecode on.
 .TP
 \fB\-\-trace\fR <level>        \fB\-T\fR
-Set bytecode trace level 0..7 (default 7)
+Set bytecode trace level 0..7 (default 7).
 .TP
 \fB\-\-no\-trace\-showsource\fR
-Don't show source line during tracing
+Don't show source line during tracing.
 .TP
 \fB\-\-statistics=bytecode\fR
-Collect and print bytecode execution statistics
+Collect and print bytecode execution statistics.
 .TP
 file
-file to test
+File to test.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

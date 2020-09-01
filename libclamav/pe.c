@@ -75,6 +75,7 @@
 #include "unsp.h"
 #include "scanners.h"
 #include "str.h"
+#include "entconv.h"
 #include "execs.h"
 #include "mew.h"
 #include "upack.h"
@@ -124,18 +125,18 @@
         return CL_CLEAN;                                       \
     }
 
-#define CLI_UNPTEMP(NAME, FREEME)                                                       \
-    if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {                               \
-        cli_exe_info_destroy(peinfo);                                                   \
-        cli_multifree FREEME;                                                           \
-        return CL_EMEM;                                                                 \
-    }                                                                                   \
-    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRWXU)) < 0) { \
-        cli_dbgmsg(NAME ": Can't create file %s\n", tempfile);                          \
-        free(tempfile);                                                                 \
-        cli_exe_info_destroy(peinfo);                                                   \
-        cli_multifree FREEME;                                                           \
-        return CL_ECREAT;                                                               \
+#define CLI_UNPTEMP(NAME, FREEME)                                                                 \
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {                                             \
+        cli_exe_info_destroy(peinfo);                                                             \
+        cli_multifree FREEME;                                                                     \
+        return CL_EMEM;                                                                           \
+    }                                                                                             \
+    if ((ndesc = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) { \
+        cli_dbgmsg(NAME ": Can't create file %s\n", tempfile);                                    \
+        free(tempfile);                                                                           \
+        cli_exe_info_destroy(peinfo);                                                             \
+        cli_multifree FREEME;                                                                     \
+        return CL_ECREAT;                                                                         \
     }
 
 #define CLI_TMPUNLK()               \
@@ -205,7 +206,7 @@
             lseek(ndesc, 0, SEEK_SET);                                                        \
             cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                             \
             SHA_OFF;                                                                          \
-            if (cli_magic_scandesc(ndesc, tempfile, ctx) == CL_VIRUS) {                       \
+            if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {                \
                 close(ndesc);                                                                 \
                 SHA_RESET;                                                                    \
                 CLI_TMPUNLK();                                                                \
@@ -2871,7 +2872,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* CLI_UNPTEMP("cli_scanpe: DISASM",(peinfo->sections,0)); */
     /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /*  ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /*  ret = cli_scan_desc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
     /* close(ndesc); */
     /* if(ret == CL_VIRUS) { */
     /*  cli_exe_info_destroy(peinfo); */
@@ -3978,7 +3979,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if ((ret = cli_magic_scandesc(ndesc, tempfile, ctx)) == CL_VIRUS) {
+        if ((ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL)) == CL_VIRUS) {
             close(ndesc);
             SHA_RESET;
             CLI_TMPUNLK();

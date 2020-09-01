@@ -21,8 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef BUILD_CLAMD
-
 #include <stdio.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -38,9 +36,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/clamdcom.h"
+#include "optparser.h"
+#include "output.h"
+#include "clamdcom.h"
 
 #include "notify.h"
 
@@ -176,4 +174,3 @@ int notify(const char *cfgfile)
     logg("Clamd successfully notified about the update.\n");
     return 0;
 }
-#endif

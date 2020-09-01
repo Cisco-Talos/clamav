@@ -35,23 +35,28 @@
 #endif
 #include <time.h>
 #include <signal.h>
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
-#include <fcntl.h>
 #endif
+#include <fcntl.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/optparser.h"
-#include "shared/actions.h"
+#include <curl/curl.h>
+
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "output.h"
+#include "misc.h"
+#include "optparser.h"
+#include "actions.h"
 
 #include "clamonacc.h"
 #include "client/client.h"
 #include "fanotif/fanotif.h"
 #include "inotif/inotif.h"
-#include "scan/queue.h"
+#include "scan/onas_queue.h"
 
 pthread_t ddd_pid        = 0;
 pthread_t scan_queue_pid = 0;
@@ -64,7 +69,7 @@ static void onas_clamonacc_exit(int sig)
 {
     logg("*Clamonacc: onas_clamonacc_exit(), signal %d\n", sig);
     if (sig == 11) {
-        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --debug and report the issue and crash report to the developpers\n");
+        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --verbose and report the issue and crash report to the developpers\n");
     }
 
     if (g_ctx) {
@@ -115,10 +120,16 @@ int main(int argc, char **argv)
     }
     ctx->opts = opts;
 
+    if (optget(opts, "verbose")->enabled) {
+        mprintf_verbose = 1;
+        logg_verbose    = 1;
+    }
+
     /* And our config file options */
     clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL);
     if (clamdopts == NULL) {
         logg("!Clamonacc: can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+        optfree((struct optstruct *)opts);
         return 2;
     }
     ctx->clamdopts = clamdopts;
@@ -126,7 +137,10 @@ int main(int argc, char **argv)
     /* Make sure we're good to begin spinup */
     ret = startup_checks(ctx);
     if (ret) {
-        goto clean_up;
+        if (ret == (int)CL_BREAK) {
+            ret = 0;
+        }
+        goto done;
     }
 
 #ifndef _WIN32
@@ -145,16 +159,17 @@ int main(int argc, char **argv)
             if (CL_SUCCESS == onas_check_client_connection(&ctx)) {
                 break;
             }
+            /* fall-through */
         case CL_BREAK:
             ret = 0;
             logg("*Clamonacc: not setting up client\n");
-            goto clean_up;
+            goto done;
             break;
         case CL_EARG:
         default:
             logg("!Clamonacc: can't setup client\n");
             ret = 2;
-            goto clean_up;
+            goto done;
             break;
     }
 
@@ -170,24 +185,24 @@ int main(int argc, char **argv)
         default:
             ret = 2;
             logg("!Clamonacc: can't setup event consumer queue\n");
-            goto clean_up;
+            goto done;
             break;
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     /* Setup fanotify */
     switch (onas_setup_fanotif(&ctx)) {
         case CL_SUCCESS:
             break;
         case CL_BREAK:
             ret = 0;
-            goto clean_up;
+            goto done;
             break;
         case CL_EARG:
         default:
             mprintf("!Clamonacc: can't setup fanotify\n");
             ret = 2;
-            goto clean_up;
+            goto done;
             break;
     }
 
@@ -198,19 +213,19 @@ int main(int argc, char **argv)
                 break;
             case CL_BREAK:
                 ret = 0;
-                goto clean_up;
+                goto done;
                 break;
             case CL_EARG:
             default:
                 mprintf("!Clamonacc: can't setup fanotify\n");
                 ret = 2;
-                goto clean_up;
+                goto done;
                 break;
         }
     }
 #else
     mprintf("!Clamonacc: currently, this application only runs on linux systems with fanotify enabled\n");
-    goto clean_up;
+    goto done;
 #endif
 
     /* Setup signal handling */
@@ -221,8 +236,8 @@ int main(int argc, char **argv)
     /*  Kick off event loop(s) */
     ret = onas_start_eloop(&ctx);
 
+done:
     /* Clean up */
-clean_up:
     onas_cleanup(ctx);
     exit(ret);
 }
@@ -290,7 +305,7 @@ int onas_start_eloop(struct onas_context **ctx)
         return CL_EARG;
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     ret = onas_fan_eloop(ctx);
 #endif
 
@@ -299,8 +314,7 @@ int onas_start_eloop(struct onas_context **ctx)
 
 static int startup_checks(struct onas_context *ctx)
 {
-
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     char faerr[128];
 #endif
     int ret        = 0;
@@ -312,13 +326,7 @@ static int startup_checks(struct onas_context *ctx)
         goto done;
     }
 
-    if (optget(ctx->opts, "version")->enabled) {
-        onas_print_server_version(&ctx);
-        ret = 2;
-        goto done;
-    }
-
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
     if (ctx->fan_fd < 0) {
         logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
@@ -330,13 +338,57 @@ static int startup_checks(struct onas_context *ctx)
     }
 #endif
 
+#if ((LIBCURL_VERSION_MAJOR < 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR < 40))
+    if (optget(ctx->opts, "fdpass")->enabled || !optget(ctx->clamdopts, "TCPSocket")->enabled || !optget(ctx->clamdopts, "TCPAddr")->enabled) {
+        logg("!Clamonacc: Version of curl is too low to use fdpassing. Please use tcp socket streaming instead\n.");
+        ret = 2;
+        goto done;
+    }
+#endif
+
     if (curl_global_init(CURL_GLOBAL_NOTHING)) {
         ret = 2;
         goto done;
     }
 
-    if (0 == onas_check_remote(&ctx, &err)) {
+    if (optget(ctx->opts, "version")->enabled) {
+        onas_print_server_version(&ctx);
+        ret = 2;
+        goto done;
+    }
 
+    if (optget(ctx->opts, "ping")->enabled && !optget(ctx->opts, "wait")->enabled) {
+        int16_t ping_result = onas_ping_clamd(&ctx);
+        switch (ping_result) {
+            case 0:
+                ret = (int)CL_BREAK;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                break;
+            default:
+                ret = 2;
+                break;
+        }
+        goto done;
+    }
+
+    if (optget(ctx->opts, "wait")->enabled) {
+        int16_t ping_result = onas_ping_clamd(&ctx);
+        switch (ping_result) {
+            case 0:
+                ret = (int)CL_BREAK;
+                break;
+            case 1:
+                ret = (int)CL_ETIMEOUT;
+                goto done;
+            default:
+                ret = 2;
+                goto done;
+        }
+    }
+
+    if (0 == onas_check_remote(&ctx, &err)) {
         if (CL_SUCCESS != err) {
             logg("!Clamonacc: daemon is local, but a connection could not be established\n");
             ret = 2;
@@ -350,6 +402,7 @@ static int startup_checks(struct onas_context *ctx)
             goto done;
         }
     }
+
 done:
     return ret;
 }
@@ -371,7 +424,9 @@ void help(void)
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
     mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
-    mprintf("    --exclude-list=FILE   -e FILE     Exclude directories from FILE\n");
+    mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
+    mprintf("    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf("    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");

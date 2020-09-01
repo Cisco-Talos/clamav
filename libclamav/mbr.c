@@ -34,7 +34,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "mbr.h"
-#include "prtn_intxn.h"
+#include "partition_intersection.h"
 #include "scanners.h"
 #include "dconf.h"
 
@@ -68,8 +68,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba,
                            size_t extlbasize, size_t sectorsize);
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
 static int mbr_check_ebr(struct mbr_boot_record *record);
-static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
-static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize);
+static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
+static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize);
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
 {
@@ -184,7 +184,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* MBR is valid, examine bootstrap code */
-    ret = cli_map_scan(*ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY);
+    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
             detection = CL_VIRUS;
@@ -194,7 +194,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
     /* check that the partition table has no intersections - HEURISTICS */
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = mbr_primary_prtn_intxn(ctx, mbr, sectorsize);
+        ret = mbr_primary_partition_intersection(ctx, mbr, sectorsize);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
@@ -239,8 +239,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
             partoff  = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
-            mbr_parsemsg("cli_map_scan: [%u, +%u)\n", partoff, partsize);
-            ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
+            mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
+            ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -381,7 +381,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size
                         return CL_EFORMAT;
                     }
 
-                    ret = cli_map_scan(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY);
+                    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
                     if (ret != CL_CLEAN) {
                         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                             detection = CL_VIRUS;
@@ -481,21 +481,21 @@ static int mbr_check_ebr(struct mbr_boot_record *record)
 }
 
 /* this includes the overall bounds of extended partitions */
-static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize)
+static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize)
 {
-    prtn_intxn_list_t prtncheck;
+    partition_intersection_list_t prtncheck;
     unsigned i = 0, pitxn = 0, prtncount = 0;
     int ret = CL_CLEAN, tmp = CL_CLEAN;
 
-    prtn_intxn_list_init(&prtncheck);
+    partition_intersection_list_init(&prtncheck);
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES && prtncount < ctx->engine->maxpartitions; ++i) {
         if (mbr.entries[i].type == MBR_EMPTY) {
             /* empty partition entry */
             prtncount++;
         } else {
-            tmp = prtn_intxn_list_check(&prtncheck, &pitxn, mbr.entries[i].firstLBA,
-                                        mbr.entries[i].numLBA);
+            tmp = partition_intersection_list_check(&prtncheck, &pitxn, mbr.entries[i].firstLBA,
+                                                    mbr.entries[i].numLBA);
             if (tmp != CL_CLEAN) {
                 if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scanmbr: detected intersection with partitions "
@@ -514,17 +514,17 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
 
             if (mbr.entries[i].type == MBR_EXTENDED) {
                 /* check the logical partitions */
-                tmp = mbr_extended_prtn_intxn(ctx, &prtncount,
-                                              mbr.entries[i].firstLBA, sectorsize);
+                tmp = mbr_extended_partition_intersection(ctx, &prtncount,
+                                                          mbr.entries[i].firstLBA, sectorsize);
                 if (tmp != CL_CLEAN) {
                     if (SCAN_ALLMATCHES && (tmp == CL_VIRUS)) {
                         ret = tmp;
                         tmp = 0;
                     } else if (tmp == CL_VIRUS) {
-                        prtn_intxn_list_free(&prtncheck);
+                        partition_intersection_list_free(&prtncheck);
                         return CL_VIRUS;
                     } else {
-                        prtn_intxn_list_free(&prtncheck);
+                        partition_intersection_list_free(&prtncheck);
                         return tmp;
                     }
                 }
@@ -535,15 +535,15 @@ static int mbr_primary_prtn_intxn(cli_ctx *ctx, struct mbr_boot_record mbr, size
     }
 
 leave:
-    prtn_intxn_list_free(&prtncheck);
+    partition_intersection_list_free(&prtncheck);
     return ret;
 }
 
 /* checks internal logical partitions */
-static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize)
+static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize)
 {
     struct mbr_boot_record ebr;
-    prtn_intxn_list_t prtncheck;
+    partition_intersection_list_t prtncheck;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN, mbr_base = 0;
     off_t pos = 0, logiclba = 0;
@@ -551,7 +551,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
-    prtn_intxn_list_init(&prtncheck);
+    partition_intersection_list_init(&prtncheck);
 
     logiclba = 0;
     i        = 0;
@@ -562,7 +562,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
         pos += (logiclba * sectorsize) + mbr_base;
         if (fmap_readn(*ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
             cli_dbgmsg("cli_scanebr: Invalid extended boot record\n");
-            prtn_intxn_list_free(&prtncheck);
+            partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;
         }
 
@@ -573,7 +573,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
         (*prtncount)++;
 
         /* assume that logical record is first and extended is second */
-        tmp = prtn_intxn_list_check(&prtncheck, &pitxn, logiclba, ebr.entries[0].numLBA);
+        tmp = partition_intersection_list_check(&prtncheck, &pitxn, logiclba, ebr.entries[0].numLBA);
         if (tmp != CL_CLEAN) {
             if (tmp == CL_VIRUS) {
                 cli_dbgmsg("cli_scanebr: detected intersection with partitions "
@@ -604,7 +604,7 @@ static int mbr_extended_prtn_intxn(cli_ctx *ctx, unsigned *prtncount, off_t extl
     } while (logiclba != 0 && (*prtncount) < ctx->engine->maxpartitions);
 
 leave:
-    prtn_intxn_list_free(&prtncheck);
+    partition_intersection_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;
     return ret;

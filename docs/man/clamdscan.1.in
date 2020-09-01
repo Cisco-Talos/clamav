@@ -1,58 +1,70 @@
 .TH "Clamd client" "1" "February 12, 2009" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
-.LP 
+.LP
 clamdscan \- scan files and directories for viruses using Clam AntiVirus Daemon
 .SH "SYNOPSIS"
-.LP 
+.LP
 clamdscan [options] [file/directory]
 .SH "DESCRIPTION"
-.LP 
+.LP
 clamdscan is a clamd client which may be used as a clamscan replacement. It accepts all the options implemented in clamscan but most of them will be ignored because its scanning abilities only depend on clamd.
 .SH "OPTIONS"
-.LP 
+.LP
 
-.TP 
+.TP
 \fB\-h, \-\-help\fR
 Display help information and exit.
-.TP 
+.TP
 \fB\-V, \-\-version\fR
 Print version number and exit.
-.TP 
+.TP
 \fB\-v, \-\-verbose\fR
 Be verbose.
-.TP 
+.TP
 \fB\-\-quiet\fR
 Be quiet \- only output error messages.
-.TP 
+.TP
 \fB\-\-stdout\fR
 Write all messages (except for libclamav output) to the standard output (stdout).
-.TP 
+.TP
 \fB\-\-config\-file=FILE\fR
 Read clamd settings from FILE.
-.TP 
+.TP
 \fB\-l FILE, \-\-log=FILE\fR
 Save the scan report to FILE.
-.TP 
+.TP
 \fB\-f FILE, \-\-file\-list=FILE\fR
 Scan files listed line by line in FILE.
-.TP 
+.TP
+\fB\-p A[:I], \-\-ping A[:I]\fR
+Ping clamd up to [A] times at optional interval [I] until it responds.
+.TP
+\fB\-w, \-\-wait\fR
+Wait up to 30 seconds for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.
+.TP
 \fB\-m, \-\-multiscan\fR
 In the multiscan mode clamd will attempt to scan the directory contents in parallel using available threads. This option is especially useful on multiprocessor and multi-core systems. If you pass more than one file or directory in the command line, they are put in a queue and sent to clamd individually. This means, that single files are always scanned by a single thread. Similarly, clamdscan will wait for clamd to finish a directory scan (performed in multiscan mode) before sending request to scan another directory. This option can be combined with \-\-fdpass (see below).
 .TP
 \fB\-z, \-\-allmatch\fR
 After a match, continue scanning within the file for additional matches.
-.TP 
+.TP
 \fB\-\-remove\fR
 Remove infected files. \fBBe careful.\fR
-.TP 
+.TP
 \fB\-\-move=DIRECTORY\fR
 Move infected files into DIRECTORY.
-.TP 
+.TP
+\fB\-\-copy=DIRECTORY\fR
+Copy infected files into DIRECTORY.
+.TP
 \fB\-\-no\-summary\fR
 Do not display summary at the end of scanning.
 .TP
 \fB\-\-reload\fR
 Request clamd to reload virus database.
+.TP
+\fB\-\-allmatch\fR
+Continue scanning within file after finding a match.
 .TP
 \fB\-\-fdpass\fR
 Pass the file descriptor permissions to clamd. This is useful if clamd is running as a different user as it is faster than streaming the file to clamd.
@@ -61,16 +73,16 @@ Only available if connected to clamd via local(unix) socket.
 \fB\-\-stream\fR
 Forces file streaming to clamd. This is generally not needed as clamdscan detects automatically if streaming is required. This option only exists for debugging and testing purposes, in all other cases \-\-fdpass is preferred.
 .SH "EXAMPLES"
-.LP 
-.TP 
+.LP
+.TP
 (0) To scan a one file:
 
 \fBclamdscan file\fR
-.TP 
+.TP
 (1) To scan a current working directory:
 
 \fBclamdscan\fR
-.TP 
+.TP
 (2) To scan all files in /home:
 
 \fBclamdscan /home\fR
@@ -85,17 +97,17 @@ Forces file streaming to clamd. This is generally not needed as clamdscan detect
 
 \fBcat file_to_scan | clamdscan \-\fR
 .SH "RETURN CODES"
-.LP 
+.LP
 0 : No virus found.
-.TP 
+.TP
 1 : Virus(es) found.
-.TP 
+.TP
 2 : An error occurred.
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
-.LP 
+.LP
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
-.LP 
+.LP
 clamd(8), clamd.conf(5), clamscan(1)

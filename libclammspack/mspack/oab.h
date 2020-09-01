@@ -10,7 +10,7 @@
 #ifndef MSPACK_OAB_H
 #define MSPACK_OAB_H 1
 
-#include <system.h>
+#include "system.h"
 
 /* generic OAB definitions */
 

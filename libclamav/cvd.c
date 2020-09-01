@@ -572,11 +572,12 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int skipsig)
     return CL_SUCCESS;
 }
 
-int cl_cvdverify(const char *file)
+cl_error_t cl_cvdverify(const char *file)
 {
     struct cl_engine *engine;
     FILE *fs;
-    int ret, dbtype = 0;
+    cl_error_t ret;
+    int dbtype = 0;
 
     if ((fs = fopen(file, "rb")) == NULL) {
         cli_errmsg("cl_cvdverify: Can't open file %s\n", file);

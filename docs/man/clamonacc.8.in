@@ -1,0 +1,84 @@
+.TH "Clam On-Access Scanner" "8" "July 29, 2020" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP
+clamonacc \- an anti\-virus on\-access scanning daemon and clamd client
+.SH "SYNOPSIS"
+.LP
+clamd [options]
+.SH "DESCRIPTION"
+.LP
+The clamonacc daemon registers for file access notifications from the Linux kernel and in response, submits scans to the clamd scanning daemon for a verdict. On-Access is only available on Linux systems. On Linux, On-Access requires a kernel version >= 3.8. This is because it leverages a kernel api called fanotify to block processes from attempting to access malicious files. This prevention occurs in kernel-space, and thus offers stronger protection than a purely user-space solution.
+.SH "OPTIONS"
+.LP
+.TP
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP
+\fB\-v, \-\-verbose\fR
+Be verbose.
+.TP
+\fB\-l FILE, \-\-log=FILE\fR
+Save the scan report to FILE.
+.TP
+\fB\-F, \-\-foreground\fR
+Run in foreground; do not daemonize.
+.TP
+\fB\-w FILE, \-\-watch\-list=FILE\fR
+Watch directories from FILE.
+.TP
+\fB\-e FILE, \-\-exclude\-list=FILE\fR
+Exclude directories from FILE.
+.TP
+\fB\-p A[:I], \-\-ping A[:I]\fR
+Ping clamd up to [A] times at optional interval [I] until it responds.
+.TP
+\fB\-w, \-\-wait\fR
+Wait up to 30 seconds for clamd to start. Optionally use alongside ping to set attempts [A] and interval [I] to check clamd.
+.TP
+\fB\-\-remove\fR
+Remove infected files. \fBBe careful.\fR
+.TP
+\fB\-\-move=DIRECTORY\fR
+Move infected files into DIRECTORY.
+.TP
+\fB\-\-copy=DIRECTORY\fR
+Copy infected files into DIRECTORY.
+.TP
+\fB\-c FILE, \-\-config\-file=FILE\fR
+Read configuration from FILE.
+.TP
+\fB\-\-allmatch\fR
+Continue scanning within file after finding a match.
+.TP
+\fB\-\-fdpass\fR
+Pass the file descriptor permissions to clamd. This is useful if clamd is running as a different user as it is faster than streaming the file to clamd.
+Only available if connected to clamd via local(unix) socket.
+.TP
+\fB\-\-stream\fR
+Forces file streaming to clamd. This is generally not needed as clamdscan detects automatically if streaming is required. This option only exists for debugging and testing purposes, in all other cases \-\-fdpass is preferred.
+.SH "SIGNALS"
+.LP
+ClamOnAcc recognizes the following signals:
+.TP
+\fBSIGHUP\fR
+Reopen the logfile.
+.TP
+\fBSIGUSR2\fR
+Reload the signature databases.
+.TP
+\fBSIGTERM\fR
+Perform a clean exit.
+.SH "FILES"
+.LP
+@CFGDIR@/clamd.conf
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP
+Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP
+clamd.conf(5), clamd(8)

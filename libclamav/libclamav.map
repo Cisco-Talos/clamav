@@ -78,6 +78,7 @@ CLAMAV_PRIVATE {
     cli_ldbtokenize;
     cli_strlcat;
     cli_strlcpy;
+    cli_strntoul;
     cli_cvdunpack;
     cli_regcomp;
     cli_regexec;
@@ -172,8 +173,8 @@ CLAMAV_PRIVATE {
     cli_bm_scanbuff;
     cli_bm_free;
     cli_initroots;
-    cli_scanbuff;
-    cli_fmap_scandesc;
+    cli_scan_buff;
+    cli_scan_fmap;
     cli_check_auth_header;
     cli_genhash_pe;
     html_screnc_decode;
@@ -258,6 +259,9 @@ CLAMAV_PRIVATE {
     cl_base64_encode;
     cli_sanitize_filepath;
     cli_gentemp_with_prefix;
+    cli_basename;
+    cli_realpath;
+    cli_codepage_to_utf8;
 
     __cli_strcasestr;
     __cli_strndup;

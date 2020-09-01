@@ -21,7 +21,7 @@ enum {SOLID_NONE=0,SOLID_NORMAL=1,SOLID_COUNT=2,SOLID_FILEEXT=4,
 enum {ARCTIME_NONE=0,ARCTIME_KEEP,ARCTIME_LATEST};
 
 enum EXTTIME_MODE {
-  EXTTIME_NONE=0,EXTTIME_1S,EXTTIME_HIGH1,EXTTIME_HIGH2,EXTTIME_HIGH3
+  EXTTIME_NONE=0,EXTTIME_1S,EXTTIME_MAX
 };
 
 enum {NAMES_ORIGINALCASE=0,NAMES_UPPERCASE,NAMES_LOWERCASE};
@@ -92,6 +92,12 @@ class RAROptions
 
     uint ExclFileAttr;
     uint InclFileAttr;
+
+    // We handle -ed and -e+d with special flags instead of attribute mask,
+    // so it works with both Windows and Unix archives.
+    bool ExclDir;
+    bool InclDir;
+
     bool InclAttrSet;
     size_t WinSize;
     wchar TempPath[NM];
@@ -162,6 +168,7 @@ class RAROptions
 #ifndef SFX_MODULE
     bool GenerateArcName;
     wchar GenerateMask[MAX_GENERATE_MASK];
+    wchar DefGenerateMask[MAX_GENERATE_MASK];
 #endif
     bool SyncFiles;
     bool ProcessEA;
@@ -185,6 +192,7 @@ class RAROptions
     EXTTIME_MODE xmtime; // Extended time modes (time precision to store).
     EXTTIME_MODE xctime;
     EXTTIME_MODE xatime;
+    bool PreserveAtime;
     wchar CompressStdin[NM];
 
     uint Threads; // We use it to init hash even if RAR_SMP is not defined.

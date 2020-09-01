@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.4.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
+
 #ifndef YY_YARA_YY_YARA_GRAMMAR_H_INCLUDED
 # define YY_YARA_YY_YARA_GRAMMAR_H_INCLUDED
 /* Debug traces.  */
@@ -40,11 +44,11 @@
 extern int yara_yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 39 "yara_grammar.y" /* yacc.c:1909  */
+#line 39 "yara_grammar.y"
 
 #include "yara_compiler.h"
 
-#line 48 "yara_grammar.h" /* yacc.c:1909  */
+#line 52 "yara_grammar.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -104,65 +108,12 @@ extern int yara_yydebug;
     _NOT_ = 308
   };
 #endif
-/* Tokens.  */
-#define _RULE_ 258
-#define _PRIVATE_ 259
-#define _GLOBAL_ 260
-#define _META_ 261
-#define _STRINGS_ 262
-#define _CONDITION_ 263
-#define _IDENTIFIER_ 264
-#define _STRING_IDENTIFIER_ 265
-#define _STRING_COUNT_ 266
-#define _STRING_OFFSET_ 267
-#define _STRING_IDENTIFIER_WITH_WILDCARD_ 268
-#define _NUMBER_ 269
-#define _TEXT_STRING_ 270
-#define _HEX_STRING_ 271
-#define _REGEXP_ 272
-#define _ASCII_ 273
-#define _WIDE_ 274
-#define _NOCASE_ 275
-#define _FULLWORD_ 276
-#define _AT_ 277
-#define _FILESIZE_ 278
-#define _ENTRYPOINT_ 279
-#define _ALL_ 280
-#define _ANY_ 281
-#define _IN_ 282
-#define _OF_ 283
-#define _FOR_ 284
-#define _THEM_ 285
-#define _INT8_ 286
-#define _INT16_ 287
-#define _INT32_ 288
-#define _UINT8_ 289
-#define _UINT16_ 290
-#define _UINT32_ 291
-#define _MATCHES_ 292
-#define _CONTAINS_ 293
-#define _IMPORT_ 294
-#define _TRUE_ 295
-#define _FALSE_ 296
-#define _OR_ 297
-#define _AND_ 298
-#define _LT_ 299
-#define _LE_ 300
-#define _GT_ 301
-#define _GE_ 302
-#define _EQ_ 303
-#define _NEQ_ 304
-#define _IS_ 305
-#define _SHIFT_LEFT_ 306
-#define _SHIFT_RIGHT_ 307
-#define _NOT_ 308
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 218 "yara_grammar.y" /* yacc.c:1909  */
+#line 219 "yara_grammar.y"
 
   SIZED_STRING*   sized_string;
   char*           c_string;
@@ -172,9 +123,9 @@ union YYSTYPE
   YR_META*        meta;
   YR_OBJECT*      object;
 
-#line 176 "yara_grammar.h" /* yacc.c:1909  */
-};
+#line 127 "yara_grammar.h"
 
+};
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

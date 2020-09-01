@@ -33,28 +33,30 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
 #endif
 
-#include "../fanotif/fanotif.h"
+// libclamav
+#include "clamav.h"
+#include "scanners.h"
+#include "str.h"
 
+// shared
+#include "optparser.h"
+#include "output.h"
+
+// clamd
+#include "server.h"
+#include "clamd_others.h"
+#include "scanner.h"
+
+#include "../fanotif/fanotif.h"
 #include "hash.h"
 #include "inotif.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
-#include "libclamav/str.h"
-
-#include "shared/optparser.h"
-#include "shared/output.h"
-
-#include "clamd/server.h"
-#include "clamd/others.h"
-#include "clamd/scanner.h"
 #include "../misc/priv_fts.h"
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 static struct onas_bucket *onas_bucket_init();
 static void onas_free_bucket(struct onas_bucket *bckt);

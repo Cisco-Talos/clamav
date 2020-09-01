@@ -4,12 +4,21 @@ AC_ARG_ENABLE(clamdtop,
 
 if test "$enable_clamdtop" != "no"; then
 
-AC_LIB_FIND([ncurses], [ncurses/ncurses.h],
+PKG_CHECK_MODULES(NCURSES, [ncurses], [
+	HAVE_LIBNCURSES=yes
+	CURSES_INCLUDE="<ncurses.h>"
+	CURSES_CPPFLAGS="$NCURSES_CFLAGS"
+	CURSES_LIBS="$NCURSES_LIBS"
+	], [HAVE_LIBNCURSES=])
+
+if test "X$HAVE_LIBNCURSES" != "Xyes"; then
+    AC_LIB_FIND([ncurses], [ncurses/ncurses.h],
 	    AC_LANG_PROGRAM([#include <ncurses/ncurses.h>],
 			    [initscr(); KEY_RESIZE;]),
 	    [CURSES_CPPFLAGS="$INCNCURSES"; CURSES_LIBS="$LTLIBNCURSES";
 	     CURSES_INCLUDE="<ncurses/ncurses.h>"],
 	    [])
+fi
 
 if test "X$HAVE_LIBNCURSES" != "Xyes"; then
     HAVE_LIBNCURSES=

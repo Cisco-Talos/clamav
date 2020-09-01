@@ -210,6 +210,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
     while (fcount--) {
         struct IS_FB fb;
         uint8_t obuf[BUFSIZ], *key = (uint8_t *)&fb.fname;
+        char *filename = NULL;
         char *tempfile;
         unsigned int i, lameidx = 0, keylen;
         int ofd;
@@ -235,12 +236,23 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
 
         keylen = strlen((const char *)key);
         if (!keylen) return CL_CLEAN;
+
+        filename = cli_strdup((const char *)key);
+
         /* FIXMEISHIELD: cleanup the spam below */
         cli_dbgmsg("ishield-msi: File %s (csize: %llx, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, (long long)csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
-        if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
+        if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
+            if (NULL != filename) {
+                free(filename);
+            }
+            return CL_EMEM;
+        }
         if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
             cli_dbgmsg("ishield-msi: failed to create file %s\n", tempfile);
             free(tempfile);
+            if (NULL != filename) {
+                free(filename);
+            }
             return CL_ECREAT;
         }
 
@@ -299,13 +311,20 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
                 cli_dbgmsg("ishield-msi: call to lseek() failed\n");
                 ret = CL_ESEEK;
             }
-            ret = cli_magic_scandesc(ofd, tempfile, ctx);
+            ret = cli_magic_scan_desc(ofd, tempfile, ctx, filename);
         }
         close(ofd);
 
-        if (!ctx->engine->keeptmp)
-            if (cli_unlink(tempfile)) ret = CL_EUNLINK;
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                ret = CL_EUNLINK;
+            }
+        }
         free(tempfile);
+
+        if (NULL != filename) {
+            free(filename);
+        }
 
         if (ret != CL_CLEAN)
             return ret;
@@ -455,7 +474,7 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize)
         cli_dbgmsg("ishield: skipping empty file\n");
         return CL_CLEAN;
     }
-    if (!(fname = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(fname = cli_gentemp(ctx->sub_tmpdir)))
         return CL_EMEM;
 
     if ((ofd = open(fname, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
@@ -483,7 +502,7 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize)
             cli_dbgmsg("ishield: call to lseek() failed\n");
             ret = CL_ESEEK;
         }
-        ret = cli_magic_scandesc(ofd, fname, ctx);
+        ret = cli_magic_scan_desc(ofd, fname, ctx, NULL);
     }
     close(ofd);
     if (!ctx->engine->keeptmp)
@@ -704,7 +723,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
         return CL_EMEM;
     }
 
-    if (!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
+    if (!(tempfile = cli_gentemp(ctx->sub_tmpdir))) {
         free(outbuf);
         return CL_EMEM;
     }
@@ -783,7 +802,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
             cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
         if (lseek(ofd, 0, SEEK_SET) == -1)
             cli_dbgmsg("is_extract_cab: call to lseek() failed\n");
-        ret = cli_magic_scandesc(ofd, tempfile, ctx);
+        ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL);
     }
 
     close(ofd);

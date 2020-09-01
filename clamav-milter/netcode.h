@@ -25,7 +25,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "shared/optparser.h"
+#include "optparser.h"
 #include "connpool.h"
 
 void nc_ping_entry(struct CP_ENTRY *cpe);

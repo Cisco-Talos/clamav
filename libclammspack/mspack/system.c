@@ -11,7 +11,7 @@
 # include <config.h>
 #endif
 
-#include <system.h>
+#include "system.h"
 
 #if !LARGEFILE_SUPPORT
 const char *largefile_msg = "library not compiled to support large files.";

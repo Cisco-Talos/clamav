@@ -88,5 +88,9 @@ static struct cli_element aliases_htable_elements[] = {
     {NULL, 0, 0},
     {NULL, 0, 0},
 };
+#ifndef PROFILE_HASHTABLE
 const struct cli_hashtable aliases_htable = {
+#else
+struct cli_hashtable aliases_htable = {
+#endif
     aliases_htable_elements, 64, 25, 51};

@@ -40,10 +40,10 @@
 
 #include <curl/curl.h>
 
-#include "shared/output.h"
+#include "output.h"
 
-#include "shared/cert_util.h"
-#include "shared/cert_util_internal.h"
+#include "cert_util.h"
+#include "cert_util_internal.h"
 
 /* Macro to obtain the number of elements in a fixed sized array that was either
  * statically declared or declared on the stack in the same scope.  The macro

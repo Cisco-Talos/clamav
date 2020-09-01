@@ -40,6 +40,8 @@ void CmdExtract::DoExtract()
   {
     if (Cmd->ManualPassword)
       Cmd->Password.Clean(); // Clean user entered password before processing next archive.
+  
+    ReconstructDone=false; // Must be reset here, not in ExtractArchiveInit().
     while (true)
     {
       EXTRACT_ARC_CODE Code=ExtractArchive();
@@ -93,7 +95,6 @@ void CmdExtract::ExtractArchiveInit(Archive &Arc)
 
   PrevProcessed=false;
   AllMatchesExact=true;
-  ReconstructDone=false;
   AnySolidDataUnpackedWell=false;
 
   StartTime.SetCurrentTime();
@@ -479,13 +480,13 @@ bool CmdExtract::ExtractCurrentFile(Archive &Arc,size_t HeaderSize,bool &Repeat)
         {
           // This message is used by Android GUI to reset cached passwords.
           // Update appropriate code if changed.
-          uiMsg(UIERROR_BADPSW,ArcFileName);
+          uiMsg(UIERROR_BADPSW,Arc.FileName,ArcFileName);
         }
         else // For passwords entered manually.
         {
           // This message is used by Android GUI and Windows GUI and SFX to
           // reset cached passwords. Update appropriate code if changed.
-          uiMsg(UIWAIT_BADPSW,ArcFileName);
+          uiMsg(UIWAIT_BADPSW,Arc.FileName,ArcFileName);
           Cmd->Password.Clean();
 
           // Avoid new requests for unrar.dll to prevent the infinite loop
@@ -624,7 +625,6 @@ bool CmdExtract::ExtractCurrentFile(Archive &Arc,size_t HeaderSize,bool &Repeat)
         CurFile.Prealloc(Arc.FileHead.UnpSize);
         Preallocated=Arc.FileHead.UnpSize;
       }
-
       CurFile.SetAllowDelete(!Cmd->KeepBroken);
 
       bool FileCreateMode=!TestMode && !SkipSolid && Command!='P';
@@ -736,38 +736,52 @@ bool CmdExtract::ExtractCurrentFile(Archive &Arc,size_t HeaderSize,bool &Repeat)
       else
         mprintf(L"\b\b\b\b\b     ");
 
+      // If we successfully unpacked a hard link, we wish to set its file
+      // attributes. Hard link shares file metadata with link target,
+      // so we do not need to set link time or owner. But when we overwrite
+      // an existing link, we can call PrepareToDelete(), which affects
+      // link target attributes as well. So we set link attributes to restore
+      // both target and link attributes if PrepareToDelete() changed them.
+      bool SetAttrOnly=LinkEntry && Arc.FileHead.RedirType==FSREDIR_HARDLINK && LinkSuccess;
+
       if (!TestMode && (Command=='X' || Command=='E') &&
-          (!LinkEntry || Arc.FileHead.RedirType==FSREDIR_FILECOPY && LinkSuccess) && 
+          (!LinkEntry || SetAttrOnly || Arc.FileHead.RedirType==FSREDIR_FILECOPY && LinkSuccess) && 
           (!BrokenFile || Cmd->KeepBroken))
       {
-        // We could preallocate more space that really written to broken file
-        // or file with crafted header.
-        if (Preallocated>0 && (BrokenFile || DataIO.CurUnpWrite!=Preallocated))
-          CurFile.Truncate();
+        // Below we use DestFileName instead of CurFile.FileName,
+        // so we can set file attributes also for hard links, which do not
+        // have the open CurFile. These strings are the same for other items.
 
-#if defined(_WIN_ALL) || defined(_EMX)
-        if (Cmd->ClearArc)
-          Arc.FileHead.FileAttr&=~FILE_ATTRIBUTE_ARCHIVE;
-#endif
+        if (!SetAttrOnly)
+        {
+          // We could preallocate more space that really written to broken file
+          // or file with crafted header.
+          if (Preallocated>0 && (BrokenFile || DataIO.CurUnpWrite!=Preallocated))
+            CurFile.Truncate();
 
 
-        CurFile.SetOpenFileTime(
-          Cmd->xmtime==EXTTIME_NONE ? NULL:&Arc.FileHead.mtime,
-          Cmd->xctime==EXTTIME_NONE ? NULL:&Arc.FileHead.ctime,
-          Cmd->xatime==EXTTIME_NONE ? NULL:&Arc.FileHead.atime);
-        CurFile.Close();
+          CurFile.SetOpenFileTime(
+            Cmd->xmtime==EXTTIME_NONE ? NULL:&Arc.FileHead.mtime,
+            Cmd->xctime==EXTTIME_NONE ? NULL:&Arc.FileHead.ctime,
+            Cmd->xatime==EXTTIME_NONE ? NULL:&Arc.FileHead.atime);
+          CurFile.Close();
+
+          SetFileHeaderExtra(Cmd,Arc,DestFileName);
+
+          CurFile.SetCloseFileTime(
+            Cmd->xmtime==EXTTIME_NONE ? NULL:&Arc.FileHead.mtime,
+            Cmd->xatime==EXTTIME_NONE ? NULL:&Arc.FileHead.atime);
+        }
+        
 #if defined(_WIN_ALL) && !defined(SFX_MODULE)
         if (Cmd->SetCompressedAttr &&
             (Arc.FileHead.FileAttr & FILE_ATTRIBUTE_COMPRESSED)!=0)
-          SetFileCompression(CurFile.FileName,true);
+          SetFileCompression(DestFileName,true);
+        if (Cmd->ClearArc)
+          Arc.FileHead.FileAttr&=~FILE_ATTRIBUTE_ARCHIVE;
 #endif
-        SetFileHeaderExtra(Cmd,Arc,CurFile.FileName);
-
-        CurFile.SetCloseFileTime(
-          Cmd->xmtime==EXTTIME_NONE ? NULL:&Arc.FileHead.mtime,
-          Cmd->xatime==EXTTIME_NONE ? NULL:&Arc.FileHead.atime);
-        if (!Cmd->IgnoreGeneralAttr && !SetFileAttr(CurFile.FileName,Arc.FileHead.FileAttr))
-          uiMsg(UIERROR_FILEATTR,Arc.FileName,CurFile.FileName);
+        if (!Cmd->IgnoreGeneralAttr && !SetFileAttr(DestFileName,Arc.FileHead.FileAttr))
+          uiMsg(UIERROR_FILEATTR,Arc.FileName,DestFileName);
 
         PrevProcessed=true;
       }

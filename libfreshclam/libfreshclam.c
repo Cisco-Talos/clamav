@@ -53,18 +53,21 @@
 #include <curl/curl.h>
 
 #include "target.h"
+
+// libclamav
 #include "clamav.h"
+#include "others.h"
+#include "regex_list.h"
+#include "str.h"
+
+// shared
+#include "cert_util.h"
+#include "output.h"
+#include "misc.h"
+
 #include "libfreshclam.h"
 #include "libfreshclam_internal.h"
 #include "dns.h"
-
-#include "shared/cert_util.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
-#include "libclamav/others.h"
-#include "libclamav/regex_list.h"
-#include "libclamav/str.h"
 
 /*
  * Private functions

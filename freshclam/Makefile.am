@@ -22,15 +22,6 @@
 bin_PROGRAMS = freshclam
 
 freshclam_SOURCES = \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/clamdcom.h \
-    $(top_srcdir)/shared/clamdcom.c \
     freshclam.c \
     notify.c \
     notify.h \
@@ -42,9 +33,9 @@ systemdsystemunit_DATA = clamav-freshclam.service
 endif
 
 AM_CFLAGS=@WERR_CFLAGS@
-DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @THREAD_LIBS@
+DEFS = @DEFS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=freshclam$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

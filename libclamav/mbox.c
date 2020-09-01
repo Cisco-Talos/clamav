@@ -106,7 +106,7 @@
 static void sigsegv(int sig);
 static void print_trace(int use_syslog);
 
-/*#define	SAVE_TMP */ /* Save the file being worked on in tmp */
+/*#define    SAVE_TMP */ /* Save the file being worked on in tmp */
 #endif
 
 #if defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
@@ -164,7 +164,7 @@ typedef enum {
 
 /*
  * Use CL_SCAN_MAIL_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
- *	This is experimental code so it is up to YOU to (1) ensure it's secure
+ *    This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) periodically trim the directory of old files
  *
  * If you use the load balancing feature of clamav-milter to run clamd on
@@ -176,7 +176,7 @@ typedef enum {
  * Slows things down a lot and only catches unencoded copies
  * of EICAR within bounces, which don't matter
  */
-//#define	SCAN_UNENCODED_BOUNCES
+//#define    SCAN_UNENCODED_BOUNCES
 
 typedef struct mbox_ctx {
     const char *dir;
@@ -218,7 +218,7 @@ static int parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static int saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static char *rfc2047(const char *in);
 static char *rfc822comments(const char *in, char *out);
-static int rfc1341(message *m, const char *dir);
+static int rfc1341(mbox_ctx *mctx, message *m);
 static bool usefulHeader(int commandNumber, const char *cmd);
 static char *getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at);
 static bool isBounceStart(mbox_ctx *mctx, const char *line);
@@ -235,11 +235,11 @@ static blob *getHrefs(message *m, tag_arguments_t *hrefs);
 static void hrefs_done(blob *b, tag_arguments_t *hrefs);
 static void checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
 
-static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc);
-static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound);
-static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound);
+static bool haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc);
+static bool hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound);
+static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound);
 
 /* Maximum line length according to RFC2821 */
 #define RFC2821LENGTH 1000
@@ -278,14 +278,14 @@ static bool haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heurist
                          * boundary="nextPart1383049.XCRrrar2yq"; \
                          * protocol="application/pgp-encrypted"   \
                          */
-#define X_BFILE RELATED /*                                           \
-                         * BeOS, expert two parts: the file and it's \
-                         * attributes. The attributes part comes as  \
-                         *	Content-Type: application/x-be_attribute  \
-                         *		name="foo"                               \
-                         * I can't find where it is defined, any     \
-                         * pointers would be appreciated. For now    \
-                         * we treat it as multipart/related          \
+#define X_BFILE RELATED /*                                             \
+                         * BeOS, expert two parts: the file and it's   \
+                         * attributes. The attributes part comes as    \
+                         *    Content-Type: application/x-be_attribute \
+                         *        name="foo"                           \
+                         * I can't find where it is defined, any       \
+                         * pointers would be appreciated. For now      \
+                         * we treat it as multipart/related            \
                          */
 #define KNOWBOT 14      /* Unknown and undocumented format? */
 
@@ -346,18 +346,18 @@ int cli_mbox(const char *dir, cli_ctx *ctx)
 
 /*
  * TODO: when signal handling is added, need to remove temp files when a
- *	signal is received
+ *    signal is received
  * TODO: add option to scan in memory not via temp files, perhaps with a
  * named pipe or memory mapped file, though this won't work on big e-mails
  * containing many levels of encapsulated messages - it'd just take too much
  * RAM
  * TODO: parse .msg format files
  * TODO: fully handle AppleDouble format, see
- *	http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
+ *    http://www.lazerware.com/formats/Specs/AppleSingle_AppleDouble.pdf
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  * TODO: Handle unexpected NUL bytes in header lines which stop strcmp()s:
- *	e.g. \0Content-Type: application/binary;
+ *    e.g. \0Content-Type: application/binary;
  */
 static int
 cli_parse_mbox(const char *dir, cli_ctx *ctx)
@@ -407,34 +407,34 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 #endif
 
     /*
-	 * Is it a UNIX style mbox with more than one
-	 * mail message, or just a single mail message?
-	 *
-	 * TODO: It would be better if we called cli_scandir here rather than
-	 * in cli_scanmail. Then we could improve the way mailboxes with more
-	 * than one message is handled, e.g. giving a better indication of
-	 * which message within the mailbox is infected
-	 */
+     * Is it a UNIX style mbox with more than one
+     * mail message, or just a single mail message?
+     *
+     * TODO: It would be better if we called cli_magic_scan_dir here rather than
+     * in cli_scanmail. Then we could improve the way mailboxes with more
+     * than one message is handled, e.g. giving a better indication of
+     * which message within the mailbox is infected
+     */
     /*if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {*/
     if (strncmp(buffer, "From ", 5) == 0) {
         /*
-		 * Have been asked to check a UNIX style mbox file, which
-		 * may contain more than one e-mail message to decode
-		 *
-		 * It would be far better for scanners.c to do this splitting
-		 * and do this
-		 *	FOR EACH mail in the mailbox
-		 *	DO
-		 *		pass this mail to cli_mbox --
-		 *		scan this file
-		 *		IF this file has a virus quit
-		 *		THEN
-		 *			return CL_VIRUS
-		 *		FI
-		 *	END
-		 * This would remove a problem with this code that it can
-		 * fill up the tmp directory before it starts scanning
-		 */
+         * Have been asked to check a UNIX style mbox file, which
+         * may contain more than one e-mail message to decode
+         *
+         * It would be far better for scanners.c to do this splitting
+         * and do this
+         *    FOR EACH mail in the mailbox
+         *    DO
+         *        pass this mail to cli_mbox --
+         *        scan this file
+         *        IF this file has a virus quit
+         *        THEN
+         *            return CL_VIRUS
+         *        FI
+         *    END
+         * This would remove a problem with this code that it can
+         * fill up the tmp directory before it starts scanning
+         */
         bool lastLineWasEmpty;
         int messagenumber;
         message *m = messageCreate(); /*Create an empty email */
@@ -452,8 +452,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             if (lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
                 cli_dbgmsg("Deal with message number %d\n", messagenumber++);
                 /*
-				 * End of a message in the mail box
-				 */
+                 * End of a message in the mail box
+                 */
                 bool heuristicFound = FALSE;
                 body                = parseEmailHeaders(m, rfc821, &heuristicFound);
                 if (body == NULL) {
@@ -481,13 +481,13 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     }
                 }
                 /*
-				 * Starting a new message, throw away all the
-				 * information about the old one. It would
-				 * be best to be able to scan this message
-				 * now, but cli_scanfile needs arguments
-				 * that haven't been passed here so it can't be
-				 * called
-				 */
+                 * Starting a new message, throw away all the
+                 * information about the old one. It would
+                 * be best to be able to scan this message
+                 * now, but cli_magic_scan_file needs arguments
+                 * that haven't been passed here so it can't be
+                 * called
+                 */
                 m = body;
                 messageReset(body);
                 messageSetCTX(body, ctx);
@@ -498,9 +498,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 
             if (isuuencodebegin(buffer)) {
                 /*
-				 * Fast track visa to uudecode.
-				 * TODO: binhex, yenc
-				 */
+                 * Fast track visa to uudecode.
+                 * TODO: binhex, yenc
+                 */
                 if (uudecodeFile(m, buffer, dir, map, &at) < 0)
                     if (messageAddStr(m, buffer) < 0)
                         break;
@@ -522,21 +522,21 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             messageDestroy(m);
     } else {
         /*
-		 * It's a single message, parse the headers then the body
-		 */
+         * It's a single message, parse the headers then the body
+         */
         if (strncmp(buffer, "P I ", 4) == 0)
             /*
-			 * CommuniGate Pro format: ignore headers until
-			 * blank line
-			 */
+             * CommuniGate Pro format: ignore headers until
+             * blank line
+             */
             while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1) &&
                    (strchr("\r\n", buffer[0]) == NULL))
                 ;
         /* getline_from_mbox could be using unlocked_stdio(3),
-		 * so lock file here */
+         * so lock file here */
         /*
-		 * Ignore any blank lines at the top of the message
-		 */
+         * Ignore any blank lines at the top of the message
+         */
         while (strchr("\r\n", buffer[0]) &&
                (getline_from_mbox(buffer, sizeof(buffer) - 1, map, &at) != NULL))
             ;
@@ -552,8 +552,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 
     if (body) {
         /*
-		 * Write out the last entry in the mailbox
-		 */
+         * Write out the last entry in the mailbox
+         */
         if ((retcode == CL_SUCCESS) && messageGetBody(body)) {
             messageSetCTX(body, ctx);
             switch (parseEmailBody(body, NULL, &mctx, 0)) {
@@ -562,14 +562,14 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     break;
                 case FAIL:
                     /*
-					 * beware: cli_magic_scandesc(),
-					 * changes this into CL_CLEAN, so only
-					 * use it to inform the higher levels
-					 * that we couldn't decode it because
-					 * it isn't an mbox, not to signal
-					 * decoding errors on what *is* a valid
-					 * mbox
-					 */
+                     * beware: cli_magic_scan_desc(),
+                     * changes this into CL_CLEAN, so only
+                     * use it to inform the higher levels
+                     * that we couldn't decode it because
+                     * it isn't an mbox, not to signal
+                     * decoding errors on what *is* a valid
+                     * mbox
+                     */
                     retcode = CL_EFORMAT;
                     break;
                 case MAXREC:
@@ -587,8 +587,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         if (body->isTruncated && retcode == CL_SUCCESS)
             retcode = CL_EMEM;
         /*
-		 * Tidy up and quit
-		 */
+         * Tidy up and quit
+         */
         messageDestroy(body);
     }
 
@@ -665,7 +665,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
 
     if (strlen(buffer) > spaceLeft) {
         ReadStruct *next = NULL;
-        int part = spaceLeft;
+        int part         = spaceLeft;
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
@@ -741,8 +741,8 @@ freeList(ReadStruct *head)
     } while (0)
 #endif /*FREELIST_REALLOC*/
 
-/*Check if we have repeated blank lines with only a semicolon at the end.  Semicolon is a delimiter for parameters, 
- * but if there is no data, it isn't a parameter.  Allow the first one because it may be continuation of a previous line 
+/*Check if we have repeated blank lines with only a semicolon at the end.  Semicolon is a delimiter for parameters,
+ * but if there is no data, it isn't a parameter.  Allow the first one because it may be continuation of a previous line
  * that actually had data in it.*/
 static bool
 doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
@@ -772,7 +772,7 @@ doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 }
 
 static bool
-hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool * heuristicFound)
+hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (line) {
@@ -795,7 +795,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
 }
 
 static bool
-haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (totalLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES) {
@@ -810,7 +810,7 @@ haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool * heuristicFound)
 }
 
 static bool
-haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (totalHeaderCnt > HEURISTIC_EMAIL_MAX_HEADERS) {
@@ -825,7 +825,7 @@ haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool * heuristicFou
 }
 
 static bool
-haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * rc)
+haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc)
 {
 
     if (mimePartCnt >= HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE) {
@@ -840,7 +840,7 @@ haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status  * 
 }
 
 static bool
-haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool * heuristicFound)
+haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (argCnt >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) {
@@ -912,9 +912,9 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
         }
 
         /*
-		 * Don't blank lines which are only spaces from headers,
-		 * otherwise they'll be treated as the end of header marker
-		 */
+         * Don't blank lines which are only spaces from headers,
+         * otherwise they'll be treated as the end of header marker
+         */
         if (lastWasBlank) {
             lastWasBlank = FALSE;
             if (boundaryStart(buffer, boundary)) {
@@ -926,9 +926,9 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
             cli_dbgmsg("parseEmailFile: check '%s'\n", buffer);
 
             /*
-			 * Ensure wide characters are handled where
-			 * sizeof(char) > 1
-			 */
+             * Ensure wide characters are handled where
+             * sizeof(char) > 1
+             */
             if (line && isspace(line[0] & 0xFF)) {
                 char copy[sizeof(buffer)];
 
@@ -936,18 +936,18 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 strstrip(copy);
                 if (copy[0] == '\0') {
                     /*
-					 * The header line contains only white
-					 * space. This is not the end of the
-					 * headers according to RFC2822, but
-					 * some MUAs will handle it as though
-					 * it were, and virus writers exploit
-					 * this bug. We can't just break from
-					 * the loop here since that would allow
-					 * other exploits such as inserting a
-					 * white space line before the
-					 * content-type line. So we just have
-					 * to make a best guess. Sigh.
-					 */
+                     * The header line contains only white
+                     * space. This is not the end of the
+                     * headers according to RFC2822, but
+                     * some MUAs will handle it as though
+                     * it were, and virus writers exploit
+                     * this bug. We can't just break from
+                     * the loop here since that would allow
+                     * other exploits such as inserting a
+                     * white space line before the
+                     * content-type line. So we just have
+                     * to make a best guess. Sigh.
+                     */
                     if (head->bufferLen) {
                         char *header     = getMallocedBufferFromList(head);
                         int needContinue = 0;
@@ -955,6 +955,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
+                            DO_FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
@@ -980,9 +981,9 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
             }
             if ((line == NULL) && (0 == head->bufferLen)) { /* empty line */
                 /*
-				 * A blank line signifies the end of
-				 * the header and the start of the text
-				 */
+                 * A blank line signifies the end of
+                 * the header and the start of the text
+                 */
                 if (!anyHeadersFound)
                     /* Ignore the junk at the top */
                     continue;
@@ -999,14 +1000,14 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
 
                     /*
-					 * Continuation of line we're ignoring?
-					 */
+                     * Continuation of line we're ignoring?
+                     */
                     if (isblank(line[0]))
                         continue;
 
                     /*
-					 * Is this a header we're interested in?
-					 */
+                     * Is this a header we're interested in?
+                     */
                     if ((strchr(line, ':') == NULL) ||
                         (cli_strtokbuf(line, 0, ":", cmd) == NULL)) {
                         if (strncmp(line, "From ", 5) == 0)
@@ -1050,24 +1051,26 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
 
                 if ((lookahead = fmap_need_off_once(map, *at, 1))) {
                     /*
-					 * Section B.2 of RFC822 says TAB or
-					 * SPACE means a continuation of the
-					 * previous entry.
-					 *
-					 * Add all the arguments on the line
-					 */
+                     * Section B.2 of RFC822 says TAB or
+                     * SPACE means a continuation of the
+                     * previous entry.
+                     *
+                     * Add all the arguments on the line
+                     */
                     if (isblank(*lookahead))
                         continue;
                 }
 
                 /*
-				 * Handle broken headers, where the next
-				 * line isn't indented by whitespace
-				 */
+                 * Handle broken headers, where the next
+                 * line isn't indented by whitespace
+                 */
                 {
                     char *header     = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
-                    needContinue     = (header[strlen(header) - 1] == ';');
+                    DO_VERIFY_POINTER(header);
+
+                    needContinue = (header[strlen(header) - 1] == ';');
                     if (0 == needContinue) {
                         needContinue = (line && (count_quotes(header) & 1));
                     }
@@ -1075,6 +1078,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (0 == needContinue) {
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
+                            DO_FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
@@ -1094,9 +1098,9 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
             }
         } else if (line && isuuencodebegin(line)) {
             /*
-			 * Fast track visa to uudecode.
-			 * TODO: binhex, yenc
-			 */
+             * Fast track visa to uudecode.
+             * TODO: binhex, yenc
+             */
             bodyIsEmpty = FALSE;
             if (uudecodeFile(ret, line, dir, map, at) < 0)
                 if (messageAddStr(ret, line) < 0)
@@ -1104,10 +1108,10 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
         } else {
             if (line == NULL) {
                 /*
-				 * Although this would save time and RAM, some
-				 * phish signatures have been built which need
-				 * the blank lines
-				 */
+                 * Although this would save time and RAM, some
+                 * phish signatures have been built which need
+                 * the blank lines
+                 */
                 if (lastBodyLineWasBlank &&
                     (messageGetMimeType(ret) != TEXT)) {
                     cli_dbgmsg("Ignoring consecutive blank lines in the body\n");
@@ -1117,11 +1121,11 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
             } else {
                 if (bodyIsEmpty) {
                     /*
-					 * Broken message: new line in the
-					 * middle of the headers, so the first
-					 * line of the body is in fact
-					 * the last lines of the header
-					 */
+                     * Broken message: new line in the
+                     * middle of the headers, so the first
+                     * line of the body is in fact
+                     * the last lines of the header
+                     */
                     if (newline_in_header(line))
                         continue;
                     bodyIsEmpty = FALSE;
@@ -1147,8 +1151,8 @@ done:
 
     if (!anyHeadersFound) {
         /*
-		 * False positive in believing we have an e-mail when we don't
-		 */
+         * False positive in believing we have an e-mail when we don't
+         */
         messageDestroy(ret);
         cli_dbgmsg("parseEmailFile: no headers found, assuming it isn't an email\n");
         return NULL;
@@ -1218,9 +1222,9 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                        line ? line : "");
             if (line == NULL) {
                 /*
-				 * A blank line signifies the end of
-				 * the header and the start of the text
-				 */
+                 * A blank line signifies the end of
+                 * the header and the start of the text
+                 */
                 cli_dbgmsg("End of header information\n");
                 if (!anyHeadersFound) {
                     cli_dbgmsg("Nothing interesting in the header\n");
@@ -1236,14 +1240,14 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     char cmd[RFC2821LENGTH + 1];
 
                     /*
-					 * Continuation of line we're ignoring?
-					 */
+                     * Continuation of line we're ignoring?
+                     */
                     if (isblank(line[0]))
                         continue;
 
                     /*
-					 * Is this a header we're interested in?
-					 */
+                     * Is this a header we're interested in?
+                     */
                     if ((strchr(line, ':') == NULL) ||
                         (cli_strtokbuf(line, 0, ":", cmd) == NULL)) {
                         if (strncmp(line, "From ", 5) == 0)
@@ -1327,17 +1331,17 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     /* throw away leading blank lines */
                     continue;
                 /*
-				 * Broken message: new line in the
-				 * middle of the headers, so the first
-				 * line of the body is in fact
-				 * the last lines of the header
-				 */
+                 * Broken message: new line in the
+                 * middle of the headers, so the first
+                 * line of the body is in fact
+                 * the last lines of the header
+                 */
                 if (newline_in_header(line))
                     continue;
                 bodyIsEmpty = FALSE;
             }
             /*if(t->t_line && isuuencodebegin(t->t_line))
-				puts("FIXME: add fast visa here");*/
+                puts("FIXME: add fast visa here");*/
             cli_dbgmsg("parseEmailHeaders: finished with headers, moving body\n");
             messageMoveText(ret, t, m);
             break;
@@ -1356,8 +1360,8 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
 
     if (!anyHeadersFound) {
         /*
-		 * False positive in believing we have an e-mail when we don't
-		 */
+         * False positive in believing we have an e-mail when we don't
+         */
         messageDestroy(ret);
         cli_dbgmsg("parseEmailHeaders: no headers found, assuming it isn't an email\n");
         return NULL;
@@ -1389,11 +1393,11 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
     cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
     /*
-	 * In RFC822 the separator between the key a value is a colon,
-	 * e.g.	Content-Transfer-Encoding: base64
-	 * However some MUA's are lapse about this and virus writers exploit
-	 * this hole, so we need to check all known possibilities
-	 */
+     * In RFC822 the separator between the key a value is a colon,
+     * e.g.    Content-Transfer-Encoding: base64
+     * However some MUA's are lapse about this and virus writers exploit
+     * this hole, so we need to check all known possibilities
+     */
     for (separator = ":= "; *separator; separator++)
         if (strchr(line, *separator) != NULL)
             break;
@@ -1428,12 +1432,12 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
 
         if (arg) {
             /*
-			 * Found a header such as
-			 * Content-Type: multipart/mixed;
-			 * set arg to be
-			 * "multipart/mixed" and cmd to
-			 * be "Content-Type"
-			 */
+             * Found a header such as
+             * Content-Type: multipart/mixed;
+             * set arg to be
+             * "multipart/mixed" and cmd to
+             * be "Content-Type"
+             */
             ret = parseMimeHeader(m, cmd, rfc821, arg, ctx, heuristicFound);
         }
     }
@@ -1574,7 +1578,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     if (input == NULL)
         return OK;
 
-    htmlDoc = htmlReadMemory((char *)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    htmlDoc = htmlReadMemory((char *)input->data, input->len, "mhtml.html", NULL, CLAMAV_MIN_XMLREADER_FLAGS | HTML_PARSE_NOWARNING);
     if (htmlDoc == NULL) {
         cli_dbgmsg("parseRootMHTML: cannot initialize read html document\n");
 #if HAVE_JSON
@@ -1690,8 +1694,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
     /* FIXMELIMITS: this should be better integrated */
     if (engine->maxreclevel)
         /*
-		 * This is approximate
-		 */
+         * This is approximate
+         */
         if (recursion_level > engine->maxreclevel) {
 
             cli_dbgmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
@@ -1699,9 +1703,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         }
     if (engine->maxfiles && (mctx->files >= engine->maxfiles)) {
         /*
-		 * FIXME: This is only approx - it may have already
-		 * been exceeded
-		 */
+         * FIXME: This is only approx - it may have already
+         * been exceeded
+         */
         cli_dbgmsg("parseEmailBody: number of files exceeded %u\n", engine->maxfiles);
         return MAXFILES;
     }
@@ -1739,20 +1743,20 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         subtype = tableFind(mctx->subtypeTable, mimeSubtype);
         if ((mimeType == TEXT) && (subtype == PLAIN)) {
             /*
-			 * This is effectively no encoding, notice that we
-			 * don't check that charset is us-ascii
-			 */
+             * This is effectively no encoding, notice that we
+             * don't check that charset is us-ascii
+             */
             cli_dbgmsg("text/plain: Assume no attachments\n");
             mimeType = NOMIME;
             messageSetMimeSubtype(mainMessage, "");
         } else if ((mimeType == MESSAGE) &&
                    (strcasecmp(mimeSubtype, "rfc822-headers") == 0)) {
             /*
-			 * RFC1892/RFC3462: section 2 text/rfc822-headers
-			 * incorrectly sent as message/rfc822-headers
-			 *
-			 * Parse as text/plain, i.e. no mime
-			 */
+             * RFC1892/RFC3462: section 2 text/rfc822-headers
+             * incorrectly sent as message/rfc822-headers
+             *
+             * Parse as text/plain, i.e. no mime
+             */
             cli_dbgmsg("Changing message/rfc822-headers to text/rfc822-headers\n");
             mimeType = NOMIME;
             messageSetMimeSubtype(mainMessage, "");
@@ -1768,23 +1772,23 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     break;
                 }
                 /*
-			 * Fall through: some phishing mails claim they are
-			 * text/plain, when they are in fact html
-			 */
+                 * Fall through: some phishing mails claim they are
+                 * text/plain, when they are in fact html
+                 */
                 /* fall through */
             case TEXT:
                 /* text/plain has been preprocessed as no encoding */
                 if (doPhishingScan) {
                     /*
-				 * It would be better to save and scan the
-				 * file and only checkURLs if it's found to be
-				 * clean
-				 */
+                     * It would be better to save and scan the
+                     * file and only checkURLs if it's found to be
+                     * clean
+                     */
                     checkURLs(mainMessage, mctx, &rc, (subtype == HTML));
                     /*
-				 * There might be html sent without subtype
-				 * html too, so scan them for phishing
-				 */
+                     * There might be html sent without subtype
+                     * html too, so scan them for phishing
+                     */
                     if (rc == VIRUS)
                         infected = TRUE;
                 }
@@ -1804,9 +1808,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     /* Broken e-mail message */
                     mimeType = NOMIME;
                     /*
-				 * The break means that we will still
-				 * check if the file contains a uuencoded file
-				 */
+                     * The break means that we will still
+                     * check if the file contains a uuencoded file
+                     */
                     break;
                 }
 
@@ -1820,8 +1824,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 }
 
                 /*
-			 * Get to the start of the first message
-			 */
+                 * Get to the start of the first message
+                 */
                 t_line = messageGetBody(mainMessage);
 
                 if (t_line == NULL) {
@@ -1836,10 +1840,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         if (boundaryStart(lineGetData(t_line->t_line), boundary))
                             break;
                         /*
-					 * Found a binhex file before
-					 *	the first multipart
-					 * TODO: check yEnc
-					 */
+                         * Found a binhex file before
+                         *    the first multipart
+                         * TODO: check yEnc
+                         */
                         if (binhexBegin(mainMessage) == t_line) {
                             if (exportBinhexMessage(mctx, mainMessage)) {
                                 /* virus found */
@@ -1850,14 +1854,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         } else if (t_line->t_next &&
                                    (encodingLine(mainMessage) == t_line->t_next)) {
                             /*
-						 * We look for the next line
-						 * since later on we'll skip
-						 * over the important line when
-						 * we think it's a blank line
-						 * at the top of the message -
-						 * which it would have been in
-						 * an RFC compliant world
-						 */
+                             * We look for the next line
+                             * since later on we'll skip
+                             * over the important line when
+                             * we think it's a blank line
+                             * at the top of the message -
+                             * which it would have been in
+                             * an RFC compliant world
+                             */
                             cli_dbgmsg("Found MIME attachment before the first MIME section \"%s\"\n",
                                        lineGetData(t_line->t_next->t_line));
                             if (messageGetEncoding(mainMessage) == NOENCODING)
@@ -1872,38 +1876,38 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     free((char *)boundary);
                     mimeType = NOMIME;
                     /*
-				 * The break means that we will still
-				 * check if the file contains a yEnc/binhex file
-				 */
+                     * The break means that we will still
+                     * check if the file contains a yEnc/binhex file
+                     */
                     break;
                 }
                 /*
-			 * Build up a table of all of the parts of this
-			 * multipart message. Remember, each part may itself
-			 * be a multipart message.
-			 */
+                 * Build up a table of all of the parts of this
+                 * multipart message. Remember, each part may itself
+                 * be a multipart message.
+                 */
                 inhead     = 1;
                 inMimeHead = 0;
 
                 /*
-			 * Re-read this variable in case mimeSubtype has changed
-			 */
+                 * Re-read this variable in case mimeSubtype has changed
+                 */
                 subtype = tableFind(mctx->subtypeTable, mimeSubtype);
 
                 /*
-			 * Parse the mainMessage object and create an array
-			 * of objects called messages, one for each of the
-			 * multiparts that mainMessage contains.
-			 *
-			 * This looks like parseEmailHeaders() - maybe there's
-			 * some duplication of code to be cleaned up
-			 *
-			 * We may need to create an array rather than just
-			 * save each part as it is found because not all
-			 * elements will need scanning, and we don't yet know
-			 * which of those elements it will be, except in
-			 * the case of mixed, when all parts need to be scanned.
-			 */
+                 * Parse the mainMessage object and create an array
+                 * of objects called messages, one for each of the
+                 * multiparts that mainMessage contains.
+                 *
+                 * This looks like parseEmailHeaders() - maybe there's
+                 * some duplication of code to be cleaned up
+                 *
+                 * We may need to create an array rather than just
+                 * save each part as it is found because not all
+                 * elements will need scanning, and we don't yet know
+                 * which of those elements it will be, except in
+                 * the case of mixed, when all parts need to be scanned.
+                 */
                 for (multiparts = 0; t_line && !infected; multiparts++) {
                     int lines = 0;
                     message **m;
@@ -1918,8 +1922,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     if (aMessage == NULL) {
                         multiparts--;
                         /* if allocation failed the first time,
-					 * there's no point in retrying, just
-					 * break out */
+                         * there's no point in retrying, just
+                         * break out */
                         break;
                     }
                     messageSetCTX(aMessage, mctx->ctx);
@@ -1927,9 +1931,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     cli_dbgmsg("Now read in part %d\n", multiparts);
 
                     /*
-				 * Ignore blank lines. There shouldn't be ANY
-				 * but some viruses insert them
-				 */
+                     * Ignore blank lines. There shouldn't be ANY
+                     * but some viruses insert them
+                     */
                     while ((t_line = t_line->t_next) != NULL)
                         if (t_line->t_line &&
                             /*(cli_chomp(t_line->t_text) > 0))*/
@@ -1939,12 +1943,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     if (t_line == NULL) {
                         cli_dbgmsg("Empty part\n");
                         /*
-					 * Remove this part unless there's
-					 * a binhex portion somewhere in
-					 * the complete message that we may
-					 * throw away by mistake if the MIME
-					 * encoding information is incorrect
-					 */
+                         * Remove this part unless there's
+                         * a binhex portion somewhere in
+                         * the complete message that we may
+                         * throw away by mistake if the MIME
+                         * encoding information is incorrect
+                         */
                         if (mainMessage &&
                             (binhexBegin(mainMessage) == NULL)) {
                             messageDestroy(aMessage);
@@ -1956,9 +1960,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     do {
                         const char *line = lineGetData(t_line->t_line);
 
-                        /*cli_dbgmsg("multipart %d: inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
-						multiparts, inMimeHead, inhead, boundary, line,
-						t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");*/
+                        /*
+                        cli_dbgmsg("multipart %d: inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
+                        multiparts, inMimeHead, inhead, boundary, line,
+                        t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");
+                        */
 
                         if (inMimeHead) { /* continuation line */
                             if (line == NULL) {
@@ -1966,20 +1972,20 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 continue;
                             }
                             /*
-						 * Handle continuation lines
-						 * because the previous line
-						 * ended with a ; or this line
-						 * starts with a white space
-						 */
+                             * Handle continuation lines
+                             * because the previous line
+                             * ended with a ; or this line
+                             * starts with a white space
+                             */
                             cli_dbgmsg("Multipart %d: About to add mime Argument '%s'\n",
                                        multiparts, line);
                             /*
-						 * Handle the case when it
-						 * isn't really a continuation
-						 * line:
-						 * Content-Type: application/octet-stream;
-						 * Content-Transfer-Encoding: base64
-						 */
+                             * Handle the case when it
+                             * isn't really a continuation
+                             * line:
+                             * Content-Type: application/octet-stream;
+                             * Content-Transfer-Encoding: base64
+                             */
                             parseEmailHeader(aMessage, line, mctx->rfc821Table, mctx->ctx, &heuristicFound);
                             if (heuristicFound) {
                                 rc = VIRUS;
@@ -2001,22 +2007,22 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                             if (line == NULL) {
                                 /*
-							 * empty line, should the end of the headers,
-							 * but some base64 decoders, e.g. uudeview, are broken
-							 * and will handle this type of entry, decoding the
-							 * base64 content...
-							 * Content-Type: application/octet-stream; name=text.zip
-							 * Content-Transfer-Encoding: base64
-							 * Content-Disposition: attachment; filename="text.zip"
-							 *
-							 * Content-Disposition: attachment;
-							 *	filename=text.zip
-							 * Content-Type: application/octet-stream;
-							 *	name=text.zip
-							 * Content-Transfer-Encoding: base64
-							 *
-							 * UEsDBAoAAAAAAACgPjJ2RHw676gAAO+oAABEAAAAbWFpbF90ZXh0LWluZm8udHh0ICAgICAgICAg
-							 */
+                                 * empty line, should the end of the headers,
+                                 * but some base64 decoders, e.g. uudeview, are broken
+                                 * and will handle this type of entry, decoding the
+                                 * base64 content...
+                                 * Content-Type: application/octet-stream; name=text.zip
+                                 * Content-Transfer-Encoding: base64
+                                 * Content-Disposition: attachment; filename="text.zip"
+                                 *
+                                 * Content-Disposition: attachment;
+                                 *    filename=text.zip
+                                 * Content-Type: application/octet-stream;
+                                 *    name=text.zip
+                                 * Content-Transfer-Encoding: base64
+                                 *
+                                 * UEsDBAoAAAAAAACgPjJ2RHw676gAAO+oAABEAAAAbWFpbF90ZXh0LWluZm8udHh0ICAgICAgICAg
+                                 */
                                 const text *next = t_line->t_next;
 
                                 if (next && next->t_line) {
@@ -2026,15 +2032,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                         (messageGetMimeType(aMessage) == APPLICATION) &&
                                         data && strstr(data, "base64")) {
                                         /*
-									 * Handle this nightmare (note the blank
-									 * line in the header and the incorrect
-									 * content-transfer-encoding header)
-									 *
-									 * Content-Type: application/octet-stream; name="zipped_files.EXEX-Spanska: Yes
-									 *
-									 * r-Encoding: base64
-									 * Content-Disposition: attachment; filename="zipped_files.EXE"
-									 */
+                                         * Handle this nightmare (note the blank
+                                         * line in the header and the incorrect
+                                         * content-transfer-encoding header)
+                                         *
+                                         * Content-Type: application/octet-stream; name="zipped_files.EXEX-Spanska: Yes
+                                         *
+                                         * r-Encoding: base64
+                                         * Content-Disposition: attachment; filename="zipped_files.EXE"
+                                         */
                                         messageSetEncoding(aMessage, "base64");
                                         cli_dbgmsg("Ignoring fake end of headers\n");
                                         continue;
@@ -2052,25 +2058,25 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             }
                             if (isspace((int)*line)) {
                                 /*
-							 * The first line is
-							 * continuation line.
-							 * This is tricky
-							 * to handle, but
-							 * all we can do is our
-							 * best
-							 */
+                                 * The first line is
+                                 * continuation line.
+                                 * This is tricky
+                                 * to handle, but
+                                 * all we can do is our
+                                 * best
+                                 */
                                 cli_dbgmsg("Part %d starts with a continuation line\n",
                                            multiparts);
                                 messageAddArgument(aMessage, line);
                                 /*
-							 * Give it a default
-							 * MIME type since
-							 * that may be the
-							 * missing line
-							 *
-							 * Choose application to
-							 * force a save
-							 */
+                                 * Give it a default
+                                 * MIME type since
+                                 * that may be the
+                                 * missing line
+                                 *
+                                 * Choose application to
+                                 * force a save
+                                 */
                                 if (messageGetMimeType(aMessage) == NOMIME)
                                     messageSetMimeType(aMessage, "application");
                                 continue;
@@ -2087,12 +2093,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             /*quotes = count_quotes(fullline);*/
 
                             /*
-						 * Fold next lines to the end of this
-						 * if they start with a white space
-						 * or if this line has an odd number of quotes:
-						 * Content-Type: application/octet-stream; name="foo
-						 * "
-						 */
+                             * Fold next lines to the end of this
+                             * if they start with a white space
+                             * or if this line has an odd number of quotes:
+                             * Content-Type: application/octet-stream; name="foo
+                             * "
+                             */
                             while (t_line && next_is_folded_header(t_line)) {
                                 const char *data;
                                 size_t datasz;
@@ -2103,11 +2109,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                                 if (data[1] == '\0') {
                                     /*
-								 * Broken message: the
-								 * blank line at the end
-								 * of the headers isn't blank -
-								 * it contains a space
-								 */
+                                     * Broken message: the
+                                     * blank line at the end
+                                     * of the headers isn't blank -
+                                     * it contains a space
+                                     */
                                     cli_dbgmsg("Multipart %d: headers not terminated by blank line\n",
                                                multiparts);
                                     inhead = FALSE;
@@ -2136,13 +2142,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             }
                         } else if (boundaryEnd(line, boundary)) {
                             /*
-						 * Some viruses put information
-						 * *after* the end of message,
-						 * which presumably some broken
-						 * mail clients find, so we
-						 * can't assume that this
-						 * is the end of the message
-						 */
+                             * Some viruses put information
+                             * *after* the end of message,
+                             * which presumably some broken
+                             * mail clients find, so we
+                             * can't assume that this
+                             * is the end of the message
+                             */
                             /* t_line = NULL;*/
                             break;
                         } else if (boundaryStart(line, boundary)) {
@@ -2159,11 +2165,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                multiparts, lines, (int)rc);
 
                     /*
-				 * Only save in the array of messages if some
-				 * decision will be taken on whether to scan.
-				 * If all parts will be scanned then save to
-				 * file straight away
-				 */
+                     * Only save in the array of messages if some
+                     * decision will be taken on whether to scan.
+                     * If all parts will be scanned then save to
+                     * file straight away
+                     */
                     switch (subtype) {
                         case MIXED:
                         case ALTERNATIVE:
@@ -2193,13 +2199,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         case SIGNED:
                         case PARALLEL:
                             /* all the subtypes that we handle
-						 * (all from the switch(tableFind...) below)
-						 * must be listed here */
+                             * (all from the switch(tableFind...) below)
+                             * must be listed here */
                             break;
                         default:
                             /* this is a subtype that we
-						 * don't handle anyway,
-						 * don't store */
+                             * don't handle anyway,
+                             * don't store */
                             if (messages[multiparts]) {
                                 messageDestroy(messages[multiparts]);
                                 messages[multiparts] = NULL;
@@ -2211,14 +2217,21 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 free((char *)boundary);
 
                 if (haveTooManyMIMEPartsPerMessage(multiparts, mctx->ctx, &rc)) {
-                    DO_FREE(messages);
+                    if (messages) {
+                        for (i = 0; i < multiparts; i++) {
+                            if (messages[i])
+                                messageDestroy(messages[i]);
+                        }
+                        free(messages);
+                        messages = NULL;
+                    }
                     break;
                 }
 
                 /*
-			 * Preprocess. Anything special to be done before
-			 * we handle the multiparts?
-			 */
+                 * Preprocess. Anything special to be done before
+                 * we handle the multiparts?
+                 */
                 switch (subtype) {
                     case KNOWBOT:
                         /* TODO */
@@ -2227,18 +2240,18 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         break;
                     case -1:
                         /*
-					 * According to section 7.2.6 of
-					 * RFC1521, unrecognized multiparts
-					 * should be treated as multipart/mixed.
-					 */
+                         * According to section 7.2.6 of
+                         * RFC1521, unrecognized multiparts
+                         * should be treated as multipart/mixed.
+                         */
                         cli_dbgmsg("Unsupported multipart format `%s', parsed as mixed\n", mimeSubtype);
                         mimeSubtype = "mixed";
                         break;
                 }
 
                 /*
-			 * We've finished message we're parsing
-			 */
+                 * We've finished message we're parsing
+                 */
                 if (mainMessage && (mainMessage != messageIn)) {
                     messageDestroy(mainMessage);
                     mainMessage = NULL;
@@ -2248,10 +2261,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                 if (infected || ((multiparts == 0) && (aText == NULL))) {
                     if (messages) {
-                        for (i = 0; i < multiparts; i++)
+                        for (i = 0; i < multiparts; i++) {
                             if (messages[i])
                                 messageDestroy(messages[i]);
+                        }
                         free(messages);
+                        messages = NULL;
                     }
                     if (aText && (textIn == NULL))
                         textDestroy(aText);
@@ -2260,8 +2275,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     mctx->wrkobj = saveobj;
 #endif
                     /*
-				 * Nothing to do
-				 */
+                     * Nothing to do
+                     */
                     switch (rc) {
                         case VIRUS:
                             return VIRUS;
@@ -2275,18 +2290,18 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
 
                 /*
-			 * We now have all the parts of the multipart message
-			 * in the messages array:
-			 *	message *messages[multiparts]
-			 * Let's decide what to do with them all
-			 */
+                 * We now have all the parts of the multipart message
+                 * in the messages array:
+                 *    message *messages[multiparts]
+                 * Let's decide what to do with them all
+                 */
                 switch (tableFind(mctx->subtypeTable, mimeSubtype)) {
                     case RELATED:
                         cli_dbgmsg("Multipart related handler\n");
                         /*
-				 * Have a look to see if there's HTML code
-				 * which will need scanning
-				 */
+                         * Have a look to see if there's HTML code
+                         * which will need scanning
+                         */
                         aMessage = NULL;
                         assert(multiparts > 0);
 
@@ -2299,10 +2314,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             }
                         } else {
                             /*
-					 * There isn't an HTML bit. If there's a
-					 * multipart bit, it'll may be in there
-					 * somewhere
-					 */
+                             * There isn't an HTML bit. If there's a
+                             * multipart bit, it'll may be in there
+                             * somewhere
+                             */
                             for (i = 0; i < multiparts; i++) {
                                 if (messageGetMimeType(messages[i]) == MULTIPART) {
                                     aMessage     = messages[i];
@@ -2318,7 +2333,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 #if HAVE_JSON
                             /* Send root HTML file for preclassification */
                             if (mctx->ctx->wrkproperty)
-                                parseRootMHTML(mctx, aMessage, aText);
+                                (void)parseRootMHTML(mctx, aMessage, aText);
 #endif
                             rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
                             if ((rc == OK) && aMessage) {
@@ -2332,58 +2347,58 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         }
 
                         /*
-				 * The message is confused about the difference
-				 * between alternative and related. Badtrans.B
-				 * suffers from this problem.
-				 *
-				 * Fall through in this case:
-				 * Content-Type: multipart/related;
-				 *	type="multipart/alternative"
-				 */
+                         * The message is confused about the difference
+                         * between alternative and related. Badtrans.B
+                         * suffers from this problem.
+                         *
+                         * Fall through in this case:
+                         * Content-Type: multipart/related;
+                         *    type="multipart/alternative"
+                         */
                         /* fall through */
                     case DIGEST:
                         /*
-				 * According to section 5.1.5 RFC2046, the
-				 * default mime type of multipart/digest parts
-				 * is message/rfc822
-				 *
-				 * We consider them as alternative, wrong in
-				 * the strictest sense since they aren't
-				 * alternatives - all parts a valid - but it's
-				 * OK for our needs since it means each part
-				 * will be scanned
-				 */
+                         * According to section 5.1.5 RFC2046, the
+                         * default mime type of multipart/digest parts
+                         * is message/rfc822
+                         *
+                         * We consider them as alternative, wrong in
+                         * the strictest sense since they aren't
+                         * alternatives - all parts a valid - but it's
+                         * OK for our needs since it means each part
+                         * will be scanned
+                         */
                     case ALTERNATIVE:
                         cli_dbgmsg("Multipart alternative handler\n");
 
                         /*
-				 * Fall through - some clients are broken and
-				 * say alternative instead of mixed. The Klez
-				 * virus is broken that way, and anyway we
-				 * wish to scan all of the alternatives
-				 */
+                         * Fall through - some clients are broken and
+                         * say alternative instead of mixed. The Klez
+                         * virus is broken that way, and anyway we
+                         * wish to scan all of the alternatives
+                         */
                         /* fall through */
                     case REPORT:
                         /*
-				 * According to section 1 of RFC1892, the
-				 * syntax of multipart/report is the same
-				 * as multipart/mixed. There are some required
-				 * parameters, but there's no need for us to
-				 * verify that they exist
-				 */
+                         * According to section 1 of RFC1892, the
+                         * syntax of multipart/report is the same
+                         * as multipart/mixed. There are some required
+                         * parameters, but there's no need for us to
+                         * verify that they exist
+                         */
                     case ENCRYPTED:
                         /* MUAs without encryption plugins can display as multipart/mixed,
-				 * just scan it*/
+                         * just scan it*/
                     case MIXED:
                     case APPLEDOUBLE: /* not really supported */
                         /*
-				 * Look for attachments
-				 *
-				 * Not all formats are supported. If an
-				 * unsupported format turns out to be
-				 * common enough to implement, it is a simple
-				 * matter to add it
-				 */
+                         * Look for attachments
+                         *
+                         * Not all formats are supported. If an
+                         * unsupported format turns out to be
+                         * common enough to implement, it is a simple
+                         * matter to add it
+                         */
                         if (aText) {
                             if (mainMessage && (mainMessage != messageIn))
                                 messageDestroy(mainMessage);
@@ -2410,13 +2425,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     case SIGNED:
                     case PARALLEL:
                         /*
-				 * If we're here it could be because we have a
-				 * multipart/mixed message, consisting of a
-				 * message followed by an attachment. That
-				 * message itself is a multipart/alternative
-				 * message and we need to dig out the plain
-				 * text part of that alternative
-				 */
+                         * If we're here it could be because we have a
+                         * multipart/mixed message, consisting of a
+                         * message followed by an attachment. That
+                         * message itself is a multipart/alternative
+                         * message and we need to dig out the plain
+                         * text part of that alternative
+                         */
                         if (messages) {
                             htmltextPart = getTextPart(messages, multiparts);
                             if (htmltextPart == -1)
@@ -2445,12 +2460,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     textDestroy(aText);
                 }
 
-                for (i = 0; i < multiparts; i++)
-                    if (messages[i])
-                        messageDestroy(messages[i]);
-
-                if (messages)
+                if (messages) {
+                    for (i = 0; i < multiparts; i++) {
+                        if (messages[i])
+                            messageDestroy(messages[i]);
+                    }
                     free(messages);
+                    messages = NULL;
+                }
 
 #if HAVE_JSON
                 mctx->wrkobj = saveobj;
@@ -2459,8 +2476,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
             case MESSAGE:
                 /*
-			 * Check for forbidden encodings
-			 */
+                 * Check for forbidden encodings
+                 */
                 switch (messageGetEncoding(mainMessage)) {
                     case NOENCODING:
                     case EIGHTBIT:
@@ -2499,7 +2516,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 } else if (strcasecmp(mimeSubtype, "partial") == 0) {
                     if (mctx->ctx->options->mail & CL_SCAN_MAIL_PARTIAL_MESSAGE) {
                         /* RFC1341 message split over many emails */
-                        if (rfc1341(mainMessage, mctx->dir) >= 0)
+                        if (rfc1341(mctx, mainMessage) >= 0)
                             rc = OK;
                     } else {
                         cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
@@ -2512,8 +2529,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
                 if (mainMessage && (mainMessage != messageIn))
                     messageDestroy(mainMessage);
-                if (messages)
+
+                if (messages) {
+                    for (i = 0; i < multiparts; i++) {
+                        if (messages[i])
+                            messageDestroy(messages[i]);
+                    }
                     free(messages);
+                    messages = NULL;
+                }
 #if HAVE_JSON
                 mctx->wrkobj = saveobj;
 #endif
@@ -2522,18 +2546,18 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             default:
                 cli_dbgmsg("Message received with unknown mime encoding - assume application\n");
                 /*
-			 * Some Yahoo emails attach as
-			 * Content-Type: X-unknown/unknown;
-			 * instead of
-			 * Content-Type: application/unknown;
-			 * so let's try our best to salvage something
-			 */
+                 * Some Yahoo emails attach as
+                 * Content-Type: X-unknown/unknown;
+                 * instead of
+                 * Content-Type: application/unknown;
+                 * so let's try our best to salvage something
+                 */
                 /* fall through */
             case APPLICATION:
                 /*cptr = messageGetMimeSubtype(mainMessage);
 
-			if((strcasecmp(cptr, "octet-stream") == 0) ||
-			   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
+                if((strcasecmp(cptr, "octet-stream") == 0) ||
+                   (strcasecmp(cptr, "x-msdownload") == 0)) {*/
                 {
                     fb = messageToFileblob(mainMessage, mctx->dir, 1);
 
@@ -2549,7 +2573,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                             messageReset(mainMessage);
                     }
                 } /*else
-				cli_warnmsg("Discarded application not sent as attachment\n");*/
+                cli_warnmsg("Discarded application not sent as attachment\n");*/
                 break;
 
             case AUDIO:
@@ -2561,7 +2585,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         if (messages) {
             /* "can't happen" */
             cli_warnmsg("messages != NULL\n");
+            for (i = 0; i < multiparts; i++) {
+                if (messages[i])
+                    messageDestroy(messages[i]);
+            }
             free(messages);
+            messages = NULL;
         }
     }
 
@@ -2598,12 +2627,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 break;
 
             /*
-			 * We've found what looks like the start of a bounce
-			 * message. Only bother saving if it really is a bounce
-			 * message, this helps to speed up scanning of ping-pong
-			 * messages that have lots of bounces within bounces in
-			 * them
-			 */
+             * We've found what looks like the start of a bounce
+             * message. Only bother saving if it really is a bounce
+             * message, this helps to speed up scanning of ping-pong
+             * messages that have lots of bounces within bounces in
+             * them
+             */
             for (; lookahead; lookahead = lookahead->t_next) {
                 l = lookahead->t_line;
 
@@ -2612,17 +2641,17 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 s = lineGetData(l);
                 if (strncasecmp(s, "Content-Type:", 13) == 0) {
                     /*
-					 * Don't bother with text/plain or
-					 * text/html
-					 */
+                     * Don't bother with text/plain or
+                     * text/html
+                     */
                     if (CLI_STRCASESTR(s, "text/plain") != NULL)
                         /*
-						 * Don't bother to save the
-						 * unuseful part, read past
-						 * the headers then we'll go
-						 * on to look for the next
-						 * bounce message
-						 */
+                         * Don't bother to save the
+                         * unuseful part, read past
+                         * the headers then we'll go
+                         * on to look for the next
+                         * bounce message
+                         */
                         continue;
                     if ((!doPhishingScan) &&
                         (CLI_STRCASESTR(s, "text/html") != NULL))
@@ -2639,14 +2668,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             }
 
             /*
-			 * Prescan the bounce message to see if there's likely
-			 * to be anything nasty.
-			 * This algorithm is hand crafted and may be breakable
-			 * so all submissions are welcome. It's best NOT to
-			 * remove this however you may be tempted, because it
-			 * significantly speeds up the scanning of multiple
-			 * bounces (i.e. bounces within many bounces)
-			 */
+             * Prescan the bounce message to see if there's likely
+             * to be anything nasty.
+             * This algorithm is hand crafted and may be breakable
+             * so all submissions are welcome. It's best NOT to
+             * remove this however you may be tempted, because it
+             * significantly speeds up the scanning of multiple
+             * bounces (i.e. bounces within many bounces)
+             */
             for (; lookahead; lookahead = lookahead->t_next) {
                 l = lookahead->t_line;
 
@@ -2713,15 +2742,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
     }
 
     /*
-	 * No attachments - scan the text portions, often files
-	 * are hidden in HTML code
-	 */
+     * No attachments - scan the text portions, often files
+     * are hidden in HTML code
+     */
     if (mainMessage && (rc != VIRUS)) {
         text *t_line;
 
         /*
-		 * Look for uu-encoded main file
-		 */
+         * Look for uu-encoded main file
+         */
         if (mainMessage->body_first != NULL &&
             (encodingLine(mainMessage) != NULL) &&
             ((t_line = bounceBegin(mainMessage)) != NULL))
@@ -2731,20 +2760,20 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
             if (messageGetMimeType(mainMessage) == MESSAGE)
                 /*
-				 * Quick peek, if the encapsulated
-				 * message has no
-				 * content encoding statement don't
-				 * bother saving to scan, it's safe
-				 */
+                 * Quick peek, if the encapsulated
+                 * message has no
+                 * content encoding statement don't
+                 * bother saving to scan, it's safe
+                 */
                 saveIt = (bool)(encodingLine(mainMessage) != NULL);
             else if (mainMessage->body_last != NULL && (t_line = encodingLine(mainMessage)) != NULL) {
                 /*
-				 * Some bounces include the message
-				 * body without the headers.
-				 * FIXME: Unfortunately this generates a
-				 * lot of false positives that a bounce
-				 * has been found when it hasn't.
-				 */
+                 * Some bounces include the message
+                 * body without the headers.
+                 * FIXME: Unfortunately this generates a
+                 * lot of false positives that a bounce
+                 * has been found when it hasn't.
+                 */
                 if ((fb = fileblobCreate()) != NULL) {
                     cli_dbgmsg("Found a bounce message with no header at '%s'\n",
                                lineGetData(t_line->t_line));
@@ -2761,10 +2790,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                 saveIt = FALSE;
             } else
                 /*
-				 * Save the entire text portion,
-				 * since it it may be an HTML file with
-				 * a JavaScript virus or a phish
-				 */
+                 * Save the entire text portion,
+                 * since it it may be an HTML file with
+                 * a JavaScript virus or a phish
+                 */
                 saveIt = TRUE;
 
             if (saveIt) {
@@ -2781,7 +2810,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             }
         }
     } /*else
-		rc = OK_ATTACHMENTS_NOT_SAVED; */
+        rc = OK_ATTACHMENTS_NOT_SAVED; */
       /* nothing saved */
 
     if (mainMessage && (mainMessage != messageIn))
@@ -2866,33 +2895,33 @@ boundaryStart(const char *line, const char *boundary)
     }
 
     /*
-	 * Gibe.B3 is broken, it has:
-	 *	boundary="---- =_NextPart_000_01C31177.9DC7C000"
-	 * but it's boundaries look like
-	 *	------ =_NextPart_000_01C31177.9DC7C000
-	 * notice the one too few '-'.
-	 * Presumably this is a deliberate exploitation of a bug in some mail
-	 * clients.
-	 *
-	 * The trouble is that this creates a lot of false positives for
-	 * boundary conditions, if we're too lax about matches. We do our level
-	 * best to avoid these false positives. For example if we have
-	 * boundary="1" we want to ensure that we don't break out of every line
-	 * that has -1 in it instead of starting --1. This needs some more work.
-	 *
-	 * Look with and without RFC822 comments stripped, I've seen some
-	 * samples where () are taken as comments in boundaries and some where
-	 * they're not. Irrespective of whatever RFC2822 says, we need to find
-	 * viruses in both types of mails.
-	 */
+     * Gibe.B3 is broken, it has:
+     *    boundary="---- =_NextPart_000_01C31177.9DC7C000"
+     * but it's boundaries look like
+     *    ------ =_NextPart_000_01C31177.9DC7C000
+     * notice the one too few '-'.
+     * Presumably this is a deliberate exploitation of a bug in some mail
+     * clients.
+     *
+     * The trouble is that this creates a lot of false positives for
+     * boundary conditions, if we're too lax about matches. We do our level
+     * best to avoid these false positives. For example if we have
+     * boundary="1" we want to ensure that we don't break out of every line
+     * that has -1 in it instead of starting --1. This needs some more work.
+     *
+     * Look with and without RFC822 comments stripped, I've seen some
+     * samples where () are taken as comments in boundaries and some where
+     * they're not. Irrespective of whatever RFC2822 says, we need to find
+     * viruses in both types of mails.
+     */
     if ((strstr(&ptr[1], boundary) != NULL) || (strstr(newline, boundary) != NULL)) {
         const char *k = ptr;
 
         /*
-		 * We need to ensure that we don't match --11=-=-=11 when
-		 * looking for --1=-=-=1 in well behaved headers, that's a
-		 * false positive problem mentioned above
-		 */
+         * We need to ensure that we don't match --11=-=-=11 when
+         * looking for --1=-=-=1 in well behaved headers, that's a
+         * false positive problem mentioned above
+         */
         rc = 0;
         do
             if (strcmp(++k, boundary) == 0) {
@@ -2976,9 +3005,9 @@ boundaryEnd(const char *line, const char *boundary)
         return 0;
     }
     /*
-	 * Use < rather than == because some broken mails have white
-	 * space after the boundary
-	 */
+     * Use < rather than == because some broken mails have white
+     * space after the boundary
+     */
     if (strlen(p) < (len + 2)) {
         if (newline != line)
             free(newline);
@@ -3017,8 +3046,8 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
     const struct tableinit *tableinit;
 
     /*
-	 * Initialise the various look up tables
-	 */
+     * Initialise the various look up tables
+     */
     *rfc821Table = tableCreate();
     assert(*rfc821Table != NULL);
 
@@ -3070,7 +3099,7 @@ getTextPart(message *const messages[], size_t size)
 
 /*
  * strip -
- *	Remove the trailing spaces from a buffer. Don't call this directly,
+ *    Remove the trailing spaces from a buffer. Don't call this directly,
  * always call strstrip() which is a wrapper to this routine to be used with
  * NUL terminated strings. This code looks a bit strange because of it's
  * heritage from code that worked on strings that weren't necessarily NUL
@@ -3080,7 +3109,7 @@ getTextPart(message *const messages[], size_t size)
  * Returns it's new length (a la strlen)
  *
  * len must be int not size_t because of the >= 0 test, it is sizeof(buf)
- *	not strlen(buf)
+ *    not strlen(buf)
  */
 static size_t
 strip(char *buf, int len)
@@ -3114,7 +3143,7 @@ strip(char *buf, int len)
 
 /*
  * strstrip:
- *	Strip a given string
+ *    Strip a given string
  */
 size_t
 strstrip(char *s)
@@ -3161,29 +3190,29 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
     switch (commandNumber) {
         case CONTENT_TYPE:
             /*
-			 * Fix for non RFC1521 compliant mailers
-			 * that send content-type: Text instead
-			 * of content-type: Text/Plain, or
-			 * just simply "Content-Type:"
-			 */
+             * Fix for non RFC1521 compliant mailers
+             * that send content-type: Text instead
+             * of content-type: Text/Plain, or
+             * just simply "Content-Type:"
+             */
             if (arg == NULL)
                 /*
-				 * According to section 4 of RFC1521:
-				 * "Note also that a subtype specification is
-				 * MANDATORY. There are no default subtypes"
-				 *
-				 * We have to break this and make an assumption
-				 * for the subtype because virus writers and
-				 * email client writers don't get it right
-				 */
+                 * According to section 4 of RFC1521:
+                 * "Note also that a subtype specification is
+                 * MANDATORY. There are no default subtypes"
+                 *
+                 * We have to break this and make an assumption
+                 * for the subtype because virus writers and
+                 * email client writers don't get it right
+                 */
                 cli_dbgmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
             else if (strchr(ptr, '/') == NULL)
                 /*
-				 * Empty field, such as
-				 *	Content-Type:
-				 * which I believe is illegal according to
-				 * RFC1521
-				 */
+                 * Empty field, such as
+                 *    Content-Type:
+                 * which I believe is illegal according to
+                 * RFC1521
+                 */
                 cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
             else {
                 int i;
@@ -3196,22 +3225,22 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                     return -1;
                 }
                 /*
-				 * Some clients are broken and
-				 * put white space after the ;
-				 */
+                 * Some clients are broken and
+                 * put white space after the ;
+                 */
                 if (*arg == '/') {
                     cli_dbgmsg("Content-type '/' received, assuming application/octet-stream\n");
                     messageSetMimeType(m, "application");
                     messageSetMimeSubtype(m, "octet-stream");
                 } else {
                     /*
-					 * The content type could be in quotes:
-					 *	Content-Type: "multipart/mixed"
-					 * FIXME: this is a hack in that ignores
-					 *	the quotes, it doesn't handle
-					 *	them properly
-					 */
-                    while (isspace(*ptr))
+                     * The content type could be in quotes:
+                     *    Content-Type: "multipart/mixed"
+                     * FIXME: this is a hack in that ignores
+                     *    the quotes, it doesn't handle
+                     *    them properly
+                     */
+                    while (isspace((const unsigned char) *ptr))
                         ptr++;
                     if (ptr[0] == '\"')
                         ptr++;
@@ -3224,11 +3253,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
                         s = cli_strtokbuf(ptr, 0, ";", buf);
                         /*
-						 * Handle
-						 * Content-Type: foo/bar multipart/mixed
-						 * and
-						 * Content-Type: multipart/mixed foo/bar
-						 */
+                         * Handle
+                         * Content-Type: foo/bar multipart/mixed
+                         * and
+                         * Content-Type: multipart/mixed foo/bar
+                         */
                         if (s && *s) {
                             char *buf2 = cli_strdup(buf);
 
@@ -3267,7 +3296,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                     }
                                 }
 
-                                while (*s && !isspace(*s))
+                                while (*s && !isspace((unsigned char) *s))
                                     s++;
                                 if (*s++ == '\0')
                                     break;
@@ -3280,17 +3309,17 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                 }
 
                 /*
-				 * Add in all rest of the the arguments.
-				 * e.g. if the header is this:
-				 * Content-Type:', arg='multipart/mixed; boundary=foo
-				 * we find the boundary argument set it
-				 */
+                 * Add in all rest of the the arguments.
+                 * e.g. if the header is this:
+                 * Content-Type:', arg='multipart/mixed; boundary=foo
+                 * we find the boundary argument set it
+                 */
                 i = 1;
                 while (cli_strtokbuf(ptr, i++, ";", buf) != NULL) {
                     cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
                     argCnt++;
-                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound )) {
+                    if (haveTooManyMIMEArguments(argCnt, ctx, heuristicFound)) {
                         break;
                     }
                     messageAddArguments(m, buf);
@@ -3315,12 +3344,12 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             }
             if (!messageHasFilename(m))
                 /*
-				 * Handle this type of header, without
-				 * a filename (e.g. some Worm.Torvil.D)
-				 *	Content-ID: <nRfkHdrKsAxRU>
-				 * Content-Transfer-Encoding: base64
-				 * Content-Disposition: attachment
-				 */
+                 * Handle this type of header, without
+                 * a filename (e.g. some Worm.Torvil.D)
+                 *    Content-ID: <nRfkHdrKsAxRU>
+                 * Content-Transfer-Encoding: base64
+                 * Content-Disposition: attachment
+                 */
                 messageAddArgument(m, "filename=unknown");
     }
     if (copy)
@@ -3342,8 +3371,8 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
     messageAddArgument(m, "filename=textportion");
     if ((fb = messageToFileblob(m, mctx->dir, destroy_text)) != NULL) {
         /*
-		 * Save main part to scan that
-		 */
+         * Save main part to scan that
+         */
         cli_dbgmsg("Saving main message\n");
 
         mctx->files++;
@@ -3355,7 +3384,7 @@ saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
 /*
  * Handle RFC822 comments in headers.
  * If out == NULL, return a buffer without the comments, the caller must free
- *	the returned buffer
+ *    the returned buffer
  * Return NULL on error or if the input * has no comments.
  * See section 3.4.3 of RFC822
  * TODO: handle comments that go on to more than one line
@@ -3375,7 +3404,7 @@ rfc822comments(const char *in, char *out)
 
     assert(out != in);
 
-    while (isspace(*in))
+    while (isspace((const unsigned char) *in))
         in++;
 
     if (out == NULL) {
@@ -3551,24 +3580,35 @@ rfc2047(const char *in)
  * Handle partial messages
  */
 static int
-rfc1341(message *m, const char *dir)
+rfc1341(mbox_ctx *mctx, message *m)
 {
     char *arg, *id, *number, *total, *oldfilename;
-    const char *tmpdir;
+    const char *tmpdir = NULL;
     int n;
-    char pdir[NAME_MAX + 1];
+    char pdir[PATH_MAX + 1];
     unsigned char md5_val[16];
     char *md5_hex;
 
-    id = (char *)messageFindArgument(m, "id");
-    if (id == NULL)
+    if ((NULL == mctx) || (NULL == m)) {
+        cli_dbgmsg("rfc1341: Invalid NULL arguments\n");
         return -1;
+    }
 
-    tmpdir = cli_gettmpdir();
+    id = (char *)messageFindArgument(m, "id");
+    if (id == NULL) {
+        return -1;
+    }
+
+    if (NULL != mctx->ctx) {
+        tmpdir = cl_engine_get_str((const struct cl_engine *)mctx->ctx->engine, CL_ENGINE_TMPDIR, NULL);
+    }
+    if (NULL == tmpdir) {
+        tmpdir = cli_gettmpdir();
+    }
 
     snprintf(pdir, sizeof(pdir) - 1, "%s" PATHSEP "clamav-partial", tmpdir);
 
-    if ((mkdir(pdir, S_IRWXU) < 0) && (errno != EEXIST)) {
+    if ((mkdir(pdir, S_IRUSR | S_IWUSR) < 0) && (errno != EEXIST)) {
         cli_errmsg("Can't create the directory '%s'\n", pdir);
         free(id);
         return -1;
@@ -3638,17 +3678,17 @@ rfc1341(message *m, const char *dir)
 
         free(total);
         /*
-		 * If it's the last one - reassemble it
-		 * FIXME: this assumes that we receive the parts in order
-		 */
+         * If it's the last one - reassemble it
+         * FIXME: this assumes that we receive the parts in order
+         */
         if ((n == t) && ((dd = opendir(pdir)) != NULL)) {
             FILE *fout;
-            char outname[NAME_MAX + 1];
+            char outname[PATH_MAX + 1];
             time_t now;
 
             sanitiseName(id);
 
-            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", dir, id);
+            snprintf(outname, sizeof(outname) - 1, "%s" PATHSEP "%s", mctx->dir, id);
 
             cli_dbgmsg("outname: %s\n", outname);
 
@@ -3731,9 +3771,9 @@ rfc1341(message *m, const char *dir)
                     nblanks = 0;
                     while (fgets(buffer, sizeof(buffer) - 1, fin) != NULL)
                         /*
-						 * Ensure that trailing newlines
-						 * aren't copied
-						 */
+                         * Ensure that trailing newlines
+                         * aren't copied
+                         */
                         if (buffer[0] == '\n')
                             nblanks++;
                         else {
@@ -3807,7 +3847,7 @@ static void extract_text_urls(const unsigned char *mem, size_t len, tag_argument
             for (url_len = 4; off + url_len < len && url_len < (sizeof(url) - 1); url_len++) {
                 unsigned char c = mem[off + url_len];
                 /* smart compilers will compile this if into
-		 * a single bt + jb instruction */
+                 * a single bt + jb instruction */
                 if (c == ' ' || c == '\n' || c == '\t')
                     break;
             }
@@ -3886,9 +3926,9 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 
     if (!hrefs.scanContents)
         /*
-		 * Don't waste time extracting hrefs (parsing html), nobody
-		 * will need it
-		 */
+         * Don't waste time extracting hrefs (parsing html), nobody
+         * will need it
+         */
         return;
 
     hrefs.count = 0;
@@ -3900,10 +3940,10 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
         if (hrefs.scanContents) {
             if (phishingScan(mctx->ctx, &hrefs) == CL_VIRUS) {
                 /*
-				 * FIXME: message objects' contents are
-				 *	encapsulated so we should not access
-				 *	the members directly
-				 */
+                 * FIXME: message objects' contents are
+                 *    encapsulated so we should not access
+                 *    the members directly
+                 */
                 mainMessage->isInfected = TRUE;
                 *rc                     = VIRUS;
                 cli_dbgmsg("PH:Phishing found\n");
@@ -3988,9 +4028,9 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
     size_t input_len = MIN(map->len - *at, buffer_len + 1);
     src = cursrc = fmap_need_off_once(map, *at, input_len);
 
-    /*	we check for eof from the result of GETC()
- *	if(feof(fin))
-		return NULL;*/
+    /* we check for eof from the result of GETC()
+    if(feof(fin))
+        return NULL;*/
     if (!src) {
         cli_dbgmsg("getline_from_mbox: fmap need failed\n");
         return NULL;
@@ -4055,9 +4095,9 @@ isBounceStart(mbox_ctx *mctx, const char *line)
     if (*line == '\0')
         return FALSE;
     /*if((strncmp(line, "From ", 5) == 0) && !isalnum(line[5]))
-		return FALSE;
-	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
-		return FALSE;*/
+        return FALSE;
+    if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
+        return FALSE;*/
 
     len = strlen(line);
     if ((len < 6) || (len >= 72))
@@ -4082,12 +4122,12 @@ isBounceStart(mbox_ctx *mctx, const char *line)
             return FALSE;
         return TRUE;
     }
-    return (bool)(cli_filetype((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL);
+    return (bool)(cli_compare_ftm_file((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL);
 }
 
 /*
  * Extract a binhexEncoded message, return if it's found to be infected as we
- *	extract it
+ *    extract it
  */
 static bool
 exportBinhexMessage(mbox_ctx *mctx, message *m)
@@ -4124,24 +4164,24 @@ exportBounceMessage(mbox_ctx *mctx, text *start)
     fileblob *fb;
 
     /*
-	 * Attempt to save the original (unbounced)
-	 * message - clamscan will find that in the
-	 * directory and call us again (with any luck)
-	 * having found an e-mail message to handle.
-	 *
-	 * This finds a lot of false positives, the
-	 * search that a content type is in the
-	 * bounce (i.e. it's after the bounce header)
-	 * helps a bit.
-	 *
-	 * messageAddLine
-	 * optimization could help here, but needs
-	 * careful thought, do it with line numbers
-	 * would be best, since the current method in
-	 * messageAddLine of checking encoding first
-	 * must remain otherwise non bounce messages
-	 * won't be scanned
-	 */
+     * Attempt to save the original (unbounced)
+     * message - clamscan will find that in the
+     * directory and call us again (with any luck)
+     * having found an e-mail message to handle.
+     *
+     * This finds a lot of false positives, the
+     * search that a content type is in the
+     * bounce (i.e. it's after the bounce header)
+     * helps a bit.
+     *
+     * messageAddLine
+     * optimization could help here, but needs
+     * careful thought, do it with line numbers
+     * would be best, since the current method in
+     * messageAddLine of checking encoding first
+     * must remain otherwise non bounce messages
+     * won't be scanned
+     */
     for (t = start; t; t = t->t_next) {
         const char *txt = lineGetData(t->t_line);
         char cmd[RFC2821LENGTH + 1];
@@ -4312,8 +4352,8 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
             addToText = TRUE;
             if (messageGetBody(aMessage) == NULL)
                 /*
-				 * No plain text version
-				 */
+                 * No plain text version
+                 */
                 cli_dbgmsg("No plain text alternative\n");
             break;
         case TEXT:
@@ -4333,10 +4373,10 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                 if ((tableFind(mctx->subtypeTable, cptr) == PLAIN) &&
                     (messageGetEncoding(aMessage) == NOENCODING)) {
                     /*
-					 * Strictly speaking, a text/plain part
-					 * is not an attachment. We pretend it
-					 * is so that we can decode and scan it
-					 */
+                     * Strictly speaking, a text/plain part
+                     * is not an attachment. We pretend it
+                     * is so that we can decode and scan it
+                     */
                     if (!messageHasFilename(aMessage)) {
                         cli_dbgmsg("Adding part to main message\n");
                         addToText = TRUE;
@@ -4364,15 +4404,15 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                 case BINARY:
                     if (encodingLine(aMessage) == NULL) {
                         /*
-						 * This means that the message
-						 * has no attachments
-						 *
-						 * The test for
-						 * messageGetEncoding is needed
-						 * since encodingLine won't have
-						 * been set if the message
-						 * itself has been encoded
-						 */
+                         * This means that the message
+                         * has no attachments
+                         *
+                         * The test for
+                         * messageGetEncoding is needed
+                         * since encodingLine won't have
+                         * been set if the message
+                         * itself has been encoded
+                         */
                         cli_dbgmsg("Unencoded multipart/message will not be scanned\n");
                         assert(aMessage == messages[i]);
                         messageDestroy(messages[i]);
@@ -4385,14 +4425,14 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
             }
 #endif
 #if 0
-			messageAddStrAtTop(aMessage,
-				"Received: by clamd (message/rfc822)");
+            messageAddStrAtTop(aMessage,
+                "Received: by clamd (message/rfc822)");
 #endif
 #ifdef SAVE_TO_DISC
             /*
-			 * Save this embedded message
-			 * to a temporary file
-			 */
+             * Save this embedded message
+             * to a temporary file
+             */
             if (saveTextPart(mctx, aMessage, 1) == CL_VIRUS)
                 *rc = VIRUS;
             assert(aMessage == messages[i]);
@@ -4400,19 +4440,19 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
             messages[i] = NULL;
 #else
             /*
-			 * Scan in memory, faster but is open to DoS attacks
-			 * when many nested levels are involved.
-			 */
+             * Scan in memory, faster but is open to DoS attacks
+             * when many nested levels are involved.
+             */
             body = parseEmailHeaders(aMessage, mctx->rfc821Table);
 
             /*
-			 * We've finished with the
-			 * original copy of the message,
-			 * so throw that away and
-			 * deal with the encapsulated
-			 * message as a message.
-			 * This can save a lot of memory
-			 */
+             * We've finished with the
+             * original copy of the message,
+             * so throw that away and
+             * deal with the encapsulated
+             * message as a message.
+             * This can save a lot of memory
+             */
             assert(aMessage == messages[i]);
             messageDestroy(messages[i]);
             messages[i]  = NULL;
@@ -4433,19 +4473,19 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
             return mainMessage;
         case MULTIPART:
             /*
-			 * It's a multi part within a multi part
-			 * Run the message parser on this bit, it won't
-			 * be an attachment
-			 */
+             * It's a multi part within a multi part
+             * Run the message parser on this bit, it won't
+             * be an attachment
+             */
             cli_dbgmsg("Found multipart inside multipart\n");
 #if HAVE_JSON
             mctx->wrkobj = thisobj;
 #endif
             if (aMessage) {
                 /*
-				 * The headers were parsed when reading in the
-				 * whole multipart section
-				 */
+                 * The headers were parsed when reading in the
+                 * whole multipart section
+                 */
                 *rc = parseEmailBody(aMessage, *tptr, mctx, recursion_level + 1);
                 cli_dbgmsg("Finished recursion, rc = %d\n", (int)*rc);
                 assert(aMessage == messages[i]);
@@ -4472,7 +4512,11 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
         fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 #if HAVE_JSON
         json_object *arrobj;
+#if (JSON_C_MAJOR_VERSION == 0) && (JSON_C_MINOR_VERSION < 13)
+        int arrlen = 0;
+#else
         size_t arrlen = 0;
+#endif
 
         if (thisobj != NULL) {
             /* attempt to determine container size - prevents incorrect type reporting */
@@ -4499,7 +4543,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 
             /* attempt to acquire container type */
             if (json_object_object_get_ex(mctx->ctx->wrkproperty, "ContainedObjects", &arrobj)) {
-                if (json_object_array_length(arrobj) > ((int)arrlen)) {
+                if (json_object_array_length(arrobj) > arrlen) {
                     entry = json_object_array_get_idx(arrobj, arrlen);
                 }
             }
@@ -4509,7 +4553,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                     dtype = json_object_get_string(entry);
                 }
             }
-            cli_jsonint(thisobj, "ContainedObjectsIndex", (uint32_t)arrlen);
+            cli_jsonint(thisobj, "ContainedObjectsIndex", (int32_t)arrlen);
             cli_jsonstr(thisobj, "ClamAVFileType", dtype ? dtype : "UNKNOWN");
         }
 #endif
@@ -4556,35 +4600,35 @@ next_is_folded_header(const text *t)
     data = lineGetData(next->t_line);
 
     /*
-	 * Section B.2 of RFC822 says TAB or SPACE means a continuation of the
-	 * previous entry.
-	 */
+     * Section B.2 of RFC822 says TAB or SPACE means a continuation of the
+     * previous entry.
+     */
     if (isblank(data[0]))
         return TRUE;
 
     if (strchr(data, '=') == NULL)
         /*
-		 * Avoid false positives with
-		 *	Content-Type: text/html;
-		 *	Content-Transfer-Encoding: quoted-printable
-		 */
+         * Avoid false positives with
+         *    Content-Type: text/html;
+         *    Content-Transfer-Encoding: quoted-printable
+         */
         return FALSE;
 
     /*
-	 * Some are broken and don't fold headers lines
-	 * correctly as per section 2.2.3 of RFC2822.
-	 * Generally they miss the white space at
-	 * the start of the fold line:
-	 *	Content-Type: multipart/related;
-	 *	type="multipart/alternative";
-	 *	boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
-	 * should read:
-	 *	Content-Type: multipart/related;
-	 *	 type="multipart/alternative";
-	 *	 boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
-	 * Since we're a virus checker not an RFC
-	 * verifier we need to handle these
-	 */
+     * Some are broken and don't fold headers lines
+     * correctly as per section 2.2.3 of RFC2822.
+     * Generally they miss the white space at
+     * the start of the fold line:
+     *    Content-Type: multipart/related;
+     *    type="multipart/alternative";
+     *    boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
+     * should read:
+     *    Content-Type: multipart/related;
+     *     type="multipart/alternative";
+     *     boundary="----=_NextPart_000_006A_01C6AC47.348CB550"
+     * Since we're a virus checker not an RFC
+     * verifier we need to handle these
+     */
     data = lineGetData(t->t_line);
 
     ptr = strchr(data, '\0');

@@ -123,6 +123,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             size_t outSizeProcessed = 0;
             const CSzFileItem *f    = db.db.Files + i;
             char *name;
+            char *tmp_name;
             size_t j;
             int newnamelen, fd;
 
@@ -184,19 +185,19 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             else if ((outBuffer == NULL) || (outSizeProcessed == 0)) {
                 cli_dbgmsg("cli_unz: extracted empty file\n");
             } else {
-                if ((found = cli_gentempfd(ctx->engine->tmpdir, &name, &fd)))
+                if ((found = cli_gentempfd(ctx->sub_tmpdir, &tmp_name, &fd)))
                     break;
 
-                cli_dbgmsg("cli_7unz: Saving to %s\n", name);
+                cli_dbgmsg("cli_7unz: Saving to %s\n", tmp_name);
                 if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
                     found = CL_EWRITE;
-                else if ((found = cli_magic_scandesc(fd, name, ctx)) == CL_VIRUS)
+                else if ((found = cli_magic_scan_desc(fd, tmp_name, ctx, name)) == CL_VIRUS)
                     viruses_found++;
                 close(fd);
-                if (!ctx->engine->keeptmp && cli_unlink(name))
+                if (!ctx->engine->keeptmp && cli_unlink(tmp_name))
                     found = CL_EUNLINK;
 
-                free(name);
+                free(tmp_name);
                 if (found != CL_CLEAN)
                     if (!(SCAN_ALLMATCHES && found == CL_VIRUS))
                         break;

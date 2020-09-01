@@ -58,8 +58,11 @@
 
 #include <assert.h>
 #include <stdint.h>
+
 #include "lzwdec.h"
-#include "../others.h"
+
+// libclamav
+#include "others.h"
 
 #define MAXCODE(n) ((1L << (n)) - 1)
 /*

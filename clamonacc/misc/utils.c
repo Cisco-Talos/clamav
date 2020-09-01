@@ -30,17 +30,23 @@
 #include <errno.h>
 #include <pthread.h>
 #include <pwd.h>
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
+
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+#include "output.h"
+
+// clamd
+#include "scanner.h"
 
 #include "utils.h"
-#include "clamd/scanner.h"
 #include "../clamonacc.h"
 #include "../client/client.h"
-#include "../scan/queue.h"
+#include "../scan/onas_queue.h"
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 extern pthread_cond_t onas_scan_queue_empty_cond;
 
@@ -222,7 +228,7 @@ void free_opt_list(char **opt_list, int entries)
 {
 
     int i = 0;
-    for (i; i < entries; i++) {
+    for (i = 0; i < entries; i++) {
         if (opt_list[i]) {
             free(opt_list[i]);
             opt_list[i] = NULL;

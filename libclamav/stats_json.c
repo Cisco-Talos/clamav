@@ -34,8 +34,8 @@
 #include <Windows.h>
 #endif
 
-#include "libclamav/others.h"
-#include "libclamav/clamav.h"
+#include "others.h"
+#include "clamav.h"
 
 #define JSON_BUFSZ 512
 #define SAMPLE_PREFIX "sample_"

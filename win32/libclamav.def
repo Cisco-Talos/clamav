@@ -76,6 +76,7 @@ EXPORTS cl_finish_hash @68
 EXPORTS cl_hash_destroy @69
 EXPORTS cl_engine_stats_enable @70
 EXPORTS cl_engine_set_clcb_virus_found @71
+EXPORTS cl_engine_get_str @72
 
 ; path variables
 ; --------------
@@ -83,12 +84,11 @@ EXPORTS cl_engine_set_clcb_virus_found @71
 ; These variables (char *) are for primary use by the ClamAV tools
 ; They are however stable and safe to link by 3rd parties
 
-EXPORTS DATADIR @1000 DATA
-EXPORTS CONFDIR @1001 DATA
-EXPORTS CONFDIR_CLAMD @1002 DATA
-EXPORTS CONFDIR_FRESHCLAM @1003 DATA
-EXPORTS CONFDIR_MILTER @1004 DATA
-
+;EXPORTS DATADIR @1000 DATA
+;EXPORTS CONFDIR @1001 DATA
+;EXPORTS CONFDIR_CLAMD @1002 DATA
+;EXPORTS CONFDIR_FRESHCLAM @1003 DATA
+;EXPORTS CONFDIR_MILTER @1004 DATA
 
 ; PRIVATE SYMBOLS!!!
 ; ------------------
@@ -159,7 +159,7 @@ EXPORTS cli_initroots @44261 NONAME
 EXPORTS cli_hex2str @44262 NONAME
 EXPORTS cli_hex2ui @44263 NONAME
 EXPORTS mpool_getstats @44264 NONAME
-EXPORTS cli_fmap_scandesc @44265 NONAME
+EXPORTS cli_scan_fmap @44265 NONAME
 EXPORTS cli_hashset_destroy @44266 NONAME
 EXPORTS cli_detect_environment @44267 NONAME
 EXPORTS cli_filecopy @44268 NONAME
@@ -187,6 +187,7 @@ EXPORTS __cli_strndup @44389 NONAME
 EXPORTS __cli_strnlen @44390 NONAME
 EXPORTS __cli_strnstr @44391 NONAME
 EXPORTS cli_gentemp_with_prefix @44392 NONAME
+EXPORTS cli_basename @44393 NONAME
 
 ; compatibility layer, tommath, zlib
 EXPORTS w32_srand @44269 NONAME
@@ -197,13 +198,9 @@ EXPORTS readdir @44273 NONAME
 EXPORTS closedir @44274 NONAME
 EXPORTS safe_open @44275 NONAME
 EXPORTS snprintf @44276 NONAME
-EXPORTS optget @44283 NONAME
-EXPORTS optparse @44284 NONAME
-EXPORTS optfree @44285 NONAME
 EXPORTS w32_glob @44286 NONAME
 EXPORTS dirname @44287 NONAME
 EXPORTS basename @44288 NONAME
-EXPORTS clam_options @44289 NONAME DATA
 
 ; zlib
 EXPORTS gzopen @44290 NONAME
@@ -272,3 +269,5 @@ EXPORTS cli_sigperf_print @44349 NONAME
 EXPORTS cli_sigperf_events_destroy @44350 NONAME
 EXPORTS cli_cache_init @44351 NONAME
 EXPORTS cli_cache_destroy @44352 NONAME
+EXPORTS cli_strntoul @44353 NONAME
+EXPORTS cli_realpath @44354 NONAME

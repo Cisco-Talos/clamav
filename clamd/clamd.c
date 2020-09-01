@@ -45,6 +45,7 @@
 #endif
 #include <signal.h>
 #include <errno.h>
+#include <locale.h>
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
@@ -56,21 +57,29 @@
 
 #include "target.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/matcher-ac.h"
-#include "libclamav/readdb.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher-ac.h"
+#include "readdb.h"
 
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
 
 #include "server.h"
 #include "tcpserver.h"
 #include "localserver.h"
-#include "others.h"
+#include "clamd_others.h"
 #include "shared.h"
 #include "scanner.h"
+
+#include <sys/types.h>
+#ifndef WIN32
+#include <sys/wait.h>
+#endif
+
 
 short debug_mode = 0, logok = 0;
 short foreground = -1;
@@ -118,6 +127,7 @@ int main(int argc, char **argv)
     struct passwd *user = NULL;
     struct sigaction sa;
     struct rlimit rlim;
+    int dropPrivRet = 0;
 #endif
     time_t currtime;
     const char *dbdir, *cfgfile;
@@ -130,9 +140,13 @@ int main(int argc, char **argv)
     unsigned int i;
     int j;
     int num_fd;
+    pid_t parentPid = getpid();
 #ifdef C_LINUX
     STATBUF sb;
 #endif
+    pid_t mainpid = 0;
+    mode_t old_umask = 0;
+    const char * user_name = NULL;
 
     if (check_flevel())
         exit(1);
@@ -142,6 +156,9 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
+    if(!setlocale(LC_CTYPE, "")) {
+       mprintf("^Failed to set locale\n");
+    }
 #endif
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
@@ -197,48 +214,15 @@ int main(int argc, char **argv)
     }
     free(pt);
 
+    if ((opt = optget(opts, "User"))->enabled){
+        user_name = opt->strarg;
+    }
+
     if (optget(opts, "version")->enabled) {
         print_version(optget(opts, "DatabaseDirectory")->strarg);
         optfree(opts);
         return 0;
     }
-
-    /* drop privileges */
-#ifndef _WIN32
-    if (geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
-        if ((user = getpwnam(opt->strarg)) == NULL) {
-            fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
-            optfree(opts);
-            return 1;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(opt->strarg, user->pw_gid)) {
-            fprintf(stderr, "ERROR: initgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgroups() failed.\n");
-            optfree(opts);
-            return 1;
-        }
-#endif
-
-        if (setgid(user->pw_gid)) {
-            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
-            optfree(opts);
-            return 1;
-        }
-
-        if (setuid(user->pw_uid)) {
-            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
-            optfree(opts);
-            return 1;
-        }
-    }
-#endif
 
     /* initialize logger */
     logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
@@ -250,24 +234,114 @@ int main(int argc, char **argv)
         logg_rotate = optget(opts, "LogRotate")->enabled;
     mprintf_send_timeout = optget(opts, "SendBufTimeout")->numarg;
 
-    do { /* logger initialized */
-        if ((opt = optget(opts, "LogFile"))->enabled) {
-            char timestr[32];
-            logg_file = opt->strarg;
-            if (!cli_is_abspath(logg_file)) {
-                fprintf(stderr, "ERROR: LogFile requires full path.\n");
-                ret = 1;
-                break;
-            }
-            time(&currtime);
-            if (logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
-                fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
-                ret = 1;
-                break;
-            }
-        } else {
-            logg_file = NULL;
+    if ((opt = optget(opts, "LogFile"))->enabled) {
+        char timestr[32];
+        logg_file = opt->strarg;
+        if (!cli_is_abspath(logg_file)) {
+            fprintf(stderr, "ERROR: LogFile requires full path.\n");
+            ret = 1;
+            return ret;
         }
+        time(&currtime);
+        if (logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
+            fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
+            ret = 1;
+            return ret;
+        }
+    } else {
+        logg_file = NULL;
+    }
+
+
+#ifndef WIN32
+        /* fork into background */
+        if (foreground == -1) {
+            if (optget(opts, "Foreground")->enabled) {
+                foreground = 1;
+            } else {
+                foreground = 0;
+            }
+        }
+        if (foreground == 0) {
+            int daemonizeRet = 0;
+#ifdef C_BSD
+            /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
+            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
+                    logg("!fcntl for lsockets[] failed\n");
+                    close(lsockets[ret]);
+                    ret = 1;
+                    break;
+                }
+            }
+#endif
+            gengine = engine;
+            atexit(free_engine);
+            daemonizeRet = daemonize_parent_wait(user_name, logg_file);
+            if (daemonizeRet < 0){
+                logg("!daemonize() failed: %s\n", strerror(errno));
+                return 1;
+            }
+            gengine = NULL;
+#ifdef C_BSD
+            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
+                    logg("!fcntl for lsockets[] failed\n");
+                    close(lsockets[ret]);
+                    ret = 1;
+                    break;
+                }
+            }
+#endif
+        }
+
+#endif
+
+    /* save the PID */
+    mainpid = getpid();
+    if ((opt = optget(opts, "PidFile"))->enabled) {
+        FILE *fd;
+        old_umask = umask(0002);
+        if ((fd = fopen(opt->strarg, "w")) == NULL) {
+            //logg("!Can't save PID in file %s\n", opt->strarg);
+            logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
+            exit(2);
+        } else {
+            if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
+                logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
+                //logg("!Can't save PID in file %s\n", opt->strarg);
+                fclose(fd);
+                exit(2);
+            }
+            fclose(fd);
+        }
+        umask(old_umask);
+
+#ifndef _WIN32
+        /*If the file has already been created by a different user, it will just be
+         * rewritten by us, but not change the ownership, so do that explicitly.
+         */
+        if (0 == geteuid()){
+            struct passwd * pw = getpwuid(0);
+            int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+            if (ret){
+                logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
+                exit(2);
+            }
+        }
+#endif /* _WIN32 */
+    }
+
+    /* drop privileges */
+#ifndef _WIN32
+    dropPrivRet = drop_privileges(user_name, logg_file);
+    if (dropPrivRet) {
+        optfree(opts);
+        return dropPrivRet;
+    }
+#endif /* _WIN32 */
+
+    do { /* logger initialized */
 
         if (optget(opts, "DevLiblog")->enabled)
             cl_set_clcb_msg(msg_callback);
@@ -552,7 +626,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        if ((ret = statinidir_th(dbdir))) {
+        if ((ret = statinidir(dbdir))) {
             logg("!%s\n", cl_strerror(ret));
             ret = 1;
             break;
@@ -694,48 +768,26 @@ int main(int argc, char **argv)
             }
         }
 
-        /* fork into background */
-        if (foreground == -1) {
-            if (optget(opts, "Foreground")->enabled) {
-                foreground = 1;
-            } else {
-                foreground = 0;
-            }
-        }
-        if (foreground == 0) {
-#ifdef C_BSD
-            /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
-#endif
-            gengine = engine;
-            atexit(free_engine);
-            if (daemonize() == -1) {
-                logg("!daemonize() failed: %s\n", strerror(errno));
-                ret = 1;
-                break;
-            }
-            gengine = NULL;
-#ifdef C_BSD
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
-#endif
-            if (!debug_mode)
-                if (chdir("/") == -1)
+        if (0 == foreground) {
+            if (!debug_mode) {
+                if (chdir("/") == -1) {
                     logg("^Can't change current working directory to root\n");
+                }
+            }
+
+#ifndef _WIN32
+
+            /*Since some of the logging is written to stderr, and some of it
+             * is written to a log file, close stdin, stderr, and stdout 
+             * now, since everything is initialized.*/
+
+            /*signal the parent process.*/
+            if (parentPid != getpid()){
+                daemonize_signal_parent(parentPid);
+            }
+#endif
         }
+
 #endif
 
         if (nlsockets == 0) {
@@ -744,7 +796,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
+        ret = recvloop(lsockets, nlsockets, engine, dboptions, opts);
 
     } while (0);
 

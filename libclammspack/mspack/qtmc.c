@@ -12,7 +12,7 @@
 
 /* Quantum compression implementation */
 
-#include <system.h>
-#include <qtm.h>
+#include "system.h"
+#include "qtm.h"
 
 /* todo */

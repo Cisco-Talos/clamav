@@ -21,7 +21,7 @@
 #ifndef __ONAS_HASH_H
 #define __ONAS_HASH_H
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 #define ONAS_FANWATCH 0x1
 #define ONAS_INWATCH 0x2

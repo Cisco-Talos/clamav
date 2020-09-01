@@ -64,7 +64,7 @@ int cli_scansis(cli_ctx *ctx)
 
     cli_dbgmsg("in scansis()\n");
 
-    if (!(tmpd = cli_gentemp(ctx->engine->tmpdir)))
+    if (!(tmpd = cli_gentemp_with_prefix(ctx->sub_tmpdir, "sis-tmp")))
         return CL_ETMPDIR;
     if (mkdir(tmpd, 0700)) {
         cli_dbgmsg("SIS: Can't create temporary directory %s\n", tmpd);
@@ -496,7 +496,7 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             return CL_EWRITE;
                         }
                         free(decomp);
-                        if (cli_magic_scandesc(fd, ofn, ctx) == CL_VIRUS) {
+                        if (cli_magic_scan_desc(fd, ofn, ctx, NULL) == CL_VIRUS) {
                             close(fd);
                             FREE(ptrs);
                             free(alangs);
@@ -805,7 +805,7 @@ static int real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 break;
                             }
                             free(dst);
-                            if (cli_magic_scandesc(fd, tempf, ctx) == CL_VIRUS) {
+                            if (cli_magic_scan_desc(fd, tempf, ctx, NULL) == CL_VIRUS) {
                                 close(fd);
                                 return CL_VIRUS;
                             }

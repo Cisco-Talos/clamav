@@ -37,13 +37,15 @@
 #endif
 #include <errno.h>
 
-#include "libclamav/clamav.h"
+// libclamav
+#include "clamav.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
-#include "others.h"
+#include "clamd_others.h"
 #include "server.h"
 #include "tcpserver.h"
 

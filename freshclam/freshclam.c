@@ -22,8 +22,6 @@
 #include "clamav-config.h"
 #endif
 
-#include "libfreshclam/libfreshclam.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
@@ -51,15 +49,19 @@
 #endif
 
 #include "target.h"
+
+// libclamav
 #include "clamav.h"
-#include "libfreshclam/libfreshclam.h"
+#include "others.h"
+#include "str.h"
 
-#include "libclamav/others.h"
-#include "libclamav/str.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
+// libfreshclam
+#include "libfreshclam.h"
 
 #include "execute.h"
 #include "notify.h"
@@ -120,18 +122,35 @@ sighandler(int sig)
     return;
 }
 
-static void writepid(const char *pidfile)
+static int writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
     old_umask = umask(0006);
     if ((fd = fopen(pidfile, "w")) == NULL) {
         logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
+        return 1;
     } else {
         fprintf(fd, "%d\n", (int)getpid());
         fclose(fd);
     }
     umask(old_umask);
+
+#ifndef _WIN32
+    /*If the file has already been created by a different user, it will just be
+     * rewritten by us, but not change the ownership, so do that explicitly.
+     */
+    if (0 == geteuid()){
+        struct passwd * pw = getpwuid(0);
+        int ret = lchown(pidfile, pw->pw_uid, pw->pw_gid);
+        if (ret){
+            logg("!Can't change ownership of PID file %s '%s'\n", pidfile, strerror(errno));
+            return 1;
+        }
+    }
+#endif /*_WIN32 */
+
+    return 0;
 }
 
 static void help(void)
@@ -163,9 +182,7 @@ static void help(void)
     printf("    --no-dns                             Force old non-DNS verification method\n");
     printf("    --checks=#n          -c #n           Number of checks per day, 1 <= n <= 50\n");
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
-#ifdef BUILD_CLAMD
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
-#endif
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
     printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
@@ -212,7 +229,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     fc_error_t ret;
     fc_ctx *fc_context = (fc_ctx *)context;
 
-#ifndef WIN32
+#ifndef _WIN32
     char firstline[256];
     char lastline[256];
     int pipefd[2];
@@ -233,7 +250,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     logg("Testing database: '%s' ...\n", dbFilename);
 
     if (fc_context->bTestDatabases) {
-#ifdef WIN32
+#ifdef _WIN32
 
         __try {
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
@@ -280,6 +297,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                         status = FC_ETESTFAIL;
                         goto done;
                     }
+                    break;
                 }
                 case 0: {
                     /*
@@ -450,13 +468,6 @@ static fc_error_t get_server_node(
     status     = FC_SUCCESS;
 
 done:
-
-    if (FC_SUCCESS != status) {
-        if (NULL != url) {
-            free(url);
-        }
-    }
-
     return status;
 }
 
@@ -633,68 +644,6 @@ done:
 }
 
 /**
- * @brief Switch users to the DatabaseOwner, if specified.
- *
- * @param dbowner     A user account that will have write permissions in the database directory.
- * @return fc_error_t FC_SUCCESS if success.
- * @return fc_error_t FC_EARG if success.
- */
-static fc_error_t switch_user(const char *dbowner)
-{
-    fc_error_t status = FC_EARG;
-
-#ifdef HAVE_PWD_H
-    struct passwd *user;
-
-    if (NULL == dbowner) {
-        logg("*No DatabaseOwner specified. Freshclam will run as the current user.\n");
-        status = FC_SUCCESS;
-        goto done;
-    }
-
-    if (!geteuid()) {
-        if ((user = getpwnam(dbowner)) == NULL) {
-            logg("^Can't get information about user %s.\n", dbowner);
-            status = FC_ECONFIG;
-            goto done;
-        }
-
-#ifdef HAVE_INITGROUPS
-        if (initgroups(dbowner, user->pw_gid)) {
-            logg("^initgroups() failed.\n");
-            status = FC_ECONFIG;
-            goto done;
-        }
-#elif HAVE_SETGROUPS
-        if (setgroups(1, &user->pw_gid)) {
-            logg("^setgroups() failed.\n");
-            status = FC_ECONFIG;
-            goto done;
-        }
-#endif
-
-        if (setgid(user->pw_gid)) {
-            logg("^setgid(%d) failed.\n", (int)user->pw_gid);
-            status = FC_ECONFIG;
-            goto done;
-        }
-
-        if (setuid(user->pw_uid)) {
-            logg("^setuid(%d) failed.\n", (int)user->pw_uid);
-            status = FC_ECONFIG;
-            goto done;
-        }
-    }
-#endif /* HAVE_PWD_H */
-
-    status = FC_SUCCESS;
-
-done:
-
-    return status;
-}
-
-/**
  * @brief Get a list of strings for a given repeatable opt argument.
  *
  * @param opt           optstruct of repeatable argument to collect in a list.
@@ -749,7 +698,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fc_error_t status = FC_EARG;
     cl_error_t cl_init_retcode;
     fc_config fcConfig;
-    char *tempDirectory = NULL;
+    char *tempDirectory                = NULL;
     const struct optstruct *logFileOpt = NULL;
 
     STATBUF statbuf;
@@ -797,14 +746,14 @@ static fc_error_t initialize(struct optstruct *opts)
             errno = 0;
             if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
                 logg("ERROR: Failed to get information about user \"%s\".\n",
-                    optget(opts, "DatabaseOwner")->strarg);
+                     optget(opts, "DatabaseOwner")->strarg);
                 if (errno == 0) {
                     logg("Create the \"%s\" user account for freshclam to use, or set the DatabaseOwner config option in freshclam.conf to a different user.\n",
-                        optget(opts, "DatabaseOwner")->strarg);
+                         optget(opts, "DatabaseOwner")->strarg);
                     logg("For more information, see https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source\n");
                 } else {
                     logg("An unexpected error occurred when attempting to query the \"%s\" user account.\n",
-                        optget(opts, "DatabaseOwner")->strarg);
+                         optget(opts, "DatabaseOwner")->strarg);
                 }
                 status = FC_EDBDIRACCESS;
                 goto done;
@@ -822,15 +771,22 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 
 #ifdef HAVE_PWD_H
-    /*
-     * freshclam shouldn't work with root privileges.
-     * Drop privileges to the DatabaseOwner user, if specified.
-     */
-    ret = switch_user(optget(opts, "DatabaseOwner")->strarg);
-    if (FC_SUCCESS != ret) {
-        logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
-        status = ret;
-        goto done;
+    /* Drop database privileges here if we are not planning on daemonizing.  If
+     * we are, we should wait until after we craete the PidFile to drop
+     * privileges.  That way, it is owned by root (or whoever started freshclam),
+     * and no one can change it.  */
+    if (!optget(opts, "daemon")->enabled) {
+        /*
+         * freshclam shouldn't work with root privileges.
+         * Drop privileges to the DatabaseOwner user, if specified.
+         * Pass NULL for the log file name, because it hasn't been created yet.
+         */
+        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, NULL);
+        if (ret) {
+            logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+            status = FC_ECONFIG;
+            goto done;
+        }
     }
 #endif /* HAVE_PWD_H */
 
@@ -909,7 +865,7 @@ static fc_error_t initialize(struct optstruct *opts)
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
-    tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
+    tempDirectory          = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
     fcConfig.tempDirectory = tempDirectory;
 
     /* Store the path of the temp directory so we can delete it later. */
@@ -1363,7 +1319,7 @@ static fc_error_t executeIfNewVersion(
             }
             version++;
         }
-        char *modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
+        modifiedCommand = (char *)malloc(strlen(command) + strlen(version) + 10);
         if (NULL == modifiedCommand) {
             logg("!executeIfNewVersion: Can't allocate memory for modifiedCommand\n");
             status = FC_EMEM;
@@ -1524,10 +1480,8 @@ fc_error_t perform_database_update(
     }
 
     if (0 < nTotalUpdated) {
-#ifdef BUILD_CLAMD
         if (NULL != notifyClamd)
             notify(notifyClamd);
-#endif
 
         if (NULL != onUpdateExecute) {
             execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
@@ -1580,6 +1534,11 @@ int main(int argc, char **argv)
 
     int bPrune = 1;
 
+#ifdef HAVE_PWD_H
+    const struct optstruct *logFileOpt = NULL;
+    const char * logFileName = NULL;
+#endif /* HAVE_PWD_H */
+
     fc_ctx fc_context = {0};
 
 #ifndef _WIN32
@@ -1587,6 +1546,7 @@ int main(int argc, char **argv)
     struct sigaction oldact;
 #endif
     int i;
+    pid_t parentPid = getpid();
 
     if (check_flevel())
         exit(FC_EINIT);
@@ -1748,8 +1708,10 @@ int main(int argc, char **argv)
         }
         if (!optget(opts, "Bytecode")->enabled) {
             if (FC_SUCCESS != (ret = string_list_add("bytecode", &optOutList, &nOptOuts))) {
-                free_string_list(optOutList, nOptOuts);
+                free_string_list(optInList, nOptIns);
                 optInList = NULL;
+                free_string_list(optOutList, nOptOuts);
+                optOutList = NULL;
 
                 mprintf("!Failed to add bytecode to list of opt-out databases.\n");
                 status = ret;
@@ -1832,7 +1794,7 @@ int main(int argc, char **argv)
             bPrivate ? 0 : optget(opts, "ScriptedUpdates")->enabled,
             bPrune,
             optget(opts, "OnUpdateExecute")->enabled ? optget(opts, "OnUpdateExecute")->strarg : NULL,
-            optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnUpdateExecute")->strarg : NULL,
+            optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnOutdatedExecute")->strarg : NULL,
             optget(opts, "daemon")->enabled,
             optget(opts, "NotifyClamd")->active ? optget(opts, "NotifyClamd")->strarg : NULL,
             &fc_context);
@@ -1886,7 +1848,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
         /* fork into background */
         if (g_foreground == 0) {
-            if (daemonize() == -1) {
+            if (-1 == daemonize_parent_wait(NULL, NULL)) {
                 logg("!daemonize() failed\n");
                 status = FC_EFAILEDUPDATE;
                 goto done;
@@ -1898,8 +1860,40 @@ int main(int argc, char **argv)
         /* Write PID of daemon process to pidfile. */
         if ((opt = optget(opts, "PidFile"))->enabled) {
             g_pidfile = opt->strarg;
-            writepid(g_pidfile);
+            if (writepid(g_pidfile)) {
+                status = FC_EINIT;
+                goto done;
+            }
         }
+
+#ifndef _WIN32
+        /* Signal the parent process that we have successfully
+         * written the PidFile.  If it does not get this signal, it
+         * will wait for our exit status (and we don't exit in daemon mode).
+         */
+        if (parentPid != getpid()) { //we have been daemonized
+            daemonize_signal_parent(parentPid);
+        }
+#endif
+
+#ifdef HAVE_PWD_H
+        /*  Get the log file name to pass it into drop_privileges.  */
+        logFileOpt = optget(opts, "UpdateLogFile");
+        if (logFileOpt->enabled) {
+           logFileName  = logFileOpt->strarg;
+        }
+
+        /*
+         * freshclam shouldn't work with root privileges.
+         * Drop privileges to the DatabaseOwner user, if specified.
+         */
+        ret = drop_privileges(optget(opts, "DatabaseOwner")->strarg, logFileName);
+        if (0 != ret) {
+            logg("!Failed to switch to %s user.\n", optget(opts, "DatabaseOwner")->strarg);
+            status = FC_ECONFIG;
+            goto done;
+        }
+#endif /* HAVE_PWD_H */
 
         g_active_children = 0;
 
@@ -2000,6 +1994,9 @@ done:
     }
     if (NULL != urlDatabaseList) {
         free_string_list(urlDatabaseList, nUrlDatabases);
+    }
+    if (NULL != serverList) {
+        free_string_list(serverList, nServers);
     }
     if (NULL != opts) {
         optfree(opts);

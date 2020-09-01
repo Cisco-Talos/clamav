@@ -1,6 +1,8 @@
 dnl Check for libcurl
 
 have_curl="no"
+if test "$enable_libclamav_only" != "yes"; then
+
 AC_MSG_CHECKING([for libcurl installation])
 
 AC_ARG_WITH([libcurl],
@@ -62,17 +64,14 @@ if test "X$have_curl" = "Xyes"; then
     dnl end of section
 
     AM_COND_IF([BUILD_CLAMONACC],
-                    dnl if version greater than (7.45)
-                    [if test $curl_version -ge 470272 ; then
-                        $enable_clamonacc="yes"
-                    else
-                        AC_MSG_ERROR([m4_normalize([
-                                Your libcurl (e.g. libcurl-devel) is too old. Installing ClamAV with clamonacc requires libcurl 7.45 or higher.
-                                For a quick fix, run ./configure again with --disable-clamonacc if you do not wish to use on-access scanning features.
-                                For more information on ClamAV's on-access scanner, please read our documentation: https://www.clamav.net/documents/on-access-scanning#on-access-scanning
-                        ])])
-                    fi]
-                )
+        $enable_clamonacc="yes"
+
+        clamonacc_curl = "current"
+        dnl if version less than to (7.40 0x072800)
+        [if test $curl_version -lt 468992; then
+          clamonacc_curl = "deprecated" 
+        fi]
+    )
 
     AC_CHECK_LIB(
         [curl],
@@ -98,3 +97,4 @@ fi
 
 AC_SUBST([CLAMSUBMIT_LIBS])
 AC_SUBST([CLAMSUBMIT_CFLAGS])
+fi

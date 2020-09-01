@@ -31,16 +31,16 @@ check_SCRIPTS = $(scripts)
 
 AM_CFLAGS=@WERR_CFLAGS@
 if HAVE_LIBCHECK
-check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
-		       check_jsnorm.c check_str.c check_regex.c\
-		       check_disasm.c check_uniq.c check_matchers.c\
+check_clamav_SOURCES = check_clamav.c checks.h checks_common.h \
+		       check_jsnorm.c check_str.c check_regex.c \
+		       check_disasm.c check_uniq.c check_matchers.c \
 		       check_htmlnorm.c check_bytecode.c
-check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_clamav_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 check_clamav_LDFLAGS = $(XML_LIBS)
 check_clamav_CFLAGS = $(AM_CFLAGS) @XML_CPPFLAGS@
 check_clamd_SOURCES = check_clamd.c checks_common.h
-check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
+check_clamd_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/shared @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
 check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
 else
 check_clamd_SOURCES = check_clamav_skip.c
@@ -48,7 +48,7 @@ check_clamav_SOURCES = check_clamav_skip.c
 endif
 
 check_fpu_endian_SOURCES = check_fpu_endian.c
-check_fpu_endian_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_fpu_endian_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 check_fpu_endian_LDADD = $(top_builddir)/libclamav/libclamav.la
 
 check_clamav.c: $(top_builddir)/test/clam.exe clamav.hdb

@@ -40,12 +40,8 @@
 #include "hashtab.h"
 #include "entconv.h"
 #include "entitylist.h"
-
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#endif
-
 #include "encoding_aliases.h"
+#include "msdoc.h"
 
 #define MODULE_NAME "entconv: "
 
@@ -773,4 +769,425 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
     }
     out_m_area->length = j;
     return 0;
+}
+
+cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size)
+
+{
+    cl_error_t status = CL_BREAK;
+
+    char* out_utf8       = NULL;
+    size_t out_utf8_size = 0;
+
+#if defined(HAVE_ICONV)
+    iconv_t conv = (iconv_t)-1;
+#elif defined(WIN32)
+    LPWSTR lpWideCharStr = NULL;
+    int cchWideChar      = 0;
+#endif
+
+    if (NULL == in || in_size == 0 || NULL == out || NULL == out_size) {
+        cli_dbgmsg("cli_codepage_to_utf8: Invalid args.\n");
+        status = CL_EARG;
+        goto done;
+    }
+
+    *out      = NULL;
+    *out_size = 0;
+
+    switch (codepage) {
+        case CODEPAGE_US_7BIT_ASCII: /* US-ASCII (7-bit) */
+        case CODEPAGE_UTF8: {        /* Unicode (UTF-8) */
+            char* track;
+            int byte_count, sigbit_count;
+
+            out_utf8_size = in_size;
+            out_utf8      = cli_calloc(1, out_utf8_size + 1);
+            if (NULL == out_utf8) {
+                cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 filename.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+            memcpy(out_utf8, in, in_size);
+
+            track = out_utf8 + in_size - 1;
+            if ((codepage == CODEPAGE_UTF8) && (*track & 0x80)) {
+                /*
+                 * UTF-8 with a most significant bit.
+                 */
+
+                /* locate the start of the last character */
+                for (byte_count = 1; (track != out_utf8); track--, byte_count++) {
+                    if (((uint8_t)*track & 0xC0) != 0x80)
+                        break;
+                }
+
+                /* count number of set (1) significant bits */
+                for (sigbit_count = 0; sigbit_count < (int)(sizeof(uint8_t) * 8); sigbit_count++) {
+                    if (((uint8_t)*track & (0x80 >> sigbit_count)) == 0)
+                        break;
+                }
+
+                if (byte_count != sigbit_count) {
+                    cli_dbgmsg("cli_codepage_to_utf8: cleaning out %d bytes from incomplete "
+                               "utf-8 character length %d\n",
+                               byte_count, sigbit_count);
+                    for (; byte_count > 0; byte_count--, track++) {
+                        *track = '\0';
+                    }
+                }
+            }
+            break;
+        }
+        default: {
+
+#if defined(WIN32) && !defined(HAVE_ICONV)
+
+            /*
+             * Do conversion using native Win32 APIs.
+             */
+
+            if (CODEPAGE_UTF16_LE != codepage) { /* not already UTF16-LE (Windows Unicode) */
+                /*
+                 * First, Convert from codepage -> UCS-2 LE with MultiByteToWideChar(codepage)
+                 */
+                cchWideChar = MultiByteToWideChar(
+                    codepage,
+                    0,
+                    in,
+                    in_size,
+                    NULL,
+                    0);
+                if (0 == cchWideChar) {
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for ansi to widechar conversion.\n");
+                    status = CL_EPARSE;
+                    goto done;
+                }
+
+                lpWideCharStr = cli_malloc((cchWideChar + 1) * sizeof(WCHAR));
+                if (NULL == lpWideCharStr) {
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char string.\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+
+                cchWideChar = MultiByteToWideChar(
+                    codepage,
+                    0,
+                    in,
+                    in_size,
+                    lpWideCharStr,
+                    cchWideChar + 1);
+                if (0 == cchWideChar) {
+                    cli_dbgmsg("cli_codepage_to_utf8: failed to convert multibyte string to widechars.\n");
+                    status = CL_EPARSE;
+                    goto done;
+                }
+
+                in      = (char*)lpWideCharStr;
+                in_size = cchWideChar;
+            }
+
+            /*
+             * Convert from UCS-2 LE -> UTF8 with WideCharToMultiByte(CP_UTF8)
+             */
+            out_utf8_size = WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                (LPCWCH)in,
+                in_size / sizeof(WCHAR),
+                NULL,
+                0,
+                NULL,
+                NULL);
+            if (0 == out_utf8_size) {
+                cli_dbgmsg("cli_codepage_to_utf8: failed to determine string size needed for widechar conversion.\n");
+                status = CL_EPARSE;
+                goto done;
+            }
+
+            out_utf8 = cli_malloc(out_utf8_size + 1);
+            if (NULL == lpWideCharStr) {
+                cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
+                status = CL_EMEM;
+                goto done;
+            }
+
+            out_utf8_size = WideCharToMultiByte(
+                CP_UTF8,
+                0,
+                (LPCWCH)in,
+                in_size / sizeof(WCHAR),
+                out_utf8,
+                out_utf8_size,
+                NULL,
+                NULL);
+            if (0 == out_utf8_size) {
+                cli_dbgmsg("cli_codepage_to_utf8: failed to convert widechar string to utf-8.\n");
+                status = CL_EPARSE;
+                goto done;
+            }
+
+#elif defined(HAVE_ICONV)
+
+            uint32_t attempt, i;
+            const char* encoding = NULL;
+
+            for (i = 0; i < NUMCODEPAGES; ++i) {
+                if (codepage == codepage_entries[i].codepage) {
+                    encoding = codepage_entries[i].encoding;
+                    break;
+                } else if (codepage < codepage_entries[i].codepage) {
+                    break; /* fail-out early, requires sorted array */
+                }
+            }
+
+            if (NULL == encoding) {
+                cli_dbgmsg("cli_codepage_to_utf8: Invalid codepage parameter passed in.\n");
+                goto done;
+            }
+
+            for (attempt = 1; attempt <= 3; attempt++) {
+                char* inbuf         = in;
+                size_t inbufsize    = in_size;
+                size_t iconvRet     = -1;
+                size_t outbytesleft = 0;
+
+                char* out_utf8_tmp   = NULL;
+                char* out_utf8_index = NULL;
+
+                /* Charset to UTF-8 should never exceed in_size * 6;
+                 * We can shrink final buffer after the conversion, if needed. */
+                out_utf8_size = (in_size * 2) * attempt;
+
+                outbytesleft = out_utf8_size;
+
+                out_utf8 = cli_calloc(1, out_utf8_size + 1);
+                if (NULL == out_utf8) {
+                    cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 data.\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                out_utf8_index = out_utf8;
+
+                conv = iconv_open("UTF-8//TRANSLIT", encoding);
+                if (conv == (iconv_t)-1) {
+                    cli_warnmsg("cli_codepage_to_utf8: Failed to open iconv.\n");
+                    goto done;
+                }
+
+                iconvRet = iconv(conv, &inbuf, &inbufsize, &out_utf8_index, &outbytesleft);
+                iconv_close(conv);
+                conv = (iconv_t)-1;
+                if ((size_t)-1 == iconvRet) {
+                    switch (errno) {
+                        case E2BIG:
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: There is not sufficient room at *outbuf.\n");
+                            free(out_utf8);
+                            out_utf8 = NULL;
+                            continue; /* Try again, with a larger buffer. */
+                        case EILSEQ:
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: An invalid multibyte sequence has been encountered in the input.\n");
+                            break;
+                        case EINVAL:
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: An incomplete multibyte sequence has been encountered in the input.\n");
+                            break;
+                        default:
+                            cli_warnmsg("cli_codepage_to_utf8: iconv error: Unexpected error code %d.\n", errno);
+                    }
+                    status = CL_EPARSE;
+                    goto done;
+                }
+
+                /* iconv succeeded, but probably didn't use the whole buffer. Free up the extra memory. */
+                out_utf8_tmp = cli_realloc(out_utf8, out_utf8_size - outbytesleft + 1);
+                if (NULL == out_utf8_tmp) {
+                    cli_errmsg("cli_codepage_to_utf8: failure cli_realloc'ing converted filename.\n");
+                    status = CL_EMEM;
+                    goto done;
+                }
+                out_utf8      = out_utf8_tmp;
+                out_utf8_size = out_utf8_size - outbytesleft;
+                break;
+            }
+
+#else
+
+            /*
+             * No way to do the conversion.
+             */
+            goto done;
+
+#endif
+        }
+    }
+
+    *out      = out_utf8;
+    *out_size = out_utf8_size;
+
+    status = CL_SUCCESS;
+
+done:
+
+#if defined(WIN32) && !defined(HAVE_ICONV)
+    if (NULL != lpWideCharStr) {
+        free(lpWideCharStr);
+    }
+#endif
+
+#if defined(HAVE_ICONV)
+    if (conv != (iconv_t)-1) {
+        iconv_close(conv);
+    }
+#endif
+
+    if (CL_SUCCESS != status) {
+        if (NULL != out_utf8) {
+            free(out_utf8);
+        }
+    }
+
+    return status;
+}
+
+char* cli_utf16toascii(const char* str, unsigned int length)
+{
+    char* decoded;
+    unsigned int i, j;
+
+    if (length < 2) {
+        cli_dbgmsg("cli_utf16toascii: length < 2\n");
+        return NULL;
+    }
+
+    if (length % 2)
+        length--;
+
+    if (!(decoded = cli_calloc(length / 2 + 1, sizeof(char))))
+        return NULL;
+
+    for (i = 0, j = 0; i < length; i += 2, j++) {
+        decoded[j] = ((unsigned char)str[i + 1]) << 4;
+        decoded[j] += str[i];
+    }
+
+    return decoded;
+}
+
+char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
+{
+    /* utf8 -
+     * 4 bytes for utf16 high+low surrogate (4 bytes input)
+     * 3 bytes for utf16 otherwise (2 bytes input) */
+    size_t i, j;
+    size_t needed = length * 3 / 2 + 2;
+    char* s2;
+
+    if (length < 2)
+        return cli_strdup("");
+    if (length % 2) {
+        cli_warnmsg("utf16 length is not multiple of two: %lu\n", (long)length);
+        length--;
+    }
+
+    s2 = cli_malloc(needed);
+    if (!s2)
+        return NULL;
+
+    i = 0;
+
+    if ((utf16[0] == '\xff' && utf16[1] == '\xfe') ||
+        (utf16[0] == '\xfe' && utf16[1] == '\xff')) {
+        i += 2;
+        if (type == E_UTF16)
+            type = (utf16[0] == '\xff') ? E_UTF16_LE : E_UTF16_BE;
+    } else if (type == E_UTF16) {
+        type = E_UTF16_BE;
+    }
+
+    for (j = 0; i < length && j < needed; i += 2) {
+        uint16_t c = cli_readint16(&utf16[i]);
+        if (type == E_UTF16_BE)
+            c = cbswap16(c);
+        if (c < 0x80) {
+            s2[j++] = c;
+        } else if (c < 0x800) {
+            s2[j]     = 0xc0 | (c >> 6);
+            s2[j + 1] = 0x80 | (c & 0x3f);
+            j += 2;
+        } else if (c < 0xd800 || c >= 0xe000) {
+            s2[j]     = 0xe0 | (c >> 12);
+            s2[j + 1] = 0x80 | ((c >> 6) & 0x3f);
+            s2[j + 2] = 0x80 | (c & 0x3f);
+            j += 3;
+        } else if (c < 0xdc00 && i + 3 < length) {
+            uint16_t c2;
+            /* UTF16 high+low surrogate */
+            c  = c - 0xd800 + 0x40;
+            c2 = i + 3 < length ? cli_readint16(&utf16[i + 2]) : 0;
+            c2 -= 0xdc00;
+            s2[j]     = 0xf0 | (c >> 8);
+            s2[j + 1] = 0x80 | ((c >> 2) & 0x3f);
+            s2[j + 2] = 0x80 | ((c & 3) << 4) | (c2 >> 6);
+            s2[j + 3] = 0x80 | (c2 & 0x3f);
+            j += 4;
+            i += 2;
+        } else {
+            cli_dbgmsg("UTF16 surrogate encountered at wrong pos\n");
+            /* invalid char */
+            s2[j++] = 0xef;
+            s2[j++] = 0xbf;
+            s2[j++] = 0xbd;
+        }
+    }
+    if (j >= needed)
+        j = needed - 1;
+    s2[j] = '\0';
+    return s2;
+}
+
+int cli_isutf8(const char* buf, unsigned int len)
+{
+    unsigned int i, j;
+
+    for (i = 0; i < len; i++) {
+        if ((buf[i] & 0x80) == 0) { /* 0xxxxxxx is plain ASCII */
+            continue;
+        } else if ((buf[i] & 0x40) == 0) { /* 10xxxxxx never 1st byte */
+            return 0;
+        } else {
+            unsigned int following;
+
+            if ((buf[i] & 0x20) == 0) { /* 110xxxxx */
+                /* c = buf[i] & 0x1f; */
+                following = 1;
+            } else if ((buf[i] & 0x10) == 0) { /* 1110xxxx */
+                /* c = buf[i] & 0x0f; */
+                following = 2;
+            } else if ((buf[i] & 0x08) == 0) { /* 11110xxx */
+                /* c = buf[i] & 0x07; */
+                following = 3;
+            } else if ((buf[i] & 0x04) == 0) { /* 111110xx */
+                /* c = buf[i] & 0x03; */
+                following = 4;
+            } else if ((buf[i] & 0x02) == 0) { /* 1111110x */
+                /* c = buf[i] & 0x01; */
+                following = 5;
+            } else {
+                return 0;
+            }
+
+            for (j = 0; j < following; j++) {
+                if (++i >= len)
+                    return 0;
+
+                if ((buf[i] & 0x80) == 0 || (buf[i] & 0x40))
+                    return 0;
+
+                /* c = (c << 6) + (buf[i] & 0x3f); */
+            }
+        }
+    }
+
+    return 1;
 }

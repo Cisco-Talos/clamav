@@ -53,15 +53,17 @@
 #include <sys/uio.h>
 #endif
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-#include "shared/actions.h"
-#include "shared/clamdcom.h"
+// libclamav
+#include "clamav.h"
+#include "str.h"
+#include "others.h"
 
-#include "libclamav/str.h"
-#include "libclamav/others.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+#include "actions.h"
+#include "clamdcom.h"
 
 #include "client.h"
 #include "proto.h"
@@ -158,6 +160,100 @@ static int isremote(const struct optstruct *opts)
     }
 
     return 0;
+}
+
+/* pings clamd at the specified interval the number of time specified
+ * return 0 on a succesful connection, 1 upon timeout, -1 on error */
+int16_t ping_clamd(const struct optstruct *opts)
+{
+
+    uint64_t attempts           = 0;
+    uint64_t interval           = 0;
+    char *attempt_str           = NULL;
+    char *interval_str          = NULL;
+    char *errchk                = NULL;
+    uint64_t i                  = 0;
+    const struct optstruct *opt = NULL;
+    int64_t sockd;
+    struct RCVLN rcv;
+    uint16_t ret = 0;
+
+    if (opts == NULL) {
+        logg("!null parameter was passed\n");
+        ret = -1;
+        goto done;
+    }
+
+    /* ping command takes the form --ping [attempts[:interval]] */
+    if (NULL != (opt = optget(opts, "ping"))) {
+        if (NULL != opt->strarg) {
+            if (NULL == (attempt_str = cli_strdup(opt->strarg))) {
+                logg("!could not allocate memory for string\n");
+                ret = -1;
+                goto done;
+            }
+            interval_str = strchr(attempt_str, ':');
+            if ((NULL != interval_str) && (interval_str[0] != '\0')) {
+                interval_str[0] = '\0';
+                interval_str++;
+                interval = cli_strntoul(interval_str, strlen(interval_str), &errchk, 10);
+                if (interval_str + strlen(interval_str) > errchk) {
+                    logg("^interval_str would go past end of buffer\n");
+                    ret = -1;
+                    goto done;
+                }
+            } else {
+                interval = CLAMDSCAN_DEFAULT_PING_INTERVAL;
+            }
+            attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
+            if (attempt_str + strlen(attempt_str) > errchk) {
+                logg("^attmept_str would go past end of buffer\n");
+                ret = -1;
+                goto done;
+            }
+        } else {
+            attempts = CLAMDSCAN_DEFAULT_PING_ATTEMPTS;
+            interval = CLAMDSCAN_DEFAULT_PING_INTERVAL;
+        }
+    }
+
+    isremote(opts);
+    do {
+        if ((sockd = dconnect()) >= 0) {
+            recvlninit(&rcv, sockd);
+
+            if (sendln(sockd, "zPING", 5)) {
+                logg("*PING failed...\n");
+                closesocket(sockd);
+            } else {
+                if (!optget(opts, "wait")->enabled) {
+                    logg("PONG\n");
+                }
+                ret = 0;
+                goto done;
+            }
+        }
+
+        if (i + 1 < attempts) {
+            logg("*PINGing again in %" PRIu64 " seconds\n", interval);
+            sleep(interval);
+        }
+        i++;
+    } while (i < attempts);
+
+    /* timed out */
+    ret = 1;
+    logg("*PING timeout exceeded with no response from clamd\n");
+
+done:
+    if (attempt_str) {
+        free(attempt_str);
+    }
+    attempt_str  = NULL;
+    interval_str = NULL;
+    errchk       = NULL;
+
+    return ret;
 }
 
 /* Turns a relative path into an absolute one
@@ -265,6 +361,18 @@ int client(const struct optstruct *opts, int *infected, int *err)
 {
     int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
     const char *fname;
+
+    if (optget(opts, "wait")->enabled) {
+        int16_t ping_result = ping_clamd(opts);
+        switch (ping_result) {
+            case 0:
+                break;
+            case 1:
+                return (int)CL_ETIMEOUT;
+            default:
+                return (int)CL_ERROR;
+        }
+    }
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
     remote   = isremote(opts) | optget(opts, "stream")->enabled;

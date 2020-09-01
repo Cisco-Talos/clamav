@@ -199,7 +199,7 @@ Timeout in seconds when connecting to database server.
 Default: 10
 .TP
 \fBReceiveTimeout NUMBER\fR
-Timeout in seconds when reading from database server. 0 means no timeout.
+Maximum time in seconds for each download operation. 0 means no timeout.
 .br
 Default: 0
 .TP

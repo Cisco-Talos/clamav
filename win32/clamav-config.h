@@ -11,9 +11,6 @@
 /* enable bind8 compatibility */
 /* #undef BIND_8_COMPAT */
 
-/* "build clamd" */
-#define BUILD_CLAMD 1
-
 /* name of the clamav group */
 #define CLAMAVGROUP "clamav"
 
@@ -87,7 +84,7 @@
 #define DEFAULT_FD_SETSIZE 1024
 
 /* use fanotify */
-/* #undef FANOTIFY */
+/* #undef HAVE_SYS_FANOTIFY_H */
 
 /* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
 /* #undef FDPASS_NEED_XOPEN */
@@ -245,7 +242,7 @@
 #define HAVE_LIMITS_H 1
 
 /* Define this if a modern libltdl is already installed */
-#define HAVE_LTDL 1
+/* #undef HAVE_LTDL 1 */
 
 /* Define to 1 if you have the <mach-o/dyld.h> header file. */
 /* #undef HAVE_MACH_O_DYLD_H */
@@ -483,7 +480,7 @@
 #define PACKAGE_NAME "ClamAV"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ClamAV 0.103.0-devel"
+#define PACKAGE_STRING "ClamAV 0.103.0-rc2"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "clamav"
@@ -492,7 +489,7 @@
 #define PACKAGE_URL "https://www.clamav.net/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.103.0-devel"
+#define PACKAGE_VERSION "0.103.0-rc2"
 
 /* scan buffer size */
 #define SCANBUFF 131072
@@ -528,7 +525,7 @@
 /* #undef USE_SYSLOG */
 
 /* Version number of package */
-#define VERSION "0.103.0-devel"
+#define VERSION "0.103.0-rc2"
 
 /* Version suffix for package */
 #define VERSION_SUFFIX ""
@@ -575,6 +572,9 @@
 /* Define to `long int' if <sys/types.h> does not define. */
 /* #undef off_t */
 
+/* Define to `int' */
+typedef int ssize_t;
+
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is
    supported directly.  */
@@ -590,7 +590,7 @@
 #endif
 
 /* Define to "int" if <sys/socket.h> does not define. */
-/* #undef socklen_t */
+typedef int socklen_t;
 
 #define LLVM_VERSION 28
 

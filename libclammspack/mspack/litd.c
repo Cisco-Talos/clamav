@@ -9,8 +9,8 @@
 
 /* LIT decompression implementation */
 
-#include <system.h>
-#include <lit.h>
+#include "system.h"
+#include "lit.h"
 
 struct mslit_decompressor *
   mspack_create_lit_decompressor(struct mspack_system *sys)

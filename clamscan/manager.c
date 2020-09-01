@@ -49,20 +49,23 @@
 #include <errno.h>
 #include <target.h>
 
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher-ac.h"
+#include "matcher-pcre.h"
+#include "str.h"
+#include "readdb.h"
+
+// shared
+#include "optparser.h"
+#include "actions.h"
+#include "output.h"
+#include "misc.h"
+
 #include "manager.h"
 #include "global.h"
 
-#include "shared/optparser.h"
-#include "shared/actions.h"
-#include "shared/output.h"
-#include "shared/misc.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/others.h"
-#include "libclamav/matcher-ac.h"
-#include "libclamav/matcher-pcre.h"
-#include "libclamav/str.h"
-#include "libclamav/readdb.h"
 
 #ifdef C_LINUX
 dev_t procdev;
@@ -287,7 +290,8 @@ static void clamscan_virus_found_cb(int fd, const char *virname, void *context)
 
 static void scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
 {
-    int ret = 0, fd, included;
+    cl_error_t ret = CL_SUCCESS;
+    int fd, included;
     unsigned i;
     const struct optstruct *opt;
     const char *virname = NULL;
@@ -295,13 +299,28 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     struct metachain chain;
     struct clamscan_cb_data data;
 
+    char *real_filename = NULL;
+
+    if (NULL == filename || NULL == engine || NULL == opts || NULL == options) {
+        logg("scanfile: Invalid args.\n");
+        ret = CL_EARG;
+        goto done;
+    }
+
+    ret = cli_realpath((const char *)filename, &real_filename);
+    if (CL_SUCCESS != ret) {
+        logg("Failed to determine real filename of %s.\n", filename);
+        goto done;
+    }
+    filename = real_filename;
+
     if ((opt = optget(opts, "exclude"))->enabled) {
         while (opt) {
             if (match_regex(filename, opt->strarg) == 1) {
                 if (!printinfected)
                     logg("~%s: Excluded\n", filename);
 
-                return;
+                goto done;
             }
 
             opt = opt->nextarg;
@@ -324,7 +343,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if (!printinfected)
                 logg("~%s: Excluded\n", filename);
 
-            return;
+            goto done;
         }
     }
 
@@ -335,14 +354,14 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             if (!printinfected)
                 logg("~%s: Excluded (/proc)\n", filename);
 
-            return;
+            goto done;
         }
 #endif
         if (!sb.st_size) {
             if (!printinfected)
                 logg("~%s: Empty file\n", filename);
 
-            return;
+            goto done;
         }
 
         info.rblocks += sb.st_size / CL_COUNT_PRECISION;
@@ -355,7 +374,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 logg("~%s: Access denied\n", filename);
 
             info.errors++;
-            return;
+            goto done;
         }
     }
 #endif
@@ -369,7 +388,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
                 free(chain.chains);
                 logg("Unable to allocate memory in scanfile()\n");
                 info.errors++;
-                return;
+                goto done;
             }
             chain.nchains = 1;
         }
@@ -380,7 +399,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
         logg("^Can't open file %s: %s\n", filename, strerror(errno));
         info.errors++;
-        return;
+        goto done;
     }
 
     data.chain    = &chain;
@@ -421,6 +440,12 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     if (ret == CL_VIRUS && action)
         action(filename);
+
+done:
+    if (NULL != real_filename) {
+        free(real_filename);
+    }
+    return;
 }
 
 static void scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options, unsigned int depth, dev_t dev)
@@ -535,20 +560,19 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     }
 }
 
-static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
+static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *options)
 {
     int ret;
-    unsigned int fsize = 0;
-    const char *virname, *tmpdir;
+    unsigned int fsize  = 0;
+    const char *virname = NULL;
+    const char *tmpdir  = NULL;
     char *file, buff[FILEBUFF];
     size_t bread;
     FILE *fs;
     struct clamscan_cb_data data;
 
-    if (optget(opts, "tempdir")->enabled) {
-        tmpdir = optget(opts, "tempdir")->strarg;
-    } else {
-        /* check write access */
+    tmpdir = cl_engine_get_str(engine, CL_ENGINE_TMPDIR, NULL);
+    if (NULL == tmpdir) {
         tmpdir = cli_gettmpdir();
     }
 
@@ -1150,6 +1174,19 @@ int scanmanager(const struct optstruct *opts)
                 return 2;
             }
         }
+
+        if ((opt = optget(opts, "structured-cc-mode"))->active) {
+            switch (opt->numarg) {
+                case 0:
+                    break;
+                case 1:
+                    options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
+                    break;
+                default:
+                    logg("!Invalid argument for --structured-cc-mode\n");
+                    return 2;
+            }
+        }
     } else {
         options.heuristic &= ~CL_SCAN_HEURISTIC_STRUCTURED;
     }
@@ -1172,7 +1209,7 @@ int scanmanager(const struct optstruct *opts)
         }
 
     } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-        ret = scanstdin(engine, opts, &options);
+        ret = scanstdin(engine, &options);
     } else {
         if (opts->filename && optget(opts, "file-list")->enabled)
             logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");

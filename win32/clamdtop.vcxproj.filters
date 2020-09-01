@@ -21,14 +21,8 @@
     <ClCompile Include="compat\strptime.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\misc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\shared\misc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="clamav-config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -41,5 +35,10 @@
     <ClInclude Include="..\libclamav\clamav.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\clamdtop.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

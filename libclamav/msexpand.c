@@ -93,7 +93,7 @@ struct msexp_hdr {
         return CL_SUCCESS;                           \
     w = 0;
 
-int cli_msexpand(cli_ctx *ctx, int ofd)
+cl_error_t cli_msexpand(cli_ctx *ctx, int ofd)
 {
     const struct msexp_hdr *hdr;
     uint8_t i, mask, bits;

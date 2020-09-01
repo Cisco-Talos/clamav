@@ -55,26 +55,29 @@
 #include <termios.h>
 #endif
 
+// libclamav
+#include "clamav.h"
+#include "matcher.h"
+#include "cvd.h"
+#include "str.h"
+#include "ole2_extract.h"
+#include "htmlnorm.h"
+#include "textnorm.h"
+#include "default.h"
+#include "fmap.h"
+#include "readdb.h"
+#include "others.h"
+#include "pe.h"
+#include "entconv.h"
+
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
+#include "cdiff.h"
+#include "tar.h"
+
 #include "vba.h"
-
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
-#include "shared/cdiff.h"
-#include "shared/tar.h"
-
-#include "libclamav/clamav.h"
-#include "libclamav/matcher.h"
-#include "libclamav/cvd.h"
-#include "libclamav/str.h"
-#include "libclamav/ole2_extract.h"
-#include "libclamav/htmlnorm.h"
-#include "libclamav/textnorm.h"
-#include "libclamav/default.h"
-#include "libclamav/fmap.h"
-#include "libclamav/readdb.h"
-#include "libclamav/others.h"
-#include "libclamav/pe.h"
 
 #define MAX_DEL_LOOKAHEAD 5000
 
@@ -233,7 +236,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
         free(ctx.containers);
         free(ctx.fmap);
         close(fd);
@@ -353,7 +356,7 @@ static int htmlnorm(const struct optstruct *opts)
         return -1;
     }
 
-    if ((map = fmap(fd, 0, 0))) {
+    if ((map = fmap(fd, 0, 0, optget(opts, "html-normalise")->strarg))) {
         html_normalise_map(map, ".", NULL, NULL);
         funmap(map);
     } else
@@ -387,7 +390,7 @@ static int asciinorm(const struct optstruct *opts)
         return -1;
     }
 
-    if (!(map = fmap(fd, 0, 0))) {
+    if (!(map = fmap(fd, 0, 0, fname))) {
         mprintf("!fmap: Could not map fd %d\n", fd);
         close(fd);
         free(norm_buff);
@@ -457,7 +460,7 @@ static int utf16decode(const struct optstruct *opts)
     }
     sprintf(newname, "%s.ascii", fname);
 
-    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU)) < 0) {
+    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) < 0) {
         mprintf("!utf16decode: Can't create file %s\n", newname);
         free(newname);
         close(fd1);
@@ -1721,8 +1724,9 @@ static int vbadump(const struct optstruct *opts)
     int fd, hex_output;
     char *dir;
     const char *pt;
-    struct uniq *vba = NULL;
+    struct uniq *files = NULL;
     cli_ctx *ctx;
+    int has_vba = 0, has_xlm = 0;
 
     if (optget(opts, "vba-hex")->enabled) {
         hex_output = 1;
@@ -1755,7 +1759,7 @@ static int vbadump(const struct optstruct *opts)
         free(dir);
         return -1;
     }
-    if (cli_ole2_extract(dir, ctx, &vba)) {
+    if (cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm)) {
         destroy_ctx(-1, ctx);
         cli_rmdirs(dir);
         free(dir);
@@ -1763,8 +1767,8 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
     destroy_ctx(-1, ctx);
-    if (vba)
-        sigtool_vba_scandir(dir, hex_output, vba);
+    if (has_vba && files)
+        sigtool_vba_scandir(dir, hex_output, files);
     cli_rmdirs(dir);
     free(dir);
     close(fd);
@@ -2257,13 +2261,13 @@ static void matchsig(const char *sig, const char *offset, int fd)
     }
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, NULL))) {
         free(ctx.containers);
         free(ctx.fmap);
         cl_engine_free(engine);
         return;
     }
-    ret = cli_fmap_scandesc(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+    ret = cli_scan_fmap(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
     res = acres;
     while (res) {
         matches++;
@@ -2850,7 +2854,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[2], '-')) {
-            sz = cli_strtokenize(tokens[2], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[2], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2871,7 +2875,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[4], '-')) {
-            sz = cli_strtokenize(tokens[4], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[4], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2891,7 +2895,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[5], '-')) {
-            sz = cli_strtokenize(tokens[5], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[5], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -2924,7 +2928,7 @@ static int decodecdb(char **tokens)
             mprintf("ANY\n");
 
         } else if (strchr(tokens[7], '-')) {
-            sz = cli_strtokenize(tokens[7], '-', 2 + 1, (const char **)range);
+            sz = cli_strtokenize(tokens[7], '-', 2, (const char **)range);
             if (sz != 2 || !cli_isnumber(range[0]) || !cli_isnumber(range[1])) {
                 mprintf("!decodesig: Invalid container size range\n");
                 return -1;
@@ -3454,7 +3458,7 @@ static int dumpcerts(const struct optstruct *opts)
 
     lseek(fd, 0, SEEK_SET);
     FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size))) {
+    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
         free(ctx.containers);
         free(ctx.fmap);
         close(fd);

@@ -30,14 +30,17 @@
 #include <errno.h>
 #include <string.h>
 
-#include "shared/output.h"
-
-#include "libclamav/clamav.h"
-#include "thrmgr.h"
+// libclamav
+#include "clamav.h"
 #include "others.h"
 #include "mpool.h"
+
+// shared
+#include "output.h"
+
+#include "thrmgr.h"
+#include "clamd_others.h"
 #include "server.h"
-#include "libclamav/others.h"
 
 #ifdef HAVE_MALLINFO
 #include <malloc.h>
@@ -356,6 +359,45 @@ void thrmgr_destroy(threadpool_t *threadpool)
     free(threadpool->single_queue);
     free(threadpool->bulk_queue);
     free(threadpool);
+    return;
+}
+
+void thrmgr_wait_for_threads(threadpool_t *threadpool)
+{
+    if (!threadpool) {
+        return;
+    }
+    if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
+        logg("!Mutex lock failed\n");
+        exit(-1);
+    }
+    if (threadpool->state != POOL_VALID) {
+        if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+            logg("!Mutex unlock failed\n");
+            exit(-1);
+        }
+        return;
+    }
+
+    /* wait for threads to exit */
+    if (threadpool->thr_alive > 0) {
+        if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
+            pthread_mutex_unlock(&threadpool->pool_mutex);
+            return;
+        }
+    }
+    while (threadpool->thr_alive > 0) {
+        if (pthread_cond_wait(&threadpool->pool_cond, &threadpool->pool_mutex) != 0) {
+            pthread_mutex_unlock(&threadpool->pool_mutex);
+            return;
+        }
+    }
+
+    /* Ok threads all exited, we can release the lock */
+    if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+        logg("!Mutex unlock failed\n");
+        exit(-1);
+    }
     return;
 }
 

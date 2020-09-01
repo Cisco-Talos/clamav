@@ -23,6 +23,6 @@
 
 #include "others.h"
 
-int cli_parsetiff(cli_ctx *ctx);
+cl_error_t cli_parsetiff(cli_ctx *ctx);
 
 #endif

@@ -33,13 +33,16 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/bytecode.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "bytecode.h"
+#include "dconf.h"
+#include "bytecode_priv.h"
+#include "pe.h"
+
 #include "checks.h"
-#include "../libclamav/dconf.h"
-#include "../libclamav/bytecode_priv.h"
-#include "../libclamav/pe.h"
+
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
 #endif
@@ -118,7 +121,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         if (fdin < 0 && errno == ENOENT)
             fdin = open_testfile(infile);
         ck_assert_msg(fdin >= 0, "failed to open infile");
-        map = fmap(fdin, 0, 0);
+        map = fmap(fdin, 0, 0, filestr);
         ck_assert_msg(!!map, "unable to fmap infile");
         if (pedata)
             ctx->hooks.pedata = pedata;
@@ -129,17 +132,17 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
     rc = cli_bytecode_run(&bcs, &bc, ctx);
     ck_assert_msg(rc == fail, "cli_bytecode_run failed, expected: %u, have: %u\n",
-                    fail, rc);
+                  fail, rc);
 
     if (rc == CL_SUCCESS) {
         v = cli_bytecode_context_getresult_int(ctx);
         ck_assert_msg(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
-                        expected, v);
+                      expected, v);
     }
     if (infile && expectedvirname) {
         ck_assert_msg(ctx->virname &&
-                        !strcmp(ctx->virname, expectedvirname),
-                    "Invalid virname, expected: %s\n", expectedvirname);
+                          !strcmp(ctx->virname, expectedvirname),
+                      "Invalid virname, expected: %s\n", expectedvirname);
     }
     cli_bytecode_context_destroy(ctx);
     if (map)
@@ -494,14 +497,14 @@ static void runload(const char *dbname, struct cl_engine *engine, unsigned signo
 
     rc = cl_load(str, engine, &signo, CL_DB_STDOPT);
     ck_assert_msg(rc == CL_SUCCESS, "failed to load %s: %s\n",
-                    dbname, cl_strerror(rc));
+                  dbname, cl_strerror(rc));
     ck_assert_msg(signo == signoexp, "different number of signatures loaded, expected %u, got %u\n",
-                    signoexp, signo);
+                  signoexp, signo);
     free(str);
 
     rc = cl_engine_compile(engine);
     ck_assert_msg(rc == CL_SUCCESS, "failed to load %s: %s\n",
-                    dbname, cl_strerror(rc));
+                  dbname, cl_strerror(rc));
 }
 
 START_TEST(test_load_bytecode_jit)

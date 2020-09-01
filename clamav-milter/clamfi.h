@@ -22,7 +22,7 @@
 #ifndef _CLAMFI_H
 #define _CLAMFI_H
 
-#include "shared/optparser.h"
+#include "optparser.h"
 #include <libmilter/mfapi.h>
 
 extern uint64_t maxfilesize;

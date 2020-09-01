@@ -133,7 +133,8 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
     int last_header_bad = 0;
     int limitnear       = 0;
     unsigned int files  = 0;
-    char fullname[NAME_MAX + 1];
+    char fullname[PATH_MAX + 1];
+    char name[101];
     size_t pos      = 0;
     size_t currsize = 0;
     char zero[BLOCKSIZE];
@@ -167,12 +168,12 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             char type;
             int directory, skipEntry = 0;
             int checksum = -1;
-            char magic[7], name[101], osize[TARSIZELEN + 1];
+            char magic[7], osize[TARSIZELEN + 1];
             currsize = 0;
 
             if (fout >= 0) {
                 lseek(fout, 0, SEEK_SET);
-                ret = cli_magic_scandesc(fout, fullname, ctx);
+                ret = cli_magic_scan_desc(fout, fullname, ctx, name);
                 close(fout);
                 if (!ctx->engine->keeptmp)
                     if (cli_unlink(fullname)) return CL_EUNLINK;
@@ -367,7 +368,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
     }
     if (fout >= 0) {
         lseek(fout, 0, SEEK_SET);
-        ret = cli_magic_scandesc(fout, fullname, ctx);
+        ret = cli_magic_scan_desc(fout, fullname, ctx, name);
         close(fout);
         if (!ctx->engine->keeptmp)
             if (cli_unlink(fullname)) return CL_EUNLINK;

@@ -28,8 +28,8 @@
 
 #include "others.h"
 
-typedef int (*zip_cb)(int fd, const char *filepath, cli_ctx *ctx);
-#define zip_scan_cb cli_magic_scandesc
+typedef cl_error_t (*zip_cb)(int fd, const char *filepath, cli_ctx *ctx, const char *name);
+#define zip_scan_cb cli_magic_scan_desc
 
 #define MAX_ZIP_REQUESTS 10
 struct zip_requests {

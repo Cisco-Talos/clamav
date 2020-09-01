@@ -52,13 +52,13 @@
 
 #include <errno.h>
 
-#include "libclamav/others.h"
-#include "libclamav/clamav.h"
-#include "libclamav/dconf.h"
-#include "libclamav/stats_json.h"
-#include "libclamav/stats.h"
-#include "libclamav/hostid.h"
-#include "libclamav/www.h"
+#include "others.h"
+#include "clamav.h"
+#include "dconf.h"
+#include "stats_json.h"
+#include "stats.h"
+#include "hostid_internal.h"
+#include "www.h"
 
 #define DEBUG_STATS 0
 

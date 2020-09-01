@@ -21,6 +21,10 @@
 EXTRA_DIST = html $(top_srcdir)/docs/man/*.in
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 man/clamav-milter.conf.5 man/freshclam.conf.5 man/clamconf.1 man/clamdtop.1 man/clambc.1
 
+if BUILD_CLAMONACC
+man_MANS += man/clamonacc.8
+endif
+
 if ENABLE_CLAMSUBMIT
 man_MANS += man/clamsubmit.1
 endif

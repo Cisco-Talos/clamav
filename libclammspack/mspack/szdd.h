@@ -10,7 +10,7 @@
 #ifndef MSPACK_SZDD_H
 #define MSPACK_SZDD_H 1
 
-#include <lzss.h>
+#include "lzss.h"
 
 /* input buffer size during decompression - not worth parameterising IMHO */
 #define SZDD_INPUT_SIZE (2048)

@@ -176,7 +176,7 @@ blobGetFilename(const blob *b)
 int blobAddData(blob *b, const unsigned char *data, size_t len)
 {
 #if HAVE_CLI_GETPAGESIZE
-    static int pagesize;
+    static int pagesize = 0;
     int growth;
 #endif
 
@@ -225,6 +225,10 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = growth;
         b->data = cli_malloc(growth);
+        if (NULL == b->data) {
+            b->size = 0;
+            return -1;
+        }
     } else if (b->size < b->len + (off_t)len) {
         unsigned char *p = cli_realloc(b->data, b->size + growth);
 
@@ -241,6 +245,10 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
         b->size = (off_t)len * 4;
         b->data = cli_malloc(b->size);
+        if (NULL == b->data) {
+            b->size = 0;
+            return -1;
+        }
     } else if (b->size < b->len + (off_t)len) {
         unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
 
@@ -255,6 +263,9 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
     if (b->data) {
         memcpy(&b->data[b->len], data, len);
         b->len += (off_t)len;
+    } else {
+        b->size = 0;
+        return -1;
     }
     return 0;
 }
@@ -309,8 +320,9 @@ void blobClose(blob *b)
         } else {
             unsigned char *ptr = cli_realloc(b->data, b->len);
 
-            if (ptr == NULL)
+            if (ptr == NULL) {
                 return;
+            }
 
             cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
                        (unsigned long)(b->size - b->len),
@@ -505,7 +517,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
         close(fb->fd);
         return;
     }
-    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->engine->tmpdir : NULL, fullname);
+    blobSetFilename(&fb->b, fb->ctx ? fb->ctx->sub_tmpdir : NULL, fullname);
     if (fb->b.data)
         if (fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
             free(fb->b.data);
@@ -584,7 +596,7 @@ int fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
                     *ctx->scanned += (unsigned long)len / CL_COUNT_PRECISION;
                 fb->bytes_scanned += (unsigned long)len;
 
-                if ((len > 5) && cli_updatelimits(ctx, len) == CL_CLEAN && (cli_scanbuff(data, (unsigned int)len, 0, ctx->virname, ctx->engine, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS)) {
+                if ((len > 5) && cli_updatelimits(ctx, len) == CL_CLEAN && (cli_scan_buff(data, (unsigned int)len, 0, ctx->virname, ctx->engine, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS)) {
                     cli_dbgmsg("fileblobAddData: found %s\n", cli_get_last_virus_str(ctx->virname));
                     fb->isInfected = 1;
                 }
@@ -649,7 +661,7 @@ int fileblobScan(const fileblob *fb)
         virus_found = 1;
     }
 
-    rc = cli_magic_scandesc(fb->fd, fb->fullname, fb->ctx);
+    rc = cli_magic_scan_desc(fb->fd, fb->fullname, fb->ctx, fb->b.name);
     if (rc == CL_VIRUS || virus_found != 0) {
         cli_dbgmsg("%s is infected\n", fb->fullname);
         return CL_VIRUS;

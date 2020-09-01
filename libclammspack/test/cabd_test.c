@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mspack.h>
-#include <system.h>
+#include "system.h"
 
 #define __tf3(x) #x
 #define __tf2(x) __tf3(x)
@@ -207,7 +207,7 @@ void cabd_search_test_01() {
 
     mspack_destroy_cab_decompressor(cabd);
 }
-  
+
 /* search file using 1-byte buffer */
 void cabd_search_test_02() {
     struct mscab_decompressor *cabd;
@@ -279,7 +279,7 @@ void cabd_merge_test_01() {
     cabd->close(cabd, cab1);
     mspack_destroy_cab_decompressor(cabd);
 }
-  
+
 /* test merging a normal 5 part single folder cabinet set with slightly
  * haphazard ordering.  should still merge fine */
 void cabd_merge_test_02() {

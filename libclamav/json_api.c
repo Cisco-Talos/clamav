@@ -193,7 +193,6 @@ cl_error_t cli_jsonint(json_object *obj, const char *key, int32_t i)
     return CL_SUCCESS;
 }
 
-#ifdef JSON10
 cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
 {
     json_type objty;
@@ -226,63 +225,6 @@ cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
 
     return CL_SUCCESS;
 }
-#else
-cl_error_t cli_jsonint64(json_object *obj, const char *key, int64_t i)
-{
-    json_type objty;
-    int32_t li, hi;
-    json_object *fpobj0, *fpobj1;
-    json_object *fparr;
-    if (NULL == obj) {
-        cli_dbgmsg("json: no parent object specified to cli_jsonint64\n");
-        return CL_ENULLARG;
-    }
-    objty = json_object_get_type(obj);
-
-    if (objty == json_type_object) {
-        if (NULL == key) {
-            cli_dbgmsg("json: null string specified as key to cli_jsonint64\n");
-            return CL_ENULLARG;
-        }
-    } else if (objty != json_type_array) {
-        return CL_EARG;
-    }
-
-    fparr = json_object_new_array();
-    if (NULL == fparr) {
-        cli_errmsg("json: no memory for json array object.\n");
-        return CL_EMEM;
-    }
-
-    hi = (uint32_t)((i & 0xFFFFFFFF00000000) >> 32);
-    li = (uint32_t)(i & 0xFFFFFFFF);
-
-    fpobj0 = json_object_new_int(li);
-    if (NULL == fpobj0) {
-        cli_errmsg("json: no memory for json int object.\n");
-        json_object_put(fparr);
-        return CL_EMEM;
-    }
-    fpobj1 = json_object_new_int(hi);
-    if (NULL == fpobj1) {
-        cli_errmsg("json: no memory for json int object.\n");
-        json_object_put(fparr);
-        json_object_put(fpobj0);
-        return CL_EMEM;
-    }
-
-    /* little-endian array */
-    json_object_array_add(fparr, fpobj0);
-    json_object_array_add(fparr, fpobj1);
-    if (objty == json_type_object)
-        json_object_object_add(obj, key, fparr);
-    else if (objty == json_type_array)
-        json_object_array_add(obj, fparr);
-
-    return CL_SUCCESS;
-}
-//#define cli_jsonint64(o,n,i) cli_dbgmsg("%s: %lld [%llx]\n", n, i, i)
-#endif
 
 cl_error_t cli_jsonbool(json_object *obj, const char *key, int i)
 {

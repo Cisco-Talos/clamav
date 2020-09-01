@@ -20,8 +20,9 @@
 #ifndef __VBA_H
 #define __VBA_H
 
-#include "libclamav/uniq.h"
-#include "libclamav/others.h"
+// libclamav
+#include "uniq.h"
+#include "others.h"
 
 int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
 cli_ctx *convenience_ctx(int fd);

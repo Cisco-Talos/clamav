@@ -23,13 +23,16 @@
 #include "clamav-config.h"
 #endif
 
+#include <Windows.h>
+#include <string.h>
+
 #include "utf8_util.h"
 
 char *cli_strdup_to_utf8(const char *s)
 {
     char *r = cli_to_utf8_maybe_alloc(s);
     if (!r) return NULL;
-    if (r == s) return strdup(r);
+    if (r == s) return _strdup(r);
     return r;
 }
 

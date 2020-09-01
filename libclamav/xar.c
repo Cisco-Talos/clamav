@@ -279,7 +279,7 @@ static int xar_get_toc_data_values(xmlTextReaderPtr reader, size_t *length, size
      ctx - pointer to cli_ctx
   Returns:
      CL_SUCCESS - subdoc found and clean scan (or virus found and SCAN_ALLMATCHES), or no subdocument
-     other - error return code from cli_mem_scandesc()
+     other - error return code from cli_magic_scan_buff()
 */
 static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
 {
@@ -308,13 +308,13 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
-            rc = cli_mem_scandesc(subdoc, subdoc_len, ctx);
+            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL);
             if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
 
             /* make a file to leave if --leave-temps in effect */
             if (ctx->engine->keeptmp) {
-                if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+                if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
                     cli_dbgmsg("cli_scanxar: Can't create temporary file for subdocument.\n");
                 } else {
                     cli_dbgmsg("cli_scanxar: Writing subdoc to temp file %s.\n", tmpname);
@@ -437,7 +437,8 @@ int cli_scanxar(cli_ctx *ctx)
     int a_hash, e_hash;
     unsigned char *a_cksum = NULL, *e_cksum = NULL;
     void *a_hash_ctx = NULL, *e_hash_ctx = NULL;
-    char result[SHA1_HASH_SIZE];
+    char e_hash_result[SHA1_HASH_SIZE];
+    char a_hash_result[SHA1_HASH_SIZE];
 
     memset(&strm, 0x00, sizeof(z_stream));
 
@@ -490,6 +491,7 @@ int cli_scanxar(cli_ctx *ctx)
     }
     rc = inflate(&strm, Z_SYNC_FLUSH);
     if (rc != Z_OK && rc != Z_STREAM_END) {
+        inflateEnd(&strm);
         cli_dbgmsg("cli_scanxar:inflate error %i \n", rc);
         rc = CL_EFORMAT;
         goto exit_toc;
@@ -515,7 +517,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_mem_scandesc(toc, hdr.toc_length_decompressed, ctx);
+    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
             goto exit_toc;
@@ -523,7 +525,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* make a file to leave if --leave-temps in effect */
     if (ctx->engine->keeptmp) {
-        if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't create temporary file for TOC.\n");
             goto exit_toc;
         }
@@ -572,7 +574,7 @@ int cli_scanxar(cli_ctx *ctx)
 
         at = offset + hdr.toc_length_compressed + hdr.size;
 
-        if ((rc = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
+        if ((rc = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
             cli_dbgmsg("cli_scanxar: Can't generate temporary file.\n");
             goto exit_reader;
         }
@@ -775,7 +777,7 @@ int cli_scanxar(cli_ctx *ctx)
             default:
             case CL_TYPE_BZ:
             case CL_TYPE_XZ:
-                /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scandesc does the rest */
+                /* for uncompressed, bzip2, xz, and unknown, just pull the file, cli_magic_scan_desc does the rest */
                 do_extract_cksum = 0;
                 {
                     size_t writelen = MIN(map->len - at, length);
@@ -804,17 +806,25 @@ int cli_scanxar(cli_ctx *ctx)
                 }
         } /* end of switch */
 
+        if (a_hash_ctx != NULL) {
+            xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
+            a_hash_ctx = NULL;
+        } else if (rc == CL_SUCCESS) {
+            cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
+            cksum_fails++;
+        }
+        if (e_hash_ctx != NULL) {
+            xar_hash_final(e_hash_ctx, e_hash_result, e_hash);
+            e_hash_ctx = NULL;
+        } else if (rc == CL_SUCCESS) {
+            cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
+            cksum_fails++;
+        }
+
         if (rc == CL_SUCCESS) {
-            if (a_hash_ctx != NULL) {
-                xar_hash_final(a_hash_ctx, result, a_hash);
-                a_hash_ctx = NULL;
-            } else {
-                cli_dbgmsg("cli_scanxar: archived-checksum missing.\n");
-                cksum_fails++;
-            }
             if (a_cksum != NULL) {
                 expected = cli_hex2str((char *)a_cksum);
-                if (xar_hash_check(a_hash, result, expected) != 0) {
+                if (xar_hash_check(a_hash, a_hash_result, expected) != 0) {
                     cli_dbgmsg("cli_scanxar: archived-checksum mismatch.\n");
                     cksum_fails++;
                 } else {
@@ -823,17 +833,10 @@ int cli_scanxar(cli_ctx *ctx)
                 free(expected);
             }
 
-            if (e_hash_ctx != NULL) {
-                xar_hash_final(e_hash_ctx, result, e_hash);
-                e_hash_ctx = NULL;
-            } else {
-                cli_dbgmsg("cli_scanxar: extracted-checksum(unarchived-checksum) missing.\n");
-                cksum_fails++;
-            }
             if (e_cksum != NULL) {
                 if (do_extract_cksum) {
                     expected = cli_hex2str((char *)e_cksum);
-                    if (xar_hash_check(e_hash, result, expected) != 0) {
+                    if (xar_hash_check(e_hash, e_hash_result, expected) != 0) {
                         cli_dbgmsg("cli_scanxar: extracted-checksum mismatch.\n");
                         cksum_fails++;
                     } else {
@@ -843,14 +846,14 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
 
-            rc = cli_magic_scandesc(fd, tmpname, ctx);
+            rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));
                     if (!SCAN_ALLMATCHES)
                         goto exit_tmpfile;
                 } else if (rc != CL_BREAK) {
-                    cli_dbgmsg("cli_scanxar: cli_magic_scandesc error %i\n", rc);
+                    cli_dbgmsg("cli_scanxar: cli_magic_scan_desc error %i\n", rc);
                     goto exit_tmpfile;
                 }
             }
@@ -869,9 +872,9 @@ int cli_scanxar(cli_ctx *ctx)
 exit_tmpfile:
     xar_cleanup_temp_file(ctx, fd, tmpname);
     if (a_hash_ctx != NULL)
-        xar_hash_final(a_hash_ctx, result, a_hash);
+        xar_hash_final(a_hash_ctx, a_hash_result, a_hash);
     if (e_hash_ctx != NULL)
-        xar_hash_final(e_hash_ctx, result, e_hash);
+        xar_hash_final(e_hash_ctx, e_hash_result, e_hash);
 
 exit_reader:
     if (a_cksum != NULL)

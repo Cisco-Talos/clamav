@@ -60,13 +60,13 @@ limitations under the License.
 #include <yara/lexer.h>
 #include <yara/parser.h>
 #else
-#include "libclamav/yara_clam.h"
-#include "libclamav/yara_compiler.h"
+#include "yara_clam.h"
+#include "yara_compiler.h"
 #include "clamav-config.h"
-#include "libclamav/yara_grammar.h"
-#include "libclamav/yara_lexer.h"
-#include "libclamav/yara_parser.h"
-#include "libclamav/yara_exec.h"
+#include "yara_grammar.h"
+#include "yara_lexer.h"
+#include "yara_parser.h"
+#include "yara_exec.h"
 #endif
 
 #define YYERROR_VERBOSE
@@ -120,6 +120,7 @@ limitations under the License.
 
 // %debug
 %name-prefix="yara_yy"
+%output "yara_grammar.c"
 %pure-parser
 %parse-param {void *yyscanner}
 %parse-param {YR_COMPILER* compiler}
@@ -233,7 +234,7 @@ rules
     | rules rule
     | rules import
     | rules error rule      /* on error skip until next rule..*/
-    | rules error 'include' /* .. or include statement */
+    | rules error "include" /* .. or include statement */
     ;
 
 

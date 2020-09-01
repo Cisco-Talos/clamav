@@ -673,6 +673,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     uint32_t mbchar  = 0;
     uint32_t mbchar2 = 0;
 
+    /*
+     * Initialize stack buffers.
+     */
+    memset(filename, 0, sizeof(filename));
+    memset(tag, 0, sizeof(tag));
+    memset(tag_arg, 0, sizeof(tag_arg));
+    memset(tag_val, 0, sizeof(tag_val));
+    memset(entity_val, 0, sizeof(entity_val));
+
     tag_args.scanContents = 0; /* do we need to store the contents of <a></a>?*/
     contents.pos          = 0;
     if (!m_area) {
@@ -697,12 +706,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     tag_args.value    = NULL;
     tag_args.contents = NULL;
     if (dirname) {
-        snprintf(filename, 1024, "%s" PATHSEP "rfc2397", dirname);
-        if (mkdir(filename, 0700) && errno != EEXIST) {
-            file_buff_o2 = file_buff_text = NULL;
-            goto abort;
-        }
-
         file_buff_o2 = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
         if (!file_buff_o2) {
             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_o2\n");
@@ -1452,9 +1455,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
                         int64_t increment = 0;
 
-                        if (hex && (value >> 32) * 16 < INT32_MAX) {
+                        if (hex && value < INT64_MAX / 16) {
                             value *= 16;
-                        } else if ((value >> 32) * 10 < INT32_MAX) {
+                        } else if (value < INT64_MAX / 10) {
                             value *= 10;
                         } else {
                             html_output_c(file_buff_o2, value);
@@ -1611,6 +1614,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     break;
                 case HTML_RFC2397_INIT:
                     if (dirname) {
+                        STATBUF statbuf;
+
                         if (NULL != file_tmp_o1) {
                             if (file_tmp_o1->fd != -1) {
                                 html_output_flush(file_tmp_o1);
@@ -1625,7 +1630,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
                             goto abort;
                         }
+                        file_tmp_o1->fd = -1;
+
+                        /* Create rfc2397 directory if it doesn't already exist */
                         snprintf(filename, 1024, "%s" PATHSEP "rfc2397", dirname);
+                        if (LSTAT(filename, &statbuf) == -1) {
+                            if (mkdir(filename, 0700) && errno != EEXIST) {
+                                cli_errmsg("Failed to create directory: %s\n", dirname);
+                                goto abort;
+                            }
+                        }
+
                         tmp_file = cli_gentemp(filename);
                         if (!tmp_file) {
                             goto abort;
@@ -1729,7 +1744,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     state = HTML_RFC2397_DATA;
                     break;
                 case HTML_ESCAPE_CHAR:
-                    if ((value >> 32) * 16 < INT32_MAX) {
+                    if (value < INT64_MAX / 16) {
                         value *= 16;
                     } else {
                         state      = next_state;

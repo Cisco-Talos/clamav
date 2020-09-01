@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <locale.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -39,17 +40,19 @@
 #include <sys/resource.h>
 #endif
 
+// libclamav
+#include "clamav.h"
 #include "others.h"
+#include "str.h"
+
+// shared
+#include "misc.h"
+#include "output.h"
+#include "actions.h"
+#include "optparser.h"
+
 #include "global.h"
 #include "manager.h"
-
-#include "shared/misc.h"
-#include "shared/output.h"
-#include "shared/actions.h"
-#include "shared/optparser.h"
-
-#include "libclamav/str.h"
-#include "libclamav/clamav.h"
 
 void help(void);
 
@@ -74,11 +77,16 @@ int main(int argc, char **argv)
     if (check_flevel())
         exit(2);
 
-#if !defined(_WIN32) && !defined(C_BEOS)
+#if !defined(_WIN32)
+    if(!setlocale(LC_CTYPE, "")) {
+        mprintf("^Failed to set locale\n");
+    }
+#if !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
-#endif
+#endif /* !C_BEOS */
+#endif /* !_WIN32 */
 
     cl_initialize_crypto();
 
@@ -263,6 +271,8 @@ void help(void)
     mprintf("\n");
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
     mprintf("    --bytecode-unsigned[=yes/no(*)]      Load unsigned bytecode\n");
+    mprintf("                                         **Caution**: You should NEVER run bytecode signatures from untrusted sources.\n");
+    mprintf("                                         Doing so may result in arbitrary code execution.\n");
     mprintf("    --bytecode-timeout=N                 Set bytecode timeout (in milliseconds)\n");
     mprintf("    --statistics[=none(*)/bytecode/pcre] Collect and print execution statistics\n");
     mprintf("    --detect-pua[=yes/no(*)]             Detect Possibly Unwanted Applications\n");
@@ -272,6 +282,7 @@ void help(void)
     mprintf("    --structured-ssn-format=X            SSN format (0=normal,1=stripped,2=both)\n");
     mprintf("    --structured-ssn-count=N             Min SSN count to generate a detect\n");
     mprintf("    --structured-cc-count=N              Min CC count to generate a detect\n");
+    mprintf("    --structured-cc-mode=X               CC mode (0=credit debit and private label, 1=credit cards only\n");
     mprintf("    --scan-mail[=yes(*)/no]              Scan mail files\n");
     mprintf("    --phishing-sigs[=yes(*)/no]          Enable email signature-based phishing detection\n");
     mprintf("    --phishing-scan-urls[=yes(*)/no]     Enable URL signature-based phishing detection\n");
@@ -299,7 +310,7 @@ void help(void)
     mprintf("    --nocerts                            Disable authenticode certificate chain verification in PE files\n");
     mprintf("    --dumpcerts                          Dump authenticode certificate chain in PE files\n");
     mprintf("\n");
-    mprintf("    --max-scantime=#n                    Scan time longer than this will be skipped and assumed clean\n");
+    mprintf("    --max-scantime=#n                    Scan time longer than this will be skipped and assumed clean (milliseconds)\n");
     mprintf("    --max-filesize=#n                    Files larger than this will be skipped and assumed clean\n");
     mprintf("    --max-scansize=#n                    The maximum amount of data to scan for each container file (**)\n");
     mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (**)\n");

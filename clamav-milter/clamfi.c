@@ -34,10 +34,13 @@
 
 #include <libmilter/mfapi.h>
 
-#include "libclamav/clamav.h"
-#include "shared/optparser.h"
-#include "shared/output.h"
-#include "libclamav/others.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+
+// shared
+#include "optparser.h"
+#include "output.h"
 
 #include "connpool.h"
 #include "netcode.h"

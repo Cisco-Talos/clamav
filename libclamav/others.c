@@ -61,10 +61,17 @@
 #include <libxml/parser.h>
 #endif
 
+#ifdef HAVE_LTDL
+#include "ltdl.h"
+#else // !HAVE_LTDL
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
+#endif // !HAVE_LTDL
+
 #include "clamav.h"
 #include "others.h"
 #include "regex/regex.h"
-#include "ltdl.h"
 #include "matcher-ac.h"
 #include "matcher-pcre.h"
 #include "default.h"
@@ -84,6 +91,11 @@ void (*cli_unrar_close)(void *hArchive);
 int have_rar             = 0;
 static int is_rar_inited = 0;
 
+#define PASTE2(a, b) a #b
+#define PASTE(a, b) PASTE2(a, b)
+
+#ifdef HAVE_LTDL
+
 static int warn_dlerror(const char *msg)
 {
     const char *err = lt_dlerror();
@@ -94,20 +106,8 @@ static int warn_dlerror(const char *msg)
     return 0;
 }
 
-#if 0
-#define lt_preload_symbols lt_libclamav_LTX_preloaded_symbols
-extern const lt_dlsymlist lt_preload_symbols[];
-#endif
-
 static int lt_init(void)
 {
-#if 0
-    /* doesn't work yet */
-    if (lt_dlpreload_default(lt_preload_symbols)) {
-        warn_dlerror("Cannot init ltdl preloaded symbols");
-	/* not fatal */
-    }
-#endif
     if (lt_dlinit()) {
         warn_dlerror("Cannot init ltdl - unrar support unavailable");
         return -1;
@@ -115,10 +115,7 @@ static int lt_init(void)
     return 0;
 }
 
-#define PASTE2(a, b) a #b
-#define PASTE(a, b) PASTE2(a, b)
-
-static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
+static void *load_module(const char *name, const char *featurename)
 {
     static const char *suffixes[] = {
         LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
@@ -163,29 +160,170 @@ static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
     info = lt_dlgetinfo(rhandle);
     if (info)
         cli_dbgmsg("%s support loaded from %s %s\n", featurename, info->filename ? info->filename : "?", info->name ? info->name : "");
-    return rhandle;
+    return (void *)rhandle;
 }
 
-static void cli_rarload(void)
+static void *get_module_function(lt_dlhandle handle, const char *name)
 {
-    lt_dlhandle rhandle;
+    return lt_dlsym(handle, name);
+}
+
+#else // !HAVE_LTDL
+
+static void *load_module(const char *name, const char *featurename)
+{
+    static const char *suffixes[] = {
+        LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
+        PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
+        LT_MODULE_EXT,
+        "." LT_LIBEXT};
+
+    const char *searchpath;
+    char modulename[128];
+    size_t i;
+#ifdef _WIN32
+    HMODULE rhandle = NULL;
+#else
+    void *rhandle;
+#endif
+
+    searchpath = SEARCH_LIBDIR;
+
+    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
+    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
+        snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
+
+#ifdef _WIN32
+        rhandle = LoadLibraryA(modulename);
+#else  // !_WIN32
+        rhandle = dlopen(modulename, RTLD_NOW);
+#endif // !_WIN32
+        if (rhandle) {
+            break;
+        }
+
+        cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+    }
+
+    if (NULL == rhandle) {
+#ifdef _WIN32
+        char *err     = NULL;
+        DWORD lasterr = GetLastError();
+        if (0 < lasterr) {
+            FormatMessageA(
+                FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                lasterr,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR)&err,
+                0,
+                NULL);
+        }
+#else  // !_WIN32
+        const char *err = dlerror();
+#endif // !_WIN32
+
+#ifdef WARN_DLOPEN_FAIL
+        if (NULL == err) {
+            cli_warnmsg("Cannot dlopen %s: Unknown error - %s support unavailable\n", name, featurename);
+        } else {
+            cli_warnmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
+        }
+#else
+        if (NULL == err) {
+            cli_dbgmsg("Cannot dlopen %s: Unknown error - %s support unavailable\n", name, featurename);
+        } else {
+            cli_dbgmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
+        }
+#endif
+
+#ifdef _WIN32
+        if (NULL != err) {
+            LocalFree(err);
+        }
+#endif
+        return rhandle;
+    }
+
+    cli_dbgmsg("%s support loaded from %s\n", featurename, modulename);
+    return (void *)rhandle;
+}
+
+#ifdef _WIN32
+
+static void *get_module_function(HMODULE handle, const char *name)
+{
+    void *procAddress = NULL;
+    procAddress       = GetProcAddress(handle, name);
+    if (NULL == procAddress) {
+        char *err     = NULL;
+        DWORD lasterr = GetLastError();
+        if (0 < lasterr) {
+            FormatMessageA(
+                FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                lasterr,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPCSTR)&err,
+                0,
+                NULL);
+        }
+        if (NULL == err) {
+            cli_warnmsg("Failed to get function \"%s\": Unknown error.\n", name);
+        } else {
+            cli_warnmsg("Failed to get function \"%s\": %s\n", name, err);
+            LocalFree(err);
+        }
+    }
+    return procAddress;
+}
+
+#else  // !_WIN32
+
+static void *get_module_function(void *handle, const char *name)
+{
+    void *procAddress = NULL;
+    procAddress = dlsym(handle, name);
+    if (NULL == procAddress) {
+        const char *err = dlerror();
+        if (NULL == err) {
+            cli_warnmsg("Failed to get function \"%s\": Unknown error.\n", name);
+        } else {
+            cli_warnmsg("Failed to get function \"%s\": %s\n", name, err);
+        }
+    }
+    return procAddress;
+}
+#endif // !_WIN32
+
+#endif // !HAVE_LTDL
+
+static void rarload(void)
+{
+#ifdef _WIN32
+    HMODULE rhandle = NULL;
+#else
+    void *rhandle = NULL;
+#endif
 
     if (is_rar_inited) return;
     is_rar_inited = 1;
 
     if (have_rar) return;
 
-    rhandle = lt_dlfind("libclamunrar_iface", "unrar");
-    if (!rhandle)
+    rhandle = load_module("libclamunrar_iface", "unrar");
+    if (NULL == rhandle)
         return;
 
-    if (!(cli_unrar_open = (cl_unrar_error_t(*)(const char *, void **, char **, uint32_t *, uint8_t))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_open")) ||
-        !(cli_unrar_peek_file_header = (cl_unrar_error_t(*)(void *, unrar_metadata_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header")) ||
-        !(cli_unrar_extract_file = (cl_unrar_error_t(*)(void *, const char *, char *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_file")) ||
-        !(cli_unrar_skip_file = (cl_unrar_error_t(*)(void *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_skip_file")) ||
-        !(cli_unrar_close = (void (*)(void *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_close"))) {
-        /* ideally we should never land here, we'd better warn so */
-        cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
+    if ((NULL == (cli_unrar_open = (cl_unrar_error_t(*)(const char *, void **, char **, uint32_t *, uint8_t))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_open"))) ||
+        (NULL == (cli_unrar_peek_file_header = (cl_unrar_error_t(*)(void *, unrar_metadata_t *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_peek_file_header"))) ||
+        (NULL == (cli_unrar_extract_file = (cl_unrar_error_t(*)(void *, const char *, char *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_extract_file"))) ||
+        (NULL == (cli_unrar_skip_file = (cl_unrar_error_t(*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_skip_file"))) ||
+        (NULL == (cli_unrar_close = (void (*)(void *))get_module_function(rhandle, "libclamunrar_iface_LTX_unrar_close")))) {
+
+        cli_warnmsg("Failed to load function from UnRAR module\n");
+        cli_warnmsg("Version mismatch?\n");
+        cli_warnmsg("UnRAR support unavailable\n");
         return;
     }
     have_rar = 1;
@@ -284,9 +422,9 @@ const char *cl_strerror(int clerror)
     }
 }
 
-int cl_init(unsigned int initoptions)
+cl_error_t cl_init(unsigned int initoptions)
 {
-    int rc;
+    cl_error_t rc;
     struct timeval tv;
     unsigned int pid = (unsigned int)getpid();
 
@@ -295,9 +433,14 @@ int cl_init(unsigned int initoptions)
     cl_initialize_crypto();
 
     /* put dlopen() stuff here, etc. */
+#ifdef HAVE_LTDL
     if (lt_init() == 0) {
-        cli_rarload();
+        rarload();
     }
+#else
+        rarload();
+#endif
+
     gettimeofday(&tv, (struct timezone *)0);
     srand(pid + tv.tv_usec * (pid + 1) + clock());
     rc = bytecode_init();
@@ -470,7 +613,7 @@ struct cl_engine *cl_engine_new(void)
     return new;
 }
 
-int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
+cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
 {
     if (!engine)
         return CL_ENULLARG;
@@ -731,20 +874,28 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
     }
 }
 
-int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
+cl_error_t cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
 {
     if (!engine)
         return CL_ENULLARG;
 
     switch (field) {
         case CL_ENGINE_PUA_CATEGORIES:
+            if (NULL != engine->pua_cats) {
+                MPOOL_FREE(engine->mempool, engine->pua_cats);
+                engine->pua_cats = NULL;
+            }
             engine->pua_cats = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (!engine->pua_cats)
+            if (NULL == engine->pua_cats)
                 return CL_EMEM;
             break;
         case CL_ENGINE_TMPDIR:
+            if (NULL != engine->tmpdir) {
+                MPOOL_FREE(engine->mempool, engine->tmpdir);
+                engine->tmpdir = NULL;
+            }
             engine->tmpdir = CLI_MPOOL_STRDUP(engine->mempool, str);
-            if (!engine->tmpdir)
+            if (NULL == engine->tmpdir)
                 return CL_EMEM;
             break;
         default:
@@ -845,7 +996,7 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     return settings;
 }
 
-int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
+cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
     engine->ac_only            = settings->ac_only;
     engine->ac_mindepth        = settings->ac_mindepth;
@@ -919,7 +1070,7 @@ int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings 
     return CL_SUCCESS;
 }
 
-int cl_engine_settings_free(struct cl_settings *settings)
+cl_error_t cl_engine_settings_free(struct cl_settings *settings)
 {
     if (!settings)
         return CL_ENULLARG;
@@ -1110,9 +1261,9 @@ int cli_unlink(const char *pathname)
         }
         return 0;
 #else
-        char err[128];
-        cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
-        return 1;
+            char err[128];
+            cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+            return 1;
 #endif
     }
     return 0;
@@ -1126,11 +1277,11 @@ void cli_virus_found_cb(cli_ctx *ctx)
 
 cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
 {
-    if (SCAN_ALLMATCHES)
+    if (SCAN_ALLMATCHES) {
         return cli_append_virus(ctx, virname);
-    else if (SCAN_HEURISTIC_PRECEDENCE)
+    } else if (SCAN_HEURISTIC_PRECEDENCE) {
         return cli_append_virus(ctx, virname);
-    else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
+    } else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
         ctx->found_possibly_unwanted = 1;
         ctx->num_viruses++;
         *ctx->virname = virname;
@@ -1140,13 +1291,19 @@ cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
 
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
 {
-    if (ctx->virname == NULL)
+    if (ctx->virname == NULL) {
         return CL_CLEAN;
-    if (ctx->fmap != NULL && (*ctx->fmap) != NULL && CL_VIRUS != cli_checkfp_virus((*ctx->fmap)->maphash, (*ctx->fmap)->len, ctx, virname))
+    }
+    if ((ctx->fmap != NULL) &&
+        ((*ctx->fmap) != NULL) &&
+        (CL_VIRUS != cli_checkfp_virus(ctx, virname, 0))) {
         return CL_CLEAN;
-    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0)
-        if (SCAN_HEURISTIC_PRECEDENCE)
+    }
+    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0) {
+        if (SCAN_HEURISTIC_PRECEDENCE) {
             return CL_CLEAN;
+        }
+    }
     if (ctx->limit_exceeded == 0 || SCAN_ALLMATCHES) {
         ctx->num_viruses++;
         *ctx->virname = virname;
@@ -1292,75 +1449,75 @@ int cli_rmdirs(const char *name)
     return rc;
 }
 #else
-int cli_rmdirs(const char *dirname)
-{
-    DIR *dd;
-    struct dirent *dent;
-    STATBUF maind, statbuf;
-    char *path;
-    char err[128];
+    int cli_rmdirs(const char *dirname)
+    {
+        DIR *dd;
+        struct dirent *dent;
+        STATBUF maind, statbuf;
+        char *path;
+        char err[128];
 
-    chmod(dirname, 0700);
-    if ((dd = opendir(dirname)) != NULL) {
-        while (CLAMSTAT(dirname, &maind) != -1) {
-            if (!rmdir(dirname)) break;
-            if (errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-                cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
-                closedir(dd);
-                return -1;
-            }
+        chmod(dirname, 0700);
+        if ((dd = opendir(dirname)) != NULL) {
+            while (CLAMSTAT(dirname, &maind) != -1) {
+                if (!rmdir(dirname)) break;
+                if (errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
+                    cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
+                    closedir(dd);
+                    return -1;
+                }
 
-            while ((dent = readdir(dd))) {
-                if (dent->d_ino) {
-                    if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                        path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-                        if (!path) {
-                            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
-                            closedir(dd);
-                            return -1;
-                        }
+                while ((dent = readdir(dd))) {
+                    if (dent->d_ino) {
+                        if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+                            path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                            if (!path) {
+                                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
+                                closedir(dd);
+                                return -1;
+                            }
 
-                        sprintf(path, "%s" PATHSEP "%s", dirname, dent->d_name);
+                            sprintf(path, "%s" PATHSEP "%s", dirname, dent->d_name);
 
-                        /* stat the file */
-                        if (LSTAT(path, &statbuf) != -1) {
-                            if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-                                if (rmdir(path) == -1) { /* can't be deleted */
-                                    if (errno == EACCES) {
-                                        cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
-                                        closedir(dd);
+                            /* stat the file */
+                            if (LSTAT(path, &statbuf) != -1) {
+                                if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+                                    if (rmdir(path) == -1) { /* can't be deleted */
+                                        if (errno == EACCES) {
+                                            cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
+                                            closedir(dd);
+                                            free(path);
+                                            return -1;
+                                        }
+                                        if (cli_rmdirs(path)) {
+                                            cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
+                                            free(path);
+                                            closedir(dd);
+                                            return -1;
+                                        }
+                                    }
+                                } else {
+                                    if (cli_unlink(path)) {
                                         free(path);
+                                        closedir(dd);
                                         return -1;
                                     }
-                                    if (cli_rmdirs(path)) {
-                                        cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
-                                        free(path);
-                                        closedir(dd);
-                                        return -1;
-                                    }
-                                }
-                            } else {
-                                if (cli_unlink(path)) {
-                                    free(path);
-                                    closedir(dd);
-                                    return -1;
                                 }
                             }
+                            free(path);
                         }
-                        free(path);
                     }
                 }
+                rewinddir(dd);
             }
-            rewinddir(dd);
+
+        } else {
+            return -1;
         }
 
-    } else {
-        return -1;
+        closedir(dd);
+        return 0;
     }
-
-    closedir(dd);
-    return 0;
-}
 #endif
 
 /* Implement a generic bitset, trog@clamav.net */

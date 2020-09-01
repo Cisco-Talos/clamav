@@ -30,14 +30,17 @@
 #include <signal.h>
 #include <pthread.h>
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
 #endif
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+// libclamav
+#include "others.h"
 
-#include "libclamav/others.h"
+// shared
+#include "optparser.h"
+#include "output.h"
+
 #include "../misc/priv_fts.h"
 #include "../misc/utils.h"
 #include "../client/client.h"
@@ -50,15 +53,6 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code);
 static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data, const char *pathname);
 static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_data, const char *pathname);
-
-static void onas_scan_thread_exit(int sig);
-
-static void onas_scan_thread_exit(int sig)
-{
-    logg("*ScanOnAccess: onas_scan_thread_exit(), signal %d\n", sig);
-
-    pthread_exit(NULL);
-}
 
 /**
  * @brief Safe-scan wrapper, originally used by inotify and fanotify threads, now exists for error checking/convenience.
@@ -119,7 +113,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
     int ret = 0;
     int fd  = 0;
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     uint8_t b_fanotify;
 
     b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
@@ -142,7 +136,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     struct fanotify_response res;
     uint8_t b_fanotify;
 #endif
@@ -160,7 +154,7 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
     b_scan          = event_data->bool_opts & ONAS_SCTH_B_SCAN ? 1 : 0;
     b_deny_on_error = event_data->bool_opts & ONAS_SCTH_B_DENY_ON_E ? 1 : 0;
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
     if (b_fanotify) {
         res.fd       = event_data->fmd->fd;
@@ -175,7 +169,7 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
             logg("*ClamWorker: scan failed with error code %d\n", *ret_code);
         }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
         if (b_fanotify) {
             if ((*err && *ret_code && b_deny_on_error) || *infected) {
                 res.response = FAN_DENY;
@@ -184,7 +178,7 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
 #endif
     }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     if (b_fanotify) {
         if (event_data->fmd->mask & FAN_ALL_PERM_EVENTS) {
             ret = write(event_data->fan_fd, &res, sizeof(res));
@@ -245,7 +239,7 @@ static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data
             fres = CLAMSTAT(curr->fts_path, &sb);
 
             if (event_data->sizelimit) {
-                if (fres != 0 || sb.st_size > event_data->sizelimit) {
+                if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
                     /* okay to skip w/o allow/deny since dir comes from inotify
 					 * events and (probably) won't block w/ protection enabled */
                     event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
@@ -281,7 +275,7 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 
     fres = CLAMSTAT(pathname, &sb);
     if (event_data->sizelimit) {
-        if (fres != 0 || sb.st_size > event_data->sizelimit) {
+        if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
             /* don't skip so we avoid lockups, but don't scan either;
 			 * while it should be obvious, this will unconditionally set
 			 * the bit in the map to 0 regardless of original orientation */
@@ -334,7 +328,7 @@ void *onas_scan_worker(void *arg)
     b_inotify  = event_data->bool_opts & ONAS_SCTH_B_INOTIFY ? 1 : 0;
     b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
     if (b_inotify) {
         logg("*ClamWorker: handling inotify event ...\n");
 
@@ -372,7 +366,7 @@ done:
             event_data->pathname = NULL;
         }
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
         if (NULL != event_data->fmd) {
             free(event_data->fmd);
             event_data->fmd = NULL;

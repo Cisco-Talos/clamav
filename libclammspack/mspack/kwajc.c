@@ -9,8 +9,8 @@
 
 /* KWAJ compression implementation */
 
-#include <system.h>
-#include <kwaj.h>
+#include "system.h"
+#include "kwaj.h"
 
 struct mskwaj_compressor *
   mspack_create_kwaj_compressor(struct mspack_system *sys)

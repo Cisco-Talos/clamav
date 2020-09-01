@@ -34,21 +34,31 @@
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <sys/socket.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/types.h>
 #endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+// libclamav
+#include "clamav.h"
+#include "cvd.h"
+#include "others.h" /* for cli_rmdirs() */
+#include "regex/regex.h"
+#include "version.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/cvd.h"
-#include "libclamav/others.h" /* for cli_rmdirs() */
-#include "libclamav/regex/regex.h"
-#include "libclamav/version.h"
-#include "shared/misc.h"
+#include "optparser.h"
+#include "output.h"
+#include "misc.h"
+
+#include <signal.h>
+
+#ifndef WIN32
+#include <sys/wait.h>
+#endif
 
 #ifndef REPO_VERSION
 #define REPO_VERSION "exported"
@@ -62,8 +72,7 @@ const char *get_version(void)
     /* it is a release, or we have nothing better */
     return VERSION "" VERSION_SUFFIX;
 }
-/* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
-#ifndef CL_NOLIBCLAMAV
+
 char *freshdbdir(void)
 {
     struct cl_cvd *d1, *d2;
@@ -182,7 +191,6 @@ int check_flevel(void)
     }
     return 0;
 }
-#endif
 
 const char *filelist(const struct optstruct *opts, int *err)
 {
@@ -250,14 +258,10 @@ int filecopy(const char *src, const char *dest)
 #endif
 }
 
-int daemonize(void)
+#ifndef _WIN32
+int close_std_descriptors()
 {
-#ifdef _WIN32
-    fputs("Background mode is not supported on your operating system\n", stderr);
-    return -1;
-#else
     int fds[3], i;
-    pid_t pid;
 
     fds[0] = open("/dev/null", O_RDONLY);
     fds[1] = open("/dev/null", O_WRONLY);
@@ -284,18 +288,152 @@ int daemonize(void)
         if (fds[i] > 2)
             close(fds[i]);
 
+    return 0;
+}
+
+int daemonize_all_return(void)
+{
+    pid_t pid;
+
     pid = fork();
 
-    if (pid == -1)
-        return -1;
-
-    if (pid)
-        exit(0);
-
-    setsid();
-    return 0;
-#endif
+    if (0 == pid) {
+        setsid();
+    }
+    return pid;
 }
+
+int daemonize(void)
+{
+    int ret = 0;
+
+    ret = close_std_descriptors();
+    if (ret) {
+        return ret;
+    }
+
+    ret       = daemonize_all_return();
+    pid_t pid = (pid_t)ret;
+    /*parent process.*/
+    if (pid > 0) {
+        exit(0);
+    }
+
+    return pid;
+}
+
+static void daemonize_child_initialized_handler(int sig)
+{
+    (void)(sig);
+    exit(0);
+}
+
+int daemonize_parent_wait(const char * const user, const char * const log_file)
+{
+    int daemonizePid = daemonize_all_return();
+    if (daemonizePid == -1) {
+        return -1;
+    } else if (daemonizePid) { //parent
+        /* The parent will wait until either the child process
+         * exits, or signals the parent that it's initialization is
+         * complete.  If it exits, it is due to an error condition,
+         * so the parent should exit with the same error code as the child.
+         * If the child signals the parent that initialization is complete, it
+         * the parent will exit from the signal handler (initDoneSignalHandler)
+         * with exit code 0.
+         */
+        struct sigaction sig;
+        memset(&sig, 0, sizeof(sig));
+        sigemptyset(&(sig.sa_mask));
+        sig.sa_handler = daemonize_child_initialized_handler;
+
+        if (0 != sigaction(SIGINT, &sig, NULL)) {
+            perror("sigaction");
+            return -1;
+        }
+
+        if (NULL != user){
+            if (drop_privileges(user, log_file)){
+                return -1;
+            }
+        }
+
+        int exitStatus;
+        wait(&exitStatus);
+        if (WIFEXITED(exitStatus)) { //error
+            exitStatus = WEXITSTATUS(exitStatus);
+            exit(exitStatus);
+        }
+    }
+    return 0;
+}
+
+void daemonize_signal_parent(pid_t parentPid)
+{
+    close_std_descriptors();
+    kill(parentPid, SIGINT);
+}
+
+int drop_privileges( const char * const user_name, const char * const log_file) {
+    int ret = 1;
+
+    /*This function is called in a bunch of places, and rather than change the error checking
+     * in every function, we are just going to return success if there is no work to do.
+     */
+    if ((0 == geteuid()) && (NULL != user_name)){
+        struct passwd *user = NULL;
+
+        if ((user = getpwnam(user_name)) == NULL) {
+            logg("^Can't get information about user %s.\n", user_name);
+            fprintf(stderr, "ERROR: Can't get information about user %s.\n", user_name);
+            goto done;
+        }
+
+#ifdef HAVE_INITGROUPS
+        if (initgroups(user_name, user->pw_gid)) {
+            fprintf(stderr, "ERROR: initgroups() failed.\n");
+            logg("^initgroups() failed.\n");
+            goto done;
+        }
+#elif HAVE_SETGROUPS
+        if (setgroups(1, &user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgroups() failed.\n");
+            logg("^setgroups() failed.\n");
+            goto done;
+        }
+#endif
+
+        /*Change ownership of the log file to the user we are going to switch to.*/
+        if (NULL != log_file){
+            int ret = lchown(log_file, user->pw_uid, user->pw_gid);
+            if (ret){
+                fprintf(stderr, "ERROR: lchown to user '%s' failed on\n", user->pw_name);
+                fprintf(stderr, "log file '%s'.\n", log_file);
+                fprintf(stderr, "Error was '%s'\n", strerror(errno));
+                logg("^lchown to user '%s' failed on log file '%s'.  Error was '%s'\n", 
+                        user->pw_name, log_file, strerror(errno));
+                goto done;
+            }
+        }
+
+        if (setgid(user->pw_gid)) {
+            fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
+            logg("^setgid(%d) failed.\n", (int)user->pw_gid);
+            goto done;
+        }
+
+        if (setuid(user->pw_uid)) {
+            fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
+            logg("^setuid(%d) failed.\n", (int)user->pw_uid);
+            goto done;
+        }
+    }
+    ret = 0;
+
+done:
+    return ret;
+}
+#endif /*_WIN32*/
 
 int match_regex(const char *filename, const char *pattern)
 {

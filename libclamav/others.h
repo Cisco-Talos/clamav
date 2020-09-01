@@ -39,20 +39,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef HAVE_JSON
+#include <json.h>
+#endif
+
 #include "clamav.h"
 #include "dconf.h"
 #include "filetypes.h"
 #include "fmap.h"
-#include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 #include "bytecode.h"
 #include "bytecode_api.h"
 #include "events.h"
 #include "crtmgr.h"
 
-#ifdef HAVE_JSON
-#include "json-c/json.h"
-#endif
+#include "unrar_iface.h"
 
 #ifdef HAVE_YARA
 #include "yara_clam.h"
@@ -150,8 +151,9 @@ typedef struct cli_ctx_container_tag {
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;
-    const char *sub_filepath;
+    char *target_filepath;    /**< (optional) The filepath of the original scan target */
+    const char *sub_filepath; /**< (optional) The filepath of the current file being parsed. May be a temp file. */
+    char *sub_tmpdir;         /**< The directory to store tmp files at this recursion depth. */
     const char **virname;
     unsigned int num_viruses;
     unsigned long int *scanned;
@@ -167,7 +169,7 @@ typedef struct cli_ctx_tag {
     cli_ctx_container *containers; /* set container type after recurse */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
-    fmap_t **fmap;
+    fmap_t **fmap; /* pointer to current fmap in an allocated array, incremented with recursion depth */
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
@@ -487,7 +489,7 @@ extern cl_unrar_error_t (*cli_unrar_extract_file)(void *hArchive, const char *de
 extern cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
 extern void (*cli_unrar_close)(void *hArchive);
 
-extern int have_rar;
+extern LIBCLAMAV_EXPORT int have_rar;
 
 #define SCAN_ALLMATCHES (ctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
 #define SCAN_COLLECT_METADATA (ctx->options->general & CL_SCAN_GENERAL_COLLECT_METADATA)
@@ -635,7 +637,42 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 }
 #endif
 
+/**
+ * @brief Append an alert.
+ *
+ * An FP-check will verify that the file is not whitelisted.
+ * The whitelist check does not happen before the scan because file whitelisting
+ * is so infrequent that such action would be detrimental to performance.
+ *
+ * TODO: Replace implementation with severity scale, and severity threshold
+ * wherein signatures that do not meet the threshold are documented in JSON
+ * metadata but do not halt the scan.
+ *
+ * @param ctx       The scan context.
+ * @param virname   The alert name.
+ * @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue.
+ */
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname);
+
+/**
+ * @brief Append a PUA (low severity) alert.
+ *
+ * This function will return CLEAN unless in all-match or Heuristic-precedence
+ * modes. The intention is for the scan to continue in case something more
+ * malicious is found.
+ *
+ * TODO: Replace implementation with severity scale, and severity threshold
+ * wherein signatures that do not meet the threshold are documented in JSON
+ * metadata but do not halt the scan.
+ *
+ * BUG: In normal scan mode (see above), the alert is not FP-checked!
+ *
+ * @param ctx       The scan context.
+ * @param virname   The alert name.
+ * @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue.
+ */
+cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
+
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx);
@@ -757,11 +794,16 @@ const char *cli_gettmpdir(void);
 /**
  * @brief Sanitize a relative path, so it cannot have a negative depth.
  *
- * Caller is responsible for freeing the filename.
+ * Caller is responsible for freeing the sanitized filepath.
+ * The optioal sanitized_filebase output param is a pointer into the filepath,
+ * if set, and does not need to be freed.
  *
- * @return char* filename or NULL.
+ * @param filepath                  The filepath to sanitize
+ * @param filepath_len              The length of the filepath
+ * @param[out] sanitized_filebase   Pointer to the basename portion of the sanitized filepath. (optional)
+ * @return char*
  */
-char *cli_sanitize_filepath(const char *filepath, size_t filepath_len);
+char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sanitized_filebase);
 
 /**
  * @brief Generate tempfile filename (no path) with a random MD5 hash.
@@ -771,6 +813,30 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len);
  * @return char* filename or NULL.
  */
 char *cli_genfname(const char *prefix);
+
+/**
+ * @brief Generate a full tempfile filepath with a provided the name.
+ *
+ * Caller is responsible for freeing the filename.
+ * If the dir is not provided, the engine->tmpdir will be used.
+ *
+ * @param dir 	 Alternative directory. (optional)
+ * @return char* filename or NULL.
+ */
+char *cli_newfilepath(const char *dir, const char *fname);
+
+/**
+ * @brief Generate a full tempfile filepath with a provided the name.
+ *
+ * Caller is responsible for freeing the filename.
+ * If the dir is not provided, the engine->tmpdir will be used.
+ *
+ * @param dir        Alternative temp directory (optional).
+ * @param prefix  	 (Optional) Base filename for new file.
+ * @param[out] name  Allocated filepath, must be freed by caller.
+ * @param[out] fd    File descriptor of open temp file.
+ */
+cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd);
 
 /**
  * @brief Generate a full tempfile filepath with a random MD5 hash and prefix the name, if provided.
@@ -828,7 +894,6 @@ int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));
 void cli_qsort_r(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *, const void *), void *arg);
 cl_error_t cli_checktimelimit(cli_ctx *ctx);
-cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01
@@ -865,7 +930,7 @@ struct cli_ftw_cbdata {
  * after an error, we call the callback with reason == error,
  * and if it returns CL_BREAK we break.
  */
-typedef int (*cli_ftw_cb)(STATBUF *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
+typedef cl_error_t (*cli_ftw_cb)(STATBUF *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 
 /*
  * returns 1 if the path should be skipped and 0 otherwise
@@ -902,5 +967,19 @@ const char *cli_strerror(int errnum, char *buf, size_t len);
  * @return cl_error_t    CL_SUCCESS if found, else an error code.
  */
 cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
+
+/**
+ * @brief   Attempt to get the real path of a provided path (evaluating symlinks).
+ *
+ * Caller is responsible for free'ing the file path.
+ * On posix systems this just calls realpath() under the hood.
+ * On Win32, it opens a handle and uses cli_get_filepath_from_filedesc()
+ * to get the real path.
+ *
+ * @param desc          A file path to evaluate.
+ * @param char*         [out] A malloced string containing the real path.
+ * @return cl_error_t   CL_SUCCESS if found, else an error code.
+ */
+cl_error_t cli_realpath(const char *file_name, char **real_filename);
 
 #endif

@@ -27,11 +27,16 @@
 #include "arc4.h"
 #include <string.h>
 
-void arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
+bool arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
 {
     unsigned i;
     uint8_t j;
-    uint32_t *S = &a->S[0];
+    uint32_t *S;
+
+    if (NULL == a || NULL == key || 0 == keylength)
+        return false;
+
+    S = &a->S[0];
 
     for (i = 0; i < 256; i++)
         S[i] = i;
@@ -42,6 +47,7 @@ void arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
         S[j]        = tmp;
     }
     a->i = a->j = 0;
+    return true;
 }
 
 void arc4_apply(struct arc4_state *s, uint8_t *data, unsigned len)

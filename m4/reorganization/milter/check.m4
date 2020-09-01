@@ -25,5 +25,4 @@ if test "$have_milter" = "yes"; then
     ])
 fi
 
-AM_CONDITIONAL([BUILD_CLAMD],[test "$have_pthreads" = "yes"])
 AM_CONDITIONAL([HAVE_MILTER],[test "$have_milter" = "yes"])

@@ -21,10 +21,15 @@
 #ifndef __ONAS_IN_H
 #define __ONAS_IN_H
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
-#include "shared/optparser.h"
-#include "libclamav/clamav.h"
+// libclamav
+#include "clamav.h"
+
+// shared
+#include "optparser.h"
+
+#include "clamonacc.h"
 
 /*
  * Extra options for onas_scan_th().

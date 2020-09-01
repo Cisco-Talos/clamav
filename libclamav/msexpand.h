@@ -26,6 +26,6 @@
 
 #include "others.h"
 
-int cli_msexpand(cli_ctx *ctx, int ofd);
+cl_error_t cli_msexpand(cli_ctx *ctx, int ofd);
 
 #endif

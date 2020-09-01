@@ -62,6 +62,7 @@ class File
     bool NoSequentialRead;
     uint CreateMode;
 #endif
+    bool PreserveAtime;
   protected:
     bool OpenShared; // Set by 'Archive' class.
   public:
@@ -114,6 +115,7 @@ class File
 #ifdef _WIN_ALL
     void RemoveSequentialFlag() {NoSequentialRead=true;}
 #endif
+    void SetPreserveAtime(bool Preserve) {PreserveAtime=Preserve;}
 #ifdef _UNIX
     int GetFD()
     {

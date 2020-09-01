@@ -21,24 +21,12 @@
 bin_PROGRAMS = sigtool
 
 sigtool_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/cdiff.c \
-    $(top_srcdir)/shared/cdiff.h \
-    $(top_srcdir)/shared/tar.c \
-    $(top_srcdir)/shared/tar.h \
     vba.c \
     vba.h \
     sigtool.c
 
 AM_CFLAGS=@WERR_CFLAGS@
-DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @SIGTOOL_CPPFLAGS@
-LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
+DEFS = @DEFS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @SIGTOOL_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @SSL_LDFLAGS@ @SSL_LIBS@ @THREAD_LIBS@
 CLEANFILES=*.gcda *.gcno

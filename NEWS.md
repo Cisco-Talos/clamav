@@ -9,18 +9,368 @@ ClamAV 0.103.0 includes the following improvements and changes.
 
 ### Major changes
 
+- Clamd can now reload the signature database without blocking scanning.
+  This multi-threaded database reload improvement was made possible thanks to
+  a community effort.
+
+  Non-blocking database reloads are now the default behavior. Some systems that
+  are more contrained on RAM may need to disable non-blocking reloads as it will
+  temporarily consume 2x as much memory. For this purpose we have added a new
+  clamd config option `ConcurrentDatabaseReload` which may be set to `no`.
+
+  Special thanks to the following for making this feature a reality:
+  - Alberto Wu
+  - Alexander Sulfrian
+  - Arjen de Korte
+  - David Heidelberg
+  - Ged Haywood
+  - Julius Plenz
+  - Michael Orlitzky
+
+  Thank you all for your patience waiting for this feature.
+
 ### Notable changes
+
+- The DLP module has been enhanced with additional credit card ranges and a new
+  engine option which allows ClamAV to alert only on credit cards (and not, for
+  instance, gift cards) when scannning with the DLP module. This feature
+  enhancement was made by John Schember, with input from Alexander Sulfrian.
+
+- Support for Adobe Reader X PDF encryption, an overhaul of PNG scanning to
+  detect PNG specific exploits, and a major change to GIF parsing which makes
+  it more tolerant to problematic files and adds the ability to scan overlays,
+  all thanks to work and patches submitted by Aldo Mazzeo.
+
+- `clamdtop.exe` now available for Windows users. Functionality is somewhat
+  limited when compared with `clamdtop` on Linux. PDCurses is required to
+  build `clamdtop.exe` for ClamAV on Windows.
+
+- The phishing detection module will now print "Suspicious link found!" along
+  with the "Real URL" and "Display URL" each time phishing is detected. In a
+  future version, we would like to print out alert-related metadata like this
+  at the end of a scan, but for now this detail will help users understand why
+  a given file is being flagged as phishing.
+
+- Added new *experimental* CMake build tooling. CMake is not yet recommended for
+  production builds. Our team would appreciate any assistance improving the
+  CMake build tooling so we can one day deprecate Autotools and remove the
+  Visual Studio solutions.
+
+  Please see the new [CMake installation instructions](INSTALL.cmake.md) for
+  detailed instructions on how to build ClamAV with CMake.
+
+- Added `--ping` and `--wait` options to the `clamdscan` and `clamonacc` client
+  applications.
+
+  The `--ping` (`-p`) command will attempt to ping `clamd` up to a specified
+  maximum number of attempts at an optional interval. If the interval isn't
+  specified, a default 1-second interval is used. It will exit with status code
+  `0` when it receives a PONG from `clamd` or status code `21` if the timeout
+  expires before it receives a response.
+
+  Example:
+  `clamdscan -p 120` will attempt to ping `clamd` 120 at a 1 second interval.
+
+  The `--wait` (`-w`) command will wait up to 30 seconds for clamd to start.
+  This option may be used in tandem with the `--ping` option to customize the
+  max # of attempts and the attempt interval. As with `--ping`, the scanning
+  client may exit with status code `21` if the timeout expires before a
+  connection is made to `clamd`.
+
+  Example:
+  `clamdscan -p 30:2 -w <file>` will attempt a scan, waiting up to 60 seconds
+  for clamd to start and receive the scan request.
+
+  The ping-and-wait feature is particularly useful for those wishing to start
+  `clamd` and start `clamonacc` at startup, ensuring that `clamd` is ready
+  before `clamonacc` starts. It is also useful for those wishing to start
+  `clamd` immediately before initiating scans with `clamdscan` rather than
+  having the `clamd` service run continuously.
+
+- Added Excel 4.0 (XLM) macro detection and extraction support. Significantly
+  improved VBA detection and extraction as well. Work courtesy of Jonas Zaddach.
+
+  This support not yet added to `sigtool`, as the VBA extraction feature in
+  `sigtool` is separate from the one used for scanning and will still need to be
+  updated or replaced in the future.
+
+- Improvements to the layout and legitibility of temp files created during a
+  scan. Improvements to legitibility and content of the metadata JSON generated
+  during a scan.
+
+  To review the scan temp files and metadata JSON, run:
+  ```bash
+  clamscan --tempdir=<path> --leave-temps --gen-json <target>
+  ```
+
+  Viewing the scan temp files and `metadata.json` file provides some insight
+  into how ClamAV analyzes a given file and can also be useful to analysts for
+  initial triage of potentially malicious files.
 
 ### Other improvements
 
+- Added ability for freshclam and clamsubmit to override default use of openssl
+  CA bundle with a custom CA bundle. On Linux/Unix platforms (excluding macOS),
+  users may specify a custom CA bundle by setting the CURL_CA_BUNDLE environment
+  variable. On macOS and Windows, users are expected to add CA certificates to
+  their respective system's keychain/certificate store.
+  Patch courtesy of Sebastian A. Siewior
+
+- `clamscan` and `clamdscan` now print the scan start and end dates in the scan
+  summary.
+
+- The `clamonacc` on-access scanning daemon for Linux now installs to `sbin`
+  instead of `bin`.
+
+- Improvements to the freshclam progress bar so the width of the text does not
+  shift around as information changes and will not spill exceed 80-characters
+  even on very slow connections. Time is now displayed in Xm XXs (or Xh XXm)
+  for values of 60 seconds or more. Bytes display now changes units at the
+  proper 1024 B/KiB instead of 2048 B/KiB.
+  Patch courtesy of Zachary Murden.
+
+- Improve column alignment and line wrap rendering for ClamdTOP. Also fixed
+  an issue on Windows where ClamdTOP would occasionally disconnect from clamd
+  and fail to reconnect.
+  Patch courtesy of Zachary Murden.
+
+- Improvements to the AutoIT parser.
+
+- Loosened the curl version requirements in order to build and use `clamonacc`.
+  You may now build ClamAV with any version of libcurl. However `clamonacc`'s
+  file descriptor-passing (FD-passing) capability will only be available with
+  libcurl 7.40 or newer. FD-passing is ordinarily the default way to perform
+  scans with clamonacc as it is significantly faster than streaming.
+
+- Added LZMA and BZip2 decompression routines to the bytecode signature API.
+
+- Disabled embedded type recognition for specific archive and disk image file
+  types. This change reduces file type misclassification and improves scan time
+  performance by reducing duplicated file scanning.
+
+- Use pkg-config to detect libpcre2-8 before resorting to pcre2-config or
+  pcre-config.
+  Patch courtesy of Michael Orlitzky.
+
 ### Bug fixes
 
+- Fixed issue scanning directories on Windows with `clamdscan.exe` that was
+  introduced when mitigating against symlink quarantine attacks.
+
+- Fixed behavior of `freshclam --quiet` option. Patch courtesy of Reio Remma.
+
+- Fixed behavior of `freshclam`'s `OnUpdateExecute`, `OnErrorExecute`, and
+  `OnOutdatedExecute` config options on Windows when in daemon-mode so it can
+  handle multiple arguments.
+  Patch courtesy of Zachary Murden.
+
+- Fixed an error in the heuristic alert mechanism that would cause a single
+  detection within an archive to alert once for every subsequent file scanned,
+  potentially resulting in thousands of alerts for a single scan.
+
+- Fixed clamd, clamav-milter, and freshclam to create PID files before
+  dropping privileges, to avoid the possibility of an unprivileged user
+  from changing the PID file so that a service manager will kill a different
+  process. This change does make the services unable to clean up the PID
+  file on exit.
+
+- Fixed the false positive (.fp) signature feature. In prior versions, the hash
+  in a false positive signature would be checked only against the current
+  layer of a file being scanned. In 0.103, every file layer is hashed,
+  and the hashes for each in the scan recursion list are checked. This ensures
+  that .fp signatures containing a hash for any layer in the scan leading
+  up to the alert will negate the alert.
+
+  As an example, a hash for a zip containing the file which alerts would not
+  prevent the detection in prior versions. Only the hash of the embedded file
+  would work. For some file types where the outermost is always an archive,
+  eg. docx files, this made .fp signatures next to useless. For certain file
+  types where the scanned content was a normalized version of the original
+  content, eg. HTML, the normalized version was never hashed and this meant
+  that .fp signatures never worked.
+
+- Fixed Trusted & Revoked Windows executable (PE) file signature rules (.crb)
+  maximum functionality level (FLEVEL) which had been being treated as the
+  minimum FLEVEL. These signatures enable ClamAV to trust executables that
+  are digitally signed by trusted publishers, or to alert on executables signed
+  with compromised signing-certificates. The minimum and maximum FLEVELS enable
+  or disable signatures at load time depending on the current ClamAV version.
+
+- Fixed a bug wherein you could not build ClamAV with `--enable-libclamav-only`
+  if curl was not installed on the system.
+
+- Various other bug fixes, improvements, and documentation improvements.
+
 ### New Requirements
+
+- Autotools (automake, autoconf, m4, pkg-config, libtool) are now required in
+  order to build from a Git clone because the files generated by these tools
+  have been removed from the Git repository. To generate theses files before
+  you compile ClamAV, run `autogen.sh`.
+  Users building with Autotools from the release tarball should be unaffected.
 
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:
 
+- Aldo Mazzeo
+- Ángel
+- Antonino Cangialosi
+- Clement Lecigne
+- Jamie Biggar
+- Jan Smutny
+- Jim Klimov
+- John Schember
+- Jonathan Sabbe
+- lutianxiong
+- Michael Orlitzky
+- Reio Remma
+- Sebastian A. Siewior
+- Zachary Murden
+
+## 0.102.4
+
+ClamAV 0.102.4 is a bug patch release to address the following issues.
+
+- [CVE-2020-3350](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3350):
+  Fix a vulnerability wherein a malicious user could replace a scan target's
+  directory with a symlink to another path to trick clamscan, clamdscan, or
+  clamonacc into removing or moving a different file (eg. a critical system
+  file). The issue would affect users that use the --move or --remove options
+  for clamscan, clamdscan, and clamonacc.
+
+  For more information about AV quarantine attacks using links, see the
+  [RACK911 Lab's report](https://www.rack911labs.com/research/exploiting-almost-every-antivirus-software).
+
+- [CVE-2020-3327](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3327):
+  Fix a vulnerability in the ARJ archive parsing module in ClamAV 0.102.3 that
+  could cause a Denial-of-Service (DoS) condition. Improper bounds checking
+  results in an out-of-bounds read which could cause a crash.
+  The previous fix for this CVE in 0.102.3 was incomplete. This fix correctly
+  resolves the issue.
+
+- [CVE-2020-3481](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3481):
+  Fix a vulnerability in the EGG archive module in ClamAV 0.102.0 - 0.102.3
+  could cause a Denial-of-Service (DoS) condition. Improper error handling
+  may result in a crash due to a NULL pointer dereference.
+  This vulnerability is mitigated for those using the official ClamAV
+  signature databases because the file type signatures in daily.cvd
+  will not enable the EGG archive parser in versions affected by the
+  vulnerability.
+
+## 0.102.3
+
+ClamAV 0.102.3 is a bug patch release to address the following issues.
+
+- [CVE-2020-3327](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3327):
+  Fix a vulnerability in the ARJ archive parsing module in ClamAV 0.102.2 that
+  could cause a Denial-of-Service (DoS) condition. Improper bounds checking of
+  an unsigned variable results in an out-of-bounds read which causes a crash.
+
+  Special thanks to Daehui Chang and Fady Othman for helping identify the ARJ
+  parsing vulnerability.
+
+- [CVE-2020-3341](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3341):
+  Fix a vulnerability in the PDF parsing module in ClamAV 0.101 - 0.102.2 that
+  could cause a Denial-of-Service (DoS) condition. Improper size checking of
+  a buffer used to initialize AES decryption routines results in an out-of-
+  bounds read which may cause a crash. Bug found by OSS-Fuzz.
+
+- Fix "Attempt to allocate 0 bytes" error when parsing some PDF documents.
+
+- Fix a couple of minor memory leaks.
+
+- Updated libclamunrar to UnRAR 5.9.2.
+
+## 0.102.2
+
+ClamAV 0.102.2 is a bug patch release to address the following issues.
+
+- [CVE-2020-3123](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-3123):
+  An Denial-of-Service (DoS) condition may occur when using the optional credit
+  card data-loss-prevention (DLP) feature. Improper bounds checking of an
+  unsigned variable resulted in an out-of-bounds read which causes a crash.
+
+- Significantly improved scan speed of PDF files on Windows.
+
+- Re-applied a fix to alleviate file access issues when scanning RAR files in
+  downstream projects that use libclamav where the scanning engine is operating
+  in a low-privelege process. This bug was originally fixed in 0.101.2 and the
+  fix was mistakenly omitted from 0.102.0.
+
+- Fixed an issue wherein freshclam failed to update if the database version
+  downloaded is 1 version older than advertised. This situation may occur after
+  a new database version is published. The issue affected users downloading the
+  whole CVD database file.
+
+- Changed the default freshclam ReceiveTimeout setting to 0 (infinite).
+  The ReceiveTimeout had caused needless database update failures for users with
+  slower internet connections.
+
+- Correctly display number of kilobytes (KiB) in progress bar and reduced the
+  size of the progress bar to accomodate 80-char width terminals.
+
+- Fixed an issue where running freshclam manually causes a daemonized freshclam
+  process to fail when it updates because the manual instance deletes the
+  temporary download directory. Freshclam temporary files will now download to a
+  unique directory created at the time of an update instead of using a hardcoded
+  directory created/destroyed at the program start/exit.
+
+- Fixed behavior of `freshclam`'s `OnOutdatedExecute` config option when in
+  foreground mode. Previously it would run the `OnUpdateExecute` command instead.
+  Patch courtesy of Antoine Deschênes.
+
+- Fixes a memory leak in the error condition handling for the email parser.
+
+- Improved bound checking and error handling in ARJ archive parser.
+
+- Improved error handling in PDF parser.
+
+- Fix for memory leak in byte-compare signature handler.
+
+- Updates to the unit test suite to support libcheck 0.13.
+
+- Updates to support autoconf 2.69 and automake 1.15.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Antoine Deschênes
+- Eric Lindblad
+- Gianluigi Tiesi
+- Tuomo Soini
+
+## 0.102.1
+
+ClamAV 0.102.1 is a security patch release to address the following issues.
+
+- Fix for the following vulnerability affecting 0.102.0 and 0.101.4 and prior:
+  - [CVE-2019-15961](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-15961)
+    A Denial-of-Service (DoS) vulnerability may occur when scanning a specially
+    crafted email file as a result of excessively long scan times. The issue is
+    resolved by implementing several maximums in parsing MIME messages and by
+    optimizing use of memory allocation.
+
+- Build system fixes to build clamav-milter, to correctly link with libxml2 when
+  detected, and to correctly detect fanotify for on-access scanning feature
+  support.
+
+- Signature load time is significantly reduced by changing to a more efficient
+  algorithm for loading signature patterns and allocating the AC trie.
+  Patch courtesy of Alberto Wu.
+
+- Introduced a new configure option to statically link libjson-c with libclamav.
+  Static linking with libjson is highly recommended to prevent crashes in
+  applications that use libclamav alongside another JSON parsing library.
+
+- Null-dereference fix in email parser when using the `--gen-json` metadata
+  option.
+
+- Fixes for Authenticode parsing and certificate signature (.crb database) bugs.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Alberto Wu
+- Joran Dirk Greef
 - Reio Remma
 
 ## 0.102.0
@@ -175,6 +525,92 @@ and for working diligently to ensure knowledge transfer up until his last day
 on the team. Working with you was a pleasure, Joe, and we wish you the best
 of luck in your next adventure!
 
+## 0.101.5
+
+ClamAV 0.101.5 is a security patch release that addresses the following issues.
+
+- Fix for the following vulnerability affecting 0.102.0 and 0.101.4 and prior:
+  - [CVE-2019-15961](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-15961)
+    A Denial-of-Service (DoS) vulnerability may occur when scanning a specially
+    crafted email file as a result of excessively long scan times. The issue is
+    resolved by implementing several maximums in parsing MIME messages and by
+    optimizing use of memory allocation.
+
+- Added the zip scanning improvements found in v0.102.0 where it scans files
+  using zip records from a sorted catalogue which provides deduplication of
+  file records resulting in faster extraction and scan time and reducing the
+  likelihood of alerting on non-malicious duplicate file entries as overlapping
+  files.
+
+- Signature load time is significantly reduced by changing to a more efficient
+  algorithm for loading signature patterns and allocating the AC trie.
+  Patch courtesy of Alberto Wu.
+
+- Introduced a new configure option to statically link libjson-c with libclamav.
+  Static linking with libjson is highly recommended to prevent crashes in
+  applications that use libclamav alongside another JSON parsing library.
+
+- Null-dereference fix in email parser when using the `--gen-json` metadata
+  option.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Alberto Wu
+- Joran Dirk Greef
+
+## 0.101.4
+
+ClamAV 0.101.4 is a security patch release that addresses the following issues.
+
+- An out of bounds write was possible within ClamAV's NSIS bzip2 library when
+  attempting decompression in cases where the number of selectors exceeded the
+  max limit set by the library (CVE-2019-12900). The issue has been resolved
+  by respecting that limit.
+
+  Thanks to Martin Simmons for reporting the issue [here](https://bugzilla.clamav.net/show_bug.cgi?id=12371)
+
+- The zip bomb vulnerability mitigated in 0.101.3 has been assigned the
+  CVE identifier CVE-2019-12625. Unfortunately, a workaround for the zip-bomb
+  mitigation was immediately identified. To remediate the zip-bomb scantime
+  issue, a scan time limit has been introduced in 0.101.4. This limit now
+  resolves ClamAV's vulnerability to CVE-2019-12625.
+
+  The default scan time limit is 2 minutes (120000 milliseconds).
+
+  To customize the time limit:
+
+  - use the `clamscan` `--max-scantime` option
+  - use the `clamd` `MaxScanTime` config option
+
+  Libclamav users may customize the time limit using the `cl_engine_set_num`
+  function. For example:
+
+  ```c
+      cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, time_limit_milliseconds)
+  ```
+
+  Thanks to David Fifield for reviewing the zip-bomb mitigation in 0.101.3
+  and reporting the issue.
+
+## 0.101.3
+
+ClamAV 0.101.3 is a patch release to address a vulnerability to non-recursive
+zip bombs.
+
+A Denial-of-Service (DoS) vulnerability may occur when scanning a zip bomb as a
+result of excessively long scan times. The issue is resolved by detecting the
+overlapping local file headers which characterize the non-recursive zip bomb
+described by David Fifield,
+[here](https://www.bamsoftware.com/hacks/zipbomb/).
+
+Thank you to Hanno Böck for reporting the issue as it relates to ClamAV,
+[here](https://bugzilla.clamav.net/show_bug.cgi?id=12356).
+
+Also included in 0.101.3:
+
+- Update of bundled the libmspack library from 0.8alpha to 0.10alpha, to
+  address a buffer overflow vulnerability in libmspack < 0.9.1α.
+
 ## 0.101.2
 
 ClamAV 0.101.2 is a patch release to address a handful of security related bugs.
@@ -183,7 +619,7 @@ This patch release is being released alongside the 0.100.3 patch so that users
 who are unable to upgrade to 0.101 due to libclamav API changes are protected.
 
 This release includes 3 extra security related bug fixes that do not apply to
-prior versions.  In addition, it includes a number of minor bug fixes and
+prior versions. In addition, it includes a number of minor bug fixes and
 improvements.
 
 - Fixes for the following vulnerabilities affecting 0.101.1 and prior:
@@ -552,17 +988,17 @@ ClamAV 0.100.1 is a hotfix release to patch a set of vulnerabilities.
     Reported by Secunia Research at Flexera.
   - [CVE-2018-0361](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-0361):
     ClamAV PDF object length check, unreasonably long time to parse relatively
-    small file.  Reported by aCaB.
+    small file. Reported by aCaB.
 - Fixes for a few additional bugs:
   - Buffer over-read in unRAR code due to missing max value checks in table
-    initialization.  Reported by Rui Reis.
+    initialization. Reported by Rui Reis.
   - Libmspack heap buffer over-read in CHM parser. Reported by Hanno Böck.
   - PDF parser bugs reported by Alex Gaynor.
     - Buffer length checks when reading integers from non-NULL terminated strings.
     - Buffer length tracking when reading strings from dictionary objects.
 - HTTPS support for clamsubmit.
 - Fix for DNS resolution for users on IPv4-only machines where IPv6 is not
-  available or is link-local only.  Patch provided by Guilherme Benkenstein.
+  available or is link-local only. Patch provided by Guilherme Benkenstein.
 
 Thank you to the following ClamAV community members for your code submissions
 and bug reports!
@@ -577,12 +1013,12 @@ and bug reports!
 ## 0.100.0
 
 ClamAV 0.100.0 is a feature release which includes many code submissions
- from the ClamAV community.  As always, it can be downloaded from our downloads
+ from the ClamAV community. As always, it can be downloaded from our downloads
  page on clamav.net. Some of the more prominent submissions include:
 
 - Interfaces to the Prelude SIEM open source package for collecting
   ClamAV virus events.
-- Support for Visual Studio 2015 for Windows builds.  Please note that we
+- Support for Visual Studio 2015 for Windows builds. Please note that we
   have deprecated support for Windows XP, and while Vista may still work,
   we no longer test ClamAV on Windows XP or Vista.
 - Support libmspack internal code or as a shared object library.
@@ -645,21 +1081,21 @@ The ClamAV team thanks the following individuals for their code submissions:
 ### Known Issues
 
 ClamAV has an active issue queue and enjoys continual improvement but as sad as
- I am to say it, we couldn't address every bug in this release.  I want to draw
+ I am to say it, we couldn't address every bug in this release. I want to draw
  your attention a couple bugs in particular so as not to frustrate users
  setting up ClamAV:
 
 - Platform: macOS:
   - Bug:  If you attempt to build ClamAV with a system installed LLVM you may
-    receive a linker error.  We recently changed default linking behavior to
-    prefer dynamic linking over static linking.  As a result, we've uncovered a
+    receive a linker error. We recently changed default linking behavior to
+    prefer dynamic linking over static linking. As a result, we've uncovered a
     bug in building on macOS where dynamic linking against the LLVM libraries
-    fails.  To work around this bug, please add the --with-llvm-linking=static
+    fails. To work around this bug, please add the --with-llvm-linking=static
     option to your ./configure call.
 
 - Platform: CentOS 6 32bit, older versions of AIX:
   - Bug:  On CentOS 6 32bit we observed that specific versions of zlib fail to
-    correctly decompress the CVD signature databases.  If you are on an older
+    correctly decompress the CVD signature databases. If you are on an older
     system such as CentoOS 6 32bit and observe failures loading the signature
     database, please consider upgrading to a newer version of zlib.
 
@@ -1019,11 +1455,11 @@ individual source file, and distribute linked combinations
 including the two.
 
 You must obey the GNU General Public License in all respects
-for all of the code used other than OpenSSL.  If you modify
+for all of the code used other than OpenSSL. If you modify
 file(s) with this exception, you may extend this exception to your
-version of the file(s), but you are not obligated to do so.  If you
+version of the file(s), but you are not obligated to do so. If you
 do not wish to do so, delete this exception statement from your
-version.  If you delete this exception statement from all source
+version. If you delete this exception statement from all source
 files in the program, then also delete it here.
 
 ## 0.98.1

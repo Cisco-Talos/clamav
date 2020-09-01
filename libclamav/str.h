@@ -78,7 +78,6 @@ char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);
 int cli_xtoi(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);
-char *cli_utf16toascii(const char *str, unsigned int length);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
 const char *cli_memstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 char *cli_strrcpy(char *dest, const char *source);
@@ -93,15 +92,6 @@ char *cli_unescape(const char *str);
 struct text_buffer;
 int cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
 int cli_hexnibbles(char *str, int len);
-
-typedef enum {
-    UTF16_BE, /* Force big endian */
-    UTF16_LE, /* Force little endian */
-    UTF16_BOM /* Use BOM if available otherwise assume big endian */
-} utf16_type;
-char *cli_utf16_to_utf8(const char *utf16, size_t length, utf16_type type);
-
-int cli_isutf8(const char *buf, unsigned int len);
 
 size_t cli_strlcat(char *dst, const char *src, size_t sz); /* libclamav/strlcat.c */
 

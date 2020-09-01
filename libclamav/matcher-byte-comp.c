@@ -122,6 +122,12 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
         return CL_EMALFDB;
     }
 
+    if (ref_subsigid > MAX_LDB_SUBSIGS) {
+        cli_errmsg("cli_bcomp_addpatt: while byte compare subsig parsing, reference subigid exceeded limits on max LDB subsigs\n");
+        cli_bcomp_freemeta(root, bcomp);
+        return CL_EMALFDB;
+    }
+
     bcomp->ref_subsigid = ref_subsigid;
 
     /* use the passed hexsig buffer to find the start and ending parens and store the param length (minus starting paren) */
@@ -479,7 +485,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
         if (bcomp->lsigid[0]) {
 
             subsigid = cli_calloc(3, sizeof(char));
-            sprintf(subsigid, "%hu", bcomp->ref_subsigid);
+            snprintf(subsigid, 3, "%hu", bcomp->ref_subsigid);
 
             /* verify the ref_subsigid */
             if (cli_ac_chklsig(subsigid, subsigid + strlen(subsigid),
@@ -538,6 +544,11 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
                 ret = cli_append_virus(ctx, (const char *)bcomp->virname);
             }
         }
+    }
+
+    if (subsigid) {
+        free(subsigid);
+        subsigid = NULL;
     }
 
     if (ret == CL_SUCCESS && viruses_found) {

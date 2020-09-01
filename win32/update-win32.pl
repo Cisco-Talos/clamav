@@ -24,7 +24,6 @@ my %CONF = (
     'AC_APPLE_UNIVERSAL_BUILD' => -1,
     'ANONYMOUS_MAP' => -1,
     'BIND_8_COMPAT' => -1,
-    'BUILD_CLAMD' => '1',
     'CLAMAVGROUP' => '"clamav"',
     'CLAMAVUSER' => '"clamav"',
     'CLAMUKO' => -1,
@@ -181,10 +180,10 @@ my %CONF = (
     'PACKAGE' => 'PACKAGE_NAME',
     'PACKAGE_BUGREPORT' => '"https://bugzilla.clamav.net/"',
     'PACKAGE_NAME' => '"ClamAV"',
-    'PACKAGE_STRING' => '"ClamAV 0.103.0-devel"',
+    'PACKAGE_STRING' => '"ClamAV 0.103.0-rc2"',
     'PACKAGE_TARNAME' => '"clamav"',
     'PACKAGE_URL' => '"https://www.clamav.net/"',
-    'PACKAGE_VERSION' => '"0.103.0-devel"',
+    'PACKAGE_VERSION' => '"0.103.0-rc2"',
     'SCANBUFF' => '131072',
     'SETPGRP_VOID' => '1',
     'SIZEOF_INT' => '4',
@@ -209,7 +208,7 @@ my %CONF = (
     'off_t' => -1,
     'restrict' => -1,
     'socklen_t' => -1,
-    'FANOTIFY' => -1
+    'HAVE_SYS_FANOTIFY_H' => -1
     );
 
 

@@ -175,9 +175,9 @@ struct pdf_struct {
 #define PDF_EXTRACT_OBJ_NONE 0x0
 #define PDF_EXTRACT_OBJ_SCAN 0x1
 
-int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
+cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
 void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj);
-int pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
+cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags);
 cl_error_t pdf_findobj(struct pdf_struct *pdf);
 struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t objid);
 

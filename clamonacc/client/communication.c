@@ -38,7 +38,7 @@
 #include <sys/socket.h>
 #endif
 
-#include "shared/output.h"
+#include "output.h"
 
 #include "communication.h"
 
@@ -81,7 +81,13 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
     CURLcode curlcode;
     curl_socket_t sockfd;
 
+#if ((LIBCURL_VERSION_MAJOR > 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 45))
+    /* Use new CURLINFO_ACTIVESOCKET option */
     curlcode = curl_easy_getinfo(curl, CURLINFO_ACTIVESOCKET, &sockfd);
+#else
+    /* Use deprecated CURLINFO_LASTSOCKET option */
+    curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &sockfd);
+#endif
 
     if (CURLE_OK != curlcode) {
         logg("!ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(curlcode));
@@ -139,7 +145,13 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
     int ret = 0;
     curl_socket_t sockfd;
 
+#if ((LIBCURL_VERSION_MAJOR > 7) || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 45))
+    /* Use new CURLINFO_ACTIVESOCKET option */
     rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_ACTIVESOCKET, &sockfd);
+#else
+    /* Use deprecated CURLINFO_LASTSOCKET option */
+    rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &sockfd);
+#endif
 
     if (CURLE_OK != rcv_data->curlcode) {
         logg("!ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(rcv_data->curlcode));

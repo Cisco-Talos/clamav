@@ -34,15 +34,17 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/dconf.h"
-#include "../libclamav/htmlnorm.h"
-#include "../libclamav/jsparse/js-norm.h"
-#include "../libclamav/jsparse/lexglobal.h"
-#include "../libclamav/jsparse/textbuf.h"
-#include "../libclamav/jsparse/generated/keywords.h"
-#include "../libclamav/jsparse/generated/operators.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "dconf.h"
+#include "htmlnorm.h"
+#include "jsparse/js-norm.h"
+#include "jsparse/lexglobal.h"
+#include "jsparse/textbuf.h"
+#include "jsparse/generated/keywords.h"
+#include "jsparse/generated/operators.h"
+
 #include "checks.h"
 
 struct test {

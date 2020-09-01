@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include <mspack.h>
-#include <system.h>
+#include "system.h"
 
 #define FILENAME ".chminfo-temp"
 
@@ -67,7 +67,7 @@ void print_dir(struct mschmd_header *chm, char *filename) {
   FILE *fh;
 
   if (!(chunk = (unsigned char *) malloc(chm->chunk_size))) return;
-  
+
   if ((fh = fopen(filename, "rb"))) {
 #if HAVE_FSEEKO
     fseeko(fh, chm->dir_offset - 84, SEEK_SET);
@@ -168,7 +168,7 @@ void print_dir(struct mschmd_header *chm, char *filename) {
           if (name_len) fwrite(name, 1, name_len, stdout);
           printf("\"\n");
         }
-      PMGI_end: 
+      PMGI_end:
         if (j != num_entries) printf("premature end of chunk\n");
       }
       else {

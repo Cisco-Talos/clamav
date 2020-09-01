@@ -22,7 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 #include <stdio.h>
 #include <unistd.h>
@@ -36,13 +36,16 @@
 
 #include <sys/fanotify.h>
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
+// libclamav
+#include "clamav.h"
+#include "scanners.h"
 
-#include "shared/optparser.h"
-#include "shared/output.h"
+// shared
+#include "optparser.h"
+#include "output.h"
 
-#include "clamd/server.h"
+// clamd
+#include "server.h"
 
 #include "../inotif/hash.h"
 #include "../inotif/inotif.h"
@@ -50,7 +53,7 @@
 #include "../client/client.h"
 
 #include "../scan/thread.h"
-#include "../scan/queue.h"
+#include "../scan/onas_queue.h"
 
 #include "../misc/utils.h"
 
@@ -64,12 +67,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 {
 
     const struct optstruct *pt;
-    short int scan;
-    unsigned int sizelimit = 0, extinfo;
-    uint64_t fan_mask      = FAN_EVENT_ON_CHILD;
-
-    pthread_attr_t ddd_attr;
-    struct ddd_thrarg *ddd_tharg = NULL;
+    uint64_t fan_mask = FAN_EVENT_ON_CHILD;
 
     ddd_pid = 0;
 
@@ -130,8 +128,6 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         logg("*ClamFanotif: file size limit disabled\n");
     }
 
-    extinfo = optget((*ctx)->clamdopts, "ExtendedDetectionInfo")->enabled;
-
     return CL_SUCCESS;
 }
 
@@ -140,14 +136,13 @@ int onas_fan_eloop(struct onas_context **ctx)
     int ret     = 0;
     int err_cnt = 0;
     short int scan;
-    STATBUF sb;
     fd_set rfds;
     char buf[4096];
     ssize_t bread;
     struct fanotify_event_metadata *fmd;
+    char proc_fd_fname[1024];
     char fname[1024];
-    int len, check, fres;
-    char err[128];
+    int len, check;
 
     FD_ZERO(&rfds);
     FD_SET((*ctx)->fan_fd, &rfds);
@@ -191,9 +186,9 @@ int onas_fan_eloop(struct onas_context **ctx)
         while (FAN_EVENT_OK(fmd, bread)) {
             scan = 1;
             if (fmd->fd >= 0) {
-                sprintf(fname, "/proc/self/fd/%d", fmd->fd);
+                sprintf(proc_fd_fname, "/proc/self/fd/%d", fmd->fd);
                 errno = 0;
-                len   = readlink(fname, fname, sizeof(fname) - 1);
+                len   = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
                     logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));

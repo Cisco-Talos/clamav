@@ -17,13 +17,17 @@
 #include <libxml/parser.h>
 #endif
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/matcher.h"
-#include "../libclamav/version.h"
-#include "../libclamav/dsig.h"
-#include "../libclamav/fpu.h"
-#include "../platform.h"
+#include "platform.h"
+
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "matcher.h"
+#include "version.h"
+#include "dsig.h"
+#include "fpu.h"
+#include "entconv.h"
+
 #include "checks.h"
 
 static int fpu_words = FPU_ENDIAN_INITME;
@@ -84,7 +88,7 @@ START_TEST(test_cl_retver)
     const char *ver = cl_retver();
     ck_assert_msg(!strcmp(REPO_VERSION "" VERSION_SUFFIX, ver), "cl_retver");
     ck_assert_msg(strcspn(ver, "012345789") < strlen(ver),
-                "cl_retver must have a number");
+                  "cl_retver must have a number");
 }
 END_TEST
 
@@ -137,7 +141,8 @@ END_TEST
 
 /* extern unsigned int cl_retflevel(void); */
 START_TEST(test_cl_retflevel)
-{}
+{
+}
 END_TEST
 
 /* extern struct cl_cvd *cl_cvdhead(const char *file); */
@@ -151,7 +156,8 @@ END_TEST
 
 /* extern struct cl_cvd *cl_cvdparse(const char *head); */
 START_TEST(test_cl_cvdparse)
-{}
+{
+}
 END_TEST
 
 static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size);
@@ -376,32 +382,38 @@ END_TEST
 
 /* int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options) */
 START_TEST(test_cl_load)
-{}
+{
+}
 END_TEST
 
 /* int cl_cvdverify(const char *file) */
 START_TEST(test_cl_cvdverify)
-{}
+{
+}
 END_TEST
 
 /* int cl_statinidir(const char *dirname, struct cl_stat *dbstat) */
 START_TEST(test_cl_statinidir)
-{}
+{
+}
 END_TEST
 
 /* int cl_statchkdir(const struct cl_stat *dbstat) */
 START_TEST(test_cl_statchkdir)
-{}
+{
+}
 END_TEST
 
 /* void cl_settempdir(const char *dir, short leavetemps) */
 START_TEST(test_cl_settempdir)
-{}
+{
+}
 END_TEST
 
 /* const char *cl_strerror(int clerror) */
 START_TEST(test_cl_strerror)
-{}
+{
+}
 END_TEST
 
 static char **testfiles     = NULL;
@@ -544,6 +556,7 @@ START_TEST(test_cl_scanmap_callback_handle)
         ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback failed for %s: %s", file, cl_strerror(ret));
         ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
+    cl_fmap_close(map);
     close(fd);
 }
 END_TEST
@@ -575,6 +588,7 @@ START_TEST(test_cl_scanmap_callback_handle_allscan)
         ck_assert_msg(ret == CL_VIRUS, "cl_scanmap_callback allscan failed for %s: %s", file, cl_strerror(ret));
         ck_assert_msg(virname && !strcmp(virname, "ClamAV-Test-File.UNOFFICIAL"), "virusname: %s", virname);
     }
+    cl_fmap_close(map);
     close(fd);
 }
 END_TEST
@@ -826,7 +840,7 @@ static const size_t dsig_tests_cnt = sizeof(dsig_tests) / sizeof(dsig_tests[0]);
 START_TEST(test_cli_dsig)
 {
     ck_assert_msg(cli_versig(dsig_tests[_i].md5, dsig_tests[_i].dsig) == dsig_tests[_i].result,
-                "digital signature verification test failed");
+                  "digital signature verification test failed");
 }
 END_TEST
 
@@ -880,96 +894,317 @@ END_TEST
 
 START_TEST(test_sanitize_path)
 {
-    char *sanitized         = NULL;
-    const char *unsanitized = NULL;
+    const char *unsanitized   = NULL;
+    char *sanitized           = NULL;
+    char *sanitized_base      = NULL;
+    const char *expected      = NULL;
+    const char *expected_base = NULL;
 
     unsanitized = "";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    ck_assert_msg(NULL == sanitized, "sanitize_path: Empty path test failed");
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+
+    unsanitized = "";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
 
     unsanitized = NULL;
-    sanitized   = cli_sanitize_filepath(unsanitized, 0);
-    ck_assert_msg(NULL == sanitized, "sanitize_path: NULL path #1 test failed");
+    sanitized   = cli_sanitize_filepath(unsanitized, 0, NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
 
     unsanitized = NULL;
-    sanitized   = cli_sanitize_filepath(unsanitized, 50);
-    ck_assert_msg(NULL == sanitized, "sanitize_path: NULL path #2 test failed");
+    sanitized   = cli_sanitize_filepath(unsanitized, 0, &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
+
+    unsanitized = NULL;
+    sanitized   = cli_sanitize_filepath(unsanitized, 50, NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+
+    unsanitized = NULL;
+    sanitized   = cli_sanitize_filepath(unsanitized, 50, &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
 
     unsanitized = "badlen";
-    sanitized   = cli_sanitize_filepath(unsanitized, 0);
-    ck_assert_msg(NULL == sanitized, "sanitize_path: Zero/bad path length test failed");
+    sanitized   = cli_sanitize_filepath(unsanitized, 0, NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+
+    unsanitized = "badlen";
+    sanitized   = cli_sanitize_filepath(unsanitized, 0, &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
 
     unsanitized = ".." PATHSEP;
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL");
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+
+    unsanitized = ".." PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
 
     unsanitized = "." PATHSEP;
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
-    ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL (2)");
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+
+    unsanitized = "." PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
 
     unsanitized = PATHSEP;
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert_msg(NULL == sanitized, "sanitize_path: sanitized path should have been NULL (3)");
 
+    unsanitized = PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert_msg(NULL == sanitized, "Expected: NULL, Found: \"%s\"", sanitized);
+    ck_assert_msg(NULL == sanitized_base, "Expected: NULL, Found: \"%s\"", sanitized_base);
+
     unsanitized = ".." PATHSEP "relative_bad_1";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative_bad_1";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative_bad_1"), "sanitize_path: bad relative path test #1 failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = ".." PATHSEP "relative_bad_1";
+    expected      = "relative_bad_1";
+    expected_base = "relative_bad_1";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP ".." PATHSEP "good";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP ".." PATHSEP "good";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "good"), "sanitize_path: good relative path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "relative" PATHSEP ".." PATHSEP "good";
+    expected      = "relative" PATHSEP ".." PATHSEP "good";
+    expected_base = "good";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP ".." PATHSEP ".." PATHSEP "bad_2";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP ".." PATHSEP "bad_2";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_2"), "sanitize_path: bad relative path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "relative" PATHSEP ".." PATHSEP ".." PATHSEP "bad_2";
+    expected      = "relative" PATHSEP ".." PATHSEP "bad_2";
+    expected_base = "bad_2";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "." PATHSEP ".." PATHSEP ".." PATHSEP "bad_current";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP ".." PATHSEP "bad_current";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
     ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP ".." PATHSEP "bad_current"), "sanitize_path: bad relative current path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "relative" PATHSEP "." PATHSEP ".." PATHSEP ".." PATHSEP "bad_current";
+    expected      = "relative" PATHSEP ".." PATHSEP "bad_current";
+    expected_base = "bad_current";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative/../../bad_win_posix_path";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+#ifdef _WIN32
+    expected = "relative\\..\\bad_win_posix_path";
+#else
+    expected = "relative/../bad_win_posix_path";
+#endif
+    sanitized = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative/../bad_win_posix_path"), "sanitize_path: bad relative win posix path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized = "relative/../../bad_win_posix_path";
+#ifdef _WIN32
+    expected = "relative\\..\\bad_win_posix_path";
+#else
+    expected = "relative/../bad_win_posix_path";
+#endif
+    expected_base = "bad_win_posix_path";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP ".." PATHSEP "bad";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "absolute" PATHSEP ".." PATHSEP "bad";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "bad"), "sanitize_path: bad absolute path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "" PATHSEP "absolute" PATHSEP ".." PATHSEP ".." PATHSEP "bad";
+    expected      = "absolute" PATHSEP ".." PATHSEP "bad";
+    expected_base = "bad";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "" PATHSEP "absolute" PATHSEP ".." PATHSEP "good";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "absolute" PATHSEP ".." PATHSEP "good";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "absolute" PATHSEP ".." PATHSEP "good"), "sanitize_path: good absolute path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "" PATHSEP "absolute" PATHSEP ".." PATHSEP "good";
+    expected      = "absolute" PATHSEP ".." PATHSEP "good";
+    expected_base = "good";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "normal";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP "normal";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "normal"), "sanitize_path: relative normal path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "relative" PATHSEP "normal";
+    expected      = "relative" PATHSEP "normal";
+    expected_base = "normal";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP PATHSEP "doublesep";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP "doublesep";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "doublesep"), "sanitize_path: relative double sep path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized   = "relative" PATHSEP PATHSEP "doublesep";
+    expected      = "relative" PATHSEP "doublesep";
+    expected_base = "doublesep";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
     unsanitized = "relative" PATHSEP "shortname" PATHSEP "1";
-    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized));
+    expected    = "relative" PATHSEP "shortname" PATHSEP "1";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
-    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "shortname" PATHSEP "1"), "sanitize_path: relative short name path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
     free(sanitized);
+
+    unsanitized   = "relative" PATHSEP "shortname" PATHSEP "1";
+    expected      = "relative" PATHSEP "shortname" PATHSEP "1";
+    expected_base = "1";
+    sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL != sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP "noname" PATHSEP;
+    expected    = "relative" PATHSEP "noname" PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
+    ck_assert(NULL != sanitized);
+    ck_assert_msg(!strcmp(sanitized, "relative" PATHSEP "noname" PATHSEP), "sanitize_path: relative no name path test failed");
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+
+    unsanitized = "relative" PATHSEP "noname" PATHSEP;
+    expected    = "relative" PATHSEP "noname" PATHSEP;
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
+    ck_assert(NULL != sanitized);
+    ck_assert(NULL == sanitized_base);
+    ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
+    free(sanitized);
+}
+END_TEST
+
+START_TEST(test_cli_codepage_to_utf8)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
+
+    ret = cli_codepage_to_utf8("\x82\xB1\x82\xF1\x82\xC9\x82\xBF\x82\xCD", 10, CODEPAGE_JAPANESE_SHIFT_JIS, &utf8, &utf8_size);
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_JAPANESE_SHIFT_JIS to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_JAPANESE_SHIFT_JIS to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(0 == strcmp(utf8, "こんにちは"), "sanitize_path: '%s' doesn't match '%s'", utf8, "こんにちは");
+
+    if (NULL != utf8) {
+        free(utf8);
+        utf8 = NULL;
+    }
+
+    ret = cli_codepage_to_utf8("\x00\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21\x00\x00", 26, CODEPAGE_UTF16_BE, &utf8, &utf8_size);
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_LE to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_LE to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(0 == strcmp(utf8, "Hello world!"), "sanitize_path: '%s' doesn't match '%s'", utf8, "Hello world!");
+
+    if (NULL != utf8) {
+        free(utf8);
+        utf8 = NULL;
+    }
+
+    ret = cli_codepage_to_utf8("\x00\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21", 24, CODEPAGE_UTF16_BE, &utf8, &utf8_size);
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_BE to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_BE to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(0 == strcmp(utf8, "Hello world!"), "sanitize_path: '%s' doesn't match '%s'", utf8, "Hello world!");
+
+    if (NULL != utf8) {
+        free(utf8);
+        utf8 = NULL;
+    }
+
+    ret = cli_codepage_to_utf8("\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21\x00\x00\x00", 26, CODEPAGE_UTF16_LE, &utf8, &utf8_size);
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_LE to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_LE to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(0 == strcmp(utf8, "Hello world!"), "sanitize_path: '%s' doesn't match '%s'", utf8, "Hello world!");
+
+    if (NULL != utf8) {
+        free(utf8);
+        utf8 = NULL;
+    }
 }
 END_TEST
 
@@ -992,6 +1227,7 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase(s, tc_cli_assorted);
     tcase_add_test(tc_cli_assorted, test_sanitize_path);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8);
 
     return s;
 }

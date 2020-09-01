@@ -34,31 +34,32 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 #include <sys/fanotify.h>
 #include <sys/inotify.h>
 #endif
 
-#include "../fanotif/fanotif.h"
+// libclamav
+#include "clamav.h"
+#include "scanners.h"
 
+// shared
+#include "optparser.h"
+#include "output.h"
+
+// clamd
+#include "server.h"
+#include "clamd_others.h"
+#include "scanner.h"
+
+#include "../fanotif/fanotif.h"
 #include "hash.h"
 #include "inotif.h"
-
 #include "../scan/thread.h"
-#include "../scan/queue.h"
+#include "../scan/onas_queue.h"
 #include "../misc/utils.h"
 
-#include "libclamav/clamav.h"
-#include "libclamav/scanners.h"
-
-#include "shared/optparser.h"
-#include "shared/output.h"
-
-#include "clamd/server.h"
-#include "clamd/others.h"
-#include "clamd/scanner.h"
-
-#if defined(FANOTIFY)
+#if defined(HAVE_SYS_FANOTIFY_H)
 
 static int onas_ddd_init_ht(uint32_t ht_size);
 static int onas_ddd_init_wdlt(uint64_t nwatches);
@@ -359,7 +360,6 @@ void *onas_ddd_th(void *arg)
 {
     struct onas_context *ctx = (struct onas_context *)arg;
     sigset_t sigset;
-    struct sigaction act;
     const struct optstruct *pt;
     uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
     fd_set rfds;
@@ -505,7 +505,8 @@ void *onas_ddd_th(void *arg)
             errno        = 0;
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
-                if (err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+                err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+                if (err) {
 
                     if (0 == errno) {
                         logg("!ClamInotif: could not watch path '%s', %d\n ", pt->strarg, err);
@@ -536,7 +537,8 @@ void *onas_ddd_th(void *arg)
             errno          = 0;
             uint64_t ptlen = strlen(include_list[idx]);
             if (onas_ht_get(ddd_ht, include_list[idx], ptlen, NULL) == CL_SUCCESS) {
-                if (err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask)) {
+                err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+                if (err) {
                     if (0 == errno) {
                         logg("!ClamInotif: could not watch path '%s', %d\n ", include_list[idx], err);
                     } else {
@@ -748,7 +750,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
     return;
 }
 
-static void onas_ddd_exit(void *arg)
+static void onas_ddd_exit(__attribute__((unused)) void *arg)
 {
     logg("*ClamInotif: onas_ddd_exit()\n");
 

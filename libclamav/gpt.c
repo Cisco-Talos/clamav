@@ -36,7 +36,8 @@
 #include "gpt.h"
 #include "mbr.h"
 #include "str.h"
-#include "prtn_intxn.h"
+#include "entconv.h"
+#include "partition_intersection.h"
 #include "scanners.h"
 #include "dconf.h"
 
@@ -66,9 +67,8 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize);
 static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize);
-static void gpt_printName(uint16_t name[], const char *msg);
 static void gpt_printGUID(uint8_t GUID[], const char *msg);
-static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
+static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize);
 
 /* returns 0 on failing to detect sectorsize */
 size_t gpt_detect_size(fmap_t *map)
@@ -194,14 +194,14 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 
     /* check that the partition table has no intersections - HEURISTICS */
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = gpt_prtn_intxn(ctx, phdr, sectorsize);
+        ret = gpt_partition_intersection(ctx, phdr, sectorsize);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
             else
                 return ret;
         }
-        ret = gpt_prtn_intxn(ctx, shdr, sectorsize);
+        ret = gpt_partition_intersection(ctx, shdr, sectorsize);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
@@ -298,7 +298,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         max_prtns = ctx->engine->maxpartitions;
     }
 
-    /* use the partition tables to pass partitions to cli_map_scan */
+    /* use the partition tables to pass partitions to cli_magic_scan_nested_fmap_type */
     pos = hdr.tableStartLBA * sectorsize;
     for (i = 0; i < max_prtns; ++i) {
         /* read in partition entry */
@@ -327,9 +327,13 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         } else if (((gpe.lastLBA + 1) * sectorsize) > maplen) {
             /* partition exists outside bounds of the file map */
         } else {
+            char *namestr = NULL;
+
+            namestr = (char *)cli_utf16toascii((char *)gpe.name, 72);
+
             /* print partition entry data for debug */
             cli_dbgmsg("GPT Partition Entry %u:\n", i);
-            gpt_printName(gpe.name, "Name");
+            cli_dbgmsg("Name: %s\n", namestr);
             gpt_printGUID(gpe.typeGUID, "Type GUID");
             gpt_printGUID(gpe.uniqueGUID, "Unique GUID");
             cli_dbgmsg("Attributes: %llx\n", (long long unsigned)gpe.attributes);
@@ -337,10 +341,13 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
                        (long long unsigned)gpe.firstLBA, (long long unsigned)(gpe.firstLBA * sectorsize),
                        (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA + 1) * sectorsize));
 
-            /* send the partition to cli_map_scan */
+            /* send the partition to cli_magic_scan_nested_fmap_type */
             part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_map_scan(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY);
+            ret       = cli_magic_scan_nested_fmap_type(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+            if (NULL != namestr) {
+                free(namestr);
+            }
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -566,16 +573,6 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
 #endif
 }
 
-static void gpt_printName(uint16_t name[], const char *msg)
-{
-    char *namestr;
-
-    namestr = (char *)cli_utf16toascii((char *)name, 72);
-    cli_dbgmsg("%s: %s\n", msg, namestr);
-
-    free(namestr);
-}
-
 static void gpt_printGUID(uint8_t GUID[], const char *msg)
 {
     cli_dbgmsg("%s: %02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
@@ -583,9 +580,9 @@ static void gpt_printGUID(uint8_t GUID[], const char *msg)
                GUID[8], GUID[9], GUID[10], GUID[11], GUID[12], GUID[13], GUID[14], GUID[15]);
 }
 
-static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize)
+static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize)
 {
-    prtn_intxn_list_t prtncheck;
+    partition_intersection_list_t prtncheck;
     struct gpt_partition_entry gpe;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN;
@@ -600,7 +597,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
     hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
 
-    prtn_intxn_list_init(&prtncheck);
+    partition_intersection_list_init(&prtncheck);
 
     /* check engine maxpartitions limit */
     if (hdr.tableNumEntries < ctx->engine->maxpartitions) {
@@ -614,7 +611,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
         /* read in partition entry */
         if (fmap_readn(*ctx->fmap, &gpe, pos, sizeof(gpe)) != sizeof(gpe)) {
             cli_dbgmsg("cli_scangpt: Invalid GPT partition entry\n");
-            prtn_intxn_list_free(&prtncheck);
+            partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;
         }
 
@@ -630,7 +627,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
         } else if (((gpe.lastLBA + 1) * sectorsize) > maplen) {
             /* partition exists outside bounds of the file map */
         } else {
-            tmp = prtn_intxn_list_check(&prtncheck, &pitxn, gpe.firstLBA, gpe.lastLBA - gpe.firstLBA + 1);
+            tmp = partition_intersection_list_check(&prtncheck, &pitxn, gpe.firstLBA, gpe.lastLBA - gpe.firstLBA + 1);
             if (tmp != CL_CLEAN) {
                 if (tmp == CL_VIRUS) {
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
@@ -655,7 +652,7 @@ static int gpt_prtn_intxn(cli_ctx *ctx, struct gpt_header hdr, size_t sectorsize
     }
 
 leave:
-    prtn_intxn_list_free(&prtncheck);
+    partition_intersection_list_free(&prtncheck);
     if (virus_found)
         return CL_VIRUS;
     return ret;

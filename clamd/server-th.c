@@ -45,23 +45,41 @@
 #ifdef C_SOLARIS
 #include <stdio_ext.h>
 #endif
-#include "libclamav/clamav.h"
 
-#include "shared/output.h"
-#include "shared/optparser.h"
-#include "shared/misc.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "readdb.h"
 
-#include "shared/idmef_logging.h"
+// shared
+#include "output.h"
+#include "optparser.h"
+#include "misc.h"
+#include "idmef_logging.h"
 
 #include "server.h"
 #include "thrmgr.h"
 #include "session.h"
-#include "others.h"
+#include "clamd_others.h"
 #include "shared.h"
-#include "libclamav/others.h"
-#include "libclamav/readdb.h"
 
 #define BUFFSIZE 1024
+
+typedef enum {
+    RELOAD_STAGE__IDLE,
+    RELOAD_STAGE__RELOADING,
+    RELOAD_STAGE__NEW_DB_AVAILABLE,
+} reload_stage_t;
+
+struct reload_th_t {
+    struct cl_settings *settings;
+    char *dbdir;
+    unsigned int dboptions;
+};
+
+/*
+ * Global variables
+ */
 
 int progexit                 = 0;
 pthread_mutex_t exit_mutex   = PTHREAD_MUTEX_INITIALIZER;
@@ -69,6 +87,11 @@ int reload                   = 0;
 time_t reloaded_time         = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup                   = 0;
+
+static pthread_mutex_t reload_stage_mutex = PTHREAD_MUTEX_INITIALIZER;
+static reload_stage_t reload_stage        = RELOAD_STAGE__IDLE; /* protected by reload_stage_mutex */
+struct cl_engine *g_newengine             = NULL;               /* protected by reload_stage_mutex */
+
 extern pthread_mutex_t logg_mutex;
 static struct cl_stat dbstat;
 
@@ -160,89 +183,245 @@ void sighandler_th(int sig)
             logg("$Failed to write to syncpipe\n");
 }
 
-static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts, int do_check, int *ret)
+static int need_db_reload(void)
 {
-    const char *dbdir;
+    if (!dbstat.entries) {
+        logg("No stats for Database check - forcing reload\n");
+        return TRUE;
+    }
+    if (cl_statchkdir(&dbstat) == 1) {
+        logg("SelfCheck: Database modification detected. Forcing reload.\n");
+        return TRUE;
+    }
+    logg("SelfCheck: Database status OK.\n");
+    return FALSE;
+}
+
+/**
+ * @brief Thread entry point to load the signature databases & compile a new scanning engine.
+ *
+ * Once loaded, an event will be set to indicate that the new engine is ready.
+ *
+ * @param arg   A reload_th_t structure defining the db directory, db settings, engine settings.
+ * @return void*
+ */
+static void *reload_th(void *arg)
+{
+    cl_error_t status = CL_EMALFDB;
+
+    struct reload_th_t *rldata = arg;
+    struct cl_engine *engine;
+    unsigned int sigs = 0;
     int retval;
-    unsigned int sigs            = 0;
-    struct cl_settings *settings = NULL;
 
-    *ret = 0;
-    if (do_check) {
-        if (!dbstat.entries) {
-            logg("No stats for Database check - forcing reload\n");
-            return engine;
-        }
-
-        if (cl_statchkdir(&dbstat) == 1) {
-            logg("SelfCheck: Database modification detected. Forcing reload.\n");
-            return engine;
-        } else {
-            logg("SelfCheck: Database status OK.\n");
-            return NULL;
-        }
+    if (NULL == rldata || NULL == rldata->dbdir || NULL == rldata->settings) {
+        logg("!reload_th: Invalid arguments, unable to load signature databases.\n");
+        status = CL_EARG;
+        goto done;
     }
 
-    /* release old structure */
-    if (engine) {
-        /* copy current settings */
-        settings = cl_engine_settings_copy(engine);
-        if (!settings)
-            logg("^Can't make a copy of the current engine settings\n");
+    logg("Reading databases from %s\n", rldata->dbdir);
 
-        thrmgr_setactiveengine(NULL);
-        cl_engine_free(engine);
+    if (NULL == (engine = cl_engine_new())) {
+        logg("!reload_th: Can't initialize antivirus engine\n");
+        goto done;
     }
 
-    dbdir = optget(opts, "DatabaseDirectory")->strarg;
-    logg("Reading databases from %s\n", dbdir);
-
-    if (dbstat.entries)
-        cl_statfree(&dbstat);
-
-    memset(&dbstat, 0, sizeof(struct cl_stat));
-    if ((retval = cl_statinidir(dbdir, &dbstat))) {
-        logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
-        *ret = 1;
-        if (settings)
-            cl_engine_settings_free(settings);
-        return NULL;
+    retval = cl_engine_settings_apply(engine, rldata->settings);
+    if (CL_SUCCESS != retval) {
+        logg("!reload_th: Failed to apply previous engine settings: %s\n", cl_strerror(retval));
+        status = CL_EMEM;
+        goto done;
     }
 
-    if (!(engine = cl_engine_new())) {
-        logg("!Can't initialize antivirus engine\n");
-        *ret = 1;
-        if (settings)
-            cl_engine_settings_free(settings);
-        return NULL;
+    retval = cl_load(rldata->dbdir, engine, &sigs, rldata->dboptions);
+    if (CL_SUCCESS != retval) {
+        logg("!reload_th: Database load failed: %s\n", cl_strerror(retval));
+        goto done;
     }
 
-    if (settings) {
-        retval = cl_engine_settings_apply(engine, settings);
-        if (retval != CL_SUCCESS) {
-            logg("^Can't apply previous engine settings: %s\n", cl_strerror(retval));
-            logg("^Using default engine settings\n");
-        }
-        cl_engine_settings_free(settings);
+    retval = cl_engine_compile(engine);
+    if (CL_SUCCESS != retval) {
+        logg("!reload_th: Database initialization error: can't compile engine: %s\n", cl_strerror(retval));
+        goto done;
     }
 
-    if ((retval = cl_load(dbdir, engine, &sigs, dboptions))) {
-        logg("!reload db failed: %s\n", cl_strerror(retval));
-        cl_engine_free(engine);
-        *ret = 1;
-        return NULL;
-    }
-
-    if ((retval = cl_engine_compile(engine)) != 0) {
-        logg("!Database initialization error: can't compile engine: %s\n", cl_strerror(retval));
-        cl_engine_free(engine);
-        *ret = 1;
-        return NULL;
-    }
     logg("Database correctly reloaded (%u signatures)\n", sigs);
+    status = CL_SUCCESS;
 
-    thrmgr_setactiveengine(engine);
-    return engine;
+done:
+
+    if (NULL != rldata) {
+        if (NULL != rldata->settings) {
+            cl_engine_settings_free(rldata->settings);
+        }
+        if (NULL != rldata->dbdir) {
+            free(rldata->dbdir);
+        }
+        free(rldata);
+    }
+
+    if (CL_SUCCESS != status) {
+        if (NULL != engine) {
+            cl_engine_free(engine);
+            engine = NULL;
+        }
+    }
+
+    pthread_mutex_lock(&reload_stage_mutex);
+    reload_stage = RELOAD_STAGE__NEW_DB_AVAILABLE; /* New DB available */
+    g_newengine  = engine;
+    pthread_mutex_unlock(&reload_stage_mutex);
+
+#ifdef _WIN32
+    SetEvent(event_wake_recv);
+#else
+    if (syncpipe_wake_recv_w != -1)
+        if (write(syncpipe_wake_recv_w, "", 1) != 1)
+            logg("$Failed to write to syncpipe\n");
+#endif
+
+    return NULL;
+}
+
+/**
+ * @brief Reload the database.
+ *
+ * @param[in/out] engine    The current scan engine, used to copy the settings.
+ * @param dboptions         The current database options, used to copy the options.
+ * @param opts              The command line options, used to get the database directory.
+ * @return cl_error_t       CL_SUCCESS if the reload thread was successfully started. This does not mean that the database has reloaded successfully.
+ */
+static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, const struct optstruct *opts, threadpool_t *thr_pool)
+{
+    cl_error_t status = CL_EMALFDB;
+    cl_error_t retval;
+    struct reload_th_t *rldata;
+    pthread_t th;
+    pthread_attr_t th_attr;
+
+    if (NULL == opts || NULL == engine) {
+        logg("!reload_db: Invalid arguments, unable to load signature databases.\n");
+        status = CL_EARG;
+        goto done;
+    }
+
+    rldata = malloc(sizeof(struct reload_th_t));
+    if (!rldata) {
+        logg("!Failed to allocate reload context\n");
+        status = CL_EMEM;
+        goto done;
+    }
+    memset(rldata, 0, sizeof(struct reload_th_t));
+
+    rldata->dboptions = dboptions;
+
+    if (*engine) {
+        /* copy current settings */
+        rldata->settings = cl_engine_settings_copy(*engine);
+        if (!rldata->settings) {
+            logg("!Can't make a copy of the current engine settings\n");
+            goto done;
+        }
+    }
+
+    rldata->dbdir = strdup(optget(opts, "DatabaseDirectory")->strarg);
+    if (!rldata->dbdir) {
+        logg("!Can't duplicate the database directory path\n");
+        goto done;
+    }
+
+    if (dbstat.entries) {
+        cl_statfree(&dbstat);
+    }
+    memset(&dbstat, 0, sizeof(struct cl_stat));
+
+    retval = cl_statinidir(rldata->dbdir, &dbstat);
+    if (CL_SUCCESS != retval) {
+        logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
+        goto done;
+    }
+
+    if (*engine) {
+        if (!optget(opts, "ConcurrentDatabaseReload")->enabled) {
+            /*
+             * If concurrent reload disabled, we'll NULL out the current engine and deref it.
+             * It will only actually be free'd once the last scan finishes.
+             */
+            thrmgr_setactiveengine(NULL);
+            cl_engine_free(*engine);
+            *engine = NULL;
+
+            /* Wait for all scans to finish */
+            thrmgr_wait_for_threads(thr_pool);
+        }
+    }
+
+    if (pthread_attr_init(&th_attr)) {
+        logg("!Failed to init reload thread attributes\n");
+        goto done;
+    }
+
+    if (optget(opts, "ConcurrentDatabaseReload")->enabled) {
+        /* For concurrent reloads: set detached, so we don't leak thread resources */
+        pthread_attr_setdetachstate(&th_attr, PTHREAD_CREATE_DETACHED);
+    }
+
+    retval = pthread_create(&th, &th_attr, reload_th, rldata);
+    if (pthread_attr_destroy(&th_attr))
+        logg("^Failed to release reload thread attributes\n");
+    if (retval) {
+        logg("!Failed to spawn reload thread\n");
+        goto done;
+    }
+
+    if (!optget(opts, "ConcurrentDatabaseReload")->enabled) {
+        /* For non-concurrent reloads: join the thread */
+        int join_ret = pthread_join(th, NULL);
+        switch (join_ret) {
+            case 0:
+                logg("Database reload completed.\n");
+                break;
+
+            case EDEADLK:
+                logg("!A deadlock was detected when waiting for the database reload thread.\n");
+                goto done;
+
+            case ESRCH:
+                logg("!Failed to find database reload thread.\n");
+                goto done;
+
+            case EINVAL:
+                logg("!The database reload thread is not a joinable thread.\n");
+                goto done;
+
+            default:
+                logg("!An unknown error occured when waiting for the database reload thread: %d\n", join_ret);
+                goto done;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    if (CL_SUCCESS != status) {
+        /*
+         * Failed to spawn reload thread, so we're responsible for cleaning up
+         * the rldata structure.
+         */
+        if (NULL != rldata) {
+            if (NULL != rldata->settings) {
+                cl_engine_settings_free(rldata->settings);
+            }
+            if (NULL != rldata->dbdir) {
+                free(rldata->dbdir);
+            }
+            free(rldata);
+        }
+    }
+
+    return status;
 }
 
 /*
@@ -297,7 +476,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
     }
 }
 
-int statinidir_th(const char *dirname)
+int statinidir(const char *dirname)
 {
     if (!dbstat.entries) {
         memset(&dbstat, 0, sizeof(dbstat));
@@ -710,7 +889,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     return 0;
 }
 
-int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
+int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
     int max_threads, max_queue, readtimeout, ret = 0;
     struct cl_scan_options options;
@@ -720,10 +899,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     sigset_t sigset;
     struct rlimit rlim;
 #endif
-    mode_t old_umask;
     const struct optstruct *opt;
     char buff[BUFFSIZE + 1];
-    pid_t mainpid;
     int idletimeout;
     unsigned long long val;
     size_t i, j, rr_last = 0;
@@ -965,7 +1142,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     if (optget(opts, "AlertEncryptedArchive")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
-            logg("Alerting of encrypted archives _and_ documents enabled.\n");
+            logg("Alerting of encrypted archives enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
         } else {
             logg("^Encrypted archive alerting requested, but archive support "
@@ -1138,6 +1315,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
         logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int)val);
 
+        if (optget(opts, "StructuredCCOnly")->enabled)
+            options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
+
         if ((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
                 logg("!cl_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
@@ -1167,23 +1347,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         logg("Self checking every %u seconds.\n", selfchk);
     }
 
-    /* save the PID */
-    mainpid = getpid();
-    if ((opt = optget(opts, "PidFile"))->enabled) {
-        FILE *fd;
-        old_umask = umask(0002);
-        if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            logg("!Can't save PID in file %s\n", opt->strarg);
-        } else {
-            if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
-                logg("!Can't save PID in file %s\n", opt->strarg);
-            }
-            fclose(fd);
-        }
-        umask(old_umask);
-    }
-
-    logg("*Listening daemon: PID: %u\n", (unsigned int)mainpid);
+    logg("*Listening daemon: PID: %u\n", (unsigned int)getpid());
     max_threads               = optget(opts, "MaxThreads")->numarg;
     max_queue                 = optget(opts, "MaxQueue")->numarg;
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
@@ -1529,7 +1693,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         if (selfchk) {
             time(&current_time);
             if ((current_time - start_time) >= (time_t)selfchk) {
-                if (reload_db(engine, dboptions, opts, TRUE, &ret)) {
+                if (need_db_reload()) {
                     pthread_mutex_lock(&reload_mutex);
                     reload = 1;
                     pthread_mutex_unlock(&reload_mutex);
@@ -1542,20 +1706,47 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         pthread_mutex_lock(&reload_mutex);
         if (reload) {
             pthread_mutex_unlock(&reload_mutex);
-
-            engine = reload_db(engine, dboptions, opts, FALSE, &ret);
-            if (ret) {
-                logg("Terminating because of a fatal error.\n");
-                if (new_sd >= 0)
-                    closesocket(new_sd);
-                break;
+            /* Reload was requested */
+            pthread_mutex_lock(&reload_stage_mutex);
+            if (reload_stage == RELOAD_STAGE__IDLE) {
+                /* Reloading not already taking place */
+                reload_stage = RELOAD_STAGE__RELOADING;
+                pthread_mutex_unlock(&reload_stage_mutex);
+                if (CL_SUCCESS != reload_db(&engine, dboptions, opts, thr_pool)) {
+                    logg("^Database reload setup failed, keeping the previous instance\n");
+                    pthread_mutex_lock(&reload_mutex);
+                    reload = 0;
+                    pthread_mutex_unlock(&reload_mutex);
+                    pthread_mutex_lock(&reload_stage_mutex);
+                    reload_stage = RELOAD_STAGE__IDLE;
+                    pthread_mutex_unlock(&reload_stage_mutex);
+                }
+                pthread_mutex_lock(&reload_stage_mutex);
             }
-
-            pthread_mutex_lock(&reload_mutex);
-            reload = 0;
-            time(&reloaded_time);
-            pthread_mutex_unlock(&reload_mutex);
-            time(&start_time);
+            if (reload_stage == RELOAD_STAGE__NEW_DB_AVAILABLE) {
+                /* New database available */
+                if (g_newengine) {
+                    /* Reload succeeded */
+                    logg("Activating the newly loaded database...\n");
+                    thrmgr_setactiveengine(g_newengine);
+                    if (optget(opts, "ConcurrentDatabaseReload")->enabled) {
+                        /* If concurrent database reload, we now need to free the old engine. */
+                        cl_engine_free(engine);
+                    }
+                    engine      = g_newengine;
+                    g_newengine = NULL;
+                } else {
+                    logg("^Database reload failed, keeping the previous instance\n");
+                }
+                reload_stage = RELOAD_STAGE__IDLE;
+                pthread_mutex_unlock(&reload_stage_mutex);
+                pthread_mutex_lock(&reload_mutex);
+                reload = 0;
+                pthread_mutex_unlock(&reload_mutex);
+                time(&reloaded_time);
+            } else {
+                pthread_mutex_unlock(&reload_stage_mutex);
+            }
         } else {
             pthread_mutex_unlock(&reload_mutex);
         }

@@ -99,6 +99,7 @@ enum thrmgr_exit {
 
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
+void thrmgr_wait_for_threads(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data, int bulk);
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);

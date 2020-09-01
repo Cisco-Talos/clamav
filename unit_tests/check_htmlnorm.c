@@ -24,13 +24,15 @@
 #include <fcntl.h>
 #include <string.h>
 
+// libclamav
+#include "clamav.h"
+#include "fmap.h"
+#include "dconf.h"
+#include "htmlnorm.h"
+#include "others.h"
+#include "fmap.h"
+
 #include "checks.h"
-#include "../libclamav/clamav.h"
-#include "../libclamav/fmap.h"
-#include "../libclamav/dconf.h"
-#include "../libclamav/htmlnorm.h"
-#include "../libclamav/others.h"
-#include "../libclamav/fmap.h"
 
 static char *dir;
 
@@ -115,7 +117,7 @@ START_TEST(test_htmlnorm_api)
     fd = open_testfile(tests[_i].input);
     ck_assert_msg(fd > 0, "open_testfile failed");
 
-    map = fmap(fd, 0, 0);
+    map = fmap(fd, 0, 0, tests[_i].input);
     ck_assert_msg(!!map, "fmap failed");
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
@@ -151,7 +153,7 @@ START_TEST(test_screnc_nullterminate)
     fmap_t *map;
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");
-    map = fmap(fd, 0, 0);
+    map = fmap(fd, 0, 0, "screnc_test");
     ck_assert_msg(!!map, "fmap failed");
     ck_assert_msg(html_screnc_decode(map, dir) == 1, "html_screnc_decode failed");
     funmap(map);

@@ -37,8 +37,8 @@
 #include <sys/socket.h>
 #endif
 
-#include "shared/output.h"
-#include "shared/clamdcom.h"
+#include "output.h"
+#include "clamdcom.h"
 
 /* Sends bytes over a socket
  * Returns 0 on success */

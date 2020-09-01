@@ -17,23 +17,9 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-if BUILD_CLAMD
-
 bin_PROGRAMS = clamdscan
 
 clamdscan_SOURCES = \
-    $(top_srcdir)/shared/output.c \
-    $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/optparser.c \
-    $(top_srcdir)/shared/optparser.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/actions.c \
-    $(top_srcdir)/shared/actions.h \
-    $(top_srcdir)/shared/clamdcom.c \
-    $(top_srcdir)/shared/clamdcom.h \
     clamdscan.c \
     proto.c \
     proto.h \
@@ -41,12 +27,9 @@ clamdscan_SOURCES = \
     client.h
 
 AM_CFLAGS=@WERR_CFLAGS@
-endif
 
-
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la  @CLAMDSCAN_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CLAMDSCAN_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamdscan$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

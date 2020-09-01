@@ -169,7 +169,7 @@ DatabaseMirror database.clamav.net
 # Default: 30
 #ConnectTimeout 60
 
-# Timeout in seconds when reading from database server.
+# Maximum time in seconds for each download operation. 0 means no timeout.
 # Default: 0
 #ReceiveTimeout 1800
 

@@ -20,8 +20,8 @@
  * http://www.speakeasy.org/~russotto/quantumcomp.html
  */
 
-#include <system.h>
-#include <qtm.h>
+#include "system.h"
+#include "qtm.h"
 
 /* import bit-reading macros and code */
 #define BITS_TYPE struct qtmd_stream
@@ -33,7 +33,7 @@
     READ_IF_NEEDED; b1 = *i_ptr++;      \
     INJECT_BITS((b0 << 8) | b1, 16);    \
 } while (0)
-#include <readbits.h>
+#include "readbits.h"
 
 /* Quantum static data tables:
  *
@@ -83,7 +83,7 @@ static const unsigned char length_extra[27] = {
 
 
 /* Arithmetic decoder:
- * 
+ *
  * GET_SYMBOL(model, var) fetches the next symbol from the stated model
  * and puts it in var.
  *
@@ -379,7 +379,7 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
           }
           out_bytes -= i;
           qtm->o_ptr = &window[0];
-          qtm->o_end = &window[0]; 
+          qtm->o_end = &window[0];
 
           /* copy second part of match, after window wrap */
           rundest = &window[0];
@@ -453,7 +453,7 @@ int qtmd_decompress(struct qtmd_stream *qtm, off_t out_bytes) {
       }
       out_bytes -= i;
       qtm->o_ptr = &window[0];
-      qtm->o_end = &window[0]; 
+      qtm->o_end = &window[0];
       window_posn = 0;
    }
 

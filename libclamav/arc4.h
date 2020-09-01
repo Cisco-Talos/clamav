@@ -19,6 +19,8 @@
  *  MA 02110-1301, USA.
  */
 
+#include <stdbool.h>
+
 #include "clamav-types.h"
 struct arc4_state {
     /* really just 8 bit, but it is faster if reads are aligned */
@@ -26,5 +28,5 @@ struct arc4_state {
     uint8_t i, j;
 };
 
-void arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength);
+bool arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength);
 void arc4_apply(struct arc4_state *s, uint8_t *data, unsigned len);

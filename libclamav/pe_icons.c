@@ -763,7 +763,7 @@ static void makebmp(const char *step, const char *tempd, int w, int h, void *dat
 
     if (!tempd)
         return;
-    if (!(fname = cli_gentemp(tempd)))
+    if (!(fname = cli_gentemp_with_prefix(tempd, "bmp")))
         return;
     if (!(f = fopen(fname, "wb"))) {
         cli_unlink(fname);
@@ -1369,7 +1369,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
         return CL_SUCCESS;
     map   = *ctx->fmap;
-    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->engine->tmpdir ? ctx->engine->tmpdir : cli_gettmpdir()) : NULL;
+    tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->sub_tmpdir ? ctx->sub_tmpdir : cli_gettmpdir()) : NULL;
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
 
     /* read the bitmap header */

@@ -331,21 +331,6 @@ static struct mspack_system mspack_sys_fmap_ops = {
     .copy    = mspack_fmap_copy,
 };
 
-static int cli_scanfile(const char *filename, cli_ctx *ctx)
-{
-    int fd, ret = 0;
-
-    /* internal version of cl_scanfile with arec/mrec preserved */
-    fd = safe_open(filename, O_RDONLY | O_BINARY);
-    if (fd < 0)
-        return ret;
-
-    ret = cli_magic_scandesc(fd, filename, ctx);
-
-    close(fd);
-    return ret;
-}
-
 int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 {
     struct mscab_decompressor *cab_d;
@@ -410,7 +395,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
         else
             max_size = ctx->engine->maxfilesize ? ctx->engine->maxfilesize : 0xffffffff;
 
-        tmp_fname = cli_gentemp(ctx->engine->tmpdir);
+        tmp_fname = cli_gentemp(ctx->sub_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
             break;
@@ -423,9 +408,12 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
 
-        ret = cli_scanfile(tmp_fname, ctx);
-        if (ret == CL_VIRUS)
+        ret = cli_magic_scan_file(tmp_fname, ctx, cab_f->filename);
+        if (CL_EOPEN == ret) {
+            ret = CL_CLEAN;
+        } else if (CL_VIRUS == ret) {
             virus_num++;
+        }
 
         if (!ctx->engine->keeptmp) {
             if (!access(tmp_fname, R_OK) && cli_unlink(tmp_fname)) {
@@ -511,7 +499,7 @@ int cli_scanmschm(cli_ctx *ctx)
 
         ops_ex.max_size = max_size;
 
-        tmp_fname = cli_gentemp(ctx->engine->tmpdir);
+        tmp_fname = cli_gentemp(ctx->sub_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
             break;
@@ -523,9 +511,12 @@ int cli_scanmschm(cli_ctx *ctx)
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
 
-        ret = cli_scanfile(tmp_fname, ctx);
-        if (ret == CL_VIRUS)
+        ret = cli_magic_scan_file(tmp_fname, ctx, mschm_f->filename);
+        if (CL_EOPEN == ret) {
+            ret = CL_CLEAN;
+        } else if (CL_VIRUS == ret) {
             virus_num++;
+        }
 
         if (!ctx->engine->keeptmp) {
             if (!access(tmp_fname, R_OK) && cli_unlink(tmp_fname)) {

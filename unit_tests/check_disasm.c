@@ -33,9 +33,11 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../libclamav/clamav.h"
-#include "../libclamav/others.h"
-#include "../libclamav/disasm.h"
+// libclamav
+#include "clamav.h"
+#include "others.h"
+#include "disasm.h"
+
 #include "checks.h"
 
 START_TEST(test_disasm_basic)

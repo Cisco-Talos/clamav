@@ -21,6 +21,7 @@
 
 /* a fake libresolv-like res_query interface */
 
+#include <Windows.H>
 #include "resolv.h"
 
 int res_init(void)

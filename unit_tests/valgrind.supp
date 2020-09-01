@@ -90,9 +90,9 @@
    y0da-cached-virname
    Memcheck:Cond
    fun:cli_scanpe
-   fun:magic_scandesc
-   fun:cli_base_scandesc
-   fun:cli_magic_scandesc
+   fun:cli_magic_scan
+   fun:cli_magic_scan_desc_type
+   fun:cli_magic_scan_desc
    fun:scan_common
    fun:cl_scandesc_callback
    fun:scanfile
@@ -196,7 +196,7 @@
    obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
    fun:send
    fun:fds_poll_recv
-   fun:recvloop_th
+   fun:recvloop
    obj:/lib/libthr.so.3
 }
 {
@@ -207,7 +207,7 @@
    obj:/usr/local/lib/valgrind/memcheck-x86-freebsd
    fun:poll
    fun:fds_poll_recv
-   fun:recvloop_th
+   fun:recvloop
    ...
 }
 {
@@ -265,7 +265,6 @@
    fun:internal_ascii_loop
    fun:__gconv_transform_internal_ascii
    fun:wcsrtombs
-   fun:wcsrtombs
    ...
 }
 {
@@ -273,14 +272,12 @@
    Memcheck:Cond
    fun:__wcsnlen_avx2
    fun:wcsrtombs
-   fun:wcsrtombs
    ...
 }
 {
    unrar-wcsrtombs-3
    Memcheck:Cond
    fun:__wcsnlen_sse4_1
-   fun:wcsrtombs
    fun:wcsrtombs
    ...
 }
@@ -290,5 +287,13 @@
    fun:__memcpy_chk
    fun:memmove
    fun:cli_binhex
+   ...
+}
+{
+   unrar-wcsrtombs-4
+   Memcheck:Cond
+   fun:internal_utf8_loop
+   fun:__gconv_transform_internal_utf8
+   fun:wcsrtombs
    ...
 }

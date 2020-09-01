@@ -132,5 +132,11 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx , int8_t*, int32_t, int
 int32_t cli_bcapi_json_get_boolean(struct cli_bc_ctx *ctx , int32_t);
 int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx , int32_t);
 uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx , const uint8_t*, uint32_t);
+int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx , int32_t, int32_t);
+int32_t cli_bcapi_lzma_process(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_lzma_done(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx , int32_t, int32_t);
+int32_t cli_bcapi_bzip2_process(struct cli_bc_ctx *ctx , int32_t);
+int32_t cli_bcapi_bzip2_done(struct cli_bc_ctx *ctx , int32_t);
 
 #endif

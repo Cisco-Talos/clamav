@@ -34,7 +34,9 @@
 #endif
 #include <zlib.h>
 
-#include "libclamav/clamav.h"
+// libclamav
+#include "clamav.h"
+
 #include "tar.h"
 
 struct tar_header {

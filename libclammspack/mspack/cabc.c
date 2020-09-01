@@ -9,8 +9,8 @@
 
 /* CAB compression implementation */
 
-#include <system.h>
-#include <cab.h>
+#include "system.h"
+#include "cab.h"
 
 struct mscab_compressor *
   mspack_create_cab_compressor(struct mspack_system *sys)

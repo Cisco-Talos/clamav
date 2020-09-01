@@ -91,13 +91,8 @@ static char boundary[256] = {
 
 static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *pattern, struct cli_ac_node *pt)
 {
-    struct cli_ac_list *ph, *new, *ph_prev, *ph_add_after;
+    struct cli_ac_list *new;
     struct cli_ac_list **newtable;
-    struct cli_ac_patt *php;
-    struct cli_ac_special *a1, *a2;
-    struct cli_alt_node *b1, *b2;
-    int match;
-    uint16_t i, j;
 
     new = (struct cli_ac_list *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_ac_list));
     if (!new) {
@@ -1887,7 +1882,9 @@ cl_error_t cli_ac_scanbuff(
                                     if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
                                         cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
                                         type = pt->type;
-                                        if (ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
+                                        if (ftoffset &&
+                                            (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) &&
+                                            (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
                                             /* FIXME: the first offset in the array is most likely the correct one but
                                              * it may happen it is not
                                              */

@@ -9,9 +9,6 @@
 /* enable bind8 compatibility */
 #undef BIND_8_COMPAT
 
-/* "build clamd" */
-#undef BUILD_CLAMD
-
 /* use ClamAuth */
 #undef CLAMAUTH
 
@@ -86,9 +83,6 @@
 
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
-
-/* use fanotify */
-#undef FANOTIFY
 
 /* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
 #undef FDPASS_NEED_XOPEN
@@ -413,6 +407,9 @@
 
 /* Define to 1 if you have the <sys/dl.h> header file. */
 #undef HAVE_SYS_DL_H
+
+/* use fanotify */
+#undef HAVE_SYS_FANOTIFY_H
 
 /* Define to 1 if you have the <sys/filio.h> header file. */
 #undef HAVE_SYS_FILIO_H
