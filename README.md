@@ -26,7 +26,7 @@ to get started!
 #### Build from Source on Linux/Unix/Mac
 
 For basic compile and install instructions on Linux/Unix platforms, check out
-the [install instructions](INSTALL.md).
+the [install instructions](INSTALL.autotools.md).
 
 For detailed instructions specific to building ClamAV please investigate
 our the
