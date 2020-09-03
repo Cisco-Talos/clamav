@@ -10,7 +10,6 @@ ConditionPathExistsGlob=@DBDIR@/daily.{c[vl]d,inc}
 ExecStart=@prefix@/sbin/clamd --foreground=true
 # Reload the database
 ExecReload=/bin/kill -USR2 $MAINPID
-StandardOutput=syslog
 TimeoutStartSec=420
 
 [Install]
