@@ -85,8 +85,8 @@ tune to #clamav on [IRC](irc.freenode.net).
 
 The ClamAV development team welcomes
 [code contributions](https://github.com/Cisco-Talos/clamav-devel),
-improvements to [our documentation](https://github.com/Cisco-Talos/clamav-faq), and also
-[bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
+improvements to [our documentation](https://github.com/Cisco-Talos/clamav-faq),
+and also [bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
 
 ## Credits
 
