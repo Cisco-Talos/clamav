@@ -8,7 +8,6 @@ After=network-online.target
 
 [Service]
 ExecStart=@prefix@/bin/freshclam -d --foreground=true
-StandardOutput=syslog
 
 [Install]
 WantedBy=multi-user.target
