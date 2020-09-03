@@ -20,7 +20,7 @@ UninstallDisplayName=ClamAV
 Compression=lzma2
 SolidCompression=yes
 OutputDir=.
-OutputBaseFilename=ClamAV-0.103.0-rc2
+OutputBaseFilename=ClamAV-0.103.0
 WizardImageFile=demon.bmp
 WizardSmallImageFile=talos.bmp
 

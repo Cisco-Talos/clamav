@@ -524,7 +524,7 @@
 #cmakedefine VERSION "@PACKAGE_VERSION@"
 
 /* Version suffix for package */
-#cmakedefine VERSION_SUFFIX "@VERSION_SUFFIX@"
+#define VERSION_SUFFIX "@VERSION_SUFFIX@"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

@@ -7,7 +7,7 @@ if test "$enable_check_ut" != "no" ; then
 
 PKG_CHECK_MODULES(CHECK, [check], [HAVE_LIBCHECK=yes], [HAVE_LIBCHECK=])
 
-if test "X$HAVE_LIBCHECK" == "Xyes"; then
+if test "X$HAVE_LIBCHECK" = "Xyes"; then
     CHECK_CPPFLAGS=$CHECK_CFLAGS
 else
 
