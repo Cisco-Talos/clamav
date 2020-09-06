@@ -28,6 +28,17 @@ FRESHCLAM_PUBLIC {
     mprintf_disabled;
 };
 FRESHCLAM_PRIVATE {
+  global:
+    optparse;
+    optget;
+    optfree;
+    get_version;
+    print_version;
+    check_flevel;
+    drop_privileges;
+    daemonize_parent_wait;
+    daemonize_signal_parent;
+    sendln;
   local:
     *;
 };
