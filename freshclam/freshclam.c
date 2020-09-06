@@ -126,7 +126,7 @@ static int writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
-    old_umask = umask(0006);
+    old_umask = umask(0002);
     if ((fd = fopen(pidfile, "w")) == NULL) {
         logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
         return 1;
@@ -140,10 +140,10 @@ static int writepid(const char *pidfile)
     /*If the file has already been created by a different user, it will just be
      * rewritten by us, but not change the ownership, so do that explicitly.
      */
-    if (0 == geteuid()){
-        struct passwd * pw = getpwuid(0);
-        int ret = lchown(pidfile, pw->pw_uid, pw->pw_gid);
-        if (ret){
+    if (0 == geteuid()) {
+        struct passwd *pw = getpwuid(0);
+        int ret           = lchown(pidfile, pw->pw_uid, pw->pw_gid);
+        if (ret) {
             logg("!Can't change ownership of PID file %s '%s'\n", pidfile, strerror(errno));
             return 1;
         }
@@ -1536,7 +1536,7 @@ int main(int argc, char **argv)
 
 #ifdef HAVE_PWD_H
     const struct optstruct *logFileOpt = NULL;
-    const char * logFileName = NULL;
+    const char *logFileName            = NULL;
 #endif /* HAVE_PWD_H */
 
     fc_ctx fc_context = {0};
@@ -1880,7 +1880,7 @@ int main(int argc, char **argv)
         /*  Get the log file name to pass it into drop_privileges.  */
         logFileOpt = optget(opts, "UpdateLogFile");
         if (logFileOpt->enabled) {
-           logFileName  = logFileOpt->strarg;
+            logFileName = logFileOpt->strarg;
         }
 
         /*
