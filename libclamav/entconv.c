@@ -772,7 +772,6 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
 }
 
 cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size)
-
 {
     cl_error_t status = CL_BREAK;
 
@@ -907,7 +906,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             }
 
             out_utf8 = cli_malloc(out_utf8_size + 1);
-            if (NULL == lpWideCharStr) {
+            if (NULL == out_utf8) {
                 cli_dbgmsg("cli_codepage_to_utf8: failed to allocate memory for wide char to utf-8 string.\n");
                 status = CL_EMEM;
                 goto done;
@@ -927,6 +926,9 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                 status = CL_EPARSE;
                 goto done;
             }
+
+            /* Set a null byte, since null-terminator is not provided when in_size is provided */
+            out_utf8[out_utf8_size] = '\0';
 
 #elif defined(HAVE_ICONV)
 

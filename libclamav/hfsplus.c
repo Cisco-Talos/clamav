@@ -970,7 +970,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                     /*
                      * The name is contained in nodeBuf[recordStart + 2 + 4 + 2 : recordStart + 2 + 4 + 2 + name_length * 2] encoded as UTF-16BE.
                      */
-                    if (CL_SUCCESS != cli_codepage_to_utf8((char *)index, name_length * 2, 1201, &name_utf8, &name_utf8_size)) {
+                    if (CL_SUCCESS != cli_codepage_to_utf8((char *)index, name_length * 2, CODEPAGE_UTF16_BE, &name_utf8, &name_utf8_size)) {
                         cli_errmsg("hfsplus_walk_catalog: failed to convert UTF-16BE to UTF-8\n");
                         name_utf8 = NULL;
                     }

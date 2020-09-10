@@ -3773,7 +3773,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     if (str_len > data_size - data_pos) {
                         str_len = data_size - data_pos;
                     }
-                    if (CL_SUCCESS == cli_codepage_to_utf8(&data[data_pos + 3], str_len, 1200, &utf8, &utf8_size)) {
+                    if (CL_SUCCESS == cli_codepage_to_utf8(&data[data_pos + 3], str_len, CODEPAGE_UTF16_LE, &utf8, &utf8_size)) {
                         if (0 < utf8_size) {
                             size_written = fwrite(utf8, 1, utf8_size, out_file);
                             free(utf8);
@@ -4326,7 +4326,7 @@ cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U,
                             string_length = biff_header.length - 3;
                         }
 
-                        if (CL_SUCCESS == cli_codepage_to_utf8(&data[3], string_length, 1200, &utf8, &utf8_size)) {
+                        if (CL_SUCCESS == cli_codepage_to_utf8(&data[3], string_length, CODEPAGE_UTF16_LE, &utf8, &utf8_size)) {
                             if (0 < utf8_size) {
                                 size_written = fwrite(utf8, 1, utf8_size, out_file);
                                 free(utf8);
