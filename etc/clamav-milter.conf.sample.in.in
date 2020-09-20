@@ -91,6 +91,7 @@ Example
 # fashion.
 #
 # Default: no default
+#ClamdSocket unix:@RUNSTATEDIR@/clamav/clamd.ctl
 #ClamdSocket tcp:scanner.mydomain:7357
 
 
