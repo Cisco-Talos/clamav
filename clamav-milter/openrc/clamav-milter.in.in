@@ -18,3 +18,17 @@ depend() {
   # before clamav-milter, so long as clamd is also present this runlevel.
   use clamd
 }
+
+start_pre() {
+  # This exists to support the (disabled) default MilterSocket setting
+  # within clamav-milter.conf. The "clamav" user and group agree with
+  # the (disabled) default "User" and "MilterSocketGroup" settings.
+  #
+  # Creating this directory is harmless even when a local socket is
+  # not used. In fact, the clamd service that we depend on should
+  # create it as well, to hold its own local socket (if enabled).
+  checkpath --directory \
+           --mode 0755 \
+           --owner clamav:clamav \
+           "@RUNSTATEDIR@/clamav"
+}

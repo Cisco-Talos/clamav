@@ -17,7 +17,7 @@ Example
 # inet6:port@[hostname|ip-address] - to specify an ipv6 socket
 #
 # Default: no default
-#MilterSocket /tmp/clamav-milter.socket
+#MilterSocket unix:@RUNSTATEDIR@/clamav/clamav-milter.socket
 #MilterSocket inet:7357
 
 # Define the group ownership for the (unix) milter socket.
