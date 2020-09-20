@@ -11,6 +11,21 @@ extra_started_commands="reload"
 #
 pidfile="@RUNSTATEDIR@/${RC_SVCNAME}.pid"
 
+start_pre() {
+  # This exists to support the (disabled) default LocalSocket setting
+  # within clamd.conf. The "clamav" user and group agree with the
+  # (disabled) default "User" and "LocalSocketGroup" settings in
+  # clamd.conf. And everything here agrees with the
+  # clamav-daemon.socket systemd service.
+  #
+  # Creating this directory is harmless even when a local socket is
+  # not used.
+  checkpath --directory \
+           --mode 0755 \
+           --owner clamav:clamav \
+           "@RUNSTATEDIR@/clamav"
+}
+
 reload() {
   ebegin "Reloading ${RC_SVCNAME}"
   "@BINDIR@/clamdscan" --reload
