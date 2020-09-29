@@ -86,7 +86,9 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
     curlcode = curl_easy_getinfo(curl, CURLINFO_ACTIVESOCKET, &sockfd);
 #else
     /* Use deprecated CURLINFO_LASTSOCKET option */
-    curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &sockfd);
+    long long_sockfd;
+    curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &long_sockfd);
+    sockfd = (curl_socket_t) long_sockfd;
 #endif
 
     if (CURLE_OK != curlcode) {
@@ -150,7 +152,9 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
     rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_ACTIVESOCKET, &sockfd);
 #else
     /* Use deprecated CURLINFO_LASTSOCKET option */
-    rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &sockfd);
+    long long_sockfd;
+    rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &long_sockfd);
+    sockfd = (curl_socket_t) long_sockfd;
 #endif
 
     if (CURLE_OK != rcv_data->curlcode) {
