@@ -165,6 +165,11 @@ int main(int argc, char **argv)
             logg("*Clamonacc: not setting up client\n");
             goto done;
             break;
+        case CL_EWRITE:
+            logg("!Clamonacc: can't set up fd passing, configuration issue -- please ensure your system \
+            is capable of fdpassing before specifying the fdpass option\n");
+            ret = 2;
+            goto done;
         case CL_EARG:
         default:
             logg("!Clamonacc: can't setup client\n");

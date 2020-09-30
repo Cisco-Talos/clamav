@@ -66,6 +66,7 @@
 #include "communication.h"
 #include "client.h"
 #include "protocol.h"
+#include "socket.h"
 
 #include "../clamonacc.h"
 
@@ -425,6 +426,9 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
     remote = (*ctx)->isremote | optget(opts, "stream")->enabled;
 #ifdef HAVE_FD_PASSING
     if (!remote && optget((*ctx)->clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled)) {
+        if (onas_set_sock_only_once(*ctx) == CL_EWRITE) {
+            return CL_EWRITE;
+        }
         logg("*ClamClient: client setup to scan via fd passing\n");
         (*ctx)->scantype = FILDES;
         (*ctx)->session  = optget(opts, "multiscan")->enabled;
@@ -458,7 +462,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     cl_error_t err = CL_SUCCESS;
     int b_remote;
     int len;
-    struct RCVLN rcv;
+    struct onas_rcvln rcv;
     int64_t timeout;
 
     timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
@@ -480,7 +484,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
         }
     }
 
-    onas_recvlninit(&rcv, curl);
+    onas_recvlninit(&rcv, curl, 0);
 
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {

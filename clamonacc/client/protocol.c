@@ -61,10 +61,12 @@
 #include "actions.h"
 #include "output.h"
 #include "misc.h"
+#include "clamdcom.h"
 
 #include "communication.h"
 #include "protocol.h"
 #include "client.h"
+#include "socket.h"
 
 static const char *scancmd[] = {"CONTSCAN", "MULTISCAN", "INSTREAM", "FILDES", "ALLMATCHSCAN"};
 
@@ -120,23 +122,50 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 
 strm_out:
     if (close_flag) {
-        //logg("DEBUG: >>>>> closed fd %d\n", fd);
         close(fd);
     }
     return ret;
 }
 
 #ifdef HAVE_FD_PASSING
-/* Issues a FILDES command and pass a FD to clamd
- * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t timeout)
+static int onas_send_fdpass(int sockd, int fd)
 {
-    CURLcode result;
+
+    char dummy[] = "";
     struct iovec iov[1];
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    char dummy[]   = "";
+
+    if (sendln(sockd, "zFILDES", 8)) {
+        return -1;
+    }
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len  = 1;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control         = fdbuf;
+    msg.msg_iov             = iov;
+    msg.msg_iovlen          = 1;
+    msg.msg_controllen      = CMSG_LEN(sizeof(int));
+    cmsg                    = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level        = SOL_SOCKET;
+    cmsg->cmsg_type         = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    if (sendmsg(sockd, &msg, 0) == -1) {
+        logg("!FD send failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    return 1;
+}
+
+/* Issues a FILDES command and pass a FD to clamd
+ * Returns >0 on success, 0 soft fail, -1 hard fail */
+static int onas_fdpass(const char *filename, int fd, int sockd)
+{
     int ret        = 1;
     int close_flag = 0;
 
@@ -152,31 +181,20 @@ static int onas_send_fdpass(CURL *curl, const char *filename, int fd, int64_t ti
         }
     }
 
-    result = onas_sendln(curl, "zFILDES", 8, timeout);
-
-    if (result) {
-        logg("*ClamProto: error sending w/ curl, %s\n", curl_easy_strerror(result));
+    if (sockd == -1) {
+        logg("*ClamProto: error when getting socket descriptor\n");
         ret = -1;
         goto fd_out;
     }
 
-    iov[0].iov_base = dummy;
-    iov[0].iov_len  = 1;
-    memset(&msg, 0, sizeof(msg));
-    msg.msg_control         = fdbuf;
-    msg.msg_iov             = iov;
-    msg.msg_iovlen          = 1;
-    msg.msg_controllen      = CMSG_LEN(sizeof(int));
-    cmsg                    = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level        = SOL_SOCKET;
-    cmsg->cmsg_type         = SCM_RIGHTS;
-    *(int *)CMSG_DATA(cmsg) = fd;
-    if (onas_sendln(curl, &msg, 0, timeout) == -1) {
-        logg("!FD send failed: %s\n", strerror(errno));
+    ret = onas_send_fdpass(sockd, fd);
+
+    if (ret < 0) {
+        logg("*ClamProto: error when fdpassing\n");
         ret = -1;
         goto fd_out;
     }
+
 fd_out:
     if (close_flag) {
         close(fd);
@@ -193,10 +211,19 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 {
     int infected = 0, len = 0, beenthere = 0;
     char *bol, *eol;
-    struct RCVLN rcv;
+    struct onas_rcvln rcv;
     STATBUF sb;
+    int sockd                                                        = -1;
+    int (*recv_func)(struct onas_rcvln *, char **, char **, int64_t) = NULL;
 
-    onas_recvlninit(&rcv, curl);
+    sockd = onas_get_sockd();
+
+    onas_recvlninit(&rcv, curl, sockd);
+    if (rcv.sockd > 0) {
+        recv_func = &onas_fd_recvln;
+    } else {
+        recv_func = &onas_recvln;
+    }
 
     switch (scantype) {
         case MULTI:
@@ -238,7 +265,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 #ifdef HAVE_FD_PASSING
         case FILDES:
             /* NULL filename safe in send_fdpass() */
-            len = onas_send_fdpass(curl, filename, fd, timeout);
+            len = onas_fdpass(filename, fd, sockd);
             break;
 #endif
     }
@@ -251,8 +278,10 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
         goto done;
     }
 
-    while ((len = onas_recvln(&rcv, &bol, &eol, timeout))) {
+    while ((len = (*recv_func)(&rcv, &bol, &eol, timeout))) {
+
         if (len == -1) {
+
             if (ret_code) {
                 *ret_code = CL_EREAD;
             }
@@ -410,5 +439,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     }
 
 done:
+    if (sockd > 0) {
+        closesocket(sockd);
+    }
     return infected;
 }
