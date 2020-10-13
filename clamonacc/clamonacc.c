@@ -397,7 +397,7 @@ static int startup_checks(struct onas_context *ctx)
 
         if (!optget(ctx->clamdopts, "OnAccessExcludeUID")->enabled &&
             !optget(ctx->clamdopts, "OnAccessExcludeUname")->enabled && !optget(ctx->clamdopts, "OnAccessExcludeRootUID")->enabled) {
-            logg("!Clamonacc: at least one of OnAccessExcludeUID, OnAccessExcludeUname, or OnAccessExcludeRootUID must be specified ... it is reccomended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
+            logg("!Clamonacc: at least one of OnAccessExcludeUID, OnAccessExcludeUname, or OnAccessExcludeRootUID must be specified ... it is recommended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
             ret = 2;
             goto done;
         }
