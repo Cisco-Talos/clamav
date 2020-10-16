@@ -12,10 +12,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "")
+set(VERSION_SUFFIX "-devel-${TODAY}")
 
 project( ClamAV
-         VERSION "0.103.0"
+         VERSION "0.104.0"
          DESCRIPTION "ClamAV open source email, web, and end-point anti-virus toolkit." )
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -30,7 +30,7 @@ HexVersion(PACKAGE_VERSION_NUM ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR}
 
 # libtool library versioning rules: http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
 set(LIBCLAMAV_CURRENT  9)
-set(LIBCLAMAV_REVISION 5)
+set(LIBCLAMAV_REVISION 6)
 set(LIBCLAMAV_AGE      0)
 
 math(EXPR LIBCLAMAV_SOVERSION "${LIBCLAMAV_CURRENT} - ${LIBCLAMAV_AGE}")
@@ -38,7 +38,7 @@ set(LIBCLAMAV_VERSION "${LIBCLAMAV_SOVERSION}.${LIBCLAMAV_AGE}.${LIBCLAMAV_REVIS
 HexVersion(LIBCLAMAV_VERSION_NUM ${LIBCLAMAV_CURRENT} ${LIBCLAMAV_REVISION} ${LIBCLAMAV_AGE})
 
 set(LIBFRESHCLAM_CURRENT  2)
-set(LIBFRESHCLAM_REVISION 1)
+set(LIBFRESHCLAM_REVISION 2)
 set(LIBFRESHCLAM_AGE      0)
 
 math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}")

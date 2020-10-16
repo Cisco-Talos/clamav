@@ -3,7 +3,7 @@ dnl During active development, set: VERSION="<version>-devel-`date +%Y%m%d`"
 dnl For beta,                  set: VERSION="<version>-beta"
 dnl For release candidate,     set: VERSION="<version>-rc"
 dnl For release,               set: VERSION="<version>"
-VERSION="0.103.0"
+VERSION="0.104.0-devel-`date +%Y%m%d`"
 
 major=`echo $PACKAGE_VERSION |cut -d. -f1 | sed -e "s/[^0-9]//g"`
 minor=`echo $PACKAGE_VERSION |cut -d. -f2 | sed -e "s/[^0-9]//g"`
@@ -14,7 +14,7 @@ AC_SUBST(PACKAGE_VERSION_NUM)
 
 dnl libclamav version info
 LC_CURRENT=9
-LC_REVISION=5
+LC_REVISION=6
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])
@@ -28,7 +28,7 @@ AC_DEFINE_UNQUOTED([LIBCLAMAV_MAJORVER], $LC_MAJOR, ["Major clamav library versi
 
 dnl libfreshclam version info
 LFC_CURRENT=2
-LFC_REVISION=1
+LFC_REVISION=2
 LFC_AGE=0
 LIBFRESHCLAM_VERSION="$LFC_CURRENT":"$LFC_REVISION":"$LFC_AGE"
 AC_SUBST([LIBFRESHCLAM_VERSION])
