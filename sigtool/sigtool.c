@@ -2611,7 +2611,19 @@ static int decodehex(const char *hexsig)
             mprintf("!missing regex expression terminator /\n");
             return -1;
         }
-        rlen = regex_end - wild - 1;
+
+        /* gotta make sure we treat escaped slashes */
+        for( i = tlen + 1; i < hexlen; i++ ) {
+            if( hexsig[ i ] == '/' && hexsig[ i - 1 ] != '\\' ) {
+                rlen = i - tlen - 1;
+                break;
+            }
+        }
+        if( i == hexlen ) {
+            mprintf( "!missing regex expression terminator /\n");
+            return -1;
+        }
+
         clen = hexlen - tlen - rlen - 2; /* 2 from regex boundaries '/' */
 
         /* get the trigger statement */
