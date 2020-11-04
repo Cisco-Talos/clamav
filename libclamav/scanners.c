@@ -4170,31 +4170,32 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_GRAPHICS:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
-                ret = cli_scanjpeg(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS)
-                ret = cli_parsejpeg(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsepng(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsegif(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsetiff(ctx);
-
+            /*
+             * This case is for unhandled graphics types such as BMP.
+             */
             break;
 
         case CL_TYPE_GIF:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_GIF))
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF))
                 ret = cli_parsegif(ctx);
             break;
 
         case CL_TYPE_PNG:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
-                ret = cli_parsepng(ctx);
+                ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+            break;
+
+        case CL_TYPE_JPEG:
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
+                ret = cli_scanjpeg(ctx); /* This one has some Exploit detection. */
+
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_JPEG) && ret != CL_VIRUS)
+                ret = cli_parsejpeg(ctx);
+            break;
+
+        case CL_TYPE_TIFF:
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS)
+                ret = cli_parsetiff(ctx);
             break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */

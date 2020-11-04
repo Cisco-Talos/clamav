@@ -54,6 +54,8 @@
 #include "libgen.h"
 #endif
 
+/* clang-format off */
+
 #ifdef _WIN32
 #define CLAMKEY "Software\\ClamAV"
 #endif
@@ -61,12 +63,12 @@
 #define MAXCMDOPTS 150
 
 #define MATCH_NUMBER "^[0-9]+$"
-#define MATCH_SIZE "^[0-9]+[KM]?$"
-#define MATCH_BOOL "^(yes|true|1|no|false|0)$"
+#define MATCH_SIZE   "^[0-9]+[KM]?$"
+#define MATCH_BOOL   "^(yes|true|1|no|false|0)$"
 
 #define FLAG_MULTIPLE 1 /* option can be used multiple times */
 #define FLAG_REQUIRED 2 /* arg is required, even if there's a default value */
-#define FLAG_HIDDEN 4   /* don't print in clamconf --generate-config */
+#define FLAG_HIDDEN   4 /* don't print in clamconf --generate-config */
 #define FLAG_REG_CASE 8 /* case-sensitive regex matching */
 
 #ifdef _WIN32
@@ -99,6 +101,8 @@ char _CONFDIR_MILTER[MAX_PATH]    = BACKUP_CONFDIR "\\clamav-milter.conf";
 #define CONST_CONFDIR_MILTER CONFDIR_MILTER
 
 #endif
+
+/* clang-format on */
 
 const struct clam_option __clam_options[] = {
     /* name, longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
@@ -382,7 +386,9 @@ const struct clam_option __clam_options[] = {
 
     {"ScanOLE2", "scan-ole2", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.\nIf you turn off this option, the original files will still be scanned, but\nwithout additional processing.", "yes"},
 
-    {"AlertBrokenExecutables", "alert-broken", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled clamav will try to detect broken executables\n(both PE and ELF) and alert on them with the Broken.Executable heuristic signature.", "yes"},
+    {"AlertBrokenExecutables", "alert-broken", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled clamav will try to detect broken executables\n(PE, ELF, & Mach-O) and alert on them with a Broken.Executable heuristic signature.", "yes"},
+
+    {"AlertBrokenMedia", "alert-broken-media", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled clamav will try to detect broken media files\n(JPEG, TIFF, PNG, GIF) and alert on them with a Broken.Media heuristic signature.", "yes"},
 
     {"AlertEncrypted", "alert-encrypted", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).", "no"},
 

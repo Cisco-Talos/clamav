@@ -301,6 +301,11 @@ Example
 # Default: no
 #AlertBrokenExecutables yes
 
+# With this option clamav will try to detect broken media file (JPEG,
+# TIFF, PNG, GIF) and alert on them with a Broken.Media heuristic signature.
+# Default: no
+#AlertBrokenMedia yes
+
 # Alert on encrypted archives _and_ documents with heuristic signature
 # (encrypted .zip, .7zip, .rar, .pdf).
 # Default: no

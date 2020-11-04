@@ -5,15 +5,53 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.103.1
 
-ClamAV 0.103.1 is a bug patch release to address the following issues.
+ClamAV 0.103.1 is a patch release with the following fixes and improvements.
 
-- Inter-process file descriptor passing for clamonacc was non-functional in previous
-  versions due to a bug introduced by the switch to curl for communicating with clamd.
-  On Linux, passing file descriptors from one process to another is handled by the kernel,
-  so we reverted clamonacc to use standard system calls for socket communication when
-  fd passing is enabled.
+### Notable changes
 
-- Fix clamonacc stack corruption issue on some systems when using an older
+- Added a new scan option to alert on broken media (graphics) file formats.
+  This feature mitigates the risk of malformed media files intended to exploit
+  vulnerabilities in other software.
+  At present media validation exists for JPEG, TIFF, PNG, and GIF files.
+  To enable this feature, set `AlertBrokenMedia yes` in clamd.conf, or use
+  the `--alert-broken-media` option when using `clamscan`.
+  These options are disabled by default in this patch release, but may be
+  enabled in a subsequent release.
+  Application developers may enable this scan option by enabling
+  `CL_SCAN_HEURISTIC_BROKEN_MEDIA` for the `heuristic` scan option bit field.
+
+- Added CL_TYPE_TIFF, CL_TYPE_JPEG types to match GIF, PNG typing behavior.
+  BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
+  ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
+
+### Bug fixes
+
+- Fixed PNG parser logic bugs that caused an excess of parsing errors and fixed
+  a stack exhaustion issue affecting some systems when scanning PNG files.
+  PNG file type detection was disabled via signature database update for
+  ClamAV version 0.103.0 to mitigate the effects from these bugs.
+
+- Fixed an issue where PNG and GIF files no longer work with Target:5 graphics
+  signatures if detected as CL_TYPE_PNG/GIF rather than as CL_TYPE_GRAPHICS.
+  Target types now support up to 10 possible file types to make way for
+  additional graphics types in future releases.
+
+- Fixed clamonacc's `--fdpass` option.
+
+  File descriptor passing (or "fd-passing") is a mechanism by which clamonacc
+  and clamdscan may transfer an open file to clamd to scan, even if clamd is
+  running as a non-privileged user and wouldn't otherwise have read-access to
+  the file. This enables clamd to scan all files without having to run clamd as
+  root. If possible, clamd should never be run as root so as to mitigate the
+  risk in case clamd is somehow compromised while scanning malware.
+
+  Interprocess file descriptor passing for clamonacc was broken since version
+  0.102.0 due to a bug introduced by the switch to curl for communicating with
+  clamd. On Linux, passing file descriptors from one process to another is
+  handled by the kernel, so we reverted clamonacc to use standard system calls
+  for socket communication when fd passing is enabled.
+
+- Fixed a clamonacc stack corruption issue on some systems when using an older
   version of libcurl. Patch courtesy of Emilio Pozuelo Monfort.
 
 - Allow clamscan and clamdscan scans to proceed even if the realpath lookup
@@ -32,6 +70,22 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
 
 - Fixed an issue where freshclam database validation didn't work correctly when
   run in daemon mode on Linux/Unix.
+
+### Other improvements
+
+- Scanning JPEG, TIFF, PNG, and GIF files will no longer return "parse" errors
+  when file format validation fails. Instead, the scan will alert with the
+  "Heuristics.Broken.Media" signature prefix and a descriptive suffix to
+  indicate the issue, provided that the "alert broken media" feature is enabled.
+
+- GIF format validation will no longer fail if the GIF image is missing the
+  trailer byte, as this appears to be a relatively common issue in otherwise
+  functional GIF files.
+
+- Added a TIFF dynamic configuration (DCONF) option, which was missing.
+  This will allow us to disable TIFF format validation via signature database
+  update in the event that it proves to be problematic.
+  This feature already exists for many other file types.
 
 ### Acknowledgements
 

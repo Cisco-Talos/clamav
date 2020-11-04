@@ -1070,6 +1070,10 @@ int scanmanager(const struct optstruct *opts)
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
     }
 
+    if (optget(opts, "alert-broken-media")->enabled) {
+        options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
+    }
+
     /* TODO: Remove deprecated option in a future feature release */
     if ((optget(opts, "block-encrypted")->enabled) ||
         (optget(opts, "alert-encrypted")->enabled)) {
