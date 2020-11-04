@@ -187,7 +187,7 @@ static inline void fmap_unneed_ptr(fmap_t *m, const void *ptr, size_t len)
 }
 
 /**
- * @brief Read bytes from fmap at offset into destinatio buffer.
+ * @brief Read bytes from fmap at offset into destination buffer.
  *
  * @param m         fmap
  * @param dst       destination buffer

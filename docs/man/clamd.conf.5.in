@@ -477,6 +477,11 @@ Alert on broken executable files (PE & ELF).
 .br
 Default: no
 .TP
+\fBAlertBrokenMedia BOOL\fR
+Alert on broken graphics files (JPEG, TIFF, PNG, GIF).
+.br
+Default: no
+.TP
 \fBAlertEncrypted BOOL\fR
 Alert on encrypted archives and documents (encrypted .zip, .7zip, .rar, .pdf).
 .br
