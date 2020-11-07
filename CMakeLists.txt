@@ -51,7 +51,7 @@ find_package(Git)
 if(Git_FOUND)
     # Store git description into variable
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --always
-        OUTPUT_VARIABLE REPO_VERSION)
+        OUTPUT_VARIABLE REPO_VERSION ERROR_QUIET)
     if("${REPO_VERSION}" MATCHES "")
         unset(REPO_VERSION)
     else()
@@ -96,6 +96,30 @@ set(ENABLE_SYSTEMD_DEFAULT      ON)
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
 
+if(ENABLE_FUZZ)
+    # We'd like the fuzz targets to be statically linked
+    set(ENABLE_STATIC_LIB       ON)
+    set(ENABLE_SHARED_LIB       OFF)
+    set(ENABLE_LIBCLAMAV_ONLY   ON)
+    set(ENABLE_TESTS            OFF)
+    set(OPTIMIZE                OFF)
+    set(ENABLE_SYSTEMD          OFF)
+    set(HAVE_MMAP               OFF)
+
+    if(NOT DEFINED ENV{FUZZING_ENGINE})
+        # If you're not building in an oss-fuzz docker environment, you can build the fuzz targets by setting:
+        # bash:  export CC=`which clang` && export CXX=`which clang++` && export SANITIZER=address/undefined/memory
+        # fish:  export CC=(which clang) && export CXX=(which clang++) && export SANITIZER=address/undefined/memory
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
+    endif()
+endif()
+
+if(ENABLE_STATIC_LIB AND NOT ENABLE_SHARED_LIB)
+    # When building everything static, link in libunrar.
+    set(UNRAR_LINKED 1)
+endif()
+
 if(ENABLE_LIBCLAMAV_ONLY AND (ENABLE_APP OR ENABLE_EXAMPLES))
     # Remember when disabled options are disabled for later diagnostics.
     set(ENABLE_LIB_ONLY_DISABLED_OTHERS 1)
@@ -116,10 +140,10 @@ endif()
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
 #
-# Define LINUX because CMake only defines UNIX
+# Define C_LINUX because CMake only defines UNIX
 #
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set(LINUX 1)
+    set(C_LINUX 1)
 
     if(CMAKE_COMPILER_IS_GNUCXX)
         # For O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
@@ -154,7 +178,7 @@ if(ENABLE_TESTS)
     find_package(Python3 REQUIRED)
 
     # Check for valgrind. If it exists, we'll enable extra tests that use valgrind.
-    if(LINUX)
+    if(C_LINUX)
         find_package(Valgrind)
     endif()
 endif()
@@ -251,7 +275,7 @@ if(NOT ENABLE_LIBCLAMAV_ONLY)
             find_package(Milter REQUIRED)
         endif()
 
-        if(LINUX AND ENABLE_SYSTEMD)
+        if(C_LINUX AND ENABLE_SYSTEMD)
             find_package(SYSTEMD)
             if(SYSTEMD_FOUND)
                 set(HAVE_SYSTEMD 1)
@@ -707,7 +731,7 @@ endif()
 
 add_subdirectory( libclamav )
 
-if(NOT LIBCLAMAV_ONLY)
+if(NOT ENABLE_LIBCLAMAV_ONLY)
     add_subdirectory( shared )
 
     add_subdirectory( libfreshclam )
@@ -720,7 +744,7 @@ if(NOT LIBCLAMAV_ONLY)
 
         add_subdirectory( clamdscan )
 
-        if(LINUX AND ENABLE_CLAMONACC)
+        if(C_LINUX AND ENABLE_CLAMONACC)
             add_subdirectory( clamonacc )
         endif()
 
@@ -781,7 +805,9 @@ ${c}    Target system:          ${e}${CMAKE_SYSTEM}
 ${c}    Compiler:               ${e}
 ${b}        Build type:         ${e}${CMAKE_BUILD_TYPE}
 ${b}        C compiler:         ${e}${CMAKE_C_COMPILER}
+${b}        C++ compiler:       ${e}${CMAKE_CXX_COMPILER}
 ${b}        CFLAGS:             ${e}${CMAKE_C_FLAGS_${_build_type}} ${CMAKE_C_FLAGS}
+${b}        CXXFLAGS:           ${e}${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
 ${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}
 ${c}    Build Options:          ${e}
 ${b}        Build apps:         ${e}${ENABLE_APP}
@@ -797,7 +823,7 @@ message("\
 ${c}    Build Extras:           ${e}")
 message("\
 ${b}        Build milter:       ${e}${ENABLE_MILTER}  (toggle with -DENABLE_MILTER=ON/OFF)")
-if(LINUX)
+if(C_LINUX)
 message("\
 ${b}        Build clamonacc:    ${e}${ENABLE_CLAMONACC}  (toggle with -DENABLE_CLAMONACC=ON/OFF)")
 endif()
@@ -859,10 +885,12 @@ ${_}            iconv           ${e}${ICONV_INCLUDE_DIRS}
 ${_}                            ${e}${ICONV_LIBRARIES}")
 endif()
 
+if(NOT ENABLE_LIBCLAMAV_ONLY)
 message(STATUS "${C}libfreshclam Extra Dependencies${e} --
 ${b}        HTTP support:       ${e}
 ${_}            curl            ${e}${CURL_INCLUDE_DIRS}
 ${_}                            ${e}${CURL_LIBRARIES}")
+endif()
 
 if(HAVE_LIBNCURSES)
 message(STATUS "${C}Application Extra Dependencies${e} --
@@ -876,7 +904,7 @@ ${_}            pdcurses        ${e}${CURSES_INCLUDE_DIRS}
 ${_}                            ${e}${CURSES_LIBRARIES}")
 endif()
 
-if(LINUX)
+if(C_LINUX)
 if(SYSTEMD_PROGRAM_FOUND)
 message("\
 ${b}        systemd:            ${e}

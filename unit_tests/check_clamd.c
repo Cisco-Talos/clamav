@@ -192,7 +192,7 @@ static void commands_teardown(void)
 
 #define VERSION_REPLY "ClamAV " REPO_VERSION "" VERSION_SUFFIX
 
-#define VCMDS_REPLY VERSION_REPLY "| COMMANDS: SCAN QUIT RELOAD PING CONTSCAN VERSIONCOMMANDS VERSION STREAM END SHUTDOWN MULTISCAN FILDES STATS IDSESSION INSTREAM DETSTATSCLEAR DETSTATS ALLMATCHSCAN"
+#define VCMDS_REPLY VERSION_REPLY "| COMMANDS: SCAN QUIT RELOAD PING CONTSCAN VERSIONCOMMANDS VERSION END SHUTDOWN MULTISCAN FILDES STATS IDSESSION INSTREAM DETSTATSCLEAR DETSTATS ALLMATCHSCAN"
 
 enum idsession_support {
     IDS_OK, /* accepted */
@@ -744,75 +744,6 @@ START_TEST(test_connections)
 END_TEST
 #endif
 
-/*
- * Test a stream scan, where the initial response to zSTREAM is a port #
- * that clamd will listen to receive the file stream.
- * Note: Disabled on Windows because of issues getting the test to work,
- * and because zSTREAM was deprecated in 02/2009 in favor of zINSTREAM.
- */
-#ifndef _WIN32
-START_TEST(test_stream)
-{
-    char buf[BUFSIZ];
-    char *recvdata;
-    size_t len;
-    unsigned port;
-    int streamsd, infd, nread;
-
-    infd = open(SCANFILE, O_RDONLY);
-
-    ck_assert_msg(infd != -1, "open failed: %s\n", strerror(errno));
-    conn_setup();
-    ck_assert_msg(
-        send(sockd, "zSTREAM", sizeof("zSTREAM"), 0) == sizeof("zSTREAM"),
-        "send failed: %s\n", strerror(errno));
-
-    /*
-     * Receive a port number over which to send the stream.
-     */
-    recvdata = recvpartial(sockd, &len, 1);
-    ck_assert_msg(sscanf(recvdata, "PORT %u\n", &port) == 1,
-                  "Wrong stream reply: %s\n", recvdata);
-
-    free(recvdata);
-
-    /*
-     * Connect & send the file to be scanned.
-     */
-    streamsd = conn_tcp(port);
-
-    do {
-        nread = read(infd, buf, sizeof(buf));
-        if (nread > 0)
-            ck_assert_msg(send(sockd, buf, nread, 0) == nread,
-                          "send failed: %s\n", strerror(errno));
-    } while (nread > 0 || (nread == -1 && errno == EINTR));
-    close(infd);
-
-    ck_assert_msg(nread != -1, "read failed: %s\n", strerror(errno));
-
-    /*
-     * Close the socket, so clamd knows we're done sending and will scan the data.
-     */
-#ifdef _WIN32
-    closesocket(streamsd);
-#else
-    close(streamsd);
-#endif
-
-    /*
-     * Receive the result.
-     */
-    recvdata = recvfull(sockd, &len);
-    ck_assert_msg(!strncmp(recvdata, "stream: ClamAV-Test-File.UNOFFICIAL FOUND", len),
-                  "Wrong reply: %s\n", recvdata);
-    free(recvdata);
-
-    conn_teardown();
-}
-END_TEST
-#endif
-
 #define END_CMD "zEND"
 #define INSTREAM_CMD "zINSTREAM"
 static void test_idsession_commands(int split, int instream)
@@ -936,9 +867,6 @@ static Suite *test_clamd_suite(void)
 
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
-#ifndef _WIN32 // Disabled on Windows because of issues getting the test to work, and because zSTREAM was deprecated in 02/2009 in favor of zINSTREAM.
-    tcase_add_test(tc_commands, test_stream);
-#endif
     tcase_add_test(tc_commands, test_idsession);
 
 #ifndef _WIN32 // Disabled because fd-passing not supported on Windows

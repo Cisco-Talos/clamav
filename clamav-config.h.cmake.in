@@ -398,6 +398,9 @@
 /* Define as const if the declaration of iconv() needs const. */
 #cmakedefine ICONV_CONST @ICONV_CONST@
 
+/* Define if UNRAR is linked instead of loaded. */
+#cmakedefine UNRAR_LINKED 1
+
 /* "Full clamav library version number" */
 #define LIBCLAMAV_FULLVER "@LIBCLAMAV_VERSION@"
 

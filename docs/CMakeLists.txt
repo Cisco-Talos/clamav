@@ -18,7 +18,7 @@ configure_file(man/freshclam.conf.5.in      man/freshclam.conf.5)
 # .8 files
 configure_file(man/clamd.8.in               man/clamd.8)
 configure_file(man/clamav-milter.8.in       man/clamav-milter.8)
-if(LINUX)
+if(C_LINUX)
     configure_file(man/clamonacc.8.in           man/clamonacc.8)
 endif()
 
@@ -62,7 +62,7 @@ foreach(m IN LISTS MAN8_FILES)
             ${CMAKE_INSTALL_PREFIX}/share/man/man8)
 endforeach()
 
-if(LINUX)
+if(C_LINUX)
     # Also install Linux-only manpage
     install(
         FILES

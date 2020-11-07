@@ -121,6 +121,9 @@ if(ENABLE_STATIC_LIB)
     endif()
 
     add_library( ClamAV::libfreshclam_static ALIAS freshclam_static )
+    if(NOT ENABLE_SHARED_LIB)
+        add_library( ClamAV::libfreshclam ALIAS freshclam_static )
+    endif()
 endif()
 
 install(

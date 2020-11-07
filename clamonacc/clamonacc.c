@@ -332,7 +332,11 @@ static int startup_checks(struct onas_context *ctx)
     }
 
 #if defined(HAVE_SYS_FANOTIFY_H)
+#if defined(_GNU_SOURCE)
     ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
+#else
+    ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
+#endif
     if (ctx->fan_fd < 0) {
         logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
         if (errno == EPERM) {

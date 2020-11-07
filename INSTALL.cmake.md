@@ -196,7 +196,12 @@ cmake --build . --config Debug
 
   _Default: `OFF`_
 
-- `ENABLE_FUZZ`: Build fuzz targets. Will enable `ENABLE_STATIC_LIB` for you.
+- `ENABLE_FUZZ`: Build statically linked fuzz targets _and nothing else_.
+  This feature is for fuzzing with OSS-Fuzz and reproducing fuzz bug reports
+  and requires the following environment variables to be set:
+  - CC = `which clang`
+  - CXX = `which clang++`
+  - SANITIZER = address _or_ undefined _or_ memory
 
   _Default: `OFF`_
 
@@ -205,8 +210,13 @@ cmake --build . --config Debug
   _Default: `OFF`_
 
 - `ENABLE_JSON_SHARED`: Prefer linking with libjson-c shared library instead of
-  static. Please set this to `OFF` if you're an application developer that uses
-  a different JSON library in your app, or if you provide libclamav to others.
+  static.
+
+  **Important**: Please set this to `OFF` if you're an application developer
+  that uses a different JSON library in your app _OR_ if you provide libclamav
+  that others may use in their apps. If you link libclamav with the json-c
+  shared library then downstream applications which use a different JSON
+  library may crash!
 
   _Default: `ON`_
 
@@ -251,6 +261,9 @@ cmake --build . --config Debug
   _Default: `OFF`_
 
 - `ENABLE_STATIC_LIB`: Build libclamav and/or libfreshclam static libraries.
+
+  Tip: If you wish to build `clamscan` and the other apps statically, you must
+  also set ENABLE_SHARED_LIB=OFF.
 
   _Default: `OFF`_
 
@@ -392,6 +405,7 @@ cmake ..  -G "Visual Studio 15 2017" -A x64 `
     -DOPENSSL_ROOT_DIR="$env:CLAMAV_DEPENDENCIES"                         `
     -DOPENSSL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
     -DOPENSSL_CRYPTO_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libcrypto.lib" `
+    -DOPENSSL_SSL_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libssl.lib"       `
     -DZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libssl.lib"              `
     -DLIBXML2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
     -DLIBXML2_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libxml2.lib"          `

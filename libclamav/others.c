@@ -369,7 +369,14 @@ static void rarload(void)
 
     if (have_rar) return;
 
-    rhandle = load_module("libclamunrar_iface", "unrar");
+#ifdef UNRAR_LINKED
+    cli_unrar_open             = unrar_open;
+    cli_unrar_peek_file_header = unrar_peek_file_header;
+    cli_unrar_extract_file     = unrar_extract_file;
+    cli_unrar_skip_file        = unrar_skip_file;
+    cli_unrar_close            = unrar_close;
+#else
+    rhandle       = load_module("libclamunrar_iface", "unrar");
     if (NULL == rhandle)
         return;
 
@@ -384,6 +391,8 @@ static void rarload(void)
         cli_warnmsg("UnRAR support unavailable\n");
         return;
     }
+#endif
+
     have_rar = 1;
 }
 
@@ -492,7 +501,6 @@ cl_error_t cl_init(unsigned int initoptions)
 
     cl_initialize_crypto();
 
-    /* put dlopen() stuff here, etc. */
 #ifdef HAVE_LTDL
     if (lt_init() == 0) {
         rarload();

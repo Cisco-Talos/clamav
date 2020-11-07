@@ -623,8 +623,8 @@ if(ENABLE_STATIC_LIB)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libmspack
-            ClamAV::libunrar_iface_iface
+            ClamAV::libmspack_static
+            ClamAV::libunrar_iface_static
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -633,7 +633,7 @@ if(ENABLE_STATIC_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
     if(NOT WIN32)
-        target_link_libraries( clamav PUBLIC ICONV::Iconv )
+        target_link_libraries( clamav_static PUBLIC Iconv::Iconv )
     endif()
     set_target_properties( clamav_static PROPERTIES
         ARCHIVE_OUTPUT_NAME clamav_static
@@ -647,6 +647,9 @@ if(ENABLE_STATIC_LIB)
     endif()
 
     add_library( ClamAV::libclamav_static ALIAS clamav_static )
+    if(NOT ENABLE_SHARED_LIB)
+        add_library( ClamAV::libclamav ALIAS clamav_static )
+    endif()
 endif()
 
 install(

@@ -126,8 +126,10 @@ int main(int argc, char **argv)
 #ifndef _WIN32
     struct passwd *user = NULL;
     struct sigaction sa;
-    struct rlimit rlim;
     int dropPrivRet = 0;
+#endif
+#if defined(C_LINUX) || (defined(RLIMIT_DATA) && defined(C_BSD))
+    struct rlimit rlim;
 #endif
     time_t currtime;
     const char *dbdir, *cfgfile;

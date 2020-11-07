@@ -70,7 +70,6 @@ if(ENABLE_APP)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libunrar_iface_iface
             JSONC::jsonc
             ClamAV::libmspack
             OpenSSL::SSL
@@ -79,6 +78,15 @@ if(ENABLE_APP)
             BZip2::BZip2
             PCRE2::pcre2
             LibXml2::LibXml2)
+    if(ENABLE_SHARED_LIB)
+        target_link_libraries(check_fpu_endian
+            PRIVATE
+                ClamAV::libunrar_iface_iface)
+    else()
+        target_link_libraries(check_fpu_endian
+            PRIVATE
+                ClamAV::libunrar_iface_static)
+    endif()
     target_include_directories(check_fpu_endian PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
     target_compile_definitions(check_fpu_endian PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
 
@@ -96,7 +104,6 @@ if(ENABLE_APP)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libunrar_iface_iface
             JSONC::jsonc
             ClamAV::libmspack
             OpenSSL::SSL
@@ -105,11 +112,17 @@ if(ENABLE_APP)
             BZip2::BZip2
             PCRE2::pcre2
             LibXml2::LibXml2)
+    if(ENABLE_SHARED_LIB)
+        target_link_libraries(check_clamd
+            PRIVATE
+                ClamAV::libunrar_iface_iface)
+    else()
+        target_link_libraries(check_clamd
+            PRIVATE
+                ClamAV::libunrar_iface_static)
+    endif()
     target_include_directories(check_clamd PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
     target_compile_definitions(check_clamd PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
-    ADD_CUSTOM_COMMAND(TARGET check_clamd
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/.)
 endif()
 
 #
@@ -137,7 +150,6 @@ target_link_libraries(check_clamav
         yara
         tomsfastmath
         bytecode_runtime
-        ClamAV::libunrar_iface_iface
         JSONC::jsonc
         ClamAV::libmspack
         OpenSSL::SSL
@@ -146,8 +158,19 @@ target_link_libraries(check_clamav
         BZip2::BZip2
         PCRE2::pcre2
         LibXml2::LibXml2)
+if(ENABLE_SHARED_LIB)
+    target_link_libraries(check_clamav
+        PRIVATE
+            ClamAV::libunrar_iface_iface)
+else()
+    target_link_libraries(check_clamav
+        PRIVATE
+            ClamAV::libunrar_iface_static)
+endif()
 target_include_directories(check_clamav PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
 target_compile_definitions(check_clamav PUBLIC OBJDIR="${OBJDIR}" BUILDDIR="${BUILDDIR}" SRCDIR="${SRCDIR}")
+ADD_CUSTOM_COMMAND(TARGET check_clamav POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/.)
 
 #
 # Paths to pass to our tests via environment variables
@@ -158,41 +181,48 @@ if(WIN32)
     file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}                             TMP)
 
     file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_clamav.exe        CHECK_CLAMAV)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_clamd.exe         CHECK_CLAMD)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_fpu_endian.exe    CHECK_FPU_ENDIAN)
+    if(ENABLE_APP)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_clamd.exe         CHECK_CLAMD)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/check_fpu_endian.exe    CHECK_FPU_ENDIAN)
 
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clambc.exe              CLAMBC)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamd.exe               CLAMD)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdscan.exe           CLAMDSCAN)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdtop.exe            CLAMDTOP)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamscan.exe            CLAMSCAN)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamsubmit.exe          CLAMSUBMIT)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamconf.exe            CLAMCONF)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe           FRESHCLAM)
-    file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe             SIGTOOL)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clambc.exe              CLAMBC)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamd.exe               CLAMD)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdscan.exe           CLAMDSCAN)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamdtop.exe            CLAMDTOP)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamscan.exe            CLAMSCAN)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamsubmit.exe          CLAMSUBMIT)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/clamconf.exe            CLAMCONF)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/freshclam.exe           FRESHCLAM)
+        file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe             SIGTOOL)
+    endif()
 else()
-    set(LD_LIBRARY_PATH    $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:ClamAV::libmspack:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar:$<TARGET_FILE_DIR:ClamAV::libfreshclam>:$ENV{LD_LIBRARY_PATH})
+    set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:ClamAV::libmspack:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar:$ENV{LD_LIBRARY_PATH})
+    if(NOT ENABLE_LIBCLAMAV_ONLY)
+        set(LD_LIBRARY_PATH $<TARGET_FILE_DIR:ClamAV::libfreshclam>:${LD_LIBRARY_PATH})
+    endif()
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
     set(BUILD              ${CMAKE_BINARY_DIR})
     set(TMP                ${CMAKE_CURRENT_BINARY_DIR})
 
     set(CHECK_CLAMAV       $<TARGET_FILE:check_clamav>)
-    set(CHECK_CLAMD        $<TARGET_FILE:check_clamd>)
-    set(CHECK_FPU_ENDIAN   $<TARGET_FILE:check_fpu_endian>)
+    if(ENABLE_APP)
+        set(CHECK_CLAMD        $<TARGET_FILE:check_clamd>)
+        set(CHECK_FPU_ENDIAN   $<TARGET_FILE:check_fpu_endian>)
 
-    set(CLAMBC             $<TARGET_FILE:clambc>)
-    set(CLAMD              $<TARGET_FILE:clamd>)
-    set(CLAMDSCAN          $<TARGET_FILE:clamdscan>)
-    set(CLAMDTOP           $<TARGET_FILE:clamdtop>)
-    set(CLAMSCAN           $<TARGET_FILE:clamscan>)
-    set(CLAMSUBMIT         $<TARGET_FILE:clamsubmit>)
-    set(CLAMCONF           $<TARGET_FILE:clamconf>)
-    set(FRESHCLAM          $<TARGET_FILE:freshclam-bin>)
-    set(SIGTOOL            $<TARGET_FILE:sigtool>)
+        set(CLAMBC             $<TARGET_FILE:clambc>)
+        set(CLAMD              $<TARGET_FILE:clamd>)
+        set(CLAMDSCAN          $<TARGET_FILE:clamdscan>)
+        set(CLAMDTOP           $<TARGET_FILE:clamdtop>)
+        set(CLAMSCAN           $<TARGET_FILE:clamscan>)
+        set(CLAMSUBMIT         $<TARGET_FILE:clamsubmit>)
+        set(CLAMCONF           $<TARGET_FILE:clamconf>)
+        set(FRESHCLAM          $<TARGET_FILE:freshclam-bin>)
+        set(SIGTOOL            $<TARGET_FILE:sigtool>)
 
-    set(CLAMAV_MILTER      $<TARGET_FILE:clamav-milter>)
-    set(CLAMONACC          $<TARGET_FILE:clamonacc>)
+        set(CLAMAV_MILTER      $<TARGET_FILE:clamav-milter>)
+        set(CLAMONACC          $<TARGET_FILE:clamonacc>)
+    endif()
 endif()
 
 set(ENVIRONMENT

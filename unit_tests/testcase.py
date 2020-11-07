@@ -151,11 +151,12 @@ class TestCase(unittest.TestCase):
         """
         print("")
 
-        try:
-            shutil.rmtree(cls.path_tmp)
-            cls.log.info("Removed tmp directory: {}".format(cls.path_tmp))
-        except Exception:
-            cls.log.info("No tmp directory to clean up.")
+        if None == os.getenv("KEEPTEMP"):
+            try:
+                shutil.rmtree(cls.path_tmp)
+                cls.log.info("Removed tmp directory: {}".format(cls.path_tmp))
+            except Exception:
+                cls.log.info("No tmp directory to clean up.")
 
     def setUp(self):
         print("")

@@ -20,7 +20,13 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#undef pid_t
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <stdio.h>
+
 #include <check.h>
 #include <fcntl.h>
 #include <string.h>
