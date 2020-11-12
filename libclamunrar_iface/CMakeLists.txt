@@ -64,9 +64,9 @@ if(ENABLE_UNRAR)
                 ClamAV::libunrar_iface_iface)
 
         if(WIN32)
-            install(TARGETS clamunrar_iface DESTINATION ${CMAKE_INSTALL_PREFIX})
+            install(TARGETS clamunrar_iface DESTINATION .)
         else()
-            install(TARGETS clamunrar_iface DESTINATION ${CMAKE_INSTALL_LIBDIR})
+            install(TARGETS clamunrar_iface DESTINATION lib)
         endif()
 
         add_library( ClamAV::libunrar_iface ALIAS clamunrar_iface )

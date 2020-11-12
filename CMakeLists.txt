@@ -187,6 +187,19 @@ endif()
 # Find Library Dependencies
 #
 if (WIN32)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+    include(InstallRequiredSystemLibraries)
+
+    set(CPACK_GENERATOR                  "ZIP;WIX")
+    SET(CPACK_WIX_UPGRADE_GUID           D9F136C1-3691-47E3-9079-4FE9C9C5EB32)
+    SET(CPACK_RESOURCE_FILE_LICENSE      ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt)
+    SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
+    SET(CPACK_WIX_UI_BANNER              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_banner.bmp)
+    SET(CPACK_WIX_UI_DIALOG              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_dialog.bmp)
+    SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
+    include(CPack)
+
     find_package(PThreadW32)
     set(HAVE_PTHREAD_H 1)
     set(_REENTRANT 1)
@@ -633,7 +646,7 @@ set(includedir  "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 set(VERSION     "${PACKAGE_VERSION}")
 
 # DBDIR for systemd service.in files
-set(DBDIR       "${DATABASE_DIRECTORY}")
+set(DBDIR       "${CMAKE_INSTALL_PREFIX}/${DATABASE_DIRECTORY}")
 
 if(ENABLE_DEBUG)
     set(CL_DEBUG 1)

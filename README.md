@@ -88,6 +88,46 @@ The ClamAV development team welcomes
 improvements to [our documentation](https://github.com/Cisco-Talos/clamav-faq),
 and also [bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
 
+## Licensing
+
+ClamAV is licensed for public/open source use under the GNU General Public
+License, Version 2 (GPLv2).
+
+See `COPYING.txt` for a copy of the license.
+
+### 3rd Party Code
+
+ClamAV contains a number of components that include code copied in part or in
+whole from 3rd party projects and whose code is not owned by Cisco and which
+are licensed differently than ClamAV. These include:
+
+- tomsfastmath:  public domain
+- LLVM: Illinois Open Source License (BSD-like)
+- Yara: Apache 2.0 license
+  - Yara has since switched to the BSD 3-Clause License;
+    Our source is out-of-date and needs to be updated.
+- 7z / lzma: public domain
+- libclamav's NSIS/NulSoft parser includes:
+  - zlib: permissive free software license
+  - bzip2 / libbzip2: BSD-like license
+- OpenBSD's libc/regex: BSD license
+- file: BSD license
+- str.c: Contains BSD licensed modified-implementations of strtol(), stroul()
+  functions, Copyright (c) 1990 The Regents of the University of California.
+- pngcheck (png.c): MIT/X11-style license
+- getopt.c: MIT license
+- Curl: license inspired by MIT/X, but not identical
+- libmspack: LGPL license
+- UnRAR (libclamunrar): a non-free/restricted open source license
+  - Note: The UnRAR license is incompatible with GPLv2 because it contains a
+    clause that prohibits reverse engineering a RAR compression algorithm from
+    the UnRAR decompression code.
+    For this reason, libclamunrar/libclamunrar_iface is not linked at all with
+    libclamav. It is instead loaded at run-time. If it fails to load, ClamAV
+    will continue running without RAR support.
+
+See the `COPYING` directory for a copy of the 3rd party project licenses.
+
 ## Credits
 
 [The ClamAV Team](https://www.clamav.net/about.html#credits)

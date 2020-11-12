@@ -566,7 +566,7 @@ if(ENABLE_SHARED_LIB)
         target_link_libraries( clamav PUBLIC ICONV::Iconv )
     endif()
     if(WIN32)
-        install( TARGETS clamav DESTINATION ${CMAKE_INSTALL_PREFIX} )
+        install( TARGETS clamav DESTINATION . )
 
         # Also install shared library (DLL) dependencies
         install( CODE [[
@@ -641,7 +641,7 @@ if(ENABLE_STATIC_LIB)
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
     target_compile_definitions( clamav_static PUBLIC clamav_staticLIB )
     if(WIN32)
-        install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_PREFIX} )
+        install( TARGETS clamav_static DESTINATION . )
     else()
         install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     endif()

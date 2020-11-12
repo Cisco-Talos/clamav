@@ -43,9 +43,9 @@ target_link_libraries( clamd
         ClamAV::libclamav
         ClamAV::shared )
 if(WIN32)
-    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_PREFIX})
+    install(TARGETS clamd DESTINATION .)
 else()
-    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR})
+    install(TARGETS clamd DESTINATION sbin)
 endif()
 
 if(SYSTEMD_FOUND)

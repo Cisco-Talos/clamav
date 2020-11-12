@@ -30,9 +30,9 @@ target_link_libraries(freshclam-bin
         ClamAV::libclamav
         ClamAV::shared )
 if(WIN32)
-    install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_PREFIX})
+    install(TARGETS freshclam-bin DESTINATION .)
 else()
-    install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS freshclam-bin DESTINATION bin)
 endif()
 
 # Install an empty database directory

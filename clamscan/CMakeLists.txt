@@ -31,7 +31,7 @@ target_link_libraries( clamscan
         ClamAV::libclamav
         ClamAV::shared )
 if(WIN32)
-    install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_PREFIX})
+    install(TARGETS clamscan DESTINATION .)
 else()
-    install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS clamscan DESTINATION bin)
 endif()

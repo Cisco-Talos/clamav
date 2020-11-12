@@ -49,7 +49,7 @@ target_link_libraries( clamonacc
         ClamAV::libclamav
         ClamAV::shared
         CURL::libcurl )
-install(TARGETS clamonacc DESTINATION ${CMAKE_INSTALL_SBINDIR})
+install(TARGETS clamonacc DESTINATION sbin)
 
 if(SYSTEMD_FOUND)
     configure_file(

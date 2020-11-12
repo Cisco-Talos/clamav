@@ -2,17 +2,17 @@
 
 if (WIN32)
     set(APP_CONFIG_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}" CACHE STRING
+        "." CACHE STRING
         "App Config directory.")
     set(DATABASE_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/database" CACHE STRING
+        "database" CACHE STRING
         "Database directory.")
 else()
     set(APP_CONFIG_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/etc" CACHE STRING
+        "etc" CACHE STRING
         "App Config directory.")
     set(DATABASE_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/share/clamav" CACHE STRING
+        "share/clamav" CACHE STRING
         "Database directory.")
 endif()
 

@@ -430,6 +430,14 @@ _Tip_: If you're having include-path issues, try building with detailed verbosit
 cmake --build . --config Release --target install -- /verbosity:detailed
 ```
 
+To build the installer, you must have WIX Toolset installed. If you're using
+Chocolatey, you can install it simply with `choco install wixtoolset` and then
+open a new terminal so that WIX will be in your PATH.
+
+```ps1
+cpack -C Release
+```
+
 ### External Depedencies
 
 The CMake tooling is good about finding installed dependencies on POSIX systems.
