@@ -36,6 +36,8 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
+add_definitions(-DTHIS_IS_LIBCLAMAV)
+
 #
 # Programs used by tests
 #

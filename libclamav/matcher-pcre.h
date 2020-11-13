@@ -67,30 +67,24 @@ struct cli_pcre_meta {
     uint32_t sigtime_id, sigmatch_id;
 };
 
-/* PCRE PERFORMANCE DECLARATIONS */
-void cli_pcre_perf_print();
-void cli_pcre_perf_events_destroy();
-
-/* PCRE MATCHER DECLARATIONS */
-int cli_pcre_init();
 cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const char *trigger, const char *pattern, const char *cflags, const char *offset, const uint32_t *lsigid, unsigned int options);
-cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
-cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
-void cli_pcre_freeoff(struct cli_pcre_off *data);
-cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
 void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm);
 void cli_pcre_freetable(struct cli_matcher *root);
+
 #else
-/* NO-PCRE DECLARATIONS - defined because encasing everything in '#if' is a pain and because dynamic library mappings are weird */
 #define PCRE_BYPASS ""
+#endif /* HAVE_PCRE */
+
+/*
+ * The following are defined to simple stub functions in matcher-pcre.c if HAVE_PCRE is not defined.
+ */
+cl_error_t cli_pcre_init();
+cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
+cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
+cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
+void cli_pcre_freeoff(struct cli_pcre_off *data);
 
 void cli_pcre_perf_print();
 void cli_pcre_perf_events_destroy();
 
-int cli_pcre_init();
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf);
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx);
-int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx);
-void cli_pcre_freeoff(struct cli_pcre_off *data);
-#endif /* HAVE_PCRE */
 #endif /*__MATCHER_PCRE_H*/

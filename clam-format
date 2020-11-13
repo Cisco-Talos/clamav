@@ -47,7 +47,6 @@ clang-format -i -verbose unit_tests/*.c
 clang-format -i -verbose unit_tests/*.h
 clang-format -i -verbose win32/compat/*.c
 clang-format -i -verbose win32/compat/*.h
-clang-format -i -verbose win32/*.h
 
 # Undo changes to specific files (whitelist)
 git checkout libclamav/iana_cctld.h

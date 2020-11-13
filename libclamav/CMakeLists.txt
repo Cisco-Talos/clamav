@@ -22,6 +22,8 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
+add_definitions(-DTHIS_IS_LIBCLAMAV)
+
 # 3rd party libraries included in libclamav
 add_library( regex OBJECT )
 target_sources( regex

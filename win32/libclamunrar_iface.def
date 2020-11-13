@@ -1,7 +1,0 @@
-LIBRARY libclamunrar_iface
-EXPORTS libclamunrar_iface_LTX_unrar_open
-EXPORTS libclamunrar_iface_LTX_unrar_peek_file_header
-EXPORTS libclamunrar_iface_LTX_unrar_extract_file
-EXPORTS libclamunrar_iface_LTX_unrar_skip_file
-EXPORTS libclamunrar_iface_LTX_unrar_close
-
