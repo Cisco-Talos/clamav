@@ -51,10 +51,8 @@ static void onas_destroy_event_queue_node(struct onas_event_queue_node *node);
 
 static pthread_mutex_t onas_queue_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static pthread_mutex_t onas_scan_queue_loop = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t onas_scan_queue_empty_cond   = PTHREAD_COND_INITIALIZER;
+pthread_cond_t onas_scan_queue_empty_cond = PTHREAD_COND_INITIALIZER;
 extern pthread_t scan_queue_pid;
-
 static threadpool g_thpool;
 
 static struct onas_event_queue_node *g_onas_event_queue_head = NULL;
@@ -171,15 +169,7 @@ void *onas_scan_queue_th(void *arg)
     pthread_cleanup_push(onas_scan_queue_exit, NULL);
     logg("*ClamScanQueue: waiting to consume events ...\n");
     do {
-        pthread_mutex_lock(&onas_scan_queue_loop);
-        pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_scan_queue_loop);
-        /* run 'till we're empty */
-        do {
-            pthread_testcancel();
-            ret = onas_consume_event(thpool);
-        } while (1 != ret);
-        pthread_mutex_unlock(&onas_scan_queue_loop);
-
+        onas_consume_event(thpool);
     } while (1);
 
     pthread_cleanup_pop(1);
@@ -197,61 +187,43 @@ static int onas_queue_is_b_empty()
 
 static int onas_consume_event(threadpool thpool)
 {
-
     pthread_mutex_lock(&onas_queue_lock);
 
-    struct onas_event_queue_node *popped_node = g_onas_event_queue_head->next;
-
     if (onas_queue_is_b_empty()) {
-        pthread_mutex_unlock(&onas_queue_lock);
-        return 1;
+        pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_queue_lock);
     }
 
-#ifdef ONAS_DEBUG
-    logg("*ClamScanQueue: consuming event!\n");
-#endif
-
-    thpool_add_work(thpool, (void *)onas_scan_worker, (void *)popped_node->data);
-
-    g_onas_event_queue_head->next       = g_onas_event_queue_head->next->next;
-    g_onas_event_queue_head->next->prev = g_onas_event_queue_head;
-
-    onas_destroy_event_queue_node(popped_node);
-
+    struct onas_event_queue_node *popped_node = g_onas_event_queue_head->next;
+    g_onas_event_queue_head->next             = g_onas_event_queue_head->next->next;
+    g_onas_event_queue_head->next->prev       = g_onas_event_queue_head;
     g_onas_event_queue.size--;
 
     pthread_mutex_unlock(&onas_queue_lock);
-    return 0;
+
+    thpool_add_work(thpool, (void *)onas_scan_worker, (void *)popped_node->data);
+    onas_destroy_event_queue_node(popped_node);
+
+    return 1;
 }
 
 cl_error_t onas_queue_event(struct onas_scan_event *event_data)
 {
+    struct onas_event_queue_node *node = NULL;
+    if (CL_EMEM == onas_new_event_queue_node(&node))
+        return CL_EMEM;
 
     pthread_mutex_lock(&onas_queue_lock);
-
-    struct onas_event_queue_node *node = NULL;
-
-#ifdef ONAS_DEBUG
-    logg("*ClamScanQueue: queueing event!\n");
-#endif
-
-    if (CL_EMEM == onas_new_event_queue_node(&node)) {
-        return CL_EMEM;
-    }
-
-    node->next = g_onas_event_queue_tail;
-    node->prev = g_onas_event_queue_tail->prev;
-
-    node->data = event_data;
-
-    /* tail will always have a .prev */
+    node->next                                                            = g_onas_event_queue_tail;
+    node->prev                                                            = g_onas_event_queue_tail->prev;
     ((struct onas_event_queue_node *)g_onas_event_queue_tail->prev)->next = node;
     g_onas_event_queue_tail->prev                                         = node;
 
+    node->data = event_data;
+
     g_onas_event_queue.size++;
 
-    pthread_mutex_unlock(&onas_queue_lock);
     pthread_cond_signal(&onas_scan_queue_empty_cond);
+    pthread_mutex_unlock(&onas_queue_lock);
 
     return CL_SUCCESS;
 }
@@ -287,15 +259,11 @@ static void onas_scan_queue_exit(void *arg)
     UNUSEDPARAM(arg);
 
     logg("*ClamScanQueue: onas_scan_queue_exit()\n");
-
-    pthread_mutex_lock(&onas_queue_lock);
-    onas_destroy_event_queue();
-
     if (g_thpool) {
+        thpool_wait(g_thpool);
         thpool_destroy(g_thpool);
+        g_thpool = NULL;
     }
-    g_thpool = NULL;
-    pthread_mutex_unlock(&onas_queue_lock);
-
+    onas_destroy_event_queue();
     logg("ClamScanQueue: stopped\n");
 }
