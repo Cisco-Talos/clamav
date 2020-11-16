@@ -189,7 +189,7 @@ endif()
 
 # libclamav feature dependencies
 if(NOT WIN32)
-    find_package(Iconv REQUIRED)
+    find_package(ICONV REQUIRED)
     # Set variable required by libclamav to use iconv
     set(HAVE_ICONV 1)
 endif()
@@ -804,7 +804,7 @@ ${b}        JSON support:       ${e}
 ${_}            json-c          ${e}${JSONC_INCLUDE_DIRS}
 ${_}                            ${e}${JSONC_LIBRARIES}
 ${b}        Threading support:  ${e}")
-if (WIN32)
+if(WIN32)
 message("\
 ${_}            pthread-win32   ${e}${PThreadW32_INCLUDE_DIRS}
 ${_}                            ${e}${PThreadW32_LIBRARIES}")
@@ -814,6 +814,12 @@ ${_}            pthread         ${e}")
 else()
 message("\
 ${o}            no              ${e}")
+endif()
+if(NOT WIN32)
+message("\
+${b}        Locale support:     ${e}
+${_}            iconv           ${e}${ICONV_INCLUDE_DIRS}
+${_}                            ${e}${ICONV_LIBRARIES}")
 endif()
 
 message(STATUS "${C}libfreshclam Extra Dependencies${e} --

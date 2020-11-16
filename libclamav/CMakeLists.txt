@@ -523,7 +523,7 @@ else()
     target_link_libraries( clamav_obj
         PUBLIC
             Threads::Threads
-            Iconv::Iconv
+            ICONV::Iconv
             ${CMAKE_DL_LIBS}
             m )
 endif()
@@ -562,7 +562,7 @@ if(ENABLE_SHARED_LIB)
     if(WIN32)
         set_target_properties(clamav PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     else()
-        target_link_libraries( clamav PUBLIC Iconv::Iconv )
+        target_link_libraries( clamav PUBLIC ICONV::Iconv )
     endif()
     if(WIN32)
         install(TARGETS clamav DESTINATION ${CMAKE_INSTALL_PREFIX})
@@ -602,7 +602,7 @@ if(ENABLE_STATIC_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
     if(NOT WIN32)
-        target_link_libraries( clamav PUBLIC Iconv::Iconv )
+        target_link_libraries( clamav PUBLIC ICONV::Iconv )
     endif()
     set_target_properties(clamav_static PROPERTIES
         ARCHIVE_OUTPUT_NAME clamav_static
