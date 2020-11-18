@@ -3,6 +3,12 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.103.1
+
+ClamAV 0.103.1 is a bug patch release to address the following issues.
+
+-
+
 ## 0.103.0
 
 ClamAV 0.103.0 includes the following improvements and changes.
