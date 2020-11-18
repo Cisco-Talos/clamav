@@ -303,7 +303,53 @@ ninja
 ninja install
 ```
 
-#### Windows Build
+#### Windows build (with vcpkg)
+
+Building with `vcpkg` is relatively easy, as all of the dependencies are built automatically.
+
+##### Preprequisites
+You'll need CMake, git and vcpkg installed.
+
+- CMake: Download the installer [here](https://cmake.org/download/#latest) and
+  install it.
+- Git: Download the installer [here](https://git-scm.com/download/win) and
+  install it.
+- vcpkg: Get and install [vcpkg](https://github.com/microsoft/vcpkg). Set up
+  `vcpkg` as described in their README. Set the variable `$VCPKG_PATH` to the
+  location where you installed `vcpkg`. If you want to build for a 64 bit
+  system, don't forget to set `vcpkg`'s triple correctly:
+  ```ps1
+  $env:VCPKG_DEFAULT_TRIPLET="x64-windows"
+  $VCPKG_PATH="..." # Path to your vcpkg installation
+  ```
+
+##### Configuring and compiling
+Next, install the required packages:
+```ps1
+& "$VCPKG_PATH\vcpkg" install 'curl[openssl]' 'json-c' 'libxml2' 'pcre2' 'pthreads' 'zlib' 'pdcurses' 'bzip2'
+```
+
+Now check out the ClamAV repository and set your build environment up with
+CMake:
+```ps1
+git clone https://github.com/Cisco-Talos/clamav-devel
+cd clamav-devel
+mkdir build
+cd build
+cmake -A x64 `
+      -DCMAKE_TOOLCHAIN_FILE="$VCPKG_PATH\scripts\buildsystems\vcpkg.cmake" `
+      -DCMAKE_INSTALL_PREFIX='C:\clamav' ..
+```
+You have to drop the `-A x64` arguments if you're building for 32
+bits, and correct the package paths accordingly. Also, if you want to install
+via the MSVC project, set up the install path as you like.
+
+Finally, go ahead and build the project:
+```ps1
+cmake --build . --config Release
+```
+
+#### Windows Build (manual or with Mussels)
 
 Chocolatey (`choco`) is used to install `winflexbison` and `cmake`.
 Visual Studio 2015+ is required, 2017+ recommended.

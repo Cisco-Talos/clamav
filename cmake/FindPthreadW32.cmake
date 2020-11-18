@@ -54,7 +54,7 @@ find_path(PThreadW32_INCLUDE_DIR
   PATH_SUFFIXES pthreadw32
 )
 find_library(PThreadW32_LIBRARY
-  NAMES pthreadVC2
+  NAMES pthreadVC2 pthreadVC3
   PATHS ${PC_PThreadW32_LIBRARY_DIRS}
 )
 

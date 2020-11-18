@@ -107,7 +107,7 @@ else()
       set(CURSES_INCLUDE "<curses.h>")
 
       find_library(CURSES_LIBRARY
-        NAMES curses
+        NAMES curses pdcurses
         PATHS ${PC_PDCurses_LIBRARY_DIRS}
       )
 
