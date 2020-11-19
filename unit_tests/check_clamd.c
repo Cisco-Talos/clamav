@@ -97,6 +97,11 @@ static void conn_setup_mayfail(int may)
     ck_assert_msg(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
 
     rc = connect(sockd, (struct sockaddr *)&nixsock, (socklen_t)sizeof(nixsock));
+    if (rc == -1 && (may && (errno == ECONNREFUSED))) {
+        close(sockd);
+        sockd = -1;
+        return;
+    }
     ck_assert_msg(rc != -1, "Unable to connect(): %s\n", strerror(errno));
 
     signal(SIGPIPE, SIG_IGN);
@@ -683,7 +688,18 @@ START_TEST(test_connections)
     ck_assert_msg(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
                   "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
     num_fds = rlim.rlim_cur - 5;
-    sock    = malloc(sizeof(int) * num_fds);
+#ifdef C_DARWIN
+    /* While the limit when testing on macOS appears to be aroudn 1024, though
+       in testing on github actions macos-latest, get "connection refused"
+       after ~925 give or take.
+       It's possible the getrlimit API is incorrect post macOS Sierra, which
+       may explain the issue. In any case, limiting to 850 should be safe.
+       It's possible there' ssome other limitation at play on the GitHUb's
+       macos-latest shared environment. */
+    num_fds = MIN(num_fds, 850);
+#endif
+
+    sock = malloc(sizeof(int) * num_fds);
 
     ck_assert_msg(!!sock, "malloc failed\n");
 
@@ -691,6 +707,11 @@ START_TEST(test_connections)
         /* just open connections, and let them time out */
         conn_setup_mayfail(1);
         if (sockd == -1) {
+            /* close the previous one, to leave space for one more connection */
+            i--;
+            close(sock[i]);
+            sock[i] = -1;
+
             num_fds = i;
             break;
         }

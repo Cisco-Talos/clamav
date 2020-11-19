@@ -127,8 +127,14 @@ class TC(testcase.TestCase):
                 self.log.warning(f'Unexpected exception {exc}')
                 pass  # ignore
             self.proc = None
-        TC.clamd_pid.unlink(missing_ok=True)
-        TC.clamd_socket.unlink(missing_ok=True)
+        try:
+            TC.clamd_pid.unlink()
+        except Exception:
+            pass # missing_ok=True is too for common use.
+        try:
+            TC.clamd_socket.unlink()
+        except Exception:
+            pass # missing_ok=True is too for common use.
 
         self.verify_valgrind_log()
 
@@ -378,6 +384,8 @@ class TC(testcase.TestCase):
 
         # Ok now run check_clamd to have fun with clamd's API
         output = self.execute_command(f'{TC.check_clamd}')
+        self.log.info(f'check_clamd stdout: \n{output.out}')
+        self.log.info(f'check_clamd stderr: \n{output.err}')
         assert output.ec == 0  # success
 
         expected_results = [

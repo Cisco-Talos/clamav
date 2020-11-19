@@ -46,6 +46,13 @@ math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}"
 set(LIBFRESHCLAM_VERSION "${LIBFRESHCLAM_SOVERSION}.${LIBFRESHCLAM_AGE}.${LIBFRESHCLAM_REVISION}")
 HexVersion(LIBFRESHCLAM_VERSION_NUM ${LIBFRESHCLAM_CURRENT} ${LIBFRESHCLAM_REVISION} ${LIBFRESHCLAM_AGE})
 
+#
+# Define C_LINUX because CMake only defines UNIX
+#
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    set(C_LINUX 1)
+endif()
+
 # Git optionally used to add commit info into build to differentiate in bug reports.
 find_package(Git)
 if(Git_FOUND)
@@ -79,19 +86,27 @@ endif()
 #
 
 # CMake Option default values:
-set(ENABLE_APP_DEFAULT          ON)
-set(ENABLE_MILTER_DEFAULT       OFF)
-set(ENABLE_CLAMONACC_DEFAULT    ON)
-set(ENABLE_EXAMPLES_DEFAULT     OFF)
-set(ENABLE_TESTS_DEFAULT        ON)
-if(WIN32)
-    set(ENABLE_DOCS_DEFAULT     OFF)
+set(ENABLE_APP_DEFAULT              ON)
+if(WIN32 OR APPLE)
+    set(ENABLE_MILTER_DEFAULT       OFF)
 else()
-    set(ENABLE_DOCS_DEFAULT     ON)
+    set(ENABLE_MILTER_DEFAULT       ON)
 endif()
-set(ENABLE_DOXYGEN_DEFAULT      OFF)
-set(ENABLE_UNRAR_DEFAULT        ON)
-set(ENABLE_SYSTEMD_DEFAULT      ON)
+if(C_LINUX)
+    set(ENABLE_CLAMONACC_DEFAULT    ON)
+else()
+    set(ENABLE_CLAMONACC_DEFAULT    OFF)
+endif()
+set(ENABLE_EXAMPLES_DEFAULT         OFF)
+set(ENABLE_TESTS_DEFAULT            ON)
+if(WIN32)
+    set(ENABLE_MAN_PAGES_DEFAULT    OFF)
+else()
+    set(ENABLE_MAN_PAGES_DEFAULT    ON)
+endif()
+set(ENABLE_DOXYGEN_DEFAULT          OFF)
+set(ENABLE_UNRAR_DEFAULT            ON)
+set(ENABLE_SYSTEMD_DEFAULT          ON)
 
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
@@ -127,8 +142,8 @@ else()
     set(ENABLE_LIB_ONLY_DISABLED_OTHERS 0)
 endif()
 if(ENABLE_LIBCLAMAV_ONLY)
-    set(ENABLE_APP              OFF)
-    set(ENABLE_EXAMPLES         OFF)
+    set(ENABLE_APP                  OFF)
+    set(ENABLE_EXAMPLES             OFF)
 endif()
 
 #
@@ -139,24 +154,12 @@ if(APPLE)
 endif()
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
-#
-# Define C_LINUX because CMake only defines UNIX
-#
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set(C_LINUX 1)
-
+if(C_LINUX)
     if(CMAKE_COMPILER_IS_GNUCXX)
-        # For O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
+        # Set _GNU_SOURCE for O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
         # (pre POSIX.1-2008: glibc 2.11 and earlier). #4042
         set(_GNU_SOURCE 1)
     endif()
-endif()
-
-#
-# Set FreeBSD include path to include /usr/local/include
-#
-if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    include_directories(/usr/local/include)
 endif()
 
 #
@@ -733,7 +736,7 @@ endif()
 add_subdirectory( libclamunrar_iface )
 
 if(NOT ENABLE_EXTERNAL_MSPACK)
-    add_subdirectory(libclammspack)
+    add_subdirectory( libclammspack )
 else()
     find_package(MSPack)
 endif()
@@ -761,7 +764,7 @@ if(NOT ENABLE_LIBCLAMAV_ONLY)
             add_subdirectory( clamonacc )
         endif()
 
-        if(NOT WIN32 AND ENABLE_MILTER)
+        if(ENABLE_MILTER)
             add_subdirectory( clamav-milter )
         endif()
 
@@ -792,13 +795,11 @@ endif()
 include(CTest)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 if(ENABLE_TESTS)
-    add_subdirectory(test)
-    add_subdirectory(unit_tests)
+    add_subdirectory( test )
+    add_subdirectory( unit_tests )
 endif()
 
-if(ENABLE_DOCS)
-    add_subdirectory( docs )
-endif()
+add_subdirectory( docs )
 
 if(ENABLE_FUZZ)
     add_subdirectory( fuzz )
@@ -814,6 +815,7 @@ ${c}    Package Version:        ${e}${PACKAGE_STRING}
 ${c}    libclamav version:      ${e}${LIBCLAMAV_CURRENT}:${LIBCLAMAV_REVISION}:${LIBCLAMAV_AGE}
 ${c}    libfreshclam version:   ${e}${LIBFRESHCLAM_CURRENT}:${LIBFRESHCLAM_REVISION}:${LIBFRESHCLAM_AGE}
 ${c}    Install prefix:         ${e}${CMAKE_INSTALL_PREFIX}
+${c}    Host system:            ${e}${CMAKE_HOST_SYSTEM}
 ${c}    Target system:          ${e}${CMAKE_SYSTEM}
 ${c}    Compiler:               ${e}
 ${b}        Build type:         ${e}${CMAKE_BUILD_TYPE}
@@ -821,7 +823,16 @@ ${b}        C compiler:         ${e}${CMAKE_C_COMPILER}
 ${b}        C++ compiler:       ${e}${CMAKE_CXX_COMPILER}
 ${b}        CFLAGS:             ${e}${CMAKE_C_FLAGS_${_build_type}} ${CMAKE_C_FLAGS}
 ${b}        CXXFLAGS:           ${e}${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
-${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}
+${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}")
+if(VCPKG_TOOLCHAIN)
+message("\
+${c}    Using vcpkg:            ${e}
+${b}        Target Triplet:     ${e}${VCPKG_TARGET_TRIPLET}
+${b}        Target Arch:        ${e}${VCPKG_TARGET_ARCHITECTURE}
+${b}        Get runtime DLLs:   ${e}${VCPKG_APPLOCAL_DEPS}
+${b}        Package root path:  ${e}${VCPKG_CMAKE_FIND_ROOT_PATH}")
+endif()
+message("\
 ${c}    Build Options:          ${e}
 ${b}        Build apps:         ${e}${ENABLE_APP}
 ${b}        Shared library:     ${e}${ENABLE_SHARED_LIB}
@@ -829,7 +840,7 @@ ${b}        Static library:     ${e}${ENABLE_STATIC_LIB}
 ${b}        Enable UnRAR:       ${e}${ENABLE_UNRAR}
 ${b}        Examples:           ${e}${ENABLE_EXAMPLES}
 ${b}        Tests:              ${e}${ENABLE_TESTS}
-${b}        Build man pages:    ${e}${ENABLE_DOCS}
+${b}        Build man pages:    ${e}${ENABLE_MAN_PAGES}
 ${b}        Build doxygen HTML: ${e}${ENABLE_DOXYGEN}")
 if(NOT WIN32)
 message("\

@@ -130,11 +130,11 @@ else()
       set(CURSES_DEFINITIONS ${PC_PDCurses_CFLAGS_OTHER})
 
       if (NOT TARGET Curses::curses)
-        add_library(Curses::curses INTERFACE IMPORTED)
+        add_library(Curses::curses UNKNOWN IMPORTED)
         set_target_properties(Curses::curses PROPERTIES
           INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
           INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIR}"
-          INTERFACE_LINK_LIBRARIES "${CURSES_LIBRARY}"
+          IMPORTED_LOCATION "${CURSES_LIBRARY}"
         )
       endif()
   else()

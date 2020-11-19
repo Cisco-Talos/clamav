@@ -1,6 +1,6 @@
 # Features that can be enabled for cmake (see CMakeLists.txt)
 
-if (WIN32)
+if(WIN32)
     set(APP_CONFIG_DIRECTORY
         "." CACHE STRING
         "App Config directory.")
@@ -77,9 +77,9 @@ option(ENABLE_CLAMONACC
     "Build clamonacc (Linux-only, requires ENABLE_APP))."
     ${ENABLE_CLAMONACC_DEFAULT})
 
-option(ENABLE_DOCS
-    "Generate documentation."
-    ${ENABLE_DOCS_DEFAULT})
+option(ENABLE_MAN_PAGES
+    "Generate man pages."
+    ${ENABLE_MAN_PAGES_DEFAULT})
 
 option(ENABLE_DOXYGEN
     "Generate doxygen HTML documentation for clamav.h, libfreshclam.h."

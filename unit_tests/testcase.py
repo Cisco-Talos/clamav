@@ -162,7 +162,10 @@ class TestCase(unittest.TestCase):
         print("")
 
         log_path = Path(self.path_build / 'unit_tests' / f'{self._testMethodName}{self.log_suffix}')
-        log_path.unlink(missing_ok=True)
+        try:
+            log_path.unlink()
+        except Exception:
+            pass # missing_ok=True is too for common use.
         self.log = Logger(self._testMethodName, log_file=str(log_path))
 
     def tearDown(self):
@@ -606,6 +609,16 @@ class Executor(object):
         else:
             sys_env = os.environ.copy()
             sys_env.update(env_vars)
+
+            if sys.platform == 'darwin':
+                # macOS doesn't propagate 'LD_LIBRARY_PATH' or 'DYLD_LIBRARY_PATH'
+                # to subprocesses, presumably as a security feature.
+                # We will likely need these for testing and can propagate them
+                # manually, like so:
+                if "LD_LIBRARY_PATH" in sys_env:
+                    cmd = f"export LD_LIBRARY_PATH={sys_env['LD_LIBRARY_PATH']} && {cmd}"
+                if "DYLD_LIBRARY_PATH" in sys_env:
+                    cmd = f"export DYLD_LIBRARY_PATH={sys_env['DYLD_LIBRARY_PATH']} && {cmd}"
 
             self._logger.debug("Run command: %s" % (cmd,))
             self._process = subprocess.Popen(
