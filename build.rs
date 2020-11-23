@@ -18,33 +18,8 @@
 use std::path::{PathBuf, Path};
 use std::env;
 
-fn main() {
-    println!("cargo:rustc-link-lib=dylib={}", "clamav");
-    if cfg!(windows) {
-        let clamav_build = env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory");
-        let profile = env::var("PROFILE").unwrap();
 
-        let library_path = match profile.as_str() {
-            "debug" => Path::new(&clamav_build).join("libclamav/Debug"),
-            "release" => Path::new(&clamav_build).join("libclamav/Release"),
-            _ => panic!("Unexpected build profile"),
-        };
-
-        println!("cargo:rustc-link-search=native={}", library_path.to_str().unwrap());
-    }
-    else {
-        pkg_config::Config::new()
-            .atleast_version("0.102")
-            .probe("libclamav")
-            .unwrap();
-    }
-
-    // Tell cargo to invalidate the built crate whenever the wrapper changes
-    println!("cargo:rerun-if-changed=wrapper.h");
-
-    // The bindgen::Builder is the main entry point
-    // to bindgen, and lets you build up options for
-    // the resulting bindings.
+fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::Builder) {
     let mut bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
@@ -77,15 +52,7 @@ fn main() {
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks));
 
-    if cfg!(windows) {
-        let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
-        let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
-        let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
-        bindings = bindings
-            .clang_arg("-I") .clang_arg(clamav_source.join("libclamav").to_str().unwrap())
-            .clang_arg("-I") .clang_arg(clamav_build.to_str().unwrap())
-            .clang_arg("-I") .clang_arg(openssl_include.to_str().unwrap())
-    }
+    bindings = customize_bindings(bindings);
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -98,3 +65,51 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
 }
+
+fn cargo_common() {
+    println!("cargo:rustc-link-lib=dylib={}", "clamav");
+
+    // Tell cargo to invalidate the built crate whenever the wrapper changes
+    println!("cargo:rerun-if-changed=wrapper.h");
+}
+
+
+
+#[cfg(windows)]
+fn main() {
+    let include_paths = match vcpkg::find_package("clamav") {
+        Ok(pkg) => pkg.include_paths,
+        Err(err) => {
+            println!("cargo:warning=Either vcpkg is not installed, or an error occurred in vcpkg: {}", err);
+            let clamav_source = PathBuf::from(env::var("CLAMAV_SOURCE").expect("CLAMAV_SOURCE environment variable must be set and point to ClamAV's source directory"));
+            let clamav_build = PathBuf::from(env::var("CLAMAV_BUILD").expect("CLAMAV_BUILD environment variable must be set and point to ClamAV's build directory"));
+            let openssl_include = PathBuf::from(env::var("OPENSSL_INCLUDE").expect("OPENSSL_INCLUDE environment variable must be set and point to openssl's include directory"));
+            let profile = env::var("PROFILE").unwrap();
+
+            let library_path = match profile.as_str() {
+                "debug" => Path::new(&clamav_build).join("libclamav/Debug"),
+                "release" => Path::new(&clamav_build).join("libclamav/Release"),
+                _ => panic!("Unexpected build profile"),
+            };
+
+            println!("cargo:rustc-link-search=native={}", library_path.to_str().unwrap());
+
+            vec![clamav_source.join("libclamav"), clamav_build, openssl_include]
+        }
+    };
+
+    cargo_common();
+    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {let mut x = x; for include_path in &include_paths {x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());}; x});
+}
+
+#[cfg(unix)]
+fn main() {
+    pkg_config::Config::new()
+        .atleast_version("0.102")
+        .probe("libclamav")
+        .unwrap();
+
+    cargo_common();
+    generate_bindings(&|x| x);
+}
+
