@@ -126,7 +126,7 @@ static int writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
-    old_umask = umask(0002);
+    old_umask = umask(0022);
     if ((fd = fopen(pidfile, "w")) == NULL) {
         logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
         return 1;
@@ -1430,7 +1430,7 @@ fc_error_t perform_database_update(
      * Create a temp directory to use for the update process.
      */
     if (LSTAT(g_freshclamTempDirectory, &statbuf) == -1) {
-        if (0 != mkdir(g_freshclamTempDirectory, 0755)) {
+        if (0 != mkdir(g_freshclamTempDirectory, 0700)) {
             logg("!Can't create temporary directory %s\n", g_freshclamTempDirectory);
             logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
             status = FC_EDBDIRACCESS;
