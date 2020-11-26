@@ -383,7 +383,7 @@ test_clamd2() {
 
 test_clamd3() {
     test_start $1
-    echo "VirusEvent $abs_srcdir/virusaction-test.sh `pwd` \"Virus found: %v\"" >>test-clamd.conf
+    echo "VirusEvent $abs_srcdir/virusaction-test.sh `pwd` \"Virus found: %v in %f\"" >>test-clamd.conf
     echo "HeuristicScanPrecedence yes" >>test-clamd.conf
     start_clamd
     # Test HeuristicScanPrecedence feature
@@ -403,7 +403,7 @@ test_clamd3() {
     # Test VirusEvent feature
     run_clamdscan_fileonly $TOP/test/clam.exe
     test -f test-clamd.log || sleep 1
-    grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2>/dev/null ||
+    grep "Virus found: ClamAV-Test-File.UNOFFICIAL in .*/clam.exe" test-clamd.log >/dev/null 2>/dev/null ||
 	{ cat test-clamd.log || true; die "Virusaction test failed"; }
 
     test_end $1
