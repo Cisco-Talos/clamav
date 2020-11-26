@@ -108,7 +108,7 @@ void virusaction(const char *filename, const char *virname,
     const struct optstruct *opt;
     char *buffer_file, *buffer_vir, *buffer_cmd, *path;
     const char *pt;
-    size_t i, j, v = 0, len;
+    size_t i, j, v = 0, f = 0, len;
     char *env[4];
 
     if (!(opt = optget(opts, "VirusEvent"))->enabled)
@@ -138,9 +138,14 @@ void virusaction(const char *filename, const char *virname,
         pt += 2;
         v++;
     }
+    pt = opt->strarg;
+    while ((pt = strstr(pt, "%f"))) {
+        pt += 2;
+        f++;
+    }
     len = strlen(opt->strarg);
     buffer_cmd =
-        (char *)calloc(len + v * strlen(virname) + 1, sizeof(char));
+        (char *)calloc(len + v * strlen(virname) + f * strlen(filename) + 1, sizeof(char));
     if (!buffer_cmd) {
         if (path)
             xfree(env[0]);
@@ -153,6 +158,10 @@ void virusaction(const char *filename, const char *virname,
         if (i + 1 < len && opt->strarg[i] == '%' && opt->strarg[i + 1] == 'v') {
             strcat(buffer_cmd, virname);
             j += strlen(virname);
+            i++;
+        } else if (i + 1 < len && opt->strarg[i] == '%' && opt->strarg[i + 1] == 'f') {
+            strcat(buffer_cmd, filename);
+            j += strlen(filename);
             i++;
         } else {
             buffer_cmd[j++] = opt->strarg[i];

@@ -241,8 +241,9 @@ Default: yes
 .TP
 \fBVirusEvent COMMAND\fR
 Execute a command when a virus is found. In the command string %v will be
-replaced with the virus name. Additionally, two environment variables will
-be defined: $CLAM_VIRUSEVENT_FILENAME and $CLAM_VIRUSEVENT_VIRUSNAME.
+replaced with the virus name and %f will be replaced with the file name.
+Additionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME
+and $CLAM_VIRUSEVENT_VIRUSNAME.
 \fR
 .br
 Default: disabled
