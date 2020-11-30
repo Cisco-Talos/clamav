@@ -1,6 +1,6 @@
 # clamav-sys
 
-clamav-sys is a minimal Rust interface around libclamav](https://www.clamav.net).
+clamav-sys is a minimal Rust interface around [libclamav](https://www.clamav.net).
 This package is not supposed to be used stand-alone, but only through its safe wrapper,
 clamav-rs.
 
