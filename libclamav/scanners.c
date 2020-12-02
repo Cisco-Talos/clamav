@@ -2562,16 +2562,6 @@ static cl_error_t cli_scanriff(cli_ctx *ctx)
     return ret;
 }
 
-static cl_error_t cli_scanjpeg(cli_ctx *ctx)
-{
-    cl_error_t ret = CL_CLEAN;
-
-    if (cli_check_jpeg_exploit(ctx, 0) == 1)
-        ret = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
-
-    return ret;
-}
-
 static cl_error_t cli_scancryptff(cli_ctx *ctx)
 {
     cl_error_t ret = CL_CLEAN, ndesc;
@@ -4190,10 +4180,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         case CL_TYPE_JPEG:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
-                ret = cli_scanjpeg(ctx); /* This one has some Exploit detection. */
-
-            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_JPEG) && ret != CL_VIRUS)
-                ret = cli_parsejpeg(ctx);
+                ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
             break;
 
         case CL_TYPE_TIFF:

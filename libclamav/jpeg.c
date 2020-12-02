@@ -37,6 +37,7 @@
 
 #include "jpeg.h"
 #include "clamav.h"
+#include "scanners.h"
 
 // clang-format off
 /*
@@ -182,6 +183,7 @@ typedef enum {
      *     - SPIFF. Not a common format, see http://fileformats.archiveteam.org/wiki/SPIFF
      *   0xED:
      *     - IPTC / IMM metadata (a type of comment)
+     *     - Photoshop data
      *   0xEE:
      *     - AdobeRGB (as opposed to sRGB)
      */
@@ -250,14 +252,69 @@ typedef enum {
 
 // clang-format on
 
-cl_error_t
-cli_parsejpeg(cli_ctx *ctx)
+static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
+{
+    cl_error_t retval;
+    const unsigned char *buf;
+    uint16_t ntmp;
+    uint8_t nlength, id[2];
+    uint32_t size;
+    off_t offset = *off;
+    fmap_t *map  = *ctx->fmap;
+
+    if (!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
+        cli_dbgmsg("read bim failed\n");
+        return CL_BREAK;
+    }
+    if (memcmp(buf, "8BIM", 4) != 0) {
+        cli_dbgmsg("missed 8bim\n");
+        return CL_BREAK;
+    }
+
+    id[0] = (uint8_t)buf[4];
+    id[1] = (uint8_t)buf[5];
+    cli_dbgmsg("ID: 0x%.2x%.2x\n", id[0], id[1]);
+    nlength = buf[6];
+    ntmp    = nlength + ((((uint16_t)nlength) + 1) & 0x01);
+    offset += 4 + 2 + 1 + ntmp;
+
+    if (fmap_readn(map, &size, offset, 4) != 4) {
+        return CL_BREAK;
+    }
+    size = be32_to_host(size);
+    if (size == 0) {
+        return CL_BREAK;
+    }
+    if ((size & 0x01) == 1) {
+        size++;
+    }
+
+    *off = offset + 4 + size;
+    /* Is it a thumbnail image: 0x0409 or 0x040c */
+    if ((id[0] == 0x04) && ((id[1] == 0x09) || (id[1] == 0x0c))) {
+        /* Yes */
+        cli_dbgmsg("found thumbnail\n");
+    } else {
+        /* No - Seek past record */
+        return CL_CLEAN;
+    }
+
+    /* Jump past header */
+    offset += 4 + 28;
+
+    /* Scan the thumbnail JPEG */
+    retval = cli_magic_scan_nested_fmap_type(map, offset, 0, ctx, CL_TYPE_JPEG, "photoshop-thumbnail");
+
+    return retval;
+}
+
+cl_error_t cli_parsejpeg(cli_ctx *ctx)
 {
     cl_error_t status = CL_CLEAN;
 
     fmap_t *map = NULL;
     jpeg_marker_t marker, prev_marker, prev_segment = JPEG_MARKER_NOT_A_MARKER_0x00;
-    uint8_t buff[strlen("ICC_PROFILE") + 2]; /* Using length "ICC_PROFILE" + 2 because it's the longest we'll read. */
+    uint8_t buff[50]; /* 50 should be sufficient for now */
     uint16_t len_u16;
     unsigned int offset = 0, i, len, segment = 0;
     bool found_comment = false;
@@ -294,8 +351,13 @@ cli_parsejpeg(cli_ctx *ctx)
             if (fmap_readn(map, &marker_u8, offset, sizeof(marker_u8)) == sizeof(marker_u8)) {
                 offset += sizeof(marker_u8);
             } else {
-                cli_errmsg("JPEG: Failed to read marker, file corrupted?\n");
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadMarker");
+                if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    cli_errmsg("JPEG: Failed to read marker, file corrupted?\n");
+                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadMarker");
+                    status = CL_EPARSE;
+                } else {
+                    cli_dbgmsg("Failed to read marker, file corrupted?\n");
+                }
                 goto done;
             }
             marker = (jpeg_marker_t)marker_u8;
@@ -305,30 +367,64 @@ cli_parsejpeg(cli_ctx *ctx)
             prev_marker = marker;
         }
         if (i == 16) {
-            cli_warnmsg("JPEG: Spurious bytes before segment %u\n", segment);
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SpuriousBytesBeforeSegment");
-            status = CL_EPARSE;
+            if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                cli_warnmsg("JPEG: Spurious bytes before segment %u\n", segment);
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SpuriousBytesBeforeSegment");
+                status = CL_EPARSE;
+            } else {
+                cli_dbgmsg("Spurious bytes before segment %u\n", segment);
+            }
             goto done;
         }
 
+        /*
+         * Check for MS04-028 exploit (See: https://docs.microsoft.com/en-us/security-updates/securitybulletins/2004/ms04-028)
+         * You can reproduce to test with https://www.exploit-db.com/exploits/474
+         * Checking here because the exploit PoC will fail our length check, below.
+         */
+        if (JPEG_MARKER_SEGMENT_COM_COMMENT == marker) {
+            if (fmap_readn(map, buff, offset, 2) == 2) {
+                if (buff[0] == 0x00) {
+                    if ((buff[1] == 0x00) || (buff[1] == 0x01)) {
+                        /* Found exploit */
+                        status = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
+                        goto done;
+                    }
+                }
+            }
+        }
+
         if (fmap_readn(map, &len_u16, offset, sizeof(len_u16)) != sizeof(len_u16)) {
-            cli_errmsg("JPEG: Failed to read the segment size, file corrupted?\n");
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadSegmentSize");
+            if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                cli_errmsg("JPEG: Failed to read the segment size, file corrupted?\n");
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadSegmentSize");
+                status = CL_EPARSE;
+            } else {
+                cli_dbgmsg("Failed to read the segment size, file corrupted?\n");
+            }
             goto done;
         }
         len = (unsigned int)be16_to_host(len_u16);
         cli_dbgmsg("segment[%d] = 0x%02x, Length %u\n", segment, marker, len);
 
         if (len < 2) {
-            cli_warnmsg("JPEG: Invalid segment size\n");
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.InvalidSegmentSize");
-            status = CL_EPARSE;
+            if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                cli_warnmsg("JPEG: Invalid segment size\n");
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.InvalidSegmentSize");
+                status = CL_EPARSE;
+            } else {
+                cli_dbgmsg("Invalid segment size\n");
+            }
             goto done;
         }
         if (len >= map->len - offset + sizeof(len_u16)) {
-            cli_warnmsg("JPEG: Segment data out of file\n");
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SegmentDataOutOfFile");
-            status = CL_EPARSE;
+            if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                cli_warnmsg("JPEG: Segment data out of file\n");
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SegmentDataOutOfFile");
+                status = CL_EPARSE;
+            } else {
+                cli_dbgmsg("Segment data out of file\n");
+            }
             goto done;
         }
         offset += len;
@@ -338,35 +434,39 @@ cli_parsejpeg(cli_ctx *ctx)
                 /*
                  * JFIF, maybe
                  */
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("JFIF") + 1) == strlen("JFIF") + 1 && 0 == memcmp(buff, "JFIF\0", strlen("JFIF") + 1)) {
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("JFIF") + 1) == strlen("JFIF") + 1) &&
+                    (0 == memcmp(buff, "JFIF\0", strlen("JFIF") + 1))) {
                     /* Found a JFIF marker */
-                    if (found_app && num_JFIF > 0) {
-                        cli_warnmsg("JPEG: Duplicate Application Marker found (JFIF)\n");
-                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFdupAppMarker");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
-                    if (!(segment == 1 ||
-                          (segment == 2 && found_comment) ||
-                          (segment == 2 && num_Exif > 0) ||
-                          (segment == 3 && found_comment && num_Exif > 0))) {
-                        /* The JFIF segment is technically required to appear first, though it has been observed
-                        * appearing in segment 2 in functional images when segment 1 is a comment or an Exif segment.
-                        * If segment 1 wasn't a comment or Exif, then the file structure is unusual. */
-                        cli_warnmsg("JPEG: JFIF marker at wrong position, found in segment # %d\n", segment);
-                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFmarkerBadPosition");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
-                    if (len < 16) {
-                        cli_warnmsg("JPEG: JFIF header too short\n");
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFheaderTooShort");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
                     cli_dbgmsg(" JFIF application marker\n");
+
+                    if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                        if (found_app && num_JFIF > 0) {
+                            cli_warnmsg("JPEG: Duplicate Application Marker found (JFIF)\n");
+                            cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFdupAppMarker");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (!(segment == 1 ||
+                              (segment == 2 && found_comment) ||
+                              (segment == 2 && num_Exif > 0) ||
+                              (segment == 3 && found_comment && num_Exif > 0))) {
+                            /* The JFIF segment is technically required to appear first, though it has been observed
+                             * appearing in segment 2 in functional images when segment 1 is a comment or an Exif segment.
+                             * If segment 1 wasn't a comment or Exif, then the file structure is unusual. */
+                            cli_warnmsg("JPEG: JFIF marker at wrong position, found in segment # %d\n", segment);
+                            cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFmarkerBadPosition");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (len < 16) {
+                            cli_warnmsg("JPEG: JFIF header too short\n");
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFheaderTooShort");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                    }
                     found_app = true;
                     num_JFIF += 1;
                 } else {
@@ -380,31 +480,37 @@ cli_parsejpeg(cli_ctx *ctx)
                 /*
                  * Exif, or maybe XMP data
                  */
-                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Exif") + 2) == strlen("Exif") + 2) && (0 == memcmp(buff, "Exif\0\0", strlen("Exif") + 2))) {
-                    if (found_app && (num_Exif > 0 || num_SPIFF > 0)) {
-                        cli_warnmsg("JPEG: Duplicate Application Marker found (Exif)\n");
-                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifDupAppMarker");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
-                    if (segment > 3 && !found_comment && num_JFIF > 0) {
-                        /* If Exif was found after segment 3 and previous segments weren't a comment or JFIF, something is unusual. */
-                        cli_warnmsg("JPEG: Exif marker at wrong position\n");
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderBadPosition");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
-                    if (len < 16) {
-                        cli_warnmsg("JPEG: Exif header too short\n");
-                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderTooShort");
-                        status = CL_EPARSE;
-                        goto done;
-                    }
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Exif") + 2) == strlen("Exif") + 2) &&
+                    (0 == memcmp(buff, "Exif\0\0", strlen("Exif") + 2))) {
+                    /* Found an Exif marker */
                     cli_dbgmsg(" Exif application marker\n");
+
+                    if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                        if (found_app && (num_Exif > 0 || num_SPIFF > 0)) {
+                            cli_warnmsg("JPEG: Duplicate Application Marker found (Exif)\n");
+                            cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifDupAppMarker");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (segment > 3 && !found_comment && num_JFIF > 0) {
+                            /* If Exif was found after segment 3 and previous segments weren't a comment or JFIF, something is unusual. */
+                            cli_warnmsg("JPEG: Exif marker at wrong position\n");
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderBadPosition");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (len < 16) {
+                            cli_warnmsg("JPEG: Exif header too short\n");
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderTooShort");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                    }
                     found_app = true;
                     num_Exif += 1;
-                } else if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("http://")) == strlen("http://")) && (0 == memcmp(buff, "http://", strlen("http://")))) {
+                } else if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("http://")) == strlen("http://")) &&
+                           (0 == memcmp(buff, "http://", strlen("http://")))) {
                     cli_dbgmsg(" XMP metadata\n");
                     found_comment = true;
                 } else {
@@ -430,41 +536,64 @@ cli_parsejpeg(cli_ctx *ctx)
                 /*
                  * SPIFF
                  */
-                if (found_app) {
-                    cli_warnmsg("JPEG: Duplicate Application Marker found (SPIFF)\n");
-                    cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFdupAppMarker");
-                    status = CL_EPARSE;
-                    goto done;
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("SPIFF") + 1) == strlen("SPIFF") + 1) &&
+                    (0 == memcmp(buff, "SPIFF\0", strlen("SPIFF") + 1))) {
+                    /* Found SPIFF application marker */
+                    cli_dbgmsg(" SPIFF application marker\n");
+
+                    if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                        if (found_app) {
+                            cli_warnmsg("JPEG: Duplicate Application Marker found (SPIFF)\n");
+                            cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFdupAppMarker");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (segment != 1 && (segment != 2 || !found_comment)) {
+                            cli_warnmsg("JPEG: SPIFF marker at wrong position\n");
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFmarkerBadPosition");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                        if (len < 16) {
+                            cli_warnmsg("JPEG: SPIFF header too short\n");
+                            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFheaderTooShort");
+                            status = CL_EPARSE;
+                            goto done;
+                        }
+                    }
+                    found_app = true;
+                    num_SPIFF += 1;
+                } else {
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
                 }
-                if (segment != 1 && (segment != 2 || !found_comment)) {
-                    cli_warnmsg("JPEG: SPIFF marker at wrong position\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFmarkerBadPosition");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("SPIFF") + 1) != strlen("SPIFF") + 1 || memcmp(buff, "SPIFF\0", strlen("SPIFF") + 1)) {
-                    cli_warnmsg("JPEG: No SPIFF marker\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoSPIFFmarker");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                if (len < 16) {
-                    cli_warnmsg("JPEG: SPIFF header too short\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFheaderTooShort");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                cli_dbgmsg(" SPIFF application marker\n");
-                found_app = true;
-                num_SPIFF += 1;
                 break;
 
             case JPEG_MARKER_SEGMENT_APP13:
                 /*
-                 * IPTC / IMM metadata (comment), probably
+                 * Check for Photoshop information
+                 * Example file to test with: 2c5883a964917aa54c8b3e2c70dabf0a7b06ba8c21bcbaf6f1c19501be9d9196
                  */
-                cli_dbgmsg(" IPTC IMM metadata segment marker\n");
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Photoshop 3.0") + 1) == strlen("Photoshop 3.0") + 1) &&
+                    (0 == memcmp(buff, "Photoshop 3.0\0", strlen("Photoshop 3.0") + 1))) {
+                    /* Found a Photoshop file */
+                    off_t photoshop_data_offset = offset - len + sizeof(len_u16) + strlen("Photoshop 3.0") + 1;
+                    off_t old_offset;
+
+                    cli_dbgmsg("Found Photoshop segment\n");
+                    do {
+                        old_offset = photoshop_data_offset;
+                        status     = jpeg_check_photoshop_8bim(ctx, &photoshop_data_offset);
+                        if (photoshop_data_offset <= old_offset)
+                            break;
+                    } while (status == CL_CLEAN);
+
+                    if (status == CL_BREAK) {
+                        status = CL_CLEAN;
+                    }
+                } else {
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
+                }
                 found_comment = true;
                 break;
 
@@ -472,12 +601,13 @@ cli_parsejpeg(cli_ctx *ctx)
                 /*
                  * Adobe RGB, probably
                  */
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Adobe") + 1) != strlen("Adobe") + 1 || 0 != memcmp(buff, "Adobe\0", strlen("Adobe") + 1)) {
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Adobe") + 1) == strlen("Adobe") + 1) &&
+                    (0 == memcmp(buff, "Adobe\0", strlen("Adobe") + 1))) {
+                    cli_dbgmsg(" AdobeRGB application marker\n");
+                } else {
                     /* Not Adobe, dunno what this is. */
-                    cli_dbgmsg(" Unfamiliar application marker: 0x%02x\n", marker);
-                    break;
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
                 }
-                cli_dbgmsg(" AdobeRGB application marker\n");
                 break;
 
             case JPEG_MARKER_SEGMENT_APP3:
@@ -524,10 +654,12 @@ cli_parsejpeg(cli_ctx *ctx)
             case JPEG_MARKER_SEGMENT_JPG7: /* JPG7 */
                 cli_dbgmsg(" JPG7 segment marker\n");
                 if (found_app) {
-                    cli_warnmsg("JPEG: Application Marker before JPG7\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.AppMarkerBeforeJPG7");
-                    status = CL_EPARSE;
-                    goto done;
+                    if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                        cli_warnmsg("JPEG: Application Marker before JPG7\n");
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.AppMarkerBeforeJPG7");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
                 }
                 goto done;
 
@@ -546,9 +678,11 @@ cli_parsejpeg(cli_ctx *ctx)
                 /*
                  * We shouldn't reach this marker because we exit out when we hit the Start of Scan marker.
                  */
-                cli_warnmsg("JPEG: No image in jpeg\n");
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoImages");
-                status = CL_EPARSE;
+                if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    cli_warnmsg("JPEG: No image in jpeg\n");
+                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoImages");
+                    status = CL_EPARSE;
+                }
                 goto done;
 
             case JPEG_MARKER_SEGMENT_COM_COMMENT: /* COM (comment) */
@@ -562,11 +696,13 @@ cli_parsejpeg(cli_ctx *ctx)
 
             case JPEG_MARKER_SEGMENT_DTT: /* DTT */
                 cli_dbgmsg(" DTT segment marker\n");
-                if (prev_segment != JPEG_MARKER_SEGMENT_DTI) {
-                    cli_warnmsg("JPEG: No DTI segment before DTT\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.DTTMissingDTISegment");
-                    status = CL_EPARSE;
-                    goto done;
+                if (SCAN_HEURISTIC_BROKEN_MEDIA) {
+                    if (prev_segment != JPEG_MARKER_SEGMENT_DTI) {
+                        cli_warnmsg("JPEG: No DTI segment before DTT\n");
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.DTTMissingDTISegment");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
                 }
                 break;
 
