@@ -32,24 +32,245 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <stdbool.h>
 #include <time.h>
 
 #include "jpeg.h"
 #include "clamav.h"
 
-cl_error_t cli_parsejpeg(cli_ctx *ctx)
+// clang-format off
+/*
+ * JPEG format highlights
+ * ----------------------
+ *
+ * Links:
+ * - https://en.wikipedia.org/wiki/JPEG#Syntax_and_structure
+ * - https://en.wikipedia.org/wiki/JPEG_File_Interchange_Format
+ * - https://en.wikipedia.org/wiki/Exif
+ *
+ * A JPEG image is a sequence of segments.
+ *
+ * Each segment starts with a two-byte marker. The first byte is 0xff and is
+ * followed by one of the following to identify the segment.
+
+ * Some segments are simply the 2-byte marker, while others have a payload.
+ * Realistically it appears that just the start-of-image and end-of-image lack
+ * the 2-byte size field, the rest have it, even the 4-byte DRI segment.
+ *
+ * All variable-byte payloads have 2-bytes indicating the size which includes
+ * the 2-bytes (but not the marker itself).
+ *
+ * Within entropy-encoded (compressed) data, any 0xff will have an 0x00
+ * inserted after it to indicate that it's just and 0xff and _NOT_ a segment
+ * marker. Decoders skip the 0x00 byte.
+ * This only applies to entropy-encoded data, not to marker payload data.
+ * We dont' really worry about this though because this parser stops when it
+ * reaches the image data.
+ */
+
+/*
+ * JPEG Segment & Entropy Markers.
+ */
+typedef enum {
+    /* Start of Image
+     * No payload
+     */
+    JPEG_MARKER_SEGMENT_SOI_START_OF_IMAGE = 0xD8,
+
+    /* Start of Frame for a Baseline DCT-based JPEG (S0F0)
+     * Variable size payload.
+     * Baseline DCT-based JPEG, and specifies the width, height, number of
+     * components, and component subsampling
+     */
+    JPEG_MARKER_SEGMENT_S0F0_START_OF_FRAME_BASELINE_DCT = 0xC0,
+
+    /* Start of Frame for a extended sequential DCT-based JPEG (S0F1)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F1_START_OF_FRAME_EXT_SEQ_DCT = 0xC1,
+
+    /* Start of Frame for a progressive DCT-based JPEG (S0F2)
+     * Variable size payload.
+     * Progressive DCT-based JPEG, and specifies the width, height, number of
+     * components, and component subsampling
+     */
+    JPEG_MARKER_SEGMENT_S0F2_START_OF_FRAME_PROG_DCT = 0xC2,
+
+    /* Start of Frame for a lossless sequential DCT-based JPEG (S0F3)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F3_START_OF_FRAME_DIFF_SEQ_DCT = 0xC3,
+
+    /* Start of Frame for a differential sequential DCT-based JPEG (S0F5)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F5_START_OF_FRAME_DIFF_SEQ_DCT = 0xC5,
+
+    /* Start of Frame for a differential progressive DCT-based JPEG (S0F6)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F6_START_OF_FRAME_DIFF_PROG_DCT = 0xC6,
+
+    /* Start of Frame for a differential lossless DCT-based JPEG (S0F7)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F7_START_OF_FRAME_DIFF_LOSSLESS_DCT = 0xC7,
+
+    /* Start of Frame for a differential sequential arithmatic-based JPEG (S0F5)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F9_START_OF_FRAME_DIFF_SEQ_ARITH = 0xC9,
+
+    /* Start of Frame for a differential progressive arithmatic-based JPEG (S0F6)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F10_START_OF_FRAME_DIFF_PROG_ARITH = 0xCA,
+
+    /* Start of Frame for a differential lossless arithmatic-based JPEG (S0F7)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_S0F11_START_OF_FRAME_DIFF_LOSSLESS_ARITH = 0xCB,
+
+    /* Define Huffman Tables (DHT)
+     * Variable size payload.
+     * Defines one or more Huffman tables.
+     */
+    JPEG_MARKER_SEGMENT_DHT_DEFINE_HUFFMAN_TABLES = 0xC4,
+
+    /* Define Arithmatic Coding Conditioning (DAC)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_DHT_DEFINE_ARITH_CODING = 0xCC,
+
+    /* Define Quantization Tables (DTQ)
+     * Variable size payload.
+     * Defines one or more quantization tables.
+     */
+    JPEG_MARKER_SEGMENT_DQT_DEFINE_QUANTIZATION_TABLES = 0xDB,
+
+    /* Define Restart Interval (DRI)
+     * 4-byte payload.
+     * Specifies the interval between RSTn markers, in Minimum Coded Units (MCUs).
+     * This marker is followed by two bytes indicating the fixed size so it can be
+     * treated like any other variable size segment.
+     */
+    JPEG_MARKER_SEGMENT_DRI_DEFINE_RESTART_INTERVAL = 0xDD,
+
+    /* Start of Scan (SOS)
+     * Variable size payload
+     * This is the start of the JPEG image data, so we'll actually stop parsing
+     * when we reach this.
+     */
+    JPEG_MARKER_SEGMENT_SOS_START_OF_SCAN = 0xDA,
+
+    /*
+     * App-specific markers E0 - EF
+     * Variable size payload.
+     * Since several vendors might use the *same* APPn marker type, application-
+     * specific markers often begin with a standard or vendor name (e.g., "Exif" or
+     * "Adobe") or some other identifying string.
+     *
+     * Some known app specific markers include:
+     *   0xE0:
+     *     - JFIF
+     *   0xE1:
+     *     - Exif
+     *     - XMP data, starts with http://ns.adobe.com/xap/1.0/\0
+     *   0xE2:
+     *     - ICC Profile Chunk. There could be multiple of these to fit the entire profile, see http://www.color.org/icc_specs2.xalter and http://www.color.org/specification/ICC1v43_2010-12.pdf Section B.4
+     *   0xE8:
+     *     - SPIFF. Not a common format, see http://fileformats.archiveteam.org/wiki/SPIFF
+     *   0xED:
+     *     - IPTC / IMM metadata (a type of comment)
+     *   0xEE:
+     *     - AdobeRGB (as opposed to sRGB)
+     */
+    JPEG_MARKER_SEGMENT_APP0 = 0xE0,
+    JPEG_MARKER_SEGMENT_APP1 = 0xE1,
+    JPEG_MARKER_SEGMENT_APP2 = 0xE2,
+    JPEG_MARKER_SEGMENT_APP3 = 0xE3,
+    JPEG_MARKER_SEGMENT_APP4 = 0xE4,
+    JPEG_MARKER_SEGMENT_APP5 = 0xE5,
+    JPEG_MARKER_SEGMENT_APP6 = 0xE6,
+    JPEG_MARKER_SEGMENT_APP7 = 0xE7,
+    JPEG_MARKER_SEGMENT_APP8 = 0xE8,
+    JPEG_MARKER_SEGMENT_APP9 = 0xE9,
+    JPEG_MARKER_SEGMENT_APP10 = 0xEA,
+    JPEG_MARKER_SEGMENT_APP11 = 0xEB,
+    JPEG_MARKER_SEGMENT_APP12 = 0xEC,
+    JPEG_MARKER_SEGMENT_APP13 = 0xED,
+    JPEG_MARKER_SEGMENT_APP14 = 0xEE,
+    JPEG_MARKER_SEGMENT_APP15 = 0xEF,
+
+    /* DTI (?)
+     *
+     */
+    JPEG_MARKER_SEGMENT_DTI = 0xF1,
+
+    /* DTT (?)
+     *
+     */
+    JPEG_MARKER_SEGMENT_DTT = 0xF2,
+
+    /* JPG7
+     * Variable size payload (?)
+     */
+    JPEG_MARKER_SEGMENT_JPG7 = 0xF7,
+
+    /* Comment (COM)
+     * Variable size payload.
+     */
+    JPEG_MARKER_SEGMENT_COM_COMMENT = 0xFE,
+
+    /* End of Image
+     * No payload
+     */
+    JPEG_MARKER_SEGMENT_EOI_END_OF_IMAGE = 0xD9,
+
+    /* Entropy-encoded (aka compressed) data markers.
+     *
+     * These aren't referenced since we don't parse the image data.
+     */
+    JPEG_MARKER_NOT_A_MARKER_0x00 = 0x00,
+    JPEG_MARKER_NOT_A_MARKER_0xFF = 0xFF,
+
+    /* Reset entropy-markers are inserted every r macroblocks, where r is the restart interval set by a DRI marker.
+     * Not used if there was no DRI segment-marker.
+     * The low three bits of the marker code cycle in value from 0 to 7 (i.e. D0 - D7).
+     */
+    JPEG_MARKER_ENTROPY_RST0_RESET = 0xD0,
+    JPEG_MARKER_ENTROPY_RST1_RESET = 0xD1,
+    JPEG_MARKER_ENTROPY_RST2_RESET = 0xD2,
+    JPEG_MARKER_ENTROPY_RST3_RESET = 0xD3,
+    JPEG_MARKER_ENTROPY_RST4_RESET = 0xD4,
+    JPEG_MARKER_ENTROPY_RST5_RESET = 0xD5,
+    JPEG_MARKER_ENTROPY_RST6_RESET = 0xD6,
+    JPEG_MARKER_ENTROPY_RST7_RESET = 0xD7,
+} jpeg_marker_t;
+
+// clang-format on
+
+cl_error_t
+cli_parsejpeg(cli_ctx *ctx)
 {
     cl_error_t status = CL_CLEAN;
 
     fmap_t *map = NULL;
-    unsigned char marker, prev_marker, prev_segment = 0, buff[8];
+    jpeg_marker_t marker, prev_marker, prev_segment = JPEG_MARKER_NOT_A_MARKER_0x00;
+    uint8_t buff[strlen("ICC_PROFILE") + 2]; /* Using length "ICC_PROFILE" + 2 because it's the longest we'll read. */
     uint16_t len_u16;
-    unsigned int offset = 0, i, len, comment = 0, segment = 0, app = 0;
+    unsigned int offset = 0, i, len, segment = 0;
+    bool found_comment = false;
+    bool found_app     = false;
+
+    uint32_t num_JFIF  = 0;
+    uint32_t num_Exif  = 0;
+    uint32_t num_SPIFF = 0;
 
     cli_dbgmsg("in cli_parsejpeg()\n");
 
     if (NULL == ctx) {
-        cli_dbgmsg("JPEG: passed context was NULL\n");
+        cli_dbgmsg("passed context was NULL\n");
         status = CL_EARG;
         goto done;
     }
@@ -67,17 +288,19 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
 
     while (1) {
         segment++;
-        prev_marker = 0;
+        prev_marker = JPEG_MARKER_NOT_A_MARKER_0x00;
         for (i = 0; offset < map->len && i < 16; i++) {
-            if (fmap_readn(map, &marker, offset, sizeof(marker)) == sizeof(marker)) {
-                offset += sizeof(marker);
+            uint8_t marker_u8;
+            if (fmap_readn(map, &marker_u8, offset, sizeof(marker_u8)) == sizeof(marker_u8)) {
+                offset += sizeof(marker_u8);
             } else {
                 cli_errmsg("JPEG: Failed to read marker, file corrupted?\n");
                 cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadMarker");
                 goto done;
             }
+            marker = (jpeg_marker_t)marker_u8;
 
-            if (prev_marker == 0xff && marker != 0xff)
+            if (prev_marker == JPEG_MARKER_NOT_A_MARKER_0xFF && marker != JPEG_MARKER_NOT_A_MARKER_0xFF)
                 break;
             prev_marker = marker;
         }
@@ -94,7 +317,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
             goto done;
         }
         len = (unsigned int)be16_to_host(len_u16);
-        cli_dbgmsg("JPEG: Marker %02x, length %u\n", marker, len);
+        cli_dbgmsg("segment[%d] = 0x%02x, Length %u\n", segment, marker, len);
 
         if (len < 2) {
             cli_warnmsg("JPEG: Invalid segment size\n");
@@ -111,85 +334,116 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
         offset += len;
 
         switch (marker) {
-            case 0xe0: /* JFIF */
-                if (app) {
-                    cli_warnmsg("JPEG: Duplicate Application Marker\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFdupAppMarker");
-                    status = CL_EPARSE;
-                    goto done;
+            case JPEG_MARKER_SEGMENT_APP0:
+                /*
+                 * JFIF, maybe
+                 */
+                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("JFIF") + 1) == strlen("JFIF") + 1 && 0 == memcmp(buff, "JFIF\0", strlen("JFIF") + 1)) {
+                    /* Found a JFIF marker */
+                    if (found_app && num_JFIF > 0) {
+                        cli_warnmsg("JPEG: Duplicate Application Marker found (JFIF)\n");
+                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFdupAppMarker");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+                    if (!(segment == 1 ||
+                          (segment == 2 && found_comment) ||
+                          (segment == 2 && num_Exif > 0) ||
+                          (segment == 3 && found_comment && num_Exif > 0))) {
+                        /* The JFIF segment is technically required to appear first, though it has been observed
+                        * appearing in segment 2 in functional images when segment 1 is a comment or an Exif segment.
+                        * If segment 1 wasn't a comment or Exif, then the file structure is unusual. */
+                        cli_warnmsg("JPEG: JFIF marker at wrong position, found in segment # %d\n", segment);
+                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFmarkerBadPosition");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+                    if (len < 16) {
+                        cli_warnmsg("JPEG: JFIF header too short\n");
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFheaderTooShort");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+                    cli_dbgmsg(" JFIF application marker\n");
+                    found_app = true;
+                    num_JFIF += 1;
+                } else {
+                    /* Found something else. Eg could be an Ocad Revision # (eg "Ocad$Rev: 14797 $"), for example.
+                       Whatever it is, we don't really care for now */
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
                 }
-                if (segment != 1 && (segment != 2 || !comment)) {
-                    cli_warnmsg("JPEG: JFIF marker at wrong position\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFmarkerBadPosition");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), 5) != 5 || memcmp(buff, "JFIF\0", 5)) {
-                    cli_warnmsg("JPEG: No JFIF marker\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoJFIFmarker");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                if (len < 16) {
-                    cli_warnmsg("JPEG: JFIF header too short\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.JFIFheaderTooShort");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                app = 0xe0;
                 break;
 
-            case 0xe1: /* EXIF */
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), 7) != 7) {
-                    cli_warnmsg("JPEG: Can't read Exif header\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.CantReadExifHeader");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                if (!memcmp(buff, "Exif\0\0", 6)) {
-                    if (app && app != 0xe0) {
-                        cli_warnmsg("JPEG: Duplicate Application Marker\n");
+            case JPEG_MARKER_SEGMENT_APP1:
+                /*
+                 * Exif, or maybe XMP data
+                 */
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Exif") + 2) == strlen("Exif") + 2) && (0 == memcmp(buff, "Exif\0\0", strlen("Exif") + 2))) {
+                    if (found_app && (num_Exif > 0 || num_SPIFF > 0)) {
+                        cli_warnmsg("JPEG: Duplicate Application Marker found (Exif)\n");
+                        cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
                         cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifDupAppMarker");
                         status = CL_EPARSE;
                         goto done;
                     }
-                    if (segment > 3 && !comment && app != 0xe0) {
+                    if (segment > 3 && !found_comment && num_JFIF > 0) {
+                        /* If Exif was found after segment 3 and previous segments weren't a comment or JFIF, something is unusual. */
                         cli_warnmsg("JPEG: Exif marker at wrong position\n");
                         cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderBadPosition");
                         status = CL_EPARSE;
                         goto done;
                     }
-                } else if (!memcmp(buff, "http://", 7)) {
-                    cli_dbgmsg("JPEG: XMP data in segment %u\n", segment);
+                    if (len < 16) {
+                        cli_warnmsg("JPEG: Exif header too short\n");
+                        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderTooShort");
+                        status = CL_EPARSE;
+                        goto done;
+                    }
+                    cli_dbgmsg(" Exif application marker\n");
+                    found_app = true;
+                    num_Exif += 1;
+                } else if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("http://")) == strlen("http://")) && (0 == memcmp(buff, "http://", strlen("http://")))) {
+                    cli_dbgmsg(" XMP metadata\n");
+                    found_comment = true;
                 } else {
-                    cli_warnmsg("JPEG: Invalid Exif header\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.InvalidExifHeader");
-                    status = CL_EPARSE;
-                    goto done;
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
                 }
-                if (len < 16) {
-                    cli_warnmsg("JPEG: Exif header too short\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.ExifHeaderTooShort");
-                    status = CL_EPARSE;
-                    goto done;
-                }
-                app = 0xe1;
                 break;
 
-            case 0xe8: /* SPIFF */
-                if (app) {
-                    cli_warnmsg("JPEG: Duplicate Application Marker\n");
+            case JPEG_MARKER_SEGMENT_APP2:
+                /*
+                 * ICC Profile
+                 */
+                if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("ICC_PROFILE") + 2) == strlen("ICC_PROFILE") + 2) &&
+                    (0 == memcmp(buff, "ICC_PROFILE\0", strlen("ICC_PROFILE" + 1)))) {
+                    /* Found ICC Profile Chunk. Let's print out the chunk #, which follows "ICC_PROFILE\0"... */
+                    uint8_t chunk_no = buff[strlen("ICC_PROFILE") + 1];
+                    cli_dbgmsg(" ICC Profile, chunk # %d\n", chunk_no);
+                } else {
+                    cli_dbgmsg(" Unfamiliar use of application marker: 0x%02x\n", marker);
+                }
+                break;
+
+            case JPEG_MARKER_SEGMENT_APP8:
+                /*
+                 * SPIFF
+                 */
+                if (found_app) {
+                    cli_warnmsg("JPEG: Duplicate Application Marker found (SPIFF)\n");
+                    cli_warnmsg("JPEG: Already observed JFIF: %d, Exif: %d, SPIFF: %d\n", num_JFIF, num_Exif, num_SPIFF);
                     cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFdupAppMarker");
                     status = CL_EPARSE;
                     goto done;
                 }
-                if (segment != 1 && (segment != 2 || !comment)) {
+                if (segment != 1 && (segment != 2 || !found_comment)) {
                     cli_warnmsg("JPEG: SPIFF marker at wrong position\n");
                     cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.SPIFFmarkerBadPosition");
                     status = CL_EPARSE;
                     goto done;
                 }
-                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), 6) != 6 || memcmp(buff, "SPIFF\0", 6)) {
+                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("SPIFF") + 1) != strlen("SPIFF") + 1 || memcmp(buff, "SPIFF\0", strlen("SPIFF") + 1)) {
                     cli_warnmsg("JPEG: No SPIFF marker\n");
                     cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoSPIFFmarker");
                     status = CL_EPARSE;
@@ -201,11 +455,75 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                     status = CL_EPARSE;
                     goto done;
                 }
-                app = 0xe8;
+                cli_dbgmsg(" SPIFF application marker\n");
+                found_app = true;
+                num_SPIFF += 1;
                 break;
 
-            case 0xf7: /* JPG7 */
-                if (app) {
+            case JPEG_MARKER_SEGMENT_APP13:
+                /*
+                 * IPTC / IMM metadata (comment), probably
+                 */
+                cli_dbgmsg(" IPTC IMM metadata segment marker\n");
+                found_comment = true;
+                break;
+
+            case JPEG_MARKER_SEGMENT_APP14:
+                /*
+                 * Adobe RGB, probably
+                 */
+                if (fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Adobe") + 1) != strlen("Adobe") + 1 || 0 != memcmp(buff, "Adobe\0", strlen("Adobe") + 1)) {
+                    /* Not Adobe, dunno what this is. */
+                    cli_dbgmsg(" Unfamiliar application marker: 0x%02x\n", marker);
+                    break;
+                }
+                cli_dbgmsg(" AdobeRGB application marker\n");
+                break;
+
+            case JPEG_MARKER_SEGMENT_APP3:
+            case JPEG_MARKER_SEGMENT_APP4:
+            case JPEG_MARKER_SEGMENT_APP5:
+            case JPEG_MARKER_SEGMENT_APP6:
+            case JPEG_MARKER_SEGMENT_APP7:
+            case JPEG_MARKER_SEGMENT_APP9:
+            case JPEG_MARKER_SEGMENT_APP10:
+            case JPEG_MARKER_SEGMENT_APP11:
+            case JPEG_MARKER_SEGMENT_APP12:
+            case JPEG_MARKER_SEGMENT_APP15:
+                /*
+                 * Unknown
+                 */
+                cli_dbgmsg(" Unfamiliar application marker: 0x%02x\n", marker);
+                break;
+
+            case JPEG_MARKER_SEGMENT_S0F0_START_OF_FRAME_BASELINE_DCT:
+            case JPEG_MARKER_SEGMENT_S0F1_START_OF_FRAME_EXT_SEQ_DCT:
+            case JPEG_MARKER_SEGMENT_S0F2_START_OF_FRAME_PROG_DCT:
+            case JPEG_MARKER_SEGMENT_S0F3_START_OF_FRAME_DIFF_SEQ_DCT:
+            case JPEG_MARKER_SEGMENT_S0F5_START_OF_FRAME_DIFF_SEQ_DCT:
+            case JPEG_MARKER_SEGMENT_S0F6_START_OF_FRAME_DIFF_PROG_DCT:
+            case JPEG_MARKER_SEGMENT_S0F7_START_OF_FRAME_DIFF_LOSSLESS_DCT:
+            case JPEG_MARKER_SEGMENT_S0F9_START_OF_FRAME_DIFF_SEQ_ARITH:
+            case JPEG_MARKER_SEGMENT_S0F10_START_OF_FRAME_DIFF_PROG_ARITH:
+            case JPEG_MARKER_SEGMENT_S0F11_START_OF_FRAME_DIFF_LOSSLESS_ARITH:
+                cli_dbgmsg(" Start of Frame (S0F) %02x\n", (uint8_t)marker);
+                break;
+
+            case JPEG_MARKER_SEGMENT_DHT_DEFINE_HUFFMAN_TABLES:
+                cli_dbgmsg(" Huffman Tables definitions (DHT)\n");
+                break;
+
+            case JPEG_MARKER_SEGMENT_DQT_DEFINE_QUANTIZATION_TABLES:
+                cli_dbgmsg(" Quantization Tables definitions (DQT)\n");
+                break;
+
+            case JPEG_MARKER_SEGMENT_DRI_DEFINE_RESTART_INTERVAL:
+                cli_dbgmsg(" Restart Interval definition (DRI)\n");
+                break;
+
+            case JPEG_MARKER_SEGMENT_JPG7: /* JPG7 */
+                cli_dbgmsg(" JPG7 segment marker\n");
+                if (found_app) {
                     cli_warnmsg("JPEG: Application Marker before JPG7\n");
                     cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.AppMarkerBeforeJPG7");
                     status = CL_EPARSE;
@@ -213,31 +531,38 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                 }
                 goto done;
 
-            case 0xda: /* SOS */
-                if (!app) {
-                    cli_warnmsg("JPEG: Invalid file structure\n");
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.InvalidStructure");
-                    status = CL_EPARSE;
-                    goto done;
+            case JPEG_MARKER_SEGMENT_SOS_START_OF_SCAN: /* SOS */
+                cli_dbgmsg(" Start of Scan (SOS) segment marker\n");
+                if (!found_app) {
+                    cli_dbgmsg(" Found the Start-of-Scan segment without identifying the JPEG application type.\n");
                 }
+                /* What follows would be scan data (compressed image data),
+                 * parsing is not presently required for validation purposes
+                 * so we'll just call it quits. */
                 goto done;
 
-            case 0xd9: /* EOI */
+            case JPEG_MARKER_SEGMENT_EOI_END_OF_IMAGE: /* EOI (End of Image) */
+                cli_dbgmsg(" End of Image (EOI) segment marker\n");
+                /*
+                 * We shouldn't reach this marker because we exit out when we hit the Start of Scan marker.
+                 */
                 cli_warnmsg("JPEG: No image in jpeg\n");
                 cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.NoImages");
                 status = CL_EPARSE;
                 goto done;
 
-            case 0xfe: /* COM */
-                comment = 1;
+            case JPEG_MARKER_SEGMENT_COM_COMMENT: /* COM (comment) */
+                cli_dbgmsg(" Comment (COM) segment marker\n");
+                found_comment = true;
                 break;
 
-            case 0xed: /* IPTC */
-                comment = 1;
+            case JPEG_MARKER_SEGMENT_DTI: /* DTI */
+                cli_dbgmsg(" DTI segment marker\n");
                 break;
 
-            case 0xf2: /* DTT */
-                if (prev_segment != 0xf1) {
+            case JPEG_MARKER_SEGMENT_DTT: /* DTT */
+                cli_dbgmsg(" DTT segment marker\n");
+                if (prev_segment != JPEG_MARKER_SEGMENT_DTI) {
                     cli_warnmsg("JPEG: No DTI segment before DTT\n");
                     cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.JPEG.DTTMissingDTISegment");
                     status = CL_EPARSE;
@@ -246,8 +571,10 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                 break;
 
             default:
+                /* Some unknown marker we don't presently handle, don't worry about it. */
                 break;
         }
+
         prev_segment = marker;
     }
 

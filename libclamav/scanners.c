@@ -4171,7 +4171,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
         case CL_TYPE_GRAPHICS:
             /*
-             * This case is for unhandled graphics types such as BMP.
+             * This case is for unhandled graphics types such as BMP, JPEG 2000, etc.
+             *
+             * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
+             * JPEG 2000 is not handled by cli_scanjpeg or cli_parsejpeg.
              */
             break;
 
