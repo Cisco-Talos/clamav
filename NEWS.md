@@ -10,8 +10,17 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
 - Inter-process file descriptor passing for clamonacc was non-functional in previous
   versions due to a bug introduced by the switch to curl for communicating with clamd.
   On Linux, passing file descriptors from one process to another is handled by the kernel,
-  so we reverted clamonacc to use standard system calls for socket communication when 
+  so we reverted clamonacc to use standard system calls for socket communication when
   fd passing is enabled.
+
+- Fix clamonacc stack corruption issue on some systems when using an older
+  version of libcurl. Patch courtesy of Emilio Pozuelo Monfort.
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
+- Emilio Pozuelo Monfort
 
 ## 0.103.0
 
