@@ -21,7 +21,7 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
--
+- Orion Poplawski
 
 ## 0.103.0
 
