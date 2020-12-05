@@ -454,7 +454,7 @@ const char *autoit_functions[] = {
     "WINWAITNOTACTIVE"};
 
 const char *autoit_keywords[] = {
-    "UNKNOWN_0",
+    "UNKNOWN_0", // "".
     "AND",
     "OR",
     "NOT",
@@ -497,7 +497,7 @@ const char *autoit_keywords[] = {
     "FALSE",
     "DEFAULT",
     "NULL",
-    "UNKNOWN_43",
+    "VOLATILE",
     "ENUM",
 };
 
