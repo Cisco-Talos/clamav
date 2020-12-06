@@ -1416,7 +1416,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         //TODO: Fix Autoit plus bug
                         // if (op == 0x49) /* + */ and next op ==0x05 /*int32*/ and that int32 is negative...
                         // skip next line (and don't add "+")
-                        // Background: "$a= -4" gets incorrect compiled. Decompiled it will be get "$A= + -4"
+                        // Background: "$a= (-4)" gets incorrect compiled. Decompiled it will be get "$A= (+ -4)"
                         // That doesn't effects the interpreter however when recompiling decompiled output that will result in a syntax error
 
                         UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op - 0x40]);
