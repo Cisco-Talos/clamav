@@ -31,6 +31,6 @@ $(FILES) :
 clean-local:
 	rm -f clam*
 
-EXTRA_DIST = .split
+EXTRA_DIST = .split assemble_testfile.py CMakeLists.txt
 
 check: all

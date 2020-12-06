@@ -65,7 +65,7 @@ quick-check:
 	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 
 CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb $(utils)
-EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
+EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh CMakeLists.txt Run-GetLibs.ctest clamd_test.py clamscan_test.py freshclam_test.py sigtool_test.py libclamav_test.py testcase.py
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
