@@ -522,7 +522,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     ck_assert_msg(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
     snprintf(file, fsize, OBJDIR PATHSEP ".." PATHSEP "test" PATHSEP "%s", testfiles[i]);
 
-    fd = open(file, O_RDONLY);
+    fd = open(file, O_RDONLY | O_BINARY);
     ck_assert_msg(fd > 0, "open");
     ck_assert_msg(FSTAT(fd, &st) == 0, "fstat");
     *size = st.st_size;

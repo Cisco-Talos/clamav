@@ -76,7 +76,7 @@ END_TEST
 
 START_TEST(test_operators)
 {
-    const struct operator*op = in_op_set(op_test[_i].str, strlen(op_test[_i].str));
+    const struct operator* op = in_op_set(op_test[_i].str, strlen(op_test[_i].str));
     if (op_test[_i].is)
         ck_assert_msg(op && !strcmp(op->name, op_test[_i].str), "operator mismatch");
     else
@@ -244,7 +244,7 @@ static void tokenizer_test(const char *in, const char *expected, int split)
     cli_js_output(state, tmpdir);
     snprintf(filename, 1023, "%s/javascript", tmpdir);
 
-    fd = open(filename, O_RDONLY);
+    fd = open(filename, O_RDONLY | O_BINARY);
     if (fd < 0) {
         jstest_teardown();
         ck_assert_msg(0, "failed to open output file: %s", filename);

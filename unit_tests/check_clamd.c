@@ -164,7 +164,7 @@ static void commands_setup(void)
     /*
      * Verify that our NONEXISTENT filepath indeed does not exist.
      */
-    int fd = open(NONEXISTENT, O_RDONLY);
+    int fd = open(NONEXISTENT, O_RDONLY | O_BINARY);
     if (fd != -1) close(fd);
     ck_assert_msg(fd == -1, "Nonexistent file exists!\n");
 

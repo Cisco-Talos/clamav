@@ -3240,7 +3240,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                      *    the quotes, it doesn't handle
                      *    them properly
                      */
-                    while (isspace((const unsigned char) *ptr))
+                    while (isspace((const unsigned char)*ptr))
                         ptr++;
                     if (ptr[0] == '\"')
                         ptr++;
@@ -3296,7 +3296,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                     }
                                 }
 
-                                while (*s && !isspace((unsigned char) *s))
+                                while (*s && !isspace((unsigned char)*s))
                                     s++;
                                 if (*s++ == '\0')
                                     break;
@@ -3404,7 +3404,7 @@ rfc822comments(const char *in, char *out)
 
     assert(out != in);
 
-    while (isspace((const unsigned char) *in))
+    while (isspace((const unsigned char)*in))
         in++;
 
     if (out == NULL) {
@@ -3732,7 +3732,7 @@ rfc1341(mbox_ctx *mctx, message *m)
                         if (!m->ctx->engine->keeptmp)
                             continue;
 
-                        if ((test_fd = open(fullname, O_RDONLY)) < 0)
+                        if ((test_fd = open(fullname, O_RDONLY | O_BINARY)) < 0)
                             continue;
 
                         if (FSTAT(test_fd, &statb) < 0) {

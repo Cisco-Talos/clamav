@@ -919,7 +919,7 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
     snprintf(filename, 1024, "%s" PATHSEP "javascript", tempdir);
 
     buf.pos   = 0;
-    buf.outfd = open(filename, O_CREAT | O_WRONLY, 0600);
+    buf.outfd = open(filename, O_CREAT | O_WRONLY | O_BINARY, 0600);
     if (buf.outfd < 0) {
         cli_errmsg(MODULE "cannot open output file for writing: %s\n", filename);
         return;

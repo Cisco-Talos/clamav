@@ -472,7 +472,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         if (!(newobj->path))
             return NULL;
 
-        fd = open(newobj->path, O_RDONLY);
+        fd = open(newobj->path, O_RDONLY | O_BINARY);
         if (fd == -1) {
             cli_unlink(newobj->path);
             free(newobj->path);

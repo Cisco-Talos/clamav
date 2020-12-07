@@ -54,7 +54,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 {
     fmap_t *map = NULL;
     int rc;
-    int fd = open_testfile(file, O_RDONLY);
+    int fd = open_testfile(file, O_RDONLY); /* CBC databases should be opened in text mode (not binary), or else CRLF line indexing with `fgets()` will fail. */
     FILE *f;
     struct cli_bc bc;
     cli_ctx cctx;
@@ -117,9 +117,9 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     ctx->ctx = &cctx;
     if (infile) {
         snprintf(filestr, sizeof(filestr), OBJDIR PATHSEP "%s", infile);
-        fdin = open(filestr, O_RDONLY);
+        fdin = open(filestr, O_RDONLY | O_BINARY);
         if (fdin < 0 && errno == ENOENT)
-            fdin = open_testfile(infile, O_RDONLY);
+            fdin = open_testfile(infile, O_RDONLY | O_BINARY);
         ck_assert_msg(fdin >= 0, "failed to open infile");
         map = fmap(fdin, 0, 0, filestr);
         ck_assert_msg(!!map, "unable to fmap infile");
