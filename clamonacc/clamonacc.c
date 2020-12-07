@@ -79,19 +79,19 @@ static void onas_clamonacc_exit(int sig)
         g_ctx->fan_fd = 0;
     }
 
-    logg("*Clamonacc: attempting to stop event consumer thread ...\n");
-    if (scan_queue_pid > 0) {
-        pthread_cancel(scan_queue_pid);
-        pthread_join(scan_queue_pid, NULL);
-    }
-    scan_queue_pid = 0;
-
     logg("*Clamonacc: attempting to stop ddd thread ... \n");
     if (ddd_pid > 0) {
         pthread_cancel(ddd_pid);
         pthread_join(ddd_pid, NULL);
     }
     ddd_pid = 0;
+
+    logg("*Clamonacc: attempting to stop event consumer thread ...\n");
+    if (scan_queue_pid > 0) {
+        pthread_cancel(scan_queue_pid);
+        pthread_join(scan_queue_pid, NULL);
+    }
+    scan_queue_pid = 0;
 
     logg("Clamonacc: stopped\n");
     onas_cleanup(g_ctx);
