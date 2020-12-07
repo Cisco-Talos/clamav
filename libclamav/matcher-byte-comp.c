@@ -573,7 +573,7 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     uint32_t norm_len         = 0;
     uint32_t length           = 0;
     uint32_t i                = 0;
-    cl_error_t ret            = 0;
+    cl_error_t ret            = CL_CLEAN;
     uint16_t opt              = 0;
     uint16_t opt_val          = 0;
     int64_t value             = 0;
@@ -585,7 +585,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
     if (!f_buffer || !bm) {
         bcm_dbgmsg("cli_bcomp_compare_check: a param is null\n");
-        return CL_ENULLARG;
+        ret = CL_ENULLARG;
+        goto done;
     }
 
     byte_len = bm->byte_len;
@@ -595,11 +596,11 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     /* ensure we won't run off the end of the file buffer */
     if (!(offset + bm->offset + byte_len <= length)) {
         bcm_dbgmsg("cli_bcomp_compare_check: %u bytes requested at offset %zu would go past file buffer of %u\n", byte_len, (offset + bm->offset), length);
-        return CL_CLEAN;
+        goto done;
     }
     if (!(offset + bm->offset > 0)) {
         bcm_dbgmsg("cli_bcomp_compare_check: negative offset would underflow buffer\n");
-        return CL_CLEAN;
+        goto done;
     }
 
     /* jump to byte compare offset, then store off specified bytes into a null terminated buffer */
@@ -615,7 +616,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
         buffer = cli_bcomp_normalize_buffer(f_buffer, byte_len, &pad_len, opt, 1);
         if (NULL == buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to whitespace normalize temp buffer, allocation failed\n");
-            return CL_EMEM;
+            ret = CL_EMEM;
+            goto done;
         }
 
         /* adjust byte_len accordingly */
@@ -630,8 +632,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             tmp_buffer = cli_bcomp_normalize_buffer(buffer, byte_len, NULL, opt, 0);
             if (NULL == tmp_buffer) {
                 cli_errmsg("cli_bcomp_compare_check: unable to normalize temp, allocation failed\n");
-                free(buffer);
-                return CL_EMEM;
+                ret = CL_EMEM;
+                goto done;
             }
         }
     }
@@ -654,19 +656,15 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             value = cli_strntol((char *)tmp_buffer, norm_len, (char **)&end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                free(tmp_buffer);
-                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: little endian hex conversion unsuccessful\n");
-                return CL_CLEAN;
+                goto done;
             }
             /*hle*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (tmp_buffer + byte_len != end_buf || pad_len != 0) {
 
-                    free(tmp_buffer);
-                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
-                    return CL_CLEAN;
+                    goto done;
                 }
             }
 
@@ -676,17 +674,15 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
         case CLI_BCOMP_HEX | CLI_BCOMP_BE:
             value = cli_strntol((char *)buffer, byte_len, (char **)&end_buf, 16);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
-                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: big endian hex conversion unsuccessful\n");
-                return CL_CLEAN;
+                goto done;
             }
             /*hbe*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer + byte_len != end_buf || pad_len != 0) {
 
-                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
-                    return CL_CLEAN;
+                    goto done;
                 }
             }
 
@@ -696,10 +692,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
         case CLI_BCOMP_DEC | CLI_BCOMP_LE:
             /* it may be possible for the auto option to proc this */
 
-            free(tmp_buffer);
-            free(buffer);
             bcm_dbgmsg("cli_bcomp_compare_check: auto detection found ascii decimal for specified little endian byte extraction, which is unsupported\n");
-            return CL_CLEAN;
+            goto done;
             break;
 
         /*db*/
@@ -707,17 +701,15 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
             value = cli_strntol((char *)buffer, byte_len, (char **)&end_buf, 10);
             if ((((value == LONG_MAX) || (value == LONG_MIN)) && errno == ERANGE) || NULL == end_buf) {
 
-                free(buffer);
                 bcm_dbgmsg("cli_bcomp_compare_check: big endian decimal conversion unsuccessful\n");
-                return CL_CLEAN;
+                goto done;
             }
             /*dbe*/
             if (opt & CLI_BCOMP_EXACT) {
                 if (buffer + byte_len != end_buf || pad_len != 0) {
 
-                    free(buffer);
                     bcm_dbgmsg("cli_bcomp_compare_check: couldn't extract the exact number of requested bytes\n");
-                    return CL_CLEAN;
+                    goto done;
                 }
             }
 
@@ -742,7 +734,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
-                    return CL_EARG;
+                    ret = CL_EARG;
+                    goto done;
             }
             break;
 
@@ -765,32 +758,18 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: invalid byte size for binary integer field (%u)\n", byte_len);
-                    return CL_EARG;
+                    ret = CL_EARG;
+                    goto done;
             }
             break;
 
         default:
             bcm_dbgmsg("cli_bcomp_compare_check: options were found invalid\n");
-            if (tmp_buffer) {
-                free(tmp_buffer);
-            }
-
-            if (buffer) {
-                free(buffer);
-            }
-            return CL_ENULLARG;
-    }
-
-    if (tmp_buffer) {
-        free(tmp_buffer);
-    }
-
-    if (buffer) {
-        free(buffer);
+            ret = CL_ENULLARG;
+            goto done;
     }
 
     /* do the actual comparison */
-    ret = CL_CLEAN;
     for (i = 0; i < bm->comp_count; i++) {
         if (bm->comps && bm->comps[i]) {
             switch (bm->comps[i]->comp_symbol) {
@@ -839,17 +818,25 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
 
                 default:
                     bcm_dbgmsg("cli_bcomp_compare_check: comparison symbol (%c) invalid\n", bm->comps[i]->comp_symbol);
-                    return CL_ENULLARG;
+                    ret = CL_ENULLARG;
+                    goto done;
             }
 
             if (CL_CLEAN == ret) {
                 /* comparison was not successful */
                 bcm_dbgmsg("cli_bcomp_compare_check: extracted value (%ld) was not %c %ld\n", (opt & CLI_BCOMP_BIN) ? bin_value : value, bm->comps[i]->comp_symbol, bm->comps[i]->comp_value);
-                return CL_CLEAN;
+                goto done;
             }
         }
     }
 
+done:
+    if (NULL != tmp_buffer) {
+        free(tmp_buffer);
+    }
+    if (NULL != buffer) {
+        free(buffer);
+    }
     return ret;
 }
 

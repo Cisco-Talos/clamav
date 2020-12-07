@@ -216,20 +216,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                     logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
                     if (errno == EBADF) {
                         logg("ClamWorker: fd already closed ... recovering ...\n");
-                        // XXX If we continue here could we potentially get
-                        // into an infinite loop, since `fmd` gets reused?
-                        // It seems like we would need to add the following
-                        // line here to move to the next event:
-                        //
-                        // fmd = FAN_EVENT_NEXT(fmd, bread);
-                        //
-                        // Alternatively, if the intention really is to retry
-                        // with the same `fmd`, then we should add the logic
-                        // from below that only tries `(*ctx)->retry_attempts`
-                        // times if `(*ctx)->retry_on_error` is true. Also,
-                        // we should not close `fmd->fd` in this case, since
-                        // otherwise if the retry succeeds we would be passing
-                        // a closed file descriptor through to `onas_queue_event`
+                        fmd = FAN_EVENT_NEXT(fmd, bread);
                         continue;
                     } else {
                         return 2;
@@ -289,22 +276,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                             err_cnt++;
                             if (err_cnt < (*ctx)->retry_attempts) {
                                 logg("ClamFanotif: ... recovering ...\n");
-                                // XXX If we continue here could we potentially get
-                                // into an infinite loop, since `fmd` gets reused?
-                                // It seems like we would need to add the following
-                                // line here:
-                                //
-                                // fmd = FAN_EVENT_NEXT(fmd, bread);
-                                //
-                                // Alternatively, if the intention is to resend
-                                // `event_data`, do we really need to recreate
-                                // it? Or can we just use the one we've already
-                                // generated? If so, just do the call to
-                                // `onas_queue_event` in it's own loop and don't
-                                // cleanup ecent_data between iterations. Regardless,
-                                // we shouldn't close `fmd->fd` here or else it
-                                // will pass a closed file descriptor to
-                                // `onas_queue_event` if the retry succeeds.
+                                fmd = FAN_EVENT_NEXT(fmd, bread);
                                 continue;
                             }
                         }
