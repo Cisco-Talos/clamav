@@ -100,3 +100,12 @@ if(ENABLE_DOXYGEN)
         DESTINATION ${CMAKE_INSTALL_DOCDIR}
         COMPONENT "docs" OPTIONAL)
 endif()
+
+if(WIN32)
+    # When built from the release tarball, this includes the user manual
+    # which is exported from the clamav-faq repo.
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html)
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html DESTINATION ".")
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual DESTINATION ".")
+    endif()
+endif()

@@ -810,6 +810,12 @@ if(ENABLE_FUZZ)
     add_subdirectory( fuzz )
 endif()
 
+if(WIN32)
+    # Include the license(s) in the installation
+    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION ".")
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION ".")
+endif()
+
 #
 # The Summary Info.
 #

@@ -36,13 +36,9 @@ else()
 endif()
 
 # Install an empty database directory
-if(WIN32)
-    INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/database)")
-else()
-    INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/share/clamav)")
-endif()
+INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/\${DATABASE_DIRECTORY})")
 
-# now we rename resman-bin executable to resman using target properties
+# Now we rename freshclam-bin executable to freshclam using target properties
 set_target_properties( freshclam-bin
         PROPERTIES OUTPUT_NAME freshclam )
 
