@@ -523,7 +523,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                  * ICC Profile
                  */
                 if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("ICC_PROFILE") + 2) == strlen("ICC_PROFILE") + 2) &&
-                    (0 == memcmp(buff, "ICC_PROFILE\0", strlen("ICC_PROFILE" + 1)))) {
+                    (0 == memcmp(buff, "ICC_PROFILE\0", strlen("ICC_PROFILE") + 1))) {
                     /* Found ICC Profile Chunk. Let's print out the chunk #, which follows "ICC_PROFILE\0"... */
                     uint8_t chunk_no = buff[strlen("ICC_PROFILE") + 1];
                     cli_dbgmsg(" ICC Profile, chunk # %d\n", chunk_no);
