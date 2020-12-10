@@ -243,7 +243,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
              | PLTE |
              *------*/
             if (have_PLTE) {
-                cli_dbgmsg("PNG: More than one PTLE chunk found in a PNG file, which is not valid\n", color_type);
+                cli_dbgmsg("PNG: More than one PTLE chunk found in a PNG file, which is not valid\n");
             }
 
             if (!(chunk_data_length > sizeof(png_palette_entry) * 256 || chunk_data_length % 3 != 0)) {
@@ -341,8 +341,8 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                     }
 
                     /* inflate! */
-                    err = inflate(&zstrm, Z_NO_FLUSH);
-                    decompressed_data_len += (decompressed_data_buffer_size - decompressed_data_len - zstrm.avail_out);
+                    err                   = inflate(&zstrm, Z_NO_FLUSH);
+                    decompressed_data_len = decompressed_data_buffer_size - zstrm.avail_out;
                     if (err != Z_OK && err != Z_STREAM_END) {
                         cli_dbgmsg("PNG: zlib: inflate error: %d, Image decompression failed!\n", err);
                         inflateEnd(&zstrm);
