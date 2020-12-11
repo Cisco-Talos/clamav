@@ -9,7 +9,7 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
 ### Major changes
 
-- PidFile Option completely removed from codebase closing https://bugzilla.clamav.net/show_bug.cgi?id=12595
+- PidFile handling removed from codebase closing https://bugzilla.clamav.net/show_bug.cgi?id=12595
 
 ### Notable changes
 
