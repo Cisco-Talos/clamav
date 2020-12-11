@@ -72,11 +72,6 @@ Chroot to the specified directory. Chrooting is performed just after reading the
 .br
 Default: unset (don\'t chroot)
 .TP 
-\fBPidFile STRING\fR
-Save the process identifier of a clamav-milter (main thread) to a specified file.
-.br 
-Default: disabled
-.TP 
 \fBTemporaryDirectory STRING\fR
 Optional path to the global temporary directory.
 .br 

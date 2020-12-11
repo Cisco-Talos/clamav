@@ -297,41 +297,6 @@ int main(int argc, char **argv)
 
 #endif
 
-    /* save the PID */
-    mainpid = getpid();
-    if ((opt = optget(opts, "PidFile"))->enabled) {
-        FILE *fd;
-        old_umask = umask(0022);
-        if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            //logg("!Can't save PID in file %s\n", opt->strarg);
-            logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
-            exit(2);
-        } else {
-            if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
-                logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
-                //logg("!Can't save PID in file %s\n", opt->strarg);
-                fclose(fd);
-                exit(2);
-            }
-            fclose(fd);
-        }
-        umask(old_umask);
-
-#ifndef _WIN32
-        /*If the file has already been created by a different user, it will just be
-         * rewritten by us, but not change the ownership, so do that explicitly.
-         */
-        if (0 == geteuid()){
-            struct passwd * pw = getpwuid(0);
-            int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
-            if (ret){
-                logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
-                exit(2);
-            }
-        }
-#endif /* _WIN32 */
-    }
-
     /* drop privileges */
 #ifndef _WIN32
     dropPrivRet = drop_privileges(user_name, logg_file);

@@ -74,7 +74,6 @@ LogTime yes
 Debug yes
 LogClean yes
 LogVerbose yes
-PidFile `pwd`/clamd-test.pid
 DatabaseDirectory `pwd`/test-db
 LocalSocket clamd-test.socket
 TCPAddr 127.0.0.1

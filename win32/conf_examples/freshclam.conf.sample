@@ -46,10 +46,6 @@ Example
 # Default: no
 #LogRotate yes
 
-# This option allows you to save the process identifier of the daemon
-# Default: disabled
-#PidFile "C:\Program Files\ClamAV\freshclam.pid"
-
 # By default when started freshclam drops privileges and switches to the
 # "clamav" user. This directive allows you to change the database owner.
 # Default: clamav (may depend on installation options)

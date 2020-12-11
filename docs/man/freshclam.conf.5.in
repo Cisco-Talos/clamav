@@ -56,11 +56,6 @@ Rotate log file. Requires LogFileMaxSize option set prior to this option.
 .br
 Default: no
 .TP
-\fBPidFile STRING\fR
-This option allows you to save the process identifier of the daemon to a file specified in the argument.
-.br
-Default: disabled
-.TP
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
 .br

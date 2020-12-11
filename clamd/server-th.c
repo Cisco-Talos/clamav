@@ -1792,13 +1792,6 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             shutdown(socketds[i], 2);
     }
 
-    if ((opt = optget(opts, "PidFile"))->enabled) {
-        if (unlink(opt->strarg) == -1)
-            logg("!Can't unlink the pid file %s\n", opt->strarg);
-        else
-            logg("Pid file removed.\n");
-    }
-
     time(&current_time);
     logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 

@@ -82,11 +82,6 @@ Log additional information about the infected file, such as its size and hash, t
 .br
 Default: no
 .TP
-\fBPidFile STRING\fR
-Save the process identifier of a listening daemon (main thread) to a specified file.
-.br
-Default: disabled
-.TP
 \fBTemporaryDirectory STRING\fR
 This option allows you to change the default temporary directory.
 .br

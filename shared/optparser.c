@@ -254,8 +254,6 @@ const struct clam_option __clam_options[] = {
 
     {"ExtendedDetectionInfo", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log additional information about the infected file, such as its\nsize and hash, together with the virus name.", "yes"},
 
-    {"PidFile", "pid", 'p', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clam.pid"},
-
     {"TemporaryDirectory", "tempdir", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_SIGTOOL, "This option allows you to change the default temporary directory.", "/tmp"},
 
     {"DatabaseDirectory", "datadir", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_SIGTOOL, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav"},

@@ -68,14 +68,6 @@ Example
 # size and hash, together with the virus name.
 #ExtendedDetectionInfo yes
 
-# This option allows you to save a process identifier of the listening
-# daemon (main thread).
-# This file will be owned by root, as long as clamd was started by root.
-# It is recommended that the directory where this file is stored is
-# also owned by root to keep other users from tampering with it.
-# Default: disabled
-#PidFile /var/run/clamd.pid
-
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
 #TemporaryDirectory /var/tmp

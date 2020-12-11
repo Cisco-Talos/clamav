@@ -416,23 +416,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if ((opt = optget(opts, "PidFile"))->enabled) {
-        FILE *fd;
-        mode_t old_umask = umask(0022);
-        int err = 0;
-
-        if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            logg("!Can't save PID in file %s\n", opt->strarg);
-            err = 1;
-        } else {
-            if (fprintf(fd, "%u\n", (unsigned int)getpid()) < 0) {
-                logg("!Can't save PID in file %s\n", opt->strarg);
-                err = 1;
-            }
-            fclose(fd);
-        }
-        umask(old_umask);
-
 #ifndef _WIN32
         if (0 == err){
             /*If the file has already been created by a different user, it will just be

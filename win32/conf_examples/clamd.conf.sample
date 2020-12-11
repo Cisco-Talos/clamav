@@ -59,11 +59,6 @@ Example
 # size and hash, together with the virus name.
 #ExtendedDetectionInfo yes
 
-# This option allows you to save a process identifier of the listening
-# daemon (main thread).
-# Default: disabled
-#PidFile "C:\Program Files\ClamAV\clamd.pid"
-
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
 #TemporaryDirectory "C:\temp"

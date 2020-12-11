@@ -71,7 +71,6 @@
 int g_sigchildWait                      = 1;
 short g_terminate                       = 0;
 short g_foreground                      = -1;
-const char *g_pidfile                   = NULL;
 char g_freshclamTempDirectory[PATH_MAX] = {0};
 
 typedef struct fc_ctx_ {
@@ -113,44 +112,11 @@ sighandler(int sig)
         default:
             if (*g_freshclamTempDirectory)
                 cli_rmdirs(g_freshclamTempDirectory);
-            if (g_pidfile)
-                unlink(g_pidfile);
             logg("Update process terminated\n");
             exit(0);
     }
 
     return;
-}
-
-static int writepid(const char *pidfile)
-{
-    FILE *fd;
-    int old_umask;
-    old_umask = umask(0022);
-    if ((fd = fopen(pidfile, "w")) == NULL) {
-        logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
-        return 1;
-    } else {
-        fprintf(fd, "%d\n", (int)getpid());
-        fclose(fd);
-    }
-    umask(old_umask);
-
-#ifndef _WIN32
-    /*If the file has already been created by a different user, it will just be
-     * rewritten by us, but not change the ownership, so do that explicitly.
-     */
-    if (0 == geteuid()) {
-        struct passwd *pw = getpwuid(0);
-        int ret           = lchown(pidfile, pw->pw_uid, pw->pw_gid);
-        if (ret) {
-            logg("!Can't change ownership of PID file %s '%s'\n", pidfile, strerror(errno));
-            return 1;
-        }
-    }
-#endif /*_WIN32 */
-
-    return 0;
 }
 
 static void help(void)
@@ -771,10 +737,7 @@ static fc_error_t initialize(struct optstruct *opts)
     }
 
 #ifdef HAVE_PWD_H
-    /* Drop database privileges here if we are not planning on daemonizing.  If
-     * we are, we should wait until after we craete the PidFile to drop
-     * privileges.  That way, it is owned by root (or whoever started freshclam),
-     * and no one can change it.  */
+    /* Drop database privileges here if we are not planning on daemonizing. */
     if (!optget(opts, "daemon")->enabled) {
         /*
          * freshclam shouldn't work with root privileges.
@@ -1857,21 +1820,12 @@ int main(int argc, char **argv)
         }
 #endif
 
-        /* Write PID of daemon process to pidfile. */
-        if ((opt = optget(opts, "PidFile"))->enabled) {
-            g_pidfile = opt->strarg;
-            if (writepid(g_pidfile)) {
-                status = FC_EINIT;
-                goto done;
-            }
-        }
-
 #ifndef _WIN32
         /* Signal the parent process that we have successfully
-         * written the PidFile.  If it does not get this signal, it
-         * will wait for our exit status (and we don't exit in daemon mode).
+         * demonized. If it does not get this signal, it will wait 
+         * for our exit status (and we don't exit in daemon mode).
          */
-        if (parentPid != getpid()) { //we have been daemonized
+        if (parentPid != getpid()) { // we have been daemonized
             daemonize_signal_parent(parentPid);
         }
 #endif
@@ -1984,10 +1938,6 @@ done:
     }
 
     logg_close();
-
-    if (g_pidfile) {
-        unlink(g_pidfile);
-    }
 
     if (NULL != databaseList) {
         free_string_list(databaseList, nDatabases);
