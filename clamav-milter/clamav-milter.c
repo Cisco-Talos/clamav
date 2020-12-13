@@ -417,31 +417,6 @@ int main(int argc, char **argv)
     }
 
 #ifndef _WIN32
-        if (0 == err){
-            /*If the file has already been created by a different user, it will just be
-             * rewritten by us, but not change the ownership, so do that explicitly.
-             */
-            if (0 == geteuid()){
-                struct passwd * pw = getpwuid(0);
-                int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
-                if (ret){
-                    logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
-                    err = 1;
-                }
-            }
-        }
-#endif /*_WIN32*/
-
-        if (err){
-            localnets_free();
-            whitelist_free();
-            logg_close();
-            optfree(opts);
-            return 2;
-        }
-    }
-
-#ifndef _WIN32
     dropPrivRet = drop_privileges(user_name, logg_file);
     if (dropPrivRet){
         optfree(opts);
