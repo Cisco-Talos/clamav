@@ -16,6 +16,11 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
 - Fix clamonacc stack corruption issue on some systems when using an older
   version of libcurl. Patch courtesy of Emilio Pozuelo Monfort.
 
+- Allow clamscan and clamdscan scans to proceed even if the realpath lookup
+  failed. This alleviates an issue on Windows scanning files hosted on file-
+  systems that do not support the GetMappedFileNameW() API such as on ImDisk
+  RAM-disks.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:

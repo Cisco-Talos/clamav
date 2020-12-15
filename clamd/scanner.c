@@ -148,11 +148,11 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
             conn_reply_errno(scandata->conn, msg, "real-path check failed:");
             logg("^Failed to determine real path for: %s\n", filename);
-            scandata->errors++;
-            return CL_SUCCESS;
+            logg("*Quarantine of the file may fail if file path contains symlinks.\n");
+        } else {
+            free(filename);
+            filename = real_filename;
         }
-        free(filename);
-        filename = real_filename;
     }
 
     /* detect disconnected socket,

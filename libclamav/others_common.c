@@ -1208,7 +1208,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     link[sizeof(link) - 1] = '\0';
 
     if (-1 == (linksz = readlink(link, fname, PATH_MAX - 1))) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d (%s)\n", desc, link);
+        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d (%s)\n", desc, link);
         status = CL_EOPEN;
         goto done;
     }
@@ -1233,7 +1233,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
     }
 
     if (fcntl(desc, F_GETPATH, &fname) < 0) {
-        printf("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
@@ -1260,7 +1260,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 
     dwRet = GetFinalPathNameByHandleW((HANDLE)hFile, NULL, 0, VOLUME_NAME_DOS);
     if (dwRet == 0) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
@@ -1274,7 +1274,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 
     dwRet = GetFinalPathNameByHandleW((HANDLE)hFile, long_evaluated_filepathW, dwRet + 1, VOLUME_NAME_DOS);
     if (dwRet == 0) {
-        cli_errmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
+        cli_dbgmsg("cli_get_filepath_from_filedesc: Failed to resolve filename for descriptor %d\n", desc);
         status = CL_EOPEN;
         goto done;
     }
