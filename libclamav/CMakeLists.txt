@@ -602,7 +602,7 @@ if(ENABLE_STATIC_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
     if(NOT WIN32)
-        target_link_libraries( clamav PUBLIC ICONV::Iconv )
+        target_link_libraries( clamav_static PUBLIC ICONV::Iconv )
     endif()
     set_target_properties(clamav_static PROPERTIES
         ARCHIVE_OUTPUT_NAME clamav_static
