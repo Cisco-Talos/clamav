@@ -10,7 +10,7 @@ GET_FILENAME_COMPONENT(_selfdir_CheckStructPacking
 check_c_source_compiles(
     "
     #ifdef __GNUC__
-    struct { int i __attribute__((packed)); } s;
+    struct { int i __attribute__((packed)); } s; int main(){return 0;}
     #else
     #error Only checking for packed attribute on gcc-like compilers
     #endif
@@ -63,7 +63,7 @@ endif()
 # Check if struct __attribute__((aligned)) is available
 check_c_source_compiles(
     "
-    typedef int cl_aligned_int __attribute__((aligned));
+    typedef int cl_aligned_int __attribute__((aligned)); int main(){return 0;}
     "
     HAVE_ATTRIB_ALIGNED )
 
