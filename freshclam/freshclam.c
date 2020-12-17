@@ -184,7 +184,8 @@ static void help(void)
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
-    printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
+    printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update.\n");
+    printf("                                         Use EXIT_1 to return 1 after successful database update.\n");
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
@@ -1480,16 +1481,9 @@ fc_error_t perform_database_update(
     }
 
     if (0 < nTotalUpdated) {
-        if (NULL != notifyClamd)
+        if (NULL != notifyClamd) {
             notify(notifyClamd);
-
-        if (NULL != onUpdateExecute) {
-            execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
         }
-    }
-
-    if ((NULL != newVersion) && (NULL != onOutdatedExecute)) {
-        executeIfNewVersion(onOutdatedExecute, newVersion, bDaemonized);
     }
 
     status = FC_SUCCESS;
@@ -1502,6 +1496,20 @@ done:
             cli_rmdirs(g_freshclamTempDirectory);
         }
     }
+
+    if (FC_SUCCESS == status) {
+        /* Run Execute commands after we clean up the temp directory,
+         * in case they want us to EXIT */
+        if (0 < nTotalUpdated) {
+            if (NULL != onUpdateExecute) {
+                execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
+            }
+        }
+        if ((NULL != newVersion) && (NULL != onOutdatedExecute)) {
+            executeIfNewVersion(onOutdatedExecute, newVersion, bDaemonized);
+        }
+    }
+
     if (NULL != dnsUpdateInfo) {
         free(dnsUpdateInfo);
     }

@@ -84,19 +84,19 @@ char _CONFDIR_CLAMD[MAX_PATH]     = BACKUP_CONFDIR "\\clamd.conf";
 char _CONFDIR_FRESHCLAM[MAX_PATH] = BACKUP_CONFDIR "\\freshclam.conf";
 char _CONFDIR_MILTER[MAX_PATH]    = BACKUP_CONFDIR "\\clamav-milter.conf";
 
-#define CONST_DATADIR           _DATADIR
-#define CONST_CONFDIR           _CONFDIR
-#define CONST_CONFDIR_CLAMD     _CONFDIR_CLAMD
+#define CONST_DATADIR _DATADIR
+#define CONST_CONFDIR _CONFDIR
+#define CONST_CONFDIR_CLAMD _CONFDIR_CLAMD
 #define CONST_CONFDIR_FRESHCLAM _CONFDIR_FRESHCLAM
-#define CONST_CONFDIR_MILTER    _CONFDIR_MILTER
+#define CONST_CONFDIR_MILTER _CONFDIR_MILTER
 
 #else
 
-#define CONST_DATADIR           DATADIR
-#define CONST_CONFDIR           CONFDIR
-#define CONST_CONFDIR_CLAMD     CONFDIR_CLAMD
+#define CONST_DATADIR DATADIR
+#define CONST_CONFDIR CONFDIR
+#define CONST_CONFDIR_CLAMD CONFDIR_CLAMD
 #define CONST_CONFDIR_FRESHCLAM CONFDIR_FRESHCLAM
-#define CONST_CONFDIR_MILTER    CONFDIR_MILTER
+#define CONST_CONFDIR_MILTER CONFDIR_MILTER
 
 #endif
 
@@ -531,7 +531,7 @@ const struct clam_option __clam_options[] = {
 
     {"NotifyClamd", "daemon-notify", 0, CLOPT_TYPE_STRING, NULL, -1, CONST_CONFDIR_CLAMD, 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes"},
 
-    {"OnUpdateExecute", "on-update-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update.", "command"},
+    {"OnUpdateExecute", "on-update-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update. Use EXIT_1 to return 1 after successful database update.", "command"},
 
     {"OnErrorExecute", "on-error-execute", 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when a database update error occurs.", "command"},
 

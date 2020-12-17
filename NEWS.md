@@ -21,6 +21,8 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
   systems that do not support the GetMappedFileNameW() API such as on ImDisk
   RAM-disks.
 
+- Fixed freshclam --on-update-execute=EXIT_1 temporary directory cleanup issue.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:
