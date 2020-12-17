@@ -30,6 +30,9 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
   yet implemented for other UNIX operating systems.
   FD-passing is not available for Windows.
 
+- Fixed an issue where freshclam database validation didn't work correctly when
+  run in daemon mode on Linux/Unix.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:

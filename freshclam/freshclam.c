@@ -281,6 +281,14 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                 goto done;
             }
         } else {
+            /*
+             * Attempt to test database in a child process.
+             */
+
+            /* We need to be able to wait for the child process ourselves.
+             * We'll re-enable wait in the global handler when we're done. */
+            g_sigchildWait = 0;
+
             switch (pid = fork()) {
                 case -1: {
                     /*
@@ -392,6 +400,7 @@ done:
         logg("!Database test FAILED.\n");
     }
 
+    /* Re-enable the global handler's child process wait */
     g_sigchildWait = 1;
 
     return status;
