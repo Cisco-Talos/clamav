@@ -82,6 +82,9 @@ their version, without the commands list.
 
 This command can be used as an easy way to check for IDSESSION support for
 example.
+
+This command can be used as an easy way to check for INSTREAM support and
+the StreamMaxLength value clamd is configured with.
 .LP
 .TP 
 \fBDEPRECATED COMMANDS\fR

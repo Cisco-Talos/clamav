@@ -502,7 +502,7 @@ static int print_ver(int desc, char term, const struct cl_engine *engine)
     return mdprintf(desc, "ClamAV %s%c", get_version(), term);
 }
 
-static void print_commands(int desc, char term, const struct cl_engine *engine)
+static void print_commands(client_conn_t *conn, int desc, char term, const struct cl_engine *engine)
 {
     unsigned i, n;
     const char *engine_ver = cl_retver();
@@ -517,6 +517,8 @@ static void print_commands(int desc, char term, const struct cl_engine *engine)
     n = sizeof(commands) / sizeof(commands[0]);
     for (i = 0; i < n; i++) {
         mdprintf(desc, " %s", commands[i].cmd);
+        if (commands[i].cmdtype == COMMAND_INSTREAM)
+            mdprintf(desc, " StreamMaxLength=%lld", optget(conn->opts, "StreamMaxLength")->numarg);
     }
     mdprintf(desc, "%c", term);
 }
@@ -590,7 +592,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
         case COMMAND_COMMANDS: {
             if (conn->group)
                 mdprintf(desc, "%u: ", conn->id);
-            print_commands(desc, conn->term, engine);
+            print_commands(conn, desc, conn->term, engine);
             return conn->group ? 0 : 1;
         }
         case COMMAND_DETSTATSCLEAR: {
