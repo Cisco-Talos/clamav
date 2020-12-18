@@ -82,14 +82,6 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
 {
     unsigned int i;
 
-    /* Check for the Byte-Order-Mark for UTF-8 */
-    if ((len >= 3) &&
-        (buf[0] == 0xEF) &&
-        (buf[1] == 0xBB) &&
-        (buf[2] == 0xBF)) {
-        return 0;
-    }
-
     /* Validate that the data all falls within the bounds of
 	 * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
 	 */
@@ -200,6 +192,11 @@ cli_file_t cli_texttype(const unsigned char *buf, unsigned int len)
 {
     int ret;
 
+    /*
+     * @TODO: Add UTF8/16/32 BOM Detection to improve text type accuracy.
+     * Significant regression testing would be needed to ensure that re-typing
+     * files does not impact efficacy.
+     */
     if (td_isascii(buf, len)) {
         cli_dbgmsg("Recognized ASCII text\n");
         return CL_TYPE_TEXT_ASCII;
