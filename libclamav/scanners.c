@@ -134,9 +134,9 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
     DIR *dd           = NULL;
     struct dirent *dent;
     STATBUF statbuf;
-    char *fname                      = NULL;
-    unsigned int viruses_found       = 0;
-    bool processing_normalized_files = ctx->next_layer_is_normalized;
+    char *fname                    = NULL;
+    unsigned int viruses_found     = 0;
+    uint32_t next_layer_attributes = ctx->next_layer_attributes;
 
     if ((dd = opendir(dir)) != NULL) {
         while ((dent = readdir(dd))) {
@@ -166,8 +166,10 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
                             }
                         } else {
                             if (S_ISREG(statbuf.st_mode)) {
-                                ctx->next_layer_is_normalized = processing_normalized_files; // This flag ingested by cli_recursion_stack_push().
-                                if (cli_magic_scan_file(fname, ctx, dent->d_name) == CL_VIRUS) {
+                                // restore next-layer attributes, so it applies to all normalized/etc. files in this dir scan.
+                                ctx->next_layer_attributes = next_layer_attributes;
+
+                                if (CL_VIRUS == cli_magic_scan_file(fname, ctx, dent->d_name)) {
                                     if (SCAN_ALLMATCHES) {
                                         viruses_found++;
                                         continue;
@@ -191,7 +193,6 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
     }
 
 done:
-    ctx->next_layer_is_normalized = false;
     if (NULL != dd) {
         closedir(dd);
     }
@@ -1587,7 +1588,8 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
             goto done;
         }
 
-        ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+        // This flag ingested by cli_recursion_stack_push().
+        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
 
         ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSOLE2, true); /* Perform exp_eval with child fmap */
         if (CL_SUCCESS != ret) {
@@ -2171,9 +2173,12 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     snprintf(fullname, 1024, "%s" PATHSEP "nocomment.html", tempname);
     fd = open(fullname, O_RDONLY | O_BINARY);
     if (fd >= 0) {
-        ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+        // This flag ingested by cli_recursion_stack_push().
+        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
+
         if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
             viruses_found++;
+
         close(fd);
     }
 
@@ -2188,9 +2193,12 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "notags.html", tempname);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+                // This flag ingested by cli_recursion_stack_push().
+                ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
+
                 if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                     viruses_found++;
+
                 close(fd);
             }
         }
@@ -2200,11 +2208,16 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         snprintf(fullname, 1024, "%s" PATHSEP "javascript", tempname);
         fd = open(fullname, O_RDONLY | O_BINARY);
         if (fd >= 0) {
-            ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+            // This flag ingested by cli_recursion_stack_push().
+            ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
+
             if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                 viruses_found++;
+
             if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
-                ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+                // This flag ingested by cli_recursion_stack_push().
+                ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
+
                 if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                     viruses_found++;
             }
@@ -2213,8 +2226,11 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     }
 
     if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
-        ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push() or cleared when cli_magic_scan_dir() is done.
         snprintf(fullname, 1024, "%s" PATHSEP "rfc2397", tempname);
+
+        // This flag ingested by cli_recursion_stack_push() or cleared when cli_magic_scan_dir() is done.
+        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
+
         ret = cli_magic_scan_dir(fullname, ctx);
         if (CL_EOPEN == ret) {
             /* If the directory doesn't exist, that's fine */
@@ -2330,7 +2346,8 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
             goto done;
         }
 
-        ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+        // This flag ingested by cli_recursion_stack_push().
+        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
 
         ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_TEXT_ASCII, true); /* Perform cli_scan_fmap with child fmap */
         if (CL_SUCCESS != ret) {
@@ -2487,7 +2504,9 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
         goto done;
     }
 
-    ctx->next_layer_is_normalized = true; // s/normalized/transcoded, practically the same thing.
+    // s/normalized/transcoded, practically the same thing.
+    // This flag ingested by cli_recursion_stack_push().
+    ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
 
     status = cli_recursion_stack_push(ctx, new_map, CL_TYPE_HTML, true); /* Perform exp_eval with child fmap */
     if (CL_SUCCESS != status) {
@@ -4033,24 +4052,108 @@ void emax_reached(cli_ctx *ctx)
 #define LINESTR2(x) LINESTR(x)
 #define __AT__ " at line " LINESTR2(__LINE__)
 
+/**
+ * @brief Provide the following to the calling application for each embedded file:
+ *  - name of parent file
+ *  - size of parent file
+ *  - name of current file
+ *  - size of current file
+ *  - pointer to the current file data
+ *
+ * @param cb
+ * @param ctx
+ * @param filetype
+ * @param old_hook_lsig_matches
+ * @param parent_property
+ * @param run_cleanup
+ * @return cl_error_t
+ */
+static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli_ctx *ctx, const char *filetype)
+{
+    cl_error_t status = CL_CLEAN;
+
+    int fd            = -1;
+    size_t fmap_index = ctx->recursion_level; /* index of current file */
+
+    cl_fmap_t *fmap         = NULL;
+    const char *file_name   = NULL;
+    size_t file_size        = 0;
+    const char *file_buffer = NULL;
+    const char **ancestors  = NULL;
+
+    size_t parent_file_size = 0;
+
+    if (NULL == cb) {
+        // Callback is not set.
+        goto done;
+    }
+
+    fmap = ctx->recursion_stack[fmap_index].fmap;
+    fd   = fmap_fd(fmap);
+
+    CLI_CALLOC(ancestors, ctx->recursion_level + 1, sizeof(char *), status = CL_EMEM);
+
+    file_name   = fmap->name;
+    file_buffer = fmap_need_off_once_len(fmap, 0, fmap->len, &file_size);
+
+    while (fmap_index > 0) {
+        cl_fmap_t *previous_fmap;
+
+        fmap_index -= 1;
+        previous_fmap = ctx->recursion_stack[fmap_index].fmap;
+
+        if (ctx->recursion_level > 0 && (fmap_index == ctx->recursion_level - 1)) {
+            parent_file_size = previous_fmap->len;
+        }
+
+        ancestors[fmap_index] = previous_fmap->name;
+    }
+
+    perf_start(ctx, PERFT_INSPECT);
+    status = cb(fd, filetype, ancestors, parent_file_size, file_name, file_size, file_buffer,
+                ctx->recursion_level, ctx->recursion_stack[ctx->recursion_level].attributes, ctx->cb_ctx);
+    perf_stop(ctx, PERFT_INSPECT);
+
+    switch (status) {
+        case CL_BREAK:
+            cli_dbgmsg("dispatch_file_inspection_callback: scan cancelled by callback\n");
+            status = CL_BREAK;
+            break;
+        case CL_VIRUS:
+            cli_dbgmsg("dispatch_file_inspection_callback: file blocked by callback\n");
+            cli_append_virus(ctx, "Detected.By.Callback.Inspection");
+            status = CL_VIRUS;
+            break;
+        case CL_CLEAN:
+            break;
+        default:
+            status = CL_CLEAN;
+            cli_warnmsg("dispatch_file_inspection_callback: ignoring bad return code from callback\n");
+    }
+
+done:
+
+    FREE(ancestors);
+    return status;
+}
+
 static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, const char *filetype)
 {
     cl_error_t status = CL_CLEAN;
 
     if (cb) {
         perf_start(ctx, PERFT_PRECB);
-
         status = cb(fmap_fd(ctx->fmap), filetype, ctx->cb_ctx);
+        perf_stop(ctx, PERFT_PRECB);
+
         switch (status) {
             case CL_BREAK:
                 cli_dbgmsg("dispatch_prescan_callback: file allowed by callback\n");
-                perf_stop(ctx, PERFT_PRECB);
                 status = CL_BREAK;
                 break;
             case CL_VIRUS:
                 cli_dbgmsg("dispatch_prescan_callback: file blocked by callback\n");
                 cli_append_virus(ctx, "Detected.By.Callback");
-                perf_stop(ctx, PERFT_PRECB);
                 status = CL_VIRUS;
                 break;
             case CL_CLEAN:
@@ -4059,8 +4162,6 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
                 status = CL_CLEAN;
                 cli_warnmsg("dispatch_prescan_callback: ignoring bad return code from callback\n");
         }
-
-        perf_stop(ctx, PERFT_PRECB);
     }
 
     return status;
@@ -4320,6 +4421,16 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         goto done;
     }
     hashed_size = ctx->fmap->len;
+
+    ret = dispatch_file_inspection_callback(ctx->engine->cb_file_inspection, ctx, filetype);
+    if (CL_CLEAN != ret) {
+        if (ret == CL_VIRUS) {
+            ret = cli_check_fp(ctx, NULL);
+        } else {
+            ret = CL_CLEAN;
+        }
+        goto done;
+    }
 
     /*
      * Check if we've already scanned this file before.
@@ -5081,6 +5192,9 @@ done:
 
     ctx->sub_filepath = parent_filepath;
 
+    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
+    ctx->next_layer_attributes = 0;
+
     return status;
 }
 
@@ -5617,6 +5731,11 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
         return CL_CLEAN;
     }
 
+    if (NULL != filename && map->name == NULL) {
+        // Use the provided name for the fmap name if one wasn't already set.
+        cli_basename(filename, strlen(filename), &map->name);
+    }
+
     return scan_common(map, filename, virname, scanned, engine, scanoptions, context);
 }
 
@@ -5659,6 +5778,9 @@ done:
     if (fd >= 0) {
         close(fd);
     }
+    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
+    ctx->next_layer_attributes = 0;
+
     return ret;
 }
 

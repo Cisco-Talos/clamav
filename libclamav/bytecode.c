@@ -165,14 +165,16 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "javascript", ctx->jsnormdir);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+                // This flag ingested by cli_recursion_stack_push().
+                cctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
 
                 ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
                     else {
-                        cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+                        // This flag ingested by cli_recursion_stack_push().
+                        cctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
 
                         ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
                     }

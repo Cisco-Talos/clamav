@@ -106,6 +106,7 @@ int cli_event_errors(cli_events_t *ctx);
 
 enum perfev {
     PERFT_SCAN,
+    PERFT_INSPECT,
     PERFT_PRECB,
     PERFT_POSTCB,
     PERFT_CACHE,
