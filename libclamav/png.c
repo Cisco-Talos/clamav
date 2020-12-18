@@ -111,9 +111,8 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
     uint64_t image_size = 0;
 
-    int err                              = Z_OK;
-    uint8_t *decompressed_data           = NULL;
-    size_t decompressed_data_buffer_size = 0;
+    int err                    = Z_OK;
+    uint8_t *decompressed_data = NULL;
 
     z_stream zstrm;
     size_t decompressed_data_len = 0;
@@ -283,8 +282,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                     }
                 }
 
-                decompressed_data_buffer_size = BUFFER_SIZE;
-                decompressed_data             = (uint8_t *)malloc(decompressed_data_buffer_size);
+                decompressed_data = (uint8_t *)malloc(BUFFER_SIZE);
                 if (NULL == decompressed_data) {
                     cli_errmsg("Failed to allocation memory for decompressed PNG data.\n");
                     goto done;
@@ -311,12 +309,22 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                 }
             }
 
+            /* skip scans of image data > max scan size. */
+            if (image_size > ctx->engine->maxscansize) {
+                idat_state = PNG_IDAT_DECOMPRESSION_COMPLETE;
+            }
+
             if (idat_state == PNG_IDAT_DECOMPRESSION_IN_PROGRESS) {
+                /*
+                 * We'll decompress the image data, but we don't _actually_ scan it.
+                 * We just want to know how much data comes out, so we can alert on the file
+                 * if it exceeds the image size calculated above (CVE-2010-1205).
+                 * Therefore, we'll use a static buffer and won't preserve the decompressed data.
+                 * This will prevent realloc errors from exceeding CLI_MAX_ALLOCATION,
+                 * will reduce RAM usage, and should be a wee bit faster.
+                 */
                 zstrm.next_in  = ptr;
                 zstrm.avail_in = chunk_data_length;
-
-                zstrm.next_out  = decompressed_data + decompressed_data_len;
-                zstrm.avail_out = decompressed_data_buffer_size - decompressed_data_len;
 
                 while (err != Z_STREAM_END) {
                     if (zstrm.avail_in == 0) {
@@ -325,24 +333,13 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                         break;
                     }
 
-                    /* extend output capacity if needed,*/
-                    if (zstrm.avail_out == 0) {
-                        uint8_t *decompressed_data_tmp = NULL;
-                        if (!(decompressed_data_tmp = cli_realloc(decompressed_data, decompressed_data_buffer_size + BUFFER_SIZE))) {
-                            cli_dbgmsg("PNG: Failed to allocate memory while decompressing image data.\n");
-                            status = CL_EMEM;
-                            goto done;
-                        }
-                        decompressed_data = decompressed_data_tmp;
-                        decompressed_data_buffer_size += BUFFER_SIZE;
-
-                        zstrm.next_out  = decompressed_data + decompressed_data_len;
-                        zstrm.avail_out = decompressed_data_buffer_size - decompressed_data_len;
-                    }
+                    /* Just keep overwriting our buffer, we don't need to save the PNG image data. */
+                    zstrm.next_out  = decompressed_data;
+                    zstrm.avail_out = BUFFER_SIZE;
 
                     /* inflate! */
-                    err                   = inflate(&zstrm, Z_NO_FLUSH);
-                    decompressed_data_len = decompressed_data_buffer_size - zstrm.avail_out;
+                    err = inflate(&zstrm, Z_NO_FLUSH);
+                    decompressed_data_len += BUFFER_SIZE - zstrm.avail_out;
                     if (err != Z_OK && err != Z_STREAM_END) {
                         cli_dbgmsg("PNG: zlib: inflate error: %d, Image decompression failed!\n", err);
                         inflateEnd(&zstrm);
