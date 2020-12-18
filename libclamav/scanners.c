@@ -3117,13 +3117,15 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     }
 
     if ((typercg) &&
-        (type != CL_TYPE_GPT) &&
-        (type != CL_TYPE_CPIO_OLD) &&
-        (type != CL_TYPE_ZIP) &&
-        (type != CL_TYPE_OLD_TAR) &&
-        (type != CL_TYPE_POSIX_TAR)) {
+        (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        (type != CL_TYPE_GZ) &&        /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        (type != CL_TYPE_GPT) &&       /* Omit GPT files because it's an image format that we can extract and scan manually. */
+        (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
+        (type != CL_TYPE_ZIP) &&       /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
+        (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
+        (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
-         * Enable file type recognition scan mode if requested, except for some raw archive (non-compressed) types, etc.
+         * Enable file type recognition scan mode if requested, except for some some problematic types (above).
          */
         acmode |= AC_SCAN_FT;
     }
@@ -4059,6 +4061,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml(ctx);
             break;
+
         case CL_TYPE_HTML_UTF16:
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml_utf16(ctx);
@@ -4337,8 +4340,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_TEXT_UTF16LE:
         case CL_TYPE_TEXT_UTF8:
             perf_nested_start(ctx, PERFT_SCRIPT, PERFT_SCAN);
-            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
-                ret = cli_scanhtml(ctx);
             if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALLMATCHES) && SCAN_PARSE_HTML)
                 ret = cli_scanscript(ctx);
             if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_get_container(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
