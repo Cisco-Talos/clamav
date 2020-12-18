@@ -489,6 +489,46 @@ typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
  */
 extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback);
 
+/*
+ * Attributes of each layer in scan.
+ */
+#define LAYER_ATTRIBUTES_NORMAL 0x0
+#define LAYER_ATTRIBUTES_NORMALIZED 0x1    /** This layer was modified to make matching more generic, reliable. */
+#define LAYER_ATTRIBUTES_DECRYPTED 0x2     /** Decryption was used to extract this layer. I.e. had to decrypt some previous layer. */
+
+/**
+ * @brief Pre-scan callback.
+ *
+ * Called for each NEW file (inner and outer).
+ * Provides capability to record embedded file information during a scan.
+ *
+ * @param fd                  Current file descriptor which is about to be scanned.
+ * @param type                Current file type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE").
+ * @param ancestors           An array of ancestors filenames of size `recursion_level`. filenames may be NULL.
+ * @param parent_file_size    Parent file size.
+ * @param file_name           Current file name, or NULL if the file does not have a name or ClamAV failed to record the name.
+ * @param file_size           Current file size.
+ * @param file_buffer         Current file buffer pointer.
+ * @param recursion_level     Recursion level / depth of the current file.
+ * @param layer_attributes    See LAYER_ATTRIBUTES_* flags.
+ * @param context             Opaque application provided data.
+ * @return                    CL_CLEAN = File is scanned.
+ * @return                    CL_BREAK = Whitelisted by callback - file is skipped and marked as clean.
+ * @return                    CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected.
+ */
+typedef cl_error_t (*clcb_file_inspection)(int fd, const char *type, const char **ancestors, size_t parent_file_size,
+                                           const char *file_name, size_t file_size, const char *file_buffer,
+                                           uint32_t recursion_level, uint32_t layer_attributes, void *context);
+/**
+ * @brief Set a custom file inspection callback function.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine.
+ * @param callback  The callback function pointer.
+ */
+extern void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_file_inspection callback);
+
 /**
  * @brief Pre-scan callback.
  *

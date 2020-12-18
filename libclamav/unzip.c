@@ -541,6 +541,9 @@ static inline cl_error_t zdecrypt(
 
             cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
+            /* The next call to push a layer onto the recursion stack will collect this "was decrypted" status. */
+            ctx->next_layer_attributes |= LAYER_ATTRIBUTES_DECRYPTED;
+
             /* decrypt data to new fmap -> buffer */
             if (!(dcypt_map = fmap(out_file, 0, total, NULL))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);

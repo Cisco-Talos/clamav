@@ -803,6 +803,8 @@ done:
     if (NULL != new_map) {
         funmap(new_map);
     }
+    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
+    ctx->next_layer_attributes = 0;
 
     return status;
 }

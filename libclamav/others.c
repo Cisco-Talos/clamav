@@ -1422,17 +1422,25 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         new_container->recursion_level_buffer_fmap = current_container->recursion_level_buffer_fmap + 1;
     }
 
-    if (ctx->next_layer_is_normalized) {
-        // Normalized layers should be ignored when using the get_type() and get_intermediate_type()
-        // functions so that signatures that specify the container or intermediates need not account
-        // for normalized layers "contained in" HTML / Javascript / etc.
-        new_container->is_normalized_layer = true;
-        ctx->next_layer_is_normalized      = false;
+    // Apply the requested next-layer attributes.
+    //
+    // Note that this is how we also keep track of normalized layers.
+    // Normalized layers should be ignored when using the get_type() and get_intermediate_type()
+    // functions so that signatures that specify the container or intermediates need not account
+    // for normalized layers "contained in" HTML / Javascript / etc.
+    new_container->attributes = ctx->next_layer_attributes;
+
+    // If the current layer is marked "decrypted", all child-layers are also marked "decrypted".
+    if (current_container->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
+        new_container->attributes |= LAYER_ATTRIBUTES_DECRYPTED;
     }
 
     ctx->fmap = new_container->fmap;
 
 done:
+    // Clear the next-layer attributes so we don't accidentally apply them to all subsequent layers.
+    ctx->next_layer_attributes = 0;
+
     return status;
 }
 
@@ -1497,7 +1505,7 @@ static int recursion_stack_get(cli_ctx *ctx, int index)
     }
 
     while (current_layer >= desired_layer && current_layer > 0) {
-        if (ctx->recursion_stack[current_layer].is_normalized_layer) {
+        if (ctx->recursion_stack[current_layer].attributes & LAYER_ATTRIBUTES_NORMALIZED) {
             // The current layer is normalized, so we should step back an extra layer
             // It's okay if desired_layer goes negative.
             desired_layer--;
@@ -1776,6 +1784,11 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cache callback)
 {
     engine->cb_pre_cache = callback;
+}
+
+void cl_engine_set_clcb_file_inspection(struct cl_engine *engine, clcb_file_inspection callback)
+{
+    engine->cb_file_inspection = callback;
 }
 
 void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan callback)

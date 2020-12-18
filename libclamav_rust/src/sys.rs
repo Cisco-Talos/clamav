@@ -114,6 +114,38 @@ pub type clcb_pre_cache = ::std::option::Option<
 >;
 #[doc = " @brief Pre-scan callback."]
 #[doc = ""]
+#[doc = " Called for each NEW file (inner and outer)."]
+#[doc = " Provides capability to record embedded file information during a scan."]
+#[doc = ""]
+#[doc = " @param fd                  Current file descriptor which is about to be scanned."]
+#[doc = " @param type                Current file type detected via magic - i.e. NOT on the fly - (e.g. \"CL_TYPE_MSEXE\")."]
+#[doc = " @param ancestors           A list of ancestors filenames, delimited by \" > \". Unnamed files are given the name \"(no name)\"."]
+#[doc = " @param parent_file_size    Parent file size."]
+#[doc = " @param file_name           Current file name, or NULL if the file does not have a name or ClamAV failed to record the name."]
+#[doc = " @param file_size           Current file size."]
+#[doc = " @param file_buffer         Current file buffer pointer."]
+#[doc = " @param recursion_level     Recursion level / depth of the current file."]
+#[doc = " @param layer_attributes    See LAYER_ATTRIBUTES_* flags."]
+#[doc = " @param context             Opaque application provided data."]
+#[doc = " @return                    CL_CLEAN = File is scanned."]
+#[doc = " @return                    CL_BREAK = Whitelisted by callback - file is skipped and marked as clean."]
+#[doc = " @return                    CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected."]
+pub type clcb_file_inspection = ::std::option::Option<
+    unsafe extern "C" fn(
+        fd: ::std::os::raw::c_int,
+        type_: *const ::std::os::raw::c_char,
+        ancestors: *mut *const ::std::os::raw::c_char,
+        parent_file_size: size_t,
+        file_name: *const ::std::os::raw::c_char,
+        file_size: size_t,
+        file_buffer: *const ::std::os::raw::c_char,
+        recursion_level: u32,
+        layer_attributes: u32,
+        context: *mut ::std::os::raw::c_void,
+    ) -> cl_error_t,
+>;
+#[doc = " @brief Pre-scan callback."]
+#[doc = ""]
 #[doc = " Called for each NEW file (inner and outer) before the scanning takes place. This is"]
 #[doc = " roughly the the same as clcb_before_cache, but it is affected by clean file caching."]
 #[doc = " This means that it won't be called if a clean cached file (inner or outer) is"]
@@ -741,7 +773,7 @@ pub struct recursion_level_tag {
     pub fmap: *mut cl_fmap_t,
     pub recursion_level_buffer: u32,
     pub recursion_level_buffer_fmap: u32,
-    pub is_normalized_layer: bool,
+    pub attributes: u32,
     pub image_fuzzy_hash: image_fuzzy_hash_t,
     pub calculated_image_fuzzy_hash: bool,
 }
@@ -769,7 +801,7 @@ pub struct cli_ctx_tag {
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
     pub fmap: *mut fmap_t,
-    pub next_layer_is_normalized: bool,
+    pub next_layer_attributes: u32,
     pub handlertype_hash: [::std::os::raw::c_uchar; 16usize],
     pub dconf: *mut cli_dconf,
     pub hook_lsig_matches: *mut bitset_t,
@@ -875,6 +907,7 @@ pub struct cl_engine {
     pub num_total_signatures: size_t,
     pub mempool: *mut mpool_t,
     pub cmgr: crtmgr,
+    pub cb_file_inspection: clcb_file_inspection,
     pub cb_pre_cache: clcb_pre_cache,
     pub cb_pre_scan: clcb_pre_scan,
     pub cb_post_scan: clcb_post_scan,
