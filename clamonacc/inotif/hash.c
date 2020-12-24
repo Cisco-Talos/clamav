@@ -536,7 +536,7 @@ int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node)
 /**
  * @brief Function to remove a listnode based on dirname.
  */
-int onas_rm_listnode(struct onas_lnode *head, const char *dirname)
+cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
 {
     if (!dirname || !head) return CL_ENULLARG;
 
@@ -544,19 +544,21 @@ int onas_rm_listnode(struct onas_lnode *head, const char *dirname)
     size_t n                = strlen(dirname);
 
     while ((curr = curr->next)) {
-        if (!strncmp(curr->dirname, dirname, n)) {
-            struct onas_lnode *tmp = curr->prev;
-            tmp->next              = curr->next;
-            tmp                    = curr->next;
-            tmp->prev              = curr->prev;
-
+        if (NULL == curr->dirname) {
+            logg("*ClamHash: node's directory name is NULL!\n");
+            return CL_ERROR;
+        } else if (!strncmp(curr->dirname, dirname, n)) {
+            if (curr->next != NULL)
+                curr->next->prev = curr->prev;
+            if (curr->prev != NULL)
+                curr->prev->next = curr->next;
             onas_free_listnode(curr);
 
             return CL_SUCCESS;
         }
     }
 
-    return -1;
+    return CL_ERROR;
 }
 
 /*** Dealing with parent/child relationships in the table. ***/
@@ -632,7 +634,9 @@ int onas_ht_rm_child(struct onas_ht *ht, const char *prntpath, size_t prntlen, c
 
     hnode = elem->data;
 
-    if ((ret = onas_rm_listnode(hnode->childhead, &(childpath[idx])))) return CL_EARG;
+    if (CL_SUCCESS != (ret = onas_rm_listnode(hnode->childhead, &(childpath[idx])))) {
+        return CL_EARG;
+    }
 
     return CL_SUCCESS;
 }
