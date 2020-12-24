@@ -476,7 +476,7 @@ const struct clam_option __clam_options[] = {
 
     /* clamonacc cmdline options */
 
-    {NULL, "watch-list", 'w', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
+    {NULL, "watch-list", 'W', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
     {NULL, "exclude-list", 'e', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMONACC, "", ""},
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
