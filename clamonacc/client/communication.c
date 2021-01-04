@@ -38,6 +38,10 @@
 #include <sys/socket.h>
 #endif
 
+// libclamav
+#include "clamav.h"
+
+// shared
 #include "output.h"
 
 #include "communication.h"
@@ -252,9 +256,11 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
  * - 0 if the connection is closed
  * - -1 on error
  */
-int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, __attribute__((unused)) int64_t timeout_ms)
+int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout_ms)
 {
     char *eol;
+
+    UNUSEDPARAM(timeout_ms);
 
     while (1) {
         if (!rcv_data->retlen) {
