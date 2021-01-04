@@ -361,6 +361,8 @@ void *onas_ddd_th(void *arg)
     struct onas_context *ctx = (struct onas_context *)arg;
     sigset_t sigset;
     const struct optstruct *pt;
+    const struct optstruct *pt_tmpdir;
+    const char *clamd_tmpdir;
     uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
     fd_set rfds;
     char buf[4096];
@@ -409,15 +411,31 @@ void *onas_ddd_th(void *arg)
         return NULL;
     }
 
+    pt_tmpdir = optget(ctx->clamdopts, "TemporaryDirectory");
+    if (pt_tmpdir->enabled) {
+        clamd_tmpdir = pt_tmpdir->strarg;
+    } else {
+        clamd_tmpdir = cli_gettmpdir();
+    }
+
     if ((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
 
         while (pt) {
             if (!strcmp(pt->strarg, "/")) {
-                logg("!ClamInotif: not including path '%s' while DDD is enabled\n", pt->strarg);
-                logg("!ClamInotif: please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
+                logg("!ClamInotif: Not watching path '%s' while DDD is enabled\n", pt->strarg);
+                logg("!ClamInotif: Please use the OnAccessMountPath option to watch '%s'\n", pt->strarg);
                 pt = (struct optstruct *)pt->nextarg;
                 continue;
             }
+
+            if (0 == strcmp(clamd_tmpdir, pt->strarg)) {
+                logg("!ClamInotif: Not watching path '%s'\n", pt->strarg);
+                logg("!ClamInotif: ClamOnAcc should not watch the directory clamd is using for temp files\n");
+                logg("!ClamInotif: Consider setting TemporaryDirectory in clamd.conf to a different directory.\n");
+                pt = (struct optstruct *)pt->nextarg;
+                continue;
+            }
+
             if (onas_ht_get(ddd_ht, pt->strarg, strlen(pt->strarg), NULL) != CL_SUCCESS) {
                 if (onas_ht_add_hierarchy(ddd_ht, pt->strarg)) {
                     logg("!ClamInotif: can't include '%s'\n", pt->strarg);
@@ -445,6 +463,21 @@ void *onas_ddd_th(void *arg)
         idx = 0;
         while (NULL != include_list[idx]) {
             if (onas_ht_get(ddd_ht, include_list[idx], strlen(include_list[idx]), NULL) != CL_SUCCESS) {
+                if (!strcmp(include_list[idx], "/")) {
+                    logg("!ClamInotif: Not watching path '%s' while DDD is enabled\n", include_list[idx]);
+                    logg("!ClamInotif: Please use the OnAccessMountPath option to watch '%s'\n", include_list[idx]);
+                    pt = (struct optstruct *)pt->nextarg;
+                    continue;
+                }
+
+                if (0 == strcmp(clamd_tmpdir, include_list[idx])) {
+                    logg("!ClamInotif: Not watching path '%s'\n", include_list[idx]);
+                    logg("!ClamInotif: ClamOnAcc should not watch the directory clamd is using for temp files\n");
+                    logg("!ClamInotif: Consider setting TemporaryDirectory in clamd.conf to a different directory.\n");
+                    pt = (struct optstruct *)pt->nextarg;
+                    continue;
+                }
+
                 if (onas_ht_add_hierarchy(ddd_ht, include_list[idx])) {
                     logg("!ClamInotif: can't include '%s'\n", include_list[idx]);
                     return NULL;
@@ -497,6 +530,14 @@ void *onas_ddd_th(void *arg)
 
             idx++;
         }
+    }
+
+    /* Also remove the clamd temp directory, in case its parent directory was watched */
+    logg("*Excluding temp directory: %s\n", clamd_tmpdir);
+    if (onas_ht_rm_hierarchy(ddd_ht, clamd_tmpdir, strlen(clamd_tmpdir), 0)) {
+        logg("*ClamInotif: NVM, didn't actually need to exclude '%s'\n", clamd_tmpdir);
+    } else {
+        logg("ClamInotif: excluding '%s' (and all sub-directories)\n", clamd_tmpdir);
     }
 
     /* Watch provided paths recursively */
@@ -750,8 +791,10 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
     return;
 }
 
-static void onas_ddd_exit(__attribute__((unused)) void *arg)
+static void onas_ddd_exit(void *arg)
 {
+    UNUSEDPARAM(arg);
+
     logg("*ClamInotif: onas_ddd_exit()\n");
 
     if (onas_in_fd) {
