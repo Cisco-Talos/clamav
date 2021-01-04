@@ -80,16 +80,17 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     int ret        = 1;
     int close_flag = 0;
 
-    if (0 == fd) {
-        if (filename) {
+    if (-1 == fd) {
+        if (NULL == filename) {
+            logg("!onas_send_stream: Invalid args, a filename or file descriptor must be provided.\n");
+            return 0;
+        } else {
             if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
-                logg("~%s: Access denied. ERROR\n", filename);
+                logg("*%s: Failed to open file. ERROR\n", filename);
                 return 0;
             }
             //logg("DEBUG: >>>>> fd is %d\n", fd);
             close_flag = 1;
-        } else {
-            fd = 0;
         }
     }
 
@@ -113,8 +114,8 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     }
 
     if (len) {
-        logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
-        ret = 0;
+        logg("!Failed to read from %s.\n", filename ? filename : "FD");
+        ret = -1;
         goto strm_out;
     }
     *buf = 0;
@@ -169,15 +170,15 @@ static int onas_fdpass(const char *filename, int fd, int sockd)
     int ret        = 1;
     int close_flag = 0;
 
-    if (0 == fd) {
+    if (-1 == fd) {
         if (filename) {
             if ((fd = open(filename, O_RDONLY)) < 0) {
-                logg("~%s: Access denied. ERROR\n", filename);
+                logg("*%s: Failed to open file. ERROR\n", filename);
                 return 0;
             }
             close_flag = 1;
         } else {
-            fd = 0;
+            fd = -1;
         }
     }
 
@@ -272,8 +273,12 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
     if (len <= 0) {
         *printok = 0;
-        if (errors)
+        if (errors && len < 0) {
+            /* Ignore error if len == 0 to reduce verbosity from file open()
+               "errors" where the file has been deleted before we have a chance
+               to scan it. */
             (*errors)++;
+        }
         infected = len;
         goto done;
     }
@@ -355,7 +360,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                     *ret_code = CL_VIRUS;
                 }
 
-            } else if (len > 49 && !memcmp(eol - 50, " lstat() failed: No such file or directory. ERROR", 49)) {
+            } else if ((len > 32 && !memcmp(eol - 33, "No such file or directory. ERROR", 32)) ||
+                       (len > 34 && !memcmp(eol - 35, "Can't open file or directory ERROR", 34))) {
                 if (errors) {
                     (*errors)++;
                 }
@@ -368,33 +374,9 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 if (ret_code) {
                     *ret_code = CL_ESTAT;
                 }
-            } else if (len > 41 && !memcmp(eol - 42, " lstat() failed: Permission denied. ERROR", 41)) {
-                if (errors) {
-                    (*errors)++;
-                }
-                *printok = 0;
-
-                if (filename) {
-                    (scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
-                }
-
-                if (ret_code) {
-                    *ret_code = CL_ESTAT;
-                }
-            } else if (len > 21 && !memcmp(eol - 22, " Access denied. ERROR", 21)) {
-                if (errors) {
-                    (*errors)++;
-                }
-                *printok = 0;
-
-                if (filename) {
-                    (scantype >= STREAM) ? logg("*%s%s\n", filename, colon) : logg("*%s\n", bol);
-                }
-
-                if (ret_code) {
-                    *ret_code = CL_EACCES;
-                }
-            } else if (!memcmp(eol - 7, " ERROR", 6)) {
+            } else if ((len > 21 && !memcmp(eol - 22, " Access denied. ERROR", 21)) ||
+                       (len > 23 && !memcmp(eol - 24, "Can't access file ERROR", 23)) ||
+                       (len > 41 && !memcmp(eol - 42, " lstat() failed: Permission denied. ERROR", 41))) {
                 if (errors) {
                     (*errors)++;
                 }
@@ -405,7 +387,20 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
                 }
 
                 if (ret_code) {
-                    *ret_code = CL_ESTATE;
+                    *ret_code = CL_EACCES;
+                }
+            } else if (len > 6 && !memcmp(eol - 7, " ERROR", 6)) {
+                if (errors) {
+                    (*errors)++;
+                }
+                *printok = 0;
+
+                if (filename) {
+                    (scantype >= STREAM) ? logg("~%s%s\n", filename, colon) : logg("~%s\n", bol);
+                }
+
+                if (ret_code) {
+                    *ret_code = CL_ERROR;
                 }
             }
         }

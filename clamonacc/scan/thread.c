@@ -72,17 +72,19 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
         switch (*ret_code) {
             case CL_EACCES:
             case CL_ESTAT:
-
-                logg("*ClamMisc: internal issue (daemon could not access directory/file %s)\n", fname);
+                logg("*ClamMisc: Scan issue; Daemon could not find or access: %s)\n", fname);
                 break;
                 /* TODO: handle other errors */
             case CL_EPARSE:
+                logg("~ClamMisc: Internal issue; Failed to parse reply from daemon: %s)\n", fname);
+                break;
             case CL_EREAD:
             case CL_EWRITE:
             case CL_EMEM:
             case CL_ENULLARG:
+            case CL_ERROR:
             default:
-                logg("~ClamMisc: internal issue (client failed to scan)\n");
+                logg("~ClamMisc: Unexpected issue; Daemon failed to scan: %s\n", fname);
         }
         if (retry_on_error) {
             logg("*ClamMisc: reattempting scan ... \n");
@@ -111,7 +113,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 {
 
     int ret = 0;
-    int fd  = 0;
+    int fd  = -1;
 
 #if defined(HAVE_SYS_FANOTIFY_H)
     uint8_t b_fanotify;

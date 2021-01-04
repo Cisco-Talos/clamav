@@ -146,7 +146,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (NULL != filename) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
-            conn_reply_errno(scandata->conn, msg, "real-path check failed:");
+            conn_reply_errno(scandata->conn, msg, "Failed to determine real path:");
             logg("^Failed to determine real path for: %s\n", filename);
             logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
