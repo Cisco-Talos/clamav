@@ -196,7 +196,7 @@ static void *load_module(const char *name, const char *featurename)
 #ifdef _WIN32
         rhandle = LoadLibraryA(modulename);
 #else  // !_WIN32
-        rhandle = dlopen(modulename, RTLD_NOW);
+        rhandle         = dlopen(modulename, RTLD_NOW);
 #endif // !_WIN32
         if (rhandle) {
             break;
@@ -415,6 +415,8 @@ const char *cl_strerror(int clerror)
             return "Scanner still active";
         case CL_ESTATE:
             return "Bad state (engine not initialized, or already initialized)";
+        case CL_ERROR:
+            return "Unspecified error";
         case CL_VERIFIED:
             return "The scanned object was verified and deemed trusted";
         default:
@@ -438,7 +440,7 @@ cl_error_t cl_init(unsigned int initoptions)
         rarload();
     }
 #else
-        rarload();
+    rarload();
 #endif
 
     gettimeofday(&tv, (struct timezone *)0);
@@ -1261,9 +1263,9 @@ int cli_unlink(const char *pathname)
         }
         return 0;
 #else
-            char err[128];
-            cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
-            return 1;
+        char err[128];
+        cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+        return 1;
 #endif
     }
     return 0;
@@ -1449,75 +1451,75 @@ int cli_rmdirs(const char *name)
     return rc;
 }
 #else
-    int cli_rmdirs(const char *dirname)
-    {
-        DIR *dd;
-        struct dirent *dent;
-        STATBUF maind, statbuf;
-        char *path;
-        char err[128];
+int cli_rmdirs(const char *dirname)
+{
+    DIR *dd;
+    struct dirent *dent;
+    STATBUF maind, statbuf;
+    char *path;
+    char err[128];
 
-        chmod(dirname, 0700);
-        if ((dd = opendir(dirname)) != NULL) {
-            while (CLAMSTAT(dirname, &maind) != -1) {
-                if (!rmdir(dirname)) break;
-                if (errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-                    cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
-                    closedir(dd);
-                    return -1;
-                }
+    chmod(dirname, 0700);
+    if ((dd = opendir(dirname)) != NULL) {
+        while (CLAMSTAT(dirname, &maind) != -1) {
+            if (!rmdir(dirname)) break;
+            if (errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
+                cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
+                closedir(dd);
+                return -1;
+            }
 
-                while ((dent = readdir(dd))) {
-                    if (dent->d_ino) {
-                        if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                            path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-                            if (!path) {
-                                cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
-                                closedir(dd);
-                                return -1;
-                            }
+            while ((dent = readdir(dd))) {
+                if (dent->d_ino) {
+                    if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+                        path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                        if (!path) {
+                            cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
+                            closedir(dd);
+                            return -1;
+                        }
 
-                            sprintf(path, "%s" PATHSEP "%s", dirname, dent->d_name);
+                        sprintf(path, "%s" PATHSEP "%s", dirname, dent->d_name);
 
-                            /* stat the file */
-                            if (LSTAT(path, &statbuf) != -1) {
-                                if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-                                    if (rmdir(path) == -1) { /* can't be deleted */
-                                        if (errno == EACCES) {
-                                            cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
-                                            closedir(dd);
-                                            free(path);
-                                            return -1;
-                                        }
-                                        if (cli_rmdirs(path)) {
-                                            cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
-                                            free(path);
-                                            closedir(dd);
-                                            return -1;
-                                        }
+                        /* stat the file */
+                        if (LSTAT(path, &statbuf) != -1) {
+                            if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+                                if (rmdir(path) == -1) { /* can't be deleted */
+                                    if (errno == EACCES) {
+                                        cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
+                                        closedir(dd);
+                                        free(path);
+                                        return -1;
                                     }
-                                } else {
-                                    if (cli_unlink(path)) {
+                                    if (cli_rmdirs(path)) {
+                                        cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
                                         free(path);
                                         closedir(dd);
                                         return -1;
                                     }
                                 }
+                            } else {
+                                if (cli_unlink(path)) {
+                                    free(path);
+                                    closedir(dd);
+                                    return -1;
+                                }
                             }
-                            free(path);
                         }
+                        free(path);
                     }
                 }
-                rewinddir(dd);
             }
-
-        } else {
-            return -1;
+            rewinddir(dd);
         }
 
-        closedir(dd);
-        return 0;
+    } else {
+        return -1;
     }
+
+    closedir(dd);
+    return 0;
+}
 #endif
 
 /* Implement a generic bitset, trog@clamav.net */
