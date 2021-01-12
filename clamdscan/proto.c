@@ -429,6 +429,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)path, &real_filename)) {
             logg("*Failed to determine real filename of %s.\n", path);
+            logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             path = real_filename;
         }
@@ -613,6 +614,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
             logg("*Failed to determine real filename of %s.\n", filename);
+            logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             free(filename);
             filename = real_filename;
