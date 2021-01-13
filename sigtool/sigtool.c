@@ -843,6 +843,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 
     if (!(cdiffh = fopen(cdiff, "ab"))) {
         mprintf("!script2cdiff: Can't open %s for appending\n", cdiff);
+        free(pt);
         unlink(cdiff);
         free(cdiff);
         return -1;
