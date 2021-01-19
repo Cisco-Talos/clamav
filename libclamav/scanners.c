@@ -3117,7 +3117,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     }
 
     if ((typercg) &&
-        (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
         (type != CL_TYPE_GZ) &&        /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
         (type != CL_TYPE_GPT) &&       /* Omit GPT files because it's an image format that we can extract and scan manually. */
         (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
@@ -3479,12 +3479,18 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         }
 
         if (nret != CL_VIRUS)
+            /*
+             * Now run the other file type parsers that may rely on file type
+             * recognition to determine the actual file type.
+             */
             switch (ret) {
                 case CL_TYPE_HTML:
                     /* bb#11196 - autoit script file misclassified as HTML */
                     if (cli_get_container_intermediate(ctx, -2) == CL_TYPE_AUTOIT) {
                         ret = CL_TYPE_TEXT_ASCII;
-                    } else if (SCAN_PARSE_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
+                    } else if (SCAN_PARSE_HTML &&
+                               (type == CL_TYPE_TEXT_ASCII ||
+                                type == CL_TYPE_GIF) && /* Scan GIFs for embedded HTML/Javascript */
                                (DCONF_DOC & DOC_CONF_HTML)) {
                         *dettype = CL_TYPE_HTML;
                         nret     = cli_scanhtml(ctx);
@@ -3683,6 +3689,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         typercg = 0;
     }
 
+    /*
+     * Perform file typing from the start of the file.
+     */
     perf_start(ctx, PERFT_FT);
     if ((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
         type = cli_determine_fmap_type(*ctx->fmap, ctx->engine, type);
@@ -3698,6 +3707,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
+        /*
+         * Create JSON object to record metadata during the scan.
+         */
         if (NULL == ctx->properties) {
             ctx->properties = json_object_new_object();
             if (NULL == ctx->properties) {
@@ -3781,6 +3793,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Check if we've already scanned this file before.
+     */
     perf_start(ctx, PERFT_CACHE);
     if (!(SCAN_COLLECT_METADATA))
         res = cache_check(hash, ctx);
@@ -3862,6 +3877,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (type != CL_TYPE_IGNORED && ctx->engine->sdb) {
+        /*
+         * If self protection mechanism enabled, do the scanraw() scan first
+         * before extracting with a file type parser.
+         */
         ret = scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
         if (ret == CL_EMEM || ret == CL_VIRUS) {
             ret = cli_checkfp(ctx);
@@ -3871,6 +3890,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Run the file type parsers that we normally use before the raw scan.
+     */
     ctx->recursion++;
     perf_nested_start(ctx, PERFT_CONTAINER, PERFT_SCAN);
     /* set current level as container AFTER recursing */
@@ -4252,12 +4274,16 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     perf_nested_stop(ctx, PERFT_CONTAINER, PERFT_SCAN);
     ctx->recursion--;
 
+    /*
+     * Perform the raw scan, which may include file type recognition signatures.
+     */
     if (ret == CL_VIRUS && !SCAN_ALLMATCHES) {
         cli_bitset_free(ctx->hook_lsig_matches);
         ctx->hook_lsig_matches = old_hook_lsig_matches;
         goto done;
     }
 
+    /* Disable type recognition for the raw scan for zip files larger than maxziptypercg */
     if (type == CL_TYPE_ZIP && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
         /* CL_ENGINE_MAX_ZIPTYPERCG */
         uint64_t curr_len = (*ctx->fmap)->len;
@@ -4331,6 +4357,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Now run the rest of the file type parsers.
+     */
     ctx->recursion++;
     switch (type) {
         /* bytecode hooks triggered by a lsig must be a hook
