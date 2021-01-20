@@ -36,18 +36,22 @@ class TC(testcase.TestCase):
         TC.path_db = Path(TC.path_tmp, 'database')
         TC.freshclam_pid = Path(TC.path_tmp, 'freshclam-test.pid')
         TC.freshclam_config = Path(TC.path_tmp, 'freshclam-test.conf')
-        TC.freshclam_config.write_text(f'''
+        TC.freshclam_config.write_text('''
             DatabaseMirror 127.0.0.1
-            PidFile {TC.freshclam_pid}
+            PidFile {freshclam_pid}
             LogVerbose yes
             LogFileMaxSize 0
             LogTime yes
-            DatabaseDirectory {TC.path_db}
-            DatabaseCustomURL file://{TC.path_www / "clamav.hdb"}
+            DatabaseDirectory {path_db}
+            DatabaseCustomURL file://{file_db}
             ExcludeDatabase daily
             ExcludeDatabase main
             ExcludeDatabase bytecode
-        ''')
+        '''.format(
+            freshclam_pid=TC.freshclam_pid,
+            path_db=TC.path_db,
+            file_db=TC.path_www / "clamav.hdb",
+        ))
 
     @classmethod
     def tearDownClass(cls):
@@ -63,27 +67,31 @@ class TC(testcase.TestCase):
     def test_freshclam_00_version(self):
         self.step_name('freshclam version test')
 
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.freshclam} --config-file={TC.freshclam_config} -V'
+        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} -V'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # success
 
         expected_results = [
-            f'ClamAV {TC.version}',
+            'ClamAV {}'.format(TC.version),
         ]
         self.verify_output(output.out, expected=expected_results)
 
     def test_freshclam_01_file_copy(self):
         self.step_name('Basic freshclam test using file:// to "download" clamav.hdb')
 
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.freshclam} --config-file={TC.freshclam_config}'
+        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # success
 
         expected_results = [
-            f'Downloading clamav.hdb',
-            f'Database test passed.',
-            f'clamav.hdb updated',
+            'Downloading clamav.hdb',
+            'Database test passed.',
+            'clamav.hdb updated',
         ]
         self.verify_output(output.out, expected=expected_results)

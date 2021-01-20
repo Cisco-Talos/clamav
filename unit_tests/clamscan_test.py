@@ -72,13 +72,15 @@ class TC(testcase.TestCase):
     def test_clamscan_00_version(self):
         self.step_name('clamscan version test')
 
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -V'
+        command = '{valgrind} {valgrind_args} {clamscan} -V'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # success
 
         expected_results = [
-            f'ClamAV {TC.version}',
+            'ClamAV {}'.format(TC.version),
         ]
         self.verify_output(output.out, expected=expected_results)
 
@@ -86,28 +88,32 @@ class TC(testcase.TestCase):
         self.step_name('Test that clamscan alerts on all test files')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "clamav.hdb"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "clamav.hdb", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
 
-        expected_results = [f'{testpath.name}: ClamAV-Test-File.UNOFFICIAL FOUND' for testpath in TC.testpaths]
-        expected_results.append(f'Scanned files: {len(TC.testpaths)}')
-        expected_results.append(f'Infected files: {len(TC.testpaths)}')
+        expected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in TC.testpaths]
+        expected_results.append('Scanned files: {}'.format(len(TC.testpaths)))
+        expected_results.append('Infected files: {}'.format(len(TC.testpaths)))
         self.verify_output(output.out, expected=expected_results)
 
     def test_clamscan_02_all_testfiles_ign2(self):
         self.step_name('Test that clamscan ignores ClamAV-Test-File alerts')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "clamav.hdb"} -d {TC.path_db / "clamav.ign2"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} -d {path_ign_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "clamav.hdb", path_ign_db=TC.path_db / "clamav.ign2", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
 
-        expected_results = [f'{testpath.name}: ClamAV-Test-File.UNOFFICIAL FOUND' for testpath in TC.testpaths]
-        expected_results.append(f'Scanned files: {len(TC.testpaths)}')
-        expected_results.append(f'Infected files: {len(TC.testpaths)}')
+        expected_results = ['{}: ClamAV-Test-File.UNOFFICIAL FOUND'.format(testpath.name) for testpath in TC.testpaths]
+        expected_results.append('Scanned files: {}'.format(len(TC.testpaths)))
+        expected_results.append('Infected files: {}'.format(len(TC.testpaths)))
         self.verify_output(output.out, expected=expected_results)
 
     def test_clamscan_03_phish_test_not_enabled(self):
@@ -116,7 +122,9 @@ class TC(testcase.TestCase):
         testpaths = list(TC.path_source.glob('unit_tests/input/phish-test-*'))
 
         testfiles = ' '.join([str(testpath) for testpath in testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "phish.pdb"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "phish.pdb", path_ign_db=TC.path_db / "clamav.ign2", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # virus NOT found
@@ -133,7 +141,9 @@ class TC(testcase.TestCase):
         testpaths = list(TC.path_source.glob('unit_tests/input/phish-test-*'))
 
         testfiles = ' '.join([str(testpath) for testpath in testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "phish.pdb"} --alert-phishing-ssl --alert-phishing-cloak {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --alert-phishing-ssl --alert-phishing-cloak {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "phish.pdb", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
@@ -150,13 +160,15 @@ class TC(testcase.TestCase):
         self.step_name('Test icon (.ldb + .idb) signatures')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "icon.ldb"} -d {TC.path_db / "icon.idb"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_ldb} -d {path_idb} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_ldb=TC.path_db / "icon.ldb", path_idb=TC.path_db / "icon.idb", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
 
         # Use check_fpu_endian to determine expected results
-        command = f'{TC.check_fpu_endian}'
+        command = '{}'.format(TC.check_fpu_endian)
         fpu_endian_output = self.execute_command(command)
 
         expected_results = [
@@ -168,14 +180,16 @@ class TC(testcase.TestCase):
         else:
             expected_results.append('clam.ea06.exe: ClamAV-Test-Icon-EA0X.UNOFFICIAL FOUND')
             expected_num_infected = 4
-        expected_results.append(f'Infected files: {expected_num_infected}')
+        expected_results.append('Infected files: {}'.format(expected_num_infected))
         self.verify_output(output.out, expected=expected_results)
 
     def test_clamscan_06_LDB_VI(self):
         self.step_name('Test LDB VI feature')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "Clam-VI.ldb"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "Clam-VI.ldb", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
@@ -191,7 +205,9 @@ class TC(testcase.TestCase):
         self.step_name('Test yara signature - detect TAR file magic at an offset')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "yara-at-offset.yara"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "yara-at-offset.yara", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found
@@ -207,7 +223,9 @@ class TC(testcase.TestCase):
         self.step_name('Test yara signature - detect TAR file magic in a range')
 
         testfiles = ' '.join([str(testpath) for testpath in TC.testpaths])
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.clamscan} -d {TC.path_db / "yara-in-range.yara"} {testfiles}'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=TC.path_db / "yara-in-range.yara", testfiles=testfiles,
+        )
         output = self.execute_command(command)
 
         assert output.ec == 1  # virus found

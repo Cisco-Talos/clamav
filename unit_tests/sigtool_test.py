@@ -36,18 +36,22 @@ class TC(testcase.TestCase):
         TC.path_db = TC.path_tmp / 'database'
         TC.sigtool_pid = TC.path_tmp / 'sigtool-test.pid'
         TC.sigtool_config = TC.path_tmp / 'sigtool-test.conf'
-        TC.sigtool_config.write_text(f'''
+        TC.sigtool_config.write_text('''
             DatabaseMirror 127.0.0.1
-            PidFile {TC.sigtool_pid}
+            PidFile {sigtool_pid}
             LogVerbose yes
             LogFileMaxSize 0
             LogTime yes
-            DatabaseDirectory {TC.path_db}
-            DatabaseCustomURL file://{TC.path_www}/clamav.hdb
+            DatabaseDirectory {path_db}
+            DatabaseCustomURL file://{path_www}/clamav.hdb
             ExcludeDatabase daily
             ExcludeDatabase main
             ExcludeDatabase bytecode
-        ''')
+        '''.format(
+            sigtool_pid=TC.sigtool_pid,
+            path_db=TC.path_db,
+            path_www=TC.path_www
+        ))
 
     @classmethod
     def tearDownClass(cls):
@@ -63,14 +67,15 @@ class TC(testcase.TestCase):
     def test_sigtool_00_version(self):
         self.step_name('sigtool version test')
 
-        self.log.warning(f'VG: {os.getenv("VG")}')
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.sigtool} -V'
+        self.log.warning('VG: {}'.format(os.getenv("VG")))
+        command = '{valgrind} {valgrind_args} {sigtool} -V'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, sigtool=TC.sigtool
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # success
 
         expected_results = [
-            f'ClamAV {TC.version}',
+            'ClamAV {}'.format(TC.version),
         ]
         self.verify_output(output.out, expected=expected_results)
-

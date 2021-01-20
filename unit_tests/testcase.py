@@ -117,10 +117,10 @@ class TestCase(unittest.TestCase):
         if os.getenv('VALGRIND') != None:
             cls.log_suffix = '.valgrind.log'
             cls.valgrind = Path(os.getenv("VALGRIND"))
-            cls.valgrind_args = f'-v --trace-children=yes --track-fds=yes --leak-check=full '         \
-                                f'--suppressions={cls.path_source / "unit_tests" / "valgrind.supp"} ' \
-                                f'--log-file={cls.path_tmp / "valgrind.log"} '                        \
-                                f'--error-exitcode=123'
+            cls.valgrind_args = '-v --trace-children=yes --track-fds=yes --leak-check=full '                  + \
+                                '--suppressions={} '.format(cls.path_source / "unit_tests" / "valgrind.supp") + \
+                                '--log-file={} '.format(cls.path_tmp / "valgrind.log")                        + \
+                                '--error-exitcode=123'
 
         # cls.log.info(f"{cls.__name__} Environment:")
         # cls.log.info(f"  version:           {cls.version}")
@@ -161,7 +161,7 @@ class TestCase(unittest.TestCase):
     def setUp(self):
         print("")
 
-        log_path = Path(self.path_build / 'unit_tests' / f'{self._testMethodName}{self.log_suffix}')
+        log_path = Path(self.path_build / 'unit_tests' / '{}{}'.format(self._testMethodName, self.log_suffix))
         try:
             log_path.unlink()
         except Exception:
@@ -263,10 +263,10 @@ class TestCase(unittest.TestCase):
             log_file = self.path_tmp / 'valgrind.log'
 
         if not log_file.exists():
-            raise AssertionError(f'{log_file} not found. Valgrind failed to run?')
+            raise AssertionError('{} not found. Valgrind failed to run?'.format(log_file))
 
         errors = False
-        self.log.info(f'Verifying {log_file}...')
+        self.log.info('Verifying {}...'.format(log_file))
         try:
             self.verify_log(
                 str(log_file),
@@ -276,9 +276,9 @@ class TestCase(unittest.TestCase):
             )
         except AssertionError:
             self.log.warning("*" * 69)
-            self.log.warning(f'Valgrind test failed!'.center(69, ' '))
-            self.log.warning(f'Please submit this log to https://bugzilla.clamav.net:'.center(69, ' '))
-            self.log.warning(f'{log_file}'.center(69, ' '))
+            self.log.warning('Valgrind test failed!'.center(69, ' '))
+            self.log.warning('Please submit this log to https://bugzilla.clamav.net:'.center(69, ' '))
+            self.log.warning(str(log_file).center(69, ' '))
             self.log.warning("*" * 69)
             errors = True
         finally:
@@ -616,9 +616,9 @@ class Executor(object):
                 # We will likely need these for testing and can propagate them
                 # manually, like so:
                 if "LD_LIBRARY_PATH" in sys_env:
-                    cmd = f"export LD_LIBRARY_PATH={sys_env['LD_LIBRARY_PATH']} && {cmd}"
+                    cmd = "export LD_LIBRARY_PATH={} && {}".format(sys_env['LD_LIBRARY_PATH'], cmd)
                 if "DYLD_LIBRARY_PATH" in sys_env:
-                    cmd = f"export DYLD_LIBRARY_PATH={sys_env['DYLD_LIBRARY_PATH']} && {cmd}"
+                    cmd = "export DYLD_LIBRARY_PATH={} && {}".format(sys_env['DYLD_LIBRARY_PATH'], cmd)
 
             self._logger.debug("Run command: %s" % (cmd,))
             self._process = subprocess.Popen(
@@ -929,4 +929,3 @@ class LogChecker:
             filename,
             found_items,
         )
-

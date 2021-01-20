@@ -39,7 +39,9 @@ class TC(testcase.TestCase):
         self.step_name('libclamav unit tests')
 
         # If no valgrind, valgrind nad valgrind args are empty strings
-        command = f'{TC.valgrind} {TC.valgrind_args} {TC.check_clamav}'
+        command = '{valgrind} {valgrind_args} {check_clamav}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, check_clamav=TC.check_clamav
+        )
         output = self.execute_command(command)
 
         assert output.ec == 0  # success
