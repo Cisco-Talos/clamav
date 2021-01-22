@@ -5112,8 +5112,13 @@ cl_error_t cl_scanfile_callback(const char *filename, const char **virname, unsi
     if (!fname)
         return CL_EARG;
 
-    if ((fd = safe_open(fname, O_RDONLY | O_BINARY)) == -1)
-        return CL_EOPEN;
+    if ((fd = safe_open(fname, O_RDONLY | O_BINARY)) == -1) {
+        if (errno == EACCES) {
+            return CL_EACCES;
+        } else {
+            return CL_EOPEN;
+        }
+    }
 
     if (fname != filename)
         free((char *)fname);

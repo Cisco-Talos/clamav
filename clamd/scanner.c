@@ -144,7 +144,6 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     int type = scandata->type;
     struct cb_context context;
     char *real_filename = NULL;
-    int save_errno;
 
     if (NULL != filename) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
@@ -264,7 +263,6 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     context.virsize  = 0;
     context.scandata = scandata;
     ret              = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
-    save_errno       = errno;
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
@@ -278,7 +276,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
         ret = CL_EMEM;
     }
 
-    if ((ret == CL_EOPEN) && (save_errno == EACCES)) {
+    if (ret == CL_EACCES) {
         if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1) {
             free(filename);
             return CL_ETIMEOUT;
