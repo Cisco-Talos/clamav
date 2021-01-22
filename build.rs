@@ -15,7 +15,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 // MA 02110-1301, USA.
 
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use std::env;
 
 
@@ -40,11 +40,13 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_function("cl_load")
         .whitelist_function("cl_scanfile")
         .whitelist_function("cl_retdbdir")
+        //Whitelist wanted types
         .rustified_enum("cl_error_t")
         //Whitelist wanted constants
         .whitelist_var("CL_SCAN_.*")
         .whitelist_var("CL_INIT_DEFAULT")
         .whitelist_var("CL_DB_.*")
+
 
         .header("wrapper.h")
 
@@ -105,7 +107,7 @@ fn main() {
 #[cfg(unix)]
 fn main() {
     pkg_config::Config::new()
-        .atleast_version("0.102")
+        .atleast_version("0.103")
         .probe("libclamav")
         .unwrap();
 
