@@ -103,7 +103,7 @@ int cli_scancpio_old(cli_ctx *ctx)
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;
     int ret         = CL_CLEAN, conv;
-    off_t pos       = 0;
+    size_t pos      = 0;
     int virus_found = 0;
 
     memset(name, 0, sizeof(name));
@@ -195,7 +195,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;
     int ret         = CL_CLEAN;
-    off_t pos       = 0;
+    size_t pos      = 0;
     int virus_found = 0;
 
     while (fmap_readn(*ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
@@ -281,7 +281,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize, pad;
     int ret         = CL_CLEAN;
-    off_t pos       = 0;
+    size_t pos      = 0;
     int virus_found = 0;
 
     memset(name, 0, 513);

@@ -4583,15 +4583,15 @@ cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, uns
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
     cl_error_t ret = CL_CLEAN;
 
     cli_dbgmsg("magic_scan_nested_fmap_type: [%zu, +%zu), [" STDi64 ", +%zu)\n",
                map->nested_offset, map->len,
                (int64_t)offset, length);
-    if (offset < 0 || (size_t)offset >= map->len) {
-        cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+    if (offset >= map->len) {
+        cli_dbgmsg("Invalid offset: %zu\n", offset);
         return CL_CLEAN;
     }
 
@@ -4599,8 +4599,8 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size
         length = map->len - offset;
     if (length > map->len - offset) {
         cli_dbgmsg("Data truncated: %zu -> %zu\n",
-                   length, map->len - (size_t)offset);
-        length = map->len - (size_t)offset;
+                   length, map->len - offset);
+        length = map->len - offset;
     }
 
     if (length <= 5) {
@@ -4625,16 +4625,15 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size
 }
 
 /* For map scans that may be forced to disk */
-cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
-    off_t old_off  = map->nested_offset;
+    size_t old_off = map->nested_offset;
     size_t old_len = map->len;
     cl_error_t ret = CL_CLEAN;
 
-    cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%ld, +%lu)\n",
-               (long)offset, (unsigned long)length);
-    if (offset < 0 || (size_t)offset >= old_len) {
-        cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+    cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%zu, +%zu)\n", offset, length);
+    if (offset >= old_len) {
+        cli_dbgmsg("Invalid offset: %zu\n", offset);
         return CL_CLEAN;
     }
 
@@ -4649,8 +4648,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t 
         if (!length)
             length = old_len - offset;
         if (length > old_len - offset) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %lu -> %lu\n",
-                       (unsigned long)length, (unsigned long)(old_len - offset));
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %zu -> %zu\n", length, old_len - offset);
             length = old_len - offset;
         }
         if (length <= 5) {
@@ -4658,8 +4656,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t 
             return CL_CLEAN;
         }
         if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length)) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%ld, %zu]\n",
-                       (long)old_off, old_len);
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu]\n", old_off, old_len);
             return CL_CLEAN;
         }
 

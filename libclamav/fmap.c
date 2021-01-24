@@ -111,8 +111,7 @@ static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
 {
     STATBUF st;
-    fmap_t *m              = NULL;
-    unsigned char hash[16] = {'\0'};
+    fmap_t *m = NULL;
 
     *empty = 0;
     if (FSTAT(fd, &st)) {
@@ -133,15 +132,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     m = cl_fmap_open_handle((void *)(ssize_t)fd, offset, len, pread_cb, 1);
     if (!m)
         return NULL;
-    m->mtime        = st.st_mtime;
-    m->handle_is_fd = 1;
-
-    /* Calculate the fmap hash to be used by the FP check later */
-    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
-        funmap(m);
-        return NULL;
-    }
-    memcpy(m->maphash, hash, 16);
+    m->mtime = st.st_mtime;
 
     if (NULL != name) {
         m->name = cli_strdup(name);
@@ -180,7 +171,6 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
     const void *data;
     HANDLE fh;
     HANDLE mh;
-    unsigned char hash[16] = {'\0'};
 
     *empty = 0;
     if (FSTAT(fd, &st)) {
@@ -224,17 +214,10 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         return NULL;
     }
     m->handle       = (void *)(size_t)fd;
-    m->handle_is_fd = 1;
+    m->handle_is_fd = 1; /* This is probably(?) needed so `fmap_fd()` can return the file descriptor. */
     m->fh           = fh;
     m->mh           = mh;
     m->unmap        = unmap_win32;
-
-    /* Calculate the fmap hash to be used by the FP check later */
-    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
-        funmap(m);
-        return NULL;
-    }
-    memcpy(m->maphash, hash, 16);
 
     if (NULL != name) {
         m->name = cli_strdup(name);
@@ -250,11 +233,15 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
 
 /* vvvvv SHARED STUFF BELOW vvvvv */
 
-fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length, const char *name)
+fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char *name)
 {
     cl_error_t status        = CL_ERROR;
     cl_fmap_t *duplicate_map = NULL;
-    unsigned char hash[16]   = {'\0'};
+
+    if (NULL == map) {
+        cli_warnmsg("fmap_duplicate: map is NULL!\n");
+        goto done;
+    }
 
     duplicate_map = cli_malloc(sizeof(cl_fmap_t));
     if (!duplicate_map) {
@@ -265,31 +252,39 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length, const char *
     /* Duplicate the state of the original map */
     memcpy(duplicate_map, map, sizeof(cl_fmap_t));
 
-    /* Set the new offset and length for the new map */
-    /* can't change offset because then we'd have to discard/move cached
-     * data, instead use another offset to reuse the already cached data */
-    duplicate_map->nested_offset += offset;
-    duplicate_map->len      = length;
-    duplicate_map->real_len = duplicate_map->nested_offset + length;
-
-    if (!CLI_ISCONTAINED(map->nested_offset, map->len,
-                         duplicate_map->nested_offset, duplicate_map->len)) {
-        uint64_t len1, len2;
-        len1 = map->nested_offset + map->len;
-        len2 = duplicate_map->nested_offset + duplicate_map->len;
-        cli_warnmsg("fmap_duplicate: internal map error: %zu, " STDu64 "; %zu, " STDu64 "\n",
-                    (size_t)map->nested_offset,
-                    (uint64_t)len1,
-                    (size_t)duplicate_map->offset,
-                    (uint64_t)len2);
-    }
-
-    /* Calculate the fmap hash to be used by the FP check later */
-    if (CL_SUCCESS != fmap_get_MD5(hash, duplicate_map)) {
-        cli_warnmsg("fmap_duplicate: failed to get fmap MD5\n");
+    if (offset > map->len) {
+        /* invalid offset, exceeds length of map */
+        cli_warnmsg("fmap_duplicate: requested offset exceeds end of map\n");
         goto done;
     }
-    memcpy(duplicate_map->maphash, hash, 16);
+
+    if (offset > 0 || length < map->len) {
+        /* Caller requested a window into the current map, not the whole map */
+        unsigned char hash[16] = {'\0'};
+
+        /* Set the new nested offset and (nested) length for the new map */
+        /* can't change offset because then we'd have to discard/move cached
+         * data, instead use nested_offset to reuse the already cached data */
+        duplicate_map->nested_offset += offset;
+        duplicate_map->len = MIN(length, map->len - offset);
+
+        if (!CLI_ISCONTAINED2(map->nested_offset, map->len,
+                              duplicate_map->nested_offset, duplicate_map->len)) {
+            size_t len1, len2;
+            len1 = map->nested_offset + map->len;
+            len2 = duplicate_map->nested_offset + duplicate_map->len;
+            cli_warnmsg("fmap_duplicate: internal map error: %zu, %zu; %zu, %zu\n",
+                        map->nested_offset, len1,
+                        duplicate_map->offset, len2);
+        }
+
+        /* Calculate the fmap hash to be used by the FP check later */
+        if (CL_SUCCESS != fmap_get_MD5(hash, duplicate_map)) {
+            cli_warnmsg("fmap_duplicate: failed to get fmap MD5\n");
+            goto done;
+        }
+        memcpy(duplicate_map->maphash, hash, 16);
+    }
 
     if (NULL != name) {
         duplicate_map->name = cli_strdup(name);
@@ -355,6 +350,8 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     size_t mapsz, bitmap_size;
     cl_fmap_t *m = NULL;
     int pgsz     = cli_getpagesize();
+
+    unsigned char hash[16] = {'\0'};
 
     if ((off_t)offset < 0 || offset != fmap_align_to(offset, pgsz)) {
         cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
@@ -429,6 +426,14 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->need_offstr     = handle_need_offstr;
     m->gets            = handle_gets;
     m->unneed_off      = handle_unneed_off;
+    m->handle_is_fd    = 1;
+
+    /* Calculate the fmap hash to be used by the FP check later */
+    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
+        cli_warnmsg("fmap: failed to get MD5\n");
+        goto done;
+    }
+    memcpy(m->maphash, hash, 16);
 
     status = CL_SUCCESS;
 
@@ -828,6 +833,8 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
 fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 {
+    unsigned char hash[16] = {'\0'};
+
     int pgsz     = cli_getpagesize();
     cl_fmap_t *m = cli_calloc(1, sizeof(*m));
     if (!m) {
@@ -852,6 +859,16 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
             return NULL;
         }
     }
+
+    /* Calculate the fmap hash to be used by the FP check later */
+    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
+        if (NULL != m->name) {
+            free(m->name);
+        }
+        free(m);
+        return NULL;
+    }
+    memcpy(m->maphash, hash, 16);
 
     return m;
 }

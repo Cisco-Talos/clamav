@@ -561,6 +561,288 @@ START_TEST(test_cl_scanmap_callback_handle)
 }
 END_TEST
 
+START_TEST(test_fmap_duplicate)
+{
+    cl_fmap_t *map;
+    cl_fmap_t *dup_map     = NULL;
+    cl_fmap_t *dup_dup_map = NULL;
+    char map_data[6]       = {'a', 'b', 'c', 'd', 'e', 'f'};
+    char tmp[6];
+    size_t bread = 0;
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data));
+    ck_assert_msg(!!map, "cl_fmap_open_handle failed");
+
+    /*
+     * Test duplicate of entire map
+     */
+    cli_dbgmsg("duplicating complete map\n");
+    dup_map = fmap_duplicate(map, 0, map->len, "complete duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == map->len, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 6);
+    ck_assert(0 == memcmp(map_data, tmp, 6));
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 2
+     */
+    cli_dbgmsg("duplicating 2 bytes into map\n");
+    dup_map = fmap_duplicate(map, 2, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 2, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 4));
+
+    /*
+     * Test duplicate of duplicate map, also at offset 2 (total 4 bytes in)
+     */
+    cli_dbgmsg("duplicating 2 bytes into dup_map\n");
+    dup_dup_map = fmap_duplicate(dup_map, 2, dup_map->len, "double offset duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 4, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 4, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map omiting the last 2 bytes
+     */
+    cli_dbgmsg("duplicating map with shorter len\n");
+    dup_map = fmap_duplicate(map, 0, map->len - 2, "short duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data, tmp, 4));
+
+    /*
+     * Test duplicate of the duplicate omiting the last 2 bytes again (so just the first 2 bytes)
+     */
+    cli_dbgmsg("duplicating dup_map with shorter len\n");
+    dup_dup_map = fmap_duplicate(dup_map, 0, dup_map->len - 2, "double short duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 0, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 2
+     */
+    cli_dbgmsg("duplicating 2 bytes into map\n");
+    dup_map = fmap_duplicate(map, 2, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 2, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 4));
+
+    /*
+     * Test duplicate of the duplicate omiting the last 2 bytes again (so just the middle 2 bytes)
+     */
+    cli_dbgmsg("duplicating dup_map with shorter len\n");
+    dup_dup_map = fmap_duplicate(dup_map, 0, dup_map->len - 2, "offset short duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 2, "dup_dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    cli_dbgmsg("freeing map\n");
+    cl_fmap_close(map);
+}
+END_TEST
+
+START_TEST(test_fmap_duplicate_out_of_bounds)
+{
+    cl_fmap_t *map;
+    cl_fmap_t *dup_map     = NULL;
+    cl_fmap_t *dup_dup_map = NULL;
+    char map_data[6]       = {'a', 'b', 'c', 'd', 'e', 'f'};
+    char tmp[6];
+    size_t bread = 0;
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data));
+    ck_assert_msg(!!map, "cl_fmap_open_handle failed");
+
+    /*
+     * Test 0-byte duplicate
+     */
+    cli_dbgmsg("duplicating 0 bytes of map\n");
+    dup_map = fmap_duplicate(map, 0, 0, "zero-byte dup");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 0, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 0);
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of entire map + 1
+     */
+    cli_dbgmsg("duplicating complete map + 1 byte\n");
+    dup_map = fmap_duplicate(map, 0, map->len + 1, "duplicate + 1");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == map->len, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 6);
+    ck_assert(0 == memcmp(map_data, tmp, 6));
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 4
+     */
+    cli_dbgmsg("duplicating 4 bytes into map\n");
+    dup_map = fmap_duplicate(map, 4, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 4, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 2, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 4, tmp, 2));
+
+    /*
+     * Test duplicate of duplicate map, also at offset 4 (total 8 bytes in, which is 2 bytes too far)
+     */
+    cli_dbgmsg("duplicating 4 bytes into dup_map\n");
+    dup_dup_map = fmap_duplicate(dup_map, 4, dup_map->len, "out of bounds offset duplicate");
+    ck_assert_msg(NULL == dup_dup_map, "fmap_duplicate should have failed!");
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate just 2 bytes of the original
+     */
+    cli_dbgmsg("duplicating map with shorter len\n");
+    dup_map = fmap_duplicate(map, 0, 2, "short duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 2, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data, tmp, 2));
+
+    /* Note: Keeping the previous dup_map around for a sequence of double-dup tests. */
+
+    /*
+     * Test duplicate 1 bytes into the 2-byte duplicate, requesting 2 bytes
+     * This should result in a 1-byte double-dup
+     */
+    cli_dbgmsg("duplicating 1 byte in, 1 too many\n");
+    dup_dup_map = fmap_duplicate(dup_map, 1, 2, "1 byte in, 1 too many");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 1, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 1, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 1);
+    ck_assert(0 == memcmp(map_data + 1, tmp, 1));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+
+    /*
+     * Test duplicate 2 bytes into the 2-byte duplicate, requesting 2 bytes
+     * This should result in a 0-byte double-dup
+     */
+    cli_dbgmsg("duplicating 2 bytes in, 2 bytes too many\n");
+    dup_dup_map = fmap_duplicate(dup_map, 2, 2, "2 bytes in, 2 bytes too many");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 2, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 0, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 0);
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+
+    /*
+     * Test duplicate 3 bytes into the 2-byte duplicate, requesting 2 bytes
+     */
+    cli_dbgmsg("duplicating 0-byte of duplicate\n");
+    dup_dup_map = fmap_duplicate(dup_map, 3, 2, "2 bytes in, 3 bytes too many");
+    ck_assert_msg(NULL == dup_dup_map, "fmap_duplicate should have failed!");
+
+    /* Ok, we're done with this dup_map */
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    cli_dbgmsg("freeing map\n");
+    cl_fmap_close(map);
+}
+END_TEST
+
 START_TEST(test_cl_scanmap_callback_handle_allscan)
 {
     const char *virname       = NULL;
@@ -710,6 +992,8 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate_out_of_bounds, 0, expect);
 
     user_timeout = getenv("T");
     if (user_timeout) {
