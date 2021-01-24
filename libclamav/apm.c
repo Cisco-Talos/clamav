@@ -53,7 +53,7 @@ int cli_scanapm(cli_ctx *ctx)
     struct apm_partition_info aptable, apentry;
     int ret = CL_CLEAN, detection = CL_CLEAN, old_school = 0;
     size_t sectorsize, maplen, partsize;
-    off_t pos = 0, partoff = 0;
+    size_t pos = 0, partoff = 0;
     unsigned i;
     uint32_t max_prtns = 0;
 
@@ -219,8 +219,8 @@ int cli_scanapm(cli_ctx *ctx)
         cli_dbgmsg("Type: %s\n", (char *)apentry.type);
         cli_dbgmsg("Signature: %x\n", apentry.signature);
         cli_dbgmsg("Partition Count: %u\n", apentry.numPartitions);
-        cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
-                   apentry.pBlockStart, apentry.pBlockCount, (long unsigned)partoff, (long unsigned)partsize);
+        cli_dbgmsg("Blocks: [%u, +%u), ([%zu, +%zu))\n",
+                   apentry.pBlockStart, apentry.pBlockCount, partoff, partsize);
 
         /* send the partition to cli_magic_scan_nested_fmap_type */
         ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
@@ -245,7 +245,7 @@ static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *a
     struct apm_partition_info apentry;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN;
-    off_t pos;
+    size_t pos;
     uint32_t max_prtns = 0;
     int virus_found    = 0;
 

@@ -222,7 +222,7 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
     if (screen_desc.flags & GIF_SCREEN_DESC_FLAGS_MASK_HAVE_GLOBAL_COLOR_TABLE) {
         global_color_table_size = 3 * (1 << ((screen_desc.flags & GIF_SCREEN_DESC_FLAGS_MASK_SIZE_OF_GLOBAL_COLOR_TABLE) + 1));
-        cli_dbgmsg("GIF: Global Color Table size: %u\n", global_color_table_size);
+        cli_dbgmsg("GIF: Global Color Table size: %zu\n", global_color_table_size);
 
         if (offset + (size_t)global_color_table_size > map->len) {
             cli_errmsg("GIF: EOF in the middle of the global color table, file truncated?\n");
@@ -349,7 +349,7 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
                 if (image_desc.flags & GIF_IMAGE_DESC_FLAGS_MASK_HAVE_LOCAL_COLOR_TABLE) {
                     local_color_table_size = 3 * (1 << ((image_desc.flags & GIF_IMAGE_DESC_FLAGS_MASK_SIZE_OF_LOCAL_COLOR_TABLE) + 1));
-                    cli_dbgmsg("GIF:     Found a Local Color Table (size: %u)\n", local_color_table_size);
+                    cli_dbgmsg("GIF:     Found a Local Color Table (size: %zu)\n", local_color_table_size);
                     offset += local_color_table_size;
                 } else {
                     cli_dbgmsg("GIF:     No Local Color Table.\n");

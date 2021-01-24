@@ -262,7 +262,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     struct gpt_partition_entry gpe;
     int ret = CL_CLEAN, detection = CL_CLEAN;
     size_t maplen, part_size      = 0;
-    off_t pos = 0, part_off = 0;
+    size_t pos = 0, part_off = 0;
     unsigned i = 0, j = 0;
     uint32_t max_prtns = 0;
 
@@ -482,7 +482,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record pmbr;
-    off_t pos = 0, mbr_base = 0;
+    size_t pos = 0, mbr_base = 0;
     int ret    = CL_CLEAN;
     unsigned i = 0;
 
@@ -533,7 +533,7 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
 {
 #ifdef DEBUG_GPT_PARSE
     struct gpt_header phdr, shdr;
-    off_t ppos = 0, spos = 0;
+    size_t ppos = 0, spos = 0;
     size_t pptable_len, sptable_len, maplen;
     uint64_t ptableLastLBA, stableLastLBA;
 
@@ -586,7 +586,7 @@ static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_
     struct gpt_partition_entry gpe;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN;
-    off_t pos;
+    size_t pos;
     size_t maplen;
     uint32_t max_prtns = 0;
     int virus_found    = 0;

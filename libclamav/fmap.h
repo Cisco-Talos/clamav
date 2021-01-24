@@ -130,7 +130,7 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name);
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return fmap_t*  NULL if failure or a special fmap that the caller must free with free_duplicate_fmap()
  */
-fmap_t *fmap_duplicate(cl_fmap_t *map, off_t offset, size_t length, const char *name);
+fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char *name);
 
 /**
  * @brief Deallocate a _duplicated_ fmap.  Does not unmap the mapped region.

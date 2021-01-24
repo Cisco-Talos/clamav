@@ -252,15 +252,15 @@ typedef enum {
 
 // clang-format on
 
-static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, off_t *off)
+static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, size_t *off)
 {
     cl_error_t retval;
     const unsigned char *buf;
     uint16_t ntmp;
     uint8_t nlength, id[2];
     uint32_t size;
-    off_t offset = *off;
-    fmap_t *map  = *ctx->fmap;
+    size_t offset = *off;
+    fmap_t *map   = *ctx->fmap;
 
     if (!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
         cli_dbgmsg("read bim failed\n");
@@ -577,8 +577,8 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                 if ((fmap_readn(map, buff, offset - len + sizeof(len_u16), strlen("Photoshop 3.0") + 1) == strlen("Photoshop 3.0") + 1) &&
                     (0 == memcmp(buff, "Photoshop 3.0\0", strlen("Photoshop 3.0") + 1))) {
                     /* Found a Photoshop file */
-                    off_t photoshop_data_offset = offset - len + sizeof(len_u16) + strlen("Photoshop 3.0") + 1;
-                    off_t old_offset;
+                    size_t photoshop_data_offset = offset - len + sizeof(len_u16) + strlen("Photoshop 3.0") + 1;
+                    size_t old_offset;
 
                     cli_dbgmsg("Found Photoshop segment\n");
                     do {

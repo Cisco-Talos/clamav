@@ -97,7 +97,7 @@ int cli_scandmg(cli_ctx *ctx)
     struct dmg_koly_block hdr;
     int ret;
     size_t maplen, nread;
-    off_t pos = 0;
+    size_t pos = 0;
     char *dirname;
     const char *outdata;
     unsigned int file                       = 0;
@@ -114,11 +114,11 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     maplen = (*ctx->fmap)->real_len;
-    pos    = maplen - 512;
-    if (pos <= 0) {
-        cli_dbgmsg("cli_scandmg: Sizing problem for DMG archive.\n");
+    if (maplen <= 512) {
+        cli_dbgmsg("cli_scandmg: DMG smaller than DMG koly block!\n");
         return CL_CLEAN;
     }
+    pos = maplen - 512;
 
     /* Grab koly block */
     if (fmap_readn(*ctx->fmap, &hdr, pos, sizeof(hdr)) != sizeof(hdr)) {
@@ -129,7 +129,7 @@ int cli_scandmg(cli_ctx *ctx)
     /* Check magic */
     hdr.magic = be32_to_host(hdr.magic);
     if (hdr.magic == 0x6b6f6c79) {
-        cli_dbgmsg("cli_scandmg: Found koly block @ %ld\n", (long)pos);
+        cli_dbgmsg("cli_scandmg: Found koly block @ %zu\n", pos);
     } else {
         cli_dbgmsg("cli_scandmg: No koly magic, %8x\n", hdr.magic);
         return CL_EFORMAT;
@@ -179,7 +179,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* scan XML with cli_magic_scan_nested_fmap_type */
-    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, (off_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
+    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, (size_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -844,7 +844,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
     }
 
     if (strm.avail_out != sizeof(obuf)) {
-        if (cli_writen(fd, obuf, sizeof(obuf) - strm.avail_out) < 0) {
+        if (cli_writen(fd, obuf, sizeof(obuf) - strm.avail_out) == (size_t)-1) {
             cli_errmsg("dmg_stripe_inflate: failed write to output file\n");
             inflateEnd(&strm);
             return CL_EWRITE;
