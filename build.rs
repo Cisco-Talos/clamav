@@ -89,8 +89,8 @@ fn main() {
             let profile = env::var("PROFILE").unwrap();
 
             let library_path = match profile.as_str() {
-                "debug" => Path::new(&clamav_build).join("libclamav/Debug"),
-                "release" => Path::new(&clamav_build).join("libclamav/Release"),
+                "debug" => std::path::Path::new(&clamav_build).join("libclamav/Debug"),
+                "release" => std::path::Path::new(&clamav_build).join("libclamav/Release"),
                 _ => panic!("Unexpected build profile"),
             };
 
