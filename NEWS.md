@@ -23,6 +23,13 @@ ClamAV 0.103.1 is a bug patch release to address the following issues.
 
 - Fixed freshclam --on-update-execute=EXIT_1 temporary directory cleanup issue.
 
+- `clamd`'s log output and VirusEvent now provide the scan target's file path
+  instead of a file descriptor. The clamd socket API for submitting a scan by
+  FD-passing doesn't include a file path, this feature works by looking up the
+  file path by file descriptor. This feature works on Mac and Linux but is not
+  yet implemented for other UNIX operating systems.
+  FD-passing is not available for Windows.
+
 ### Acknowledgements
 
 The ClamAV team thanks the following individuals for their code submissions:
