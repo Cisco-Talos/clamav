@@ -273,15 +273,11 @@ AC_ARG_ENABLE([simd],
 if test "$build_linux" = "yes"  
 then
    AX_EXT
-   echo "SIMD before: $SIMD_FLAGS"
-   echo "SIMD set: $enable_simd"
-   echo "SIMD SSE4.2: $ax_cv_have_sse42_ext"
 #      if test "$HAVE_SSE4_2" = "1" && test "$enable_simd" = "yes"
       if test "$enable_simd" = "yes" && test "$ax_cv_have_sse42_ext" = "yes"    
       then
          # Add other simd flags here:
-	 CFLAGS+=" -msse4.2 "
-	 echo "SIMD set: $enable_simd"
+	 CFLAGS+=" $SIMD_FLAGS "
          AH_TEMPLATE([ENABLE_SIMD],
 	    [Define to 1 to enable custom simd.])
 	 AC_DEFINE(ENABLE_SIMD)

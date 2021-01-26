@@ -454,7 +454,6 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
 
 void optimize_scanbuf_init()
 {
-	;
 	// set jmp table index:
 	if (__builtin_cpu_supports("sse4.2"))
 		runtime_detection = OPTIMIZE_HAS_SSE4_2;
