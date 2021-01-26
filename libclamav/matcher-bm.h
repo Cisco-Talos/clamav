@@ -53,9 +53,14 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
 void cli_bm_free(struct cli_matcher *root);
 
 // optimization options:
+#ifdef ENABLE_SIMD 
+void optimize_scanbuf_init(void);
+
 void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
 			uint8_t *found, const unsigned char *bp, const unsigned char *pt);
 void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
 			uint8_t *found, const unsigned char *bp, const unsigned char *pt);
+#endif
+
 
 #endif

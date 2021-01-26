@@ -45,6 +45,7 @@ AM_SILENT_RULES([yes])
 AC_USE_SYSTEM_EXTENSIONS
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
+
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
@@ -261,6 +262,36 @@ AM_CONDITIONAL([ENABLE_CLAMSUBMIT],
 	       [test "X$have_curl" = "Xyes" && test "X$have_json" = "Xyes"])
 no_recursion="yes";
 
+# Check for SIMD
+m4_include([m4/ax_ext.m4])
+
+AC_ARG_ENABLE([simd],
+[AS_HELP_STRING([--enable-simd],
+		[enable compile with simd optimizations])],
+[enable_simd="yes"], enable_simd="no")
+
+if test "$build_linux" = "yes"  
+then
+   AX_EXT
+   echo "SIMD before: $SIMD_FLAGS"
+   echo "SIMD set: $enable_simd"
+   echo "SIMD SSE4.2: $ax_cv_have_sse42_ext"
+#      if test "$HAVE_SSE4_2" = "1" && test "$enable_simd" = "yes"
+      if test "$enable_simd" = "yes" && test "$ax_cv_have_sse42_ext" = "yes"    
+      then
+         # Add other simd flags here:
+	 CFLAGS+=" -msse4.2 "
+	 echo "SIMD set: $enable_simd"
+         AH_TEMPLATE([ENABLE_SIMD],
+	    [Define to 1 to enable custom simd.])
+	 AC_DEFINE(ENABLE_SIMD)
+      else
+         AH_TEMPLATE([DISABLE_SIMD],
+	    [Define to 1 to disable custom simd.])
+	 AC_DEFINE(DISABLE_SIMD)
+      fi
+fi
+
 AC_OUTPUT([libclamav/Makefile])
 
 # Print a summary of what features we enabled
@@ -388,7 +419,7 @@ fi
 if test "X$have_json" = "Xyes" && test "x$json_linking" = "xdynamic"; then
     AC_MSG_WARN([
 ****** libjson-c is known to share symbol names with other JSON libraries
-****** which may result in crashes for applications that use libclamav.
+****** which may result in crashes for applications that use libclamav. 
 ****** Consider using --with-libjson-static=[path/to/libjson-c.a],
 ****** providing a json-c library that was compiled with CFLAGS="-fPIC".
     ])

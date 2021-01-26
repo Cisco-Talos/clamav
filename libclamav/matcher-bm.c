@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <assert.h>
 
+#ifdef ENABLE_SIMD
 #include <immintrin.h>
+#endif
 
 #include "clamav.h"
 #include "memory.h"
@@ -44,9 +46,11 @@
 
 #define OPTIMIZE_MAX_OPTIONS 2
 #define OPTIMIZE_USE_DEFAULT 0
+#ifdef ENABLE_SIMD 
 #define OPTIMIZE_HAS_SSE4_2 1
 // AVX is not implemented yet, example only.
 #define OPTIMIZE_HAS_AVX 2 
+
 
 // Set to default:
 uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT;
@@ -55,6 +59,7 @@ uint8_t runtime_detection = OPTIMIZE_USE_DEFAULT;
 void (* const stringSearch[]) (const uint32_t, const uint32_t, uint32_t *,
       uint32_t *, uint8_t *, const unsigned char *, const unsigned char *)
       = {charSearch_C, charSearch_sse4_2};
+#endif
 
 cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset)
 {
@@ -359,11 +364,21 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
                 }
 
 
+#ifdef ENABLE_SIMD 
 //		UNCOMMENT "if" for to check within range: 
 //		if (runtime_detection < OPTIMIZE_MAX_OPTIONS)
 		   if (off < length)
 		   stringSearch[runtime_detection] ( length, p->length + p->prefix_length, 
 			 &j, &off, &found, bp, pt);
+#else
+         found = 1;
+         for (j = 0; j < p->length + p->prefix_length && off < length; j++, off++) {
+            if (bp[j] != pt[j]) {
+            found = 0;
+            break;
+            }
+         }
+#endif
 
                 if (found && (p->boundary & BM_BOUNDARY_EOL)) {
                     if (off != length) {
@@ -435,16 +450,17 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
 }
 
 // Functions for hardware specific optimizations:
+#ifdef ENABLE_SIMD 
 
 void optimize_scanbuf_init()
 {
+	;
 	// set jmp table index:
 	if (__builtin_cpu_supports("sse4.2"))
 		runtime_detection = OPTIMIZE_HAS_SSE4_2;
 }
 
-void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
-			uint8_t *found, const unsigned char *bp, const unsigned char *pt)
+void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off, uint8_t *found, const unsigned char *bp, const unsigned char *pt)
 {
 	// Original program code, just moved here.
 	*found = 1;
@@ -456,8 +472,7 @@ void charSearch_C(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t
 	}
 }
 
-void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off,
-			uint8_t *found, const unsigned char *bp, const unsigned char *pt)
+void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uint32_t *off, uint8_t *found, const unsigned char *bp, const unsigned char *pt)
 {
     *found = 0;
     for (*j = 0; *j < length && *j < l ;)
@@ -490,3 +505,4 @@ void charSearch_sse4_2(const uint32_t length, const uint32_t l, uint32_t *j, uin
        *found = ( length == l && *j == length ) ? 1 : 0;
        *off += *j;
 }
+#endif

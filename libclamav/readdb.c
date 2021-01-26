@@ -4529,7 +4529,9 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
     struct db_ll_entry *next;
 
     // call hw detection for cli_bm_scanbuff optimization:
+#ifdef ENABLE_SIMD 
     optimize_scanbuf_init();
+#endif
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
 
@@ -4718,7 +4720,9 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
     int ret;
 
     // call hw detection for cli_bm_scanbuff:
+#ifdef ENABLE_SIMD 
     optimize_scanbuf_init();
+#endif
 
     if (!engine) {
         cli_errmsg("cl_load: engine == NULL\n");
