@@ -262,6 +262,7 @@ CLAMAV_PRIVATE {
     cli_basename;
     cli_realpath;
     cli_codepage_to_utf8;
+    cli_get_filepath_from_filedesc;
 
     __cli_strcasestr;
     __cli_strndup;
