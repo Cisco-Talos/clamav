@@ -1,7 +1,7 @@
 /*
  * YARA rule parser for ClamAV
  *
- * Copyright (C) 2014-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2014-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  * Authors: Steven Morgan
  *

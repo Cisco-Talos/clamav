@@ -1,7 +1,7 @@
 /*
  *  Extract XLM (Excel 4.0) macro source code for component MS Office Documents
  *
- *  Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2020-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Jonas Zaddach
  *
@@ -21,7 +21,7 @@
  */
 
 /**
- * Throughout this file, I refer to the Microsoft Office Excel 97 - 2007 Binary File Format (.xls) Specification, which can be found 
+ * Throughout this file, I refer to the Microsoft Office Excel 97 - 2007 Binary File Format (.xls) Specification, which can be found
  * here: http://download.microsoft.com/download/5/0/1/501ED102-E53F-4CE0-AA6B-B0F93629DDC6/Office/Excel97-2007BinaryFileFormat(xls)Specification.pdf
  */
 

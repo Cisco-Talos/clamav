@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -410,7 +410,7 @@ int drop_privileges( const char * const user_name, const char * const log_file) 
                 fprintf(stderr, "ERROR: lchown to user '%s' failed on\n", user->pw_name);
                 fprintf(stderr, "log file '%s'.\n", log_file);
                 fprintf(stderr, "Error was '%s'\n", strerror(errno));
-                logg("^lchown to user '%s' failed on log file '%s'.  Error was '%s'\n", 
+                logg("^lchown to user '%s' failed on log file '%s'.  Error was '%s'\n",
                         user->pw_name, log_file, strerror(errno));
                 goto done;
             }

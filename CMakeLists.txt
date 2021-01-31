@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 cmake_minimum_required( VERSION 3.12...3.13 )
 set(CMAKE_C_STANDARD 90)

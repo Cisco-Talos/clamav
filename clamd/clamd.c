@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -89,7 +89,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Daemon %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2020 Cisco Systems, Inc.\n");
+    printf("           (C) 2021 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamd [options]\n");
     printf("\n");
@@ -778,7 +778,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
 
             /*Since some of the logging is written to stderr, and some of it
-             * is written to a log file, close stdin, stderr, and stdout 
+             * is written to a log file, close stdin, stderr, and stdout
              * now, since everything is initialized.*/
 
             /*signal the parent process.*/

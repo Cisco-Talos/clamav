@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         printf("\n");
         printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
         printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-        printf("           (C) 2020 Cisco Systems, Inc.\n");
+        printf("           (C) 2021 Cisco Systems, Inc.\n");
         printf("\n");
         printf("    %s [-c <config-file>]\n\n", argv[0]);
         printf("\n");
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
      */
     if (parentPid != getpid()){ //we have been daemonized
         daemonize_signal_parent(parentPid);
-    }   
+    }
 #endif
 
     return smfi_main();
