@@ -687,17 +687,8 @@ START_TEST(test_connections)
     int num_fds, maxfd = 0;
     ck_assert_msg(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
                   "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
-    num_fds = rlim.rlim_cur - 5;
-#ifdef C_DARWIN
-    /* While the limit when testing on macOS appears to be aroudn 1024, though
-       in testing on github actions macos-latest, get "connection refused"
-       after ~925 give or take.
-       It's possible the getrlimit API is incorrect post macOS Sierra, which
-       may explain the issue. In any case, limiting to 850 should be safe.
-       It's possible there' ssome other limitation at play on the GitHUb's
-       macos-latest shared environment. */
-    num_fds = MIN(num_fds, 850);
-#endif
+
+    num_fds = MIN(rlim.rlim_cur - 5, 250);
 
     sock = malloc(sizeof(int) * num_fds);
 
