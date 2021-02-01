@@ -89,7 +89,7 @@ static void conn_setup_mayfail(int may)
     struct sockaddr_un nixsock;
     memset((void *)&nixsock, 0, sizeof(nixsock));
     nixsock.sun_family = AF_UNIX;
-    strncpy(nixsock.sun_path, BUILDDIR PATHSEP SOCKET, sizeof(nixsock.sun_path));
+    strncpy(nixsock.sun_path, SOCKET, sizeof(nixsock.sun_path));
 
     sockd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockd == -1 && (may && (errno == EMFILE || errno == ENFILE)))
@@ -102,7 +102,7 @@ static void conn_setup_mayfail(int may)
         sockd = -1;
         return;
     }
-    ck_assert_msg(rc != -1, "Unable to connect(): %s\n", strerror(errno));
+    ck_assert_msg(rc != -1, "Unable to connect(): %s: %s\n", strerror(errno), SOCKET);
 
     signal(SIGPIPE, SIG_IGN);
 }
@@ -136,7 +136,7 @@ static void conn_teardown(void)
 #define REPO_VERSION VERSION
 #endif
 
-#define SCANFILE BUILDDIR PATHSEP ".." PATHSEP "test" PATHSEP "clam.exe"
+#define SCANFILE OBJDIR PATHSEP ".." PATHSEP "test" PATHSEP "clam.exe"
 #define FOUNDREPLY "clam.exe: ClamAV-Test-File.UNOFFICIAL FOUND"
 
 /* some clean file */
@@ -149,7 +149,7 @@ static void conn_teardown(void)
 #define NONEXISTENT_REPLY NONEXISTENT ": lstat() failed: No such file or directory. ERROR"
 
 #ifndef _WIN32
-#define ACCDENIED BUILDDIR PATHSEP "accdenied"
+#define ACCDENIED OBJDIR PATHSEP "accdenied"
 #define ACCDENIED_REPLY ACCDENIED ": Access denied. ERROR"
 #endif
 
@@ -913,7 +913,7 @@ int main(void)
 
     Suite *s    = test_clamd_suite();
     SRunner *sr = srunner_create(s);
-    srunner_set_log(sr, BUILDDIR PATHSEP "test-clamd.log");
+    srunner_set_log(sr, OBJDIR PATHSEP "test-clamd.log");
     srunner_run_all(sr, CK_NORMAL);
     num_fds = srunner_ntests_failed(sr);
     srunner_free(sr);

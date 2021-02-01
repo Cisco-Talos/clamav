@@ -44,8 +44,10 @@ class TC(testcase.TestCase):
         TC.testpaths = list(TC.path_build.glob('test/clam*')) # A list of Path()'s of each of our generated test files
 
         TC.clamd_pid = TC.path_tmp / 'clamd-test.pid'
-        TC.clamd_socket =   TC.path_build / 'unit_tests' / 'clamd-test.socket' # <-- this is hard-coded into the `check_clamd` program
-        TC.clamd_port_num = 3319                                               # <-- this is hard-coded into the `check_clamd` program
+        TC.clamd_socket =   'clamd-test.socket'             # <-- A relative path here and in check_clamd to avoid-
+                                                            # test failures caused by (invalid) long socket filepaths.
+                                                            # The max length for a socket file path is _really_ short.
+        TC.clamd_port_num = 3319                            # <-- This is hard-coded into the `check_clamd` program
         TC.path_db = TC.path_tmp / 'database'
         TC.path_db.mkdir(parents=True)
         shutil.copy(

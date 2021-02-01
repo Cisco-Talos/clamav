@@ -742,7 +742,7 @@ int main(int argc, char **argv)
             }
 
             if (chmod(optget(opts, "LocalSocket")->strarg, sock_mode & 0666)) {
-                logg("!Cannot set socket permission to %s\n", optget(opts, "LocalSocketMode")->strarg);
+                logg("!Cannot set socket permission for %s to %3o\n", optget(opts, "LocalSocket")->strarg, sock_mode & 0666);
                 ret = 1;
                 break;
             }

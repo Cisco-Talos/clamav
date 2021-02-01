@@ -63,6 +63,8 @@ class TestCase(unittest.TestCase):
     valgrind_args = ""
     log_suffix = '.log'
 
+    original_working_directory = ""
+
     @classmethod
     def setUpClass(cls):
         """
@@ -143,6 +145,10 @@ class TestCase(unittest.TestCase):
         # cls.log.info(f"  sigtool:           {cls.sigtool}")
         # cls.log.info(f"  valgrind:          {cls.valgrind}")
 
+        # Perform all tests with cwd set to the cls.path_tmp, created above.
+        cls.original_working_directory = os.getcwd()
+        os.chdir(str(cls.path_tmp))
+
     @classmethod
     def tearDownClass(cls):
         """
@@ -150,6 +156,9 @@ class TestCase(unittest.TestCase):
         Delete the generated tmp directory.
         """
         print("")
+
+        # Restore current working directory before deleting cls.path_tmp.
+        os.chdir(cls.original_working_directory)
 
         if None == os.getenv("KEEPTEMP"):
             try:
