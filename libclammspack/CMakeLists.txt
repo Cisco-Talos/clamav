@@ -1,10 +1,6 @@
 
 cmake_minimum_required( VERSION 3.13 )
 
-add_compile_definitions(_LARGEFILE_SOURCE)
-add_compile_definitions(_LARGEFILE64_SOURCE)
-add_compile_definitions(_FILE_OFFSET_BITS=64)
-
 if(WIN32)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
