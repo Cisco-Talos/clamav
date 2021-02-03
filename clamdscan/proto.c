@@ -151,11 +151,13 @@ static int send_stream(int sockd, const char *filename)
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
-            logg("~%s: Access denied. ERROR\n", filename);
+            logg("~%s: Failed to open file. ERROR\n", filename);
             return 0;
         }
-    } else
+    } else {
+        /* Read stream from STDIN */
         fd = 0;
+    }
 
     if (sendln(sockd, "zINSTREAM", 10)) {
         close(fd);
@@ -199,7 +201,7 @@ static int send_fdpass(int sockd, const char *filename)
 
     if (filename) {
         if ((fd = open(filename, O_RDONLY)) < 0) {
-            logg("~%s: Access denied. ERROR\n", filename);
+            logg("~%s: Failed to open file\n", filename);
             return 0;
         }
     } else
@@ -429,6 +431,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)path, &real_filename)) {
             logg("*Failed to determine real filename of %s.\n", path);
+            logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             path = real_filename;
         }
@@ -613,6 +616,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
             logg("*Failed to determine real filename of %s.\n", filename);
+            logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             free(filename);
             filename = real_filename;

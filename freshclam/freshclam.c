@@ -126,7 +126,7 @@ static int writepid(const char *pidfile)
 {
     FILE *fd;
     int old_umask;
-    old_umask = umask(0002);
+    old_umask = umask(0022);
     if ((fd = fopen(pidfile, "w")) == NULL) {
         logg("!Can't save PID to file %s: %s\n", pidfile, strerror(errno));
         return 1;
@@ -184,7 +184,8 @@ static void help(void)
     printf("    --datadir=DIRECTORY                  Download new databases into DIRECTORY\n");
     printf("    --daemon-notify[=/path/clamd.conf]   Send RELOAD command to clamd\n");
     printf("    --local-address=IP   -a IP           Bind to IP for HTTP downloads\n");
-    printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update\n");
+    printf("    --on-update-execute=COMMAND          Execute COMMAND after successful update.\n");
+    printf("                                         Use EXIT_1 to return 1 after successful database update.\n");
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
@@ -280,6 +281,14 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                 goto done;
             }
         } else {
+            /*
+             * Attempt to test database in a child process.
+             */
+
+            /* We need to be able to wait for the child process ourselves.
+             * We'll re-enable wait in the global handler when we're done. */
+            g_sigchildWait = 0;
+
             switch (pid = fork()) {
                 case -1: {
                     /*
@@ -391,6 +400,7 @@ done:
         logg("!Database test FAILED.\n");
     }
 
+    /* Re-enable the global handler's child process wait */
     g_sigchildWait = 1;
 
     return status;
@@ -1430,7 +1440,7 @@ fc_error_t perform_database_update(
      * Create a temp directory to use for the update process.
      */
     if (LSTAT(g_freshclamTempDirectory, &statbuf) == -1) {
-        if (0 != mkdir(g_freshclamTempDirectory, 0755)) {
+        if (0 != mkdir(g_freshclamTempDirectory, 0700)) {
             logg("!Can't create temporary directory %s\n", g_freshclamTempDirectory);
             logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
             status = FC_EDBDIRACCESS;
@@ -1480,16 +1490,9 @@ fc_error_t perform_database_update(
     }
 
     if (0 < nTotalUpdated) {
-        if (NULL != notifyClamd)
+        if (NULL != notifyClamd) {
             notify(notifyClamd);
-
-        if (NULL != onUpdateExecute) {
-            execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
         }
-    }
-
-    if ((NULL != newVersion) && (NULL != onOutdatedExecute)) {
-        executeIfNewVersion(onOutdatedExecute, newVersion, bDaemonized);
     }
 
     status = FC_SUCCESS;
@@ -1502,6 +1505,20 @@ done:
             cli_rmdirs(g_freshclamTempDirectory);
         }
     }
+
+    if (FC_SUCCESS == status) {
+        /* Run Execute commands after we clean up the temp directory,
+         * in case they want us to EXIT */
+        if (0 < nTotalUpdated) {
+            if (NULL != onUpdateExecute) {
+                execute("OnUpdateExecute", onUpdateExecute, bDaemonized);
+            }
+        }
+        if ((NULL != newVersion) && (NULL != onOutdatedExecute)) {
+            executeIfNewVersion(onOutdatedExecute, newVersion, bDaemonized);
+        }
+    }
+
     if (NULL != dnsUpdateInfo) {
         free(dnsUpdateInfo);
     }

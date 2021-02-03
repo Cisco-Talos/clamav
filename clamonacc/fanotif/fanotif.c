@@ -69,6 +69,9 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     const struct optstruct *pt;
     uint64_t fan_mask = FAN_EVENT_ON_CHILD;
 
+    const struct optstruct *pt_tmpdir;
+    const char *clamd_tmpdir;
+
     ddd_pid = 0;
 
     if (!ctx || !*ctx) {
@@ -90,6 +93,13 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         (*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
 
+    pt_tmpdir = optget((*ctx)->clamdopts, "TemporaryDirectory");
+    if (pt_tmpdir->enabled) {
+        clamd_tmpdir = pt_tmpdir->strarg;
+    } else {
+        clamd_tmpdir = cli_gettmpdir();
+    }
+
     if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
             if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
@@ -106,6 +116,14 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     } else {
         if ((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
             while (pt) {
+                if (0 == strcmp(clamd_tmpdir, pt->strarg)) {
+                    logg("!ClamFanotif: Not watching path '%s'\n", pt->strarg);
+                    logg("!ClamFanotif: ClamOnAcc should not watch the directory clamd is using for temp files\n");
+                    logg("!ClamFanotif: Consider setting TemporaryDirectory in clamd.conf to a different directory.\n");
+                    pt = (struct optstruct *)pt->nextarg;
+                    continue;
+                }
+
                 if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
                     logg("!ClamFanotif: can't include path '%s'\n", pt->strarg);
                     return CL_EARG;

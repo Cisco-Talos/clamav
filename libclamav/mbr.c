@@ -64,17 +64,17 @@ enum MBR_STATE {
     SEEN_EMPTY
 };
 
-static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba,
+static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba,
                            size_t extlbasize, size_t sectorsize);
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
 static int mbr_check_ebr(struct mbr_boot_record *record);
 static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
-static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize);
+static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize);
 
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
 {
     struct mbr_boot_record mbr;
-    off_t mbr_base    = 0;
+    size_t mbr_base   = 0;
     size_t sectorsize = 512;
 
     if (len < sectorsize) {
@@ -94,7 +94,7 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
 int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record mbr;
-    off_t pos = 0, mbr_base = 0;
+    size_t pos = 0, mbr_base = 0;
     size_t maplen;
 
     if (!ctx || !ctx->fmap) {
@@ -140,7 +140,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     struct mbr_boot_record mbr;
     enum MBR_STATE state = SEEN_NOTHING;
     int ret = CL_CLEAN, detection = CL_CLEAN;
-    off_t pos = 0, mbr_base = 0, partoff = 0;
+    size_t pos = 0, mbr_base = 0, partoff = 0;
     unsigned i = 0, prtncount = 0;
     size_t maplen, partsize;
 
@@ -210,10 +210,10 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("MBR Partition Entry %u:\n", i);
         cli_dbgmsg("Status: %u\n", mbr.entries[i].status);
         cli_dbgmsg("Type: %x\n", mbr.entries[i].type);
-        cli_dbgmsg("Blocks: [%u, +%u), ([%lu, +%lu))\n",
+        cli_dbgmsg("Blocks: [%u, +%u), ([%zu, +%zu))\n",
                    mbr.entries[i].firstLBA, mbr.entries[i].numLBA,
-                   (unsigned long)(mbr.entries[i].firstLBA * sectorsize),
-                   (unsigned long)(mbr.entries[i].numLBA * sectorsize));
+                   mbr.entries[i].firstLBA * sectorsize,
+                   mbr.entries[i].numLBA * sectorsize);
 
         /* Handle MBR entry based on type */
         if (mbr.entries[i].type == MBR_EMPTY) {
@@ -257,12 +257,12 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     return detection;
 }
 
-static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t extlbasize, size_t sectorsize)
+static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t extlbasize, size_t sectorsize)
 {
     struct mbr_boot_record ebr;
     enum MBR_STATE state = SEEN_NOTHING;
     int ret = CL_CLEAN, detection = CL_CLEAN;
-    off_t pos = 0, mbr_base = 0, logiclba = 0, extoff = 0, partoff = 0;
+    size_t pos = 0, mbr_base = 0, logiclba = 0, extoff = 0, partoff = 0;
     size_t partsize, extsize;
     unsigned i = 0, j = 0;
 
@@ -424,7 +424,7 @@ void mbr_convert_to_host(struct mbr_boot_record *record)
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
 {
     unsigned i      = 0;
-    off_t partoff   = 0;
+    size_t partoff  = 0;
     size_t partsize = 0;
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
@@ -540,13 +540,13 @@ leave:
 }
 
 /* checks internal logical partitions */
-static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, off_t extlba, size_t sectorsize)
+static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize)
 {
     struct mbr_boot_record ebr;
     partition_intersection_list_t prtncheck;
     unsigned i, pitxn;
     int ret = CL_CLEAN, tmp = CL_CLEAN, mbr_base = 0;
-    off_t pos = 0, logiclba = 0;
+    size_t pos = 0, logiclba = 0;
     int virus_found = 0;
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);

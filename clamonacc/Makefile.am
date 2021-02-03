@@ -29,6 +29,8 @@ clamonacc_SOURCES = \
     client/protocol.h \
     client/communication.c \
     client/communication.h \
+    client/socket.c \
+    client/socket.h \
     inotif/inotif.c \
     inotif/inotif.h \
     fanotif/fanotif.c \

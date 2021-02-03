@@ -139,7 +139,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         logg("*ClamMisc: permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
     } else if (errno == ENOENT) {
         /* TODO: should this be configurable? */
-        logg("ClamMisc: $/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
+        logg("*ClamMisc: $/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
     return CHK_CLEAN;

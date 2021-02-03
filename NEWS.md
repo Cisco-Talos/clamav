@@ -3,6 +3,44 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.104.0
+
+ClamAV 0.104.0 includes the following improvements and changes.
+
+### Major changes
+
+### Notable changes
+
+The following was added in 0.103.1 and is repeated here for awareness, as
+patch versions do not generally introduce new options:
+
+- Added a new scan option to alert on broken media (graphics) file formats.
+  This feature mitigates the risk of malformed media files intended to exploit
+  vulnerabilities in other software.
+  At present media validation exists for JPEG, TIFF, PNG, and GIF files.
+  To enable this feature, set `AlertBrokenMedia yes` in clamd.conf, or use
+  the `--alert-broken-media` option when using `clamscan`.
+  These options are disabled by default in this patch release, but may be
+  enabled in a subsequent release.
+  Application developers may enable this scan option by enabling
+  `CL_SCAN_HEURISTIC_BROKEN_MEDIA` for the `heuristic` scan option bit field.
+
+- Added CL_TYPE_TIFF, CL_TYPE_JPEG types to match GIF, PNG typing behavior.
+  BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
+  ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
+
+### Other improvements
+
+### Bug fixes
+
+### New Requirements
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
+- Orion Poplawski
+
 ## 0.103.0
 
 ClamAV 0.103.0 includes the following improvements and changes.

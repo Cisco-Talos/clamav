@@ -301,7 +301,7 @@ int main(int argc, char **argv)
     mainpid = getpid();
     if ((opt = optget(opts, "PidFile"))->enabled) {
         FILE *fd;
-        old_umask = umask(0002);
+        old_umask = umask(0022);
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
             //logg("!Can't save PID in file %s\n", opt->strarg);
             logg("!Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
@@ -778,7 +778,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
 
             /*Since some of the logging is written to stderr, and some of it
-             * is written to a log file, close stdin, stderr, and stdout 
+             * is written to a log file, close stdin, stderr, and stdout
              * now, since everything is initialized.*/
 
             /*signal the parent process.*/

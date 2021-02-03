@@ -163,8 +163,8 @@ struct cli_cdb {
     cli_file_t ctype;        /* container type */
     regex_t name;            /* filename regex */
     size_t csize[2];         /* container size (min, max); if csize[0] != csize[1]
-			                     * then value of 0 makes the field ignored
-			                     */
+                              * then value of 0 makes the field ignored
+                              */
     size_t fsizec[2];        /* file size in container */
     size_t fsizer[2];        /* real file size */
     int encrypted;           /* file is encrypted; 2 == ignore */
@@ -175,7 +175,7 @@ struct cli_cdb {
     struct cli_cdb *next;
 };
 
-#define CLI_MAX_TARGETS 2 /* maximum filetypes for a specific target */
+#define CLI_MAX_TARGETS 10 /* maximum filetypes for a specific target */
 struct cli_mtarget {
     cli_file_t target[CLI_MAX_TARGETS];
     const char *name;
@@ -185,26 +185,26 @@ struct cli_mtarget {
     uint8_t target_count; /* must be synced with non-zero values in the target array */
 };
 
-// clang-format off
-
 #define CLI_MTARGETS 15
-static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
-    { {0, 0},                                   "GENERIC",      0,  0, 1, 1 },
-    { {CL_TYPE_MSEXE, 0},                       "PE",           1,  0, 1, 1 },
-    { {CL_TYPE_MSOLE2, 0},                      "OLE2",         2,  1, 0, 1 },
-    { {CL_TYPE_HTML, 0},                        "HTML",         3,  1, 0, 1 },
-    { {CL_TYPE_MAIL, 0},                        "MAIL",         4,  1, 1, 1 },
-    { {CL_TYPE_GRAPHICS, 0},                    "GRAPHICS",     5,  1, 0, 1 },
-    { {CL_TYPE_ELF, 0},                         "ELF",          6,  1, 0, 1 },
-    { {CL_TYPE_TEXT_ASCII, 0},                  "ASCII",        7,  1, 1, 1 },
-    { {CL_TYPE_ERROR, 0},                       "NOT USED",     8,  1, 0, 1 },
-    { {CL_TYPE_MACHO, CL_TYPE_MACHO_UNIBIN},    "MACH-O",       9,  1, 0, 2 },
-    { {CL_TYPE_PDF, 0},                         "PDF",         10,  1, 0, 1 },
-    { {CL_TYPE_SWF, 0},                         "FLASH",       11,  1, 0, 1 },
-    { {CL_TYPE_JAVA, 0},                        "JAVA",        12,  1, 0, 1 },
-    { {CL_TYPE_INTERNAL, 0},                    "INTERNAL",    13,  1, 0, 1 },
-    { {CL_TYPE_OTHER, 0},                       "OTHER",       14,  1, 0, 1 }
-};
+static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
+    /* All types for target, name, idx, ac_only, pre-filtering?, # of types */
+    {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "GENERIC", 0, 0, 1, 1},
+    {{CL_TYPE_MSEXE, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "PE", 1, 0, 1, 1},
+    {{CL_TYPE_MSOLE2, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "OLE2", 2, 1, 0, 1},
+    {{CL_TYPE_HTML, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "HTML", 3, 1, 0, 1},
+    {{CL_TYPE_MAIL, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "MAIL", 4, 1, 1, 1},
+    {{CL_TYPE_GRAPHICS, CL_TYPE_GIF, CL_TYPE_PNG, CL_TYPE_JPEG, CL_TYPE_TIFF, 0, 0, 0, 0, 0}, "GRAPHICS", 5, 1, 0, 5},
+    {{CL_TYPE_ELF, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "ELF", 6, 1, 0, 1},
+    {{CL_TYPE_TEXT_ASCII, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "ASCII", 7, 1, 1, 1},
+    {{CL_TYPE_ERROR, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "NOT USED", 8, 1, 0, 1},
+    {{CL_TYPE_MACHO, CL_TYPE_MACHO_UNIBIN, 0, 0, 0, 0, 0, 0, 0, 0}, "MACH-O", 9, 1, 0, 2},
+    {{CL_TYPE_PDF, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "PDF", 10, 1, 0, 1},
+    {{CL_TYPE_SWF, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "FLASH", 11, 1, 0, 1},
+    {{CL_TYPE_JAVA, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "JAVA", 12, 1, 0, 1},
+    {{CL_TYPE_INTERNAL, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "INTERNAL", 13, 1, 0, 1},
+    {{CL_TYPE_OTHER, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "OTHER", 14, 1, 0, 1}};
+
+// clang-format off
 
 #define CLI_OFF_ANY         0xffffffff
 #define CLI_OFF_NONE        0xfffffffe

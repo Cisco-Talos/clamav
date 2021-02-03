@@ -38,6 +38,10 @@
 #include <sys/socket.h>
 #endif
 
+// libclamav
+#include "clamav.h"
+
+// shared
 #include "output.h"
 
 #include "communication.h"
@@ -70,6 +74,7 @@ static int onas_socket_wait(curl_socket_t sockfd, int32_t b_recv, uint64_t timeo
 
     /* select() returns the number of signalled sockets or -1 */
     ret = select((int)sockfd + 1, &infd, &outfd, &errfd, &tv);
+
     return ret;
 }
 
@@ -86,7 +91,9 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
     curlcode = curl_easy_getinfo(curl, CURLINFO_ACTIVESOCKET, &sockfd);
 #else
     /* Use deprecated CURLINFO_LASTSOCKET option */
-    curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &sockfd);
+    long long_sockfd;
+    curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &long_sockfd);
+    sockfd   = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != curlcode) {
@@ -98,15 +105,21 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
 
         do {
             curlcode = curl_easy_send(curl, line, len, &sent);
-            if (CURLE_AGAIN == curlcode && !onas_socket_wait(sockfd, 0, timeout)) {
+            if (CURLE_AGAIN == curlcode && onas_socket_wait(sockfd, 0, timeout) <= 0) {
                 logg("!ClamCom: TIMEOUT while waiting on socket (send)\n");
                 return 1;
             }
         } while (CURLE_AGAIN == curlcode);
 
-        if (sent <= 0) {
+        if (sent == 0) {
             if (sent && errno == EINTR) {
                 continue;
+            } else if (errno == EFAULT) {
+                /* Users have reported frequent "bad address" errors when files
+                   are created & removed before the file can be sent to be
+                   scanned. This isn't a critical error, so we'll log it in
+                   verbose-mode only. */
+                logg("*Can't send to clamd: %s\n", strerror(errno));
             } else {
                 logg("!Can't send to clamd: %s\n", strerror(errno));
             }
@@ -122,12 +135,13 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
 }
 
 /* Inits a RECVLN struct before it can be used in recvln() - see below */
-void onas_recvlninit(struct RCVLN *rcv_data, CURL *curl)
+void onas_recvlninit(struct onas_rcvln *rcv_data, CURL *curl, int sockd)
 {
     rcv_data->curl     = curl;
     rcv_data->curlcode = CURLE_OK;
     rcv_data->lnstart = rcv_data->curr = rcv_data->buf;
     rcv_data->retlen                   = 0;
+    rcv_data->sockd                    = sockd;
 }
 
 /* Receives a full (terminated with \0) line from a socket
@@ -139,7 +153,7 @@ void onas_recvlninit(struct RCVLN *rcv_data, CURL *curl)
  * - 0 if the connection is closed
  * - -1 on error
  */
-int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout)
+int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout)
 {
     char *eol;
     int ret = 0;
@@ -150,7 +164,9 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
     rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_ACTIVESOCKET, &sockfd);
 #else
     /* Use deprecated CURLINFO_LASTSOCKET option */
-    rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &sockfd);
+    long long_sockfd;
+    rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &long_sockfd);
+    sockfd             = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != rcv_data->curlcode) {
@@ -164,7 +180,7 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
                 rcv_data->curlcode = curl_easy_recv(rcv_data->curl, rcv_data->curr,
                                                     sizeof(rcv_data->buf) - (rcv_data->curr - rcv_data->buf), &(rcv_data->retlen));
 
-                if (CURLE_AGAIN == rcv_data->curlcode && !onas_socket_wait(sockfd, 1, timeout)) {
+                if (CURLE_AGAIN == rcv_data->curlcode && onas_socket_wait(sockfd, 1, timeout) <= 0) {
                     logg("!ClamCom: TIMEOUT while waiting on socket (recv)\n");
                     return -1;
                 }
@@ -181,7 +197,7 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
                     *rcv_data->curr = '\0';
 
                     if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n")) {
-                        logg("!Communication error\n");
+                        logg("!Communication error, clamd received unknown command\n");
                     } else {
                         logg("!Command rejected by clamd (wrong clamd version?)\n");
                     }
@@ -225,6 +241,69 @@ int onas_recvln(struct RCVLN *rcv_data, char **ret_bol, char **ret_eol, int64_t 
                 rcv_data->lnstart = rcv_data->buf;
             }
 
+            rcv_data->curr   = &rcv_data->lnstart[rcv_data->retlen];
+            rcv_data->retlen = 0;
+        }
+    }
+}
+
+/* Receives a full (terminated with \0) line from a socket
+ * Sets ret_bol to the begin of the received line, and optionally
+ * ret_eol to the end of line.
+ * Should be called repeatedly until all input is consumed
+ * Returns:
+ * - the length of the line (a positive number) on success
+ * - 0 if the connection is closed
+ * - -1 on error
+ */
+int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout_ms)
+{
+    char *eol;
+
+    UNUSEDPARAM(timeout_ms);
+
+    while (1) {
+        if (!rcv_data->retlen) {
+            rcv_data->retlen = recv(rcv_data->sockd, rcv_data->curr, sizeof(rcv_data->buf) - (rcv_data->curr - rcv_data->buf), 0);
+            if (rcv_data->retlen <= 0) {
+                if (rcv_data->retlen && errno == EINTR) {
+                    rcv_data->retlen = 0;
+                    continue;
+                }
+                if (rcv_data->retlen || rcv_data->curr != rcv_data->buf) {
+                    *rcv_data->curr = '\0';
+                    if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n"))
+                        logg("!Communication error\n");
+                    else
+                        logg("!Command rejected by clamd (wrong clamd version?)\n");
+                    return -1;
+                }
+                return 0;
+            }
+        }
+        if ((eol = memchr(rcv_data->curr, 0, rcv_data->retlen))) {
+            int ret = 0;
+            eol++;
+            rcv_data->retlen -= eol - rcv_data->curr;
+            *ret_bol = rcv_data->lnstart;
+            if (ret_eol) *ret_eol = eol;
+            ret = eol - rcv_data->lnstart;
+            if (rcv_data->retlen)
+                rcv_data->lnstart = rcv_data->curr = eol;
+            else
+                rcv_data->lnstart = rcv_data->curr = rcv_data->buf;
+            return ret;
+        }
+        rcv_data->retlen += rcv_data->curr - rcv_data->lnstart;
+        if (!eol && rcv_data->retlen == sizeof(rcv_data->buf)) {
+            logg("!Overlong reply from clamd\n");
+            return -1;
+        }
+        if (!eol) {
+            if (rcv_data->buf != rcv_data->lnstart) { /* old memmove sux */
+                memmove(rcv_data->buf, rcv_data->lnstart, rcv_data->retlen);
+                rcv_data->lnstart = rcv_data->buf;
+            }
             rcv_data->curr   = &rcv_data->lnstart[rcv_data->retlen];
             rcv_data->retlen = 0;
         }

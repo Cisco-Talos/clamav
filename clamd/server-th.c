@@ -1203,6 +1203,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
     }
 
+    if (optget(opts, "AlertBrokenMedia")->enabled) {
+        options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
+        logg("Media (Graphics) Format Validatation enabled\n");
+    }
+
     if (optget(opts, "ScanMail")->enabled) {
         logg("Mail files support enabled.\n");
         options.parse |= CL_SCAN_PARSE_MAIL;

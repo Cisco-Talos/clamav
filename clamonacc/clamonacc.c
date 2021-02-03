@@ -165,6 +165,11 @@ int main(int argc, char **argv)
             logg("*Clamonacc: not setting up client\n");
             goto done;
             break;
+        case CL_EWRITE:
+            logg("!Clamonacc: can't set up fd passing, configuration issue -- please ensure your system \
+            is capable of fdpassing before specifying the fdpass option\n");
+            ret = 2;
+            goto done;
         case CL_EARG:
         default:
             logg("!Clamonacc: can't setup client\n");
@@ -377,7 +382,7 @@ static int startup_checks(struct onas_context *ctx)
         int16_t ping_result = onas_ping_clamd(&ctx);
         switch (ping_result) {
             case 0:
-                ret = (int)CL_BREAK;
+                ret = (int)CL_SUCCESS;
                 break;
             case 1:
                 ret = (int)CL_ETIMEOUT;
@@ -423,7 +428,7 @@ void help(void)
     mprintf("    --verbose              -v          Be verbose\n");
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
-    mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
+    mprintf("    --watch-list=FILE      -W FILE     Watch directories from FILE\n");
     mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
     mprintf("    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
     mprintf("    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");

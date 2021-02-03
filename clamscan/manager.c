@@ -66,7 +66,6 @@
 #include "manager.h"
 #include "global.h"
 
-
 #ifdef C_LINUX
 dev_t procdev;
 #endif
@@ -309,10 +308,11 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
 
     ret = cli_realpath((const char *)filename, &real_filename);
     if (CL_SUCCESS != ret) {
-        logg("Failed to determine real filename of %s.\n", filename);
-        goto done;
+        logg("*Failed to determine real filename of %s.\n", filename);
+        logg("*Quarantine of the file may fail if file path contains symlinks.\n");
+    } else {
+        filename = real_filename;
     }
-    filename = real_filename;
 
     if ((opt = optget(opts, "exclude"))->enabled) {
         while (opt) {
@@ -1068,6 +1068,10 @@ int scanmanager(const struct optstruct *opts)
     if ((optget(opts, "detect-broken")->enabled) ||
         (optget(opts, "alert-broken")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
+    }
+
+    if (optget(opts, "alert-broken-media")->enabled) {
+        options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
     }
 
     /* TODO: Remove deprecated option in a future feature release */

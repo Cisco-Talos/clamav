@@ -1,8 +1,7 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
- *  Authors: Trog
+ *  Author: Mickey Sola
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -19,24 +18,17 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __SPECIAL_H
-#define __SPECIAL_H
+#include <sys/socket.h>
+#include <sys/un.h>
 
-#include "others.h"
-#define SWIZZ_MAXERRORS 2000
-struct swizz_stats {
-    uint16_t gngrams[17576];
-    uint32_t total;
-    uint32_t suspicious;
-    int has_version;
-    int has_manifest;
-    int errors;
-    int entries;
+#include "optparser.h"
+#include "../clamonacc.h"
+
+struct onas_sock_t {
+
+    int written;
+    struct sockaddr_un sock;
 };
 
-int cli_check_mydoom_log(cli_ctx *ctx);
-int cli_check_riff_exploit(cli_ctx *ctx);
-void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob);
-int cli_detect_swizz(struct swizz_stats *stats);
-
-#endif
+cl_error_t onas_set_sock_only_once(struct onas_context *ctx);
+int onas_get_sockd();

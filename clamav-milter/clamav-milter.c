@@ -418,7 +418,7 @@ int main(int argc, char **argv)
 
     if ((opt = optget(opts, "PidFile"))->enabled) {
         FILE *fd;
-        mode_t old_umask = umask(0002);
+        mode_t old_umask = umask(0022);
         int err = 0;
 
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
@@ -470,7 +470,7 @@ int main(int argc, char **argv)
      */
     if (parentPid != getpid()){ //we have been daemonized
         daemonize_signal_parent(parentPid);
-    }   
+    }
 #endif
 
     return smfi_main();

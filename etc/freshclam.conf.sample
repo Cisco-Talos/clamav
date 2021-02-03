@@ -148,6 +148,7 @@ DatabaseMirror database.clamav.net
 #NotifyClamd /path/to/clamd.conf
 
 # Run command after successful database update.
+# Use EXIT_1 to return 1 after successful database update.
 # Default: disabled
 #OnUpdateExecute command
 

@@ -16,6 +16,8 @@ target_sources( clamonacc
         client/communication.h
         client/protocol.c
         client/protocol.h
+        client/socket.c
+        client/socket.h
         fanotif/fanotif.c
         fanotif/fanotif.h
         inotif/inotif.c

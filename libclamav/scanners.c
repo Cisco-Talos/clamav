@@ -2562,16 +2562,6 @@ static cl_error_t cli_scanriff(cli_ctx *ctx)
     return ret;
 }
 
-static cl_error_t cli_scanjpeg(cli_ctx *ctx)
-{
-    cl_error_t ret = CL_CLEAN;
-
-    if (cli_check_jpeg_exploit(ctx, 0) == 1)
-        ret = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
-
-    return ret;
-}
-
 static cl_error_t cli_scancryptff(cli_ctx *ctx)
 {
     cl_error_t ret = CL_CLEAN, ndesc;
@@ -3127,13 +3117,15 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     }
 
     if ((typercg) &&
-        (type != CL_TYPE_GPT) &&
-        (type != CL_TYPE_CPIO_OLD) &&
-        (type != CL_TYPE_ZIP) &&
-        (type != CL_TYPE_OLD_TAR) &&
-        (type != CL_TYPE_POSIX_TAR)) {
+        // We should also omit bzips, but DMG's may be detected in bzips. (type != CL_TYPE_BZ) &&        /* Omit BZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        (type != CL_TYPE_GZ) &&        /* Omit GZ files because they can contain portions of original files like zip file entries that cause invalid extractions and lots of warnings. Decompress first, then scan! */
+        (type != CL_TYPE_GPT) &&       /* Omit GPT files because it's an image format that we can extract and scan manually. */
+        (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
+        (type != CL_TYPE_ZIP) &&       /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
+        (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
+        (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
-         * Enable file type recognition scan mode if requested, except for some raw archive (non-compressed) types, etc.
+         * Enable file type recognition scan mode if requested, except for some some problematic types (above).
          */
         acmode |= AC_SCAN_FT;
     }
@@ -3487,12 +3479,18 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         }
 
         if (nret != CL_VIRUS)
+            /*
+             * Now run the other file type parsers that may rely on file type
+             * recognition to determine the actual file type.
+             */
             switch (ret) {
                 case CL_TYPE_HTML:
                     /* bb#11196 - autoit script file misclassified as HTML */
                     if (cli_get_container_intermediate(ctx, -2) == CL_TYPE_AUTOIT) {
                         ret = CL_TYPE_TEXT_ASCII;
-                    } else if (SCAN_PARSE_HTML && (type == CL_TYPE_TEXT_ASCII || type == CL_TYPE_GRAPHICS) &&
+                    } else if (SCAN_PARSE_HTML &&
+                               (type == CL_TYPE_TEXT_ASCII ||
+                                type == CL_TYPE_GIF) && /* Scan GIFs for embedded HTML/Javascript */
                                (DCONF_DOC & DOC_CONF_HTML)) {
                         *dettype = CL_TYPE_HTML;
                         nret     = cli_scanhtml(ctx);
@@ -3691,6 +3689,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         typercg = 0;
     }
 
+    /*
+     * Perform file typing from the start of the file.
+     */
     perf_start(ctx, PERFT_FT);
     if ((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
         type = cli_determine_fmap_type(*ctx->fmap, ctx->engine, type);
@@ -3706,6 +3707,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA) {
+        /*
+         * Create JSON object to record metadata during the scan.
+         */
         if (NULL == ctx->properties) {
             ctx->properties = json_object_new_object();
             if (NULL == ctx->properties) {
@@ -3789,6 +3793,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Check if we've already scanned this file before.
+     */
     perf_start(ctx, PERFT_CACHE);
     if (!(SCAN_COLLECT_METADATA))
         res = cache_check(hash, ctx);
@@ -3870,6 +3877,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     }
 
     if (type != CL_TYPE_IGNORED && ctx->engine->sdb) {
+        /*
+         * If self protection mechanism enabled, do the scanraw() scan first
+         * before extracting with a file type parser.
+         */
         ret = scanraw(ctx, type, 0, &dettype, (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) ? NULL : hash);
         if (ret == CL_EMEM || ret == CL_VIRUS) {
             ret = cli_checkfp(ctx);
@@ -3879,6 +3890,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Run the file type parsers that we normally use before the raw scan.
+     */
     ctx->recursion++;
     perf_nested_start(ctx, PERFT_CONTAINER, PERFT_SCAN);
     /* set current level as container AFTER recursing */
@@ -4069,6 +4083,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml(ctx);
             break;
+
         case CL_TYPE_HTML_UTF16:
             if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
                 ret = cli_scanhtml_utf16(ctx);
@@ -4170,31 +4185,32 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             break;
 
         case CL_TYPE_GRAPHICS:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
-                ret = cli_scanjpeg(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS)
-                ret = cli_parsejpeg(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsepng(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsegif(ctx);
-
-            if (ctx->img_validate && SCAN_HEURISTICS && ret != CL_VIRUS && ret != CL_EPARSE)
-                ret = cli_parsetiff(ctx);
-
+            /*
+             * This case is for unhandled graphics types such as BMP, JPEG 2000, etc.
+             *
+             * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
+             * JPEG 2000 is not handled by cli_scanjpeg or cli_parsejpeg.
+             */
             break;
 
         case CL_TYPE_GIF:
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_GIF))
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF))
                 ret = cli_parsegif(ctx);
             break;
 
         case CL_TYPE_PNG:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
-                ret = cli_parsepng(ctx);
+                ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+            break;
+
+        case CL_TYPE_JPEG:
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
+                ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
+            break;
+
+        case CL_TYPE_TIFF:
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS)
+                ret = cli_parsetiff(ctx);
             break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
@@ -4258,12 +4274,16 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     perf_nested_stop(ctx, PERFT_CONTAINER, PERFT_SCAN);
     ctx->recursion--;
 
+    /*
+     * Perform the raw scan, which may include file type recognition signatures.
+     */
     if (ret == CL_VIRUS && !SCAN_ALLMATCHES) {
         cli_bitset_free(ctx->hook_lsig_matches);
         ctx->hook_lsig_matches = old_hook_lsig_matches;
         goto done;
     }
 
+    /* Disable type recognition for the raw scan for zip files larger than maxziptypercg */
     if (type == CL_TYPE_ZIP && SCAN_PARSE_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
         /* CL_ENGINE_MAX_ZIPTYPERCG */
         uint64_t curr_len = (*ctx->fmap)->len;
@@ -4337,6 +4357,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         }
     }
 
+    /*
+     * Now run the rest of the file type parsers.
+     */
     ctx->recursion++;
     switch (type) {
         /* bytecode hooks triggered by a lsig must be a hook
@@ -4346,8 +4369,6 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         case CL_TYPE_TEXT_UTF16LE:
         case CL_TYPE_TEXT_UTF8:
             perf_nested_start(ctx, PERFT_SCRIPT, PERFT_SCAN);
-            if (SCAN_PARSE_HTML && (DCONF_DOC & DOC_CONF_HTML))
-                ret = cli_scanhtml(ctx);
             if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALLMATCHES) && SCAN_PARSE_HTML)
                 ret = cli_scanscript(ctx);
             if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_get_container(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
@@ -4562,15 +4583,15 @@ cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, uns
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
     cl_error_t ret = CL_CLEAN;
 
     cli_dbgmsg("magic_scan_nested_fmap_type: [%zu, +%zu), [" STDi64 ", +%zu)\n",
                map->nested_offset, map->len,
                (int64_t)offset, length);
-    if (offset < 0 || (size_t)offset >= map->len) {
-        cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+    if (offset >= map->len) {
+        cli_dbgmsg("Invalid offset: %zu\n", offset);
         return CL_CLEAN;
     }
 
@@ -4578,8 +4599,8 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size
         length = map->len - offset;
     if (length > map->len - offset) {
         cli_dbgmsg("Data truncated: %zu -> %zu\n",
-                   length, map->len - (size_t)offset);
-        length = map->len - (size_t)offset;
+                   length, map->len - offset);
+        length = map->len - offset;
     }
 
     if (length <= 5) {
@@ -4604,16 +4625,15 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size
 }
 
 /* For map scans that may be forced to disk */
-cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
-    off_t old_off  = map->nested_offset;
+    size_t old_off = map->nested_offset;
     size_t old_len = map->len;
     cl_error_t ret = CL_CLEAN;
 
-    cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%ld, +%lu)\n",
-               (long)offset, (unsigned long)length);
-    if (offset < 0 || (size_t)offset >= old_len) {
-        cli_dbgmsg("Invalid offset: %ld\n", (long)offset);
+    cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%zu, +%zu)\n", offset, length);
+    if (offset >= old_len) {
+        cli_dbgmsg("Invalid offset: %zu\n", offset);
         return CL_CLEAN;
     }
 
@@ -4628,8 +4648,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t 
         if (!length)
             length = old_len - offset;
         if (length > old_len - offset) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %lu -> %lu\n",
-                       (unsigned long)length, (unsigned long)(old_len - offset));
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %zu -> %zu\n", length, old_len - offset);
             length = old_len - offset;
         }
         if (length <= 5) {
@@ -4637,8 +4656,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, off_t offset, size_t 
             return CL_CLEAN;
         }
         if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length)) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%ld, %zu]\n",
-                       (long)old_off, old_len);
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu]\n", old_off, old_len);
             return CL_CLEAN;
         }
 
