@@ -151,11 +151,13 @@ static int send_stream(int sockd, const char *filename)
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
-            logg("~%s: Access denied. ERROR\n", filename);
+            logg("~%s: Failed to open file. ERROR\n", filename);
             return 0;
         }
-    } else
+    } else {
+        /* Read stream from STDIN */
         fd = 0;
+    }
 
     if (sendln(sockd, "zINSTREAM", 10)) {
         close(fd);
@@ -199,7 +201,7 @@ static int send_fdpass(int sockd, const char *filename)
 
     if (filename) {
         if ((fd = open(filename, O_RDONLY)) < 0) {
-            logg("~%s: Access denied. ERROR\n", filename);
+            logg("~%s: Failed to open file\n", filename);
             return 0;
         }
     } else

@@ -38,6 +38,10 @@
 #include <sys/socket.h>
 #endif
 
+// libclamav
+#include "clamav.h"
+
+// shared
 #include "output.h"
 
 #include "communication.h"
@@ -89,7 +93,7 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
     /* Use deprecated CURLINFO_LASTSOCKET option */
     long long_sockfd;
     curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &long_sockfd);
-    sockfd = (curl_socket_t) long_sockfd;
+    sockfd   = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != curlcode) {
@@ -107,9 +111,15 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
             }
         } while (CURLE_AGAIN == curlcode);
 
-        if (sent <= 0) {
+        if (sent == 0) {
             if (sent && errno == EINTR) {
                 continue;
+            } else if (errno == EFAULT) {
+                /* Users have reported frequent "bad address" errors when files
+                   are created & removed before the file can be sent to be
+                   scanned. This isn't a critical error, so we'll log it in
+                   verbose-mode only. */
+                logg("*Can't send to clamd: %s\n", strerror(errno));
             } else {
                 logg("!Can't send to clamd: %s\n", strerror(errno));
             }
@@ -156,7 +166,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
     /* Use deprecated CURLINFO_LASTSOCKET option */
     long long_sockfd;
     rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &long_sockfd);
-    sockfd = (curl_socket_t) long_sockfd;
+    sockfd             = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != rcv_data->curlcode) {
@@ -246,9 +256,11 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
  * - 0 if the connection is closed
  * - -1 on error
  */
-int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, __attribute__((unused)) int64_t timeout_ms)
+int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int64_t timeout_ms)
 {
     char *eol;
+
+    UNUSEDPARAM(timeout_ms);
 
     while (1) {
         if (!rcv_data->retlen) {

@@ -78,7 +78,7 @@ int main(int argc, char **argv)
         exit(2);
 
 #if !defined(_WIN32)
-    if(!setlocale(LC_CTYPE, "")) {
+    if (!setlocale(LC_CTYPE, "")) {
         mprintf("^Failed to set locale\n");
     }
 #if !defined(C_BEOS)
@@ -299,6 +299,7 @@ void help(void)
     mprintf("    --scan-hwp3[=yes(*)/no]              Scan HWP3 files\n");
     mprintf("    --scan-archive[=yes(*)/no]           Scan archive files (supported by libclamav)\n");
     mprintf("    --alert-broken[=yes/no(*)]           Alert on broken executable files (PE & ELF)\n");
+    mprintf("    --alert-broken-media[=yes/no(*)]     Alert on broken graphics files (JPEG, TIFF, PNG, GIF)\n");
     mprintf("    --alert-encrypted[=yes/no(*)]        Alert on encrypted archives and documents\n");
     mprintf("    --alert-encrypted-archive[=yes/no(*)] Alert on encrypted archives\n");
     mprintf("    --alert-encrypted-doc[=yes/no(*)]    Alert on encrypted documents\n");

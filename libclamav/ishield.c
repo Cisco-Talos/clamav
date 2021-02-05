@@ -773,7 +773,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
             zret        = inflate(&z, 0);
             if (zret == Z_OK || zret == Z_STREAM_END || zret == Z_BUF_ERROR) {
                 unsigned int umpd = IS_CABBUFSZ - z.avail_out;
-                if (cli_writen(ofd, outbuf, umpd) < umpd)
+                if (cli_writen(ofd, outbuf, umpd) != umpd)
                     break;
                 outsz += umpd;
                 if (zret == Z_STREAM_END || z.avail_out == IS_CABBUFSZ /* FIXMEISHIELD: is the latter ok? */) {

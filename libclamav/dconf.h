@@ -127,6 +127,7 @@ struct cli_dconf {
 #define OTHER_CONF_LZW          0x400
 #define OTHER_CONF_PNG          0x800
 #define OTHER_CONF_GIF          0x1000
+#define OTHER_CONF_TIFF         0x2000
 
 /* Phishing flags */
 #define PHISHING_CONF_ENGINE  0x1

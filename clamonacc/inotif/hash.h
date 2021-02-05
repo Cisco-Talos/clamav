@@ -104,7 +104,7 @@ void onas_free_hashnode(struct onas_hnode *hnode);
 
 void onas_free_listnode(struct onas_lnode *lnode);
 int onas_add_listnode(struct onas_lnode *tail, struct onas_lnode *node);
-int onas_rm_listnode(struct onas_lnode *head, const char *dirname);
+cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname);
 
 void onas_free_dirlist(struct onas_lnode *head);
 

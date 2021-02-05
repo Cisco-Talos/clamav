@@ -146,7 +146,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (NULL != filename) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
-            conn_reply_errno(scandata->conn, msg, "real-path check failed:");
+            conn_reply_errno(scandata->conn, msg, "Failed to determine real path:");
             logg("^Failed to determine real path for: %s\n", filename);
             logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
@@ -364,7 +364,7 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
     return 0;
 }
 
-int scanfd(
+cl_error_t scanfd(
     const client_conn_t *conn,
     unsigned long int *scanned,
     const struct cl_engine *engine,
@@ -373,12 +373,16 @@ int scanfd(
     int odesc,
     int stream)
 {
-    int ret, fd = conn->scanfd;
+    cl_error_t ret      = -1;
+    int fd              = conn->scanfd;
     const char *virname = NULL;
     STATBUF statbuf;
     struct cb_context context;
     char fdstr[32];
     const char *reply_fdstr;
+
+    char *filepath     = NULL;
+    char *log_filename = fdstr;
 
     UNUSEDPARAM(odesc);
 
@@ -396,41 +400,60 @@ int scanfd(
     }
     if (FSTAT(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
         logg("%s: Not a regular file. ERROR\n", fdstr);
-        if (conn_reply(conn, reply_fdstr, "Not a regular file", "ERROR") == -1)
-            return CL_ETIMEOUT;
-        return -1;
+        if (conn_reply(conn, reply_fdstr, "Not a regular file", "ERROR") == -1) {
+            ret = CL_ETIMEOUT;
+            goto done;
+        }
+        ret = CL_BREAK;
+        goto done;
+    }
+
+    /* Try and get the real filename, for logging purposes */
+    if (!stream) {
+        if (CL_SUCCESS != cli_get_filepath_from_filedesc(fd, &filepath)) {
+            logg("*%s: Unable to determine the filepath given the file descriptor.\n", fdstr);
+        } else {
+            log_filename = filepath;
+        }
     }
 
     thrmgr_setactivetask(fdstr, NULL);
     context.filename = fdstr;
     context.virsize  = 0;
     context.scandata = NULL;
-    ret              = cl_scandesc_callback(fd, conn->filename, &virname, scanned, engine, options, &context);
+    ret              = cl_scandesc_callback(fd, log_filename, &virname, scanned, engine, options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(conn->group)) {
         logg("*Client disconnected while scanjob was active\n");
-        return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+        ret = ret == CL_ETIMEOUT ? ret : CL_BREAK;
+        goto done;
     }
 
     if (ret == CL_VIRUS) {
         if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
             ret = CL_ETIMEOUT;
         if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
-            logg("%s: %s(%s:%llu) FOUND\n", fdstr, virname, context.virhash, context.virsize);
+            logg("%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
         else
-            logg("%s: %s FOUND\n", fdstr, virname);
-        virusaction(reply_fdstr, virname, opts);
+            logg("%s: %s FOUND\n", log_filename, virname);
+        virusaction(log_filename, virname, opts);
     } else if (ret != CL_CLEAN) {
         if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
             ret = CL_ETIMEOUT;
-        logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
+        logg("%s: %s ERROR\n", log_filename, cl_strerror(ret));
     } else {
         if (conn_reply_single(conn, reply_fdstr, "OK") == CL_ETIMEOUT)
             ret = CL_ETIMEOUT;
         if (logok)
-            logg("%s: OK\n", fdstr);
+            logg("%s: OK\n", log_filename);
     }
+
+done:
+    if (NULL != filepath) {
+        free(filepath);
+    }
+
     return ret;
 }
 
