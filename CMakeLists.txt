@@ -52,10 +52,12 @@ set(LIBFRESHCLAM_VERSION "${LIBFRESHCLAM_SOVERSION}.${LIBFRESHCLAM_AGE}.${LIBFRE
 HexVersion(LIBFRESHCLAM_VERSION_NUM ${LIBFRESHCLAM_CURRENT} ${LIBFRESHCLAM_REVISION} ${LIBFRESHCLAM_AGE})
 
 #
-# Define C_LINUX because CMake only defines UNIX
+# Define C_LINUX and C_BSD because CMake only defines UNIX, APPLE, WIN32, MSVC
 #
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(C_LINUX 1)
+elseif(APPLE OR CMAKE_SYSTEM_NAME MATCHES "BSD")
+    set(C_BSD 1)
 endif()
 
 # Git optionally used to add commit info into build to differentiate in bug reports.
