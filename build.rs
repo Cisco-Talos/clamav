@@ -33,6 +33,7 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_function("cl_engine_compile")
         .whitelist_function("cl_scandesc")
         .whitelist_function("cl_scanmap_callback")
+        .whitelist_function("cl_fmap_open_handle")
         .whitelist_function("cl_fmap_open_memory")
         .whitelist_function("cl_fmap_close")
         .whitelist_function("cl_retflevel")
