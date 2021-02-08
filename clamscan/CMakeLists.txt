@@ -33,5 +33,5 @@ target_link_libraries( clamscan
 if(WIN32)
     install(TARGETS clamscan DESTINATION .)
 else()
-    install(TARGETS clamscan DESTINATION bin)
+    install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

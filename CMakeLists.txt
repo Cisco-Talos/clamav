@@ -159,7 +159,14 @@ endif()
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+include(GNUInstallDirs)
+
+if(CMAKE_INSTALL_FULL_LIBDIR)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+else()
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
 
 if(C_LINUX)
     if(CMAKE_COMPILER_IS_GNUCXX)
@@ -347,8 +354,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
         "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
-
-include(GNUInstallDirs)
 
 # Always use '-fPIC'/'-fPIE' option.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -714,7 +719,7 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-config
         @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/clamav-config"
-        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
         PERMISSIONS
             OWNER_READ OWNER_WRITE OWNER_EXECUTE
             GROUP_READ             GROUP_EXECUTE
@@ -814,8 +819,8 @@ endif()
 
 if(WIN32)
     # Include the license(s) in the installation
-    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION ".")
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION ".")
+    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION .)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION .)
 endif()
 
 #

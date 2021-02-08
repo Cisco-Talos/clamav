@@ -72,7 +72,7 @@ if(ENABLE_SHARED_LIB)
     if(WIN32)
         install(TARGETS mspack DESTINATION .)
     else()
-        install(TARGETS mspack DESTINATION lib)
+        install(TARGETS mspack DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
     # Public (forwarded) dependencies.

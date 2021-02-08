@@ -45,7 +45,7 @@ target_link_libraries( clamd
 if(WIN32)
     install(TARGETS clamd DESTINATION .)
 else()
-    install(TARGETS clamd DESTINATION sbin)
+    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR})
 endif()
 
 if(SYSTEMD_FOUND)

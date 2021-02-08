@@ -21,7 +21,7 @@ if(ENABLE_MAN_PAGES)
     configure_file(man/clamd.8.in               man/clamd.8)
     configure_file(man/clamav-milter.8.in       man/clamav-milter.8)
     if(C_LINUX)
-        configure_file(man/clamonacc.8.in           man/clamonacc.8)
+        configure_file(man/clamonacc.8.in       man/clamonacc.8)
     endif()
 
     set(MAN1_FILES
@@ -38,7 +38,7 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_PREFIX}/share/man/man1)
+                ${CMAKE_INSTALL_MANDIR}/man1)
     endforeach()
 
     set(MAN5_FILES
@@ -50,7 +50,7 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_PREFIX}/share/man/man5)
+                ${CMAKE_INSTALL_MANDIR}/man5)
     endforeach()
 
     set(MAN8_FILES
@@ -61,7 +61,7 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_PREFIX}/share/man/man8)
+                ${CMAKE_INSTALL_MANDIR}/man8)
     endforeach()
 
     if(C_LINUX)
@@ -70,7 +70,7 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/man/clamonacc.8
             DESTINATION
-                ${CMAKE_INSTALL_PREFIX}/share/man/man8)
+                ${CMAKE_INSTALL_MANDIR}/man8)
     endif()
 endif()
 
@@ -105,7 +105,7 @@ if(WIN32)
     # When built from the release tarball, this includes the user manual
     # which is exported from the clamav-faq repo.
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html)
-        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html DESTINATION ".")
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual DESTINATION ".")
+        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html DESTINATION .)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual DESTINATION .)
     endif()
 endif()

@@ -92,7 +92,7 @@ if(ENABLE_SHARED_LIB)
     if(WIN32)
         install(TARGETS clamunrar DESTINATION .)
     else()
-        install(TARGETS clamunrar DESTINATION lib)
+        install(TARGETS clamunrar DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
     add_library( ClamAV::libunrar ALIAS clamunrar )

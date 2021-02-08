@@ -17,7 +17,6 @@ function(assemble_testfile test_file)
             --split_dir ${CMAKE_CURRENT_SOURCE_DIR}/.split
         COMMENT "Assembling test file ${test_file} of ${original}")
     add_custom_target(tgt_${test_file} ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${test_file})
-    #install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${test_file} DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()
 
 foreach(TESTFILE ${TESTFILES})

@@ -32,7 +32,7 @@ target_link_libraries(freshclam-bin
 if(WIN32)
     install(TARGETS freshclam-bin DESTINATION .)
 else()
-    install(TARGETS freshclam-bin DESTINATION bin)
+    install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 # Install an empty database directory

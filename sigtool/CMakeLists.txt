@@ -32,5 +32,5 @@ target_link_libraries( sigtool
 if(WIN32)
     install(TARGETS sigtool DESTINATION .)
 else()
-    install(TARGETS sigtool DESTINATION bin)
+    install(TARGETS sigtool DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
