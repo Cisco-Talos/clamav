@@ -399,7 +399,11 @@ else()
     if(APPLE)
         set(BIND_8_COMPAT 1)
     endif()
-    check_include_file("resolv.h"       HAVE_RESOLV_H) # Disabled, beacuse libfreshclam/dns.c is broken.
+    check_include_file("resolv.h"       HAVE_RESOLV_H)
+    if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND EXISTS /usr/include/resolv.h)
+        # This hack because check_include_file() can't find "resolv.h" on FreeBSD.
+        set(HAVE_RESOLV_H 1)
+    endif()
     check_include_file("dirent.h"       HAVE_DIRENT_H)
     check_include_file("dlfcn.h"        HAVE_DLFCN_H)
 endif()

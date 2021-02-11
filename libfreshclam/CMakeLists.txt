@@ -39,7 +39,7 @@ if(APPLE)
             ${APPLE_CORE_FOUNDATION}
             ${APPLE_SECURITY} )
 elseif(UNIX)
-    if(HAVE_RESOLV_H)
+    if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
         target_link_libraries( libfreshclam_obj
             PUBLIC
                 resolv )
