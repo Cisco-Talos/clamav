@@ -36,6 +36,9 @@ properties(
                 string(name: 'FUZZ_CORPUS_BRANCH',
                        defaultValue: 'master',
                        description: 'private-fuzz-corpus branch'),
+                string(name: 'APPCHECK_PIPELINE',
+                       defaultValue: 'appcheck-0.104',
+                       description: 'test-pipelines branch for appcheck'),
                 string(name: 'SHARED_LIB_BRANCH',
                        defaultValue: 'master',
                        description: 'tests-jenkins-shared-libraries branch')
@@ -130,7 +133,7 @@ node('master') {
 
         tasks["appcheck"] = {
             stage("AppCheck") {
-                final appcheckResult = build(job: "test-pipelines/appcheck",
+                final appcheckResult = build(job: "test-pipelines/${params.APPCHECK_PIPELINE}",
                     propagate: true,
                     wait: true,
                     parameters: [
@@ -140,7 +143,7 @@ node('master') {
                         [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
                     ]
                 )
-                echo "test-pipelines/appcheck #${appcheckResult.number} succeeded."
+                echo "test-pipelines/${params.APPCHECK_PIPELINE} #${appcheckResult.number} succeeded."
             }
         }
 
