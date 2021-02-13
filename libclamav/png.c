@@ -114,6 +114,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
     int err                    = Z_OK;
     uint8_t *decompressed_data = NULL;
 
+    bool zstrm_initialized = false;
     z_stream zstrm;
     size_t decompressed_data_len = 0;
 
@@ -297,6 +298,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
                     idat_state = PNG_IDAT_DECOMPRESSION_FAILED;
                 } else {
+                    zstrm_initialized = true;
                     uint64_t cur_width, cur_linebytes;
                     int64_t cur_xoff  = 0;
                     int64_t cur_xskip = interlace_method ? 8 : 1;
@@ -343,6 +345,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                     if (err != Z_OK && err != Z_STREAM_END) {
                         cli_dbgmsg("PNG: zlib: inflate error: %d, Image decompression failed!\n", err);
                         inflateEnd(&zstrm);
+                        zstrm_initialized = false;
                         idat_state = PNG_IDAT_DECOMPRESSION_FAILED;
                         break;
                     }
@@ -351,6 +354,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                 if (err == Z_STREAM_END) {
                     cli_dbgmsg("  TOTAL decompressed:    %zu\n", decompressed_data_len);
                     inflateEnd(&zstrm);
+                    zstrm_initialized = false;
                     idat_state = PNG_IDAT_DECOMPRESSION_COMPLETE;
 
                     if (decompressed_data_len > image_size) {
@@ -436,7 +440,7 @@ done:
     if (NULL != decompressed_data) {
         free(decompressed_data);
     }
-    if (idat_state == PNG_IDAT_DECOMPRESSION_IN_PROGRESS) {
+    if (zstrm_initialized) {
         inflateEnd(&zstrm);
     }
 
