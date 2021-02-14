@@ -40,6 +40,7 @@ patch versions do not generally introduce new options:
 The ClamAV team thanks the following individuals for their code submissions:
 
 - Orion Poplawski
+- Sven Rueß
 
 ## 0.103.0
 
