@@ -39,6 +39,7 @@ patch versions do not generally introduce new options:
 
 The ClamAV team thanks the following individuals for their code submissions:
 
+- Alexander Golovach
 - Duane Waddle
 - Orion Poplawski
 - Sven Rueß
