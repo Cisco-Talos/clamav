@@ -43,6 +43,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Brian Bergstrand
 - Duane Waddle
 - Orion Poplawski
+- Sergey Valentey
 - Sven Rueß
 
 ## 0.103.0
