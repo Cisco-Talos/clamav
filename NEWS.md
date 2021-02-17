@@ -31,6 +31,14 @@ patch versions do not generally introduce new options:
 
 ### Other improvements
 
+- Added the `%f` format string option to the ClamD VirusEvent feature to insert
+  the file path of the scan target when a virus-event occurs. This supplements
+  the VirusEvent `%v` option which prints the signature (virus) name.
+  The ClamD VirusEvent feature also provides two environment variables,
+  `$CLAM_VIRUSEVENT_FILENAME` and `$CLAM_VIRUSEVENT_VIRUSNAME` for a similar
+  effect.
+  Patch courtesy of Vasile Papp.
+
 ### Bug fixes
 
 ### New Requirements
@@ -45,6 +53,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Orion Poplawski
 - Sergey Valentey
 - Sven Rueß
+- Vasile Papp
 
 ## 0.103.0
 
