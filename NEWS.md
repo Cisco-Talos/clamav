@@ -3,6 +3,14 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.103.2
+
+ClamAV 0.103.2 is a security patch release with the following fixes:
+
+-
+
+The ClamAV team thanks the following individuals for their code submissions:
+
 ## 0.103.1
 
 ClamAV 0.103.1 is a patch release with the following fixes and improvements.

@@ -147,6 +147,7 @@ enum FunctionalityLevels {
     FUNC_LEVEL_0103_BETA = 120, /**< LibClamAV release 0.103.0-BETA */
     FUNC_LEVEL_0103      = 121, /**< LibClamAV release 0.103.0 */
     FUNC_LEVEL_0103_1    = 122, /**< LibClamAV release 0.103.1 */
+    FUNC_LEVEL_0103_2    = 123, /**< LibClamAV release 0.103.2 */
 };
 
 /**
