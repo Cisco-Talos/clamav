@@ -2,7 +2,6 @@
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DHAVE_STRUCT_TIMESPEC)
 
     # Windows compatibility headers
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)

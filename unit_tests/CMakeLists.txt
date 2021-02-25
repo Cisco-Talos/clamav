@@ -26,7 +26,6 @@ endforeach()
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DHAVE_STRUCT_TIMESPEC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
@@ -320,6 +319,7 @@ if(WIN32)
             add_custom_target(test_install
                 ALL
                 "${CMAKE_COMMAND}"
+                -D CMAKE_INSTALL_CONFIG_NAME:string=$<CONFIG>
                 -D CMAKE_INSTALL_PREFIX:string=$<TARGET_FILE_DIR:check_clamav>
                 -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
                 DEPENDS
@@ -331,6 +331,7 @@ if(WIN32)
             add_custom_target(test_install
                 ALL
                 "${CMAKE_COMMAND}"
+                -D CMAKE_INSTALL_CONFIG_NAME:string=$<CONFIG>
                 -D CMAKE_INSTALL_PREFIX:string=$<TARGET_FILE_DIR:check_clamav>
                 -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
                 DEPENDS

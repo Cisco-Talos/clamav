@@ -2,7 +2,6 @@
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DHAVE_STRUCT_TIMESPEC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
     add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)

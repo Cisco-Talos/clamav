@@ -32,9 +32,9 @@ _Known Issues / To-do:_
       - [Linux release build, install to system](#linux-release-build-install-to-system)
       - [macOS debug build, custom OpenSSL path, build examples, local install](#macos-debug-build-custom-openssl-path-build-examples-local-install)
       - [Windows builds](#windows-builds)
-      - [Windows build (with vcpkg)](#windows-build-with-vcpkg)
-      - [Windows build (with Mussels)](#windows-build-with-mussels)
-      - [Build the Installer](#build-the-installer)
+        - [Windows build (with Mussels)](#windows-build-with-mussels)
+        - [Windows build (with vcpkg)](#windows-build-with-vcpkg)
+        - [Build the Installer](#build-the-installer)
     - [External Depedencies](#external-depedencies)
       - [libclamav dependencies](#libclamav-dependencies)
       - [libfreshclam dependencies](#libfreshclam-dependencies)
@@ -363,73 +363,33 @@ choco install cmake wixtoolset
 ```
 
 Then open a new terminal so that CMake and WiX will be in your `$PATH`.
+**The following commands for building on Windows are written for Powershell**.
 
-#### Windows build (with vcpkg)
+There are two options for building and supplying the library dependencies.
+These are Mussels and vcpkg.
 
-`vcpkg` can be used to build the ClamAV library dependencies automatically.
+Mussels is an open source project developed in-house by the ClamAV team.
+It offers great flexibility for defining your own collections (cookbooks) of
+build instructions (recipes) instead of solely relying on a centralized
+repository of ports. And unlike vcpkg, Mussels does not implement CMake build
+tooling for projects that don't support CMake, but instead leverages whatever
+build system is provided by the project. This means that Mussels builds may
+require installing additional tools, like NMake and ActivePerl rather than
+simply requiring CMake. The advantage is that you'll be building those projects
+the same way that those developers intended, and that Mussels recipes are
+generally very light weight. Mussels has some sharp edges because it's a newer
+and much smaller project than vcpkg.
 
-`vcpkg` integrates really well with CMake, enabling CMake to find your compiled
-libraries automatically, so you don't have to specify the include & library
-paths manually as you do when using Mussels (below).
+Vcpkg is an open source project developed by Microsoft and is heavily oriented
+towards CMake projects. Vcpkg offers a very large collection of "ports" for
+almost any project you may need to build.
+It is very easy to get started with vcpkg.
 
-**Preprequisites:**
+Mussels is the preferred tool to supply the library dependencies at least until
+such time as the vcpkg Debug-build libclamav unit test heap-corruption crash
+is resolved [(see below)](#windows-build-with-vcpkg).
 
-You'll need to install [vcpkg](https://github.com/microsoft/vcpkg).
-See the `vcpkg` README for installation instructions.
-
-Once installed, set the variable `$VCPKG_PATH` to the location where you
-installed `vcpkg`:
-
-```ps1
-$VCPKG_PATH="..." # Path to your vcpkg installation
-```
-
-By default, CMake and `vcpkg` build for 32-bit. If you want to build for 64-bit,
-set the `VCPKG_DEFAULT_TRIPLET` environment variable:
-
-```ps1
-$env:VCPKG_DEFAULT_TRIPLET="x64-windows"
-```
-
-**Building the libraries and ClamAV:**
-
-Next, use `vcpkg` to build the required library dependencies:
-
-```ps1
-& "$VCPKG_PATH\vcpkg" install 'curl[openssl]' 'json-c' 'libxml2' 'pcre2' 'pthreads' 'zlib' 'pdcurses' 'bzip2'
-```
-
-Now configure the ClamAV build using the `CMAKE_TOOLCHAIN_FILE` variable which
-will enable CMake to automatically find the libraries we built with `vcpkg`.
-
-```ps1
-cmake .. -A x64 `
-  -D CMAKE_TOOLCHAIN_FILE="$VCPKG_PATH\scripts\buildsystems\vcpkg.cmake" `
-  -D CMAKE_INSTALL_PREFIX="install"
-```
-
-_Tip_: You have to drop the `-A x64` arguments if you're building for 32-bits,
-and correct the package paths accordingly.
-
-Now, go ahead and build the project:
-
-```ps1
-cmake --build . --config Release
-```
-
-You can run the test suite with CTest:
-
-```ps1
-ctest -C Release
-```
-
-And you can install to the `install` directory (set above) like this:
-
-```ps1
-cmake --build . --config Release --target install
-```
-
-#### Windows build (with Mussels)
+##### Windows build (with Mussels)
 
 Much like `vcpkg`, [Mussels](https://github.com/Cisco-Talos/Mussels) can be
 used to automatically build the ClamAV library dependencies. Unlike `vcpkg`,
@@ -527,7 +487,87 @@ And you can install to the `install` (set above) like this:
 cmake --build . --config Release --target install
 ```
 
-#### Build the Installer
+##### Windows build (with vcpkg)
+
+`vcpkg` can be used to build the ClamAV library dependencies automatically.
+
+`vcpkg` integrates really well with CMake, enabling CMake to find your compiled
+libraries automatically, so you don't have to specify the include & library
+paths manually as you do when using Mussels.
+
+_DISCLAIMER_: There is a known issue with the unit tests when building with
+vcpkg in Debug mode. When you run the libclamav unit tests (check_clamav), the
+program will crash and a popup will claim there was heap corruption. If you use
+Task Manager to kill the `check_clamav.exe` process, the rest of the tests pass
+just fine. This issue does not occur when using Mussels to supply the library
+dependencies. Commenting out the following lines in `readdb.c` resolves the
+heap corruption crash when running `check_clamav`, but of course introduces a
+memory leak:
+```c
+    if (engine->stats_data)
+        free(engine->stats_data);
+```
+If anyone has time to figure out the real cause of the vcpkg Debug-build crash
+in check_clamav, it would be greatly appreciated.
+
+**Preprequisites:**
+
+You'll need to install [vcpkg](https://github.com/microsoft/vcpkg).
+See the `vcpkg` README for installation instructions.
+
+Once installed, set the variable `$VCPKG_PATH` to the location where you
+installed `vcpkg`:
+
+```ps1
+$VCPKG_PATH="..." # Path to your vcpkg installation
+```
+
+By default, CMake and `vcpkg` build for 32-bit. If you want to build for 64-bit,
+set the `VCPKG_DEFAULT_TRIPLET` environment variable:
+
+```ps1
+$env:VCPKG_DEFAULT_TRIPLET="x64-windows"
+```
+
+**Building the libraries and ClamAV:**
+
+Next, use `vcpkg` to build the required library dependencies:
+
+```ps1
+& "$VCPKG_PATH\vcpkg" install 'curl[openssl]' 'json-c' 'libxml2' 'pcre2' 'pthreads' 'zlib' 'pdcurses' 'bzip2' 'check'
+```
+
+Now configure the ClamAV build using the `CMAKE_TOOLCHAIN_FILE` variable which
+will enable CMake to automatically find the libraries we built with `vcpkg`.
+
+```ps1
+cmake .. -A x64 `
+  -D CMAKE_TOOLCHAIN_FILE="$VCPKG_PATH\scripts\buildsystems\vcpkg.cmake" `
+  -D CMAKE_INSTALL_PREFIX="install"
+```
+
+_Tip_: You have to drop the `-A x64` arguments if you're building for 32-bits,
+and correct the package paths accordingly.
+
+Now, go ahead and build the project:
+
+```ps1
+cmake --build . --config Release
+```
+
+You can run the test suite with CTest:
+
+```ps1
+ctest -C Release
+```
+
+And you can install to the `install` directory (set above) like this:
+
+```ps1
+cmake --build . --config Release --target install
+```
+
+##### Build the Installer
 
 To build the installer, you must have WIX Toolset installed. If you're using
 Chocolatey, you can install it simply with `choco install wixtoolset` and then
