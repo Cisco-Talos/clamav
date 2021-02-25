@@ -9,6 +9,18 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
 ### Major changes
 
+- CMake is now the preferred build system. Please make an effort now to migrate
+  build tooling to use CMake instead of Autotools (eg: `./configure`, `make`,
+  `sudo make install`).
+
+  We have added comprehensive build instructions for using CMake to the new
+  `INSTALL.cmake.md` file. The online documentation will also be updated to
+  include CMake build instructions.
+
+  The Autotools build system is still available if you need it but is expected
+  to be removed in the next feature release. The Visual Studio build system has
+  been removed.
+
 ### Notable changes
 
 The following was added in 0.103.1 and is repeated here for awareness, as
