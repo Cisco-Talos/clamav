@@ -25,7 +25,7 @@ set_target_properties( clambc PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clambc
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared )
+        ClamAV::common )
 if(WIN32)
     install(TARGETS clambc DESTINATION .)
 else()

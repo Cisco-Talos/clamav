@@ -57,7 +57,7 @@
 #include "clamav.h"
 #include "others.h"
 
-// shared
+// common
 #include "actions.h"
 #include "output.h"
 #include "misc.h"

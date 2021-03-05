@@ -28,7 +28,7 @@ set_target_properties( clamscan PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamscan
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared )
+        ClamAV::common )
 if(WIN32)
     install(TARGETS clamscan DESTINATION .)
 else()

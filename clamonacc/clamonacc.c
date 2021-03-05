@@ -46,7 +46,7 @@
 #include "clamav.h"
 #include "others.h"
 
-// shared
+// common
 #include "output.h"
 #include "misc.h"
 #include "optparser.h"

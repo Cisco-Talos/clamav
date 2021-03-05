@@ -25,7 +25,7 @@ set_target_properties( clamdtop PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamdtop
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared
+        ClamAV::common
         Curses::curses )
 if(WIN32)
     install(TARGETS clamdtop DESTINATION .)

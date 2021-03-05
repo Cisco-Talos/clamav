@@ -27,6 +27,6 @@ sigtool_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 DEFS = @DEFS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @SIGTOOL_CPPFLAGS@
-LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @SSL_LDFLAGS@ @SSL_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/common -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @SIGTOOL_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/common/libcommon.la @SSL_LDFLAGS@ @SSL_LIBS@ @THREAD_LIBS@
 CLEANFILES=*.gcda *.gcno

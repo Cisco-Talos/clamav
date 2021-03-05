@@ -57,7 +57,7 @@
 #include "str.h"
 #include "readdb.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "actions.h"
 #include "output.h"

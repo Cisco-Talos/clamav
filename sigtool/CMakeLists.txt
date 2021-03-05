@@ -21,13 +21,15 @@ if(WIN32)
     target_sources( sigtool PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/sigtool.rc )
 endif()
 target_include_directories( sigtool
-    PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
+    PRIVATE
+        ${CMAKE_BINARY_DIR} # For clamav-config.h
 )
+
 set_target_properties( sigtool PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( sigtool
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared )
+        ClamAV::common )
 if(WIN32)
     install(TARGETS sigtool DESTINATION .)
 else()

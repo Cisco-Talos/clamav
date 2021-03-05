@@ -19,4 +19,4 @@ MAX_DOT_GRAPH_DEPTH=3
 
 EXTRACT_ALL=YES
 INPUT = . \
-        ../shared
+        ../common

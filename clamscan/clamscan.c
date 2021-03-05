@@ -45,7 +45,7 @@
 #include "others.h"
 #include "str.h"
 
-// shared
+// common
 #include "misc.h"
 #include "output.h"
 #include "actions.h"

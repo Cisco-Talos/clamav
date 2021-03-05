@@ -45,7 +45,7 @@
 #include "clamav.h"
 #include "others.h"
 
-// shared
+// common
 #include "misc.h"
 #include "getopt.h"
 #include "cert_util.h"

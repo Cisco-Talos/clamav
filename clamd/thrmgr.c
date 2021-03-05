@@ -35,7 +35,7 @@
 #include "others.h"
 #include "mpool.h"
 
-// shared
+// common
 #include "output.h"
 
 #include "thrmgr.h"

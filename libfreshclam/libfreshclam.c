@@ -60,7 +60,7 @@
 #include "regex_list.h"
 #include "str.h"
 
-// shared
+// common
 #include "cert_util.h"
 #include "output.h"
 #include "misc.h"

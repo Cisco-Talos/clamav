@@ -52,7 +52,7 @@
 // libclamav
 #include "clamav.h"
 
-// shared
+// common
 #include "optparser.h"
 
 #include "server.h"

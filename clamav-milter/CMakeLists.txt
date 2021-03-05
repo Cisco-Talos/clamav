@@ -20,6 +20,6 @@ set_target_properties( clamav-milter PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamav-milter
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared
+        ClamAV::common
         Sendmail::milter )
 install(TARGETS clamav-milter DESTINATION ${CMAKE_INSTALL_SBINDIR})

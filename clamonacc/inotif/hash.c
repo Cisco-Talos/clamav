@@ -42,7 +42,7 @@
 #include "scanners.h"
 #include "str.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "output.h"
 

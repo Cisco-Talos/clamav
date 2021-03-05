@@ -58,8 +58,8 @@ if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-clamonacc.service
 endif
 
-LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamonacc -I$(top_srcdir)/shared -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/common/libcommon.la $(top_builddir)/libclamav/libclamav.la @CURL_LIBS@ @CLAMONACC_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamonacc -I$(top_srcdir)/common -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @CLAMONACC_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamonacc$(EXEEXT)
 CLEANFILES=*.gcda *.gcno

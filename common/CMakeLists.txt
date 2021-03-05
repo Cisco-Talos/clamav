@@ -10,9 +10,9 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
-# The shared object library
-add_library( shared_obj OBJECT )
-target_sources( shared_obj
+# The "common" object library
+add_library( common_obj OBJECT )
+target_sources( common_obj
     PRIVATE
         cert_util.c
         cdiff.c
@@ -38,24 +38,24 @@ target_sources( shared_obj
         optparser.h
         output.h
         tar.h )
-target_include_directories( shared_obj
+target_include_directories( common_obj
     PRIVATE ${CMAKE_BINARY_DIR}
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 if(FOUND_SYSTEMD)
-    target_include_directories( shared_obj
+    target_include_directories( common_obj
         PRIVATE ${SYSTEMD_INCLUDE_DIRS} )
 endif()
-set_target_properties( shared_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+set_target_properties( common_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 
 if(APPLE)
-    target_sources( shared_obj PRIVATE mac/cert_util_mac.m )
+    target_sources( common_obj PRIVATE mac/cert_util_mac.m )
 elseif(WIN32)
-    target_sources( shared_obj PRIVATE win/cert_util_win.c )
+    target_sources( common_obj PRIVATE win/cert_util_win.c )
 else()
-    target_sources( shared_obj PRIVATE linux/cert_util_linux.c )
+    target_sources( common_obj PRIVATE linux/cert_util_linux.c )
 endif()
 
-target_link_libraries( shared_obj
+target_link_libraries( common_obj
     PUBLIC
         ClamAV::libclamav
         ZLIB::ZLIB
@@ -63,26 +63,26 @@ target_link_libraries( shared_obj
         OpenSSL::SSL
         OpenSSL::Crypto )
 if(WIN32)
-    target_link_libraries( shared_obj
+    target_link_libraries( common_obj
         PUBLIC
             crypt32 )
 endif()
 
 if(HAVE_SYSTEMD)
-    target_link_libraries( shared_obj
+    target_link_libraries( common_obj
         PRIVATE
             SYSTEMD::systemd )
 endif()
 
-# The shared static library.
-add_library( shared STATIC )
+# The "common" static library.
+add_library( common STATIC )
 
-target_link_libraries( shared
+target_link_libraries( common
     PUBLIC
-        shared_obj )
-set_target_properties( shared PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+        common_obj )
+set_target_properties( common PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 if(WIN32)
-    set_target_properties(shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set_target_properties(common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
-add_library( ClamAV::shared ALIAS shared )
+add_library( ClamAV::common ALIAS common )

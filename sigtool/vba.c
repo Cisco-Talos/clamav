@@ -39,7 +39,7 @@
 #include "ole2_extract.h"
 #include "readdb.h"
 
-// shared
+// common
 #include "output.h"
 
 #include "vba.h"

@@ -77,7 +77,7 @@
 #include "cvd.h"
 #include "regex_list.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "output.h"
 #include "cdiff.h"

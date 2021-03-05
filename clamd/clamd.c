@@ -63,7 +63,7 @@
 #include "matcher-ac.h"
 #include "readdb.h"
 
-// shared
+// common
 #include "output.h"
 #include "optparser.h"
 #include "misc.h"

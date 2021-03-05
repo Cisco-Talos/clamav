@@ -185,7 +185,6 @@ AM_CONDITIONAL([LINUX], [test "$build_linux" = "yes"])
 AM_CONDITIONAL([WINDOWS], [test "$build_windows" = "yes"])
 AM_CONDITIONAL([MACOS], [test "$build_mac" = "yes"])
 
-
 AC_CONFIG_FILES([
                  Makefile
                  clamav-config
@@ -198,7 +197,7 @@ if test "x$enable_libclamav_only" != "xyes"; then
                      clamscan/Makefile
                      database/Makefile
                      docs/Makefile
-                     shared/Makefile
+                     common/Makefile
                      clamd/Makefile
                      clamd/clamav-daemon.service
                      clamd/clamav-daemon.socket
@@ -321,6 +320,7 @@ if test "x$enable_debug" = "xyes"; then
 else
     CL_MSG_STATUS([release mode],[yes],[yes])
 fi
+
 have_jit="no"
 if test "$subdirfailed" = "no"; then
     have_jit="yes"

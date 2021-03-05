@@ -43,7 +43,7 @@
 #include "clamav.h"
 #include "scanners.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "output.h"
 

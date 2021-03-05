@@ -70,7 +70,7 @@
 #include "pe.h"
 #include "entconv.h"
 
-// shared
+// common
 #include "output.h"
 #include "optparser.h"
 #include "misc.h"

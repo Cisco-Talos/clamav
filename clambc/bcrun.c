@@ -35,7 +35,7 @@
 #include "bytecode.h"
 #include "bytecode_priv.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "misc.h"
 

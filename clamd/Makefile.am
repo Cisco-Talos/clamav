@@ -44,8 +44,8 @@ if INSTALL_SYSTEMD_UNITS
 systemdsystemunit_DATA = clamav-daemon.socket clamav-daemon.service
 endif
 
-LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMD_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/common/libcommon.la @CLAMD_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/common -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 
 # it does support --help and --version but with the default config file
 # it outputs an error message which tells us to edit the config files

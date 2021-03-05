@@ -38,7 +38,7 @@
 // libclamav
 #include "clamav.h"
 
-// shared
+// common
 #include "output.h"
 #include "misc.h"
 #include "optparser.h"

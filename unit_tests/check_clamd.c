@@ -60,7 +60,7 @@
 #include "version.h"
 #include "str.h"
 
-// shared
+// common
 #include "fdpassing.h"
 
 static int conn_tcp(int port)

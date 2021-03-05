@@ -40,7 +40,7 @@ check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK
 check_clamav_LDFLAGS = $(XML_LIBS)
 check_clamav_CFLAGS = $(AM_CFLAGS) @XML_CPPFLAGS@
 check_clamd_SOURCES = check_clamd.c
-check_clamd_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/shared @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_clamd_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/common @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
 check_clamd_LDADD = $(top_builddir)/libclamav/libclamav.la @CHECK_LIBS@ @CLAMD_LIBS@
 else
 check_clamd_SOURCES = check_clamav_skip.c

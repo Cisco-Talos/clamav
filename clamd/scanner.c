@@ -51,7 +51,7 @@
 #include "others.h"
 #include "scanners.h"
 
-// shared
+// common
 #include "idmef_logging.h"
 #include "optparser.h"
 #include "output.h"

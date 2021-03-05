@@ -30,7 +30,7 @@
 // libclamav
 #include "regex/regex.h"
 
-// shared
+// common
 #include "output.h"
 
 #include "whitelist.h"

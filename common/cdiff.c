@@ -39,7 +39,7 @@
 #include "dsig.h"
 #include "others.h"
 
-// shared
+// common
 #include "misc.h"
 #include "output.h"
 #include "cdiff.h"

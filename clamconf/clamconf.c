@@ -49,7 +49,7 @@
 #include "bytecode_detect.h"
 #include "fpu.h"
 
-// shared
+// common
 #include "optparser.h"
 #include "misc.h"
 

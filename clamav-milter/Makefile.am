@@ -37,6 +37,6 @@ AM_CFLAGS=@WERR_CFLAGS_MILTER@
 
 endif
 
-LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/shared/libshared.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
-AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface -I$(top_srcdir)/shared -I$(top_srcdir) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/libclamav/libclamav.la $(top_builddir)/common/libcommon.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface -I$(top_srcdir)/common -I$(top_srcdir) @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 CLEANFILES=*.gcda *.gcno

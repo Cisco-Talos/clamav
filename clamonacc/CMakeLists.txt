@@ -47,7 +47,7 @@ set_target_properties( clamonacc PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamonacc
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared
+        ClamAV::common
         CURL::libcurl )
 install(TARGETS clamonacc DESTINATION ${CMAKE_INSTALL_SBINDIR})
 

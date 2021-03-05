@@ -25,7 +25,7 @@ set_target_properties( clamsubmit PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamsubmit
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared
+        ClamAV::common
         JSONC::jsonc
         CURL::libcurl )
 if(APPLE)

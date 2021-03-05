@@ -779,7 +779,7 @@ endif()
 add_subdirectory( libclamav )
 
 if(NOT ENABLE_LIBCLAMAV_ONLY)
-    add_subdirectory( shared )
+    add_subdirectory( common )
 
     add_subdirectory( libfreshclam )
 

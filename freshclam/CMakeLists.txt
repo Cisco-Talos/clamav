@@ -27,7 +27,7 @@ target_link_libraries(freshclam-bin
     PRIVATE
         ClamAV::libfreshclam
         ClamAV::libclamav
-        ClamAV::shared )
+        ClamAV::common )
 if(WIN32)
     install(TARGETS freshclam-bin DESTINATION .)
 else()

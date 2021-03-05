@@ -22,12 +22,13 @@ target_sources( libfreshclam_obj
     PUBLIC
         libfreshclam.h )
 target_include_directories( libfreshclam_obj
-    PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
+    PRIVATE
+        ${CMAKE_BINARY_DIR} # For clamav-config.h
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 set_target_properties( libfreshclam_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( libfreshclam_obj
     PUBLIC
-        ClamAV::shared
+        ClamAV::common
         CURL::libcurl
         OpenSSL::SSL
         OpenSSL::Crypto )

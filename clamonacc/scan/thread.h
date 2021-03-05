@@ -28,7 +28,7 @@
 // libclamav
 #include "clamav.h"
 
-// shared
+// common
 #include "optparser.h"
 
 #define ONAS_SCTH_B_DIR 0x01

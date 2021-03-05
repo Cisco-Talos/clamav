@@ -94,7 +94,7 @@ if(ENABLE_APP)
     target_link_libraries(check_clamd
         PRIVATE
             libcheck::check
-            ClamAV::shared
+            ClamAV::common
             clamav_obj
             regex
             lzma_sdk

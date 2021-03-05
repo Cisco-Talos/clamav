@@ -28,7 +28,7 @@
 #include "clamav.h"
 #include "others.h"
 
-// shared
+// common
 #include "optparser.h"
 
 #include "thrmgr.h"

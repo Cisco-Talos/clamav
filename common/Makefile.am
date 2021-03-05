@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libcla
 LIBS = @SSL_LDFLAGS@ @SSL_LIBS@
 AM_LIBTOOLFLAGS = --tag CC
 
-libshared_la_SOURCES= \
+libcommon_la_SOURCES= \
     actions.c \
     actions.h \
     cdiff.c \
@@ -29,19 +29,19 @@ libshared_la_SOURCES= \
     tar.h
 
 if MACOS
-    libshared_la_SOURCES += \
+    libcommon_la_SOURCES += \
         mac/cert_util_mac.m \
         cert_util.h
 endif
 if WINDOWS
-    libshared_la_SOURCES += \
+    libcommon_la_SOURCES += \
         win/cert_util_win.c \
         cert_util.h
 endif
 if LINUX
-    libshared_la_SOURCES += \
+    libcommon_la_SOURCES += \
         linux/cert_util_linux.c \
         cert_util.h
 endif
 
-noinst_LTLIBRARIES=libshared.la
+noinst_LTLIBRARIES=libcommon.la

@@ -35,8 +35,8 @@ clang-format -i -verbose libclamunrar_iface/*.cpp
 clang-format -i -verbose libclamunrar_iface/*.h
 clang-format -i -verbose libfreshclam/*.c
 clang-format -i -verbose libfreshclam/*.h
-clang-format -i -verbose shared/*.c
-clang-format -i -verbose shared/*.h
+clang-format -i -verbose common/*.c
+clang-format -i -verbose common/*.h
 clang-format -i -verbose sigtool/*.c
 clang-format -i -verbose sigtool/*.h
 clang-format -i -verbose clamonacc/*.c

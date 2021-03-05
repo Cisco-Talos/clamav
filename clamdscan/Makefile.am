@@ -28,8 +28,8 @@ clamdscan_SOURCES = \
 
 AM_CFLAGS=@WERR_CFLAGS@
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
-LIBS = $(top_builddir)/shared/libshared.la $(top_builddir)/libclamav/libclamav.la @CLAMDSCAN_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/common -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/libclamunrar_iface @SSL_CPPFLAGS@ @CLAMDSCAN_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
+LIBS = $(top_builddir)/common/libcommon.la $(top_builddir)/libclamav/libclamav.la @CLAMDSCAN_LIBS@ @THREAD_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamdscan$(EXEEXT)
 CLEANFILES=*.gcda *.gcno
