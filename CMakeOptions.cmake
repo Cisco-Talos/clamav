@@ -34,6 +34,10 @@ option(OPTIMIZE
     "Allow compiler optimizations.  Set to OFF to disable (i.e. to set -O0)."
     ON)
 
+option(MAINTAINER_MODE
+    "Update generated sources. Requires flex, bison, cbindgen."
+    ${MAINTAINER_MODE_DEFAULT})
+
 option(ENABLE_WERROR
     "Compile time warnings will cause build failures.")
 
