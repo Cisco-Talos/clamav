@@ -79,22 +79,11 @@ endif()
 find_package(PkgConfig QUIET)
 
 #
-# Find Build Tools
-#
-
-if(MAINTAINER_MODE)
-    # Bison, Flex required to build Yara module for libclamav.
-    find_package(BISON REQUIRED)
-    find_package(FLEX  REQUIRED)
-    # TODO: Gperf required to generate JS-normalization code.
-    # find_package(GPERF REQUIRED)
-endif()
-
-#
 # Load Build Options
 #
 
 # CMake Option default values:
+set(MAINTAINER_MODE_DEFAULT         OFF)
 set(ENABLE_APP_DEFAULT              ON)
 if(WIN32 OR APPLE)
     set(ENABLE_MILTER_DEFAULT       OFF)
@@ -119,6 +108,25 @@ set(ENABLE_SYSTEMD_DEFAULT          ON)
 
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
+
+#
+# Find Build Tools
+#
+if(MAINTAINER_MODE)
+    # cbindgen required to update C headers for Rust libraries.
+    set(cbindgen_REQUIRED 1)
+    set(CBINDGEN ON)
+
+    # Bison, Flex required to build Yara module for libclamav.
+    find_package(BISON REQUIRED)
+    find_package(FLEX  REQUIRED)
+
+    # TODO: Gperf required to generate JS-normalization code.
+    # find_package(GPERF REQUIRED)
+else()
+    set(CBINDGEN OFF)
+endif()
+find_package(Rust REQUIRED)
 
 if(ENABLE_FUZZ)
     # We'd like the fuzz targets to be statically linked
@@ -1052,6 +1060,7 @@ ${c}    Compiler:               ${e}
 ${b}        Build type:         ${e}${CMAKE_BUILD_TYPE}
 ${b}        C compiler:         ${e}${CMAKE_C_COMPILER}
 ${b}        C++ compiler:       ${e}${CMAKE_CXX_COMPILER}
+${b}        Rust toolchain:     ${e}${cargo_EXECUTABLE} (${cargo_VERSION})
 ${b}        CFLAGS:             ${e}${CMAKE_C_FLAGS_${_build_type}} ${CMAKE_C_FLAGS}
 ${b}        CXXFLAGS:           ${e}${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
 ${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}")
@@ -1072,7 +1081,15 @@ ${b}        Enable UnRAR:       ${e}${ENABLE_UNRAR}
 ${b}        Examples:           ${e}${ENABLE_EXAMPLES}
 ${b}        Tests:              ${e}${ENABLE_TESTS}
 ${b}        Build man pages:    ${e}${ENABLE_MAN_PAGES}
-${b}        Build doxygen HTML: ${e}${ENABLE_DOXYGEN}")
+${b}        Build doxygen HTML: ${e}${ENABLE_DOXYGEN}
+${b}        Maintainer Mode:    ${e}${MAINTAINER_MODE}")
+if(MAINTAINER_MODE)
+message("\
+${R}    Maintainer Mode Tools:  ${e}
+${y}        cbindgen:           ${e}${cbindgen_EXECUTABLE} (${cbindgen_VERSION})
+${y}        bison:              ${e}${BISON_EXECUTABLE} (${BISON_VERSION})
+${y}        flex:               ${e}${FLEX_EXECUTABLE} (${FLEX_VERSION})")
+endif()
 if(NOT WIN32)
 message("\
 ${c}    Build Extras:           ${e}")
