@@ -134,6 +134,7 @@ static struct dconf_module modules[] = {
     {"OTHER", "LZW", OTHER_CONF_LZW, 1},
     {"OTHER", "GIF", OTHER_CONF_GIF, 1},
     {"OTHER", "PNG", OTHER_CONF_PNG, 1},
+    {"OTHER", "TIFF", OTHER_CONF_TIFF, 1},
 
     {"PHISHING", "ENGINE", PHISHING_CONF_ENGINE, 1},
     {"PHISHING", "ENTCONV", PHISHING_CONF_ENTCONV, 1},
@@ -169,27 +170,21 @@ struct cli_dconf *cli_dconf_init(void)
         if (!strcmp(modules[i].mname, "PE")) {
             if (modules[i].state)
                 dconf->pe |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "ELF")) {
             if (modules[i].state)
                 dconf->elf |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "MACHO")) {
             if (modules[i].state)
                 dconf->macho |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "ARCHIVE")) {
             if (modules[i].state)
                 dconf->archive |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "DOCUMENT")) {
             if (modules[i].state)
                 dconf->doc |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "MAIL")) {
             if (modules[i].state)
                 dconf->mail |= modules[i].bflag;
-
         } else if (!strcmp(modules[i].mname, "OTHER")) {
             if (modules[i].state)
                 dconf->other |= modules[i].bflag;

@@ -1,16 +1,11 @@
 # Installation Instructions
 
-**CAUTION**: ClamAV CMake support is experimental in this release and is not
-recommended for production systems!!!
-
-Please help us stabilize it so we can deprecate autotools and Visual Studio.
+CMake the preferred build system going forwards. The Windows Visual Studio
+solution has been removed, and the Autotools build system will likely be
+removed in the near future.
 
 _Known Issues / To-do:_
 
-- Support for building unit tests / feature tests and running with CTest
-  - A portion of this task will involve converting the shell scripts portions
-    to Python unit tests.
-- Build fuzz targets.
 - LLVM bytecode runtime support.
   - Presently only the bytecode intepreter is supported. LLVM is preferable
     because it is faster. This task also requires updating to use a modern
@@ -20,8 +15,12 @@ _Known Issues / To-do:_
     is updated.
 - Complete the MAINTAINER_MODE option to generate jsparse files with GPerf.
 
+**Table Of Contents**
+
 - [Installation Instructions](#installation-instructions)
   - [CMake Basics](#cmake-basics)
+    - [Build requirements](#build-requirements)
+    - [Optional build requirements (Maintainer-Mode)](#optional-build-requirements-maintainer-mode)
     - [Basic Release build & system install](#basic-release-build--system-install)
     - [Basic Debug build](#basic-debug-build)
     - [Build and install to a specific install location (prefix)](#build-and-install-to-a-specific-install-location-prefix)
@@ -32,37 +31,45 @@ _Known Issues / To-do:_
     - [Example Build Commands](#example-build-commands)
       - [Linux release build, install to system](#linux-release-build-install-to-system)
       - [macOS debug build, custom OpenSSL path, build examples, local install](#macos-debug-build-custom-openssl-path-build-examples-local-install)
-      - [Windows Build](#windows-build)
+      - [Windows builds](#windows-builds)
+        - [Windows build (with Mussels)](#windows-build-with-mussels)
+        - [Windows build (with vcpkg)](#windows-build-with-vcpkg)
+        - [Build the Installer](#build-the-installer)
     - [External Depedencies](#external-depedencies)
       - [libclamav dependencies](#libclamav-dependencies)
       - [libfreshclam dependencies](#libfreshclam-dependencies)
       - [Application dependencies](#application-dependencies)
       - [Dependency build options](#dependency-build-options)
-        - [bzip2](#bzip2)
-        - [zlib](#zlib)
-        - [libxml2](#libxml2)
-        - [libpcre2](#libpcre2)
-        - [openssl (libcrypto, libssl)](#openssl-libcrypto-libssl)
-        - [libjson-c](#libjson-c)
-        - [libmspack](#libmspack)
-        - [iconv (POSIX-only)](#iconv-posix-only)
-        - [pthreads-win32 (Windows-only)](#pthreads-win32-windows-only)
-        - [llvm (optional, _see "Bytecode Runtime" section_)](#llvm-optional-see-bytecode-runtime-section)
-        - [libcurl](#libcurl)
-        - [ncurses or pdcurses, for clamdtop](#ncurses-or-pdcurses-for-clamdtop)
+        - [`libcheck`](#libcheck)
+        - [`bzip2`](#bzip2)
+        - [`zlib`](#zlib)
+        - [`libxml2`](#libxml2)
+        - [`libpcre2`](#libpcre2)
+        - [`openssl` (`libcrypto`, `libssl`)](#openssl-libcrypto-libssl)
+        - [`libjson-c`](#libjson-c)
+        - [`libmspack`](#libmspack)
+        - [`iconv` (POSIX-only)](#iconv-posix-only)
+        - [`pthreads-win32` (Windows-only)](#pthreads-win32-windows-only)
+        - [`llvm` (optional, _see "Bytecode Runtime" section_)](#llvm-optional-see-bytecode-runtime-section)
+        - [`libcurl`](#libcurl)
+        - [`ncurses` or `pdcurses`, for `clamdtop`](#ncurses-or-pdcurses-for-clamdtop)
         - [Bytecode Runtime](#bytecode-runtime)
   - [Compilers and Options](#compilers-and-options)
   - [Compiling For Multiple Architectures](#compiling-for-multiple-architectures)
 
 ## CMake Basics
 
-Build requirements:
+### Build requirements
 
-- CMake 3.13+
-- A C-toolchain such as gcc, clang, or Microsoft Visual Studio.
-- Flex and Bison. On Windows, `choco install winflexbison`.
+- CMake 3.14+
+- A C compiler toolchain such as gcc, clang, or Microsoft Visual Studio.
+- Python 3 (to run the test suite)
 
-_Important_: The following instructions assume that you have created a `build`
+### Optional build requirements (Maintainer-Mode)
+
+- GPerf, Flex and Bison. On Windows, `choco install winflexbison`.
+
+**_Important_**: The following instructions assume that you have created a `build`
 subdirectory and that subsequent commands are performed from said directory,
 like so:
 
@@ -73,7 +80,7 @@ mkdir build && cd build
 ### Basic Release build & system install
 
 ```sh
-cmake .. -DCMAKE_BUILD_TYPE="Release"
+cmake .. -D CMAKE_BUILD_TYPE="Release"
 cmake --build . --config Release
 sudo cmake --build . --config Release --target install
 ```
@@ -83,7 +90,7 @@ sudo cmake --build . --config Release --target install
 In CMake, "Debug" builds mean that symbols are compiled in.
 
 ```sh
-cmake .. -DCMAKE_BUILD_TYPE="Debug"
+cmake .. -D CMAKE_BUILD_TYPE="Debug"
 cmake --build . --config Debug
 ```
 
@@ -91,14 +98,31 @@ You will likely also wish to disable compiler/linker optimizations, which you
 can do like so, using our custom `OPTIMIZE` option:
 
 ```sh
-cmake .. -DCMAKE_BUILD_TYPE="Debug" -DOPTIMIZE=OFF
+cmake .. -D CMAKE_BUILD_TYPE="Debug" -D OPTIMIZE=OFF
 cmake --build . --config Debug
 ```
+
+_Tip_: CMake provides four build configurations which you can set using the
+`CMAKE_BUILD_TYPE` variable or the `--config` (`-C`) command line option.
+These are:
+- `Debug`
+- `Release`
+- `MinSizeRel`
+- `RelWithDebInfo`
+
+For multi-config generators, such as "Visual Studio" and "Ninja Multi-Config",
+you should not specify the config when you initially configure the project but
+you _will_ need to specify the config when you build the project and when
+running `ctest` or `cpack`.
+
+For single-config generators, such as "Make" or "Ninja", you will need to
+specify the config when you configure the project, and should _not_ specify the
+config when you build the project or run `ctest`.
 
 ### Build and install to a specific install location (prefix)
 
 ```sh
-cmake -DCMAKE_INSTALL_PREFIX:PATH=install ..
+cmake -D CMAKE_INSTALL_PREFIX:PATH=install ..
 cmake --build . --target install --config Release
 ```
 
@@ -113,7 +137,15 @@ cmake --build . --config Release
 
 ### Build and run tests
 
-_TODO_: We have not yet added unit test support for CMake.
+The option to build and run tests is enabled by default, which requires that
+you provide libcheck (i.e. `check`, `check-devel`, `check-dev`, etc).
+
+If you're building with `ENABLE_LIBCLAMAV_ONLY=ON` or `ENABLE_APP=OFF`, then
+libcheck will still be required and you can still run the tests, but it will
+skip all app tests and only run the libclamav unit tests.
+
+If you wish to disable test support, then configure with `-D ENABLE_TESTS=OFF`.
+
 
 - `-V`: Verbose
 
@@ -131,7 +163,7 @@ ctest -C Release -V
 The following CMake options can be selected by using `-D`. For example:
 
 ```sh
-cmake .. -DENABLE_EXAMPLES
+cmake .. -D ENABLE_EXAMPLES
 cmake --build . --config Debug
 ```
 
@@ -182,7 +214,12 @@ cmake --build . --config Debug
 
   _Default: `OFF`_
 
-- `ENABLE_FUZZ`: Build fuzz targets. Will enable `ENABLE_STATIC_LIB` for you.
+- `ENABLE_FUZZ`: Build statically linked fuzz targets _and nothing else_.
+  This feature is for fuzzing with OSS-Fuzz and reproducing fuzz bug reports
+  and requires the following environment variables to be set:
+  - CC = `which clang`
+  - CXX = `which clang++`
+  - SANITIZER = "address" _or_ "undefined" _or_ "memory"
 
   _Default: `OFF`_
 
@@ -191,8 +228,13 @@ cmake --build . --config Debug
   _Default: `OFF`_
 
 - `ENABLE_JSON_SHARED`: Prefer linking with libjson-c shared library instead of
-  static. Please set this to `OFF` if you're an application developer that uses
-  a different JSON library in your app, or if you provide libclamav to others.
+  static.
+
+  **Important**: Please set this to `OFF` if you're an application developer
+  that uses a different JSON library in your app _OR_ if you provide libclamav
+  that others may use in their apps. If you link libclamav with the json-c
+  shared library then downstream applications which use a different JSON
+  library may crash!
 
   _Default: `ON`_
 
@@ -209,13 +251,13 @@ cmake --build . --config Debug
 - `ENABLE_MILTER`: (Posix-only) Build the clamav-milter mail filter daemon.
   Requires: `ENABLE_APP`
 
-  _Default: `OFF`_
+  _Default: `OFF` for Mac & Windows, `ON` for Linux/Unix_
 
 - `ENABLE_UNRAR`: Build & install libclamunrar (UnRAR) and libclamunrar_iface.
 
   _Default: `ON`_
 
-- `ENABLE_DOCS`: Generate man pages.
+- `ENABLE_MAN_PAGES`: Generate man pages.
 
   _Default: `OFF`_
 
@@ -228,11 +270,18 @@ cmake --build . --config Debug
 
   _Default: `OFF`_
 
+- `ENABLE_TESTS`: Build examples.
+
+  _Default: `ON`_
+
 - `ENABLE_LIBCLAMAV_ONLY`: Build libclamav only. Excludes libfreshclam too!
 
   _Default: `OFF`_
 
 - `ENABLE_STATIC_LIB`: Build libclamav and/or libfreshclam static libraries.
+
+  Tip: If you wish to build `clamscan` and the other apps statically, you must
+  also set ENABLE_SHARED_LIB=OFF.
 
   _Default: `OFF`_
 
@@ -260,139 +309,272 @@ cmake --build . --config Debug
 
 #### Linux release build, install to system
 
-This example sets the build system to Ninja instead of using Make, for speed.
+This example sets the build generator to Ninja instead of using Make, for speed.
 You may need to first use `apt`/`dnf`/`pkg` to install `ninja-build`
 
 ```sh
 cmake .. -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DENABLE_JSON_SHARED=OFF
+  -D CMAKE_BUILD_TYPE=Release \
+  -D ENABLE_JSON_SHARED=OFF
 ninja
 sudo ninja install
 ```
 
 #### macOS debug build, custom OpenSSL path, build examples, local install
 
-macOS builds use Homebrew to install `flex`, `bison`, and each of the library
-dependencies.
+For macOS builds, we recommend using Homebrew to install the build tools, such
+as `cmake`, `flex`, `bison`, as well as ClamAV's library dependencies.
 
 Note that explicit paths for OpenSSL are requires so as to avoid using an older
 OpenSSL install provided by the operating system.
 
 This example also:
-
-- Build system to Ninja instead of using Make.
+- Sets the build generator to Ninja instead of using Make.
   - You may need to first use `brew` to install `ninja`.
-- Sets build type to "Debug" and explicitly disables compiler optimizations.
+- Sets build config to "Debug" and explicitly disables compiler optimizations.
 - Builds static libraries (and also shared libraries, which are on by default).
 - Builds the example programs, just to test them out.
-- Sets the install path (prefix) to ./install
+- Sets the install path (prefix) to `./install`.
 
 ```sh
-cmake .. -G Ninja                                                              \
-  -DCMAKE_BUILD_TYPE=Debug                                                     \
-  -DOPTIMIZE=OFF                                                               \
-  -DENABLE_JSON_SHARED=OFF                                                     \
-  -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1/                               \
-  -DOPENSSL_CRYPTO_LIBRARY=/usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib  \
-  -DOPENSSL_SSL_LIBRARY=/usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib        \
-  -DENABLE_STATIC_LIB=ON                                                       \
-  -DENABLE_EXAMPLES=ON                                                         \
-  -DCMAKE_INSTALL_PREFIX=install
+cmake .. -G Ninja                                                             \
+  -D CMAKE_BUILD_TYPE=Debug                                                    \
+  -D OPTIMIZE=OFF                                                              \
+  -D ENABLE_JSON_SHARED=OFF                                                    \
+  -D OPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1/                              \
+  -D OPENSSL_CRYPTO_LIBRARY=/usr/local/opt/openssl@1.1/lib/libcrypto.1.1.dylib \
+  -D OPENSSL_SSL_LIBRARY=/usr/local/opt/openssl@1.1/lib/libssl.1.1.dylib       \
+  -D ENABLE_STATIC_LIB=ON                                                      \
+  -D ENABLE_EXAMPLES=ON                                                        \
+  -D CMAKE_INSTALL_PREFIX=install
 ninja
 ninja install
 ```
 
-#### Windows build (with vcpkg)
+#### Windows builds
 
-Building with `vcpkg` is relatively easy, as all of the dependencies are built automatically.
+At a minimum you will need Visual Studio 2015 or newer, and CMake.
+If you want to build the installer, you'll also need WiX Toolset.
 
-##### Preprequisites
-You'll need CMake, git and vcpkg installed.
+If you're using Chocolatey, you can install CMake and WiX simply like this:
 
-- CMake: Download the installer [here](https://cmake.org/download/#latest) and
-  install it.
-- Git: Download the installer [here](https://git-scm.com/download/win) and
-  install it.
-- vcpkg: Get and install [vcpkg](https://github.com/microsoft/vcpkg). Set up
-  `vcpkg` as described in their README. Set the variable `$VCPKG_PATH` to the
-  location where you installed `vcpkg`. If you want to build for a 64 bit
-  system, don't forget to set `vcpkg`'s triple correctly:
-  ```ps1
-  $env:VCPKG_DEFAULT_TRIPLET="x64-windows"
-  $VCPKG_PATH="..." # Path to your vcpkg installation
-  ```
-
-##### Configuring and compiling
-Next, install the required packages:
 ```ps1
-& "$VCPKG_PATH\vcpkg" install 'curl[openssl]' 'json-c' 'libxml2' 'pcre2' 'pthreads' 'zlib' 'pdcurses' 'bzip2'
+choco install cmake wixtoolset
 ```
 
-Now check out the ClamAV repository and set your build environment up with
-CMake:
-```ps1
-git clone https://github.com/Cisco-Talos/clamav-devel
-cd clamav-devel
-mkdir build
-cd build
-cmake -A x64 `
-      -DCMAKE_TOOLCHAIN_FILE="$VCPKG_PATH\scripts\buildsystems\vcpkg.cmake" `
-      -DCMAKE_INSTALL_PREFIX='C:\clamav' ..
-```
-You have to drop the `-A x64` arguments if you're building for 32
-bits, and correct the package paths accordingly. Also, if you want to install
-via the MSVC project, set up the install path as you like.
+Then open a new terminal so that CMake and WiX will be in your `$PATH`.
+**The following commands for building on Windows are written for Powershell**.
 
-Finally, go ahead and build the project:
+There are two options for building and supplying the library dependencies.
+These are Mussels and vcpkg.
+
+Mussels is an open source project developed in-house by the ClamAV team.
+It offers great flexibility for defining your own collections (cookbooks) of
+build instructions (recipes) instead of solely relying on a centralized
+repository of ports. And unlike vcpkg, Mussels does not implement CMake build
+tooling for projects that don't support CMake, but instead leverages whatever
+build system is provided by the project. This means that Mussels builds may
+require installing additional tools, like NMake and ActivePerl rather than
+simply requiring CMake. The advantage is that you'll be building those projects
+the same way that those developers intended, and that Mussels recipes are
+generally very light weight. Mussels has some sharp edges because it's a newer
+and much smaller project than vcpkg.
+
+Vcpkg is an open source project developed by Microsoft and is heavily oriented
+towards CMake projects. Vcpkg offers a very large collection of "ports" for
+almost any project you may need to build.
+It is very easy to get started with vcpkg.
+
+Mussels is the preferred tool to supply the library dependencies at least until
+such time as the vcpkg Debug-build libclamav unit test heap-corruption crash
+is resolved [(see below)](#windows-build-with-vcpkg).
+
+##### Windows build (with Mussels)
+
+Much like `vcpkg`, [Mussels](https://github.com/Cisco-Talos/Mussels) can be
+used to automatically build the ClamAV library dependencies. Unlike `vcpkg`,
+Mussels does not provide a mechanism for CMake to automatically detect the
+library paths.
+
+**Preprequisites:**
+
+To build the library dependencies with Mussels, use Python's `pip` package
+manager to install Mussels:
+
+```ps1
+python3 -m pip install mussels
+```
+
+Update the Mussels cookbooks to get the latest build recipes and set the
+`clamav` cookbook to be trusted:
+
+```ps1
+msl update
+msl cookbook trust clamav
+```
+
+Use `msl list` if you wish to see the recipes provided by the `clamav` cookbook.
+
+**Building the libraries and ClamAV:**
+
+Build the `clamav_deps` recipe to compile ClamAV's library dependencies.
+By default, Mussels will install them to `~\.mussels\install\<target>`
+
+```ps1
+msl build clamav_deps
+```
+
+Next, set `$env:CLAMAV_DEPENDENCIES` to the location where Mussels built your
+library dependencies:
+
+```ps1
+$env:CLAMAV_DEPENDENCIES="$env:userprofile\.mussels\install\x64"
+```
+
+To configure the project, run:
+
+```ps1
+cmake ..  -G "Visual Studio 15 2017" -A x64 `
+  -D JSONC_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include\json-c"         `
+  -D JSONC_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\json-c.lib"             `
+  -D ENABLE_JSON_SHARED=OFF                                              `
+  -D BZIP2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                `
+  -D BZIP2_LIBRARY_RELEASE="$env:CLAMAV_DEPENDENCIES\lib\libbz2.lib"     `
+  -D CURL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
+  -D CURL_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libcurl_imp.lib"         `
+  -D OPENSSL_ROOT_DIR="$env:CLAMAV_DEPENDENCIES"                         `
+  -D OPENSSL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
+  -D OPENSSL_CRYPTO_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libcrypto.lib" `
+  -D OPENSSL_SSL_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libssl.lib"       `
+  -D ZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libssl.lib"              `
+  -D LIBXML2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
+  -D LIBXML2_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libxml2.lib"          `
+  -D PCRE2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                `
+  -D PCRE2_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pcre2-8.lib"            `
+  -D CURSES_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"               `
+  -D CURSES_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pdcurses.lib"          `
+  -D PThreadW32_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"           `
+  -D PThreadW32_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pthreadVC2.lib"    `
+  -D ZLIB_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
+  -D ZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\zlibstatic.lib"          `
+  -D LIBCHECK_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"             `
+  -D LIBCHECK_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\checkDynamic.lib"    `
+  -D CMAKE_INSTALL_PREFIX="install"
+```
+
+Now, go ahead and build the project:
+
 ```ps1
 cmake --build . --config Release
 ```
 
-#### Windows Build (manual or with Mussels)
-
-Chocolatey (`choco`) is used to install `winflexbison` and `cmake`.
-Visual Studio 2015+ is required, 2017+ recommended.
-
-These instructions assume that `$env:CLAMAV_DEPENDENCIES` is set to your
-[Mussels](https://github.com/Cisco-Talos/Mussels) `install\x64` directory and
-that you've used Mussels to build the `clamav_deps` collection which will
-provide the required libraries.
-
-_Tip_: Instead of building manually, try using Mussels to automate your build!
+_Tip_: If you're having include-path issues when building, try building with
+detailed verbosity so you can verify that the paths are correct:
 
 ```ps1
-$env:CLAMAV_DEPENDENCIES="$env:userprofile\.mussels\install\x64"
-cmake ..  -G "Visual Studio 15 2017" -A x64 `
-    -DJSONC_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include\json-c"         `
-    -DJSONC_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\json-c.lib"             `
-    -DBZIP2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                `
-    -DBZIP2_LIBRARY_RELEASE="$env:CLAMAV_DEPENDENCIES\lib\libbz2.lib"     `
-    -DCURL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
-    -DCURL_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libcurl_imp.lib"         `
-    -DOPENSSL_ROOT_DIR="$env:CLAMAV_DEPENDENCIES"                         `
-    -DOPENSSL_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
-    -DOPENSSL_CRYPTO_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libcrypto.lib" `
-    -DZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libssl.lib"              `
-    -DLIBXML2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"              `
-    -DLIBXML2_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\libxml2.lib"          `
-    -DPCRE2_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                `
-    -DPCRE2_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pcre2-8.lib"            `
-    -DCURSES_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"               `
-    -DCURSES_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pdcurses.lib"          `
-    -DPThreadW32_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"           `
-    -DPThreadW32_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\pthreadVC2.lib"    `
-    -DZLIB_INCLUDE_DIR="$env:CLAMAV_DEPENDENCIES\include"                 `
-    -DZLIB_LIBRARY="$env:CLAMAV_DEPENDENCIES\lib\zlibstatic.lib"          `
-    -DCMAKE_INSTALL_PREFIX="install"
-cmake --build . --config Release --target install
-copy $env:CLAMAV_DEPENDENCIES\lib\* .\install
+cmake --build . --config Release -- /verbosity:detailed
 ```
 
-_Tip_: If you're having include-path issues, try building with detailed verbosity:
+You can run the test suite with CTest:
 
 ```ps1
-cmake --build . --config Release --target install -- /verbosity:detailed
+ctest -C Release
+```
+
+And you can install to the `install` (set above) like this:
+
+```ps1
+cmake --build . --config Release --target install
+```
+
+##### Windows build (with vcpkg)
+
+`vcpkg` can be used to build the ClamAV library dependencies automatically.
+
+`vcpkg` integrates really well with CMake, enabling CMake to find your compiled
+libraries automatically, so you don't have to specify the include & library
+paths manually as you do when using Mussels.
+
+_DISCLAIMER_: There is a known issue with the unit tests when building with
+vcpkg in Debug mode. When you run the libclamav unit tests (check_clamav), the
+program will crash and a popup will claim there was heap corruption. If you use
+Task Manager to kill the `check_clamav.exe` process, the rest of the tests pass
+just fine. This issue does not occur when using Mussels to supply the library
+dependencies. Commenting out the following lines in `readdb.c` resolves the
+heap corruption crash when running `check_clamav`, but of course introduces a
+memory leak:
+```c
+    if (engine->stats_data)
+        free(engine->stats_data);
+```
+If anyone has time to figure out the real cause of the vcpkg Debug-build crash
+in check_clamav, it would be greatly appreciated.
+
+**Preprequisites:**
+
+You'll need to install [vcpkg](https://github.com/microsoft/vcpkg).
+See the `vcpkg` README for installation instructions.
+
+Once installed, set the variable `$VCPKG_PATH` to the location where you
+installed `vcpkg`:
+
+```ps1
+$VCPKG_PATH="..." # Path to your vcpkg installation
+```
+
+By default, CMake and `vcpkg` build for 32-bit. If you want to build for 64-bit,
+set the `VCPKG_DEFAULT_TRIPLET` environment variable:
+
+```ps1
+$env:VCPKG_DEFAULT_TRIPLET="x64-windows"
+```
+
+**Building the libraries and ClamAV:**
+
+Next, use `vcpkg` to build the required library dependencies:
+
+```ps1
+& "$VCPKG_PATH\vcpkg" install 'curl[openssl]' 'json-c' 'libxml2' 'pcre2' 'pthreads' 'zlib' 'pdcurses' 'bzip2' 'check'
+```
+
+Now configure the ClamAV build using the `CMAKE_TOOLCHAIN_FILE` variable which
+will enable CMake to automatically find the libraries we built with `vcpkg`.
+
+```ps1
+cmake .. -A x64 `
+  -D CMAKE_TOOLCHAIN_FILE="$VCPKG_PATH\scripts\buildsystems\vcpkg.cmake" `
+  -D CMAKE_INSTALL_PREFIX="install"
+```
+
+_Tip_: You have to drop the `-A x64` arguments if you're building for 32-bits,
+and correct the package paths accordingly.
+
+Now, go ahead and build the project:
+
+```ps1
+cmake --build . --config Release
+```
+
+You can run the test suite with CTest:
+
+```ps1
+ctest -C Release
+```
+
+And you can install to the `install` directory (set above) like this:
+
+```ps1
+cmake --build . --config Release --target install
+```
+
+##### Build the Installer
+
+To build the installer, you must have WIX Toolset installed. If you're using
+Chocolatey, you can install it simply with `choco install wixtoolset` and then
+open a new terminal so that WIX will be in your PATH.
+
+```ps1
+cpack -C Release
 ```
 
 ### External Depedencies
@@ -404,142 +586,146 @@ which include C headers. For macOS, Homebrew doesn't separate the headers.
 
 #### libclamav dependencies
 
-App developers that only need libclamav can use the `-DENABLE_LIBCLAMAV_ONLY`
+App developers that only need libclamav can use the `-D ENABLE_LIBCLAMAV_ONLY`
 option to bypass ClamAV app dependencies.
 
 libclamav requires these library dependencies:
 
-- bzip2
-- zlib
-- libxml2
-- libpcre2
-- openssl
-- libjson-c
-- iconv (POSIX-only, may be provided by system)
-- pthreads (or on Windows: pthreads-win32)
-- llvm (optional, _see [Bytecode Runtime](#bytecode-runtime))
+- `bzip2`
+- `zlib`
+- `libxml2`
+- `libpcre2`
+- `openssl`
+- `json-c`
+- `iconv` (POSIX-only, may be provided by system)
+- `pthreads` (Provided by the system on POSIX; Use `pthreads-win32` on Windows)
+- `llvm` (optional, _see [Bytecode Runtime](#bytecode-runtime))
 
 #### libfreshclam dependencies
 
 If you want libclamav _and_ libfreshclam for your app, then use the
-`-DENABLE_APP=OFF` option instead.
+`-D ENABLE_APP=OFF` option instead.
 
 libfreshclam adds these additional library dependencies:
 
-- libcurl
+- `libcurl`
 
 #### Application dependencies
 
 For regular folk who want the ClamAV apps, you'll also need:
 
-- ncurses (or pdcurses), for clamdtop.
-- systemd, so clamd, freshclam, clamonacc may run as a systemd service (Linux).
-- libsystemd, so clamd will support the clamd.ctl socket (Linux).
+- `ncurses` (or `pdcurses`), for `clamdtop`.
+- `systemd`, so `clamd`, `freshclam`, `clamonacc` may run as a `systemd`
+  service (Linux).
+- `libsystemd`, so `clamd` will support the `clamd.ctl` socket (Linux).
 
 #### Dependency build options
 
 If you have custom install paths for the dependencies on your system or are
 on Windows, you may need to use the following options...
 
-##### bzip2
+##### `libcheck`
 
 ```sh
-  -DBZIP2_INCLUDE_DIR="_filepath of bzip2 header directory_"
-  -DBZIP2_LIBRARIES="_filepath of bzip2 library_"
+  -D LIBCHECK_ROOT_DIR="_path to libcheck install root_"
+  -D LIBCHECK_INCLUDE_DIR="_filepath of libcheck header directory_"
+  -D LIBCHECK_LIBRARY="_filepath of libcheck library_"
 ```
 
-##### zlib
+##### `bzip2`
 
 ```sh
-  -DZLIB_INCLUDE_DIR="_filepath of zlib header directory_"
-  -DZLIB_LIBRARY="_filepath of zlib library_"
+  -D BZIP2_INCLUDE_DIR="_filepath of bzip2 header directory_"
+  -D BZIP2_LIBRARIES="_filepath of bzip2 library_"
 ```
 
-##### libxml2
+##### `zlib`
 
 ```sh
-  -DLIBXML2_INCLUDE_DIR="_filepath of libxml2 header directory_"
-  -DLIBXML2_LIBRARY="_filepath of libxml2 library_"
+  -D ZLIB_INCLUDE_DIR="_filepath of zlib header directory_"
+  -D ZLIB_LIBRARY="_filepath of zlib library_"
 ```
 
-##### libpcre2
+##### `libxml2`
 
 ```sh
-  -DPCRE2_INCLUDE_DIR="_filepath of libpcre2 header directory_"
-  -DPCRE2_LIBRARY="_filepath of libcpre2 library_"
+  -D LIBXML2_INCLUDE_DIR="_filepath of libxml2 header directory_"
+  -D LIBXML2_LIBRARY="_filepath of libxml2 library_"
 ```
 
-##### openssl (libcrypto, libssl)
-
-Hints to find openssl package:
+##### `libpcre2`
 
 ```sh
-  -DOPENSSL_ROOT_DIR="_path to openssl install root_"
+  -D PCRE2_INCLUDE_DIR="_filepath of libpcre2 header directory_"
+  -D PCRE2_LIBRARY="_filepath of libcpre2 library_"
 ```
+
+##### `openssl` (`libcrypto`, `libssl`)
 
 ```sh
-  -DOPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
-  -DOPENSSL_CRYPTO_LIBRARY="_filepath of libcrypto library_"
-  -DOPENSSL_SSL_LIBRARY="_filepath of libcrypto library_"
+  -D OPENSSL_ROOT_DIR="_path to openssl install root_"
+  -D OPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
+  -D OPENSSL_CRYPTO_LIBRARY="_filepath of libcrypto library_"
+  -D OPENSSL_SSL_LIBRARY="_filepath of libcrypto library_"
 ```
 
-##### libjson-c
+##### `libjson-c`
 
-Tip: You're strongly encouraged to link with the a static json-c library.
+_Tip_: You're strongly encouraged to link with the a static json-c library.
 
 ```sh
-  -DJSONC_INCLUDE_DIR="_path to json-c header directory_"
-  -DJSONC_LIBRARY="_filepath of json-c library_"
+  -D JSONC_INCLUDE_DIR="_path to json-c header directory_"
+  -D JSONC_LIBRARY="_filepath of json-c library_"
 ```
 
-##### libmspack
+##### `libmspack`
 
-These options only apply if you use the `-DENABLE_EXTERNAL_MSPACK=ON` option.
+These options only apply if you use the `-D ENABLE_EXTERNAL_MSPACK=ON` option.
 
 ```sh
-  -DMSPack_INCLUDE_DIR="_path to mspack header directory_"
-  -DMSPack_LIBRARY="_filepath of libmspack library_"
+  -D MSPack_INCLUDE_DIR="_path to mspack header directory_"
+  -D MSPack_LIBRARY="_filepath of libmspack library_"
 ```
 
-##### iconv (POSIX-only)
+##### `iconv` (POSIX-only)
 
 On POSIX platforms, iconv might be part of the C library in which case you
 would not want to specify an external iconv library.
 
 ```sh
-  -DIconv_INCLUDE_DIR="_path to iconv header directory_"
-  -DIconv_LIBRARY="_filepath of iconv library_"
+  -D Iconv_INCLUDE_DIR="_path to iconv header directory_"
+  -D Iconv_LIBRARY="_filepath of iconv library_"
 ```
 
-##### pthreads-win32 (Windows-only)
+##### `pthreads-win32` (Windows-only)
 
 On POSIX platforms, pthread support is detected automatically.  On Windows, you
 need to specify the following:
 
 ```sh
-  -DPThreadW32_INCLUDE_DIR="_path to pthread-win32 header directory_"
-  -DPThreadW32_LIBRARY="_filepath of pthread-win32 library_"
+  -D PThreadW32_INCLUDE_DIR="_path to pthread-win32 header directory_"
+  -D PThreadW32_LIBRARY="_filepath of pthread-win32 library_"
 ```
 
-##### llvm (optional, _see "Bytecode Runtime" section_)
+##### `llvm` (optional, _see "Bytecode Runtime" section_)
 
 ```sh
-  -DBYTECODE_RUNTIME="llvm"
-  -DLLVM_ROOT_DIR="_path to llvm install root_" -DLLVM_FIND_VERSION="3.6.0"
+  -D BYTECODE_RUNTIME="llvm"
+  -D LLVM_ROOT_DIR="_path to llvm install root_" -D LLVM_FIND_VERSION="3.6.0"
 ```
 
-##### libcurl
+##### `libcurl`
 
 ```sh
-  -DCURL_INCLUDE_DIR="_path to curl header directory_"
-  -DCURL_LIBRARY="_filepath of curl library_"
+  -D CURL_INCLUDE_DIR="_path to curl header directory_"
+  -D CURL_LIBRARY="_filepath of curl library_"
 ```
 
-##### ncurses or pdcurses, for clamdtop
+##### `ncurses` or `pdcurses`, for `clamdtop`
 
 ```sh
-  -DCURSES_INCLUDE_DIR="_path to curses header directory_"
-  -DCURSES_LIBRARY="_filepath of curses library_"
+  -D CURSES_INCLUDE_DIR="_path to curses header directory_"
+  -D CURSES_LIBRARY="_filepath of curses library_"
 ```
 
 ##### Bytecode Runtime
@@ -564,22 +750,22 @@ At the moment, the interpreter is the default runtime, while we work out
 compatibility issues with libLLVM. This default equates to:
 
 ```sh
-cmake .. -DBYTECODE_RUNTIME="interpreter"
+cmake .. -D BYTECODE_RUNTIME="interpreter"
 ```
 
 To build using LLVM instead of the intereter, use:
 
 ```sh
 cmake .. \
-  -DBYTECODE_RUNTIME="llvm"       \
-  -DLLVM_ROOT_DIR="/opt/llvm/3.6" \
-  -DLLVM_FIND_VERSION="3.6.0"
+  -D BYTECODE_RUNTIME="llvm"       \
+  -D LLVM_ROOT_DIR="/opt/llvm/3.6" \
+  -D LLVM_FIND_VERSION="3.6.0"
 ```
 
-To disable bytecode signature support entire, you may build with this option:
+To disable bytecode signature support entirely, you may build with this option:
 
 ```sh
-cmake .. -DBYTECODE_RUNTIME="none"
+cmake .. -D BYTECODE_RUNTIME="none"
 ```
 
 ## Compilers and Options

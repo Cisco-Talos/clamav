@@ -3456,7 +3456,7 @@ int cli_scanpe(cli_ctx *ctx)
                   ) ||
                  (                                                                                                         /* upack 1.1/1.2, based on 2 samples */
                   epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) < peinfo->min && /* mov esi */
-                  cli_readint32(epbuff + 1) - EC32(peinfo->pe_opt.opt32.ImageBase) > 0 &&
+                  cli_readint32(epbuff + 1) > EC32(peinfo->pe_opt.opt32.ImageBase) &&
                   epbuff[5] == '\xad' && epbuff[6] == '\x8b' && epbuff[7] == '\xf8' /* loads;  mov edi, eax */
                   )))) {
             uint32_t vma, off;

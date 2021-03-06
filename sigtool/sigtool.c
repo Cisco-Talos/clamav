@@ -225,7 +225,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     }
 
     /* Prepare file */
-    fd = open(filename, O_RDONLY);
+    fd = open(filename, O_RDONLY | O_BINARY);
     if (fd < 0) {
         mprintf("!hashpe: Can't open file %s!\n", filename);
         free(ctx.containers);
@@ -351,7 +351,7 @@ static int htmlnorm(const struct optstruct *opts)
     int fd;
     fmap_t *map;
 
-    if ((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
+    if ((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY | O_BINARY)) == -1) {
         mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
         return -1;
     }
@@ -377,7 +377,7 @@ static int asciinorm(const struct optstruct *opts)
     int fd, ofd;
 
     fname = optget(opts, "ascii-normalise")->strarg;
-    fd    = open(fname, O_RDONLY);
+    fd    = open(fname, O_RDONLY | O_BINARY);
 
     if (fd == -1) {
         mprintf("!asciinorm: Can't open file %s\n", fname);
@@ -405,7 +405,7 @@ static int asciinorm(const struct optstruct *opts)
         return -1;
     }
 
-    ofd = open("./normalised_text", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    ofd = open("./normalised_text", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR);
     if (ofd == -1) {
         mprintf("!asciinorm: Can't open file ./normalised_text\n");
         close(fd);
@@ -447,7 +447,7 @@ static int utf16decode(const struct optstruct *opts)
     int fd1, fd2, bytes;
 
     fname = optget(opts, "utf16-decode")->strarg;
-    if ((fd1 = open(fname, O_RDONLY)) == -1) {
+    if ((fd1 = open(fname, O_RDONLY | O_BINARY)) == -1) {
         mprintf("!utf16decode: Can't open file %s\n", fname);
         return -1;
     }
@@ -460,7 +460,7 @@ static int utf16decode(const struct optstruct *opts)
     }
     sprintf(newname, "%s.ascii", fname);
 
-    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)) < 0) {
+    if ((fd2 = open(newname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
         mprintf("!utf16decode: Can't create file %s\n", newname);
         free(newname);
         close(fd1);
@@ -843,6 +843,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 
     if (!(cdiffh = fopen(cdiff, "ab"))) {
         mprintf("!script2cdiff: Can't open %s for appending\n", cdiff);
+        free(pt);
         unlink(cdiff);
         free(cdiff);
         return -1;
@@ -1875,7 +1876,7 @@ static int maxlinelen(const char *file)
     int fd, bytes, n = 0, nmax = 0, i;
     char buff[512];
 
-    if ((fd = open(file, O_RDONLY)) == -1) {
+    if ((fd = open(file, O_RDONLY | O_BINARY)) == -1) {
         mprintf("!maxlinelen: Can't open file %s\n", file);
         return -1;
     }
@@ -2611,7 +2612,19 @@ static int decodehex(const char *hexsig)
             mprintf("!missing regex expression terminator /\n");
             return -1;
         }
-        rlen = regex_end - wild - 1;
+
+        /* gotta make sure we treat escaped slashes */
+        for( i = tlen + 1; i < hexlen; i++ ) {
+            if( hexsig[ i ] == '/' && hexsig[ i - 1 ] != '\\' ) {
+                rlen = i - tlen - 1;
+                break;
+            }
+        }
+        if( i == hexlen ) {
+            mprintf( "!missing regex expression terminator /\n");
+            return -1;
+        }
+
         clen = hexlen - tlen - rlen - 2; /* 2 from regex boundaries '/' */
 
         /* get the trigger statement */
@@ -3447,7 +3460,7 @@ static int dumpcerts(const struct optstruct *opts)
     }
 
     /* Prepare file */
-    fd = open(filename, O_RDONLY);
+    fd = open(filename, O_RDONLY | O_BINARY);
     if (fd < 0) {
         mprintf("!dumpcerts: Can't open file %s!\n", filename);
         free(ctx.containers);

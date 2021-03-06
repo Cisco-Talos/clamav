@@ -1,10 +1,16 @@
 # Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
+if(WIN32)
+    cmake_minimum_required( VERSION 3.16 ) # For file(GET_RUNTIME_DEPENDENCIES)
+else()
+    cmake_minimum_required( VERSION 3.14 )
+endif()
+
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) and install(SCRIPT)
 
 # Change this on a release:
 #  During active development: set(VERSION_SUFFIX "-devel-${TODAY}")
@@ -45,12 +51,21 @@ math(EXPR LIBFRESHCLAM_SOVERSION "${LIBFRESHCLAM_CURRENT} - ${LIBFRESHCLAM_AGE}"
 set(LIBFRESHCLAM_VERSION "${LIBFRESHCLAM_SOVERSION}.${LIBFRESHCLAM_AGE}.${LIBFRESHCLAM_REVISION}")
 HexVersion(LIBFRESHCLAM_VERSION_NUM ${LIBFRESHCLAM_CURRENT} ${LIBFRESHCLAM_REVISION} ${LIBFRESHCLAM_AGE})
 
+#
+# Define C_LINUX and C_BSD because CMake only defines UNIX, APPLE, WIN32, MSVC
+#
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(C_LINUX 1)
+elseif(APPLE OR CMAKE_SYSTEM_NAME MATCHES "BSD")
+    set(C_BSD 1)
+endif()
+
 # Git optionally used to add commit info into build to differentiate in bug reports.
 find_package(Git)
 if(Git_FOUND)
     # Store git description into variable
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --always
-        OUTPUT_VARIABLE REPO_VERSION)
+        OUTPUT_VARIABLE REPO_VERSION ERROR_QUIET)
     if("${REPO_VERSION}" MATCHES "")
         unset(REPO_VERSION)
     else()
@@ -78,21 +93,54 @@ endif()
 #
 
 # CMake Option default values:
-set(ENABLE_APP_DEFAULT          ON)
-set(ENABLE_MILTER_DEFAULT       OFF)
-set(ENABLE_CLAMONACC_DEFAULT    ON)
-set(ENABLE_EXAMPLES_DEFAULT     OFF)
-if(WIN32)
-    set(ENABLE_DOCS_DEFAULT     OFF)
+set(ENABLE_APP_DEFAULT              ON)
+if(WIN32 OR APPLE)
+    set(ENABLE_MILTER_DEFAULT       OFF)
 else()
-    set(ENABLE_DOCS_DEFAULT     ON)
+    set(ENABLE_MILTER_DEFAULT       ON)
 endif()
-set(ENABLE_DOXYGEN_DEFAULT      OFF)
-set(ENABLE_UNRAR_DEFAULT        ON)
-set(ENABLE_SYSTEMD_DEFAULT      ON)
+if(C_LINUX)
+    set(ENABLE_CLAMONACC_DEFAULT    ON)
+else()
+    set(ENABLE_CLAMONACC_DEFAULT    OFF)
+endif()
+set(ENABLE_EXAMPLES_DEFAULT         OFF)
+set(ENABLE_TESTS_DEFAULT            ON)
+if(WIN32)
+    set(ENABLE_MAN_PAGES_DEFAULT    OFF)
+else()
+    set(ENABLE_MAN_PAGES_DEFAULT    ON)
+endif()
+set(ENABLE_DOXYGEN_DEFAULT          OFF)
+set(ENABLE_UNRAR_DEFAULT            ON)
+set(ENABLE_SYSTEMD_DEFAULT          ON)
 
 # See CMakeOptions.cmake for additional options.
 include(CMakeOptions.cmake)
+
+if(ENABLE_FUZZ)
+    # We'd like the fuzz targets to be statically linked
+    set(ENABLE_STATIC_LIB       ON)
+    set(ENABLE_SHARED_LIB       OFF)
+    set(ENABLE_LIBCLAMAV_ONLY   ON)
+    set(ENABLE_TESTS            OFF)
+    set(OPTIMIZE                OFF)
+    set(ENABLE_SYSTEMD          OFF)
+    set(HAVE_MMAP               OFF)
+
+    if(NOT DEFINED ENV{FUZZING_ENGINE})
+        # If you're not building in an oss-fuzz docker environment, you can build the fuzz targets by setting:
+        # bash:  export CC=`which clang` && export CXX=`which clang++` && export SANITIZER=address/undefined/memory
+        # fish:  export CC=(which clang) && export CXX=(which clang++) && export SANITIZER=address/undefined/memory
+        set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=$ENV{SANITIZER},fuzzer-no-link -fsanitize-coverage=edge,indirect-calls")
+    endif()
+endif()
+
+if(ENABLE_STATIC_LIB AND NOT ENABLE_SHARED_LIB)
+    # When building everything static, link in libunrar.
+    set(UNRAR_LINKED 1)
+endif()
 
 if(ENABLE_LIBCLAMAV_ONLY AND (ENABLE_APP OR ENABLE_EXAMPLES))
     # Remember when disabled options are disabled for later diagnostics.
@@ -101,8 +149,8 @@ else()
     set(ENABLE_LIB_ONLY_DISABLED_OTHERS 0)
 endif()
 if(ENABLE_LIBCLAMAV_ONLY)
-    set(ENABLE_APP              OFF)
-    set(ENABLE_EXAMPLES         OFF)
+    set(ENABLE_APP                  OFF)
+    set(ENABLE_EXAMPLES             OFF)
 endif()
 
 #
@@ -111,40 +159,64 @@ endif()
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
 endif()
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
-#
-# Define LINUX because CMake only defines UNIX
-#
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    set(LINUX 1)
+include(GNUInstallDirs)
 
+if(CMAKE_INSTALL_FULL_LIBDIR)
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+else()
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
+if(C_LINUX)
     if(CMAKE_COMPILER_IS_GNUCXX)
-        # For O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
+        # Set _GNU_SOURCE for O_LARGEFILE, O_CLOEXEC, O_DIRECTORY, O_NOFOLLOW, etc flags on older systems
         # (pre POSIX.1-2008: glibc 2.11 and earlier). #4042
         set(_GNU_SOURCE 1)
     endif()
 endif()
 
 #
-# Set FreeBSD include path to include /usr/local/include
-#
-if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    include_directories(/usr/local/include)
-endif()
-
-#
 # Use the `lib` prefix on Windows, to match previous ClamAV build
 #
 if(WIN32)
-   set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
-   set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+    set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+    set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+endif()
+
+#
+# Find Test dependencies
+#
+if(ENABLE_TESTS)
+    # Used for the libclamav unit test framework
+    find_package(Libcheck REQUIRED)
+
+    # Used to generate the test files and for the application feature test framework
+    find_package(Python3 REQUIRED)
+
+    # Check for valgrind. If it exists, we'll enable extra tests that use valgrind.
+    if(C_LINUX)
+        find_package(Valgrind)
+    endif()
 endif()
 
 #
 # Find Library Dependencies
 #
 if (WIN32)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+    include(InstallRequiredSystemLibraries)
+
+    set(CPACK_GENERATOR                  "ZIP;WIX")
+    SET(CPACK_WIX_UPGRADE_GUID           D9F136C1-3691-47E3-9079-4FE9C9C5EB32)
+    SET(CPACK_RESOURCE_FILE_LICENSE      ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt)
+    SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
+    SET(CPACK_WIX_UI_BANNER              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_banner.bmp)
+    SET(CPACK_WIX_UI_DIALOG              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_dialog.bmp)
+    SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
+    include(CPack)
+
     find_package(PThreadW32)
     set(HAVE_PTHREAD_H 1)
     set(_REENTRANT 1)
@@ -211,7 +283,7 @@ if(BYTECODE_RUNTIME STREQUAL "llvm")
     endif()
 endif()
 
-# libfreshclam & app dependencies
+# libfreshclam & application dependencies
 if(NOT ENABLE_LIBCLAMAV_ONLY)
     find_package(CURL REQUIRED)
 
@@ -233,12 +305,13 @@ if(NOT ENABLE_LIBCLAMAV_ONLY)
             find_package(Milter REQUIRED)
         endif()
 
-        if(LINUX AND ENABLE_SYSTEMD)
+        if(C_LINUX AND ENABLE_SYSTEMD)
             find_package(SYSTEMD)
             if(SYSTEMD_FOUND)
                 set(HAVE_SYSTEMD 1)
             endif()
         endif()
+
     endif()
 endif()
 
@@ -281,11 +354,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
         "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
-
-include(GNUInstallDirs)
-
-# For test scripts and documentation
-find_package(Python3)
 
 # Always use '-fPIC'/'-fPIE' option.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -331,7 +399,11 @@ else()
     if(APPLE)
         set(BIND_8_COMPAT 1)
     endif()
-    check_include_file("resolv.h"       HAVE_RESOLV_H) # Disabled, beacuse libfreshclam/dns.c is broken.
+    check_include_file("resolv.h"       HAVE_RESOLV_H)
+    if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND EXISTS /usr/include/resolv.h)
+        # This hack because check_include_file() can't find "resolv.h" on FreeBSD.
+        set(HAVE_RESOLV_H 1)
+    endif()
     check_include_file("dirent.h"       HAVE_DIRENT_H)
     check_include_file("dlfcn.h"        HAVE_DLFCN_H)
 endif()
@@ -341,6 +413,12 @@ check_include_file("inttypes.h"         HAVE_INTTYPES_H)
 check_include_file("sys/inttypes.h"     HAVE_SYS_INTTYPES_H)
 check_include_file("sys/int_types.h"    HAVE_SYS_INT_TYPES_H)
 check_include_file("stdint.h"           HAVE_STDINT_H)
+
+# this hack required to silence warnings on systems with inttypes.h
+# because json-c's inttypes header isn't generated for each system. Hooray C!
+if(HAVE_INTTYPES_H)
+    set(JSON_C_HAVE_INTTYPES_H 1)
+endif()
 
 include(CheckTypeSize)
 # Checks for typedefs, structures, and compiler characteristics.
@@ -587,7 +665,7 @@ set(includedir  "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 set(VERSION     "${PACKAGE_VERSION}")
 
 # DBDIR for systemd service.in files
-set(DBDIR       "${DATABASE_DIRECTORY}")
+set(DBDIR       "${CMAKE_INSTALL_PREFIX}/${DATABASE_DIRECTORY}")
 
 if(ENABLE_DEBUG)
     set(CL_DEBUG 1)
@@ -645,7 +723,7 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-config
         @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/clamav-config"
-        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+            DESTINATION "${CMAKE_INSTALL_BINDIR}"
         PERMISSIONS
             OWNER_READ OWNER_WRITE OWNER_EXECUTE
             GROUP_READ             GROUP_EXECUTE
@@ -674,7 +752,7 @@ endif()
 add_subdirectory( libclamunrar_iface )
 
 if(NOT ENABLE_EXTERNAL_MSPACK)
-    add_subdirectory(libclammspack)
+    add_subdirectory( libclammspack )
 else()
     find_package(MSPack)
 endif()
@@ -685,7 +763,7 @@ endif()
 
 add_subdirectory( libclamav )
 
-if(NOT LIBCLAMAV_ONLY)
+if(NOT ENABLE_LIBCLAMAV_ONLY)
     add_subdirectory( shared )
 
     add_subdirectory( libfreshclam )
@@ -698,11 +776,11 @@ if(NOT LIBCLAMAV_ONLY)
 
         add_subdirectory( clamdscan )
 
-        if(LINUX AND ENABLE_CLAMONACC)
+        if(C_LINUX AND ENABLE_CLAMONACC)
             add_subdirectory( clamonacc )
         endif()
 
-        if(NOT WIN32 AND ENABLE_MILTER)
+        if(ENABLE_MILTER)
             add_subdirectory( clamav-milter )
         endif()
 
@@ -730,12 +808,23 @@ if(ENABLE_EXAMPLES)
     add_subdirectory( examples )
 endif()
 
-if(ENABLE_DOCS)
-    add_subdirectory( docs )
+include(CTest)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+if(ENABLE_TESTS)
+    add_subdirectory( test )
+    add_subdirectory( unit_tests )
 endif()
+
+add_subdirectory( docs )
 
 if(ENABLE_FUZZ)
     add_subdirectory( fuzz )
+endif()
+
+if(WIN32)
+    # Include the license(s) in the installation
+    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION .)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION .)
 endif()
 
 #
@@ -748,26 +837,39 @@ ${c}    Package Version:        ${e}${PACKAGE_STRING}
 ${c}    libclamav version:      ${e}${LIBCLAMAV_CURRENT}:${LIBCLAMAV_REVISION}:${LIBCLAMAV_AGE}
 ${c}    libfreshclam version:   ${e}${LIBFRESHCLAM_CURRENT}:${LIBFRESHCLAM_REVISION}:${LIBFRESHCLAM_AGE}
 ${c}    Install prefix:         ${e}${CMAKE_INSTALL_PREFIX}
+${c}    Host system:            ${e}${CMAKE_HOST_SYSTEM}
 ${c}    Target system:          ${e}${CMAKE_SYSTEM}
 ${c}    Compiler:               ${e}
 ${b}        Build type:         ${e}${CMAKE_BUILD_TYPE}
 ${b}        C compiler:         ${e}${CMAKE_C_COMPILER}
+${b}        C++ compiler:       ${e}${CMAKE_CXX_COMPILER}
 ${b}        CFLAGS:             ${e}${CMAKE_C_FLAGS_${_build_type}} ${CMAKE_C_FLAGS}
-${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}
+${b}        CXXFLAGS:           ${e}${CMAKE_CXX_FLAGS_${_build_type}} ${CMAKE_CXX_FLAGS}
+${b}        WARNCFLAGS:         ${e}${WARNCFLAGS}")
+if(VCPKG_TOOLCHAIN)
+message("\
+${c}    Using vcpkg:            ${e}
+${b}        Target Triplet:     ${e}${VCPKG_TARGET_TRIPLET}
+${b}        Target Arch:        ${e}${VCPKG_TARGET_ARCHITECTURE}
+${b}        Get runtime DLLs:   ${e}${VCPKG_APPLOCAL_DEPS}
+${b}        Package root path:  ${e}${VCPKG_CMAKE_FIND_ROOT_PATH}")
+endif()
+message("\
 ${c}    Build Options:          ${e}
 ${b}        Build apps:         ${e}${ENABLE_APP}
 ${b}        Shared library:     ${e}${ENABLE_SHARED_LIB}
 ${b}        Static library:     ${e}${ENABLE_STATIC_LIB}
 ${b}        Enable UnRAR:       ${e}${ENABLE_UNRAR}
 ${b}        Examples:           ${e}${ENABLE_EXAMPLES}
-${b}        Build man pages:    ${e}${ENABLE_DOCS}
+${b}        Tests:              ${e}${ENABLE_TESTS}
+${b}        Build man pages:    ${e}${ENABLE_MAN_PAGES}
 ${b}        Build doxygen HTML: ${e}${ENABLE_DOXYGEN}")
 if(NOT WIN32)
 message("\
 ${c}    Build Extras:           ${e}")
 message("\
 ${b}        Build milter:       ${e}${ENABLE_MILTER}  (toggle with -DENABLE_MILTER=ON/OFF)")
-if(LINUX)
+if(C_LINUX)
 message("\
 ${b}        Build clamonacc:    ${e}${ENABLE_CLAMONACC}  (toggle with -DENABLE_CLAMONACC=ON/OFF)")
 endif()
@@ -784,7 +886,14 @@ message(STATUS "${C}Engine Options${e} --
 ${b}        Bytecode Runtime:   ${e}
 ${_}            ${BYTECODE_RUNTIME}            ${e}")
 endif()
-
+if(ENABLE_TESTS)
+message(STATUS "${C}Test Dependencies${e} --
+${b}        Unit Test Framework:${e}
+${_}            libcheck        ${e}${LIBCHECK_INCLUDE_DIR}
+${_}                            ${e}${LIBCHECK_LIBRARY}
+${b}        Feature Test Framework:${e}
+${_}            python3         ${e}${Python3_EXECUTABLE}")
+endif()
 message(STATUS "${C}libclamav Dependencies${e} --
 ${b}        Compression support:${e}
 ${_}            bzip2           ${e}${BZIP2_INCLUDE_DIRS}
@@ -822,10 +931,12 @@ ${_}            iconv           ${e}${ICONV_INCLUDE_DIRS}
 ${_}                            ${e}${ICONV_LIBRARIES}")
 endif()
 
+if(NOT ENABLE_LIBCLAMAV_ONLY)
 message(STATUS "${C}libfreshclam Extra Dependencies${e} --
 ${b}        HTTP support:       ${e}
 ${_}            curl            ${e}${CURL_INCLUDE_DIRS}
 ${_}                            ${e}${CURL_LIBRARIES}")
+endif()
 
 if(HAVE_LIBNCURSES)
 message(STATUS "${C}Application Extra Dependencies${e} --
@@ -839,7 +950,7 @@ ${_}            pdcurses        ${e}${CURSES_INCLUDE_DIRS}
 ${_}                            ${e}${CURSES_LIBRARIES}")
 endif()
 
-if(LINUX)
+if(C_LINUX)
 if(SYSTEMD_PROGRAM_FOUND)
 message("\
 ${b}        systemd:            ${e}

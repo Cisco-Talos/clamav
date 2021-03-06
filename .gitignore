@@ -10,6 +10,11 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Ninja
 .ninja_deps
 .ninja_log
@@ -238,9 +243,7 @@ ipch/
 ClamAV.VC.db
 libclamav.pc
 clamav-config.h
-!win32/clamav-config.h
 platform.h
-!win32/platform.h
 /target.h
 libclamav/c++/FileCheck
 libclamav/c++/count

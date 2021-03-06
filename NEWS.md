@@ -9,9 +9,47 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
 ### Major changes
 
+- CMake is now the preferred build system. Please make an effort now to migrate
+  build tooling to use CMake instead of Autotools (eg: `./configure`, `make`,
+  `sudo make install`).
+
+  We have added comprehensive build instructions for using CMake to the new
+  `INSTALL.cmake.md` file. The online documentation will also be updated to
+  include CMake build instructions.
+
+  The Autotools build system is still available if you need it but is expected
+  to be removed in the next feature release. The Visual Studio build system has
+  been removed.
+
 ### Notable changes
 
+The following was added in 0.103.1 and is repeated here for awareness, as
+patch versions do not generally introduce new options:
+
+- Added a new scan option to alert on broken media (graphics) file formats.
+  This feature mitigates the risk of malformed media files intended to exploit
+  vulnerabilities in other software.
+  At present media validation exists for JPEG, TIFF, PNG, and GIF files.
+  To enable this feature, set `AlertBrokenMedia yes` in clamd.conf, or use
+  the `--alert-broken-media` option when using `clamscan`.
+  These options are disabled by default in this patch release, but may be
+  enabled in a subsequent release.
+  Application developers may enable this scan option by enabling
+  `CL_SCAN_HEURISTIC_BROKEN_MEDIA` for the `heuristic` scan option bit field.
+
+- Added CL_TYPE_TIFF, CL_TYPE_JPEG types to match GIF, PNG typing behavior.
+  BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
+  ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
+
 ### Other improvements
+
+- Added the `%f` format string option to the ClamD VirusEvent feature to insert
+  the file path of the scan target when a virus-event occurs. This supplements
+  the VirusEvent `%v` option which prints the signature (virus) name.
+  The ClamD VirusEvent feature also provides two environment variables,
+  `$CLAM_VIRUSEVENT_FILENAME` and `$CLAM_VIRUSEVENT_VIRUSNAME` for a similar
+  effect.
+  Patch courtesy of Vasile Papp.
 
 ### Bug fixes
 
@@ -21,7 +59,13 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
--
+- Alexander Golovach
+- Brian Bergstrand
+- Duane Waddle
+- Orion Poplawski
+- Sergey Valentey
+- Sven Rueß
+- Vasile Papp
 
 ## 0.103.0
 

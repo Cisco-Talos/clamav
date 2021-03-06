@@ -11,7 +11,9 @@
 #include <check.h>
 #include <sys/types.h>
 #include <dirent.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 
 #if HAVE_LIBXML2
 #include <libxml/parser.h>
@@ -71,12 +73,14 @@ START_TEST(test_cl_debug)
 }
 END_TEST
 
+#ifndef _WIN32
 /* extern const char *cl_retdbdir(void); */
 START_TEST(test_cl_retdbdir)
 {
     ck_assert_msg(!strcmp(DATADIR, cl_retdbdir()), "cl_retdbdir");
 }
 END_TEST
+#endif
 
 #ifndef REPO_VERSION
 #define REPO_VERSION VERSION
@@ -149,7 +153,7 @@ END_TEST
 START_TEST(test_cl_cvdhead)
 {
     // ck_assert_msg(NULL == cl_cvdhead(NULL), "cl_cvdhead(null)");
-    // ck_assert_msg(NULL == cl_cvdhead("input/cl_cvdhead/1.txt"), "cl_cvdhead(515 byte file, all nulls)");
+    // ck_assert_msg(NULL == cl_cvdhead("input" PATHSEP "cl_cvdhead" PATHSEP "1.txt"), "cl_cvdhead(515 byte file, all nulls)");
     /* the data read from the file is passed to cl_cvdparse, test cases for that are separate */
 }
 END_TEST
@@ -452,7 +456,7 @@ static void init_testfiles(void)
     unsigned i = 0;
     int expect = expected_testfiles;
 
-    DIR *d = opendir(OBJDIR "/../test");
+    DIR *d = opendir(OBJDIR PATHSEP ".." PATHSEP "test");
     ck_assert_msg(!!d, "opendir");
     if (!d)
         return;
@@ -491,7 +495,7 @@ static int inited = 0;
 static void engine_setup(void)
 {
     unsigned int sigs = 0;
-    const char *hdb   = OBJDIR "/clamav.hdb";
+    const char *hdb   = OBJDIR PATHSEP "clamav.hdb";
 
     init_testfiles();
     if (!inited)
@@ -516,15 +520,16 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     STATBUF st;
 
     ck_assert_msg(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
-    snprintf(file, fsize, OBJDIR "/../test/%s", testfiles[i]);
+    snprintf(file, fsize, OBJDIR PATHSEP ".." PATHSEP "test" PATHSEP "%s", testfiles[i]);
 
-    fd = open(file, O_RDONLY);
+    fd = open(file, O_RDONLY | O_BINARY);
     ck_assert_msg(fd > 0, "open");
     ck_assert_msg(FSTAT(fd, &st) == 0, "fstat");
     *size = st.st_size;
     return fd;
 }
 
+#ifndef _WIN32
 static off_t pread_cb(void *handle, void *buf, size_t count, off_t offset)
 {
     return pread(*((int *)handle), buf, count, offset);
@@ -592,7 +597,9 @@ START_TEST(test_cl_scanmap_callback_handle_allscan)
     close(fd);
 }
 END_TEST
+#endif
 
+#ifdef HAVE_SYS_MMAN_H
 START_TEST(test_cl_scanmap_callback_mem)
 {
     const char *virname       = NULL;
@@ -666,6 +673,289 @@ START_TEST(test_cl_scanmap_callback_mem_allscan)
     munmap(mem, size);
 }
 END_TEST
+#endif
+
+START_TEST(test_fmap_duplicate)
+{
+    cl_fmap_t *map;
+    cl_fmap_t *dup_map     = NULL;
+    cl_fmap_t *dup_dup_map = NULL;
+    char map_data[6]       = {'a', 'b', 'c', 'd', 'e', 'f'};
+    char tmp[6];
+    size_t bread = 0;
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data));
+    ck_assert_msg(!!map, "cl_fmap_open_handle failed");
+
+    /*
+     * Test duplicate of entire map
+     */
+    cli_dbgmsg("duplicating complete map\n");
+    dup_map = fmap_duplicate(map, 0, map->len, "complete duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == map->len, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 6);
+    ck_assert(0 == memcmp(map_data, tmp, 6));
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 2
+     */
+    cli_dbgmsg("duplicating 2 bytes into map\n");
+    dup_map = fmap_duplicate(map, 2, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 2, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 4));
+
+    /*
+     * Test duplicate of duplicate map, also at offset 2 (total 4 bytes in)
+     */
+    cli_dbgmsg("duplicating 2 bytes into dup_map\n");
+    dup_dup_map = fmap_duplicate(dup_map, 2, dup_map->len, "double offset duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 4, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 4, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map omiting the last 2 bytes
+     */
+    cli_dbgmsg("duplicating map with shorter len\n");
+    dup_map = fmap_duplicate(map, 0, map->len - 2, "short duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data, tmp, 4));
+
+    /*
+     * Test duplicate of the duplicate omiting the last 2 bytes again (so just the first 2 bytes)
+     */
+    cli_dbgmsg("duplicating dup_map with shorter len\n");
+    dup_dup_map = fmap_duplicate(dup_map, 0, dup_map->len - 2, "double short duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 0, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 2
+     */
+    cli_dbgmsg("duplicating 2 bytes into map\n");
+    dup_map = fmap_duplicate(map, 2, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 2, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 4, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 4);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 4));
+
+    /*
+     * Test duplicate of the duplicate omiting the last 2 bytes again (so just the middle 2 bytes)
+     */
+    cli_dbgmsg("duplicating dup_map with shorter len\n");
+    dup_dup_map = fmap_duplicate(dup_map, 0, dup_map->len - 2, "offset short duplicate");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 2, "dup_dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 2, "dup_dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 2, tmp, 2));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    cli_dbgmsg("freeing map\n");
+    cl_fmap_close(map);
+}
+END_TEST
+
+START_TEST(test_fmap_duplicate_out_of_bounds)
+{
+    cl_fmap_t *map;
+    cl_fmap_t *dup_map     = NULL;
+    cl_fmap_t *dup_dup_map = NULL;
+    char map_data[6]       = {'a', 'b', 'c', 'd', 'e', 'f'};
+    char tmp[6];
+    size_t bread = 0;
+
+    map = cl_fmap_open_memory(map_data, sizeof(map_data));
+    ck_assert_msg(!!map, "cl_fmap_open_handle failed");
+
+    /*
+     * Test 0-byte duplicate
+     */
+    cli_dbgmsg("duplicating 0 bytes of map\n");
+    dup_map = fmap_duplicate(map, 0, 0, "zero-byte dup");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 0, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 0);
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of entire map + 1
+     */
+    cli_dbgmsg("duplicating complete map + 1 byte\n");
+    dup_map = fmap_duplicate(map, 0, map->len + 1, "duplicate + 1");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == map->len, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == map->len, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 6);
+    ck_assert(0 == memcmp(map_data, tmp, 6));
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate of map at offset 4
+     */
+    cli_dbgmsg("duplicating 4 bytes into map\n");
+    dup_map = fmap_duplicate(map, 4, map->len, "offset duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 4, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 2, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data + 4, tmp, 2));
+
+    /*
+     * Test duplicate of duplicate map, also at offset 4 (total 8 bytes in, which is 2 bytes too far)
+     */
+    cli_dbgmsg("duplicating 4 bytes into dup_map\n");
+    dup_dup_map = fmap_duplicate(dup_map, 4, dup_map->len, "out of bounds offset duplicate");
+    ck_assert_msg(NULL == dup_dup_map, "fmap_duplicate should have failed!");
+
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    /*
+     * Test duplicate just 2 bytes of the original
+     */
+    cli_dbgmsg("duplicating map with shorter len\n");
+    dup_map = fmap_duplicate(map, 0, 2, "short duplicate");
+    ck_assert_msg(!!dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_map->nested_offset == 0, "dup_map nested_offset is incorrect: %zu", dup_map->nested_offset);
+    ck_assert_msg(dup_map->len == 2, "dup_map len is incorrect: %zu", dup_map->len);
+    ck_assert_msg(dup_map->real_len == 6, "dup_map real len is incorrect: %zu", dup_map->real_len);
+
+    bread = fmap_readn(dup_map, tmp, 0, 6);
+    ck_assert(bread == 2);
+    ck_assert(0 == memcmp(map_data, tmp, 2));
+
+    /* Note: Keeping the previous dup_map around for a sequence of double-dup tests. */
+
+    /*
+     * Test duplicate 1 bytes into the 2-byte duplicate, requesting 2 bytes
+     * This should result in a 1-byte double-dup
+     */
+    cli_dbgmsg("duplicating 1 byte in, 1 too many\n");
+    dup_dup_map = fmap_duplicate(dup_map, 1, 2, "1 byte in, 1 too many");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 1, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 1, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 1);
+    ck_assert(0 == memcmp(map_data + 1, tmp, 1));
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+
+    /*
+     * Test duplicate 2 bytes into the 2-byte duplicate, requesting 2 bytes
+     * This should result in a 0-byte double-dup
+     */
+    cli_dbgmsg("duplicating 2 bytes in, 2 bytes too many\n");
+    dup_dup_map = fmap_duplicate(dup_map, 2, 2, "2 bytes in, 2 bytes too many");
+    ck_assert_msg(!!dup_dup_map, "fmap_duplicate failed");
+    ck_assert_msg(dup_dup_map->nested_offset == 2, "dup_dup_map nested_offset is incorrect: %zu", dup_dup_map->nested_offset);
+    ck_assert_msg(dup_dup_map->len == 0, "dup_dup_map len is incorrect: %zu", dup_dup_map->len);
+    ck_assert_msg(dup_dup_map->real_len == 6, "dup_dup_map real len is incorrect: %zu", dup_dup_map->real_len);
+
+    bread = fmap_readn(dup_dup_map, tmp, 0, 6);
+    ck_assert(bread == 0);
+
+    cli_dbgmsg("freeing dup_dup_map\n");
+    free_duplicate_fmap(dup_dup_map);
+    dup_dup_map = NULL;
+
+    /*
+     * Test duplicate 3 bytes into the 2-byte duplicate, requesting 2 bytes
+     */
+    cli_dbgmsg("duplicating 0-byte of duplicate\n");
+    dup_dup_map = fmap_duplicate(dup_map, 3, 2, "2 bytes in, 3 bytes too many");
+    ck_assert_msg(NULL == dup_dup_map, "fmap_duplicate should have failed!");
+
+    /* Ok, we're done with this dup_map */
+    cli_dbgmsg("freeing dup_map\n");
+    free_duplicate_fmap(dup_map);
+    dup_map = NULL;
+
+    cli_dbgmsg("freeing map\n");
+    cl_fmap_close(map);
+}
+END_TEST
 
 static Suite *test_cl_suite(void)
 {
@@ -678,7 +968,9 @@ static Suite *test_cl_suite(void)
     tcase_add_test(tc_cl, test_cl_free);
     tcase_add_test(tc_cl, test_cl_build);
     tcase_add_test(tc_cl, test_cl_debug);
+#ifndef _WIN32
     tcase_add_test(tc_cl, test_cl_retdbdir);
+#endif
     tcase_add_test(tc_cl, test_cl_retver);
     tcase_add_test(tc_cl, test_cl_cvdfree);
     tcase_add_test(tc_cl, test_cl_statfree);
@@ -706,10 +998,16 @@ static Suite *test_cl_suite(void)
     tcase_add_loop_test(tc_cl_scan, test_cl_scandesc_callback_allscan, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanfile_callback_allscan, 0, expect);
+#ifndef _WIN32
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_handle_allscan, 0, expect);
+#endif
+#ifdef HAVE_SYS_MMAN_H
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem, 0, expect);
     tcase_add_loop_test(tc_cl_scan, test_cl_scanmap_callback_mem_allscan, 0, expect);
+#endif
+    tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate, 0, expect);
+    tcase_add_loop_test(tc_cl_scan, test_fmap_duplicate_out_of_bounds, 0, expect);
 
     user_timeout = getenv("T");
     if (user_timeout) {
@@ -1032,23 +1330,15 @@ START_TEST(test_sanitize_path)
     ck_assert_msg(!strcmp(expected_base, sanitized_base), "Expected: \"%s\", Found: \"%s\"", expected_base, sanitized_base);
     free(sanitized);
 
-    unsanitized = "relative/../../bad_win_posix_path";
-#ifdef _WIN32
-    expected = "relative\\..\\bad_win_posix_path";
-#else
-    expected = "relative/../bad_win_posix_path";
-#endif
-    sanitized = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
+    unsanitized = "relative/../../bad_win_posix_path"; // <-- posix paths intentionally specified -- should still work on Windows)
+    expected    = "relative" PATHSEP ".." PATHSEP "bad_win_posix_path";
+    sanitized   = cli_sanitize_filepath(unsanitized, strlen(unsanitized), NULL);
     ck_assert(NULL != sanitized);
     ck_assert_msg(!strcmp(expected, sanitized), "Expected: \"%s\", Found: \"%s\"", expected, sanitized);
     free(sanitized);
 
-    unsanitized = "relative/../../bad_win_posix_path";
-#ifdef _WIN32
-    expected = "relative\\..\\bad_win_posix_path";
-#else
-    expected = "relative/../bad_win_posix_path";
-#endif
+    unsanitized   = "relative/../../bad_win_posix_path"; // <-- posix paths intentionally specified -- should still work on Windows)
+    expected      = "relative" PATHSEP ".." PATHSEP "bad_win_posix_path";
     expected_base = "bad_win_posix_path";
     sanitized     = cli_sanitize_filepath(unsanitized, strlen(unsanitized), &sanitized_base);
     ck_assert(NULL != sanitized);
@@ -1160,7 +1450,7 @@ START_TEST(test_sanitize_path)
 }
 END_TEST
 
-START_TEST(test_cli_codepage_to_utf8)
+START_TEST(test_cli_codepage_to_utf8_jis)
 {
     cl_error_t ret;
     char *utf8       = NULL;
@@ -1175,16 +1465,32 @@ START_TEST(test_cli_codepage_to_utf8)
         free(utf8);
         utf8 = NULL;
     }
+}
+END_TEST
+
+START_TEST(test_cli_codepage_to_utf8_utf16be_null_term)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
 
     ret = cli_codepage_to_utf8("\x00\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21\x00\x00", 26, CODEPAGE_UTF16_BE, &utf8, &utf8_size);
-    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_LE to UTF8: ret != SUCCESS!");
-    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_LE to UTF8: utf8 pointer is NULL!");
+    ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_BE to UTF8: ret != SUCCESS!");
+    ck_assert_msg(NULL != utf8, "sanitize_path: Failed to convert CODEPAGE_UTF16_BE to UTF8: utf8 pointer is NULL!");
     ck_assert_msg(0 == strcmp(utf8, "Hello world!"), "sanitize_path: '%s' doesn't match '%s'", utf8, "Hello world!");
 
     if (NULL != utf8) {
         free(utf8);
         utf8 = NULL;
     }
+}
+END_TEST
+
+START_TEST(test_cli_codepage_to_utf8_utf16be_no_null_term)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
 
     ret = cli_codepage_to_utf8("\x00\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21", 24, CODEPAGE_UTF16_BE, &utf8, &utf8_size);
     ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_BE to UTF8: ret != SUCCESS!");
@@ -1195,6 +1501,14 @@ START_TEST(test_cli_codepage_to_utf8)
         free(utf8);
         utf8 = NULL;
     }
+}
+END_TEST
+
+START_TEST(test_cli_codepage_to_utf8_utf16le)
+{
+    cl_error_t ret;
+    char *utf8       = NULL;
+    size_t utf8_size = 0;
 
     ret = cli_codepage_to_utf8("\x48\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00\x20\x00\x77\x00\x6f\x00\x72\x00\x6c\x00\x64\x00\x21\x00\x00\x00", 26, CODEPAGE_UTF16_LE, &utf8, &utf8_size);
     ck_assert_msg(CL_SUCCESS == ret, "test_cli_codepage_to_utf8: Failed to convert CODEPAGE_UTF16_LE to UTF8: ret != SUCCESS!");
@@ -1227,7 +1541,10 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase(s, tc_cli_assorted);
     tcase_add_test(tc_cli_assorted, test_sanitize_path);
-    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8_jis);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8_utf16be_null_term);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8_utf16be_no_null_term);
+    tcase_add_test(tc_cli_assorted, test_cli_codepage_to_utf8_utf16le);
 
     return s;
 }
@@ -1237,7 +1554,7 @@ void errmsg_expected(void)
     fputs("cli_errmsg() expected here\n", stderr);
 }
 
-int open_testfile(const char *name)
+int open_testfile(const char *name, int flags)
 {
     int fd;
     const char *srcdir = getenv("srcdir");
@@ -1250,9 +1567,9 @@ int open_testfile(const char *name)
 
     str = cli_malloc(strlen(name) + strlen(srcdir) + 2);
     ck_assert_msg(!!str, "cli_malloc");
-    sprintf(str, "%s/%s", srcdir, name);
+    sprintf(str, "%s" PATHSEP "%s", srcdir, name);
 
-    fd = open(str, O_RDONLY);
+    fd = open(str, flags);
     ck_assert_msg(fd >= 0, "open() failed: %s", str);
     free(str);
     return fd;
@@ -1330,6 +1647,7 @@ void dconf_teardown(void)
 #endif
 }
 
+#ifndef _WIN32
 static void check_version_compatible()
 {
     /* check 0.9.8 is not ABI compatible with 0.9.6,
@@ -1351,6 +1669,7 @@ static void check_version_compatible()
         exit(EXIT_FAILURE);
     }
 }
+#endif
 
 int main(void)
 {
@@ -1362,7 +1681,9 @@ int main(void)
 
     fpu_words = get_fpu_endian();
 
+#ifndef _WIN32
     check_version_compatible();
+#endif
     s  = test_cl_suite();
     sr = srunner_create(s);
 
@@ -1376,8 +1697,8 @@ int main(void)
     srunner_add_suite(sr, test_htmlnorm_suite());
     srunner_add_suite(sr, test_bytecode_suite());
 
-    srunner_set_log(sr, "test.log");
-    if (freopen("test-stderr.log", "w+", stderr) == NULL) {
+    srunner_set_log(sr, OBJDIR PATHSEP "test.log");
+    if (freopen(OBJDIR PATHSEP "test-stderr.log", "w+", stderr) == NULL) {
         fputs("Unable to redirect stderr!\n", stderr);
     }
     cl_debug();

@@ -79,19 +79,19 @@ static void onas_clamonacc_exit(int sig)
         g_ctx->fan_fd = 0;
     }
 
-    logg("*Clamonacc: attempting to stop event consumer thread ...\n");
-    if (scan_queue_pid > 0) {
-        pthread_cancel(scan_queue_pid);
-        pthread_join(scan_queue_pid, NULL);
-    }
-    scan_queue_pid = 0;
-
     logg("*Clamonacc: attempting to stop ddd thread ... \n");
     if (ddd_pid > 0) {
         pthread_cancel(ddd_pid);
         pthread_join(ddd_pid, NULL);
     }
     ddd_pid = 0;
+
+    logg("*Clamonacc: attempting to stop event consumer thread ...\n");
+    if (scan_queue_pid > 0) {
+        pthread_cancel(scan_queue_pid);
+        pthread_join(scan_queue_pid, NULL);
+    }
+    scan_queue_pid = 0;
 
     logg("Clamonacc: stopped\n");
     onas_cleanup(g_ctx);
@@ -332,7 +332,11 @@ static int startup_checks(struct onas_context *ctx)
     }
 
 #if defined(HAVE_SYS_FANOTIFY_H)
+#if defined(_GNU_SOURCE)
     ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_LARGEFILE | O_RDONLY);
+#else
+    ctx->fan_fd = fanotify_init(FAN_CLASS_CONTENT | FAN_UNLIMITED_QUEUE | FAN_UNLIMITED_MARKS, O_RDONLY);
+#endif
     if (ctx->fan_fd < 0) {
         logg("!Clamonacc: fanotify_init failed: %s\n", cli_strerror(errno, faerr, sizeof(faerr)));
         if (errno == EPERM) {
@@ -382,7 +386,7 @@ static int startup_checks(struct onas_context *ctx)
         int16_t ping_result = onas_ping_clamd(&ctx);
         switch (ping_result) {
             case 0:
-                ret = (int)CL_BREAK;
+                ret = (int)CL_SUCCESS;
                 break;
             case 1:
                 ret = (int)CL_ETIMEOUT;
@@ -402,7 +406,7 @@ static int startup_checks(struct onas_context *ctx)
 
         if (!optget(ctx->clamdopts, "OnAccessExcludeUID")->enabled &&
             !optget(ctx->clamdopts, "OnAccessExcludeUname")->enabled && !optget(ctx->clamdopts, "OnAccessExcludeRootUID")->enabled) {
-            logg("!Clamonacc: at least one of OnAccessExcludeUID, OnAccessExcludeUname, or OnAccessExcludeRootUID must be specified ... it is reccomended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
+            logg("!Clamonacc: at least one of OnAccessExcludeUID, OnAccessExcludeUname, or OnAccessExcludeRootUID must be specified ... it is recommended you exclude the clamd instance UID or uname to prevent infinite event scanning loops\n");
             ret = 2;
             goto done;
         }
@@ -428,7 +432,7 @@ void help(void)
     mprintf("    --verbose              -v          Be verbose\n");
     mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
     mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
-    mprintf("    --watch-list=FILE      -w FILE     Watch directories from FILE\n");
+    mprintf("    --watch-list=FILE      -W FILE     Watch directories from FILE\n");
     mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
     mprintf("    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
     mprintf("    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");

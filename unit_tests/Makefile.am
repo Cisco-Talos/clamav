@@ -31,7 +31,7 @@ check_SCRIPTS = $(scripts)
 
 AM_CFLAGS=@WERR_CFLAGS@
 if HAVE_LIBCHECK
-check_clamav_SOURCES = check_clamav.c checks.h checks_common.h \
+check_clamav_SOURCES = check_clamav.c checks.h \
 		       check_jsnorm.c check_str.c check_regex.c \
 		       check_disasm.c check_uniq.c check_matchers.c \
 		       check_htmlnorm.c check_bytecode.c
@@ -39,9 +39,9 @@ check_clamav_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_buildd
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 check_clamav_LDFLAGS = $(XML_LIBS)
 check_clamav_CFLAGS = $(AM_CFLAGS) @XML_CPPFLAGS@
-check_clamd_SOURCES = check_clamd.c checks_common.h
-check_clamd_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/shared @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
-check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
+check_clamd_SOURCES = check_clamd.c
+check_clamd_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/libclamav -I$(top_builddir)/libclamav -I$(top_srcdir)/shared @CHECK_CPPFLAGS@ @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DOBJDIR=\"$(abs_builddir)\"
+check_clamd_LDADD = $(top_builddir)/libclamav/libclamav.la @CHECK_LIBS@ @CLAMD_LIBS@
 else
 check_clamd_SOURCES = check_clamav_skip.c
 check_clamav_SOURCES = check_clamav_skip.c
@@ -65,7 +65,7 @@ quick-check:
 	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 
 CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied clamav.hdb $(utils)
-EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
+EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh CMakeLists.txt Run-GetLibs.ctest clamd_test.py clamscan_test.py freshclam_test.py sigtool_test.py libclamav_test.py testcase.py
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html

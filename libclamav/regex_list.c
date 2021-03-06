@@ -677,11 +677,11 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
     if (el) {
         /* existing suffix */
         assert((size_t)el->data < matcher->suffix_cnt);
-        list_add_tail(&matcher->suffix_regexes[el->data], regex);
+        list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
         size_t n    = matcher->suffix_cnt++;
-        el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, n);
+        el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
         tmp_matcher = cli_realloc(matcher->suffix_regexes, (n + 1) * sizeof(*matcher->suffix_regexes));
         if (!tmp_matcher) {

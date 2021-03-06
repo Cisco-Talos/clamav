@@ -192,7 +192,7 @@ void cli_pcre_perf_events_destroy()
 }
 
 /* PCRE MATCHER FUNCTIONS */
-int cli_pcre_init()
+cl_error_t cli_pcre_init()
 {
     return cli_pcre_init_internal();
 }
@@ -835,13 +835,13 @@ void cli_pcre_perf_events_destroy()
     return;
 }
 
-int cli_pcre_init()
+cl_error_t cli_pcre_init()
 {
     cli_errmsg("cli_pcre_init: Cannot initialize PCRE without PCRE support\n");
     return CL_SUCCESS;
 }
 
-int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
+cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, long long unsigned recmatch_limit, const struct cli_dconf *dconf)
 {
     UNUSEDPARAM(root);
     UNUSEDPARAM(match_limit);
@@ -852,7 +852,7 @@ int cli_pcre_build(struct cli_matcher *root, long long unsigned match_limit, lon
     return CL_SUCCESS;
 }
 
-int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
+cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, const struct cli_pcre_off *data, cli_ctx *ctx)
 {
     UNUSEDPARAM(buffer);
     UNUSEDPARAM(length);
@@ -867,7 +867,7 @@ int cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const char **
     return CL_SUCCESS;
 }
 
-int cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
+cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data, struct cli_target_info *info, cli_ctx *ctx)
 {
     UNUSEDPARAM(root);
     UNUSEDPARAM(info);

@@ -1,18 +1,18 @@
 # Features that can be enabled for cmake (see CMakeLists.txt)
 
-if (WIN32)
+if(WIN32)
     set(APP_CONFIG_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}" CACHE STRING
+        "." CACHE STRING
         "App Config directory.")
     set(DATABASE_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/database" CACHE STRING
+        "database" CACHE STRING
         "Database directory.")
 else()
     set(APP_CONFIG_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/etc" CACHE STRING
+        "etc" CACHE STRING
         "App Config directory.")
     set(DATABASE_DIRECTORY
-        "${CMAKE_INSTALL_PREFIX}/share/clamav" CACHE STRING
+        "share/clamav" CACHE STRING
         "Database directory.")
 endif()
 
@@ -77,9 +77,9 @@ option(ENABLE_CLAMONACC
     "Build clamonacc (Linux-only, requires ENABLE_APP))."
     ${ENABLE_CLAMONACC_DEFAULT})
 
-option(ENABLE_DOCS
-    "Generate documentation."
-    ${ENABLE_DOCS_DEFAULT})
+option(ENABLE_MAN_PAGES
+    "Generate man pages."
+    ${ENABLE_MAN_PAGES_DEFAULT})
 
 option(ENABLE_DOXYGEN
     "Generate doxygen HTML documentation for clamav.h, libfreshclam.h."
@@ -88,6 +88,10 @@ option(ENABLE_DOXYGEN
 option(ENABLE_EXAMPLES
     "Build examples."
     ${ENABLE_EXAMPLES_DEFAULT})
+
+option(ENABLE_TESTS
+    "Build/enable unit tests."
+    ${ENABLE_TESTS_DEFAULT})
 
 option(ENABLE_LIBCLAMAV_ONLY
     "Build libclamav only. Excludes libfreshclam too!")

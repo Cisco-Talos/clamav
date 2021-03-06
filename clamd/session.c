@@ -88,7 +88,6 @@ static struct {
     /* must be before VERSION, because they share common prefix! */
     {CMD18, sizeof(CMD18) - 1, COMMAND_COMMANDS, 0, 0, 1},
     {CMD7, sizeof(CMD7) - 1, COMMAND_VERSION, 0, 1, 1},
-    {CMD8, sizeof(CMD8) - 1, COMMAND_STREAM, 0, 1, 1},
     {CMD10, sizeof(CMD10) - 1, COMMAND_END, 0, 0, 1},
     {CMD11, sizeof(CMD11) - 1, COMMAND_SHUTDOWN, 0, 1, 1},
     {CMD13, sizeof(CMD13) - 1, COMMAND_MULTISCAN, 1, 1, 1},
@@ -326,18 +325,6 @@ int command(client_conn_t *conn, int *virus)
                 mdprintf(desc, "%u: ", conn->id);
             thrmgr_printstats(desc, conn->term);
             return 0;
-        case COMMAND_STREAM:
-            thrmgr_setactivetask(NULL, "STREAM");
-            ret = scanstream(desc, NULL, engine, options, opts, conn->term);
-            if (ret == CL_VIRUS)
-                *virus = 1;
-            if (ret == CL_EMEM) {
-                if (optget(opts, "ExitOnOOM")->enabled)
-                    return -1;
-                else
-                    return 1;
-            }
-            return 0;
         case COMMAND_INSTREAMSCAN:
             thrmgr_setactivetask(NULL, "INSTREAM");
             ret = scanfd(conn, NULL, engine, options, opts, desc, 1);
@@ -460,7 +447,6 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
             dup_conn->scanfd = conn->scanfd;
             conn->scanfd     = -1;
             break;
-        case COMMAND_STREAM:
         case COMMAND_STATS:
             /* not a scan command, don't queue to bulk */
             bulk = 0;
@@ -609,7 +595,6 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             conn->mode  = MODE_STREAM;
             return 0;
         }
-        case COMMAND_STREAM:
         case COMMAND_MULTISCAN:
         case COMMAND_CONTSCAN:
         case COMMAND_STATS:

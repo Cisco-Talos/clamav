@@ -117,6 +117,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     scanopts.parse |= ~(0);
 #endif
     scanopts.general |= CL_SCAN_GENERAL_HEURISTICS;
+    scanopts.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* Enable the gen-json feature */
+    scanopts.heuristic |= ~(0);                           /* Enable all heuristic code */
+    scanopts.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* Enable all-match, so heuristic alerts don't end the scan early */
 
     fuzzfile = fopen(kClamAVState.tmp_file_name, "w");
     fwrite(data, size, 1, fuzzfile);

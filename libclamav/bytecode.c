@@ -1847,8 +1847,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
         cli_event_int(interp_ev, BCEV_EXEC_RETURNVALUE, ret);
         cli_event_string(interp_ev, BCEV_VIRUSNAME, ctx->virname);
 
-        /* need to be called here to catch any extracted but not yet scanned files
-	*/
+        /* need to be called here to catch any extracted but not yet scanned files */
         if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
             cli_bcapi_extract_new(ctx, -1);
     }
@@ -1867,8 +1866,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
         cli_event_int(jit_ev, BCEV_EXEC_RETURNVALUE, ret);
         cli_event_string(jit_ev, BCEV_VIRUSNAME, ctx->virname);
 
-        /* need to be called here to catch any extracted but not yet scanned files
-	*/
+        /* need to be called here to catch any extracted but not yet scanned files */
         if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
             cli_bcapi_extract_new(ctx, -1);
     }

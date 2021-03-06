@@ -1,1 +1,16 @@
-ChangeLog merge=cl-merge
+# Handle line endings automatically for files detected as text
+# and leave all files detected as binary untouched.
+* text=auto
+
+#
+# The above will handle all files NOT found below
+#
+
+# Files that should be left untouched (binary is macro for -text -diff)
+*.ref           binary
+
+#
+# Exclude files from exporting
+#
+.gitattributes  export-ignore
+.gitignore      export-ignore

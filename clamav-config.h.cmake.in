@@ -74,10 +74,10 @@
 
 #ifndef _WIN32
 /* Path to virus database directory. */
-#define DATADIR "@DATABASE_DIRECTORY@"
+#define DATADIR "@CMAKE_INSTALL_PREFIX@/@DATABASE_DIRECTORY@"
 
 /* where to look for the config file */
-#define CONFDIR "@APP_CONFIG_DIRECTORY@"
+#define CONFDIR "@CMAKE_INSTALL_PREFIX@/@APP_CONFIG_DIRECTORY@"
 #endif
 
 /* Have sys/fanotify.h */
@@ -177,6 +177,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H 1
+
+/* Define to 1 if you have the <inttypes.h> header file (for libjson-c). */
+#cmakedefine JSON_C_HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the 'libjson' library (-ljson). */
 #cmakedefine HAVE_JSON 1
@@ -384,7 +387,7 @@
 #cmakedefine HAVE_WORKING_ARGZ 1
 
 /* yara sources are compiled in */
-#cmakedefine HAVE_YARA 1
+#define HAVE_YARA 1
 
 /* Define to 1 if you have the <zlib.h> header file. */
 #cmakedefine HAVE_ZLIB_H 1
@@ -394,6 +397,9 @@
 
 /* Define as const if the declaration of iconv() needs const. */
 #cmakedefine ICONV_CONST @ICONV_CONST@
+
+/* Define if UNRAR is linked instead of loaded. */
+#cmakedefine UNRAR_LINKED 1
 
 /* "Full clamav library version number" */
 #define LIBCLAMAV_FULLVER "@LIBCLAMAV_VERSION@"

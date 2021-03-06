@@ -34,7 +34,7 @@
 #include "clamav-types.h"
 #include "clamav-config.h"
 #include "mpool.h"
-typedef long cli_element_data;
+typedef size_t cli_element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */
 #ifdef PROFILE_HASHTABLE
@@ -94,7 +94,7 @@ int cli_hashtab_store(const struct cli_hashtable *s, FILE *out);
 struct cli_htu32_element {
     uint32_t key;
     union {
-        unsigned long as_ulong;
+        size_t as_size_t;
         void *as_ptr;
     } data;
 };

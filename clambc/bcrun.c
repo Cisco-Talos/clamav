@@ -430,7 +430,7 @@ int main(int argc, char *argv[])
         }
 
         if ((opt = optget(opts, "input"))->enabled) {
-            fd = open(opt->strarg, O_RDONLY);
+            fd = open(opt->strarg, O_RDONLY | O_BINARY);
             if (fd == -1) {
                 fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
                 optfree(opts);

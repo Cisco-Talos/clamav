@@ -235,7 +235,17 @@ int16_t ping_clamd(const struct optstruct *opts)
         }
 
         if (i + 1 < attempts) {
-            logg("*PINGing again in %" PRIu64 " seconds\n", interval);
+            if (optget(opts, "wait")->enabled) {
+                if (interval == 1)
+                    logg("*Could not connect, will try again in %lu second\n", interval);
+                else
+                    logg("*Could not connect, will try again in %lu seconds\n", interval);
+            } else {
+                if (interval == 1)
+                    logg("Could not connect, will PING again in %lu second\n", interval);
+                else
+                    logg("Could not connect, will PING again in %lu seconds\n", interval);
+            }
             sleep(interval);
         }
         i++;
@@ -243,7 +253,11 @@ int16_t ping_clamd(const struct optstruct *opts)
 
     /* timed out */
     ret = 1;
-    logg("*PING timeout exceeded with no response from clamd\n");
+    if (optget(opts, "wait")->enabled) {
+        logg("Wait timeout exceeded; Could not connect to clamd\n");
+    } else {
+        logg("PING timeout exceeded; No response from clamd\n");
+    }
 
 done:
     if (attempt_str) {

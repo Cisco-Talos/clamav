@@ -80,38 +80,36 @@ extern uint8_t cli_debug_flag;
 extern uint8_t cli_always_gen_section_hash;
 
 /*
- * CLI_ISCONTAINED(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
- * within bb (buffer).
+ * CLI_ISCONTAINED(bb, bb_size, sb, sb_size) checks if sb (small buffer) is
+ * within bb (big buffer).
  *
  * bb and sb are pointers (or offsets) for the main buffer and the
  * sub-buffer respectively, and bb_size and sb_size are their sizes
  *
  * The macro can be used to protect against wraps.
  */
-#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)                                           \
-    (                                                                                       \
-        (size_t)(bb_size) > 0 && (size_t)(sb_size) > 0 &&                                   \
-        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
-        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
-        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
-        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) > (ptrdiff_t)(bb) &&                         \
-        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size))
+#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)                            \
+    ((size_t)(bb_size) > 0 && (size_t)(sb_size) > 0 &&                       \
+     (size_t)(sb_size) <= (size_t)(bb_size) &&                               \
+     (size_t)(sb) >= (size_t)(bb) &&                                         \
+     (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb) + (size_t)(bb_size) && \
+     (size_t)(sb) + (size_t)(sb_size) > (size_t)(bb) &&                      \
+     (size_t)(sb) < (size_t)(bb) + (size_t)(bb_size))
 
 /*
- * CLI_ISCONTAINED2(bb, bb_size, sb, sb_size) checks if sb (sub buffer) is contained
- * within bb (buffer).
+ * CLI_ISCONTAINED2(bb, bb_size, sb, sb_size) checks if sb (small buffer) is
+ * within bb (big buffer).
  *
- * CLI_ISCONTAINED2 is the same as CLI_ISCONTAINED except that it allows for sub-
- * buffers with sb_size == 0.
+ * CLI_ISCONTAINED2 is the same as CLI_ISCONTAINED except that it allows for
+ * small-buffers with sb_size == 0.
  */
-#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)                                          \
-    (                                                                                       \
-        (size_t)(bb_size) > 0 && (size_t)(sb_size) >= 0 &&                                  \
-        (size_t)(sb_size) <= (size_t)(bb_size) &&                                           \
-        (ptrdiff_t)(sb) >= (ptrdiff_t)(bb) &&                                               \
-        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) <= (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size) && \
-        (ptrdiff_t)(sb) + (ptrdiff_t)(sb_size) >= (ptrdiff_t)(bb) &&                        \
-        (ptrdiff_t)(sb) < (ptrdiff_t)(bb) + (ptrdiff_t)(bb_size))
+#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)                           \
+    ((size_t)(bb_size) > 0 &&                                                \
+     (size_t)(sb_size) <= (size_t)(bb_size) &&                               \
+     (size_t)(sb) >= (size_t)(bb) &&                                         \
+     (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb) + (size_t)(bb_size) && \
+     (size_t)(sb) + (size_t)(sb_size) >= (size_t)(bb) &&                     \
+     (size_t)(sb) <= (size_t)(bb) + (size_t)(bb_size))
 
 #define CLI_MAX_ALLOCATION (182 * 1024 * 1024)
 
@@ -509,6 +507,7 @@ extern LIBCLAMAV_EXPORT int have_rar;
 #define SCAN_PARSE_PE (ctx->options->parse & CL_SCAN_PARSE_PE)
 
 #define SCAN_HEURISTIC_BROKEN (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN)
+#define SCAN_HEURISTIC_BROKEN_MEDIA (ctx->options->heuristic & CL_SCAN_HEURISTIC_BROKEN_MEDIA)
 #define SCAN_HEURISTIC_EXCEEDS_MAX (ctx->options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX)
 #define SCAN_HEURISTIC_PHISHING_SSL_MISMATCH (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH)
 #define SCAN_HEURISTIC_PHISHING_CLOAK (ctx->options->heuristic & CL_SCAN_HEURISTIC_PHISHING_CLOAK)

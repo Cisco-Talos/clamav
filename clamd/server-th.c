@@ -443,6 +443,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
         /* commands terminated by delimiters */
         case 'z':
             *term = '\0';
+            /* fall-through */
         case 'n':
             pos = memchr(buf->buffer + off, *term, buf->off - off);
             if (!pos) {
@@ -1201,6 +1202,11 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             logg("Alerting on broken executables enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
         }
+    }
+
+    if (optget(opts, "AlertBrokenMedia")->enabled) {
+        options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
+        logg("Media (Graphics) Format Validatation enabled\n");
     }
 
     if (optget(opts, "ScanMail")->enabled) {

@@ -1,10 +1,10 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DHAVE_STRUCT_TIMESPEC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
 
     # Windows compatibility headers
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
@@ -29,19 +29,15 @@ target_link_libraries(freshclam-bin
         ClamAV::libclamav
         ClamAV::shared )
 if(WIN32)
-    install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_PREFIX})
+    install(TARGETS freshclam-bin DESTINATION .)
 else()
     install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 # Install an empty database directory
-if(WIN32)
-    INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/database)")
-else()
-    INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/share/clamav)")
-endif()
+INSTALL(CODE "FILE(MAKE_DIRECTORY \${ENV}\${CMAKE_INSTALL_PREFIX}/\${DATABASE_DIRECTORY})")
 
-# now we rename resman-bin executable to resman using target properties
+# Now we rename freshclam-bin executable to freshclam using target properties
 set_target_properties( freshclam-bin
         PROPERTIES OUTPUT_NAME freshclam )
 

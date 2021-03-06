@@ -1,7 +1,5 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 # The clamonacc executable.
 add_executable( clamonacc )
 target_sources( clamonacc
@@ -49,7 +47,8 @@ set_target_properties( clamonacc PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( clamonacc
     PRIVATE
         ClamAV::libclamav
-        ClamAV::shared )
+        ClamAV::shared
+        CURL::libcurl )
 install(TARGETS clamonacc DESTINATION ${CMAKE_INSTALL_SBINDIR})
 
 if(SYSTEMD_FOUND)

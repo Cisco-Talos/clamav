@@ -43,14 +43,6 @@ enum ptime_locale_status { not,
                            raw };
 #endif
 
-struct tm *localtime_r(time_t const *t, struct tm *tp)
-{
-    struct tm *copy = localtime(t);
-    if (!copy) return NULL;
-    memcpy(tp, copy, sizeof(*tp));
-    return tp;
-}
-
 typedef int bool;
 
 #define match_char(ch1, ch2) \
@@ -518,9 +510,10 @@ LOCALE_PARAM_DECL
                     secs += *rp++ - '0';
                 } while (*rp >= '0' && *rp <= '9');
 
-                if (localtime_r(&secs, tm) == NULL)
+                if (0 != localtime_s(tm, &secs)) {
                     /* Error in function.  */
                     return NULL;
+                }
             } break;
             case 'S':
                 get_number(0, 61, 2);

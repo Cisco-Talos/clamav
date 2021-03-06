@@ -460,7 +460,6 @@ libclamav_la_SOURCES = \
 	uniq.c \
 	uniq.h \
 	version.c\
-	version.h\
 	mpool.c\
 	mpool.h \
 	filtering.h\

@@ -25,7 +25,7 @@
 
 #include <Windows.h>
 #include <string.h>
-#include "pthread.h"
+#include <pthread.h>
 
 #ifndef LIBFRESHCLAM_STATIC
 BOOL APIENTRY DllMain(HMODULE hm, DWORD why, LPVOID rsrv)

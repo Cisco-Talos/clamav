@@ -210,9 +210,11 @@ Example
 #ConcurrentDatabaseReload no
 
 # Execute a command when virus is found. In the command string %v will
-# be replaced with the virus name.
+# be replaced with the virus name and %f will be replaced with the file name.
+# Additionally, two environment variables will be defined: $CLAM_VIRUSEVENT_FILENAME
+# and $CLAM_VIRUSEVENT_VIRUSNAME.
 # Default: no
-#VirusEvent /usr/local/bin/send_sms 123456789 "VIRUS ALERT: %v"
+#VirusEvent /usr/local/bin/send_sms 123456789 "VIRUS ALERT: %v in %f"
 
 # Run as another user (clamd must be started by root for this option to work)
 # Default: don't drop privileges
@@ -300,6 +302,11 @@ Example
 # ELF) and alert on them with the Broken.Executable heuristic signature.
 # Default: no
 #AlertBrokenExecutables yes
+
+# With this option clamav will try to detect broken media file (JPEG,
+# TIFF, PNG, GIF) and alert on them with a Broken.Media heuristic signature.
+# Default: no
+#AlertBrokenMedia yes
 
 # Alert on encrypted archives _and_ documents with heuristic signature
 # (encrypted .zip, .7zip, .rar, .pdf).

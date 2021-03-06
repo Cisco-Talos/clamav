@@ -715,7 +715,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
         /* this will still contains scripts that are inside comments */
         snprintf(filename, 1024, "%s" PATHSEP "nocomment.html", dirname);
-        file_buff_o2->fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR);
+        file_buff_o2->fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
         if (file_buff_o2->fd == -1) {
             cli_dbgmsg("open failed: %s\n", filename);
             free(file_buff_o2);
@@ -733,7 +733,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         }
 
         snprintf(filename, 1024, "%s" PATHSEP "notags.html", dirname);
-        file_buff_text->fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR);
+        file_buff_text->fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
         if (file_buff_text->fd == -1) {
             cli_dbgmsg("open failed: %s\n", filename);
             close(file_buff_o2->fd);
@@ -1646,7 +1646,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             goto abort;
                         }
                         cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
-                        file_tmp_o1->fd = open(tmp_file, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR);
+                        file_tmp_o1->fd = open(tmp_file, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
                         free(tmp_file);
                         if (file_tmp_o1->fd < 0) {
                             cli_dbgmsg("open failed: %s\n", filename);
@@ -1906,7 +1906,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
     m_area.map    = map;
 
     snprintf((char *)filename, 1024, "%s" PATHSEP "screnc.html", dirname);
-    ofd = open((const char *)filename, O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IRUSR);
+    ofd = open((const char *)filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);
 
     if (ofd < 0) {
         cli_dbgmsg("open failed: %s\n", filename);

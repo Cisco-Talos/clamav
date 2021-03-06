@@ -1,13 +1,11 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 include_directories(
     ${LIBXML2_INCLUDE_DIR}
     ${OPENSSL_INCLUDE_DIR}
     ${ZLIB_INCLUDE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    $<TARGET_PROPERTY:ClamAV::libclamunrar_iface_iface,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:ClamAV::libunrar_iface_iface,INTERFACE_INCLUDE_DIRECTORIES>
     ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
@@ -15,11 +13,15 @@ configure_file(version.h.in version.h)
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
-    add_definitions(-DHAVE_STRUCT_TIMESPEC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
 
     # Windows compatibility headers
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
+
+add_definitions(-DTHIS_IS_LIBCLAMAV)
 
 # 3rd party libraries included in libclamav
 add_library( regex OBJECT )
@@ -39,8 +41,8 @@ target_sources( regex
 target_include_directories( regex
     PRIVATE ${CMAKE_BINARY_DIR}
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-set_target_properties(regex PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}")
+set_target_properties( regex PROPERTIES
+    COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( regex
     PRIVATE
         PCRE2::pcre2
@@ -96,8 +98,8 @@ target_sources( lzma_sdk
 target_include_directories( lzma_sdk
     PRIVATE ${CMAKE_BINARY_DIR}
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-set_target_properties(lzma_sdk PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}")
+set_target_properties( lzma_sdk PROPERTIES
+    COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( lzma_sdk
     PRIVATE
         PCRE2::pcre2
@@ -108,7 +110,7 @@ if(MAINTAINER_MODE)
         yara_grammar.y ${CMAKE_CURRENT_SOURCE_DIR}/yara_grammar.c )
     flex_target( yara_lexer
         yara_lexer.l ${CMAKE_CURRENT_SOURCE_DIR}/yara_lexer.c )
-    add_flex_bison_dependency(yara_lexer yara_grammar)
+    add_flex_bison_dependency( yara_lexer yara_grammar )
 endif()
 
 add_library( yara OBJECT )
@@ -148,8 +150,8 @@ target_include_directories( yara
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_BINARY_DIR} )
-set_target_properties(yara PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}")
+set_target_properties( yara PROPERTIES
+    COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( yara
     PRIVATE
         PCRE2::pcre2
@@ -245,8 +247,8 @@ target_sources( tomsfastmath
 target_include_directories( tomsfastmath
     PRIVATE ${CMAKE_BINARY_DIR}
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-set_target_properties(tomsfastmath PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}")
+set_target_properties( tomsfastmath PROPERTIES
+    COMPILE_FLAGS "${WARNCFLAGS}" )
 
 # Bytecode Runtime
 add_library( bytecode_runtime OBJECT )
@@ -258,16 +260,16 @@ if(LLVM_FOUND)
             c++/bytecode2llvm.cpp
             bytecode_priv.h
             bytecode.h )
-    set_target_properties(bytecode_runtime PROPERTIES
-        COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}")
+    set_target_properties( bytecode_runtime PROPERTIES
+        COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}" )
 else()
     target_sources( bytecode_runtime
         PRIVATE
             bytecode_nojit.c
             bytecode_priv.h
             bytecode.h )
-    set_target_properties(bytecode_runtime PROPERTIES
-        COMPILE_FLAGS "${WARNCFLAGS}")
+    set_target_properties( bytecode_runtime PROPERTIES
+        COMPILE_FLAGS "${WARNCFLAGS}" )
 endif()
 target_include_directories( bytecode_runtime
     PRIVATE ${CMAKE_BINARY_DIR}
@@ -505,7 +507,7 @@ target_link_libraries( clamav_obj
         tomsfastmath
         bytecode_runtime
         ClamAV::libmspack
-        ClamAV::libclamunrar_iface_iface
+        ClamAV::libunrar_iface_iface
         OpenSSL::SSL
         OpenSSL::Crypto
         ZLIB::ZLIB
@@ -527,15 +529,15 @@ else()
             ${CMAKE_DL_LIBS}
             m )
 endif()
-set_target_properties(clamav_obj PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}")
+set_target_properties( clamav_obj PROPERTIES
+    COMPILE_FLAGS "${WARNCFLAGS}" )
 
 if(ENABLE_SHARED_LIB)
     # The clamav shared library.
     add_library( clamav SHARED )
-    set_target_properties(clamav PROPERTIES
+    set_target_properties( clamav PROPERTIES
         VERSION ${LIBCLAMAV_VERSION}
-        SOVERSION ${LIBCLAMAV_SOVERSION})
+        SOVERSION ${LIBCLAMAV_SOVERSION} )
     target_sources( clamav
         PUBLIC
             clamav.h )
@@ -548,7 +550,7 @@ if(ENABLE_SHARED_LIB)
             tomsfastmath
             bytecode_runtime
             ClamAV::libmspack
-            ClamAV::libclamunrar_iface_iface
+            ClamAV::libunrar_iface_iface
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -556,18 +558,48 @@ if(ENABLE_SHARED_LIB)
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
-    set_target_properties(clamav PROPERTIES
+    set_target_properties( clamav PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"
-        VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION})
+        VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
     if(WIN32)
-        set_target_properties(clamav PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        set_target_properties( clamav PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON )
     else()
         target_link_libraries( clamav PUBLIC ICONV::Iconv )
     endif()
     if(WIN32)
-        install(TARGETS clamav DESTINATION ${CMAKE_INSTALL_PREFIX})
+        install( TARGETS clamav DESTINATION . )
+
+        # Also install shared library (DLL) dependencies
+        install( CODE [[
+            file(GET_RUNTIME_DEPENDENCIES
+                LIBRARIES
+                    $<TARGET_FILE:ClamAV::libclamav>
+                RESOLVED_DEPENDENCIES_VAR _r_deps
+                UNRESOLVED_DEPENDENCIES_VAR _u_deps
+                DIRECTORIES
+                    $<TARGET_FILE_DIR:OpenSSL::SSL>
+                    $<TARGET_FILE_DIR:OpenSSL::Crypto>
+                    $<TARGET_FILE_DIR:ZLIB::ZLIB>
+                    $<TARGET_FILE_DIR:BZip2::BZip2>
+                    $<TARGET_FILE_DIR:PCRE2::pcre2>
+                    $<TARGET_FILE_DIR:LibXml2::LibXml2>
+                    $<TARGET_FILE_DIR:JSONC::jsonc>
+            )
+            foreach(_file ${_r_deps})
+                string(TOLOWER ${_file} _file_lower)
+                if(NOT ${_file_lower} MATCHES "c:[\\/]windows[\\/]system32.*")
+                    file(INSTALL
+                        DESTINATION "${CMAKE_INSTALL_PREFIX}"
+                        TYPE SHARED_LIBRARY
+                        FOLLOW_SYMLINK_CHAIN
+                        FILES "${_file}"
+                    )
+                endif()
+            endforeach()
+            #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
+        ]] )
     else()
-        install(TARGETS clamav DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install( TARGETS clamav DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     endif()
 
     if(LLVM_FOUND)
@@ -580,11 +612,11 @@ endif()
 
 if(ENABLE_STATIC_LIB)
     # The clamav static library.
-    add_library(clamav_static STATIC)
-    target_sources(clamav_static
+    add_library( clamav_static STATIC)
+    target_sources( clamav_static
         PUBLIC
             clamav.h )
-    target_link_libraries(clamav_static
+    target_link_libraries( clamav_static
         PUBLIC
             clamav_obj
             regex
@@ -592,8 +624,8 @@ if(ENABLE_STATIC_LIB)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libmspack
-            ClamAV::libclamunrar_iface_iface
+            ClamAV::libmspack_static
+            ClamAV::libunrar_iface_static
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -602,20 +634,23 @@ if(ENABLE_STATIC_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
     if(NOT WIN32)
-        target_link_libraries( clamav PUBLIC ICONV::Iconv )
+        target_link_libraries( clamav_static PUBLIC ICONV::Iconv )
     endif()
-    set_target_properties(clamav_static PROPERTIES
+    set_target_properties( clamav_static PROPERTIES
         ARCHIVE_OUTPUT_NAME clamav_static
         COMPILE_FLAGS       "${WARNCFLAGS}"
-        VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION})
-    target_compile_definitions(clamav_static PUBLIC clamav_staticLIB)
+        VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
+    target_compile_definitions( clamav_static PUBLIC clamav_staticLIB )
     if(WIN32)
-        install(TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_PREFIX})
+        install( TARGETS clamav_static DESTINATION . )
     else()
-        install(TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR} )
     endif()
 
     add_library( ClamAV::libclamav_static ALIAS clamav_static )
+    if(NOT ENABLE_SHARED_LIB)
+        add_library( ClamAV::libclamav ALIAS clamav_static )
+    endif()
 endif()
 
 install(

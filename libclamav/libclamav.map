@@ -259,9 +259,13 @@ CLAMAV_PRIVATE {
     cl_base64_encode;
     cli_sanitize_filepath;
     cli_gentemp_with_prefix;
+    cli_gentempfd_with_prefix;
     cli_basename;
     cli_realpath;
     cli_codepage_to_utf8;
+    cli_get_filepath_from_filedesc;
+    fmap_duplicate;
+    free_duplicate_fmap;
 
     __cli_strcasestr;
     __cli_strndup;

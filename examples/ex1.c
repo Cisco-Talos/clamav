@@ -30,6 +30,10 @@
 #include <fcntl.h>
 #include <clamav.h>
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /*
  * Exit codes:
  *  0: clean
@@ -55,7 +59,8 @@ int main(int argc, char **argv)
 
     filename = argv[1];
 
-    if ((fd = open(argv[1], O_RDONLY)) == -1) {
+    /* Tip: Scan input should be opened as binary on Windows! */
+    if ((fd = open(argv[1], O_RDONLY | O_BINARY)) == -1) {
         printf("Can't open file %s\n", argv[1]);
         return 2;
     }

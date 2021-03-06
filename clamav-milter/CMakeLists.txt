@@ -1,7 +1,5 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-cmake_minimum_required( VERSION 3.12...3.13 )
-
 # The clamav-milter executable.
 add_executable( clamav-milter )
 target_sources( clamav-milter
