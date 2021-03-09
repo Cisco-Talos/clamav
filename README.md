@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/Cisco-Talos/clamav-devel/actions"><img src="https://github.com/Cisco-Talos/clamav-devel/workflows/CMake%20Build/badge.svg" height="18"></a>
-  <a href="https://discord.gg/sGaxA5Q"><img src="https://img.shields.io/discord/636023333074370595.svg?logo=discord" height="18"/></a>
+  <a href="https://discord.gg/6vNAqWnVgw"><img src="https://img.shields.io/discord/636023333074370595.svg?logo=discord" height="18"/></a>
   <a href="https://twitter.com/clamav"><img src="https://abs.twimg.com/favicons/twitter.ico" width="18" height="18"></a>
 </p>
 
@@ -77,7 +77,7 @@ Catch up on the latest about ClamAV by reading our
 
 The best way to get in touch with the ClamAV community is to join our
 [mailing lists](https://www.clamav.net/documents/mailing-lists-faq) and tune to
-#clamav on [IRC](irc.freenode.net) or [Discord](https://discord.gg/sGaxA5Q).
+#clamav on [IRC](irc.freenode.net) or [Discord](https://discord.gg/6vNAqWnVgw).
 
 ## Want to make a contribution?
 
