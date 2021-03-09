@@ -666,7 +666,7 @@ on Windows, you may need to use the following options...
   -D OPENSSL_ROOT_DIR="_path to openssl install root_"
   -D OPENSSL_INCLUDE_DIR="_filepath of openssl header directory_"
   -D OPENSSL_CRYPTO_LIBRARY="_filepath of libcrypto library_"
-  -D OPENSSL_SSL_LIBRARY="_filepath of libcrypto library_"
+  -D OPENSSL_SSL_LIBRARY="_filepath of libssl library_"
 ```
 
 ##### `libjson-c`
