@@ -11,6 +11,10 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   Fix for UnRAR DLL load privilege escalation.
   Affects 0.103.1 and prior on Windows only.
 
+- [CVE-2021-1252](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1252):
+  Fix for Excel XLM parser infinite loop.
+  Affects 0.103.0 and 0.103.1 only.
+
 The ClamAV team thanks the following individuals for their code submissions:
 
 ## 0.103.1
