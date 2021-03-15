@@ -15,6 +15,10 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   Fix for Excel XLM parser infinite loop.
   Affects 0.103.0 and 0.103.1 only.
 
+- [CVE-2021-1404](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1404):
+  Fix for PDF parser buffer over-read; possible crash.
+  Affects 0.103.0 and 0.103.1 only.
+
 The ClamAV team thanks the following individuals for their code submissions:
 
 ## 0.103.1
