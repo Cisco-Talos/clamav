@@ -7,7 +7,9 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.2 is a security patch release with the following fixes:
 
--
+- [CVE-2021-1386](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1386):
+  Fix for UnRAR DLL load privilege escalation.
+  Affects 0.103.1 and prior on Windows only.
 
 The ClamAV team thanks the following individuals for their code submissions:
 
