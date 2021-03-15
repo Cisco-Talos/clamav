@@ -37,7 +37,7 @@ properties(
                        defaultValue: 'dev/0.103',
                        description: 'tests-fuzz-regression branch'),
                 string(name: 'SHARED_LIB_BRANCH',
-                       defaultValue: 'master',
+                       defaultValue: '0.103',
                        description: 'tests-jenkins-shared-libraries branch')
             ]
         )
