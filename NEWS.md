@@ -19,7 +19,9 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   Fix for PDF parser buffer over-read; possible crash.
   Affects 0.103.0 and 0.103.1 only.
 
-The ClamAV team thanks the following individuals for their code submissions:
+- [CVE-2021-1405](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1405):
+  Fix for mail parser NULL-dereference crash.
+  Affects 0.103.1 and prior.
 
 ## 0.103.1
 
