@@ -418,6 +418,8 @@ class TC(testcase.TestCase):
         assert output.ec == 0  # success
         self.verify_output(output.out, expected=['PONG'])
 
+        time.sleep(5)
+
     def test_clamd_06_HeuristicScanPrecedence_off(self):
         '''
         Verify that HeuristicScanPrecedence off works as expected (default)
