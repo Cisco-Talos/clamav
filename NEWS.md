@@ -23,6 +23,8 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
   Fix for mail parser NULL-dereference crash.
   Affects 0.103.1 and prior.
 
+- Fix possible memory leak in PNG parser.
+
 ## 0.103.1
 
 ClamAV 0.103.1 is a patch release with the following fixes and improvements.
