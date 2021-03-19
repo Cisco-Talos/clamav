@@ -1,7 +1,7 @@
 /*
  *  Internal certificate utility methods and data structures.
  *
- *  Copyright (C) 2016-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *

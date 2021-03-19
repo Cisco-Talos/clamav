@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Trog
@@ -942,7 +942,7 @@ struct biff_parser_state {
 /**
  * Scan through a buffer of BIFF records and find PARSERNAME, BOUNDSHEET records (Which indicate XLM  macros).
  * BIFF streams follow the format OOLLDDDDDDDDD..., where OO is the opcode (little endian 16 bit value),
- * LL is the data length (little endian 16 bit value), followed by LL bytes of data. Records are defined in 
+ * LL is the data length (little endian 16 bit value), followed by LL bytes of data. Records are defined in
  * the MICROSOFT OFFICE EXCEL 97-2007 BINARY FILE FORMAT SPECIFICATION.
  *
  * \param state The parser state.

@@ -1,7 +1,7 @@
 /*
  * Fuzz target for cl_scanmap_callback()
  *
- * Copyright (C) 2018-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2018-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Authors: Micah Snyder, Alex Gaynor
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,16 @@
 
 #include "clamav.h"
 
-
 void clamav_message_callback(enum cl_msg severity, const char *fullmsg,
-                             const char *msg, void *context) {
+                             const char *msg, void *context)
+{
 }
 
-class ClamAVState {
-public:
-    ClamAVState() {
+class ClamAVState
+{
+  public:
+    ClamAVState()
+    {
         // Silence all the log messages, none of them are meaningful.
         cl_set_clcb_msg(clamav_message_callback);
 
@@ -53,7 +55,8 @@ public:
         cl_engine_compile(engine);
     }
 
-    ~ClamAVState() {
+    ~ClamAVState()
+    {
         cl_engine_free(engine);
     }
 
@@ -64,7 +67,8 @@ public:
 // that on each execution.
 ClamAVState kClamAVState;
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
 
     struct cl_scan_options scanopts = {0};
 
@@ -100,7 +104,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     scanopts.general |= CL_SCAN_GENERAL_HEURISTICS;
 
     const char *virus_name = nullptr;
-    unsigned long scanned = 0;
+    unsigned long scanned  = 0;
     cl_scanmap_callback(
         clamav_data,
         NULL,
@@ -108,8 +112,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         &scanned,
         kClamAVState.engine,
         &scanopts,
-        nullptr
-    );
+        nullptr);
 
     cl_fmap_close(clamav_data);
 

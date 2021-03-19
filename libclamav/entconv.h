@@ -1,7 +1,7 @@
 /*
  *  HTML Entity & Encoding normalization.
  *
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -62,7 +62,7 @@
 /* string conversion */
 struct codepage_entry {
     uint16_t codepage;
-    const char *encoding;
+    const char* encoding;
 };
 
 #define NUMCODEPAGES (sizeof(codepage_entries) / sizeof(struct codepage_entry))

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -598,7 +598,7 @@ cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion
     }
 
     digest = (*(ctx->fmap - recursion_cnt))->maphash;
-    size = (*(ctx->fmap - recursion_cnt))->len;
+    size   = (*(ctx->fmap - recursion_cnt))->len;
 
     if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
         cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);

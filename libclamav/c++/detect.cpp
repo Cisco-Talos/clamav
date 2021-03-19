@@ -1,7 +1,7 @@
 /*
  *  JIT detection for ClamAV bytecode.
  *
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2010-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -186,4 +186,3 @@ void cli_detect_env_jit(struct cli_environment *env)
 	sys::Memory::ReleaseRWX(B);
     }
 }
-

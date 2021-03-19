@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -4805,7 +4805,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 const char *cl_retdbdir(void)
 {
 #ifdef _WIN32
-    int have_ddir = 0;
+    int have_ddir       = 0;
     char path[MAX_PATH] = "";
     DWORD sizof;
     HKEY key;
@@ -4819,7 +4819,7 @@ const char *cl_retdbdir(void)
         RegCloseKey(key);
     }
     if (!(have_ddir) && GetModuleFileName(NULL, path, sizeof(path))) {
-        char *dir = NULL;
+        char *dir              = NULL;
         path[sizeof(path) - 1] = '\0';
         dir                    = dirname(path);
         snprintf(DATABASE_DIRECTORY, sizeof(DATABASE_DIRECTORY), "%s\\database", dir);
