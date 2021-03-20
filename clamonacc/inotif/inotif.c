@@ -72,6 +72,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
 
 static void onas_ddd_handle_in_moved_to(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
 static void onas_ddd_handle_in_create(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask);
+static void onas_ddd_handle_in_close_write(struct onas_context *ctx, const char *child_path);
 static void onas_ddd_handle_in_moved_from(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
 static void onas_ddd_handle_in_delete(struct onas_context *ctx, const char *path, const char *child_path, const struct inotify_event *event, int wd);
 static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char *pathname, int extra_options);
@@ -363,7 +364,7 @@ void *onas_ddd_th(void *arg)
     const struct optstruct *pt;
     const struct optstruct *pt_tmpdir;
     const char *clamd_tmpdir;
-    uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE;
+    uint64_t in_mask = IN_ONLYDIR | IN_MOVE | IN_DELETE | IN_CREATE | IN_CLOSE_WRITE;
     fd_set rfds;
     char buf[4096];
     ssize_t bread;
@@ -659,6 +660,9 @@ void *onas_ddd_th(void *arg)
                 } else if (event->mask & IN_CREATE) {
                     onas_ddd_handle_in_create(ctx, path, child_path, event, wd, in_mask);
 
+                } else if (event->mask & IN_CLOSE_WRITE) {
+                    onas_ddd_handle_in_close_write(ctx, child_path);
+
                 } else if (event->mask & IN_MOVED_TO) {
                     onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
                 }
@@ -708,26 +712,29 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
                                       const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask)
 {
 
+    if (!(event->mask & IN_ISDIR)){
+        return;
+    }
+
+    if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
+        logg("*ClamInotif: CREATE - adding %s to %s with wd:%d\n", child_path, path, wd);
+        onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
+    }
+
+    onas_ht_add_hierarchy(ddd_ht, child_path);
+    onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
+
+    return;
+}
+
+static void onas_ddd_handle_in_close_write(struct onas_context *ctx, const char *child_path)
+{
     struct stat s;
 
     if (optget(ctx->clamdopts, "OnAccessExtraScanning")->enabled) {
         if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) {
             onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_FILE);
-
-        } else if (event->mask & IN_ISDIR) {
-            logg("*ClamInotif: CREATE - adding %s to %s with wd:%d\n", child_path, path, wd);
-            onas_ddd_handle_extra_scanning(ctx, child_path, ONAS_SCTH_B_DIR);
-
-            onas_ht_add_hierarchy(ddd_ht, child_path);
-            onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
         }
-    } else {
-        if (stat(child_path, &s) == 0 && S_ISREG(s.st_mode)) return;
-        if (!(event->mask & IN_ISDIR)) return;
-
-        logg("*ClamInotif: MOVED_TO - adding %s to %s with wd:%d\n", child_path, path, wd);
-        onas_ht_add_hierarchy(ddd_ht, child_path);
-        onas_ddd_watch(child_path, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
     }
 
     return;
