@@ -76,9 +76,10 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 {
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
     uint64_t len;
-    uint64_t todo  = maxstream;
     int ret        = 1;
     int close_flag = 0;
+    STATBUF statbuf;
+    uint64_t bytesRead = 0;
 
     if (-1 == fd) {
         if (NULL == filename) {
@@ -94,30 +95,51 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
         }
     }
 
+    if (FSTAT(fd, &statbuf)){
+        logg("!onas_send_stream: Invalid args, bad file descriptor.\n");
+        ret = -1;
+        goto strm_out;
+    }
+
+    if (S_ISDIR(statbuf.st_mode)){
+        ret = 0;
+        goto strm_out;
+    }
+
+    if ((uint64_t) statbuf.st_size > maxstream){
+        ret = 0;
+        goto strm_out;
+    }
+
     if (onas_sendln(curl, "zINSTREAM", 10, timeout)) {
         ret = -1;
         goto strm_out;
     }
 
-    while ((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
-        if ((uint64_t)len > todo) len = todo;
-        buf[0] = htonl(len);
-        if (onas_sendln(curl, (const char *)buf, len + sizeof(uint32_t), timeout)) {
-            ret = -1;
-            goto strm_out;
-        }
-        todo -= len;
-        if (!todo) {
-            len = 0;
-            break;
-        }
-    }
-
-    if (len) {
-        logg("!Failed to read from %s.\n", filename ? filename : "FD");
+    len = statbuf.st_size;
+    buf[0] = htonl(len);
+    if (onas_sendln(curl, (const char *) buf, sizeof(uint32_t), timeout)){
         ret = -1;
         goto strm_out;
     }
+
+    while (bytesRead < len){
+        ssize_t ret = read(fd, buf, sizeof(buf));
+        if (ret < 0){
+            logg("!Failed to read from %s.\n", filename ? filename : "FD");
+            ret = -1;
+            goto strm_out;
+        } else if (0 == ret){
+            break;
+        }
+        bytesRead += ret;
+
+        if (onas_sendln(curl, (const char *) buf, ret, timeout)) {
+            ret = -1;
+            goto strm_out;
+        }
+    }
+
     *buf = 0;
     onas_sendln(curl, (const char *)buf, 4, timeout);
 
