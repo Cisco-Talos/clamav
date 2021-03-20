@@ -1701,16 +1701,6 @@ int main(int argc, char **argv)
             status = ret;
             goto done;
         }
-        if (optget(opts, "SafeBrowsing")->enabled) {
-            if (FC_SUCCESS != (ret = string_list_add("safebrowsing", &optInList, &nOptIns))) {
-                free_string_list(optInList, nOptIns);
-                optInList = NULL;
-
-                mprintf("!Failed to add safebrowsing to list of opt-in databases.\n");
-                status = ret;
-                goto done;
-            }
-        }
 
         /*
          * Collect list of database opt-outs.

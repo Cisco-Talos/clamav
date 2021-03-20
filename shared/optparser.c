@@ -550,14 +550,13 @@ const struct clam_option __clam_options[] = {
 
     {"ReceiveTimeout", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_FRESHCLAM, "Maximum time in seconds for each download operation. 0 means no timeout.", "0"},
 
-    {"SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "This option enables support for Google Safe Browsing. When activated for\nthe first time, freshclam will download a new database file (safebrowsing.cvd)\nwhich will be automatically loaded by clamd and clamscan during the next\nreload, provided that the heuristic phishing detection is turned on. This\ndatabase includes information about websites that may be phishing sites or\npossible sources of malware. When using this option, it's mandatory to run\nfreshclam at least every 30 minutes.\nFreshclam uses the ClamAV's mirror infrastructure to distribute the\ndatabase and its updates but all the contents are provided under Google's\nterms of use. See https://transparencyreport.google.com/safe-browsing/overview \n and https://www.clamav.net/documents/safebrowsing for more information.", "yes"},
-
     {"Bytecode", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_FRESHCLAM, "This option enables downloading of bytecode.cvd, which includes additional\ndetection mechanisms and improvements to the ClamAV engine.", "yes"},
 
     {"DisableCertCheck", "nocerts", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Disable authenticode certificate chain verification in PE files.", "no"},
 
     /* Deprecated options */
 
+    {"SafeBrowsing", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "Deprecated option to download signatures derived from the Google Safe Browsing API. See https://blog.clamav.net/2020/06/the-future-of-clamav-safebrowsing.html for more details.", "no"},
     {"TimeLimit", "timelimit", 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "Deprecated option to set the max-scantime.\nThe value is in milliseconds.", "120000"},
     {"DetectBrokenExecutables", "detect-broken", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_DEPRECATED, "Deprecated option to alert on broken PE and ELF executable files.", "no"},
     {"AlgorithmicDetection", "algorithmic-detection", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Deprecated option to enable heuristic alerts (e.g. \"Heuristics.<sig name>\")", "no"},
