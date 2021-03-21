@@ -575,13 +575,11 @@ static fc_error_t remote_cvdhead(
     /*
      * Request CVD header.
      */
-    logg("Reading CVD header (%s): ", cvdfile);
-
     urlLen = strlen(server) + strlen("/") + strlen(cvdfile);
     url    = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
-    logg("*Trying to retrieve CVD header from %s\n", url);
+    logg("Trying to retrieve CVD header from %s\n", url);
 
     if (FC_SUCCESS != (ret = create_curl_handle(
                            bHttpServer, // Set extra HTTP-specific headers.
@@ -1000,6 +998,14 @@ static fc_error_t downloadFile(
             status = FC_UPTODATE;
             break;
         }
+        case 403: {
+            status = FC_EFORBIDDEN;
+            break;
+        }
+        case 429: {
+            status = FC_ERETRYLATER;
+            break;
+        }
         case 404: {
             if (g_proxyServer)
                 logg("^downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
@@ -1050,6 +1056,7 @@ static fc_error_t getcvd(
     const char *cvdfile,
     const char *tmpfile,
     char *server,
+    uint32_t ifModifiedSince,
     unsigned int remoteVersion,
     int logerr)
 {
@@ -1071,8 +1078,13 @@ static fc_error_t getcvd(
     url    = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
-    if (FC_SUCCESS != (ret = downloadFile(url, tmpfile, 1, logerr, 0))) {
-        logg("%cgetcvd: Can't download %s from %s\n", logerr ? '!' : '^', cvdfile, url);
+    ret = downloadFile(url, tmpfile, 1, logerr, ifModifiedSince);
+    if (ret == FC_UPTODATE) {
+        logg("%s is up to date.\n", cvdfile);
+        status = ret;
+        goto done;
+    } else if (ret > FC_UPTODATE) {
+        logg("%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, url);
         status = ret;
         goto done;
     }
@@ -1080,32 +1092,32 @@ static fc_error_t getcvd(
     /* Temporarily rename file to correct extension for verification. */
     tmpfile_with_extension = strdup(tmpfile);
     if (!tmpfile_with_extension) {
-        logg("!getcvd: Can't allocate memory for temp file with extension!\n");
+        logg("!Can't allocate memory for temp file with extension!\n");
         status = FC_EMEM;
         goto done;
     }
     strncpy(tmpfile_with_extension + strlen(tmpfile_with_extension) - 4, cvdfile + strlen(cvdfile) - 4, 4);
     if (rename(tmpfile, tmpfile_with_extension) == -1) {
-        logg("!getcvd: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+        logg("!Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
 
     if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile_with_extension))) {
-        logg("!getcvd: Verification: %s\n", cl_strerror(cl_ret));
+        logg("!Verification: %s\n", cl_strerror(cl_ret));
         status = FC_EBADCVD;
         goto done;
     }
 
     if (NULL == (cvd = cl_cvdhead(tmpfile_with_extension))) {
-        logg("!getcvd: Can't read CVD header of new %s database.\n", cvdfile);
+        logg("!Can't read CVD header of new %s database.\n", cvdfile);
         status = FC_EBADCVD;
         goto done;
     }
 
     /* Rename the file back to the original, since verification passed. */
     if (rename(tmpfile_with_extension, tmpfile) == -1) {
-        logg("!getcvd: Can't rename %s to %s: %s\n", tmpfile_with_extension, tmpfile, strerror(errno));
+        logg("!Can't rename %s to %s: %s\n", tmpfile_with_extension, tmpfile, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
@@ -1719,7 +1731,8 @@ static fc_error_t check_for_new_database_version(
     uint32_t *localVersion,
     uint32_t *remoteVersion,
     char **localFilename,
-    char **remoteFilename)
+    char **remoteFilename,
+    uint32_t *localTimestamp)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -1728,13 +1741,13 @@ static fc_error_t check_for_new_database_version(
     struct cl_cvd *local_database = NULL;
     char *remotename              = NULL;
 
-    uint32_t localver       = 0;
-    uint32_t localTimestamp = 0;
-    uint32_t remotever      = 0;
+    uint32_t localver  = 0;
+    uint32_t remotever = 0;
 
     if ((NULL == database) || (NULL == server) ||
         (NULL == localVersion) || (NULL == remoteVersion) ||
-        (NULL == localFilename) || (NULL == remoteFilename)) {
+        (NULL == localFilename) || (NULL == remoteFilename) ||
+        (NULL == localTimestamp)) {
         logg("!check_for_new_database_version: Invalid args!\n");
         goto done;
     }
@@ -1743,6 +1756,7 @@ static fc_error_t check_for_new_database_version(
     *remoteVersion  = 0;
     *localFilename  = NULL;
     *remoteFilename = NULL;
+    *localTimestamp = 0;
 
     /*
      * Check local database version (if exists)
@@ -1751,8 +1765,8 @@ static fc_error_t check_for_new_database_version(
         logg("*check_for_new_database_version: No local copy of \"%s\" database.\n", database);
     } else {
         logg("*check_for_new_database_version: Local copy of %s found: %s.\n", database, localname);
-        localTimestamp = local_database->stime;
-        localver       = local_database->version;
+        *localTimestamp = local_database->stime;
+        localver        = local_database->version;
     }
 
     /*
@@ -1760,7 +1774,7 @@ static fc_error_t check_for_new_database_version(
      */
     ret = query_remote_database_version(
         database,
-        localTimestamp,
+        *localTimestamp,
         dnsUpdateInfo,
         server,
         bPrivateMirror,
@@ -1858,11 +1872,12 @@ fc_error_t updatedb(
 
     struct cl_cvd *cvd = NULL;
 
-    uint32_t localVersion  = 0;
-    uint32_t remoteVersion = 0;
-    char *localFilename    = NULL;
-    char *remoteFilename   = NULL;
-    char *newLocalFilename = NULL;
+    uint32_t localTimestamp = 0;
+    uint32_t localVersion   = 0;
+    uint32_t remoteVersion  = 0;
+    char *localFilename     = NULL;
+    char *remoteFilename    = NULL;
+    char *newLocalFilename  = NULL;
 
     char *tmpdir  = NULL;
     char *tmpfile = NULL;
@@ -1892,7 +1907,8 @@ fc_error_t updatedb(
                            &localVersion,
                            &remoteVersion,
                            &localFilename,
-                           &remoteFilename))) {
+                           &remoteFilename,
+                           &localTimestamp))) {
         logg("*updatedb: %s database update failed.\n", database);
         status = ret;
         goto done;
@@ -1914,8 +1930,15 @@ fc_error_t updatedb(
         /*
          * Download entire file.
          */
-        ret = getcvd(remoteFilename, tmpfile, server, remoteVersion, logerr);
-        if (FC_SUCCESS != ret) {
+        ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
+        if (FC_UPTODATE == ret) {
+            logg("^Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
+            if (NULL != localFilename) {
+                /* Received a 304 (not modified), must be up to date after all */
+                *dbFilename = cli_strdup(localFilename);
+            }
+            goto up_to_date;
+        } else if (FC_SUCCESS != ret) {
             status = ret;
             goto done;
         }
@@ -1980,7 +2003,7 @@ fc_error_t updatedb(
                 logg("^Incremental update failed, trying to download %s\n", remoteFilename);
             }
 
-            ret = getcvd(remoteFilename, tmpfile, server, remoteVersion, logerr);
+            ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
             if (FC_SUCCESS != ret) {
                 status = ret;
                 goto done;

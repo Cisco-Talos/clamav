@@ -496,7 +496,7 @@ const struct clam_option __clam_options[] = {
     {"DevPerformance", "dev-performance", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", ""},
     {"DevLiblog", "dev-liblog", 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD, "", ""},
 
-    /* Freshclam-only entries */
+    /* FreshClam-only entries */
 
     /* FIXME: drop this entry and use LogFile */
     {"UpdateLogFile", "log", 'l', CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Save all reports to a log file.", "/var/log/freshclam.log"},
@@ -505,7 +505,7 @@ const struct clam_option __clam_options[] = {
 
     {"Checks", "checks", 'c', CLOPT_TYPE_NUMBER, MATCH_NUMBER, 12, NULL, 0, OPT_FRESHCLAM, "This option defined how many times daily freshclam should check for\na database update.", "24"},
 
-    {"DNSDatabaseInfo", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. Freshclam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
+    {"DNSDatabaseInfo", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. FreshClam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net"},
 
     {"DatabaseMirror", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least one entry: database.clamav.net.", "database.clamav.net"},
 

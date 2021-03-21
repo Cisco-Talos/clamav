@@ -92,7 +92,7 @@ Number of database checks per day.
 Default: 12
 .TP
 \fBDNSDatabaseInfo STRING\fR
-Use DNS to verify the virus database version. Freshclam uses DNS TXT records to verify the versions of the database and software itself. With this directive you can change the database verification domain.
+Use DNS to verify the virus database version. FreshClam uses DNS TXT records to verify the versions of the database and software itself. With this directive you can change the database verification domain.
 .br
 \fBWARNING:\fR Please don't change it unless you're configuring freshclam to use your own database verification domain.
 .br
