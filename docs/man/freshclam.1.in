@@ -10,7 +10,7 @@ freshclam [options]
 freshclam is a virus database update tool for ClamAV.
 .SH "OPTIONS"
 .LP
-Freshclam reads its configuration from freshclam.conf. The settings can be overwritten with command line options.
+FreshClam reads its configuration from freshclam.conf. The settings can be overwritten with command line options.
 .TP
 \fB\-h, \-\-help\fR
 Output help information and exit.

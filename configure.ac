@@ -147,7 +147,7 @@ m4_include([m4/reorganization/bsd.m4])
 dnl Clamonacc loading
 m4_include([m4/reorganization/clamonacc.m4])
 
-dnl Freshclam dependencies
+dnl FreshClam dependencies
 m4_include([m4/reorganization/libs/curl.m4])
 m4_include([m4/reorganization/substitutions.m4])
 m4_include([m4/reorganization/strni.m4])

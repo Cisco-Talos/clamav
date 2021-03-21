@@ -261,7 +261,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
             ret = FC_ETESTFAIL;
         }
         if (FC_SUCCESS != ret) {
-            logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
+            logg("^Database load exited with \"%s\"\n", fc_strerror(ret));
             status = FC_ETESTFAIL;
             goto done;
         }
@@ -276,7 +276,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
             logg("^pipe() failed: %s\n", strerror(errno));
             ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
             if (FC_SUCCESS != ret) {
-                logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
+                logg("^Database load exited with \"%s\"\n", fc_strerror(ret));
                 status = FC_ETESTFAIL;
                 goto done;
             }
@@ -302,7 +302,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     /* Test the database without forking. */
                     ret = fc_test_database(dbFilename, fc_context->bBytecodeEnabled);
                     if (FC_SUCCESS != ret) {
-                        logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
+                        logg("^Database load exited with \"%s\"\n", fc_strerror(ret));
                         status = FC_ETESTFAIL;
                         goto done;
                     }
@@ -367,7 +367,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
                     if (WIFEXITED(stat_loc)) {
                         ret = (fc_error_t)WEXITSTATUS(stat_loc);
                         if (FC_SUCCESS != ret) {
-                            logg("^Database load exited with \"%s\" (%d)\n", fc_strerror(ret), ret);
+                            logg("^Database load exited with \"%s\"\n", fc_strerror(ret));
                             status = FC_ETESTFAIL;
                             goto done;
                         }
@@ -555,7 +555,7 @@ static void free_string_list(char **stringList, uint32_t nListItems)
 /**
  * @brief Get the database server list object
  *
- * @param opts          Freshclam options struct.
+ * @param opts          FreshClam options struct.
  * @param serverList    [out] List of servers.
  * @param nServers      [out] Number of servers in list.
  * @param bPrivate      [out] Non-zero if PrivateMirror servers were selected.
@@ -1463,7 +1463,7 @@ fc_error_t perform_database_update(
             (void *)fc_context,
             &nUpdated);
         if (FC_SUCCESS != ret) {
-            logg("!Database update process failed: %s (%d)\n", fc_strerror(ret), ret);
+            logg("!Database update process failed: %s\n", fc_strerror(ret));
             status = ret;
             goto done;
         }
@@ -1480,7 +1480,7 @@ fc_error_t perform_database_update(
             (void *)fc_context,
             &nUpdated);
         if (FC_SUCCESS != ret) {
-            logg("!Database update process failed: %s (%d)\n", fc_strerror(ret), ret);
+            logg("!Database update process failed: %s\n", fc_strerror(ret));
             status = ret;
             goto done;
         }

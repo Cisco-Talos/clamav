@@ -24,7 +24,7 @@
 #include "clamav-types.h"
 
 /*
- * Freshclam configuration flag options.
+ * FreshClam configuration flag options.
  */
 // clang-format off
 #define FC_CONFIG_MSG_DEBUG        0x1  // Enable debug messages.
@@ -79,7 +79,9 @@ typedef enum fc_error_tag {
     FC_ELOGGING,
     FC_EFAILEDUPDATE,
     FC_EMEM,
-    FC_EARG
+    FC_EARG,
+    FC_EFORBIDDEN,
+    FC_ERETRYLATER
 } fc_error_t;
 
 /**
@@ -240,7 +242,7 @@ fc_error_t fc_update_databases(
  */
 
 /**
- * @brief Freshclam callback Download Complete
+ * @brief FreshClam callback Download Complete
  *
  * Called after each database has been downloaded or updated.
  *
