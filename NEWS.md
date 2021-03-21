@@ -376,7 +376,7 @@ ClamAV 0.102.2 is a bug patch release to address the following issues.
 
 - Fixed an issue where running freshclam manually causes a daemonized freshclam
   process to fail when it updates because the manual instance deletes the
-  temporary download directory. Freshclam temporary files will now download to a
+  temporary download directory. FreshClam temporary files will now download to a
   unique directory created at the time of an update instead of using a hardcoded
   directory created/destroyed at the program start/exit.
 
@@ -865,7 +865,7 @@ we've cooked up over the past 6 months.
   numeric value. You can read more about this feature, see how it works, and
   look over examples in [our documentation](docs/UserManual/Signatures.md).
 - Backwards compatibility improvements for detecting the OpenSSL dependency.
-- Freshclam updated to match exit codes defined in the freshclam.1 man page.
+- FreshClam updated to match exit codes defined in the freshclam.1 man page.
 - Upgrade from libmspack 0.5alpha to libmspack 0.7.1alpha. As a reminder, we
   support system-installed versions of libmspack. _However_, at this time the
   ClamAV-provided version of libmspack provides additional abilities to parse
@@ -1440,7 +1440,7 @@ ClamAV 0.98.4 is a bug fix release. The following issues are now resolved:
 - Crashes of clamd on Windows and Mac OS X platforms when reloading
   the virus signature database.
 - Infinite loop in clamdscan when clamd is not running.
-- Freshclam failure on Solaris 10.
+- FreshClam failure on Solaris 10.
 - Buffer underruns when handling multi-part MIME email attachments.
 - Configuration of OpenSSL on various platforms.
 - Name collisions on Ubuntu 14.04, Debian sid, and Slackware 14.1.
@@ -1900,7 +1900,7 @@ version:
   Numbers and credit card numbers (clamd: StructuredDataDetection,
   clamscan: --detect-structured; additional fine-tuning options are available)
 
-- IPv6 Support: Freshclam now supports IPv6
+- IPv6 Support: FreshClam now supports IPv6
 
 - Improved Scanning of Scripts: The normalization of scripts now covers
   JavaScript
@@ -3189,7 +3189,7 @@ News from ClamAV world:
   - clamav.linux-sxs.org: database mirror - rsync from clamav.ozforces.com
     (thanks to Douglas J Hunley <doug@hunley.homeip.net>)
 
-    Freshclam will automatically use them when the main server is not
+    FreshClam will automatically use them when the main server is not
     accessible.
 
 - Official port in FreeBSD available ! (maintained by Masahiro Teramoto

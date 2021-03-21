@@ -113,6 +113,10 @@ const char *fc_strerror(fc_error_t fcerror)
             return "Memory allocation error";
         case FC_EARG:
             return "Invalid argument(s)";
+        case FC_EFORBIDDEN:
+            return "Forbidden, Blocked by CDN";
+        case FC_ERETRYLATER:
+            return "Too-many-requests, Retry later";
         default:
             return "Unknown libfreshclam error code!";
     }
@@ -627,8 +631,7 @@ fc_error_t fc_update_database(
                 }
                 case FC_ECONNECTION:
                 case FC_EBADCVD:
-                case FC_EFAILEDGET:
-                case FC_EMIRRORNOTSYNC: {
+                case FC_EFAILEDGET: {
                     if (attempt < g_maxAttempts) {
                         logg("Trying again in 5 secs...\n");
                         sleep(5);
@@ -642,8 +645,43 @@ fc_error_t fc_update_database(
                     }
                     break;
                 }
+                case FC_EMIRRORNOTSYNC: {
+                    logg("!Update failed for database: %s\n", database);
+                    status = ret;
+                    goto done;
+                }
+                case FC_EFORBIDDEN: {
+                    logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
+                    logg("This could mean several things:\n");
+                    logg(" 1. You are running an out of date version of ClamAV / FreshClam.\n");
+                    logg("    Ensure you are the most updated version by visiting https://www.clamav.net/downloads\n");
+                    logg(" 2. Your network is explicitly denied by the FreshClam CDN.\n");
+                    logg("    In order to rectify this please check that you are:\n");
+                    logg("   a. Running an up to date version of FreshClam\n");
+                    logg("   b. Running FreshClam no more than once an hour\n");
+                    logg("   c. If you have checked (a) and (b), please open a ticket at\n");
+                    logg("      https://bugzilla.clamav.net under the “Mirrors” component\n");
+                    logg("      and we will investigate why your network is blocked.\n");
+                    status = ret;
+                    goto done;
+                    break;
+                }
+                case FC_ERETRYLATER: {
+                    logg("^FreshClam received error code 429 from the ClamAV Content Delivery Network (CDN).\n");
+                    logg("This means that you have been rate limited by the CDN.\n");
+                    logg(" 1. Run FreshClam no more than once an hour to check for updates.\n");
+                    logg("    Freshclam should check DNS first to see if an update is needed.\n");
+                    logg(" 2. If you have more than 10 hosts on your network attempting to download,\n");
+                    logg("    it is recommended that you set up a private mirror on your network using\n");
+                    logg("    cvdupdate (https://pypi.org/project/cvdupdate/) to save bandwidth on the\n");
+                    logg("    CDN and your own network.\n");
+                    logg(" 3. Please do not open a ticket asking for an exemption from the rate limit,\n");
+                    logg("    it will not be granted.\n");
+                    goto success;
+                    break;
+                }
                 default: {
-                    logg("!Unexpected error when attempting to update database: %s\n", database);
+                    logg("!Unexpected error when attempting to update %s: %s\n", database, fc_strerror(ret));
                     status = ret;
                     goto done;
                 }
@@ -698,7 +736,6 @@ fc_error_t fc_update_databases(
                                bScriptedUpdates,
                                context,
                                &bUpdated))) {
-            logg("^fc_update_databases: fc_update_database failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
             goto done;
         }

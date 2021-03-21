@@ -58,7 +58,7 @@ Example
 # Default: clamav (may depend on installation options)
 #DatabaseOwner clamav
 
-# Use DNS to verify virus database version. Freshclam uses DNS TXT records
+# Use DNS to verify virus database version. FreshClam uses DNS TXT records
 # to verify database and software versions. With this directive you can change
 # the database verification domain.
 # WARNING: Do not touch it unless you're configuring freshclam to use your
