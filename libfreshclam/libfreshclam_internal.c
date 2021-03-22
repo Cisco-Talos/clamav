@@ -1401,24 +1401,11 @@ static fc_error_t getcvd(
     }
 
     if (cvd->version < remoteVersion) {
-        if (cvd->version == remoteVersion - 1) {
-            logg("*The %s database downloaded from %s is one version older than advertised in the DNS TXT record.\n",
-                 cvdfile,
-                 server);
-
-            /*
-             * Tolerate an off-by-one version mismatch.
-             * Chances are the new version was just published and the CDN is still updating.
-             */
-            status = FC_SUCCESS;
-            goto done;
-        } else {
-            logg("!The %s database downloaded from %s is more than one version older than the version advertised in the DNS TXT record.\n",
-                 cvdfile,
-                 server);
-            status = FC_EMIRRORNOTSYNC;
-            goto done;
-        }
+        logg("*The %s database downloaded from %s is older than the version advertised in the DNS TXT record.\n",
+             cvdfile,
+             server);
+        status = FC_EMIRRORNOTSYNC;
+        goto done;
     }
 
     status = FC_SUCCESS;
@@ -1434,7 +1421,10 @@ done:
     if (NULL != url) {
         free(url);
     }
-    if (FC_SUCCESS != status) {
+    if (
+        (FC_SUCCESS != status) &&
+        (FC_EMIRRORNOTSYNC != status) /* Keep older version, it's better than nothing. */
+    ) {
         if (NULL != tmpfile) {
             unlink(tmpfile);
         }
@@ -2222,6 +2212,12 @@ fc_error_t updatedb(
                 *dbFilename = cli_strdup(localFilename);
             }
             goto up_to_date;
+        } else if (FC_EMIRRORNOTSYNC == ret) {
+            /* Let's accept this older version, but keep the error code.
+             * We'll have fc_update_database() retry using CDIFFs.
+             */
+            logg("*Received an older %s CVD than was advertised. We'll keep it and try updating to the latest version with CDIFFs.\n", database);
+            status = ret;
         } else if (FC_SUCCESS != ret) {
             status = ret;
             goto done;
@@ -2289,8 +2285,17 @@ fc_error_t updatedb(
 
             ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
             if (FC_SUCCESS != ret) {
-                status = ret;
-                goto done;
+                if (FC_EMIRRORNOTSYNC == status) {
+                    /* Note: We can't retry with CDIFF's if FC_EMIRRORNOTSYNC happened here.
+                     * If we did there could be an infinite loop.
+                     * Best option is to accept the older CVD.
+                     */
+                    logg("^Received an older %s CVD than was advertised. Incremental updates either failed or are disabled, so we'll have to settle for a slightly out-of-date database.\n", database);
+                    status = FC_SUCCESS;
+                } else {
+                    status = ret;
+                    goto done;
+                }
             }
 
             newLocalFilename = cli_strdup(remoteFilename);
@@ -2394,7 +2399,9 @@ fc_error_t updatedb(
 
 up_to_date:
 
-    status = FC_SUCCESS;
+    if (status != FC_EMIRRORNOTSYNC) {
+        status = FC_SUCCESS;
+    }
 
 done:
 
