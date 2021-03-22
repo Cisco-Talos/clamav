@@ -1932,7 +1932,7 @@ int main(int argc, char **argv)
             alarm(0);
 #endif
 
-            if (ret > 1) {
+            if (ret > FC_UPTODATE) {
                 if ((opt = optget(opts, "OnErrorExecute"))->enabled)
                     arg = opt->strarg;
 
@@ -1940,6 +1940,14 @@ int main(int argc, char **argv)
                     execute("OnErrorExecute", arg, optget(opts, "daemon")->enabled);
 
                 arg = NULL;
+
+                if (FC_EFORBIDDEN == ret) {
+                    /* We're being actively blocked, which is a fatal error. Exit. */
+                    logg("^Freshclam was forbidden from downloading a database.\n");
+                    logg("^This is fatal. Retrying later won't help. Exiting now.\n");
+                    status = ret;
+                    goto done;
+                }
             }
 
             logg("#--------------------------------------\n");

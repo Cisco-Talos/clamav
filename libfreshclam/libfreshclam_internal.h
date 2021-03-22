@@ -32,6 +32,14 @@
 #define DNS_EXTRADBINFO_RECORDTIME      1
 // clang-format on
 
+#define SIZEOF_UUID_V4 37                 /** For uuid_v4_gen(), includes NULL byte */
+#define MIRRORS_DAT_MAGIC "FreshClamData" /** Magic bytes for mirrors.dat found before mirrors_dat_v1_t */
+typedef struct _mirrors_dat_v1 {
+    uint32_t version;          /** version of this dat format */
+    char uuid[SIZEOF_UUID_V4]; /** uuid to be used in user-agent */
+    time_t retry_after;        /** retry date. If > 0, don't update until after this date */
+} mirrors_dat_v1_t;
+
 /* ----------------------------------------------------------------------------
  * Internal libfreshclam globals
  */
@@ -54,6 +62,12 @@ extern uint32_t g_connectTimeout;
 extern uint32_t g_requestTimeout;
 
 extern uint32_t g_bCompressLocalDatabase;
+
+extern mirrors_dat_v1_t *g_mirrorsDat;
+
+fc_error_t load_mirrors_dat(void);
+fc_error_t save_mirrors_dat(void);
+fc_error_t new_mirrors_dat(void);
 
 fc_error_t updatedb(
     const char *database,
