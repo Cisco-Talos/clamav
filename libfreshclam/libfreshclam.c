@@ -657,9 +657,8 @@ fc_error_t fc_update_database(
                     break;
                 }
                 case FC_EMIRRORNOTSYNC: {
-                    logg("!Update failed for database: %s\n", database);
-                    status = ret;
-                    goto done;
+                    logg("Received an older %s CVD than was advertised. We'll retry so the incremental update will ensure we're up-to-date.\n", database);
+                    break;
                 }
                 case FC_EFORBIDDEN: {
                     logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
