@@ -66,6 +66,7 @@
 #include <math.h>
 
 #include <curl/curl.h>
+#include <openssl/rand.h>
 
 #include "target.h"
 
@@ -114,6 +115,242 @@ uint32_t g_connectTimeout = 0;
 uint32_t g_requestTimeout = 0;
 
 uint32_t g_bCompressLocalDatabase = 0;
+
+mirrors_dat_v1_t *g_mirrorsDat = NULL;
+
+/** @brief Generate a Version 4 UUID according to RFC-4122
+ *
+ * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
+ *
+ * Copyright 2021 Karthik Velakur
+ * License: MIT
+ * From: https://gist.github.com/kvelakur/9069c9896577c3040030
+ *
+ * @param buffer A buffer that is SIZEOF_UUID_V4
+ * @retval 1 on success, 0 otherwise.
+ */
+static int uuid_v4_gen(char *buffer)
+{
+    union {
+        struct
+        {
+            uint32_t time_low;
+            uint16_t time_mid;
+            uint16_t time_hi_and_version;
+            uint8_t clk_seq_hi_res;
+            uint8_t clk_seq_low;
+            uint8_t node[6];
+        };
+        uint8_t __rnd[16];
+    } uuid;
+
+    int rc = RAND_bytes(uuid.__rnd, sizeof(uuid));
+
+    // Refer Section 4.2 of RFC-4122
+    // https://tools.ietf.org/html/rfc4122#section-4.2
+    uuid.clk_seq_hi_res      = (uint8_t)((uuid.clk_seq_hi_res & 0x3F) | 0x80);
+    uuid.time_hi_and_version = (uint16_t)((uuid.time_hi_and_version & 0x0FFF) | 0x4000);
+
+    snprintf(buffer, SIZEOF_UUID_V4, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
+             uuid.clk_seq_hi_res, uuid.clk_seq_low,
+             uuid.node[0], uuid.node[1], uuid.node[2],
+             uuid.node[3], uuid.node[4], uuid.node[5]);
+    buffer[SIZEOF_UUID_V4 - 1] = 0;
+
+    return rc;
+}
+
+fc_error_t load_mirrors_dat(void)
+{
+    fc_error_t status      = FC_EINIT;
+    int handle             = -1;
+    ssize_t bread          = 0;
+    mirrors_dat_v1_t *mdat = NULL;
+    uint32_t version       = 0;
+    char magic[13]         = {0};
+
+    /* Change directory to database directory */
+    if (chdir(g_databaseDirectory)) {
+        logg("!Can't change dir to %s\n", g_databaseDirectory);
+        status = FC_EDIRECTORY;
+        goto done;
+    }
+    logg("*Current working dir is %s\n", g_databaseDirectory);
+
+    if (-1 == (handle = safe_open("mirrors.dat", O_RDONLY | O_BINARY))) {
+        char currdir[PATH_MAX];
+
+        if (getcwd(currdir, sizeof(currdir)))
+            logg("*Can't open mirrors.dat in %s\n", currdir);
+        else
+            logg("*Can't open mirrors.dat in the current directory\n");
+
+        logg("*It probably doesn't exist yet. That's ok.\n");
+        status = FC_EFILE;
+        goto done;
+    }
+
+    if (strlen(MIRRORS_DAT_MAGIC) != (bread = read(handle, &magic, strlen(MIRRORS_DAT_MAGIC)))) {
+        char error_message[260];
+        cli_strerror(errno, error_message, 260);
+        logg("!Can't read version from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        goto done;
+    }
+    if (0 != strncmp(magic, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
+        logg("*Magic bytes for mirrors.dat did not match expectations.\n");
+        goto done;
+    }
+
+    if (sizeof(uint32_t) != (bread = read(handle, &version, sizeof(uint32_t)))) {
+        char error_message[260];
+        cli_strerror(errno, error_message, 260);
+        logg("!Can't read version from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        goto done;
+    }
+
+    switch (version) {
+        case 1: {
+            /* Verify that file size is as expected. */
+            off_t file_size = lseek(handle, 0L, SEEK_END);
+
+            if (strlen(MIRRORS_DAT_MAGIC) + sizeof(mirrors_dat_v1_t) != (size_t)file_size) {
+                logg("*mirrors.dat is bigger than expected: %zu != %ld\n", sizeof(mirrors_dat_v1_t), file_size);
+                goto done;
+            }
+
+            /* Rewind to just after the magic bytes and read data struct */
+            lseek(handle, strlen(MIRRORS_DAT_MAGIC), SEEK_SET);
+
+            mdat = malloc(sizeof(mirrors_dat_v1_t));
+            if (NULL == mdat) {
+                logg("!Failed to allocate memory for mirrors.dat\n");
+                status = FC_EMEM;
+                goto done;
+            }
+
+            if (sizeof(mirrors_dat_v1_t) != (bread = read(handle, mdat, sizeof(mirrors_dat_v1_t)))) {
+                char error_message[260];
+                cli_strerror(errno, error_message, 260);
+                logg("!Can't read from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+                goto done;
+            }
+
+            /* Got it.*/
+            close(handle);
+
+            /* This is the latest version.
+               If we change the format in the future, we may wish to create a new
+               mirrors dat struct, import the relevant bits to the new format,
+               and then save (overwrite) mirrors.dat with the new data. */
+            g_mirrorsDat = mdat;
+            break;
+        }
+        default: {
+            logg("*mirrors.dat version is different than expected: %u != %u\n", 1, g_mirrorsDat->version);
+            goto done;
+        }
+    }
+
+    logg("*Loaded mirrors.dat:\n");
+    logg("*  version:    %d\n", g_mirrorsDat->version);
+    logg("*  uuid:       %s\n", g_mirrorsDat->uuid);
+    if (g_mirrorsDat->retry_after > 0) {
+        char retry_after_string[26];
+        struct tm *tm_info = localtime(&g_mirrorsDat->retry_after);
+        strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+        logg("*  retry-after: %s\n", retry_after_string);
+    }
+
+    status = FC_SUCCESS;
+
+done:
+    if (-1 != handle) {
+        close(handle);
+    }
+    if (FC_SUCCESS != status) {
+        free(mdat);
+    }
+
+    return status;
+}
+
+fc_error_t save_mirrors_dat(void)
+{
+    fc_error_t status = FC_EINIT;
+    int handle        = -1;
+
+    if (-1 == (handle = safe_open("mirrors.dat", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644))) {
+        char currdir[PATH_MAX];
+
+        if (getcwd(currdir, sizeof(currdir)))
+            logg("!Can't create mirrors.dat in %s\n", currdir);
+        else
+            logg("!Can't create mirrors.dat in the current directory\n");
+
+        logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+        status = FC_EDBDIRACCESS;
+        goto done;
+    }
+    if (-1 == write(handle, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
+        logg("!Can't write to mirrors.dat\n");
+    }
+    if (-1 == write(handle, g_mirrorsDat, sizeof(mirrors_dat_v1_t))) {
+        logg("!Can't write to mirrors.dat\n");
+    }
+
+    logg("*Saved mirrors.dat\n");
+
+    status = FC_SUCCESS;
+done:
+    if (-1 != handle) {
+        close(handle);
+    }
+
+    return status;
+}
+
+fc_error_t new_mirrors_dat(void)
+{
+    fc_error_t status = FC_EINIT;
+
+    mirrors_dat_v1_t *mdat = malloc(sizeof(mirrors_dat_v1_t));
+    if (NULL == mdat) {
+        logg("!Failed to allocate memory for mirrors.dat\n");
+        status = FC_EMEM;
+        goto done;
+    }
+
+    mdat->version     = 1;
+    mdat->retry_after = 0;
+    if (0 == uuid_v4_gen(mdat->uuid)) {
+        /* Failed to create UUID */
+        status = FC_EINIT;
+        logg("!Failed to create random UUID!\n");
+        goto done;
+    }
+
+    g_mirrorsDat = mdat;
+
+    logg("*Creating new mirrors.dat\n");
+
+    if (FC_SUCCESS != save_mirrors_dat()) {
+        logg("!Failed to save mirrors.dat!\n");
+        status = FC_EFILE;
+        goto done;
+    }
+
+    status = FC_SUCCESS;
+
+done:
+    if (FC_SUCCESS != status) {
+        if (NULL != mdat) {
+            free(mdat);
+        }
+        g_mirrorsDat = NULL;
+    }
+    return status;
+}
 
 /**
  * @brief Get DNS text record field # for official databases.
@@ -328,12 +565,19 @@ static fc_error_t create_curl_handle(
         goto done;
     }
 
-    if (g_userAgent)
+    if (g_userAgent) {
         strncpy(userAgent, g_userAgent, sizeof(userAgent));
-    else
+    } else {
+        /*
+         * Use a randomly generated UUID in the User-Agent
+         * We'll try to load it from a file in the database directory.
+         * If none exists, we'll create a new one and save it to said file.
+         */
         snprintf(userAgent, sizeof(userAgent),
-                 PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ")",
-                 get_version());
+                 PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ", UUID: %s)",
+                 get_version(),
+                 g_mirrorsDat->uuid);
+    }
     userAgent[sizeof(userAgent) - 1] = 0;
 
     if (mprintf_verbose) {
@@ -730,6 +974,27 @@ static fc_error_t remote_cvdhead(
             status = FC_UPTODATE;
             goto done;
         }
+        case 403: {
+            status = FC_EFORBIDDEN;
+            break;
+        }
+        case 429: {
+            status = FC_ERETRYLATER;
+            curl_off_t retry_after;
+
+            /* Find out how long we should wait before allowing a retry. */
+            curl_easy_getinfo(curl, CURLINFO_RETRY_AFTER, &retry_after);
+            if (retry_after > 0) {
+                /* The response gave us a Retry-After date. Use that. */
+                g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
+            } else {
+                /* Try again in no less than 4 hours if the response didn't specify. */
+                g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
+            }
+            (void)save_mirrors_dat();
+
+            break;
+        }
         case 404: {
             if (g_proxyServer)
                 logg("^remote_cvdhead: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
@@ -1004,6 +1269,19 @@ static fc_error_t downloadFile(
         }
         case 429: {
             status = FC_ERETRYLATER;
+            curl_off_t retry_after;
+
+            /* Find out how long we should wait before allowing a retry. */
+            curl_easy_getinfo(curl, CURLINFO_RETRY_AFTER, &retry_after);
+            if (retry_after > 0) {
+                /* The response gave us a Retry-After date. Use that. */
+                g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
+            } else {
+                /* Try again in no less than 4 hours if the response didn't specify. */
+                g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
+            }
+            (void)save_mirrors_dat();
+
             break;
         }
         case 404: {
@@ -1792,7 +2070,7 @@ static fc_error_t check_for_new_database_version(
                      database, localver, remotever);
                 break;
             }
-            // else: Fall-through to Up-to-date case.
+            /* fall-through */
         }
         case FC_UPTODATE: {
             if (NULL == local_database) {
@@ -1811,6 +2089,12 @@ static fc_error_t check_for_new_database_version(
                We know it will be the same as the local version though. */
             remotever = localver;
             break;
+        }
+        case FC_EFORBIDDEN: {
+            /* We tried to look up the version using HTTP and were actively blocked. */
+            logg("!check_for_new_database_version: Blocked from using server %s.\n", server);
+            status = FC_EFORBIDDEN;
+            goto done;
         }
         default: {
             logg("!check_for_new_database_version: Failed to find %s database using server %s.\n", database, server);
