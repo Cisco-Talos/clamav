@@ -147,8 +147,8 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     if (NULL != filename) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
-            conn_reply_errno(scandata->conn, msg, "Failed to determine real path:");
-            logg("^Failed to determine real path for: %s\n", filename);
+            conn_reply_errno(scandata->conn, msg, "File path check failure:");
+            logg("^File path check failure for: %s\n", filename);
             logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             free(filename);
@@ -181,25 +181,30 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             else
                 logg("!Memory allocation failed during cli_ftw()\n");
             scandata->errors++;
+            free(filename);
             return CL_EMEM;
         case error_stat:
-            conn_reply_errno(scandata->conn, msg, "lstat() failed:");
-            logg("^lstat() failed on: %s\n", msg);
+            conn_reply_errno(scandata->conn, msg, "File path check failure:");
+            logg("^File path check failure on: %s\n", msg);
             scandata->errors++;
+            free(filename);
             return CL_SUCCESS;
         case warning_skipped_dir:
-            logg("^Directory recursion limit reached, skipping %s\n",
-                 msg);
+            logg("^Directory recursion limit reached, skipping %s\n", msg);
+            free(filename);
             return CL_SUCCESS;
         case warning_skipped_link:
             logg("$Skipping symlink: %s\n", msg);
+            free(filename);
             return CL_SUCCESS;
         case warning_skipped_special:
             if (msg == scandata->toplevel_path)
                 conn_reply(scandata->conn, msg, "Not supported file type", "ERROR");
             logg("*Not supported file type: %s\n", msg);
+            free(filename);
             return CL_SUCCESS;
         case visit_directory_toplev:
+            free(filename);
             return CL_SUCCESS;
         case visit_file:
             break;

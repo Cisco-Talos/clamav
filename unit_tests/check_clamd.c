@@ -146,7 +146,7 @@ static void conn_teardown(void)
 
 #define NONEXISTENT PATHSEP "nonexistent\vfilename"
 
-#define NONEXISTENT_REPLY NONEXISTENT ": lstat() failed: No such file or directory. ERROR"
+#define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: No such file or directory. ERROR"
 
 #ifndef _WIN32
 #define ACCDENIED OBJDIR PATHSEP "accdenied"

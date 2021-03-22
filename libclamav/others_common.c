@@ -574,28 +574,46 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     return stated;
 }
 
-static int handle_filetype(const char *fname, int flags,
-                           STATBUF *statbuf, int *stated, enum filetype *ft,
-                           cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+static cl_error_t handle_filetype(const char *fname, int flags,
+                                  STATBUF *statbuf, int *stated, enum filetype *ft,
+                                  cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
-    int ret;
+    cl_error_t status = CL_EMEM;
 
     *stated = get_filetype(fname, flags, flags & CLI_FTW_NEED_STAT, statbuf, ft);
 
     if (*stated == -1) {
-        /*  we failed a stat() or lstat() */
-        ret = callback(NULL, NULL, fname, error_stat, data);
-        if (ret != CL_SUCCESS)
-            return ret;
+        /* we failed a stat() or lstat() */
+        char *fname_copy = cli_strdup(fname);
+        if (NULL == fname_copy) {
+            goto done;
+        }
+
+        status = callback(NULL, fname_copy, fname, error_stat, data);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
         *ft = ft_unknown;
     } else if (*ft == ft_skipped_link || *ft == ft_skipped_special) {
         /* skipped filetype */
-        ret = callback(stated ? statbuf : NULL, NULL, fname,
-                       *ft == ft_skipped_link ? warning_skipped_link : warning_skipped_special, data);
-        if (ret != CL_SUCCESS)
-            return ret;
+        char *fname_copy = cli_strdup(fname);
+        if (NULL == fname_copy) {
+            goto done;
+        }
+
+        status = callback(stated ? statbuf : NULL,
+                          fname_copy,
+                          fname,
+                          *ft == ft_skipped_link ? warning_skipped_link : warning_skipped_special,
+                          data);
+        if (status != CL_SUCCESS)
+            goto done;
     }
-    return CL_SUCCESS;
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
 }
 
 static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
@@ -608,13 +626,14 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
     }
 }
 
-int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
+cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
+    cl_error_t status = CL_EMEM;
     STATBUF statbuf;
     enum filetype ft = ft_unknown;
     struct dirent_data entry;
-    int stated = 0;
-    int ret;
+    int stated      = 0;
+    char *path_copy = NULL;
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
         char *pathend;
@@ -627,23 +646,49 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
         while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
         *pathend = '\0';
     }
-    if (pathchk && pathchk(path, data) == 1)
-        return CL_SUCCESS;
-    ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
-    if (ret != CL_SUCCESS)
-        return ret;
-    if (ft_skipped(ft))
-        return CL_SUCCESS;
-    entry.statbuf  = stated ? &statbuf : NULL;
-    entry.is_dir   = ft == ft_directory;
-    entry.filename = entry.is_dir ? NULL : strdup(path);
-    entry.dirname  = entry.is_dir ? path : NULL;
-    if (entry.is_dir) {
-        ret = callback(entry.statbuf, NULL, path, visit_directory_toplev, data);
-        if (ret != CL_SUCCESS)
-            return ret;
+
+    if (pathchk && pathchk(path, data) == 1) {
+        status = CL_SUCCESS;
+        goto done;
     }
-    return handle_entry(&entry, flags, maxdepth, callback, data, pathchk);
+
+    status = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
+    if (status != CL_SUCCESS) {
+        goto done;
+    }
+
+    if (ft_skipped(ft)) {
+        status = CL_SUCCESS;
+        goto done;
+    }
+
+    entry.statbuf = stated ? &statbuf : NULL;
+    entry.is_dir  = ft == ft_directory;
+
+    if (entry.is_dir) {
+        path_copy = cli_strdup(path);
+        if (NULL == path_copy) {
+            goto done;
+        }
+
+        status = callback(entry.statbuf, path_copy, path, visit_directory_toplev, data);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+    }
+
+    path_copy = cli_strdup(path);
+    if (NULL == path_copy) {
+        goto done;
+    }
+
+    entry.filename = entry.is_dir ? NULL : path_copy;
+    entry.dirname  = entry.is_dir ? path : NULL;
+
+    status = handle_entry(&entry, flags, maxdepth, callback, data, pathchk);
+
+done:
+    return status;
 }
 
 static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
