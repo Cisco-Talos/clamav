@@ -951,7 +951,7 @@ typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
  * which one it is.
  * If it is a file, it simply calls the callback once, otherwise recurses.
  */
-int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
+cl_error_t cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 
 const char *cli_strerror(int errnum, char *buf, size_t len);
 

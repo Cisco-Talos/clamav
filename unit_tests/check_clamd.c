@@ -121,7 +121,7 @@ static void conn_teardown(void)
 
 #define NONEXISTENT "/nonexistent\vfilename"
 
-#define NONEXISTENT_REPLY NONEXISTENT ": lstat() failed: No such file or directory. ERROR"
+#define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: No such file or directory. ERROR"
 
 #define ACCDENIED BUILDDIR "/accdenied"
 #define ACCDENIED_REPLY ACCDENIED ": Access denied. ERROR"
