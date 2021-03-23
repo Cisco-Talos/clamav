@@ -146,7 +146,11 @@ static void conn_teardown(void)
 
 #define NONEXISTENT PATHSEP "nonexistent\vfilename"
 
+#ifdef _WIN32
+#define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: Invalid argument. ERROR"
+#else
 #define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: No such file or directory. ERROR"
+#endif
 
 #ifndef _WIN32
 #define ACCDENIED OBJDIR PATHSEP "accdenied"
@@ -300,7 +304,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
     // For the same reasons, we can't expect the path to match exactly, so we'll
     // just make sure expect is found in recvdata and use the basename instead of the full path.
     expected_string_offset = CLI_STRNSTR(recvdata, expect, len);
-    ck_assert_msg(expected_string_offset != NULL, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
+    ck_assert_msg(expected_string_offset != NULL, "Wrong reply for command %s.\nReceived: \n%s\nExpected: \n%s\n", cmd, recvdata, expect);
     free(recvdata);
 }
 
@@ -439,7 +443,7 @@ START_TEST(test_instream)
                   len, expect_len, recvdata);
 
     rc = memcmp(recvdata, EXPECT_INSTREAM, expect_len);
-    ck_assert_msg(!rc, "Wrong reply for command INSTREAM: |%s|, expected: |%s|\n", recvdata, EXPECT_INSTREAM);
+    ck_assert_msg(!rc, "Wrong reply for command INSTREAM:\nReceived: \n%s\nExpected: \n%s\n", recvdata, EXPECT_INSTREAM);
     free(recvdata);
 
     conn_teardown();
@@ -517,7 +521,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
                   len, expect_len, p, expect);
 
     rc = memcmp(p, expect, expect_len);
-    ck_assert_msg(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, p, expect);
+    ck_assert_msg(!rc, "Wrong reply for command %s:\nReceived: \n%s\nExpected: \n%s\n", cmd, p, expect);
     free(recvdata);
     conn_teardown();
 }
@@ -835,7 +839,7 @@ static void test_idsession_commands(int split, int instream)
             ck_assert_msg(id <= j, "ID too big: %u, max: %u\n", id, j);
             q += 2;
             ck_assert_msg(NULL != strstr(q, replies[id - 1]),
-                          "Wrong ID reply for ID %u: %s, expected %s\n",
+                          "Wrong ID reply for ID %u:\nReceived: \n%s\nExpected: \n%s\n",
                           id,
                           q, replies[id - 1]);
             p = q + strlen(q) + 1;

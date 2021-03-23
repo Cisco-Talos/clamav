@@ -194,6 +194,21 @@ if(ENABLE_TESTS)
     # Used to generate the test files and for the application feature test framework
     find_package(Python3 REQUIRED)
 
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m pip show pytest
+        RESULT_VARIABLE EXIT_CODE
+        ERROR_QUIET OUTPUT_QUIET
+    )
+
+    if (NOT ${EXIT_CODE} EQUAL 0)
+        message("Python3 package 'pytest' is not installed.")
+        message("Failed unit tests will be easier to read if you install pytest.")
+        message("Eg:  python3 -m pip install --user pytest")
+        set(Python3_TEST_PACKAGE "unittest;--verbose")
+    else()
+        set(Python3_TEST_PACKAGE "pytest;-v")
+    endif()
+
     # Check for valgrind. If it exists, we'll enable extra tests that use valgrind.
     if(C_LINUX)
         find_package(Valgrind)

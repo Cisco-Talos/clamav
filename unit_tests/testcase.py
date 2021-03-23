@@ -4,7 +4,7 @@
 Wrapper for unittest to provide ClamAV specific test environment features.
 """
 
-from collections import namedtuple
+from typing import NamedTuple
 import hashlib
 import logging
 import os
@@ -30,6 +30,11 @@ CHUNK_SIZE = 100
 
 loggers = {}
 
+
+class CmdResult(NamedTuple):
+    ec: int
+    out: bytes
+    err: bytes
 
 class TestCase(unittest.TestCase):
     """
@@ -428,7 +433,7 @@ class TestCase(unittest.TestCase):
             "\n".join([error, res.err]),
             "\n".join([result, res.out]),
         )
-        return namedtuple("CmdResult", ["ec", "out", "err"])(code, result, error)
+        return CmdResult(code, result, error)
 
     def _taskkill(self, process, match_all=True):
         """Stop processes matching the given name.
@@ -461,7 +466,7 @@ class TestCase(unittest.TestCase):
             "\n".join([error, res.err]),
             "\n".join([result, res.out]),
         )
-        return namedtuple("CmdResult", ["ec", "out", "err"])(code, result, error)
+        return CmdResult(code, result, error)
 
     def stop_process(self, processes, options=["-9 -f"], sudo=False):
         """Stop all specified processes.
@@ -598,9 +603,7 @@ class Executor(object):
             self.terminated = True
             thread.join()
 
-        return namedtuple("CmdResult", ["ec", "out", "err"])(
-            self.code, self.result, self.error
-        )
+        return CmdResult(self.code, self.result, self.error)
 
     def __run(self, cmd, cwd=None, env_vars={}, interact=""):
         """Execute command in separate thread."""

@@ -1,1 +1,5 @@
-include(GetLibs-${CTEST_CONFIGURATION_TYPE}.ctest)
+if(CTEST_CONFIGURATION_TYPE)
+    include(GetLibs-${CTEST_CONFIGURATION_TYPE}.ctest)
+else()
+    message(FATAL_ERROR "\nCTest requires a config type argument on Windows.\n    Eg:  ctest -C Debug\n")
+endif()
