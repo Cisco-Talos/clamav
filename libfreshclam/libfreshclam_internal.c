@@ -120,16 +120,15 @@ mirrors_dat_v1_t *g_mirrorsDat = NULL;
 
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
- * Uses the openssl RAND_bytes function to generate a Version 4 UUID.
+ * Uses the openssl RAND_pseudo_bytes function to generate a Version 4 UUID.
  *
- * Copyright 2021 Karthik Velakur
+ * Copyright 2021 Karthik Velakur with some modifications by the ClamAV team.
  * License: MIT
  * From: https://gist.github.com/kvelakur/9069c9896577c3040030
  *
  * @param buffer A buffer that is SIZEOF_UUID_V4
- * @retval 1 on success, 0 otherwise.
  */
-static int uuid_v4_gen(char *buffer)
+static void uuid_v4_gen(char *buffer)
 {
     union {
         struct
@@ -144,7 +143,11 @@ static int uuid_v4_gen(char *buffer)
         uint8_t __rnd[16];
     } uuid;
 
-    int rc = RAND_bytes(uuid.__rnd, sizeof(uuid));
+    if (0 >= RAND_bytes(uuid.__rnd, sizeof(uuid.__rnd))) {
+        /* Failed to generate random bytes for new UUID */
+        memset(uuid.__rnd, 0, sizeof(uuid.__rnd));
+        uuid.time_low = (uint32_t)time(NULL);
+    }
 
     // Refer Section 4.2 of RFC-4122
     // https://tools.ietf.org/html/rfc4122#section-4.2
@@ -158,7 +161,7 @@ static int uuid_v4_gen(char *buffer)
              uuid.node[3], uuid.node[4], uuid.node[5]);
     buffer[SIZEOF_UUID_V4 - 1] = 0;
 
-    return rc;
+    return;
 }
 
 fc_error_t load_mirrors_dat(void)
@@ -194,7 +197,7 @@ fc_error_t load_mirrors_dat(void)
     if (strlen(MIRRORS_DAT_MAGIC) != (bread = read(handle, &magic, strlen(MIRRORS_DAT_MAGIC)))) {
         char error_message[260];
         cli_strerror(errno, error_message, 260);
-        logg("!Can't read version from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        logg("!Can't read magic from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
         goto done;
     }
     if (0 != strncmp(magic, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
@@ -236,18 +239,22 @@ fc_error_t load_mirrors_dat(void)
                 goto done;
             }
 
-            /* Got it.*/
+            /* Got it. */
             close(handle);
+            handle = -1;
 
             /* This is the latest version.
                If we change the format in the future, we may wish to create a new
                mirrors dat struct, import the relevant bits to the new format,
                and then save (overwrite) mirrors.dat with the new data. */
+            if (NULL != g_mirrorsDat) {
+                free(g_mirrorsDat);
+            }
             g_mirrorsDat = mdat;
             break;
         }
         default: {
-            logg("*mirrors.dat version is different than expected: %u != %u\n", 1, g_mirrorsDat->version);
+            logg("*mirrors.dat version is different than expected: %u != %u\n", 1, version);
             goto done;
         }
     }
@@ -258,6 +265,10 @@ fc_error_t load_mirrors_dat(void)
     if (g_mirrorsDat->retry_after > 0) {
         char retry_after_string[26];
         struct tm *tm_info = localtime(&g_mirrorsDat->retry_after);
+        if (NULL == tm_info) {
+            logg("!Failed to query the local time for the retry-after date!\n");
+            goto done;
+        }
         strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
         logg("*  retry-after: %s\n", retry_after_string);
     }
@@ -279,6 +290,11 @@ fc_error_t save_mirrors_dat(void)
 {
     fc_error_t status = FC_EINIT;
     int handle        = -1;
+
+    if (NULL == g_mirrorsDat) {
+        logg("!Attempted to save mirrors data to mirrors.dat before initializing it!\n");
+        goto done;
+    }
 
     if (-1 == (handle = safe_open("mirrors.dat", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644))) {
         char currdir[PATH_MAX];
@@ -314,7 +330,7 @@ fc_error_t new_mirrors_dat(void)
 {
     fc_error_t status = FC_EINIT;
 
-    mirrors_dat_v1_t *mdat = malloc(sizeof(mirrors_dat_v1_t));
+    mirrors_dat_v1_t *mdat = calloc(1, sizeof(mirrors_dat_v1_t));
     if (NULL == mdat) {
         logg("!Failed to allocate memory for mirrors.dat\n");
         status = FC_EMEM;
@@ -323,12 +339,7 @@ fc_error_t new_mirrors_dat(void)
 
     mdat->version     = 1;
     mdat->retry_after = 0;
-    if (0 == uuid_v4_gen(mdat->uuid)) {
-        /* Failed to create UUID */
-        status = FC_EINIT;
-        logg("!Failed to create random UUID!\n");
-        goto done;
-    }
+    uuid_v4_gen(mdat->uuid);
 
     g_mirrorsDat = mdat;
 
@@ -372,7 +383,7 @@ static int textrecordfield(const char *database)
     return 0;
 }
 
-#if LIBCURL_VERSION_NUM >= 0x073d00
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 61))
 /* In libcurl 7.61.0, support was added for extracting the time in plain
    microseconds. Older libcurl versions are stuck in using 'double' for this
    information so we complicate this example a bit by supporting either
@@ -519,7 +530,7 @@ static int xferinfo(void *prog,
     return 0;
 }
 
-#if LIBCURL_VERSION_NUM < 0x072000
+#if (LIBCURL_VERSION_MAJOR < 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR < 32))
 /**
  * Function from curl example code, Copyright (C) 1998 - 2018, Daniel Stenberg, see COPYING.curl for license details
  * Older style progress bar callback shim; for libcurl older than 7.32.0 ( CURLOPT_PROGRESSFUNCTION ).
@@ -844,7 +855,7 @@ static fc_error_t remote_cvdhead(
         prog.curl        = curl;
         prog.bComplete   = 0;
 
-#if LIBCURL_VERSION_NUM >= 0x072000
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 32))
         /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
        compile as they won't have the symbols around.
 
@@ -980,15 +991,22 @@ static fc_error_t remote_cvdhead(
         }
         case 429: {
             status = FC_ERETRYLATER;
-            curl_off_t retry_after;
+
+            curl_off_t retry_after = 0;
+
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 66))
+            /* CURLINFO_RETRY_AFTER was introduced in libcurl 7.66 */
 
             /* Find out how long we should wait before allowing a retry. */
             curl_easy_getinfo(curl, CURLINFO_RETRY_AFTER, &retry_after);
+#endif
+
             if (retry_after > 0) {
                 /* The response gave us a Retry-After date. Use that. */
                 g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
             } else {
-                /* Try again in no less than 4 hours if the response didn't specify. */
+                /* Try again in no less than 4 hours if the response didn't specify
+                   or if CURLINFO_RETRY_AFTER is not supported. */
                 g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
             }
             (void)save_mirrors_dat();
@@ -1128,7 +1146,7 @@ static fc_error_t downloadFile(
         prog.curl        = curl;
         prog.bComplete   = 0;
 
-#if LIBCURL_VERSION_NUM >= 0x072000
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 32))
         /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
        compile as they won't have the symbols around.
 
@@ -1269,15 +1287,22 @@ static fc_error_t downloadFile(
         }
         case 429: {
             status = FC_ERETRYLATER;
-            curl_off_t retry_after;
+
+            curl_off_t retry_after = 0;
+
+#if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 66))
+            /* CURLINFO_RETRY_AFTER was introduced in libcurl 7.66 */
 
             /* Find out how long we should wait before allowing a retry. */
             curl_easy_getinfo(curl, CURLINFO_RETRY_AFTER, &retry_after);
+#endif
+
             if (retry_after > 0) {
                 /* The response gave us a Retry-After date. Use that. */
                 g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
             } else {
-                /* Try again in no less than 4 hours if the response didn't specify. */
+                /* Try again in no less than 4 hours if the response didn't specify
+                   or if CURLINFO_RETRY_AFTER is not supported. */
                 g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
             }
             (void)save_mirrors_dat();
@@ -1358,7 +1383,7 @@ static fc_error_t getcvd(
 
     ret = downloadFile(url, tmpfile, 1, logerr, ifModifiedSince);
     if (ret == FC_UPTODATE) {
-        logg("%s is up to date.\n", cvdfile);
+        logg("%s is up-to-date.\n", cvdfile);
         status = ret;
         goto done;
     } else if (ret > FC_UPTODATE) {
@@ -2064,11 +2089,11 @@ static fc_error_t check_for_new_database_version(
         }
         case FC_UPTODATE: {
             if (NULL == local_database) {
-                logg("!check_for_new_database_version: server claims we're up to date, but we don't have a local database!\n");
+                logg("!check_for_new_database_version: server claims we're up-to-date, but we don't have a local database!\n");
                 status = FC_EFAILEDGET;
                 goto done;
             }
-            logg("%s database is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
+            logg("%s database is up-to-date (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
                  localname,
                  local_database->version,
                  local_database->sigs,
@@ -2208,7 +2233,7 @@ fc_error_t updatedb(
         if (FC_UPTODATE == ret) {
             logg("^Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
             if (NULL != localFilename) {
-                /* Received a 304 (not modified), must be up to date after all */
+                /* Received a 304 (not modified), must be up-to-date after all */
                 *dbFilename = cli_strdup(localFilename);
             }
             goto up_to_date;
@@ -2490,7 +2515,7 @@ fc_error_t updatecustomdb(
         remote_dbtime = statbuf.st_mtime;
         dbtime        = (CLAMSTAT(databaseName, &statbuf) != -1) ? statbuf.st_mtime : 0;
         if (dbtime > remote_dbtime) {
-            logg("%s is up to date (version: custom database)\n", databaseName);
+            logg("%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
         }
 
@@ -2517,7 +2542,7 @@ fc_error_t updatecustomdb(
 
         ret = downloadFile(url, tmpfile, 1, logerr, dbtime);
         if (ret == FC_UPTODATE) {
-            logg("%s is up to date (version: custom database)\n", databaseName);
+            logg("%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
         } else if (ret > FC_UPTODATE) {
             logg("%cCan't download %s from %s\n", logerr ? '!' : '^', databaseName, url);

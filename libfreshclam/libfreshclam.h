@@ -81,7 +81,8 @@ typedef enum fc_error_tag {
     FC_EMEM,
     FC_EARG,
     FC_EFORBIDDEN,
-    FC_ERETRYLATER
+    FC_ERETRYLATER,
+    FC_ERROR
 } fc_error_t;
 
 /**
