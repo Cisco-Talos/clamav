@@ -114,9 +114,9 @@ const char *fc_strerror(fc_error_t fcerror)
         case FC_EARG:
             return "Invalid argument(s)";
         case FC_EFORBIDDEN:
-            return "Forbidden, Blocked by CDN";
+            return "Forbidden; Blocked by CDN";
         case FC_ERETRYLATER:
-            return "Too-many-requests, Retry later";
+            return "Too many requests; Retry later";
         default:
             return "Unknown libfreshclam error code!";
     }
@@ -307,6 +307,10 @@ void fc_cleanup(void)
     if (NULL != g_tempDirectory) {
         free(g_tempDirectory);
         g_tempDirectory = NULL;
+    }
+    if (NULL != g_mirrorsDat) {
+        free(g_mirrorsDat);
+        g_mirrorsDat = NULL;
     }
 }
 
@@ -663,14 +667,14 @@ fc_error_t fc_update_database(
                 case FC_EFORBIDDEN: {
                     logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
                     logg("This could mean several things:\n");
-                    logg(" 1. You are running an out of date version of ClamAV / FreshClam.\n");
+                    logg(" 1. You are running an out-of-date version of ClamAV / FreshClam.\n");
                     logg("    Ensure you are the most updated version by visiting https://www.clamav.net/downloads\n");
                     logg(" 2. Your network is explicitly denied by the FreshClam CDN.\n");
                     logg("    In order to rectify this please check that you are:\n");
-                    logg("   a. Running an up to date version of FreshClam\n");
+                    logg("   a. Running an up-to-date version of FreshClam\n");
                     logg("   b. Running FreshClam no more than once an hour\n");
                     logg("   c. If you have checked (a) and (b), please open a ticket at\n");
-                    logg("      https://bugzilla.clamav.net under the “Mirrors” component\n");
+                    logg("      https://bugzilla.clamav.net under the 'Mirrors' component\n");
                     logg("      and we will investigate why your network is blocked.\n");
                     status = ret;
                     goto done;
@@ -680,11 +684,16 @@ fc_error_t fc_update_database(
                     char retry_after_string[26];
                     struct tm *tm_info;
                     tm_info = localtime(&g_mirrorsDat->retry_after);
+                    if (NULL == tm_info) {
+                        logg("!Failed to query the local time for the retry-after date!\n");
+                        status = FC_ERROR;
+                        goto done;
+                    }
                     strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
                     logg("^FreshClam received error code 429 from the ClamAV Content Delivery Network (CDN).\n");
                     logg("This means that you have been rate limited by the CDN.\n");
                     logg(" 1. Run FreshClam no more than once an hour to check for updates.\n");
-                    logg("    Freshclam should check DNS first to see if an update is needed.\n");
+                    logg("    FreshClam should check DNS first to see if an update is needed.\n");
                     logg(" 2. If you have more than 10 hosts on your network attempting to download,\n");
                     logg("    it is recommended that you set up a private mirror on your network using\n");
                     logg("    cvdupdate (https://pypi.org/project/cvdupdate/) to save bandwidth on the\n");
@@ -747,11 +756,16 @@ fc_error_t fc_update_databases(
             char retry_after_string[26];
             struct tm *tm_info;
             tm_info = localtime(&g_mirrorsDat->retry_after);
+            if (NULL == tm_info) {
+                logg("!Failed to query the local time for the retry-after date!\n");
+                status = FC_ERROR;
+                goto done;
+            }
             strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
             logg("^FreshClam previously received error code 429 from the ClamAV Content Delivery Network (CDN).\n");
             logg("This means that you have been rate limited by the CDN.\n");
             logg(" 1. Run FreshClam no more than once an hour to check for updates.\n");
-            logg("    Freshclam should check DNS first to see if an update is needed.\n");
+            logg("    FreshClam should check DNS first to see if an update is needed.\n");
             logg(" 2. If you have more than 10 hosts on your network attempting to download,\n");
             logg("    it is recommended that you set up a private mirror on your network using\n");
             logg("    cvdupdate (https://pypi.org/project/cvdupdate/) to save bandwidth on the\n");
@@ -859,14 +873,14 @@ fc_error_t fc_download_url_database(
             case FC_EFORBIDDEN: {
                 logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
                 logg("This could mean several things:\n");
-                logg(" 1. You are running an out of date version of ClamAV / FreshClam.\n");
+                logg(" 1. You are running an out-of-date version of ClamAV / FreshClam.\n");
                 logg("    Ensure you are the most updated version by visiting https://www.clamav.net/downloads\n");
                 logg(" 2. Your network is explicitly denied by the FreshClam CDN.\n");
                 logg("    In order to rectify this please check that you are:\n");
-                logg("   a. Running an up to date version of FreshClam\n");
+                logg("   a. Running an up-to-date version of FreshClam\n");
                 logg("   b. Running FreshClam no more than once an hour\n");
                 logg("   c. If you have checked (a) and (b), please open a ticket at\n");
-                logg("      https://bugzilla.clamav.net under the “Mirrors” component\n");
+                logg("      https://bugzilla.clamav.net under the 'Mirrors' component\n");
                 logg("      and we will investigate why your network is blocked.\n");
                 status = ret;
                 goto done;
@@ -876,11 +890,16 @@ fc_error_t fc_download_url_database(
                 char retry_after_string[26];
                 struct tm *tm_info;
                 tm_info = localtime(&g_mirrorsDat->retry_after);
+                if (NULL == tm_info) {
+                    logg("!Failed to query the local time for the retry-after date!\n");
+                    status = FC_ERROR;
+                    goto done;
+                }
                 strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
                 logg("^FreshClam received error code 429 from the ClamAV Content Delivery Network (CDN).\n");
                 logg("This means that you have been rate limited by the CDN.\n");
                 logg(" 1. Run FreshClam no more than once an hour to check for updates.\n");
-                logg("    Freshclam should check DNS first to see if an update is needed.\n");
+                logg("    FreshClam should check DNS first to see if an update is needed.\n");
                 logg(" 2. If you have more than 10 hosts on your network attempting to download,\n");
                 logg("    it is recommended that you set up a private mirror on your network using\n");
                 logg("    cvdupdate (https://pypi.org/project/cvdupdate/) to save bandwidth on the\n");

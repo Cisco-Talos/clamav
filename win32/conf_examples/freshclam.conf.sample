@@ -174,11 +174,14 @@ DatabaseMirror database.clamav.net
 # Default: 0
 #ReceiveTimeout 1800
 
-# With this option enabled, freshclam will attempt to load new
-# databases into memory to make sure they are properly handled
-# by libclamav before replacing the old ones.
+# With this option enabled, freshclam will attempt to load new databases into
+# memory to make sure they are properly handled by libclamav before replacing
+# the old ones.
+# Tip: This feature uses a lot of RAM. If your system has limited RAM and you
+# are actively running ClamD or ClamScan during the update, then you may need
+# to set `TestDatabases no`.
 # Default: yes
-#TestDatabases yes
+#TestDatabases no
 
 # This option enables downloading of bytecode.cvd, which includes additional
 # detection mechanisms and improvements to the ClamAV engine.

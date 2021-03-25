@@ -1943,7 +1943,7 @@ int main(int argc, char **argv)
 
                 if (FC_EFORBIDDEN == ret) {
                     /* We're being actively blocked, which is a fatal error. Exit. */
-                    logg("^Freshclam was forbidden from downloading a database.\n");
+                    logg("^FreshClam was forbidden from downloading a database.\n");
                     logg("^This is fatal. Retrying later won't help. Exiting now.\n");
                     status = ret;
                     goto done;

@@ -53,7 +53,6 @@ class TC(testcase.TestCase):
     def tearDown(self):
         if TC.mock_mirror != None:
             TC.mock_mirror.terminate()
-            TC.mock_mirror.kill()
             TC.mock_mirror = None
 
         if (TC.path_db / 'mirrors.dat').exists():
