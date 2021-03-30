@@ -85,9 +85,9 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define fmap_bitmap (m->bitmap)
 
-static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al);
-static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al);
-static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
+static inline uint64_t fmap_align_items(uint64_t sz, uint64_t al);
+static inline uint64_t fmap_align_to(uint64_t sz, uint64_t al);
+static inline uint64_t fmap_which_page(fmap_t *m, size_t at);
 
 static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock);
 static void handle_unneed_off(fmap_t *m, size_t at, size_t len);
@@ -164,7 +164,7 @@ static void unmap_win32(fmap_t *m)
 
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name)
 { /* WIN32 */
-    unsigned int pages, mapsz;
+    uint64_t pages, mapsz;
     int pgsz = cli_getpagesize();
     STATBUF st;
     fmap_t *m = NULL;
@@ -346,7 +346,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
                                       clcb_pread pread_cb, int use_aging)
 {
     cl_error_t status = CL_EMEM;
-    unsigned int pages;
+    uint64_t pages;
     size_t mapsz, bitmap_size;
     cl_fmap_t *m = NULL;
     int pgsz     = cli_getpagesize();
@@ -368,7 +368,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
 
     pages = fmap_align_items(len, pgsz);
 
-    bitmap_size = pages * sizeof(uint32_t);
+    bitmap_size = pages * sizeof(uint64_t);
     mapsz       = pages * pgsz;
 
     m = cli_calloc(1, sizeof(fmap_t));
@@ -450,10 +450,10 @@ static void fmap_aging(fmap_t *m)
 #ifdef ANONYMOUS_MAP
     if (!m->aging) return;
     if (m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
-        unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme) / sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
+        uint64_t i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme) / sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
 
         for (i = 0; i < m->pages; i++) {
-            uint32_t s = fmap_bitmap[i];
+            uint64_t s = fmap_bitmap[i];
             if ((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == FM_MASK_PAGED) {
                 /* page is paged and not locked: dec age */
                 if (s & FM_MASK_COUNT) fmap_bitmap[i]--;
@@ -464,7 +464,7 @@ static void fmap_aging(fmap_t *m)
                     avail++;
                 } else {
                     /* Insert sort onto a stack'd array - same performance as quickselect */
-                    unsigned int insert_to = MIN(maxavail, avail) - 1, age = fmap_bitmap[i] & FM_MASK_COUNT;
+                    uint64_t insert_to = MIN(maxavail, avail) - 1, age = fmap_bitmap[i] & FM_MASK_COUNT;
                     if (avail <= maxavail || (fmap_bitmap[freeme[maxavail]] & FM_MASK_COUNT) > age) {
                         while ((fmap_bitmap[freeme[insert_to]] & FM_MASK_COUNT) > age) {
                             freeme[insert_to + 1] = freeme[insert_to];
@@ -513,15 +513,15 @@ static void fmap_aging(fmap_t *m)
 #endif
 }
 
-static int fmap_readpage(fmap_t *m, uint64_t first_page, uint32_t count, uint32_t lock_count)
+static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_t lock_count)
 {
     size_t readsz = 0, eintr_off;
     char *pptr    = NULL, errtxt[256];
-    uint32_t sbitmap;
+    uint64_t sbitmap;
     uint64_t i, page = first_page, force_read = 0;
 
-    if ((size_t)(m->real_len) > (size_t)(UINT_MAX)) {
-        cli_dbgmsg("fmap_readage: size of file exceeds total prefaultible page size (unpacked file is too large)\n");
+    if ((uint64_t)(m->real_len) > (uint64_t)(m->pages * m->pgsz)) {
+        cli_dbgmsg("fmap_readpage: size of file exceeds total prefaultible page size (unpacked file is too large)\n");
         return 1;
     }
 
@@ -573,7 +573,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint32_t count, uint32_
         if (force_read) {
             /* we have some pending reads to perform */
             if (m->handle_is_fd) {
-                unsigned int j;
+                uint64_t j;
                 int _fd = (int)(ptrdiff_t)m->handle;
                 for (j = first_page; j < page; j++) {
                     if (fmap_bitmap[j] & FM_MASK_SEEN) {
@@ -613,7 +613,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint32_t count, uint32_
                     cli_strerror(errno, errtxt, sizeof(errtxt));
                     cli_errmsg("fmap_readpage: pread error: %s\n", errtxt);
                 } else {
-                    cli_warnmsg("fmap_readpage: pread fail: asked for %lu bytes @ offset %lu, got %lu\n", (long unsigned int)readsz, (long unsigned int)target_offset, (long unsigned int)got);
+                    cli_warnmsg("fmap_readpage: pread fail: asked for %zu bytes @ offset %zu, got %zd\n", readsz, (size_t)target_offset, got);
                 }
                 return 1;
             }
@@ -672,9 +672,9 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
     return (void *)ret;
 }
 
-static void fmap_unneed_page(fmap_t *m, unsigned int page)
+static void fmap_unneed_page(fmap_t *m, uint64_t page)
 {
-    uint32_t s = fmap_bitmap[page];
+    uint64_t s = fmap_bitmap[page];
 
     if ((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
         /* page is paged and locked: check lock count */
@@ -693,7 +693,7 @@ static void fmap_unneed_page(fmap_t *m, unsigned int page)
 
 static void handle_unneed_off(fmap_t *m, size_t at, size_t len)
 {
-    unsigned int i, first_page, last_page;
+    uint64_t i, first_page, last_page;
     if (!m->aging) return;
     if (!len) {
         cli_warnmsg("fmap_unneed: attempted void unneed\n");
@@ -737,7 +737,7 @@ static void unmap_malloc(fmap_t *m)
 
 static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 {
-    unsigned int i, first_page, last_page;
+    uint64_t i, first_page, last_page;
     void *ptr = (void *)((char *)m->data + at);
 
     if (!len_hint || len_hint > m->real_len - at)
@@ -753,7 +753,7 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 
     for (i = first_page; i <= last_page; i++) {
         char *thispage = (char *)m->data + i * m->pgsz;
-        unsigned int scanat, scansz;
+        uint64_t scanat, scansz;
 
         if (fmap_readpage(m, i, 1, 1)) {
             last_page = i - 1;
@@ -777,7 +777,7 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
-    unsigned int i, first_page, last_page;
+    uint64_t i, first_page, last_page;
     char *src     = (void *)((char *)m->data + *at);
     char *endptr  = NULL;
     size_t len    = MIN(max_len - 1, m->real_len - *at);
@@ -793,7 +793,7 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 
     for (i = first_page; i <= last_page; i++) {
         char *thispage = (char *)m->data + i * m->pgsz;
-        unsigned int scanat, scansz;
+        uint64_t scanat, scansz;
 
         if (fmap_readpage(m, i, 1, 0))
             return NULL;
@@ -941,17 +941,17 @@ fmap_t *fmap(int fd, off_t offset, size_t len, const char *name)
     return fmap_check_empty(fd, offset, len, &unused, name);
 }
 
-static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al)
+static inline uint64_t fmap_align_items(uint64_t sz, uint64_t al)
 {
     return sz / al + (sz % al != 0);
 }
 
-static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al)
+static inline uint64_t fmap_align_to(uint64_t sz, uint64_t al)
 {
     return al * fmap_align_items(sz, al);
 }
 
-static inline unsigned int fmap_which_page(fmap_t *m, size_t at)
+static inline uint64_t fmap_which_page(fmap_t *m, size_t at)
 {
     return at / m->pgsz;
 }
@@ -984,8 +984,8 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
         } else if ((start_offset != 0) && (end_offset != map->real_len)) {
             /* If we're only dumping a portion of the file, inlcude the offsets in the prefix,...
 			 * e.g. tmp filename will become something like:  filebase.500-1200.<randhex> */
-            uint32_t prefix_len = strlen(filebase) + 1 + SIZE_T_CHARLEN + 1 + SIZE_T_CHARLEN + 1;
-            prefix              = malloc(prefix_len);
+            size_t prefix_len = strlen(filebase) + 1 + SIZE_T_CHARLEN + 1 + SIZE_T_CHARLEN + 1;
+            prefix            = malloc(prefix_len);
             if (NULL == prefix) {
                 cli_errmsg("fmap_dump_to_file: Failed to allocate memory for tempfile prefix.\n");
                 if (NULL != filebase)
@@ -1086,7 +1086,7 @@ cl_error_t fmap_get_MD5(unsigned char *hash, fmap_t *map)
 
     while (todo) {
         const void *buf;
-        size_t readme = todo < FILEBUFF ? todo : FILEBUFF;
+        size_t readme = todo < 1024 * 1024 * 10 ? todo : 1024 * 1024 * 10;
 
         if (!(buf = fmap_need_off_once(map, at, readme))) {
             cl_hash_destroy(hashctx);

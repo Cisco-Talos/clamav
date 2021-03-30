@@ -124,9 +124,7 @@ check_symbol_exists(getpagesize unistd.h HAVE_GETPAGESIZE)
 check_c_source_compiles(
     "
         #include <sys/types.h>
-        #if HAVE_UNISTD_H
         #include <unistd.h>
-        #endif
         int main(void)
         {
             int x = sysconf(_SC_PAGESIZE);

@@ -46,12 +46,12 @@ struct cl_fmap {
 
     /* internal */
     time_t mtime;
-    unsigned int pages;
+    uint64_t pages;
     uint64_t pgsz;
-    unsigned int paged;
-    unsigned short aging;
-    unsigned short dont_cache_flag;
-    unsigned short handle_is_fd;
+    uint64_t paged;
+    uint16_t aging;
+    uint16_t dont_cache_flag;
+    uint16_t handle_is_fd;
 
     /* memory interface */
     const void *data;
@@ -81,7 +81,7 @@ struct cl_fmap {
     HANDLE mh;
 #endif
     unsigned char maphash[16];
-    uint32_t *bitmap;
+    uint64_t *bitmap;
     char *name;
 };
 

@@ -1506,7 +1506,8 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
-    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS : CL_CLEAN;
+    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS
+                                                   : CL_CLEAN;
 }
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -4746,7 +4747,12 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         return CL_ENULLARG;
     }
 
-    /* We have a limit of around 2.17GB (INT_MAX - 2). Enforce it here. */
+    /* We have a limit of around 2GB (INT_MAX - 2). Enforce it here. */
+    /* TODO: Large file support is large-ly untested. Remove this restriction
+     * and test with a large set of large files of various types. libclamav's
+     * integer type safety has come a long way since 2014, so it's possible
+     * we could lift this restriction, but at least one of the parsers is
+     * bound to behave badly with large files. */
     if ((size_t)(map->real_len) > (size_t)(INT_MAX - 2))
         return CL_CLEAN;
 
@@ -5023,8 +5029,18 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
         goto done;
     }
     if (sb.st_size <= 5) {
-        cli_dbgmsg("cl_scandesc_callback: File too small (%u bytes), ignoring\n", (unsigned int)sb.st_size);
+        cli_dbgmsg("cl_scandesc_callback: File too small (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
         status = CL_CLEAN;
+        goto done;
+    }
+    if ((uint64_t)sb.st_size > engine->maxfilesize) {
+        cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
+        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
+            engine->cb_virus_found(desc, "Heuristics.Limits.Exceeded", context);
+            status = CL_VIRUS;
+        } else {
+            status = CL_CLEAN;
+        }
         goto done;
     }
 
@@ -5053,6 +5069,15 @@ done:
 
 cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
+    if (map->real_len > engine->maxfilesize) {
+        cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->real_len);
+        if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
+            engine->cb_virus_found(fmap_fd(map), "Heuristics.Limits.Exceeded", context);
+            return CL_VIRUS;
+        }
+        return CL_CLEAN;
+    }
+
     return scan_common(map, filename, virname, scanned, engine, scanoptions, context);
 }
 
