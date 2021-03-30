@@ -25,6 +25,9 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
 
 - Fix possible memory leak in PNG parser.
 
+- Fix ClamOnAcc scan on file-creation race condition so files are scanned after
+  their contents are written.
+
 ## 0.103.1
 
 ClamAV 0.103.1 is a patch release with the following fixes and improvements.
