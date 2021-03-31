@@ -28,6 +28,35 @@ ClamAV 0.103.2 is a security patch release with the following fixes:
 - Fix ClamOnAcc scan on file-creation race condition so files are scanned after
   their contents are written.
 
+- FreshClam: Deprecate the `SafeBrowsing` config option.
+  The `SafeBrowsing` option will no longer do anything.
+
+  For more details, see:
+  https://blog.clamav.net/2020/06/the-future-of-clamav-safebrowsing.html
+
+  > _Tip_: If creating and hosting your own `safebrowing.gdb` database, you can
+  > use the `DatabaseCustomURL` option in `freshclam.conf` to download it.
+
+- FreshClam: Improved HTTP 304, 403, & 429 handling.
+
+- FreshClam: Add back the `mirrors.dat` file to the database directory.
+  This new `mirrors.dat` file will store:
+  - A randomly generated UUID for the FreshClam User-Agent.
+  - A retry-after timestamp that so FreshClam won't try to update after
+    having received an HTTP 429 response until the Retry-After timeout has
+    expired.
+
+- FreshClam will now exit with a failure in daemon mode if an HTTP 403
+  (Forbidden) was received, because retrying later won't help any.
+  The FreshClam user will have to take actions to get unblocked.
+
+- Fix the FreshClam mirror-sync issue where a downloaded database is "older
+  than the version advertised."
+
+  If a new CVD download gets a version that is older than advertised, FreshClam
+  will keep the older version and retry the update so that the incremental
+  update process (CDIFF patch process) will update to the latest version.
+
 ## 0.103.1
 
 ClamAV 0.103.1 is a patch release with the following fixes and improvements.
