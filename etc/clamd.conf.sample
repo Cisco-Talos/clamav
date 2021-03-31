@@ -526,6 +526,8 @@ Example
 # Value of 0 disables the limit.
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
+# Technical design limitations prevent ClamAV from scanning files greater than
+# 2 GB at this time.
 # Default: 25M
 #MaxFileSize 30M
 
@@ -790,4 +792,3 @@ Example
 #
 # Default: 5000
 # BytecodeTimeout 1000
-
