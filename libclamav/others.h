@@ -759,6 +759,7 @@ static inline int cli_getpagesize(void)
     GetSystemInfo(&si);
     return si.dwPageSize;
 }
+#define HAVE_CLI_GETPAGESIZE 1
 #else /* ! _WIN32 */
 #if HAVE_SYSCONF_SC_PAGESIZE
 static inline int cli_getpagesize(void)
