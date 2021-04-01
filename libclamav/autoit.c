@@ -454,7 +454,7 @@ const char *autoit_functions[] = {
     "WINWAITNOTACTIVE"};
 
 const char *autoit_keywords[] = {
-    "UNKNOWN_0",
+    "UNKNOWN_0", // "".
     "AND",
     "OR",
     "NOT",
@@ -497,7 +497,7 @@ const char *autoit_keywords[] = {
     "FALSE",
     "DEFAULT",
     "NULL",
-    "UNKNOWN_43",
+    "VOLATILE",
     "ENUM",
 };
 
@@ -969,7 +969,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     int i, ret, det = 0;
     unsigned int files = 0;
     char tempfile[1024];
-    const char prefixes[] = {'\0', '\0', '@', '$', '\0', '.', '"', '#'};
+    const char prefixes[] = {'\0', '\0', '@', '$', '\0', '.', '"', '\0'};
     const char *opers[]   = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=", "?", ":"};
     struct UNP UNP;
     fmap_t *map = *ctx->fmap;
@@ -1372,6 +1372,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             UNP.cur_input += dchars;
                         }
                         if (op == 0x36)
+                            // TODO: Mask possible double quotes inside the string: >Say:"Hi "<  ==> >"Say:""Hi"" "<
                             buf[UNP.cur_output++] = '"';
                         if (op != 0x34)
                             buf[UNP.cur_output++] = ' ';
@@ -1411,6 +1412,13 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             }
                             buf = newout;
                         }
+
+                        //TODO: Fix Autoit plus bug
+                        // if (op == 0x49) /* + */ and next op ==0x05 /*int32*/ and that int32 is negative...
+                        // skip next line (and don't add "+")
+                        // Background: "$a= (-4)" gets incorrect compiled. Decompiled it will be get "$A= (+ -4)"
+                        // That doesn't effects the interpreter however when recompiling decompiled output that will result in a syntax error
+
                         UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op - 0x40]);
                         break;
 
