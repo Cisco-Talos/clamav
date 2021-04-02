@@ -1,4 +1,4 @@
-AC_ARG_WITH([dbdir], 
+AC_ARG_WITH([dbdir],
 [AS_HELP_STRING([--with-dbdir@<:@=path@:>@], [path to virus database directory])],
 db_dir="$withval", db_dir="_default_")
 
@@ -14,5 +14,5 @@ then
 fi
 
 AC_DEFINE_UNQUOTED([DATADIR],"$db_dir", [Path to virus database directory.])
-DBDIR="$db_dir"
-AC_SUBST([DBDIR])
+DATADIR="$db_dir"
+AC_SUBST([DATADIR])

@@ -3,8 +3,8 @@ Description=Clam AntiVirus userspace daemon
 Documentation=man:clamd(8) man:clamd.conf(5) https://www.clamav.net/documents/
 Requires=clamav-daemon.socket
 # Check for database existence
-ConditionPathExistsGlob=@DBDIR@/main.{c[vl]d,inc}
-ConditionPathExistsGlob=@DBDIR@/daily.{c[vl]d,inc}
+ConditionPathExistsGlob=@DATADIR@/main.{c[vl]d,inc}
+ConditionPathExistsGlob=@DATADIR@/daily.{c[vl]d,inc}
 
 [Service]
 ExecStart=@prefix@/sbin/clamd --foreground=true

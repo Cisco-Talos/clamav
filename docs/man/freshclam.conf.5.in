@@ -64,7 +64,7 @@ Default: disabled
 \fBDatabaseDirectory STRING\fR
 Path to a directory containing database files.
 .br
-Default: @DBDIR@
+Default: @DATADIR@
 .TP
 \fBForeground BOOL\fR
 Don't fork into background.

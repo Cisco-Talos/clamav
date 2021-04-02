@@ -679,8 +679,18 @@ set(libdir      "${CMAKE_INSTALL_FULL_LIBDIR}")
 set(includedir  "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 set(VERSION     "${PACKAGE_VERSION}")
 
-# DBDIR for systemd service.in files
-set(DBDIR       "${CMAKE_INSTALL_PREFIX}/${DATABASE_DIRECTORY}")
+# Absolute path of database directory
+if(IS_ABSOLUTE ${DATABASE_DIRECTORY})
+    set(DATADIR "${DATABASE_DIRECTORY}")
+else()
+    set(DATADIR "${CMAKE_INSTALL_PREFIX}/${DATABASE_DIRECTORY}")
+endif()
+# Absolute path of the applications' config directory
+if(IS_ABSOLUTE ${APP_CONFIG_DIRECTORY})
+    set(CONFDIR "${APP_CONFIG_DIRECTORY}")
+else()
+    set(CONFDIR "${CMAKE_INSTALL_PREFIX}/${APP_CONFIG_DIRECTORY}")
+endif()
 
 if(ENABLE_DEBUG)
     set(CL_DEBUG 1)
@@ -852,6 +862,8 @@ ${c}    Package Version:        ${e}${PACKAGE_STRING}
 ${c}    libclamav version:      ${e}${LIBCLAMAV_CURRENT}:${LIBCLAMAV_REVISION}:${LIBCLAMAV_AGE}
 ${c}    libfreshclam version:   ${e}${LIBFRESHCLAM_CURRENT}:${LIBFRESHCLAM_REVISION}:${LIBFRESHCLAM_AGE}
 ${c}    Install prefix:         ${e}${CMAKE_INSTALL_PREFIX}
+${c}    Install database dir:   ${e}${DATADIR}
+${c}    Install config dir:     ${e}${CONFDIR}
 ${c}    Host system:            ${e}${CMAKE_HOST_SYSTEM}
 ${c}    Target system:          ${e}${CMAKE_SYSTEM}
 ${c}    Compiler:               ${e}

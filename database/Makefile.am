@@ -20,7 +20,7 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 EXTRA_DIST = main.cvd daily.cvd
-DBINST = @DBDIR@
+DBINST = @DATADIR@
 CLAMAVUSER = @CLAMAVUSER@
 CLAMAVGROUP = @CLAMAVGROUP@
 

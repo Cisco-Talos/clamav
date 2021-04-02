@@ -74,10 +74,10 @@
 
 #ifndef _WIN32
 /* Path to virus database directory. */
-#define DATADIR "@CMAKE_INSTALL_PREFIX@/@DATABASE_DIRECTORY@"
+#define DATADIR "@DATADIR@"
 
 /* where to look for the config file */
-#define CONFDIR "@CMAKE_INSTALL_PREFIX@/@APP_CONFIG_DIRECTORY@"
+#define CONFDIR "@CONFDIR@"
 #endif
 
 /* Have sys/fanotify.h */
