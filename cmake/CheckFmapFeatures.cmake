@@ -86,36 +86,38 @@ else()
 endif()
 
 # Check the flag name for the ANONYMOUS_MAP feature.
-check_c_source_compiles(
-    "
-        #include <sys/mman.h>
-        int main(void)
-        {
-            mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-            return 0;
-        }
-    "
-    HAVE_MMAP_MAP_ANONYMOUS
-)
-if(HAVE_MMAP_MAP_ANONYMOUS)
-    set(ANONYMOUS_MAP MAP_ANONYMOUS)
-else()
+if(HAVE_MMAP)
     check_c_source_compiles(
         "
-            /* OPENBSD WORKAROUND - DND*/
-            #include <sys/types.h>
-            /* OPENBSD WORKAROUND - END*/
             #include <sys/mman.h>
             int main(void)
             {
-                mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+                mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
                 return 0;
             }
         "
-        HAVE_MMAP_MAP_ANON
+        HAVE_MMAP_MAP_ANONYMOUS
     )
-    if(HAVE_MMAP_MAP_ANON)
-        set(ANONYMOUS_MAP MAP_ANON)
+    if(HAVE_MMAP_MAP_ANONYMOUS)
+        set(ANONYMOUS_MAP MAP_ANONYMOUS)
+    else()
+        check_c_source_compiles(
+            "
+                /* OPENBSD WORKAROUND - DND*/
+                #include <sys/types.h>
+                /* OPENBSD WORKAROUND - END*/
+                #include <sys/mman.h>
+                int main(void)
+                {
+                    mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+                    return 0;
+                }
+            "
+            HAVE_MMAP_MAP_ANON
+        )
+        if(HAVE_MMAP_MAP_ANON)
+            set(ANONYMOUS_MAP MAP_ANON)
+        endif()
     endif()
 endif()
 
