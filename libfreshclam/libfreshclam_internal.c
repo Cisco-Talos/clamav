@@ -1596,7 +1596,7 @@ static fc_error_t downloadPatch(
         if (ret == FC_EEMPTYFILE) {
             logg("Empty script %s, need to download entire database\n", patch);
         } else {
-            logg("%cgetpatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, url);
+            logg("%cdownloadPatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, url);
         }
         status = ret;
         goto done;
@@ -2263,7 +2263,8 @@ fc_error_t updatedb(
         /*
          * Attempt scripted/CDIFF incremental update.
          */
-        ret = FC_SUCCESS;
+        ret                         = FC_SUCCESS;
+        uint32_t numPatchesReceived = 0;
 
         tmpdir = cli_gentemp(g_tempDirectory);
         if (!tmpdir) {
@@ -2304,11 +2305,19 @@ fc_error_t updatedb(
                     break;
                 }
             }
-            if (FC_SUCCESS != ret)
+            if (FC_SUCCESS == ret) {
+                numPatchesReceived += 1;
+            } else {
                 break;
+            }
         }
 
-        if (FC_SUCCESS != ret) {
+        if (
+            (FC_EEMPTYFILE == ret) ||                                 /* Request a new CVD if we got an empty CDIFF.      */
+            (FC_SUCCESS != ret && (                                   /* Or if the incremental update failed:             */
+                                   (0 == numPatchesReceived) &&       /* 1. Ask for the CVD if we didn't get any patches, */
+                                   (localVersion < remoteVersion - 1) /* 2. AND if we're more than 1 version out of date. */
+                                   ))) {
             /*
              * Incremental update failed or intentionally disabled.
              */
@@ -2334,10 +2343,18 @@ fc_error_t updatedb(
             }
 
             newLocalFilename = cli_strdup(remoteFilename);
+        } else if (0 == numPatchesReceived) {
+            logg("The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
+            goto up_to_date;
         } else {
             /*
              * CDIFFs downloaded; Use CDIFFs to turn old CVD/CLD into new updated CLD.
              */
+            if (numPatchesReceived < remoteVersion - localVersion) {
+                logg("Downloaded %u patches for %s, which is fewer than the %u expected patches.\n", numPatchesReceived, database, remoteVersion - localVersion);
+                logg("We'll settle for this partial-update, at least for now.\n");
+            }
+
             size_t newLocalFilenameLen = 0;
             if (FC_SUCCESS != buildcld(tmpdir, database, tmpfile, g_bCompressLocalDatabase)) {
                 logg("!updatedb: Incremental update failed. Failed to build CLD.\n");
