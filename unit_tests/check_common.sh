@@ -77,7 +77,7 @@ LogVerbose yes
 PidFile `pwd`/clamd-test.pid
 DatabaseDirectory `pwd`/test-db
 LocalSocket clamd-test.socket
-TCPAddr 127.0.0.1
+TCPAddr localhost
 # using different port here to avoid conflicts with system clamd daemon
 TCPSocket $port
 ExitOnOOM yes
