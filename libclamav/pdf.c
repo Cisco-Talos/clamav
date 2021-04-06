@@ -236,25 +236,25 @@ static cl_error_t find_stream_bounds(
     /* Begin by finding the "stream" string that prefixes stream data. */
     if ((stream_begin = cli_memstr(start, bytesleft, "stream", strlen("stream")))) {
         idx = stream_begin + strlen("stream");
-        bytesleft -= idx - start;
-        if (bytesleft < 0)
+        if ((size_t)(idx - start) >= bytesleft)
             goto done;
+        bytesleft -= idx - start;
 
         /* Skip any new line charcters. */
         if (bytesleft >= 2 && idx[0] == '\xd' && idx[1] == '\xa') {
             idx += 2;
-            if (newline_hack && (bytesleft > 2) && idx[0] == '\xa')
+            bytesleft -= 2;
+            if (newline_hack && (bytesleft > 2) && idx[0] == '\xa') {
                 idx++;
+                bytesleft--;
+            }
         } else if (bytesleft && idx[0] == '\xa') {
             idx++;
+            bytesleft--;
         }
 
         /* Pass back start of the stream data. */
         *stream = idx;
-
-        bytesleft = size - (idx - start);
-        if (bytesleft <= 0)
-            goto done;
 
         /* Now find the "endstream" string that suffixes stream data. */
         endstream_begin = cli_memstr(idx, bytesleft, "endstream", strlen("endstream"));
@@ -405,7 +405,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
     /* Update current_pair, if there are more */
     if ((objstm->nobjs_found < objstm->n) &&
         (index < objstm->streambuf + objstm->streambuf_len)) {
-        unsigned long next_objid = 0, next_objoff = 0;
+        unsigned long next_objoff = 0;
 
         /*
          * While we're at it,
@@ -417,17 +417,19 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         index           = objstm->streambuf + objstm->current_pair;
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
-        if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
-            /* Failed to find objid for next obj */
-            cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next objid for obj in object stream though there should be {%u} more.\n", objstm->n - objstm->nobjs_found);
-            status = CL_EPARSE;
-            goto done;
-        } else if (temp_long < 0) {
-            cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative objid (%ld).\n", temp_long);
-            status = CL_EPARSE;
-            goto done;
-        }
-        next_objid = (unsigned long)temp_long;
+        /* We don't actually care about the object id at this point, so reading the object id is commented out.
+           I didn't delete it entirely in case the object id is needed in the future. */
+        // if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
+        //     /* Failed to find objid for next obj */
+        //     cli_dbgmsg("pdf_findobj_in_objstm: Failed to find next objid for obj in object stream though there should be {%u} more.\n", objstm->n - objstm->nobjs_found);
+        //     status = CL_EPARSE;
+        //     goto done;
+        // } else if (temp_long < 0) {
+        //     cli_dbgmsg("pdf_findobj_in_objstm: Encountered invalid negative objid (%ld).\n", temp_long);
+        //     status = CL_EPARSE;
+        //     goto done;
+        // }
+        // next_objid = (unsigned long)temp_long;
 
         /* Find the obj offset that appears just after the objid*/
         while ((index < objstm->streambuf + objstm->streambuf_len) && isdigit(*index)) {
@@ -1499,8 +1501,6 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 
         /* Find and interpret the length dictionary value */
         length = find_length(pdf, obj, start, dict_len);
-        if (length < 0)
-            length = 0;
 
         orig_length = length;
 
@@ -1511,7 +1511,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             length = obj->stream_size;
         }
 
-        if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && (length <= 0)) {
+        if (!(obj->flags & (1 << OBJ_FILTER_FLATE)) && (length == 0)) {
             /*
              * If the length is unknown and this doesn't contain a FLATE encoded filter...
              * Calculate the length using the stream size, and trimming
@@ -1521,18 +1521,17 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             length        = obj->stream_size;
             q--;
 
-            if (*q == '\n') {
-                q--;
-                length--;
-
-                if (*q == '\r')
+            if (length > 0) {
+                if (*q == '\n') {
+                    q--;
                     length--;
-            } else if (*q == '\r') {
-                length--;
-            }
 
-            if (length < 0)
-                length = 0;
+                    if (length > 0 && *q == '\r')
+                        length--;
+                } else if (*q == '\r') {
+                    length--;
+                }
+            }
 
             cli_dbgmsg("pdf_extract_obj: calculated length %lld\n", (long long)length);
         } else {
@@ -2908,21 +2907,26 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 
         compute_hash_r6(password, pwlen, (const unsigned char *)(U + 32), validationkey);
         if (!memcmp(U, validationkey, sizeof(validationkey))) {
-            size_t inLen = 32;
+            size_t UE_len;
 
             compute_hash_r6(password, pwlen, (const unsigned char *)(U + 40), hash);
+            UE_len = UE ? strlen(UE) : 0;
+            if (UE_len != 32) {
+                cli_dbgmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
+                noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
+            } else {
+                pdf->keylen = 32;
+                pdf->key    = cli_malloc(pdf->keylen);
+                if (!pdf->key) {
+                    cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
+                    return;
+                }
 
-            pdf->keylen = 32;
-            pdf->key    = cli_malloc(pdf->keylen);
-            if (!pdf->key) {
-                cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
-                return;
+                aes_256cbc_decrypt((const unsigned char *)UE, &UE_len, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
+                dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
+
+                password_empty = 1;
             }
-
-            aes_256cbc_decrypt((const unsigned char *)UE, &inLen, (unsigned char *)(pdf->key), (char *)hash, 32, 0);
-            dbg_printhex("check_user_password: Candidate encryption key", pdf->key, pdf->keylen);
-
-            password_empty = 1;
         }
     } else if ((R >= 2) && (R <= 4)) {
         unsigned char *d;
