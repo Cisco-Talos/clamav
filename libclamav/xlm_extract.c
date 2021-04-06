@@ -3804,6 +3804,9 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                         }
                     }
                     data_pos += 3 + str_len;
+                } else {
+                    cli_dbgmsg("[cli_xlm_extract_macros] Invalid or truncated string record!\n");
+                    goto done;
                 }
                 break;
             case ptgAttr:

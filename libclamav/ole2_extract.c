@@ -991,8 +991,8 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                 break;
             default:
                 switch (state->state) {
-#if HAVE_JSON
                     case BIFF_PARSER_NAME_RECORD:
+#if HAVE_JSON
                         if (state->data_offset == 0) {
                             state->tmp = buff[i] & 0x20;
                         } else if ((state->data_offset == 14 || state->data_offset == 15) && state->tmp) {
@@ -1011,8 +1011,8 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                                 state->tmp = 0;
                             }
                         }
-                        break;
 #endif
+                        break;
                     case BIFF_PARSER_BOUNDSHEET_RECORD:
                         if (state->data_offset == 4) {
                             state->tmp = buff[i];
@@ -1044,7 +1044,7 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                         break;
                     default:
                         //Should never arrive here
-                        cli_errmsg("[scan_biff_for_xlm_macros] Unexpected state value %d\n", (int)state->state);
+                        cli_dbgmsg("[scan_biff_for_xlm_macros] Unexpected state value %d\n", (int)state->state);
                         break;
                 }
                 state->data_offset += 1;
