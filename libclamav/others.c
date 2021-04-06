@@ -173,9 +173,11 @@ static void *get_module_function(lt_dlhandle handle, const char *name)
 static void *load_module(const char *name, const char *featurename)
 {
     static const char *suffixes[] = {
+#ifndef _WIN32
         LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
         PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
         LT_MODULE_EXT,
+#endif
         "." LT_LIBEXT};
 
     const char *searchpath;
