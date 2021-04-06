@@ -458,6 +458,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                 body                = parseEmailHeaders(m, rfc821, &heuristicFound);
                 if (body == NULL) {
                     messageReset(m);
+                    messageSetCTX(m, ctx);
                     if (heuristicFound) {
                         retcode = CL_VIRUS;
                         break;
@@ -469,8 +470,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                 if (messageGetBody(body)) {
                     mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
                     if (rc == FAIL) {
-                        messageReset(body);
                         m = body;
+                        messageReset(m);
+                        messageSetCTX(m, ctx);
                         continue;
                     } else if (rc == VIRUS) {
                         cli_dbgmsg("Message number %d is infected\n",
@@ -489,8 +491,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                  * called
                  */
                 m = body;
-                messageReset(body);
-                messageSetCTX(body, ctx);
+                messageReset(m);
+                messageSetCTX(m, ctx);
 
                 cli_dbgmsg("Finished processing message\n");
             } else
@@ -3711,7 +3713,7 @@ rfc1341(mbox_ctx *mctx, message *m)
 
                 while ((dent = readdir(dd))) {
                     FILE *fin;
-                    char buffer[BUFSIZ], fullname[PATH_MAX + 1];
+                    char buffer[BUFSIZ], fullname[PATH_MAX + 1 + 256 + 1];
                     int nblanks;
                     STATBUF statb;
                     const char *dentry_idpart;
