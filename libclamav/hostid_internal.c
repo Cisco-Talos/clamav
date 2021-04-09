@@ -129,7 +129,7 @@ struct device *get_devices(void)
         if (!(addr->ifa_addr))
             continue;
 
-        /*
+            /*
          * Even though POSIX (BSD) sockets define AF_LINK, Linux decided to be clever
          * and use AF_PACKET instead.
          */

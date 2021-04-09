@@ -1506,8 +1506,7 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
-    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS
-                                                   : CL_CLEAN;
+    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS : CL_CLEAN;
 }
 
 #define min(x, y) ((x) < (y) ? (x) : (y))

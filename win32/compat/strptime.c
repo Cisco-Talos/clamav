@@ -285,14 +285,14 @@ LOCALE_PARAM_DECL
 #ifdef _NL_CURRENT
                     if (*decided != raw) {
                         if (match_string(_NL_CURRENT(LC_TIME, DAY_1 + cnt), rp)) {
-                            if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, DAY_1 + cnt),
-                                                        weekday_name[cnt]))
+                            if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, DAY_1 + cnt),
+                                                         weekday_name[cnt]))
                                 *decided = loc;
                             break;
                         }
                         if (match_string(_NL_CURRENT(LC_TIME, ABDAY_1 + cnt), rp)) {
-                            if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, ABDAY_1 + cnt),
-                                                        ab_weekday_name[cnt]))
+                            if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, ABDAY_1 + cnt),
+                                                         ab_weekday_name[cnt]))
                                 *decided = loc;
                             break;
                         }
@@ -317,14 +317,14 @@ LOCALE_PARAM_DECL
 #ifdef _NL_CURRENT
                     if (*decided != raw) {
                         if (match_string(_NL_CURRENT(LC_TIME, MON_1 + cnt), rp)) {
-                            if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, MON_1 + cnt),
-                                                        month_name[cnt]))
+                            if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, MON_1 + cnt),
+                                                         month_name[cnt]))
                                 *decided = loc;
                             break;
                         }
                         if (match_string(_NL_CURRENT(LC_TIME, ABMON_1 + cnt), rp)) {
-                            if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, ABMON_1 + cnt),
-                                                        ab_month_name[cnt]))
+                            if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, ABMON_1 + cnt),
+                                                         ab_month_name[cnt]))
                                 *decided = loc;
                             break;
                         }
@@ -351,7 +351,7 @@ LOCALE_PARAM_DECL
                         else
                             rp = rp_backup;
                     } else {
-                        if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, D_T_FMT), HERE_D_T_FMT))
+                        if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, D_T_FMT), HERE_D_T_FMT))
                             *decided = loc;
                         want_xday = 1;
                         break;
@@ -392,7 +392,7 @@ LOCALE_PARAM_DECL
                         else
                             rp = rp_backup;
                     } else {
-                        if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, D_FMT), HERE_D_FMT))
+                        if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, D_FMT), HERE_D_FMT))
                             *decided = loc;
                         want_xday = 1;
                         break;
@@ -480,8 +480,8 @@ LOCALE_PARAM_DECL
                         else
                             rp = rp_backup;
                     } else {
-                        if (*decided == not&&strcmp(_NL_CURRENT(LC_TIME, T_FMT_AMPM),
-                                                    HERE_T_FMT_AMPM))
+                        if (*decided == not &&strcmp(_NL_CURRENT(LC_TIME, T_FMT_AMPM),
+                                                     HERE_T_FMT_AMPM))
                             *decided = loc;
                         break;
                     }
@@ -1004,7 +1004,7 @@ LOCALE_PARAM_DECL
     enum ptime_locale_status decided;
 
 #ifdef _NL_CURRENT
-    decided = not;
+    decided = not ;
 #else
     decided = raw;
 #endif
