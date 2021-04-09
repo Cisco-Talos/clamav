@@ -2614,14 +2614,14 @@ static int decodehex(const char *hexsig)
         }
 
         /* gotta make sure we treat escaped slashes */
-        for( i = tlen + 1; i < hexlen; i++ ) {
-            if( hexsig[ i ] == '/' && hexsig[ i - 1 ] != '\\' ) {
+        for (i = tlen + 1; i < hexlen; i++) {
+            if (hexsig[i] == '/' && hexsig[i - 1] != '\\') {
                 rlen = i - tlen - 1;
                 break;
             }
         }
-        if( i == hexlen ) {
-            mprintf( "!missing regex expression terminator /\n");
+        if (i == hexlen) {
+            mprintf("!missing regex expression terminator /\n");
             return -1;
         }
 

@@ -346,7 +346,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                         cli_dbgmsg("PNG: zlib: inflate error: %d, Image decompression failed!\n", err);
                         inflateEnd(&zstrm);
                         zstrm_initialized = false;
-                        idat_state = PNG_IDAT_DECOMPRESSION_FAILED;
+                        idat_state        = PNG_IDAT_DECOMPRESSION_FAILED;
                         break;
                     }
                 }
@@ -355,7 +355,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                     cli_dbgmsg("  TOTAL decompressed:    %zu\n", decompressed_data_len);
                     inflateEnd(&zstrm);
                     zstrm_initialized = false;
-                    idat_state = PNG_IDAT_DECOMPRESSION_COMPLETE;
+                    idat_state        = PNG_IDAT_DECOMPRESSION_COMPLETE;
 
                     if (decompressed_data_len > image_size) {
                         status = cli_append_virus(ctx, "Heuristics.PNG.CVE-2010-1205");

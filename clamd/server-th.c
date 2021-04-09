@@ -210,8 +210,8 @@ static void *reload_th(void *arg)
     cl_error_t status = CL_EMALFDB;
 
     struct reload_th_t *rldata = arg;
-    struct cl_engine *engine = NULL;
-    unsigned int sigs = 0;
+    struct cl_engine *engine   = NULL;
+    unsigned int sigs          = 0;
     int retval;
 
     if (NULL == rldata || NULL == rldata->dbdir || NULL == rldata->settings) {
