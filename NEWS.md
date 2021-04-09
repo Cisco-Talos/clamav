@@ -67,6 +67,150 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Sven Rueß
 - Vasile Papp
 
+## 0.103.2
+
+ClamAV 0.103.2 is a security patch release with the following fixes:
+
+- [CVE-2021-1386](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1386):
+  Fix for UnRAR DLL load privilege escalation.
+  Affects 0.103.1 and prior on Windows only.
+
+- [CVE-2021-1252](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1252):
+  Fix for Excel XLM parser infinite loop.
+  Affects 0.103.0 and 0.103.1 only.
+
+- [CVE-2021-1404](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1404):
+  Fix for PDF parser buffer over-read; possible crash.
+  Affects 0.103.0 and 0.103.1 only.
+
+- [CVE-2021-1405](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-1405):
+  Fix for mail parser NULL-dereference crash.
+  Affects 0.103.1 and prior.
+
+- Fix possible memory leak in PNG parser.
+
+- Fix ClamOnAcc scan on file-creation race condition so files are scanned after
+  their contents are written.
+
+- FreshClam: Deprecate the `SafeBrowsing` config option.
+  The `SafeBrowsing` option will no longer do anything.
+
+  For more details, see:
+  https://blog.clamav.net/2020/06/the-future-of-clamav-safebrowsing.html
+
+  > _Tip_: If creating and hosting your own `safebrowing.gdb` database, you can
+  > use the `DatabaseCustomURL` option in `freshclam.conf` to download it.
+
+- FreshClam: Improved HTTP 304, 403, & 429 handling.
+
+- FreshClam: Add back the `mirrors.dat` file to the database directory.
+  This new `mirrors.dat` file will store:
+  - A randomly generated UUID for the FreshClam User-Agent.
+  - A retry-after timestamp that so FreshClam won't try to update after
+    having received an HTTP 429 response until the Retry-After timeout has
+    expired.
+
+- FreshClam will now exit with a failure in daemon mode if an HTTP 403
+  (Forbidden) was received, because retrying later won't help any.
+  The FreshClam user will have to take actions to get unblocked.
+
+- Fix the FreshClam mirror-sync issue where a downloaded database is "older
+  than the version advertised."
+
+  If a new CVD download gets a version that is older than advertised, FreshClam
+  will keep the older version and retry the update so that the incremental
+  update process (CDIFF patch process) will update to the latest version.
+
+## 0.103.1
+
+ClamAV 0.103.1 is a patch release with the following fixes and improvements.
+
+### Notable changes
+
+- Added a new scan option to alert on broken media (graphics) file formats.
+  This feature mitigates the risk of malformed media files intended to exploit
+  vulnerabilities in other software.
+  At present media validation exists for JPEG, TIFF, PNG, and GIF files.
+  To enable this feature, set `AlertBrokenMedia yes` in clamd.conf, or use
+  the `--alert-broken-media` option when using `clamscan`.
+  These options are disabled by default in this patch release, but may be
+  enabled in a subsequent release.
+  Application developers may enable this scan option by enabling
+  `CL_SCAN_HEURISTIC_BROKEN_MEDIA` for the `heuristic` scan option bit field.
+
+- Added CL_TYPE_TIFF, CL_TYPE_JPEG types to match GIF, PNG typing behavior.
+  BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
+  ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
+
+### Bug fixes
+
+- Fixed PNG parser logic bugs that caused an excess of parsing errors and fixed
+  a stack exhaustion issue affecting some systems when scanning PNG files.
+  PNG file type detection was disabled via signature database update for
+  ClamAV version 0.103.0 to mitigate the effects from these bugs.
+
+- Fixed an issue where PNG and GIF files no longer work with Target:5 graphics
+  signatures if detected as CL_TYPE_PNG/GIF rather than as CL_TYPE_GRAPHICS.
+  Target types now support up to 10 possible file types to make way for
+  additional graphics types in future releases.
+
+- Fixed clamonacc's `--fdpass` option.
+
+  File descriptor passing (or "fd-passing") is a mechanism by which clamonacc
+  and clamdscan may transfer an open file to clamd to scan, even if clamd is
+  running as a non-privileged user and wouldn't otherwise have read-access to
+  the file. This enables clamd to scan all files without having to run clamd as
+  root. If possible, clamd should never be run as root so as to mitigate the
+  risk in case clamd is somehow compromised while scanning malware.
+
+  Interprocess file descriptor passing for clamonacc was broken since version
+  0.102.0 due to a bug introduced by the switch to curl for communicating with
+  clamd. On Linux, passing file descriptors from one process to another is
+  handled by the kernel, so we reverted clamonacc to use standard system calls
+  for socket communication when fd passing is enabled.
+
+- Fixed a clamonacc stack corruption issue on some systems when using an older
+  version of libcurl. Patch courtesy of Emilio Pozuelo Monfort.
+
+- Allow clamscan and clamdscan scans to proceed even if the realpath lookup
+  failed. This alleviates an issue on Windows scanning files hosted on file-
+  systems that do not support the GetMappedFileNameW() API such as on ImDisk
+  RAM-disks.
+
+- Fixed freshclam --on-update-execute=EXIT_1 temporary directory cleanup issue.
+
+- `clamd`'s log output and VirusEvent now provide the scan target's file path
+  instead of a file descriptor. The clamd socket API for submitting a scan by
+  FD-passing doesn't include a file path, this feature works by looking up the
+  file path by file descriptor. This feature works on Mac and Linux but is not
+  yet implemented for other UNIX operating systems.
+  FD-passing is not available for Windows.
+
+- Fixed an issue where freshclam database validation didn't work correctly when
+  run in daemon mode on Linux/Unix.
+
+### Other improvements
+
+- Scanning JPEG, TIFF, PNG, and GIF files will no longer return "parse" errors
+  when file format validation fails. Instead, the scan will alert with the
+  "Heuristics.Broken.Media" signature prefix and a descriptive suffix to
+  indicate the issue, provided that the "alert broken media" feature is enabled.
+
+- GIF format validation will no longer fail if the GIF image is missing the
+  trailer byte, as this appears to be a relatively common issue in otherwise
+  functional GIF files.
+
+- Added a TIFF dynamic configuration (DCONF) option, which was missing.
+  This will allow us to disable TIFF format validation via signature database
+  update in the event that it proves to be problematic.
+  This feature already exists for many other file types.
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
+- Emilio Pozuelo Monfort
+
 ## 0.103.0
 
 ClamAV 0.103.0 includes the following improvements and changes.
