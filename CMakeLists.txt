@@ -195,12 +195,18 @@ if(ENABLE_TESTS)
     find_package(Python3 REQUIRED)
 
     execute_process(
-        COMMAND ${Python3_EXECUTABLE} -m pip show pytest
-        RESULT_VARIABLE EXIT_CODE
+        COMMAND pytest --version
+        RESULT_VARIABLE PYTEST_EXIT_CODE
         ERROR_QUIET OUTPUT_QUIET
     )
 
-    if (NOT ${EXIT_CODE} EQUAL 0)
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m pip show pytest
+        RESULT_VARIABLE PIP_EXIT_CODE
+        ERROR_QUIET OUTPUT_QUIET
+    )
+
+    if ((NOT ${PYTEST_EXIT_CODE} EQUAL 0) AND (NOT ${PIP_EXIT_CODE} EQUAL 0))
         message("Python3 package 'pytest' is not installed.")
         message("Failed unit tests will be easier to read if you install pytest.")
         message("Eg:  python3 -m pip install --user pytest")
