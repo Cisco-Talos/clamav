@@ -51,6 +51,8 @@ patch versions do not generally introduce new options:
   effect.
   Patch courtesy of Vasile Papp.
 
+- Improvements to the AutoIt extraction module. Patch courtesy of cw2k.
+
 ### Bug fixes
 
 ### New Requirements
@@ -61,6 +63,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 
 - Alexander Golovach
 - Brian Bergstrand
+- cw2k
 - Duane Waddle
 - Orion Poplawski
 - Sergey Valentey
