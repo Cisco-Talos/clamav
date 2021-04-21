@@ -45,7 +45,6 @@
 #define CLI_BCOMP_EXACT 0x0100
 
 struct cli_bcomp_meta {
-    char *virname;
     uint16_t ref_subsigid; /* identifies the dependent subsig from which we will do comparisons */
     uint32_t lsigid[3];
     ssize_t offset;   /* offset from the referenced subsig, handled at match-time */

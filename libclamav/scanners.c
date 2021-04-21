@@ -53,6 +53,8 @@
 
 #include <zlib.h>
 
+#include "clamav_rust.h"
+
 #include "clamav.h"
 #include "others.h"
 #include "dconf.h"
@@ -4064,6 +4066,50 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
     return status;
 }
 
+static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
+{
+    cl_error_t status       = CL_EPARSE;
+    const uint8_t *offset   = NULL;
+    image_fuzzy_hash_t hash = {0};
+    json_object *header     = NULL;
+
+    offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
+
+    if (SCAN_COLLECT_METADATA && (NULL != ctx->wrkproperty)) {
+        if (NULL == (header = cli_jsonobj(ctx->wrkproperty, "ImageFuzzyHash"))) {
+            cli_errmsg("Failed to allocate ImageFuzzyHash JSON object\n");
+            status = CL_EMEM;
+            goto done;
+        }
+    }
+
+    if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8)) {
+        cli_dbgmsg("Failed to generate image fuzzy hash for %s\n", cli_ftname(type));
+
+        if (SCAN_COLLECT_METADATA && (NULL != header)) {
+            (void)cli_jsonstr(header, "Error", "Failed to generate image fuzzy hash");
+        }
+
+        goto done;
+    }
+
+    if (SCAN_COLLECT_METADATA && (NULL != header)) {
+        char hashstr[17];
+        snprintf(hashstr, 17, "%02x%02x%02x%02x%02x%02x%02x%02x",
+                 hash.hash[0], hash.hash[1], hash.hash[2], hash.hash[3],
+                 hash.hash[4], hash.hash[5], hash.hash[6], hash.hash[7]);
+        (void)cli_jsonstr(header, "Hash", hashstr);
+    }
+
+    ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash = hash;
+
+    status = CL_SUCCESS;
+
+done:
+
+    return status;
+}
+
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
 {
     cl_error_t ret = CL_CLEAN;
@@ -4593,29 +4639,49 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_scanriff(ctx);
             break;
 
-        case CL_TYPE_GRAPHICS:
+        case CL_TYPE_GRAPHICS: {
             /*
              * This case is for unhandled graphics types such as BMP, JPEG 2000, etc.
              *
              * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
              * JPEG 2000 is not handled by cli_scanjpeg or cli_parsejpeg.
              */
+            ret = calculate_fuzzy_image_hash(ctx, type);
             break;
+        }
 
-        case CL_TYPE_GIF:
+        case CL_TYPE_GIF: {
+            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (CL_SUCCESS != ret) {
+                break;
+            }
+
             if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF))
                 ret = cli_parsegif(ctx);
             break;
+        }
 
-        case CL_TYPE_PNG:
+        case CL_TYPE_PNG: {
+            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (CL_SUCCESS != ret) {
+                break;
+            }
+
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
                 ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
             break;
+        }
 
-        case CL_TYPE_JPEG:
+        case CL_TYPE_JPEG: {
+            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (CL_SUCCESS != ret) {
+                break;
+            }
+
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
                 ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
             break;
+        }
 
         case CL_TYPE_TIFF:
             if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS)

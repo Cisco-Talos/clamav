@@ -649,7 +649,12 @@ void cli_ac_free(struct cli_matcher *root)
     for (i = 0; i < root->ac_patterns; i++) {
         patt = root->ac_pattable[i];
         MPOOL_FREE(root->mempool, patt->prefix ? patt->prefix : patt->pattern);
-        MPOOL_FREE(root->mempool, patt->virname);
+        if (!(patt->lsigid[0] == 1)) {
+            /* Don't free the virname for patterns lsigs (normal or yara).
+               For lsigs, we store the virname in lsig->virname, not in each ac-pattern.
+               TODO: never store the virname in the ac pattern and only store it per-signature, not per-pattern. */
+            MPOOL_FREE(root->mempool, patt->virname);
+        }
         if (patt->special)
             mpool_ac_free_special(root->mempool, patt);
         MPOOL_FREE(root->mempool, patt);
@@ -1575,6 +1580,11 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
 
     (*list)->cnt++;
     return CL_SUCCESS;
+}
+
+void lsig_increment_subsig_match(struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id)
+{
+    mdata->lsigcnt[lsig_id][subsig_id]++;
 }
 
 cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id, uint32_t realoff, int partial)
@@ -2521,6 +2531,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
     struct cli_ac_special *newspecial, **newtable;
     int ret, error = CL_SUCCESS;
+    char *virname_copy = NULL;
 
     if (!root) {
         cli_errmsg("cli_ac_addsig: root == NULL\n");
@@ -2922,16 +2933,23 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if (new->length[2] + new->prefix_length[2] > root->maxpatlen)
         root->maxpatlen = new->length[2] + new->prefix_length[2];
 
-    new->virname = CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
-    if (!new->virname) {
-        MPOOL_FREE(root->mempool, new->prefix ? new->prefix : new->pattern);
-        mpool_ac_free_special(root->mempool, new);
-        MPOOL_FREE(root->mempool, new);
-        return CL_EMEM;
-    }
+    if (0 == new->lsigid[0]) {
+        /* For logical signatures, we already recorded the virname in the lsig table entry.
+         * For other signature types, continue to store a copy of the virname in each ac_pattern struct.
+         *
+         * TODO: Don't make a copy of the virname for every ac pattern,
+         * because that makes for multipel copies every time a signature has wildcards.
+         */
+        virname_copy = CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
+        if (NULL == virname_copy) {
+            MPOOL_FREE(root->mempool, new->prefix ? new->prefix : new->pattern);
+            mpool_ac_free_special(root->mempool, new);
+            MPOOL_FREE(root->mempool, new);
+            return CL_EMEM;
+        }
 
-    if (new->lsigid[0])
-        root->ac_lsigtable[new->lsigid[1]]->virname = new->virname;
+        new->virname = virname_copy;
+    }
 
     ret = cli_caloff(offset, NULL, root->type, new->offdata, &new->offset_min, &new->offset_max);
     if (ret != CL_SUCCESS) {

@@ -99,6 +99,8 @@ struct cli_lsig_tdb {
     uint32_t       *macro_ptids;
 #ifdef USE_MPOOL
     mpool_t        *mempool;
+#else
+    void           *_padding_mempool;
 #endif
 };
 
@@ -122,9 +124,11 @@ struct cli_ac_lsig {
         char *logic;
         uint8_t *code_start;
     } u;
-    const char *virname;
+    char *virname;
     struct cli_lsig_tdb tdb;
 };
+
+typedef void *hashmap_ptr_t;
 
 struct cli_matcher {
     unsigned int type;
@@ -164,11 +168,16 @@ struct cli_matcher {
     uint32_t bcomp_metas;
     struct cli_bcomp_meta **bcomp_metatable;
 
+    /* Fuzzy Image Hash */
+    hashmap_ptr_t fuzzy_hashmap;
+
     /* Bytecode Tracker */
     uint32_t linked_bcs;
 
 #ifdef USE_MPOOL
     mpool_t *mempool;
+#else
+    void *_padding_mempool;
 #endif
 };
 

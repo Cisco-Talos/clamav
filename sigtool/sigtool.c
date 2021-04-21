@@ -1055,7 +1055,10 @@ static int build(const struct optstruct *opts)
             mprintf(LOGG_ERROR, "Generated file is incorrect, renamed to %s\n", broken);
         }
     } else {
-        ret = script2cdiff(patch, builder, optget(opts, "server")->strarg);
+        cl_error_t to_cdiff_ret;
+        to_cdiff_ret = script2cdiff(patch, builder, optget(opts, "server")->strarg);
+
+        ret = to_cdiff_ret == CL_SUCCESS ? 0 : -1;
     }
 
     return ret;
@@ -1944,7 +1947,17 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     return ret;
 }
 
-static void matchsig(const char *sig, const char *offset, int fd)
+/**
+ * @brief Match a given "signature" in the file fd and return the offset.
+ *
+ * The "signature" may be a subsignature to include things like a PCRE special
+ * subsignature.
+ *
+ * @param sig
+ * @param offset
+ * @param fd
+ */
+static void matchsig(char *sig, const char *offset, int fd)
 {
     struct cli_ac_result *acres = NULL, *res;
     STATBUF sb;
@@ -1953,6 +1966,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
     cli_ctx ctx                    = {0};
     struct cl_scan_options options = {0};
     cl_fmap_t *new_map             = NULL;
+    struct cli_lsig_tdb tdb        = {0};
 
     mprintf(LOGG_INFO, "SUBSIG: %s\n", sig);
 
@@ -1977,7 +1991,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
         goto done;
     }
 
-    if (cli_add_content_match_pattern(engine->root[0], "test", sig, 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if (readdb_parse_ldb_subsignature(engine->root[0], "test", sig, "*", 0, NULL, 0, 0, 1, &tdb) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "matchsig: Can't parse signature\n");
         goto done;
     }

@@ -56,7 +56,7 @@ struct cli_lsig_matches {
     struct cli_subsig_matches *matches[1]; /* matches[] is variable length */
 };
 
-struct cli_ac_data {
+typedef struct cli_ac_data {
     uint32_t ***offmatrix;
     uint32_t partsigs, lsigs, reloffsigs;
     uint32_t **lsigcnt;
@@ -68,7 +68,7 @@ struct cli_ac_data {
     /** Hashset for versioninfo matching */
     const struct cli_hashset *vinfo;
     uint32_t min_partno;
-};
+} cli_ac_data;
 
 struct cli_alt_node {
     uint16_t *str;
@@ -138,6 +138,14 @@ struct cli_ac_result {
  * Simple sub-patterns may not include any wildcards or [a-b] anchored byte ranges.
  */
 cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
+
+/**
+ * @brief Increment the count for a subsignature of a logical signature.
+ *
+ * This is and alternative to lsig_increment_subsig_match() for use in subsigs that don't have a specific offset,
+ * like byte-compare subsigs and fuzzy-hash subsigs.
+ */
+void lsig_increment_subsig_match(struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id);
 
 cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen);
 

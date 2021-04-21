@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2021-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: John Humlick
  *
@@ -29,13 +29,14 @@ use std::{
     str,
 };
 
+use crate::sys;
 use crate::util;
+use crate::validate_str_param;
+
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use log::{debug, error, warn};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
-
-use crate::sys;
 
 /// Size of a digital signature
 const SIG_SIZE: usize = 350;
@@ -384,30 +385,12 @@ fn is_debug_enabled() -> bool {
     }
 }
 
-/// Verify that the given parameter is not NULL, and valid UTF-8, returning a &str or forcing a return with -1
-macro_rules! validate_str_param {
-    ($ptr:ident) => {
-        if $ptr.is_null() {
-            warn!("{} is NULL", stringify!($ptr));
-            return -1;
-        } else {
-            match unsafe { CStr::from_ptr($ptr) }.to_str() {
-                Err(e) => {
-                    warn!("{} is not valid unicode: {}", stringify!($ptr), e);
-                    return -1;
-                }
-                Ok(s) => s,
-            }
-        }
-    };
-}
-
 #[export_name = "script2cdiff"]
 pub extern "C" fn _script2cdiff(
     script: *const c_char,
     builder: *const c_char,
     server: *const c_char,
-) -> i32 {
+) -> sys::cl_error_t {
     // validate_str_param! generates a false alarm here.  Marking the entire
     // function as unsafe triggers a different warning
     #![allow(clippy::not_unsafe_ptr_arg_deref)]
@@ -415,10 +398,10 @@ pub extern "C" fn _script2cdiff(
     let builder = validate_str_param!(builder);
     let server = validate_str_param!(server);
     match script2cdiff(script_file_name, builder, server) {
-        Ok(_) => 0,
+        Ok(_) => sys::cl_error_t_CL_SUCCESS,
         Err(e) => {
             error!("{}", e);
-            -1
+            sys::cl_error_t_CL_ERROR
         }
     }
 }
@@ -747,8 +730,7 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
     let mut tmp_file = tmp_named_file.as_file();
 
     // Open src in read-only mode
-    let mut src_reader =
-        BufReader::new(File::open(&move_op.src).map_err(ProcessingError::from)?);
+    let mut src_reader = BufReader::new(File::open(&move_op.src).map_err(ProcessingError::from)?);
 
     let mut line = vec![];
     let mut line_no = 0;
@@ -779,12 +761,9 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
                 if line.starts_with(move_op.end_line) {
                     state = State::End;
                 } else {
-                    return Err(ProcessingError::PatternDoesNotMatch(
-                        "MOVE",
-                        line_no,
-                        move_op.dst,
-                    )
-                    .into());
+                    return Err(
+                        ProcessingError::PatternDoesNotMatch("MOVE", line_no, move_op.dst).into(),
+                    );
                 }
             }
         }
@@ -843,7 +822,7 @@ fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
                 // No more input
                 break;
             }
-            
+
             match linebuf.pop() {
                 Some(b'\n') => (),
                 Some(_) => return Err(InputError::MissingNL),

@@ -181,6 +181,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
  * - a macro subsignature
  * - a pcre subsignature
  * - a byte compare subsignature
+ * - a fuzzy hash subsignature
  * - or else treated as a file content matching subsignature.
  *
  * @param root
@@ -188,7 +189,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
  * @param hexsig
  * @param offset
  * @param target
- * @param lsigid
+ * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
  * @param options
  * @param current_subsig_index
  * @param num_subsigs

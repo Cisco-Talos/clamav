@@ -33,6 +33,7 @@
 #include <stdbool.h>
 
 #include "clamav.h"
+#include "clamav_rust.h"
 #include "others.h"
 #include "matcher-ac.h"
 #include "matcher-bm.h"
@@ -175,26 +176,43 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
                 if (ret != CL_CLEAN)
                     return ret;
             }
-        } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+        } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR) {
             saved_ret = ret;
-        else
+        } else {
             return ret;
+        }
     }
 
     if (root->bcomp_metas) {
         ret = cli_bcomp_scanbuf(orig_buffer, orig_length, acres, root, mdata, ctx);
         if (ret != CL_CLEAN) {
-            if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+            if (ret > CL_TYPENO && acmode & AC_SCAN_VIR) {
                 saved_ret = ret;
-            else
+            } else {
                 return ret;
+            }
         }
     }
 
+    switch (ftype) {
+        case CL_TYPE_GIF:
+        case CL_TYPE_TIFF:
+        case CL_TYPE_JPEG:
+        case CL_TYPE_PNG:
+        case CL_TYPE_GRAPHICS: {
+            if (!fuzzy_hash_check(root->fuzzy_hashmap, mdata, ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash)) {
+                cli_errmsg("Unexpected error when checking for fuzzy hash matches.\n");
+                return CL_ERROR;
+            }
+        }
+        default:
+            break;
+    }
+
+#if HAVE_PCRE
     /* due to logical triggered, pcres cannot be evaluated until after full subsig matching */
     /* cannot save pcre execution state without possible evasion; must scan entire buffer */
     /* however, scanning the whole buffer may require the whole buffer being loaded into memory */
-#if HAVE_PCRE
     if (root->pcre_metas) {
         int rc;
         uint64_t maxfilesize;

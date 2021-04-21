@@ -54,7 +54,6 @@ struct cli_pcre_off {
 
 struct cli_pcre_meta {
     char *trigger;
-    char *virname;
     uint32_t lsigid[3]; /* 0=valid, 1=lsigid, 2=subsigid */
     struct cli_pcre_data pdata;
     /* clamav offset data */

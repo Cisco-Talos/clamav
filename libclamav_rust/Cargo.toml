@@ -8,10 +8,12 @@ version = "0.0.1"
 flate2 = "1"
 hex = "0.4"
 libc = "0.2"
-log = {version = "0.4", features = ["std"]}
+log = { version = "0.4", features = ["std"] }
 sha2 = "0.10"
 tempfile = "3"
 thiserror = "1"
+image = "0.23"
+img_hash = "*"
 
 [lib]
 crate-type = ["staticlib"]
