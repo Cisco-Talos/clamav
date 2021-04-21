@@ -987,6 +987,7 @@ if(WIN32)
     add_subdirectory( win32/compat )
 endif()
 
+add_subdirectory( libclamav_rust )
 add_subdirectory( libclamav )
 
 if(NOT ENABLE_LIBCLAMAV_ONLY)
