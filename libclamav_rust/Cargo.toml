@@ -1,0 +1,15 @@
+[package]
+authors = ["The ClamAV Team <clamav-bugs@external.cisco.com>"]
+name = "clamav_rust"
+version = "0.0.1"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[dependencies]
+log = {version = "*", features = ["std"]} 
+
+[lib]
+crate-type = ["staticlib"]
+name = "clamav_rust"
+path = "lib.rs"

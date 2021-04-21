@@ -520,6 +520,7 @@ if(ENABLE_SHARED_LIB)
             tomsfastmath
             bytecode_runtime
             ${LIBMSPACK}
+            ClamAV::libclamav_rust
             ClamAV::libunrar_iface_iface
             OpenSSL::SSL
             OpenSSL::Crypto
@@ -621,6 +622,7 @@ if(ENABLE_STATIC_LIB)
             tomsfastmath
             bytecode_runtime
             ${LIBMSPACK}
+            ClamAV::libclamav_rust
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
