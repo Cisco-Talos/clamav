@@ -48,6 +48,7 @@
 #endif
 
 #include "clamav.h"
+#include "clamav_rust.h"
 #include "cvd.h"
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
@@ -468,9 +469,32 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
          * Looks like an byte_compare subsignature.
          */
         if (CL_SUCCESS != (ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options))) {
-            cli_errmsg("Problem adding byte compare subsignature.\n");
+            cli_errmsg("Problem adding byte compare subsignature: %s\n", hexsig);
             status = ret;
             goto done;
+        }
+
+    } else if (0 == strncmp(hexsig, "fuzzy_img#", strlen("fuzzy_img#"))) {
+        /*
+         * format seems to match fuzzy image hash
+         */
+
+        if (lsigid != NULL) {
+            /* fuzzy hash is a part of a logical signature (normal use case) */
+            if (CL_SUCCESS != (ret = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, lsigid[0], lsigid[1]))) {
+                cli_errmsg("Problem adding image fuzzy hash subsignature: %s\n", hexsig);
+                status = ret;
+                goto done;
+            }
+        } else {
+            /* No logical signature, must be `sigtool --test-sigs`
+             * TODO: sigtool should really load the logical sig properly and we can get rid of this logic.
+             * Note: similar functionality is inside of cli_bcomp_addpatt() and cli_pcre_addpatt() */
+            if (CL_SUCCESS != (ret = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, 0, 0))) {
+                cli_errmsg("Problem adding image fuzzy hash subsignature: %s\n", hexsig);
+                status = ret;
+                goto done;
+            }
         }
 
     } else {
@@ -840,10 +864,10 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
     struct cli_matcher *root;
 
     UNUSEDPARAM(options);
+    cli_dbgmsg("Initializing engine matching structures\n");
 
     for (i = 0; i < CLI_MTARGETS; i++) {
         if (!engine->root[i]) {
-            cli_dbgmsg("Initializing engine->root[%d]\n", i);
             root = engine->root[i] = (struct cli_matcher *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_matcher));
             if (!root) {
                 cli_errmsg("cli_initroots: Can't allocate memory for cli_matcher\n");
@@ -856,7 +880,6 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
             if (cli_mtargets[i].ac_only || engine->ac_only)
                 root->ac_only = 1;
 
-            cli_dbgmsg("Initializing AC pattern matcher of root[%d]\n", i);
             if (CL_SUCCESS != (ret = cli_ac_init(root, engine->ac_mindepth, engine->ac_maxdepth, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
                 /* no need to free previously allocated memory here */
                 cli_errmsg("cli_initroots: Can't initialise AC pattern matcher\n");
@@ -864,12 +887,13 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
             }
 
             if (!root->ac_only) {
-                cli_dbgmsg("cli_initroots: Initializing BM tables of root[%d]\n", i);
                 if (CL_SUCCESS != (ret = cli_bm_init(root))) {
                     cli_errmsg("cli_initroots: Can't initialise BM pattern matcher\n");
                     return ret;
                 }
             }
+
+            root->fuzzy_hashmap = fuzzy_hash_init_hashmap();
         }
     }
     engine->root[1]->bm_offmode = 1; /* BM offset mode for PE files */
@@ -1896,46 +1920,56 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
 #define LDB_TOKENS 67
 static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
+    cl_error_t status = CL_EMALFDB;
+    cl_error_t ret;
     const char *virname, *logic;
-    struct cli_ac_lsig **newtable, *lsig;
+    struct cli_ac_lsig **newtable;
+    struct cli_ac_lsig *lsig = NULL;
     char *tokens[LDB_TOKENS + 1];
     int i, subsigs, tokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
-    cl_error_t ret;
+    bool tdb_initialized = false;
 
     UNUSEDPARAM(dbname);
 
     tokens_count = cli_ldbtokenize(buffer, ';', LDB_TOKENS + 1, (const char **)tokens, 2);
     if (tokens_count < 4) {
         cli_errmsg("Invalid or unsupported ldb signature format\n");
-        return CL_EMALFDB;
+        status = CL_EMALFDB;
+        goto done;
     }
 
     virname = tokens[0];
     logic   = tokens[2];
 
-    if (chkpua && cli_chkpua(virname, engine->pua_cats, options))
-        return CL_SUCCESS;
+    if (chkpua && cli_chkpua(virname, engine->pua_cats, options)) {
+        cli_dbgmsg("cli_loadldb: Skipping PUA signature %s\n", virname);
+        status = CL_BREAK;
+        goto done;
+    }
 
     if (engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy ? buffer_cpy : virname)) {
         if (skip)
             *skip = 1;
-        return CL_SUCCESS;
+        cli_dbgmsg("cli_loadldb: Skipping ignored signature %s\n", virname);
+        status = CL_BREAK;
+        goto done;
     }
 
     if (engine->cb_sigload && engine->cb_sigload("ldb", virname, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
         cli_dbgmsg("cli_loadldb: skipping %s due to callback\n", virname);
-        (*sigs)--;
-        return CL_SUCCESS;
+        status = CL_BREAK;
+        goto done;
     }
 
     subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
     if (subsigs == -1) {
         cli_errmsg("Invalid or unsupported ldb logic\n");
-        return CL_EMALFDB;
+        status = CL_EMALFDB;
+        goto done;
     }
     subsigs++;
 
@@ -1950,7 +1984,8 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         subsigs = tokens_count - 3;
     } else if (subsigs != tokens_count - 3) {
         cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
-        return CL_EMALFDB;
+        status = CL_EMALFDB;
+        goto done;
     }
 
 #if !HAVE_PCRE
@@ -1959,8 +1994,8 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         char *slash = strchr(tokens[i + 3], '/');
         if (slash && strchr(slash + 1, '/')) {
             cli_warnmsg("cli_loadldb: logical signature for %s uses PCREs but support is disabled, skipping\n", virname);
-            (*sigs)--;
-            return CL_SUCCESS;
+            status = CL_BREAK;
+            goto done;
         }
     }
 #endif
@@ -1968,58 +2003,60 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     /* enforce MAX_LDB_SUBSIGS subsig cap */
     if (subsigs > MAX_LDB_SUBSIGS) {
         cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
-        return CL_EMALFDB;
+        status = CL_EMALFDB;
+        goto done;
     }
 
     /* Initialize Target Description Block (TDB) */
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname))) {
-        (*sigs)--;
-        if (ret == CL_BREAK)
-            return CL_SUCCESS;
-        return ret;
+        cli_errmsg("cli_loadldb: Failed to initialize target description block\n");
+        status = ret;
+        goto done;
     }
+
+    tdb_initialized = true;
 
     root = engine->root[tdb.target[0]];
 
     lsig = (struct cli_ac_lsig *)MPOOL_CALLOC(engine->mempool, 1, sizeof(struct cli_ac_lsig));
     if (!lsig) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
-        FREE_TDB(tdb);
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
     lsig->type    = CLI_LSIG_NORMAL;
     lsig->u.logic = CLI_MPOOL_STRDUP(engine->mempool, logic);
     if (!lsig->u.logic) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
-        FREE_TDB(tdb);
-        MPOOL_FREE(engine->mempool, lsig);
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
     lsigid[0] = lsig->id = root->ac_lsigs;
 
-    if (bc_idx)
-        root->linked_bcs++;
-    root->ac_lsigs++;
-    newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+    newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, (root->ac_lsigs + 1) * sizeof(struct cli_ac_lsig *));
     if (!newtable) {
-        if (bc_idx)
-            root->linked_bcs--;
-        root->ac_lsigs--;
         cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
-        FREE_TDB(tdb);
-        MPOOL_FREE(engine->mempool, lsig);
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
     /* 0 marks no bc, we can't use a pointer to bc, since that is
      * realloced/moved during load */
-    lsig->bc_idx                 = bc_idx;
-    newtable[root->ac_lsigs - 1] = lsig;
-    root->ac_lsigtable           = newtable;
-    tdb.subsigs                  = subsigs;
+    lsig->bc_idx             = bc_idx;
+    newtable[root->ac_lsigs] = lsig;
+    root->ac_lsigtable       = newtable;
+    tdb.subsigs              = subsigs;
+
+    /* For logical subsignatures, only store the virname in the lsigtable entry. */
+    lsig->virname = CLI_MPOOL_VIRNAME(engine->mempool, virname, options & CL_DB_OFFICIAL);
+    if (NULL == lsig->virname) {
+        cli_errmsg("cli_loadldb: Can't allocate memory for virname in lsig table\n");
+        status = CL_EMEM;
+        goto done;
+    }
 
     for (i = 0; i < subsigs; i++) {
         lsigid[1] = i;
@@ -2027,17 +2064,47 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         // handle each LDB subsig
         ret = readdb_parse_ldb_subsignature(root, virname, tokens[3 + i], "*", target, lsigid, options, i, subsigs, &tdb);
         if (CL_SUCCESS != ret) {
-            if (bc_idx)
-                root->linked_bcs--;
-            root->ac_lsigs--;
-            FREE_TDB(tdb);
-            MPOOL_FREE(engine->mempool, lsig);
-            return ret;
+            cli_errmsg("cli_loadldb: failed to parse subsignature %d in %s\n", i, virname);
+            status = ret;
+            goto done;
         }
     }
 
     memcpy(&lsig->tdb, &tdb, sizeof(tdb));
-    return CL_SUCCESS;
+
+    /* Increment signature counts */
+    (*sigs) += 1;
+
+    if (bc_idx) {
+        root->linked_bcs++;
+    }
+    root->ac_lsigs++;
+
+    status = CL_SUCCESS;
+
+done:
+
+    if (CL_SUCCESS != status) {
+        if (NULL != lsig) {
+            if (NULL != lsig->virname) {
+                MPOOL_FREE(engine->mempool, lsig->virname);
+            }
+
+            if (NULL != lsig->u.logic) {
+                MPOOL_FREE(engine->mempool, lsig->u.logic);
+            }
+
+            MPOOL_FREE(engine->mempool, lsig);
+        }
+        if (tdb_initialized) {
+            FREE_TDB(tdb);
+        }
+    }
+
+    if (status == CL_BREAK) {
+        status = CL_SUCCESS;
+    }
+    return status;
 }
 
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
@@ -2061,7 +2128,6 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         if (buffer[0] == '#')
             continue;
 
-        sigs++;
         cli_chomp(buffer);
 
         if (engine->ignored)
@@ -2180,14 +2246,14 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             bcs->count--;
             return CL_SUCCESS;
         }
-        if (sigs != oldsigs) {
+        if (sigs == oldsigs) {
             /* compiler ensures Engine field in lsig matches the one in bytecode,
              * so this should never happen. */
             cli_errmsg("Bytecode logical signature skipped, but bytecode itself not?");
             return CL_EMALFDB;
         }
     }
-    sigs++;
+
     if (bc->kind != BC_LOGICAL) {
         if (bc->lsig) {
             /* runlsig will only flip a status bit, not report a match,
@@ -3706,13 +3772,6 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     */
 #endif
 
-    if (engine->cb_sigload && engine->cb_sigload("yara", newident, ~options & CL_DB_OFFICIAL, engine->cb_sigload_ctx)) {
-        cli_dbgmsg("load_oneyara: skipping %s due to callback\n", newident);
-        (*sigs)--;
-        free(newident);
-        return CL_SUCCESS;
-    }
-
     /*** verification step - can clamav load it?       ***/
     /*** initial population pass for the strings table ***/
     STAILQ_FOREACH(string, &rule->strings, link)
@@ -3777,11 +3836,23 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 tsig->type = CLI_YARA_NORMAL;
                 lsigid[0] = tsig->id = root->ac_lsigs;
 
+                /* For logical subsignatures, only store the virname in the lsigtable entry. */
+                tsig->virname = CLI_MPOOL_VIRNAME(engine->mempool, newident, options & CL_DB_OFFICIAL);
+                if (NULL == tsig->virname) {
+                    root->ac_lsigs--;
+                    cli_errmsg("load_oneyara: failed to allocate signature name for yara test lsig\n");
+                    MPOOL_FREE(engine->mempool, tsig);
+                    free(substr);
+                    free(newident);
+                    return CL_EMEM;
+                }
+
                 root->ac_lsigs++;
                 newtable = (struct cli_ac_lsig **)MPOOL_REALLOC(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
                 if (!newtable) {
                     root->ac_lsigs--;
                     cli_errmsg("load_oneyara: cannot allocate test root->ac_lsigtable\n");
+                    MPOOL_FREE(engine->mempool, tsig->virname);
                     MPOOL_FREE(engine->mempool, tsig);
                     free(substr);
                     free(newident);
@@ -4059,6 +4130,17 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             free(newident);
             return CL_EMEM;
         }
+    }
+
+    /* For logical subsignatures, only store the virname in the lsigtable entry. */
+    lsig->virname = CLI_MPOOL_VIRNAME(engine->mempool, newident, options & CL_DB_OFFICIAL);
+    if (NULL == lsig->virname) {
+        cli_errmsg("load_oneyara: failed to allocate signature name for yara lsig\n");
+        FREE_TDB(tdb);
+        ytable_delete(&ytable);
+        MPOOL_FREE(engine->mempool, lsig);
+        free(newident);
+        return CL_EMEM;
     }
 
     lsigid[0] = lsig->id = root->ac_lsigs;
@@ -5439,6 +5521,8 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 #if HAVE_PCRE
         tasks_to_do += 1; // pcre table
 #endif
+        tasks_to_do += 1; // fuzzy hashmap
+
         tasks_to_do += 1; // engine root mempool
     }
 
@@ -5474,8 +5558,10 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
                 if (root->ac_lsigtable) {
                     for (j = 0; j < root->ac_lsigs; j++) {
-                        if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL)
+                        if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL) {
                             MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]->u.logic);
+                        }
+                        MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]->virname);
                         FREE_TDB(root->ac_lsigtable[j]->tdb);
                         MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]);
 
@@ -5489,6 +5575,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
                 cli_pcre_freetable(root);
                 TASK_COMPLETE();
 #endif /* HAVE_PCRE */
+                fuzzy_hash_free_hashmap(root->fuzzy_hashmap);
+                TASK_COMPLETE();
+
                 MPOOL_FREE(engine->mempool, root);
                 TASK_COMPLETE();
             }
@@ -5643,8 +5732,10 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
-                if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
+                if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL) {
                     MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->u.logic);
+                }
+                MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->virname);
                 FREE_TDB(root->ac_lsigtable[i]->tdb);
                 MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]);
 
@@ -5816,8 +5907,10 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
         cli_ac_free(root);
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
-                if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
+                if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL) {
                     MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->u.logic);
+                }
+                MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->virname);
                 FREE_TDB(root->ac_lsigtable[i]->tdb);
                 MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]);
             }

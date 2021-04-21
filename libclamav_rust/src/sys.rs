@@ -729,6 +729,12 @@ pub struct bitset_tag {
 pub type bitset_t = bitset_tag;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+pub struct image_fuzzy_hash {
+    pub hash: [u8; 8usize],
+}
+pub type image_fuzzy_hash_t = image_fuzzy_hash;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct recursion_level_tag {
     pub type_: cli_file_t,
     pub size: size_t,
@@ -736,6 +742,7 @@ pub struct recursion_level_tag {
     pub recursion_level_buffer: u32,
     pub recursion_level_buffer_fmap: u32,
     pub is_normalized_layer: bool,
+    pub image_fuzzy_hash: image_fuzzy_hash_t,
 }
 pub type recursion_level_t = recursion_level_tag;
 #[repr(C)]
@@ -757,7 +764,6 @@ pub struct cli_ctx_tag {
     pub scannedfiles: ::std::os::raw::c_uint,
     pub found_possibly_unwanted: ::std::os::raw::c_uint,
     pub corrupted_input: ::std::os::raw::c_uint,
-    pub img_validate: ::std::os::raw::c_uint,
     pub recursion_stack: *mut recursion_level_t,
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
@@ -1093,6 +1099,13 @@ pub struct cli_ac_result {
     pub offset: off_t,
     pub next: *mut cli_ac_result,
 }
+extern "C" {
+    #[doc = " @brief Increment the count for a subsignature of a logical signature."]
+    #[doc = ""]
+    #[doc = " This is and alternative to lsig_increment_subsig_match() for use in subsigs that don't have a specific offset,"]
+    #[doc = " like byte-compare subsigs and fuzzy-hash subsigs."]
+    pub fn lsig_increment_subsig_match(mdata: *mut cli_ac_data, lsig_id: u32, subsig_id: u32);
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_bm_patt {
@@ -1152,7 +1165,6 @@ pub struct cli_pcre_data {
 #[derive(Debug, Copy, Clone)]
 pub struct cli_pcre_meta {
     pub trigger: *mut ::std::os::raw::c_char,
-    pub virname: *mut ::std::os::raw::c_char,
     pub lsigid: [u32; 3usize],
     pub pdata: cli_pcre_data,
     pub offdata: [u32; 4usize],
@@ -1166,7 +1178,6 @@ pub struct cli_pcre_meta {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_bcomp_meta {
-    pub virname: *mut ::std::os::raw::c_char,
     pub ref_subsigid: u16,
     pub lsigid: [u32; 3usize],
     pub offset: ssize_t,
@@ -1223,7 +1234,7 @@ pub struct cli_ac_lsig {
     pub type_: lsig_type_t,
     pub flag: u8,
     pub u: cli_ac_lsig__bindgen_ty_1,
-    pub virname: *const ::std::os::raw::c_char,
+    pub virname: *mut ::std::os::raw::c_char,
     pub tdb: cli_lsig_tdb,
 }
 #[repr(C)]
@@ -1232,6 +1243,7 @@ pub union cli_ac_lsig__bindgen_ty_1 {
     pub logic: *mut ::std::os::raw::c_char,
     pub code_start: *mut u8,
 }
+pub type hashmap_ptr_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_matcher {
@@ -1271,6 +1283,7 @@ pub struct cli_matcher {
     pub pcre_absoff_num: u32,
     pub bcomp_metas: u32,
     pub bcomp_metatable: *mut *mut cli_bcomp_meta,
+    pub fuzzy_hashmap: hashmap_ptr_t,
     pub linked_bcs: u32,
     pub mempool: *mut mpool_t,
 }

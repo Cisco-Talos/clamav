@@ -269,17 +269,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         return CL_EMEM;
     }
 
-    pm->virname = (char *)CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
-    if (!pm->virname) {
-        cli_errmsg("cli_pcre_addpatt: Unable to allocate memory for virname or NULL virname\n");
-        cli_pcre_freemeta(root, pm);
-        MPOOL_FREE(root->mempool, pm);
-        return CL_EMEM;
-    }
-
     if (lsigid) {
-        root->ac_lsigtable[lsigid[0]]->virname = pm->virname;
-
         pm->lsigid[0] = 1;
         pm->lsigid[1] = lsigid[0];
         pm->lsigid[2] = lsigid[1];
@@ -735,7 +725,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                             ret = CL_EMEM;
                             break;
                         }
-                        newres->virname    = pm->virname;
+                        newres->virname    = "test";
                         newres->customdata = NULL; /* get value? */
                         newres->next       = *res;
                         newres->offset     = adjbuffer + p_res.match[0];
@@ -744,9 +734,9 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                         ret           = CL_CLEAN;
                         viruses_found = 1;
                         if (ctx)
-                            ret = cli_append_virus(ctx, (const char *)pm->virname);
+                            ret = cli_append_virus(ctx, "test");
                         if (virname)
-                            *virname = pm->virname;
+                            *virname = "test";
                         if (!ctx || !SCAN_ALLMATCHES)
                             if (ret != CL_CLEAN)
                                 break;
@@ -791,11 +781,6 @@ void cli_pcre_freemeta(struct cli_matcher *root, struct cli_pcre_meta *pm)
     if (pm->trigger) {
         MPOOL_FREE(root->mempool, pm->trigger);
         pm->trigger = NULL;
-    }
-
-    if (pm->virname) {
-        MPOOL_FREE(root->mempool, pm->virname);
-        pm->virname = NULL;
     }
 
     if (pm->statname) {

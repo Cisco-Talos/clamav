@@ -75,6 +75,8 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     char *comp_start     = NULL;
     char *comp_end       = NULL;
 
+    UNUSEDPARAM(options);
+
     if (!hexsig || !(*hexsig) || !root || !virname) {
         return CL_ENULLARG;
     }
@@ -91,18 +93,8 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
         return CL_EMEM;
     }
 
-    /* allocate virname space with the root structure's mempool instance */
-    bcomp->virname = (char *)CLI_MPOOL_VIRNAME(root->mempool, virname, options & CL_DB_OFFICIAL);
-    if (!bcomp->virname) {
-        cli_errmsg("cli_bcomp_addpatt: Unable to allocate memory for virname or NULL virname\n");
-        cli_bcomp_freemeta(root, bcomp);
-        return CL_EMEM;
-    }
-
     /* bring along the standard lsigid vector, first param marks validity of vector, 2nd is lsigid, 3rd is subsigid */
     if (lsigid) {
-        root->ac_lsigtable[lsigid[0]]->virname = bcomp->virname;
-
         bcomp->lsigid[0] = 1;
         bcomp->lsigid[1] = lsigid[0];
         bcomp->lsigid[2] = lsigid[1];
@@ -368,7 +360,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     for (i = 0; i < bcomp->comp_count; i++) {
 
         bcomp->comps[i] = (struct cli_bcomp_comp *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_bcomp_comp));
-        if (!bcomp->virname) {
+        if (!bcomp->comps[i]) {
             cli_errmsg("cli_bcomp_addpatt: unable to allocate memory for comp struct\n");
             free(buf);
             free((void *)buf_start);
@@ -460,7 +452,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     size_t i;
-    int val = 0;
+    int val                = 0;
     cl_error_t ret         = CL_SUCCESS;
     cl_error_t bcomp_check = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
@@ -510,7 +502,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
                     ret = CL_EMEM;
                     break;
                 }
-                newres->virname    = bcomp->virname;
+                newres->virname    = "test";
                 newres->customdata = NULL;
                 newres->next       = *res;
                 *res               = newres;
@@ -529,7 +521,13 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
          * Later, the lsig-eval will evaluate the logical condition, based on these counts
          * and will append the virus alert if the whole logical signature matches. */
         if (CL_VIRUS == bcomp_check) {
-            mdata->lsigcnt[bcomp->lsigid[1]][bcomp->lsigid[2]]++;
+            /* check to see if we are being run in sigtool or not */
+            if (bcomp->lsigid[0]) {
+                mdata->lsigcnt[bcomp->lsigid[1]][bcomp->lsigid[2]]++;
+            } else {
+                /* Run by sigtool's --test-sigs feature without context of whole lsig or previous subsigs */
+                ret = cli_append_virus(ctx, "test");
+            }
         }
     }
 
@@ -994,11 +992,6 @@ void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm)
 
     if (!root || !bm) {
         return;
-    }
-
-    if (bm->virname) {
-        MPOOL_FREE(root->mempool, bm->virname);
-        bm->virname = NULL;
     }
 
     /* can never have more than 2 */

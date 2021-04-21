@@ -159,6 +159,10 @@ typedef struct bitset_tag {
     unsigned long length;
 } bitset_t;
 
+typedef struct image_fuzzy_hash {
+    uint8_t hash[8];
+} image_fuzzy_hash_t;
+
 typedef struct recursion_level_tag {
     cli_file_t type;
     size_t size;
@@ -166,8 +170,8 @@ typedef struct recursion_level_tag {
     uint32_t recursion_level_buffer;      /* Which buffer layer in scan recursion. */
     uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
     bool is_normalized_layer;             /* Indicates that the layer should be skipped when checking container and intermediate types. */
+    image_fuzzy_hash_t image_fuzzy_hash;  /* Used for image/graphics files to store a fuzzy hash. */
 } recursion_level_t;
-// #define CONTAINER_FLAG_VALID 0x01
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
@@ -184,7 +188,6 @@ typedef struct cli_ctx_tag {
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     unsigned int corrupted_input;
-    unsigned int img_validate;
     recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
