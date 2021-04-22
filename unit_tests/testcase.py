@@ -30,11 +30,14 @@ CHUNK_SIZE = 100
 
 loggers = {}
 
+#TODO: replace w/ this when Python 3.5 support is dropped.
+# class CmdResult(NamedTuple):
+#     ec: int
+#     out: bytes
+#     err: bytes
 
-class CmdResult(NamedTuple):
-    ec: int
-    out: bytes
-    err: bytes
+# Use older Python 3.5 syntax.
+CmdResult = NamedTuple('CmdResult', [('ec', int), ('out', bytes), ('err', bytes)])
 
 class TestCase(unittest.TestCase):
     """
