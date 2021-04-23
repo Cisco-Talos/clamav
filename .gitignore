@@ -19,62 +19,6 @@ __pycache__/
 .ninja_deps
 .ninja_log
 
-# http://www.gnu.org/software/automake
-Makefile.in
-/config/ar-lib
-/config/test-driver
-/config/ylwrap
-/libclamav/c++/config/ar-lib
-/mdate-sh
-/py-compile
-
-# http://www.gnu.org/software/autoconf
-autom4te.cache
-/autoscan.log
-/autoscan-*.log
-/configure
-/libclamav/c++/configure
-/configure.scan
-/aclocal.m4
-/config/compile
-/config/config.guess
-/config/config.log
-/config/config.status
-/config/config.sub
-/config/depcomp
-/config/install-sh
-/config/missing
-/libclamav/c++/aclocal.m4
-/libclamav/c++/config/compile
-/libclamav/c++/config/config.guess
-/libclamav/c++/config/config.log
-/libclamav/c++/config/config.status
-/libclamav/c++/config/config.sub
-/libclamav/c++/config/depcomp
-/libclamav/c++/config/install-sh
-/libclamav/c++/config/missing
-/stamp-h1
-.deps
-.libs
-
-# https://www.gnu.org/software/libtool/
-/config/ltmain.sh
-/libclamav/c++/config/ltmain.sh
-/libltdl
-
-# http://www.gnu.org/software/m4/
-m4/ltdl.m4
-m4/libtool.m4
-m4/ltoptions.m4
-m4/ltsugar.m4
-m4/ltversion.m4
-m4/lt~obsolete.m4
-libclamav/c++/m4/libtool.m4
-libclamav/c++/m4/ltoptions.m4
-libclamav/c++/m4/ltsugar.m4
-libclamav/c++/m4/ltversion.m4
-libclamav/c++/m4/lt~obsolete.m4
-
 # C Prerequisites
 *.d
 

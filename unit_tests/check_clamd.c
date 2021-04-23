@@ -140,7 +140,7 @@ static void conn_teardown(void)
 #define FOUNDREPLY "clam.exe: ClamAV-Test-File.UNOFFICIAL FOUND"
 
 /* some clean file */
-#define CLEANFILE SRCDIR PATHSEP "Makefile.am"
+#define CLEANFILE SRCDIR PATHSEP "CMakeLists.txt"
 #define CLEANREPLY CLEANFILE ": OK"
 #define UNKNOWN_REPLY "UNKNOWN COMMAND"
 

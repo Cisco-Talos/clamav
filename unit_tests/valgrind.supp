@@ -120,14 +120,6 @@
    ...
 }
 {
-   lib-ltdl
-   Memcheck:Addr8
-   obj:/libexec/ld-elf*
-   ...
-   obj:/usr/*lib*/libltdl*
-   fun:lt_dlopen
-}
-{
    bsd-iconv-openat
    Memcheck:Param
    openat(filename)

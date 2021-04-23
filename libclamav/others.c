@@ -61,13 +61,9 @@
 #include <libxml/parser.h>
 #endif
 
-#ifdef HAVE_LTDL
-#include "ltdl.h"
-#else // !HAVE_LTDL
 #ifndef _WIN32
 #include <dlfcn.h>
 #endif
-#endif // !HAVE_LTDL
 
 #include "clamav.h"
 #include "others.h"
@@ -93,82 +89,6 @@ static int is_rar_inited = 0;
 
 #define PASTE2(a, b) a #b
 #define PASTE(a, b) PASTE2(a, b)
-
-#ifdef HAVE_LTDL
-
-static int warn_dlerror(const char *msg)
-{
-    const char *err = lt_dlerror();
-    if (err)
-        cli_warnmsg("%s: %s\n", msg, err);
-    else
-        cli_warnmsg("%s\n", err);
-    return 0;
-}
-
-static int lt_init(void)
-{
-    if (lt_dlinit()) {
-        warn_dlerror("Cannot init ltdl - unrar support unavailable");
-        return -1;
-    }
-    return 0;
-}
-
-static void *load_module(const char *name, const char *featurename)
-{
-    static const char *suffixes[] = {
-        LT_MODULE_EXT "." LIBCLAMAV_FULLVER,
-        PASTE(LT_MODULE_EXT ".", LIBCLAMAV_MAJORVER),
-        LT_MODULE_EXT,
-        "." LT_LIBEXT};
-
-    const char *searchpath;
-    const lt_dlinfo *info;
-    char modulename[128];
-    lt_dlhandle rhandle;
-    unsigned i;
-
-    if (lt_dladdsearchdir(SEARCH_LIBDIR)) {
-        cli_dbgmsg("lt_dladdsearchdir failed for %s\n", SEARCH_LIBDIR);
-    }
-
-    searchpath = lt_dlgetsearchpath();
-    if (!searchpath)
-        searchpath = "";
-
-    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
-    for (i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-        snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
-        rhandle = lt_dlopen(modulename);
-        if (rhandle)
-            break;
-        cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
-    }
-
-    if (!rhandle) {
-        const char *err = lt_dlerror();
-        if (!err) err = "";
-#ifdef WARN_DLOPEN_FAIL
-        cli_warnmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
-#else
-        cli_dbgmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
-#endif
-        return rhandle;
-    }
-
-    info = lt_dlgetinfo(rhandle);
-    if (info)
-        cli_dbgmsg("%s support loaded from %s %s\n", featurename, info->filename ? info->filename : "?", info->name ? info->name : "");
-    return (void *)rhandle;
-}
-
-static void *get_module_function(lt_dlhandle handle, const char *name)
-{
-    return lt_dlsym(handle, name);
-}
-
-#else // !HAVE_LTDL
 
 static void *load_module(const char *name, const char *featurename)
 {
@@ -358,8 +278,6 @@ static void *get_module_function(void *handle, const char *name)
 }
 #endif // !_WIN32
 
-#endif // !HAVE_LTDL
-
 static void rarload(void)
 {
 #ifdef _WIN32
@@ -505,13 +423,7 @@ cl_error_t cl_init(unsigned int initoptions)
 
     cl_initialize_crypto();
 
-#ifdef HAVE_LTDL
-    if (lt_init() == 0) {
-        rarload();
-    }
-#else
     rarload();
-#endif
 
     gettimeofday(&tv, (struct timezone *)0);
     srand(pid + tv.tv_usec * (pid + 1) + clock());

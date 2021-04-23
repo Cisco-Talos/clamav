@@ -14,12 +14,21 @@ ClamAV 0.104.0 includes the following improvements and changes.
   `sudo make install`).
 
   We have added comprehensive build instructions for using CMake to the new
-  `INSTALL.cmake.md` file. The online documentation will also be updated to
-  include CMake build instructions.
+  [`INSTALL.md`](INSTALL.md) file. The online documentation will also be
+  updated to include CMake build instructions.
 
-  The Autotools build system is still available if you need it but is expected
-  to be removed in the next feature release. The Visual Studio build system has
-  been removed.
+  The Autotools and the Visual Studio build system have been removed.
+
+- The built-in LLVM has been removed. The bytecode runtime is now limited to
+  using an external LLVM library (preferred) or if a compatible LLVM library
+  is not available, using the internal bytecode interpreter.
+
+  Using LLVM is preferred because although signature load time is slower,
+  signature runtime can be much faster, depending on how complex the bytecode
+  signature is.
+
+  When building from source, see [`INSTALL.md`](INSTALL.md#bytecode-runtime) to
+  learn how to select bytecode runtime.
 
 - There are now official ClamAV images on Docker Hub.
   You can find the images on [Docker Hub under `clamav`](https://hub.docker.com/r/clamav/clamav).
@@ -306,7 +315,7 @@ ClamAV 0.103.0 includes the following improvements and changes.
   CMake build tooling so we can one day deprecate Autotools and remove the
   Visual Studio solutions.
 
-  Please see the new [CMake installation instructions](INSTALL.cmake.md) for
+  Please see the new [CMake installation instructions](INSTALL.md) for
   detailed instructions on how to build ClamAV with CMake.
 
 - Added `--ping` and `--wait` options to the `clamdscan` and `clamonacc` client
