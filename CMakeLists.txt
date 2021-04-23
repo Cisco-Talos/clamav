@@ -257,8 +257,11 @@ if(ENABLE_TESTS)
 endif()
 
 #
-# Find Library Dependencies
+# Configure CPack
+#  - for installers
+#  - for source tarball
 #
+
 if (WIN32)
     find_package(PThreadW32)
     set(HAVE_PTHREAD_H 1)
