@@ -247,13 +247,17 @@ if(ENABLE_TESTS)
 endif()
 
 #
-# Find Library Dependencies
+# Configure CPack
+#  - for installers
+#  - for source tarball
 #
+
 if (WIN32)
     set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
     include(InstallRequiredSystemLibraries)
 
     set(CPACK_GENERATOR                  "ZIP;WIX")
+    set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
     SET(CPACK_WIX_UPGRADE_GUID           D9F136C1-3691-47E3-9079-4FE9C9C5EB32)
     SET(CPACK_RESOURCE_FILE_LICENSE      ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt)
     SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
@@ -262,7 +266,25 @@ if (WIN32)
     SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
     include(CPack)
+elseif(APPLE)
+    # TODO: generate macOS installer.
+else()
+    set(CPACK_SOURCE_GENERATOR "TGZ")
+    set(CPACK_SOURCE_PACKAGE_FILE_NAME clamav-${PROJECT_VERSION}${VERSION_SUFFIX})
+    set(CPACK_SOURCE_IGNORE_FILES
+        \\.git/
+        ".*~$"
+    )
+    list(APPEND CPACK_SOURCE_IGNORE_FILES "^${CMAKE_BINARY_DIR}")
 
+    set(CPACK_VERBATIM_VARIABLES YES)
+    include(CPack)
+endif()
+
+#
+# Find Library Dependencies
+#
+if (WIN32)
     find_package(PThreadW32)
     set(HAVE_PTHREAD_H 1)
     set(_REENTRANT 1)
