@@ -167,7 +167,7 @@ void LLVMInitializePowerPCAsmPrinter();
 //#define TIMING
 #undef TIMING
 
-#include "llvm/Config/config.h"
+#include "llvm/Config/llvm-config.h"
 #ifdef ENABLE_THREADS
 #if !ENABLE_THREADS
 #error "Thread support was explicitly disabled. Cannot continue"

@@ -22,7 +22,7 @@
  */
 
 #include "llvm/ADT/Triple.h"
-#include "llvm/Config/config.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/raw_ostream.h"
 #if LLVM_VERSION < 29
 #include "llvm/System/DataTypes.h"

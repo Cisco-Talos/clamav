@@ -257,11 +257,14 @@ if(LLVM_FOUND)
         PRIVATE
             c++/detect.cpp
             c++/ClamBCRTChecks.cpp
+            c++/PointerTracking.cpp
             c++/bytecode2llvm.cpp
             bytecode_priv.h
             bytecode.h )
     set_target_properties( bytecode_runtime PROPERTIES
         COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}" )
+    target_compile_definitions( bytecode_runtime PRIVATE -D LLVM_VERSION=${LLVM_VERSION} )
+    target_include_directories( bytecode_runtime PRIVATE ${LLVM_INCLUDE_DIRS} )
 else()
     target_sources( bytecode_runtime
         PRIVATE
@@ -603,8 +606,8 @@ if(ENABLE_SHARED_LIB)
     endif()
 
     if(LLVM_FOUND)
-        target_link_directories( clamav PRIVATE ${LLVM_LIBRARY_DIRS} )
-        target_link_libraries( clamav PRIVATE ${LLVM_LIBRARIES} )
+        target_link_directories( clamav PUBLIC ${LLVM_LIBRARY_DIRS} )
+        target_link_libraries( clamav PUBLIC ${LLVM_LIBRARIES} )
     endif()
 
     add_library( ClamAV::libclamav ALIAS clamav )

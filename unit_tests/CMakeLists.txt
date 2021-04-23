@@ -84,6 +84,10 @@ if(ENABLE_APP)
             PRIVATE
                 ClamAV::libunrar_iface_static)
     endif()
+    if(LLVM_FOUND)
+        target_link_directories( check_fpu_endian PUBLIC ${LLVM_LIBRARY_DIRS} )
+        target_link_libraries( check_fpu_endian PUBLIC ${LLVM_LIBRARIES} )
+    endif()
     target_include_directories(check_fpu_endian PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
     target_compile_definitions(check_fpu_endian PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
 
@@ -117,6 +121,10 @@ if(ENABLE_APP)
         target_link_libraries(check_clamd
             PRIVATE
                 ClamAV::libunrar_iface_static)
+    endif()
+    if(LLVM_FOUND)
+        target_link_directories( check_clamd PUBLIC ${LLVM_LIBRARY_DIRS} )
+        target_link_libraries( check_clamd PUBLIC ${LLVM_LIBRARIES} )
     endif()
     target_include_directories(check_clamd PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
     target_compile_definitions(check_clamd PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
@@ -163,6 +171,10 @@ else()
     target_link_libraries(check_clamav
         PRIVATE
             ClamAV::libunrar_iface_static)
+endif()
+if(LLVM_FOUND)
+    target_link_directories( check_clamav PUBLIC ${LLVM_LIBRARY_DIRS} )
+    target_link_libraries( check_clamav PUBLIC ${LLVM_LIBRARIES} )
 endif()
 target_include_directories(check_clamav PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
 target_compile_definitions(check_clamav PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")

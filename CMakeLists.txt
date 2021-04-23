@@ -8,8 +8,8 @@ endif()
 
 set(CMAKE_C_STANDARD 90)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# CMAKE_CXX_STANDARD not set because we may need to match the compiler used to build LLVM.
+# There's probably a good chance this issue will go away if using modern LLVM versions.
 cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) and install(SCRIPT)
 
 # Change this on a release:
@@ -348,6 +348,7 @@ if(BYTECODE_RUNTIME STREQUAL "llvm")
     if(LLVM_FOUND)
         # Set variable required by libclamav to use llvm instead of interpreter
         set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
+        set(LLVM_LIBRARIES "${LLVM_LIBRARIES};-ltinfo")
     endif()
 endif()
 
@@ -958,9 +959,9 @@ endif()
 if(LLVM_FOUND)
 message(STATUS "${C}Engine Options${e} --
 ${b}        Bytecode Runtime:   ${e}
-${_}            ${BYTECODE_RUNTIME}            ${e}${LLVM_INCLUDE_DIRS}
-${_}                            ${e}${LLVM_LDFLAGS} ${LLVM_LIBRARIES}
-${_}                            ${e}${LLVM_LIBRARY_DIRS}")
+${_}            llvm            ${e}${LLVM_INCLUDE_DIRS}
+${_}                            ${e}${LLVM_LIBRARY_DIRS}
+${_}                            ${e}${LLVM_LIBRARIES}")
 else()
 message(STATUS "${C}Engine Options${e} --
 ${b}        Bytecode Runtime:   ${e}
