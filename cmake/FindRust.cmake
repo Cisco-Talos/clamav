@@ -100,6 +100,41 @@ function(find_rust_program RUST_PROGRAM)
     endif()
 endfunction()
 
+function(cargo_vendor)
+    set(options)
+    set(oneValueArgs TARGET WORKING_DIRECTORY)
+    cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT EXISTS ${ARGS_WORKING_DIRECTORY}}/.cargo/config.toml)
+        # Vendor the dependencies and create .cargo/config.toml
+        # Vendored dependencies will be used during the build.
+        # This will allow us to package vendored dependencies in source tarballs
+        # for online builds when we run `cpack --config CPackSourceConfig.cmake`
+        message(STATUS "Running `cargo vendor` to collect dependencies for ${ARGS_TARGET}. This may take a while if the local crates.io index needs to be updated ...")
+        make_directory(${ARGS_WORKING_DIRECTORY}/.cargo)
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} vendor ".cargo/vendor"
+            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            OUTPUT_VARIABLE CARGO_VENDOR_OUTPUT
+            ERROR_VARIABLE  CARGO_VENDOR_ERROR
+            RESULT_VARIABLE CARGO_VENDOR_RESULT
+        )
+        if(NOT ${CARGO_VENDOR_RESULT} EQUAL 0)
+            message(FATAL_ERROR "Failed!\n${CARGO_VENDOR_ERROR}")
+        else()
+            message("Success!")
+        endif()
+        write_file(${ARGS_WORKING_DIRECTORY}/.cargo/config.toml "
+[source.crates-io]
+replace-with = \"vendored-sources\"
+
+[source.vendored-sources]
+directory = \".cargo/vendor\"
+"
+        )
+    endif()
+endfunction()
+
 function(add_rust_library)
     set(options)
     set(oneValueArgs TARGET WORKING_DIRECTORY)
@@ -150,6 +185,11 @@ function(add_rust_library)
             IMPORTED_LOCATION "${OUTPUT}"
             INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY}"
     )
+
+    # Vendor the dependencies, if desired
+    if(VENDOR_DEPENDENCIES)
+        cargo_vendor(TARGET "${ARGS_TARGET}" WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}")
+    endif()
 endfunction()
 
 function(add_rust_test)
