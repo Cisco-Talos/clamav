@@ -40,18 +40,16 @@ our images on [Docker Hub](https://hub.docker.com/r/clamav/clamav).
 
 #### Build from Source
 
-For compile and install instructions with CMake, please see
-[INSTALL.cmake.md](INSTALL.cmake.md).
-For install instructions with the (now deprecated) autotools build system, see
-[INSTALL.autotools.md](INSTALL.autotools.md).
+For comprehensive compile and install instructions, please see
+[INSTALL.md](INSTALL.md).
 
-For additional instructions specific to building ClamAV please visit our
-[online documentation](https://www.clamav.net/documents/clam-antivirus-user-manual).
+For step-by-step instructions, see our
+[online documentation](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.htmll).
 
 #### Install from a binary package distribution
 
-For binary package distribution installation instructions, head over to
-[our website](https://www.clamav.net/documents/installing-clamav).
+For binary package distribution installation instructions,
+[see the Packages section in our online documentation](https://docs.clamav.net/manual/Installing/Packages.html).
 
 #### Install using an installer (Windows)
 
@@ -63,11 +61,11 @@ for users that may wish to run ClamAV without installing it to a system-owned
 directory.
 
 For details on how to use either option, head over to the
-[Windows Install instructions in the User Manual](https://www.clamav.net/documents/installing-clamav-on-windows).
+[Windows Install instructions in the User Manual](https://docs.clamav.net/manual/Installing.html).
 
 ### Upgrading from a previous version
 
-Some tips on [how to upgrade](https://www.clamav.net/documents/upgrading-clamav)
+Some tips on [how to upgrade](https://docs.clamav.net/faq/faq-upgrade.html)
  from a previous version of ClamAV.
 
 ## ClamAV News
@@ -81,15 +79,23 @@ Catch up on the latest about ClamAV by reading our
 ## Join the ClamAV Community
 
 The best way to get in touch with the ClamAV community is to join our
-[mailing lists](https://www.clamav.net/documents/mailing-lists-faq) and tune to
-#clamav on [IRC](irc.freenode.net) or [Discord](https://discord.gg/6vNAqWnVgw).
+[mailing lists](https://docs.clamav.net/faq/faq-ml.html).
+
+You can also join the community on our
+[ClamAV Discord chat server](https://discord.gg/6vNAqWnVgw). If you prefer IRC,
+the Discord `#general`, and `#irc-verbose` channels are bridged with the
+`#clamav` IRC channel on `irc.freenode.net` using a pair of bots to relay
+messages.
 
 ## Want to make a contribution?
 
 The ClamAV development team welcomes
 [code contributions](https://github.com/Cisco-Talos/clamav-devel),
-improvements to [our documentation](https://github.com/Cisco-Talos/clamav-faq),
-and also [bug reports](https://bugzilla.clamav.net/). Thanks for joining us!
+improvements to
+[our documentation](https://github.com/Cisco-Talos/clamav-documentation),
+and also [bug reports](https://github.com/Cisco-Talos/clamav-devel/issues).
+
+Thanks for joining us!
 
 ## Licensing
 
@@ -105,7 +111,6 @@ whole from 3rd party projects and whose code is not owned by Cisco and which
 are licensed differently than ClamAV. These include:
 
 - tomsfastmath:  public domain
-- LLVM: Illinois Open Source License (BSD-like)
 - Yara: Apache 2.0 license
   - Yara has since switched to the BSD 3-Clause License;
     Our source is out-of-date and needs to be updated.
