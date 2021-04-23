@@ -4,6 +4,7 @@
 Run freshclam tests
 """
 
+import getpass
 from multiprocessing import Process, Pipe
 import os
 from pathlib import Path
@@ -103,11 +104,13 @@ class TC(testcase.TestCase):
             ExcludeDatabase daily
             ExcludeDatabase main
             ExcludeDatabase bytecode
+            DatabaseOwner {user}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
             file_db=TC.path_www / "clamav.hdb",
             port=TC.mock_mirror_port,
+            user=getpass.getuser(),
         ))
 
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config}'.format(
@@ -142,10 +145,12 @@ class TC(testcase.TestCase):
             LogFileMaxSize 0
             LogTime yes
             DatabaseDirectory {path_db}
+            DatabaseOwner {user}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
             port=TC.mock_mirror_port,
+            user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
@@ -178,10 +183,12 @@ class TC(testcase.TestCase):
             LogFileMaxSize 0
             LogTime yes
             DatabaseDirectory {path_db}
+            DatabaseOwner {user}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
             port=TC.mock_mirror_port,
+            user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily --daemon -F'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
@@ -214,10 +221,12 @@ class TC(testcase.TestCase):
             LogFileMaxSize 0
             LogTime yes
             DatabaseDirectory {path_db}
+            DatabaseOwner {user}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
             port=TC.mock_mirror_port,
+            user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
