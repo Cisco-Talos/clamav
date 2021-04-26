@@ -106,12 +106,20 @@ fn main() {
 
 #[cfg(unix)]
 fn main() {
-    pkg_config::Config::new()
+    let libclamav = pkg_config::Config::new()
         .atleast_version("0.103")
         .probe("libclamav")
         .unwrap();
 
+    let mut include_paths = libclamav.include_paths.clone();
+
+    if let Some(val) = std::env::var_os("OPENSSL_ROOT_DIR") {
+        let mut openssl_include_dir = PathBuf::from(val);
+        openssl_include_dir.push("include");
+        include_paths.push(openssl_include_dir);
+    }
+
     cargo_common();
-    generate_bindings(&|x| x);
+    generate_bindings(&|x: bindgen::Builder| -> bindgen::Builder {let mut x = x; for include_path in &include_paths {x = x.clang_arg("-I").clang_arg(include_path.to_str().unwrap());}; x});
 }
 
