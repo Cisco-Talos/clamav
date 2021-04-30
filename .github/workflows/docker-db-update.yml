@@ -1,0 +1,15 @@
+name: Docker image virus database update
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+
+jobs:
+  update-image-databases:
+    runs-on: ubuntu-latest
+    env:
+      CLAMAV_DOCKER_USER: ${{ secrets.CLAMAV_DOCKER_USER }}
+      CLAMAV_DOCKER_PASSWD: ${{ secrets.CLAMAV_DOCKER_PASSWD }}
+    steps:
+      - name: Update virus database and push image
+        run: ./dockerfiles/update_db_image.sh

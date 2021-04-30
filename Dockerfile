@@ -40,11 +40,7 @@ RUN apk add --no-cache \
         py3-pytest \
         zlib-dev \
     && \
-    addgroup -S "clamav" && \
-    adduser -D -G "clamav" -h "/var/lib/clamav" -s "/bin/false" -S "clamav" && \
-    install -d -m 755 -g "clamav" -o "clamav" "/var/log/clamav" && \
-    mkdir -p "./build" && \
-    cd "./build" && \
+    mkdir -p "./build" && cd "./build" && \
     cmake .. \
           -DCMAKE_BUILD_TYPE="Release" \
           -DCMAKE_INSTALL_PREFIX="/usr" \

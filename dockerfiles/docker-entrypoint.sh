@@ -14,6 +14,9 @@ if [ ! -d "/run/clamav" ]; then
 	install -d -g "clamav" -m 775 -o "clamav" "/run/clamav"
 fi
 
+# Assign ownership to the database directory, just in case it is a mounted volume
+chown -R clamav:clamav /var/lib/clamav
+
 # run command if it is not starting with a "-" and is an executable in PATH
 if [ "${#}" -gt 0 ] && \
    [ "${1#-}" = "${1}" ] && \
@@ -38,7 +41,7 @@ else
 		freshclam --foreground --stdout
 	fi
 
-	if [ "${CLAMAV_NO_CLAMD:-}" != "true" ]; then
+	if [ "${CLAMAV_NO_CLAMD:-false}" != "true" ]; then
 		echo "Starting ClamAV"
 		if [ -S "/run/clamav/clamd.sock" ]; then
 			unlink "/run/clamav/clamd.sock"
@@ -57,7 +60,7 @@ else
 		echo "socket found, clamd started."
 	fi
 
-	if [ "${CLAMAV_NO_FRESHCLAMD:-}" != "true" ]; then
+	if [ "${CLAMAV_NO_FRESHCLAMD:-false}" != "true" ]; then
 		echo "Starting Freshclamd"
 		freshclam \
 		          --checks="${FRESHCLAM_CHECKS:-1}" \
@@ -68,7 +71,7 @@ else
 			  &
 	fi
 
-	if [ "${CLAMAV_NO_MILTERD:-}" != "true" ]; then
+	if [ "${CLAMAV_NO_MILTERD:-true}" != "true" ]; then
 		echo "Starting clamav milterd"
 		clamav-milter &
 	fi

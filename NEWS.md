@@ -21,6 +21,43 @@ ClamAV 0.104.0 includes the following improvements and changes.
   to be removed in the next feature release. The Visual Studio build system has
   been removed.
 
+- There are now official ClamAV images on Docker Hub.
+  You can find the images on [Docker Hub under `clamav`](https://hub.docker.com/r/clamav/clamav).
+
+  Docker Hub ClamAV tags:
+
+  - `clamav/clamav:<version>`: A release preloaded with signature databases.
+
+    Using this container will save the ClamAV project some bandwidth.
+    Use this if you will keep the image around so that you don't download the
+    entire database set every time you start a new container. Updating with
+    FreshClam from existing databases set does not use much data.
+
+  - `clamav/clamav:<version>_base`: A release with no signature databases.
+
+    Use this container **only** if you mount a volume in your container under
+    `/var/lib/clamav` to persist your signature database databases.
+    This method is the best option because it will reduce data costs for ClamAV
+    and for the Docker registry, but it does require advanced familiarity with
+    Linux and Docker.
+
+    > _Caution_: Using this image without mounting an existing database
+    directory will cause FreshClam to download the entire database set each
+    time you start a new container.
+
+  You can use the `unstable` version (i.e. `clamav/clamav:unstable` or
+  `clamav/clamav:unstable_base`) to try the latest from our development branch.
+
+  Please, be kind when using 'free' bandwidth, both for the virus databases
+  but also the Docker registry. Try not to download the entire database set or
+  the larger ClamAV database images on a regular basis.
+
+  For more details, see
+  [the ClamAV Docker documentation](https://github.com/Cisco-Talos/clamav-devel/blob/main/README.Docker.md).
+
+  Special thanks to Olliver Schinagl for his excellent work creating ClamAV's
+  new Docker files, image database deployment tooling, and user documentation.
+
 ### Notable changes
 
 The following was added in 0.103.1 and is repeated here for awareness, as
@@ -65,6 +102,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Brian Bergstrand
 - cw2k
 - Duane Waddle
+- Olliver Schinagl
 - Orion Poplawski
 - Sergey Valentey
 - Sven Rueß
