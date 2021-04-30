@@ -238,6 +238,10 @@ static int chkpath(const char *path)
 {
     const struct optstruct *opt;
 
+    if (!path) {
+        return 1;
+    }
+
     if ((opt = optget(clamdopts, "ExcludePath"))->enabled) {
         while (opt) {
             if (match_regex(path, opt->strarg) == 1) {
