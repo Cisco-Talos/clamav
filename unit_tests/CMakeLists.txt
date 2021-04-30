@@ -260,48 +260,48 @@ set(ENVIRONMENT
 # Run a specific test like this:
 #                     `ctest -V -R libclamav_valgrind_test`
 #
-add_test(NAME libclamav COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};libclamav_test.py
+add_test(NAME libclamav COMMAND ${PythonTest_COMMAND};libclamav_test.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TEST libclamav PROPERTY ENVIRONMENT ${ENVIRONMENT})
 if(Valgrind_FOUND)
-    add_test(NAME libclamav_valgrind COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};libclamav_test.py
+    add_test(NAME libclamav_valgrind COMMAND ${PythonTest_COMMAND};libclamav_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
 endif()
 
 if(ENABLE_APP)
-    add_test(NAME clamscan COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};clamscan_test.py
+    add_test(NAME clamscan COMMAND ${PythonTest_COMMAND};clamscan_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST clamscan PROPERTY ENVIRONMENT ${ENVIRONMENT})
     if(Valgrind_FOUND)
-        add_test(NAME clamscan_valgrind COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};clamscan_test.py
+        add_test(NAME clamscan_valgrind COMMAND ${PythonTest_COMMAND};clamscan_test.py
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST clamscan_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
 
-    add_test(NAME clamd COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};clamd_test.py
+    add_test(NAME clamd COMMAND ${PythonTest_COMMAND};clamd_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST clamd PROPERTY ENVIRONMENT ${ENVIRONMENT})
     if(Valgrind_FOUND)
-        add_test(NAME clamd_valgrind COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};clamd_test.py
+        add_test(NAME clamd_valgrind COMMAND ${PythonTest_COMMAND};clamd_test.py
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST clamd_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
 
-    add_test(NAME freshclam COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};freshclam_test.py
+    add_test(NAME freshclam COMMAND ${PythonTest_COMMAND};freshclam_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST freshclam PROPERTY ENVIRONMENT ${ENVIRONMENT})
     if(Valgrind_FOUND)
-        add_test(NAME freshclam_valgrind COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};freshclam_test.py
+        add_test(NAME freshclam_valgrind COMMAND ${PythonTest_COMMAND};freshclam_test.py
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST freshclam_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
 
-    add_test(NAME sigtool COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};sigtool_test.py
+    add_test(NAME sigtool COMMAND ${PythonTest_COMMAND};sigtool_test.py
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST sigtool PROPERTY ENVIRONMENT ${ENVIRONMENT})
     if(Valgrind_FOUND)
-        add_test(NAME sigtool_valgrind COMMAND ${Python3_EXECUTABLE} -m;${Python3_TEST_PACKAGE};sigtool_test.py
+        add_test(NAME sigtool_valgrind COMMAND ${PythonTest_COMMAND};sigtool_test.py
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST sigtool_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()

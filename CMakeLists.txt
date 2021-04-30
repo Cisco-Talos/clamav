@@ -194,25 +194,50 @@ if(ENABLE_TESTS)
     # Used to generate the test files and for the application feature test framework
     find_package(Python3 REQUIRED)
 
+    # First try using pytest from the PATH
     execute_process(
         COMMAND pytest --version
         RESULT_VARIABLE PYTEST_EXIT_CODE
         ERROR_QUIET OUTPUT_QUIET
     )
 
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} -m pip show pytest
-        RESULT_VARIABLE PIP_EXIT_CODE
-        ERROR_QUIET OUTPUT_QUIET
-    )
-
-    if ((NOT ${PYTEST_EXIT_CODE} EQUAL 0) AND (NOT ${PIP_EXIT_CODE} EQUAL 0))
-        message("Python3 package 'pytest' is not installed.")
-        message("Failed unit tests will be easier to read if you install pytest.")
-        message("Eg:  python3 -m pip install --user pytest")
-        set(Python3_TEST_PACKAGE "unittest;--verbose")
+    if(${PYTEST_EXIT_CODE} EQUAL 0)
+        # pytest found in the path.
+        set(PythonTest_COMMAND "pytest;-v")
     else()
-        set(Python3_TEST_PACKAGE "pytest;-v")
+        # Not in the path, try using: python3 -m pytest
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m pytest --version
+            RESULT_VARIABLE PYTEST_MODULE_EXIT_CODE
+            ERROR_QUIET OUTPUT_QUIET
+        )
+
+        if(${PYTEST_MODULE_EXIT_CODE} EQUAL 0)
+            # pytest isn't in the path, but the Python 3 we found has it.
+            set(PythonTest_COMMAND "${Python3_EXECUTABLE};-m;pytest;-v")
+        else()
+            # pytest couldn't be found, verify that we can at least use: python3 -m unittest
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m unittest --help
+                RESULT_VARIABLE UNITTEST_MODULE_EXIT_CODE
+                ERROR_QUIET OUTPUT_QUIET
+            )
+
+            if(${UNITTEST_MODULE_EXIT_CODE} EQUAL 0)
+                # No pytest :-(, but we'll get by with unittest
+                message("Python 3 package 'pytest' is not installed for ${Python3_EXECUTABLE} and is not available in your PATH.")
+                message("Failed unit tests will be easier to read if you install pytest.")
+                message("Eg:  python3 -m pip install --user pytest")
+
+                set(PythonTest_COMMAND "${Python3_EXECUTABLE};-m;unittest;--verbose")
+            else()
+                # No unittest either!
+                # Some weird Python installations do exist that lack standard modules like unittest.
+                # Let's make sure these folks know the Python 3 install we found won't cut it.
+                message("Python 3 found: ${Python3_EXECUTABLE}, but it is missing the unittest module (wierd!).")
+                message(FATAL_ERROR "The tests won't work with this Python installation. You can disable the tests by reconfiguring with: -D ENABLE_TESTS=OFF")
+            endif()
+        endif()
     endif()
 
     # Check for valgrind. If it exists, we'll enable extra tests that use valgrind.
@@ -925,7 +950,8 @@ ${b}        Unit Test Framework:${e}
 ${_}            libcheck        ${e}${LIBCHECK_INCLUDE_DIR}
 ${_}                            ${e}${LIBCHECK_LIBRARY}
 ${b}        Feature Test Framework:${e}
-${_}            python3         ${e}${Python3_EXECUTABLE}")
+${_}            python3         ${e}${Python3_EXECUTABLE}
+${_}            test command    ${e}${PythonTest_COMMAND}")
 endif()
 message(STATUS "${C}libclamav Dependencies${e} --
 ${b}        Compression support:${e}
