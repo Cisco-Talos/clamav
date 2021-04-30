@@ -236,6 +236,10 @@ static int send_fdpass(int sockd, const char *filename)
 /* 0: scan, 1: skip */
 static int chkpath(const char *path)
 {
+    if(!path) {
+      return 1;
+    }
+
     const struct optstruct *opt;
 
     if ((opt = optget(clamdopts, "ExcludePath"))->enabled) {
