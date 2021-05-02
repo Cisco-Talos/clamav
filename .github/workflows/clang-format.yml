@@ -47,7 +47,7 @@ jobs:
             exclude: ''
           - check: 'libfreshclam'
             exclude: ''
-          - check: 'shared'
+          - check: 'common'
             exclude: ''
           - check: 'sigtool'
             exclude: ''
