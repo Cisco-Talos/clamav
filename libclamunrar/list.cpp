@@ -1,6 +1,6 @@
 #include "rar.hpp"
 
-static void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bool Technical,bool Bare);
+static void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bool Technical,bool Bare,bool DisableNames);
 static void ListSymLink(Archive &Arc);
 static void ListFileAttr(uint A,HOST_SYSTEM_TYPE HostType,wchar *AttrStr,size_t AttrSize);
 static void ListOldSubHeader(Archive &Arc);
@@ -28,7 +28,7 @@ void ListArchive(CommandData *Cmd)
     if (!Arc.WOpen(ArcName))
       continue;
     bool FileMatched=true;
-    while (1)
+    while (true)
     {
       int64 TotalPackSize=0,TotalUnpSize=0;
       uint FileCount=0;
@@ -69,7 +69,7 @@ void ListArchive(CommandData *Cmd)
 
         wchar VolNumText[50];
         *VolNumText=0;
-        while(Arc.ReadHeader()>0)
+        while (Arc.ReadHeader()>0)
         {
           Wait(); // Allow quit listing with Ctrl+C.
           HEADER_TYPE HeaderType=Arc.GetHeaderType();
@@ -95,7 +95,7 @@ void ListArchive(CommandData *Cmd)
               FileMatched=Cmd->IsProcessFile(Arc.FileHead,NULL,MATCH_WILDSUBPATH,0,NULL,0)!=0;
               if (FileMatched)
               {
-                ListFileHeader(Arc,Arc.FileHead,TitleShown,Verbose,Technical,Bare);
+                ListFileHeader(Arc,Arc.FileHead,TitleShown,Verbose,Technical,Bare,Cmd->DisableNames);
                 if (!Arc.FileHead.SplitBefore)
                 {
                   TotalUnpSize+=Arc.FileHead.UnpSize;
@@ -108,7 +108,7 @@ void ListArchive(CommandData *Cmd)
               if (FileMatched && !Bare)
               {
                 if (Technical && ShowService)
-                  ListFileHeader(Arc,Arc.SubHead,TitleShown,Verbose,true,false);
+                  ListFileHeader(Arc,Arc.SubHead,TitleShown,Verbose,true,false,Cmd->DisableNames);
               }
               break;
           }
@@ -188,8 +188,29 @@ enum LISTCOL_TYPE {
 };
 
 
-void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bool Technical,bool Bare)
+void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bool Technical,bool Bare,bool DisableNames)
 {
+  if (!TitleShown && !Technical && !Bare)
+  {
+    if (Verbose)
+    {
+      mprintf(L"\n%ls",St(MListTitleV));
+      if (!DisableNames)
+        mprintf(L"\n----------- ---------  -------- ----- ---------- -----  --------  ----");
+    }
+    else
+    {
+      mprintf(L"\n%ls",St(MListTitleL));
+      if (!DisableNames)
+        mprintf(L"\n----------- ---------  ---------- -----  ----");
+    }
+    // Must be set even in DisableNames mode to suppress "0 files" output
+    // unless no files are matched.
+    TitleShown=true;
+  }
+  if (DisableNames)
+    return;
+
   wchar *Name=hd.FileName;
   RARFORMAT Format=Arc.Format;
 
@@ -197,21 +218,6 @@ void ListFileHeader(Archive &Arc,FileHeader &hd,bool &TitleShown,bool Verbose,bo
   {
     mprintf(L"%s\n",Name);
     return;
-  }
-
-  if (!TitleShown && !Technical)
-  {
-    if (Verbose)
-    {
-      mprintf(L"\n%ls",St(MListTitleV));
-      mprintf(L"\n----------- ---------  -------- ----- ---------- -----  --------  ----");
-    }
-    else
-    {
-      mprintf(L"\n%ls",St(MListTitleL));
-      mprintf(L"\n----------- ---------  ---------- -----  ----");
-    }
-    TitleShown=true;
   }
 
   wchar UnpSizeText[30],PackSizeText[30];

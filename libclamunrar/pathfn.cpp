@@ -184,7 +184,9 @@ void MakeName(const wchar *Path,const wchar *Name,wchar *Pathname,size_t MaxSize
   // the temporary buffer instead of constructing the name in 'Pathname'.
   wchar OutName[NM];
   wcsncpyz(OutName,Path,ASIZE(OutName));
-  AddEndSlash(OutName,ASIZE(OutName));
+  // Do not add slash to d:, we want to allow relative paths like d:filename.
+  if (!IsDriveLetter(Path) || Path[2]!=0)
+    AddEndSlash(OutName,ASIZE(OutName));
   wcsncatz(OutName,Name,ASIZE(OutName));
   wcsncpyz(Pathname,OutName,MaxSize);
 }
@@ -655,7 +657,7 @@ wchar* VolNameToFirstName(const wchar *VolName,wchar *FirstName,size_t MaxSize,b
   }
   if (!FileExist(FirstName))
   {
-    // If the first volume, which name we just generated, is not exist,
+    // If the first volume, which name we just generated, does not exist,
     // check if volume with same name and any other extension is available.
     // It can help in case of *.exe or *.sfx first volume.
     wchar Mask[NM];

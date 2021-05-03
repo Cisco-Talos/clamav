@@ -93,7 +93,7 @@ HANDLE PASCAL RAROpenArchiveEx(struct RAROpenArchiveDataEx *r)
       return NULL;
     }
     r->Flags=0;
-
+    
     if (Data->Arc.Volume)
       r->Flags|=ROADF_VOLUME;
     if (Data->Arc.MainComment)
@@ -230,7 +230,7 @@ int PASCAL RARReadHeaderEx(HANDLE hArcData,struct RARHeaderDataEx *D)
       // open callback for RAR5 archives and if password is invalid.
       if (Data->Arc.FailedHeaderDecryption)
         return ERAR_BAD_PASSWORD;
-
+      
       return ERAR_END_ARCHIVE;
     }
     FileHeader *hd=&Data->Arc.FileHead;
@@ -271,7 +271,7 @@ int PASCAL RARReadHeaderEx(HANDLE hArcData,struct RARHeaderDataEx *D)
     D->UnpVer=Data->Arc.FileHead.UnpVer;
     D->FileCRC=hd->FileHash.CRC32;
     D->FileTime=hd->mtime.GetDos();
-
+    
     uint64 MRaw=hd->mtime.GetWin();
     D->MtimeLow=(uint)MRaw;
     D->MtimeHigh=(uint)(MRaw>>32);
@@ -329,7 +329,7 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
   {
     Data->Cmd.DllError=0;
     if (Data->OpenMode==RAR_OM_LIST || Data->OpenMode==RAR_OM_LIST_INCSPLIT ||
-        Operation==RAR_SKIP) // && !Data->Arc.Solid)
+        Operation==RAR_SKIP && !Data->Arc.Solid)
     {
       if (Data->Arc.Volume && Data->Arc.GetHeaderType()==HEAD_FILE &&
           Data->Arc.FileHead.SplitAfter)
@@ -396,7 +396,7 @@ int PASCAL ProcessFile(HANDLE hArcData,int Operation,char *DestPath,char *DestNa
       // if archive is still open to avoid calling file operations on
       // the invalid file handle. Some of our file operations like Seek()
       // process such invalid handle correctly, some not.
-      while (Data->Arc.IsOpened() && Data->Arc.ReadHeader()!=0 &&
+      while (Data->Arc.IsOpened() && Data->Arc.ReadHeader()!=0 && 
              Data->Arc.GetHeaderType()==HEAD_SERVICE)
       {
         Data->Extract.ExtractCurrentFile(Data->Arc,Data->HeaderSize,Repeat);
@@ -474,6 +474,7 @@ static int RarErrorToDll(RAR_EXIT ErrCode)
   switch(ErrCode)
   {
     case RARX_FATAL:
+    case RARX_READ:
       return ERAR_EREAD;
     case RARX_CRC:
       return ERAR_BAD_DATA;

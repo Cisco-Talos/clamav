@@ -785,7 +785,7 @@ size_t Archive::ReadHeader50()
     case HEAD_SERVICE:
       {
         FileHeader *hd=ShortBlock.HeaderType==HEAD_FILE ? &FileHead:&SubHead;
-        hd->Reset();
+        hd->Reset(); // Clear hash, time fields and other stuff like flags.
         *(BaseBlock *)hd=ShortBlock;
 
         bool FileBlock=ShortBlock.HeaderType==HEAD_FILE;
@@ -1262,6 +1262,7 @@ size_t Archive::ReadHeader14()
     IntToExt(FileName,FileName,ASIZE(FileName));
     CharToWide(FileName,FileHead.FileName,ASIZE(FileHead.FileName));
     ConvertNameCase(FileHead.FileName);
+    ConvertFileHeader(&FileHead);
 
     if (Raw.Size()!=0)
       NextBlockPos=CurBlockPos+FileHead.HeadSize+FileHead.PackSize;
