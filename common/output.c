@@ -434,10 +434,10 @@ int logg(const char *str, ...)
                 cli_ctime(&currtime, timestr, sizeof(timestr));
                 /* cut trailing \n */
                 timestr[strlen(timestr) - 1] = '\0';
-                mprintf("%s -> %s", timestr, buff);
-            } else {
-                mprintf("%s", buff);
-            }
+                mprintf("%s -> ", timestr);
+            } 
+             mprintf("%s", buff);
+            
         }
     }
 
