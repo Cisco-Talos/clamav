@@ -65,7 +65,7 @@ class ThreadPool
   	uint QueueBottom;
 
     bool Closing; // Set true to quit all threads.
-
+  	
 #ifdef _WIN_ALL
   	// Semaphore counting number of tasks stored in queue.
   	HANDLE QueuedTasksCnt;
@@ -104,3 +104,4 @@ class ThreadPool
 #endif // RAR_SMP
 
 #endif // _RAR_THREADPOOL_
+
