@@ -3,9 +3,6 @@ properties(
         disableConcurrentBuilds(),
         parameters(
             [
-                string(name: 'CLAMAV_BRANCH',
-                       defaultValue: "${env.BRANCH_NAME}",
-                       description: 'clamav-devel branch'),
                 string(name: 'VERSION',
                        defaultValue: '0.104.0',
                        description: 'ClamAV version string'),
@@ -47,15 +44,45 @@ properties(
     ]
 )
 
-def buildResult
-
 node('master') {
+    stage('Generate Tarball') {
+        cleanWs()
+
+        checkout scm
+
+        dir(path: 'clamav_documentation') {
+            git(url: 'https://github.com/Cisco-Talos/clamav-documentation.git', branch: "gh-pages")
+        }
+
+        dir(path: 'docs/html') {
+            sh '''# Move the clamav-documentation here.
+                cp -r ../../clamav_documentation/* .
+                # Clean-up
+                rm -rf ../../clamav_documentation
+                rm -rf .git .nojekyll CNAME Placeholder || true
+                '''
+        }
+
+        dir(path: 'build') {
+            sh """# CPack
+                cmake .. -D VENDOR_DEPENDENCIES=ON
+                cpack --config CPackSourceConfig.cmake
+                mv clamav-${params.VERSION}*.tar.gz clamav-${params.VERSION}.tar.gz || true """
+            archiveArtifacts(artifacts: "clamav-${params.VERSION}.tar.gz", onlyIfSuccessful: true)
+        }
+
+        cleanWs()
+    }
+
+    def buildResult
+
     stage('Build') {
         buildResult = build(job: "test-pipelines/${params.BUILD_PIPELINE}",
             propagate: true,
             wait: true,
             parameters: [
-                [$class: 'StringParameterValue', name: 'TARGET_BRANCH', value: "${params.CLAMAV_BRANCH}"],
+                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                 [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                 [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
                 [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
@@ -76,13 +103,14 @@ node('master') {
                         propagate: true,
                         wait: true,
                         parameters: [
+                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                            [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                             [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
                             [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
                             [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                             [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"],
-                            [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
+                            [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
                         ]
                     )
                     echo "test-pipelines/${params.REGULAR_PIPELINE} #${regularResult.number} succeeded."
@@ -96,13 +124,12 @@ node('master') {
                     propagate: true,
                     wait: true,
                     parameters: [
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                         [$class: 'StringParameterValue', name: 'TESTS_BRANCH', value: "${params.TESTS_CUSTOM_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'FRAMEWORK_BRANCH', value: "${params.FRAMEWORK_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                        [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
+                        [$class: 'StringParameterValue', name: 'SHARED_LIB_BRANCH', value: "${params.SHARED_LIB_BRANCH}"]
                     ]
                 )
                 echo "test-pipelines/${params.CUSTOM_PIPELINE} #${customResult.number} succeeded."
@@ -119,12 +146,11 @@ node('master') {
                     propagate: true,
                     wait: true,
                     parameters: [
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
-                        [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                         [$class: 'StringParameterValue', name: 'TESTS_FUZZ_BRANCH', value: "${params.TESTS_FUZZ_BRANCH}"],
                         [$class: 'StringParameterValue', name: 'FUZZ_CORPUS_BRANCH', value: "${params.FUZZ_CORPUS_BRANCH}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
+                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
                     ]
                 )
                 echo "test-pipelines/${params.FUZZ_PIPELINE} #${fuzzResult.number} succeeded."
@@ -137,10 +163,11 @@ node('master') {
                     propagate: true,
                     wait: true,
                     parameters: [
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NAME', value: "${JOB_NAME}"],
+                        [$class: 'StringParameterValue', name: 'CLAMAV_JOB_NUMBER', value: "${BUILD_NUMBER}"],
                         [$class: 'StringParameterValue', name: 'BUILD_JOB_NAME', value: "test-pipelines/${params.BUILD_PIPELINE}"],
                         [$class: 'StringParameterValue', name: 'BUILD_JOB_NUMBER', value: "${buildResult.number}"],
-                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"],
-                        [$class: 'StringParameterValue', name: 'CLAMAV_BRANCH', value: "${params.CLAMAV_BRANCH}"]
+                        [$class: 'StringParameterValue', name: 'VERSION', value: "${params.VERSION}"]
                     ]
                 )
                 echo "test-pipelines/${params.APPCHECK_PIPELINE} #${appcheckResult.number} succeeded."
