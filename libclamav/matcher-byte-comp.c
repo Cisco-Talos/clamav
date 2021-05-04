@@ -460,7 +460,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, const char **virname, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
 
-    int64_t i = 0, ret = CL_SUCCESS;
+    int64_t i = 0, val = 0, ret = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
     uint32_t offset              = 0;
     uint8_t viruses_found        = 0;
@@ -488,8 +488,14 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
             snprintf(subsigid, 3, "%hu", bcomp->ref_subsigid);
 
             /* verify the ref_subsigid */
-            if (cli_ac_chklsig(subsigid, subsigid + strlen(subsigid),
-                               mdata->lsigcnt[bcomp->lsigid[1]], &evalcnt, &evalids, 0) != 1) {
+            val = cli_ac_chklsig(subsigid, subsigid + strlen(subsigid), mdata->lsigcnt[bcomp->lsigid[1]], &evalcnt, &evalids, 0);
+
+            if (subsigid) {
+                free(subsigid);
+                subsigid = NULL;
+            }
+
+            if (val != 1) {
                 bcm_dbgmsg("cli_bcomp_scanbuf: could not verify a match for lsig reference subsigid (%s)\n", subsigid);
                 continue;
             }
@@ -544,11 +550,6 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
                 ret = cli_append_virus(ctx, (const char *)bcomp->virname);
             }
         }
-    }
-
-    if (subsigid) {
-        free(subsigid);
-        subsigid = NULL;
     }
 
     if (ret == CL_SUCCESS && viruses_found) {
