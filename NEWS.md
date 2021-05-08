@@ -106,6 +106,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Orion Poplawski
 - Sergey Valentey
 - Sven Rueß
+- Tom Briden
 - Vasile Papp
 
 ## 0.103.2
