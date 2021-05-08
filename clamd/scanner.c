@@ -301,6 +301,7 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
             virusaction(filename, virname, scandata->opts);
         } else {
             scandata->infected++;
+            virusaction(filename, virname, scandata->opts);
             if (conn_reply_virus(scandata->conn, filename, virname) == -1) {
                 free(filename);
                 return CL_ETIMEOUT;
@@ -313,7 +314,6 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
                 logg("~%s: %s(%s:%llu) FOUND\n", filename, virname, context.virhash, context.virsize);
             else
                 logg("~%s: %s FOUND\n", filename, virname);
-            virusaction(filename, virname, scandata->opts);
         }
     } else if (ret != CL_CLEAN) {
         scandata->errors++;
@@ -437,13 +437,13 @@ cl_error_t scanfd(
     }
 
     if (ret == CL_VIRUS) {
+        virusaction(log_filename, virname, opts);
         if (conn_reply_virus(conn, reply_fdstr, virname) == -1)
             ret = CL_ETIMEOUT;
         if (context.virsize && optget(opts, "ExtendedDetectionInfo")->enabled)
             logg("%s: %s(%s:%llu) FOUND\n", log_filename, virname, context.virhash, context.virsize);
         else
             logg("%s: %s FOUND\n", log_filename, virname);
-        virusaction(log_filename, virname, opts);
     } else if (ret != CL_CLEAN) {
         if (conn_reply(conn, reply_fdstr, cl_strerror(ret), "ERROR") == -1)
             ret = CL_ETIMEOUT;
