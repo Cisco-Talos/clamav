@@ -7,6 +7,14 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.3 is a security patch release with the following fixes:
 
+- Fix ClamDScan crashes when using the `--fdpass --multiscan` command-line
+  options in combination with the ClamD `ExcludePath` config file options.
+
+Special thanks to the following for code contributions and bug reports:
+
+- Stephen Agate
+- Tom Briden
+
 ## 0.103.2
 
 ClamAV 0.103.2 is a security patch release with the following fixes:
