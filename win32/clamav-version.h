@@ -27,7 +27,7 @@
  * @macro
  * Version number of the clamav package release
  */
-#define CLAMAV_VERSION "0.103.2"
+#define CLAMAV_VERSION "0.103.3"
 
 /**
  * @macro
