@@ -128,7 +128,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 403 (forbidden)')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(Test_02_WebServerHandler,))
+        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -164,7 +164,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(Test_02_WebServerHandler,))
+        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -200,7 +200,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 429 (too-many-requests)')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(Test_04_WebServerHandler,TC.mock_mirror_port))
+        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_04,TC.mock_mirror_port))
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -245,7 +245,7 @@ def mock_database_mirror(handler, port=8000):
         print("^C entered, stopping web server...")
         server.socket.close()
 
-class Test_02_WebServerHandler(BaseHTTPRequestHandler):
+class WebServerHandler_02(BaseHTTPRequestHandler):
     '''
     Web server handler to send 403 (Forbidden) if a whole file is requested.
     Will send a CVD header if a Range-requeset is received.
@@ -272,7 +272,7 @@ class Test_02_WebServerHandler(BaseHTTPRequestHandler):
                     </body></html>'''
             self.wfile.write(page)
 
-class Test_04_WebServerHandler(BaseHTTPRequestHandler):
+class WebServerHandler_04(BaseHTTPRequestHandler):
     '''
     Web server handler to send 429 (Too-Many-Requests) if a whole file is requested.
     Will send a CVD header if a Range-requeset is received.
