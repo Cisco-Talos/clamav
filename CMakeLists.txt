@@ -307,7 +307,7 @@ endif()
 
 # libclamav feature dependencies
 if(NOT WIN32)
-    find_package(ICONV REQUIRED)
+    find_package(Iconv REQUIRED)
     # Set variable required by libclamav to use iconv
     set(HAVE_ICONV 1)
 endif()
@@ -986,8 +986,8 @@ endif()
 if(NOT WIN32)
 message("\
 ${b}        Locale support:     ${e}
-${_}            iconv           ${e}${ICONV_INCLUDE_DIRS}
-${_}                            ${e}${ICONV_LIBRARIES}")
+${_}            iconv           ${e}${Iconv_INCLUDE_DIRS}
+${_}                            ${e}${Iconv_LIBRARIES}")
 endif()
 
 if(NOT ENABLE_LIBCLAMAV_ONLY)
