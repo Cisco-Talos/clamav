@@ -51,7 +51,13 @@ if(SYSTEMD_FOUND)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/clamav-daemon.service.in
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.service @ONLY)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/clamav-daemon.socket.in
+        ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.socket @ONLY)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.service
+        DESTINATION ${SYSTEMD_UNIT_DIR})
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.socket
         DESTINATION ${SYSTEMD_UNIT_DIR})
 endif()
