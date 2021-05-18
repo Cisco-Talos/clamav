@@ -245,7 +245,7 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
     }
 
     logg("*download_complete_callback: Download complete for database : %s\n", dbFilename);
-    logg("*download_complete_callback:   fc_context->bTestDatabases   : %u\n", fc_context->bBytecodeEnabled);
+    logg("*download_complete_callback:   fc_context->bTestDatabases   : %u\n", fc_context->bTestDatabases);
     logg("*download_complete_callback:   fc_context->bBytecodeEnabled : %u\n", fc_context->bBytecodeEnabled);
 
     logg("Testing database: '%s' ...\n", dbFilename);
