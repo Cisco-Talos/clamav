@@ -4874,7 +4874,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     cli_logg_setup(&ctx);
 
-    rc = cli_magic_scan_nested_fmap_type(map, 0, map->len, &ctx, CL_TYPE_ANY, target_basename);
+    rc = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
     if (rc == CL_CLEAN && ctx.found_possibly_unwanted) {
         cli_virus_found_cb(&ctx);
