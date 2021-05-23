@@ -341,6 +341,7 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     file_metadata->encrypted   = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
     file_metadata->is_dir      = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
     file_metadata->method      = headerData.Method;
+    file_metadata->dict_size   = (uint64_t)headerData.DictSize * 1024; // DictSize is in KB
 
     unrar_dbgmsg("unrar_peek_file_header:   Name:          %s\n", headerData.FileName);
     unrar_dbgmsg("unrar_peek_file_header:   Directory?:    %u\n", file_metadata->is_dir);
@@ -348,6 +349,7 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     unrar_dbgmsg("unrar_peek_file_header:   RAR Version:   %u\n", headerData.UnpVer);
     unrar_dbgmsg("unrar_peek_file_header:   Packed Size:   %" PRIu64 "\n", file_metadata->pack_size);
     unrar_dbgmsg("unrar_peek_file_header:   Unpacked Size: %" PRIu64 "\n", file_metadata->unpack_size);
+    unrar_dbgmsg("unrar_peek_file_header:   Dict Size:     %" PRIu64 "\n", file_metadata->dict_size);
 
     // PrintTime("mtime",HeaderData.MtimeLow,HeaderData.MtimeHigh);
     // PrintTime("ctime",HeaderData.CtimeLow,HeaderData.CtimeHigh);

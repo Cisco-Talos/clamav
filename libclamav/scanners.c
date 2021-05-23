@@ -380,7 +380,19 @@ static cl_error_t cli_scanrar(const char *filepath, int desc, cli_ctx *ctx)
                 * Although we may be able to scan the metadata */
                 nTooLargeFilesFound += 1;
 
-                cli_dbgmsg("RAR: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
+                cli_dbgmsg("RAR: Next file is too large (%" PRIu64 " bytes); it would exceed maximums.  Skipping to next file.\n", metadata.unpack_size);
+
+                if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
+                    /* Failed to skip!  Break extraction loop. */
+                    cli_dbgmsg("RAR: Failed to skip file. RAR archive extraction has failed.\n");
+                    break;
+                }
+            } else if (cli_checklimits("RAR", ctx, metadata.dict_size, 0, 0)) {
+                /* File size exceeds maxfilesize, must skip extraction.
+                * Although we may be able to scan the metadata */
+                nTooLargeFilesFound += 1;
+
+                cli_dbgmsg("RAR: Next file's dictionary size is too large (%" PRIu64 " bytes); it would exceed maximums.  Skipping to next file.\n", metadata.dict_size);
 
                 if (UNRAR_OK != cli_unrar_skip_file(hArchive)) {
                     /* Failed to skip!  Break extraction loop. */
