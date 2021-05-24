@@ -3026,8 +3026,11 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             memset(ca.serial, 0xca, sizeof(ca.serial));
         }
         pubkey = cli_hex2str(tokens[4]);
-        cli_dbgmsg("cli_loadcrt: subject: %s\n", tokens[2]);
-        cli_dbgmsg("cli_loadcrt: public key: %s\n", tokens[4]);
+
+        if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
+            cli_dbgmsg("cli_loadcrt: subject: %s\n", tokens[2]);
+            cli_dbgmsg("cli_loadcrt: public key: %s\n", tokens[4]);
+        }
 
         if (!subject) {
             cli_errmsg("cli_loadcrt: line %u: Cannot convert subject to binary string\n", (unsigned int)line);
