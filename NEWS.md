@@ -40,6 +40,9 @@ ClamAV 0.103.3 is a security patch release with the following fixes:
   This type of PNG issue appears to be common enough to be an annoyance, and
   the CVE is old enough that no one should be vulnerable at this point.
 
+- Fix ClamSubmit failures after changes to Cloudflare "__cfduid" cookies.
+  See: https://blog.cloudflare.com/deprecating-cfduid-cookie/
+
 Special thanks to the following for code contributions and bug reports:
 
 - Stephen Agate
