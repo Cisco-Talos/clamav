@@ -877,25 +877,25 @@ static fc_error_t remote_cvdhead(
        if both callbacks are set. */
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
-            logg("!create_curl_handle: Failed to set transfer info function!\n");
+            logg("!remote_cvdhead: Failed to set transfer info function!\n");
         }
         /* pass the struct pointer into the xferinfo function, note that this is
            an alias to CURLOPT_PROGRESSDATA */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
-            logg("!create_curl_handle: Failed to set transfer info data structure!\n");
+            logg("!remote_cvdhead: Failed to set transfer info data structure!\n");
         }
 #else
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
-            logg("!create_curl_handle: Failed to set progress function!\n");
+            logg("!remote_cvdhead: Failed to set progress function!\n");
         }
         /* pass the struct pointer into the progress function */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
-            logg("!create_curl_handle: Failed to set progress data structure!\n");
+            logg("!remote_cvdhead: Failed to set progress data structure!\n");
         }
 #endif
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
-            logg("!create_curl_handle: Failed to disable progress function!\n");
+            logg("!remote_cvdhead: Failed to disable progress function!\n");
         }
     }
 
