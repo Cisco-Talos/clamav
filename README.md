@@ -9,7 +9,8 @@ clamav-rs.
 
 ### Unix (anything but Windows)
 You should have the `clamav-dev` package of your distribution installed (ClamAV
-with headers). The headers and library should be picked up automatically.
+with headers). The headers and library should be picked up automatically via
+pkg-config.
 
 ### Windows
 #### vcpkg
@@ -28,3 +29,14 @@ You will need to define the following environment variables:
 - `CLAMAV_BUILD`: Points to the ClamAV build directory.
 - `OPENSSL_INCLUDE`: Points to the include directory containing `openssl/ssl.h`.
 
+### MacOS
+Install the development dependencies via `homebrew`:
+```
+brew install clamav openssl@1.1
+```
+
+OpenSSL is not included in the environment to avoid shadowing Apple's one, so
+you need to tell the build script where it is located:
+```
+export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl@1.1/1.1.1i/
+```
