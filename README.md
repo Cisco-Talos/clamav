@@ -21,6 +21,19 @@ likely not work, as `pdcurses` doesn't support the `x64-windows-static-md` tripl
 
 See the [vcpkg crate's documentation](https://docs.rs/vcpkg) for more details. 
 
+Gotchas:
+- Windows has its own version of a zlib dll that is incompatbile with vcpkg. If
+  you get a message such as "The procedure entry point gzdirect could not be
+  located in the dynamic link library", you'll want to make sure that the vcpkg
+  dynamic libraries in your PATH variable are preceding the Windows one.
+  ```
+  $env:PATH="$env:VCPKG_ROOT\installed\x64-windows\bin\;$env:PATH"
+  ```
+  This error is especially hard to diagnose in PowerShell, as the process will
+  just hang without any output. In cmd.exe you'll get the aforementioned dialog
+  box telling you about the error.
+
+
 #### Manual
 If `vcpkg` is not available or cannot be found on your system, the build defaults
 to a manual specification of dependencies.
