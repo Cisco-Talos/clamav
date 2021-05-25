@@ -116,7 +116,7 @@ uint32_t g_requestTimeout = 0;
 
 uint32_t g_bCompressLocalDatabase = 0;
 
-mirrors_dat_v1_t *g_mirrorsDat = NULL;
+freshclam_dat_v1_t *g_freshclamDat = NULL;
 
 /** @brief Generate a Version 4 UUID according to RFC-4122
  *
@@ -164,12 +164,12 @@ static void uuid_v4_gen(char *buffer)
     return;
 }
 
-fc_error_t load_mirrors_dat(void)
+fc_error_t load_freshclam_dat(void)
 {
     fc_error_t status      = FC_EINIT;
     int handle             = -1;
     ssize_t bread          = 0;
-    mirrors_dat_v1_t *mdat = NULL;
+    freshclam_dat_v1_t *mdat = NULL;
     uint32_t version       = 0;
     char magic[13]         = {0};
 
@@ -181,13 +181,13 @@ fc_error_t load_mirrors_dat(void)
     }
     logg("*Current working dir is %s\n", g_databaseDirectory);
 
-    if (-1 == (handle = open("mirrors.dat", O_RDONLY | O_BINARY))) {
+    if (-1 == (handle = open("freshclam.dat", O_RDONLY | O_BINARY))) {
         char currdir[PATH_MAX];
 
         if (getcwd(currdir, sizeof(currdir)))
-            logg("*Can't open mirrors.dat in %s\n", currdir);
+            logg("*Can't open freshclam.dat in %s\n", currdir);
         else
-            logg("*Can't open mirrors.dat in the current directory\n");
+            logg("*Can't open freshclam.dat in the current directory\n");
 
         logg("*It probably doesn't exist yet. That's ok.\n");
         status = FC_EFILE;
@@ -197,18 +197,18 @@ fc_error_t load_mirrors_dat(void)
     if (strlen(MIRRORS_DAT_MAGIC) != (bread = read(handle, &magic, strlen(MIRRORS_DAT_MAGIC)))) {
         char error_message[260];
         cli_strerror(errno, error_message, 260);
-        logg("!Can't read magic from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        logg("!Can't read magic from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
         goto done;
     }
     if (0 != strncmp(magic, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
-        logg("*Magic bytes for mirrors.dat did not match expectations.\n");
+        logg("*Magic bytes for freshclam.dat did not match expectations.\n");
         goto done;
     }
 
     if (sizeof(uint32_t) != (bread = read(handle, &version, sizeof(uint32_t)))) {
         char error_message[260];
         cli_strerror(errno, error_message, 260);
-        logg("!Can't read version from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        logg("!Can't read version from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
         goto done;
     }
 
@@ -217,25 +217,25 @@ fc_error_t load_mirrors_dat(void)
             /* Verify that file size is as expected. */
             off_t file_size = lseek(handle, 0L, SEEK_END);
 
-            if (strlen(MIRRORS_DAT_MAGIC) + sizeof(mirrors_dat_v1_t) != (size_t)file_size) {
-                logg("*mirrors.dat is bigger than expected: %zu != %ld\n", sizeof(mirrors_dat_v1_t), file_size);
+            if (strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t) != (size_t)file_size) {
+                logg("*freshclam.dat is bigger than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
                 goto done;
             }
 
             /* Rewind to just after the magic bytes and read data struct */
             lseek(handle, strlen(MIRRORS_DAT_MAGIC), SEEK_SET);
 
-            mdat = malloc(sizeof(mirrors_dat_v1_t));
+            mdat = malloc(sizeof(freshclam_dat_v1_t));
             if (NULL == mdat) {
-                logg("!Failed to allocate memory for mirrors.dat\n");
+                logg("!Failed to allocate memory for freshclam.dat\n");
                 status = FC_EMEM;
                 goto done;
             }
 
-            if (sizeof(mirrors_dat_v1_t) != (bread = read(handle, mdat, sizeof(mirrors_dat_v1_t)))) {
+            if (sizeof(freshclam_dat_v1_t) != (bread = read(handle, mdat, sizeof(freshclam_dat_v1_t)))) {
                 char error_message[260];
                 cli_strerror(errno, error_message, 260);
-                logg("!Can't read from mirrors.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+                logg("!Can't read from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
                 goto done;
             }
 
@@ -245,27 +245,27 @@ fc_error_t load_mirrors_dat(void)
 
             /* This is the latest version.
                If we change the format in the future, we may wish to create a new
-               mirrors dat struct, import the relevant bits to the new format,
-               and then save (overwrite) mirrors.dat with the new data. */
-            if (NULL != g_mirrorsDat) {
-                free(g_mirrorsDat);
+               freshclam.dat struct, import the relevant bits to the new format,
+               and then save (overwrite) freshclam.dat with the new data. */
+            if (NULL != g_freshclamDat) {
+                free(g_freshclamDat);
             }
-            g_mirrorsDat = mdat;
+            g_freshclamDat = mdat;
             mdat         = NULL;
             break;
         }
         default: {
-            logg("*mirrors.dat version is different than expected: %u != %u\n", 1, version);
+            logg("*freshclam.dat version is different than expected: %u != %u\n", 1, version);
             goto done;
         }
     }
 
-    logg("*Loaded mirrors.dat:\n");
-    logg("*  version:    %d\n", g_mirrorsDat->version);
-    logg("*  uuid:       %s\n", g_mirrorsDat->uuid);
-    if (g_mirrorsDat->retry_after > 0) {
+    logg("*Loaded freshclam.dat:\n");
+    logg("*  version:    %d\n", g_freshclamDat->version);
+    logg("*  uuid:       %s\n", g_freshclamDat->uuid);
+    if (g_freshclamDat->retry_after > 0) {
         char retry_after_string[26];
-        struct tm *tm_info = localtime(&g_mirrorsDat->retry_after);
+        struct tm *tm_info = localtime(&g_freshclamDat->retry_after);
         if (NULL == tm_info) {
             logg("!Failed to query the local time for the retry-after date!\n");
             goto done;
@@ -284,45 +284,45 @@ done:
         if (NULL != mdat) {
             free(mdat);
         }
-        if (NULL != g_mirrorsDat) {
-            free(g_mirrorsDat);
-            g_mirrorsDat = NULL;
+        if (NULL != g_freshclamDat) {
+            free(g_freshclamDat);
+            g_freshclamDat = NULL;
         }
     }
 
     return status;
 }
 
-fc_error_t save_mirrors_dat(void)
+fc_error_t save_freshclam_dat(void)
 {
     fc_error_t status = FC_EINIT;
     int handle        = -1;
 
-    if (NULL == g_mirrorsDat) {
-        logg("!Attempted to save mirrors data to mirrors.dat before initializing it!\n");
+    if (NULL == g_freshclamDat) {
+        logg("!Attempted to save freshclam.dat before initializing data struct!\n");
         goto done;
     }
 
-    if (-1 == (handle = open("mirrors.dat", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644))) {
+    if (-1 == (handle = open("freshclam.dat", O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644))) {
         char currdir[PATH_MAX];
 
         if (getcwd(currdir, sizeof(currdir)))
-            logg("!Can't create mirrors.dat in %s\n", currdir);
+            logg("!Can't create freshclam.dat in %s\n", currdir);
         else
-            logg("!Can't create mirrors.dat in the current directory\n");
+            logg("!Can't create freshclam.dat in the current directory\n");
 
         logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
         status = FC_EDBDIRACCESS;
         goto done;
     }
     if (-1 == write(handle, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
-        logg("!Can't write to mirrors.dat\n");
+        logg("!Can't write to freshclam.dat\n");
     }
-    if (-1 == write(handle, g_mirrorsDat, sizeof(mirrors_dat_v1_t))) {
-        logg("!Can't write to mirrors.dat\n");
+    if (-1 == write(handle, g_freshclamDat, sizeof(freshclam_dat_v1_t))) {
+        logg("!Can't write to freshclam.dat\n");
     }
 
-    logg("*Saved mirrors.dat\n");
+    logg("*Saved freshclam.dat\n");
 
     status = FC_SUCCESS;
 done:
@@ -333,13 +333,13 @@ done:
     return status;
 }
 
-fc_error_t new_mirrors_dat(void)
+fc_error_t new_freshclam_dat(void)
 {
     fc_error_t status = FC_EINIT;
 
-    mirrors_dat_v1_t *mdat = calloc(1, sizeof(mirrors_dat_v1_t));
+    freshclam_dat_v1_t *mdat = calloc(1, sizeof(freshclam_dat_v1_t));
     if (NULL == mdat) {
-        logg("!Failed to allocate memory for mirrors.dat\n");
+        logg("!Failed to allocate memory for freshclam.dat\n");
         status = FC_EMEM;
         goto done;
     }
@@ -348,15 +348,15 @@ fc_error_t new_mirrors_dat(void)
     mdat->retry_after = 0;
     uuid_v4_gen(mdat->uuid);
 
-    if (NULL != g_mirrorsDat) {
-        free(g_mirrorsDat);
+    if (NULL != g_freshclamDat) {
+        free(g_freshclamDat);
     }
-    g_mirrorsDat = mdat;
+    g_freshclamDat = mdat;
 
-    logg("*Creating new mirrors.dat\n");
+    logg("*Creating new freshclam.dat\n");
 
-    if (FC_SUCCESS != save_mirrors_dat()) {
-        logg("!Failed to save mirrors.dat!\n");
+    if (FC_SUCCESS != save_freshclam_dat()) {
+        logg("!Failed to save freshclam.dat!\n");
         status = FC_EFILE;
         goto done;
     }
@@ -368,7 +368,7 @@ done:
         if (NULL != mdat) {
             free(mdat);
         }
-        g_mirrorsDat = NULL;
+        g_freshclamDat = NULL;
     }
     return status;
 }
@@ -597,7 +597,7 @@ static fc_error_t create_curl_handle(
         snprintf(userAgent, sizeof(userAgent),
                  PACKAGE "/%s (OS: " TARGET_OS_TYPE ", ARCH: " TARGET_ARCH_TYPE ", CPU: " TARGET_CPU_TYPE ", UUID: %s)",
                  get_version(),
-                 g_mirrorsDat->uuid);
+                 g_freshclamDat->uuid);
     }
     userAgent[sizeof(userAgent) - 1] = 0;
 
@@ -1013,13 +1013,13 @@ static fc_error_t remote_cvdhead(
 
             if (retry_after > 0) {
                 /* The response gave us a Retry-After date. Use that. */
-                g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
+                g_freshclamDat->retry_after = time(NULL) + (time_t)retry_after;
             } else {
                 /* Try again in no less than 4 hours if the response didn't specify
                    or if CURLINFO_RETRY_AFTER is not supported. */
-                g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
+                g_freshclamDat->retry_after = time(NULL) + 60 * 60 * 4;
             }
-            (void)save_mirrors_dat();
+            (void)save_freshclam_dat();
 
             break;
         }
@@ -1309,13 +1309,13 @@ static fc_error_t downloadFile(
 
             if (retry_after > 0) {
                 /* The response gave us a Retry-After date. Use that. */
-                g_mirrorsDat->retry_after = time(NULL) + (time_t)retry_after;
+                g_freshclamDat->retry_after = time(NULL) + (time_t)retry_after;
             } else {
                 /* Try again in no less than 4 hours if the response didn't specify
                    or if CURLINFO_RETRY_AFTER is not supported. */
-                g_mirrorsDat->retry_after = time(NULL) + 60 * 60 * 4;
+                g_freshclamDat->retry_after = time(NULL) + 60 * 60 * 4;
             }
-            (void)save_mirrors_dat();
+            (void)save_freshclam_dat();
 
             break;
         }
