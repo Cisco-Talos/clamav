@@ -56,8 +56,8 @@ class TC(testcase.TestCase):
             TC.mock_mirror.terminate()
             TC.mock_mirror = None
 
-        if (TC.path_db / 'mirrors.dat').exists():
-            os.remove(str(TC.path_db / 'mirrors.dat'))
+        if (TC.path_db / 'freshclam.dat').exists():
+            os.remove(str(TC.path_db / 'freshclam.dat'))
 
         super(TC, self).tearDown()
         self.verify_valgrind_log()

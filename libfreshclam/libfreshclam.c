@@ -250,12 +250,12 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 
     g_bCompressLocalDatabase = fcConfig->bCompressLocalDatabase;
 
-    /* Load or create mirrors.dat */
-    if (FC_SUCCESS != load_mirrors_dat()) {
-        logg("*Failed to load mirrors.dat; will create a new mirrors.dat\n");
+    /* Load or create freshclam.dat */
+    if (FC_SUCCESS != load_freshclam_dat()) {
+        logg("*Failed to load freshclam.dat; will create a new freshclam.dat\n");
 
-        if (FC_SUCCESS != new_mirrors_dat()) {
-            logg("^Failed to create a new mirrors.dat!\n");
+        if (FC_SUCCESS != new_freshclam_dat()) {
+            logg("^Failed to create a new freshclam.dat!\n");
             status = FC_EINIT;
             goto done;
         }
@@ -308,9 +308,9 @@ void fc_cleanup(void)
         free(g_tempDirectory);
         g_tempDirectory = NULL;
     }
-    if (NULL != g_mirrorsDat) {
-        free(g_mirrorsDat);
-        g_mirrorsDat = NULL;
+    if (NULL != g_freshclamDat) {
+        free(g_freshclamDat);
+        g_freshclamDat = NULL;
     }
 }
 
@@ -683,7 +683,7 @@ fc_error_t fc_update_database(
                 case FC_ERETRYLATER: {
                     char retry_after_string[26];
                     struct tm *tm_info;
-                    tm_info = localtime(&g_mirrorsDat->retry_after);
+                    tm_info = localtime(&g_freshclamDat->retry_after);
                     if (NULL == tm_info) {
                         logg("!Failed to query the local time for the retry-after date!\n");
                         status = FC_ERROR;
@@ -750,12 +750,12 @@ fc_error_t fc_update_databases(
 
     *nUpdated = 0;
 
-    if (g_mirrorsDat->retry_after > 0) {
-        if (g_mirrorsDat->retry_after > time(NULL)) {
+    if (g_freshclamDat->retry_after > 0) {
+        if (g_freshclamDat->retry_after > time(NULL)) {
             /* We're on cool-down, try again later. */
             char retry_after_string[26];
             struct tm *tm_info;
-            tm_info = localtime(&g_mirrorsDat->retry_after);
+            tm_info = localtime(&g_freshclamDat->retry_after);
             if (NULL == tm_info) {
                 logg("!Failed to query the local time for the retry-after date!\n");
                 status = FC_ERROR;
@@ -776,9 +776,9 @@ fc_error_t fc_update_databases(
             status = FC_SUCCESS;
             goto done;
         } else {
-            g_mirrorsDat->retry_after = 0;
+            g_freshclamDat->retry_after = 0;
             logg("^Cool-down expired, ok to try again.\n");
-            save_mirrors_dat();
+            save_freshclam_dat();
         }
     }
 
@@ -889,7 +889,7 @@ fc_error_t fc_download_url_database(
             case FC_ERETRYLATER: {
                 char retry_after_string[26];
                 struct tm *tm_info;
-                tm_info = localtime(&g_mirrorsDat->retry_after);
+                tm_info = localtime(&g_freshclamDat->retry_after);
                 if (NULL == tm_info) {
                     logg("!Failed to query the local time for the retry-after date!\n");
                     status = FC_ERROR;
