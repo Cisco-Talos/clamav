@@ -927,8 +927,24 @@ static fc_error_t initialize(struct optstruct *opts)
         logg("Connecting via %s\n", fcConfig.proxyServer);
     }
 
-    if (optget(opts, "HTTPUserAgent")->enabled)
-        fcConfig.userAgent = optget(opts, "HTTPUserAgent")->strarg;
+    if (optget(opts, "HTTPUserAgent")->enabled) {
+
+        if (!(optget(opts, "PrivateMirror")->enabled) &&
+            (optget(opts, "DatabaseMirror")->enabled) &&
+            (strstr(optget(opts, "DatabaseMirror")->strarg, "clamav.net"))) {
+            /*
+             * Using the official project CDN.
+             */
+            logg("In an effort to reduce CDN data costs, HTTPUserAgent may not be used when updating from clamav.net.\n");
+            logg("The HTTPUserAgent specified in your config will be ignored so that FreshClam is not blocked by the CDN.\n");
+            logg("If ClamAV's user agent is not allowed through your firewall/proxy, please contact your network administrator.\n\n");
+        } else {
+            /*
+             * Using some other CDN or private mirror.
+             */
+            fcConfig.userAgent = optget(opts, "HTTPUserAgent")->strarg;
+        }
+    }
 
     fcConfig.maxAttempts    = optget(opts, "MaxAttempts")->numarg;
     fcConfig.connectTimeout = optget(opts, "ConnectTimeout")->numarg;
@@ -1902,6 +1918,7 @@ int main(int argc, char **argv)
             if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
                 logg("^Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
                 fprintf(stderr, "ERROR: Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
+                status = FC_ECONFIG;
                 goto done;
             }
 
@@ -1913,6 +1930,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "Error was '%s'\n", strerror(errno));
                     logg("^lchown to user '%s' failed on freshclam.dat.  Error was '%s'\n",
                          user->pw_name, strerror(errno));
+                    status = FC_ECONFIG;
                     goto done;
                 }
             }

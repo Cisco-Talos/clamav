@@ -132,7 +132,9 @@ DatabaseMirror database.clamav.net
 # If your servers are behind a firewall/proxy which applies User-Agent
 # filtering you can use this option to force the use of a different
 # User-Agent header.
-# Default: clamav/version_number
+# As of ClamAV 0.103.3, this setting may not be used when updating from the
+# clamav.net CDN and can only be used when updating from a private mirror.
+# Default: clamav/version_number (OS: ..., ARCH: ..., CPU: ..., UUID: ...)
 #HTTPUserAgent SomeUserAgentIdString
 
 # Use aaa.bbb.ccc.ddd as client address for downloading databases. Useful for
