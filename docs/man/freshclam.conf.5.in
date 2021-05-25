@@ -165,6 +165,7 @@ Default: disabled
 .TP
 \fBHTTPUserAgent STRING\fR
 If your servers are behind a firewall/proxy which applies User-Agent filtering, you can use this option to force the use of a different User-Agent header.
+As of ClamAV 0.103.3, this setting may not be used when updating from the clamav.net CDN and can only be used when updating from a private mirror.
 .br .
 Default: clamav/version_number
 .TP
