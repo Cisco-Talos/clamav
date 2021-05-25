@@ -1891,6 +1891,34 @@ int main(int argc, char **argv)
         }
 
         /*
+         * freshclam may have created the freshclam.dat file with as root
+         * if run in daemon-mode, so we should give ownership to the
+         * DatabaseOwner if we're supposed to drop privileges..
+         */
+        if ((0 == geteuid()) && (NULL != optget(opts, "DatabaseOwner")->strarg)) {
+            struct passwd *user = NULL;
+            STATBUF sb;
+
+            if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
+                logg("^Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
+                fprintf(stderr, "ERROR: Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
+                goto done;
+            }
+
+            /*Change ownership of the freshclam DAT file to the user we are going to switch to.*/
+            if (CLAMSTAT("freshclam.dat", &sb) != -1) {
+                int ret = lchown("freshclam.dat", user->pw_uid, user->pw_gid);
+                if (ret) {
+                    fprintf(stderr, "ERROR: lchown to user '%s' failed on freshclam.dat\n", user->pw_name);
+                    fprintf(stderr, "Error was '%s'\n", strerror(errno));
+                    logg("^lchown to user '%s' failed on freshclam.dat.  Error was '%s'\n",
+                         user->pw_name, strerror(errno));
+                    goto done;
+                }
+            }
+        }
+
+        /*
          * freshclam shouldn't work with root privileges.
          * Drop privileges to the DatabaseOwner user, if specified.
          */
