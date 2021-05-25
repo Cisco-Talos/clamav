@@ -1918,6 +1918,7 @@ int main(int argc, char **argv)
             if ((user = getpwnam(optget(opts, "DatabaseOwner")->strarg)) == NULL) {
                 logg("^Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
                 fprintf(stderr, "ERROR: Can't get information about user %s.\n", optget(opts, "DatabaseOwner")->strarg);
+                status = FC_ECONFIG;
                 goto done;
             }
 
@@ -1929,6 +1930,7 @@ int main(int argc, char **argv)
                     fprintf(stderr, "Error was '%s'\n", strerror(errno));
                     logg("^lchown to user '%s' failed on freshclam.dat.  Error was '%s'\n",
                          user->pw_name, strerror(errno));
+                    status = FC_ECONFIG;
                     goto done;
                 }
             }

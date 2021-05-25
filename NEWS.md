@@ -10,6 +10,31 @@ ClamAV 0.103.3 is a security patch release with the following fixes:
 - Fix ClamDScan crashes when using the `--fdpass --multiscan` command-line
   options in combination with the ClamD `ExcludePath` config file options.
 
+- Fixed an issue where the `mirrors.dat` file is owned by root when starting as
+  root (or with sudo) and using daemon-mode. File ownership will be set to the
+  `DatabaseOwner` just before FreshClam switches to run as that user.
+
+- Renamed the `mirrors.dat` file to `freshclam.dat`.
+
+  We used to recommend deleting `mirrors.dat` if FreshClam failed to update.
+  This is because `mirrors.dat` used to keep track of offline mirrors and
+  network interruptions were known to cause FreshClam to think that all mirrors
+  were offline. ClamAV now uses a paid CDN instead of a mirror network, and the
+  new FreshClam DAT file no longer stores that kind of information.
+  The UUID used in ClamAV's HTTP User-Agent is stored in the FreshClam DAT file
+  and we want the UUID to persist between runs, even if there was a failure.
+
+  Unfortunately, some users have FreshClam configured to automatically delete
+  `mirrors.dat` if FreshClam failed. Renaming `mirrors.dat` to `freshclam.dat`
+  should make it so those scripts don't delete important FreshClam data.
+
+- Disabled the `HTTPUserAgent` config option if the `DatabaseMirror` uses
+  clamav.net. This will prevent users from being inadvertently blocked and
+  will ensure that we can keep better metrics on which ClamAV versions are
+  being used.
+
+  This change effectively deprecates the `HTTPUserAgent` option for most users.
+
 Special thanks to the following for code contributions and bug reports:
 
 - Stephen Agate
