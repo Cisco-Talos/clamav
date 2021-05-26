@@ -222,7 +222,7 @@ int16_t ping_clamd(const struct optstruct *opts)
         if ((sockd = dconnect()) >= 0) {
             recvlninit(&rcv, sockd);
 
-            if (sendln(sockd, "zPING", 5)) {
+            if (sendln(sockd, "zPING", 6)) {
                 logg("*PING failed...\n");
                 closesocket(sockd);
             } else {
