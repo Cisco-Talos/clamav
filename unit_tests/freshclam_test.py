@@ -69,10 +69,11 @@ class TC(testcase.TestCase):
             os.remove(str(TC.freshclam_config))
 
         TC.freshclam_config.write_text('''
-            DatabaseMirror http://localhost:8000
+            DatabaseMirror http://localhost:{port}
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
+            port=TC.mock_mirror_port,
         ))
 
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} -V'.format(

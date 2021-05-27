@@ -7,7 +7,7 @@ ConditionPathExistsGlob=@DATADIR@/daily.{c[vl]d,inc}
 
 [Socket]
 ListenStream=/run/clamav/clamd.ctl
-#ListenStream=127.0.0.1:1024
+#ListenStream=1024
 SocketUser=clamav
 SocketGroup=clamav
 RemoveOnStop=True

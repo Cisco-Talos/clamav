@@ -37,7 +37,7 @@ class TC(testcase.TestCase):
         TC.sigtool_pid = TC.path_tmp / 'sigtool-test.pid'
         TC.sigtool_config = TC.path_tmp / 'sigtool-test.conf'
         TC.sigtool_config.write_text('''
-            DatabaseMirror 127.0.0.1
+            DatabaseMirror localhost
             PidFile {sigtool_pid}
             LogVerbose yes
             LogFileMaxSize 0

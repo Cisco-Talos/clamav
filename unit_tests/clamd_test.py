@@ -27,7 +27,7 @@ def check_port_available(port_num: int) -> bool:
     port_is_available = True # It's probably available...
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    location = ("127.0.0.1", port_num)
+    location = ("localhost", port_num)
 
     result_of_check = sock.connect_ex(location)
     if result_of_check == 0:
@@ -89,14 +89,14 @@ class TC(testcase.TestCase):
             # Only have TCP socket option for Windows.
             config += '''
                 TCPSocket {socket}
-                TCPAddr 127.0.0.1
+                TCPAddr localhost
                 '''.format(socket=TC.clamd_port_num)
         else:
             # Use LocalSocket for Posix, because that's what check_clamd expects.
             config += '''
                 LocalSocket {localsocket}
                 TCPSocket {tcpsocket}
-                TCPAddr 127.0.0.1
+                TCPAddr localhost
                 '''.format(localsocket=TC.clamd_socket, tcpsocket=TC.clamd_port_num)
 
         TC.clamd_config = TC.path_tmp / 'clamd-test.conf'

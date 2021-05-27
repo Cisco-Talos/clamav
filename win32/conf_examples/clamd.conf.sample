@@ -90,7 +90,7 @@ TCPSocket 3310
 # from the outside world. This option can be specified multiple
 # times if you want to listen on multiple IPs. IPv6 is now supported.
 # Default: no
-TCPAddr 127.0.0.1
+TCPAddr localhost
 
 # Maximum length the queue of pending connections may grow to.
 # Default: 200
