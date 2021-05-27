@@ -2345,6 +2345,7 @@ fc_error_t updatedb(
             newLocalFilename = cli_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
             logg("The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
+            *dbFilename = cli_strdup(localFilename);
             goto up_to_date;
         } else {
             /*
