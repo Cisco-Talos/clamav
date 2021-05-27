@@ -33,7 +33,7 @@
 // common
 #include "output.h"
 
-#include "whitelist.h"
+#include "allow_list.h"
 
 struct WHLST {
     regex_t preg;
@@ -46,7 +46,7 @@ struct WHLST *wto   = NULL;
 int skipauth = 0;
 regex_t authreg;
 
-void whitelist_free(void)
+void allow_list_free(void)
 {
     struct WHLST *w;
     while (wfrom) {
@@ -63,14 +63,14 @@ void whitelist_free(void)
     }
 }
 
-int whitelist_init(const char *fname)
+int allow_list_init(const char *fname)
 {
     char buf[2048];
     FILE *f;
     struct WHLST *w;
 
     if (!(f = fopen(fname, "r"))) {
-        logg("!Cannot open whitelist file '%s'\n", fname);
+        logg("!Cannot open allow list file '%s'\n", fname);
         return 1;
     }
 
@@ -95,16 +95,16 @@ int whitelist_init(const char *fname)
         }
         if (!len) continue;
         if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
-            logg("!Out of memory loading whitelist file\n");
-            whitelist_free();
+            logg("!Out of memory loading allow list file\n");
+            allow_list_free();
             fclose(f);
             return 1;
         }
         w->next  = (*addto);
         (*addto) = w;
         if (cli_regcomp(&w->preg, ptr, REG_ICASE | REG_NOSUB)) {
-            logg("!Failed to compile regex '%s' in whitelist file\n", ptr);
-            whitelist_free();
+            logg("!Failed to compile regex '%s' in allow list file\n", ptr);
+            allow_list_free();
             fclose(f);
             return 1;
         }
@@ -113,7 +113,7 @@ int whitelist_init(const char *fname)
     return 0;
 }
 
-int whitelisted(const char *addr, int from)
+int allowed(const char *addr, int from)
 {
     struct WHLST *w;
 
@@ -140,7 +140,7 @@ int smtpauth_init(const char *r)
         int rxsize = 0, rxavail = 0, rxused = 0;
 
         if (!f) {
-            logg("!Cannot open whitelist file '%s'\n", r + 5);
+            logg("!Cannot open allow list file '%s'\n", r + 5);
             return 1;
         }
         while (fgets(buf, sizeof(buf), f) != NULL) {

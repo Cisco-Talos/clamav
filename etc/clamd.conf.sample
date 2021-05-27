@@ -359,7 +359,7 @@ Example
 # the signature chain in the PE file against a database of trusted and
 # revoked certificates if the file being scanned is marked as a virus.
 # If any certificate in the chain validates against any trusted root, but
-# does not match any revoked certificate, the file is marked as whitelisted.
+# does not match any revoked certificate, the file is marked as trusted.
 # If the file does match a revoked certificate, the file is marked as virus.
 # The following setting completely turns off authenticode verification.
 # Default: no
@@ -717,7 +717,7 @@ Example
 #OnAccessMountPath /
 #OnAccessMountPath /home/user
 
-# With this option you can whitelist the root UID (0). Processes run under
+# With this option you can exclude the root UID (0). Processes run under
 # root with be able to access all files without triggering scans or
 # permission denied events.
 # Note that if clamd cannot check the uid of the process that generated an
@@ -728,12 +728,12 @@ Example
 # Default: no
 #OnAccessExcludeRootUID no
 
-# With this option you can whitelist specific UIDs. Processes with these UIDs
+# With this option you can exclude specific UIDs. Processes with these UIDs
 # will be able to access all files without triggering scans or permission
 # denied events.
 # This option can be used multiple times (one per line).
 # Using a value of 0 on any line will disable this option entirely.
-# To whitelist the root UID (0) please enable the OnAccessExcludeRootUID
+# To exclude the root UID (0) please enable the OnAccessExcludeRootUID
 # option.
 # Also note that if clamd cannot check the uid of the process that generated an
 # on-access scan event (e.g., because OnAccessPrevention was not enabled, and

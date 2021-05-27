@@ -695,8 +695,8 @@ changes.
 
 ### Other improvements
 
-- Improved Windows executable Authenticode handling, enabling both whitelisting
-  and blacklisting of files based on code-signing certificates. Additional
+- Improved Windows executable Authenticode handling, enabling both allowing
+  and blocking of files based on code-signing certificates. Additional
   improvements to Windows executable (PE file) parsing.
   Work courtesy of Andrew Williams.
 - Added support for creating bytecode signatures for Mach-O and
@@ -1085,7 +1085,7 @@ we've cooked up over the past 6 months.
   request by Andrew Williams.
   - Added support for Authenticode signature properties commonly used by
     Windows system files. These files are now much more likely to be
-    whitelisted correctly.
+    trusted correctly.
   - Signature parsing now works correctly on big endian systems.
 
 - Some simplification to freshclam mirror management code, including changes
@@ -1769,7 +1769,7 @@ support for additional filetypes, and internal upgrades.
 
 - Authenticode: ClamAV is now aware of the certificate chains when
   scanning signed PE files. When the database contains signatures for
-  trusted root certificate authorities, the engine can whitelist
+  trusted root certificate authorities, the engine can trust
   PE files with a valid signature. The same database file can also
   include known compromised certificates to be rejected! This
   feature can also be disabled in clamd.conf (DisableCertCheck) or
@@ -1998,7 +1998,7 @@ The following are the key features of this release:
 
 - Google Safe Browsing support: in addition to the heuristic and signature
   based phishing detection mechanisms already available in ClamAV, the
-  scanner can now make use of the Google's blacklists of suspected
+  scanner can now make use of the Google's block lists of suspected
   phishing and malware sites. The ClamAV Project distributes a constantly
   updated Safe Browsing database, which can be automatically fetched by
   freshclam. For more information, please see freshclam.conf(5) and
@@ -2395,7 +2395,7 @@ Detailed list of changes:
     - PhishingAlwaysBlockCloak
 
 - clamav-milter:
-  - Black list mode: optionally black lists an IP for a configurable amount
+  - Block list mode: optionally block lists an IP for a configurable amount
     of time
   - Black hole mode: detects emails that will be discarded and refrains from
     scanning them

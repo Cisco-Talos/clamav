@@ -1,10 +1,8 @@
 /*
- *  Phishing module: whitelist implementation.
- *
  *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
- *  Authors: Török Edvin
+ *  Author: aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -21,15 +19,12 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef _PHISH_WHITELIST_H
-#define _PHISH_WHITELIST_H
+#ifndef _ALLOW_LIST_H
+#define _ALLOW_LIST_H
 
-#include "clamav.h"
-
-cl_error_t init_whitelist(struct cl_engine* engine);
-void whitelist_done(struct cl_engine* engine);
-void whitelist_cleanup(const struct cl_engine* engine);
-int is_whitelist_ok(const struct cl_engine* engine);
-cl_error_t whitelist_match(const struct cl_engine* engine, char* real_url, const char* display_url, int hostOnly);
-
+int allow_list_init(const char *fname);
+void allow_list_free(void);
+int allowed(const char *addr, int from);
+int smtpauth_init(const char *r);
+int smtpauthed(const char *login);
 #endif

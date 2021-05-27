@@ -73,7 +73,7 @@ static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *patter
 static void fatal_error(struct regex_matcher *matcher)
 {
     regex_list_done(matcher);
-    matcher->list_inited = -1; /* the phishing module will know we tried to load a whitelist, and failed, so it will disable itself too*/
+    matcher->list_inited = -1; /* the phishing module will know we tried to load an allow list, and failed, so it will disable itself too*/
 }
 
 static inline char get_char_at_pos_with_skip(const struct pre_fixup_info *info, const char *buffer, size_t pos)
@@ -140,7 +140,7 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
  * @real_url - href target
  * @display_url - <a> tag contents
  * @hostOnly - if you want to match only the host part
- * @is_whitelist - is this a lookup in whitelist?
+ * @is_allow_list_lookup - is this a lookup in an allow list?
  *
  * @return - CL_SUCCESS - url doesn't match
  *         - CL_VIRUS - url matches list
@@ -148,7 +148,7 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
  * Do not send NULL pointers to this function!!
  *
  */
-cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const char *display_url, const struct pre_fixup_info *pre_fixup, int hostOnly, const char **info, int is_whitelist)
+cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const char *display_url, const struct pre_fixup_info *pre_fixup, int hostOnly, const char **info, int is_allow_list_lookup)
 {
     char *orig_real_url = real_url;
     struct regex_list *regex;
@@ -174,7 +174,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     if (display_url[0] == '.') display_url++;
     real_len    = strlen(real_url);
     display_len = strlen(display_url);
-    buffer_len  = (hostOnly && !is_whitelist) ? real_len + 1 : real_len + display_len + 1 + 1;
+    buffer_len  = (hostOnly && !is_allow_list_lookup) ? real_len + 1 : real_len + display_len + 1 + 1;
     if (buffer_len < 3) {
         /* too short, no match possible */
         return CL_SUCCESS;
@@ -186,13 +186,13 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     }
 
     strncpy(buffer, real_url, real_len);
-    buffer[real_len] = (!is_whitelist && hostOnly) ? '/' : ':';
+    buffer[real_len] = (!is_allow_list_lookup && hostOnly) ? '/' : ':';
 
     /*
      * For H-type PDB signatures, real_url is actually the DisplayedHostname.
      * RealHostname is not used.
      */
-    if (!hostOnly || is_whitelist) {
+    if (!hostOnly || is_allow_list_lookup) {
         /* For all other PDB and WDB signatures concatenate Real:Displayed. */
         strncpy(buffer + real_len + 1, display_url, display_len);
     }
@@ -392,7 +392,7 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
         cli_hashset_contains(&matcher->sha256_pfx_set, cli_readint32(pat->pattern)) &&
         cli_bm_scanbuff(pat->pattern, 32, &vname, NULL, &matcher->sha256_hashes, 0, NULL, NULL, NULL) == CL_VIRUS) {
         if (*vname == 'W') {
-            /* hash is whitelisted in local.gdb */
+            /* hash is allowed in local.gdb */
             cli_dbgmsg("Skipping hash %s\n", pattern);
             MPOOL_FREE(matcher->mempool, pat->pattern);
             MPOOL_FREE(matcher->mempool, pat);
@@ -418,7 +418,7 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
 }
 
 /* Load patterns/regexes from file */
-cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, FILE *fd, unsigned int *signo, unsigned int options, int is_whitelist, struct cli_dbio *dbio, uint8_t dconf_prefiltering)
+cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *matcher, FILE *fd, unsigned int *signo, unsigned int options, int is_allow_list_lookup, struct cli_dbio *dbio, uint8_t dconf_prefiltering)
 {
     cl_error_t rc;
     int line = 0, entry = 0;
@@ -443,7 +443,8 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         }
     }
     /*
-	 * Regexlist db format (common to .wdb(whitelist) and .pdb(domainlist) files:
+	 * Regexlist db format, common to .wdb (allow list) and .pdb (domain list) files.
+     *
 	 * Multiple lines of form, (empty lines are skipped):
  	 * Flags RealURL DisplayedURL
 	 * Where:
@@ -504,15 +505,15 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
             return CL_EMALFDB;
         }
 
-        if ((buffer[0] == 'R' && !is_whitelist) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_whitelist)) {
+        if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_allow_list_lookup)) {
             /* regex for hostname*/
             if ((rc = regex_list_add_pattern(matcher, pattern)))
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
-        } else if ((buffer[0] == 'H' && !is_whitelist) || (buffer[0] == 'M' && is_whitelist)) {
+        } else if ((buffer[0] == 'H' && !is_allow_list_lookup) || (buffer[0] == 'M' && is_allow_list_lookup)) {
             /*matches displayed host*/
             if ((rc = add_static_pattern(matcher, pattern)))
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
-        } else if (buffer[0] == 'S' && (!is_whitelist || pattern[0] == 'W')) {
+        } else if (buffer[0] == 'S' && (!is_allow_list_lookup || pattern[0] == 'W')) {
             pattern[pattern_len] = '\0';
             if (pattern[0] == 'W')
                 flags[0] = 'W';

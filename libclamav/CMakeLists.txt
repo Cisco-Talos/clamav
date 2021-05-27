@@ -439,7 +439,7 @@ target_sources( clamav_obj
         mbox.c              mbox.h
         message.c           message.h
         phish_domaincheck_db.c phish_domaincheck_db.h
-        phish_whitelist.c   phish_whitelist.h
+        phish_allow_list.c  phish_allow_list.h
         phishcheck.c        phishcheck.h
         regex_list.c        regex_list.h
         regex_suffix.c      regex_suffix.h

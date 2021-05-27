@@ -59,7 +59,7 @@ Example
 
 # This option allows you to save a process identifier of the listening
 # daemon (main thread).
-# This file will be owned by root, as long as clamav-milter was started by 
+# This file will be owned by root, as long as clamav-milter was started by
 # root.  It is recommended that the directory where this file is stored is
 # also owned by root to keep other users from tampering with it.
 #
@@ -111,13 +111,13 @@ Example
 # This option specifies a file which contains a list of basic POSIX regular
 # expressions. Addresses (sent to or from - see below) matching these regexes
 # will not be scanned.  Optionally each line can start with the string "From:"
-# or "To:" (note: no whitespace after the colon) indicating if it is, 
-# respectively, the sender or recipient that is to be whitelisted.
+# or "To:" (note: no whitespace after the colon) indicating if it is,
+# respectively, the sender or recipient that is to be allowed.
 # If the field is missing, "To:" is assumed.
 # Lines starting with #, : or ! are ignored.
 #
 # Default unset (no exclusion applied)
-#Whitelist /etc/whitelisted_addresses
+#AllowList /etc/allowed_addresses
 
 # Messages from authenticated SMTP users matching this extended POSIX
 # regular expression (egrep-like) will not be scanned.
@@ -127,7 +127,7 @@ Example
 #
 # Note: this is the AUTH login name!
 #
-# Default: unset (no whitelisting based on SMTP auth)
+# Default: unset (no allowing based on SMTP auth)
 #SkipAuthenticated ^(tom|dick|henry)$
 
 # Messages larger than this value won't be scanned.
@@ -157,7 +157,7 @@ Example
 #
 # NOTE: In Sendmail the quarantine queue can be examined via mailq -qQ
 # For Postfix this causes the message to be placed on hold
-# 
+#
 # Action to be performed on clean messages (mostly useful for testing)
 # Default: Accept
 #OnClean Accept
@@ -176,7 +176,7 @@ Example
 # and it's therefore only useful together with "OnInfected Reject"
 # The string "%v", if present, will be replaced with the virus name.
 # Default: MTA specific
-#RejectMsg 
+#RejectMsg
 
 # If this option is set to "Replace" (or "Yes"), an "X-Virus-Scanned" and an
 # "X-Virus-Status" headers will be attached to each processed message, possibly
@@ -288,10 +288,9 @@ Example
 # If SupportMultipleRecipients is on:
 # then one line is logged for each recipient and the command indicated
 # by VirusAction is also executed once for each recipient.
-# 
+#
 # Note: although it's probably a good idea to enable this option, the default
 # value
 # is currently set to off for legacy reasons.
 # Default: no
 #SupportMultipleRecipients yes
-

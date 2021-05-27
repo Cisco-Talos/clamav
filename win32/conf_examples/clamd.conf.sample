@@ -332,7 +332,7 @@ TCPAddr 127.0.0.1
 # the signature chain in the PE file against a database of trusted and
 # revoked certificates if the file being scanned is marked as a virus.
 # If any certificate in the chain validates against any trusted root, but
-# does not match any revoked certificate, the file is marked as whitelisted.
+# does not match any revoked certificate, the file is marked as trusted.
 # If the file does match a revoked certificate, the file is marked as virus.
 # The following setting completely turns off authenticode verification.
 # Default: no

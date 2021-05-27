@@ -687,18 +687,18 @@ This option allows excluding directories from on-access scanning. It can be used
 Default: disabled
 .TP
 \fBOnAccessExcludeRootUID BOOL\fR
-With this option you can whitelist the root UID (0). Processes run under root will be able to access all files without triggering scans or permission denied events.
+With this option you can exclude the root UID (0). Processes run under root will be able to access all files without triggering scans or permission denied events.
 .br
 Note that if clamd cannot check the uid of the process that generated an on-access scan event (e.g., because \fBOnAccessPrevention\fR was not enabled, and the process already exited), clamd will perform a scan.  Thus, setting \fBOnAccessExcludeRootUID\fR is not \fIguaranteed\fR to prevent every access by the root user from triggering a scan (unless \fBOnAccessPrevention\fR is enabled).
 .br
 Default: no
 .TP
 \fBOnAccessExcludeUID NUMBER\fR
-With this option you can whitelist specific UIDs. Processes with these UIDs will be able to access all files without triggering scans or permission denied events.
+With this option you can exclude specific UIDs. Processes with these UIDs will be able to access all files without triggering scans or permission denied events.
 .br
 This option can be used multiple times (one per line).
 .br
-Note: using a value of 0 on any line will disable this option entirely. To whitelist the root UID (0) please enable the OnAccessExcludeRootUID option.
+Note: using a value of 0 on any line will disable this option entirely. To exclude the root UID (0) please enable the OnAccessExcludeRootUID option.
 .br
 Also note that if clamd cannot check the uid of the process that generated an on-access scan event (e.g., because \fBOnAccessPrevention\fR was not enabled, and the process already exited), clamd will perform a scan.  Thus, setting \fBOnAccessExcludeUID\fR is not \fIguaranteed\fR to prevent every access by the specified uid from triggering a scan (unless \fBOnAccessPrevention\fR is enabled).
 .br

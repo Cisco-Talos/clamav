@@ -33,12 +33,12 @@
 
 /* Certain OSs already use 64bit variables in their stat struct */
 #if (!defined(__FreeBSD__) && !defined(__APPLE__))
-#define STAT64_BLACKLIST 1
+#define STAT64_OK 1
 #else
-#define STAT64_BLACKLIST 0
+#define STAT64_OK 0
 #endif
 
-#if defined(HAVE_STAT64) && STAT64_BLACKLIST
+#if defined(HAVE_STAT64) && STAT64_OK
 
 #include <unistd.h>
 
@@ -47,6 +47,7 @@
 #define LSTAT lstat64
 #define FSTAT fstat64
 #define safe_open(a, b) open(a, b | O_LARGEFILE)
+
 #else
 
 #define STATBUF struct stat
@@ -473,8 +474,8 @@ extern cl_error_t cl_engine_free(struct cl_engine *engine);
  * @param type      File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE").
  * @param context   Opaque application provided data.
  * @return          CL_CLEAN = File is scanned.
- * @return          CL_BREAK = Whitelisted by callback - file is skipped and marked as clean.
- * @return          CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected.
+ * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
+ * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
 typedef cl_error_t (*clcb_pre_cache)(int fd, const char *type, void *context);
 /**
@@ -499,8 +500,8 @@ extern void cl_engine_set_clcb_pre_cache(struct cl_engine *engine, clcb_pre_cach
  * @param type      File type detected via magic - i.e. NOT on the fly - (e.g. "CL_TYPE_MSEXE").
  * @param context   Opaque application provided data.
  * @return          CL_CLEAN = File is scanned.
- * @return          CL_BREAK = Whitelisted by callback - file is skipped and marked as clean.
- * @return          CL_VIRUS = Blacklisted by callback - file is skipped and marked as infected.
+ * @return          CL_BREAK = Allowed by callback - file is skipped and marked as clean.
+ * @return          CL_VIRUS = Blocked by callback - file is skipped and marked as infected.
  */
 typedef cl_error_t (*clcb_pre_scan)(int fd, const char *type, void *context);
 /**
@@ -526,8 +527,8 @@ extern void cl_engine_set_clcb_pre_scan(struct cl_engine *engine, clcb_pre_scan 
  * @param virname   A signature name if there was one or more matches.
  * @param context   Opaque application provided data.
  * @return          Scan result is not overridden.
- * @return          CL_BREAK = Whitelisted by callback - scan result is set to CL_CLEAN.
- * @return          Blacklisted by callback - scan result is set to CL_VIRUS.
+ * @return          CL_BREAK = Allowed by callback - scan result is set to CL_CLEAN.
+ * @return          Blocked by callback - scan result is set to CL_VIRUS.
  */
 typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, void *context);
 /**
@@ -541,14 +542,14 @@ typedef cl_error_t (*clcb_post_scan)(int fd, int result, const char *virname, vo
 extern void cl_engine_set_clcb_post_scan(struct cl_engine *engine, clcb_post_scan callback);
 
 /**
- * @brief Post-scan callback.
+ * @brief Virus-found callback.
  *
  * Called for each signature match.
  * If all-match is enabled, clcb_virus_found() may be called multiple times per
  * scan.
  *
  * In addition, clcb_virus_found() does not have a return value and thus.
- * can not be used to whitelist the match.
+ * can not be used to ignore the match.
  *
  * @param fd        File descriptor which was scanned.
  * @param virname   Virus name.
@@ -657,7 +658,7 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
 /**
  * @brief Archive meta matching callback function.
  *
- * May be used to blacklist archive/container samples based on archive metadata.
+ * May be used to block archive/container samples based on archive metadata.
  * Function is invoked multiple times per archive. Typically once per contained file.
  *
  * Note: Used by the --archive-verbose clamscan option. Overriding this will alter
@@ -670,7 +671,7 @@ extern void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback
  * @param is_encrypted      Boolean non-zero if the contained file is encrypted.
  * @param filepos_container File index in container.
  * @param context           Opaque application provided data.
- * @return                  CL_VIRUS to blacklist
+ * @return                  CL_VIRUS to block (alert on)
  * @return                  CL_CLEAN to continue scanning
  */
 typedef cl_error_t (*clcb_meta)(const char *container_type, unsigned long fsize_container, const char *filename,

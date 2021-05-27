@@ -1015,7 +1015,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
 
     /* If it's a PE, check the Authenticode header.  This would be more
      * appropriate in cli_scanpe, but scanraw->cli_scan_fmap gets
-     * called first for PEs, and we want to determine the whitelist/blacklist
+     * called first for PEs, and we want to determine the trust/block
      * status early on so we can skip things like embedded PE extraction
      * (which is broken for signed binaries within signed binaries).
      *
@@ -1352,7 +1352,7 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
 
     if (ctx->engine && ctx->engine->cb_meta)
         if (ctx->engine->cb_meta(cli_ftname(cli_get_container(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
-            cli_dbgmsg("inner file blacklisted by callback: %s\n", fname);
+            cli_dbgmsg("inner file blocked by callback: %s\n", fname);
 
             ret = cli_append_virus(ctx, "Detected.By.Callback");
             viruses_found++;

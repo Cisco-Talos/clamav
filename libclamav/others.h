@@ -312,15 +312,15 @@ struct cl_engine {
     struct cli_matcher *hm_mdb;
     /* hash matcher for MD5 sigs for PE import tables */
     struct cli_matcher *hm_imp;
-    /* hash matcher for whitelist db */
+    /* hash matcher for allow list db */
     struct cli_matcher *hm_fp;
 
     /* Container metadata */
     struct cli_cdb *cdb;
 
     /* Phishing .pdb and .wdb databases*/
-    struct regex_matcher *whitelist_matcher;
-    struct regex_matcher *domainlist_matcher;
+    struct regex_matcher *allow_list_matcher;
+    struct regex_matcher *domain_list_matcher;
     struct phishcheck *phishcheck;
 
     /* Dynamic configuration */
@@ -639,8 +639,8 @@ static inline void cli_writeint32(void *offset, uint32_t value)
 /**
  * @brief Append an alert.
  *
- * An FP-check will verify that the file is not whitelisted.
- * The whitelist check does not happen before the scan because file whitelisting
+ * An FP-check will verify that the file is not allowed.
+ * The allow list check does not happen before the scan because allowing files
  * is so infrequent that such action would be detrimental to performance.
  *
  * TODO: Replace implementation with severity scale, and severity threshold

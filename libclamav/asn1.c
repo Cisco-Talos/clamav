@@ -1608,10 +1608,10 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     x509 = newcerts.crts;
                 }
 
-                /* Determine whether the embedded certificate is blacklisted or
-                 * whitelisted. If an embedded cert matches a blacklist rule,
+                /* Determine whether the embedded certificate is blocked or
+                 * trusted. If an embedded cert matches a block list rule,
                  * we can return immediately indicating that a sig matched.
-                 * This isn't true for whitelist matches, since otherwise an
+                 * This isn't true for allow list matches, since otherwise an
                  * attacker could just include a known-good certificate in the
                  * signature and not use it. Instead, for those we will add the
                  * embedded cert to the trust store and continue on to ensure
@@ -1620,14 +1620,14 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     cli_crt *crt;
 
                     /* Use &(engine->cmgr) for this check, since we don't copy
-                     * blacklist certs into cmgr and so that if there's a
+                     * block list certs into cmgr and so that if there's a
                      * match, we have a long-lived pointer that we can pass
                      * back (via cli_append_virus) indicating the name of the
                      * sigs that matched (we can't just malloc new space for
                      * one, since nothing above here knows to free it.) */
-                    if (NULL != (crt = crtmgr_blacklist_lookup(&(engine->cmgr), x509))) {
+                    if (NULL != (crt = crtmgr_block_list_lookup(&(engine->cmgr), x509))) {
                         ret = CL_VIRUS;
-                        cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blacklisted by %s\n", crt->name ? crt->name : "(unnamed CRB rule)");
+                        cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blocked by %s\n", crt->name ? crt->name : "(unnamed CRB rule)");
                         if (NULL != ctx) {
                             ret = cli_append_virus(ctx, crt->name ? crt->name : "(unnamed CRB rule)");
                             if ((ret == CL_VIRUS) && !SCAN_ALLMATCHES) {
@@ -1636,7 +1636,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                             }
                         }
                         /* In the case where ctx is NULL, we don't care about
-                         * blacklist matches - we are either using this
+                         * block list matches - we are either using this
                          * function to parse .cat rules that were loaded in,
                          * or it's sigtool doing cert printing. */
                     }
@@ -1647,13 +1647,13 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                      * store for doing the time/code digital signature checks.
                      * This isn't required for cert-signing certs that
                      * we discover this way, since the CRB cli_crts have enough
-                     * info to be able to whitelist other certs, but executing
+                     * info to be able to trust other certs, but executing
                      * the following code for those has the benefit of removing
                      * them from newcerts so they aren't processed again while
                      * looking for chained trust. */
-                    if (NULL != (crt = crtmgr_whitelist_lookup(cmgr, x509, 1))) {
+                    if (NULL != (crt = crtmgr_trust_list_lookup(cmgr, x509, 1))) {
                         cli_crt *tmp = x509->next;
-                        cli_dbgmsg("asn1_parse_mscat: Directly whitelisting embedded cert based on %s\n", (crt->name ? crt->name : "(no name)"));
+                        cli_dbgmsg("asn1_parse_mscat: Directly trusting embedded cert based on %s\n", (crt->name ? crt->name : "(no name)"));
                         if (cli_debug_flag && crt->name) {
                             // Copy the name from the CRB entry for printing below
                             x509->name = strdup(crt->name);
@@ -1695,7 +1695,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                      * assuming tries to prevent us from doing the expensive
                      * RSA verification in the case where the same cert is
                      * embedded multiple times?  Sure, why not */
-                    if (crtmgr_whitelist_lookup(cmgr, x509, 0)) {
+                    if (crtmgr_trust_list_lookup(cmgr, x509, 0)) {
                         cli_crt *tmp = x509->next;
                         cli_dbgmsg("asn1_parse_mscat: found embedded certificate matching one in the trust store\n");
                         crtmgr_del(&newcerts, x509);
@@ -1709,7 +1709,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
 
                     if (parent) {
 
-                        cli_dbgmsg("asn1_parse_mscat: Indirectly whitelisting embedded cert based on %s\n", (parent->name ? parent->name : "(no name)"));
+                        cli_dbgmsg("asn1_parse_mscat: Indirectly trusting embedded cert based on %s\n", (parent->name ? parent->name : "(no name)"));
 
                         // TODO Why is this done?  It seems like you should be
                         // able to have a parent cert can only do cert signing
@@ -2005,7 +2005,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
          * signature has a time-stamping countersignature, then we just need to
          * verify that countersignature.  Otherwise, we should determine
          * whether the signing certificate is still valid (time-based, since at
-         * this point in the code no matching blacklist rules fired). */
+         * this point in the code no matching block list rules fired). */
 
         if (!size) {
             time_t now;
@@ -2155,7 +2155,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
     int i;
 
     // TODO As currently implemented, loading in a .cat file with -d requires
-    // an accompanying .crb with whitelist entries that will cause the .cat
+    // an accompanying .crb with trust entries that will cause the .cat
     // file signatures to verify successfully.  If a user is specifying a .cat
     // file to use, though, we should assume they trust it and at least add the
     // covered hashes from it to hm_fp
@@ -2311,10 +2311,10 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
 /* Check an embedded PE Authenticode section to determine whether it's trusted.
  * This will return CL_VERIFIED if the file should be trusted, CL_EPARSE if an
  * error occurred while parsing the signature, CL_EVERIFY if parsing was
- * successful but there were no whitelist rules for the signature, and
- * CL_VIRUS if a blacklist rule was found for an embedded certificate.
+ * successful but there were no trust rules for the signature, and
+ * CL_VIRUS if a block list rule was found for an embedded certificate.
  *
- * If CL_VIRUS is returned, certname will be set to the certname of blacklist
+ * If CL_VIRUS is returned, certname will be set to the certname of block list
  * rule that matched (unless certname is NULL). */
 cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset, unsigned int size, struct cli_mapped_region *regions, uint32_t nregions, cli_ctx *ctx)
 {
@@ -2331,7 +2331,7 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
 
     cli_dbgmsg("in asn1_check_mscat (offset: %llu)\n", (long long unsigned)offset);
     crtmgr_init(&certs);
-    /* Get a copy of all certs in the trust store, excluding blacklist certs */
+    /* Get a copy of all certs in the trust store, excluding block list certs */
     if (crtmgr_add_roots(engine, &certs, 1)) {
         crtmgr_free(&certs);
         return CL_EVERIFY;
@@ -2404,6 +2404,6 @@ cl_error_t asn1_check_mscat(struct cl_engine *engine, fmap_t *map, size_t offset
         return CL_EPARSE;
     }
 
-    cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, whitelisted\n");
+    cli_dbgmsg("asn1_check_mscat: file with valid authenticode signature, trusted\n");
     return CL_VERIFIED;
 }

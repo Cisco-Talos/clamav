@@ -144,7 +144,7 @@ With this option you can provide custom sources for database files. This option 
 Support for:
   http(s)://, ftp(s)://, or file://
 Example usage:
-  DatabaseCustomURL https://myserver.com:4567/whitelist.wdb
+  DatabaseCustomURL https://myserver.com:4567/allow_list.wdb
 .br
 Default: disabled
 .TP

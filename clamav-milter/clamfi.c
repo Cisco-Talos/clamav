@@ -44,7 +44,7 @@
 
 #include "connpool.h"
 #include "netcode.h"
-#include "whitelist.h"
+#include "allow_list.h"
 #include "clamfi.h"
 
 #if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
@@ -87,7 +87,7 @@ struct CLAMFI {
     int alt;
     unsigned int totsz;
     unsigned int bufsz;
-    unsigned int all_whitelisted;
+    unsigned int all_allowed;
     unsigned int gotbody;
     unsigned int scanned_count;
     unsigned int status_count;
@@ -227,8 +227,8 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
     if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
         return SMFIS_CONTINUE; /* whatever */
 
-    if (!cf->totsz && cf->all_whitelisted) {
-        logg("*Skipping scan (all destinations whitelisted)\n");
+    if (!cf->totsz && cf->all_allowed) {
+        logg("*Skipping scan (all destinations allowed)\n");
         nullify(ctx, cf, CF_NONE);
         free(cf);
         return SMFIS_ACCEPT;
@@ -712,8 +712,8 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv)
         return SMFIS_ACCEPT;
     }
 
-    if (whitelisted(argv[0], 1)) {
-        logg("*Skipping scan for %s (whitelisted from)\n", argv[0]);
+    if (allowed(argv[0], 1)) {
+        logg("*Skipping scan for %s (allowed from)\n", argv[0]);
         return SMFIS_ACCEPT;
     }
 
@@ -724,7 +724,7 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv)
     cf->totsz = 0;
     cf->bufsz = 0;
     cf->main = cf->alt  = -1;
-    cf->all_whitelisted = 1;
+    cf->all_allowed     = 1;
     cf->gotbody         = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
     if (multircpt) {
@@ -747,8 +747,8 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv)
     if (!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
         return SMFIS_CONTINUE; /* whatever */
 
-    if (cf->all_whitelisted)
-        cf->all_whitelisted &= whitelisted(argv[0], 0);
+    if (cf->all_allowed)
+        cf->all_allowed &= allowed(argv[0], 0);
 
     if (multircpt) {
         void *new_rcpt = realloc(cf->recipients, (cf->nrecipients + 1) * sizeof(*(cf->recipients)));

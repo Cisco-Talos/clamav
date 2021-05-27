@@ -5537,12 +5537,12 @@ static int sort_sects(const void *first, const void *second)
  *
  * If peinfo is NULL, one will be created internally and used
  *
- * CL_VERIFIED will be returned if the file was whitelisted based on its
- * signature.  CL_VIRUS will be returned if the file was blacklisted based on
+ * CL_VERIFIED will be returned if the file was trusted based on its
+ * signature.  CL_VIRUS will be returned if the file was blocked based on
  * its signature.  Otherwise, a cl_error_t error value will be returned.
  *
  * If CL_VIRUS is returned, cli_append_virus will get called, adding the
- * name associated with the blacklist CRB rules to the list of found viruses.*/
+ * name associated with the block list CRB rules to the list of found viruses.*/
 cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     size_t at;
@@ -5678,7 +5678,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
                  * bytes in the security directory) is now opt-in via a registry
                  * key.  Given that most machines will treat these binaries as
                  * valid, we'll still parse the signature and just trust that
-                 * our whitelist signatures are tailored enough to where any
+                 * our trust signatures are tailored enough to where any
                  * instances of this are reasonable (for instance, I saw one
                  * binary that appeared to use this to embed a license key.) */
             cli_dbgmsg("cli_check_auth_header: MS13-098 violation detected, but continuing on to verify certificate\n");
@@ -5693,7 +5693,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
             // We validated the embedded signature.  Hooray!
             goto finish;
         } else if (CL_VIRUS == ret) {
-            // A blacklist rule hit - don't continue on to check hm_fp for a match
+            // A block list rule hit - don't continue on to check hm_fp for a match
             goto finish;
         }
 
@@ -5740,7 +5740,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     hashctx = NULL;
 
     if (cli_hm_scan(authsha1, 2, NULL, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-        cli_dbgmsg("cli_check_auth_header: PE file whitelisted by catalog file\n");
+        cli_dbgmsg("cli_check_auth_header: PE file trusted by catalog file\n");
         ret = CL_CLEAN;
         goto finish;
     }

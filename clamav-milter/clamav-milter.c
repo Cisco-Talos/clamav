@@ -49,7 +49,7 @@
 #include "connpool.h"
 #include "netcode.h"
 #include "clamfi.h"
-#include "whitelist.h"
+#include "allow_list.h"
 
 #ifndef _WIN32
 #include <sys/wait.h>
@@ -80,7 +80,7 @@ static void milter_exit(int sig)
     logg_close();
     cpool_free();
     localnets_free();
-    whitelist_free();
+    allow_list_free();
 }
 
 int main(int argc, char **argv)
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if ((opt = optget(opts, "Whitelist"))->enabled && whitelist_init(opt->strarg)) {
+    if (((opt = optget(opts, "Whitelist"))->enabled || (opt = optget(opts, "AllowList"))->enabled) && allow_list_init(opt->strarg)) {
         localnets_free();
         logg_close();
         optfree(opts);
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 
     if ((opt = optget(opts, "SkipAuthenticated"))->enabled && smtpauth_init(opt->strarg)) {
         localnets_free();
-        whitelist_free();
+        allow_list_free();
         logg_close();
         optfree(opts);
         return 1;
@@ -371,7 +371,7 @@ int main(int argc, char **argv)
         if (-1 == daemonize_parent_wait(user_name, logg_file)) {
             logg("!daemonize() failed\n");
             localnets_free();
-            whitelist_free();
+            allow_list_free();
             cpool_free();
             logg_close();
             optfree(opts);
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
     if (!cp) {
         logg("!Failed to init the socket pool\n");
         localnets_free();
-        whitelist_free();
+        allow_list_free();
         logg_close();
         optfree(opts);
         return 1;
@@ -451,7 +451,7 @@ int main(int argc, char **argv)
 
         if (err) {
             localnets_free();
-            whitelist_free();
+            allow_list_free();
             logg_close();
             optfree(opts);
             return 2;

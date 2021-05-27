@@ -40,7 +40,7 @@
 #include "htmlnorm.h"
 #include "phishcheck.h"
 #include "phish_domaincheck_db.h"
-#include "phish_whitelist.h"
+#include "phish_allow_list.h"
 #include "regex_list.h"
 #include "iana_tld.h"
 #include "iana_cctld.h"
@@ -82,25 +82,25 @@ Steps:
 - convert hostname to lowercase
 - normalize \ to /
 
-3. Matched the urls against a _whitelist_:
-a _realLink_, _displayedLink_ pair is matched against the _whitelist_.
-the _whitelist_ is a list of pairs of realLink, displayedLink. Any of the elements of those pairs can be a _regex_.
- if url *is found* in _whitelist_ --> *CLEAN*
+3. Matched the urls against an _allow_list_:
+a _realLink_, _displayedLink_ pair is matched against the _allow_list_.
+the _allow_list_ is a list of pairs of realLink, displayedLink. Any of the elements of those pairs can be a _regex_.
+ if url *is found* in _allow_list_ --> *CLEAN*
 
-4. URL is looked up in the _domainlist_
-The _domainlist_ is a list of pairs of realLink, displayedLink (any of which can be regex).
+4. URL is looked up in the _domain_list_
+The _domain_list_ is a list of pairs of realLink, displayedLink (any of which can be regex).
 This is the list of domains we do phishing detection for (such as ebay,paypal,chase,....)
 We can't decide to stop processing here or not, so we just set a flag.
 
-Note(*!*): the flags are modified by the the domainlist checker. If domain is found, then the flags associated with it filter the default compile-time flags.
+Note(*!*): the flags are modified by the the domain list checker. If domain is found, then the flags associated with it filter the default compile-time flags.
 
 5. _Hostname_ is extracted from the _displayed URL_.
-It is checked against the _whitelist_, and _domainlist_.
+It is checked against the _allow_list_, and _domain_list_.
 
 6. Now we know if we want to stop processing.
-If we are only scanning domains in the _domainlist_ (default behaviour), and the url/domain
+If we are only scanning domains in the _domain_list_ (default behaviour), and the url/domain
 isn't found in it, we return (and mark url as not_list/clean).
-If we scan all domains, then the domainlist isn't even checked.
+If we scan all domains, then the domain list isn't even checked.
 
 7. URL cloak check.
 check for %00, and hex-encoded IPs in URL.
@@ -127,7 +127,7 @@ if not -> clean
 
 16. Do DNS lookups/reverse lookups. Disabled now (too much load/too many lookups). *
 
-For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Flags)
+For the AllowList(.wdb)/DomainList(.pdb) format see regex_list.c (search for Flags)
  *
  */
 
@@ -727,7 +727,7 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
     /* TODO: get_host and then apply regex, etc. */
     int i;
     struct phishcheck* pchk = (struct phishcheck*)ctx->engine->phishcheck;
-    /* check for status of whitelist fatal error, etc. */
+    /* check for status of allow list fatal error, etc. */
     if (!pchk || pchk->is_disabled) {
         goto done;
     }
@@ -791,7 +791,7 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
                 status = cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
                 break;
             case CL_PHISH_HASH1:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.URL.Blacklisted");
+                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.URL.Blocked");
                 break;
             case CL_PHISH_HASH2:
                 status = cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
@@ -863,8 +863,8 @@ void phishing_done(struct cl_engine* engine)
     if (pchk && !pchk->is_disabled) {
         free_regex(&pchk->preg_numeric);
     }
-    whitelist_done(engine);
-    domainlist_done(engine);
+    allow_list_done(engine);
+    domain_list_done(engine);
     if (pchk) {
         cli_dbgmsg("Freeing phishcheck struct\n");
         MPOOL_FREE(engine->mempool, pchk);
@@ -1141,9 +1141,9 @@ static enum phish_status phishy_map(int phishy, enum phish_status fallback)
         return fallback;
 }
 
-static cl_error_t whitelist_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
+static cl_error_t allow_list_check(const struct cl_engine* engine, struct url_check* urls, int hostOnly)
 {
-    return whitelist_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
+    return allow_list_match(engine, urls->realLink.data, urls->displayLink.data, hostOnly);
 }
 
 static cl_error_t hash_match(const struct regex_matcher* rlist,
@@ -1204,7 +1204,7 @@ static cl_error_t hash_match(const struct regex_matcher* rlist,
             cli_dbgmsg("This hash matched: %s\n", h);
             switch (*virname) {
                 case 'W':
-                    cli_dbgmsg("Hash is whitelisted, skipping\n");
+                    cli_dbgmsg("Hash is allowed, skipping\n");
                     break;
                 case '1':
                     *phishing_verdict = CL_PHISH_HASH1;
@@ -1479,7 +1479,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
         goto done;
     }
 
-    if (CL_SUCCESS != (status = url_hash_match(ctx->engine->domainlist_matcher,
+    if (CL_SUCCESS != (status = url_hash_match(ctx->engine->domain_list_matcher,
                                                urls->realLink.data,
                                                strlen(urls->realLink.data),
                                                &phishing_verdict))) {
@@ -1523,11 +1523,11 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
     }
 
     /*
-     * Whitelist X-type WDB signatures:  X:RealURL:DisplayedURL
+     * AllowList X-type WDB signatures:  X:RealURL:DisplayedURL
      * Eg:
      *      X:.+\.benign\.com([/?].*)?:.+\.benign\.de
      */
-    if (whitelist_check(ctx->engine, urls, 0)) { /* if url is whitelisted don't perform further checks */
+    if (allow_list_check(ctx->engine, urls, 0)) { /* if url is allowed don't perform further checks */
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
@@ -1537,7 +1537,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      R:.+\.malicious\.net([/?].*)?:.+\.benign\.com
      */
-    /* Provide copies of the oirinal URL's, because domainlist_match() may modify the buffer,
+    /* Provide copies of the oirinal URL's, because domain_list_match() may modify the buffer,
        and we don't want that to happen in this case. */
     realData = cli_strdup(urls->realLink.data);
     if (!realData) {
@@ -1551,7 +1551,7 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
-    if (domainlist_match(ctx->engine, realData, displayData, &urls->pre_fixup, 0)) {
+    if (domain_list_match(ctx->engine, realData, displayData, &urls->pre_fixup, 0)) {
         phishy |= DOMAIN_LISTED;
     }
 
@@ -1576,11 +1576,11 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
     }
 
     /*
-     * Whitelist M-type WDB signatures: M:RealHostname:DisplayedHostname
+     * Allow List M-type WDB signatures: M:RealHostname:DisplayedHostname
      * Eg:
      *      M:email.isbenign.com:benign.com
      */
-    if (whitelist_check(ctx->engine, &host_url, 1)) {
+    if (allow_list_check(ctx->engine, &host_url, 1)) {
         phishing_verdict = CL_PHISH_CLEAN;
         goto done;
     }
@@ -1590,14 +1590,14 @@ static enum phish_status phishingCheck(cli_ctx* ctx, struct url_check* urls)
      * Eg:
      *      H:malicious.com
      */
-    if (domainlist_match(ctx->engine, host_url.displayLink.data, host_url.realLink.data, &urls->pre_fixup, 1)) {
+    if (domain_list_match(ctx->engine, host_url.displayLink.data, host_url.realLink.data, &urls->pre_fixup, 1)) {
         phishy |= DOMAIN_LISTED;
     } else {
         urls->flags &= urls->always_check_flags;
         /* don't return, we may need to check for ssl/cloaking */
     }
 
-    /* link type filtering must occur after last domainlist_match */
+    /* link type filtering must occur after last domain_list_match */
     if (urls->link_type & LINKTYPE_IMAGE && !(urls->flags & CHECK_IMG_URL)) {
         /* its listed, but this link type is filtered */
         phishing_verdict = CL_PHISH_CLEAN;
@@ -1675,7 +1675,7 @@ static const char* phishing_ret_toString(enum phish_status phishing_verdict)
         case CL_PHISH_HASH0:
         case CL_PHISH_HASH1:
         case CL_PHISH_HASH2:
-            return "Blacklisted";
+            return "Blocked";
         default:
             return "Unknown return code";
     }

@@ -3562,14 +3562,14 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
         perf_start(ctx, PERFT_PRECB);
         switch (cb(fmap_fd(*ctx->fmap), filetype, ctx->cb_ctx)) {
             case CL_BREAK:
-                cli_dbgmsg("dispatch_prescan_callback: file whitelisted by callback\n");
+                cli_dbgmsg("dispatch_prescan_callback: file allowed by callback\n");
                 perf_stop(ctx, PERFT_PRECB);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
                 /* returns CL_CLEAN */
                 *run_cleanup = 1;
                 break;
             case CL_VIRUS:
-                cli_dbgmsg("dispatch_prescan_callback: file blacklisted by callback\n");
+                cli_dbgmsg("dispatch_prescan_callback: file blocked by callback\n");
                 cli_append_virus(ctx, "Detected.By.Callback");
                 perf_stop(ctx, PERFT_PRECB);
                 ctx->hook_lsig_matches = old_hook_lsig_matches;
@@ -4456,12 +4456,12 @@ done:
             virusname = cli_get_last_virus(ctx);
         switch (ctx->engine->cb_post_scan(fmap_fd(*ctx->fmap), cb_retcode, virusname, ctx->cb_ctx)) {
             case CL_BREAK:
-                cli_dbgmsg("cli_magic_scan_desc: file whitelisted by post_scan callback\n");
+                cli_dbgmsg("cli_magic_scan_desc: file allowed by post_scan callback\n");
                 perf_stop(ctx, PERFT_POSTCB);
                 ret = CL_CLEAN;
                 break;
             case CL_VIRUS:
-                cli_dbgmsg("cli_magic_scan_desc: file blacklisted by post_scan callback\n");
+                cli_dbgmsg("cli_magic_scan_desc: file blocked by post_scan callback\n");
                 cli_append_virus(ctx, "Detected.By.Callback");
                 perf_stop(ctx, PERFT_POSTCB);
                 if (ret != CL_VIRUS) {

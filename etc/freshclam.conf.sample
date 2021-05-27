@@ -95,7 +95,7 @@ DatabaseMirror database.clamav.net
 # Default: no custom URLs
 #DatabaseCustomURL http://myserver.example.com/mysigs.ndb
 #DatabaseCustomURL https://myserver.example.com/mysigs.ndb
-#DatabaseCustomURL https://myserver.example.com:4567/whitelist.wdb
+#DatabaseCustomURL https://myserver.example.com:4567/allow_list.wdb
 #DatabaseCustomURL ftp://myserver.example.com/example.ldb
 #DatabaseCustomURL ftps://myserver.example.com:4567/example.ndb
 #DatabaseCustomURL file:///mnt/nfs/local.hdb

@@ -41,7 +41,7 @@
 #include "regex_suffix.h"
 #include "regex_list.h"
 #include "phish_domaincheck_db.h"
-#include "phish_whitelist.h"
+#include "phish_allow_list.h"
 
 #include "checks.h"
 
@@ -183,14 +183,14 @@ static void rteardown(void)
 
 typedef enum rtest_result {
     RTR_PHISH,
-    RTR_WHITELISTED,
+    RTR_ALLOWED,
     RTR_CLEAN,
-    RTR_BLACKLISTED, // if 2nd db is loaded
+    RTR_BLOCKED, // if 2nd db is loaded
     RTR_INVALID_REGEX
 } rtr_t;
 
 static const struct rtest {
-    const char *pattern; /* NULL if not meant for whitelist testing */
+    const char *pattern; /* NULL if not meant for allow list testing */
     const char *realurl;
     const char *displayurl;
     rtr_t result;
@@ -208,43 +208,43 @@ static const struct rtest {
     {".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
      "http://srx.main.ebayrtm.com",
      "pages.ebay.de",
-     RTR_WHITELISTED /* should be whitelisted */},
+     RTR_ALLOWED /* should be allowed */},
     {".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
      "http://srx.main.ebayrtm.com.evil.example.com",
      "pages.ebay.de",
      RTR_PHISH},
     {".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
      "www.www.ebayrtm.com?somecgi",
-     "www.ebay.com/something", RTR_WHITELISTED},
+     "www.ebay.com/something", RTR_ALLOWED},
     {NULL,
      "http://key.com", "go to key.com", RTR_CLEAN},
     {":.+\\.paypal\\.(com|de|fr|it)([/?].*)?:.+\\.ebay\\.(at|be|ca|ch|co\\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\\.(au|cn|hk|my|sg))?)([/?].*)?/",
-     "http://www.paypal.com", "pics.ebay.com", RTR_WHITELISTED},
+     "http://www.paypal.com", "pics.ebay.com", RTR_ALLOWED},
     {NULL, "http://somefakeurl.example.com", "someotherdomain-key.com", RTR_CLEAN},
     {NULL, "http://somefakeurl.example.com", "someotherdomain.key.com", RTR_PHISH},
-    {NULL, "http://malware-test.example.com/something", "test", RTR_BLACKLISTED},
-    {NULL, "http://phishing-test.example.com/something", "test", RTR_BLACKLISTED},
-    {NULL, "http://sub.malware-test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://sub.phishing-test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@malware-test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@phishing-test.example.com/2", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@malware-test.example.com/2/test", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@phishing-test.example.com/2/test", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@malware-test.example.com/", "test", RTR_BLACKLISTED},
-    {NULL, "http://user@phishing-test.example.com/", "test", RTR_BLACKLISTED},
+    {NULL, "http://malware-test.example.com/something", "test", RTR_BLOCKED},
+    {NULL, "http://phishing-test.example.com/something", "test", RTR_BLOCKED},
+    {NULL, "http://sub.malware-test.example.com/2", "test", RTR_BLOCKED},
+    {NULL, "http://sub.phishing-test.example.com/2", "test", RTR_BLOCKED},
+    {NULL, "http://user@malware-test.example.com/2", "test", RTR_BLOCKED},
+    {NULL, "http://user@phishing-test.example.com/2", "test", RTR_BLOCKED},
+    {NULL, "http://user@malware-test.example.com/2/test", "test", RTR_BLOCKED},
+    {NULL, "http://user@phishing-test.example.com/2/test", "test", RTR_BLOCKED},
+    {NULL, "http://user@malware-test.example.com/", "test", RTR_BLOCKED},
+    {NULL, "http://user@phishing-test.example.com/", "test", RTR_BLOCKED},
     {NULL, "http://x.exe", "http:///x.exe", RTR_CLEAN},
     {".+\\.ebayrtm\\.com([/?].*)?:[^.]+\\.ebay\\.(de|com|co\\.uk)/",
      "http://srx.main.ebayrtm.com",
      "pages.ebay.de",
-     RTR_WHITELISTED /* should be whitelisted */},
+     RTR_ALLOWED /* should be allowed */},
     {".+\\.ebayrtm\\.com([/?].*)?:.+[r-t]\\.ebay\\.(de|com|co\\.uk)/",
      "http://srx.main.ebayrtm.com",
      "pages.ebay.de",
-     RTR_WHITELISTED /* should be whitelisted */},
+     RTR_ALLOWED /* should be allowed */},
     {".+\\.ebayrtm\\.com([/?].*)?:.+[r-t]\\.ebay\\.(de|com|co\\.uk)/",
      "http://srx.main.ebayrtm.com",
      "pages.ebay.de",
-     RTR_WHITELISTED /* should be whitelisted */},
+     RTR_ALLOWED /* should be allowed */},
     {"[t-", "", "", RTR_INVALID_REGEX},
     {NULL, "http://co.uk", "http:// co.uk", RTR_CLEAN},
     {NULL, "http://co.uk", "     ", RTR_CLEAN},
@@ -263,14 +263,14 @@ START_TEST(regex_list_match_test)
     cl_error_t rc;
 
     if (!rtest->pattern) {
-        ck_assert_msg(rtest->result != RTR_WHITELISTED,
-                      "whitelist test must have pattern set");
-        /* this test entry is not meant for whitelist testing */
+        ck_assert_msg(rtest->result != RTR_ALLOWED,
+                      "Allow list test must have pattern set");
+        /* this test entry is not meant for allow_list testing */
         return;
     }
 
-    ck_assert_msg(rtest->result == RTR_PHISH || rtest->result == RTR_WHITELISTED || rtest->result == RTR_INVALID_REGEX,
-                  "whitelist test result must be either RTR_PHISH or RTR_WHITELISTED or RTR_INVALID_REGEX");
+    ck_assert_msg(rtest->result == RTR_PHISH || rtest->result == RTR_ALLOWED || rtest->result == RTR_INVALID_REGEX,
+                  "Allow list test result must be either RTR_PHISH or RTR_ALLOWED or RTR_INVALID_REGEX");
     pattern = cli_strdup(rtest->pattern);
     ck_assert_msg(!!pattern, "cli_strdup");
 
@@ -314,13 +314,13 @@ static void psetup_impl(int load2)
     phishing_init(engine);
     ck_assert_msg(!!engine->phishcheck, "phishing_init");
 
-    rc = init_domainlist(engine);
-    ck_assert_msg(rc == CL_SUCCESS, "init_domainlist");
+    rc = init_domain_list(engine);
+    ck_assert_msg(rc == CL_SUCCESS, "init_domain_list");
 
     f = fdopen(open_testfile("input" PATHSEP "daily.pdb", O_RDONLY | O_BINARY), "r");
     ck_assert_msg(!!f, "fopen daily.pdb");
 
-    rc = load_regex_matcher(engine, engine->domainlist_matcher, f, &signo, 0, 0, NULL, 1);
+    rc = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
     ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
     fclose(f);
 
@@ -331,7 +331,7 @@ static void psetup_impl(int load2)
         ck_assert_msg(!!f, "fopen daily.gdb");
 
         signo = 0;
-        rc    = load_regex_matcher(engine, engine->domainlist_matcher, f, &signo, 0, 0, NULL, 1);
+        rc    = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
         ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
         fclose(f);
 
@@ -339,25 +339,25 @@ static void psetup_impl(int load2)
     }
     loaded_2 = load2;
 
-    rc = init_whitelist(engine);
-    ck_assert_msg(rc == CL_SUCCESS, "init_whitelist");
+    rc = init_allow_list(engine);
+    ck_assert_msg(rc == CL_SUCCESS, "init_allow_list");
 
     f     = fdopen(open_testfile("input" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
     signo = 0;
-    rc    = load_regex_matcher(engine, engine->whitelist_matcher, f, &signo, 0, 1, NULL, 1);
+    rc    = load_regex_matcher(engine, engine->allow_list_matcher, f, &signo, 0, 1, NULL, 1);
     ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
     fclose(f);
 
     ck_assert_msg(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
 
-    rc = cli_build_regex_list(engine->whitelist_matcher);
+    rc = cli_build_regex_list(engine->allow_list_matcher);
     ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list");
 
-    rc = cli_build_regex_list(engine->domainlist_matcher);
+    rc = cli_build_regex_list(engine->domain_list_matcher);
     ck_assert_msg(rc == CL_SUCCESS, "cli_build_regex_list");
 
-    ck_assert_msg(is_regex_ok(engine->whitelist_matcher), "is_regex_ok");
-    ck_assert_msg(is_regex_ok(engine->domainlist_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->allow_list_matcher), "is_regex_ok");
+    ck_assert_msg(is_regex_ok(engine->domain_list_matcher), "is_regex_ok");
 }
 
 static void psetup(void)
@@ -418,9 +418,9 @@ static void do_phishing_test(const struct rtest *rtest)
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
-        case RTR_WHITELISTED:
+        case RTR_ALLOWED:
             ck_assert_msg(!ctx.found_possibly_unwanted,
-                          "this should be whitelisted, realURL: %s, displayURL: %s",
+                          "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
@@ -428,14 +428,14 @@ static void do_phishing_test(const struct rtest *rtest)
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
-        case RTR_BLACKLISTED:
+        case RTR_BLOCKED:
             if (!loaded_2)
                 ck_assert_msg(!ctx.found_possibly_unwanted,
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
             else {
                 ck_assert_msg(ctx.found_possibly_unwanted,
-                              "this should be blacklisted, realURL: %s, displayURL: %s",
+                              "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
                 if (*ctx.virname) {
                     char *phishingFound = NULL;
@@ -446,7 +446,7 @@ static void do_phishing_test(const struct rtest *rtest)
                     } else if (strstr(rtest->realurl, "phishing-test")) {
                         detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
                     }
-                    ck_assert_msg(detectionName != NULL, "\n\t Blacklist test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
+                    ck_assert_msg(detectionName != NULL, "\n\t Block list test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
                     phishingFound = strstr((const char *)*ctx.virname, detectionName);
                     ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
                 }
@@ -492,7 +492,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     rc = phishingScan(&ctx, &hrefs);
 
     html_tag_arg_free(&hrefs);
-    if (rtest->result == RTR_PHISH || (loaded_2 != 0 && rtest->result == RTR_BLACKLISTED)) {
+    if (rtest->result == RTR_PHISH || (loaded_2 != 0 && rtest->result == RTR_BLOCKED)) {
         ck_assert_msg(rc == CL_VIRUS, "phishingScan returned \"%s\", expected \"%s\". \n\trealURL: %s \n\tdisplayURL: %s",
                       cl_strerror(rc),
                       cl_strerror(CL_VIRUS),
@@ -509,9 +509,9 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
-        case RTR_WHITELISTED:
+        case RTR_ALLOWED:
             ck_assert_msg(!ctx.num_viruses,
-                          "this should be whitelisted, realURL: %s, displayURL: %s",
+                          "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
@@ -519,14 +519,14 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
-        case RTR_BLACKLISTED:
+        case RTR_BLOCKED:
             if (!loaded_2)
                 ck_assert_msg(!ctx.num_viruses,
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
             else {
                 ck_assert_msg(ctx.num_viruses,
-                              "this should be blacklisted, realURL: %s, displayURL: %s",
+                              "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
                 if (*ctx.virname) {
                     char *phishingFound = NULL;
@@ -537,7 +537,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
                     } else if (strstr(rtest->realurl, "phishing-test")) {
                         detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
                     }
-                    ck_assert_msg(detectionName != NULL, "\n\t Blacklist test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
+                    ck_assert_msg(detectionName != NULL, "\n\t Block list test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
                     phishingFound = strstr((const char *)*ctx.virname, detectionName);
                     ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
                 }

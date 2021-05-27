@@ -68,7 +68,7 @@
 #include "asn1.h"
 
 #include "phishcheck.h"
-#include "phish_whitelist.h"
+#include "phish_allow_list.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
 #include "hashtab.h"
@@ -1207,13 +1207,13 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
     if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
         return CL_SUCCESS;
 
-    if (!engine->whitelist_matcher) {
-        if (CL_SUCCESS != (ret = init_whitelist(engine))) {
+    if (!engine->allow_list_matcher) {
+        if (CL_SUCCESS != (ret = init_allow_list(engine))) {
             return ret;
         }
     }
 
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->whitelist_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->allow_list_matcher, fs, NULL, options, 1, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -1227,13 +1227,13 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if (!(engine->dconf->phishing & PHISHING_CONF_ENGINE))
         return CL_SUCCESS;
 
-    if (!engine->domainlist_matcher) {
-        if (CL_SUCCESS != (ret = init_domainlist(engine))) {
+    if (!engine->domain_list_matcher) {
+        if (CL_SUCCESS != (ret = init_domain_list(engine))) {
             return ret;
         }
     }
 
-    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->domainlist_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
+    if (CL_SUCCESS != (ret = load_regex_matcher(engine, engine->domain_list_matcher, fs, signo, options, 0, dbio, engine->dconf->other & OTHER_CONF_PREFILTERING))) {
         return ret;
     }
 
@@ -1956,7 +1956,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     unsigned security_trust = 0;
     unsigned i;
 
-    /* TODO: virusname have a common prefix, and whitelist by that */
+    /* TODO: virusname have a common prefix, and allow by that */
     if ((rc = cli_initroots(engine, options)))
         return rc;
 
@@ -3000,10 +3000,10 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
 
         switch (tokens[1][0]) {
             case '1':
-                ca.isBlacklisted = 0;
+                ca.isBlocked = 0;
                 break;
             case '0':
-                ca.isBlacklisted = 1;
+                ca.isBlocked = 1;
                 break;
             default:
                 cli_errmsg("cli_loadcrt: line %u: Invalid trust specification. Expected 0 or 1\n", (unsigned int)line);
@@ -4635,7 +4635,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
 
         } else if (cli_strbcasestr(dent->d_name, ".crb")) {
             /* .cat files cannot be loaded successfully unless there are .crb
-             * rules that whitelist the certs used to sign the catalog files.
+             * rules that trust the certs used to sign the catalog files.
              * Therefore, we need to ensure the .crb rules are loaded prior */
             load_priority = DB_LOAD_PRIORITY_CRB;
 
@@ -5283,10 +5283,10 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     if (engine->hm_fp)
         hm_flush(engine->hm_fp);
 
-    if ((ret = cli_build_regex_list(engine->whitelist_matcher))) {
+    if ((ret = cli_build_regex_list(engine->allow_list_matcher))) {
         return ret;
     }
-    if ((ret = cli_build_regex_list(engine->domainlist_matcher))) {
+    if ((ret = cli_build_regex_list(engine->domain_list_matcher))) {
         return ret;
     }
     if (engine->ignored) {
@@ -5395,12 +5395,12 @@ static int countsigs(const char *dbname, unsigned int options, unsigned int *sig
             (*sigs)++;
 
     } else if (cli_strbcasestr(dbname, ".wdb") || cli_strbcasestr(dbname, ".fp") || cli_strbcasestr(dbname, ".sfp") || cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2") || cli_strbcasestr(dbname, ".ftm") || cli_strbcasestr(dbname, ".cfg") || cli_strbcasestr(dbname, ".cat")) {
-        /* ignore whitelist/FP signatures and metadata files */
+        /* ignore allow list/FP signatures and metadata files */
 
-        // TODO .crb sigs can contain both whitelist and blacklist signatures.
+        // TODO .crb sigs can contain both allow/trust and block signatures.
         // For now we will just include both in the count by not excluding this
         // sig type here, but in the future we could extract just the number of
-        // blacklist rules manually so that the count is more accurate.
+        // block list rules manually so that the count is more accurate.
 
         // NOTE: We implicitly ignore .info files because they aren't currently
         // in the list of ones checked for by CLI_DBEXT

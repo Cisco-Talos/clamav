@@ -3488,7 +3488,7 @@ static int dumpcerts(const struct optstruct *opts)
             break;
         case CL_EVERIFY:
             // The Authenticode header was parsed successfully but there were
-            // no applicable whitelist/blacklist rules
+            // no applicable trust/block rules
             break;
         case CL_BREAK:
             mprintf("*dumpcerts: No Authenticode signature detected\n");

@@ -61,13 +61,13 @@ void cli_crt_clear(cli_crt *x509)
     mp_clear_multi(&x509->n, &x509->e, &x509->sig, NULL);
 }
 
-/* Look for an existing certificate in the trust store m.  This search allows
+/* Look for an existing certificate in the trust store `m`.  This search allows
  * the not_before / not_after / certSign / codeSign / timeSign fields to be
  * more restrictive than the values associated with a cert in the trust store,
  * but not less.  It's probably overkill to not do exact matching on those
  * fields... TODO Is there a case where this is needed
  *
- * There are two ways that things get added to the whitelist - through the CRB
+ * There are two ways that things get added to the trust list - through the CRB
  * rules, and through embedded signatures / catalog files that we parse.  CRB
  * rules don't currently allow the issuer and hashtype to be specified, so the
  * code sets those to sentinel values (0xca repeating and CLI_HASHTYPE_ANY
@@ -98,12 +98,12 @@ void cli_crt_clear(cli_crt *x509)
  * hashtype fields.
  *
  */
-cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
+cli_crt *crtmgr_trust_list_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
 {
     cli_crt *i;
     for (i = m->crts; i; i = i->next) {
 
-        if (i->isBlacklisted) {
+        if (i->isBlocked) {
             continue;
         }
 
@@ -145,29 +145,29 @@ cli_crt *crtmgr_whitelist_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
     return NULL;
 }
 
-cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
+cli_crt *crtmgr_block_list_lookup(crtmgr *m, cli_crt *x509)
 {
     cli_crt *i;
     for (i = m->crts; i; i = i->next) {
         /* The CRB rules are based on subject, serial, and public key,
-         * so do blacklist lookups based on those fields. The serial
-         * number field can also be blank, which effectively blacklists
+         * so do block list lookups based on those fields. The serial
+         * number field can also be blank, which effectively blocks
          * all possible serial numbers using the specified subject and
          * public key. Sometimes when people go to have their cert
          * renewed, they'll opt to have the subject and public key be
          * the same, but the CA must issue a new serial number for the
-         * new cert. A blank issuer in a CRB rule allows blacklisting
+         * new cert. A blank issuer in a CRB rule allows blocking
          * all of these at once. */
 
         // TODO the rule format specifies CodeSign / TimeSign / CertSign
         // which we could also match on, but we just ignore those fields
-        // for blacklist certs for now
+        // for blocked certs for now
 
         // TODO the rule format allows the exponent to be specified as well,
         // but that gets ignored when CRB rules are parsed (and set to a fixed
         // value), so ignore that field when looking at certs
 
-        if (!i->isBlacklisted ||
+        if (!i->isBlocked ||
             memcmp(i->subject, x509->subject, sizeof(i->subject)) ||
             mp_cmp(&x509->n, &i->n)) {
             continue;
@@ -184,13 +184,13 @@ cli_crt *crtmgr_blacklist_lookup(crtmgr *m, cli_crt *x509)
 }
 
 /* Determine whether x509 already exists in m. The fields compared depend on
- * whether x509 is a blacklist entry or a trusted certificate */
+ * whether x509 is a block entry or a trusted certificate */
 cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509)
 {
-    if (x509->isBlacklisted) {
-        return crtmgr_blacklist_lookup(m, x509);
+    if (x509->isBlocked) {
+        return crtmgr_block_list_lookup(m, x509);
     } else {
-        return crtmgr_whitelist_lookup(m, x509, 0);
+        return crtmgr_trust_list_lookup(m, x509, 0);
     }
 }
 
@@ -199,13 +199,13 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
     cli_crt *i;
     int ret = 0;
 
-    if (x509->isBlacklisted) {
-        if (crtmgr_blacklist_lookup(m, x509)) {
-            cli_dbgmsg("crtmgr_add: duplicate blacklist entry detected - not adding\n");
+    if (x509->isBlocked) {
+        if (crtmgr_block_list_lookup(m, x509)) {
+            cli_dbgmsg("crtmgr_add: duplicate blocked certificate detected - not adding\n");
             return 0;
         }
     } else {
-        if (crtmgr_whitelist_lookup(m, x509, 0)) {
+        if (crtmgr_trust_list_lookup(m, x509, 0)) {
             cli_dbgmsg("crtmgr_add: duplicate trusted certificate detected - not adding\n");
             return 0;
         }
@@ -246,7 +246,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
     i->certSign      = x509->certSign;
     i->codeSign      = x509->codeSign;
     i->timeSign      = x509->timeSign;
-    i->isBlacklisted = x509->isBlacklisted;
+    i->isBlocked     = x509->isBlocked;
     i->next          = m->crts;
     i->prev          = NULL;
     if (m->crts)
@@ -472,17 +472,17 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
     // Loop through each of the certificates in our trust store and see whether
     // x509 is signed with it.  If it is, it's trusted
 
-    // TODO Technically we should loop through all of the blacklisted certs
+    // TODO Technically we should loop through all of the blocked certs
     // first to see whether one of those is used to sign x509.  This case
-    // will get handled if the blacklisted certificate is embedded, since we
-    // will call crtmgr_verify_crt on it and match against the blacklist entry
+    // will get handled if the blocked certificate is embedded, since we
+    // will call crtmgr_verify_crt on it and match against the block entry
     // that way, but the cert doesn't HAVE to be embedded.  This case seems
-    // unlikely enough to ignore, though.  If we ever want to blacklist a
+    // unlikely enough to ignore, though.  If we ever want to block a
     // stolen CA cert or something, then we will need to revisit this.
 
     for (i = m->crts; i; i = i->next) {
         if (i->certSign &&
-            !i->isBlacklisted &&
+            !i->isBlocked &&
             !memcmp(i->subject, x509->issuer, sizeof(i->subject)) &&
             !crtmgr_rsa_verify(i, &x509->sig, x509->hashtype, x509->tbshash)) {
             int curscore;
@@ -550,7 +550,7 @@ int crtmgr_add_roots(struct cl_engine *engine, crtmgr *m, int exclude_bl_crts)
      */
     if (m != &(engine->cmgr)) {
         for (crt = engine->cmgr.crts; crt != NULL; crt = crt->next) {
-            if (exclude_bl_crts && crt->isBlacklisted) {
+            if (exclude_bl_crts && crt->isBlocked) {
                 continue;
             }
             if (crtmgr_add(m, crt)) {

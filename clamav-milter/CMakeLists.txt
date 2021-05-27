@@ -11,8 +11,8 @@ target_sources( clamav-milter
         connpool.h
         netcode.c
         netcode.h
-        whitelist.c
-        whitelist.h )
+        allow_list.c
+        allow_list.h )
 target_include_directories( clamav-milter
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
 )

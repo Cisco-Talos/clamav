@@ -458,9 +458,9 @@ const struct clam_option __clam_options[] = {
 
     {"OnAccessExcludePath", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times. Only works with DDD system.", "/home/bofh\n/root"},
 
-    {"OnAccessExcludeRootUID", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Use this option to whitelist the root UID (0) and allow any processes run under root to access all watched files without triggering scans.", "no"},
+    {"OnAccessExcludeRootUID", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Use this option to exclude the root UID (0) and allow any processes run under root to access all watched files without triggering scans.", "no"},
 
-    {"OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can whitelist specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To whitelist the root UID please enable the OnAccessExcludeRootUID option.", "0"},
+    {"OnAccessExcludeUID", NULL, 0, CLOPT_TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "With this option you can exclude specific UIDs. Processes with these UIDs\nwill be able to access all files.\nThis option can be used multiple times (one per line). Using a value of 0 on any line will disable this option entirely. To exclude the root UID please enable the OnAccessExcludeRootUID option.", "0"},
 
     {"OnAccessExcludeUname", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows exclusions via user names when using the on-access scanning client. It can\nbe used multiple times.", "clamuser"},
 
@@ -605,7 +605,9 @@ const struct clam_option __clam_options[] = {
 
     {"Chroot", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot"},
 
-    {"Whitelist", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses"},
+    {"AllowList", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
+    // The Whitelist option should remain functional for a version or two, but has been deprecated in the documentation in favor of "AllowList".
+    {"Whitelist", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be allowed.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/allowed_addresses"},
 
     {"SkipAuthenticated", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Messages from authenticated SMTP users matching this extended POSIX\nregular expression (egrep-like) will not be scanned.\nAs an alternative, a file containing a plain (not regex) list of names (one\nper line) can be specified using the prefix \"file:\".\ne.g. SkipAuthenticated file:/etc/good_guys\n\nNote: this is the AUTH login name!", "SkipAuthenticated ^(tom|dick|henry)$"},
 
