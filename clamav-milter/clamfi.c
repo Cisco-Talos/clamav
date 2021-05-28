@@ -723,9 +723,9 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv)
     }
     cf->totsz = 0;
     cf->bufsz = 0;
-    cf->main = cf->alt  = -1;
-    cf->all_allowed     = 1;
-    cf->gotbody         = 0;
+    cf->main = cf->alt = -1;
+    cf->all_allowed    = 1;
+    cf->gotbody        = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
     if (multircpt) {
         cf->recipients  = NULL;

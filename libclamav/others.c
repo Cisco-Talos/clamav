@@ -298,7 +298,7 @@ static void rarload(void)
     cli_unrar_skip_file        = unrar_skip_file;
     cli_unrar_close            = unrar_close;
 #else
-    rhandle       = load_module("libclamunrar_iface", "unrar");
+    rhandle = load_module("libclamunrar_iface", "unrar");
     if (NULL == rhandle)
         return;
 
