@@ -201,6 +201,12 @@ Alert on emails containing cloaked URLs (might lead to some false positives).
 \fB\-\-alert\-partition\-intersection[=yes/no(*)]\fR
 Detect partition intersections in raw disk images using heuristics.
 .TP
+\fB\-\-nocerts\fR
+Disable authenticode certificate chain verification in PE files.
+.TP
+\fB\-\-dumpcerts\fR
+Dump authenticode certificate chain in PE files.
+.TP
 \fB\-\-max\-scantime=#n\fR
 The maximum time to scan before giving up. The value is in milliseconds. The value of 0 disables the limit. This option protects your system against DoS attacks (default: 120000 = 120s or 2min)
 .TP
