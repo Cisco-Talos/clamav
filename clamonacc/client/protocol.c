@@ -80,6 +80,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     int close_flag = 0;
     STATBUF statbuf;
     uint64_t bytesRead = 0;
+    const char zINSTREAM[] = "zINSTREAM";
 
     if (-1 == fd) {
         if (NULL == filename) {
@@ -111,7 +112,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
         goto strm_out;
     }
 
-    if (onas_sendln(curl, "zINSTREAM", 10, timeout)) {
+    if (onas_sendln(curl, zINSTREAM, sizeof(zINSTREAM), timeout)) {
         ret = -1;
         goto strm_out;
     }
@@ -159,8 +160,9 @@ static int onas_send_fdpass(int sockd, int fd)
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    const char zFILDES[] = "zFILDES";
 
-    if (sendln(sockd, "zFILDES", 8)) {
+    if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
         return -1;
     }
 
