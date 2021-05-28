@@ -220,9 +220,10 @@ int16_t ping_clamd(const struct optstruct *opts)
     isremote(opts);
     do {
         if ((sockd = dconnect()) >= 0) {
+            const char zPING[] = "zPING";
             recvlninit(&rcv, sockd);
 
-            if (sendln(sockd, "zPING", 6)) {
+            if (sendln(sockd, zPING, sizeof(zPING))) {
                 logg("*PING failed...\n");
                 closesocket(sockd);
             } else {
@@ -325,12 +326,13 @@ int get_clamd_version(const struct optstruct *opts)
     char *buff;
     int len, sockd;
     struct RCVLN rcv;
+    const char zVERSION[] = "zVERSION";
 
     isremote(opts);
     if ((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
-    if (sendln(sockd, "zVERSION", 9)) {
+    if (sendln(sockd, zVERSION, sizeof(zVERSION))) {
         closesocket(sockd);
         return 2;
     }
@@ -352,12 +354,13 @@ int reload_clamd_database(const struct optstruct *opts)
     char *buff;
     int len, sockd;
     struct RCVLN rcv;
+    const char zRELOAD[] = "zRELOAD";
 
     isremote(opts);
     if ((sockd = dconnect()) < 0) return 2;
     recvlninit(&rcv, sockd);
 
-    if (sendln(sockd, "zRELOAD", 8)) {
+    if (sendln(sockd, zRELOAD, sizeof(zRELOAD))) {
         closesocket(sockd);
         return 2;
     }

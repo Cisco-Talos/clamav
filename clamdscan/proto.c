@@ -148,6 +148,7 @@ static int send_stream(int sockd, const char *filename)
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
     int fd, len;
     unsigned long int todo = maxstream;
+    const char zINSTREAM[] = "zINSTREAM";
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
@@ -159,7 +160,7 @@ static int send_stream(int sockd, const char *filename)
         fd = 0;
     }
 
-    if (sendln(sockd, "zINSTREAM", 10)) {
+    if (sendln(sockd, zINSTREAM, sizeof(zINSTREAM))) {
         close(fd);
         return -1;
     }
@@ -198,6 +199,7 @@ static int send_fdpass(int sockd, const char *filename)
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     char dummy[] = "";
     int fd;
+    const char zFILDES[] = "zFILDES";
 
     if (filename) {
         if ((fd = open(filename, O_RDONLY)) < 0) {
@@ -206,7 +208,7 @@ static int send_fdpass(int sockd, const char *filename)
         }
     } else
         fd = 0;
-    if (sendln(sockd, "zFILDES", 8)) {
+    if (sendln(sockd, zFILDES, sizeof(zFILDES))) {
         close(fd);
         return -1;
     }
@@ -731,11 +733,13 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
     int ftw;
+    const char zIDSESSION[] = "zIDSESSION";
+    const char zEND[] = "zEND";
 
     if ((cdata.sockd = dconnect()) < 0)
         return 1;
 
-    if (sendln(cdata.sockd, "zIDSESSION", 11)) {
+    if (sendln(cdata.sockd, zIDSESSION, sizeof(zIDSESSION))) {
         closesocket(cdata.sockd);
         return 1;
     }
@@ -758,7 +762,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
         return 1;
     }
 
-    sendln(cdata.sockd, "zEND", 5);
+    sendln(cdata.sockd, zEND, sizeof(zEND));
     while (cdata.ids && !dspresult(&cdata)) continue;
     closesocket(cdata.sockd);
 
