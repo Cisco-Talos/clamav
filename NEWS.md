@@ -35,6 +35,11 @@ ClamAV 0.103.3 is a security patch release with the following fixes:
 
   This change effectively deprecates the `HTTPUserAgent` option for most users.
 
+- Moved the detection for Heuristics.PNG.CVE-2010-1205 behind the
+  ClamScan `--alert-broken-media` option (ClamD `AlertBrokenMedia yes`) option.
+  This type of PNG issue appears to be common enough to be an annoyance, and
+  the CVE is old enough that no one should be vulnerable at this point.
+
 Special thanks to the following for code contributions and bug reports:
 
 - Stephen Agate
