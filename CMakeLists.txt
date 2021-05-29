@@ -832,8 +832,10 @@ add_subdirectory( libclamunrar_iface )
 
 if(NOT ENABLE_EXTERNAL_MSPACK)
     add_subdirectory( libclammspack )
+    set(LIBMSPACK "ClamAV::libmspack")
 else()
     find_package(MSPack)
+    set(LIBMSPACK "MSPack::mspack")
 endif()
 
 if(WIN32)
