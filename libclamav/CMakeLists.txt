@@ -509,7 +509,7 @@ target_link_libraries( clamav_obj
         yara
         tomsfastmath
         bytecode_runtime
-        ClamAV::libmspack
+        ${LIBMSPACK}
         ClamAV::libunrar_iface_iface
         OpenSSL::SSL
         OpenSSL::Crypto
@@ -552,7 +552,7 @@ if(ENABLE_SHARED_LIB)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libmspack
+            ${LIBMSPACK}
             ClamAV::libunrar_iface_iface
             OpenSSL::SSL
             OpenSSL::Crypto
@@ -627,7 +627,7 @@ if(ENABLE_STATIC_LIB)
             yara
             tomsfastmath
             bytecode_runtime
-            ClamAV::libmspack_static
+            ${LIBMSPACK}
             ClamAV::libunrar_iface_static
             OpenSSL::SSL
             OpenSSL::Crypto

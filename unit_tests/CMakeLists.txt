@@ -68,7 +68,7 @@ if(ENABLE_APP)
             tomsfastmath
             bytecode_runtime
             JSONC::jsonc
-            ClamAV::libmspack
+            ${LIBMSPACK}
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -106,7 +106,7 @@ if(ENABLE_APP)
             tomsfastmath
             bytecode_runtime
             JSONC::jsonc
-            ClamAV::libmspack
+            ${LIBMSPACK}
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -156,7 +156,7 @@ target_link_libraries(check_clamav
         tomsfastmath
         bytecode_runtime
         JSONC::jsonc
-        ClamAV::libmspack
+        ${LIBMSPACK}
         OpenSSL::SSL
         OpenSSL::Crypto
         ZLIB::ZLIB
@@ -205,7 +205,7 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe             SIGTOOL)
     endif()
 else()
-    set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:ClamAV::libmspack>:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>:$ENV{LD_LIBRARY_PATH})
+    set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:${LIBMSPACK}>:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>:$ENV{LD_LIBRARY_PATH})
     if(NOT ENABLE_LIBCLAMAV_ONLY)
         set(LD_LIBRARY_PATH $<TARGET_FILE_DIR:ClamAV::libfreshclam>:${LD_LIBRARY_PATH})
     endif()
@@ -336,7 +336,7 @@ if(WIN32)
                 -P "${CMAKE_BINARY_DIR}/cmake_install.cmake"
                 DEPENDS
                     check_clamav check_clamd check_fpu_endian
-                    ClamAV::libclamav ClamAV::libfreshclam ClamAV::libunrar ClamAV::libunrar_iface ClamAV::libmspack
+                    ClamAV::libclamav ClamAV::libfreshclam ClamAV::libunrar ClamAV::libunrar_iface ${LIBMSPACK}
                     clambc clamd clamdscan clamdtop clamscan clamsubmit clamconf freshclam-bin sigtool
             )
         else()
@@ -398,7 +398,9 @@ if(WIN32)
 
                 # Collect our libs
                 file(COPY $<TARGET_FILE:ClamAV::libclamav> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                if(NOT ENABLE_EXTERNAL_MSPACK)
+                    file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
                 file(COPY $<TARGET_FILE:ClamAV::libfreshclam> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:ClamAV::libunrar> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:ClamAV::libunrar_iface> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
@@ -447,7 +449,9 @@ if(WIN32)
 
                 # Collect our libs
                 file(COPY $<TARGET_FILE:ClamAV::libclamav> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
-                file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                if(NOT ENABLE_EXTERNAL_MSPACK)
+                    file(COPY $<TARGET_FILE:ClamAV::libmspack> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
+                endif()
                 file(COPY $<TARGET_FILE:ClamAV::libunrar> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
                 file(COPY $<TARGET_FILE:ClamAV::libunrar_iface> DESTINATION $<TARGET_FILE_DIR:check_clamav>)
             ]])
