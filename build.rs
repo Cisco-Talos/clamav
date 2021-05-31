@@ -31,6 +31,10 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_function("cl_engine_new")
         .whitelist_function("cl_engine_free")
         .whitelist_function("cl_engine_compile")
+        .whitelist_function("cl_engine_get_num")
+        .whitelist_function("cl_engine_set_num")
+        .whitelist_function("cl_engine_get_str")
+        .whitelist_function("cl_engine_set_str")
         .whitelist_function("cl_scandesc")
         .whitelist_function("cl_scanmap_callback")
         .whitelist_function("cl_fmap_open_handle")
@@ -43,6 +47,8 @@ fn generate_bindings(customize_bindings: &dyn Fn(bindgen::Builder) -> bindgen::B
         .whitelist_function("cl_retdbdir")
         //Whitelist wanted types
         .rustified_enum("cl_error_t")
+        .rustified_enum("cl_engine_field")
+        .whitelist_type("time_t")
         //Whitelist wanted constants
         .whitelist_var("CL_SCAN_.*")
         .whitelist_var("CL_INIT_DEFAULT")
