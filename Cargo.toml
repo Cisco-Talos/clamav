@@ -1,7 +1,7 @@
 [package]
 name = "clamav-sys"
 description = "ClamAV low level bindings for Rust"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Jonas Zaddach <jonas.zaddach@gmail.com>"]
 edition = "2018"
 license = "GPL-2.0"
