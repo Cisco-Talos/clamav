@@ -592,6 +592,10 @@ END_TEST
 START_TEST(test_fildes_many)
 {
     const char idsession[] = "zIDSESSION";
+    const char fildes[] = "zFILDES";
+    const char end[] = "zEND";
+    const char ping[] = "zPING";
+
     int dummyfd, i, killed = 0;
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
@@ -599,19 +603,19 @@ START_TEST(test_fildes_many)
 
     ck_assert_msg(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
     for (i = 0; i < 1024; i++) {
-        if (sendmsg_fd(sockd, "zFILDES", sizeof("zFILDES"), dummyfd, 1) == -1) {
+        if (sendmsg_fd(sockd, fildes, sizeof(fildes), dummyfd, 1) == -1) {
             killed = 1;
             break;
         }
     }
     close(dummyfd);
-    if (send(sockd, "zEND", sizeof("zEND"), 0) == -1) {
+    if (send(sockd, end, sizeof(end), 0) == -1) {
         killed = 1;
     }
     conn_teardown();
 
     conn_setup();
-    test_command("zPING", sizeof("zPING"), NULL, "PONG", 5);
+    test_command(ping, sizeof(ping), NULL, "PONG", 5);
     conn_teardown();
 }
 END_TEST
@@ -621,12 +625,13 @@ START_TEST(test_fildes_unwanted)
     char *recvdata;
     size_t len;
     int dummyfd;
+    const char idsession[] = "zIDSESSION";
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
 
     /* send a 'zVERSION\0' including the ancillary data.
      * The \0 is from the extra char needed when sending ancillary data */
-    ck_assert_msg(sendmsg_fd(sockd, "zIDSESSION", strlen("zIDSESSION"), dummyfd, 1) != -1,
+    ck_assert_msg(sendmsg_fd(sockd, idsession, sizeof(idsession), dummyfd, 1) != -1,
                   "sendmsg failed: %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
@@ -647,14 +652,16 @@ START_TEST(test_idsession_stress)
     size_t i;
     char *data, *p;
     size_t len;
+    const char idsession[] = "zIDSESSION";
+    const char version[] = "zVERSION";
 
     conn_setup();
 
-    ck_assert_msg(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
+    ck_assert_msg(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession),
                   "send() failed: %s\n", strerror(errno));
     for (i = 0; i < 1024; i++) {
         snprintf(buf, sizeof(buf), "%u", (unsigned)(i + 1));
-        ck_assert_msg(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
+        ck_assert_msg(send(sockd, version, sizeof(version), 0) == sizeof(version),
                       "send failed: %s\n", strerror(errno));
         data = recvpartial(sockd, &len, 1);
         p    = strchr(data, ':');
