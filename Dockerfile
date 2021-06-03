@@ -83,7 +83,7 @@ RUN apk add --no-cache \
         -e "s|.*\(\ClamdSocket\) .*|\1 unix:/run/clamav/clamd.sock|" \
         "/clamav/etc/clamav/clamav-milter.conf.sample" > "/clamav/etc/clamav/clamav-milter.conf" || \
     exit 1 && \
-    ctest -V || echo "Continuing with failed tests!"
+    ctest -V
 
 FROM registry.hub.docker.com/library/alpine:latest
 

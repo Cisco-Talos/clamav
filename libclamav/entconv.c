@@ -1005,8 +1005,13 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 
                 conv = iconv_open("UTF-8//TRANSLIT", encoding);
                 if (conv == (iconv_t)-1) {
-                    cli_warnmsg("cli_codepage_to_utf8: Failed to open iconv.\n");
-                    goto done;
+                    // Try again w/out the //TRANSLIT, required because musl doesn't supprot it.
+                    // See: https://github.com/akrennmair/newsbeuter/issues/364#issuecomment-250208235
+                    conv = iconv_open("UTF-8", encoding);
+                    if (conv == (iconv_t)-1) {
+                        cli_warnmsg("cli_codepage_to_utf8: Failed to open iconv.\n");
+                        goto done;
+                    }
                 }
 
                 iconvRet = iconv(conv, &inbuf, &inbufsize, &out_utf8_index, &outbytesleft);
