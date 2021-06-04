@@ -579,7 +579,10 @@ void cert_fill_X509_store(X509_STORE *store, X509 **certs, size_t cert_count)
                             (name ? name : ""));
                 }
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-                free(name);
+                if (NULL != name) {
+                    free(name);
+                    name = NULL;
+                }
 #endif
             }
         }
@@ -646,7 +649,10 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
                         (name ? name : ""));
             }
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-            free(name);
+            if (NULL != name) {
+                free(name);
+                name = NULL;
+            }
 #endif
         }
     } while (0);

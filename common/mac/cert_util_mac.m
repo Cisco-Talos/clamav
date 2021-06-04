@@ -351,7 +351,10 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
                         mprintf("!Failed conversion of DER format to X.509\n");
                     }
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-                    free(name);
+                    if (NULL != name) {
+                        free(name);
+                        name = NULL;
+                    }
 #endif
 
                     CFRelease(cert_data);
