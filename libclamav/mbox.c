@@ -2442,7 +2442,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         }
                         break;
                     default:
-                        assert(0);
+                        cli_dbgmsg("Unepxected mime sub type\n");
+                        rc = CL_EFORMAT;
+                        break;
                 }
 
                 if (mainMessage && (mainMessage != messageIn))
