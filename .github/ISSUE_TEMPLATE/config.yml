@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://docs.clamav.net/Introduction.html#mailing-lists-and-chat
+    about: Questions should go to the mailing list
