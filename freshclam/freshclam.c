@@ -60,6 +60,10 @@
 #include "output.h"
 #include "misc.h"
 
+#ifdef _WIN32
+#include "service.h"
+#endif
+
 // libfreshclam
 #include "libfreshclam.h"
 
@@ -173,6 +177,10 @@ static void help(void)
     printf("\n");
     printf("    --config-file=FILE                   Read configuration from FILE.\n");
     printf("    --log=FILE           -l FILE         Log into FILE\n");
+#ifdef _WIN32
+    printf("    --install-service                    Install Windows Service\n");
+    printf("    --uninstall-service                  Uninstall Windows Service\n");
+#endif
     printf("    --daemon             -d              Run in daemon mode\n");
     printf("    --pid=FILE           -p FILE         Save daemon's pid in FILE\n");
 #ifndef _WIN32
@@ -1596,6 +1604,22 @@ int main(int argc, char **argv)
         goto done;
     }
 
+#ifdef _WIN32
+
+    if (optget(opts, "install-service")->enabled) {
+        svc_install("freshclam", "ClamAV FreshClam",
+                    "Updates virus pattern database for ClamAV");
+        optfree(opts);
+        return 0;
+    }
+
+    if (optget(opts, "uninstall-service")->enabled) {
+        svc_uninstall("freshclam", 1);
+        optfree(opts);
+        return 0;
+    }
+#endif
+
     /* check foreground option from command line to override config file */
     for (i = 0; i < argc; i += 1) {
         if ((memcmp(argv[i], "--foreground", 12) == 0) || (memcmp(argv[i], "-F", 2) == 0)) {
@@ -1877,6 +1901,14 @@ int main(int argc, char **argv)
                 goto done;
             }
             mprintf_disabled = 1;
+        }
+#endif
+
+#ifdef _WIN32
+        if (optget(opts, "service-mode")->enabled) {
+            mprintf_disabled = 1;
+            svc_register("freshclam");
+            svc_ready();
         }
 #endif
 
