@@ -82,10 +82,7 @@ The best way to get in touch with the ClamAV community is to join our
 [mailing lists](https://docs.clamav.net/faq/faq-ml.html).
 
 You can also join the community on our
-[ClamAV Discord chat server](https://discord.gg/6vNAqWnVgw). If you prefer IRC,
-the Discord `#general`, and `#irc-verbose` channels are bridged with the
-`#clamav` IRC channel on `irc.freenode.net` using a pair of bots to relay
-messages.
+[ClamAV Discord chat server](https://discord.gg/6vNAqWnVgw).
 
 ## Want to make a contribution?
 
