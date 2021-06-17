@@ -3122,6 +3122,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         (type != CL_TYPE_GPT) &&       /* Omit GPT files because it's an image format that we can extract and scan manually. */
         (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
         (type != CL_TYPE_ZIP) &&       /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
+        (type != CL_TYPE_ZIPSFX) &&    /* Omit ZIPSFX files because we should've already detected each entry with embedded file type recognition already! */
         (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
         (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
