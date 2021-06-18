@@ -673,7 +673,7 @@ ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
                 break;
             case 2: /* File */
                 ole2_listmsg("file node\n");
-                if (ctx && ctx->engine->maxfiles && ctx->scannedfiles + *file_count > ctx->engine->maxfiles) {
+                if (ctx && ctx->engine->maxfiles && ((*file_count > ctx->engine->maxfiles) || (ctx->scannedfiles > ctx->engine->maxfiles - *file_count))) {
                     cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
                     ole2_list_delete(&node_list);
                     return CL_EMAXFILES;
