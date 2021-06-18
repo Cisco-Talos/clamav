@@ -592,9 +592,9 @@ END_TEST
 START_TEST(test_fildes_many)
 {
     const char idsession[] = "zIDSESSION";
-    const char fildes[] = "zFILDES";
-    const char end[] = "zEND";
-    const char ping[] = "zPING";
+    const char fildes[]    = "zFILDES";
+    const char end[]       = "zEND";
+    const char ping[]      = "zPING";
 
     int dummyfd, i, killed = 0;
     conn_setup();
@@ -653,7 +653,7 @@ START_TEST(test_idsession_stress)
     char *data, *p;
     size_t len;
     const char idsession[] = "zIDSESSION";
-    const char version[] = "zVERSION";
+    const char version[]   = "zVERSION";
 
     conn_setup();
 

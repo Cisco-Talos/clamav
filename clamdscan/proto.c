@@ -734,7 +734,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     struct client_parallel_data cdata;
     int ftw;
     const char zIDSESSION[] = "zIDSESSION";
-    const char zEND[] = "zEND";
+    const char zEND[]       = "zEND";
 
     if ((cdata.sockd = dconnect()) < 0)
         return 1;

@@ -1925,7 +1925,7 @@ cl_error_t cli_ac_scanbuff(
                                     } else {
                                         if (ctx && SCAN_ALLMATCHES) {
                                             ret = cli_append_virus(ctx, (const char *)pt->virname);
-                                            if(ret == CL_VIRUS) {
+                                            if (ret == CL_VIRUS) {
                                                 viruses_found = 1;
                                             }
                                         }
@@ -1982,7 +1982,7 @@ cl_error_t cli_ac_scanbuff(
                                 } else {
                                     if (ctx && SCAN_ALLMATCHES) {
                                         ret = cli_append_virus(ctx, (const char *)pt->virname);
-                                        if(ret == CL_VIRUS) {
+                                        if (ret == CL_VIRUS) {
                                             viruses_found = 1;
                                         }
                                     }

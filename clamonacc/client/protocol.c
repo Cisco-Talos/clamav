@@ -79,7 +79,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
     int ret        = 1;
     int close_flag = 0;
     STATBUF statbuf;
-    uint64_t bytesRead = 0;
+    uint64_t bytesRead     = 0;
     const char zINSTREAM[] = "zINSTREAM";
 
     if (-1 == fd) {

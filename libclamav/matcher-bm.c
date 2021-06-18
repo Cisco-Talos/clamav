@@ -394,7 +394,6 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
                     if (patt)
                         *patt = p;
 
-
                     if (ctx != NULL && !SCAN_ALLMATCHES)
                         return CL_VIRUS;
                 }
