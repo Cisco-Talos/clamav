@@ -5,7 +5,11 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ## 0.103.3
 
-ClamAV 0.103.3 is a security patch release with the following fixes:
+ClamAV 0.103.3 is a patch release with the following fixes:
+
+- Fixed a scan performance issue when ENGINE_OPTIONS_FORCE_TO_DISK is enabled.
+  This issue did not impacted most users but for those affected it caused every
+  scanned file to be copied to the temp directory before the scan.
 
 - Fix ClamDScan crashes when using the `--fdpass --multiscan` command-line
   options in combination with the ClamD `ExcludePath` config file options.
