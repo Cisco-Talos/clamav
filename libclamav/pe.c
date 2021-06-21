@@ -107,9 +107,7 @@
 
 #define PE_MAXNAMESIZE 256
 #define PE_MAXIMPORTS 1024
-// TODO On Vista and above, up to 65535 sections are allowed.  Make sure
-// that using this lower limit from XP is acceptable in all cases
-#define PE_MAXSECTIONS 96
+#define PE_MAXSECTIONS 65535
 
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
