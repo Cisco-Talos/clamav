@@ -101,6 +101,9 @@ patch versions do not generally introduce new options:
 
 ### Bug fixes
 
+- Fixed a memory leak affecting logical signatures that use the "byte compare"
+  feature. Patch courtesy of Andrea De Pasquale.
+
 ### New Requirements
 
 ### Acknowledgements
@@ -108,6 +111,7 @@ patch versions do not generally introduce new options:
 The ClamAV team thanks the following individuals for their code submissions:
 
 - Alexander Golovach
+- Andrea De Pasquale
 - Armin Kuster
 - Brian Bergstrand
 - cw2k
