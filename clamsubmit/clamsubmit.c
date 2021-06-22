@@ -24,6 +24,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #if HAVE_UNISTD_H
@@ -49,6 +50,7 @@
 #include "misc.h"
 #include "getopt.h"
 #include "cert_util.h"
+#include "output.h"
 
 #define OPTS "e:p:n:N:V:H:h?v?d"
 
@@ -58,7 +60,6 @@ void version(void);
 
 typedef struct _header_data {
     int len;
-    char *cfduid;
     char *session;
 } header_data;
 
@@ -67,7 +68,7 @@ typedef struct _write_data {
     char *str;
 } write_data;
 
-int g_debug = 0;
+bool g_debug = false;
 
 void usage(char *name)
 {
@@ -111,22 +112,20 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         sp = ptr + clen + 1;
         ep = strchr(sp, ';');
         if (ep == NULL) {
-            fprintf(stderr, "header_cb(): malformed cookie\n");
+            logg("!header_cb(): malformed cookie\n");
             return 0;
         }
         mem = malloc(ep - sp + 1);
         if (mem == NULL) {
-            fprintf(stderr, "header_cb(): malloc failed\n");
+            logg("!header_cb(): malloc failed\n");
             return 0;
         }
         memcpy(mem, sp, ep - sp);
         mem[ep - sp] = '\0';
-        if (!strncmp(mem, "__cfduid", 8))
-            hd->cfduid = mem;
-        else if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
+        if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
             hd->session = mem;
         else {
-            fprintf(stderr, "header_cb(): unrecognized cookie\n");
+            logg("!header_cb(): unrecognized cookie\n");
             free(mem);
         }
     }
@@ -142,7 +141,7 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
     if (len) {
         str = realloc(wd->str, wd->len + len + 1);
         if (str == NULL) {
-            fprintf(stderr, "write_cb() realloc failure\n");
+            logg("!write_cb() realloc failure\n");
             return 0;
         }
         memcpy(str + wd->len, ptr, len);
@@ -168,10 +167,10 @@ const char *presigned_get_string(json_object *ps_json_obj, char *key)
     if (json_object_object_get_ex(ps_json_obj, key, &json_obj)) {
         json_str = json_object_get_string(json_obj);
         if (json_str == NULL) {
-            fprintf(stderr, "Error: json_object_get_string() for %s.\n", key);
+            logg("!Error: json_object_get_string() for %s.\n", key);
         }
     } else {
-        fprintf(stderr, "Error: json_object_object_get_ex() for %s.\n", key);
+        logg("!Error: json_object_object_get_ex() for %s.\n", key);
     }
     return json_str;
 }
@@ -189,23 +188,28 @@ int main(int argc, char *argv[])
     int setURL = 0, fromStream = 0;
     const char *json_str;
     write_data wd            = {0, NULL};
-    header_data hd_malware   = {0, NULL, NULL};
-    header_data hd_presigned = {0, NULL, NULL};
+    header_data hd_malware   = {0, NULL};
+    header_data hd_presigned = {0, NULL};
     json_object *ps_json_obj = NULL;
-    int malware              = 0;
+    bool malware             = false;
     int len                  = 0;
     char *submissionID       = NULL;
     char *fpvname            = NULL;
-    char *sp, *ep, *str;
-    char *authenticity_token = NULL;
-    char *urlp;
+    char *sp, *ep;
+
+    char *authenticity_token_header = NULL;
+    char *authenticity_token        = NULL;
+    char *session_cookie            = NULL;
+
+    char *url_for_auth_token;
+    char *url_for_presigned_cookie;
 
     curl_global_init(CURL_GLOBAL_ALL);
 
     clam_curl = curl_easy_init();
     if (clam_curl == NULL) {
-        fprintf(stderr, "ERROR: Could not initialize libcurl.\n");
-        goto cleanup;
+        logg("!ERROR: Could not initialize libcurl.\n");
+        goto done;
     }
 
     memset(userAgent, 0, sizeof(userAgent));
@@ -215,7 +219,7 @@ int main(int argc, char *argv[])
     userAgent[sizeof(userAgent) - 1] = 0;
 
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_USERAGENT, userAgent)) {
-        fprintf(stderr, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+        logg("!!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
     }
 
     while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
@@ -237,14 +241,14 @@ int main(int argc, char *argv[])
             case 'n':
                 if (setURL)
                     usage(argv[0]);
-                malware  = 1;
+                malware  = true;
                 filename = optarg;
                 break;
             case 'V':
                 fpvname = optarg;
                 break;
             case 'd':
-                g_debug = 1;
+                g_debug = true;
                 break;
             case 'h':
             case '?':
@@ -256,15 +260,15 @@ int main(int argc, char *argv[])
     if (!(name) || !(email) || !(filename))
         usage(argv[0]);
 
-    if (malware == 0 && fpvname == NULL) {
-        fprintf(stderr, "Detected virus name(-V) required for false positive submissions.\n");
+    if (malware == false && fpvname == NULL) {
+        logg("!Detected virus name(-V) required for false positive submissions.\n");
         usage(argv[0]);
     }
     if (strlen(filename) == 1 && filename[0] == '-') {
         filename = read_stream();
         if (!(filename)) {
-            fprintf(stderr, "ERROR: Unable to read stream\n");
-            goto cleanup;
+            logg("!ERROR: Unable to read stream\n");
+            goto done;
         }
         fromStream = 1;
     }
@@ -272,31 +276,34 @@ int main(int argc, char *argv[])
     if (g_debug) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_VERBOSE, 1L)) {
-            fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+            logg("!!ERROR: Failed to set CURLOPT_VERBOSE!\n");
         }
         if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_STDERR, stdout)) {
-            fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+            logg("!!ERROR: Failed to direct curl debug output to stdout!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-        fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+        logg("!ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
     }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
+        logg("!ERROR: Failed to set SSL CTX function!\n");
     }
 #else
     set_tls_ca_bundle(clam_curl);
 #endif
 
-    /*** The GET malware|fp ***/
-    if (malware == 1)
-        urlp = "https://www.clamav.net/reports/malware";
-    else
-        urlp = "https://www.clamav.net/reports/fp";
-    curl_easy_setopt(clam_curl, CURLOPT_URL, urlp);
+    /*
+     * GET authenticity token
+     */
+    if (malware == true) {
+        url_for_auth_token = "https://www.clamav.net/reports/malware";
+    } else {
+        url_for_auth_token = "https://www.clamav.net/reports/fp";
+    }
+    curl_easy_setopt(clam_curl, CURLOPT_URL, url_for_auth_token);
     curl_easy_setopt(clam_curl, CURLOPT_HTTPGET, 1);
     curl_easy_setopt(clam_curl, CURLOPT_WRITEDATA, &wd);
     curl_easy_setopt(clam_curl, CURLOPT_WRITEFUNCTION, write_cb);
@@ -304,30 +311,30 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, header_cb);
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Error in GET %s: %s\n", urlp, curl_easy_strerror(res));
-        goto cleanup;
+        logg("!Error in GET %s: %s\n", url_for_auth_token, curl_easy_strerror(res));
+        goto done;
     }
     if (wd.str != NULL) {
         sp = strstr(wd.str, "name=\"authenticity_token\"");
         if (sp == NULL) {
-            fprintf(stderr, "Authenticity token element not found.\n");
-            goto cleanup;
+            logg("!Authenticity token element not found.\n");
+            goto done;
         }
         sp = strstr(sp, "value=");
         if (sp == NULL) {
-            fprintf(stderr, "Authenticity token value not found.\n");
-            goto cleanup;
+            logg("!Authenticity token value not found.\n");
+            goto done;
         }
         sp += 7;
         ep = strchr(sp, '"');
         if (ep == NULL) {
-            fprintf(stderr, "Authenticity token malformed.\n");
-            goto cleanup;
+            logg("!Authenticity token malformed.\n");
+            goto done;
         }
         authenticity_token = malloc(ep - sp + 1);
         if (authenticity_token == NULL) {
-            fprintf(stderr, "no memory for authenticity token.\n");
-            goto cleanup;
+            logg("!no memory for authenticity token.\n");
+            goto done;
         }
         memcpy(authenticity_token, sp, ep - sp);
         authenticity_token[ep - sp] = '\0';
@@ -335,120 +342,128 @@ int main(int argc, char *argv[])
         wd.str = NULL;
     }
     wd.len = 0;
-    urlp   = NULL;
 
-    /*** The GET presigned ***/
-    if (malware == 1)
-        curl_easy_setopt(clam_curl, CURLOPT_URL, "https://www.clamav.net/presigned?type=malware");
-    else
-        curl_easy_setopt(clam_curl, CURLOPT_URL, "https://www.clamav.net/presigned?type=fp");
+    /* record the session cookie for later use, if exists */
+    if (NULL == hd_malware.session) {
+        logg("!clamav.net/presigned response missing session ID cookie.\nWill try without the cookie.\n");
+        // goto done; // Note: unclear if the session cookie is required. Can't hurt to try w/out it?
+    } else {
+        len            = strlen(hd_malware.session) + 3;
+        session_cookie = malloc(len);
+        if (session_cookie == NULL) {
+            logg("!No memory for GET presigned cookies\n");
+            goto done;
+        }
+        if (snprintf(session_cookie, len, "%s;", hd_malware.session) > len) {
+            logg("!snprintf() failed formatting GET presigned cookies\n");
+            goto done;
+        }
+    }
+
+    /*
+     * GET presigned cookie
+     */
+    if (malware == true) {
+        url_for_presigned_cookie = "https://www.clamav.net/presigned?type=malware";
+    } else {
+        url_for_presigned_cookie = "https://www.clamav.net/presigned?type=fp";
+    }
+
+    curl_easy_setopt(clam_curl, CURLOPT_URL, url_for_presigned_cookie);
     curl_easy_setopt(clam_curl, CURLOPT_HTTPGET, 1);
 
-    if (NULL == hd_malware.cfduid || NULL == hd_malware.session) {
-        fprintf(stderr, "invalid cfduid and/or session id values provided by clamav.net/presigned. Unable to continue submission.");
-        goto cleanup;
+    if (NULL != session_cookie) {
+        curl_easy_setopt(clam_curl, CURLOPT_COOKIE, session_cookie);
     }
 
-    len = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
-    str = malloc(len);
-    if (str == NULL) {
-        fprintf(stderr, "No memory for GET presigned cookies\n");
-        goto cleanup;
+    /* Include an X-CSRF-Token header using the authenticity token retrieved with the presigned GET request */
+    len                       = strlen(authenticity_token) + strlen("X-CSRF-Token: ") + 1;
+    authenticity_token_header = malloc(len);
+    if (authenticity_token_header == NULL) {
+        logg("!No memory for GET presigned X-CSRF-Token\n");
+        goto done;
     }
-    if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_malware.session) > len) {
-        fprintf(stderr, "snprintf() failed formatting GET presigned cookies\n");
-        free(str);
-        goto cleanup;
+    if (snprintf(authenticity_token_header, len, "X-CSRF-Token: %s", authenticity_token) > len) {
+        logg("!snprintf() failed for GET presigned X-CSRF-Token\n");
+        goto done;
     }
-    curl_easy_setopt(clam_curl, CURLOPT_COOKIE, str);
-    free(str);
-    len = strlen(authenticity_token) + 15;
-    str = malloc(len);
-    if (str == NULL) {
-        fprintf(stderr, "No memory for GET presigned X-CSRF-Token\n");
-        goto cleanup;
-    }
-    if (snprintf(str, len, "X-CSRF-Token: %s", authenticity_token) > len) {
-        fprintf(stderr, "snprintf() failed for GET presigned X-CSRF-Token\n");
-        free(str);
-        goto cleanup;
-    }
-    slist = curl_slist_append(slist, str);
-    free(str);
+    slist = curl_slist_append(slist, authenticity_token_header);
+    free(authenticity_token_header);
+    authenticity_token_header = NULL;
+
     curl_easy_setopt(clam_curl, CURLOPT_HTTPHEADER, slist);
     curl_easy_setopt(clam_curl, CURLOPT_HEADERDATA, &hd_presigned);
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, header_cb);
-    if (malware == 1)
-        curl_easy_setopt(clam_curl, CURLOPT_REFERER, "https://www.clamav.net/reports/malware");
-    else
-        curl_easy_setopt(clam_curl, CURLOPT_REFERER, "https://www.clamav.net/reports/fp");
+    curl_easy_setopt(clam_curl, CURLOPT_REFERER, url_for_auth_token);
 
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Error in GET presigned: %s\n", curl_easy_strerror(res));
-        goto cleanup;
+        logg("!Error in GET reports: %s\n", curl_easy_strerror(res));
+        goto done;
     }
     curl_slist_free_all(slist);
     slist = NULL;
 
-    /*** The POST to AWS ***/
+    /*
+     * POST the report to AWS
+     */
     ps_json_obj = json_tokener_parse(wd.str);
     if (ps_json_obj == NULL) {
-        fprintf(stderr, "Error in json_tokener_parse of %.*s\n", wd.len, wd.str);
-        goto cleanup;
+        logg("!Error in json_tokener_parse of %.*s\n", wd.len, wd.str);
+        goto done;
     }
     json_str = presigned_get_string(ps_json_obj, "key");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing key from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing key from json object\n");
+        goto done;
     }
     sp = strchr(json_str, '/');
     if (sp == NULL) {
-        fprintf(stderr, "Error: malformed 'key' string in GET presigned response (missing '/'.\n");
-        goto cleanup;
+        logg("!Error: malformed 'key' string in GET presigned response (missing '/'.\n");
+        goto done;
     }
     sp++;
     ep = strchr(sp, '-');
     if (ep == NULL) {
-        fprintf(stderr, "Error: malformed 'key' string in GET presigned response (missing '-'.\n");
-        goto cleanup;
+        logg("!Error: malformed 'key' string in GET presigned response (missing '-'.\n");
+        goto done;
     }
 
     submissionID = malloc(ep - sp + 1);
     if (submissionID == NULL) {
-        fprintf(stderr, "Error: malloc submissionID.\n");
-        goto cleanup;
+        logg("!Error: malloc submissionID.\n");
+        goto done;
     }
     memcpy(submissionID, sp, ep - sp);
     submissionID[ep - sp] = '\0';
 
     aws_curl = curl_easy_init();
     if (!(aws_curl)) {
-        fprintf(stderr, "ERROR: Could not initialize libcurl POST presigned\n");
-        goto cleanup;
+        logg("!ERROR: Could not initialize libcurl POST presigned\n");
+        goto done;
     }
 
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_USERAGENT, userAgent)) {
-        fprintf(stderr, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+        logg("!!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
     }
 
     if (g_debug) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
-            fprintf(stderr, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+            logg("!!ERROR: Failed to set CURLOPT_VERBOSE!\n");
         }
         if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_STDERR, stdout)) {
-            fprintf(stderr, "!ERROR: Failed to direct curl debug output to stdout!\n");
+            logg("!!ERROR: Failed to direct curl debug output to stdout!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-        fprintf(stderr, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+        logg("!ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
     }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        fprintf(stderr, "ERROR: Failed to set SSL CTX function!\n");
+        logg("!ERROR: Failed to set SSL CTX function!\n");
     }
 #else
     set_tls_ca_bundle(aws_curl);
@@ -458,50 +473,50 @@ int main(int argc, char *argv[])
 
     json_str = presigned_get_string(ps_json_obj, "acl");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing acl from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing acl from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "acl", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "policy");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing policy from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing policy from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "policy", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-meta-original-filename");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing x-amz-meta-original-filename from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing x-amz-meta-original-filename from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-meta-original-filename", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-credential");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing x-amz-credential from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing x-amz-credential from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-credential", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-algorithm");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing x-amz-algorithm from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing x-amz-algorithm from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-algorithm", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-date");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing x-amz-date from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing x-amz-date from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-date", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-signature");
     if (json_str == NULL) {
-        fprintf(stderr, "Error in presigned_get_string parsing x-amz-signature from json object\n");
-        goto cleanup;
+        logg("!Error in presigned_get_string parsing x-amz-signature from json object\n");
+        goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-signature", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
@@ -514,8 +529,8 @@ int main(int argc, char *argv[])
 
     res = curl_easy_perform(aws_curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Error in POST AWS: %s\n", curl_easy_strerror(res));
-        goto cleanup;
+        logg("!Error in POST AWS: %s\n", curl_easy_strerror(res));
+        goto done;
     }
     curl_slist_free_all(slist);
     slist = NULL;
@@ -525,36 +540,30 @@ int main(int argc, char *argv[])
     curl_easy_cleanup(aws_curl);
     aws_curl = NULL;
     json_object_put(ps_json_obj);
-    free(wd.str);
-    wd.str = NULL;
+
+    if (wd.str != NULL) {
+        free(wd.str);
+        wd.str = NULL;
+    }
     wd.len = 0;
 
     /*** The POST submit to clamav.net ***/
     slist = curl_slist_append(slist, "Expect:");
-    len   = strlen(hd_malware.cfduid) + strlen(hd_malware.session) + 3;
-    str   = malloc(len);
-    if (str == NULL) {
-        fprintf(stderr, "No memory for POST submit cookies.\n");
-        goto cleanup;
+
+    if (NULL != session_cookie) {
+        curl_easy_setopt(clam_curl, CURLOPT_COOKIE, session_cookie);
     }
-    if (snprintf(str, len, "%s; %s;", hd_malware.cfduid, hd_malware.session) > len) {
-        fprintf(stderr, "snprintf() failed formatting POST submit cookies\n");
-        free(str);
-        goto cleanup;
-    }
-    curl_easy_setopt(clam_curl, CURLOPT_COOKIE, str);
-    free(str);
+
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "utf8", CURLFORM_COPYCONTENTS, "\x27\x13", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "authenticity_token", CURLFORM_COPYCONTENTS, authenticity_token, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "submissionID", CURLFORM_COPYCONTENTS, submissionID, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "type", CURLFORM_COPYCONTENTS, malware ? "malware" : "fp", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "sendername", CURLFORM_COPYCONTENTS, name, CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "email", CURLFORM_COPYCONTENTS, email, CURLFORM_END);
-    if (malware == 0) {
-        curl_formadd(&post, &last, CURLFORM_COPYNAME, "virusname", CURLFORM_COPYCONTENTS, fpvname, CURLFORM_END);
+    if (malware == true) {
+        curl_formadd(&post, &last, CURLFORM_COPYNAME, "shareSample", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
     } else {
-        if (malware == 1)
-            curl_formadd(&post, &last, CURLFORM_COPYNAME, "shareSample", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
+        curl_formadd(&post, &last, CURLFORM_COPYNAME, "virusname", CURLFORM_COPYCONTENTS, fpvname, CURLFORM_END);
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "description", CURLFORM_COPYCONTENTS, "clamsubmit", CURLFORM_END);
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "notify", CURLFORM_COPYCONTENTS, "on", CURLFORM_END);
@@ -565,37 +574,43 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, NULL);
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        fprintf(stderr, "Error in POST submit: %s\n", curl_easy_strerror(res));
-        goto cleanup;
+        logg("!Error in POST submit: %s\n", curl_easy_strerror(res));
+        goto done;
     } else {
         long response_code;
         curl_easy_getinfo(clam_curl, CURLINFO_RESPONSE_CODE, &response_code);
         if (response_code / 100 == 3) {
-            curl_easy_getinfo(clam_curl, CURLINFO_REDIRECT_URL, &urlp);
-            if (urlp == NULL) {
-                fprintf(stderr, "POST submit Location URL is NULL.\n");
-                goto cleanup;
+            curl_easy_getinfo(clam_curl, CURLINFO_REDIRECT_URL, &url_for_auth_token);
+            if (url_for_auth_token == NULL) {
+                logg("!POST submit Location URL is NULL.\n");
+                goto done;
             }
-            sp = strstr(urlp, "/reports/");
+            sp = strstr(url_for_auth_token, "/reports/");
             if (sp == NULL) {
-                fprintf(stderr, "POST submit Location URL is malformed.\n");
+                logg("!POST submit Location URL is malformed.\n");
             } else if (!strcmp(sp, "/reports/success")) {
-                fprintf(stdout, "Submission success!\n");
+                logg("Submission success!\n");
                 status = 0;
             } else if (!strcmp(sp, "/reports/failure")) {
-                fprintf(stdout, "Submission failed\n");
+                logg("Submission failed\n");
             } else {
-                fprintf(stdout, "Unknown submission status %s\n", sp);
+                logg("Unknown submission status %s\n", sp);
             }
         } else {
-            fprintf(stderr, "Unexpected POST submit response code: %li\n", response_code);
+            logg("!Unexpected POST submit response code: %li\n", response_code);
         }
     }
 
-cleanup:
+done:
     /*
      * Cleanup
      */
+    if (authenticity_token_header != NULL) {
+        free(authenticity_token_header);
+    }
+    if (session_cookie != NULL) {
+        free(session_cookie);
+    }
     if (slist != NULL) {
         curl_slist_free_all(slist);
     }
@@ -615,14 +630,8 @@ cleanup:
         wd.str = NULL;
         wd.len = 0;
     }
-    if (hd_malware.cfduid != NULL) {
-        free(hd_malware.cfduid);
-    }
     if (hd_malware.session != NULL) {
         free(hd_malware.session);
-    }
-    if (hd_presigned.cfduid != NULL) {
-        free(hd_presigned.cfduid);
     }
     if (hd_presigned.session != NULL) {
         free(hd_presigned.session);
