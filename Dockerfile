@@ -4,7 +4,7 @@
 # Copyright (C) 2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 # hadolint ignore=DL3007  latest is the latest stable for alpine
-FROM registry.hub.docker.com/library/alpine:latest AS builder
+FROM index.docker.io/library/alpine:latest AS builder
 
 LABEL maintainer="ClamAV bugs <clamav-bugs@external.cisco.com>"
 
@@ -85,7 +85,7 @@ RUN apk add --no-cache \
     exit 1 && \
     ctest -V
 
-FROM registry.hub.docker.com/library/alpine:latest
+FROM index.docker.io/library/alpine:latest
 
 RUN apk add --no-cache \
         fts \
