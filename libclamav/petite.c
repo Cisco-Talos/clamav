@@ -85,15 +85,15 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
     void *tmpsct                   = NULL;
 
     /*
-    -] The real thing [-
-  */
+     * -] The real thing [-
+     */
 
     /* NOTE: (435063->4350a5) Petite kernel32!imports and error strings */
 
     /* Here we adjust the start of packed blob, the size of petite code,
-   * the difference in size if relocs were stripped
-   * See below...
-   */
+     * the difference in size if relocs were stripped
+     * See below...
+     */
 
     if (version == 2)
         packed = adjbuf + sections[sectcount - 1].rva + 0x1b8;
@@ -151,10 +151,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             }
 
             /*
-       * Our encryption is pathetic and out software is lame but
-       * we need to claim it's unbreakable.
-       * So why dont we just mangle the imports and encrypt the EP?!
-       */
+             * Our encryption is pathetic and out software is lame but
+             * we need to claim it's unbreakable.
+             * So why dont we just mangle the imports and encrypt the EP?!
+             */
 
             /* Decrypts old entrypoint if we got enough clues */
             if (enc_ep) {
@@ -242,11 +242,11 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
         if (srva != size) { /* Test and clear bit 31 */
             check4resources = 0;
             /*
-	Enumerates each petite data section
-	I should get here once ot twice:
-	- 1 time for the resource section (if present)
-	- 1 time for the all_the_rest section
-      */
+             * Enumerates each petite data section
+             * I should get here once or twice:
+             * - 1 time for the resource section (if present)
+             * - 1 time for the all_the_rest section
+             */
 
             if (!CLI_ISCONTAINED(buf, bufsz, packed + 4, 8)) {
                 if (usects)
@@ -254,7 +254,14 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                 return 1;
             }
             /* Save the end of current packed section for later use */
-            bottom = cli_readint32(packed + 8) + 4;
+            bottom = (uint32_t)cli_readint32(packed + 8);
+            if (bottom > UINT32_MAX - 4) {
+                /* bottom is too large, would cause integer overflow */
+                if (usects)
+                    free(usects);
+                return 1;
+            }
+            bottom += 4;
             ssrc   = adjbuf + cli_readint32(packed + 4) - (size - 1) * 4;
             ddst   = adjbuf + cli_readint32(packed + 8) - (size - 1) * 4;
 
@@ -316,8 +323,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             ddst = adjbuf + thisrva;
 
             /* Last petite section (unpacked 1st) could contain unpacked data
-       * (eg the icon): let's fix the rva
-       */
+             * (eg the icon): let's fix the rva
+             */
 
             for (q = 0; q < sectcount; q++) {
                 if (!CLI_ISCONTAINED(sections[q].rva, sections[q].vsz, usects[j].rva, usects[j].vsz))
@@ -352,10 +359,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             }
 
             /*
-       * NOTE: on last loop we get esi=edi=ImageBase (which is not writeable)
-       * The movsb on the next line causes the iat_rebuild_and_decrypt_oldEP()
-       * func to get called instead... ehehe very smart ;)
-       */
+             * NOTE: on last loop we get esi=edi=ImageBase (which is not writeable)
+             * The movsb on the next line causes the iat_rebuild_and_decrypt_oldEP()
+             * func to get called instead... ehehe very smart ;)
+             */
 
             if (!CLI_ISCONTAINED(buf, bufsz, ssrc, 1) || !CLI_ISCONTAINED(buf, bufsz, ddst, 1)) {
                 free(usects);
@@ -469,8 +476,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             }     /* while(ebx) */
 
             /* Any lame petite code here? If so let's strip it
-       * We've done version adjustments already, see above
-       */
+             * We've done version adjustments already, see above
+             */
 
             if (j) {
                 int strippetite = 0;
