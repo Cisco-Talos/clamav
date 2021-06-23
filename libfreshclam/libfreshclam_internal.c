@@ -2329,7 +2329,7 @@ fc_error_t updatedb(
 
             ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
             if (FC_SUCCESS != ret) {
-                if (FC_EMIRRORNOTSYNC == status) {
+                if (FC_EMIRRORNOTSYNC == ret) {
                     /* Note: We can't retry with CDIFF's if FC_EMIRRORNOTSYNC happened here.
                      * If we did there could be an infinite loop.
                      * Best option is to accept the older CVD.
