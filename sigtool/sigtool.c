@@ -1479,7 +1479,7 @@ static int listdb(const char *filename, const regex_t *regex)
         return -1;
     }
 
-    if (!(buffer = (char *)malloc(FILEBUFF))) {
+    if (!(buffer = (char *)malloc(CLI_DEFAULT_LSIG_BUFSIZE + 1))) {
         mprintf("!listdb: Can't allocate memory for buffer\n");
         fclose(fh);
         return -1;
@@ -1540,7 +1540,7 @@ static int listdb(const char *filename, const regex_t *regex)
 
     if (cli_strbcasestr(filename, ".db")) { /* old style database */
 
-        while (fgets(buffer, FILEBUFF, fh)) {
+        while (fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh)) {
             if (regex) {
                 cli_chomp(buffer);
                 if (!cli_regexec(regex, buffer, 0, NULL, 0))
@@ -1570,7 +1570,7 @@ static int listdb(const char *filename, const regex_t *regex)
         }
 
     } else if (cli_strbcasestr(filename, ".crb")) {
-        while (fgets(buffer, FILEBUFF, fh)) {
+        while (fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh)) {
             cli_chomp(buffer);
 
             if (buffer[0] == '#')
@@ -1587,7 +1587,7 @@ static int listdb(const char *filename, const regex_t *regex)
         }
     } else if (cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu") || cli_strbcasestr(filename, ".hsb") || cli_strbcasestr(filename, ".hsu") || cli_strbcasestr(filename, ".msb") || cli_strbcasestr(filename, ".msu") || cli_strbcasestr(filename, ".imp")) { /* hash database */
 
-        while (fgets(buffer, FILEBUFF, fh)) {
+        while (fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh)) {
             cli_chomp(buffer);
             if (regex) {
                 if (!cli_regexec(regex, buffer, 0, NULL, 0))
@@ -1617,7 +1617,7 @@ static int listdb(const char *filename, const regex_t *regex)
 
     } else if (cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd") || cli_strbcasestr(filename, ".cdb")) {
 
-        while (fgets(buffer, FILEBUFF, fh)) {
+        while (fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh)) {
             cli_chomp(buffer);
             if (regex) {
                 if (!cli_regexec(regex, buffer, 0, NULL, 0))
@@ -1649,7 +1649,7 @@ static int listdb(const char *filename, const regex_t *regex)
         }
 
     } else if (cli_strbcasestr(filename, ".cbc")) {
-        if (fgets(buffer, FILEBUFF, fh) && fgets(buffer, FILEBUFF, fh)) {
+        if (fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh) && fgets(buffer, CLI_DEFAULT_LSIG_BUFSIZE, fh)) {
             pt = strchr(buffer, ';');
             if (!pt) { /* not a real sig */
                 fclose(fh);
