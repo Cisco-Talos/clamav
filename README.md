@@ -44,7 +44,7 @@ For comprehensive compile and install instructions, please see
 [INSTALL.md](INSTALL.md).
 
 For step-by-step instructions, see our
-[online documentation](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.htmll).
+[online documentation](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html).
 
 #### Install from a binary package distribution
 
