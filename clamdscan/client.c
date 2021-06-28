@@ -65,6 +65,10 @@
 #include "actions.h"
 #include "clamdcom.h"
 
+#ifdef _WIN32
+#include "scanmem.h"
+#endif
+
 #include "client.h"
 #include "proto.h"
 
@@ -464,7 +468,20 @@ int client(const struct optstruct *opts, int *infected, int *err)
 	    }
 	    */
         }
-    } else {
+    }
+#ifdef _WIN32
+    else if (optget(opts, "memory")->enabled) {
+        struct mem_info minfo;
+        minfo.d      = 1;
+        minfo.opts   = opts;
+        minfo.ifiles = *infected;
+        minfo.errors = errors;
+        int res      = scanmem(&minfo);
+        *infected    = minfo.ifiles;
+        *err         = minfo.errors;
+    }
+#endif
+    else {
         errors = client_scan("", scantype, infected, err, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
