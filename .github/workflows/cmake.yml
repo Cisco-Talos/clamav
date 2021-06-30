@@ -31,6 +31,9 @@ jobs:
         with:
           args: install wixtoolset
 
+      - name: Install pytest for easier to read test results
+        run: python3 -m pip install pytest
+
       - uses: lukka/get-cmake@latest
 
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
@@ -91,6 +94,9 @@ jobs:
       - name: Install Dependencies
         run: brew install bzip2 check curl-openssl json-c libxml2 ncurses openssl@1.1 pcre2 zlib
 
+      - name: Install pytest for easier to read test results
+        run: python3 -m pip install pytest
+
       - uses: lukka/get-cmake@latest
 
       - name: Create Build Directory
@@ -138,6 +144,9 @@ jobs:
 
       - name: Install Dependencies
         run: sudo apt-get install -y check libbz2-dev libcurl4-openssl-dev libjson-c-dev libmilter-dev libncurses5-dev libpcre3-dev libssl-dev libxml2-dev zlib1g-dev
+
+      - name: Install pytest for easier to read test results
+        run: python3 -m pip install pytest
 
       - uses: lukka/get-cmake@latest
 
