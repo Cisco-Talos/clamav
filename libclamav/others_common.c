@@ -581,9 +581,9 @@ static int get_filetype(const char *fname, int flags, int need_stat,
  *
  * @param fname         The file path
  * @param flags         CLI_FTW_* bitflag field
- * @param statbuf       [out] the stat metadata for the file.
- * @param stated        [out] 1 if statbuf contains stat info, 0 if not. -1 if there was a stat error.
- * @param ft            [out] will indicate if the file was skipped based on the file type.
+ * @param[out] statbuf  the stat metadata for the file.
+ * @param[out] stated   1 if statbuf contains stat info, 0 if not. -1 if there was a stat error.
+ * @param[out] ft       will indicate if the file was skipped based on the file type.
  * @param callback      the callback (E.g. function that may scan the file)
  * @param data          callback data
  * @return cl_error_t

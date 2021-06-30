@@ -1,7 +1,7 @@
 # Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
-Run clamd tests.
+Run clamd (and clamdscan) tests.
 """
 
 import os
@@ -140,13 +140,18 @@ class TC(testcase.TestCase):
 
         self.verify_valgrind_log()
 
-    def start_clamd(self):
+    def start_clamd(self, use_valgrind=True):
         '''
         Start clamd
         '''
-        command = '{valgrind} {valgrind_args} {clamd} --config-file={clamd_config}'.format(
-            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamd=TC.clamd, clamd_config=TC.clamd_config
-        )
+        if use_valgrind:
+            command = '{valgrind} {valgrind_args} {clamd} --config-file={clamd_config}'.format(
+                valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamd=TC.clamd, clamd_config=TC.clamd_config
+            )
+        else:
+            command = '{clamd} --config-file={clamd_config}'.format(
+                clamd=TC.clamd, clamd_config=TC.clamd_config
+            )
         self.log.info('Starting clamd: {}'.format(command))
         self.proc = subprocess.Popen(
             command.strip().split(' '),
@@ -161,65 +166,40 @@ class TC(testcase.TestCase):
                       expected_out=[],
                       expected_err=[],
                       unexpected_out=[],
-                      unexpected_err=[]):
+                      unexpected_err=[],
+                      use_valgrind=False):
         '''
         Run clamdscan in each mode
         The first scan uses ping & wait to give clamd time to start.
         '''
-        # default (filepath) mode
-        output = self.execute_command('{clamdscan} --ping 5 --wait -c {clamd_config} {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-        assert output.ec == expected_ec
-        if expected_out != [] or unexpected_out != []:
-            self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
-        if expected_err != [] or unexpected_err != []:
-            self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
-
-        # multi mode
-        output = self.execute_command('{clamdscan} -c {clamd_config} -m {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-        assert output.ec == expected_ec
-        if expected_out != [] or unexpected_out != []:
-            self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
-        if expected_err != [] or unexpected_err != []:
-            self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
-
+        arg_variations = [
+            '--ping 5 --wait',          # default (filepath) mode
+            '--multiscan',              # multi mode
+            '--stream',                 # stream mode
+            '--stream --multiscan',     # fdstreampass multi mode
+        ]
         if TC.has_fdpass_support:
-            # fdpass
-            output = self.execute_command('{clamdscan} -c {clamd_config} --fdpass {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-            assert output.ec == expected_ec
+            arg_variations += [
+                '--fdpass',             # fdpass mode
+                '--fdpass --multiscan', # fdpass multi mode
+            ]
+
+        for arg_variation in arg_variations:
+            if use_valgrind:
+                output = self.execute_command('{valgrind} {valgrind_args} {clamdscan} {arg_variation} {scan_args} -c {clamd_config}'.format(
+                    valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, arg_variation=arg_variation, scan_args=scan_args))
+            else:
+                output = self.execute_command('{clamdscan} {arg_variation} {scan_args} -c {clamd_config}'.format(
+                    clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, arg_variation=arg_variation, scan_args=scan_args))
+
             if expected_out != [] or unexpected_out != []:
                 self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
             if expected_err != [] or unexpected_err != []:
                 self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
 
-            # fdpass multi mode
-            output = self.execute_command('{clamdscan} -c {clamd_config} --fdpass -m {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-            assert output.ec == expected_ec
-            if expected_out != [] or unexpected_out != []:
-                self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
-            if expected_err != [] or unexpected_err != []:
-                self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
+            if use_valgrind:
+                self.verify_valgrind_log()
 
-        # stream
-        output = self.execute_command('{clamdscan} -c {clamd_config} --stream {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-        assert output.ec == expected_ec
-        if expected_out != [] or unexpected_out != []:
-            self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
-        if expected_err != [] or unexpected_err != []:
-            self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
-
-        # stream multi mode
-        output = self.execute_command('{clamdscan} -c {clamd_config} --stream -m {scan_args}'.format(
-            clamdscan=TC.clamdscan, clamd_config=TC.clamd_config, scan_args=scan_args))
-        assert output.ec == expected_ec
-        if expected_out != [] or unexpected_out != []:
-            self.verify_output(output.out, expected=expected_out, unexpected=unexpected_out)
-        if expected_err != [] or unexpected_err != []:
-            self.verify_output(output.err, expected=expected_err, unexpected=unexpected_err)
 
     def run_clamdscan_file_only(self,
                                 scan_args,
@@ -485,3 +465,54 @@ class TC(testcase.TestCase):
         self.verify_log(str(TC.path_tmp / 'test-clamd.log'),
             expected=['Virus found: ClamAV-Test-File.UNOFFICIAL'],
             unexpected=['VirusEvent incorrect', 'VirusName incorrect'])
+
+    def test_clamd_09_clamdscan_ExcludePath(self):
+        '''
+        Verify that ExcudePath works and does not cause other  on works as expected.
+        We'll use valgrind on clamdscan instead of clamd for this one, if enabled
+        as a regression for clamdscan memory leak fixes.
+
+        With it on, we expect the scan to stop and raise an alert as soon as
+        the phishing heuristic is detected.
+        '''
+        self.step_name('Testing clamd + clamdscan w/ ExcludePath')
+
+        (TC.path_tmp / 'a').mkdir()
+        (TC.path_tmp / 'b').mkdir()
+        (TC.path_tmp / 'c').mkdir()
+
+        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'a' / 'a_found'))     # This should be found (first)
+        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'b' / 'b_excluded'))  # This one should be excluded
+        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'c' / 'c_found'))     # This one should still be found after excluding the previous
+
+        with TC.clamd_config.open('a') as config:
+            exclude_path = str(TC.path_tmp / 'b')
+
+            if operating_system == 'windows':
+                # It's a regex, need to escape the path separators
+                exclude_path = exclude_path.replace('\\', '\\\\')
+
+            config.write('''
+                ExcludePath {}
+                '''.format(exclude_path))
+
+        self.start_clamd(use_valgrind=False)
+
+        poll = self.proc.poll()
+        assert poll == None  # subprocess is alive if poll() returns None
+
+        expected_out = [
+            'a_found: ClamAV-Test-File.UNOFFICIAL FOUND',
+          # 'b_excluded: Excluded',  <-- Bug: this doesn't appear in recursive regular scans :-(, only fdpass and stream
+            'c_found: ClamAV-Test-File.UNOFFICIAL FOUND',
+        ]
+
+        unexpected_out = [
+            'a_found: Excluded',
+            'b_excluded: ClamAV-Test-File.UNOFFICIAL FOUND',
+            'c_found: Excluded',
+        ]
+
+        self.run_clamdscan('{}'.format(TC.path_tmp),
+            expected_ec=1, expected_out=expected_out, unexpected_out=unexpected_out,
+            use_valgrind=True)
