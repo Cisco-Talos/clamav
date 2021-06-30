@@ -574,6 +574,20 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     return stated;
 }
 
+/**
+ * @brief Determine the file type and pass the metadata to the callback as the "reason".
+ *
+ * The callback may end up doing something or doing nothing, depending on the reason.
+ *
+ * @param fname         The file path
+ * @param flags         CLI_FTW_* bitflag field
+ * @param statbuf       [out] the stat metadata for the file.
+ * @param stated        [out] 1 if statbuf contains stat info, 0 if not. -1 if there was a stat error.
+ * @param ft            [out] will indicate if the file was skipped based on the file type.
+ * @param callback      the callback (E.g. function that may scan the file)
+ * @param data          callback data
+ * @return cl_error_t
+ */
 static cl_error_t handle_filetype(const char *fname, int flags,
                                   STATBUF *statbuf, int *stated, enum filetype *ft,
                                   cli_ftw_cb callback, struct cli_ftw_cbdata *data)
@@ -616,7 +630,7 @@ done:
     return status;
 }
 
-static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
+static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     if (!entry->is_dir) {
@@ -630,10 +644,11 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
 {
     cl_error_t status = CL_EMEM;
     STATBUF statbuf;
-    enum filetype ft = ft_unknown;
-    struct dirent_data entry;
-    int stated      = 0;
-    char *path_copy = NULL;
+    enum filetype ft               = ft_unknown;
+    struct dirent_data entry       = {0};
+    int stated                     = 0;
+    char *filename_for_callback    = NULL;
+    char *filename_for_handleentry = NULL;
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
         char *pathend;
@@ -652,11 +667,14 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
         goto done;
     }
 
+    /* Determine if the file should be skipped (special file or symlink).
+       This will also get the stat metadata. */
     status = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
     if (status != CL_SUCCESS) {
         goto done;
     }
 
+    /* Bail out if the file should be skipped. */
     if (ft_skipped(ft)) {
         status = CL_SUCCESS;
         goto done;
@@ -665,38 +683,63 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
     entry.statbuf = stated ? &statbuf : NULL;
     entry.is_dir  = ft == ft_directory;
 
+    /*
+     * handle_entry() doesn't call the callback for directories, so we'll call it now first.
+     */
     if (entry.is_dir) {
-        path_copy = cli_strdup(path);
-        if (NULL == path_copy) {
+        /* Allocate the filename for the callback function. TODO: this FTW code is spaghetti, refactor. */
+        filename_for_callback = cli_strdup(path);
+        if (NULL == filename_for_callback) {
             goto done;
         }
 
-        status = callback(entry.statbuf, path_copy, path, visit_directory_toplev, data);
+        status = callback(entry.statbuf, filename_for_callback, path, visit_directory_toplev, data);
+
+        filename_for_callback = NULL; // free'd by the callback
+
         if (status != CL_SUCCESS) {
             goto done;
         }
     }
 
-    path_copy = cli_strdup(path);
-    if (NULL == path_copy) {
-        goto done;
+    /*
+     * Now call handle_entry() to either call the callback for files,
+     * or recurse deeper into the file tree walk.
+     * TODO: Recursion is bad, this whole thing should be iterative
+     */
+    if (entry.is_dir) {
+        entry.dirname = path;
+    } else {
+        /* Allocate the filename for the callback function within the handle_entry function. TODO: this FTW code is spaghetti, refactor. */
+        filename_for_handleentry = cli_strdup(path);
+        if (NULL == filename_for_handleentry) {
+            goto done;
+        }
+
+        entry.filename = filename_for_handleentry;
     }
-
-    entry.filename = entry.is_dir ? NULL : path_copy;
-    entry.dirname  = entry.is_dir ? path : NULL;
-
     status = handle_entry(&entry, flags, maxdepth, callback, data, pathchk);
 
+    filename_for_handleentry = NULL; // free'd by the callback call in handle_entry()
+
 done:
+    if (NULL != filename_for_callback) {
+        /* Free-check just in case someone injects additional calls and error handling before callback(). */
+        free(filename_for_callback);
+    }
+    if (NULL != filename_for_handleentry) {
+        /* Free-check just in case someone injects additional calls and error handling before handle_entry(). */
+        free(filename_for_handleentry);
+    }
     return status;
 }
 
-static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
+static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     DIR *dd;
     struct dirent_data *entries = NULL;
     size_t i, entries_cnt = 0;
-    int ret;
+    cl_error_t ret;
 
     if (maxdepth < 0) {
         /* exceeded recursion limit */
@@ -824,8 +867,11 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
                     free(entry->filename);
                 if (entry->statbuf)
                     free(entry->statbuf);
-                if (ret != CL_SUCCESS)
+                if (ret != CL_SUCCESS) {
+                    /* Something went horribly wrong, Skip the rest of the files */
+                    cli_errmsg("File tree walk aborted.\n");
                     break;
+                }
             }
             for (i++; i < entries_cnt; i++) {
                 struct dirent_data *entry = &entries[i];
