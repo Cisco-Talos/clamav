@@ -308,7 +308,21 @@ static char *makeabs(const char *basepath)
 static int client_scan(const char *file, int scantype, int *infected, int *err, int maxlevel, int session, int flags)
 {
     int ret;
-    char *fullpath = makeabs(file);
+    char *real_path = NULL;
+    char *fullpath  = NULL;
+
+    /* Convert relative path to fullpath */
+    fullpath = makeabs(file);
+
+    /* Convert fullpath to the real path (evaluating symlinks and . and ..).
+       Doing this early on will ensure that the scan results will appear consistent
+       across regular scans, --fdpass scans, and --stream scans. */
+    if (CL_SUCCESS != cli_realpath(fullpath, &real_path)) {
+        logg("*client_scan: Failed to determine real filename of %s.\n", fullpath);
+    } else {
+        free(fullpath);
+        fullpath = real_path;
+    }
 
     if (!fullpath)
         return 0;
