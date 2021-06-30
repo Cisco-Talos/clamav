@@ -9,7 +9,7 @@ if(WIN32)
         "Database directory.")
 else()
     set(APP_CONFIG_DIRECTORY
-        "etc" CACHE STRING
+        "etc/clamav" CACHE STRING
         "App Config directory.")
     set(DATABASE_DIRECTORY
         "share/clamav" CACHE STRING

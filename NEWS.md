@@ -19,6 +19,26 @@ ClamAV 0.104.0 includes the following improvements and changes.
 
   The Autotools and the Visual Studio build system have been removed.
 
+- The default config directory has moved from `<install prefix>/etc` to
+  `<install prefix>/etc/clamav` when ClamAV is installed from source. ClamAV
+  has a growing number of config files. Using a `clamav` subdirectory reduces
+  clutter in `/usr/local/etc`.
+
+  The "install prefix" may be customized with using
+  `-D CMAKE_INSTALL_PREFIX=/your/install/path`.
+
+  The config directory may be customized using
+  `-D APP_CONFIG_DIRECTORY=some/relative/path` for a path relative to the
+  install prefix, or using
+  `-D APP_CONFIG_DIRECTORY=/some/absolute/path` for a path independent from the
+  install prefix.
+  Most Linux distribution packages will have built using: `/var/lib/clamav`
+
+  The default path for the database directory hasn't changed, but can be
+  customized in the same way, using `DATABASE_DIRECTORY`.
+  See [the "Custom CMake Options" section in `INSTALL.md`](INSTALL.md#Custom-CMake-options)
+  for more details.
+
 - The built-in LLVM has been removed. The bytecode runtime is now limited to
   using an external LLVM library (preferred) or if a compatible LLVM library
   is not available, using the internal bytecode interpreter.

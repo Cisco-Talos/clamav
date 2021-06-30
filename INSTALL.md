@@ -167,11 +167,15 @@ cmake .. -D ENABLE_EXAMPLES
 cmake --build . --config Debug
 ```
 
-- `APP_CONFIG_DIRECTORY`: App Config directory.
+- `APP_CONFIG_DIRECTORY`: App Config directory. By default this is relative to
+  the install prefix (`CMAKE_INSTALL_PREFIX`), but you can override it with an
+  absolute path.
 
-  _Default: Windows: `{prefix}`, POSIX: `{prefix}/etc`_
+  _Default: Windows: `{prefix}`, POSIX: `{prefix}/etc/clamav`_
 
-- `DATABASE_DIRECTORY`: Database directory.
+- `DATABASE_DIRECTORY`: Database directory. By default this is relative to
+  the install prefix (`CMAKE_INSTALL_PREFIX`), but you can override it with an
+  absolute path.
 
   _Default: Windows: `{prefix}/database`, POSIX: `{prefix}/share/clamav`_
 
