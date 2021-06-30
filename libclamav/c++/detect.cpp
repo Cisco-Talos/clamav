@@ -34,6 +34,8 @@
 #include "llvm/Support/Memory.h"
 #endif
 
+#include "llvm/Support/Endian.h"
+
 extern "C" {
 #include "bytecode_detect.h"
 }
@@ -63,7 +65,7 @@ void cli_detect_env_jit(struct cli_environment *env)
 #endif
     INIT_STRFIELD(env->triple, host_triple.c_str());
 
-    std::string cpu = sys::getHostCPUName();
+    std::string cpu = sys::getHostCPUName().data();
     INIT_STRFIELD(env->cpu, cpu.c_str());
 
 #if LLVM_VERSION < 33
@@ -176,6 +178,7 @@ void cli_detect_env_jit(struct cli_environment *env)
 	CASE_OS(Minix, os_unknown);
     }
 
+#if 0
     // mmap RWX
     std::string ErrMsg;
     sys::MemoryBlock B = sys::Memory::AllocateRWX(4096, NULL, &ErrMsg);
@@ -185,4 +188,21 @@ void cli_detect_env_jit(struct cli_environment *env)
 	env->os_features |= 1 << feature_map_rwx;
 	sys::Memory::ReleaseRWX(B);
     }
+#else
+
+    //aragusa: I implemented this the same way it was previously done.  This
+    //appears to be a test to make sure that we are able to map RWX memory.
+    //Figure out why later.
+    //mmap RWX
+    std::error_code ec;
+    //sys::MemoryBlock memoryBlock = sys::Memory::allocateMappedMemory(4096, nullptr, sys::Memory::MF_RWE_MASK, ec);
+    sys::MemoryBlock memoryBlock = sys::Memory::allocateMappedMemory(4096, nullptr, sys::Memory::MF_READ | sys::Memory::MF_WRITE | sys::Memory::MF_EXEC, ec);
+    if (ec){
+        errs() << "LibClamAV Warning: RWX mapping denied: " << ec.message() << "\n";
+    } else {
+        env->os_features |= 1 << feature_map_rwx;
+        sys::Memory::releaseMappedMemory(memoryBlock);
+    }
+
+#endif
 }

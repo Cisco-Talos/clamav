@@ -22,18 +22,30 @@
 #  LLVM_VERSION_STRING - Full LLVM version string (e.g. 6.0.0svn).
 #  LLVM_VERSION_BASE_STRING - Base LLVM version string without git/svn suffix (e.g. 6.0.0).
 #
+# LLVM_FIND_VERSION    - Minimum supported LLVM version.
 # Note: The variable names were chosen in conformance with the offical CMake
 # guidelines, see ${CMAKE_ROOT}/Modules/readme.txt.
+
+
+#Setting this to 6.0.0 for now, since that is what is installed by default by Ubuntu 18
+#(At the time of this writing)
+set (LLVM_FIND_VERSION "6.0.0")
+
+
+#Not tested with anything other than llvm-8 (yet), but leave this in there for
+#when I get back to it.
 
 # Try suffixed versions to pick up the newest LLVM install available on Debian
 # derivatives.
 # We also want an user-specified LLVM_ROOT_DIR to take precedence over the
 # system default locations such as /usr/local/bin. Executing find_program()
 # multiples times is the approach recommended in the docs.
-set(llvm_config_names llvm-config-9.0 llvm-config90
-                      llvm-config-8.0 llvm-config80
-                      llvm-config-7.0 llvm-config70
-                      llvm-config-6.0 llvm-config60
+set(llvm_config_names llvm-config-10.0 llvm-config100 llvm-config-12
+                      llvm-config-11 llvm-config-10
+                      llvm-config-9.0 llvm-config90 llvm-config-9
+                      llvm-config-8.0 llvm-config80 llvm-config-8
+                      llvm-config-7.0 llvm-config70 llvm-config-7
+                      llvm-config-6.0 llvm-config60 llvm-config-6
                       llvm-config-5.0 llvm-config50
                       llvm-config-4.0 llvm-config40
                       llvm-config-3.9 llvm-config39

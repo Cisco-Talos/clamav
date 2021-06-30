@@ -349,6 +349,12 @@ if(BYTECODE_RUNTIME STREQUAL "llvm")
         # Set variable required by libclamav to use llvm instead of interpreter
         set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
         set(LLVM_LIBRARIES "${LLVM_LIBRARIES};-ltinfo")
+
+        if (${LLVM_VERSION_STRING} VERSION_GREATER_EQUAL "9.0.0")
+            if (${LLVM_VERSION_STRING} VERSION_LESS "10.0.0")
+                set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+            endif()
+        endif()
     endif()
 endif()
 
