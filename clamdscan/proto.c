@@ -236,10 +236,13 @@ static int send_fdpass(int sockd, const char *filename)
 /* 0: scan, 1: skip */
 static int chkpath(const char *path)
 {
+    int status = 0;
     const struct optstruct *opt;
+    char *real_path = NULL;
 
     if (!path) {
-        return 1;
+        status = 1;
+        goto done;
     }
 
     if ((opt = optget(clamdopts, "ExcludePath"))->enabled) {
@@ -247,12 +250,18 @@ static int chkpath(const char *path)
             if (match_regex(path, opt->strarg) == 1) {
                 if (printinfected != 1)
                     logg("~%s: Excluded\n", path);
-                return 1;
+                status = 1;
+                goto done;
             }
             opt = opt->nextarg;
         }
     }
-    return 0;
+
+done:
+    if (NULL != real_path) {
+        free(real_path);
+    }
+    return status;
 }
 
 static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
@@ -442,6 +451,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
     }
 
     if (chkpath(path)) {
+        /* Exclude the path */
         status = CL_SUCCESS;
         goto done;
     }
@@ -496,6 +506,9 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
 
     status = CL_SUCCESS;
 done:
+    if (NULL != real_filename) {
+        free(real_filename);
+    }
     free(filename);
     return status;
 }
@@ -622,12 +635,14 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
             logg("*Failed to determine real filename of %s.\n", filename);
             logg("*Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
-            free(filename);
+            free(filename); /* callback is responsible for free'ing filename parameter. */
             filename = real_filename;
         }
     }
 
     if (chkpath(filename)) {
+        /* Exclude the path */
+        status = CL_SUCCESS;
         goto done;
     }
     c->files++;

@@ -921,35 +921,56 @@ struct cli_ftw_cbdata {
     void *data;
 };
 
-/*
- * return CL_BREAK to break out without an error, CL_SUCCESS to continue,
- * or any CL_E* to break out due to error.
+/**
+ * @brief Callback to process each file in a file tree walk (FTW).
+ *
  * The callback is responsible for freeing filename when it is done using it.
+ *
  * Note that callback decides if directory traversal should continue
  * after an error, we call the callback with reason == error,
  * and if it returns CL_BREAK we break.
+ *
+ * Return:
+ * - CL_BREAK to break out without an error,
+ * - CL_SUCCESS to continue,
+ * - any CL_E* to break out due to error.
  */
 typedef cl_error_t (*cli_ftw_cb)(STATBUF *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 
-/*
- * returns 1 if the path should be skipped and 0 otherwise
- * uses callback data
+/**
+ * @brief Callback to determine if a path in a file tree walk (FTW) should be skipped.
+ * Has access to the same callback data as the main FTW callback function (above).
+ *
+ * Return:
+ * - 1 if the path should be skipped (i.e. to not call the callback for the given path),
+ * - 0 if the path should be processed (i.e. to call the callback for the given path).
  */
 typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
 
-/*
- * returns
- *  CL_SUCCESS if it traversed all files and subdirs
- *  CL_BREAK if traversal has stopped at some point
- *  CL_E* if error encountered during traversal and we had to break out
+/**
+ * @brief Traverse a file path, calling the callback function on each file
+ * within if the pathchk() check allows for it. Will skip certain file types:
+ * -
+ *
  * This is regardless of virus found/not, that is the callback's job to store.
  * Note that the callback may dispatch async the scan, so that when cli_ftw
  * returns we don't know the infected/notinfected status of the directory yet!
+ *
  * Due to this if the callback scans synchronously it should store the infected
  * status in its cbdata.
  * This works for both files and directories. It stats the path to determine
  * which one it is.
  * If it is a file, it simply calls the callback once, otherwise recurses.
+ *
+ * @param base      The top level directory (or file) path to be processed
+ * @param flags     A bitflag field for the CLI_FTW_* flag options (see above)
+ * @param maxdepth  The max recursion depth.
+ * @param callback  The cli_ftw_cb callback to invoke on each file AND directory.
+ * @param data      Callback data for the callback function.
+ * @param pathchk   A function used to determine if the callback should be run on the given file.
+ * @return cl_error_t CL_SUCCESS if it traversed all files and subdirs
+ * @return cl_error_t CL_BREAK if traversal has stopped at some point
+ * @return cl_error_t CL_E* if error encountered during traversal and we had to break out
  */
 cl_error_t cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 
