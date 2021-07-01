@@ -1760,7 +1760,7 @@ static int vbadump(const struct optstruct *opts)
         free(dir);
         return -1;
     }
-    if (cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm)) {
+    if (cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, NULL)) {
         destroy_ctx(-1, ctx);
         cli_rmdirs(dir);
         free(dir);
