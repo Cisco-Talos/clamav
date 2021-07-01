@@ -2019,7 +2019,7 @@ static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq
     }
 
     for (; hashcnt > 0; hashcnt--) {
-        if ((ret = cli_xlm_extract_macros(dirname, ctx, U, hash, hashcnt)) != CL_SUCCESS) {
+        if ((ret = cli_extract_xlm_macros_and_images(dirname, ctx, U, hash, hashcnt)) != CL_SUCCESS) {
             switch (ret) {
                 case CL_VIRUS:
                 case CL_EMEM:
@@ -2388,7 +2388,11 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     char *dir          = NULL;
     cl_error_t ret     = CL_CLEAN;
     struct uniq *files = NULL;
-    int has_vba = 0, has_xlm = 0, has_macros = 0, viruses_found = 0;
+    int has_vba        = 0;
+    int has_xlm        = 0;
+    int has_image      = 0;
+    int has_macros     = 0;
+    int viruses_found  = 0;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
@@ -2411,7 +2415,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
         goto done;
     }
 
-    ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm);
+    ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, &has_image);
     if (ret != CL_CLEAN && ret != CL_VIRUS) {
         cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
         goto done;
@@ -2454,9 +2458,15 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
         }
     }
 
-    if (has_xlm && files) {
+    if ((has_xlm || has_image) && files) {
         ctx->recursion++;
 
+        ///
+        /// TODO: only vba scandir processes the summary info.
+        ///       we need to do it here too.
+        ///
+        /// consider moving image extraction to handler_enum and removing the has_image bit.
+        ///
         ret = cli_xlm_scandir(dir, ctx, files);
         if (CL_VIRUS == ret) {
             viruses_found++;

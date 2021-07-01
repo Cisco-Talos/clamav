@@ -1159,16 +1159,16 @@ char *cli_newfilepath(const char *dir, const char *fname)
     const char *mdir;
     size_t len;
 
-    mdir = dir ? dir : cli_gettmpdir();
-
-    if (!fname) {
-        cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
+    if (NULL == fname) {
+        cli_dbgmsg("cli_newfilepath('%s'): fname argument must not be NULL\n", mdir);
         return NULL;
     }
 
+    mdir = dir ? dir : cli_gettmpdir();
+
     len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
     fullpath = (char *)cli_calloc(len, sizeof(char));
-    if (!fullpath) {
+    if (NULL == fullpath) {
         cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
         return NULL;
     }
@@ -1180,9 +1180,16 @@ char *cli_newfilepath(const char *dir, const char *fname)
 
 cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
 {
+    if (NULL == name || NULL == fname || NULL == fd) {
+        cli_dbgmsg("cli_newfilepathfd('%s'): invalid NULL arguments\n", dir);
+        return CL_EARG;
+    }
+
     *name = cli_newfilepath(dir, fname);
-    if (!*name)
+    if (!*name) {
+        cli_dbgmsg("cli_newfilepathfd('%s'): out of memory\n", dir);
         return CL_EMEM;
+    }
 
     *fd = open(*name, O_RDWR | O_CREAT | O_TRUNC | O_BINARY | O_EXCL, S_IRUSR | S_IWUSR);
     /*
@@ -1238,7 +1245,7 @@ cl_error_t cli_gentempfd(const char *dir, char **name, int *fd)
     return cli_gentempfd_with_prefix(dir, NULL, name, fd);
 }
 
-cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name, int *fd)
+cl_error_t cli_gentempfd_with_prefix(const char *dir, const char *prefix, char **name, int *fd)
 {
     *name = cli_gentemp_with_prefix(dir, prefix);
     if (!*name)

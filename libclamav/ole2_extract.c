@@ -46,6 +46,7 @@
 #include "others.h"
 #include "hwp.h"
 #include "ole2_extract.h"
+#include "xlm_extract.h"
 #include "scanners.h"
 #include "fmap.h"
 #include "json_api.h"
@@ -99,11 +100,14 @@ typedef struct ole2_header_tag {
     int32_t xbat_count __attribute__((packed));
     int32_t bat_array[109] __attribute__((packed));
 
-    /* not part of the ole2 header, but stuff we need in order to decode */
-
     /*
-     * must take account of the size of variables below here when reading the
-     * header
+     * The following is not part of the ole2 header, but stuff we need in
+     * order to decode.
+     *
+     * IMPORANT: These must take account of the size of variables below here
+     * when calculating hdr_size to read the header.
+     *
+     * See the top of cli_ole2_extract().
      */
     int32_t sbat_root_start __attribute__((packed));
     uint32_t max_block_no;
@@ -111,8 +115,9 @@ typedef struct ole2_header_tag {
     bitset_t *bitset;
     struct uniq *U;
     fmap_t *map;
-    int has_vba;
-    int has_xlm;
+    bool has_vba;
+    bool has_xlm;
+    bool has_image;
     hwp5_header_t *is_hwp;
 } ole2_header_t;
 
@@ -537,10 +542,33 @@ ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
     return (ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block));
 }
 
-static int
-ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
-                        int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
-                        unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
+/**
+ * @brief File handler for use when walking ole2 property trees.
+ *
+ * @param hdr   The ole2 header metadata
+ * @param prop  The property
+ * @param dir   (optional) directory to write temp files to.
+ * @param ctx   The scan context
+ * @return cl_error_t
+ */
+typedef cl_error_t ole2_walk_property_tree_file_handler(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx);
+
+/**
+ * @brief Walk an ole2 property tree, calling the handler for each file found
+ *
+ * @param hdr           The ole2 header metadata (an ole2-specific context struct)
+ * @param dir           (optional) directory to write temp files to, passed to the handler.
+ * @param prop_index    Index of the property being walked, to be recorded with a pointer to the root node in an ole2 node list.
+ * @param handler       The file handler to call when a file is found.
+ * @param rec_level     The recursion level. Max is 100.
+ * @param file_count    [in/out] A running count of the total # of files. Max is 100000.
+ * @param ctx           The scan context
+ * @param scansize      [in/out] A running sum of the file sizes processed.
+ * @return int
+ */
+static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
+                                   ole2_walk_property_tree_file_handler handler,
+                                   unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
 {
     property_t prop_block[4];
     int32_t idx, current_block, i, curindex;
@@ -792,133 +820,146 @@ ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
 }
 
 /* Write file Handler - write the contents of the entry to a file */
-static int
-handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    unsigned char *buff;
-    int32_t current_block, ofd;
+    cl_error_t ret = CL_BREAK;
+    char newname[1024];
+    char *name          = NULL;
+    unsigned char *buff = NULL;
+    int32_t current_block;
     size_t len, offset;
-    char *name, newname[1024];
-    bitset_t *blk_bitset;
+    int ofd = -1;
     char *hash;
+    bitset_t *blk_bitset = NULL;
     uint32_t cnt;
 
     UNUSEDPARAM(ctx);
 
     if (prop->type != 2) {
         /* Not a file */
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
+        goto done;
     }
+
     if (prop->name_size > 64) {
         cli_dbgmsg("OLE2 [handler_writefile]: property name too long: %d\n", prop->name_size);
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
+        goto done;
     }
+
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
         cli_dbgmsg("Storing %s in uniq\n", name);
         if (CL_SUCCESS != uniq_add(hdr->U, name, strlen(name), &hash, &cnt)) {
-            free(name);
             cli_dbgmsg("OLE2 [handler_writefile]: too many property names added to uniq store.\n");
-            return CL_BREAK;
+            goto done;
         }
     } else {
         if (CL_SUCCESS != uniq_add(hdr->U, NULL, 0, &hash, &cnt)) {
             cli_dbgmsg("OLE2 [handler_writefile]: too many property names added to uniq store.\n");
-            return CL_BREAK;
+            goto done;
         }
     }
+
     snprintf(newname, sizeof(newname), "%s" PATHSEP "%s_%u", dir, hash, cnt);
     newname[sizeof(newname) - 1] = '\0';
     cli_dbgmsg("OLE2 [handler_writefile]: Dumping '%s' to '%s'\n", name ? name : "<empty>", newname);
-    if (name)
-        free(name);
 
     ofd = open(newname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR);
     if (ofd < 0) {
         cli_errmsg("OLE2 [handler_writefile]: failed to create file: %s\n", newname);
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
+        goto done;
     }
+
     current_block = prop->start_block;
     len           = prop->size;
 
     buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
     if (!buff) {
         cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-        close(ofd);
-        return CL_BREAK;
+        ret = CL_EMEM;
+        goto done;
     }
+
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
         cli_errmsg("OLE2 [handler_writefile]: init bitset failed\n");
-        close(ofd);
-        free(buff);
-        return CL_BREAK;
+        goto done;
     }
+
     while ((current_block >= 0) && (len > 0)) {
         if (current_block > (int32_t)hdr->max_block_no) {
             cli_dbgmsg("OLE2 [handler_writefile]: Max block number for file size exceeded: %d\n", current_block);
-            close(ofd);
-            free(buff);
-            cli_bitset_free(blk_bitset);
-            return CL_SUCCESS;
+            break;
         }
+
         /* Check we aren't in a loop */
         if (cli_bitset_test(blk_bitset, (unsigned long)current_block)) {
             /* Loop in block list */
             cli_dbgmsg("OLE2 [handler_writefile]: Block list loop detected\n");
-            close(ofd);
-            free(buff);
-            cli_bitset_free(blk_bitset);
-            return CL_BREAK;
+            break;
         }
+
         if (!cli_bitset_set(blk_bitset, (unsigned long)current_block)) {
-            close(ofd);
-            free(buff);
-            cli_bitset_free(blk_bitset);
-            return CL_BREAK;
+            break;
         }
+
         if (prop->size < (int64_t)hdr->sbat_cutoff) {
             /* Small block file */
             if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
                 cli_dbgmsg("OLE2 [handler_writefile]: ole2_get_sbat_data_block failed\n");
-                close(ofd);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                return CL_SUCCESS;
+                break;
             }
+
             /* buff now contains the block with N small blocks in it */
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
 
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
-                close(ofd);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                return CL_BREAK;
+                goto done;
             }
+
             len -= MIN(len, 1 << hdr->log2_small_block_size);
             current_block = ole2_get_next_sbat_block(hdr, current_block);
         } else {
             /* Big block file */
             if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
-                close(ofd);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                return CL_SUCCESS;
+                break;
             }
+
             if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) != MIN(len, (1 << hdr->log2_big_block_size))) {
-                close(ofd);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                return CL_BREAK;
+                ret = CL_EWRITE;
+                goto done;
             }
+
             current_block = ole2_get_next_block_number(hdr, current_block);
             len -= MIN(len, (1 << hdr->log2_big_block_size));
         }
     }
-    close(ofd);
-    free(buff);
-    cli_bitset_free(blk_bitset);
-    return CL_SUCCESS;
+
+    /*
+     * Unlike w/ handler_otf(), the ole2 summary JSON will be recorded
+     * when we re-ingest the files we wrote above when we scan the directory.
+     * See cli_vba_scandir()
+     */
+
+    ret = CL_SUCCESS;
+
+done:
+    if (NULL != name) {
+        free(name);
+    }
+    if (-1 != ofd) {
+        close(ofd);
+    }
+    if (NULL != buff) {
+        free(buff);
+    }
+    if (NULL != blk_bitset) {
+        cli_bitset_free(blk_bitset);
+    }
+
+    return ret;
 }
 
 enum biff_parser_states {
@@ -928,6 +969,7 @@ enum biff_parser_states {
     BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE,
     BIFF_PARSER_NAME_RECORD,
     BIFF_PARSER_BOUNDSHEET_RECORD,
+    BIFF_PARSER_MSODRAWINGGROUP_RECORD,
     BIFF_PARSER_DATA,
 };
 
@@ -951,11 +993,16 @@ struct biff_parser_state {
  * \param ctx The ClamAV context for emitting JSON about the document.
  * \returns true if a macro has been found, false otherwise.
  */
-static bool
-scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, size_t len, cli_ctx *ctx)
+static cl_error_t scan_biff_for_xlm_macros_and_images(
+    struct biff_parser_state *state,
+    unsigned char *buff,
+    size_t len,
+    cli_ctx *ctx,
+    bool *found_macro,
+    bool *found_image)
 {
+    cl_error_t status = CL_EFORMAT;
     size_t i;
-    bool found_macro = false;
 
     for (i = 0; i < len; ++i) {
         switch (state->state) {
@@ -975,11 +1022,14 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                 state->length |= buff[i] << 8;
                 state->data_offset = 0;
                 switch (state->opcode) {
-                    case 0x85:
+                    case OPC_BOUNDSHEET:
                         state->state = BIFF_PARSER_BOUNDSHEET_RECORD;
                         break;
-                    case 0x18:
+                    case OPC_NAME:
                         state->state = BIFF_PARSER_NAME_RECORD;
+                        break;
+                    case OPC_MSODRAWINGGROUP:
+                        state->state = BIFF_PARSER_MSODRAWINGGROUP_RECORD;
                         break;
                     default:
                         state->state = BIFF_PARSER_DATA;
@@ -1002,7 +1052,7 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                                     if (indicators) {
                                         cli_jsonstr(indicators, NULL, "autorun");
                                     } else {
-                                        cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"autorun\" entry to MacroIndicators JSON array\n");
+                                        cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Failed to add \"autorun\" entry to MacroIndicators JSON array\n");
                                     }
                                 }
                             }
@@ -1017,7 +1067,7 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                         if (state->data_offset == 4) {
                             state->tmp = buff[i];
                         } else if (state->data_offset == 5 && buff[i] == 1) { //Excel 4.0 macro sheet
-                            cli_dbgmsg("[scan_biff_for_xlm_macros] Found XLM macro sheet\n");
+                            cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Found XLM macro sheet\n");
 #if HAVE_JSON
                             if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
                                 cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
@@ -1025,26 +1075,33 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                                 if (macro_languages) {
                                     cli_jsonstr(macro_languages, NULL, "XLM");
                                 } else {
-                                    cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"XLM\" entry to MacroLanguages JSON array\n");
+                                    cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Failed to add \"XLM\" entry to MacroLanguages JSON array\n");
                                 }
                                 if (state->tmp == 1 || state->tmp == 2) {
                                     json_object *indicators = cli_jsonarray(ctx->wrkproperty, "MacroIndicators");
                                     if (indicators) {
                                         cli_jsonstr(indicators, NULL, "hidden");
                                     } else {
-                                        cli_dbgmsg("[scan_biff_for_xlm_macros] Failed to add \"hidden\" entry to MacroIndicators JSON array\n");
+                                        cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Failed to add \"hidden\" entry to MacroIndicators JSON array\n");
                                     }
                                 }
                             }
 #endif
-                            found_macro = true;
+                            *found_macro = true;
                         }
                         break;
                     case BIFF_PARSER_DATA:
                         break;
+                    case BIFF_PARSER_MSODRAWINGGROUP_RECORD:
+                        // Embedded image found
+                        if (true != *found_image) {
+                            *found_image = true;
+                            cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Found image in sheet\n");
+                        }
+                        break;
                     default:
                         //Should never arrive here
-                        cli_dbgmsg("[scan_biff_for_xlm_macros] Unexpected state value %d\n", (int)state->state);
+                        cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Unexpected state value %d\n", (int)state->state);
                         break;
                 }
                 state->data_offset += 1;
@@ -1054,25 +1111,35 @@ scan_biff_for_xlm_macros(struct biff_parser_state *state, unsigned char *buff, s
                 }
         }
     }
-    return found_macro;
+
+    status = CL_SUCCESS;
+
+    return status;
 }
 
 /**
- * Scan for XLM (Excel 4.0) macro sheets in an OLE2 Workbook stream.
+ * @brief Scan for XLM (Excel 4.0) macro sheets and images in an OLE2 Workbook stream.
+ *
  * The stream should be encoded with <= BIFF8.
+ * The found_macro and found_image out-params should be checked even if an error occured.
+ *
+ * @param hdr
+ * @param prop
+ * @param ctx
+ * @param found_macro [out] If any macros were found
+ * @param found_image [out] If any images were found
+ * @return cl_error_t CL_EPARSE if an error was encountered
+ * @return cl_error_t CL_EMEM if a memory issue was encountered.
+ * @return cl_error_t CL_SUCCESS if no errors were encountered.
  */
-static int
-scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t *prop, cli_ctx *ctx, bool *found_macro, bool *found_image)
 {
+    cl_error_t status   = CL_EPARSE;
     unsigned char *buff = NULL;
     int32_t current_block;
     size_t len, offset;
     bitset_t *blk_bitset = NULL;
     struct biff_parser_state state;
-    bool found_macro = false;
-
-    UNUSEDPARAM(ctx);
-    UNUSEDPARAM(dir);
 
     if (prop->type != 2) {
         /* Not a file */
@@ -1086,23 +1153,24 @@ scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_c
 
     buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
     if (!buff) {
-        cli_errmsg("OLE2 [scan_for_xlm_macros]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+        cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+        status = CL_EMEM;
         goto done;
     }
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
-        cli_errmsg("OLE2 [scan_for_xlm_macros]: init bitset failed\n");
+        cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: init bitset failed\n");
         goto done;
     }
     while ((current_block >= 0) && (len > 0)) {
         if (current_block > (int32_t)hdr->max_block_no) {
-            cli_dbgmsg("OLE2 [scan_for_xlm_macros]: Max block number for file size exceeded: %d\n", current_block);
+            cli_dbgmsg("OLE2 [scan_for_xlm_macros_and_images]: Max block number for file size exceeded: %d\n", current_block);
             goto done;
         }
         /* Check we aren't in a loop */
         if (cli_bitset_test(blk_bitset, (unsigned long)current_block)) {
             /* Loop in block list */
-            cli_dbgmsg("OLE2 [scan_for_xlm_macros]: Block list loop detected\n");
+            cli_dbgmsg("OLE2 [scan_for_xlm_macros_and_images]: Block list loop detected\n");
             goto done;
         }
         if (!cli_bitset_set(blk_bitset, (unsigned long)current_block)) {
@@ -1111,13 +1179,13 @@ scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_c
         if (prop->size < (int64_t)hdr->sbat_cutoff) {
             /* Small block file */
             if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
-                cli_dbgmsg("OLE2 [scan_for_xlm_macros]: ole2_get_sbat_data_block failed\n");
+                cli_dbgmsg("OLE2 [scan_for_xlm_macros_and_images]: ole2_get_sbat_data_block failed\n");
                 goto done;
             }
             /* buff now contains the block with N small blocks in it */
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
 
-            found_macro = scan_biff_for_xlm_macros(&state, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size), ctx) || found_macro;
+            (void)scan_biff_for_xlm_macros_and_images(&state, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size), ctx, found_macro, found_image);
             len -= MIN(len, 1 << hdr->log2_small_block_size);
             current_block = ole2_get_next_sbat_block(hdr, current_block);
         } else {
@@ -1126,11 +1194,13 @@ scan_for_xlm_macros(ole2_header_t *hdr, property_t *prop, const char *dir, cli_c
                 goto done;
             }
 
-            found_macro   = scan_biff_for_xlm_macros(&state, buff, MIN(len, (1 << hdr->log2_big_block_size)), ctx) || found_macro;
+            (void)scan_biff_for_xlm_macros_and_images(&state, buff, MIN(len, (1 << hdr->log2_big_block_size)), ctx, found_macro, found_image);
             current_block = ole2_get_next_block_number(hdr, current_block);
             len -= MIN(len, (1 << hdr->log2_big_block_size));
         }
     }
+
+    status = CL_SUCCESS;
 
 done:
     if (buff) {
@@ -1139,17 +1209,25 @@ done:
     if (blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
-    return found_macro;
+    return status;
 }
 
-/* enum file Handler - checks for VBA presence */
-static int
-handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+/**
+ * @brief enum file Handler - checks for VBA presence
+ *
+ * @param hdr
+ * @param prop
+ * @param dir
+ * @param ctx   the scan context
+ * @return cl_error_t
+ */
+static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
+    cl_error_t status = CL_EREAD;
+
     char *name = NULL;
     unsigned char *hwp_check;
     int32_t offset;
-    int ret = CL_SUCCESS;
 #if HAVE_JSON
     json_object *arrobj, *strmobj;
 
@@ -1200,8 +1278,8 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
             if (!strcmp(name, "fileheader")) {
                 hwp_check = (unsigned char *)cli_calloc(1, 1 << hdr->log2_big_block_size);
                 if (!hwp_check) {
-                    free(name);
-                    return CL_EMEM;
+                    status = CL_EMEM;
+                    goto done;
                 }
 
                 /* reading safety checks; do-while used for breaks */
@@ -1216,7 +1294,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
                     offset = 0;
                     if (prop->size < (int64_t)hdr->sbat_cutoff) {
                         if (!ole2_get_sbat_data_block(hdr, hwp_check, prop->start_block)) {
-                            ret = CL_EREAD;
+                            status = CL_EREAD;
                             break;
                         }
                         offset = (1 << hdr->log2_small_block_size) *
@@ -1227,7 +1305,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
                             break;
                     } else {
                         if (!ole2_read_block(hdr, hwp_check, 1 << hdr->log2_big_block_size, prop->start_block)) {
-                            ret = CL_EREAD;
+                            status = CL_EREAD;
                             break;
                         }
                     }
@@ -1240,7 +1318,7 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
 #endif
                         hwp_new = cli_calloc(1, sizeof(hwp5_header_t));
                         if (!(hwp_new)) {
-                            ret = CL_EMEM;
+                            status = CL_EMEM;
                             break;
                         }
 
@@ -1258,19 +1336,27 @@ handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx
         }
     }
 
-    if (!hdr->has_xlm) {
+    /* If we've already found a macro and an image, we can skip this initial check.
+       This scan step is to save a little time so we don't have to fully parse it
+       later if never find anything.. */
+    if (!hdr->has_xlm || !hdr->has_image) {
         if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
         }
 
         if (name && (strcmp(name, "workbook") == 0 || strcmp(name, "book") == 0)) {
-            hdr->has_xlm = scan_for_xlm_macros(hdr, prop, dir, ctx);
+            (void)scan_for_xlm_macros_and_images(hdr, prop, ctx, &hdr->has_xlm, &hdr->has_image);
         }
     }
 
-    if (name)
+    status = CL_SUCCESS;
+
+done:
+    if (NULL != name) {
         free(name);
-    return ret;
+    }
+
+    return status;
 }
 
 static int
@@ -1442,100 +1528,91 @@ mso_end:
     return ret;
 }
 
-static int
-handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    char *tempfile, *name = NULL;
-    unsigned char *buff;
+    cl_error_t ret      = CL_BREAK;
+    char *tempfile      = NULL;
+    char *name          = NULL;
+    unsigned char *buff = NULL;
     int32_t current_block;
     size_t len, offset;
-    int ofd, is_mso, ret;
-    bitset_t *blk_bitset;
+    int ofd = -1;
+    int is_mso;
+    bitset_t *blk_bitset = NULL;
 
     UNUSEDPARAM(dir);
 
     if (prop->type != 2) {
         /* Not a file */
-        return CL_SUCCESS;
+        ret = CL_SUCCESS;
+        goto done;
     }
     print_ole2_property(prop);
 
-    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL)))
-        return CL_EMEM;
+    if (!(tempfile = cli_gentemp(ctx ? ctx->sub_tmpdir : NULL))) {
+        ret = CL_EMEM;
+        goto done;
+    }
 
     if ((ofd = open(tempfile, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, S_IRUSR | S_IWUSR)) < 0) {
-        cli_dbgmsg("OLE2: Can't create file %s\n", tempfile);
-        free(tempfile);
-        return CL_ECREAT;
+        cli_dbgmsg("OLE2 [handler_otf]: Can't create file %s\n", tempfile);
+        ret = CL_ECREAT;
+        goto done;
     }
+
     current_block = prop->start_block;
     len           = prop->size;
 
     if (cli_debug_flag) {
-        if (!name)
+        if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
     buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
     if (!buff) {
-        close(ofd);
-        if (name)
-            free(name);
-        cli_unlink(tempfile);
-        free(tempfile);
-        return CL_EMEM;
+        ret = CL_EMEM;
+        goto done;
     }
-    blk_bitset = cli_bitset_init();
 
+    blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
-        cli_errmsg("OLE2: OTF handler init bitset failed\n");
-        free(buff);
-        close(ofd);
-        if (name)
-            free(name);
-        if (cli_unlink(tempfile)) {
-            free(tempfile);
-            return CL_EUNLINK;
-        }
-        free(tempfile);
-        return CL_BREAK;
+        cli_errmsg("OLE2 [handler_otf]: init bitset failed\n");
+        goto done;
     }
+
     while ((current_block >= 0) && (len > 0)) {
         if (current_block > (int32_t)hdr->max_block_no) {
-            cli_dbgmsg("OLE2: Max block number for file size exceeded: %d\n", current_block);
+            cli_dbgmsg("OLE2 [handler_otf]: Max block number for file size exceeded: %d\n", current_block);
             break;
         }
+
         /* Check we aren't in a loop */
         if (cli_bitset_test(blk_bitset, (unsigned long)current_block)) {
             /* Loop in block list */
-            cli_dbgmsg("OLE2: Block list loop detected\n");
+            cli_dbgmsg("OLE2 [handler_otf]: Block list loop detected\n");
             break;
         }
+
         if (!cli_bitset_set(blk_bitset, (unsigned long)current_block)) {
             break;
         }
+
         if (prop->size < (int64_t)hdr->sbat_cutoff) {
             /* Small block file */
             if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
-                cli_dbgmsg("ole2_get_sbat_data_block failed\n");
+                cli_dbgmsg("OLE2 [handler_otf]: ole2_get_sbat_data_block failed\n");
                 break;
             }
+
             /* buff now contains the block with N small blocks in it */
             offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+
             if (cli_writen(ofd, &buff[offset], MIN(len, 1 << hdr->log2_small_block_size)) != MIN(len, 1 << hdr->log2_small_block_size)) {
-                close(ofd);
-                if (name)
-                    free(name);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                if (cli_unlink(tempfile)) {
-                    free(tempfile);
-                    return CL_EUNLINK;
-                }
-                free(tempfile);
-                return CL_BREAK;
+                goto done;
             }
+
             len -= MIN(len, 1 << hdr->log2_small_block_size);
             current_block = ole2_get_next_sbat_block(hdr, current_block);
         } else {
@@ -1543,19 +1620,12 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
             if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
                 break;
             }
+
             if (cli_writen(ofd, buff, MIN(len, (1 << hdr->log2_big_block_size))) != MIN(len, (1 << hdr->log2_big_block_size))) {
-                close(ofd);
-                if (name)
-                    free(name);
-                free(buff);
-                cli_bitset_free(blk_bitset);
-                if (cli_unlink(tempfile)) {
-                    free(tempfile);
-                    return CL_EUNLINK;
-                }
-                free(tempfile);
-                return CL_EWRITE;
+                ret = CL_EWRITE;
+                goto done;
             }
+
             current_block = ole2_get_next_block_number(hdr, current_block);
             len -= MIN(len, (1 << hdr->log2_big_block_size));
         }
@@ -1565,52 +1635,32 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 
     is_mso = likely_mso_stream(ofd);
     if (lseek(ofd, 0, SEEK_SET) == -1) {
-        close(ofd);
-        if (name)
-            free(name);
-        if (ctx && !(ctx->engine->keeptmp))
-            cli_unlink(tempfile);
-
-        free(tempfile);
-        free(buff);
-        cli_bitset_free(blk_bitset);
-        return CL_ESEEK;
+        ret = CL_ESEEK;
+        goto done;
     }
 
 #if HAVE_JSON
     /* JSON Output Summary Information */
     if (SCAN_COLLECT_METADATA && (ctx->properties != NULL)) {
-        if (!name)
+        if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
         if (name) {
             if (!strncmp(name, "_5_summaryinformation", 21)) {
                 cli_dbgmsg("OLE2: detected a '_5_summaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
                 if (cli_ole2_summary_json(ctx, ofd, 0) == CL_ETIMEOUT) {
-                    free(name);
-                    close(ofd);
-                    if (ctx && !(ctx->engine->keeptmp))
-                        cli_unlink(tempfile);
-
-                    free(tempfile);
-                    free(buff);
-                    cli_bitset_free(blk_bitset);
-                    return CL_ETIMEOUT;
+                    ret = CL_ETIMEOUT;
+                    goto done;
                 }
             }
+
             if (!strncmp(name, "_5_documentsummaryinformation", 29)) {
                 cli_dbgmsg("OLE2: detected a '_5_documentsummaryinformation' stream\n");
                 /* JSONOLE2 - what to do if something breaks? */
                 if (cli_ole2_summary_json(ctx, ofd, 1) == CL_ETIMEOUT) {
-                    free(name);
-                    close(ofd);
-                    if (ctx && !(ctx->engine->keeptmp))
-                        cli_unlink(tempfile);
-
-                    free(tempfile);
-                    free(buff);
-                    cli_bitset_free(blk_bitset);
-                    return CL_ETIMEOUT;
+                    ret = CL_ETIMEOUT;
+                    goto done;
                 }
             }
         }
@@ -1618,8 +1668,9 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 #endif
 
     if (hdr->is_hwp) {
-        if (!name)
+        if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
         ret = cli_scanhwp5_stream(ctx, hdr->is_hwp, name, ofd, tempfile);
     } else if (is_mso < 0) {
         ret = CL_ESEEK;
@@ -1630,19 +1681,32 @@ handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
         /* Normal File Scan */
         ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL);
     }
-    if (name)
+
+    ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
+
+done:
+    if (NULL != name) {
         free(name);
-    close(ofd);
-    free(buff);
-    cli_bitset_free(blk_bitset);
-    if (ctx && !ctx->engine->keeptmp) {
-        if (cli_unlink(tempfile)) {
-            free(tempfile);
-            return CL_EUNLINK;
-        }
     }
-    free(tempfile);
-    return ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
+    if (-1 != ofd) {
+        close(ofd);
+    }
+    if (NULL != buff) {
+        free(buff);
+    }
+    if (NULL != blk_bitset) {
+        cli_bitset_free(blk_bitset);
+    }
+    if (NULL != tempfile) {
+        if (ctx && !ctx->engine->keeptmp) {
+            if (cli_unlink(tempfile)) {
+                ret = CL_EUNLINK;
+            }
+        }
+        free(tempfile);
+    }
+
+    return ret;
 }
 
 #if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK) && !defined(HAVE_PRAGMA_PACK_HPPA)
@@ -1708,35 +1772,57 @@ ole2_read_header(int fd, ole2_header_t *hdr)
 }
 #endif
 
-int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm)
+/**
+ * @brief Extract macros and images from an ole2 file
+ *
+ * @param dirname   A temp directory where we should store extracted content
+ * @param ctx       The scan context
+ * @param files     [out] A store of file names of extracted things to be processed later.
+ * @param has_vba   [out] If the ole2 contained 1 or more VBA macros
+ * @param has_xlm   [out] If the ole2 contained 1 or more XLM macros
+ * @param has_image [out] If the ole2 contained 1 or more images
+ * @return cl_error_t
+ */
+cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm, int *has_image)
 {
     ole2_header_t hdr;
-    int ret = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
     size_t hdr_size;
     unsigned int file_count = 0;
     unsigned long scansize, scansize2;
     const void *phdr;
 
     cli_dbgmsg("in cli_ole2_extract()\n");
-    if (!ctx)
+    if (!ctx) {
         return CL_ENULLARG;
+    }
 
     hdr.is_hwp = NULL;
     hdr.bitset = NULL;
     if (ctx->engine->maxscansize) {
-        if (ctx->engine->maxscansize > ctx->scansize)
+        if (ctx->engine->maxscansize > ctx->scansize) {
             scansize = ctx->engine->maxscansize - ctx->scansize;
-        else
+        } else {
             return CL_EMAXSIZE;
-    } else
+        }
+    } else {
         scansize = -1;
+    }
 
     scansize2 = scansize;
 
     /* size of header - size of other values in struct */
-    hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) - sizeof(uint32_t) -
-               sizeof(off_t) - sizeof(bitset_t *) -
-               sizeof(struct uniq *) - sizeof(fmap_t *) - sizeof(int) - sizeof(hwp5_header_t *);
+    hdr_size = sizeof(struct ole2_header_tag) -
+               sizeof(int32_t) -        // sbat_root_start
+               sizeof(uint32_t) -       // max_block_no
+               sizeof(off_t) -          // m_length
+               sizeof(bitset_t *) -     // bitset
+               sizeof(struct uniq *) -  // U
+               sizeof(fmap_t *) -       // map
+               sizeof(bool) -           // has_vba
+               sizeof(bool) -           // has_xlm
+               sizeof(bool) -           // has_image
+               sizeof(hwp5_header_t *); // is_hwp
 
     if ((size_t)((*ctx->fmap)->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
@@ -1748,7 +1834,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
         memcpy(&hdr, phdr, hdr_size);
     } else {
         cli_dbgmsg("cli_ole2_extract: failed to read header\n");
-        goto abort;
+        goto done;
     }
 
     hdr.minor_version         = ole2_endian_convert_16(hdr.minor_version);
@@ -1769,20 +1855,20 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
     hdr.bitset = cli_bitset_init();
     if (!hdr.bitset) {
         ret = CL_EMEM;
-        goto abort;
+        goto done;
     }
     if (memcmp(hdr.magic, magic_id, 8) != 0) {
         cli_dbgmsg("OLE2 magic failed!\n");
         ret = CL_EFORMAT;
-        goto abort;
+        goto done;
     }
     if (hdr.log2_big_block_size < 6 || hdr.log2_big_block_size > 30) {
         cli_dbgmsg("CAN'T PARSE: Invalid big block size (2^%u)\n", hdr.log2_big_block_size);
-        goto abort;
+        goto done;
     }
     if (!hdr.log2_small_block_size || hdr.log2_small_block_size > hdr.log2_big_block_size) {
         cli_dbgmsg("CAN'T PARSE: Invalid small block size (2^%u)\n", hdr.log2_small_block_size);
-        goto abort;
+        goto done;
     }
     if (hdr.sbat_cutoff != 4096) {
         cli_dbgmsg("WARNING: Untested sbat cutoff (%u); data may not extract correctly\n", hdr.sbat_cutoff);
@@ -1791,7 +1877,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
     if (hdr.map->len > INT32_MAX) {
         cli_dbgmsg("OLE2 extract: Overflow detected\n");
         ret = CL_EFORMAT;
-        goto abort;
+        goto done;
     }
     /* 8 SBAT blocks per file block */
     hdr.max_block_no = (hdr.map->len - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
@@ -1800,13 +1886,15 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
     cli_dbgmsg("Max block number: %lu\n", (unsigned long int)hdr.max_block_no);
 
     /* PASS 1 : Count files and check for VBA */
-    hdr.has_vba = 0;
-    hdr.has_xlm = 0;
-    ret         = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+    hdr.has_vba   = false;
+    hdr.has_xlm   = false;
+    hdr.has_image = false;
+    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
-    if (!file_count || !(hdr.bitset = cli_bitset_init()))
-        goto abort;
+    if (!file_count || !(hdr.bitset = cli_bitset_init())) {
+        goto done;
+    }
 
     if (hdr.is_hwp) {
         cli_dbgmsg("OLE2: identified HWP document\n");
@@ -1815,18 +1903,19 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
         cli_dbgmsg("OLE2: HWP flags:   0x%08x\n", hdr.is_hwp->flags);
 
         ret = cli_hwp5header(ctx, hdr.is_hwp);
-        if (ret != CL_SUCCESS)
-            goto abort;
+        if (ret != CL_SUCCESS) {
+            goto done;
+        }
     }
 
     /* If there's no VBA we scan OTF */
-    if (hdr.has_vba || hdr.has_xlm) {
+    if (hdr.has_vba || hdr.has_xlm || hdr.has_image) {
         /* PASS 2/A : VBA scan */
         cli_dbgmsg("OLE2: VBA project found\n");
         if (!(hdr.U = uniq_init(file_count))) {
             cli_dbgmsg("OLE2: uniq_init() failed\n");
             ret = CL_EMEM;
-            goto abort;
+            goto done;
         }
         file_count = 0;
         ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
@@ -1838,6 +1927,9 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
         if (has_xlm) {
             *has_xlm = hdr.has_xlm;
         }
+        if (has_image) {
+            *has_image = hdr.has_image;
+        }
     } else {
         cli_dbgmsg("OLE2: no VBA projects found\n");
         /* PASS 2/B : OTF scan */
@@ -1845,12 +1937,12 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
         ret        = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
     }
 
-abort:
-    if (hdr.bitset)
+done:
+    if (hdr.bitset) {
         cli_bitset_free(hdr.bitset);
-
-    if (hdr.is_hwp)
+    }
+    if (hdr.is_hwp) {
         free(hdr.is_hwp);
-
+    }
     return ret == CL_BREAK ? CL_CLEAN : ret;
 }

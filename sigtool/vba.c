@@ -1155,7 +1155,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                                     free(dir);
                                     return 1;
                                 }
-                                if ((ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm))) {
+                                if ((ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, NULL))) {
                                     printf("ERROR %s\n", cl_strerror(ret));
                                     destroy_ctx(desc, ctx);
                                     cli_rmdirs(dir);

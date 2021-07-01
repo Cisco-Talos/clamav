@@ -847,7 +847,7 @@ char *cli_newfilepath(const char *dir, const char *fname);
  * If the dir is not provided, the engine->tmpdir will be used.
  *
  * @param dir        Alternative temp directory (optional).
- * @param prefix  	 (Optional) Base filename for new file.
+ * @param fname  	 Filename for new file.
  * @param[out] name  Allocated filepath, must be freed by caller.
  * @param[out] fd    File descriptor of open temp file.
  */
@@ -859,6 +859,7 @@ cl_error_t cli_newfilepathfd(const char *dir, char *fname, char **name, int *fd)
  * Caller is responsible for freeing the filename.
  *
  * @param dir 	 Alternative temp directory. (optional)
+ * @param prefix (Optional) Prefix for new file tempfile.
  * @return char* filename or NULL.
  */
 char *cli_gentemp_with_prefix(const char *dir, const char *prefix);
@@ -892,7 +893,7 @@ cl_error_t cli_gentempfd(const char *dir, char **name, int *fd);
  * @param[out] fd    File descriptor of open temp file.
  * @return cl_error_t CL_SUCCESS, CL_ECREAT, or CL_EMEM.
  */
-cl_error_t cli_gentempfd_with_prefix(const char *dir, char *prefix, char **name, int *fd);
+cl_error_t cli_gentempfd_with_prefix(const char *dir, const char *prefix, char **name, int *fd);
 
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);

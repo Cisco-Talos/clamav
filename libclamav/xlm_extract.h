@@ -35,5 +35,14 @@
 //Page 58 CONTINUE record Microsoft Office Excel97-2007Binary File Format (.xls) Specification
 #define BIFF8_MAX_RECORD_LENGTH 8228
 
-cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which);
+typedef enum biff8_opcode {
+    OPC_FORMULA         = 0x06,
+    OPC_NAME            = 0x18,
+    OPC_CONTINUE        = 0x3C,
+    OPC_BOUNDSHEET      = 0x85,
+    OPC_MSODRAWINGGROUP = 0xEB,
+    OPC_STRING          = 0x207,
+} biff8_opcode;
+
+cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which);
 #endif

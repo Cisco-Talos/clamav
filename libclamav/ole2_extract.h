@@ -29,7 +29,7 @@
 #include "others.h"
 #include "uniq.h"
 
-int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm);
+cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int *has_vba, int *has_xlm, int *has_image);
 char *cli_ole2_get_property_name2(const char *name, int size);
 
 #endif
