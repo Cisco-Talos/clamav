@@ -44,5 +44,5 @@ typedef enum biff8_opcode {
     OPC_STRING          = 0x207,
 } biff8_opcode;
 
-cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which);
+cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char *hash, uint32_t which);
 #endif

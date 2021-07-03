@@ -4087,7 +4087,7 @@ done:
     return status;
 }
 
-cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, struct uniq *U, char *hash, uint32_t which)
+cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char *hash, uint32_t which)
 {
     char fullname[PATH_MAX];
     int in_fd = -1, out_fd = -1;
@@ -4110,8 +4110,6 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, stru
     char *extracted_image_filepath  = NULL;
     int extracted_image_tempfd      = -1;
     cli_file_t extracted_image_type = CL_TYPE_ANY;
-
-    UNUSEDPARAM(U);
 
     snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s_%u", dir, hash, which);
     fullname[sizeof(fullname) - 1] = '\0';

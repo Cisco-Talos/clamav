@@ -940,7 +940,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     /*
      * Unlike w/ handler_otf(), the ole2 summary JSON will be recorded
      * when we re-ingest the files we wrote above when we scan the directory.
-     * See cli_vba_scandir()
+     * See cli_ole2_tempdir_scan_vba()
      */
 
     ret = CL_SUCCESS;
