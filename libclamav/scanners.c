@@ -125,7 +125,7 @@
 #include <fcntl.h>
 #include <string.h>
 
-cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx)
+cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
 {
     DIR *dd;
     struct dirent *dent;
@@ -133,19 +133,19 @@ cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx)
     char *fname;
     unsigned int viruses_found = 0;
 
-    if ((dd = opendir(dirname)) != NULL) {
+    if ((dd = opendir(dir)) != NULL) {
         while ((dent = readdir(dd))) {
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                     /* build the full name */
-                    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                    fname = cli_malloc(strlen(dir) + strlen(dent->d_name) + 2);
                     if (!fname) {
                         closedir(dd);
                         cli_dbgmsg("cli_magic_scan_dir: Unable to allocate memory for filename\n");
                         return CL_EMEM;
                     }
 
-                    sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
+                    sprintf(fname, "%s" PATHSEP "%s", dir, dent->d_name);
 
                     /* stat the file */
                     if (LSTAT(fname, &statbuf) != -1) {
@@ -182,7 +182,7 @@ cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx)
             }
         }
     } else {
-        cli_dbgmsg("cli_magic_scan_dir: Can't open directory %s.\n", dirname);
+        cli_dbgmsg("cli_magic_scan_dir: Can't open directory %s.\n", dir);
         return CL_EOPEN;
     }
 
@@ -1569,9 +1569,9 @@ cl_error_t find_file(const char *filename, const char *dir, char *result, size_t
 
 /**
  * Scan an OLE directory for a VBA project.
- * Contrary to cli_vba_scandir, this function uses the dir file to locate VBA modules.
+ * Contrary to cli_ole2_tempdir_scan_vba, this function uses the dir file to locate VBA modules.
  */
-static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct uniq *U, int *has_macros)
+static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, struct uniq *U, int *has_macros)
 {
     cl_error_t ret   = CL_SUCCESS;
     uint32_t hashcnt = 0;
@@ -1582,7 +1582,7 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
     int viruses_found = 0;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
-        cli_dbgmsg("cli_vba_scandir_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
+        cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: uniq_get('dir') failed with ret code (%d)!\n", ret);
         return ret;
     }
 
@@ -1594,13 +1594,13 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
         snprintf(filename, sizeof(filename), "%s_%u", hash, hashcnt);
         filename[sizeof(filename) - 1] = '\0';
 
-        if (CL_SUCCESS == find_file(filename, dirname, path, sizeof(path))) {
-            cli_dbgmsg("cli_vba_scandir_new: Found dir file: %s\n", path);
+        if (CL_SUCCESS == find_file(filename, dir, path, sizeof(path))) {
+            cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Found dir file: %s\n", path);
             if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros)) != CL_SUCCESS) {
                 //FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
                 //       OLE2 archive, we don't know if we have the right file. The only thing we can do is
                 //       iterate all of them until one succeeds.
-                cli_dbgmsg("cli_vba_scandir_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
+                cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
                 ret = CL_SUCCESS;
                 hashcnt--;
                 continue;
@@ -1613,7 +1613,7 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
                 if (macro_languages) {
                     cli_jsonstr(macro_languages, NULL, "VBA");
                 } else {
-                    cli_dbgmsg("[cli_vba_scandir_new] Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
+                    cli_dbgmsg("[cli_ole2_tempdir_scan_vba_new] Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
                 }
             }
 #endif
@@ -1631,7 +1631,7 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
              * Now rewind the extracted vba-project output FD and scan it!
              */
             if (lseek(tempfd, 0, SEEK_SET) != 0) {
-                cli_dbgmsg("cli_vba_scandir_new: Failed to seek to beginning of temporary VBA project file\n");
+                cli_dbgmsg("cli_ole2_tempdir_scan_vba_new: Failed to seek to beginning of temporary VBA project file\n");
                 ret = CL_ESEEK;
                 goto done;
             }
@@ -1667,30 +1667,143 @@ done:
     return ret;
 }
 
-static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U, int *has_macros)
+/**
+ * @brief find the summary information files and write out the meta to the JSON.
+ *
+ * @param dir   The directory containing ole2 temp files
+ * @param ctx       The scan context
+ * @param U         The unique structure indicating while files exist in the directory
+ * @return cl_error_t
+ */
+static cl_error_t cli_ole2_tempdir_scan_summary(const char *dir, cli_ctx *ctx, struct uniq *U)
+{
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret;
+    char summary_filename[1024];
+    char *hash;
+    uint32_t hashcnt = 0;
+
+#if HAVE_JSON
+    if (CL_SUCCESS != (ret = uniq_get(U, "_5_summaryinformation", 21, &hash, &hashcnt))) {
+        cli_dbgmsg("cli_ole2_tempdir_scan_summary: uniq_get('_5_summaryinformation') failed with ret code (%d)!\n", ret);
+        status = ret;
+        goto done;
+    }
+    while (hashcnt) {
+        int fd = -1;
+
+        snprintf(summary_filename, sizeof(summary_filename), "%s" PATHSEP "%s_%u", dir, hash, hashcnt);
+        summary_filename[sizeof(summary_filename) - 1] = '\0';
+
+        fd = open(summary_filename, O_RDONLY | O_BINARY);
+        if (fd >= 0) {
+            cli_dbgmsg("cli_ole2_tempdir_scan_summary: detected a '_5_summaryinformation' stream\n");
+            /* JSONOLE2 - what to do if something breaks? */
+            cli_ole2_summary_json(ctx, fd, 0);
+            close(fd);
+        }
+        hashcnt--;
+    }
+
+    if (CL_SUCCESS != (ret = uniq_get(U, "_5_documentsummaryinformation", 29, &hash, &hashcnt))) {
+        cli_dbgmsg("cli_ole2_tempdir_scan_summary: uniq_get('_5_documentsummaryinformation') failed with ret code (%d)!\n", ret);
+        status = ret;
+        goto done;
+    }
+    while (hashcnt) {
+        int fd = -1;
+
+        snprintf(summary_filename, sizeof(summary_filename), "%s" PATHSEP "%s_%u", dir, hash, hashcnt);
+        summary_filename[sizeof(summary_filename) - 1] = '\0';
+
+        fd = open(summary_filename, O_RDONLY | O_BINARY);
+        if (fd >= 0) {
+            cli_dbgmsg("cli_ole2_tempdir_scan_summary: detected a '_5_documentsummaryinformation' stream\n");
+            /* JSONOLE2 - what to do if something breaks? */
+            cli_ole2_summary_json(ctx, fd, 1);
+            close(fd);
+        }
+        hashcnt--;
+    }
+#endif
+
+done:
+
+    return status;
+}
+
+/**
+ * @brief Check the ole2 temp directory for embedded OLE objects
+ *
+ * @param dir   The ole2 temp directory
+ * @param ctx       The scan context
+ * @param U         The uniq structure which recors what files are in the temp directory
+ * @return cl_error_t
+ */
+static cl_error_t cli_ole2_tempdir_scan_embedded_ole10(const char *dir, cli_ctx *ctx, struct uniq *U)
+{
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret;
+    char ole10_filename[1024];
+    char *hash;
+    uint32_t hashcnt           = 0;
+    unsigned int viruses_found = 0;
+
+    /* Check directory for embedded OLE objects */
+    if (CL_SUCCESS != (ret = uniq_get(U, "_1_ole10native", 14, &hash, &hashcnt))) {
+        cli_dbgmsg("cli_ole2_tempdir_scan_embedded_ole10: uniq_get('_1_ole10native') failed with ret code (%d)!\n", ret);
+        status = ret;
+        goto done;
+    }
+    while (hashcnt) {
+        int fd = -1;
+
+        snprintf(ole10_filename, sizeof(ole10_filename), "%s" PATHSEP "%s_%u", dir, hash, hashcnt);
+        ole10_filename[sizeof(ole10_filename) - 1] = '\0';
+
+        fd = open(ole10_filename, O_RDONLY | O_BINARY);
+        if (fd >= 0) {
+            ret = cli_scan_ole10(fd, ctx);
+            close(fd);
+            if (CL_VIRUS == ret) {
+                viruses_found++;
+                if (!SCAN_ALLMATCHES) {
+                    status = ret;
+                    goto done;
+                }
+            }
+        }
+        hashcnt--;
+    }
+
+done:
+    if (viruses_found > 0) {
+        status = CL_VIRUS;
+    }
+
+    return status;
+}
+
+static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struct uniq *U, int *has_macros)
 {
     cl_error_t status = CL_CLEAN;
     cl_error_t ret;
     int i, j;
     size_t data_len;
     vba_project_t *vba_project;
-    DIR *dd = NULL;
-    struct dirent *dent;
-    STATBUF statbuf;
     char *fullname, vbaname[1024];
     unsigned char *data;
     char *hash;
     uint32_t hashcnt           = 0;
     unsigned int viruses_found = 0;
 
-    cli_dbgmsg("VBADir: %s\n", dirname);
     if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
-        cli_dbgmsg("VBADir: uniq_get('_vba_project') failed with ret code (%d)!\n", ret);
+        cli_dbgmsg("cli_ole2_tempdir_scan_vba: uniq_get('_vba_project') failed with ret code (%d)!\n", ret);
         status = ret;
         goto done;
     }
     while (hashcnt) {
-        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) {
+        if (!(vba_project = (vba_project_t *)cli_vba_readdir(dir, U, hashcnt))) {
             hashcnt--;
             continue;
         }
@@ -1706,7 +1819,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                 if (fd == -1) {
                     continue;
                 }
-                cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
+                cli_dbgmsg("cli_ole2_tempdir_scan_vba: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
                 data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
                 close(fd);
                 *has_macros = *has_macros + 1;
@@ -1720,19 +1833,19 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
                         int of;
 
                         if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tempfile, &of)) != CL_SUCCESS) {
-                            cli_warnmsg("VBADir: WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
+                            cli_warnmsg("WARNING: VBA project '%s_%u' cannot be dumped to file\n", vba_project->name[i], j);
                             status = ret;
                             goto done;
                         }
                         if (cli_writen(of, data, data_len) != data_len) {
-                            cli_warnmsg("VBADir: WARNING: VBA project '%s_%u' failed to write to file\n", vba_project->name[i], j);
+                            cli_warnmsg("WARNING: VBA project '%s_%u' failed to write to file\n", vba_project->name[i], j);
                             close(of);
                             free(tempfile);
                             status = CL_EWRITE;
                             goto done;
                         }
 
-                        cli_dbgmsg("VBADir: VBA project '%s_%u' dumped to %s\n", vba_project->name[i], j, tempfile);
+                        cli_dbgmsg("cli_ole2_tempdir_scan_vba: VBA project '%s_%u' dumped to %s\n", vba_project->name[i], j, tempfile);
                         free(tempfile);
                     }
 
@@ -1763,14 +1876,14 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
     if (status == CL_CLEAN || (status == CL_VIRUS && SCAN_ALLMATCHES)) {
         if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
-            cli_dbgmsg("VBADir: uniq_get('powerpoint document') failed with ret code (%d)!\n", ret);
+            cli_dbgmsg("cli_ole2_tempdir_scan_vba: uniq_get('powerpoint document') failed with ret code (%d)!\n", ret);
             status = ret;
             goto done;
         }
         while (hashcnt) {
             int fd = -1;
 
-            snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
+            snprintf(vbaname, 1024, "%s" PATHSEP "%s_%u", dir, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
             fd = open(vbaname, O_RDONLY | O_BINARY);
@@ -1801,14 +1914,14 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
 
     if (status == CL_CLEAN || (status == CL_VIRUS && SCAN_ALLMATCHES)) {
         if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
-            cli_dbgmsg("VBADir: uniq_get('worddocument') failed with ret code (%d)!\n", ret);
+            cli_dbgmsg("cli_ole2_tempdir_scan_vba: uniq_get('worddocument') failed with ret code (%d)!\n", ret);
             status = ret;
             goto done;
         }
         while (hashcnt) {
             int fd = -1;
 
-            snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
+            snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dir, hash, hashcnt);
             vbaname[sizeof(vbaname) - 1] = '\0';
 
             fd = open(vbaname, O_RDONLY | O_BINARY);
@@ -1824,12 +1937,12 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
             }
 
             for (i = 0; i < vba_project->count; i++) {
-                cli_dbgmsg("VBADir: Decompress WM project macro:%d key:%d length:%d\n", i, vba_project->key[i], vba_project->length[i]);
+                cli_dbgmsg("cli_ole2_tempdir_scan_vba: Decompress WM project macro:%d key:%d length:%d\n", i, vba_project->key[i], vba_project->length[i]);
                 data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
                 if (!data) {
-                    cli_dbgmsg("VBADir: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
+                    cli_dbgmsg("cli_ole2_tempdir_scan_vba: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
                 } else {
-                    cli_dbgmsg("Project content:\n%s", data);
+                    cli_dbgmsg("cli_ole2_tempdir_scan_vba: Project content:\n%s", data);
                     if (ctx->scanned)
                         *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
                     if (vba_scandata(data, vba_project->length[i], ctx) == CL_VIRUS) {
@@ -1855,128 +1968,7 @@ static cl_error_t cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq
         }
     }
 
-#if HAVE_JSON
-    /* JSON Output Summary Information */
-    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
-        if (CL_SUCCESS != (ret = uniq_get(U, "_5_summaryinformation", 21, &hash, &hashcnt))) {
-            cli_dbgmsg("VBADir: uniq_get('_5_summaryinformation') failed with ret code (%d)!\n", ret);
-            status = ret;
-            goto done;
-        }
-        while (hashcnt) {
-            int fd = -1;
-
-            snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
-            vbaname[sizeof(vbaname) - 1] = '\0';
-
-            fd = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd >= 0) {
-                cli_dbgmsg("VBADir: detected a '_5_summaryinformation' stream\n");
-                /* JSONOLE2 - what to do if something breaks? */
-                cli_ole2_summary_json(ctx, fd, 0);
-                close(fd);
-            }
-            hashcnt--;
-        }
-
-        if (CL_SUCCESS != (ret = uniq_get(U, "_5_documentsummaryinformation", 29, &hash, &hashcnt))) {
-            cli_dbgmsg("VBADir: uniq_get('_5_documentsummaryinformation') failed with ret code (%d)!\n", ret);
-            status = ret;
-            goto done;
-        }
-        while (hashcnt) {
-            int fd = -1;
-
-            snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
-            vbaname[sizeof(vbaname) - 1] = '\0';
-
-            fd = open(vbaname, O_RDONLY | O_BINARY);
-            if (fd >= 0) {
-                cli_dbgmsg("VBADir: detected a '_5_documentsummaryinformation' stream\n");
-                /* JSONOLE2 - what to do if something breaks? */
-                cli_ole2_summary_json(ctx, fd, 1);
-                close(fd);
-            }
-            hashcnt--;
-        }
-    }
-#endif
-
-    if (status != CL_CLEAN && !(status == CL_VIRUS && SCAN_ALLMATCHES)) {
-        goto done;
-    }
-
-    /* Check directory for embedded OLE objects */
-    if (CL_SUCCESS != (ret = uniq_get(U, "_1_ole10native", 14, &hash, &hashcnt))) {
-        cli_dbgmsg("VBADir: uniq_get('_1_ole10native') failed with ret code (%d)!\n", ret);
-        status = ret;
-        goto done;
-    }
-    while (hashcnt) {
-        int fd = -1;
-
-        snprintf(vbaname, sizeof(vbaname), "%s" PATHSEP "%s_%u", dirname, hash, hashcnt);
-        vbaname[sizeof(vbaname) - 1] = '\0';
-
-        fd = open(vbaname, O_RDONLY | O_BINARY);
-        if (fd >= 0) {
-            ret = cli_scan_ole10(fd, ctx);
-            close(fd);
-            if (CL_VIRUS == ret) {
-                viruses_found++;
-                if (!SCAN_ALLMATCHES) {
-                    status = ret;
-                    goto done;
-                }
-            }
-        }
-        hashcnt--;
-    }
-
-    /* ACAB: since we now hash filenames and handle collisions we
-     * could avoid recursion by removing the block below and by
-     * flattening the paths in ole2_walk_property_tree (case 1) */
-
-    if ((dd = opendir(dirname)) != NULL) {
-        while ((dent = readdir(dd))) {
-            if (dent->d_ino) {
-                if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                    /* build the full name */
-                    fullname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-                    if (!fullname) {
-                        cli_dbgmsg("cli_vba_scandir: Unable to allocate memory for fullname\n");
-                        status = CL_EMEM;
-                        break;
-                    }
-                    sprintf(fullname, "%s" PATHSEP "%s", dirname, dent->d_name);
-
-                    /* stat the file */
-                    if (LSTAT(fullname, &statbuf) != -1) {
-                        if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-                            if (cli_vba_scandir(fullname, ctx, U, has_macros) == CL_VIRUS) {
-                                viruses_found++;
-                                if (!SCAN_ALLMATCHES) {
-                                    status = CL_VIRUS;
-                                    free(fullname);
-                                    break;
-                                }
-                            }
-                    }
-                    free(fullname);
-                }
-            }
-        }
-    } else {
-        cli_dbgmsg("VBADir: Can't open directory %s.\n", dirname);
-        status = CL_EOPEN;
-        goto done;
-    }
-
 done:
-    if (NULL != dd) {
-        closedir(dd);
-    }
-
 #if HAVE_JSON
     if (*has_macros && SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
         cli_jsonbool(ctx->wrkproperty, "HasMacros", 1);
@@ -1984,10 +1976,11 @@ done:
         if (macro_languages) {
             cli_jsonstr(macro_languages, NULL, "VBA");
         } else {
-            cli_dbgmsg("[cli_scan_vbadir] Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
+            cli_dbgmsg("cli_ole2_tempdir_scan_vba: Failed to add \"VBA\" entry to MacroLanguages JSON array\n");
         }
     }
 #endif
+
     if (SCAN_HEURISTIC_MACROS && *has_macros) {
         ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
         if (ret == CL_VIRUS)
@@ -2000,7 +1993,7 @@ done:
     return status;
 }
 
-static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
+static cl_error_t cli_ole2_tempdir_scan_xlm(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
     cl_error_t ret             = CL_CLEAN;
     char *hash                 = NULL;
@@ -2009,32 +2002,32 @@ static cl_error_t cli_xlm_scandir(const char *dirname, cli_ctx *ctx, struct uniq
     char STR_WORKBOOK[]        = "workbook";
     char STR_BOOK[]            = "book";
 
-    cli_dbgmsg("XLMDir: %s\n", dirname);
-
     if (CL_SUCCESS != (ret = uniq_get(U, STR_WORKBOOK, sizeof(STR_WORKBOOK) - 1, &hash, &hashcnt))) {
         if (CL_SUCCESS != (ret = uniq_get(U, STR_BOOK, sizeof(STR_BOOK) - 1, &hash, &hashcnt))) {
-            cli_dbgmsg("XLMDir: uniq_get('%s') failed with ret code (%d)!\n", STR_BOOK, ret);
-            return ret;
+            cli_dbgmsg("cli_ole2_tempdir_scan_xlm: uniq_get('%s') failed with ret code (%d)!\n", STR_BOOK, ret);
+            goto done;
         }
     }
 
     for (; hashcnt > 0; hashcnt--) {
-        if ((ret = cli_extract_xlm_macros_and_images(dirname, ctx, U, hash, hashcnt)) != CL_SUCCESS) {
+        if ((ret = cli_extract_xlm_macros_and_images(dir, ctx, hash, hashcnt)) != CL_SUCCESS) {
             switch (ret) {
                 case CL_VIRUS:
                 case CL_EMEM:
-                    return ret;
+                    goto done;
                 default:
-                    cli_dbgmsg("XLMDir: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
+                    cli_dbgmsg("cli_ole2_tempdir_scan_xlm: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
             }
         }
     }
 
+done:
     if (SCAN_HEURISTIC_MACROS) {
         ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
         if (ret == CL_VIRUS)
             viruses_found++;
     }
+
     if (SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
     return ret;
@@ -2383,6 +2376,189 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
     return ret;
 }
 
+static cl_error_t cli_ole2_scan_tempdir(
+    cli_ctx *ctx,
+    const char *dir,
+    struct uniq *files,
+    int has_vba,
+    int has_xlm,
+    int has_image)
+{
+    cl_error_t status = CL_CLEAN;
+    DIR *dd           = NULL;
+    int viruses_found = 0;
+    int has_macros    = 0;
+
+    struct dirent *dent;
+    STATBUF statbuf;
+    char *subdirectory = NULL;
+
+    cli_dbgmsg("cli_ole2_scan_tempdir: %s\n", dir);
+
+    /* Output JSON Summary Information */
+    if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
+        (void)cli_ole2_tempdir_scan_summary(dir, ctx, files);
+    }
+
+    status = cli_ole2_tempdir_scan_embedded_ole10(dir, ctx, files);
+    if (CL_VIRUS == status) {
+        viruses_found++;
+        if (!SCAN_ALLMATCHES) {
+            ctx->recursion--;
+            goto done;
+        }
+    } else if (CL_SUCCESS != status) {
+        /* Some error occured */
+        cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+        ctx->recursion--;
+        goto done;
+    }
+
+    if (has_vba) {
+        ctx->recursion++;
+
+        status = cli_ole2_tempdir_scan_vba(dir, ctx, files, &has_macros);
+        if (CL_VIRUS == status) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        } else if (CL_SUCCESS != status) {
+            /* Some error occured */
+            cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+            ctx->recursion--;
+            goto done;
+        }
+
+        status = cli_ole2_tempdir_scan_vba_new(dir, ctx, files, &has_macros);
+        if (CL_VIRUS == status) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        } else if (CL_SUCCESS != status) {
+            /* Some error occured */
+            cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+            ctx->recursion--;
+            goto done;
+        }
+
+        ctx->recursion--;
+    }
+
+    if (has_xlm || has_image) {
+        ctx->recursion++;
+
+        /* TODO: Consider moving image extraction to handler_enum and
+         * removing the has_image and found_image stuff. */
+
+        status = cli_ole2_tempdir_scan_xlm(dir, ctx, files);
+        if (CL_VIRUS == status) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        } else if (CL_SUCCESS != status) {
+            /* Some error occured */
+            cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+            ctx->recursion--;
+            goto done;
+        }
+
+        ctx->recursion--;
+    }
+
+    if (has_xlm || has_vba) {
+        ctx->recursion++;
+
+        status = cli_magic_scan_dir(dir, ctx);
+        if (CL_VIRUS == status) {
+            viruses_found++;
+            if (!SCAN_ALLMATCHES) {
+                ctx->recursion--;
+                goto done;
+            }
+        } else if (CL_SUCCESS != status) {
+            /* Some error occured */
+            cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+            ctx->recursion--;
+            goto done;
+        }
+
+        ctx->recursion--;
+    }
+
+    /* ACAB: since we now hash filenames and handle collisions we
+     * could avoid recursion by removing the block below and by
+     * flattening the paths in ole2_walk_property_tree (case 1) */
+
+    if ((dd = opendir(dir)) != NULL) {
+        while ((dent = readdir(dd))) {
+            if (dent->d_ino) {
+                if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+                    /* build the full name */
+                    subdirectory = cli_malloc(strlen(dir) + strlen(dent->d_name) + 2);
+                    if (!subdirectory) {
+                        cli_dbgmsg("cli_ole2_tempdir_scan_vba: Unable to allocate memory for subdirectory path\n");
+                        status = CL_EMEM;
+                        break;
+                    }
+                    sprintf(subdirectory, "%s" PATHSEP "%s", dir, dent->d_name);
+
+                    /* stat the file */
+                    if (LSTAT(subdirectory, &statbuf) != -1) {
+                        if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+                            /*
+                             * Process subdirectory
+                             */
+                            status = cli_ole2_scan_tempdir(
+                                ctx,
+                                subdirectory,
+                                files,
+                                has_vba,
+                                has_xlm,
+                                has_image);
+                            if (CL_VIRUS == status) {
+                                viruses_found++;
+                                if (!SCAN_ALLMATCHES) {
+                                    status = CL_VIRUS;
+                                    goto done;
+                                }
+                            } else if (CL_SUCCESS != status) {
+                                /* Some error occured */
+                                cli_dbgmsg("An error occured while scanning ole2 extracted VBA files: %s\n", cl_strerror(status));
+                                goto done;
+                            }
+                        }
+                    }
+                    free(subdirectory);
+                    subdirectory = NULL;
+                }
+            }
+        }
+    } else {
+        cli_dbgmsg("VBADir: Can't open directory %s.\n", dir);
+        status = CL_EOPEN;
+        goto done;
+    }
+
+done:
+    if (NULL != dd) {
+        closedir(dd);
+    }
+    if (NULL != subdirectory) {
+        free(subdirectory);
+    }
+
+    if (viruses_found > 0) {
+        status = CL_VIRUS;
+    }
+    return status;
+}
+
 static cl_error_t cli_scanole2(cli_ctx *ctx)
 {
     char *dir          = NULL;
@@ -2391,7 +2567,6 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     int has_vba        = 0;
     int has_xlm        = 0;
     int has_image      = 0;
-    int has_macros     = 0;
     int viruses_found  = 0;
 
     cli_dbgmsg("in cli_scanole2()\n");
@@ -2427,70 +2602,24 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
         }
     }
 
-    if (has_vba && files) {
-        ctx->recursion++;
-
-        ret = cli_vba_scandir(dir, ctx, files, &has_macros);
-        if (CL_VIRUS == ret) {
-            viruses_found++;
-            if (!SCAN_ALLMATCHES) {
-                ctx->recursion--;
-                goto done;
-            }
-        }
-
-        ret = cli_vba_scandir_new(dir, ctx, files, &has_macros);
-        if (CL_VIRUS == ret) {
-            viruses_found++;
-            if (!SCAN_ALLMATCHES) {
-                ctx->recursion--;
-                goto done;
-            }
-        }
-
-        ctx->recursion--;
-    }
-
-    if (CL_VIRUS == ret) {
-        viruses_found++;
-        if (!SCAN_ALLMATCHES) {
-            goto done;
-        }
-    }
-
-    if ((has_xlm || has_image) && files) {
-        ctx->recursion++;
-
-        ///
-        /// TODO: only vba scandir processes the summary info.
-        ///       we need to do it here too.
-        ///
-        /// consider moving image extraction to handler_enum and removing the has_image bit.
-        ///
-        ret = cli_xlm_scandir(dir, ctx, files);
-        if (CL_VIRUS == ret) {
-            viruses_found++;
-            if (!SCAN_ALLMATCHES) {
-                ctx->recursion--;
-                goto done;
-            }
-        }
-
-        ctx->recursion--;
-    }
-
-    if ((has_xlm || has_vba) && files) {
-        ctx->recursion++;
-
-        if (CL_VIRUS == cli_magic_scan_dir(dir, ctx)) {
-            viruses_found++;
-            if (!SCAN_ALLMATCHES) {
-                ctx->recursion--;
-                goto done;
-            }
-        }
-
-        ctx->recursion--;
+    if (files) {
+        /*
+         * Files containing the document summary, any VBA or XLM macros, or
+         * images were previously extracted from an ole2 file.
+         * This happens if cli_ole2_extract() executes the handler_writer()
+         * because XLM, VBA, or images were found.
+         * So now we need to process them.
+         *
+         * TODO: consider maybe processes all that stuff in memory instead of
+         * writing everything to temp files?
+         */
+        ret = cli_ole2_scan_tempdir(
+            ctx,
+            dir,
+            files,
+            has_vba,
+            has_xlm,
+            has_image);
     }
 
 done:
@@ -2499,8 +2628,9 @@ done:
     }
 
     if (NULL != dir) {
-        if (!ctx->engine->keeptmp)
+        if (!ctx->engine->keeptmp) {
             cli_rmdirs(dir);
+        }
         free(dir);
     }
 
