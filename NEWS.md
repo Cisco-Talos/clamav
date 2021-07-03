@@ -121,6 +121,8 @@ patch versions do not generally introduce new options:
 
 - Improvements to the AutoIt extraction module. Patch courtesy of cw2k.
 
+- Added support for extracting images from OLE2 files (E.g. XLS documents).
+
 ### Bug fixes
 
 - Fixed a memory leak affecting logical signatures that use the "byte compare"
