@@ -47,7 +47,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
-#include <target.h>
+#include <math.h>
 
 // libclamav
 #include "clamav.h"
@@ -631,18 +631,308 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
     return ret;
 }
 
+struct sigload_progress {
+    time_t startTime;
+    time_t lastRunTime;
+    uint8_t bComplete;
+};
+
+struct engine_compile_progress {
+    time_t startTime;
+    time_t lastRunTime;
+    uint8_t bComplete;
+};
+
+struct engine_free_progress {
+    time_t startTime;
+    time_t lastRunTime;
+    uint8_t bComplete;
+};
+
+static void print_time(time_t seconds)
+{
+    if (seconds >= 3600) {
+        fprintf(stdout, "%2lldh %02lldm", (long long)seconds / 3600, ((long long)seconds % 3600) / 60);
+    } else if (seconds >= 60) {
+        fprintf(stdout, "%2lldm %02llds", (long long)seconds / 60, (long long)seconds % 60);
+    } else {
+        fprintf(stdout, "%3llds", (long long)seconds);
+    }
+}
+
+static void print_no_sigs(size_t sigs, int bPad)
+{
+    if (sigs >= (1000 * 1000)) {
+        const char *format = bPad ? "%7.02fM" : "%.02fM";
+        double megasigs    = sigs / (double)(1000 * 1000);
+        fprintf(stdout, format, megasigs);
+    } else if (sigs >= 1000) {
+        const char *format = bPad ? "%7.02fK" : "%.02fK";
+        double kilosigs    = sigs / (double)(1000);
+        fprintf(stdout, format, kilosigs);
+    } else {
+        const char *format = bPad ? "%8zu" : "%zu";
+        fprintf(stdout, format, sigs);
+    }
+}
+
+/**
+ * @brief Progress callback for sig-load
+ *
+ * @param total_items   Total number of items
+ * @param now_completed Number of items completed
+ * @param context       Opaque application provided data; This maps to sigload_progress
+ */
+static void sigload_callback(size_t total_items, size_t now_completed, void *context)
+{
+    time_t curtime = 0;
+    time_t remtime = 0;
+
+    struct sigload_progress *sigloadProgress = (struct sigload_progress *)context;
+
+    uint32_t i                = 0;
+    uint32_t totalNumDots     = 25;
+    uint32_t numDots          = 0;
+    double fractiondownloaded = 0.0;
+
+    if ((total_items <= 0) || (sigloadProgress->bComplete)) {
+        return;
+    }
+
+    fractiondownloaded = (double)now_completed / (double)total_items;
+    numDots            = round(fractiondownloaded * totalNumDots);
+
+    if (0 == sigloadProgress->startTime) {
+        sigloadProgress->startTime = time(0);
+    }
+    curtime = time(0) - sigloadProgress->startTime;
+
+    sigloadProgress->lastRunTime = curtime;
+
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7l");
+#endif
+    if (fractiondownloaded <= 0.0) {
+        fprintf(stdout, "Loading:   ");
+        print_time(curtime);
+        fprintf(stdout, "               ");
+    } else {
+        remtime = (curtime / fractiondownloaded) - curtime;
+        fprintf(stdout, "Loading:   ");
+        print_time(curtime);
+        fprintf(stdout, ", ETA: ");
+        print_time(remtime);
+        fprintf(stdout, " ");
+    }
+
+    fprintf(stdout, "[");
+    if (numDots > 0) {
+        if (numDots > 1) {
+            for (i = 0; i < numDots - 1; i++) {
+                fprintf(stdout, "=");
+            }
+        }
+        fprintf(stdout, ">");
+        i++;
+    }
+    for (; i < totalNumDots; i++) {
+        fprintf(stdout, " ");
+    }
+
+    fprintf(stdout, "] ");
+
+    print_no_sigs(now_completed, 1);
+    fprintf(stdout, "/");
+    print_no_sigs(total_items, 0);
+    fprintf(stdout, " sigs    ");
+
+    if (now_completed < total_items) {
+        fprintf(stdout, "\r");
+    } else {
+        fprintf(stdout, "\n");
+        sigloadProgress->bComplete = 1;
+    }
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7h");
+#endif
+    fflush(stdout);
+
+    return;
+}
+
+/**
+ * @brief Progress callback for sig-load
+ *
+ * @param total_items   Total number of items
+ * @param now_completed Number of items completed
+ * @param context       Opaque application provided data; This maps to engine_compile_progress
+ */
+static void engine_compile_callback(size_t total_items, size_t now_completed, void *context)
+{
+    time_t curtime = 0;
+    time_t remtime = 0;
+
+    struct engine_compile_progress *engineCompileProgress = (struct engine_compile_progress *)context;
+
+    uint32_t i                  = 0;
+    uint32_t totalNumDots       = 25;
+    uint32_t numDots            = 0;
+    double fractiondowncompiled = 0.0;
+
+    if ((total_items <= 0) || (engineCompileProgress->bComplete)) {
+        return;
+    }
+
+    fractiondowncompiled = (double)now_completed / (double)total_items;
+    numDots              = round(fractiondowncompiled * totalNumDots);
+
+    if (0 == engineCompileProgress->startTime) {
+        engineCompileProgress->startTime = time(0);
+    }
+    curtime = time(0) - engineCompileProgress->startTime;
+
+    engineCompileProgress->lastRunTime = curtime;
+
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7l");
+#endif
+    if (fractiondowncompiled <= 0.0) {
+        fprintf(stdout, "Compiling: ");
+        print_time(curtime);
+        fprintf(stdout, "               ");
+    } else {
+        remtime = (curtime / fractiondowncompiled) - curtime;
+        fprintf(stdout, "Compiling: ");
+        print_time(curtime);
+        fprintf(stdout, ", ETA: ");
+        print_time(remtime);
+        fprintf(stdout, " ");
+    }
+
+    fprintf(stdout, "[");
+    if (numDots > 0) {
+        if (numDots > 1) {
+            for (i = 0; i < numDots - 1; i++) {
+                fprintf(stdout, "=");
+            }
+        }
+        fprintf(stdout, ">");
+        i++;
+    }
+    for (; i < totalNumDots; i++) {
+        fprintf(stdout, " ");
+    }
+
+    fprintf(stdout, "] ");
+
+    print_no_sigs(now_completed, 1);
+    fprintf(stdout, "/");
+    print_no_sigs(total_items, 0);
+    fprintf(stdout, " tasks ");
+
+    if (now_completed < total_items) {
+        fprintf(stdout, "\r");
+    } else {
+        fprintf(stdout, "\n");
+        engineCompileProgress->bComplete = 1;
+    }
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7h");
+#endif
+    fflush(stdout);
+
+    return;
+}
+
+#ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
+/**
+ * @brief Progress callback for sig-load
+ *
+ * @param total_items   Total number of items
+ * @param now_completed Number of items completed
+ * @param context       Opaque application provided data; This maps to engine_free_progress
+ */
+static void engine_free_callback(size_t total_items, size_t now_completed, void *context)
+{
+    time_t curtime = 0;
+
+    struct engine_free_progress *engineFreeProgress = (struct engine_free_progress *)context;
+
+    uint32_t i                = 0;
+    uint32_t totalNumDots     = 10;
+    uint32_t numDots          = 0;
+    double fractiondownloaded = 0.0;
+
+    if ((total_items <= 0) || (engineFreeProgress->bComplete)) {
+        return;
+    }
+
+    fractiondownloaded = (double)now_completed / (double)total_items;
+    numDots            = round(fractiondownloaded * totalNumDots);
+
+    if (0 == engineFreeProgress->startTime) {
+        engineFreeProgress->startTime = time(0);
+    }
+    curtime = time(0) - engineFreeProgress->startTime;
+
+    engineFreeProgress->lastRunTime = curtime;
+
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7l");
+#endif
+    fprintf(stdout, "Unloading");
+
+    if (numDots > 0) {
+        if (numDots > 1) {
+            for (i = 0; i < numDots - 1; i++) {
+                fprintf(stdout, ".");
+            }
+        }
+        i++;
+    }
+    for (; i < totalNumDots; i++) {
+        fprintf(stdout, " ");
+    }
+
+    fprintf(stdout, " ");
+
+    print_no_sigs(now_completed, 1);
+    fprintf(stdout, "/");
+    print_no_sigs(total_items, 0);
+    fprintf(stdout, " tasks ");
+
+    if (now_completed < total_items) {
+        fprintf(stdout, "\r");
+    } else {
+        fprintf(stdout, "\n");
+        engineFreeProgress->bComplete = 1;
+    }
+#ifndef _WIN32
+    fprintf(stdout, "\e[?7h");
+#endif
+    fflush(stdout);
+
+    return;
+}
+#endif
+
 int scanmanager(const struct optstruct *opts)
 {
     int ret = 0, i;
     struct cl_scan_options options;
     unsigned int dboptions = 0, dirlnk = 1, filelnk = 1;
-    struct cl_engine *engine;
+    struct cl_engine *engine = NULL;
     STATBUF sb;
     char *file, cwd[1024], *pua_cats = NULL;
     const char *filename;
     const struct optstruct *opt;
 #ifndef _WIN32
     struct rlimit rlim;
+#endif
+    struct sigload_progress sigload_progress_ctx               = {0};
+    struct engine_compile_progress engine_compile_progress_ctx = {0};
+#ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
+    struct engine_free_progress engine_free_progress_ctx = {0};
 #endif
 
     /* Initalize scan options struct */
@@ -651,13 +941,15 @@ int scanmanager(const struct optstruct *opts)
     dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
     if (dirlnk > 2) {
         logg("!--follow-dir-symlinks: Invalid argument\n");
-        return 2;
+        ret = 2;
+        goto done;
     }
 
     filelnk = optget(opts, "follow-file-symlinks")->numarg;
     if (filelnk > 2) {
         logg("!--follow-file-symlinks: Invalid argument\n");
-        return 2;
+        ret = 2;
+        goto done;
     }
 
     if (optget(opts, "yara-rules")->enabled) {
@@ -684,15 +976,30 @@ int scanmanager(const struct optstruct *opts)
 
     if ((ret = cl_init(CL_INIT_DEFAULT))) {
         logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
-        return 2;
+        ret = 2;
+        goto done;
     }
 
     if (!(engine = cl_engine_new())) {
         logg("!Can't initialize antivirus engine\n");
-        return 2;
+        ret = 2;
+        goto done;
     }
 
     cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
+
+    if (isatty(fileno(stdout)) &&
+        !cli_debug_flag &&
+        !optget(opts, "quiet")->enabled &&
+        !optget(opts, "infected")->enabled &&
+        !optget(opts, "no-summary")->enabled) {
+        /* set progress callbacks */
+        cl_engine_set_clcb_sigload_progress(engine, sigload_callback, &sigload_progress_ctx);
+        cl_engine_set_clcb_engine_compile_progress(engine, engine_compile_callback, &engine_compile_progress_ctx);
+#ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
+        cl_engine_set_clcb_engine_free_progress(engine, engine_free_callback, &engine_free_progress_ctx);
+#endif
+    }
 
     if (optget(opts, "disable-cache")->enabled)
         cl_engine_set_num(engine, CL_ENGINE_DISABLE_CACHE, 1);
@@ -706,8 +1013,8 @@ int scanmanager(const struct optstruct *opts)
                 if (!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
                     logg("!Can't allocate memory for pua_cats\n");
 
-                    cl_engine_free(engine);
-                    return 2;
+                    ret = 2;
+                    goto done;
                 }
 
                 sprintf(pua_cats + i, ".%s", opt->strarg);
@@ -724,9 +1031,9 @@ int scanmanager(const struct optstruct *opts)
             if (pua_cats) {
                 logg("!--exclude-pua and --include-pua cannot be used at the same time\n");
 
-                cl_engine_free(engine);
                 free(pua_cats);
-                return 2;
+                ret = 2;
+                goto done;
             }
 
             dboptions |= CL_DB_PUA_INCLUDE;
@@ -734,8 +1041,8 @@ int scanmanager(const struct optstruct *opts)
             while (opt) {
                 if (!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
                     logg("!Can't allocate memory for pua_cats\n");
-                    cl_engine_free(engine);
-                    return 2;
+                    ret = 2;
+                    goto done;
                 }
 
                 sprintf(pua_cats + i, ".%s", opt->strarg);
@@ -754,8 +1061,8 @@ int scanmanager(const struct optstruct *opts)
                 logg("!cli_engine_set_str(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
 
                 free(pua_cats);
-                cl_engine_free(engine);
-                return 2;
+                ret = 2;
+                goto done;
             }
 
             free(pua_cats);
@@ -820,8 +1127,8 @@ int scanmanager(const struct optstruct *opts)
     if (optget(opts, "gen-json")->enabled) {
         logg("!Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
 
-        cl_engine_free(engine);
-        return 2;
+        ret = 2;
+        goto done;
     }
 #endif
 
@@ -829,8 +1136,8 @@ int scanmanager(const struct optstruct *opts)
         if ((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
             logg("!cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
@@ -839,8 +1146,8 @@ int scanmanager(const struct optstruct *opts)
             if ((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
                 logg("!%s\n", cl_strerror(ret));
 
-                cl_engine_free(engine);
-                return 2;
+                ret = 2;
+                goto done;
             }
 
             opt = opt->nextarg;
@@ -852,8 +1159,8 @@ int scanmanager(const struct optstruct *opts)
             logg("!%s\n", cl_strerror(ret));
 
             free(dbdir);
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
 
         free(dbdir);
@@ -863,24 +1170,32 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "pcre-match-limit"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_PCRE_MATCH_LIMIT) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "pcre-recmatch-limit"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_PCRE_RECMATCH_LIMIT) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((ret = cl_engine_compile(engine)) != 0) {
         logg("!Database initialization error: %s\n", cl_strerror(ret));
+        ret = 2;
+        goto done;
+    }
 
-        cl_engine_free(engine);
-        return 2;
+    if (isatty(fileno(stdout)) &&
+        !cli_debug_flag &&
+        !optget(opts, "quiet")->enabled &&
+        !optget(opts, "infected")->enabled &&
+        !optget(opts, "no-summary")->enabled) {
+        /* For a space after the progress bars */
+        logg("\n");
     }
 
     if (optget(opts, "archive-verbose")->enabled) {
@@ -895,35 +1210,31 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "timelimit"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
     if ((opt = optget(opts, "max-scantime"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-scansize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-filesize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
@@ -941,18 +1252,16 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "max-files"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-recursion"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
@@ -961,80 +1270,72 @@ int scanmanager(const struct optstruct *opts)
     if ((opt = optget(opts, "max-embeddedpe"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-htmlnormalize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-htmlnotags"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-scriptnormalize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-ziptypercg"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-partitions"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_PARTITIONS) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-iconspe"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ICONSPE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_ICONSPE) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "max-rechwp3"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECHWP3, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_MAX_RECHWP3) failed: %s\n", cl_strerror(ret));
-
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
     if ((opt = optget(opts, "pcre-max-filesize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
             logg("!cli_engine_set_num(CL_ENGINE_PCRE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
-            cl_engine_free(engine);
-            return 2;
+            ret = 2;
+            goto done;
         }
     }
 
@@ -1156,7 +1457,8 @@ int scanmanager(const struct optstruct *opts)
                     break;
                 default:
                     logg("!Invalid argument for --structured-ssn-format\n");
-                    return 2;
+                    ret = 2;
+                    goto done;
             }
         } else {
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
@@ -1165,17 +1467,16 @@ int scanmanager(const struct optstruct *opts)
         if ((opt = optget(opts, "structured-ssn-count"))->active) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
                 logg("!cli_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
-
-                cl_engine_free(engine);
-                return 2;
+                ret = 2;
+                goto done;
             }
         }
 
         if ((opt = optget(opts, "structured-cc-count"))->active) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_CC_COUNT, opt->numarg))) {
                 logg("!cli_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
-                cl_engine_free(engine);
-                return 2;
+                ret = 2;
+                goto done;
             }
         }
 
@@ -1188,7 +1489,8 @@ int scanmanager(const struct optstruct *opts)
                     break;
                 default:
                     logg("!Invalid argument for --structured-cc-mode\n");
-                    return 2;
+                    ret = 2;
+                    goto done;
             }
         }
     } else {
@@ -1275,6 +1577,7 @@ int scanmanager(const struct optstruct *opts)
         }
     }
 
+done:
     /* free the engine */
     cl_engine_free(engine);
 

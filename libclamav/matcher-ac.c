@@ -2915,7 +2915,10 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         return ret;
     }
 
-    if (new->offdata[0] != CLI_OFF_ANY && new->offdata[0] != CLI_OFF_ABSOLUTE && new->offdata[0] != CLI_OFF_MACRO) {
+    if ((new->offdata[0] != CLI_OFF_ANY) &&
+        (new->offdata[0] != CLI_OFF_ABSOLUTE) &&
+        (new->offdata[0] != CLI_OFF_MACRO)) {
+
         root->ac_reloff = (struct cli_ac_patt **)MPOOL_REALLOC2(root->mempool, root->ac_reloff, (root->ac_reloff_num + 1) * sizeof(struct cli_ac_patt *));
         if (!root->ac_reloff) {
             cli_errmsg("cli_ac_addsig: Can't allocate memory for root->ac_reloff\n");
