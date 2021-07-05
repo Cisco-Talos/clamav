@@ -144,13 +144,9 @@ static void conn_teardown(void)
 #define CLEANREPLY CLEANFILE ": OK"
 #define UNKNOWN_REPLY "UNKNOWN COMMAND"
 
-#define NONEXISTENT PATHSEP "nonexistent\vfilename"
+#define NONEXISTENT PATHSEP "nonexistentfilename"
 
-#ifdef _WIN32
-#define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: Invalid argument. ERROR"
-#else
 #define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: No such file or directory. ERROR"
-#endif
 
 #ifndef _WIN32
 #define ACCDENIED OBJDIR PATHSEP "accdenied"
