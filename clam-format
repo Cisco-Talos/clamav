@@ -31,6 +31,8 @@ clang-format -i -verbose libclamav/jsparse/*.h
 clang-format -i -verbose libclamav/lzw/*.c
 clang-format -i -verbose libclamav/lzw/*.h
 clang-format -i -verbose libclamav/nsis/nulsft.*
+clang-format -i -verbose libclamav/c++/*.cpp
+clang-format -i -verbose libclamav/c++/*.h
 clang-format -i -verbose libclamunrar_iface/*.cpp
 clang-format -i -verbose libclamunrar_iface/*.h
 clang-format -i -verbose libfreshclam/*.c

@@ -262,8 +262,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                 return 1;
             }
             bottom += 4;
-            ssrc   = adjbuf + cli_readint32(packed + 4) - (size - 1) * 4;
-            ddst   = adjbuf + cli_readint32(packed + 8) - (size - 1) * 4;
+
+            ssrc = adjbuf + cli_readint32(packed + 4) - (size - 1) * 4;
+            ddst = adjbuf + cli_readint32(packed + 8) - (size - 1) * 4;
 
             if (!CLI_ISCONTAINED(buf, bufsz, ssrc, size * 4) || !CLI_ISCONTAINED(buf, bufsz, ddst, size * 4)) {
                 if (usects)
