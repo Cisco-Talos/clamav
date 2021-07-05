@@ -4,7 +4,7 @@
 clamonacc \- an anti\-virus on\-access scanning daemon and clamd client
 .SH "SYNOPSIS"
 .LP
-clamd [options]
+clamonacc [options]
 .SH "DESCRIPTION"
 .LP
 The clamonacc daemon registers for file access notifications from the Linux kernel and in response, submits scans to the clamd scanning daemon for a verdict. On-Access is only available on Linux systems. On Linux, On-Access requires a kernel version >= 3.8. This is because it leverages a kernel api called fanotify to block processes from attempting to access malicious files. This prevention occurs in kernel-space, and thus offers stronger protection than a purely user-space solution.
