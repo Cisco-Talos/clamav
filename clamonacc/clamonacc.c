@@ -69,7 +69,7 @@ static void onas_clamonacc_exit(int sig)
 {
     logg("*Clamonacc: onas_clamonacc_exit(), signal %d\n", sig);
     if (sig == 11) {
-        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --verbose and report the issue and crash report to the developpers\n");
+        logg("!Clamonacc: clamonacc has experienced a fatal error, if you continue to see this error, please run clamonacc with --verbose and report the issue and crash report to the developers\n");
     }
 
     if (g_ctx) {

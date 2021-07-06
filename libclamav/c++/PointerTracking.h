@@ -45,31 +45,33 @@
 #include "llvm/IR/Instructions.h"
 #endif
 
-namespace llvm {
-  class DominatorTree;
-  class ScalarEvolution;
-  class SCEV;
-  class Loop;
-  class LoopInfo;
+namespace llvm
+{
+class DominatorTree;
+class ScalarEvolution;
+class SCEV;
+class Loop;
+class LoopInfo;
 #if LLVM_VERSION < 32
-  class TargetData;
+class TargetData;
 #else
-  class DataLayout;
+class DataLayout;
 #endif
 
-  // Result from solver, assuming pointer is not NULL,
-  // and it is not a use-after-free situation.
-  enum SolverResult {
-    AlwaysFalse,// always false with above constraints
-    AlwaysTrue,// always true with above constraints
-    Unknown // it can sometimes be true, sometimes false, or it is undecided
-  };
+// Result from solver, assuming pointer is not NULL,
+// and it is not a use-after-free situation.
+enum SolverResult {
+    AlwaysFalse, // always false with above constraints
+    AlwaysTrue,  // always true with above constraints
+    Unknown      // it can sometimes be true, sometimes false, or it is undecided
+};
 
 #if LLVM_VERSION >= 29
-  void initializePointerTrackingPass(PassRegistry&);
+void initializePointerTrackingPass(PassRegistry &);
 #endif
 
-  class PointerTracking : public FunctionPass {
+class PointerTracking : public FunctionPass
+{
   public:
     typedef ICmpInst::Predicate Predicate;
     static char ID;
@@ -93,7 +95,7 @@ namespace llvm {
     // When unable to determine, sets Base to NULL, and Limit/Offset to
     // CouldNotCompute.
     // BaseSize, and Offset are in bytes: Pointer == Base + Offset
-    void getPointerOffset(Value *Pointer, Value *&Base, const SCEV *& BaseSize,
+    void getPointerOffset(Value *Pointer, Value *&Base, const SCEV *&BaseSize,
                           const SCEV *&Offset) const;
 
     // Compares the 2 scalar evolution expressions according to predicate,
@@ -117,8 +119,9 @@ namespace llvm {
 
     virtual bool runOnFunction(Function &F);
     virtual void getAnalysisUsage(AnalysisUsage &AU) const;
-    void print(raw_ostream &OS, const Module* = 0) const;
+    void print(raw_ostream &OS, const Module * = 0) const;
     Value *computeAllocationCountValue(Value *P, constType *&Ty) const;
+
   private:
     Function *FF;
 #if LLVM_VERSION < 32
@@ -136,12 +139,12 @@ namespace llvm {
     Function *reallocFunc;
     PredIteratorCache predCache;
 
-    SmallPtrSet<const SCEV*, 1> analyzing;
+    SmallPtrSet<const SCEV *, 1> analyzing;
 
     enum SolverResult isLoopGuardedBy(const Loop *L, Predicate Pred,
                                       const SCEV *A, const SCEV *B) const;
     static bool isMonotonic(const SCEV *S);
-    bool scevPositive(const SCEV *A, const Loop *L, bool strict=true) const;
+    bool scevPositive(const SCEV *A, const Loop *L, bool strict = true) const;
     bool conditionSufficient(Value *Cond, bool negated,
                              const SCEV *A, Predicate Pred, const SCEV *B);
     Value *getConditionToReach(BasicBlock *A,
@@ -152,7 +155,6 @@ namespace llvm {
                                bool &negated);
     const SCEV *computeAllocationCount(Value *P, constType *&Ty) const;
     const SCEV *computeAllocationCountForType(Value *P, constType *Ty) const;
-  };
-}
+};
+} // namespace llvm
 #endif
-
