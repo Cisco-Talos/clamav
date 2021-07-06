@@ -439,7 +439,7 @@ void help(void)
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
-    mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --config-file=FILE     -c FILE     Read configuration from FILE\n");
     mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
     mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
