@@ -104,15 +104,15 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
                                 break;
                             case EMFILE:
                             case ENFILE:
-                                if (0 == retry) {
+                                if (3 >= retry) {
                                     logg("*ClamMisc: waiting for consumer thread to catch up then retrying ...\n");
-                                    sleep(3);
-                                    retry = 1;
+                                    sleep(6);
+                                    retry += 1;
                                     continue;
                                 } else {
                                     logg("*ClamMisc: fds have been exhausted ... attempting to force the consumer thread to catch up ... (excluding for safety)\n");
                                     pthread_cond_signal(&onas_scan_queue_empty_cond);
-                                    sleep(3);
+                                    sleep(6);
                                     return CHK_FOUND;
                                 }
                             case ERANGE:

@@ -139,6 +139,7 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
             } else {
                 logg("!ClamClient: Could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
             }
+            curl_easy_cleanup(curl);
             *err = CL_EARG;
             return ret;
         }
@@ -399,7 +400,6 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
         curl_easy_cleanup(*curl);
         return curlcode;
     }
-
     return curlcode;
 }
 
@@ -512,6 +512,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {
         logg("*ClamClient: could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
+        curl_easy_cleanup(curl);
         return 2;
     }
 
@@ -574,6 +575,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
             logg("!ClamClient: Connection to clamd failed, %s.\n", curl_easy_strerror(curlcode));
             disconnected = true;
         }
+        curl_easy_cleanup(curl);
         return CL_ECREAT;
     }
     if (disconnected) {
