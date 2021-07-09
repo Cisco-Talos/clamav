@@ -47,15 +47,25 @@
 #define EC32(x) cli_readint32(&(x))
 #define EC16(x) cli_readint16(&(x))
 
-static int real_scansis(cli_ctx *, const char *);
-static int real_scansis9x(cli_ctx *, const char *);
+/*
+ * The SIS header begins with four 4-byte UIDs.
+ *
+ * SIS format reference: https://web.archive.org/web/20021017223232/http://homepage.ntlworld.com/thouky/software/psifs/sis.html
+ *
+ * SIS v9.x format reference: https://web.archive.org/web/20101011053920/http://developer.symbian.org/wiki/images/b/b7/SymbianOSv9.x_SIS_File_Format_Specification.pdf
+ *   See Section 3 (page 8)
+ */
+#define SIZEOF_HEADER_UUIDS 16
+
+static cl_error_t real_scansis(cli_ctx *, const char *);
+static cl_error_t real_scansis9x(cli_ctx *, const char *);
 
 /*************************************************
        This is the wrapper to the old and new
             format handlers - see below.
  *************************************************/
 
-int cli_scansis(cli_ctx *ctx)
+cl_error_t cli_scansis(cli_ctx *ctx)
 {
     char *tmpd;
     unsigned int i;
@@ -74,7 +84,7 @@ int cli_scansis(cli_ctx *ctx)
     if (ctx->engine->keeptmp)
         cli_dbgmsg("SIS: Extracting files to %s\n", tmpd);
 
-    if (fmap_readn(map, &uid, 0, 16) != 16) {
+    if (fmap_readn(map, &uid, 0, SIZEOF_HEADER_UUIDS) != SIZEOF_HEADER_UUIDS) {
         cli_dbgmsg("SIS: unable to read UIDs\n");
         cli_rmdirs(tmpd);
         free(tmpd);
@@ -228,8 +238,10 @@ static int spamsisnames(fmap_t *map, size_t pos, uint16_t langs, const char **al
     return 1;
 }
 
-static int real_scansis(cli_ctx *ctx, const char *tmpd)
+static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
 {
+    cl_error_t status = CL_CLEAN;
+
     struct {
         uint16_t filesum;
         uint16_t langs;
@@ -255,18 +267,22 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
         uint32_t uspace;
         uint32_t nspace;
     } sis;
-    const char **alangs;
+    const char **alangs = NULL;
     const uint16_t *llangs;
     unsigned int i, umped = 0;
     uint32_t sleft = 0, smax = 0;
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
-    fmap_t *map    = *ctx->fmap;
-    uint32_t *ptrs = NULL;
+    fmap_t *map             = *ctx->fmap;
+    uint32_t *ptrs          = NULL;
+    void *decomp            = NULL;
+    int fd                  = -1;
+    char *original_filepath = NULL;
+    char *install_filepath  = NULL;
 
-    if (fmap_readn(map, &sis, 16, sizeof(sis)) != sizeof(sis)) {
+    if (fmap_readn(map, &sis, SIZEOF_HEADER_UUIDS, sizeof(sis)) != sizeof(sis)) {
         cli_dbgmsg("SIS: Unable to read header\n");
-        return CL_CLEAN;
+        goto done;
     }
     /*  cli_dbgmsg("SIS HEADER INFO: \nFile checksum: %x\nLangs: %d\nFiles: %d\nDeps: %d\nUsed langs: %d\nInstalled files: %d\nDest drive: %d\nCapabilities: %d\nSIS Version: %d\nFlags: %x\nType: %d\nVersion: %d.%d.%d\nLangs@: %x\nFiles@: %x\nDeps@: %x\nCerts@: %x\nName@: %x\nSig@: %x\nCaps@: %x\nUspace: %d\nNspace: %d\n\n", sis.filesum, sis.langs, sis.files, sis.deps, sis.ulangs, sis.instfiles, sis.drive, sis.caps, sis.version, sis.flags, sis.type, sis.verhi, sis.verlo, sis.versub, sis.plangs, sis.pfiles, sis.pdeps, sis.pcerts, sis.pnames, sis.psig, sis.pcaps, sis.uspace, sis.nspace);
    */
@@ -285,19 +301,19 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
 
     if (!sis.langs || sis.langs >= MAXLANG) {
         cli_dbgmsg("SIS: Too many or too few languages found\n");
-        return CL_CLEAN;
+        goto done;
     }
 
     pos = sis.plangs;
 
     if (!(llangs = fmap_need_off_once(map, pos, sis.langs * sizeof(uint16_t)))) {
         cli_dbgmsg("SIS: Unable to read languages\n");
-        return CL_CLEAN;
+        goto done;
     }
     pos += sis.langs * sizeof(uint16_t);
     if (!(alangs = cli_malloc(sis.langs * sizeof(char *)))) {
         cli_dbgmsg("SIS: OOM\n");
-        return CL_CLEAN;
+        goto done;
     }
     for (i = 0; i < sis.langs; i++)
         alangs[i] = (size_t)EC16(llangs[i]) < MAXLANG ? sislangs[EC16(llangs[i])] : sislangs[0];
@@ -307,8 +323,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     } else {
         cli_dbgmsg("SIS: Application name:\n");
         if (!spamsisnames(map, sis.pnames, sis.langs, alangs)) {
-            free(alangs);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
     }
 
@@ -317,8 +333,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
     } else {
         cli_dbgmsg("SIS: Provides:\n");
         if (!spamsisnames(map, sis.pcaps, sis.langs, alangs)) {
-            free(alangs);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
     }
 
@@ -341,8 +357,8 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                 pos += sizeof(dep);
                 cli_dbgmsg("\tUID: %x v. %d.%d.%d\n\taka:\n", EC32(dep.uid), EC16(dep.verhi), EC16(dep.verlo), EC32(dep.versub));
                 if (!spamsisnames(map, pos, sis.langs, alangs)) {
-                    free(alangs);
-                    return CL_EMEM;
+                    status = CL_EMEM;
+                    goto done;
                 }
             }
         }
@@ -350,6 +366,11 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
 
     compd = !(sis.flags & 0x0008);
     cli_dbgmsg("SIS: Package is%s compressed\n", (compd) ? "" : " not");
+
+    if (SIZEOF_HEADER_UUIDS + sizeof(sis) > sis.pfiles) {
+        cli_dbgmsg("SIS: Invalid SIS format or not an SIS file. The pointer to the file records must not point to within the SIS header: %u\n", sis.pfiles);
+        goto done;
+    }
 
     pos = sis.pfiles;
     for (i = 0; i < sis.files; i++) {
@@ -366,7 +387,6 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                 uint32_t ftype, options, ssname, psname, sdname, pdname;
                 const char *sftype;
                 uint32_t *lens, *olens;
-                char *fn;
                 fcount = sis.langs;
 
                 GETD2(ftype);
@@ -410,19 +430,19 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                         sftype = "unknown";
                 }
                 cli_dbgmsg("SIS: File details:\n\tOptions: %d\n\tType: %s\n", options, sftype);
-                if ((fn = getsistring(map, psname, ssname))) {
-                    cli_dbgmsg("\tOriginal filename: %s\n", fn);
-                    free(fn);
+                if ((original_filepath = getsistring(map, psname, ssname))) {
+                    cli_dbgmsg("\tOriginal filename: %s\n", original_filepath);
+                    /* We'll keep the original filepath around to pass to the scan function */
                 }
-                if ((fn = getsistring(map, pdname, sdname))) {
-                    cli_dbgmsg("\tInstalled to: %s\n", fn);
-                    free(fn);
+                if ((install_filepath = getsistring(map, pdname, sdname))) {
+                    cli_dbgmsg("\tInstalled to: %s\n", install_filepath);
+                    FREE(install_filepath);
                 }
 
                 if (!(ptrs = cli_malloc(fcount * sizeof(uint32_t) * 3))) {
                     cli_dbgmsg("\tOOM\n");
-                    free(alangs);
-                    return CL_CLEAN;
+                    status = CL_EMEM;
+                    goto done;
                 }
                 lens  = &ptrs[fcount];
                 olens = &ptrs[fcount * 2];
@@ -435,10 +455,11 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
 
                 if (ftype != FTnull) {
                     char ofn[1024];
-                    int fd;
 
+                    /*
+                     * There should be 1 version of the file for each language.
+                     */
                     for (j = 0; j < fcount; j++) {
-                        void *decomp = NULL;
                         const void *comp;
                         const void *decompp = NULL;
                         uLongf olen;
@@ -447,14 +468,24 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                             cli_dbgmsg("\tSkipping empty file\n");
                             continue;
                         }
+
+                        if (SIZEOF_HEADER_UUIDS + sizeof(sis) > ptrs[j]) {
+                            cli_dbgmsg("\tThe pointer (offset) of the file in the archive cannot be within the SIS header: %u\n", ptrs[j]);
+                            continue;
+                        }
+
                         if (cli_checklimits("sis", ctx, lens[j], 0, 0) != CL_CLEAN) continue;
-                        cli_dbgmsg("\tUnpacking lang#%d - ptr:%x csize:%x osize:%x\n", j, ptrs[j], lens[j], olens[j]);
+                        cli_dbgmsg("\tUnpacking lang#%d - ptr:%x compressed size:%x original (decompressed) size:%x\n", j, ptrs[j], lens[j], olens[j]);
 
                         if (!(comp = fmap_need_off_once(map, ptrs[j], lens[j]))) {
                             cli_dbgmsg("\tSkipping ghost or otherwise out of archive file\n");
                             continue;
                         }
+
                         if (compd) {
+                            /*
+                             * The compressed flag was set. Try to decompress it.
+                             */
                             if (olens[j] <= lens[j] * 3 && cli_checklimits("sis", ctx, lens[j] * 3, 0, 0) == CL_CLEAN)
                                 olen = lens[j] * 3;
                             else if (cli_checklimits("sis", ctx, olens[j], 0, 0) == CL_CLEAN)
@@ -465,17 +496,18 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
 
                             if (!(decomp = cli_malloc(olen))) {
                                 cli_dbgmsg("\tOOM\n");
-                                FREE(ptrs);
-                                free(alangs);
-                                return CL_CLEAN;
+                                goto done;
                             }
                             if (uncompress(decomp, &olen, comp, lens[j]) != Z_OK) {
                                 cli_dbgmsg("\tUnpacking failure\n");
-                                free(decomp);
+                                FREE(decomp);
                                 continue;
                             }
                             decompp = decomp;
                         } else {
+                            /*
+                             * File not compressed, scan it as-is.
+                             */
                             olen    = lens[j];
                             decompp = comp;
                         }
@@ -483,30 +515,31 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
                         ofn[1023] = '\0';
                         if ((fd = open(ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
                             cli_errmsg("SIS: unable to create output file %s - aborting.", ofn);
-                            free(decomp);
-                            FREE(ptrs);
-                            free(alangs);
-                            return CL_ECREAT;
+                            status = CL_ECREAT;
+                            goto done;
                         }
                         if (cli_writen(fd, decompp, olen) != olen) {
-                            close(fd);
-                            free(decomp);
-                            FREE(ptrs);
-                            free(alangs);
-                            return CL_EWRITE;
+                            status = CL_EWRITE;
+                            goto done;
                         }
-                        free(decomp);
-                        if (cli_magic_scan_desc(fd, ofn, ctx, NULL) == CL_VIRUS) {
-                            close(fd);
-                            FREE(ptrs);
-                            free(alangs);
-                            return CL_VIRUS;
+
+                        FREE(decomp);
+
+                        if (cli_magic_scan_desc(fd, ofn, ctx, original_filepath) == CL_VIRUS) {
+                            status = CL_VIRUS;
+                            goto done;
                         }
+
                         close(fd);
+                        fd = -1;
+
                         umped++;
                     }
                 }
+
+                FREE(original_filepath);
                 FREE(ptrs);
+
                 fcount = 2 * sizeof(uint32_t);
                 break;
             }
@@ -538,8 +571,18 @@ static int real_scansis(cli_ctx *ctx, const char *tmpd)
         SKIP(fcount);
     }
 
-    free(alangs);
-    return CL_CLEAN;
+    status = CL_CLEAN;
+
+done:
+    if (-1 != fd) {
+        close(fd);
+    }
+    FREE(original_filepath);
+    FREE(decomp);
+    FREE(ptrs);
+    FREE(alangs);
+
+    return status;
 }
 
 /*************************************************
@@ -676,7 +719,7 @@ static inline void seeknext(struct SISTREAM *s)
     s->sleft = s->smax = 0;
 }
 
-static int real_scansis9x(cli_ctx *ctx, const char *tmpd)
+static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
 {
     struct SISTREAM stream;
     struct SISTREAM *s = &stream;
