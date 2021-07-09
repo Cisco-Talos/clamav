@@ -24,6 +24,6 @@
 
 #include "others.h"
 
-int cli_scansis(cli_ctx *ctx);
+cl_error_t cli_scansis(cli_ctx *ctx);
 
 #endif
