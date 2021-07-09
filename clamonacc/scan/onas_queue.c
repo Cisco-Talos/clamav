@@ -189,7 +189,7 @@ static int onas_consume_event(threadpool thpool)
 {
     pthread_mutex_lock(&onas_queue_lock);
 
-    if (onas_queue_is_b_empty()) {
+    while (onas_queue_is_b_empty()) {
         pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_queue_lock);
     }
 
