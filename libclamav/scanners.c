@@ -1506,8 +1506,15 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
-    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS
-                                                   : CL_CLEAN;
+    if (ret != CL_CLEAN) {
+        return ret;
+    } else {
+        if (viruses_found) {
+            return CL_VIRUS;
+        } else {
+            return CL_CLEAN;
+        }
+    }
 }
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -3123,7 +3130,12 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         (type != CL_TYPE_GPT) &&       /* Omit GPT files because it's an image format that we can extract and scan manually. */
         (type != CL_TYPE_CPIO_OLD) &&  /* Omit CPIO_OLD files because it's an image format that we can extract and scan manually. */
         (type != CL_TYPE_ZIP) &&       /* Omit ZIP files because it'll detect each zip file entry as SFXZIP, which is a waste. We'll extract it and then scan. */
-        (type != CL_TYPE_ZIPSFX) &&    /* Omit ZIPSFX files because we should've already detected each entry with embedded file type recognition already! */
+        (type != CL_TYPE_ZIPSFX) &&    /* Omit SFX archive types from being checked for embedded content. They should only be parsed for contained files. Those contained files could be EXE's with more SFX, but that's the nature of containers. */
+        (type != CL_TYPE_ARJSFX) &&    /* " */
+        (type != CL_TYPE_RARSFX) &&    /* " */
+        (type != CL_TYPE_EGGSFX) &&    /* " */
+        (type != CL_TYPE_CABSFX) &&    /* " */
+        (type != CL_TYPE_7ZSFX) &&     /* " */
         (type != CL_TYPE_OLD_TAR) &&   /* Omit OLD TAR files because it's a raw archive format that we can extract and scan manually. */
         (type != CL_TYPE_POSIX_TAR)) { /* Omit POSIX TAR files because it's a raw archive format that we can extract and scan manually. */
         /*
