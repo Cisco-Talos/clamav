@@ -197,8 +197,11 @@ static int onas_queue_is_b_empty()
 
 static int onas_consume_event(threadpool thpool)
 {
-
     pthread_mutex_lock(&onas_queue_lock);
+
+    while (onas_queue_is_b_empty()) {
+        pthread_cond_wait(&onas_scan_queue_empty_cond, &onas_queue_lock);
+    }
 
     struct onas_event_queue_node *popped_node = g_onas_event_queue_head->next;
 
