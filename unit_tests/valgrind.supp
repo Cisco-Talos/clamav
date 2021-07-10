@@ -236,7 +236,7 @@
 }
 
 {
-   <insert_a_suppression_name_here>
+   bsd-lowering3
    Memcheck:Cond
    fun:_ZNK4llvm17X86TargetLowering9LowerCallERNS_14TargetLowering16CallLoweringInfoERNS_15SmallVectorImplINS_7SDValueEEE
    fun:_ZNK4llvm14TargetLowering11LowerCallToERNS0_16CallLoweringInfoE
@@ -288,4 +288,31 @@
    fun:__gconv_transform_internal_utf8
    fun:wcsrtombs
    ...
+}
+{
+   thrmgr_dispatch_internal-pthread_create
+   Memcheck:Leak
+   match-leak-kinds: possible,definite
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   ...
+   fun:thrmgr_dispatch_internal
+   fun:thrmgr_group_dispatch
+   fun:dispatch_command
+   ...
+}
+{
+   reload_db-pthread_create
+   Memcheck:Leak
+   match-leak-kinds: possible,definite
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   ...
+   fun:reload_db
+   fun:recvloop
+   fun:main
 }
