@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
- *  Copyright (C) 2007-2013 Sourcefire, Inc.
+ *  Copyright (C) 2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2008-2010 Gianluigi Tiesi <sherpya@netfarm.it>
  *
  *  Authors: Gianluigi Tiesi
  *
