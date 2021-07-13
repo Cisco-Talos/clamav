@@ -67,6 +67,11 @@ ClamAV 0.104.0 includes the following improvements and changes.
   Special thanks to Olliver Schinagl for his excellent work creating ClamAV's
   new Docker files, image database deployment tooling, and user documentation.
 
+- `clamd` and `freshclam` are now available as Windows services. To install
+  and run them, use the `--install-service` option and `net start [name]` command. 
+  
+  Special thanks to Gianluigi Tiesi for his original work on this feature.
+
 ### Notable changes
 
 The following was added in 0.103.1 and is repeated here for awareness, as
