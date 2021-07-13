@@ -821,7 +821,7 @@ int main(int argc, char **argv)
         }
 
 #elif defined(_WIN32)
-        if (optget(opts, "daemon")->enabled) {
+        if (optget(opts, "service-mode")->enabled) {
             cl_engine_set_clcb_sigload(engine, NULL, NULL);
             svc_ready();
         }
