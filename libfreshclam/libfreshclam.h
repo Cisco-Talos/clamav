@@ -151,8 +151,8 @@ fc_error_t fc_test_database(
  * Caller must free dnsUpdateInfo.
  *
  * @param dnsUpdateInfoServer   (optional) The DNS server to query for Update Info. If NULL, will disable DNS update info query feature.
- * @param dnsUpdateInfo         [out] The Update Info DNS reply string.
- * @param newVersion            [out] New version of ClamAV available.
+ * @param[out] dnsUpdateInfo    The Update Info DNS reply string.
+ * @param[out] newVersion       New version of ClamAV available.
  * @return fc_error_t           FC_SUCCESS if success.
  * @return fc_error_t           FC_EARG if invalid args.
  * @return fc_error_t           FC_EFAILEDGET if error or disabled and should fall back to HTTP mode for update info.
@@ -169,7 +169,7 @@ fc_error_t fc_dns_query_update_info(
  *
  * @param url           Database URL (http, https, file).
  * @param context       Application context to pass to fccb_download_complete callback.
- * @param bUpdated      [out] Non-zero if database was updated to new version or is entirely new.
+ * @param[out] bUpdated Non-zero if database was updated to new version or is entirely new.
  * @return fc_error_t   FC_SUCCESS if database downloaded and callback executed successfully.
  */
 fc_error_t fc_download_url_database(
@@ -183,7 +183,7 @@ fc_error_t fc_download_url_database(
  * @param urlDatabaseList List of database URLs
  * @param nUrlDatabases   Number of URLs in list.
  * @param context         Application context to pass to fccb_download_complete callback.
- * @param nUpdated        [out] Number of databases that were updated.
+ * @param[out] nUpdated   Number of databases that were updated.
  * @return fc_error_t     FC_SUCCESS if database downloaded and callback executed successfully.
  */
 fc_error_t fc_download_url_databases(
@@ -201,7 +201,7 @@ fc_error_t fc_download_url_databases(
  * @param dnsUpdateInfoServer   DNS server for update info check. May be NULL to disable use of DNS.
  * @param bScriptedUpdates      Enable incremental/updates (should not be enabled for PrivateMirrors).
  * @param context               Application context to pass to fccb_download_complete callback.
- * @param bUpdated              [out] Non-zero if database was updated to new version or is entirely new.
+ * @param[out] bUpdated         Non-zero if database was updated to new version or is entirely new.
  * @return fc_error_t           FC_SUCCESS if database downloaded and callback executed successfully.
  */
 fc_error_t fc_update_database(
@@ -224,7 +224,7 @@ fc_error_t fc_update_database(
  * @param dnsUpdateInfoServer   DNS server for update info check. May be NULL to disable use of DNS.
  * @param bScriptedUpdates      Enable incremental/updates (should not be enabled for PrivateMirrors).
  * @param context               Application context to pass to fccb_download_complete callback.
- * @param nUpdated              [out] Number of databases that were updated.
+ * @param[out] nUpdated         Number of databases that were updated.
  * @return fc_error_t           FC_SUCCESS if database downloaded and callback executed successfully.
  */
 fc_error_t fc_update_databases(

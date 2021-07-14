@@ -660,7 +660,7 @@ static void print_time(time_t seconds)
     }
 }
 
-static void print_no_sigs(size_t sigs, int bPad)
+static void print_num_sigs(size_t sigs, int bPad)
 {
     if (sigs >= (1000 * 1000)) {
         const char *format = bPad ? "%7.02fM" : "%.02fM";
@@ -690,17 +690,17 @@ static void sigload_callback(size_t total_items, size_t now_completed, void *con
 
     struct sigload_progress *sigloadProgress = (struct sigload_progress *)context;
 
-    uint32_t i                = 0;
-    uint32_t totalNumDots     = 25;
-    uint32_t numDots          = 0;
-    double fractiondownloaded = 0.0;
+    uint32_t i             = 0;
+    uint32_t totalNumDots  = 25;
+    uint32_t numDots       = 0;
+    double fraction_loaded = 0.0;
 
     if ((total_items <= 0) || (sigloadProgress->bComplete)) {
         return;
     }
 
-    fractiondownloaded = (double)now_completed / (double)total_items;
-    numDots            = round(fractiondownloaded * totalNumDots);
+    fraction_loaded = (double)now_completed / (double)total_items;
+    numDots         = round(fraction_loaded * totalNumDots);
 
     if (0 == sigloadProgress->startTime) {
         sigloadProgress->startTime = time(0);
@@ -712,12 +712,12 @@ static void sigload_callback(size_t total_items, size_t now_completed, void *con
 #ifndef _WIN32
     fprintf(stdout, "\e[?7l");
 #endif
-    if (fractiondownloaded <= 0.0) {
+    if (fraction_loaded <= 0.0) {
         fprintf(stdout, "Loading:   ");
         print_time(curtime);
         fprintf(stdout, "               ");
     } else {
-        remtime = (curtime / fractiondownloaded) - curtime;
+        remtime = (curtime / fraction_loaded) - curtime;
         fprintf(stdout, "Loading:   ");
         print_time(curtime);
         fprintf(stdout, ", ETA: ");
@@ -741,9 +741,9 @@ static void sigload_callback(size_t total_items, size_t now_completed, void *con
 
     fprintf(stdout, "] ");
 
-    print_no_sigs(now_completed, 1);
+    print_num_sigs(now_completed, 1);
     fprintf(stdout, "/");
-    print_no_sigs(total_items, 0);
+    print_num_sigs(total_items, 0);
     fprintf(stdout, " sigs    ");
 
     if (now_completed < total_items) {
@@ -774,17 +774,17 @@ static void engine_compile_callback(size_t total_items, size_t now_completed, vo
 
     struct engine_compile_progress *engineCompileProgress = (struct engine_compile_progress *)context;
 
-    uint32_t i                  = 0;
-    uint32_t totalNumDots       = 25;
-    uint32_t numDots            = 0;
-    double fractiondowncompiled = 0.0;
+    uint32_t i               = 0;
+    uint32_t totalNumDots    = 25;
+    uint32_t numDots         = 0;
+    double fraction_compiled = 0.0;
 
     if ((total_items <= 0) || (engineCompileProgress->bComplete)) {
         return;
     }
 
-    fractiondowncompiled = (double)now_completed / (double)total_items;
-    numDots              = round(fractiondowncompiled * totalNumDots);
+    fraction_compiled = (double)now_completed / (double)total_items;
+    numDots           = round(fraction_compiled * totalNumDots);
 
     if (0 == engineCompileProgress->startTime) {
         engineCompileProgress->startTime = time(0);
@@ -796,12 +796,12 @@ static void engine_compile_callback(size_t total_items, size_t now_completed, vo
 #ifndef _WIN32
     fprintf(stdout, "\e[?7l");
 #endif
-    if (fractiondowncompiled <= 0.0) {
+    if (fraction_compiled <= 0.0) {
         fprintf(stdout, "Compiling: ");
         print_time(curtime);
         fprintf(stdout, "               ");
     } else {
-        remtime = (curtime / fractiondowncompiled) - curtime;
+        remtime = (curtime / fraction_compiled) - curtime;
         fprintf(stdout, "Compiling: ");
         print_time(curtime);
         fprintf(stdout, ", ETA: ");
@@ -825,9 +825,9 @@ static void engine_compile_callback(size_t total_items, size_t now_completed, vo
 
     fprintf(stdout, "] ");
 
-    print_no_sigs(now_completed, 1);
+    print_num_sigs(now_completed, 1);
     fprintf(stdout, "/");
-    print_no_sigs(total_items, 0);
+    print_num_sigs(total_items, 0);
     fprintf(stdout, " tasks ");
 
     if (now_completed < total_items) {
@@ -858,17 +858,17 @@ static void engine_free_callback(size_t total_items, size_t now_completed, void 
 
     struct engine_free_progress *engineFreeProgress = (struct engine_free_progress *)context;
 
-    uint32_t i                = 0;
-    uint32_t totalNumDots     = 10;
-    uint32_t numDots          = 0;
-    double fractiondownloaded = 0.0;
+    uint32_t i            = 0;
+    uint32_t totalNumDots = 10;
+    uint32_t numDots      = 0;
+    double fraction_freed = 0.0;
 
     if ((total_items <= 0) || (engineFreeProgress->bComplete)) {
         return;
     }
 
-    fractiondownloaded = (double)now_completed / (double)total_items;
-    numDots            = round(fractiondownloaded * totalNumDots);
+    fraction_freed = (double)now_completed / (double)total_items;
+    numDots        = round(fraction_freed * totalNumDots);
 
     if (0 == engineFreeProgress->startTime) {
         engineFreeProgress->startTime = time(0);
@@ -896,9 +896,9 @@ static void engine_free_callback(size_t total_items, size_t now_completed, void 
 
     fprintf(stdout, " ");
 
-    print_no_sigs(now_completed, 1);
+    print_num_sigs(now_completed, 1);
     fprintf(stdout, "/");
-    print_no_sigs(total_items, 0);
+    print_num_sigs(total_items, 0);
     fprintf(stdout, " tasks ");
 
     if (now_completed < total_items) {

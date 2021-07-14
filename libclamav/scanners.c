@@ -1506,7 +1506,8 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
     cli_ac_freedata(&tmdata);
     cli_ac_freedata(&gmdata);
 
-    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS : CL_CLEAN;
+    return (ret != CL_CLEAN) ? ret : viruses_found ? CL_VIRUS
+                                                   : CL_CLEAN;
 }
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
@@ -3089,13 +3090,13 @@ static inline void perf_done(cli_ctx *ctx)
 /**
  * @brief Perform raw scan of current fmap.
  *
- * @param ctx       Current scan context.
- * @param type      File type
- * @param typercg   Enable type recognition (file typing scan results).
- *                  If 0, will be a regular ac-mode scan.
- * @param dettype   [out] If typercg enabled and scan detects HTML or MAIL types,
- *                  will output HTML or MAIL types after performing HTML/MAIL scans
- * @param refhash   Hash of current fmap
+ * @param ctx           Current scan context.
+ * @param type          File type
+ * @param typercg       Enable type recognition (file typing scan results).
+ *                      If 0, will be a regular ac-mode scan.
+ * @param[out] dettype  If typercg enabled and scan detects HTML or MAIL types,
+ *                      will output HTML or MAIL types after performing HTML/MAIL scans
+ * @param refhash       Hash of current fmap
  * @return cl_error_t
  */
 static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype, unsigned char *refhash)

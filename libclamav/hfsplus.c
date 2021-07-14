@@ -310,7 +310,7 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
  * @param extHeader     Extent overflow file header
  * @param fork          Fork Data
  * @param dirname       Temp directory name
- * @param filename      [out] (optional) temp file name
+ * @param[out] filename (optional) temp file name
  * @param orig_filename (optiopnal) Original filename
  * @return cl_error_t
  */

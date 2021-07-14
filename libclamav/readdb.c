@@ -4553,7 +4553,7 @@ static size_t count_line_based_signatures(const char *filepath)
 {
     FILE *fp              = NULL;
     int current_character = 0;
-    int sig_count         = 0;
+    size_t sig_count      = 0;
     bool in_sig           = false;
 
     fp = fopen(filepath, "r");
@@ -4568,7 +4568,7 @@ static size_t count_line_based_signatures(const char *filepath)
 
         if (!in_sig) {
             /* Not inside of a signature, yet */
-            if (!isspace(current_character) && // Ignore new lines and other forms of white space before a signature
+            if (!isspace(current_character) && // Ignore newlines and other forms of white space before a signature
                 ('#' != current_character))    // Ignore lines that begin with a # comment character
             {
                 /* Found first character of a new signatures */
@@ -4745,7 +4745,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
                     goto done;
                 }
 
-                /* Successfully opened the daily CLD file and ready the header info. */
+                /* Successfully opened the daily CLD file and read the header info. */
                 engine->num_total_signatures += daily_cld->sigs;
             }
 

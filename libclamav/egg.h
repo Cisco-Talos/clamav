@@ -54,9 +54,9 @@ typedef struct cl_egg_metadata {
  *
  * @param map               fmap representing archive file.
  * @param sfx_offset        0 for a regular file, or an offset into the fmap for the EGG archive if found embedded in another file.
- * @param hArchive          [out] Handle to opened archive.
- * @param comments          [out] Array of null terminated archive comments, if present in archive. Array will be free'd by cli_egg_close()
- * @param nComments         [out] Number of archive comments in array.
+ * @param[out] hArchive     Handle to opened archive.
+ * @param[out] comments     Array of null terminated archive comments, if present in archive. Array will be free'd by cli_egg_close()
+ * @param[out] nComments    Number of archive comments in array.
  * @return cl_error_t   CL_SUCCESS if success.
  */
 cl_error_t cli_egg_open(
@@ -83,11 +83,11 @@ cl_error_t cli_egg_peek_file_header(
  * Does not return all of the metadata provided by cli_egg_peek_file_header(), so both should be used to get file information.
  * The current file index will be incrememnted on both success and failure.
  *
- * @param hArchive              An open EGG archive handle from cli_egg_open()
- * @param filename              [out] The filename of the extracted file, in UTF-8.
- * @param output_buffer         [out] A malloc'd buffer of the file contents.  Must be free()'d by caller. Set to NULL on failure.
- * @param output_buffer_length  [out] Size of buffer in bytes.
- * @return cl_error_t       CL_SUCCESS if success.
+ * @param hArchive                  An open EGG archive handle from cli_egg_open()
+ * @param[out] filename             The filename of the extracted file, in UTF-8.
+ * @param[out] output_buffer        A malloc'd buffer of the file contents.  Must be free()'d by caller. Set to NULL on failure.
+ * @param[out] output_buffer_length Size of buffer in bytes.
+ * @return cl_error_t               CL_SUCCESS if success.
  */
 cl_error_t cli_egg_extract_file(
     void* hArchive,

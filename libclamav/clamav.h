@@ -604,9 +604,7 @@ enum cl_msg {
 /**
  * @brief Progress callback for sig-load, engine-compile, and engine-free.
  *
- * Disclaimer: total_items may increase with each call as new items to be
- * processed are found. As such, total_items == now_completed does not mean it
- * guaranteed to be complete.
+ * Progress is complete when total_items == now_completed.
  *
  * @param total_items   Total number of items
  * @param now_completed Number of items completed
@@ -1001,10 +999,10 @@ extern cl_error_t cl_scanfile_callback(const char *filename, const char **virnam
 /**
  * @brief Load the signature databases found at the path.
  *
- * @param path      May be a file or directory.
- * @param engine    The engine to load the signatures into
- * @param signo     [out] The number of signatures loaded
- * @param dboptions Database load bitflag field. See the CL_DB_* defines, above.
+ * @param path          May be a file or directory.
+ * @param engine        The engine to load the signatures into
+ * @param[out] signo    The number of signatures loaded
+ * @param dboptions     Database load bitflag field. See the CL_DB_* defines, above.
  * @return cl_error_t
  */
 extern cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);

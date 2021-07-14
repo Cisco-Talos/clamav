@@ -253,9 +253,9 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
  * @param in                string buffer
  * @param in_size           length of string buffer in bytes
  * @param codepage          Windows code page https://docs.microsoft.com/en-us/windows/desktop/Intl/code-page-identifiers)
- * @param [out] out         pointer to receive malloc'ed utf-8 buffer.
- * @param [out] out_size    pointer to receive size of utf-8 buffer, not including null terminating character.
- * @return cl_error_t   CL_SUCCESS if success. CL_BREAK if unable to because iconv is unavailable.  Other error code if outright failure.
+ * @param[out] out          pointer to receive malloc'ed utf-8 buffer.
+ * @param[out] out_size     pointer to receive size of utf-8 buffer, not including null terminating character.
+ * @return cl_error_t       CL_SUCCESS if success. CL_BREAK if unable to because iconv is unavailable.  Other error code if outright failure.
  */
 cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, char** out, size_t* out_size);
 

@@ -992,7 +992,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
  * to get the real path.
  *
  * @param desc          A file path to evaluate.
- * @param char*         [out] A malloced string containing the real path.
+ * @param[out] char*    A malloced string containing the real path.
  * @return cl_error_t   CL_SUCCESS if found, else an error code.
  */
 cl_error_t cli_realpath(const char *file_name, char **real_filename);
