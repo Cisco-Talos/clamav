@@ -137,7 +137,8 @@ static void scanner_thread(void *arg)
     if (conn->filename)
         free(conn->filename);
     logg("$Finished scanthread\n");
-    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK)) {
+    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR
+                                                                       : EXIT_OK)) {
         logg("$Scanthread: connection shut down (FD %d)\n", conn->sd);
         /* close connection if we were last in group */
         shutdown(conn->sd, 2);
@@ -287,7 +288,7 @@ done:
 /**
  * @brief Reload the database.
  *
- * @param[in/out] engine    The current scan engine, used to copy the settings.
+ * @param[in,out] engine    The current scan engine, used to copy the settings.
  * @param dboptions         The current database options, used to copy the options.
  * @param opts              The command line options, used to get the database directory.
  * @return cl_error_t       CL_SUCCESS if the reload thread was successfully started. This does not mean that the database has reloaded successfully.

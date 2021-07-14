@@ -492,12 +492,12 @@ done:
 /**
  * @brief Add string to list of strings.
  *
- * @param item          string to add to list.
- * @param stringList    [in/out] String list to add string to.
- * @param nListItems    [in/out] Number of strings in list.
- * @return fc_error_t   FC_SUCCESS if success.
- * @return fc_error_t   FC_EARG if invalid args passed to function.
- * @return fc_error_t   FC_EMEM if failed to allocate memory.
+ * @param item                  string to add to list.
+ * @param[in,out] stringList    String list to add string to.
+ * @param[in,out] nListItems    Number of strings in list.
+ * @return fc_error_t           FC_SUCCESS if success.
+ * @return fc_error_t           FC_EARG if invalid args passed to function.
+ * @return fc_error_t           FC_EMEM if failed to allocate memory.
  */
 static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t *nListItems)
 {

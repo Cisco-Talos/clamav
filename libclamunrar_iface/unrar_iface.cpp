@@ -296,7 +296,7 @@ done:
  * @brief  Get file metadata from the next file header.
  *
  * @param hArchive              Handle to the archive we're extracting.
- * @param[in/out] file_metadata Pointer to a pre-allocated metadata structure.
+ * @param[in,out] file_metadata Pointer to a pre-allocated metadata structure.
  * @return cl_unrar_error_t     UNRAR_OK if metadata retrieved, UNRAR_BREAK if no more files, UNRAR_ENCRYPTED if header was encrypted, else maybe UNRAR_EMEM or UNRAR_ERR.
  */
 cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_metadata)

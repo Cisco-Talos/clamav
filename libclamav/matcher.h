@@ -229,12 +229,12 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
  * This function does not perform file type magic identification and does not use
  * the file format scanners.
  *
- * @param buffer    The buffer to be matched.
- * @param length    The length of the buffer or amount of bytets to match.
- * @param offset    Offset into the buffer from which to start matching.
- * @param ctx       The scanning context.
- * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
- * @param acdata    [in/out] A list of pattern maching data structs to contain match results, one for each pattern matching trie.
+ * @param buffer            The buffer to be matched.
+ * @param length            The length of the buffer or amount of bytets to match.
+ * @param offset            Offset into the buffer from which to start matching.
+ * @param ctx               The scanning context.
+ * @param ftype             If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param[in,out] acdata    A list of pattern maching data structs to contain match results, one for each pattern matching trie.
  * @return cl_error_t
  */
 cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);

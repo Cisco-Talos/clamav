@@ -3782,10 +3782,10 @@ typedef enum {
 /**
  * @brief Read the office art record header information from a buffer
  *
- * @param data              data buffer starting with the record header
- * @param data_len          length of the buffer
- * @param unpacked_header   [in/out] fill this
- * @return cl_error_t CL_SUCCESS if successfull, else some error code.
+ * @param data                      data buffer starting with the record header
+ * @param data_len                  length of the buffer
+ * @param[in,out] unpacked_header   fill this
+ * @return cl_error_t               CL_SUCCESS if successfull, else some error code.
  */
 static cl_error_t
 read_office_art_record_header(const unsigned char *data, size_t data_len, struct OfficeArtRecordHeader_Unpacked *unpacked_header)
