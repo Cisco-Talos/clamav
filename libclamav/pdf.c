@@ -3102,7 +3102,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 
     len = obj->size;
     q   = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                      : (const char *)(obj->start + pdf->map);
+                        : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {
@@ -3347,9 +3347,9 @@ done:
  * @brief Search pdf buffer for objects.  Parse each and then extract each.
  *
  * @param pdf               Pdf struct that keeps track of all information found in the PDF.
- * @param alerts[in/out]    The number of alerts, relevant in ALLMATCH mode.
+ * @param[in,out] alerts    The number of alerts, relevant in ALLMATCH mode.
  *
- * @return cl_error_t   Error code.
+ * @return cl_error_t       Error code.
  */
 cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
 {

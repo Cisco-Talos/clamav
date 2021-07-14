@@ -556,14 +556,14 @@ typedef cl_error_t ole2_walk_property_tree_file_handler(ole2_header_t *hdr, prop
 /**
  * @brief Walk an ole2 property tree, calling the handler for each file found
  *
- * @param hdr           The ole2 header metadata (an ole2-specific context struct)
- * @param dir           (optional) directory to write temp files to, passed to the handler.
- * @param prop_index    Index of the property being walked, to be recorded with a pointer to the root node in an ole2 node list.
- * @param handler       The file handler to call when a file is found.
- * @param rec_level     The recursion level. Max is 100.
- * @param file_count    [in/out] A running count of the total # of files. Max is 100000.
- * @param ctx           The scan context
- * @param scansize      [in/out] A running sum of the file sizes processed.
+ * @param hdr                   The ole2 header metadata (an ole2-specific context struct)
+ * @param dir                   (optional) directory to write temp files to, passed to the handler.
+ * @param prop_index            Index of the property being walked, to be recorded with a pointer to the root node in an ole2 node list.
+ * @param handler               The file handler to call when a file is found.
+ * @param rec_level             The recursion level. Max is 100.
+ * @param[in,out] file_count    A running count of the total # of files. Max is 100000.
+ * @param ctx                   The scan context
+ * @param[in,out] scansize      A running sum of the file sizes processed.
  * @return int
  */
 static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
