@@ -28,6 +28,8 @@
  */
 
 #include <fcntl.h>
+#include <stdbool.h>
+
 #include "fmap.h"
 #include "entconv.h"
 #include "xlm_extract.h"
@@ -3707,6 +3709,119 @@ typedef enum ptg_expr {
 
 } ptg_expr;
 
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
+/**
+ * @brief The OfficeArtRecordHeader fined on page 27 of the MSO-ODRAW specification:
+ *   https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf
+ *
+ * We'll use this to extract images found in office documents.
+ */
+struct OfficeArtRecordHeader_PackedLittleEndian {
+    uint16_t recVerAndInstance; // 4 bytes for recVer, 12 bytes for recInstance
+    uint16_t recType;
+    uint32_t recLen;
+} __attribute__((packed));
+
+/**
+ * @brief The OfficeArtFBSE structure following its record header.
+ * See section 2.2.32 OfficeArtFBSE in:
+ *   https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf
+ *
+ * Does not include the variable size nameData
+ */
+struct OfficeArtFBSE_PackedLittleEndian {
+    uint8_t btWin32; // 1-byte enum containing a mso_blip_type value
+    uint8_t btMacOS; // 1-byte enum containing a mso_blip_type value
+    unsigned char rgbUid[16];
+    uint16_t tag;
+    uint32_t size;    // size of the Blip stream
+    uint32_t cRef;    // number of references to the Blip
+    uint32_t foDelay; // An MSOFOstructure, as defined in section 2.1.4, must be 0x00000000
+    uint8_t unused1;  // unused
+    uint8_t cbName;   // length of the name field, in bytes.
+    uint8_t unused2;  // unused
+    uint8_t unused3;  // unused
+} __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
+struct OfficeArtRecordHeader_Unpacked {
+    uint16_t recVer;
+    uint16_t recInstance;
+    uint16_t recType;
+    uint32_t recLen;
+} __attribute__((packed));
+
+typedef enum {
+    msoblip_ERROR    = 0x00, // Error reading the file.
+    msoblip_UNKNOWN  = 0x01, // Unknown BLIPtype.
+    msoblip_EMF      = 0x02, // EMF.
+    msoblip_WMF      = 0x03, // WMF.
+    msoblip_PICT     = 0x04, // Macintosh PICT.
+    msoblip_JPEG     = 0x05, // JPEG.
+    msoblip_PNG      = 0x06, // PNG.
+    msoblip_DIB      = 0x07, // DIB
+    msoblip_TIFF     = 0x11, // TIFF
+    msoblip_CMYKJPEG = 0x12, // JPEG in the YCCK or CMYK color space.
+} mso_blip_type;
+
+/**
+ * @brief Read the office art record header information from a buffer
+ *
+ * @param data              data buffer starting with the record header
+ * @param data_len          length of the buffer
+ * @param unpacked_header   [in/out] fill this
+ * @return cl_error_t CL_SUCCESS if successfull, else some error code.
+ */
+static cl_error_t
+read_office_art_record_header(const unsigned char *data, size_t data_len, struct OfficeArtRecordHeader_Unpacked *unpacked_header)
+{
+    cl_error_t status = CL_EARG;
+    uint16_t recVerAndInstance;
+    struct OfficeArtRecordHeader_PackedLittleEndian *rawHeader;
+
+    if ((NULL == data) ||
+        (sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) > data_len) ||
+        (NULL == unpacked_header)) {
+        // invalid args
+        goto done;
+    }
+
+    rawHeader = (struct OfficeArtRecordHeader_PackedLittleEndian *)data;
+
+    recVerAndInstance = le16_to_host(rawHeader->recVerAndInstance);
+
+    unpacked_header->recVer      = recVerAndInstance & 0x000F;
+    unpacked_header->recInstance = (recVerAndInstance & 0xFFF0) >> 4;
+    unpacked_header->recType     = le16_to_host(rawHeader->recType);
+    unpacked_header->recLen      = le32_to_host(rawHeader->recLen);
+
+    cli_dbgmsg("read_office_art_record_header: office art record:\n");
+    cli_dbgmsg("read_office_art_record_header:   recVer       0x%x\n", unpacked_header->recVer);
+    cli_dbgmsg("read_office_art_record_header:   recInstance  0x%x\n", unpacked_header->recInstance);
+    cli_dbgmsg("read_office_art_record_header:   recType      0x%x\n", unpacked_header->recType);
+    cli_dbgmsg("read_office_art_record_header:   recLen       %u\n", unpacked_header->recLen);
+
+    status = CL_SUCCESS;
+
+done:
+    return status;
+}
+
 static const char *get_function_name(unsigned index)
 {
     if (index < sizeof(FUNCTIONS) / sizeof(FUNCTIONS[0])) {
@@ -4087,6 +4202,435 @@ done:
     return status;
 }
 
+/**
+ * @brief Handle each type of Blip record. See section 2.2.23 OfficeArtBlip in:
+ * https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf
+ *
+ * @param blip_store_container
+ * @param blip_store_container_len
+ * @param ctx
+ * @return cl_error_t
+ */
+cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const unsigned char *index, size_t remaining, cli_ctx *ctx)
+{
+    cl_error_t status = CL_EARG;
+    cl_error_t ret;
+    bool virus_found = false;
+
+    char *extracted_image_filepath = NULL;
+    int extracted_image_tempfd     = -1;
+
+    size_t blip_bytes_before_image      = 0; /* the number of bytes between the record header and the image */
+    const unsigned char *start_of_image = NULL;
+    size_t size_of_image                = 0;
+    const char *extracted_image_type    = NULL;
+
+    if (0x0 != rh->recVer) {
+        cli_dbgmsg("process_blip_store_container: Invalid recVer for Blip record header: %u\n", rh->recVer);
+    }
+
+    switch (rh->recType) {
+        case 0xF01A: { /* OfficeArtBlipEMF */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipEMF (Enhanced Metafile Format)\n");
+            if (0x3D4 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 34; /* 1 16-byte UID + 34-byte metafile header */
+            } else if (0x3D5 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 34; /* 2 16-byte UIDs + 34-byte metafile header */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipEMF\n");
+            }
+            extracted_image_type = "EMF";
+            break;
+        }
+        case 0xF01B: { /* OfficeArtBlipWMF */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipWMF (Windows Metafile Format)\n");
+            if (0x216 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 34; /* 1 16-byte UID + 34-byte metafile header */
+            } else if (0x217 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 34; /* 2 16-byte UIDs + 34-byte metafile header */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipWMF\n");
+            }
+            extracted_image_type = "WMF";
+            break;
+        }
+        case 0xF01C: { /* OfficeArtBlipPICT */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipPICT (Macintosh PICT)\n");
+            if (0x542 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 34; /* 1 16-byte UID + 34-byte metafile header */
+            } else if (0x543 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 34; /* 2 16-byte UIDs + 34-byte metafile header */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipPICT\n");
+            }
+            extracted_image_type = "PICT";
+            break;
+        }
+        case 0xF01D:   /* OfficeArtBlipJPEG */
+        case 0xF02A: { /* OfficeArtBlipJPEG */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipJPEG\n");
+            if (0x46A == rh->recInstance || 0x6E2 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 1; /* 1 16-byte UID + 1-byte tag */
+            } else if (0x46B == rh->recInstance || 0x6E3 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 1; /* 2 16-byte UIDs + 1-byte tag */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipJPEG\n");
+            }
+            extracted_image_type = "JPEG";
+            break;
+        }
+        case 0xF01E: { /* OfficeArtBlipPNG */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipPNG\n");
+            if (0x6E0 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 1; /* 1 16-byte UID + 1-byte tag */
+            } else if (0x6E1 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 1; /* 2 16-byte UIDs + 1-byte tag */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipPNG\n");
+            }
+            extracted_image_type = "PNG";
+            break;
+        }
+        case 0xF01F: { /* OfficeArtBlipDIB */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipDIB (device independent bitmap)\n");
+            if (0x7A8 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 1; /* 1 16-byte UID + 1-byte tag */
+            } else if (0x7A9 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 1; /* 2 16-byte UIDs + 1-byte tag */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipDIB\n");
+            }
+            extracted_image_type = "DIB";
+            break;
+        }
+        case 0xF029: { /* OfficeArtBlipTIFF */
+            cli_dbgmsg("process_blip_store_container: Found OfficeArtBlipTIFF\n");
+            if (0x6E4 == rh->recInstance) {
+                blip_bytes_before_image += 16 + 1; /* 1 16-byte UID + 1-byte tag */
+            } else if (0x6E5 == rh->recInstance) {
+                blip_bytes_before_image += 32 + 1; /* 2 16-byte UIDs + 1-byte tag */
+            } else {
+                cli_dbgmsg("process_blip_store_container: Invalid recInstance for OfficeArtBlipTIFF\n");
+            }
+            extracted_image_type = "TIFF";
+            break;
+        }
+        default: {
+            cli_dbgmsg("Unknown OfficeArtBlip type!\n");
+        }
+    }
+
+    if (0 == blip_bytes_before_image) {
+        cli_dbgmsg("Was not able to identify the Blip type, skipping...\n");
+
+    } else if (remaining < sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image) {
+        cli_dbgmsg("Not enough remaining bytes in blip array for image data\n");
+
+    } else {
+        start_of_image = index + sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image;
+        size_of_image  = MIN(rh->recLen, remaining - (sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image));
+
+        cli_dbgmsg("Scanning extracted image of size %zu\n", size_of_image);
+
+        if (ctx->engine->keeptmp) {
+            /* Drop a temp file and scan that */
+            if ((ret = cli_gentempfd_with_prefix(
+                     ctx->sub_tmpdir,
+                     extracted_image_type,
+                     &extracted_image_filepath,
+                     &extracted_image_tempfd)) != CL_SUCCESS) {
+                cli_warnmsg("Failed to create temp file for extracted %s file\n", extracted_image_type);
+                status = CL_EOPEN;
+                goto done;
+            }
+
+            if (cli_writen(extracted_image_tempfd, start_of_image, size_of_image) != size_of_image) {
+                cli_errmsg("failed to write output file\n");
+                status = CL_EWRITE;
+                goto done;
+            }
+
+            ret = cli_magic_scan_desc_type(extracted_image_tempfd, extracted_image_filepath, ctx, CL_TYPE_ANY, NULL);
+        } else {
+            /* Scan the buffer */
+            ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, NULL);
+        }
+        if (ret == CL_VIRUS) {
+            if (!SCAN_ALLMATCHES) {
+                status = CL_VIRUS;
+                goto done;
+            }
+            virus_found = true;
+        }
+    }
+
+    if (remaining < sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh->recLen) {
+        remaining = 0;
+    } else {
+        remaining -= sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh->recLen;
+        index += sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh->recLen;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    if (-1 != extracted_image_tempfd) {
+        close(extracted_image_tempfd);
+    }
+    if (NULL != extracted_image_filepath) {
+        free(extracted_image_filepath);
+    }
+
+    if (virus_found) {
+        status = CL_VIRUS;
+    }
+    return status;
+}
+
+/**
+ * @brief Process each Blip Store Container File Block in a Blip Store Container
+ *
+ * @param blip_store_container
+ * @param blip_store_container_len
+ * @param ctx
+ * @return cl_error_t
+ */
+cl_error_t process_blip_store_container(const unsigned char *blip_store_container, size_t blip_store_container_len, cli_ctx *ctx)
+{
+    cl_error_t status = CL_EARG;
+    cl_error_t ret;
+    bool virus_found = false;
+
+    struct OfficeArtRecordHeader_Unpacked rh;
+    const unsigned char *index = blip_store_container;
+    size_t remaining           = blip_store_container_len;
+
+    while (0 < remaining) {
+
+        if (CL_SUCCESS != read_office_art_record_header(index, remaining, &rh)) {
+            /* Failed to get header, abort. */
+            cli_dbgmsg("process_blip_store_container: Failed to get header\n");
+            goto done;
+        }
+
+        if (0x0 != rh.recVer) {
+            cli_dbgmsg("process_blip_store_container: Invalid recVer for Blip record header: %u\n", rh.recVer);
+        }
+
+        /*
+         * Handle each type of Blip Store Container File Block. See section 2.2.22 OfficeArtBStoreContainerFileBlock in:
+         * https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf
+         */
+        if (0xF007 == rh.recType) {
+            /* it's an OfficeArtFBSErecord */
+            cli_dbgmsg("process_blip_store_container: Found a File Blip Store Entry (FBSE) record\n");
+
+            if (0x2 != rh.recVer) {
+                cli_dbgmsg("process_blip_store_container: Invalid recVer for OfficeArtFBSErecord: 0x%x\n", rh.recVer);
+            }
+
+            if (sizeof(struct OfficeArtFBSE_PackedLittleEndian) > remaining - sizeof(struct OfficeArtRecordHeader_PackedLittleEndian)) {
+                cli_dbgmsg("process_blip_store_container: Not enough bytes for FSBE record data\n");
+            } else {
+                struct OfficeArtFBSE_PackedLittleEndian *FBSE_record_data = (struct OfficeArtFBSE_PackedLittleEndian *)(index + sizeof(struct OfficeArtRecordHeader_PackedLittleEndian));
+
+                if (FBSE_record_data->cbName > remaining - sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) - sizeof(struct OfficeArtFBSE_PackedLittleEndian)) {
+                    cli_dbgmsg("process_blip_store_container: Not enough bytes for FSBE record data + blip file name\n");
+                } else {
+                    struct OfficeArtRecordHeader_Unpacked embeddedBlip_rh;
+                    const unsigned char *embeddedBlip;
+                    size_t embeddedBlip_size;
+                    char *blip_file_name       = NULL;
+                    char blip_name_buffer[255] = {0};
+
+                    if (FBSE_record_data->cbName > 0) {
+                        memcpy(blip_name_buffer,
+                               (char *)(index +
+                                        sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) +
+                                        sizeof(struct OfficeArtFBSE_PackedLittleEndian)),
+                               (size_t)FBSE_record_data->cbName);
+                        blip_name_buffer[FBSE_record_data->cbName] = '\0';
+
+                        blip_file_name = blip_name_buffer;
+                        cli_dbgmsg("Blip file name: %s\n", blip_file_name);
+                    }
+
+                    embeddedBlip = (const unsigned char *)(index +
+                                                           sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) +
+                                                           sizeof(struct OfficeArtFBSE_PackedLittleEndian) +
+                                                           (size_t)FBSE_record_data->cbName);
+
+                    embeddedBlip_size = remaining -
+                                        sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) -
+                                        sizeof(struct OfficeArtFBSE_PackedLittleEndian) -
+                                        (size_t)FBSE_record_data->cbName;
+
+                    if (le32_to_host(FBSE_record_data->size) > embeddedBlip_size) {
+                        cli_dbgmsg("process_blip_store_container: WARNING: The File Blip Store Entry claims that the Blip data is bigger than the remaining bytes in the record!\n");
+                        cli_dbgmsg("process_blip_store_container:   %d > %zu!\n", le32_to_host(FBSE_record_data->size), embeddedBlip_size);
+                    } else {
+                        /* limit embeddedBlip_size to the size of what's actually left */
+                        embeddedBlip_size = le32_to_host(FBSE_record_data->size);
+                    }
+
+                    if (CL_SUCCESS != read_office_art_record_header(embeddedBlip, embeddedBlip_size, &embeddedBlip_rh)) {
+                        /* Failed to get header, abort. */
+                        cli_dbgmsg("process_blip_store_container: Failed to get header\n");
+                        goto done;
+                    }
+                    ret = process_blip_record(&embeddedBlip_rh, embeddedBlip, embeddedBlip_size, ctx);
+                    if (ret == CL_VIRUS) {
+                        if (!SCAN_ALLMATCHES) {
+                            status = CL_VIRUS;
+                            goto done;
+                        }
+                        virus_found = true;
+                    }
+                }
+            }
+
+        } else if ((0xF018 <= rh.recType) && (0xF117 >= rh.recType)) {
+            /* it's an OfficeArtBlip record */
+            cli_dbgmsg("process_blip_store_container: Found a Blip record\n");
+            ret = process_blip_record(&rh, index, remaining, ctx);
+            if (ret == CL_VIRUS) {
+                if (!SCAN_ALLMATCHES) {
+                    status = CL_VIRUS;
+                    goto done;
+                }
+                virus_found = true;
+            }
+
+        } else {
+            /* unexpected record type. */
+            cli_dbgmsg("process_blip_store_container: Unexpected record type\n");
+        }
+
+        if (remaining < sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen) {
+            remaining = 0;
+        } else {
+            remaining -= sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen;
+            index += sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    if (virus_found) {
+        status = CL_VIRUS;
+    }
+    return status;
+}
+
+cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggroup, size_t drawinggroup_len, cli_ctx *ctx)
+{
+    cl_error_t status = CL_EARG;
+    cl_error_t ret;
+    bool virus_found = false;
+
+    struct OfficeArtRecordHeader_Unpacked rh;
+    const unsigned char *index = drawinggroup;
+    size_t remaining           = drawinggroup_len;
+
+    if (NULL == drawinggroup || 0 == drawinggroup_len) {
+        cli_dbgmsg("cli_extract_images_from_drawing_group: Invalid arguments\n");
+        goto done;
+    }
+
+    if (CL_SUCCESS != read_office_art_record_header(drawinggroup, drawinggroup_len, &rh)) {
+        /* Failed to get header, abort. */
+        cli_dbgmsg("cli_extract_images_from_drawing_group: Failed to get drawing group record header\n");
+        goto done;
+    }
+
+    if (!((0xF == rh.recVer) &&
+          (0x000 == rh.recInstance) &&
+          (0xF000 == rh.recType))) {
+        /* Invalid record values for drawing group record header */
+        cli_dbgmsg("cli_extract_images_from_drawing_group: Invalid record values for drawing group record header\n");
+        goto done;
+    }
+
+    if (rh.recLen > drawinggroup_len) {
+        /* Record header claims to be longer than our drawing group buffer */
+        cli_dbgmsg("cli_extract_images_from_drawing_group: Record header claims to be longer than our drawing group buffer:\n");
+        cli_dbgmsg("cli_extract_images_from_drawing_group:   %u > %zu\n", rh.recLen, drawinggroup_len);
+    }
+
+    /* Looks like we really found an Office Art Drawing Group (container).
+     * See section 2.2.12 OfficeArtDggContainer in:
+     * https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf */
+    cli_dbgmsg("cli_extract_images_from_drawing_group: Found drawing group of size %u bytes\n", rh.recLen);
+
+    /* Just skip over this first header */
+    if (remaining < sizeof(struct OfficeArtRecordHeader_PackedLittleEndian)) {
+        remaining = 0;
+    } else {
+        remaining -= sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
+        index += sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
+    }
+
+    while (0 < remaining) {
+        if (CL_SUCCESS != read_office_art_record_header(index, remaining, &rh)) {
+            /* Failed to get header, abort. */
+            cli_dbgmsg("cli_extract_images_from_drawing_group: Failed to get header\n");
+            goto done;
+        }
+
+        if (sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) > remaining) {
+            cli_dbgmsg("cli_extract_images_from_drawing_group: Not enough data remaining for BLIP store.\n");
+            goto done;
+        }
+
+        if ((0xF == rh.recVer) &&
+            (0xF001 == rh.recType)) {
+            /* Looks like we found a BLIP store container (array of OfficeArtBStoreContainerFileBlock records)
+             * See section 2.2.20 OfficeArtBStoreContainer in:
+             * https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf */
+            const unsigned char *start_of_blip_store_container = index + sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
+            size_t blip_store_container_len                    = remaining - sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
+
+            cli_dbgmsg("cli_extract_images_from_drawing_group: Found an OfficeArtBStoreContainerFileBlock (Blip store).\n");
+            cli_dbgmsg("cli_extract_images_from_drawing_group:   size: %u bytes, contains: %u file block records\n",
+                       rh.recLen, rh.recInstance);
+
+            if (rh.recLen > blip_store_container_len) {
+                cli_dbgmsg("cli_extract_images_from_drawing_group: WARNING: The blip store header claims to be bigger than the remaining bytes in the drawing group!\n");
+                cli_dbgmsg("cli_extract_images_from_drawing_group:   %d > %zu!\n", rh.recLen, blip_store_container_len);
+            } else {
+                /* limit rgfb enumeration to the size of the blip store */
+                blip_store_container_len = rh.recLen;
+            }
+
+            ret = process_blip_store_container(start_of_blip_store_container, blip_store_container_len, ctx);
+            if (ret == CL_VIRUS) {
+                if (!SCAN_ALLMATCHES) {
+                    status = CL_VIRUS;
+                    goto done;
+                }
+                virus_found = true;
+            }
+        }
+
+        if (remaining < sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen) {
+            remaining = 0;
+        } else {
+            remaining -= sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen;
+            index += sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + rh.recLen;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
+    if (virus_found) {
+        status = CL_VIRUS;
+    }
+    return status;
+}
+
 cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char *hash, uint32_t which)
 {
     char fullname[PATH_MAX];
@@ -4105,11 +4649,12 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     } __attribute__((packed)) biff_header;
     const char FILE_HEADER[] = "-- BIFF content extracted and disassembled from CL_TYPE_MSXL .xls file because a XLM macro was found in the document\n";
 
-    unsigned char *extracted_image  = NULL;
-    size_t extracted_image_len      = 0;
-    char *extracted_image_filepath  = NULL;
-    int extracted_image_tempfd      = -1;
-    cli_file_t extracted_image_type = CL_TYPE_ANY;
+    unsigned char *drawinggroup = NULL;
+    size_t drawinggroup_len     = 0;
+
+    biff8_opcode previous_biff8_opcode = 0x0; // Initialize to 0x0, which isn't even in our enum.
+                                              // This variable will allow the OPC_CONTINUE record
+                                              // to know which record it is continuing.
 
     snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s_%u", dir, hash, which);
     fullname[sizeof(fullname) - 1] = '\0';
@@ -4255,69 +4800,46 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 break;
             }
             case OPC_MSODRAWINGGROUP: {
-                if (NULL == extracted_image) {
-                    /* check for the beginning of an image */
-                    const char *index   = 0;
-                    size_t image_offset = 0;
-
-                    const char *magic_JPG_e0 = "\xff\xd8\xff\xe0";
-                    const char *magic_JPG_e1 = "\xff\xd8\xff\xe1";
-                    const char *magic_JPG_fe = "\xff\xd8\xff\xfe";
-                    const char *magic_PNG    = "\x89PNG";
-                    const char *magic_GIF_89 = "GIF89a";
-                    const char *magic_GIF_87 = "GIF87a";
-
-                    if ((NULL != (index = cli_memstr(data, biff_header.length, magic_JPG_e0, strlen(magic_JPG_e0)))) ||
-                        (NULL != (index = cli_memstr(data, biff_header.length, magic_JPG_e1, strlen(magic_JPG_e1)))) ||
-                        (NULL != (index = cli_memstr(data, biff_header.length, magic_JPG_fe, strlen(magic_JPG_fe))))) {
-                        cli_dbgmsg("Extracting JPEG image\n");
-                        extracted_image_type = CL_TYPE_JPEG;
-                    } else if (NULL != (index = cli_memstr(data, biff_header.length, magic_PNG, strlen(magic_PNG)))) {
-                        cli_dbgmsg("Extracting PNG image\n");
-                        extracted_image_type = CL_TYPE_PNG;
-                    } else if ((NULL != (index = cli_memstr(data, biff_header.length, magic_GIF_89, strlen(magic_GIF_89)))) ||
-                               (NULL != (index = cli_memstr(data, biff_header.length, magic_GIF_87, strlen(magic_GIF_87))))) {
-                        cli_dbgmsg("Extracting GIF image\n");
-                        extracted_image_type = CL_TYPE_GIF;
-                    } else {
-                        // No images
-                    }
-
-                    image_offset        = (size_t)index - (size_t)data;
-                    extracted_image_len = (size_t)biff_header.length - image_offset;
-                    extracted_image     = malloc(extracted_image_len);
-                    memcpy(extracted_image, index, extracted_image_len);
-                    // cli_dbgmsg("Collected %zu image bytes\n", extracted_image_len);
+                /*
+                 * Extract the entire drawing group before we parse it.
+                 */
+                if (NULL == drawinggroup) {
+                    /* Found beginning of a drawing group */
+                    drawinggroup_len = (size_t)biff_header.length;
+                    drawinggroup     = malloc(drawinggroup_len);
+                    memcpy(drawinggroup, data, drawinggroup_len);
+                    // cli_dbgmsg("Collected %zu drawing group bytes\n", drawinggroup_len);
 
                 } else {
-                    /* already found the beginning of an image, extract the remaining chunks */
+                    /* already found the beginning of a drawing group, extract the remaining chunks */
                     unsigned char *tmp = NULL;
-                    extracted_image_len += biff_header.length;
-                    tmp = realloc(extracted_image, extracted_image_len);
+                    drawinggroup_len += biff_header.length;
+                    tmp = realloc(drawinggroup, drawinggroup_len);
                     if (NULL == tmp) {
-                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", extracted_image_len);
+                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
                         ret = CL_EMEM;
                         goto done;
                     }
-                    extracted_image = tmp;
-                    memcpy(extracted_image + (extracted_image_len - biff_header.length), data, biff_header.length);
-                    // cli_dbgmsg("Collected %d image bytes\n", biff_header.length);
+                    drawinggroup = tmp;
+                    memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
+                    // cli_dbgmsg("Collected %d drawing group bytes\n", biff_header.length);
                 }
                 break;
             }
             case OPC_CONTINUE: {
-                if (NULL != extracted_image) {
+                if ((OPC_MSODRAWINGGROUP == previous_biff8_opcode) &&
+                    (NULL != drawinggroup)) {
                     /* already found the beginning of an image, extract the remaining chunks */
                     unsigned char *tmp = NULL;
-                    extracted_image_len += biff_header.length;
-                    tmp = realloc(extracted_image, extracted_image_len);
+                    drawinggroup_len += biff_header.length;
+                    tmp = realloc(drawinggroup, drawinggroup_len);
                     if (NULL == tmp) {
-                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", extracted_image_len);
+                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
                         ret = CL_EMEM;
                         goto done;
                     }
-                    extracted_image = tmp;
-                    memcpy(extracted_image + (extracted_image_len - biff_header.length), data, biff_header.length);
+                    drawinggroup = tmp;
+                    memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
                     // cli_dbgmsg("Collected %d image bytes\n", biff_header.length);
                 }
                 break;
@@ -4450,6 +4972,11 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
             cli_dbgmsg("[cli_extract_xlm_macros_and_images] Error writing new line to out file\n");
             goto done;
         }
+
+        /* Keep track of which biff record we're continuing if we encounter OPC_CONTINUE */
+        if (OPC_CONTINUE != biff_header.opcode) {
+            previous_biff8_opcode = biff_header.opcode;
+        }
     }
 
     /* Scan the extracted content */
@@ -4476,46 +5003,19 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
         goto done;
     }
 
-    if (NULL != extracted_image) {
-        /* Scan extracted image, if any */
-        cli_dbgmsg("Scanning extracted image of size %zu\n", extracted_image_len);
-
-        if (ctx->engine->keeptmp) {
-            /* Drop a temp file and scan that */
-            if ((ret = cli_gentempfd_with_prefix(
-                     ctx->sub_tmpdir,
-                     cli_ftname(extracted_image_type),
-                     &extracted_image_filepath,
-                     &extracted_image_tempfd)) != CL_SUCCESS) {
-                cli_warnmsg("Failed to create temp file for extracted %s file\n", cli_ftname(extracted_image_type));
-                ret = CL_EOPEN;
-                goto done;
-            }
-
-            if (cli_writen(extracted_image_tempfd, extracted_image, extracted_image_len) != extracted_image_len) {
-                cli_errmsg("failed to write output file\n");
-                ret = CL_EWRITE;
-                goto done;
-            }
-
-            ret = cli_magic_scan_desc_type(extracted_image_tempfd, extracted_image_filepath, ctx, extracted_image_type, NULL);
-        } else {
-            /* Scan the buffer */
-            ret = cli_magic_scan_buff(extracted_image, extracted_image_len, ctx, NULL);
-        }
+    if (NULL != drawinggroup) {
+        /*
+         * A drawing group was extracted, now we need to find all the images inside.
+         * If we fail to extract images, that's fine.
+         */
+        (void)cli_extract_images_from_drawing_group(drawinggroup, drawinggroup_len, ctx);
     }
 
     ret = CL_SUCCESS;
 
 done:
-    if (NULL != extracted_image) {
-        free(extracted_image);
-    }
-    if (-1 != extracted_image_tempfd) {
-        close(extracted_image_tempfd);
-    }
-    if (NULL != extracted_image_filepath) {
-        free(extracted_image_filepath);
+    if (NULL != drawinggroup) {
+        free(drawinggroup);
     }
 
     if (in_fd != -1) {
