@@ -606,11 +606,16 @@ enum cl_msg {
  *
  * Progress is complete when total_items == now_completed.
  *
+ * Note: The callback should return CL_SUCCESS. We reserve the right to have it
+ *       cancel the operation in the future if you return something else...
+ *       ... but for now, the return value will be ignored.
+ *
  * @param total_items   Total number of items
  * @param now_completed Number of items completed
  * @param context       Opaque application provided data
+ * @return cl_error_t   reserved for future use
  */
-typedef void (*clcb_progress)(size_t total_items, size_t now_completed, void *context);
+typedef cl_error_t (*clcb_progress)(size_t total_items, size_t now_completed, void *context);
 
 /**
  * @brief Set a progress callback function to be called incrementally during a

@@ -1346,7 +1346,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
         if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
             /* Let the progress callback function know how we're doing */
-            engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
         }
     }
     if (engine->ignored)
@@ -1934,7 +1934,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
         if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
             /* Let the progress callback function know how we're doing */
-            engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
         }
     }
 
@@ -2587,7 +2587,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
         if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
             /* Let the progress callback function know how we're doing */
-            engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
         }
     }
     if (engine->ignored)
@@ -4504,7 +4504,7 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
 
     if (engine->cb_sigload_progress) {
         /* Let the progress callback function know how we're doing */
-        engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+        (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
     }
 
     return ret;
@@ -4957,7 +4957,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 
     if (engine->cb_sigload_progress) {
         /* Let the progress callback function know we're done! */
-        engine->cb_sigload_progress(*signo, *signo, engine->cb_sigload_progress_ctx);
+        (void)engine->cb_sigload_progress(*signo, *signo, engine->cb_sigload_progress_ctx);
     }
 
 #ifdef YARA_PROTO
@@ -5307,7 +5307,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
      */
 #define TASK_COMPLETE()                           \
     if (engine->cb_engine_free_progress) {        \
-        engine->cb_engine_free_progress(          \
+        (void)engine->cb_engine_free_progress(    \
             tasks_to_do,                          \
             ++tasks_complete,                     \
             engine->cb_engine_free_progress_ctx); \
@@ -5582,7 +5582,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 #undef TASK_COMPLETE
 #define TASK_COMPLETE()                              \
     if (engine->cb_engine_compile_progress) {        \
-        engine->cb_engine_compile_progress(          \
+        (void)engine->cb_engine_compile_progress(    \
             tasks_to_do,                             \
             ++tasks_complete,                        \
             engine->cb_engine_compile_progress_ctx); \

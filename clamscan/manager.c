@@ -683,7 +683,7 @@ static void print_num_sigs(size_t sigs, int bPad)
  * @param now_completed Number of items completed
  * @param context       Opaque application provided data; This maps to sigload_progress
  */
-static void sigload_callback(size_t total_items, size_t now_completed, void *context)
+static cl_error_t sigload_callback(size_t total_items, size_t now_completed, void *context)
 {
     time_t curtime = 0;
     time_t remtime = 0;
@@ -757,7 +757,7 @@ static void sigload_callback(size_t total_items, size_t now_completed, void *con
 #endif
     fflush(stdout);
 
-    return;
+    return CL_SUCCESS;
 }
 
 /**
@@ -767,7 +767,7 @@ static void sigload_callback(size_t total_items, size_t now_completed, void *con
  * @param now_completed Number of items completed
  * @param context       Opaque application provided data; This maps to engine_compile_progress
  */
-static void engine_compile_callback(size_t total_items, size_t now_completed, void *context)
+static cl_error_t engine_compile_callback(size_t total_items, size_t now_completed, void *context)
 {
     time_t curtime = 0;
     time_t remtime = 0;
@@ -841,7 +841,7 @@ static void engine_compile_callback(size_t total_items, size_t now_completed, vo
 #endif
     fflush(stdout);
 
-    return;
+    return CL_SUCCESS;
 }
 
 #ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
@@ -852,7 +852,7 @@ static void engine_compile_callback(size_t total_items, size_t now_completed, vo
  * @param now_completed Number of items completed
  * @param context       Opaque application provided data; This maps to engine_free_progress
  */
-static void engine_free_callback(size_t total_items, size_t now_completed, void *context)
+static cl_error_t engine_free_callback(size_t total_items, size_t now_completed, void *context)
 {
     time_t curtime = 0;
 
@@ -912,7 +912,7 @@ static void engine_free_callback(size_t total_items, size_t now_completed, void 
 #endif
     fflush(stdout);
 
-    return;
+    return CL_SUCCESS;
 }
 #endif
 
