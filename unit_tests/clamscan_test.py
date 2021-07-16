@@ -236,3 +236,25 @@ class TC(testcase.TestCase):
             'Infected files: 3',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_09_xls_jpeg_png_extraction(self):
+        self.step_name('Test that clamav can successfully extract jpeg and png images from XLS documents')
+        # Note: we aren't testing BMP, TIFF, or GIF because excel converts them to PNG when you try to insert them.
+
+        testfiles = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'has_png_and_jpeg.xls'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --gen-json --debug'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # no virus, no failures
+
+        expected_results = [
+            'Recognized PNG file',
+            'Recognized JPEG file',
+            '"FileMD5":"41e64a9ddb49690f0b6fbbd71362b1b3"',
+            '"FileMD5":"5341e0efde53a50c416b2352263e7693"',
+        ]
+        self.verify_output(output.err, expected=expected_results)
