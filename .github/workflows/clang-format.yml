@@ -21,45 +21,45 @@ jobs:
     strategy:
       matrix:
         path:
-          - check: 'libclamav'
-            exclude: '(iana_cctld|bytecode_api_|bytecode_hooks|rijndael|yara|inffixed|inflate|queue|tomsfastmath|nsis|7z|regex|c++|generated)'
-          - check: 'libfreshclam'
-            exclude: ''
-          - check: 'clamav-milter'
-            exclude: ''
-          - check: 'clambc'
-            exclude: ''
-          - check: 'clamconf'
-            exclude: ''
-          - check: 'clamd'
-            exclude: ''
-          - check: 'clamdscan'
-            exclude: ''
-          - check: 'clamdtop'
-            exclude: ''
-          - check: 'clamonacc'
-            exclude: '(c-thread-pool|fts|priv_fts)'
-          - check: 'clamscan'
-            exclude: ''
-          - check: 'clamsubmit'
-            exclude: ''
-          - check: 'freshclam'
-            exclude: ''
-          - check: 'libfreshclam'
-            exclude: ''
-          - check: 'common'
-            exclude: ''
-          - check: 'sigtool'
-            exclude: ''
-          - check: 'examples'
-            exclude: ''
-          - check: 'win32/compat'
-            exclude: ''
+          - check: "libclamav"
+            exclude: "(iana_cctld|bytecode_api_|bytecode_hooks|rijndael|yara|inffixed|inflate|queue|tomsfastmath|nsis|7z|regex|c++|generated)"
+          - check: "libfreshclam"
+            exclude: ""
+          - check: "clamav-milter"
+            exclude: ""
+          - check: "clambc"
+            exclude: ""
+          - check: "clamconf"
+            exclude: ""
+          - check: "clamd"
+            exclude: ""
+          - check: "clamdscan"
+            exclude: ""
+          - check: "clamdtop"
+            exclude: ""
+          - check: "clamonacc"
+            exclude: "(c-thread-pool|fts|priv_fts)"
+          - check: "clamscan"
+            exclude: ""
+          - check: "clamsubmit"
+            exclude: ""
+          - check: "freshclam"
+            exclude: ""
+          - check: "libfreshclam"
+            exclude: ""
+          - check: "common"
+            exclude: ""
+          - check: "sigtool"
+            exclude: ""
+          - check: "examples"
+            exclude: ""
+          - check: "win32/compat"
+            exclude: ""
     steps:
-    - uses: actions/checkout@v2
-    - name: Run clang-format style check for C/C++ programs.
-      uses: jidicula/clang-format-action@v3.3.0
-      with:
-        clang-format-version: '10'
-        check-path: ${{ matrix.path['check'] }}
-        exclude-regex: ${{ matrix.path['exclude'] }}
+      - uses: actions/checkout@v2
+      - name: Run clang-format style check for C/C++ programs.
+        uses: jidicula/clang-format-action@v3.4.0
+        with:
+          clang-format-version: "10"
+          check-path: ${{ matrix.path['check'] }}
+          exclude-regex: ${{ matrix.path['exclude'] }}
