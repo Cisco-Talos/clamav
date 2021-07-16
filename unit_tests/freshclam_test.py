@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run freshclam tests
@@ -105,7 +105,7 @@ class TC(testcase.TestCase):
 
         # Select database files for test
         shutil.copy(
-            str(TC.path_build / 'unit_tests' / 'clamav.hdb'),
+            str(TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb'),
             str(TC.path_www),
         )
 
@@ -261,17 +261,17 @@ class TC(testcase.TestCase):
         self.step_name('Verify that freshclam can update from an older CVD to a newer with CDIFF patches')
 
         # start with this CVD
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-1.cvd', TC.path_db / 'test.cvd')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-1.cvd', TC.path_db / 'test.cvd')
 
         # advertise this CVD (by sending the header response to Range requests)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cvd', TC.path_www / 'test.cvd.advertised')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd', TC.path_www / 'test.cvd.advertised')
 
         # using these CDIFFs
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-2.cdiff', TC.path_www)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-3.cdiff', TC.path_www)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-4.cdiff', TC.path_www)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-5.cdiff', TC.path_www)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-2.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff', TC.path_www)
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
         TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
@@ -314,15 +314,15 @@ class TC(testcase.TestCase):
         self.step_name('Verify that freshclam will accept a partial update with 1 missing cdiff')
 
         # start with this CVD
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-3.cvd', TC.path_db / 'test.cvd')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cvd', TC.path_db / 'test.cvd')
 
         # advertise this CVD (by sending the header response to Range requests)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cvd', TC.path_www / 'test.cvd.advertised')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd', TC.path_www / 'test.cvd.advertised')
 
         # using these CDIFFs
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-4.cdiff', TC.path_www)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-5.cdiff', TC.path_www)
-        #shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cdiff', TC.path_www)  # <-- don't give them the last CDIFF
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff', TC.path_www)
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff', TC.path_www)
+        #shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff', TC.path_www)  # <-- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
         TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
@@ -387,18 +387,18 @@ class TC(testcase.TestCase):
         self.step_name('Verify that freshclam behavior with 2 missing cdiffs')
 
         # start with this CVD
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-3.cvd', TC.path_db / 'test.cvd')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cvd', TC.path_db / 'test.cvd')
 
         # advertise this CVD (by sending the header response to Range requests)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cvd', TC.path_www / 'test.cvd.advertised')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd', TC.path_www / 'test.cvd.advertised')
 
         # serve this CVD when requested instead of the advertised one
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cvd', TC.path_www / 'test.cvd.served')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd', TC.path_www / 'test.cvd.served')
 
         # using these CDIFFs
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-4.cdiff', TC.path_www)
-        # shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-5.cdiff', TC.path_www)  <--- dont' give them the second to last, either!
-        # shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cdiff', TC.path_www)  <--- don't give them the last CDIFF
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff', TC.path_www)
+        # shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff', TC.path_www)  <--- dont' give them the second to last, either!
+        # shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff', TC.path_www)  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
         TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
@@ -462,13 +462,13 @@ class TC(testcase.TestCase):
         self.step_name('Verify that freshclam will properly handle an out-of-date CVD update after a zero-byte CDIFF')
 
         # start with this CVD
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-3.cvd', TC.path_db / 'test.cvd')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cvd', TC.path_db / 'test.cvd')
 
         # advertise this CVD (by sending the header response to Range requests)
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-6.cvd', TC.path_www / 'test.cvd.advertised')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd', TC.path_www / 'test.cvd.advertised')
 
         # serve this CVD when requested instead of the advertised one
-        shutil.copy(TC.path_source / 'unit_tests' / 'test_db' / 'test-5.cvd', TC.path_www / 'test.cvd.served')
+        shutil.copy(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cvd', TC.path_www / 'test.cvd.served')
 
         # Serve a zero-byte test-4.cdiff instead of the real test-4.cdiff. This should trigger a whole CVD download.
         with (TC.path_www / 'test-4.cdiff').open('w') as fp:

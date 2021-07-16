@@ -1,28 +1,9 @@
-# Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 #
-# Assemble additional split files found in unit_tests/.split
+# Decrypt test files
 #
-set(TESTFILES
-    clam-phish-exe
-)
-
-# Assemble split test file
-function(assemble_testfile test_file)
-    add_custom_command(OUTPUT ${test_file}
-        COMMAND ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/../test/assemble_testfile.py
-            ${test_file}
-            --build_dir ${CMAKE_CURRENT_BINARY_DIR}
-            --split_dir ${CMAKE_CURRENT_SOURCE_DIR}/.split
-        COMMENT "Assembling test file ${test_file} of ${original}")
-    add_custom_target(tgt_${test_file} ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${test_file})
-endfunction()
-
-foreach(TESTFILE ${TESTFILES})
-    assemble_testfile(${TESTFILE})
-endforeach()
-
+add_subdirectory( input )
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
@@ -179,7 +160,7 @@ endif()
 target_include_directories(check_clamav PRIVATE ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/libclamav ${CMAKE_BINARY_DIR})
 target_compile_definitions(check_clamav PUBLIC OBJDIR="${OBJDIR}" SRCDIR="${SRCDIR}")
 ADD_CUSTOM_COMMAND(TARGET check_clamav POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/.)
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/input/clamav.hdb ${CMAKE_CURRENT_BINARY_DIR}/input/.)
 
 #
 # Paths to pass to our tests via environment variables

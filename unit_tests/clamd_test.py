@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamd (and clamdscan) tests.
@@ -27,7 +27,7 @@ def check_port_available(port_num: int) -> bool:
     port_is_available = True # It's probably available...
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    location = ("localhost", port_num)
+    location = ('localhost', port_num)
 
     result_of_check = sock.connect_ex(location)
     if result_of_check == 0:
@@ -41,7 +41,7 @@ class TC(testcase.TestCase):
     def setUpClass(cls):
         super(TC, cls).setUpClass()
 
-        TC.testpaths = list(TC.path_build.glob('test/clam*')) # A list of Path()'s of each of our generated test files
+        TC.testpaths = list(TC.path_build.glob('unit_tests/input/clamav_hdb_scanfiles/clam*')) # A list of Path()'s of each of our generated test files
 
         TC.clamd_pid = TC.path_tmp / 'clamd-test.pid'
         TC.clamd_socket =   'clamd-test.socket'             # <-- A relative path here and in check_clamd to avoid-
@@ -51,11 +51,11 @@ class TC(testcase.TestCase):
         TC.path_db = TC.path_tmp / 'database'
         TC.path_db.mkdir(parents=True)
         shutil.copy(
-            str(TC.path_build / 'unit_tests' / 'clamav.hdb'),
+            str(TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb'),
             str(TC.path_db),
         )
         shutil.copy(
-            str(TC.path_source / 'unit_tests' / 'input' / 'daily.pdb'),
+            str(TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'daily.pdb'),
             str(TC.path_db),
         )
 
@@ -329,7 +329,7 @@ class TC(testcase.TestCase):
 
         (TC.path_tmp / 'reload-testfile').write_bytes(b'ClamAV-RELOAD-Test')
 
-        self.run_clamdscan('{}'.format(TC.path_tmp / "reload-testfile"),
+        self.run_clamdscan('{}'.format(TC.path_tmp / 'reload-testfile'),
             expected_ec=0, expected_out=['reload-testfile: OK', 'Infected files: 0'])
 
         (TC.path_db / 'reload-test.ndb').write_text('ClamAV-RELOAD-TestFile:0:0:436c616d41562d52454c4f41442d54657374')
@@ -342,12 +342,12 @@ class TC(testcase.TestCase):
                       # with multi-threaded reloading will clamd would happily
                       # re-scan with the old engine while it reloads.
 
-        self.run_clamdscan('{}'.format(TC.path_tmp / "reload-testfile"),
+        self.run_clamdscan('{}'.format(TC.path_tmp / 'reload-testfile'),
             expected_ec=1, expected_out=['ClamAV-RELOAD-TestFile.UNOFFICIAL FOUND', 'Infected files: 1'])
 
     def test_clamd_04_all_testfiles(self):
         '''
-        Verify that clamd + clamdscan detect each of our <build>/test/clam* test files.
+        Verify that clamd + clamdscan detect each of our <build>/unit_tests/input/clamav_hdb_scanfiles/clam* test files.
         '''
         self.step_name('Testing clamd + clamdscan scan of all `test` files')
 
@@ -416,7 +416,7 @@ class TC(testcase.TestCase):
         poll = self.proc.poll()
         assert poll == None  # subprocess is alive if poll() returns None
 
-        self.run_clamdscan('{}'.format(TC.path_build / "unit_tests" / "clam-phish-exe"),
+        self.run_clamdscan('{}'.format(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe_and_mail.tar.gz'),
             expected_ec=1, expected_out=['ClamAV-Test-File'])
 
     def test_clamd_07_HeuristicScanPrecedence_on(self):
@@ -438,7 +438,7 @@ class TC(testcase.TestCase):
         poll = self.proc.poll()
         assert poll == None  # subprocess is alive if poll() returns None
 
-        self.run_clamdscan('{}'.format(TC.path_build / "unit_tests" / "clam-phish-exe"),
+        self.run_clamdscan('{}'.format(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe_and_mail.tar.gz'),
             expected_ec=1, expected_out=['Heuristics.Phishing.Email.SpoofedDomain'])
 
     @unittest.skipIf(operating_system == 'windows', 'This test uses a shell script to test virus-action. TODO: add Windows support to this test.')
@@ -450,7 +450,7 @@ class TC(testcase.TestCase):
 
         with TC.clamd_config.open('a') as config:
             config.write('VirusEvent {} {} "Virus found: %v"\n'.format(
-                TC.path_source / "unit_tests" / "virusaction-test.sh",
+                TC.path_source / 'unit_tests' / 'input' / 'virusaction-test.sh',
                 TC.path_tmp))
 
         self.start_clamd()
@@ -458,10 +458,10 @@ class TC(testcase.TestCase):
         poll = self.proc.poll()
         assert poll == None  # subprocess is alive if poll() returns None
 
-        self.run_clamdscan_file_only('{}'.format(TC.path_build / "test" / "clam.exe"),
+        self.run_clamdscan_file_only('{}'.format(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'),
             expected_ec=1)#, expected_out=['Virus found: ClamAV-Test-File.UNOFFICIAL'])
 
-        self.log.info('verifying log output from virusaction-test.sh: {}'.format(str(TC.path_tmp / "test-clamd.log")))
+        self.log.info('verifying log output from virusaction-test.sh: {}'.format(str(TC.path_tmp / 'test-clamd.log')))
         self.verify_log(str(TC.path_tmp / 'test-clamd.log'),
             expected=['Virus found: ClamAV-Test-File.UNOFFICIAL'],
             unexpected=['VirusEvent incorrect', 'VirusName incorrect'])
@@ -481,9 +481,9 @@ class TC(testcase.TestCase):
         (TC.path_tmp / 'b').mkdir()
         (TC.path_tmp / 'c').mkdir()
 
-        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'a' / 'a_found'))     # This should be found (first)
-        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'b' / 'b_excluded'))  # This one should be excluded
-        shutil.copy(str(TC.path_build / 'test' / 'clam.exe'), str(TC.path_tmp / 'c' / 'c_found'))     # This one should still be found after excluding the previous
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'a' / 'a_found'))     # This should be found (first)
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'b' / 'b_excluded'))  # This one should be excluded
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'c' / 'c_found'))     # This one should still be found after excluding the previous
 
         with TC.clamd_config.open('a') as config:
             exclude_path = str(TC.path_tmp / 'b')

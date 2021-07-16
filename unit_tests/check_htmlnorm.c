@@ -67,11 +67,30 @@ static struct test {
     const char *jsref;
 } tests[] = {
     /* NULL means don't test it */
-    {"input" PATHSEP "htmlnorm_buf.html", "buf.nocomment.ref", "buf.notags.ref", NULL},
-    {"input" PATHSEP "htmlnorm_encode.html", "encode.nocomment.ref", NULL, "encode.js.ref"},
-    {"input" PATHSEP "htmlnorm_js_test.html", "js.nocomment.ref", NULL, "js.js.ref"},
-    {"input" PATHSEP "htmlnorm_test.html", "test.nocomment.ref", "test.notags.ref", NULL},
-    {"input" PATHSEP "htmlnorm_urls.html", "urls.nocomment.ref", "urls.notags.ref", NULL}};
+    {"input" PATHSEP "htmlnorm_scanfiles" PATHSEP "htmlnorm_buf.html",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "buf.nocomment.ref",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "buf.notags.ref",
+     NULL},
+
+    {"input" PATHSEP "htmlnorm_scanfiles" PATHSEP "htmlnorm_encode.html",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "encode.nocomment.ref",
+     NULL,
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "encode.js.ref"},
+
+    {"input" PATHSEP "htmlnorm_scanfiles" PATHSEP "htmlnorm_js_test.html",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "js.nocomment.ref",
+     NULL,
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "js.js.ref"},
+
+    {"input" PATHSEP "htmlnorm_scanfiles" PATHSEP "htmlnorm_test.html",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "test.nocomment.ref",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "test.notags.ref",
+     NULL},
+
+    {"input" PATHSEP "htmlnorm_scanfiles" PATHSEP "htmlnorm_urls.html",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "urls.nocomment.ref",
+     "input" PATHSEP "htmlnorm_reffiles" PATHSEP "urls.notags.ref",
+     NULL}};
 
 static void check_dir(const char *dire, const struct test *test)
 {
@@ -153,7 +172,7 @@ END_TEST
 
 START_TEST(test_screnc_nullterminate)
 {
-    int fd = open_testfile("input" PATHSEP "screnc_test", O_RDONLY | O_BINARY);
+    int fd = open_testfile("input" PATHSEP "other_scanfiles" PATHSEP "screnc_test", O_RDONLY | O_BINARY);
     fmap_t *map;
 
     ck_assert_msg(mkdir(dir, 0700) == 0, "mkdir failed");

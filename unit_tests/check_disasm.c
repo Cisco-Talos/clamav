@@ -219,7 +219,7 @@ START_TEST(test_disasm_basic)
     STATBUF st;
 
     ck_assert_msg(fd != -1, "mkstemp failed");
-    ref = open_testfile("input" PATHSEP "disasmref.bin", O_RDONLY | O_BINARY);
+    ref = open_testfile("input" PATHSEP "other_scanfiles" PATHSEP "disasmref.bin", O_RDONLY | O_BINARY);
     ck_assert_msg(FSTAT(ref, &st) != -1, "fstat failed");
     disasmbuf(buf, sizeof(buf), fd);
     size = lseek(fd, 0, SEEK_CUR);
