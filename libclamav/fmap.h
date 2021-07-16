@@ -102,12 +102,12 @@ fmap_t *fmap(int fd, off_t offset, size_t len, const char *name);
  * This variant of fmap() provides a boolean output variable to indicate on
  * failure if the failure was because the file is empty (not really a failure).
  *
- * @param fd        File descriptor of file to be mapped.
- * @param offset    Offset into file for start of map.
- * @param len       Length from offset for size of map.
- * @param empty     [out] Boolean will be non-zero if the file couldn't be mapped because it is empty.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return fmap_t*  The newly created fmap.  Free it with `funmap()`
+ * @param fd            File descriptor of file to be mapped.
+ * @param offset        Offset into file for start of map.
+ * @param len           Length from offset for size of map.
+ * @param[out] empty    Boolean will be non-zero if the file couldn't be mapped because it is empty.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @return fmap_t*      The newly created fmap.  Free it with `funmap()`
  */
 fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const char *name);
 

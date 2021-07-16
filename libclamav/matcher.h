@@ -247,14 +247,14 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
  *
  * This function uses the newer cli_scan_fmap() scanning API.
  *
- * @param desc      File descriptor to be used for input
- * @param ctx       The scanning context.
- * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
- * @param ftonly    Boolean indicating if the scan is for file-type detection only.
- * @param ftoffset  [out] A list of file type signature matches with their corresponding offsets.
- * @param acmode    Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
- * @param acres     [out] A list of cli_ac_result AC pattern matching results.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
+ * @param desc          File descriptor to be used for input
+ * @param ctx           The scanning context.
+ * @param ftype         If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param ftonly        Boolean indicating if the scan is for file-type detection only.
+ * @param[out] ftoffset A list of file type signature matches with their corresponding offsets.
+ * @param acmode        Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
+ * @param[out] acres    A list of cli_ac_result AC pattern matching results.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
  * @return cl_error_t
  */
 cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name);
@@ -264,13 +264,13 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonl
  *
  * This API will invoke cli_exp_eval() for you.
  *
- * @param ctx       The scanning context.
- * @param ftype     If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
- * @param ftonly    Boolean indicating if the scan is for file-type detection only.
- * @param ftoffset  [out] A list of file type signature matches with their corresponding offsets.
- * @param acmode    Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
- * @param acres     [out] A list of cli_ac_result AC pattern matching results.
- * @param refhash   MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.
+ * @param ctx           The scanning context.
+ * @param ftype         If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
+ * @param ftonly        Boolean indicating if the scan is for file-type detection only.
+ * @param[out] ftoffset A list of file type signature matches with their corresponding offsets.
+ * @param acmode        Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
+ * @param[out] acres    A list of cli_ac_result AC pattern matching results.
+ * @param refhash       MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.
  * @return cl_error_t
  */
 cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, unsigned char *refhash);

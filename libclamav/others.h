@@ -353,6 +353,9 @@ struct cl_engine {
     /* Database information from .info files */
     struct cli_dbinfo *dbinfo;
 
+    /* Signature counting, for progress callbacks */
+    size_t num_total_signatures;
+
     /* Used for memory pools */
     mpool_t *mempool;
 
@@ -369,6 +372,12 @@ struct cl_engine {
     clcb_hash cb_hash;
     clcb_meta cb_meta;
     clcb_file_props cb_file_props;
+    clcb_progress cb_sigload_progress;
+    void *cb_sigload_progress_ctx;
+    clcb_progress cb_engine_compile_progress;
+    void *cb_engine_compile_progress_ctx;
+    clcb_progress cb_engine_free_progress;
+    void *cb_engine_free_progress_ctx;
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
@@ -449,6 +458,12 @@ struct cl_settings {
     clcb_hash cb_hash;
     clcb_meta cb_meta;
     clcb_file_props cb_file_props;
+    clcb_progress cb_sigload_progress;
+    void *cb_sigload_progress_ctx;
+    clcb_progress cb_engine_compile_progress;
+    void *cb_engine_compile_progress_ctx;
+    clcb_progress cb_engine_free_progress;
+    void *cb_engine_free_progress_ctx;
 
     /* Engine max settings */
     uint64_t maxembeddedpe;      /* max size to scan MSEXE for PE */
@@ -998,7 +1013,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
  * to get the real path.
  *
  * @param desc          A file path to evaluate.
- * @param char*         [out] A malloced string containing the real path.
+ * @param[out] char*    A malloced string containing the real path.
  * @return cl_error_t   CL_SUCCESS if found, else an error code.
  */
 cl_error_t cli_realpath(const char *file_name, char **real_filename);

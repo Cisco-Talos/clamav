@@ -92,6 +92,23 @@ patch versions do not generally introduce new options:
   BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
   ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
 
+- Add progress callbacks to libclamav for:
+  - database load:  `cl_engine_set_clcb_sigload_progress()`
+  - engine compile: `cl_engine_set_clcb_engine_compile_progress()`
+  - engine free:    `cl_engine_set_clcb_engine_free_progress()`
+
+  These new callbacks enable an application to monitor and estiamte load,
+  compile, and unload progress. See `clamav.h` for API details.
+
+- Added progress bars to ClamScan for the signature load and engine compile
+  steps before a scan begins.
+  The start-up progress bars won't be enabled if ClamScan isn't running in a
+  terminal (i.e. stdout is not a TTY), or if any of these options are used:
+    - `--debug`
+    - `--quiet`
+    - `--infected`
+    - `--no-summary`
+
 ### Other improvements
 
 - Added the `%f` format string option to the ClamD VirusEvent feature to insert

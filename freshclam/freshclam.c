@@ -430,7 +430,7 @@ done:
  * @param server            Server string
  * @param defaultProtocol   Default protocol if not already specified. Eg: "https"
  * @param defaultPort       Default port if not already specified. Eg: 443
- * @param serverUrl         [out] A malloced string in the protocol://server:port format.
+ * @param[out] serverUrl    A malloced string in the protocol://server:port format.
  * @return fc_error_t       FC_SUCCESS if success.
  * @return fc_error_t       FC_EARG if invalid args.
  * @return fc_error_t       FC_EMEM if malloc failed.
@@ -563,10 +563,10 @@ static void free_string_list(char **stringList, uint32_t nListItems)
 /**
  * @brief Get the database server list object
  *
- * @param opts          FreshClam options struct.
- * @param serverList    [out] List of servers.
- * @param nServers      [out] Number of servers in list.
- * @param bPrivate      [out] Non-zero if PrivateMirror servers were selected.
+ * @param opts              FreshClam options struct.
+ * @param[out]  serverList  List of servers.
+ * @param[out]  nServers    Number of servers in list.
+ * @param[out]  bPrivate    Non-zero if PrivateMirror servers were selected.
  * @return fc_error_t
  */
 static fc_error_t get_database_server_list(
@@ -664,12 +664,12 @@ done:
 /**
  * @brief Get a list of strings for a given repeatable opt argument.
  *
- * @param opt           optstruct of repeatable argument to collect in a list.
- * @param stringList    [out] String list.
- * @param nListItems    [out] Number of strings in list.
- * @return fc_error_t   FC_SUCCESS if success.
- * @return fc_error_t   FC_EARG if invalid args passed to function.
- * @return fc_error_t   FC_EMEM if failed to allocate memory.
+ * @param opt               optstruct of repeatable argument to collect in a list.
+ * @param[out] stringList   String list.
+ * @param[out] nListItems   Number of strings in list.
+ * @return fc_error_t       FC_SUCCESS if success.
+ * @return fc_error_t       FC_EARG if invalid args passed to function.
+ * @return fc_error_t       FC_EMEM if failed to allocate memory.
  */
 static fc_error_t get_string_list(const struct optstruct *opt, char ***stringList, uint32_t *nListItems)
 {
@@ -989,11 +989,11 @@ done:
  *
  * TODO: Implement system to query list of available standard and optional databases.
  *
- * @param standardDatabases  [out] Standard database string list.
- * @param nStandardDatabases [out] Number of standard databases in list.
- * @param optionalDatabases  [out] Optional database string list.
- * @param nOptionalDatabases [out] Number of optional databases in list.
- * @return fc_error_t        FC_SUCCESS if all databases upddated successfully.
+ * @param[out] standardDatabases    Standard database string list.
+ * @param[out] nStandardDatabases   Number of standard databases in list.
+ * @param[out] optionalDatabases    Optional database string list.
+ * @param[out] nOptionalDatabases   Number of optional databases in list.
+ * @return fc_error_t               FC_SUCCESS if all databases upddated successfully.
  */
 fc_error_t get_official_database_lists(
     char ***standardDatabases,
@@ -1069,8 +1069,8 @@ done:
  * @param nOptIns               Number of opt-in database strings in list.
  * @param optOutList            List of standard databases that are not desired.
  * @param nOptOuts              Number of opt-out database strings in list.
- * @param databaseList          [out] String list of desired databases.
- * @param nDatabases            [out] Number of desired databases in list.
+ * @param[out] databaseList     String list of desired databases.
+ * @param[out] nDatabases       Number of desired databases in list.
  * @return fc_error_t
  */
 fc_error_t select_from_official_databases(
@@ -1204,9 +1204,9 @@ done:
  *
  * @param specificDatabaseList  List of desired databases.
  * @param nSpecificDatabases    Number of databases in list.
- * @param databaseList          [out] String list of desired databases.
- * @param nDatabases            [out] Number of desired databases in list.
- * @param bCustom               [out] "custom" selected.
+ * @param[out] databaseList     String list of desired databases.
+ * @param[out] nDatabases       Number of desired databases in list.
+ * @param[out] bCustom          "custom" selected.
  * @return fc_error_t
  */
 fc_error_t select_specific_databases(

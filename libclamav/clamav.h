@@ -602,6 +602,66 @@ enum cl_msg {
 };
 
 /**
+ * @brief Progress callback for sig-load, engine-compile, and engine-free.
+ *
+ * Progress is complete when total_items == now_completed.
+ *
+ * Note: The callback should return CL_SUCCESS. We reserve the right to have it
+ *       cancel the operation in the future if you return something else...
+ *       ... but for now, the return value will be ignored.
+ *
+ * @param total_items   Total number of items
+ * @param now_completed Number of items completed
+ * @param context       Opaque application provided data
+ * @return cl_error_t   reserved for future use
+ */
+typedef cl_error_t (*clcb_progress)(size_t total_items, size_t now_completed, void *context);
+
+/**
+ * @brief Set a progress callback function to be called incrementally during a
+ * database load.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine
+ * @param callback  The callback function pointer
+ * @param context   Opaque application provided data
+ */
+extern void cl_engine_set_clcb_sigload_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
+/**
+ * @brief Set a progress callback function to be called incrementally during an
+ * engine compile.
+ *
+ * Disclaimer: the number of items for this is a rough estimate of the items that
+ * tend to take longest to compile and doesn't represent an accurate number of
+ * things compiled.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine
+ * @param callback  The callback function pointer
+ * @param context   Opaque application provided data
+ */
+extern void cl_engine_set_clcb_engine_compile_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
+/**
+ * @brief Set a progress callback function to be called incrementally during an
+ * engine free (if the engine is in fact freed).
+ *
+ * Disclaimer: the number of items for this is a rough estimate of the items that
+ * tend to take longest to free and doesn't represent an accurate number of
+ * things freed.
+ *
+ * Caution: changing options for an engine that is in-use is not thread-safe!
+ *
+ * @param engine    The initialized scanning engine
+ * @param callback  The callback function pointer
+ * @param context   Opaque application provided data
+ */
+extern void cl_engine_set_clcb_engine_free_progress(struct cl_engine *engine, clcb_progress callback, void *context);
+
+/**
  * @brief Logging message callback for info, warning, and error messages.
  *
  * The specified callback will be called instead of logging to stderr.
@@ -940,7 +1000,23 @@ extern cl_error_t cl_scanfile_callback(const char *filename, const char **virnam
 /* ----------------------------------------------------------------------------
  * Database handling.
  */
+
+/**
+ * @brief Load the signature databases found at the path.
+ *
+ * @param path          May be a file or directory.
+ * @param engine        The engine to load the signatures into
+ * @param[out] signo    The number of signatures loaded
+ * @param dboptions     Database load bitflag field. See the CL_DB_* defines, above.
+ * @return cl_error_t
+ */
 extern cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);
+
+/**
+ * @brief Get the default database directory path.
+ *
+ * @return const char*
+ */
 extern const char *cl_retdbdir(void);
 
 /* ----------------------------------------------------------------------------

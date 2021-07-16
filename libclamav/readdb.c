@@ -25,6 +25,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1342,6 +1343,11 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             break;
         }
         sigs++;
+
+        if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
+            /* Let the progress callback function know how we're doing */
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+        }
     }
     if (engine->ignored)
         free(buffer_cpy);
@@ -1925,6 +1931,11 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
                           engine, options, dbname, line, &sigs, 0, buffer_cpy, NULL);
         if (ret)
             break;
+
+        if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
+            /* Let the progress callback function know how we're doing */
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+        }
     }
 
     if (engine->ignored)
@@ -2573,6 +2584,11 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         }
 
         sigs++;
+
+        if (engine->cb_sigload_progress && ((*signo + sigs) % 10000 == 0)) {
+            /* Let the progress callback function know how we're doing */
+            (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo + sigs, engine->cb_sigload_progress_ctx);
+        }
     }
     if (engine->ignored)
         free(buffer_cpy);
@@ -4486,6 +4502,11 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
     if (fs)
         fclose(fs);
 
+    if (engine->cb_sigload_progress) {
+        /* Let the progress callback function know how we're doing */
+        (void)engine->cb_sigload_progress(engine->num_total_signatures, *signo, engine->cb_sigload_progress_ctx);
+    }
+
     return ret;
 }
 
@@ -4520,6 +4541,126 @@ cli_insertdbtoll(struct db_ll_entry **head, struct db_ll_entry *entry)
     return;
 }
 
+/**
+ * @brief Count the number of signatures in a line-based signature file
+ *
+ * Ignores lines starting with # comment character
+ *
+ * @param filepath
+ * @return size_t
+ */
+static size_t count_line_based_signatures(const char *filepath)
+{
+    FILE *fp              = NULL;
+    int current_character = 0;
+    size_t sig_count      = 0;
+    bool in_sig           = false;
+
+    fp = fopen(filepath, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    sig_count++;
+    while (0 == feof(fp)) {
+        /* Get the next character */
+        current_character = fgetc(fp);
+
+        if (!in_sig) {
+            /* Not inside of a signature, yet */
+            if (!isspace(current_character) && // Ignore newlines and other forms of white space before a signature
+                ('#' != current_character))    // Ignore lines that begin with a # comment character
+            {
+                /* Found first character of a new signatures */
+                sig_count++;
+                in_sig = true;
+            }
+        } else {
+            /* Inside of a signature */
+            if (current_character == '\n') {
+                in_sig = false;
+            }
+        }
+    }
+
+    fclose(fp);
+    return sig_count;
+}
+
+/**
+ * @brief Count the number of signatures in a database file.
+ *
+ * Non-database files will be ignored, and count as 0 signatures.
+ * Database validation is not done, just signature counting.
+ *
+ * CVD/CLD/CUD database archives are not counted the hard way, we just trust
+ * signature count in the header. Yara rules and bytecode sigs count as 1 each.
+ *
+ * @param filepath  Filepath of the database file to count.
+ * @return size_t   The number of signatures.
+ */
+static size_t count_signatures(const char *filepath, struct cl_engine *engine, unsigned int options)
+{
+    size_t num_signatures            = 0;
+    struct cl_cvd *db_archive_header = NULL;
+
+    if (cli_strbcasestr(filepath, ".cld") ||
+        cli_strbcasestr(filepath, ".cvd") ||
+        cli_strbcasestr(filepath, ".cud")) {
+        /* use the CVD head to get the sig count. */
+        if (0 == access(filepath, R_OK)) {
+            db_archive_header = cl_cvdhead(filepath);
+            if (!db_archive_header) {
+                cli_errmsg("cli_loaddbdir: error parsing header of %s\n", filepath);
+                goto done;
+            }
+
+            num_signatures += db_archive_header->sigs;
+        }
+
+    } else if ((CL_BYTECODE_TRUST_ALL == engine->bytecode_security) &&
+               cli_strbcasestr(filepath, ".cbc")) {
+        /* Counts as 1 signature if loading plain .cbc files. */
+        num_signatures += 1;
+
+    } else if ((options & CL_DB_YARA_ONLY) &&
+               (cli_strbcasestr(filepath, ".yar") || cli_strbcasestr(filepath, ".yara"))) {
+        /* Counts as 1 signature. */
+        num_signatures += 1;
+
+    } else if (cli_strbcasestr(filepath, ".db") ||
+               cli_strbcasestr(filepath, ".crb") ||
+               cli_strbcasestr(filepath, ".hdb") || cli_strbcasestr(filepath, ".hsb") ||
+               cli_strbcasestr(filepath, ".hdu") || cli_strbcasestr(filepath, ".hsu") ||
+               cli_strbcasestr(filepath, ".fp") || cli_strbcasestr(filepath, ".sfp") ||
+               cli_strbcasestr(filepath, ".mdb") || cli_strbcasestr(filepath, ".msb") ||
+               cli_strbcasestr(filepath, ".imp") ||
+               cli_strbcasestr(filepath, ".mdu") || cli_strbcasestr(filepath, ".msu") ||
+               cli_strbcasestr(filepath, ".ndb") || cli_strbcasestr(filepath, ".ndu") || cli_strbcasestr(filepath, ".sdb") ||
+               cli_strbcasestr(filepath, ".ldb") || cli_strbcasestr(filepath, ".ldu") ||
+               cli_strbcasestr(filepath, ".zmd") || cli_strbcasestr(filepath, ".rmd") ||
+               cli_strbcasestr(filepath, ".cfg") ||
+               cli_strbcasestr(filepath, ".wdb") ||
+               cli_strbcasestr(filepath, ".pdb") || cli_strbcasestr(filepath, ".gdb") ||
+               cli_strbcasestr(filepath, ".ftm") ||
+               cli_strbcasestr(filepath, ".ign") || cli_strbcasestr(filepath, ".ign2") ||
+               cli_strbcasestr(filepath, ".idb") ||
+               cli_strbcasestr(filepath, ".cdb") ||
+               cli_strbcasestr(filepath, ".cat") ||
+               cli_strbcasestr(filepath, ".ioc") ||
+               cli_strbcasestr(filepath, ".pwdb")) {
+        /* Should be a line-based signaure file, count it the old fashioned way */
+        num_signatures += count_line_based_signatures(filepath);
+    }
+
+done:
+    if (NULL != db_archive_header) {
+        cl_cvdfree(db_archive_header);
+    }
+
+    return num_signatures;
+}
+
 static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned int *signo, unsigned int options)
 {
     cl_error_t ret = CL_EOPEN;
@@ -4538,7 +4679,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
     cli_dbgmsg("Loading databases from %s\n", dirname);
 
     if ((dd = opendir(dirname)) == NULL) {
-        cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
+        cli_errmsg("cli_loaddbdir: Can't open directory %s\n", dirname);
         ret = CL_EOPEN;
         goto done;
     }
@@ -4546,7 +4687,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
     dirname_len = strlen(dirname);
     if (dirname_len >= strlen(PATHSEP)) {
         if (strcmp(dirname + dirname_len - strlen(PATHSEP), PATHSEP) == 0) {
-            cli_dbgmsg("cli_loaddbdir(): dirname ends with separator\n");
+            cli_dbgmsg("cli_loaddbdir: dirname ends with separator\n");
             ends_with_sep = 1;
         }
     }
@@ -4567,7 +4708,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
 
         dbfile = (char *)cli_malloc(strlen(dent->d_name) + dirname_len + 2);
         if (!dbfile) {
-            cli_errmsg("cli_loaddbdir(): dbfile == NULL\n");
+            cli_errmsg("cli_loaddbdir: dbfile == NULL\n");
             ret = CL_EMEM;
             goto done;
         }
@@ -4588,6 +4729,8 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             /* load .ign and .ign2 files first */
             load_priority = DB_LOAD_PRIORITY_IGN;
 
+            engine->num_total_signatures += count_line_based_signatures(dbfile);
+
         } else if (!strcmp(dent->d_name, "daily.cld")) {
             /* The daily db must be loaded before main, this way, the
                daily ign & ign2 signatures prevent ign'ored signatures
@@ -4597,10 +4740,13 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             if (0 == access(dbfile, R_OK)) {
                 daily_cld = cl_cvdhead(dbfile);
                 if (!daily_cld) {
-                    cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+                    cli_errmsg("cli_loaddbdir: error parsing header of %s\n", dbfile);
                     ret = CL_EMALFDB;
                     goto done;
                 }
+
+                /* Successfully opened the daily CLD file and read the header info. */
+                engine->num_total_signatures += daily_cld->sigs;
             }
 
         } else if (!strcmp(dent->d_name, "daily.cvd")) {
@@ -4609,17 +4755,23 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             if (0 == access(dbfile, R_OK)) {
                 daily_cvd = cl_cvdhead(dbfile);
                 if (!daily_cvd) {
-                    cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+                    cli_errmsg("cli_loaddbdir: error parsing header of %s\n", dbfile);
                     ret = CL_EMALFDB;
                     goto done;
                 }
+                /* Successfully opened the daily CVD file and ready the header info. */
+                engine->num_total_signatures += daily_cvd->sigs;
             }
 
         } else if (!strcmp(dent->d_name, "local.gdb")) {
             load_priority = DB_LOAD_PRIORITY_LOCAL_GDB;
 
+            engine->num_total_signatures += count_line_based_signatures(dbfile);
+
         } else if (!strcmp(dent->d_name, "daily.cfg")) {
             load_priority = DB_LOAD_PRIORITY_DAILY_CFG;
+
+            engine->num_total_signatures += count_line_based_signatures(dbfile);
 
         } else if ((options & CL_DB_OFFICIAL_ONLY) &&
                    !strstr(dirname, "clamav-") &&            // Official databases that are temp-files (in the process of updating).
@@ -4639,13 +4791,17 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
              * Therefore, we need to ensure the .crb rules are loaded prior */
             load_priority = DB_LOAD_PRIORITY_CRB;
 
+            engine->num_total_signatures += count_line_based_signatures(dbfile);
+
         } else {
             load_priority = DB_LOAD_PRIORITY_NORMAL;
+
+            engine->num_total_signatures += count_signatures(dbfile, engine, options);
         }
 
         entry = malloc(sizeof(*entry));
         if (NULL == entry) {
-            cli_errmsg("cli_loaddbdir(): entry == NULL\n");
+            cli_errmsg("cli_loaddbdir: failed to allocate memory for database load list entry\n");
             ret = CL_EMEM;
             goto done;
         }
@@ -4682,7 +4838,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
 
         ret = cli_load(iter->path, engine, signo, options, NULL);
         if (ret) {
-            cli_errmsg("cli_loaddbdir(): error loading database %s\n", iter->path);
+            cli_errmsg("cli_loaddbdir: error loading database %s\n", iter->path);
             goto done;
         }
     }
@@ -4711,7 +4867,7 @@ done:
     }
 
     if (ret == CL_EOPEN)
-        cli_errmsg("cli_loaddbdir(): No supported database files found in %s\n", dirname);
+        cli_errmsg("cli_loaddbdir: No supported database files found in %s\n", dirname);
 
     return ret;
 }
@@ -4783,16 +4939,25 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 
     switch (sb.st_mode & S_IFMT) {
         case S_IFREG:
+            /* Count # of sigs in the database now */
+            engine->num_total_signatures += count_signatures(path, engine, dboptions);
+
             ret = cli_load(path, engine, signo, dboptions, NULL);
             break;
 
         case S_IFDIR:
+            /* Count # of signatures inside cli_loaddbdir(), before loading */
             ret = cli_loaddbdir(path, engine, signo, dboptions | CL_DB_DIRECTORY);
             break;
 
         default:
             cli_errmsg("cl_load(%s): Not supported database file type\n", path);
             return CL_EOPEN;
+    }
+
+    if (engine->cb_sigload_progress) {
+        /* Let the progress callback function know we're done! */
+        (void)engine->cb_sigload_progress(*signo, *signo, engine->cb_sigload_progress_ctx);
     }
 
 #ifdef YARA_PROTO
@@ -5034,6 +5199,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     unsigned int i, j;
     struct cli_matcher *root;
 
+    size_t tasks_to_do    = 0;
+    size_t tasks_complete = 0;
+
     if (!engine) {
         cli_errmsg("cl_free: engine == NULL\n");
         return CL_ENULLARG;
@@ -5065,54 +5233,148 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
+
     if (engine->stats_data)
         free(engine->stats_data);
+
+    /*
+     * Pre-calculate number of "major" tasks to complete for the progress callback
+     */
+    if (engine->root) {
+        for (i = 0; i < CLI_MTARGETS; i++) {
+            if ((root = engine->root[i])) {
+                if (!root->ac_only) {
+                    tasks_to_do += 1; // bm root
+                }
+                tasks_to_do += 1; // ac root
+                if (root->ac_lsigtable) {
+                    tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
+                    tasks_to_do += 1;                     // ac lsig table
+                }
+#if HAVE_PCRE
+                tasks_to_do += 1; // pcre table
+#endif
+                tasks_to_do += 1; // root mempool
+            }
+        }
+        tasks_to_do += 1; // engine root mempool
+    }
+    tasks_to_do += 7; // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
+
+    if (engine->dconf) {
+        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+            if (engine->bcs.all_bcs) {
+                tasks_to_do += engine->bcs.count;
+            }
+            tasks_to_do += 1; // bytecode done
+            tasks_to_do += 1; // bytecode hooks
+        }
+
+        if (engine->dconf->phishing & PHISHING_CONF_ENGINE) {
+            tasks_to_do += 1; // phishing cleanup
+        }
+
+        tasks_to_do += 1; // dconf mempool
+    }
+    tasks_to_do += 7; // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
+
+    if (engine->test_root) {
+        root = engine->test_root;
+        if (!root->ac_only) {
+            tasks_to_do += 1; // bm root
+        }
+        tasks_to_do += 1; // ac root
+        if (root->ac_lsigtable) {
+            tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
+            tasks_to_do += 1;                     // ac lsig table
+        }
+#if HAVE_PCRE
+        tasks_to_do += 1; // pcre table
+#endif
+        tasks_to_do += 1; // engine root mempool
+    }
+
+#ifdef USE_MPOOL
+    tasks_to_do += 1; // mempool
+#endif
+
+#ifdef HAVE_YARA
+    tasks_to_do += 1; // yara
+#endif
+
+    /*
+     * Ok, now actually free everything.
+     */
+#define TASK_COMPLETE()                           \
+    if (engine->cb_engine_free_progress) {        \
+        (void)engine->cb_engine_free_progress(    \
+            tasks_to_do,                          \
+            ++tasks_complete,                     \
+            engine->cb_engine_free_progress_ctx); \
+    }
 
     if (engine->root) {
         for (i = 0; i < CLI_MTARGETS; i++) {
             if ((root = engine->root[i])) {
-                if (!root->ac_only)
+                if (!root->ac_only) {
                     cli_bm_free(root);
+                    TASK_COMPLETE();
+                }
+
                 cli_ac_free(root);
+                TASK_COMPLETE();
+
                 if (root->ac_lsigtable) {
                     for (j = 0; j < root->ac_lsigs; j++) {
                         if (root->ac_lsigtable[j]->type == CLI_LSIG_NORMAL)
                             MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]->u.logic);
                         FREE_TDB(root->ac_lsigtable[j]->tdb);
                         MPOOL_FREE(engine->mempool, root->ac_lsigtable[j]);
+
+                        TASK_COMPLETE();
                     }
+
                     MPOOL_FREE(engine->mempool, root->ac_lsigtable);
+                    TASK_COMPLETE();
                 }
 #if HAVE_PCRE
                 cli_pcre_freetable(root);
+                TASK_COMPLETE();
 #endif /* HAVE_PCRE */
                 MPOOL_FREE(engine->mempool, root);
+                TASK_COMPLETE();
             }
         }
         MPOOL_FREE(engine->mempool, engine->root);
+        TASK_COMPLETE();
     }
 
     if ((root = engine->hm_hdb)) {
         hm_free(root);
         MPOOL_FREE(engine->mempool, root);
     }
+    TASK_COMPLETE();
 
     if ((root = engine->hm_mdb)) {
         hm_free(root);
         MPOOL_FREE(engine->mempool, root);
     }
+    TASK_COMPLETE();
 
     if ((root = engine->hm_imp)) {
         hm_free(root);
         MPOOL_FREE(engine->mempool, root);
     }
+    TASK_COMPLETE();
 
     if ((root = engine->hm_fp)) {
         hm_free(root);
         MPOOL_FREE(engine->mempool, root);
     }
+    TASK_COMPLETE();
 
     crtmgr_free(&engine->cmgr);
+    TASK_COMPLETE();
 
     while (engine->cdb) {
         struct cli_cdb *pt = engine->cdb;
@@ -5123,6 +5385,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         MPOOL_FREE(engine->mempool, pt->virname);
         MPOOL_FREE(engine->mempool, pt);
     }
+    TASK_COMPLETE();
 
     while (engine->dbinfo) {
         struct cli_dbinfo *pt = engine->dbinfo;
@@ -5133,23 +5396,35 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
             cl_cvdfree(pt->cvd);
         MPOOL_FREE(engine->mempool, pt);
     }
+    TASK_COMPLETE();
 
     if (engine->dconf) {
         if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-            if (engine->bcs.all_bcs)
-                for (i = 0; i < engine->bcs.count; i++)
+            if (engine->bcs.all_bcs) {
+                for (i = 0; i < engine->bcs.count; i++) {
                     cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+                    TASK_COMPLETE();
+                }
+            }
+
             cli_bytecode_done(&engine->bcs);
+            TASK_COMPLETE();
+
             free(engine->bcs.all_bcs);
+
             for (i = 0; i < _BC_LAST_HOOK - _BC_START_HOOKS; i++) {
                 free(engine->hooks[i]);
             }
+            TASK_COMPLETE();
         }
 
-        if (engine->dconf->phishing & PHISHING_CONF_ENGINE)
+        if (engine->dconf->phishing & PHISHING_CONF_ENGINE) {
             phishing_done(engine);
+            TASK_COMPLETE();
+        }
 
         MPOOL_FREE(engine->mempool, engine->dconf);
+        TASK_COMPLETE();
     }
 
     if (engine->pwdbs) {
@@ -5158,9 +5433,12 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
                 cli_pwdb_list_free(engine, engine->pwdbs[i]);
         MPOOL_FREE(engine->mempool, engine->pwdbs);
     }
+    TASK_COMPLETE();
 
-    if (engine->pua_cats)
+    if (engine->pua_cats) {
         MPOOL_FREE(engine->mempool, engine->pua_cats);
+    }
+    TASK_COMPLETE();
 
     if (engine->iconcheck) {
         struct icon_matcher *iconcheck = engine->iconcheck;
@@ -5185,47 +5463,68 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         }
         MPOOL_FREE(engine->mempool, iconcheck);
     }
+    TASK_COMPLETE();
 
-    if (engine->tmpdir)
+    if (engine->tmpdir) {
         MPOOL_FREE(engine->mempool, engine->tmpdir);
+    }
+    TASK_COMPLETE();
 
-    if (engine->cache)
+    if (engine->cache) {
         cli_cache_destroy(engine);
+    }
+    TASK_COMPLETE();
 
     cli_ftfree(engine);
+    TASK_COMPLETE();
+
     if (engine->ignored) {
         cli_bm_free(engine->ignored);
         MPOOL_FREE(engine->mempool, engine->ignored);
     }
+    TASK_COMPLETE();
+
     if (engine->test_root) {
         root = engine->test_root;
-        if (!root->ac_only)
+        if (!root->ac_only) {
             cli_bm_free(root);
+            TASK_COMPLETE();
+        }
         cli_ac_free(root);
+        TASK_COMPLETE();
+
         if (root->ac_lsigtable) {
             for (i = 0; i < root->ac_lsigs; i++) {
                 if (root->ac_lsigtable[i]->type == CLI_LSIG_NORMAL)
                     MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]->u.logic);
                 FREE_TDB(root->ac_lsigtable[i]->tdb);
                 MPOOL_FREE(engine->mempool, root->ac_lsigtable[i]);
+
+                TASK_COMPLETE();
             }
             MPOOL_FREE(engine->mempool, root->ac_lsigtable);
+            TASK_COMPLETE();
         }
 #if HAVE_PCRE
         cli_pcre_freetable(root);
+        TASK_COMPLETE();
 #endif /* HAVE_PCRE */
         MPOOL_FREE(engine->mempool, root);
+        TASK_COMPLETE();
     }
 
 #ifdef USE_MPOOL
     if (engine->mempool) mpool_destroy(engine->mempool);
+    TASK_COMPLETE();
 #endif
 
 #ifdef HAVE_YARA
     cli_yara_free(engine);
+    TASK_COMPLETE();
 #endif
 
     free(engine);
+
     return CL_SUCCESS;
 }
 
@@ -5235,8 +5534,60 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     cl_error_t ret;
     struct cli_matcher *root;
 
-    if (!engine)
+    size_t tasks_to_do    = 0;
+    size_t tasks_complete = 0;
+
+    if (!engine) {
         return CL_ENULLARG;
+    }
+
+    /*
+     * Pre-calculate number of "major" tasks to complete for the progress callback
+     */
+#ifdef HAVE_YARA
+    tasks_to_do += 1; // yara free
+#endif
+    tasks_to_do += 1; // load ftm
+
+    tasks_to_do += 1; // load pwdb
+
+    for (i = 0; i < CLI_MTARGETS; i++) {
+        if ((root = engine->root[i])) {
+            tasks_to_do += 1; // build ac trie
+#if HAVE_PCRE
+            tasks_to_do += 1; // compile pcre regex
+#endif
+        }
+    }
+    tasks_to_do += 1; // flush hdb
+    tasks_to_do += 1; // flush mdb
+    tasks_to_do += 1; // flush imp
+    tasks_to_do += 1; // flush fp
+    tasks_to_do += 1; // build allow list regex list
+    tasks_to_do += 1; // build domain list regex list
+    if (engine->ignored) {
+        tasks_to_do += 1; // free list of ignored sigs (no longer needed)
+    }
+    if (engine->test_root) {
+        tasks_to_do += 1; // free test root (no longer needed)
+    }
+    tasks_to_do += 1; // prepare bytecode sigs
+                      // Note: Adding a task to compile each bytecode is doable
+                      //       but would be painful to implement. For now, just
+                      //       having it all as one task should be good enough.
+
+    /*
+     * Ok, now actually compile everything.
+     */
+#undef TASK_COMPLETE
+#define TASK_COMPLETE()                              \
+    if (engine->cb_engine_compile_progress) {        \
+        (void)engine->cb_engine_compile_progress(    \
+            tasks_to_do,                             \
+            ++tasks_complete,                        \
+            engine->cb_engine_compile_progress_ctx); \
+    }
+
 #ifdef HAVE_YARA
     /* Free YARA hash tables - only needed for parse and load */
     if (engine->yara_global != NULL) {
@@ -5246,24 +5597,29 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
             yr_hash_table_destroy(engine->yara_global->objects_table, NULL);
         engine->yara_global->rules_table = engine->yara_global->objects_table = NULL;
     }
+    TASK_COMPLETE();
 #endif
 
     if (!engine->ftypes)
         if ((ret = cli_loadftm(NULL, engine, 0, 1, NULL)))
             return ret;
+    TASK_COMPLETE();
 
     /* handle default passwords */
     if (!engine->pwdbs[0] && !engine->pwdbs[1] && !engine->pwdbs[2])
         if ((ret = cli_loadpwdb(NULL, engine, 0, 1, NULL)))
             return ret;
+    TASK_COMPLETE();
 
     for (i = 0; i < CLI_MTARGETS; i++) {
         if ((root = engine->root[i])) {
             if ((ret = cli_ac_buildtrie(root)))
                 return ret;
+            TASK_COMPLETE();
 #if HAVE_PCRE
             if ((ret = cli_pcre_build(root, engine->pcre_match_limit, engine->pcre_recmatch_limit, engine->dconf)))
                 return ret;
+            TASK_COMPLETE();
 
             cli_dbgmsg("Matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) PCREs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->pcre_metas, root->pcre_reloff_num, root->pcre_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 #else
@@ -5271,29 +5627,40 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 #endif
         }
     }
+
     if (engine->hm_hdb)
         hm_flush(engine->hm_hdb);
+    TASK_COMPLETE();
 
     if (engine->hm_mdb)
         hm_flush(engine->hm_mdb);
+    TASK_COMPLETE();
 
     if (engine->hm_imp)
         hm_flush(engine->hm_imp);
+    TASK_COMPLETE();
 
     if (engine->hm_fp)
         hm_flush(engine->hm_fp);
+    TASK_COMPLETE();
 
     if ((ret = cli_build_regex_list(engine->allow_list_matcher))) {
         return ret;
     }
+    TASK_COMPLETE();
+
     if ((ret = cli_build_regex_list(engine->domain_list_matcher))) {
         return ret;
     }
+    TASK_COMPLETE();
+
     if (engine->ignored) {
         cli_bm_free(engine->ignored);
         MPOOL_FREE(engine->mempool, engine->ignored);
         engine->ignored = NULL;
+        TASK_COMPLETE();
     }
+
     if (engine->test_root) {
         root = engine->test_root;
         if (!root->ac_only)
@@ -5313,7 +5680,9 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 #endif /* HAVE_PCRE */
         MPOOL_FREE(engine->mempool, root);
         engine->test_root = NULL;
+        TASK_COMPLETE();
     }
+
     cli_dconf_print(engine->dconf);
     MPOOL_FLUSH(engine->mempool);
 
@@ -5322,6 +5691,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
         cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
         return ret;
     }
+    TASK_COMPLETE();
 
     engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;

@@ -792,7 +792,7 @@ static size_t WriteFileCallback(void *contents, size_t size, size_t nmemb, void 
  * @param ifModifiedSince   modified time of local database. May be 0 to always get the CVD header.
  * @param server            server to use to retrieve for database header.
  * @param logerr            non-zero to upgrade warnings to errors.
- * @param cvd               [out] CVD header of newest available CVD, if FC_SUCCESS
+ * @param[out] cvd          CVD header of newest available CVD, if FC_SUCCESS
  * @return fc_error_t       FC_SUCCESS if CVD header obtained.
  * @return fc_error_t       FC_UPTODATE if received 304 in response to ifModifiedSince date.
  * @return fc_error_t       Another error code if failure occured.
@@ -1474,7 +1474,7 @@ done:
  * Will create the temp dir if it does not already exist.
  *
  * @param database      The database we're updating.
- * @param tmpdir        [out] The name of the temp dir to use.
+ * @param[out] tmpdir   The name of the temp dir to use.
  * @return fc_error_t
  */
 static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char *tmpdir)
@@ -1645,7 +1645,7 @@ done:
  * @brief Get CVD header info for local CVD/CLD database.
  *
  * @param database          Database name
- * @param localname         [out] (optional) filename of local database.
+ * @param[out] localname    (optional) filename of local database.
  * @return struct cl_cvd*   CVD info struct of local database, if found. NULL if not found.
  */
 static struct cl_cvd *currentdb(const char *database, char **localname)

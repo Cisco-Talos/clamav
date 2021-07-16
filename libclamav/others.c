@@ -948,16 +948,22 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
     settings->bytecode_mode      = engine->bytecode_mode;
     settings->pua_cats           = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
 
-    settings->cb_pre_cache   = engine->cb_pre_cache;
-    settings->cb_pre_scan    = engine->cb_pre_scan;
-    settings->cb_post_scan   = engine->cb_post_scan;
-    settings->cb_virus_found = engine->cb_virus_found;
-    settings->cb_sigload     = engine->cb_sigload;
-    settings->cb_sigload_ctx = engine->cb_sigload_ctx;
-    settings->cb_hash        = engine->cb_hash;
-    settings->cb_meta        = engine->cb_meta;
-    settings->cb_file_props  = engine->cb_file_props;
-    settings->engine_options = engine->engine_options;
+    settings->cb_pre_cache                   = engine->cb_pre_cache;
+    settings->cb_pre_scan                    = engine->cb_pre_scan;
+    settings->cb_post_scan                   = engine->cb_post_scan;
+    settings->cb_virus_found                 = engine->cb_virus_found;
+    settings->cb_sigload                     = engine->cb_sigload;
+    settings->cb_sigload_ctx                 = engine->cb_sigload_ctx;
+    settings->cb_sigload_progress            = engine->cb_sigload_progress;
+    settings->cb_sigload_progress_ctx        = engine->cb_sigload_progress_ctx;
+    settings->cb_engine_compile_progress     = engine->cb_engine_compile_progress;
+    settings->cb_engine_compile_progress_ctx = engine->cb_engine_compile_progress_ctx;
+    settings->cb_engine_free_progress        = engine->cb_engine_free_progress;
+    settings->cb_engine_free_progress_ctx    = engine->cb_engine_free_progress_ctx;
+    settings->cb_hash                        = engine->cb_hash;
+    settings->cb_meta                        = engine->cb_meta;
+    settings->cb_file_props                  = engine->cb_file_props;
+    settings->engine_options                 = engine->engine_options;
 
     settings->cb_stats_add_sample      = engine->cb_stats_add_sample;
     settings->cb_stats_remove_sample   = engine->cb_stats_remove_sample;
@@ -1023,15 +1029,21 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
         engine->pua_cats = NULL;
     }
 
-    engine->cb_pre_cache   = settings->cb_pre_cache;
-    engine->cb_pre_scan    = settings->cb_pre_scan;
-    engine->cb_post_scan   = settings->cb_post_scan;
-    engine->cb_virus_found = settings->cb_virus_found;
-    engine->cb_sigload     = settings->cb_sigload;
-    engine->cb_sigload_ctx = settings->cb_sigload_ctx;
-    engine->cb_hash        = settings->cb_hash;
-    engine->cb_meta        = settings->cb_meta;
-    engine->cb_file_props  = settings->cb_file_props;
+    engine->cb_pre_cache                   = settings->cb_pre_cache;
+    engine->cb_pre_scan                    = settings->cb_pre_scan;
+    engine->cb_post_scan                   = settings->cb_post_scan;
+    engine->cb_virus_found                 = settings->cb_virus_found;
+    engine->cb_sigload                     = settings->cb_sigload;
+    engine->cb_sigload_ctx                 = settings->cb_sigload_ctx;
+    engine->cb_sigload_progress            = settings->cb_sigload_progress;
+    engine->cb_sigload_progress_ctx        = settings->cb_sigload_progress_ctx;
+    engine->cb_engine_compile_progress     = settings->cb_engine_compile_progress;
+    engine->cb_engine_compile_progress_ctx = settings->cb_engine_compile_progress_ctx;
+    engine->cb_engine_free_progress        = settings->cb_engine_free_progress;
+    engine->cb_engine_free_progress_ctx    = settings->cb_engine_free_progress_ctx;
+    engine->cb_hash                        = settings->cb_hash;
+    engine->cb_meta                        = settings->cb_meta;
+    engine->cb_file_props                  = settings->cb_file_props;
 
     engine->cb_stats_add_sample      = settings->cb_stats_add_sample;
     engine->cb_stats_remove_sample   = settings->cb_stats_remove_sample;
@@ -1622,6 +1634,24 @@ void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback,
 {
     engine->cb_sigload     = callback;
     engine->cb_sigload_ctx = callback ? context : NULL;
+}
+
+void cl_engine_set_clcb_sigload_progress(struct cl_engine *engine, clcb_progress callback, void *context)
+{
+    engine->cb_sigload_progress     = callback;
+    engine->cb_sigload_progress_ctx = callback ? context : NULL;
+}
+
+void cl_engine_set_clcb_engine_compile_progress(struct cl_engine *engine, clcb_progress callback, void *context)
+{
+    engine->cb_engine_compile_progress     = callback;
+    engine->cb_engine_compile_progress_ctx = callback ? context : NULL;
+}
+
+void cl_engine_set_clcb_engine_free_progress(struct cl_engine *engine, clcb_progress callback, void *context)
+{
+    engine->cb_engine_free_progress     = callback;
+    engine->cb_engine_free_progress_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_hash(struct cl_engine *engine, clcb_hash callback)
