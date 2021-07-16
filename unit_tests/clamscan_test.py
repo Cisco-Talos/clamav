@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2020-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 """
 Run clamscan tests.
@@ -25,14 +25,14 @@ class TC(testcase.TestCase):
     def setUpClass(cls):
         super(TC, cls).setUpClass()
 
-        TC.testpaths = list(TC.path_build.glob('test/clam*')) # A list of Path()'s of each of our generated test files
+        TC.testpaths = list(TC.path_build.glob('unit_tests/input/clamav_hdb_scanfiles/clam*')) # A list of Path()'s of each of our generated test files
 
         # Prepare a directory to store our test databases
         TC.path_db = TC.path_tmp / 'database'
         TC.path_db.mkdir(parents=True)
 
         shutil.copy(
-            str(TC.path_build / 'unit_tests' / 'clamav.hdb'),
+            str(TC.path_build / 'unit_tests' / 'input' / 'clamav.hdb'),
             str(TC.path_db),
         )
 
@@ -119,7 +119,7 @@ class TC(testcase.TestCase):
     def test_clamscan_03_phish_test_not_enabled(self):
         self.step_name('Test that clamscan will load the phishing sigs w/out issue')
 
-        testpaths = list(TC.path_source.glob('unit_tests/input/phish-test-*'))
+        testpaths = list(TC.path_source.glob('unit_tests/input/other_scanfiles/phish-test-*'))
 
         testfiles = ' '.join([str(testpath) for testpath in testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
@@ -138,7 +138,7 @@ class TC(testcase.TestCase):
     def test_clamscan_04_phish_test_alert_phishing_ssl_alert_phishing_cloak(self):
         self.step_name('Test clamscan --alert-phishing-ssl --alert-phishing-cloak')
 
-        testpaths = list(TC.path_source.glob('unit_tests/input/phish-test-*'))
+        testpaths = list(TC.path_source.glob('unit_tests/input/other_scanfiles/phish-test-*'))
 
         testfiles = ' '.join([str(testpath) for testpath in testpaths])
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} --alert-phishing-ssl --alert-phishing-cloak {testfiles}'.format(
@@ -215,7 +215,7 @@ class TC(testcase.TestCase):
         expected_results = [
             'clam.tar.gz: YARA.yara_at_offset.UNOFFICIAL FOUND',
             'clam_cache_emax.tgz: YARA.yara_at_offset.UNOFFICIAL FOUND',
-            'Infected files: 2',
+            'Infected files: 3',
         ]
         self.verify_output(output.out, expected=expected_results)
 
@@ -233,6 +233,6 @@ class TC(testcase.TestCase):
         expected_results = [
             'clam.tar.gz: YARA.yara_in_range.UNOFFICIAL FOUND',
             'clam_cache_emax.tgz: YARA.yara_in_range.UNOFFICIAL FOUND',
-            'Infected files: 2',
+            'Infected files: 3',
         ]
         self.verify_output(output.out, expected=expected_results)

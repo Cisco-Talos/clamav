@@ -136,7 +136,7 @@ static void conn_teardown(void)
 #define REPO_VERSION VERSION
 #endif
 
-#define SCANFILE OBJDIR PATHSEP ".." PATHSEP "test" PATHSEP "clam.exe"
+#define SCANFILE OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe"
 #define FOUNDREPLY "clam.exe: ClamAV-Test-File.UNOFFICIAL FOUND"
 
 /* some clean file */

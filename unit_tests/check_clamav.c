@@ -423,7 +423,7 @@ END_TEST
 static char **testfiles     = NULL;
 static unsigned testfiles_n = 0;
 
-static const int expected_testfiles = 48;
+static const int expected_testfiles = 49;
 
 static unsigned skip_files(void)
 {
@@ -456,7 +456,7 @@ static void init_testfiles(void)
     unsigned i = 0;
     int expect = expected_testfiles;
 
-    DIR *d = opendir(OBJDIR PATHSEP ".." PATHSEP "test");
+    DIR *d = opendir(OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles");
     ck_assert_msg(!!d, "opendir");
     if (!d)
         return;
@@ -495,7 +495,7 @@ static int inited = 0;
 static void engine_setup(void)
 {
     unsigned int sigs = 0;
-    const char *hdb   = OBJDIR PATHSEP "clamav.hdb";
+    const char *hdb   = OBJDIR PATHSEP "input" PATHSEP "clamav.hdb";
 
     init_testfiles();
     if (!inited)
@@ -520,7 +520,7 @@ static int get_test_file(int i, char *file, unsigned fsize, unsigned long *size)
     STATBUF st;
 
     ck_assert_msg(i < testfiles_n, "%i < %i %s", i, testfiles_n, file);
-    snprintf(file, fsize, OBJDIR PATHSEP ".." PATHSEP "test" PATHSEP "%s", testfiles[i]);
+    snprintf(file, fsize, OBJDIR PATHSEP "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "%s", testfiles[i]);
 
     fd = open(file, O_RDONLY | O_BINARY);
     ck_assert_msg(fd > 0, "open");

@@ -892,7 +892,6 @@ endif()
 include(CTest)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 if(ENABLE_TESTS)
-    add_subdirectory( test )
     add_subdirectory( unit_tests )
 endif()
 
