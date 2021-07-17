@@ -626,7 +626,7 @@ void *mpool_malloc(struct MP *mp, size_t size)
 
     /*  check_all(mp); */
     if (!size || sbits == FRAGSBITS) {
-        cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long)size);
+        cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long)size);
         return NULL;
     }
 
@@ -651,7 +651,7 @@ void *mpool_malloc(struct MP *mp, size_t size)
     }
 
     if (!(needed = from_bits(sbits))) {
-        cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long)size);
+        cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long)size);
         return NULL;
     }
 
@@ -735,7 +735,7 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
     if (!ptr) return mpool_malloc(mp, size);
 
     if (!size || !(csize = from_bits(f->u.a.sbits))) {
-        cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to https://bugzilla.clamav.net\n", (unsigned long)size);
+        cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long)size);
         return NULL;
     }
     csize -= FRAG_OVERHEAD + f->u.a.padding;
@@ -789,7 +789,7 @@ char *cli_mpool_strdup(mpool_t *mp, const char *s)
     size_t strsz;
 
     if (s == NULL) {
-        cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to https://bugzilla.clamav.net\n");
+        cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         return NULL;
     }
 
@@ -808,7 +808,7 @@ char *cli_mpool_strndup(mpool_t *mp, const char *s, size_t n)
     size_t strsz;
 
     if (s == NULL) {
-        cli_errmsg("cli_mpool_strndup(): s == NULL. Please report to https://bugzilla.clamav.net\n");
+        cli_errmsg("cli_mpool_strndup(): s == NULL. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         return NULL;
     }
 

@@ -479,11 +479,11 @@ void fileblobDestroy(fileblob *fb)
     } else if (fb->b.data) {
         free(fb->b.data);
         if (fb->b.name) {
-            cli_errmsg("fileblobDestroy: %s not saved: report to https://bugzilla.clamav.net\n",
+            cli_errmsg("fileblobDestroy: %s not saved: report to https://github.com/Cisco-Talos/clamav/issues\n",
                        (fb->fullname) ? fb->fullname : fb->b.name);
             free(fb->b.name);
         } else
-            cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to https://bugzilla.clamav.net\n",
+            cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to https://github.com/Cisco-Talos/clamav/issues\n",
                        (unsigned long)fb->b.len);
     }
     if (fb->fullname)

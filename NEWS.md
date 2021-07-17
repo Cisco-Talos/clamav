@@ -596,7 +596,7 @@ changes.
   - With `clamonacc`, it is now possible to copy, move, or remove a file if the
     scan triggered an alert, just like with `clamdscan`.
   For details on how to use the new `clamonacc` On-Access scanner, please
-  refer to the user manual on [ClamAV.net](http://www.clamav.net/documents/),
+  refer to the user manual on [ClamAV.net](https://docs.clamav.net/),
   and keep an eye out for a new blog post on the topic
 - The `freshclam` database update utility has undergone a significant update.
   This includes:
@@ -613,7 +613,7 @@ changes.
   This was necessary because the UnEgg library's license includes restrictions
   limiting the commercial use of the UnEgg library.
 - The documentation has moved!
-  - Users should navigate to [ClamAV.net](http://www.clamav.net/documents/)
+  - Users should navigate to [ClamAV.net](https://docs.clamav.net/)
     to view the documentation online.
   - The documentation will continue to be provided in HTML format with each
     release for offline viewing in the `docs/html` directory.
@@ -1944,7 +1944,7 @@ The following are the key features of this release:
   phishing and malware sites. The ClamAV Project distributes a constantly
   updated Safe Browsing database, which can be automatically fetched by
   freshclam. For more information, please see freshclam.conf(5) and
-  https://www.clamav.net/documents/safebrowsing.
+  https://docs.clamav.net/faq/faq-safebrowsing.html.
 
 - New clamav-milter: The program has been redesigned and rewritten from
   scratch. The most notable difference is that the internal mode has been
@@ -3178,7 +3178,6 @@ the highest possible level.
 New mirroring mechanisms. Luca Gibelli (ClamAV) and mirror administrators
 (22 sites) are converting mirrors to new "push mirroring"
 method. It uses advanced techniques to ensure all the mirrors are up to date.
-More info: https://www.clamav.net/documents/introduction
 
 We would like to thank our donors:
 
