@@ -2438,7 +2438,7 @@ fc_error_t updatedb(
     if (flevel < cvd->fl) {
         logg("^Your ClamAV installation is OUTDATED!\n");
         logg("^Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
-        logg("DON'T PANIC! Read https://www.clamav.net/documents/installing-clamav\n");
+        logg("DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
     }
 
     *signo      = cvd->sigs;
@@ -2648,7 +2648,7 @@ fc_error_t updatecustomdb(
         if (flevel < cvd->fl) {
             logg("^Your ClamAV installation is OUTDATED!\n");
             logg("^Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
-            logg("DON'T PANIC! Read https://www.clamav.net/documents/installing-clamav\n");
+            logg("DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
         }
 
         cl_cvdfree(cvd);

@@ -3,7 +3,7 @@
 
 [Unit]
 Description=ClamAV On-Access Scanner
-Documentation=man:clamonacc(8) man:clamd.conf(5) https://www.clamav.net/documents
+Documentation=man:clamonacc(8) man:clamd.conf(5) https://docs.clamav.net/
 Requires=clamav-daemon.service
 After=clamav-daemon.service syslog.target network.target
 
