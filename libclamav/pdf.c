@@ -3102,7 +3102,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 
     len = obj->size;
     q   = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                        : (const char *)(obj->start + pdf->map);
+                      : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {

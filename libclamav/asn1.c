@@ -371,8 +371,8 @@ typedef struct _oid_alternative {
     const int context[2];
 } oid_alternative_t;
 
-static const oid_alternative_t* asn1_expect_algo_multi(fmap_t *map, const void **asn1data, unsigned int *asn1len,
-                                         const oid_alternative_t alts[], unsigned int alts_count)
+static const oid_alternative_t *asn1_expect_algo_multi(fmap_t *map, const void **asn1data, unsigned int *asn1len,
+                                                       const oid_alternative_t alts[], unsigned int alts_count)
 {
     struct cli_asn1 obj;
     unsigned int avail;
@@ -391,8 +391,7 @@ static const oid_alternative_t* asn1_expect_algo_multi(fmap_t *map, const void *
         return NULL;
     }
 
-    if (0 == obj.size)
-    {
+    if (0 == obj.size) {
         cli_dbgmsg("asn1_expect_algo_multi: Unexpected length value of zero when parsing OID obj\n");
         return NULL;
     }
@@ -402,23 +401,19 @@ static const oid_alternative_t* asn1_expect_algo_multi(fmap_t *map, const void *
         return NULL;
     }
 
-    for (i = 0; i < alts_count; i++)
-    {
+    for (i = 0; i < alts_count; i++) {
         oid_alt_ptr = &(alts[i]);
 
-        if (obj.size != oid_alt_ptr->oid_bytes_len)
-        {
+        if (obj.size != oid_alt_ptr->oid_bytes_len) {
             continue;
         }
 
-        if (!memcmp(obj.content, oid_alt_ptr->oid_bytes, obj.size))
-        {
+        if (!memcmp(obj.content, oid_alt_ptr->oid_bytes, obj.size)) {
             break;
         }
     }
 
-    if (NULL == oid_alt_ptr)
-    {
+    if (NULL == oid_alt_ptr) {
         cli_dbgmsg("asn1_expect_algo_multi: Failed to find valid OID alternative\n");
         return NULL;
     }
@@ -442,21 +437,20 @@ static int asn1_expect_hash_algo(fmap_t *map, const void **asn1data, unsigned in
     const oid_alternative_t *ret;
 
     static const oid_alternative_t alts[] = {
-        {OID_sha1,                    lenof(OID_sha1),                    {CLI_SHA1RSA,   SHA1_HASH_SIZE}},
-        {OID_sha1WithRSAEncryption,   lenof(OID_sha1WithRSAEncryption),   {CLI_SHA1RSA,   SHA1_HASH_SIZE}},
-        {OID_md5,                     lenof(OID_md5),                     {CLI_MD5RSA,    MD5_HASH_SIZE}},
-        {OID_md5WithRSAEncryption,    lenof(OID_md5WithRSAEncryption),    {CLI_MD5RSA,    MD5_HASH_SIZE}},
-        {OID_sha256,                  lenof(OID_sha256),                  {CLI_SHA256RSA, SHA256_HASH_SIZE}},
+        {OID_sha1, lenof(OID_sha1), {CLI_SHA1RSA, SHA1_HASH_SIZE}},
+        {OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption), {CLI_SHA1RSA, SHA1_HASH_SIZE}},
+        {OID_md5, lenof(OID_md5), {CLI_MD5RSA, MD5_HASH_SIZE}},
+        {OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption), {CLI_MD5RSA, MD5_HASH_SIZE}},
+        {OID_sha256, lenof(OID_sha256), {CLI_SHA256RSA, SHA256_HASH_SIZE}},
         {OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption), {CLI_SHA256RSA, SHA256_HASH_SIZE}},
-        {OID_sha384,                  lenof(OID_sha384),                  {CLI_SHA384RSA, SHA384_HASH_SIZE}},
+        {OID_sha384, lenof(OID_sha384), {CLI_SHA384RSA, SHA384_HASH_SIZE}},
         {OID_sha384WithRSAEncryption, lenof(OID_sha384WithRSAEncryption), {CLI_SHA384RSA, SHA384_HASH_SIZE}},
-        {OID_sha512,                  lenof(OID_sha512),                  {CLI_SHA512RSA, SHA512_HASH_SIZE}},
+        {OID_sha512, lenof(OID_sha512), {CLI_SHA512RSA, SHA512_HASH_SIZE}},
         {OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption), {CLI_SHA512RSA, SHA512_HASH_SIZE}},
     };
 
-    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts)/sizeof(alts[0]));
-    if (NULL == ret)
-    {
+    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts) / sizeof(alts[0]));
+    if (NULL == ret) {
         cli_dbgmsg("asn1_expect_hash_algo: Failed to find valid OID alternative for hash algo\n");
         return 1;
     }
@@ -472,19 +466,19 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
 
     static const oid_alternative_t alts[] = {
         /* Obsolete sha1rsa 1.3.14.3.2.29 */
-        {OID_sha1WithRSA,           lenof(OID_sha1WithRSA),               {CLI_SHA1RSA, 0}},
+        {OID_sha1WithRSA, lenof(OID_sha1WithRSA), {CLI_SHA1RSA, 0}},
 
         /* sha1withRSAEncryption 1.2.840.113549.1.1.5 */
-        {OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption),     {CLI_SHA1RSA, 0}},
+        {OID_sha1WithRSAEncryption, lenof(OID_sha1WithRSAEncryption), {CLI_SHA1RSA, 0}},
 
         /* md5withRSAEncryption 1.2.840.113549.1.1.4 */
-        {OID_md5WithRSAEncryption,  lenof(OID_md5WithRSAEncryption),      {CLI_MD5RSA, 0}},
+        {OID_md5WithRSAEncryption, lenof(OID_md5WithRSAEncryption), {CLI_MD5RSA, 0}},
 
         /* rsaEncryption 1.2.840.113549.1.1.1 */
-        {OID_rsaEncryption,         lenof(OID_rsaEncryption),             {CLI_RSA, 0}},
+        {OID_rsaEncryption, lenof(OID_rsaEncryption), {CLI_RSA, 0}},
 
         /* md2withRSAEncryption 1.2.840.113549.1.1.2 */
-        {OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption),       {CLI_MD2RSA, 0}},
+        {OID_md2WithRSAEncryption, lenof(OID_md2WithRSAEncryption), {CLI_MD2RSA, 0}},
 
         /* sha256WithRSAEncryption 1.2.840.113549.1.1.11 */
         {OID_sha256WithRSAEncryption, lenof(OID_sha256WithRSAEncryption), {CLI_SHA256RSA, 0}},
@@ -496,9 +490,8 @@ static int asn1_expect_rsa(fmap_t *map, const void **asn1data, unsigned int *asn
         {OID_sha512WithRSAEncryption, lenof(OID_sha512WithRSAEncryption), {CLI_SHA512RSA, 0}},
     };
 
-    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts)/sizeof(alts[0]));
-    if (NULL == ret)
-    {
+    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts) / sizeof(alts[0]));
+    if (NULL == ret) {
         cli_dbgmsg("asn1_expect_rsa: Failed to find valid OID alternative for RSA algo\n");
         return 1;
     }
@@ -512,13 +505,12 @@ static int asn1_expect_list_member(fmap_t *map, const void **asn1data, unsigned 
     const oid_alternative_t *ret;
 
     static const oid_alternative_t alts[] = {
-        {OID_szOID_CATALOG_LIST_MEMBER,  lenof(OID_szOID_CATALOG_LIST_MEMBER),  {0, 0}},
+        {OID_szOID_CATALOG_LIST_MEMBER, lenof(OID_szOID_CATALOG_LIST_MEMBER), {0, 0}},
         {OID_szOID_CATALOG_LIST_MEMBER2, lenof(OID_szOID_CATALOG_LIST_MEMBER2), {0, 0}},
     };
 
-    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts)/sizeof(alts[0]));
-    if (NULL == ret)
-    {
+    ret = asn1_expect_algo_multi(map, asn1data, asn1len, alts, sizeof(alts) / sizeof(alts[0]));
+    if (NULL == ret) {
         cli_dbgmsg("asn1_expect_list_member: Failed to find valid OID alternative for list member algo\n");
         return 1;
     }
@@ -2294,16 +2286,11 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
             }
 
             /* Translate hashtype to the enum used by the hasher */
-            if (CLI_SHA1RSA == hashtype)
-            {
+            if (CLI_SHA1RSA == hashtype) {
                 hm_hashtype = CLI_HASH_SHA1;
-            }
-            else if (CLI_SHA256RSA == hashtype)
-            {
+            } else if (CLI_SHA256RSA == hashtype) {
                 hm_hashtype = CLI_HASH_SHA256;
-            }
-            else
-            {
+            } else {
                 cli_dbgmsg("asn1_load_mscat: only SHA1 and SHA256 hashes are supported for .cat file sigs\n");
                 return 1;
             }

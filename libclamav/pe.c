@@ -5585,10 +5585,9 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // the section hashes), bail out if we don't have any Authenticode hashes
     // loaded from .cat files. The value 2 in these calls is the sentinel value
     // for the 'PE' .cat Authenticode hash file type.
-    if (sec_dir_size < 8 && \
-        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) && \
-        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, 2))
-    {
+    if (sec_dir_size < 8 &&
+        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 2) &&
+        !cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, 2)) {
         ret = CL_BREAK;
         goto finish;
     }
@@ -5722,13 +5721,11 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
         {CLI_HASH_SHA256, "sha256"},
     };
 
-    for (i = 0; i < (sizeof(supported_hashes)/sizeof(supported_hashes[0])); i++)
-    {
+    for (i = 0; i < (sizeof(supported_hashes) / sizeof(supported_hashes[0])); i++) {
         const enum CLI_HASH_TYPE hashtype = supported_hashes[i].hashtype;
-        const char *hashctx_name = supported_hashes[i].hashctx_name;
+        const char *hashctx_name          = supported_hashes[i].hashctx_name;
 
-        if (!cli_hm_have_size(ctx->engine->hm_fp, hashtype, 2))
-        {
+        if (!cli_hm_have_size(ctx->engine->hm_fp, hashtype, 2)) {
             continue;
         }
 
