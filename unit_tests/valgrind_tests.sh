@@ -1,11 +1,11 @@
 #!/bin/sh
-# 
+#
 # We don't look for 'still reachable' blocks, since clamd fork()s after loading
 # the DB. The parent exits without freeing the memory (but they are freed
 # anyway due to the exit).
 # To test for DB load leaks, we issue a RELOAD command, which should cause
 # leaks to be reported by valgrind if there are any.
-# 
+#
 
 test "x$VG" = "x1" || { echo "*** valgrind tests skipped by default, use 'make check VG=1' to activate"; exit 77; }
 VALGRIND=`which ${VALGRIND-valgrind}`
@@ -19,9 +19,9 @@ parse_valgrindlog()
 	fi
 	NRUNS=`grep -a "ERROR SUMMARY" $1 | wc -l`
 	if test $NRUNS -eq `grep -a "ERROR SUMMARY: 0 errors" $1 | wc -l` && test `grep -a "FATAL:" $1|wc -l ` -eq 0; then
-		if test "$1" = "valgrind-race.log" || 
+		if test "$1" = "valgrind-race.log" ||
 			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
-			test `grep "lost:" $1 | grep -v " 0 bytes" | wc -l` -eq 0; then 
+			test `grep "lost:" $1 | grep -v " 0 bytes" | wc -l` -eq 0; then
 			if test -z "$GENSUPP"; then
 			        cp $1 /tmp
 				rm -f $1;
@@ -53,7 +53,7 @@ parse_valgrindlog()
 		' <$1 | grep -Ev "Thread.+was created" | grep -v "Open"
 	fi
 	echo "***"
-	echo "*** Please submit $1 to https://bugzilla.clamav.net"
+	echo "*** Please submit $1 to https://github.com/Cisco-Talos/clamav/issues"
 	echo "***"
 }
 

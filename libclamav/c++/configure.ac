@@ -14,7 +14,7 @@ dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 dnl   MA 02110-1301, USA.
 
 AC_PREREQ([2.59])
-AC_INIT([libclamavc++],[devel],[https://bugzilla.clamav.net])
+AC_INIT([libclamavc++],[devel],[https://github.com/Cisco-Talos/clamav/issues])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])

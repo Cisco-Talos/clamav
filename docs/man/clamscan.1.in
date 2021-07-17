@@ -112,10 +112,10 @@ Collect and print execution statistics.
 Detect Possibly Unwanted Applications.
 .TP
 \fB\-\-exclude\-pua=CATEGORY\fR
-Exclude a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
+Exclude a specific PUA category. This option can be used multiple times. See https://docs.clamav.net/faq/faq-pua.html for the complete list of PUA
 .TP
 \fB\-\-include\-pua=CATEGORY\fR
-Only include a specific PUA category. This option can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA
+Only include a specific PUA category. This option can be used multiple times. See https://docs.clamav.net/faq/faq-pua.html for the complete list of PUA
 .TP
 \fB\-\-detect\-structured[=yes/no(*)]\fR
 Use the DLP (Data Loss Prevention) module to detect SSN and Credit Card numbers inside documents/text files.

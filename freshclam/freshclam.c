@@ -760,7 +760,7 @@ static fc_error_t initialize(struct optstruct *opts)
                 if (errno == 0) {
                     logg("Create the \"%s\" user account for freshclam to use, or set the DatabaseOwner config option in freshclam.conf to a different user.\n",
                          optget(opts, "DatabaseOwner")->strarg);
-                    logg("For more information, see https://www.clamav.net/documents/installing-clamav-on-unix-linux-macos-from-source\n");
+                    logg("For more information, see https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html\n");
                 } else {
                     logg("An unexpected error occurred when attempting to query the \"%s\" user account.\n",
                          optget(opts, "DatabaseOwner")->strarg);
