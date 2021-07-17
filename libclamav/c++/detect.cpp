@@ -44,7 +44,7 @@ static void warn_assumptions(const char *msg, int a, int b)
 {
     errs() << "LibClamAV Warning: libclamav and llvm make inconsistent "
            << "assumptions about " << msg << ": " << a << " and " << b << "."
-           << "Please report to https://bugzilla.clamav.net\n";
+           << "Please report to https://github.com/Cisco-Talos/clamav/issues\n";
 }
 
 #define CASE_OS(theos, compat)                                                     \

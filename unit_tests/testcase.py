@@ -294,7 +294,7 @@ class TestCase(unittest.TestCase):
         except AssertionError:
             self.log.warning("*" * 69)
             self.log.warning('Valgrind test failed!'.center(69, ' '))
-            self.log.warning('Please submit this log to https://bugzilla.clamav.net:'.center(69, ' '))
+            self.log.warning('Please submit this log to https://github.com/Cisco-Talos/clamav/issues:'.center(69, ' '))
             self.log.warning(str(log_file).center(69, ' '))
             self.log.warning("*" * 69)
             errors = True
