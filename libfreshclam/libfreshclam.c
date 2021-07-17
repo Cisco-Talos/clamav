@@ -561,7 +561,7 @@ fc_error_t fc_dns_query_update_info(
 
                 logg("^Your ClamAV installation is OUTDATED!\n");
                 logg("^Local version: %s Recommended version: %s\n", version_string, reply_token);
-                logg("DON'T PANIC! Read https://www.clamav.net/documents/upgrading-clamav\n");
+                logg("DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
                 *newVersion = cli_strdup(reply_token);
             }
         }
@@ -674,7 +674,7 @@ fc_error_t fc_update_database(
                     logg("   a. Running an up-to-date version of FreshClam\n");
                     logg("   b. Running FreshClam no more than once an hour\n");
                     logg("   c. If you have checked (a) and (b), please open a ticket at\n");
-                    logg("      https://bugzilla.clamav.net under the 'Mirrors' component\n");
+                    logg("      https://github.com/Cisco-Talos/clamav/issues\n");
                     logg("      and we will investigate why your network is blocked.\n");
                     status = ret;
                     goto done;
@@ -880,7 +880,7 @@ fc_error_t fc_download_url_database(
                 logg("   a. Running an up-to-date version of FreshClam\n");
                 logg("   b. Running FreshClam no more than once an hour\n");
                 logg("   c. If you have checked (a) and (b), please open a ticket at\n");
-                logg("      https://bugzilla.clamav.net under the 'Mirrors' component\n");
+                logg("      https://github.com/Cisco-Talos/clamav/issues\n");
                 logg("      and we will investigate why your network is blocked.\n");
                 status = ret;
                 goto done;

@@ -18,18 +18,14 @@
 ## Documentation & FAQ
 
 Official documentation can be found online at
-[ClamAV.net](https://www.clamav.net/documents).
+[ClamAV.net](https://docs.clamav.net/).
 Our source code release tarballs also includes a copy of the documentation for
 [offline](docs/html/UserManual.html) reading.
 
 ## ClamAV Signatures
 
-Anyone can learn to read and write ClamAV signatures. Take a look
-at the
-[signature writing documentation](https://www.clamav.net/documents/creating-signatures-for-clamav)
-and
-[phishing signature writing documentation](https://www.clamav.net/documents/phishsigs)
-to get started!
+Anyone can learn to read and write ClamAV signatures. To get started, see our
+[signature writing documentation](https://docs.clamav.net/manual/Signatures.html).
 
 ## Installation Instructions
 
