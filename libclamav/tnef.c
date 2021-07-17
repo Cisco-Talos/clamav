@@ -168,7 +168,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                     if (fout >= 0) {
                         size_t count;
 
-                        cli_warnmsg("Saving dump to %s:  refer to https://www.clamav.net/documents/installing-clamav\n", filename);
+                        cli_warnmsg("Saving dump to %s:  refer to https://docs.clamav.net/manual/Installing.html\n", filename);
 
                         pos = 0;
                         while ((count = fmap_readn(*ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1) {

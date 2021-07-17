@@ -24,7 +24,7 @@ include(Version)
 set(PACKAGE_NAME      "${PROJECT_NAME}")
 set(PACKAGE_VERSION   "${PROJECT_VERSION}")
 set(PACKAGE_STRING    "${PROJECT_NAME} ${PROJECT_VERSION}${VERSION_SUFFIX}")
-set(PACKAGE_BUGREPORT "https://bugzilla.clamav.net/")
+set(PACKAGE_BUGREPORT "https://github.com/Cisco-Talos/clamav/issues")
 set(PACKAGE_URL       "https://www.clamav.net/")
 HexVersion(PACKAGE_VERSION_NUM ${PROJECT_VERSION_MAJOR} ${PROJECT_VERSION_MINOR} ${PROJECT_VERSION_PATCH})
 

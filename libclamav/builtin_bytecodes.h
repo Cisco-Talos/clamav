@@ -147,7 +147,7 @@ int entrypoint()
         else
           /* RWX mapping got denied but apparently not due to SELinux/PaX */
           disable_jit_if("^RWX mapping denied for unknown reason."
-            "Please report to https://bugzilla.clamav.net\n", 0, 1);
+            "Please report to https://github.com/Cisco-Talos/clamav/issues\n", 0, 1);
       }
     } else {
       if ((env.os_category == os_linux || env.os == llvm_os_Linux) &&

@@ -1,7 +1,7 @@
 # Win32 ClamAV Build Instructions
 
 This document describes how to build ClamAV on Windows using Visual Studio.
-For information on how to use ClamAV, please refer to our [User Manual](https://www.clamav.net/documents).
+For information on how to use ClamAV, please refer to our [User Manual](https://docs.clamav.net/Introduction.html).
 
 **Table of Contents**
 

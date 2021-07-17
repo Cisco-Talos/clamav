@@ -2664,7 +2664,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
     }
     rc = run_builtin_or_loaded(bcs, BC_STARTUP, builtin_bc_startup, ctx, "BC_STARTUP");
     if (rc != CL_SUCCESS) {
-        cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to https://bugzilla.clamav.net\n");
+        cli_warnmsg("Bytecode: BC_STARTUP failed to run, disabling ALL bytecodes! Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         ctx->bytecode_disable_status = 2;
     } else {
         cli_dbgmsg("Bytecode: disable status is %d\n", ctx->bytecode_disable_status);
@@ -2672,7 +2672,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
         /* check magic number, don't use 0 here because it is too easy for a
 	 * buggy bytecode to return 0 */
         if ((unsigned int)rc != (unsigned int)0xda7aba5e) {
-            cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to https://bugzilla.clamav.net\n",
+            cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to https://github.com/Cisco-Talos/clamav/issues\n",
                         rc);
             if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
                 return CL_EBYTECODE_TESTFAIL;
