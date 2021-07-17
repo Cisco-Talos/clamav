@@ -696,7 +696,7 @@ static cl_error_t sigload_callback(size_t total_items, size_t now_completed, voi
     double fraction_loaded = 0.0;
 
     if ((total_items <= 0) || (sigloadProgress->bComplete)) {
-        return;
+        return CL_SUCCESS;
     }
 
     fraction_loaded = (double)now_completed / (double)total_items;
@@ -780,7 +780,7 @@ static cl_error_t engine_compile_callback(size_t total_items, size_t now_complet
     double fraction_compiled = 0.0;
 
     if ((total_items <= 0) || (engineCompileProgress->bComplete)) {
-        return;
+        return CL_SUCCESS;
     }
 
     fraction_compiled = (double)now_completed / (double)total_items;
@@ -864,7 +864,7 @@ static cl_error_t engine_free_callback(size_t total_items, size_t now_completed,
     double fraction_freed = 0.0;
 
     if ((total_items <= 0) || (engineFreeProgress->bComplete)) {
-        return;
+        return CL_SUCCESS;
     }
 
     fraction_freed = (double)now_completed / (double)total_items;
@@ -989,7 +989,7 @@ int scanmanager(const struct optstruct *opts)
     cl_engine_set_clcb_virus_found(engine, clamscan_virus_found_cb);
 
     if (isatty(fileno(stdout)) &&
-        !cli_debug_flag &&
+        !optget(opts, "debug")->enabled &&
         !optget(opts, "quiet")->enabled &&
         !optget(opts, "infected")->enabled &&
         !optget(opts, "no-summary")->enabled) {
@@ -1190,7 +1190,7 @@ int scanmanager(const struct optstruct *opts)
     }
 
     if (isatty(fileno(stdout)) &&
-        !cli_debug_flag &&
+        !optget(opts, "debug")->enabled &&
         !optget(opts, "quiet")->enabled &&
         !optget(opts, "infected")->enabled &&
         !optget(opts, "no-summary")->enabled) {
