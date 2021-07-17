@@ -4040,7 +4040,7 @@ getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
         return NULL;
     }
     if ((buffer_len == 0) || (buffer == NULL)) {
-        cli_errmsg("Invalid call to getline_from_mbox(). Refer to https://www.clamav.net/documents/installing-clamav\n");
+        cli_errmsg("Invalid call to getline_from_mbox(). Refer to https://docs.clamav.net/manual/Installing.html\n");
         return NULL;
     }
 

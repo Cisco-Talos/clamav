@@ -339,12 +339,12 @@ Detect Possibly Unwanted Applications.
 Default: No
 .TP
 \fBExcludePUA CATEGORY\fR
-Exclude a specific PUA category. This directive can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA categories.
+Exclude a specific PUA category. This directive can be used multiple times. See https://docs.clamav.net/faq/faq-pua.html for the complete list of PUA categories.
 .br
 Default: disabled
 .TP
 \fBIncludePUA CATEGORY\fR
-Only include a specific PUA category. This directive can be used multiple times. See https://www.clamav.net/documents/potentially-unwanted-applications-pua for the complete list of PUA categories.
+Only include a specific PUA category. This directive can be used multiple times. See https://docs.clamav.net/faq/faq-pua.html for the complete list of PUA categories.
 .br
 Default: disabled
 .TP

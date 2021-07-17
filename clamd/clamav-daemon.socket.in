@@ -1,6 +1,6 @@
 [Unit]
 Description=Socket for Clam AntiVirus userspace daemon
-Documentation=man:clamd(8) man:clamd.conf(5) https://www.clamav.net/documents/
+Documentation=man:clamd(8) man:clamd.conf(5) https://docs.clamav.net/
 # Check for database existence
 ConditionPathExistsGlob=@DATADIR@/main.{c[vl]d,inc}
 ConditionPathExistsGlob=@DATADIR@/daily.{c[vl]d,inc}
