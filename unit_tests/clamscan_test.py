@@ -258,3 +258,21 @@ class TC(testcase.TestCase):
             '"FileMD5":"5341e0efde53a50c416b2352263e7693"',
         ]
         self.verify_output(output.err, expected=expected_results)
+
+    def test_clamscan_10_bytecode_pdf_hook(self):
+        self.step_name('Test that pdf bytecode hooks trigger')
+
+        testfiles = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.pdf'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --bytecode-unsigned'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_source / 'unit_tests' / 'input' / 'bytecode_sigs' / 'pdf-hook.cbc',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.Case.BC.PDF.hook FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
