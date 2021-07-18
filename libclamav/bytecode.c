@@ -2806,7 +2806,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     if (bc->hook_lsig_id) {
         cli_dbgmsg("hook lsig id %d matched (bc %d)\n", bc->hook_lsig_id, bc->id);
         /* this is a bytecode for a hook, defer running it until hook is
-	 * executed, so that it has all the info for the hook */
+	     * executed, so that it has all the info for the hook */
         if (cctx->hook_lsig_matches)
             cli_bitset_set(cctx->hook_lsig_matches, bc->hook_lsig_id - 1);
         /* save match counts */
