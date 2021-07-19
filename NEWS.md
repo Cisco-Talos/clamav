@@ -7,30 +7,35 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.104.0 includes the following improvements and changes.
 
-### Major changes
+### New Requirements
 
-- CMake is now the preferred build system. Please make an effort now to migrate
-  build tooling to use CMake instead of Autotools (eg: `./configure`, `make`,
-  `sudo make install`).
+- As of ClamAV 0.104, CMake is required to build ClamAV.
 
   We have added comprehensive build instructions for using CMake to the new
   [`INSTALL.md`](INSTALL.md) file. The online documentation will also be
   updated to include CMake build instructions.
 
-  The Autotools and the Visual Studio build system have been removed.
+  The Autotools and the Visual Studio build systems have been removed.
 
-- The built-in LLVM has been removed. The bytecode runtime is now limited to
-  using an external LLVM library (preferred) or if a compatible LLVM library
-  is not available, using the internal bytecode interpreter.
+### Major changes
 
-  Using LLVM is preferred because although signature load time is slower,
-  signature runtime can be much faster, depending on how complex the bytecode
-  signature is.
+- The built-in LLVM for the bytecode runtime has been removed.
 
-  When building from source, see [`INSTALL.md`](INSTALL.md#bytecode-runtime) to
-  learn how to select bytecode runtime.
+  The bytecode interpreter is the default runtime for bytecode signatures just
+  as it was in ClamAV 0.103.
+
+  We wished to add support for newer versions of LLVM but ran out of time.
+  If you're building ClamAV from source and you wish to use LLVM instead of the
+  bytecode interpreter, you will need to supply the development libraries for
+  LLVM version 3.6.2.
+  See [`INSTALL.md`](INSTALL.md#bytecode-runtime) to learn more.
 
 - There are now official ClamAV images on Docker Hub.
+
+  > _Note_: Until ClamAV 0.104.0 is released, these images are limited to
+  > "unstable" versions, which are updated daily with the latest changes in the
+  > default branch on GitHub.
+
   You can find the images on [Docker Hub under `clamav`](https://hub.docker.com/r/clamav/clamav).
 
   Docker Hub ClamAV tags:
@@ -92,7 +97,7 @@ patch versions do not generally introduce new options:
   BMP and JPEG 2000 files will continue to detect as CL_TYPE_GRAPHICS because
   ClamAV does not yet have BMP or JPEG 2000 format checking capabilities.
 
-- Add progress callbacks to libclamav for:
+- Added progress callbacks to libclamav for:
   - database load:  `cl_engine_set_clcb_sigload_progress()`
   - engine compile: `cl_engine_set_clcb_engine_compile_progress()`
   - engine free:    `cl_engine_set_clcb_engine_free_progress()`
@@ -121,14 +126,20 @@ patch versions do not generally introduce new options:
 
 - Improvements to the AutoIt extraction module. Patch courtesy of cw2k.
 
-- Added support for extracting images from OLE2 files (E.g. XLS documents).
+- Added support for extracting images from Excel *.xls (OLE2) documents.
+
+- Trusted SHA256-based Authenticode hashes can now be loaded in from *.cat
+  files. See https://docs.clamav.net/appendix/Authenticode.html for more info
+  about using *.cat files with *.crb rules to trust signed Windows executables.
 
 ### Bug fixes
 
 - Fixed a memory leak affecting logical signatures that use the "byte compare"
   feature. Patch courtesy of Andrea De Pasquale.
 
-### New Requirements
+- Fixed bytecode match evaluation for PDF bytecode hooks in PDF file scans.
+
+- Other minor bug fixes.
 
 ### Acknowledgements
 
@@ -136,11 +147,15 @@ The ClamAV team thanks the following individuals for their code submissions:
 
 - Alexander Golovach
 - Andrea De Pasquale
+- Andrew Williams
 - Armin Kuster
 - Brian Bergstrand
 - cw2k
 - Duane Waddle
 - Gianluigi Tiesi
+- Jonas Zaddach
+- Kenneth Hau
+- Markus Strehle
 - Olliver Schinagl
 - Orion Poplawski
 - Sergey Valentey
