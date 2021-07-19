@@ -91,6 +91,12 @@ void Unpack::Init(size_t WinSize,bool Solid)
   if ((WinSize>>16)>0x10000) // Window size must not exceed 4 GB.
     return;
 
+  // Unrar does not support window size greather than 1GB at this time.
+  // Any request for a window larger than 1GB should be ignored.
+  const size_t MaxAllocSize=0x40000000;
+  if (WinSize>MaxAllocSize)
+    WinSize=MaxAllocSize;
+
   // Archiving code guarantees that window size does not grow in the same
   // solid stream. So if we are here, we are either creating a new window
   // or increasing the size of non-solid window. So we could safely reject
@@ -265,7 +271,7 @@ void Unpack::MakeDecodeTables(byte *LengthTable,DecodeTable *Dec,uint Size)
     Dec->DecodeLen[I]=(uint)LeftAligned;
 
     // Every item of this array contains the sum of all preceding items.
-    // So it contains the start position in code list for every bit length. 
+    // So it contains the start position in code list for every bit length.
     Dec->DecodePos[I]=Dec->DecodePos[I-1]+LengthCount[I-1];
   }
 
@@ -328,7 +334,7 @@ void Unpack::MakeDecodeTables(byte *LengthTable,DecodeTable *Dec,uint Size)
     uint BitField=Code<<(16-Dec->QuickBits);
 
     // Prepare the table for quick decoding of bit lengths.
-  
+
     // Find the upper limit for current bit field and adjust the bit length
     // accordingly if necessary.
     while (CurBitLength<ASIZE(Dec->DecodeLen) && BitField>=Dec->DecodeLen[CurBitLength])
