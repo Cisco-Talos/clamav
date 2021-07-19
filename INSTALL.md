@@ -1,19 +1,19 @@
 # Installation Instructions
 
-CMake the preferred build system going forwards. The Windows Visual Studio
-solution has been removed, and the Autotools build system will likely be
-removed in the near future.
+As of ClamAV 0.104, CMake is required to build ClamAV.
+The Windows Visual Studio and Autotools build systems have been removed.
 
 _Known Issues / To-do:_
 
-- LLVM bytecode runtime support.
-  - Presently only the bytecode intepreter is supported. LLVM is preferable
-    because it is faster. This task also requires updating to use a modern
-    version of LLVM. Currently ClamAV is limited to LLVM 3.6.
-  - The built-in LLVM runtime is not supported in the CMake tooling with no
-    plans to add support. It will likely be removed when system-LLVM support
-    is updated.
-- Complete the MAINTAINER_MODE option to generate jsparse files with GPerf.
+- The newest LLVM version supported is 3.6.2. We ran out of time during 0.104
+  development to add support for newer versions of LLVM.
+  The bytecode interpreter is therefore the default option for the bytecode
+  signature runtime in this release.
+- Complete the `MAINTAINER_MODE` option to generate jsparse files with GPerf.
+- The test suite will fail to run if you have `pytest` from Python 2 installed
+  and you don't have `pytest` from Python 3 installed. If this happens, run:
+  `python3 -m pip install pytest` and then delete your build directory before
+  recompiling clamav and trying again.
 
 **Table Of Contents**
 
@@ -61,7 +61,7 @@ _Known Issues / To-do:_
 
 ### Build requirements
 
-- CMake 3.14+
+- CMake 3.16 for Windows, and 3.14+ for other operating systems.
 - A C compiler toolchain such as gcc, clang, or Microsoft Visual Studio.
 - Python 3 (to run the test suite)
 
@@ -735,25 +735,31 @@ detection capabilities.
 
 ClamAV has two bytecode runtimes:
 
-- *LLVM*: LLVM is the preferred runtime.
-
-  With LLVM, ClamAV JIT compiles bytecode signatures at database load time.
-  Bytecode signature execution is faster with LLVM.
-
-- *Interpreter*: The bytecode interpreter is an option on systems where a
-  a supported LLVM version is not available.
+- *Interpreter*: The bytecode interpreter evaluates and executes bytecode
+  instructions one by one.
 
   With the interpreter, signature database (re)loads are faster, but execution
-  time is slower.
+  time for scans that make use of the bytecode sigantures is slower.
+
+- *LLVM*: LLVM can be used to Just-in-Time (JIT) compile bytecode signatures
+  at database load time.
+
+  With LLVM, signature database loading is slower, but bytecode signature
+  execution should be faster. Not all scans will run bytecode signatures, so
+  performance testing will depend heavily depending on what files are tested.
+
+  We ran out of time in 0.104 development to update to support newer versions
+  of LLVM. LLVM 3.6.2 is the newest version supported in ClamAV 0.104.
 
 At the moment, the interpreter is the default runtime, while we work out
-compatibility issues with libLLVM. This default equates to:
+compatibility issues with newer versions of libLLVM. This default equates to:
 
 ```sh
 cmake .. -D BYTECODE_RUNTIME="interpreter"
 ```
 
-To build using LLVM instead of the intereter, use:
+If you wish to build using LLVM instead of the intereter, you will need to
+obtain v3.6 of the LLVM development libraries. Then build using these options:
 
 ```sh
 cmake .. \

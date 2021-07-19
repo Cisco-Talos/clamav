@@ -231,8 +231,8 @@ void help(void)
 
     mprintf("\n");
     mprintf("                       Clam AntiVirus: Scanner %s\n", get_version());
-    printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2021 Cisco Systems, Inc.\n");
+    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    mprintf("           (C) 2021 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    clamscan [options] [file/directory/-]\n");
     mprintf("\n");
@@ -250,8 +250,9 @@ void help(void)
     mprintf("\n");
     mprintf("    --tempdir=DIRECTORY                  Create temporary files in DIRECTORY\n");
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
-    mprintf("    --gen-json[=yes/no(*)]               Generate JSON description of scanned file(s). JSON will be printed and also-\n");
-    mprintf("                                         dropped to the temp directory if --leave-temps is enabled.\n");
+    mprintf("    --gen-json[=yes/no(*)]               Generate JSON metadata for the scanned file(s). For testing & development use ONLY.\n");
+    mprintf("                                         JSON will be printed if --debug is enabled.\n");
+    mprintf("                                         A JSON file will dropped to the temp directory if --leave-temps is enabled.\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load all supported db files from DIR\n");
     mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
