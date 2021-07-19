@@ -1028,7 +1028,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                             cli_warnmsg("cli_codepage_to_utf8: iconv error: An invalid multibyte sequence has been encountered in the input.\n");
                             break;
                         case EINVAL:
-                            cli_warnmsg("cli_codepage_to_utf8: iconv error: An incomplete multibyte sequence has been encountered in the input.\n");
+                            cli_dbgmsg("cli_codepage_to_utf8: iconv error: An incomplete multibyte sequence has been encountered in the input.\n");
                             break;
                         default:
                             cli_warnmsg("cli_codepage_to_utf8: iconv error: Unexpected error code %d.\n", errno);

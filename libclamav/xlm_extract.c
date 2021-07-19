@@ -4187,7 +4187,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                 break;
             }
             default:
-                if (ptg < sizeof(TOKENS)) {
+                if (ptg < sizeof(TOKENS) / sizeof(char*)) {
                     cli_dbgmsg("[cli_extract_xlm_macros_and_images:parse_formula] Encountered unexpected ptg token: %s\n", TOKENS[ptg]);
                 } else {
                     cli_dbgmsg("[cli_extract_xlm_macros_and_images:parse_formula] Encountered unknown ptg token: 0x%02x\n", ptg);
@@ -4662,7 +4662,9 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     if (in_fd == -1) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to open input file\n");
-        ret = CL_EACCES;
+        /* Don't return an error. If the file is missing, an error probably occured
+         * earlier, such as a UTF8 conversion error in parse_formula() and so the file was never written.
+         * There are no macros to scan, so report SUCCESS / CLEAN. */
         goto done;
     }
 
