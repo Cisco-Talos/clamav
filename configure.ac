@@ -22,7 +22,7 @@ AC_PREREQ([2.59])
 
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([ClamAV], [0.103.3], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
+AC_INIT([ClamAV], [0.103.4], [https://bugzilla.clamav.net/], [clamav], [https://www.clamav.net/])
 
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
