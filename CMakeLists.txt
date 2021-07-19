@@ -18,7 +18,7 @@ cmake_policy(SET CMP0087 NEW) # support generator expressions in install(CODE) a
 #  For release candidate:     set(VERSION_SUFFIX "-rc")
 #  For release:               set(VERSION_SUFFIX "")
 string(TIMESTAMP TODAY "%Y%m%d")
-set(VERSION_SUFFIX "-devel-${TODAY}")
+set(VERSION_SUFFIX "-rc")
 
 project( ClamAV
          VERSION "0.104.0"
