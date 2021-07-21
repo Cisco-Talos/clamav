@@ -1146,8 +1146,8 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
         goto done;
     }
 
+    memset(&state, 0, sizeof(state));
     state.state   = BIFF_PARSER_INITIAL;
-    state.length  = 0;
     current_block = prop->start_block;
     len           = prop->size;
 
