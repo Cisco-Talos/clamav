@@ -39,8 +39,9 @@ our images on [Docker Hub](https://hub.docker.com/r/clamav/clamav).
 For comprehensive compile and install instructions, please see
 [INSTALL.md](INSTALL.md).
 
-For step-by-step instructions, see our
-[online documentation](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html).
+For step-by-step instructions, visit our online documentation:
+- [Unix/Linux/Mac Instructions](Installing-from-source/Installing-from-source-Unix.md)
+- [Windows Instructions](Installing-from-source/Installing-from-source-Windows.md)
 
 #### Install from a binary package distribution
 
