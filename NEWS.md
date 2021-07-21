@@ -28,7 +28,8 @@ ClamAV 0.104.0 includes the following improvements and changes.
   If you're building ClamAV from source and you wish to use LLVM instead of the
   bytecode interpreter, you will need to supply the development libraries for
   LLVM version 3.6.2.
-  See [`INSTALL.md`](INSTALL.md#bytecode-runtime) to learn more.
+  See [the "bytecode runtime" section in `INSTALL.md`](INSTALL.md#bytecode-runtime)
+  to learn more.
 
 - There are now official ClamAV images on Docker Hub.
 
@@ -67,7 +68,7 @@ ClamAV 0.104.0 includes the following improvements and changes.
   the larger ClamAV database images on a regular basis.
 
   For more details, see
-  [the ClamAV Docker documentation](https://github.com/Cisco-Talos/clamav-devel/blob/main/README.Docker.md).
+  [the ClamAV Docker documentation](https://docs.clamav.net/manual/Installing/Docker.html).
 
   Special thanks to Olliver Schinagl for his excellent work creating ClamAV's
   new Docker files, image database deployment tooling, and user documentation.
@@ -102,7 +103,7 @@ patch versions do not generally introduce new options:
   - engine compile: `cl_engine_set_clcb_engine_compile_progress()`
   - engine free:    `cl_engine_set_clcb_engine_free_progress()`
 
-  These new callbacks enable an application to monitor and estiamte load,
+  These new callbacks enable an application to monitor and estimate load,
   compile, and unload progress. See `clamav.h` for API details.
 
 - Added progress bars to ClamScan for the signature load and engine compile
@@ -129,7 +130,8 @@ patch versions do not generally introduce new options:
 - Added support for extracting images from Excel *.xls (OLE2) documents.
 
 - Trusted SHA256-based Authenticode hashes can now be loaded in from *.cat
-  files. See https://docs.clamav.net/appendix/Authenticode.html for more info
+  files. For more information, visit our
+  [Authenticode documentation](https://docs.clamav.net/appendix/Authenticode.html)
   about using *.cat files with *.crb rules to trust signed Windows executables.
 
 ### Bug fixes
