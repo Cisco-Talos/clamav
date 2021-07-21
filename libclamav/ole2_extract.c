@@ -1319,7 +1319,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                         hwp_new = cli_calloc(1, sizeof(hwp5_header_t));
                         if (!(hwp_new)) {
                             status = CL_EMEM;
-                            break;
+                            goto done;
                         }
 
                         /*
