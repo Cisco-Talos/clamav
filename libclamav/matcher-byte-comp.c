@@ -469,7 +469,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
 
     uint32_t evalcnt = 0;
     uint64_t evalids = 0;
-    char *subsigid   = NULL;
+    char subsigid[3];
 
     if (!(root) || !(root->bcomp_metas) || !(root->bcomp_metatable) || !(mdata) || !(mdata->offmatrix) || !(ctx)) {
         return CL_SUCCESS;
@@ -484,16 +484,10 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
         /* check to see if we are being run in sigtool or not */
         if (bcomp->lsigid[0]) {
 
-            subsigid = cli_calloc(3, sizeof(char));
             snprintf(subsigid, 3, "%hu", bcomp->ref_subsigid);
 
             /* verify the ref_subsigid */
             val = cli_ac_chklsig(subsigid, subsigid + strlen(subsigid), mdata->lsigcnt[bcomp->lsigid[1]], &evalcnt, &evalids, 0);
-
-            if (subsigid) {
-                free(subsigid);
-                subsigid = NULL;
-            }
 
             if (val != 1) {
                 bcm_dbgmsg("cli_bcomp_scanbuf: could not verify a match for lsig reference subsigid (%s)\n", subsigid);
