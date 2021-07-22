@@ -240,7 +240,6 @@ static int chkpath(const char *path)
 {
     int status = 0;
     const struct optstruct *opt;
-    char *real_path = NULL;
 
     if (!path) {
         status = 1;
@@ -260,9 +259,6 @@ static int chkpath(const char *path)
     }
 
 done:
-    if (NULL != real_path) {
-        free(real_path);
-    }
     return status;
 }
 
