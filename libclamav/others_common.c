@@ -1159,12 +1159,12 @@ char *cli_newfilepath(const char *dir, const char *fname)
     const char *mdir;
     size_t len;
 
+    mdir = dir ? dir : cli_gettmpdir();
+
     if (NULL == fname) {
         cli_dbgmsg("cli_newfilepath('%s'): fname argument must not be NULL\n", mdir);
         return NULL;
     }
-
-    mdir = dir ? dir : cli_gettmpdir();
 
     len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
     fullpath = (char *)cli_calloc(len, sizeof(char));
