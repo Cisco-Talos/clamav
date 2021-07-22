@@ -223,7 +223,12 @@ fc_error_t load_freshclam_dat(void)
             }
 
             /* Rewind to just after the magic bytes and read data struct */
-            lseek(handle, strlen(MIRRORS_DAT_MAGIC), SEEK_SET);
+            if (-1 == lseek(handle, strlen(MIRRORS_DAT_MAGIC), SEEK_SET)) {
+                char error_message[260];
+                cli_strerror(errno, error_message, 260);
+                logg("!Can't seek to %lu, error: %s\n", strlen(MIRRORS_DAT_MAGIC), error_message);
+                goto done;
+            }
 
             mdat = malloc(sizeof(freshclam_dat_v1_t));
             if (NULL == mdat) {
