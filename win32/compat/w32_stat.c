@@ -214,3 +214,14 @@ int w32_access(const char *pathname, int mode)
     free(wpath);
     return ret;
 }
+
+#undef rename
+int w32_rename(const char *oldname, const char *newname)
+{
+    DWORD dwAttrs = GetFileAttributes(newname);
+    SetFileAttributes(newname, dwAttrs & ~(FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN));
+    if (!DeleteFileA(newname) && (GetLastError() != ERROR_FILE_NOT_FOUND)) {
+        return -1;
+    }
+    return rename(oldname, newname);
+}

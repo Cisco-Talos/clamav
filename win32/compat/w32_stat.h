@@ -43,6 +43,7 @@ int w32_stat(const char *path, struct stat *buf);
 int w32_access(const char *pathname, int mode);
 
 #define access(pathname, mode) w32_access(pathname, mode)
+#define rename w32_rename
 
 wchar_t *uncpath(const char *path);
 int safe_open(const char *path, int flags, ...);
