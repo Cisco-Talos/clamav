@@ -31,7 +31,10 @@ target_sources( clamd
         thrmgr.c
         thrmgr.h )
 if(WIN32)
-    target_sources( clamd PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/clamd.rc )
+    target_sources( clamd 
+    PRIVATE 
+        ${CMAKE_SOURCE_DIR}/win32/res/clamd.rc
+        ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( clamd
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
