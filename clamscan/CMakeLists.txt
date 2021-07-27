@@ -33,7 +33,7 @@ target_link_libraries( clamscan
         ClamAV::libclamav
         ClamAV::common )
 if(WIN32)
-    install(TARGETS clamscan DESTINATION .)
+    install(TARGETS clamscan DESTINATION . COMPONENT programs)
 else()
-    install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

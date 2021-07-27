@@ -28,7 +28,7 @@ target_link_libraries( clamdtop
         ClamAV::common
         Curses::curses )
 if(WIN32)
-    install(TARGETS clamdtop DESTINATION .)
+    install(TARGETS clamdtop DESTINATION . COMPONENT programs)
     # Also install shared library (DLL) dependencies
     install(CODE [[
         file(GET_RUNTIME_DEPENDENCIES
@@ -51,7 +51,8 @@ if(WIN32)
             endif()
         endforeach()
         #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-    ]])
+        ]]
+        COMPONENT programs)
 else()
-    install(TARGETS clamdtop DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS clamdtop DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

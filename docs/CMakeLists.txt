@@ -38,7 +38,8 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_MANDIR}/man1)
+                ${CMAKE_INSTALL_MANDIR}/man1
+            COMPONENT documentation)
     endforeach()
 
     set(MAN5_FILES
@@ -50,7 +51,8 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_MANDIR}/man5)
+                ${CMAKE_INSTALL_MANDIR}/man5
+            COMPONENT documentation)
     endforeach()
 
     set(MAN8_FILES
@@ -61,7 +63,8 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/${m}
             DESTINATION
-                ${CMAKE_INSTALL_MANDIR}/man8)
+                ${CMAKE_INSTALL_MANDIR}/man8
+            COMPONENT documentation)
     endforeach()
 
     if(C_LINUX)
@@ -70,7 +73,8 @@ if(ENABLE_MAN_PAGES)
             FILES
                 ${CMAKE_CURRENT_BINARY_DIR}/man/clamonacc.8
             DESTINATION
-                ${CMAKE_INSTALL_MANDIR}/man8)
+                ${CMAKE_INSTALL_MANDIR}/man8
+            COMPONENT documentation)
     endif()
 endif()
 
@@ -98,14 +102,19 @@ if(ENABLE_DOXYGEN)
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
         DESTINATION ${CMAKE_INSTALL_DOCDIR}
-        COMPONENT "docs" OPTIONAL)
+        COMPONENT documentation OPTIONAL)
 endif()
 
-if(WIN32)
-    # When built from the release tarball, this includes the user manual
-    # which is exported from the clamav-faq repo.
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html)
-        install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual.html DESTINATION .)
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html/UserManual DESTINATION .)
+# When built from the release tarball, this includes the user manual
+# which is exported from the clamav-faq repo.
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/index.html)
+    if(WIN32)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html
+            DESTINATION .
+            COMPONENT documentation)
+    else()
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+            COMPONENT documentation)
     endif()
 endif()
