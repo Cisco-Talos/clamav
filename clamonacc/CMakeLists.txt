@@ -49,7 +49,7 @@ target_link_libraries( clamonacc
         ClamAV::libclamav
         ClamAV::common
         CURL::libcurl )
-install(TARGETS clamonacc DESTINATION ${CMAKE_INSTALL_SBINDIR})
+install(TARGETS clamonacc DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)
 
 if(SYSTEMD_FOUND)
     configure_file(
@@ -57,5 +57,5 @@ if(SYSTEMD_FOUND)
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamonacc.service @ONLY)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-clamonacc.service
-        DESTINATION ${SYSTEMD_UNIT_DIR})
+        DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT programs)
 endif()

@@ -31,7 +31,7 @@ target_link_libraries( sigtool
         ClamAV::libclamav
         ClamAV::common )
 if(WIN32)
-    install(TARGETS sigtool DESTINATION .)
+    install(TARGETS sigtool DESTINATION . COMPONENT programs)
 else()
-    install(TARGETS sigtool DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS sigtool DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

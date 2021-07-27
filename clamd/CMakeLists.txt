@@ -45,9 +45,9 @@ target_link_libraries( clamd
         ClamAV::libclamav
         ClamAV::common )
 if(WIN32)
-    install(TARGETS clamd DESTINATION .)
+    install(TARGETS clamd DESTINATION . COMPONENT programs)
 else()
-    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR})
+    install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)
 endif()
 
 if(SYSTEMD_FOUND)
@@ -59,8 +59,8 @@ if(SYSTEMD_FOUND)
         ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.socket @ONLY)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.service
-        DESTINATION ${SYSTEMD_UNIT_DIR})
+        DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT programs)
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/clamav-daemon.socket
-        DESTINATION ${SYSTEMD_UNIT_DIR})
+        DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT programs)
 endif()

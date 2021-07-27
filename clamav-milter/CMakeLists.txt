@@ -22,4 +22,4 @@ target_link_libraries( clamav-milter
         ClamAV::libclamav
         ClamAV::common
         Sendmail::milter )
-install(TARGETS clamav-milter DESTINATION ${CMAKE_INSTALL_SBINDIR})
+install(TARGETS clamav-milter DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)

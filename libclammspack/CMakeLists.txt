@@ -70,9 +70,9 @@ if(ENABLE_SHARED_LIB)
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/mspack/mspack.h )
     if(WIN32)
-        install(TARGETS clammspack DESTINATION .)
+        install(TARGETS clammspack DESTINATION . COMPONENT libraries)
     else()
-        install(TARGETS clammspack DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS clammspack DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()
 
     # Public (forwarded) dependencies.

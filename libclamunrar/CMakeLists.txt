@@ -90,9 +90,9 @@ if(ENABLE_SHARED_LIB)
             unrar_obj )
 
     if(WIN32)
-        install(TARGETS clamunrar DESTINATION .)
+        install(TARGETS clamunrar DESTINATION . COMPONENT libraries)
     else()
-        install(TARGETS clamunrar DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS clamunrar DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()
 
     add_library( ClamAV::libunrar ALIAS clamunrar )

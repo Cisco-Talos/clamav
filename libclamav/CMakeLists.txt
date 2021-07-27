@@ -570,7 +570,7 @@ if(ENABLE_SHARED_LIB)
         target_link_libraries( clamav PUBLIC Iconv::Iconv )
     endif()
     if(WIN32)
-        install( TARGETS clamav DESTINATION . )
+        install( TARGETS clamav DESTINATION . COMPONENT libraries )
 
         # Also install shared library (DLL) dependencies
         install( CODE [[
@@ -600,9 +600,10 @@ if(ENABLE_SHARED_LIB)
                 endif()
             endforeach()
             #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-        ]] )
+            ]]
+            COMPONENT libraries )
     else()
-        install( TARGETS clamav DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+        install( TARGETS clamav DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries )
     endif()
 
     if(LLVM_FOUND)
@@ -647,9 +648,9 @@ if(ENABLE_STATIC_LIB)
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
     target_compile_definitions( clamav_static PUBLIC clamav_staticLIB )
     if(WIN32)
-        install( TARGETS clamav_static DESTINATION . )
+        install( TARGETS clamav_static DESTINATION . COMPONENT libraries )
     else()
-        install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR} )
+        install( TARGETS clamav_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries )
     endif()
 
     add_library( ClamAV::libclamav_static ALIAS clamav_static )
@@ -663,4 +664,5 @@ install(
         clamav.h
         ${CMAKE_BINARY_DIR}/clamav-types.h
         ${CMAKE_BINARY_DIR}/clamav-version.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT libraries)
