@@ -20,7 +20,10 @@ target_sources( freshclam-bin
         notify.c
         notify.h )
 if(WIN32)
-    target_sources( freshclam-bin PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/freshclam.rc )
+    target_sources( freshclam-bin 
+        PRIVATE 
+            ${CMAKE_SOURCE_DIR}/win32/res/freshclam.rc
+            ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 set_target_properties( freshclam-bin PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries(freshclam-bin

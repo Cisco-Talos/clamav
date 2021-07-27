@@ -20,7 +20,10 @@ target_sources( clamdscan
         proto.c
         proto.h )
 if(WIN32)
-    target_sources( clamdscan PRIVATE ${CMAKE_SOURCE_DIR}/win32/res/clamdscan.rc )
+    target_sources( clamdscan 
+    PRIVATE 
+        ${CMAKE_SOURCE_DIR}/win32/res/clamdscan.rc
+        ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 target_include_directories( clamdscan
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
