@@ -67,7 +67,7 @@ if(ENABLE_SHARED_LIB)
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION})
     if(WIN32)
-        install(TARGETS freshclam DESTINATION .)
+        install(TARGETS freshclam DESTINATION . COMPONENT libraries)
         # Also install shared library (DLL) dependencies
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES
@@ -92,9 +92,10 @@ if(ENABLE_SHARED_LIB)
                 endif()
             endforeach()
             #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-        ]])
+            ]]
+            COMPONENT libraries)
     else()
-        install(TARGETS freshclam DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS freshclam DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()
 
     add_library( ClamAV::libfreshclam ALIAS freshclam )
@@ -115,9 +116,9 @@ if(ENABLE_STATIC_LIB)
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION})
     target_compile_definitions(freshclam_static PUBLIC freshclam_staticLIB)
     if(WIN32)
-        install(TARGETS freshclam_static DESTINATION .)
+        install(TARGETS freshclam_static DESTINATION . COMPONENT libraries)
     else()
-        install(TARGETS freshclam_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS freshclam_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()
 
     add_library( ClamAV::libfreshclam_static ALIAS freshclam_static )
@@ -129,4 +130,5 @@ endif()
 install(
     FILES
         libfreshclam.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT libraries)

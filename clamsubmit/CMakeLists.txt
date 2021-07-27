@@ -35,7 +35,7 @@ if(APPLE)
             ${APPLE_SECURITY} )
 endif()
 if(WIN32)
-    install(TARGETS clamsubmit DESTINATION .)
+    install(TARGETS clamsubmit DESTINATION . COMPONENT programs)
     # Also install shared library (DLL) dependencies
     install(CODE [[
         file(GET_RUNTIME_DEPENDENCIES
@@ -59,7 +59,8 @@ if(WIN32)
             endif()
         endforeach()
         #message("UNRESOLVED_DEPENDENCIES_VAR: ${_u_deps}")
-    ]])
+        ]]
+        COMPONENT programs)
 else()
-    install(TARGETS clamsubmit DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS clamsubmit DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

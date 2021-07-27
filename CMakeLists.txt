@@ -249,41 +249,6 @@ if(ENABLE_TESTS)
 endif()
 
 #
-# Configure CPack
-#  - for installers
-#  - for source tarball
-#
-
-if (WIN32)
-    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
-    include(InstallRequiredSystemLibraries)
-
-    set(CPACK_GENERATOR                  "ZIP;WIX")
-    set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
-    SET(CPACK_WIX_UPGRADE_GUID           D9F136C1-3691-47E3-9079-4FE9C9C5EB32)
-    SET(CPACK_RESOURCE_FILE_LICENSE      ${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt)
-    SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
-    SET(CPACK_WIX_UI_BANNER              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_banner.bmp)
-    SET(CPACK_WIX_UI_DIALOG              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_dialog.bmp)
-    SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
-    include(CPack)
-elseif(APPLE)
-    # TODO: generate macOS installer.
-else()
-    set(CPACK_SOURCE_GENERATOR "TGZ")
-    set(CPACK_SOURCE_PACKAGE_FILE_NAME clamav-${PROJECT_VERSION}${VERSION_SUFFIX})
-    set(CPACK_SOURCE_IGNORE_FILES
-        \\.git/
-        ".*~$"
-    )
-    list(APPEND CPACK_SOURCE_IGNORE_FILES "^${CMAKE_BINARY_DIR}")
-
-    set(CPACK_VERBATIM_VARIABLES YES)
-    include(CPack)
-endif()
-
-#
 # Find Library Dependencies
 #
 if (WIN32)
@@ -300,6 +265,136 @@ else()
         set(CL_THREAD_SAFE 1)
     endif()
 endif()
+
+#
+# Configure CPack
+#  - for installers
+#  - for source tarball
+#
+
+set(CPACK_PACKAGE_NAME ${PACKAGE_STRING})
+
+#set(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/logo.png)
+#set(CPACK_PACKAGE_RELOCATABLE TRUE)
+if (APPLE AND CLAMAV_SIGN_FILE)
+    # on macOS, strip files later (during signing)
+    set(CPACK_STRIP_FILES FALSE)
+else()
+    set(CPACK_STRIP_FILES TRUE)
+endif()
+
+set(CPACK_PACKAGE_VERSION_MAJOR ${CLAMAV_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${CLAMAV_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${CLAMAV_VERSION_PATCH})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${PROJECT_DESCRIPTION})
+set(CPACK_PACKAGE_CONTACT https://www.clamav.net/)
+
+# point to readme and license files
+set(CPACK_RESOURCE_FILE_README ${PROJECT_SOURCE_DIR}/README.md)
+set(CPACK_RESOURCE_FILE_LICENSE ${PROJECT_SOURCE_DIR}/COPYING.txt)
+
+set(CPACK_PACKAGE_FILE_NAME clamav-${PROJECT_VERSION}${VERSION_SUFFIX})
+
+set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME})
+set(CPACK_SOURCE_IGNORE_FILES "\\.git/" ".*~$" "^${CMAKE_BINARY_DIR}")
+set(CPACK_VERBATIM_VARIABLES YES)
+
+if (WIN32)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
+    include(InstallRequiredSystemLibraries)
+
+    set(CPACK_GENERATOR                  "ZIP;WIX")
+    set(CPACK_PACKAGE_VENDOR             "Cisco Systems, Inc.")
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.win.${CMAKE_VS_PLATFORM_NAME})
+
+    NumberToHex(${PROJECT_VERSION_MAJOR} HEX_MAJOR)
+    NumberToHex(${PROJECT_VERSION_MINOR} HEX_MINOR)
+    NumberToHex(${PROJECT_VERSION_PATCH} HEX_PATCH)
+    SET(CPACK_WIX_PRODUCT_GUID           "D9F136C1-3691-47E3-9079-4FE9C9${HEX_MAJOR}${HEX_MINOR}${HEX_PATCH}")
+    SET(CPACK_WIX_UPGRADE_GUID           "D9F136C1-3691-47E3-9079-4FE9C9${HEX_MAJOR}${HEX_MINOR}00")
+
+    SET(CPACK_WIX_PRODUCT_ICON           ${CMAKE_CURRENT_SOURCE_DIR}/win32/res/clam.ico)
+    SET(CPACK_WIX_UI_BANNER              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_banner.bmp)
+    SET(CPACK_WIX_UI_DIALOG              ${CMAKE_CURRENT_SOURCE_DIR}/win32/wix_ui_dialog.bmp)
+    SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
+
+elseif(APPLE)
+    set(CPACK_GENERATOR productbuild)
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.macos.${CMAKE_SYSTEM_PROCESSOR})
+    set(CPACK_PACKAGE_VENDOR "cisco")  # For Apple, creates short name com.cisco.clamav.xxx in pkgutil
+
+    # productbuild requires components or it won't add anything to the PKG
+    set(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
+    set(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The ClamAV libraries including the header files for C/C++ development.")
+    set(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
+    set(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Manpages and HTML documentation.")
+    set(CPACK_COMPONENT_PROGRAMS_DISPLAY_NAME "Programs")
+    set(CPACK_COMPONENT_PROGRAMS_DESCRIPTION "The ClamAV toolkit.")
+
+    # dependencies between components
+    set(CPACK_COMPONENT_DOCUMENTATION_DEPENDS libraries)
+    set(CPACK_COMPONENT_PROGRAMS_DEPENDS libraries)
+    set(CPACK_COMPONENT_LIBRARIES_REQUIRED ON) # always install the libs
+    set(CPACK_COMPONENTS_ALL libraries documentation programs)
+
+    if(CMAKE_FIND_PACKAGE_PREFER_CONFIG)
+        # Convert NEWS.md to HTML to match Apple productbuild requirements.
+        # Not in the path, try using: python3 -m pytest
+        execute_process(
+            COMMAND ${Python3_EXECUTABLE} -m markdown --version
+            RESULT_VARIABLE MARKDOWN_MODULE_EXIT_CODE
+            ERROR_QUIET OUTPUT_QUIET
+        )
+        if(${MARKDOWN_MODULE_EXIT_CODE} EQUAL 0)
+            # The markdown module is installed, we can do the conversion.
+            set(PythonTest_COMMAND "${Python3_EXECUTABLE};-m;markdown;-v")
+
+            execute_process(
+                COMMAND echo "<html><body>"
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/prefix.html)
+            execute_process(
+                COMMAND ${Python3_EXECUTABLE} -m markdown ${CMAKE_CURRENT_SOURCE_DIR}/NEWS.md
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/body.html)
+            execute_process(
+                COMMAND echo "</html></body>"
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/suffix.html)
+            execute_process(
+                COMMAND cat ${CMAKE_CURRENT_BINARY_DIR}/prefix.html
+                            ${CMAKE_CURRENT_BINARY_DIR}/body.html
+                            ${CMAKE_CURRENT_BINARY_DIR}/suffix.html
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/NEWS.html)
+
+            set(CPACK_RESOURCE_FILE_README ${PROJECT_BINARY_DIR}/NEWS.html)
+        else()
+            message("Failed to detect the Python 3 'markdown' package.")
+            message(FATAL_ERROR "Try running 'pip3 install --user markdown' and then try again.")
+        endif()
+    endif()
+
+elseif(C_BSD)
+    # User must specify `-G FreeBSD` when building FreeBSD packages
+    # Disclaimer: doesn't seem to actually exist, despite being in the documentation.
+    set(CPACK_PACKAGE_NAME             clamav)
+    set(CPACK_PACKAGE_FILE_NAME        ${CPACK_PACKAGE_FILE_NAME}.freebsd.${CMAKE_SYSTEM_PROCESSOR})
+
+    set(CPACK_FREEBSD_PACKAGE_LICENSE "GPLv2")
+    set(CPACK_FREEBSD_PACKAGE_MAINTAINER "https://www.clamav.net/")
+
+else()
+    # User must specify `-G DEB` or `-G RPM` when building Linux packages
+    set(CPACK_PACKAGE_NAME             clamav)
+    set(CPACK_PACKAGE_VERSION          ${PROJECT_VERSION}${VERSION_SUFFIX})
+    set(CPACK_PACKAGE_FILE_NAME        ${CPACK_PACKAGE_FILE_NAME}.linux.${CMAKE_SYSTEM_PROCESSOR})
+
+    set(CPACK_RPM_PACKAGE_LICENSE "GPLv2")
+    set(CPACK_RPM_PACKAGE_AUTOREQ " no")
+    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/sbin")
+endif()
+
+# Including CPack must be the very last CPack thing we do.
+include(CPack)
 
 # libclamav efficacy dependencies
 find_package(OpenSSL REQUIRED)
@@ -821,7 +916,8 @@ else()
         PERMISSIONS
             OWNER_READ OWNER_WRITE OWNER_EXECUTE
             GROUP_READ             GROUP_EXECUTE
-            WORLD_READ             WORLD_EXECUTE)
+            WORLD_READ             WORLD_EXECUTE
+        COMPONENT libraries)
 
     # pkg-config
     configure_file(
@@ -829,7 +925,8 @@ else()
         ${CMAKE_CURRENT_BINARY_DIR}/libclamav.pc
         @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libclamav.pc"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+        COMPONENT libraries)
 endif()
 
 #
@@ -918,8 +1015,8 @@ endif()
 
 if(WIN32)
     # Include the license(s) in the installation
-    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION .)
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION .)
+    install(FILES ${CMAKE_SOURCE_DIR}/COPYING.txt DESTINATION . COMPONENT libraries)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/COPYING DESTINATION . COMPONENT libraries)
 endif()
 
 #

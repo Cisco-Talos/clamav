@@ -27,7 +27,7 @@ target_link_libraries( clamconf
         ClamAV::libclamav
         ClamAV::common )
 if(WIN32)
-    install(TARGETS clamconf DESTINATION .)
+    install(TARGETS clamconf DESTINATION . COMPONENT programs)
 else()
-    install(TARGETS clamconf DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(TARGETS clamconf DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()
