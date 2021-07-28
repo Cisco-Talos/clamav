@@ -52,7 +52,7 @@ Write daemon's pid to FILE.
 Don't fork into background (for use in daemon mode).
 .TP
 \fB\-u USER, \-\-user USER\fR
-Run as USER. By default (when started by root) freshclam drops privileges and operates as the '@CLAMAVUSER@' user.
+Run as USER. By default (when started by root) freshclam drops privileges and operates as the '@CLAMAV_USER@' user.
 .TP
 \fB\-\-no\-dns\fR
 This option forces old non\-DNS verification method (without a TTL delay).
@@ -61,7 +61,7 @@ This option forces old non\-DNS verification method (without a TTL delay).
 Check #n times per day for a new database. #n must be between 1 and 50.
 .TP
 \fB\-\-datadir=DIRECTORY\fR
-Install new database in DIRECTORY. The directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running freshclam.
+Install new database in DIRECTORY. The directory must be writable for the '@CLAMAV_USER@' user or unprivileged user running freshclam.
 .TP
 \fB\-\-daemon\-notify=/path/to/clamd.conf\fR
 Notify the daemon about the new database. By default it reads a hardcoded config file but you can use a different one. Both local and TCP sockets are supported.
@@ -121,14 +121,14 @@ Some return codes of freshclam can be overwritten with a built-in command EXIT_n
 .TP
 59: Mirrors are not fully synchronized (try again later).
 .TP
-60: Can't get information about '@CLAMAVUSER@' user from /etc/passwd.
+60: Can't get information about '@CLAMAV_USER@' user from /etc/passwd.
 .TP
 61: Can't drop privileges.
 .TP
 62: Can't initialize logger.
 .SH "FILES"
 .LP
-@CFGDIR@/freshclam.conf
+@CONFDIR@/freshclam.conf
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"

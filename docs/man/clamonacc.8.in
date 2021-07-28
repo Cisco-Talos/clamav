@@ -73,7 +73,7 @@ Reload the signature databases.
 Perform a clean exit.
 .SH "FILES"
 .LP
-@CFGDIR@/clamd.conf
+@CONFDIR@/clamd.conf
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
