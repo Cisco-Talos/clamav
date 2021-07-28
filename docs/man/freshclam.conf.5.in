@@ -84,7 +84,7 @@ Default: disabled.
 \fBDatabaseOwner STRING\fR
 When started by root, drop privileges to a specified user.
 .br
-Default: @CLAMAVUSER@
+Default: @CLAMAV_USER@
 .TP
 \fBChecks NUMBER\fR
 Number of database checks per day.
@@ -210,7 +210,7 @@ This option enables downloading of bytecode.cvd, which includes additional detec
 Default: yes
 .SH "FILES"
 .LP
-@CFGDIR@/freshclam.conf
+@CONFDIR@/freshclam.conf
 .SH "AUTHOR"
 .LP
 Thomas Lamy <thomas.lamy@netwake.de>, Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>

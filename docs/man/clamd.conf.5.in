@@ -765,7 +765,7 @@ Default: no
 All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP
-@CFGDIR@/clamd.conf
+@CONFDIR@/clamd.conf
 .SH "AUTHORS"
 .LP
 Tomasz Kojm <tkojm@clamav.net>, Kevin Lin <klin@sourcefire.com>

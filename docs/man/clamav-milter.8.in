@@ -19,17 +19,17 @@ goes down.
 .TP
 \fB\-h, \-\-help\fR
 Output help information and exit.
-.TP 
+.TP
 \fB\-V, \-\-version\fR
 Print the version number and exit.
-.TP 
+.TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
 .SH "FILES"
-.LP 
-@CFGDIR@/clamav-milter.conf
+.LP
+@CONFDIR@/clamav-milter.conf
 .SH "AUTHOR"
-.LP 
+.LP
 aCaB <acab@clamav.net>
 .SH "SEE ALSO"
 .LP
