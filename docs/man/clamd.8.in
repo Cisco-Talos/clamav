@@ -1,42 +1,42 @@
 .TH "Clam Daemon" "8" "February 12, 2009" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
-.LP 
+.LP
 clamd \- an anti\-virus daemon
 .SH "SYNOPSIS"
-.LP 
+.LP
 clamd [options]
 .SH "DESCRIPTION"
-.LP 
-The daemon listens for incoming connections on Unix and/or TCP socket and scans files or directories on demand. It reads the configuration from @CFGDIR@/clamd.conf
+.LP
+The daemon listens for incoming connections on Unix and/or TCP socket and scans files or directories on demand. It reads the configuration from @CONFDIR@/clamd.conf
 .SH "COMMANDS"
-.LP 
+.LP
 It's recommended to prefix clamd commands with the letter \fBz\fR (eg. zSCAN) to indicate that the command will be delimited by a NULL character and that clamd should continue reading command data until a NULL character is read. The null delimiter assures that the complete command and its entire argument will be processed as a single command. Alternatively commands may be prefixed with the letter \fBn\fR (e.g. nSCAN) to use a newline character as the delimiter. Clamd replies will honour the requested terminator in turn.
 If clamd doesn't recognize the command, or the command doesn't follow the requirements specified below, it will reply with an error message, and close the connection.
 .LP
 Clamd recognizes the following commands:
 
-.TP 
+.TP
 \fBPING\fR
 Check the server's state. It should reply with "PONG".
-.TP 
+.TP
 \fBVERSION\fR
 Print program and database versions.
-.TP 
+.TP
 \fBRELOAD\fR
 Reload the virus databases.
-.TP 
+.TP
 \fBSHUTDOWN\fR
 Perform a clean exit.
-.TP 
+.TP
 \fBSCAN file/directory\fR
 Scan a file or a directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
-.TP 
+.TP
 \fBCONTSCAN file/directory\fR
 Scan file or directory (recursively) with archive support enabled and don't stop the scanning when a virus is found.
-.TP 
+.TP
 \fBMULTISCAN file/directory\fR
 Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
-.TP 
+.TP
 \fBALLMATCHSCAN file/directory\fR
 ALLMATCHSCAN works just like SCAN except that it sets a mode where scanning continues after finding a match within a file.
 .TP
@@ -83,54 +83,54 @@ their version, without the commands list.
 This command can be used as an easy way to check for IDSESSION support for
 example.
 .LP
-.TP 
+.TP
 \fBDEPRECATED COMMANDS\fR
 .TP
 \fBSTREAM\fR
-Scan stream \- on this command clamd will return "PORT number" you should connect to and send data to scan. (\fBDEPRECATED\fR, use INSTREAM instead) 
+Scan stream \- on this command clamd will return "PORT number" you should connect to and send data to scan. (\fBDEPRECATED\fR, use INSTREAM instead)
 .LP
 .TP
 \fBNOT SUPPORTED COMMANDS\fR
-.TP 
+.TP
 \fBSESSION, END\fR
 Start/end a clamd session which will allow you to run multiple commands per TCP session. (use IDSESSION instead)
 .SH "OPTIONS"
-.LP 
-.TP 
+.LP
+.TP
 \fB\-h, \-\-help\fR
 Output help information and exit.
-.TP 
+.TP
 \fB\-V, \-\-version\fR
 Print the version number and exit.
-.TP 
+.TP
 \fB\-F, \-\-foreground\fR
 Run in foreground; do not daemonize.
-.TP 
+.TP
 \fB\-\-debug\fR
 Enable debug mode.
 .TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
 .SH "SIGNALS"
-.LP 
+.LP
 Clamd recognizes the following signals:
-.TP 
+.TP
 \fBSIGHUP\fR
 Reopen the logfile.
-.TP 
+.TP
 \fBSIGUSR2\fR
 Reload the signature databases.
-.TP 
+.TP
 \fBSIGTERM\fR
 Perform a clean exit.
 .SH "FILES"
-.LP 
-@CFGDIR@/clamd.conf
+.LP
+@CONFDIR@/clamd.conf
 .SH "CREDITS"
 Please check the full documentation for credits.
 .SH "AUTHOR"
-.LP 
+.LP
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
-.LP 
+.LP
 clamd.conf(5), clamdscan(1), freshclam(1), freshclam.conf(5), clamav\-milter(8)

@@ -239,7 +239,7 @@ Default: no
 All options expressing a size are limited to max 4GB. Values in excess will be reset to the maximum.
 .SH "FILES"
 .LP
-@CFGDIR@/clamav-milter.conf
+@CONFDIR@/clamav-milter.conf
 .SH "AUTHOR"
 .LP
 aCaB <acab@clamav.net>

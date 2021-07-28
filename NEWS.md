@@ -157,6 +157,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Gianluigi Tiesi
 - Jonas Zaddach
 - Kenneth Hau
+- Mark Fortescue
 - Markus Strehle
 - Olliver Schinagl
 - Orion Poplawski
