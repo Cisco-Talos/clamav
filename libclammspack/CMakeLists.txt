@@ -60,43 +60,43 @@ target_include_directories( mspack_obj
 
 if(ENABLE_SHARED_LIB)
     # The mspack shared library.
-    add_library( mspack SHARED )
-    set_target_properties(mspack PROPERTIES
+    add_library( clammspack SHARED )
+    set_target_properties(clammspack PROPERTIES
         VERSION "0.8.0" SOVERSION 0)
     if(WIN32)
-        set_target_properties(mspack PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        set_target_properties(clammspack PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
-    target_sources( mspack
+    target_sources( clammspack
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/mspack/mspack.h )
     if(WIN32)
-        install(TARGETS mspack DESTINATION .)
+        install(TARGETS clammspack DESTINATION .)
     else()
-        install(TARGETS mspack DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        install(TARGETS clammspack DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
     # Public (forwarded) dependencies.
-    target_link_libraries( mspack
+    target_link_libraries( clammspack
         PUBLIC
             mspack_obj )
 
-    add_library( ClamAV::libmspack ALIAS mspack )
+    add_library( ClamAV::libmspack ALIAS clammspack )
 endif()
 
 if(ENABLE_STATIC_LIB)
     # The clamav static library.
-    add_library( mspack_static STATIC)
-    target_sources( mspack_static
+    add_library( clammspack_static STATIC)
+    target_sources( clammspack_static
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/mspack/mspack.h )
 
     # Public (forwarded) dependencies.
-    target_link_libraries( mspack_static
+    target_link_libraries( clammspack_static
         PUBLIC
             mspack_obj )
 
-    add_library( ClamAV::libmspack_static ALIAS mspack_static )
+    add_library( ClamAV::libmspack_static ALIAS clammspack_static )
     if(NOT ENABLE_SHARED_LIB)
-        add_library( ClamAV::libmspack ALIAS mspack_static )
+        add_library( ClamAV::libmspack ALIAS clammspack_static )
     endif()
 endif()
