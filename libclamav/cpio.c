@@ -191,12 +191,14 @@ leave:
 int cli_scancpio_odc(cli_ctx *ctx)
 {
     struct cpio_hdr_odc hdr_odc;
-    char name[513], buff[12];
+    char name[513] = {0}, buff[12] = {0};
     unsigned int file = 0, trailer = 0;
-    uint32_t filesize, namesize, hdr_namesize;
+    uint32_t filesize = 0, namesize = 0, hdr_namesize = 0;
     int ret         = CL_CLEAN;
     size_t pos      = 0;
     int virus_found = 0;
+
+    memset(&hdr_odc, 0, sizeof(hdr_odc));
 
     while (fmap_readn(*ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
         pos += sizeof(hdr_odc);
