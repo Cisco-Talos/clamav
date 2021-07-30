@@ -329,9 +329,9 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
  */
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
 {
-    char offcpy[65];
-    unsigned int n, val;
-    char *pt;
+    char offcpy[65] = {0};
+    unsigned int n = 0, val = 0;
+    char *pt = NULL;
 
     if (!info) { /* decode offset string */
         if (!offstr) {
