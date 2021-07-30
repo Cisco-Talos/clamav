@@ -299,8 +299,6 @@
    fun:allocate_stack
    ...
    fun:thrmgr_dispatch_internal
-   fun:thrmgr_group_dispatch
-   fun:dispatch_command
    ...
 }
 {
