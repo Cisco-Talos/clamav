@@ -150,6 +150,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Alexander Golovach
 - Andrea De Pasquale
 - Andrew Williams
+- Arjen de Korte
 - Armin Kuster
 - Brian Bergstrand
 - cw2k
