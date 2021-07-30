@@ -15,6 +15,12 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
+
+if (ENABLE_UNRAR)
+    add_definitions(-DHAVE_UNRAR)
+endif()
+
+
 add_definitions(-DTHIS_IS_LIBCLAMAV)
 
 #
@@ -61,9 +67,11 @@ if(ENABLE_APP)
             PRIVATE
                 ClamAV::libunrar_iface_iface)
     else()
-        target_link_libraries(check_fpu_endian
-            PRIVATE
-                ClamAV::libunrar_iface_static)
+        if (ENABLE_UNRAR)
+            target_link_libraries(check_fpu_endian
+                PRIVATE
+                    ClamAV::libunrar_iface_static)
+            endif()
     endif()
     if(LLVM_FOUND)
         target_link_directories( check_fpu_endian PUBLIC ${LLVM_LIBRARY_DIRS} )
@@ -99,9 +107,11 @@ if(ENABLE_APP)
             PRIVATE
                 ClamAV::libunrar_iface_iface)
     else()
-        target_link_libraries(check_clamd
-            PRIVATE
-                ClamAV::libunrar_iface_static)
+        if (ENABLE_UNRAR)
+            target_link_libraries(check_clamd
+                PRIVATE
+                    ClamAV::libunrar_iface_static)
+        endif()
     endif()
     if(LLVM_FOUND)
         target_link_directories( check_clamd PUBLIC ${LLVM_LIBRARY_DIRS} )
@@ -144,15 +154,20 @@ target_link_libraries(check_clamav
         BZip2::BZip2
         PCRE2::pcre2
         LibXml2::LibXml2)
-if(ENABLE_SHARED_LIB)
-    target_link_libraries(check_clamav
-        PRIVATE
-            ClamAV::libunrar_iface_iface)
-else()
-    target_link_libraries(check_clamav
-        PRIVATE
-            ClamAV::libunrar_iface_static)
+if (ENABLE_UNRAR)
+    if(ENABLE_SHARED_LIB)
+        target_link_libraries(check_clamav
+            PRIVATE
+                ClamAV::libunrar_iface_iface)
+    else()
+        if (ENABLE_UNRAR)
+            target_link_libraries(check_clamav
+                PRIVATE
+                    ClamAV::libunrar_iface_static)
+        endif()
+    endif()
 endif()
+
 if(LLVM_FOUND)
     target_link_directories( check_clamav PUBLIC ${LLVM_LIBRARY_DIRS} )
     target_link_libraries( check_clamav PUBLIC ${LLVM_LIBRARIES} )
@@ -186,10 +201,14 @@ if(WIN32)
         file(TO_NATIVE_PATH $<TARGET_FILE_DIR:check_clamav>/sigtool.exe             SIGTOOL)
     endif()
 else()
-    set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:${LIBMSPACK}>:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>:$ENV{LD_LIBRARY_PATH})
+    set(LD_LIBRARY_PATH     $<TARGET_FILE_DIR:ClamAV::libclamav>:$<TARGET_FILE_DIR:${LIBMSPACK}>:$ENV{LD_LIBRARY_PATH})
     if(NOT ENABLE_LIBCLAMAV_ONLY)
         set(LD_LIBRARY_PATH $<TARGET_FILE_DIR:ClamAV::libfreshclam>:${LD_LIBRARY_PATH})
     endif()
+    if (ENABLE_UNRAR)
+        set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>)
+    endif()
+
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
     set(BUILD              ${CMAKE_BINARY_DIR})
@@ -253,7 +272,8 @@ set(ENVIRONMENT
 # Run a specific test like this:
 #                     `ctest -V -R libclamav_valgrind_test`
 #
-add_test(NAME libclamav COMMAND ${PythonTest_COMMAND};libclamav_test.py
+
+add_test(NAME libclamav COMMAND ${PythonTest_COMMAND};libclamav_test.py 
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TEST libclamav PROPERTY ENVIRONMENT ${ENVIRONMENT})
 if(Valgrind_FOUND)
