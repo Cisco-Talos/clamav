@@ -137,7 +137,7 @@ if(ENABLE_FUZZ)
     endif()
 endif()
 
-if(ENABLE_STATIC_LIB AND NOT ENABLE_SHARED_LIB)
+if(ENABLE_STATIC_LIB AND NOT ENABLE_SHARED_LIB AND ENABLE_UNRAR)
     # When building everything static, link in libunrar.
     set(UNRAR_LINKED 1)
 endif()

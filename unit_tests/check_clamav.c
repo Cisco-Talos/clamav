@@ -447,6 +447,11 @@ static unsigned skip_files(void)
     skipped += 0;
 #endif
 
+#if HAVE_UNRAR
+#else
+    skipped += 2;
+#endif
+
     return skipped;
 }
 

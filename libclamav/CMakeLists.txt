@@ -628,7 +628,6 @@ if(ENABLE_STATIC_LIB)
             tomsfastmath
             bytecode_runtime
             ${LIBMSPACK}
-            ClamAV::libunrar_iface_static
             OpenSSL::SSL
             OpenSSL::Crypto
             ZLIB::ZLIB
@@ -636,6 +635,9 @@ if(ENABLE_STATIC_LIB)
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
+        if (ENABLE_UNRAR)
+            target_link_libraries( clamav_static PUBLIC ClamAV::libunrar_iface_static)
+        endif()
     if(NOT WIN32)
         target_link_libraries( clamav_static PUBLIC Iconv::Iconv )
     endif()
