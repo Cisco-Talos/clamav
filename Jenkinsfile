@@ -66,9 +66,8 @@ node('master') {
         dir(path: 'build') {
             sh """# CPack
                 cmake .. -D VENDOR_DEPENDENCIES=ON
-                cpack --config CPackSourceConfig.cmake
-                mv clamav-${params.VERSION}*.tar.gz clamav-${params.VERSION}.tar.gz || true """
-            archiveArtifacts(artifacts: "clamav-${params.VERSION}.tar.gz", onlyIfSuccessful: true)
+                cpack --config CPackSourceConfig.cmake """
+            archiveArtifacts(artifacts: "clamav-${params.VERSION}*.tar.gz", onlyIfSuccessful: true)
         }
 
         cleanWs()
