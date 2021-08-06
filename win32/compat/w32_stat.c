@@ -202,16 +202,32 @@ int w32_stat(const char *path, struct stat *buf)
 
 int w32_access(const char *pathname, int mode)
 {
-    wchar_t *wpath = uncpath(pathname);
     int ret;
+    HANDLE hFile          = INVALID_HANDLE_VALUE;
+    DWORD dwDesiredAccess = GENERIC_READ;
 
-    if (!wpath) {
-        errno = ENOMEM;
-        return -1;
+    if (W_OK & mode) {
+        dwDesiredAccess = dwDesiredAccess | GENERIC_WRITE;
     }
 
-    ret = _waccess(wpath, mode);
-    free(wpath);
+    hFile = CreateFileA(pathname, // file to open
+                        dwDesiredAccess,
+                        FILE_SHARE_READ,            // share for reading
+                        NULL,                       // default security
+                        OPEN_EXISTING,              // existing file only
+                        FILE_FLAG_BACKUP_SEMANTICS, // may be a directory
+                        NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        if (GetLastError() == ERROR_ACCESS_DENIED) {
+            _set_errno(EACCES);
+        } else {
+            _set_errno(ENOENT);
+        }
+        ret = -1;
+    } else {
+        CloseHandle(hFile);
+        ret = 0;
+    }
     return ret;
 }
 
