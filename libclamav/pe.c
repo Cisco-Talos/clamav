@@ -4482,7 +4482,7 @@ int cli_pe_targetinfo(fmap_t *map, struct cli_exe_info *peinfo)
  *                                          file, remove it from
  *                                          peinfo->sections. Otherwise, the
  *                                          rsz is just set to 0 for it.
- * @param ctx The overaching cli_ctx.  This is required with certain opts, but
+ * @param ctx The overarching cli_ctx.  This is required with certain opts, but
  *            optional otherwise.
  * @return If the PE header is parsed successfully, CLI_PEHEADER_RET_SUCCESS
  *         is returned. If it seems like the PE is broken,
