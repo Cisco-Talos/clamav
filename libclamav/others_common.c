@@ -1461,7 +1461,7 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
     char *real_file_path = NULL;
     cl_error_t status    = CL_EARG;
 #ifdef _WIN32
-    int desc = -1;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
 #endif
 
     cli_dbgmsg("Checking realpath of %s\n", file_name);
@@ -1482,8 +1482,6 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
     status = CL_SUCCESS;
 
 #else
-
-    HANDLE hFile;
     hFile = CreateFileA(file_name,                  // file to open
                         GENERIC_READ,               // open for reading
                         FILE_SHARE_READ,            // share for reading
@@ -1506,8 +1504,8 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
 done:
 
 #ifdef _WIN32
-    if (-1 != desc) {
-        close(desc);
+    if (hFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(hFile);
     }
 #endif
 
