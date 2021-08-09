@@ -332,7 +332,7 @@ const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 /**
  * @brief  Try hard to read the requested number of bytes
  *
- * @param fd        File desriptor to read from.
+ * @param fd        File descriptor to read from.
  * @param buff      Buffer to read data into.
  * @param count     # of bytes to read.
  * @return size_t   # of bytes read.

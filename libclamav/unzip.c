@@ -898,7 +898,7 @@ parse_central_directory_file_header(
  * @param first
  * @param second
  * @return int 1 if first record's offset is higher than second's.
- * @return int 0 if first and second reocrd offsets are equal.
+ * @return int 0 if first and second record offsets are equal.
  * @return int -1 if first record's offset is less than second's.
  */
 static int sort_by_file_offset(const void *first, const void *second)
