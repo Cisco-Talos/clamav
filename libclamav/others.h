@@ -993,6 +993,19 @@ cl_error_t cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, str
 
 const char *cli_strerror(int errnum, char *buf, size_t len);
 
+#ifdef _WIN32
+/**
+ * @brief   Attempt to get a filename from an open file handle.
+ * 
+ * Windows only.
+ *
+ * @param hFile          File handle
+ * @param[out] filepath  Will be set to file path if found, or NULL.
+ * @return cl_error_t    CL_SUCCESS if found, else an error code.
+ */
+cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath);
+#endif
+
 /**
  * @brief   Attempt to get a filename from an open file descriptor.
  *
