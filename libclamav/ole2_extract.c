@@ -1294,7 +1294,6 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                     offset = 0;
                     if (prop->size < (int64_t)hdr->sbat_cutoff) {
                         if (!ole2_get_sbat_data_block(hdr, hwp_check, prop->start_block)) {
-                            status = CL_EREAD;
                             break;
                         }
                         offset = (1 << hdr->log2_small_block_size) *
@@ -1305,7 +1304,6 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                             break;
                     } else {
                         if (!ole2_read_block(hdr, hwp_check, 1 << hdr->log2_big_block_size, prop->start_block)) {
-                            status = CL_EREAD;
                             break;
                         }
                     }
