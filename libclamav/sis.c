@@ -136,12 +136,6 @@ enum {
     FTnotinst = 99
 };
 
-#define FREE(VAR)      \
-    if (NULL != VAR) { \
-        free(VAR);     \
-        VAR = NULL;    \
-    }
-
 #define GETD2(VAR)                                                           \
     {                                                                        \
         /* cli_dbgmsg("GETD2 smax: %d sleft: %d\n", smax, sleft); */         \
