@@ -181,20 +181,21 @@ ole2_list_size(ole2_list_t *list)
 
 int ole2_list_push(ole2_list_t *list, uint32_t val)
 {
-    //check the cli - malloc ?
-    ole2_list_node_t *new_node;
+    ole2_list_node_t * new_node = NULL;
+    int status = CL_EMEM;
 
-    new_node = (ole2_list_node_t *)cli_malloc(sizeof(ole2_list_node_t));
-    if (!new_node) {
-        cli_dbgmsg("OLE2: could not allocate new node for worklist!\n");
-        return CL_EMEM;
-    }
+    CLI_MALLOC(new_node, sizeof(ole2_list_node_t), 
+            cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
+
     new_node->Val  = val;
     new_node->Next = list->Head;
 
     list->Head = new_node;
     (list->Size)++;
-    return CL_SUCCESS;
+
+    status = CL_SUCCESS;
+done:
+    return status;
 }
 
 uint32_t
@@ -238,16 +239,14 @@ char *
 cli_ole2_get_property_name2(const char *name, int size)
 {
     int i, j;
-    char *newname;
+    char * newname = NULL;
 
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    newname = (char *)cli_malloc(size * 7);
-    if (!newname) {
-        cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7);
-        return NULL;
-    }
+    CLI_MALLOC(newname, size*7, 
+        cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
+
     j = 0;
     /* size-2 to ignore trailing NULL */
     for (i = 0; i < size - 2; i += 2) {
@@ -273,8 +272,10 @@ cli_ole2_get_property_name2(const char *name, int size)
     newname[j] = '\0';
     if (strlen(newname) == 0) {
         free(newname);
-        return NULL;
+        newname = NULL;
     }
+
+done:
     return newname;
 }
 
@@ -283,33 +284,36 @@ get_property_name(char *name, int size)
 {
     const char *carray = "0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz._";
     int csize          = size >> 1;
-    char *newname, *cname;
+    char * newname = NULL;
+    char * cname = NULL;
     char *oname = name;
 
-    if (csize <= 0)
-        return NULL;
-
-    newname = cname = (char *)cli_malloc(size);
-    if (!newname) {
-        cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size);
+    if (csize <= 0) {
         return NULL;
     }
+
+    CLI_MALLOC(newname, size, 
+        cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
+    cname = newname;
+
     while (--csize) {
         uint16_t lo, hi, u = cli_readint16(oname) - 0x3800;
 
         oname += 2;
         if (u > 0x1040) {
-            free(newname);
+            FREE(newname);
             return cli_ole2_get_property_name2(name, size);
         }
         lo = u % 64;
         u >>= 6;
         hi       = u % 64;
         *cname++ = carray[lo];
-        if (csize != 1 || u != 64)
+        if (csize != 1 || u != 64) {
             *cname++ = carray[hi];
+        }
     }
     *cname = '\0';
+done:
     return newname;
 }
 
@@ -824,14 +828,14 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
 {
     cl_error_t ret = CL_BREAK;
     char newname[1024];
-    char *name          = NULL;
-    unsigned char *buff = NULL;
-    int32_t current_block;
-    size_t len, offset;
+    char* name = NULL;
+    unsigned char * buff = NULL;
+    int32_t current_block = 0;
+    size_t len = 0, offset = 0;
     int ofd = -1;
-    char *hash;
-    bitset_t *blk_bitset = NULL;
-    uint32_t cnt;
+    char* hash = NULL;
+    bitset_t* blk_bitset = NULL;
+    uint32_t cnt = 0;
 
     UNUSEDPARAM(ctx);
 
@@ -875,12 +879,9 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     current_block = prop->start_block;
     len           = prop->size;
 
-    buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
-    if (!buff) {
+    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, 
         cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-        ret = CL_EMEM;
-        goto done;
-    }
+        ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -946,15 +947,11 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     ret = CL_SUCCESS;
 
 done:
-    if (NULL != name) {
-        free(name);
-    }
+    FREE(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    if (NULL != buff) {
-        free(buff);
-    }
+    FREE(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1135,11 +1132,11 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
 static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t *prop, cli_ctx *ctx, bool *found_macro, bool *found_image)
 {
     cl_error_t status   = CL_EPARSE;
-    unsigned char *buff = NULL;
-    int32_t current_block;
-    size_t len, offset;
-    bitset_t *blk_bitset = NULL;
-    struct biff_parser_state state;
+    unsigned char * buff = NULL;
+    int32_t current_block = 0;
+    size_t len = 0, offset = 0;
+    bitset_t * blk_bitset = NULL;
+    struct biff_parser_state state = {0};
 
     if (prop->type != 2) {
         /* Not a file */
@@ -1151,12 +1148,10 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     current_block = prop->start_block;
     len           = prop->size;
 
-    buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
-    if (!buff) {
+    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, 
         cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-        status = CL_EMEM;
-        goto done;
-    }
+        status = CL_EMEM);
+
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
         cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: init bitset failed\n");
@@ -1203,14 +1198,14 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     status = CL_SUCCESS;
 
 done:
-    if (buff) {
-        free(buff);
-    }
+    FREE(buff);
+
     if (blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
     return status;
 }
+
 
 /**
  * @brief enum file Handler - checks for VBA presence
@@ -1224,12 +1219,12 @@ done:
 static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
     cl_error_t status = CL_EREAD;
-
-    char *name = NULL;
-    unsigned char *hwp_check;
-    int32_t offset;
+    char* name = NULL;
+    unsigned char * hwp_check = NULL;
+    int32_t offset = 0;
 #if HAVE_JSON
-    json_object *arrobj, *strmobj;
+    json_object* arrobj = NULL;
+    json_object* strmobj = NULL;
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
@@ -1272,15 +1267,12 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
      * identify the HWP signature "HWP Document File" at offset 0 stream
      */
     if (!hdr->is_hwp) {
-        if (!name)
+        if (!name) {
             name = cli_ole2_get_property_name2(prop->name, prop->name_size);
+        }
         if (name) {
             if (!strcmp(name, "fileheader")) {
-                hwp_check = (unsigned char *)cli_calloc(1, 1 << hdr->log2_big_block_size);
-                if (!hwp_check) {
-                    status = CL_EMEM;
-                    goto done;
-                }
+                CLI_CALLOC(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
 
                 /* reading safety checks; do-while used for breaks */
                 do {
@@ -1314,11 +1306,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 #if HAVE_JSON
                         cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
 #endif
-                        hwp_new = cli_calloc(1, sizeof(hwp5_header_t));
-                        if (!(hwp_new)) {
-                            status = CL_EMEM;
-                            goto done;
-                        }
+                        CLI_CALLOC(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
                         /*
                          * Copy the header information into our header struct.
@@ -1332,7 +1320,6 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                     }
                 } while (0);
 
-                free(hwp_check);
             }
         }
     }
@@ -1353,9 +1340,8 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
     status = CL_SUCCESS;
 
 done:
-    if (NULL != name) {
-        free(name);
-    }
+    FREE(name);
+    FREE(hwp_check);
 
     return status;
 }
@@ -1532,14 +1518,14 @@ mso_end:
 static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
     cl_error_t ret      = CL_BREAK;
-    char *tempfile      = NULL;
-    char *name          = NULL;
-    unsigned char *buff = NULL;
-    int32_t current_block;
-    size_t len, offset;
+    char* tempfile = NULL;
+    char * name = NULL;
+    unsigned char * buff = NULL;
+    int32_t current_block = 0;
+    size_t len = 0, offset = 0;
     int ofd = -1;
-    int is_mso;
-    bitset_t *blk_bitset = NULL;
+    int is_mso = 0;
+    bitset_t * blk_bitset = NULL;
 
     UNUSEDPARAM(dir);
 
@@ -1571,11 +1557,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
-    buff = (unsigned char *)cli_malloc(1 << hdr->log2_big_block_size);
-    if (!buff) {
-        ret = CL_EMEM;
-        goto done;
-    }
+    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1686,15 +1668,11 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
 done:
-    if (NULL != name) {
-        free(name);
-    }
+    FREE(name);
     if (-1 != ofd) {
         close(ofd);
     }
-    if (NULL != buff) {
-        free(buff);
-    }
+    FREE(buff);
     if (NULL != blk_bitset) {
         cli_bitset_free(blk_bitset);
     }
@@ -1705,6 +1683,7 @@ done:
             }
         }
         free(tempfile);
+        tempfile = NULL;
     }
 
     return ret;

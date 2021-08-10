@@ -1050,4 +1050,92 @@ uint8_t cli_get_debug_flag();
  */
 uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
+
+#ifndef STRDUP
+#define STRDUP(buf, var, ...)                  \
+    do {                                       \
+        var = strdup(buf);                     \
+        if (NULL == var) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef FREE
+#define FREE(var)                              \
+    do {                                       \
+        if (NULL != var) {                     \
+            free(var);                         \
+            var = NULL;                        \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef MALLOC
+#define MALLOC(var, size, ...)                 \
+    do {                                       \
+        var = malloc(size);                    \
+        if (NULL == var) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef CLI_MALLOC
+#define CLI_MALLOC(var, size, ...)             \
+    do {                                       \
+        var = cli_malloc(size);                \
+        if (NULL == var) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef CALLOC
+#define CALLOC(var, nmemb, size, ...)       \
+    do {                                       \
+        (var) = calloc(nmemb, size);           \
+        if (NULL == var) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef CLI_CALLOC
+#define CLI_CALLOC(var, nmemb, size, ...)      \
+    do {                                       \
+        (var) = cli_calloc(nmemb, size);       \
+        if (NULL == var) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
+#ifndef VERIFY_POINTER
+#define VERIFY_POINTER(ptr, ...)            \
+    do {                                       \
+        if (NULL == ptr) {                     \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+    } while (0)
+#endif
+
 #endif

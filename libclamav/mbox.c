@@ -605,45 +605,6 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
     return retcode;
 }
 
-/*TODO: move these to a header.*/
-#define DO_STRDUP(buf, var) \
-    do {                    \
-        var = strdup(buf);  \
-        if (NULL == var) {  \
-            goto done;      \
-        }                   \
-    } while (0)
-
-#define DO_FREE(var)       \
-    do {                   \
-        if (NULL != var) { \
-            free(var);     \
-            var = NULL;    \
-        }                  \
-    } while (0)
-
-#define DO_MALLOC(var, size) \
-    do {                     \
-        var = malloc(size);  \
-        if (NULL == var) {   \
-            goto done;       \
-        }                    \
-    } while (0)
-
-#define DO_CALLOC(var, size)                   \
-    do {                                       \
-        (var) = calloc((size), sizeof *(var)); \
-        if (NULL == var) {                     \
-            goto done;                         \
-        }                                      \
-    } while (0)
-
-#define DO_VERIFY_POINTER(ptr) \
-    do {                       \
-        if (NULL == ptr) {     \
-            goto done;         \
-        }                      \
-    } while (0)
 
 #define READ_STRUCT_BUFFER_LEN 1024
 typedef struct _ReadStruct {
@@ -671,7 +632,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
-        DO_CALLOC(next, 1);
+        CLI_CALLOC(next, 1, sizeof(ReadStruct));
 
         rs->next = next;
         strcpy(next->buffer, &(buffer[part]));
@@ -701,7 +662,7 @@ getMallocedBufferFromList(const ReadStruct *head)
         rs = rs->next;
     }
 
-    DO_MALLOC(working, bufferLen);
+    MALLOC(working, bufferLen);
 
     rs        = head;
     bufferLen = 0;
@@ -715,7 +676,7 @@ getMallocedBufferFromList(const ReadStruct *head)
     ret = working;
 done:
     if (NULL == ret) {
-        DO_FREE(working);
+        FREE(working);
     }
 
     return ret;
@@ -726,7 +687,7 @@ freeList(ReadStruct *head)
 {
     while (head) {
         ReadStruct *rs = head->next;
-        DO_FREE(head);
+        FREE(head);
         head = rs;
     }
 }
@@ -891,7 +852,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
     if (ret == NULL)
         return NULL;
 
-    DO_CALLOC(head, 1);
+    CLI_CALLOC(head, 1, sizeof(ReadStruct));
     curr = head;
 
     strncpy(buffer, firstLine, sizeof(buffer) - 1);
@@ -953,20 +914,20 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (head->bufferLen) {
                         char *header     = getMallocedBufferFromList(head);
                         int needContinue = 0;
-                        DO_VERIFY_POINTER(header);
+                        VERIFY_POINTER(header);
 
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
-                            DO_FREE(header);
+                            FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
                         if (*heuristicFound) {
-                            DO_FREE(header);
+                            FREE(header);
                             break;
                         }
 
-                        DO_FREE(header);
+                        FREE(header);
                         FREELIST_REALLOC(head, curr);
 
                         if (needContinue) {
@@ -1070,7 +1031,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                 {
                     char *header     = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
-                    DO_VERIFY_POINTER(header);
+                    VERIFY_POINTER(header);
 
                     needContinue = (header[strlen(header) - 1] == ';');
                     if (0 == needContinue) {
@@ -1080,18 +1041,18 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     if (0 == needContinue) {
                         totalHeaderCnt++;
                         if (haveTooManyEmailHeaders(totalHeaderCnt, ctx, heuristicFound)) {
-                            DO_FREE(header);
+                            FREE(header);
                             break;
                         }
                         needContinue = (parseEmailHeader(ret, header, rfc821, ctx, heuristicFound) < 0);
                         if (*heuristicFound) {
-                            DO_FREE(header);
+                            FREE(header);
                             break;
                         }
                         /*Check total headers here;*/
                     }
 
-                    DO_FREE(header);
+                    FREE(header);
                     if (needContinue) {
                         continue;
                     }
@@ -1147,7 +1108,7 @@ done:
         ret->isTruncated = TRUE;
     }
 
-    DO_FREE(boundary);
+    FREE(boundary);
 
     freeList(head);
 
@@ -1444,7 +1405,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821, cli_ctx *c
         }
     }
 done:
-    DO_FREE(copy);
+    FREE(copy);
 
     return ret;
 }
