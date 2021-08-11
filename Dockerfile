@@ -62,11 +62,22 @@ RUN apk add --no-cache \
         -e "s|.*\(PidFile\) .*|\1 /run/lock/clamd.pid|" \
         -e "s|.*\(LocalSocket\) .*|\1 /run/clamav/clamd.sock|" \
         -e "s|.*\(TCPSocket\) .*|\1 3310|" \
+        -e "s|.*\(MaxScanSize\) .*|\1 2000M|" \
         -e "s|.*\(TCPAddr\) .*|\1 0.0.0.0|" \
-        -e "s|.*\(User\) .*|\1 clamav|" \
+        -e "s|.*\(MaxDirectoryRecursion\) .*|\1 40|" \
         -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/clamd.log|" \
         -e "s|^\#\(LogTime\).*|\1 yes|" \
         "/clamav/etc/clamav/clamd.conf.sample" > "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath proc\/bus" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/module" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/kernel" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/power" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/devices" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/fs" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/firmware" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/bus" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath sys\/class" >> "/clamav/etc/clamav/clamd.conf" && \
+    echo "ExcludePath proc\/sys" >> "/clamav/etc/clamav/clamd.conf" && \
     sed -e "s|^\(Example\)|\# \1|" \
         -e "s|.*\(PidFile\) .*|\1 /run/lock/freshclam.pid|" \
         -e "s|.*\(DatabaseOwner\) .*|\1 clamav|" \
@@ -108,5 +119,5 @@ RUN apk add --no-cache \
 COPY --from=builder "/clamav" "/"
 COPY "./dockerfiles/clamdcheck.sh" "/usr/local/bin/"
 COPY "./dockerfiles/docker-entrypoint.sh" "/init"
-
+RUN echo "0       0       *       *       *       time clamdscan --fdpass --multiscan /folder-to-scan/aufs/ 2>&1 | tee -a /var/log/clamav/clamdscan.log" >> /etc/crontabs/root
 ENTRYPOINT [ "/init" ]

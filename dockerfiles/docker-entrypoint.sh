@@ -77,7 +77,8 @@ else
 	fi
 
 	# Wait forever (or until canceled)
-	exec tail -f "/dev/null"
+	# exec tail -f "/dev/null"
+	crond -l 2 -f
 fi
 
 exit 0
