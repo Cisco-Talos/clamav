@@ -48,7 +48,7 @@ if(ENABLE_APP)
     target_link_libraries(check_fpu_endian
         PRIVATE
             libcheck::check
-            clamav_obj
+            ClamAV::libclamav
             regex
             lzma_sdk
             yara
@@ -88,7 +88,7 @@ if(ENABLE_APP)
         PRIVATE
             libcheck::check
             ClamAV::common
-            clamav_obj
+            ClamAV::libclamav
             regex
             lzma_sdk
             yara
@@ -140,7 +140,7 @@ target_sources(check_clamav
 target_link_libraries(check_clamav
     PRIVATE
         libcheck::check
-        clamav_obj
+        ClamAV::libclamav
         regex
         lzma_sdk
         yara
@@ -273,7 +273,7 @@ set(ENVIRONMENT
 #                     `ctest -V -R libclamav_valgrind_test`
 #
 
-add_test(NAME libclamav COMMAND ${PythonTest_COMMAND};libclamav_test.py 
+add_test(NAME libclamav COMMAND ${PythonTest_COMMAND};libclamav_test.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(TEST libclamav PROPERTY ENVIRONMENT ${ENVIRONMENT})
 if(Valgrind_FOUND)

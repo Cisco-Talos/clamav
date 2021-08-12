@@ -10,56 +10,52 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
-# The libfreshclam object library
-add_library( libfreshclam_obj OBJECT )
-target_sources( libfreshclam_obj
-    PRIVATE
-        libfreshclam.c
-        libfreshclam_internal.c
-        libfreshclam_internal.h
-        dns.c
-        dns.h
-    PUBLIC
-        libfreshclam.h )
-target_include_directories( libfreshclam_obj
-    PRIVATE
-        ${CMAKE_BINARY_DIR} # For clamav-config.h
-    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
-set_target_properties( libfreshclam_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
-target_link_libraries( libfreshclam_obj
-    PUBLIC
-        ClamAV::common
-        CURL::libcurl
-        OpenSSL::SSL
-        OpenSSL::Crypto )
-if(APPLE)
-    target_link_libraries( libfreshclam_obj
-        PUBLIC
-            resolv
-            ${APPLE_CORE_FOUNDATION}
-            ${APPLE_SECURITY} )
-elseif(UNIX)
-    if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
-        target_link_libraries( libfreshclam_obj
-            PUBLIC
-                resolv )
-    endif()
-endif()
-
-
-if(WIN32)
-    target_sources( libfreshclam_obj PRIVATE libfreshclam_main.c)
-endif()
+# not using an object library for the sake of Xcode compatibility
+# See: https://cmake.org/pipermail/cmake/2016-May/063479.html
+set(LIBFRESHCLAM_SOURCES
+    libfreshclam.c
+    libfreshclam_internal.c
+    libfreshclam_internal.h
+    dns.c
+    dns.h
+)
 
 if(ENABLE_SHARED_LIB)
     # The libfreshclam shared library.
     add_library( freshclam SHARED )
     target_sources( freshclam
+        PRIVATE
+            ${LIBFRESHCLAM_SOURCES}
         PUBLIC
             libfreshclam.h )
+    if(WIN32)
+        target_sources( freshclam PRIVATE libfreshclam_main.c)
+    endif()
+    target_include_directories( freshclam
+        PRIVATE
+            ${CMAKE_BINARY_DIR} # For clamav-config.h
+        PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
+
     target_link_libraries( freshclam
         PUBLIC
-            libfreshclam_obj )
+            ClamAV::common
+            CURL::libcurl
+            OpenSSL::SSL
+            OpenSSL::Crypto )
+    if(APPLE)
+        target_link_libraries( freshclam
+            PUBLIC
+                resolv
+                ${APPLE_CORE_FOUNDATION}
+                ${APPLE_SECURITY} )
+    elseif(UNIX)
+        if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
+            target_link_libraries( freshclam
+                PUBLIC
+                    resolv )
+        endif()
+    endif()
+
     if(WIN32)
         set_target_properties(freshclam PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()
@@ -105,11 +101,38 @@ if(ENABLE_STATIC_LIB)
     # The freshclam static library.
     add_library(freshclam_static STATIC)
     target_sources(freshclam_static
+        PRIVATE
+            ${LIBFRESHCLAM_SOURCES}
         PUBLIC
             libfreshclam.h )
-    target_link_libraries(freshclam_static
+    if(WIN32)
+        target_sources( freshclam_static PRIVATE libfreshclam_main.c)
+    endif()
+    target_include_directories( freshclam_static
+        PRIVATE
+            ${CMAKE_BINARY_DIR} # For clamav-config.h
+        PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
+
+    target_link_libraries( freshclam_static
         PUBLIC
-            libfreshclam_obj )
+            ClamAV::common
+            CURL::libcurl
+            OpenSSL::SSL
+            OpenSSL::Crypto )
+    if(APPLE)
+        target_link_libraries( freshclam_static
+            PUBLIC
+                resolv
+                ${APPLE_CORE_FOUNDATION}
+                ${APPLE_SECURITY} )
+    elseif(UNIX)
+        if(HAVE_RESOLV_H AND NOT C_BSD) # BSD appears to have libresolv inside libc
+            target_link_libraries( freshclam_static
+                PUBLIC
+                    resolv )
+        endif()
+    endif()
+
     set_target_properties(freshclam_static PROPERTIES
         ARCHIVE_OUTPUT_NAME freshclam_static
         COMPILE_FLAGS       "${WARNCFLAGS}"

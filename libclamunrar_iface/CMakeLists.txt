@@ -24,21 +24,12 @@ target_include_directories( clamunrar_iface_iface
 add_library( ClamAV::libunrar_iface_iface ALIAS clamunrar_iface_iface )
 
 if(ENABLE_UNRAR)
-    # unrar_iface object
-    add_library( unrar_iface_obj OBJECT )
-    target_sources( unrar_iface_obj
-        PRIVATE
-            unrar_iface.cpp
-            unrar_iface.h )
-
-    target_include_directories( unrar_iface_obj
-        PRIVATE
-            ${CMAKE_BINARY_DIR} # For clamav-config.h
-            $<TARGET_PROPERTY:ClamAV::libunrar,INTERFACE_INCLUDE_DIRECTORIES>
-            $<TARGET_PROPERTY:ClamAV::libclamav,INTERFACE_INCLUDE_DIRECTORIES> )
-
-    set_target_properties( unrar_iface_obj PROPERTIES
-        COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}" )
+    # not using an object library for the sake of Xcode compatibility
+    # See: https://cmake.org/pipermail/cmake/2016-May/063479.html
+    set(UNRAR_IFACE_SOURCES
+        unrar_iface.cpp
+        unrar_iface.h
+    )
 
     if(ENABLE_SHARED_LIB)
         # The clamunrar_iface SHARED library.
@@ -46,9 +37,21 @@ if(ENABLE_UNRAR)
         set_target_properties(clamunrar_iface PROPERTIES
             VERSION ${LIBCLAMAV_VERSION}
             SOVERSION ${LIBCLAMAV_SOVERSION})
+
         target_sources( clamunrar_iface
+            PRIVATE
+                ${UNRAR_IFACE_SOURCES}
             PUBLIC
                 ${CMAKE_CURRENT_SOURCE_DIR}/unrar_iface.h )
+
+        target_include_directories( clamunrar_iface
+            PRIVATE
+                ${CMAKE_BINARY_DIR} # For clamav-config.h
+                $<TARGET_PROPERTY:ClamAV::libunrar,INTERFACE_INCLUDE_DIRECTORIES>
+                $<TARGET_PROPERTY:ClamAV::libclamav,INTERFACE_INCLUDE_DIRECTORIES> )
+
+        set_target_properties( clamunrar_iface PROPERTIES
+            COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}" )
 
         if(WIN32)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -57,7 +60,6 @@ if(ENABLE_UNRAR)
         # Private (internal-only) dependencies.
         target_link_libraries( clamunrar_iface
             PRIVATE
-                unrar_iface_obj
                 ClamAV::libunrar
             PUBLIC
                 ClamAV::libunrar_iface_iface)
@@ -74,14 +76,22 @@ if(ENABLE_UNRAR)
     if(ENABLE_STATIC_LIB)
         # The clamunrar_iface static library.
         add_library( clamunrar_iface_static STATIC)
+
         target_sources( clamunrar_iface_static
+            PRIVATE
+                ${UNRAR_IFACE_SOURCES}
             PUBLIC
                 ${CMAKE_CURRENT_SOURCE_DIR}/unrar_iface.h )
+
+        target_include_directories( clamunrar_iface_static
+            PRIVATE
+                ${CMAKE_BINARY_DIR} # For clamav-config.h
+                $<TARGET_PROPERTY:ClamAV::libunrar,INTERFACE_INCLUDE_DIRECTORIES>
+                $<TARGET_PROPERTY:ClamAV::libclamav,INTERFACE_INCLUDE_DIRECTORIES> )
 
         # Public (forwarded) dependencies.
         target_link_libraries( clamunrar_iface_static
             PRIVATE
-                unrar_iface_obj
                 ClamAV::libunrar_static )
 
         add_library( ClamAV::libunrar_iface_static ALIAS clamunrar_iface_static )

@@ -276,12 +276,7 @@ set(CPACK_PACKAGE_NAME ${PACKAGE_STRING})
 
 #set(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/logo.png)
 #set(CPACK_PACKAGE_RELOCATABLE TRUE)
-if (APPLE AND CLAMAV_SIGN_FILE)
-    # on macOS, strip files later (during signing)
-    set(CPACK_STRIP_FILES FALSE)
-else()
-    set(CPACK_STRIP_FILES TRUE)
-endif()
+set(CPACK_STRIP_FILES TRUE)
 
 set(CPACK_PACKAGE_VERSION_MAJOR ${CLAMAV_VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${CLAMAV_VERSION_MINOR})
@@ -322,7 +317,7 @@ if (WIN32)
 
 elseif(APPLE)
     set(CPACK_GENERATOR productbuild)
-    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.macos.${CMAKE_SYSTEM_PROCESSOR})
+    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.macos.universal)
     set(CPACK_PACKAGE_VENDOR "cisco")  # For Apple, creates short name com.cisco.clamav.xxx in pkgutil
 
     # productbuild requires components or it won't add anything to the PKG
@@ -339,7 +334,15 @@ elseif(APPLE)
     set(CPACK_COMPONENT_LIBRARIES_REQUIRED ON) # always install the libs
     set(CPACK_COMPONENTS_ALL libraries documentation programs)
 
-    if(CMAKE_FIND_PACKAGE_PREFER_CONFIG)
+    if(CLAMAV_SIGN_FILE)
+        # This tells Xcode's signing phase to pretend that the binary was signed by the linker.
+        # Then install_name_tool is willing to revise the ad-hoc signature.
+        # See: https://gitlab.kitware.com/cmake/cmake/-/issues/21854#note_907691
+        set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "-o linker-signed")
+
+        # Stripping the files will invalidate the signatures.
+        set(CPACK_STRIP_FILES FALSE)
+
         # Convert NEWS.md to HTML to match Apple productbuild requirements.
         # Not in the path, try using: python3 -m pytest
         execute_process(
@@ -390,7 +393,19 @@ else()
 
     set(CPACK_RPM_PACKAGE_LICENSE "GPLv2")
     set(CPACK_RPM_PACKAGE_AUTOREQ " no")
-    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/sbin")
+    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/sbin"
+        "/usr/local"
+        "/usr/local/bin"
+        "/usr/local/etc"
+        "/usr/local/include"
+        "/usr/local/lib"
+        "/usr/local/sbin"
+        "/usr/local/share"
+        "/usr/local/share/man"
+        "/usr/local/share/man/man1"
+        "/usr/local/share/man/man5"
+        "/usr/local/share/man/man8"
+    )
 endif()
 
 # Including CPack must be the very last CPack thing we do.

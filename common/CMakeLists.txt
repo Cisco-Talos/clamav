@@ -10,9 +10,9 @@ if(WIN32)
     include_directories(${CMAKE_SOURCE_DIR}/win32/compat)
 endif()
 
-# The "common" object library
-add_library( common_obj OBJECT )
-target_sources( common_obj
+# The "common" static library.
+add_library( common STATIC )
+target_sources( common
     PRIVATE
         cert_util.c
         cdiff.c
@@ -39,25 +39,24 @@ target_sources( common_obj
         output.h
         tar.h )
 
-target_include_directories( common_obj
+target_include_directories( common
     PRIVATE ${CMAKE_BINARY_DIR}
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 if(FOUND_SYSTEMD)
-    target_include_directories( common_obj
+    target_include_directories( common
         PRIVATE ${SYSTEMD_INCLUDE_DIRS} )
 endif()
-set_target_properties( common_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 
 if(APPLE)
-    target_sources( common_obj PRIVATE mac/cert_util_mac.m )
+    target_sources( common PRIVATE mac/cert_util_mac.m )
 elseif(WIN32)
-    target_sources( common_obj PRIVATE service.c PUBLIC service.h )
-    target_sources( common_obj PRIVATE win/cert_util_win.c )
+    target_sources( common PRIVATE service.c PUBLIC service.h )
+    target_sources( common PRIVATE win/cert_util_win.c )
 else()
-    target_sources( common_obj PRIVATE linux/cert_util_linux.c )
+    target_sources( common PRIVATE linux/cert_util_linux.c )
 endif()
 
-target_link_libraries( common_obj
+target_link_libraries( common
     PUBLIC
         ClamAV::libclamav
         ZLIB::ZLIB
@@ -65,23 +64,17 @@ target_link_libraries( common_obj
         OpenSSL::SSL
         OpenSSL::Crypto )
 if(WIN32)
-    target_link_libraries( common_obj
+    target_link_libraries( common
         PUBLIC
             crypt32 )
 endif()
 
 if(HAVE_SYSTEMD)
-    target_link_libraries( common_obj
+    target_link_libraries( common
         PRIVATE
             SYSTEMD::systemd )
 endif()
 
-# The "common" static library.
-add_library( common STATIC )
-
-target_link_libraries( common
-    PUBLIC
-        common_obj )
 set_target_properties( common PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 if(WIN32)
     set_target_properties(common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
