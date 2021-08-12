@@ -755,7 +755,7 @@ void cli_logg_unsetup(void);
 #define __hot__
 #endif
 
-#define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
+#define cli_dbgmsg (!UNLIKELY(cli_get_debug_flag())) ? (void)0 : cli_dbgmsg_internal
 
 #ifdef __GNUC__
 void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));
@@ -1031,5 +1031,23 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
  * @return cl_error_t   CL_SUCCESS if found, else an error code.
  */
 cl_error_t cli_realpath(const char *file_name, char **real_filename);
+
+/**
+ * @brief   Get the libclamav debug flag (e.g. if debug logging is enabled)
+ *
+ * This is required for unit tests to be able to link with clamav.dll and not
+ * directly manipulate libclamav global variables.
+ */
+uint8_t cli_get_debug_flag();
+
+/**
+ * @brief   Set the libclamav debug flag to a specific value.
+ *
+ * The public cl_debug() API will only ever enable debug mode, it won't disable debug mode.
+ *
+ * This is required for unit tests to be able to link with clamav.dll and not
+ * directly manipulate libclamav global variables.
+ */
+uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
 #endif
