@@ -61,15 +61,17 @@ END_TEST
 /* extern void cl_debug(void); */
 START_TEST(test_cl_debug)
 {
-    int old_status = cli_debug_flag;
-    cli_debug_flag = 0;
-    cl_debug();
-    ck_assert_msg(1 == cli_debug_flag, "cl_debug failed to set cli_debug_flag");
+    int old_status = cli_set_debug_flag(0);
 
-    cli_debug_flag = 1;
     cl_debug();
-    ck_assert_msg(1 == cli_debug_flag, "cl_debug failed when flag was already set");
-    cli_debug_flag = old_status;
+    ck_assert_msg(1 == cli_get_debug_flag(), "cl_debug failed to set cli_debug_flag");
+
+    (void)cli_set_debug_flag(1);
+
+    cl_debug();
+    ck_assert_msg(1 == cli_get_debug_flag(), "cl_debug failed when flag was already set");
+
+    (void)cli_set_debug_flag(old_status);
 }
 END_TEST
 

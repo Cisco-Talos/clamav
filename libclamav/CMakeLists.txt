@@ -282,258 +282,215 @@ target_link_libraries( bytecode_runtime
         PCRE2::pcre2
         JSONC::jsonc )
 
-# clamav clamav_obj
-add_library( clamav_obj OBJECT )
-target_sources( clamav_obj
-    PRIVATE
-        # Utils
-        blob.c              blob.h
-        conv.c              conv.h
-        fpu.c               fpu.h
-        hashtab.c           hashtab.h
-        iowrap.c            iowrap.h
-        json_api.c          json_api.h
-        jsparse/textbuf.h
-        others_common.c     others.h
-        qsort.c
-        sf_base64decode.c   sf_base64decode.h
-        str.c               str.h
-        strlcat.c
-        table.c             table.h
-        text.c              text.h
-        uniq.c              uniq.h
-        www.c               www.h
-        # Utils Disasm
-        disasm-common.h     disasm.c    disasm.h    disasmpriv.h
-        # Matcher
-        filtering.c         filtering.h
-        matcher-ac.c        matcher-ac.h
-        matcher-bm.c        matcher-bm.h
-        matcher-byte-comp.c matcher-byte-comp.h
-        matcher-hash.c      matcher-hash.h
-        matcher-pcre.c      matcher-pcre.h
-        matcher.c           matcher.h
-        regex_pcre.c        regex_pcre.h
-        # Database
-        cvd.c               cvd.h
-        dconf.c             dconf.h
-        dsig.c              dsig.h
-        readdb.c            readdb.h
-        # Core
-        cache.c             cache.h
-        crtmgr.c            crtmgr.h
-        crypto.c
-        default.h
-        filetypes_int.h     filetypes.c     filetypes.h
-        fmap.c              fmap.h
-        mpool.c             mpool.h
-        others.c
-        perflogging.c       perflogging.h
-        scanners.c          scanners.h
-        textdet.c           textdet.h
-        version.c
-        # file normalization (for matching)
-        htmlnorm.c          htmlnorm.h
-        jsparse/generated/keywords.h
-        jsparse/generated/operators.h
-        jsparse/js-norm.c
-        jsparse/js-norm.h
-        jsparse/lexglobal.h
-        textnorm.c          textnorm.h
-        # heuristics (hardcoded exploit/malware detection)
-        partition_intersection.c partition_intersection.h
-        special.c           special.h
-        # clamav statistics
-        hostid_internal.c   hostid_internal.h
-        stats_json.c        stats_json.h
-        stats.c             stats.h
-        # clamav bytecode support
-        bcfeatures.h
-        builtin_bytecodes.h
-        bytecode_api_decl.c
-        bytecode_api_impl.h
-        bytecode_api.c      bytecode_api.h
-        bytecode_detect.c   bytecode_detect.h
-        bytecode_hooks.h
-        bytecode_priv.h
-        bytecode_vm.c
-        bytecode.c          bytecode.h
-        events.c            events.h
-        type_desc.h
-        # utils: compression
-        7z_iface.c          7z_iface.h
-        explode.c           explode.h
-        inffixed64.h
-        inflate64_priv.h    inflate64.c     inflate64.h
-        lzma_iface.c        lzma_iface.h
-        lzw/lzwdec.c        lzw/lzwdec.h
-        xz_iface.c          xz_iface.h
-        # utils: encryption
-        arc4.c              arc4.h
-        rijndael.c          rijndael.h
-        # utils: text conversion
-        encoding_aliases.h
-        entconv.c           entconv.h
-        entitylist.h
-        # Data-Loss-Prevention
-        dlp.c               dlp.h
-        #
-        # FILE PARSERS
-        #
-        # autoit
-        autoit.c            autoit.h
-        # binhex
-        binhex.c            binhex.h
-        # cpio
-        cpio.c              cpio.h
-        # install shield
-        ishield.c           ishield.h
-        # cab / chm
-        libmspack.c         libmspack.h
-        # msszdd
-        msexpand.c          msexpand.h
-        # nsis
-        nsis/bzlib_private.h
-        nsis/bzlib.c
-        nsis/infblock.c
-        nsis/nsis_bzlib.h
-        nsis/nsis_zconf.h
-        nsis/nsis_zlib.h
-        nsis/nsis_zutil.h
-        nsis/nulsft.c       nsis/nulsft.h
-        # office docs
-        hwp.c               hwp.h
-        msdoc.c             msdoc.h
-        msxml_parser.c      msxml_parser.h
-        msxml.c             msxml.h
-        ole2_extract.c      ole2_extract.h
-        xlm_extract.c       xlm_extract.h
-        ooxml.c             ooxml.h
-        rtf.c               rtf.h
-        vba_extract.c       vba_extract.h
-        # executables
-        asn1.c              asn1.h
-        elf.c               elf.h
-        execs.c             execs.h
-        macho.c             macho.h
-        pe_icons.c          pe_icons.h
-        pe_structs.h
-        pe.c                pe.h
-        rebuildpe.c         rebuildpe.h
-        # executable unpackers
-        aspack.c            aspack.h
-        fsg.c               fsg.h
-        mew.c               mew.h
-        packlibs.c          packlibs.h
-        petite.c            petite.h
-        spin.c              spin.h
-        unsp.c              unsp.h
-        upack.c             upack.h
-        upx.c               upx.h
-        wwunpack.c          wwunpack.h
-        yc.c                yc.h
-        # mail & phishing
-        iana_cctld.h
-        iana_tld.h
-        line.c              line.h
-        mbox.c              mbox.h
-        message.c           message.h
-        phish_domaincheck_db.c phish_domaincheck_db.h
-        phish_allow_list.c  phish_allow_list.h
-        phishcheck.c        phishcheck.h
-        regex_list.c        regex_list.h
-        regex_suffix.c      regex_suffix.h
-        # sis
-        sis.c               sis.h
-        # tnef
-        tnef.c              tnef.h
-        # uuencode
-        uuencode.c          uuencode.h
-        # swf (flash)
-        swf.c               swf.h
-        # pdf
-        pdf.c               pdf.h
-        pdfng.c
-        pdfdecode.c         pdfdecode.h
-        # xdp
-        xdp.c               xdp.h
-        # ARJ archive
-        unarj.c             unarj.h
-        # TAR archive
-        is_tar.c            is_tar.h
-        untar.c             untar.h
-        # ZIP archive
-        unzip.c             unzip.h
-        # DMG archive
-        adc.c               adc.h
-        dmg.c               dmg.h
-        # XAR archive
-        xar.c               xar.h
-        # EGG archive
-        egg.c               egg.h
-        # Master Boot Record partition
-        mbr.c               mbr.h
-        # GUID Parition Table partition
-        gpt.c               gpt.h
-        # Apple Partition Map partition
-        apm.c               apm.h
-        # HFS+ partition
-        hfsplus.c           hfsplus.h
-        # iso9660 partition
-        iso9660.c           iso9660.h
-        # OpenIOC
-        openioc.c           openioc.h
-        # JPEG image format checker
-        jpeg.c              jpeg.h
-        # PNG image format checker
-        png.c               png.h
-        # TIFF image format checker
-        tiff.c              tiff.h
-        # GIF image format checker
-        gif.c               gif.h
-    PUBLIC
-        clamav.h )
-
-if(WIN32)
-    target_sources( clamav_obj PRIVATE libclamav_main.c )
-endif()
-
-target_include_directories( clamav_obj
-    PRIVATE   ${CMAKE_BINARY_DIR} ${JSONC_INCLUDE_DIRS}
-    PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}
-    INTERFACE ${CMAKE_BINARY_DIR} )
-target_link_libraries( clamav_obj
-    PUBLIC
-        regex
-        lzma_sdk
-        yara
-        tomsfastmath
-        bytecode_runtime
-        ${LIBMSPACK}
-        ClamAV::libunrar_iface_iface
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ZLIB::ZLIB
-        BZip2::BZip2
-        PCRE2::pcre2
-        LibXml2::LibXml2
-        JSONC::jsonc )
-if (WIN32)
-    target_link_libraries( clamav_obj
-        PUBLIC
-            PThreadW32::pthreadw32
-            ClamAV::win32_compat
-            wsock32 ws2_32 )
-else()
-    target_link_libraries( clamav_obj
-        PUBLIC
-            Threads::Threads
-            Iconv::Iconv
-            ${CMAKE_DL_LIBS}
-            m )
-endif()
-set_target_properties( clamav_obj PROPERTIES
-    COMPILE_FLAGS "${WARNCFLAGS}" )
+# not using an object library for the sake of Xcode compatibility
+# See: https://cmake.org/pipermail/cmake/2016-May/063479.html
+set(LIBCLAMAV_SOURCES
+    # Utils
+    blob.c              blob.h
+    conv.c              conv.h
+    fpu.c               fpu.h
+    hashtab.c           hashtab.h
+    iowrap.c            iowrap.h
+    json_api.c          json_api.h
+    jsparse/textbuf.h
+    others_common.c     others.h
+    qsort.c
+    sf_base64decode.c   sf_base64decode.h
+    str.c               str.h
+    strlcat.c
+    table.c             table.h
+    text.c              text.h
+    uniq.c              uniq.h
+    www.c               www.h
+    # Utils Disasm
+    disasm-common.h     disasm.c    disasm.h    disasmpriv.h
+    # Matcher
+    filtering.c         filtering.h
+    matcher-ac.c        matcher-ac.h
+    matcher-bm.c        matcher-bm.h
+    matcher-byte-comp.c matcher-byte-comp.h
+    matcher-hash.c      matcher-hash.h
+    matcher-pcre.c      matcher-pcre.h
+    matcher.c           matcher.h
+    regex_pcre.c        regex_pcre.h
+    # Database
+    cvd.c               cvd.h
+    dconf.c             dconf.h
+    dsig.c              dsig.h
+    readdb.c            readdb.h
+    # Core
+    cache.c             cache.h
+    crtmgr.c            crtmgr.h
+    crypto.c
+    default.h
+    filetypes_int.h     filetypes.c     filetypes.h
+    fmap.c              fmap.h
+    mpool.c             mpool.h
+    others.c
+    perflogging.c       perflogging.h
+    scanners.c          scanners.h
+    textdet.c           textdet.h
+    version.c
+    # file normalization (for matching)
+    htmlnorm.c          htmlnorm.h
+    jsparse/generated/keywords.h
+    jsparse/generated/operators.h
+    jsparse/js-norm.c
+    jsparse/js-norm.h
+    jsparse/lexglobal.h
+    textnorm.c          textnorm.h
+    # heuristics (hardcoded exploit/malware detection)
+    partition_intersection.c partition_intersection.h
+    special.c           special.h
+    # clamav statistics
+    hostid_internal.c   hostid_internal.h
+    stats_json.c        stats_json.h
+    stats.c             stats.h
+    # clamav bytecode support
+    bcfeatures.h
+    builtin_bytecodes.h
+    bytecode_api_decl.c
+    bytecode_api_impl.h
+    bytecode_api.c      bytecode_api.h
+    bytecode_detect.c   bytecode_detect.h
+    bytecode_hooks.h
+    bytecode_priv.h
+    bytecode_vm.c
+    bytecode.c          bytecode.h
+    events.c            events.h
+    type_desc.h
+    # utils: compression
+    7z_iface.c          7z_iface.h
+    explode.c           explode.h
+    inffixed64.h
+    inflate64_priv.h    inflate64.c     inflate64.h
+    lzma_iface.c        lzma_iface.h
+    lzw/lzwdec.c        lzw/lzwdec.h
+    xz_iface.c          xz_iface.h
+    # utils: encryption
+    arc4.c              arc4.h
+    rijndael.c          rijndael.h
+    # utils: text conversion
+    encoding_aliases.h
+    entconv.c           entconv.h
+    entitylist.h
+    # Data-Loss-Prevention
+    dlp.c               dlp.h
+    #
+    # FILE PARSERS
+    #
+    # autoit
+    autoit.c            autoit.h
+    # binhex
+    binhex.c            binhex.h
+    # cpio
+    cpio.c              cpio.h
+    # install shield
+    ishield.c           ishield.h
+    # cab / chm
+    libmspack.c         libmspack.h
+    # msszdd
+    msexpand.c          msexpand.h
+    # nsis
+    nsis/bzlib_private.h
+    nsis/bzlib.c
+    nsis/infblock.c
+    nsis/nsis_bzlib.h
+    nsis/nsis_zconf.h
+    nsis/nsis_zlib.h
+    nsis/nsis_zutil.h
+    nsis/nulsft.c       nsis/nulsft.h
+    # office docs
+    hwp.c               hwp.h
+    msdoc.c             msdoc.h
+    msxml_parser.c      msxml_parser.h
+    msxml.c             msxml.h
+    ole2_extract.c      ole2_extract.h
+    xlm_extract.c       xlm_extract.h
+    ooxml.c             ooxml.h
+    rtf.c               rtf.h
+    vba_extract.c       vba_extract.h
+    # executables
+    asn1.c              asn1.h
+    elf.c               elf.h
+    execs.c             execs.h
+    macho.c             macho.h
+    pe_icons.c          pe_icons.h
+    pe_structs.h
+    pe.c                pe.h
+    rebuildpe.c         rebuildpe.h
+    # executable unpackers
+    aspack.c            aspack.h
+    fsg.c               fsg.h
+    mew.c               mew.h
+    packlibs.c          packlibs.h
+    petite.c            petite.h
+    spin.c              spin.h
+    unsp.c              unsp.h
+    upack.c             upack.h
+    upx.c               upx.h
+    wwunpack.c          wwunpack.h
+    yc.c                yc.h
+    # mail & phishing
+    iana_cctld.h
+    iana_tld.h
+    line.c              line.h
+    mbox.c              mbox.h
+    message.c           message.h
+    phish_domaincheck_db.c phish_domaincheck_db.h
+    phish_allow_list.c  phish_allow_list.h
+    phishcheck.c        phishcheck.h
+    regex_list.c        regex_list.h
+    regex_suffix.c      regex_suffix.h
+    # sis
+    sis.c               sis.h
+    # tnef
+    tnef.c              tnef.h
+    # uuencode
+    uuencode.c          uuencode.h
+    # swf (flash)
+    swf.c               swf.h
+    # pdf
+    pdf.c               pdf.h
+    pdfng.c
+    pdfdecode.c         pdfdecode.h
+    # xdp
+    xdp.c               xdp.h
+    # ARJ archive
+    unarj.c             unarj.h
+    # TAR archive
+    is_tar.c            is_tar.h
+    untar.c             untar.h
+    # ZIP archive
+    unzip.c             unzip.h
+    # DMG archive
+    adc.c               adc.h
+    dmg.c               dmg.h
+    # XAR archive
+    xar.c               xar.h
+    # EGG archive
+    egg.c               egg.h
+    # Master Boot Record partition
+    mbr.c               mbr.h
+    # GUID Parition Table partition
+    gpt.c               gpt.h
+    # Apple Partition Map partition
+    apm.c               apm.h
+    # HFS+ partition
+    hfsplus.c           hfsplus.h
+    # iso9660 partition
+    iso9660.c           iso9660.h
+    # OpenIOC
+    openioc.c           openioc.h
+    # JPEG image format checker
+    jpeg.c              jpeg.h
+    # PNG image format checker
+    png.c               png.h
+    # TIFF image format checker
+    tiff.c              tiff.h
+    # GIF image format checker
+    gif.c               gif.h
+)
 
 if(ENABLE_SHARED_LIB)
     # The clamav shared library.
@@ -542,11 +499,21 @@ if(ENABLE_SHARED_LIB)
         VERSION ${LIBCLAMAV_VERSION}
         SOVERSION ${LIBCLAMAV_SOVERSION} )
     target_sources( clamav
+        PRIVATE
+            ${LIBCLAMAV_SOURCES}
         PUBLIC
             clamav.h )
+    if(WIN32)
+        target_sources( clamav PRIVATE libclamav_main.c )
+    endif()
+
+    target_include_directories( clamav
+        PRIVATE   ${CMAKE_BINARY_DIR} ${JSONC_INCLUDE_DIRS}
+        PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}
+        INTERFACE ${CMAKE_BINARY_DIR} )
+
     target_link_libraries( clamav
         PUBLIC
-            clamav_obj
             regex
             lzma_sdk
             yara
@@ -561,6 +528,21 @@ if(ENABLE_SHARED_LIB)
             PCRE2::pcre2
             LibXml2::LibXml2
             JSONC::jsonc )
+
+    if(WIN32)
+        target_link_libraries( clamav
+            PUBLIC
+                PThreadW32::pthreadw32
+                ClamAV::win32_compat
+                wsock32 ws2_32 )
+    else()
+        target_link_libraries( clamav
+            PUBLIC
+                Threads::Threads
+                Iconv::Iconv
+                ${CMAKE_DL_LIBS}
+                m )
+    endif()
     set_target_properties( clamav PROPERTIES
         COMPILE_FLAGS "${WARNCFLAGS}"
         VERSION ${LIBCLAMAV_VERSION} SOVERSION ${LIBCLAMAV_SOVERSION} )
@@ -618,11 +600,21 @@ if(ENABLE_STATIC_LIB)
     # The clamav static library.
     add_library( clamav_static STATIC)
     target_sources( clamav_static
+        PRIVATE
+            ${LIBCLAMAV_SOURCES}
         PUBLIC
             clamav.h )
+    if(WIN32)
+        target_sources( clamav_static PRIVATE libclamav_main.c )
+    endif()
+
+    target_include_directories( clamav_static
+        PRIVATE   ${CMAKE_BINARY_DIR} ${JSONC_INCLUDE_DIRS}
+        PUBLIC    ${CMAKE_CURRENT_SOURCE_DIR}
+        INTERFACE ${CMAKE_BINARY_DIR} )
+
     target_link_libraries( clamav_static
         PUBLIC
-            clamav_obj
             regex
             lzma_sdk
             yara
@@ -637,10 +629,21 @@ if(ENABLE_STATIC_LIB)
             LibXml2::LibXml2
             JSONC::jsonc )
         if (ENABLE_UNRAR)
-            target_link_libraries( clamav_static PUBLIC ClamAV::libunrar_iface_static)
+            target_link_libraries( clamav_static PUBLIC ClamAV::libunrar_iface_static ClamAV::libunrar_iface_iface)
         endif()
-    if(NOT WIN32)
-        target_link_libraries( clamav_static PUBLIC Iconv::Iconv )
+    if (WIN32)
+        target_link_libraries( clamav_static
+            PUBLIC
+                PThreadW32::pthreadw32
+                ClamAV::win32_compat
+                wsock32 ws2_32 )
+    else()
+        target_link_libraries( clamav_static
+            PUBLIC
+                Threads::Threads
+                Iconv::Iconv
+                ${CMAKE_DL_LIBS}
+                m )
     endif()
     set_target_properties( clamav_static PROPERTIES
         ARCHIVE_OUTPUT_NAME clamav_static
