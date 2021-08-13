@@ -1322,6 +1322,9 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                             break;
                         }
 
+                        /*
+                         * Copy the header information into our header struct.
+                         */
                         memcpy(hwp_new, hwp_check + offset, sizeof(hwp5_header_t));
 
                         hwp_new->version = ole2_endian_convert_32(hwp_new->version);
@@ -1898,7 +1901,6 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
 
     if (hdr.is_hwp) {
         cli_dbgmsg("OLE2: identified HWP document\n");
-        cli_dbgmsg("OLE2: HWP signature: %.17s\n", hdr.is_hwp->signature);
         cli_dbgmsg("OLE2: HWP version: 0x%08x\n", hdr.is_hwp->version);
         cli_dbgmsg("OLE2: HWP flags:   0x%08x\n", hdr.is_hwp->flags);
 

@@ -314,9 +314,6 @@ cl_error_t cli_hwp5header(cli_ctx *ctx, hwp5_header_t *hwp5)
             return CL_EMEM;
         }
 
-        /* magic */
-        cli_jsonstr(header, "Magic", (char *)hwp5->signature);
-
         /* version */
         cli_jsonint(header, "RawVersion", hwp5->version);
 
@@ -1885,9 +1882,6 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
 
 #if HAVE_JSON
     /*
-    // magic
-    cli_jsonstr(header, "Magic", hwp5->signature);
-
     // version
     cli_jsonint(header, "RawVersion", hwp5->version);
     */
