@@ -477,20 +477,16 @@ class TC(testcase.TestCase):
         '''
         self.step_name('Testing clamd + clamdscan w/ ExcludePath')
 
-        (TC.path_tmp / 'a').mkdir()
-        (TC.path_tmp / 'b').mkdir()
-        (TC.path_tmp / 'c').mkdir()
+        (TC.path_tmp / 'alpha').mkdir()
+        (TC.path_tmp / 'beta').mkdir()
+        (TC.path_tmp / 'charlie').mkdir()
 
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'a' / 'a_found'))     # This should be found (first)
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'b' / 'b_excluded'))  # This one should be excluded
-        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'c' / 'c_found'))     # This one should still be found after excluding the previous
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'alpha' / 'a_found'))     # This should be found (first)
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'beta' / 'b_excluded'))  # This one should be excluded
+        shutil.copy(str(TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'), str(TC.path_tmp / 'charlie' / 'c_found'))     # This one should still be found after excluding the previous
 
         with TC.clamd_config.open('a') as config:
-            exclude_path = str(TC.path_tmp / 'b')
-
-            if operating_system == 'windows':
-                # It's a regex, need to escape the path separators
-                exclude_path = exclude_path.replace('\\', '\\\\')
+            exclude_path = 'beta'
 
             config.write('''
                 ExcludePath {}

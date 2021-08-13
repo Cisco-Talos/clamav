@@ -150,7 +150,7 @@ static void conn_teardown(void)
 
 #ifndef _WIN32
 #define ACCDENIED OBJDIR PATHSEP "accdenied"
-#define ACCDENIED_REPLY ACCDENIED ": Access denied. ERROR"
+#define ACCDENIED_REPLY ": Access denied. ERROR"
 #endif
 
 static int isroot = 0;
@@ -277,7 +277,7 @@ static void *recvfull(int sd, size_t *len)
 
 static void test_command(const char *cmd, size_t len, const char *extra, const char *expect, size_t expect_len)
 {
-    void *recvdata;
+    char *recvdata;
     ssize_t rc;
     char *expected_string_offset = NULL;
 
@@ -293,7 +293,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
 #else
     shutdown(sockd, SHUT_WR);
 #endif
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
 
     // The path which comes back may be an absolute real path, not a relative path with symlinks ...
     // ... so this length check isn't really meaningful anymore.
@@ -380,7 +380,7 @@ START_TEST(test_stats)
     rc = send(sockd, "nSTATS\n", len, 0);
     ck_assert_msg((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
 
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
 
     ck_assert_msg(len > strlen(STATS_REPLY), "Reply has wrong size: %lu, minimum %lu, reply: %s\n",
                   len, strlen(STATS_REPLY), recvdata);
@@ -409,7 +409,7 @@ static size_t prepare_instream(char *buf, size_t off, size_t buflen)
     memcpy(&buf[off], &chunk, sizeof(chunk));
     off += 4;
     nread = read(fd, &buf[off], buflen - off - 4);
-    ck_assert_msg(nread == stbuf.st_size, "read failed: %d != %d, %s\n", nread, stbuf.st_size, strerror(errno));
+    ck_assert_msg(nread == stbuf.st_size, "read failed: %d != " STDi64 ", %s\n", nread, (int64_t)stbuf.st_size, strerror(errno));
     off += nread;
     buf[off++] = 0;
     buf[off++] = 0;
@@ -421,7 +421,7 @@ static size_t prepare_instream(char *buf, size_t off, size_t buflen)
 
 START_TEST(test_instream)
 {
-    void *recvdata;
+    char *recvdata;
     size_t len, expect_len;
     char buf[4096] = "nINSTREAM\n";
     size_t off     = strlen(buf);
@@ -432,7 +432,7 @@ START_TEST(test_instream)
     conn_setup();
     ck_assert_msg((size_t)send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
 
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
 
     expect_len = strlen(EXPECT_INSTREAM);
     ck_assert_msg(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s\n",
@@ -504,7 +504,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
     if (closefd)
         close(fd);
 
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
     p        = strchr(recvdata, ':');
 
     ck_assert_msg(!!p, "Reply doesn't contain ':' : %s\n", recvdata);
@@ -630,7 +630,7 @@ START_TEST(test_fildes_unwanted)
     ck_assert_msg(sendmsg_fd(sockd, idsession, sizeof(idsession), dummyfd, 1) != -1,
                   "sendmsg failed: %s\n", strerror(errno));
 
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
 
     ck_assert_msg(!strcmp(recvdata, "1: PROTOCOL ERROR: ancillary data sent without FILDES. ERROR"),
                   "Wrong reply: %s\n", recvdata);
@@ -661,9 +661,9 @@ START_TEST(test_idsession_stress)
                       "send failed: %s\n", strerror(errno));
         data = recvpartial(sockd, &len, 1);
         p    = strchr(data, ':');
-        ck_assert_msg(!!p, "wrong VERSION reply (%u): %s\n", i, data);
+        ck_assert_msg(!!p, "wrong VERSION reply (%zu): %s\n", i, data);
         *p++ = '\0';
-        ck_assert_msg(*p == ' ', "wrong VERSION reply (%u): %s\n", i, p);
+        ck_assert_msg(*p == ' ', "wrong VERSION reply (%zu): %s\n", i, p);
         *p++ = '\0';
 
         ck_assert_msg(!strcmp(p, VERSION_REPLY), "wrong VERSION reply: %s\n", data);
@@ -822,11 +822,11 @@ static void test_idsession_commands(int split, int instream)
     if (split) {
         /* test corner-cases: 1-byte sends */
         for (i = 0; i < (size_t)(p - buf); i++)
-            ck_assert_msg((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %u, %s\n", i, strerror(errno));
+            ck_assert_msg((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %zu, %s\n", i, strerror(errno));
     } else {
         ck_assert_msg(send(sockd, buf, p - buf, 0) == p - buf, "send() failed: %s\n", strerror(errno));
     }
-    recvdata = recvfull(sockd, &len);
+    recvdata = (char *)recvfull(sockd, &len);
     p        = recvdata;
     for (i = 0; i < sizeof(basic_tests) / sizeof(basic_tests[0]); i++) {
         const struct basic_test *test = &basic_tests[i];
@@ -839,7 +839,7 @@ static void test_idsession_commands(int split, int instream)
             *q = '\0';
             ck_assert_msg(sscanf(p, "%u", &id) == 1, "Wrong ID in reply: %s\n", p);
             ck_assert_msg(id > 0, "ID cannot be zero");
-            ck_assert_msg(id <= j, "ID too big: %u, max: %u\n", id, j);
+            ck_assert_msg(id <= j, "ID too big: %u, max: %zu\n", id, j);
             q += 2;
             ck_assert_msg(NULL != strstr(q, replies[id - 1]),
                           "Wrong ID reply for ID %u:\nReceived: \n%s\nExpected: \n%s\n",
