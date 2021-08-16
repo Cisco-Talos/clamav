@@ -310,6 +310,63 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
 
+    @unittest.skipIf(operating_system != 'windows', 'This test is specific to Windows.')
+    def test_freshclam_05_cdiff_update_UNC(self):
+        # This is a regression test for https://github.com/Cisco-Talos/clamav/pull/226
+        self.step_name('Verify that freshclam can update from an older CVD to a newer with CDIFF patches with UNC paths')
+
+        # start with this CVD
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-1.cvd'), str(TC.path_db / 'test.cvd'))
+
+        # advertise this CVD (by sending the header response to Range requests)
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cvd'), str(TC.path_www / 'test.cvd.advertised'))
+
+        # using these CDIFFs
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-2.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-3.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-4.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-5.cdiff'), str(TC.path_www))
+        shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
+
+        handler = partial(WebServerHandler_WWW, TC.path_www)
+        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror.start()
+
+        if TC.freshclam_config.exists():
+            os.remove(str(TC.freshclam_config))
+
+        path_db_unc = str(TC.path_db).replace('C:\\', '\\\\localhost\\c$\\').replace('D:\\', '\\\\localhost\\d$\\').replace('E:\\', '\\\\localhost\\e$\\')
+
+        TC.freshclam_config.write_text('''
+            DatabaseMirror http://localhost:{port}
+            DNSDatabaseInfo no
+            PidFile {freshclam_pid}
+            LogVerbose yes
+            LogFileMaxSize 0
+            LogTime yes
+            DatabaseDirectory {path_db}
+            DatabaseOwner {user}
+        '''.format(
+            freshclam_pid=TC.freshclam_pid,
+            path_db=path_db_unc,
+            port=TC.mock_mirror_port,
+            user=getpass.getuser(),
+        ))
+        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # success
+
+        expected_results = [
+            'test.cld updated',
+        ]
+        unexpected_results = [
+            'already up-to-date'
+        ]
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
     def test_freshclam_06_cdiff_partial_minus_1(self):
         self.step_name('Verify that freshclam will accept a partial update with 1 missing cdiff')
 
