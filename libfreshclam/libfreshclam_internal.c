@@ -1794,7 +1794,7 @@ static fc_error_t buildcld(
         }
     }
 
-    if (NULL == (dir = opendir("."))) {
+    if (NULL == (dir = opendir(tmpdir))) {
         logg("!buildcld: Can't open directory %s\n", tmpdir);
         status = FC_EDIRECTORY;
         goto done;
