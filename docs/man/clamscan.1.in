@@ -261,6 +261,13 @@ Maximum size file to perform PCRE subsig matching (default: 25 MB, max: <4 GB).
 .TP
 \fB\-\-disable\-cache\fR
 Disable caching and cache checks for hash sums of scanned files.
+
+.SH "ENVIRONMENT VARIABLES"
+.LP
+clamscan uses the following environment variables:
+.TP
+LD_LIBRARY_PATH - May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+
 .SH "EXAMPLES"
 .LP
 .TP

@@ -1,26 +1,26 @@
 .TH "File submission tool" "1" "March 20, 2014" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
-.LP 
+.LP
 clamsubmit \- File submission utility for ClamAV
 .SH "SYNOPSIS"
-.LP 
+.LP
 clamsubmit [options]
 .SH "DESCRIPTION"
-.LP 
+.LP
 clamsubmit submits files to Sourcefire for further analysis.
 .SH "OPTIONS"
-.LP 
+.LP
 
-.TP 
+.TP
 \fB\-h, \-?\fR
 Display help to stderr and exit.
-.TP 
+.TP
 \fB\-e EMAIL\fR
 Required option for setting the email address for the submission.
-.TP 
+.TP
 \fB\-n FILE\fR
 Submit a file that reports as a false negative (ClamAV reports CLEAN). FILE can be \- to specify stdin. Mutually exclusive with \-p.
-.TP 
+.TP
 \fB\-N NAME\fR
 Required option for setting the name of the sender for the submission.
 .TP
@@ -29,6 +29,15 @@ Submit a file that reports as a false positive (ClamAV flags the file as virus).
 .TP
 \fB-V VIRUS\fR
 The name of the virus detected as false positive. This option is required for false positive submissions.
+
+.SH "ENVIRONMENT VARIABLES"
+.LP
+clamsubmit uses the following environment variables:
+.TP
+CURL_CA_BUNDLE - May be set to the path of a file (bundle) containing one or more CA certificates. This will override the default openssl certificate path.
+
+Note that the CURL_CA_BUNDLE environment variable is also used by the curl command line tool for the same purpose.
+
 .SH "AUTHOR"
-.LP 
+.LP
 Shawn Webb <swebb@sourcefire.com>
