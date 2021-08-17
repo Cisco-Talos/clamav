@@ -94,6 +94,7 @@ Scan stream \- on this command clamd will return "PORT number" you should connec
 .TP
 \fBSESSION, END\fR
 Start/end a clamd session which will allow you to run multiple commands per TCP session. (use IDSESSION instead)
+
 .SH "OPTIONS"
 .LP
 .TP
@@ -111,6 +112,13 @@ Enable debug mode.
 .TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 Read configuration from FILE.
+
+.SH "ENVIRONMENT VARIABLES"
+.LP
+clamd uses the following environment variables:
+.TP
+LD_LIBRARY_PATH - May be used on startup to find the libclamunrar_iface shared library module to enable RAR archive support.
+
 .SH "SIGNALS"
 .LP
 Clamd recognizes the following signals:
