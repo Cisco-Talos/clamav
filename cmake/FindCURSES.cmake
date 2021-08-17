@@ -85,7 +85,7 @@ if(NCURSES_NOT_FOUND EQUAL -1)
       add_library(Curses::curses INTERFACE IMPORTED)
       set_target_properties(Curses::curses PROPERTIES
         INTERFACE_COMPILE_OPTIONS "${PC_NCurses_CFLAGS_OTHER}"
-        INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIR}"
+        INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
         INTERFACE_LINK_LIBRARIES "${CURSES_LIBRARY}"
       )
     endif()
@@ -133,7 +133,7 @@ else()
         add_library(Curses::curses UNKNOWN IMPORTED)
         set_target_properties(Curses::curses PROPERTIES
           INTERFACE_COMPILE_OPTIONS "${PC_PDCurses_CFLAGS_OTHER}"
-          INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIR}"
+          INTERFACE_INCLUDE_DIRECTORIES "${CURSES_INCLUDE_DIRS}"
           IMPORTED_LOCATION "${CURSES_LIBRARY}"
         )
       endif()

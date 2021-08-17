@@ -618,7 +618,16 @@ need to specify the following:
 ### `ncurses` or `pdcurses`, for `clamdtop`
 
 ```sh
-  -D CURSES_INCLUDE_DIR="_path to curses header directory_"
+  -D NCURSES_INCLUDE_DIR="_path to ncurses header directory_"
+```
+
+or:
+```sh
+  -D PDCURSES_INCLUDE_DIR="_path to pdcurses header directory_"
+```
+
+and:
+```sh
   -D CURSES_LIBRARY="_filepath of curses library_"
 ```
 
