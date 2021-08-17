@@ -72,6 +72,7 @@ Only available if connected to clamd via local(unix) socket.
 .TP
 \fB\-\-stream\fR
 Forces file streaming to clamd. This is generally not needed as clamdscan detects automatically if streaming is required. This option only exists for debugging and testing purposes, in all other cases \-\-fdpass is preferred.
+
 .SH "EXAMPLES"
 .LP
 .TP
