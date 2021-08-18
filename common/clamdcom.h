@@ -32,6 +32,15 @@
 
 #include "misc.h"
 
+enum {
+    CONT,
+    MULTI,
+    STREAM,
+    FILDES,
+    ALLMATCH,
+    MAX_SCANTYPE = ALLMATCH
+};
+
 struct RCVLN {
     char buf[PATH_MAX + 1024]; /* FIXME must match that in clamd - bb1349 */
     int sockd;
@@ -44,4 +53,11 @@ int sendln(int sockd, const char *line, unsigned int len);
 void recvlninit(struct RCVLN *s, int sockd);
 int recvln(struct RCVLN *s, char **rbol, char **reol);
 
+int chkpath(const char *path, struct optstruct *clamdopts);
+#ifdef HAVE_FD_PASSING
+int send_fdpass(int sockd, const char *filename);
+#endif
+int send_stream(int sockd, const char *filename, struct optstruct *clamdopts);
+int dconnect(struct optstruct *clamdopts);
+int dsresult(int sockd, int scantype, const char *filename, int *printok, int *errors, struct optstruct *clamdopts);
 #endif

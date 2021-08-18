@@ -28,14 +28,6 @@
 
 #define TIMEOUT_MODULE 30000
 
-#define UN2_PREFIX "\\??\\"
-#define UNC_OFFSET(x) (&x[4])
-#define PATH_ISUNC(path) (!strncmp(path, UNC_PREFIX, 4))
-#define PATH_ISUN2(path) (!strncmp(path, UN2_PREFIX, 4))
-#define PATH_ISDEV(path) (!strncmp(path, DEV_PREFIX, 4))
-#define PATH_ISNET(path) (!strncmp(path, NET_PREFIX, 2))
-#define PATH_PLAIN(path) (PATH_ISUNC(path) ? UNC_OFFSET(path) : path)
-
 int scanmem(struct mem_info *info);
 
 /* cache helpers */

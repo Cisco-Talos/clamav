@@ -30,295 +30,13 @@
 
 #include "actions.h"
 #include "output.h"
+#include "clamdcom.h"
 #include "exescanner.h"
 #include "scanmem.h"
-#include "clamdcom.h"
 
 typedef int (*proc_callback)(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info);
 int sock;
-
-/* clamd helpers */
-static int chkpath(const char *path, struct mem_info *minfo)
-{
-    const struct optstruct *opt;
-    struct optstruct *clamdopts = NULL;
-
-    if ((clamdopts = optparse(optget(minfo->opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        logg("!Can't parse clamd configuration file %s\n", optget(minfo->opts, "config-file")->strarg);
-    }
-
-    if (!path) {
-        return 1;
-    }
-
-    if ((opt = optget(clamdopts, "ExcludePath"))->enabled) {
-        while (opt) {
-            if (match_regex(path, opt->strarg) == 1) {
-                if (!optget(minfo->opts, "infected")->enabled)
-                    logg("~%s: Excluded\n", path);
-                return 1;
-            }
-            opt = opt->nextarg;
-        }
-    }
-    return 0;
-}
-
-/* Issues an INSTREAM command to clamd and streams the given file
- * Returns >0 on success, 0 soft fail, -1 hard fail */
-static int send_stream(int sockd, const char *filename, struct mem_info *info)
-{
-    uint32_t buf[BUFSIZ / sizeof(uint32_t)];
-    int fd, len;
-
-    struct optstruct *clamdopts = NULL;
-
-    if ((clamdopts = optparse(optget(info->opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        logg("!Can't parse clamd configuration file %s\n", optget(info->opts, "config-file")->strarg);
-    }
-    unsigned long int maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
-    unsigned long int todo      = maxstream;
-    const char zINSTREAM[]      = "zINSTREAM";
-
-    if (filename) {
-        if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
-            logg("~%s: Failed to open file. ERROR\n", filename);
-            return 0;
-        }
-    } else {
-        /* Read stream from STDIN */
-        fd = 0;
-    }
-
-    if (sendln(sockd, zINSTREAM, sizeof(zINSTREAM))) {
-        close(fd);
-        return -1;
-    }
-
-    while ((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
-        if ((unsigned int)len > todo) len = todo;
-        buf[0] = htonl(len);
-        if (sendln(sockd, (const char *)buf, len + sizeof(uint32_t))) {
-            close(fd);
-            return -1;
-        }
-        todo -= len;
-        if (!todo) {
-            len = 0;
-            break;
-        }
-    }
-    close(fd);
-    if (len) {
-        logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
-        return 0;
-    }
-    *buf = 0;
-    sendln(sockd, (const char *)buf, 4);
-    return 1;
-}
-
-/* Connects to clamd
- * Returns a FD or -1 on error */
-int connect_clamd(struct mem_info *minfo)
-{
-    int sockd, res;
-    const struct optstruct *opt;
-    struct addrinfo hints, *info, *p;
-    char port[10];
-    char *ipaddr;
-    struct optstruct *clamdopts = NULL;
-
-    if ((clamdopts = optparse(optget(minfo->opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        logg("!Can't parse clamd configuration file %s\n", optget(minfo->opts, "config-file")->strarg);
-    }
-
-    snprintf(port, sizeof(port), "%lld", optget(clamdopts, "TCPSocket")->numarg);
-
-    opt = optget(clamdopts, "TCPAddr");
-    while (opt) {
-        if (opt->enabled) {
-            ipaddr = NULL;
-            if (opt->strarg)
-                ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
-
-            memset(&hints, 0x00, sizeof(struct addrinfo));
-            hints.ai_family   = AF_UNSPEC;
-            hints.ai_socktype = SOCK_STREAM;
-
-            if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-                logg("!Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
-                opt = opt->nextarg;
-                continue;
-            }
-
-            for (p = info; p != NULL; p = p->ai_next) {
-                if ((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                    logg("!Can't create the socket: %s\n", strerror(errno));
-                    continue;
-                }
-
-                if (connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
-                    logg("!Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
-                    closesocket(sockd);
-                    continue;
-                }
-
-                freeaddrinfo(info);
-                return sockd;
-            }
-
-            freeaddrinfo(info);
-        }
-        opt = opt->nextarg;
-    }
-
-    return -1;
-}
-
-/* Sends a proper scan request to clamd and parses its replies
- * This is used only in non IDSESSION mode
- * Returns the number of infected files or -1 on error
- * NOTE: filename may be NULL for STREAM scantype. */
-int dresult(int sockd, const char *filename, const char *virname, struct mem_info *info)
-{
-    int infected = 0, len = 0, beenthere = 0;
-    char *bol, *eol;
-    struct RCVLN rcv;
-    STATBUF sb;
-
-    if (filename) {
-        if (1 == chkpath(filename, info)) {
-            goto done;
-        }
-    }
-
-    recvlninit(&rcv, sockd);
-
-    //scantype
-    if (optget(info->opts, "allmatch")->enabled) {
-        if (!filename) {
-            logg("Filename cannot be NULL for ALLMATCHSCAN.\n");
-            infected = -1;
-            goto done;
-        }
-        len = strlen(filename) + strlen("ALLMATCHSCAN") + 3;
-        if (!(bol = malloc(len))) {
-            logg("!Cannot allocate a command buffer: %s\n", strerror(errno));
-            infected = -1;
-            goto done;
-        }
-        sprintf(bol, "z%s %s", "ALLMATCHSCAN", filename);
-        if (sendln(sockd, bol, len)) {
-            free(bol);
-            infected = -1;
-            goto done;
-        }
-        free(bol);
-    } else if (optget(info->opts, "stream")->enabled) {
-        /* NULL filename safe in send_stream() */
-        len = send_stream(sockd, filename, info);
-    } else {
-        if (!filename) {
-            logg("Filename cannot be NULL.\n");
-            infected = -1;
-            goto done;
-        }
-        len = strlen(filename) + strlen("SCAN") + 3;
-        if (!(bol = malloc(len))) {
-            logg("!Cannot allocate a command buffer: %s\n", strerror(errno));
-            infected = -1;
-            goto done;
-        }
-        sprintf(bol, "z%s %s", "SCAN", filename);
-        if (sendln(sockd, bol, len)) {
-            free(bol);
-            infected = -1;
-            goto done;
-        }
-        free(bol);
-    }
-
-    if (len <= 0) {
-        if (info->errors)
-            (info->errors)++;
-        infected = len;
-        goto done;
-    }
-
-    while ((len = recvln(&rcv, &bol, &eol))) {
-        if (len == -1) {
-            infected = -1;
-            goto done;
-        }
-        beenthere = 1;
-        if (!filename) logg("~%s\n", bol);
-        if (len > 7) {
-            char *colon = strrchr(bol, ':');
-            if (colon && colon[1] != ' ') {
-                char *br;
-                *colon = 0;
-                br     = strrchr(bol, '(');
-                if (br)
-                    *br = 0;
-                colon = strrchr(bol, ':');
-            }
-            if (!colon) {
-                char *unkco = "UNKNOWN COMMAND";
-                if (!strncmp(bol, unkco, sizeof(unkco) - 1))
-                    logg("clamd replied \"UNKNOWN COMMAND\"");
-                else
-                    logg("Failed to parse reply: \"%s\"\n", bol);
-                infected = -1;
-                goto done;
-            } else if (!memcmp(eol - 7, " FOUND", 6)) {
-                static char last_filename[PATH_MAX + 1] = {'\0'};
-                *(eol - 7)                              = 0;
-                if (!optget(info->opts, "allmatch")->enabled) {
-                    infected++;
-                } else {
-                    if (filename != NULL && strcmp(filename, last_filename)) {
-                        infected++;
-                        strncpy(last_filename, filename, PATH_MAX);
-                        last_filename[PATH_MAX] = '\0';
-                    }
-                }
-                if (filename) {
-                    logg("~%s%s FOUND\n", filename, colon);
-                    if (action) action(filename);
-                }
-            } else if (!memcmp(eol - 7, " ERROR", 6)) {
-                if (info->errors)
-                    (info->errors)++;
-                if (filename) {
-                    logg("~%s%s\n", filename, colon);
-                }
-                return -1;
-            }
-        }
-    }
-    if (!beenthere) {
-        if (!filename) {
-            logg("STDIN: noreply from clamd\n.");
-            infected = -1;
-            goto done;
-        }
-        if (CLAMSTAT(filename, &sb) == -1) {
-            logg("~%s: stat() failed with %s, clamd may not be responding\n",
-                 filename, strerror(errno));
-            infected = -1;
-            goto done;
-        }
-        if (!S_ISDIR(sb.st_mode)) {
-            logg("~%s: no reply from clamd\n", filename);
-            infected = -1;
-            goto done;
-        }
-    }
-
-done:
-    return infected;
-}
+struct optstruct *clamdopts;
 
 static inline int lookup_cache(filelist_t **list, const char *filename)
 {
@@ -326,13 +44,11 @@ static inline int lookup_cache(filelist_t **list, const char *filename)
     while (current) {
         /* Cache hit */
         if (!_stricmp(filename, current->filename)) {
-            /* cli_dbgmsg("ScanMem Cache [Hit]: %s (%s)\n", current->filename,
-       * cl_strerror(current->res)); */
             return current->res;
         }
         current = current->next;
     }
-    /* cli_dbgmsg("ScanMem Cache [Miss]: %s\n", filename); */
+
     return -1;
 }
 
@@ -496,8 +212,6 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
         /* system process */
         if (!ps.th32ProcessID)
             continue;
-        /* if (ps.szExeFile[0] != 'c') continue; */
-        /* if (!strstr(ps.szExeFile, "clam.exe")) continue; */
         hModuleSnap = CreateToolhelp32Snapshot(
             TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, ps.th32ProcessID);
         if (hModuleSnap == INVALID_HANDLE_VALUE)
@@ -812,26 +526,10 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
     return ret;
 }
 
-static inline int excluded(const char *filename, const struct optstruct *opts)
-{
-    const struct optstruct *opt;
-
-    if ((opt = optget(opts, "exclude"))->enabled) {
-        while (opt) {
-            /* cli_dbgmsg("Matching %s vs %s\n", filename, opt->strarg); */
-            if (cli_matchregex(filename, opt->strarg) == 1) {
-                logg("~%s: Excluded\n", filename);
-                return 1;
-            }
-            opt = opt->nextarg;
-        }
-    }
-    return 0;
-}
-
 int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *info)
 {
     int fd;
+    int scantype;
     int ret             = CL_CLEAN;
     const char *virname = NULL;
 
@@ -843,15 +541,22 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
     }
 
     if (info->d) { //clamdscan
-        if ((sock = connect_clamd(info)) < 0) {
+        if (optget(info->opts, "stream")->enabled)
+            scantype = STREAM;
+        else if (optget(info->opts, "multiscan")->enabled)
+            scantype = MULTI;
+        else if (optget(info->opts, "allmatch")->enabled)
+            scantype = ALLMATCH;
+        else
+            scantype = CONT;
+
+        if ((sock = dconnect(clamdopts)) < 0) {
             info->errors++;
             return -1;
         }
-        if (dresult(sock, filename, virname, info) > 0) {
+        if (dsresult(sock, scantype, filename, NULL, &info->errors, clamdopts) > 0) {
             info->ifiles++;
             ret = CL_VIRUS;
-        } else if (scan_data->printclean) {
-            logg("~%s: OK    \n", filename);
         }
     } else { //clamscan
         ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
@@ -895,11 +600,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
     }
 
     if (!modulename[0]) {
-        if ((strlen(me32.szExePath) > 4) &&
-            PATH_ISUN2(me32.szExePath)) /* \\??\ <-- wtf */
-            strncpy(modulename, UNC_OFFSET(me32.szExePath), MAX_PATH - 1);
-        else
-            strncpy(modulename, me32.szExePath, MAX_PATH - 1);
+        strncpy(modulename, me32.szExePath, MAX_PATH - 1);
         modulename[MAX_PATH - 1] = 0;
     }
 
@@ -917,7 +618,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
 
         /* check for module exclusion */
         scan_data->res = CL_CLEAN;
-        if (!(scan_data->exclude && excluded(modulename, info->opts)))
+        if (!(scan_data->exclude && chkpath(modulename, clamdopts)))
             scan_data->res = scanfile(modulename, scan_data, info);
 
         if ((scan_data->res != CL_VIRUS) && is_packed(modulename)) {
@@ -980,9 +681,8 @@ int scanmem(struct mem_info *info)
     if (optget(info->opts, "exclude")->enabled)
         data.exclude = 1;
 
-    /*connect to clamd*/
-    if (info->d == 1) {
-        if ((sock = connect_clamd(info)) < 0) {
+    if (info->d) {
+        if ((sock = dconnect(clamdopts)) < 0) {
             info->errors++;
             return -1;
         }

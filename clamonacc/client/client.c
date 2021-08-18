@@ -62,6 +62,7 @@
 #include "output.h"
 #include "misc.h"
 #include "actions.h"
+#include "clamdcom.h"
 
 #include "communication.h"
 #include "client.h"

@@ -223,7 +223,7 @@ int16_t ping_clamd(const struct optstruct *opts)
 
     isremote(opts);
     do {
-        if ((sockd = dconnect()) >= 0) {
+        if ((sockd = dconnect(clamdopts)) >= 0) {
             const char zPING[] = "zPING";
             recvlninit(&rcv, sockd);
 
@@ -347,7 +347,7 @@ int get_clamd_version(const struct optstruct *opts)
     const char zVERSION[] = "zVERSION";
 
     isremote(opts);
-    if ((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) return 2;
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zVERSION, sizeof(zVERSION))) {
@@ -375,7 +375,7 @@ int reload_clamd_database(const struct optstruct *opts)
     const char zRELOAD[] = "zRELOAD";
 
     isremote(opts);
-    if ((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) return 2;
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zRELOAD, sizeof(zRELOAD))) {
@@ -446,7 +446,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
             return 2;
         }
         if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-        if ((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
+        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0)
             *infected = ret;
         else
             errors = 1;
