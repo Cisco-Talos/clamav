@@ -1,7 +1,7 @@
 # ClamAV News
 
-Note: This file refers to the source tarball. Things described here may differ
- slightly from the binary packages.
+Note: This file refers to the official packages. Things described here may
+differ slightly from third-party binary packages.
 
 ## 0.105.0
 

@@ -2,12 +2,12 @@
 
 See our online documentation for installation instructions:
 - [Installing ClamAV Main Page](https://docs.clamav.net/manual/Installing.html)
-- [Third Party Package Installation](https://docs.clamav.net/manual/Installing/Packages.html)
+- [Third-Party Package Installation](https://docs.clamav.net/manual/Installing/Packages.html)
 
 **For step-by-step compiling instructions** for each major operating system
 and distribution, see:
-- [Unix/Linux/Mac Instructions](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html)
-- [Windows Instructions](https://docs.clamav.net/manual/Installing/Installing-from-source-Windows.html)
+- [Unix/Linux/Mac](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html)
+- [Windows](https://docs.clamav.net/manual/Installing/Installing-from-source-Windows.html)
 
 You can find additional tips for development builds in our
 [online documentation](https://docs.clamav.net/manual/Development/development-builds.html).
