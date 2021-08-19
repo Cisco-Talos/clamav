@@ -245,8 +245,8 @@ void help(void)
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
 #ifdef _WIN32
     mprintf("    --memory                           Scan loaded executable modules\n");
-    mprintf("    --kill                -k           Kill/Unload infected loaded modules\n");
-    mprintf("    --unload              -u           Unload infected modules from processes\n");
+    mprintf("    --kill                             Kill/Unload infected loaded modules\n");
+    mprintf("    --unload                           Unload infected modules from processes\n");
 #endif
     mprintf("    --allmatch            -z           Continue scanning within file after finding a match.\n");
     mprintf("    --multiscan           -m           Force MULTISCAN mode\n");

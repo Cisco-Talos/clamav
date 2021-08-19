@@ -271,8 +271,8 @@ void help(void)
     mprintf("    --include-dir=REGEX                  Only scan directories matching REGEX\n");
 #ifdef _WIN32
     mprintf("    --memory                             Scan loaded executable modules\n");
-    mprintf("    --kill                -k             Kill/Unload infected loaded modules\n");
-    mprintf("    --unload              -u             Unload infected modules from processes\n");
+    mprintf("    --kill                               Kill/Unload infected loaded modules\n");
+    mprintf("    --unload                             Unload infected modules from processes\n");
 #endif
     mprintf("\n");
     mprintf("    --bytecode[=yes(*)/no]               Load bytecode from the database\n");
