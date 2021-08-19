@@ -10,66 +10,19 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cisco-Talos/clamav-devel/actions"><img src="https://github.com/Cisco-Talos/clamav-devel/workflows/CMake%20Build/badge.svg" height="18"></a>
+  <a href="https://github.com/Cisco-Talos/clamav/actions"><img src="https://github.com/Cisco-Talos/clamav/workflows/CMake%20Build/badge.svg" height="18"></a>
   <a href="https://discord.gg/6vNAqWnVgw"><img src="https://img.shields.io/discord/636023333074370595.svg?logo=discord" height="18"/></a>
   <a href="https://twitter.com/clamav"><img src="https://abs.twimg.com/favicons/twitter.ico" width="18" height="18"></a>
 </p>
 
 ## Documentation & FAQ
 
-Official documentation can be found online at
-[ClamAV.net](https://docs.clamav.net/).
-Our source code release tarballs also includes a copy of the documentation for
-[offline](docs/html/UserManual.html) reading.
+ClamAV documentation is hosted at [docs.clamav.net](https://docs.clamav.net/).
+The source archive for each release also includes a copy of the documentation
+for [offline](docs/html/UserManual.html) reading.
 
-## ClamAV Signatures
-
-Anyone can learn to read and write ClamAV signatures. To get started, see our
-[signature writing documentation](https://docs.clamav.net/manual/Signatures.html).
-
-## Installation Instructions
-
-### Docker
-
-ClamAV can be run using Docker, see [README.Docker.md](README.Docker.md) and
-our images on [Docker Hub](https://hub.docker.com/r/clamav/clamav).
-
-#### Build from Source
-
-For step-by-step instructions, visit our online documentation:
-- [Unix/Linux/Mac Instructions](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html)
-- [Windows Instructions](https://docs.clamav.net/manual/Installing/Installing-from-source-Windows.html)
-
-If you have a source tarball from an official release, you can also find
-a copy of the online documentation in the [docs/html](docs/html) directory.
-
-A more comprehensive reference with all of the available build options can be
-found in the [INSTALL.md](INSTALL.md) file.
-
-You can find additional tips for development builds in our
-[online documentation](https://docs.clamav.net/manual/Development/development-builds.html).
-
-#### Install from a binary package distribution
-
-For binary package distribution installation instructions,
-[see the Packages section in our online documentation](https://docs.clamav.net/manual/Installing/Packages.html).
-
-#### Install using an installer (Windows)
-
-We provide installers to install ClamAV on Windows to "C:\\Program Files".
-This install method will require you to have Administrator priveleges.
-
-We also provide a "Portable Install Package" (i.e. a zip of the required files)
-for users that may wish to run ClamAV without installing it to a system-owned
-directory.
-
-For details on how to use either option, head over to the
-[Windows Install instructions in the User Manual](https://docs.clamav.net/manual/Installing.html).
-
-### Upgrading from a previous version
-
-Some tips on [how to upgrade](https://docs.clamav.net/faq/faq-upgrade.html)
- from a previous version of ClamAV.
+You can contribute to the documentation by submitting improvements to
+[Cisco-Talos/clamav-documentation](https://github.com/Cisco-Talos/clamav-documentation)
 
 ## ClamAV News
 
@@ -77,7 +30,57 @@ For information about the features in this and prior releases, read
 [the news](NEWS.md).
 
 Catch up on the latest about ClamAV by reading our
-[blog](http://blog.clamav.net) and follow us on Twitter @clamav.
+[blog](http://blog.clamav.net) and follow us on Twitter `@clamav`.
+
+## ClamAV Signatures
+
+Anyone can learn to read and write ClamAV signatures. To get started, see our
+[signature writing manual](https://docs.clamav.net/manual/Signatures.html).
+
+## Installation Instructions
+
+### Using Docker
+
+ClamAV can be run using Docker. For details, visit to the online manual under
+["Docker"](https://docs.clamav.net/manual/Installing/Docker.html) and check out
+our images on [Docker Hub](https://hub.docker.com/r/clamav/clamav).
+
+### Using a Package Manager
+
+For help installing from a package manager, refer to the online manual under
+["Packages"](https://docs.clamav.net/manual/Installing/Packages.html).
+
+### Using an Installer
+
+The following install packages are available for download from
+[clamav.net/downloads](https://www.clamav.net/downloads):
+
+- Linux - Debian and RPM packages for x86_64 and i686. *New in v0.104.*
+- macOS - PKG installer for x86_64 and arm64 (universal). *New in v0.104.*
+- Windows - MSI installers and portable ZIP packages for win32 and x64.
+
+To learn how to use these packages, refer to the online manual under
+["Installing"](https://docs.clamav.net/manual/Installing.html#installing-with-an-installer).
+
+### Build from Source
+
+For step-by-step instructions, refer to the online manual:
+- [Unix/Linux/Mac](https://docs.clamav.net/manual/Installing/Installing-from-source-Unix.html)
+- [Windows](https://docs.clamav.net/manual/Installing/Installing-from-source-Windows.html)
+
+The source archive for each release includes a copy of the documentation for
+[offline](docs/html/UserManual.html) reading.
+
+A reference with all of the available build options can be found in the
+[INSTALL.md](INSTALL.md) file.
+
+You can find additional advice for developers in the online manual under
+["For Developers"](https://docs.clamav.net/manual/Development.html).
+
+### Upgrading from a previous version
+
+Visit [the FAQ](https://docs.clamav.net/faq/faq-upgrade.html) for tips on how
+to upgrade from a previous version.
 
 ## Join the ClamAV Community
 
@@ -90,10 +93,10 @@ You can also join the community on our
 ## Want to make a contribution?
 
 The ClamAV development team welcomes
-[code contributions](https://github.com/Cisco-Talos/clamav-devel),
+[code contributions](https://github.com/Cisco-Talos/clamav),
 improvements to
 [our documentation](https://github.com/Cisco-Talos/clamav-documentation),
-and also [bug reports](https://github.com/Cisco-Talos/clamav-devel/issues).
+and also [bug reports](https://github.com/Cisco-Talos/clamav/issues).
 
 Thanks for joining us!
 
@@ -136,6 +139,9 @@ are licensed differently than ClamAV. These include:
 
 See the `COPYING` directory for a copy of the 3rd party project licenses.
 
-## Credits
+## Acknowledgements
 
-[The ClamAV Team](https://www.clamav.net/about.html#credits)
+Credit for contributions to each release can be found in the [News](NEWS.md).
+
+ClamAV is brought to you by
+[the ClamAV Team](https://www.clamav.net/about.html#credits)
