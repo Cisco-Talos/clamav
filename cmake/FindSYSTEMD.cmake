@@ -63,7 +63,7 @@ if (NOT PC_SYSTEMD_FOUND)
 endif()
 
 find_path(SYSTEMD_INCLUDE_DIR
-    NAMES systemd/sd-bus.h
+    NAMES systemd/sd-daemon.h
     PATHS ${PC_SYSTEMD_INCLUDE_DIRS}
     PATH_SUFFIXES systemd
 )
