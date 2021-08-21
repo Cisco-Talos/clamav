@@ -1,7 +1,7 @@
 # ClamAV
 
 <p align="center">
-  <img width="250" height="250" src="https://raw.githubusercontent.com/Cisco-Talos/clamav-devel/dev/0.104/logo.png" alt='Maeve, the ClamAV mascot'>
+  <img width="250" height="250" src="https://raw.githubusercontent.com/Cisco-Talos/clamav/main/logo.png" alt='Maeve, the ClamAV mascot'>
 </p>
 
 <p align="center">
