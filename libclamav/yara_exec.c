@@ -144,13 +144,16 @@ int yr_execute_code(
 
   YR_RULE* rule;
   YR_STRING* string;
+#if REAL_YARA
   YR_MATCH* match;
+#endif
   YR_OBJECT* object;
   YR_OBJECT_FUNCTION* function;
 
   char* identifier;
 
-  int i;
+  uint32_t i_u32;
+  int64_t i_i64;
   int found;
   int count;
   int result = -1;
@@ -159,7 +162,7 @@ int yr_execute_code(
   int tidx = yr_get_tidx();
 #else
 
-  cli_dbgmsg("yara_exec: beginning execution for lsig %i\n", aclsig->id);
+  cli_dbgmsg("yara_exec: beginning execution for lsig %u (%s)\n", aclsig->id, aclsig->virname);
 #endif
 
   #ifdef PROFILING_ENABLED
@@ -168,13 +171,16 @@ int yr_execute_code(
 
   while(1)
   {
-    cli_dbgmsg("yara_exec: executing %i\n", *ip);
+    cli_dbgmsg("yara_exec: executing %d\n", *ip);
     switch(*ip)
     {
       case OP_HALT:
         // When the halt instruction is reached the stack
         // should be empty.
-        assert(sp == 0);
+        if (sp != 0) {
+          cli_dbgmsg("error executing yara rule, stack should be empty when halt instruction reached\n");
+          return CL_EPARSE;
+        }
 #if REAL_YARA
         return ERROR_SUCCESS;
 #else
@@ -609,13 +615,13 @@ int yr_execute_code(
             ss_matches = ls_matches->matches[string->subsig_id];
             if (ss_matches != NULL) {
                 offs = ss_matches->offsets;
-                for (i = 0; i < ss_matches->next; i++) {
-                    if (offs[i] == r1) {
+                for (i_u32 = 0; i_u32 < ss_matches->next; i_u32++) {
+                    if (offs[i_u32] == r1) {
                         push(1);
                         found = 1;
                         break;
                     }
-                    if (r1 < offs[i])
+                    if (r1 < offs[i_u32])
                         break;
                 }
             }
@@ -663,18 +669,18 @@ int yr_execute_code(
             ss_matches = ls_matches->matches[string->subsig_id];
             if (ss_matches != NULL) {
                 offs = ss_matches->offsets;
-                for (i = 0; i < ss_matches->next; i++) {
-                    if (offs[i] >= r1 &&
-                        offs[i] <= r2) {
+                for (i_u32 = 0; i_u32 < ss_matches->next; i_u32++) {
+                    if (offs[i_u32] >= r1 &&
+                        offs[i_u32] <= r2) {
                         push(1);
                         found = TRUE;
                         break;
                     }
-                    if (r2 < offs[i])
+                    if (r2 < offs[i_u32])
                         break;
                 }
             }
-        }        
+        }
 #endif
 
         if (!found)
@@ -705,29 +711,29 @@ int yr_execute_code(
         string = UINT64_TO_PTR(YR_STRING*, r2);
 #if REAL_YARA
         match = string->matches[tidx].head;
-        i = 1;
+        i_i64 = 1;
         found = FALSE;
 
         while (match != NULL && !found)
         {
-          if (r1 == i)
+          if (r1 == i_i64)
           {
             push(match->base + match->offset);
             found = TRUE;
           }
 
-          i++;
+          i_i64++;
           match = match->next;
         }
 #else
-        i = r1 - 1;
+        i_i64 = r1 - 1;
         found = FALSE;
         ls_matches = acdata->lsig_matches[aclsig->id];
-        if (ls_matches != NULL && i >= 0) {
+        if (ls_matches != NULL && i_i64 >= 0) {
             ss_matches = ls_matches->matches[string->subsig_id];
             if (ss_matches != NULL) {
-                if (i < ss_matches->next) {
-                    push(ss_matches->offsets[i]);
+                if (i_i64 < ss_matches->next) {
+                    push(ss_matches->offsets[i_i64]);
                     found = TRUE;
                 }
             }
