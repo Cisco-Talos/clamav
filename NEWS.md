@@ -3,6 +3,24 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.105.0
+
+ClamAV 0.105.0 includes the following improvements and changes.
+
+### New Requirements
+
+### Major changes
+
+### Notable changes
+
+### Other improvements
+
+### Bug fixes
+
+### Acknowledgements
+
+The ClamAV team thanks the following individuals for their code submissions:
+
 ## 0.104.0
 
 ClamAV 0.104.0 includes the following improvements and changes.

@@ -72,7 +72,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 140
+#define CL_FLEVEL 150
 #define CL_FLEVEL_DCONF CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -996,7 +996,7 @@ const char *cli_strerror(int errnum, char *buf, size_t len);
 #ifdef _WIN32
 /**
  * @brief   Attempt to get a filename from an open file handle.
- * 
+ *
  * Windows only.
  *
  * @param hFile          File handle
