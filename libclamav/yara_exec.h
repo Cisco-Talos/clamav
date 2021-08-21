@@ -24,7 +24,7 @@ limitations under the License.
 #include <yara/rules.h>
 #endif
 
-#define UNDEFINED           0xFFFABADAFABADAFFLL
+#define UNDEFINED           (int64_t)0xFFFABADAFABADAFF
 #define IS_UNDEFINED(x)     ((x) == UNDEFINED)
 
 #define OP_HALT           255
