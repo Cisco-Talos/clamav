@@ -165,6 +165,7 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Sergey Valentey
 - Sven Rueß
 - Tom Briden
+- Tuomo Soini
 - Vasile Papp
 - Yasuhiro Kimura
 
