@@ -67,7 +67,8 @@ if(ENABLE_SHARED_LIB)
     # The unrar shared library.
     add_library( clamunrar SHARED )
     set_target_properties(clamunrar PROPERTIES
-        VERSION "5.7.5" SOVERSION 5)
+        VERSION ${LIBCLAMAV_VERSION}
+        SOVERSION ${LIBCLAMAV_SOVERSION})
     target_sources( clamunrar
         PRIVATE
             ${UNRAR_SOURCES}
