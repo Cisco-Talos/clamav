@@ -9,10 +9,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "libclamav/others.h"
 
 
 bool clrs_log_init(void);
-
-void clrs_hello_clam(void);
 
 #endif /* __CLAMAV_RUST_H */

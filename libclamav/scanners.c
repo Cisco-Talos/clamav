@@ -4601,17 +4601,15 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
                 ret = cli_parsegif(ctx);
             break;
 
-        case CL_TYPE_PNG: {
+        case CL_TYPE_PNG:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
                 ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
             break;
-        }
 
-        case CL_TYPE_JPEG: {
+        case CL_TYPE_JPEG:
             if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
                 ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
             break;
-        }
 
         case CL_TYPE_TIFF:
             if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS)
