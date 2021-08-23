@@ -62,6 +62,8 @@
 #include "str.h"
 #include "entconv.h"
 
+#include "libclamav_rust/clamav_rust.h"
+
 #define MSGBUFSIZ 8192
 
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
@@ -164,10 +166,19 @@ void cli_infomsg(const cli_ctx *ctx, const char *str, ...)
     msg_callback(CL_MSG_INFO_VERBOSE, buff, buff + len, ctx ? ctx->cb_ctx : NULL);
 }
 
-void cli_dbgmsg_internal(const char *str, ...)
+/* intended for logging in rust modules */
+void cli_infomsg_simple(const char *str, ...)
 {
-    MSGCODE(buff, len, "LibClamAV debug: ");
-    fputs(buff, stderr);
+    MSGCODE(buff, len, "LibClamAV info: ");
+    msg_callback(CL_MSG_INFO_VERBOSE, buff, buff + len, NULL);
+}
+
+inline void cli_dbgmsg(const char *str, ...)
+{
+    if (!UNLIKELY(cli_get_debug_flag())) {
+        MSGCODE(buff, len, "LibClamAV debug: ");
+        fputs(buff, stderr);
+    }
 }
 
 int cli_matchregex(const char *str, const char *regex)

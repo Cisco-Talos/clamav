@@ -728,6 +728,12 @@ void cli_infomsg(const cli_ctx *ctx, const char *fmt, ...) __attribute__((format
 void cli_infomsg(const cli_ctx *ctx, const char *fmt, ...);
 #endif
 
+#ifdef __GNUC__
+void cli_infomsg_simple(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+#else
+void cli_infomsg_simple(const char *fmt, ...);
+#endif
+
 void cli_logg_setup(const cli_ctx *ctx);
 void cli_logg_unsetup(void);
 
@@ -755,12 +761,10 @@ void cli_logg_unsetup(void);
 #define __hot__
 #endif
 
-#define cli_dbgmsg (!UNLIKELY(cli_get_debug_flag())) ? (void)0 : cli_dbgmsg_internal
-
 #ifdef __GNUC__
-void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));
+inline void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
 #else
-void cli_dbgmsg_internal(const char *str, ...);
+inline void cli_dbgmsg(const char *str, ...);
 #endif
 
 #ifdef HAVE_CLI_GETPAGESIZE
