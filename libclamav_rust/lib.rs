@@ -3,4 +3,3 @@
  */
 
 pub mod logging;
-pub mod helloclam;
