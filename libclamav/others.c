@@ -425,6 +425,12 @@ cl_error_t cl_init(unsigned int initoptions)
 
     UNUSEDPARAM(initoptions);
 
+    /* Rust logging initialization */
+    if (!clrs_log_init()) {
+        cli_dbgmsg("Unexpected problem occurred while setting up rust logging... continuing without rust logging. \
+                    Please submit an issue to https://github.com/Cisco-Talos/clamav");
+    }
+
     cl_initialize_crypto();
 
     rarload();

@@ -268,9 +268,9 @@ void cli_warnmsg(const char *str, ...);
 #endif
 
 #ifdef __GNUC__
-void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));
+inline void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
 #else
-void cli_dbgmsg_internal(const char *str, ...);
+inline void cli_dbgmsg(const char *str, ...);
 #endif
 }
 
@@ -463,7 +463,7 @@ class NotifyListener : public JITEventListener
     {
         if (!cli_debug_flag)
             return;
-        cli_dbgmsg_internal("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
+        cli_dbgmsg("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
 #if LLVM_VERSION < 31
                             F.getNameStr().c_str(), (long)Size, Code);
 #else
@@ -477,7 +477,7 @@ class NotifyListener : public JITEventListener
     {
         if (!cli_debug_flag)
             return;
-        cli_dbgmsg_internal("[Bytecode JIT]; emitted %s %s of %zd bytes\n",
+        cli_dbgmsg("[Bytecode JIT]; emitted %s %s of %zd bytes\n",
                             Obj.getFileFormatName().str().c_str(),
                             Obj.getFileName().str().c_str(), Obj.getData().size());
     }
@@ -1001,7 +1001,7 @@ class LLVMCodegen
                     V->print(ostr);
                     Ty->print(ostr);
                     M->dump();
-                    cli_dbgmsg_internal("[Bytecode JIT]: operand %d: %s\n", operand, ostr.str().c_str());
+                    cli_dbgmsg("[Bytecode JIT]: operand %d: %s\n", operand, ostr.str().c_str());
                 }
                 llvm_report_error("(libclamav) Type mismatch converting operand");
             }
@@ -1193,7 +1193,7 @@ class LLVMCodegen
                     ostr << **I << ", ";
                 }
                 ostr << "\n";
-                cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+                cli_dbgmsg("[Bytecode JIT]: %s\n", ostr.str().c_str());
             } else {
                 cli_warnmsg("[Bytecode JIT]: Wrong indices for GEP opcode\n");
             }
@@ -1212,7 +1212,7 @@ class LLVMCodegen
         Value *V       = createGEP(Base, ETy, ARRAYREFP(Start, End, ARef));
         if (!V) {
             if (cli_debug_flag)
-                cli_dbgmsg_internal("[Bytecode JIT] @%d\n", dest);
+                cli_dbgmsg("[Bytecode JIT] @%d\n", dest);
             return false;
         }
         V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
@@ -1464,7 +1464,7 @@ class LLVMCodegen
                             raw_string_ostream ostr(str);
                             ostr << i << ":" << g << ":" << bc->globals[i][0] << "\n";
                             Ty->print(ostr);
-                            cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+                            cli_dbgmsg("[Bytecode JIT]: %s\n", ostr.str().c_str());
                         }
                         llvm_report_error("(libclamav) unable to create fake global");
                     }
@@ -1930,7 +1930,7 @@ class LLVMCodegen
                         std::string str;
                         raw_string_ostream ostr(str);
                         F->print(ostr);
-                        cli_dbgmsg_internal("[Bytecode JIT]: %s\n", ostr.str().c_str());
+                        cli_dbgmsg("[Bytecode JIT]: %s\n", ostr.str().c_str());
                     }
                 }
             }
@@ -2252,7 +2252,7 @@ static void *bytecode_watchdog(void *arg)
     char err[128];
     pthread_mutex_lock(&watchdog_mutex);
     if (cli_debug_flag)
-        cli_dbgmsg_internal("bytecode watchdog is running\n");
+        cli_dbgmsg("bytecode watchdog is running\n");
     do {
         struct watchdog_item *item;
         gettimeofday(&tv, NULL);
@@ -2299,7 +2299,7 @@ static void *bytecode_watchdog(void *arg)
     } while (1);
     watchdog_running = 0;
     if (cli_debug_flag)
-        cli_dbgmsg_internal("bytecode watchdog quiting\n");
+        cli_dbgmsg("bytecode watchdog quiting\n");
     pthread_mutex_unlock(&watchdog_mutex);
     return NULL;
 }
@@ -2424,7 +2424,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
         tv1.tv_sec -= tv0.tv_sec;
         tv1.tv_usec -= tv0.tv_usec;
         diff = tv1.tv_sec * 1000000 + tv1.tv_usec;
-        cli_dbgmsg_internal("bytecode finished in %ld us\n", diff);
+        cli_dbgmsg("bytecode finished in %ld us\n", diff);
     }
     return ctx->timeout ? CL_ETIMEOUT : ret;
 }
