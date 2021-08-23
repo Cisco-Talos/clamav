@@ -623,8 +623,16 @@ static fc_error_t create_curl_handle(
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, g_connectTimeout)) {
             logg("!create_curl_handle: Failed to set CURLOPT_CONNECTTIMEOUT (%u)!\n", g_connectTimeout);
         }
-        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_TIMEOUT, g_requestTimeout)) {
-            logg("!create_curl_handle: Failed to set CURLOPT_TIMEOUT (%u)!\n", g_requestTimeout);
+        if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, g_requestTimeout)) {
+            logg("!create_curl_handle: Failed to set CURLOPT_LOW_SPEED_TIME  (%u)!\n", g_requestTimeout);
+        }
+        if (g_requestTimeout > 0) {
+            /* Minimum speed is 1 byte/second over the previous g_requestTimeout seconds. */
+            int minimumSpeed = 1;
+
+            if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, minimumSpeed)) {
+                logg("!create_curl_handle: Failed to set CURLOPT_LOW_SPEED_LIMIT  (%u)!\n", minimumSpeed);
+            }
         }
 
         if (bAllowRedirect) {
