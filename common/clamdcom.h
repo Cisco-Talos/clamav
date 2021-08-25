@@ -49,6 +49,10 @@ struct RCVLN {
     char *bol;
 };
 
+#ifndef _WIN32
+extern struct sockaddr_un nixsock;
+#endif
+
 int sendln(int sockd, const char *line, unsigned int len);
 void recvlninit(struct RCVLN *s, int sockd);
 int recvln(struct RCVLN *s, char **rbol, char **reol);

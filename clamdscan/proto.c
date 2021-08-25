@@ -68,9 +68,6 @@
 extern unsigned long int maxstream;
 int printinfected;
 extern struct optstruct *clamdopts;
-#ifndef _WIN32
-extern struct sockaddr_un nixsock;
-#endif
 
 static int ftw_chkpath(const char *path, struct cli_ftw_cbdata *data)
 {

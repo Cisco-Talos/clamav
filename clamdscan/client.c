@@ -73,9 +73,6 @@
 #include "proto.h"
 
 unsigned long int maxstream;
-#ifndef _WIN32
-struct sockaddr_un nixsock;
-#endif
 extern struct optstruct *clamdopts;
 
 /* Inits the communication layer
