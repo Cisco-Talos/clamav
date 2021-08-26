@@ -315,6 +315,13 @@ if (WIN32)
     SET(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ClamAV)
     set(CPACK_PACKAGE_INSTALL_DIRECTORY  "ClamAV")
 
+    install(
+        FILES
+            ${CMAKE_CURRENT_SOURCE_DIR}/NEWS.md
+            ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+        DESTINATION "."
+        COMPONENT documentation)
+
 elseif(APPLE)
     set(CPACK_GENERATOR productbuild)
     set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.macos.universal)
