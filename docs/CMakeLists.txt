@@ -109,8 +109,8 @@ endif()
 # which is exported from the clamav-faq repo.
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/html/index.html)
     if(WIN32)
-        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html
-            DESTINATION .
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html/
+            DESTINATION ./UserManual
             COMPONENT documentation)
     else()
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/html
