@@ -66,6 +66,10 @@
 #include "manager.h"
 #include "global.h"
 
+#ifdef _WIN32 /* scan memory */
+#include "scanmem.h"
+#endif
+
 #ifdef C_LINUX
 dev_t procdev;
 #endif
@@ -926,7 +930,9 @@ int scanmanager(const struct optstruct *opts)
     char *file, cwd[1024], *pua_cats = NULL;
     const char *filename;
     const struct optstruct *opt;
-#ifndef _WIN32
+#ifdef _WIN32
+    struct mem_info minfo;
+#else
     struct rlimit rlim;
 #endif
     struct sigload_progress sigload_progress_ctx               = {0};
@@ -1503,8 +1509,21 @@ int scanmanager(const struct optstruct *opts)
         procdev = sb.st_dev;
 #endif
 
-    /* check filetype */
-    if (!opts->filename && !optget(opts, "file-list")->enabled) {
+#ifdef _WIN32
+    /* scan only memory */
+    if (optget(opts, "memory")->enabled && (!opts->filename && !optget(opts, "file-list")->enabled)) {
+        minfo.d       = 0;
+        minfo.files   = info.files;
+        minfo.ifiles  = info.ifiles;
+        minfo.blocks  = info.blocks;
+        minfo.engine  = engine;
+        minfo.opts    = opts;
+        minfo.options = &options;
+        ret           = scanmem(&minfo);
+    } else
+#endif
+        /* check filetype */
+        if (!opts->filename && !optget(opts, "file-list")->enabled) {
         /* we need full path for some reasons (eg. archive handling) */
         if (!getcwd(cwd, sizeof(cwd))) {
             logg("!Can't get absolute pathname of current working directory\n");
@@ -1520,6 +1539,19 @@ int scanmanager(const struct optstruct *opts)
         if (opts->filename && optget(opts, "file-list")->enabled)
             logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
+#ifdef _WIN32
+        /* scan first memory if requested */
+        if (optget(opts, "memory")->enabled) {
+            minfo.d       = 0;
+            minfo.files   = info.files;
+            minfo.ifiles  = info.ifiles;
+            minfo.blocks  = info.blocks;
+            minfo.engine  = engine;
+            minfo.opts    = opts;
+            minfo.options = &options;
+            ret           = scanmem(&minfo);
+        }
+#endif
         while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
             if (LSTAT(file, &sb) == -1) {
                 perror(file);
@@ -1580,6 +1612,14 @@ int scanmanager(const struct optstruct *opts)
 done:
     /* free the engine */
     cl_engine_free(engine);
+
+#ifdef _WIN32
+    if (optget(opts, "memory")->enabled) {
+        info.files  = minfo.files;
+        info.ifiles = minfo.ifiles;
+        info.blocks = minfo.blocks;
+    }
+#endif
 
     /* overwrite return code - infection takes priority */
     if (info.ifiles)

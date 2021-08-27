@@ -62,6 +62,7 @@
 #include "output.h"
 #include "misc.h"
 #include "actions.h"
+#include "clamdcom.h"
 
 #include "communication.h"
 #include "client.h"
@@ -69,8 +70,6 @@
 #include "socket.h"
 
 #include "../clamonacc.h"
-
-struct sockaddr_un nixsock;
 
 void onas_print_server_version(struct onas_context **ctx)
 {

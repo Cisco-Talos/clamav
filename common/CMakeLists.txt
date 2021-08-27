@@ -50,7 +50,9 @@ endif()
 if(APPLE)
     target_sources( common PRIVATE mac/cert_util_mac.m )
 elseif(WIN32)
-    target_sources( common PRIVATE service.c PUBLIC service.h )
+    target_sources( common 
+        PRIVATE service.c scanmem.c exescanner.c 
+        PUBLIC service.h scanmem.h exescanner.h )
     target_sources( common PRIVATE win/cert_util_win.c )
 else()
     target_sources( common PRIVATE linux/cert_util_linux.c )
@@ -66,7 +68,8 @@ target_link_libraries( common
 if(WIN32)
     target_link_libraries( common
         PUBLIC
-            crypt32 )
+            crypt32 
+            psapi)
 endif()
 
 if(HAVE_SYSTEMD)

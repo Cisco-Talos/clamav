@@ -65,13 +65,14 @@
 #include "actions.h"
 #include "clamdcom.h"
 
+#ifdef _WIN32
+#include "scanmem.h"
+#endif
+
 #include "client.h"
 #include "proto.h"
 
 unsigned long int maxstream;
-#ifndef _WIN32
-struct sockaddr_un nixsock;
-#endif
 extern struct optstruct *clamdopts;
 
 /* Inits the communication layer
@@ -219,7 +220,7 @@ int16_t ping_clamd(const struct optstruct *opts)
 
     isremote(opts);
     do {
-        if ((sockd = dconnect()) >= 0) {
+        if ((sockd = dconnect(clamdopts)) >= 0) {
             const char zPING[] = "zPING";
             recvlninit(&rcv, sockd);
 
@@ -343,7 +344,7 @@ int get_clamd_version(const struct optstruct *opts)
     const char zVERSION[] = "zVERSION";
 
     isremote(opts);
-    if ((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) return 2;
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zVERSION, sizeof(zVERSION))) {
@@ -371,7 +372,7 @@ int reload_clamd_database(const struct optstruct *opts)
     const char zRELOAD[] = "zRELOAD";
 
     isremote(opts);
-    if ((sockd = dconnect()) < 0) return 2;
+    if ((sockd = dconnect(clamdopts)) < 0) return 2;
     recvlninit(&rcv, sockd);
 
     if (sendln(sockd, zRELOAD, sizeof(zRELOAD))) {
@@ -442,7 +443,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
             return 2;
         }
         if ((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-        if ((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL)) >= 0)
+        if ((sockd = dconnect(clamdopts)) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret, NULL, clamdopts)) >= 0)
             *infected = ret;
         else
             errors = 1;
@@ -464,7 +465,20 @@ int client(const struct optstruct *opts, int *infected, int *err)
 	    }
 	    */
         }
-    } else {
+    }
+#ifdef _WIN32
+    else if (optget(opts, "memory")->enabled) {
+        struct mem_info minfo;
+        minfo.d      = 1;
+        minfo.opts   = opts;
+        minfo.ifiles = *infected;
+        minfo.errors = errors;
+        int res      = scanmem(&minfo);
+        *infected    = minfo.ifiles;
+        *err         = minfo.errors;
+    }
+#endif
+    else {
         errors = client_scan("", scantype, infected, err, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
