@@ -351,7 +351,7 @@ static int cli_ac_addpatt_recursive(struct cli_matcher *root, struct cli_ac_patt
     /* if pattern is nocase, we need to enumerate all the combinations if applicable
      * it's why this function was re-written to be recursive
      */
-    if ((pattern->sigopts & ACPATT_OPTION_NOCASE) && isalpha(pattern->pattern[i] & 0xff)) {
+    if ((pattern->sigopts & ACPATT_OPTION_NOCASE) && (pattern->pattern[i] & 0xff) < 0x80 && isalpha((unsigned char)(pattern->pattern[i] & 0xff))) {
         next = pt->trans[CLI_NOCASEI((unsigned char)(pattern->pattern[i] & 0xff))];
         if (!next)
             next = add_new_node(root, i, len);
