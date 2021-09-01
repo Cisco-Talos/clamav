@@ -53,6 +53,13 @@ if(ENABLE_UNRAR)
         set_target_properties( clamunrar_iface PROPERTIES
             COMPILE_FLAGS "${WARNCXXFLAGS} ${CXX1XCXXFLAGS}" )
 
+        if (APPLE AND CLAMAV_SIGN_FILE)
+            set_target_properties( clamunrar_iface PROPERTIES
+                XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
+                XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
+            )
+        endif()
+
         if(WIN32)
             set_target_properties(clamunrar_iface PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
         endif()
