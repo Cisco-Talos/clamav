@@ -322,9 +322,10 @@ if (WIN32)
         DESTINATION ".")
 
 elseif(APPLE)
-    set(CPACK_GENERATOR productbuild)
+    set(CPACK_PACKAGE_NAME      ClamAV)
+    set(CPACK_GENERATOR         productbuild)
     set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_FILE_NAME}.macos.universal)
-    set(CPACK_PACKAGE_VENDOR "cisco")  # For Apple, creates short name com.cisco.clamav.xxx in pkgutil
+    set(CPACK_PACKAGE_VENDOR    "cisco")  # For Apple, creates short name com.cisco.clamav.xxx in pkgutil
 
     # productbuild requires components or it won't add anything to the PKG
     set(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Libraries")
