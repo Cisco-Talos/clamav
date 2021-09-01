@@ -22,6 +22,14 @@ target_include_directories( clamsubmit
     PRIVATE ${CMAKE_BINARY_DIR} # For clamav-config.h
 )
 set_target_properties( clamsubmit PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+
+if (APPLE AND CLAMAV_SIGN_FILE)
+    set_target_properties( clamscan PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
+    )
+endif()
+
 target_link_libraries( clamsubmit
     PRIVATE
         ClamAV::libclamav

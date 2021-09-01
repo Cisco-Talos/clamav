@@ -44,6 +44,7 @@ target_include_directories( clamonacc
 )
 
 set_target_properties( clamonacc PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+
 target_link_libraries( clamonacc
     PRIVATE
         ClamAV::libclamav

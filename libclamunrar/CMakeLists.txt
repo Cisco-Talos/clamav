@@ -84,6 +84,13 @@ if(ENABLE_SHARED_LIB)
             COMPILE_FLAGS "-Wno-logical-op-parentheses -Wno-switch -Wno-dangling-else")
     endif()
 
+    if (APPLE AND CLAMAV_SIGN_FILE)
+        set_target_properties( clamunrar PROPERTIES
+            XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
+            XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
+        )
+    endif()
+
     if(WIN32)
         set_target_properties(clamunrar PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
     endif()

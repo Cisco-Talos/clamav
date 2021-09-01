@@ -20,12 +20,20 @@ target_sources( freshclam-bin
         notify.c
         notify.h )
 if(WIN32)
-    target_sources( freshclam-bin 
-        PRIVATE 
+    target_sources( freshclam-bin
+        PRIVATE
             ${CMAKE_SOURCE_DIR}/win32/res/freshclam.rc
             ${CMAKE_SOURCE_DIR}/win32/res/clam.manifest )
 endif()
 set_target_properties( freshclam-bin PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
+
+if (APPLE AND CLAMAV_SIGN_FILE)
+    set_target_properties( freshclam-bin PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY ${CODE_SIGN_IDENTITY}
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DEVELOPMENT_TEAM_ID}
+    )
+endif()
+
 target_link_libraries(freshclam-bin
     PRIVATE
         ClamAV::libfreshclam
