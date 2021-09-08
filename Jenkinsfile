@@ -44,6 +44,16 @@ properties(
     ]
 )
 
+properties(
+    [
+        buildDiscarder(logRotator(
+        artifactDaysToKeepStr: '15',
+        artifactNumToKeepStr: '15',
+        daysToKeepStr: '30',
+        numToKeepStr: '20'))
+    ]
+)
+
 node('master') {
     stage('Generate Tarball') {
         cleanWs()
