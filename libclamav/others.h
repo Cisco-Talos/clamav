@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #ifdef HAVE_JSON
 #include <json.h>
@@ -140,16 +141,19 @@ typedef struct bitset_tag {
     unsigned long length;
 } bitset_t;
 
-typedef struct cli_ctx_container_tag {
+typedef struct recursion_level_tag {
     cli_file_t type;
     size_t size;
-    unsigned char flag;
-} cli_ctx_container;
-#define CONTAINER_FLAG_VALID 0x01
+    cl_fmap_t *fmap;                      /* The fmap for this layer. This used to be in an array in the ctx. */
+    uint32_t recursion_level_buffer;      /* Which buffer layer in scan recursion. */
+    uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
+    bool is_normalized_layer;             /* Indicates that the layer should be skipped when checking container and intermediate types. */
+} recursion_level_t;
+// #define CONTAINER_FLAG_VALID 0x01
 
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;    /**< (optional) The filepath of the original scan target */
+    char *target_filepath;    /**< (optional) The filepath of the original scan target. */
     const char *sub_filepath; /**< (optional) The filepath of the current file being parsed. May be a temp file. */
     char *sub_tmpdir;         /**< The directory to store tmp files at this recursion depth. */
     const char **virname;
@@ -159,15 +163,17 @@ typedef struct cli_ctx_tag {
     const struct cl_engine *engine;
     unsigned long scansize;
     struct cl_scan_options *options;
-    unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     unsigned int corrupted_input;
     unsigned int img_validate;
-    cli_ctx_container *containers; /* set container type after recurse */
+    recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
+    uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
+    uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
+    fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
+    bool next_layer_is_normalized;      /* Indicate that the next fmap pushed to the stack is normalized and should be ignored when checking container/intermediate types */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
-    fmap_t **fmap; /* pointer to current fmap in an allocated array, incremented with recursion depth */
     bitset_t *hook_lsig_matches;
     void *cb_ctx;
     cli_events_t *perf;
@@ -179,7 +185,8 @@ typedef struct cli_ctx_tag {
     struct json_object *wrkproperty;
 #endif
     struct timeval time_limit;
-    int limit_exceeded;
+    bool limit_exceeded; /* To guard against alerting on limits exceeded more than once, or storing that in the JSON metadata more than once. */
+    bool abort_scan;     /* So we can guarantee a scan is aborted, even if CL_ETIMEOUT/etc. status is lost in the scan recursion stack. */
 } cli_ctx;
 
 #define STATS_ANON_UUID "5b585e8f-3be5-11e3-bf0b-18037319526c"
@@ -285,15 +292,15 @@ struct cl_engine {
     uint64_t engine_options;
 
     /* Limits */
-    uint32_t maxscantime; /* Time limit (in milliseconds) */
-    uint64_t maxscansize; /* during the scanning of archives this size
+    uint32_t maxscantime;         /* Time limit (in milliseconds) */
+    uint64_t maxscansize;         /* during the scanning of archives this size
 				           * will never be exceeded
 				           */
-    uint64_t maxfilesize; /* compressed files will only be decompressed
+    uint64_t maxfilesize;         /* compressed files will only be decompressed
 				           * and scanned up to this size
 				           */
-    uint32_t maxreclevel; /* maximum recursion level for archives */
-    uint32_t maxfiles;    /* maximum number of files to be scanned
+    uint32_t max_recursion_level; /* maximum recursion level for archives */
+    uint32_t maxfiles;            /* maximum number of files to be scanned
 				           * within a single archive
 				           */
     /* This is for structured data detection.  You can set the minimum
@@ -437,7 +444,7 @@ struct cl_settings {
     uint32_t maxscantime;
     uint64_t maxscansize;
     uint64_t maxfilesize;
-    uint32_t maxreclevel;
+    uint32_t max_recursion_level;
     uint32_t maxfiles;
     uint32_t min_cc_count;
     uint32_t min_ssn_count;
@@ -691,10 +698,74 @@ const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx);
 
-void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size);
-cli_file_t cli_get_container(cli_ctx *ctx, int index);
-size_t cli_get_container_size(cli_ctx *ctx, int index);
-cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index);
+/**
+ * @brief Push a new fmap onto our scan recursion stack.
+ *
+ * May fail if we exceed max recursion depth.
+ *
+ * @param ctx           The scanning context.
+ * @param map           The fmap for the new layer.
+ * @param type          The file type. May be CL_TYPE_ANY if unknown. Can change it later with cli_recursion_stack_change_type().
+ * @param is_new_buffer true if the fmap represents a new buffer/file, and not some window into an existing fmap.
+ * @return cl_error_t   CL_SUCCESS if successful, else CL_EMAXREC if exceeding the max recursion depth.
+ */
+cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer);
+
+/**
+ * @brief Pop off a layer of our scan recursion stack.
+ *
+ * Returns the fmap for the popped layer. Does NOT funmap() the fmap for you.
+ *
+ * @param ctx           The scanning context.
+ * @return cl_fmap_t*   A pointer to the fmap for the popped layer, may return NULL instead if the stack is empty.
+ */
+cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx);
+
+/**
+ * @brief Re-assign the type for the current layer.
+ *
+ * @param ctx   The scanning context.
+ * @param type  The new file type.
+ */
+void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type);
+
+/**
+ * @brief Get the type of a specific layer.
+ *
+ * Ignores normalized layers internally.
+ *
+ * For index:
+ *  0 == the outermost (bottom) layer of the stack.
+ *  1 == the first layer (probably never explicitly used).
+ * -1 == the present innermost (top) layer of the stack.
+ * -2 == the parent layer (or "container"). That is, the second from the top of the stack.
+ *
+ * @param ctx           The scanning context.
+ * @param index         Desired index, will be converted internally as though the normalized layers were stripped out. Don't think too had about it. Or do. ¯\_(ツ)_/¯
+ * @return cli_file_t   The type of the requested layer,
+ *                      or returns CL_TYPE_ANY if a negative layer is requested,
+ *                      or returns CL_TYPE_IGNORED if requested layer too high.
+ */
+cli_file_t cli_recursion_stack_get_type(cli_ctx *ctx, int index);
+
+/**
+ * @brief Get the size of a specific layer.
+ *
+ * Ignores normalized layers internally.
+ *
+ * For index:
+ *  0 == the outermost (bottom) layer of the stack.
+ *  1 == the first layer (probably never explicitly used).
+ * -1 == the present innermost (top) layer of the stack.
+ * -2 == the parent layer (or "container"). That is, the second from the top of the stack.
+ *
+ * @param ctx           The scanning context.
+ * @param index         Desired index, will be converted internally as though the normalized layers were stripped out. Don't think too had about it. Or do. ¯\_(ツ)_/¯
+ * @return cli_file_t   The size of the requested layer,
+ *                      or returns the size of the whole file if a negative layer is requested,
+ *                      or returns 0 if requested layer too high.
+ */
+size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index);
 
 /* used by: spin, yc (C) aCaB */
 #define __SHIFTBITS(a) (sizeof(a) << 3)
@@ -902,9 +973,21 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
-void cli_check_blockmax(cli_ctx *, int);
+void cli_append_virus_if_heur_exceedsmax(cli_ctx *, char *);
 cl_error_t cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
-cl_error_t cli_updatelimits(cli_ctx *, unsigned long);
+
+/**
+ * @brief Call before scanning a file to determine if we should scan it, skip it, or abort the entire scanning process.
+ *
+ * If the verdict is CL_SUCCESS, then this function increments the # of scanned files, and increments the amount of scanned data.
+ * If the verdict is that a limit has been exceeded, then ctx->
+ *
+ * @param ctx       The scanning context.
+ * @param needed    The size of the file we're considering scanning.
+ * @return cl_error_t CL_SUCCESS if we're good to keep scanning else an error status.
+ */
+cl_error_t cli_updatelimits(cli_ctx *ctx, size_t needed);
+
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
 void cli_qsort(void *a, size_t n, size_t es, int (*cmp)(const void *, const void *));

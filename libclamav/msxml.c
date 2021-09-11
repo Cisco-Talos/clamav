@@ -238,7 +238,7 @@ cl_error_t cli_scanmsxml(cli_ctx *ctx)
         return CL_ENULLARG;
 
     memset(&cbdata, 0, sizeof(cbdata));
-    cbdata.map = *ctx->fmap;
+    cbdata.map = ctx->fmap;
 
     reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "msxml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {

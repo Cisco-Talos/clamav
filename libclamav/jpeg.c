@@ -260,7 +260,7 @@ static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, size_t *off)
     uint8_t nlength, id[2];
     uint32_t size;
     size_t offset = *off;
-    fmap_t *map   = *ctx->fmap;
+    fmap_t *map   = ctx->fmap;
 
     if (!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
         cli_dbgmsg("read bim failed\n");
@@ -331,7 +331,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
         status = CL_EARG;
         goto done;
     }
-    map = *ctx->fmap;
+    map = ctx->fmap;
 
     if (fmap_readn(map, buff, offset, 4) != 4)
         goto done; /* Ignore */

@@ -548,13 +548,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
     cli_dbgmsg("bytecode: scanning extracted file %s\n", ctx->tempfile);
     cctx = (cli_ctx *)ctx->ctx;
     if (cctx) {
-        cctx->recursion++;
-        if (ctx->containertype != CL_TYPE_ANY) {
-            size_t csize = cli_get_container_size(cctx, -2);
-            cli_set_container(cctx, ctx->containertype, csize);
-        }
-        res = cli_magic_scan_desc(ctx->outfd, ctx->tempfile, cctx, NULL);
-        cctx->recursion--;
+        res = cli_magic_scan_desc_type(ctx->outfd, ctx->tempfile, cctx, ctx->containertype, NULL);
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);
             ctx->found   = 1;

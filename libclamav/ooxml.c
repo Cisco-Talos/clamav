@@ -437,7 +437,6 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
         /* two files: version.xml and Contents/content.hpf */
         ret = unzip_search_single(ctx, "version.xml", 11, &loff);
         if (ret == CL_ETIMEOUT) {
-            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
             return CL_ETIMEOUT;
         } else if (ret != CL_VIRUS) {
             cli_dbgmsg("cli_process_ooxml: failed to find "
@@ -451,7 +450,6 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
         if (ret == CL_SUCCESS) {
             ret = unzip_search_single(ctx, "Contents/content.hpf", 20, &loff);
             if (ret == CL_ETIMEOUT) {
-                cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
                 return CL_ETIMEOUT;
             } else if (ret != CL_VIRUS) {
                 cli_dbgmsg("cli_process_ooxml: failed to find "
@@ -466,7 +464,6 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
         /* find "[Content Types].xml" */
         ret = unzip_search_single(ctx, "[Content_Types].xml", 19, &loff);
         if (ret == CL_ETIMEOUT) {
-            cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
             return CL_ETIMEOUT;
         } else if (ret != CL_VIRUS) {
             cli_dbgmsg("cli_process_ooxml: failed to find "
@@ -482,15 +479,6 @@ cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
 
         ret = unzip_single_internal(ctx, loff, ooxml_content_cb);
     }
-
-    if (ret == CL_ETIMEOUT)
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_TIMEOUT");
-    else if (ret == CL_EMEM)
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_OUTOFMEM");
-    else if (ret == CL_EMAXSIZE)
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXSIZE");
-    else if (ret == CL_EMAXFILES)
-        cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_EMAXFILES");
 
     return ret;
 #else

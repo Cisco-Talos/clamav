@@ -367,7 +367,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
     char buffer[RFC2821LENGTH + 1];
     mbox_ctx mctx;
     size_t at   = 0;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in mbox()\n");
 
@@ -576,9 +576,15 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                     break;
                 case MAXREC:
                     retcode = CL_EMAXREC;
+                    cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion"); // Doing this now because it's actually tracking email recursion,-
+                                                                                                         // not fmap recursion, but it still is aborting with stuff not scanned.
+                                                                                                         // Also, we didn't have access to the ctx when this happened earlier.
                     break;
                 case MAXFILES:
                     retcode = CL_EMAXFILES;
+                    cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles"); // Doing this now because it's actually tracking email parts,-
+                                                                                                     // not actual files, but it still is aborting with stuff not scanned.
+                                                                                                     // Also, we didn't have access to the ctx when this happened earlier.
                     break;
                 case VIRUS:
                     retcode = CL_VIRUS;
@@ -604,7 +610,6 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 
     return retcode;
 }
-
 
 #define READ_STRUCT_BUFFER_LEN 1024
 typedef struct _ReadStruct {
@@ -1655,12 +1660,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                mctx->files);
 
     /* FIXMELIMITS: this should be better integrated */
-    if (engine->maxreclevel)
+    if (engine->max_recursion_level)
         /*
          * This is approximate
          */
-        if (recursion_level > engine->maxreclevel) {
-
+        if (recursion_level > engine->max_recursion_level) {
+            // Note: engine->max_recursion_level is re-purposed here out of convenience.
+            //       ole2 recursion does not leverage the ctx->recursion_stack stack.
             cli_dbgmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
             return MAXREC;
         }

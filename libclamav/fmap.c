@@ -259,11 +259,12 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
     }
 
     if (offset > 0 || length < map->len) {
-        /* Caller requested a window into the current map, not the whole map */
-        unsigned char hash[16] = {'\0'};
+        /*
+         * Caller requested a window into the current map, not the whole map.
+         */
 
         /* Set the new nested offset and (nested) length for the new map */
-        /* can't change offset because then we'd have to discard/move cached
+        /* Note: We can't change offset because then we'd have to discard/move cached
          * data, instead use nested_offset to reuse the already cached data */
         duplicate_map->nested_offset += offset;
         duplicate_map->len = MIN(length, map->len - offset);
@@ -278,19 +279,17 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
                         duplicate_map->offset, len2);
         }
 
-        /* Calculate the fmap hash to be used by the FP check later */
-        if (CL_SUCCESS != fmap_get_MD5(hash, duplicate_map)) {
-            cli_warnmsg("fmap_duplicate: failed to get fmap MD5\n");
-            goto done;
-        }
-        memcpy(duplicate_map->maphash, hash, 16);
+        /* This also means the hash will be different.
+         * Clear the have_maphash flag.
+         * It will be calculated when next it is needed. */
+        duplicate_map->have_maphash = false;
     }
 
     if (NULL != name) {
         duplicate_map->name = cli_strdup(name);
         if (NULL == duplicate_map->name) {
-            free(duplicate_map);
-            return NULL;
+            status = CL_EMEM;
+            goto done;
         }
     } else {
         duplicate_map->name = NULL;
@@ -350,8 +349,6 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     size_t mapsz, bitmap_size;
     cl_fmap_t *m = NULL;
     int pgsz     = cli_getpagesize();
-
-    unsigned char hash[16] = {'\0'};
 
     if ((off_t)offset < 0 || offset != fmap_align_to(offset, pgsz)) {
         cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
@@ -427,13 +424,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->gets            = handle_gets;
     m->unneed_off      = handle_unneed_off;
     m->handle_is_fd    = 1;
-
-    /* Calculate the fmap hash to be used by the FP check later */
-    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
-        cli_warnmsg("fmap: failed to get MD5\n");
-        goto done;
-    }
-    memcpy(m->maphash, hash, 16);
+    m->have_maphash    = false;
 
     status = CL_SUCCESS;
 
@@ -833,13 +824,13 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 
 fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 {
-    unsigned char hash[16] = {'\0'};
+    cl_error_t status = CL_ERROR;
 
     int pgsz     = cli_getpagesize();
     cl_fmap_t *m = cli_calloc(1, sizeof(*m));
     if (!m) {
         cli_warnmsg("fmap: map allocation failed\n");
-        return NULL;
+        goto done;
     }
     m->data        = start;
     m->len         = len;
@@ -853,22 +844,24 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
     m->unneed_off  = mem_unneed_off;
 
     if (NULL != name) {
+        /* Copy the name, if one is given */
         m->name = cli_strdup(name);
         if (NULL == m->name) {
-            free(m);
-            return NULL;
+            cli_warnmsg("fmap: failed to duplicate map name\n");
+            goto done;
         }
     }
 
-    /* Calculate the fmap hash to be used by the FP check later */
-    if (CL_SUCCESS != fmap_get_MD5(hash, m)) {
+    status = CL_SUCCESS;
+
+done:
+    if (CL_SUCCESS != status) {
         if (NULL != m->name) {
             free(m->name);
         }
         free(m);
-        return NULL;
+        m = NULL;
     }
-    memcpy(m->maphash, hash, 16);
 
     return m;
 }
@@ -1071,39 +1064,57 @@ extern void cl_fmap_close(cl_fmap_t *map)
     funmap(map);
 }
 
-cl_error_t fmap_get_MD5(unsigned char *hash, fmap_t *map)
+cl_error_t fmap_get_MD5(fmap_t *map, unsigned char **hash)
 {
+    cl_error_t status = CL_ERROR;
     size_t todo, at = 0;
-    void *hashctx;
+    void *hashctx = NULL;
 
     todo = map->len;
 
-    hashctx = cl_hash_init("md5");
-    if (!(hashctx)) {
-        cli_errmsg("ctx_get_MD5: error initializing new md5 hash!\n");
-        return CL_ERROR;
-    }
-
-    while (todo) {
-        const void *buf;
-        size_t readme = todo < 1024 * 1024 * 10 ? todo : 1024 * 1024 * 10;
-
-        if (!(buf = fmap_need_off_once(map, at, readme))) {
-            cl_hash_destroy(hashctx);
-            return CL_EREAD;
+    if (!map->have_maphash) {
+        /* Need to calculate the hash */
+        hashctx = cl_hash_init("md5");
+        if (!(hashctx)) {
+            cli_errmsg("fmap_get_MD5: error initializing new md5 hash!\n");
+            goto done;
         }
 
-        todo -= readme;
-        at += readme;
+        while (todo) {
+            const void *buf;
+            size_t readme = todo < 1024 * 1024 * 10 ? todo : 1024 * 1024 * 10;
 
-        if (cl_update_hash(hashctx, (void *)buf, readme)) {
-            cl_hash_destroy(hashctx);
-            cli_errmsg("ctx_get_MD5: error reading while generating hash!\n");
-            return CL_EREAD;
+            if (!(buf = fmap_need_off_once(map, at, readme))) {
+                cli_errmsg("fmap_get_MD5: error reading while generating hash!\n");
+                status = CL_EREAD;
+                goto done;
+            }
+
+            todo -= readme;
+            at += readme;
+
+            if (cl_update_hash(hashctx, (void *)buf, readme)) {
+                cli_errmsg("fmap_get_MD5: error calculating hash!\n");
+                status = CL_EREAD;
+                goto done;
+            }
         }
+
+        cl_finish_hash(hashctx, map->maphash);
+        hashctx = NULL;
+
+        map->have_maphash = true;
     }
 
-    cl_finish_hash(hashctx, hash);
+    *hash = map->maphash;
 
-    return CL_CLEAN;
+    status = CL_SUCCESS;
+
+done:
+
+    if (NULL != hashctx) {
+        cl_hash_destroy(hashctx);
+    }
+
+    return status;
 }

@@ -180,7 +180,7 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
         status = CL_EARG;
         goto done;
     }
-    map = *ctx->fmap;
+    map = ctx->fmap;
 
     /*
      * Skip the "GIF" Signature and "87a" or "89a" Version.

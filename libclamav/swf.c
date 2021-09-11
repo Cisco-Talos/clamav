@@ -123,7 +123,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     struct CLI_LZMA lz;
     unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     /* strip off header */
     off_t offset = 8;
     uint32_t d_insize;
@@ -303,7 +303,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     z_stream stream;
     char inbuff[FILEBUFF], outbuff[FILEBUFF];
-    fmap_t *map    = *ctx->fmap;
+    fmap_t *map    = ctx->fmap;
     int offset     = 8, ret, zret, zend;
     size_t outsize = 8;
     size_t count;
@@ -445,7 +445,7 @@ static const char *tagname(tag_id id)
 int cli_scanswf(cli_ctx *ctx)
 {
     struct swf_file_hdr file_hdr;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     unsigned int bitpos, bitbuf, getbits_n, nbits, getword_1, getword_2, getdword_1, getdword_2;
     const char *pt;
     unsigned char get_c;

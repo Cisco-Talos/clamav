@@ -172,87 +172,78 @@ static int hexdump(void)
 
 static int hashpe(const char *filename, unsigned int class, int type)
 {
+    int status = -1;
     STATBUF sb;
     const char *fmptr;
-    struct cl_engine *engine;
-    cli_ctx ctx;
-    struct cl_scan_options options;
-    int fd, ret;
+    struct cl_engine *engine       = NULL;
+    cli_ctx ctx                    = {0};
+    struct cl_scan_options options = {0};
+    cl_fmap_t *new_map             = NULL;
+    int fd                         = -1;
+    cl_error_t ret;
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        mprintf("!hashpe: Can't open file %s!\n", filename);
+        goto done;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+
+    new_map = fmap(fd, 0, sb.st_size, filename);
+    if (NULL == new_map) {
+        mprintf("!hashpe: Can't create fmap for open file\n");
+        goto done;
+    }
 
     /* build engine */
     if (!(engine = cl_engine_new())) {
         mprintf("!hashpe: Can't create new engine\n");
-        return -1;
+        goto done;
     }
     cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
 
     if (cli_initroots(engine, 0) != CL_SUCCESS) {
         mprintf("!hashpe: cli_initroots() failed\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     if (cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf("!hashpe: Can't parse signature\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     if (cl_engine_compile(engine) != CL_SUCCESS) {
         mprintf("!hashpe: Can't compile engine\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     /* prepare context */
-    memset(&ctx, '\0', sizeof(cli_ctx));
-    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine         = engine;
     ctx.options        = &options;
     ctx.options->parse = ~0;
-    ctx.containers     = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
-    if (!ctx.containers) {
-        cl_engine_free(engine);
-        return -1;
-    }
-    ctx.containers[0].type = CL_TYPE_ANY;
-    ctx.dconf              = (struct cli_dconf *)engine->dconf;
-    ctx.fmap               = calloc(sizeof(fmap_t *), 1);
-    if (!ctx.fmap) {
-        free(ctx.containers);
-        cl_engine_free(engine);
-        return -1;
+    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    if (!ctx.recursion_stack) {
+        goto done;
     }
 
-    /* Prepare file */
-    fd = open(filename, O_RDONLY | O_BINARY);
-    if (fd < 0) {
-        mprintf("!hashpe: Can't open file %s!\n", filename);
-        free(ctx.containers);
-        free(ctx.fmap);
-        cl_engine_free(engine);
-        return -1;
-    }
+    // ctx was memset, so recursion_level starts at 0.
+    ctx.recursion_stack[ctx.recursion_level].fmap = new_map;
+    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY;                           // ANY for the top level, because we don't yet know the type.
+    ctx.recursion_stack[ctx.recursion_level].size = new_map->len - new_map->nested_offset; // Realistically nested_offset will be 0,
+                                                                                           // but taking the diff is the "right" way.
 
-    lseek(fd, 0, SEEK_SET);
-    FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
-        free(ctx.containers);
-        free(ctx.fmap);
-        close(fd);
-        cl_engine_free(engine);
-        return -1;
-    }
+    ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
-    fmptr = fmap_need_off_once(*ctx.fmap, 0, sb.st_size);
+    fmptr = fmap_need_off_once(ctx.fmap, 0, sb.st_size);
     if (!fmptr) {
         mprintf("!hashpe: fmap_need_off_once failed!\n");
-        free(ctx.containers);
-        funmap(*ctx.fmap);
-        free(ctx.fmap);
-        close(fd);
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     cl_debug();
@@ -267,12 +258,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
             break;
         default:
             mprintf("!hashpe: unknown classification(%u) for pe hash!\n", class);
-            free(ctx.containers);
-            funmap(*ctx.fmap);
-            free(ctx.fmap);
-            close(fd);
-            cl_engine_free(engine);
-            return -1;
+            goto done;
     }
 
     /* THIS MAY BE UNNECESSARY */
@@ -293,13 +279,23 @@ static int hashpe(const char *filename, unsigned int class, int type)
             break;
     }
 
+    status = 0;
+
+done:
     /* Cleanup */
-    free(ctx.containers);
-    funmap(*ctx.fmap);
-    free(ctx.fmap);
-    close(fd);
-    cl_engine_free(engine);
-    return 0;
+    if (NULL != new_map) {
+        funmap(new_map);
+    }
+    if (NULL != ctx.recursion_stack) {
+        free(ctx.recursion_stack);
+    }
+    if (NULL == engine) {
+        cl_engine_free(engine);
+    }
+    if (-1 != fd) {
+        close(fd);
+    }
+    return status;
 }
 
 static int hashsig(const struct optstruct *opts, unsigned int class, int type)
@@ -1761,13 +1757,13 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
     if (cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, NULL)) {
-        destroy_ctx(-1, ctx);
+        destroy_ctx(ctx);
         cli_rmdirs(dir);
         free(dir);
         close(fd);
         return -1;
     }
-    destroy_ctx(-1, ctx);
+    destroy_ctx(ctx);
     if (has_vba && files)
         sigtool_vba_scandir(dir, hex_output, files);
     cli_rmdirs(dir);
@@ -2209,71 +2205,74 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 
 static void matchsig(const char *sig, const char *offset, int fd)
 {
-    struct cl_engine *engine;
     struct cli_ac_result *acres = NULL, *res;
     STATBUF sb;
-    unsigned int matches = 0;
-    cli_ctx ctx;
-    struct cl_scan_options options;
-    int ret;
+    unsigned int matches           = 0;
+    struct cl_engine *engine       = NULL;
+    cli_ctx ctx                    = {0};
+    struct cl_scan_options options = {0};
+    cl_fmap_t *new_map             = NULL;
 
     mprintf("SUBSIG: %s\n", sig);
 
+    /* Prepare file */
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+
+    new_map = fmap(fd, 0, sb.st_size, NULL);
+    if (NULL == new_map) {
+        goto done;
+    }
+
+    /* build engine */
     if (!(engine = cl_engine_new())) {
         mprintf("!matchsig: Can't create new engine\n");
-        return;
+        goto done;
     }
     cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
 
     if (cli_initroots(engine, 0) != CL_SUCCESS) {
         mprintf("!matchsig: cli_initroots() failed\n");
-        cl_engine_free(engine);
-        return;
+        goto done;
     }
 
     if (cli_parse_add(engine->root[0], "test", sig, 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf("!matchsig: Can't parse signature\n");
-        cl_engine_free(engine);
-        return;
+        goto done;
     }
 
     if (cl_engine_compile(engine) != CL_SUCCESS) {
         mprintf("!matchsig: Can't compile engine\n");
-        cl_engine_free(engine);
-        return;
+        goto done;
     }
-    memset(&ctx, '\0', sizeof(cli_ctx));
-    memset(&options, 0, sizeof(struct cl_scan_options));
+
     ctx.engine         = engine;
     ctx.options        = &options;
     ctx.options->parse = ~0;
-    ctx.containers     = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
-    if (!ctx.containers) {
-        cl_engine_free(engine);
-        return;
+    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    if (!ctx.recursion_stack) {
+        goto done;
     }
-    ctx.containers[0].type = CL_TYPE_ANY;
-    ctx.dconf              = (struct cli_dconf *)engine->dconf;
-    ctx.fmap               = calloc(sizeof(fmap_t *), 1);
-    if (!ctx.fmap) {
-        free(ctx.containers);
-        cl_engine_free(engine);
-        return;
-    }
-    lseek(fd, 0, SEEK_SET);
-    FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, NULL))) {
-        free(ctx.containers);
-        free(ctx.fmap);
-        cl_engine_free(engine);
-        return;
-    }
-    ret = cli_scan_fmap(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+
+    // ctx was memset, so recursion_level starts at 0.
+    ctx.recursion_stack[ctx.recursion_level].fmap = new_map;
+    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY;                           // ANY for the top level, because we don't yet know the type.
+    ctx.recursion_stack[ctx.recursion_level].size = new_map->len - new_map->nested_offset; // Realistically nested_offset will be 0,
+                                                                                           // but taking the diff is the "right" way.
+
+    ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
+
+    (void)cli_scan_fmap(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+
     res = acres;
     while (res) {
         matches++;
         res = res->next;
     }
+
     if (matches) {
         /* TODO: check offsets automatically */
         mprintf("MATCH: ** YES%s ** (%u %s:", offset ? "/CHECK OFFSET" : "", matches, matches > 1 ? "matches at offsets" : "match at offset");
@@ -2286,15 +2285,23 @@ static void matchsig(const char *sig, const char *offset, int fd)
     } else {
         mprintf("MATCH: ** NO **\n");
     }
+
+done:
+    /* Cleanup */
     while (acres) {
         res   = acres;
         acres = acres->next;
         free(res);
     }
-    free(ctx.containers);
-    funmap(*ctx.fmap);
-    free(ctx.fmap);
-    cl_engine_free(engine);
+    if (NULL != new_map) {
+        funmap(new_map);
+    }
+    if (NULL != ctx.recursion_stack) {
+        free(ctx.recursion_stack);
+    }
+    if (NULL == engine) {
+        cl_engine_free(engine);
+    }
 }
 
 static char *decodehexstr(const char *hex, unsigned int *dlen)
@@ -3395,12 +3402,14 @@ static int makediff(const struct optstruct *opts)
 
 static int dumpcerts(const struct optstruct *opts)
 {
+    int status     = -1;
     char *filename = NULL;
     STATBUF sb;
-    struct cl_engine *engine;
-    cli_ctx ctx;
-    struct cl_scan_options options;
-    int fd;
+    struct cl_engine *engine       = NULL;
+    cli_ctx ctx                    = {0};
+    struct cl_scan_options options = {0};
+    int fd                         = -1;
+    cl_fmap_t *new_map             = NULL;
     cl_error_t ret;
 
     logg_file = NULL;
@@ -3408,7 +3417,23 @@ static int dumpcerts(const struct optstruct *opts)
     filename = optget(opts, "print-certs")->strarg;
     if (!filename) {
         mprintf("!dumpcerts: No filename!\n");
-        return -1;
+        goto done;
+    }
+
+    /* Prepare file */
+    fd = open(filename, O_RDONLY | O_BINARY);
+    if (fd < 0) {
+        mprintf("!dumpcerts: Can't open file %s!\n", filename);
+        goto done;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    FSTAT(fd, &sb);
+
+    new_map = fmap(fd, 0, sb.st_size, filename);
+    if (NULL == new_map) {
+        mprintf("!dumpcerts: Can't create fmap for open file\n");
+        goto done;
     }
 
     /* build engine */
@@ -3420,64 +3445,41 @@ static int dumpcerts(const struct optstruct *opts)
 
     if (cli_initroots(engine, 0) != CL_SUCCESS) {
         mprintf("!dumpcerts: cli_initroots() failed\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     if (cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf("!dumpcerts: Can't parse signature\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     if (cl_engine_compile(engine) != CL_SUCCESS) {
         mprintf("!dumpcerts: Can't compile engine\n");
-        cl_engine_free(engine);
-        return -1;
+        goto done;
     }
 
     cl_engine_set_num(engine, CL_ENGINE_PE_DUMPCERTS, 1);
     cl_debug();
 
     /* prepare context */
-    memset(&ctx, '\0', sizeof(cli_ctx));
-    memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.engine         = engine;
     ctx.options        = &options;
     ctx.options->parse = ~0;
-    ctx.containers     = cli_calloc(sizeof(cli_ctx_container), engine->maxreclevel + 2);
-    if (!ctx.containers) {
-        cl_engine_free(engine);
-        return -1;
-    }
-    ctx.containers[0].type = CL_TYPE_ANY;
-    ctx.dconf              = (struct cli_dconf *)engine->dconf;
-    ctx.fmap               = calloc(sizeof(fmap_t *), 1);
-    if (!ctx.fmap) {
-        free(ctx.containers);
-        cl_engine_free(engine);
-        return -1;
+    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    if (!ctx.recursion_stack) {
+        goto done;
     }
 
-    /* Prepare file */
-    fd = open(filename, O_RDONLY | O_BINARY);
-    if (fd < 0) {
-        mprintf("!dumpcerts: Can't open file %s!\n", filename);
-        free(ctx.containers);
-        free(ctx.fmap);
-        cl_engine_free(engine);
-        return -1;
-    }
+    // ctx was memset, so recursion_level starts at 0.
+    ctx.recursion_stack[ctx.recursion_level].fmap = new_map;
+    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY;                           // ANY for the top level, because we don't yet know the type.
+    ctx.recursion_stack[ctx.recursion_level].size = new_map->len - new_map->nested_offset; // Realistically nested_offset will be 0,
+                                                                                           // but taking the diff is the "right" way.
 
-    lseek(fd, 0, SEEK_SET);
-    FSTAT(fd, &sb);
-    if (!(*ctx.fmap = fmap(fd, 0, sb.st_size, filename))) {
-        free(ctx.containers);
-        free(ctx.fmap);
-        close(fd);
-        cl_engine_free(engine);
-        return -1;
-    }
+    ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
     ret = cli_check_auth_header(&ctx, NULL);
 
@@ -3501,13 +3503,23 @@ static int dumpcerts(const struct optstruct *opts)
             break;
     }
 
+    status = 0;
+
+done:
     /* Cleanup */
-    free(ctx.containers);
-    funmap(*ctx.fmap);
-    free(ctx.fmap);
-    close(fd);
-    cl_engine_free(engine);
-    return 0;
+    if (NULL != new_map) {
+        funmap(new_map);
+    }
+    if (NULL != ctx.recursion_stack) {
+        free(ctx.recursion_stack);
+    }
+    if (NULL == engine) {
+        cl_engine_free(engine);
+    }
+    if (-1 != fd) {
+        close(fd);
+    }
+    return status;
 }
 
 static void help(void)

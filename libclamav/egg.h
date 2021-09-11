@@ -61,7 +61,6 @@ typedef struct cl_egg_metadata {
  */
 cl_error_t cli_egg_open(
     fmap_t* map,
-    size_t sfx_offset,
     void** hArchive,
     char*** comments,
     uint32_t* nComments);

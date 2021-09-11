@@ -21,15 +21,6 @@
 #include "execs.h"
 #include <string.h>
 
-/**
- * Initialize a struct cli_exe_info so that it's ready to be populated
- * by the EXE header parsing functions (cli_peheader, cli_elfheader, and
- * cli_machoheader) and/or cli_exe_info_destroy.
- *
- * @param exeinfo a pointer to the struct cli_exe_info to initialize
- * @param offset the file offset corresponding to the start of the
- *        executable that exeinfo stores information about
- */
 void cli_exe_info_init(struct cli_exe_info *exeinfo, uint32_t offset)
 {
 
@@ -59,12 +50,6 @@ void cli_exe_info_init(struct cli_exe_info *exeinfo, uint32_t offset)
     //cli_hashset_init_noalloc(&(exeinfo->vinfo));
 }
 
-/**
- * Free resources associated with a struct cli_exe_info initialized
- * via cli_exe_info_init
- *
- * @param exeinfo a pointer to the struct cli_exe_info to destroy
- */
 void cli_exe_info_destroy(struct cli_exe_info *exeinfo)
 {
 
