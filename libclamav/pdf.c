@@ -1060,12 +1060,12 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
         return CL_EMEM;
     }
 
-    map = *ctx->fmap;
+    map = ctx->fmap;
     if (fd != -1) {
         map = fmap(fd, 0, 0, NULL);
         if (!map) {
             cli_dbgmsg("run_pdf_hooks: can't mmap pdf extracted obj\n");
-            map = *ctx->fmap;
+            map = ctx->fmap;
             fd  = -1;
         }
     }
@@ -1811,8 +1811,6 @@ done:
 
     if (flags & PDF_EXTRACT_OBJ_SCAN && sum) {
         int rc2;
-
-        cli_updatelimits(pdf->ctx, sum);
 
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
@@ -3102,7 +3100,7 @@ void pdf_handle_enc(struct pdf_struct *pdf)
 
     len = obj->size;
     q   = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                      : (const char *)(obj->start + pdf->map);
+                        : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {
@@ -3472,7 +3470,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
     cl_error_t rc = CL_SUCCESS;
     struct pdf_struct pdf;
-    fmap_t *map   = *ctx->fmap;
+    fmap_t *map   = ctx->fmap;
     size_t size   = map->len - offset;
     off_t versize = size > 1032 ? 1032 : size;
     off_t map_off, bytesleft;

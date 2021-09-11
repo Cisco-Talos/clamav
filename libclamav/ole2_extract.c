@@ -562,10 +562,15 @@ ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
     if ((rec_level > 100) || (*file_count > 100000)) {
         return CL_SUCCESS;
     }
-    if (ctx && ctx->engine->maxreclevel && (rec_level > ctx->engine->maxreclevel)) {
-        cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
-        return CL_SUCCESS;
+
+    if (ctx && ctx->engine->max_recursion_level && (rec_level > ctx->engine->max_recursion_level)) {
+        // Note: engine->max_recursion_level is re-purposed here out of convenience.
+        //       ole2 recursion does not leverage the ctx->recursion_stack stack.
+        cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->max_recursion_level);
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
+        return CL_EMAXREC;
     }
+
     //push the 'root' node for the level onto the local list
     if ((ret = ole2_list_push(&node_list, prop_index)) != CL_SUCCESS) {
         ole2_list_delete(&node_list);
@@ -675,6 +680,7 @@ ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
                 ole2_listmsg("file node\n");
                 if (ctx && ctx->engine->maxfiles && ((*file_count > ctx->engine->maxfiles) || (ctx->scannedfiles > ctx->engine->maxfiles - *file_count))) {
                     cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
+                    cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                     ole2_list_delete(&node_list);
                     return CL_EMAXFILES;
                 }
@@ -1738,10 +1744,10 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **files, int
                sizeof(off_t) - sizeof(bitset_t *) -
                sizeof(struct uniq *) - sizeof(fmap_t *) - sizeof(int) - sizeof(hwp5_header_t *);
 
-    if ((size_t)((*ctx->fmap)->len) < (size_t)(hdr_size)) {
+    if ((size_t)(ctx->fmap->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
     }
-    hdr.map      = *ctx->fmap;
+    hdr.map      = ctx->fmap;
     hdr.m_length = hdr.map->len;
     phdr         = fmap_need_off_once(hdr.map, 0, hdr_size);
     if (phdr) {

@@ -127,7 +127,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
         status = CL_EARG;
         goto done;
     }
-    map = *ctx->fmap;
+    map = ctx->fmap;
 
     while (fmap_readn(map, (void *)&chunk_data_length_u32, offset, PNG_CHUNK_LENGTH_SIZE) == PNG_CHUNK_LENGTH_SIZE) {
         chunk_data_length = be32_to_host(chunk_data_length_u32);

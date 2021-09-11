@@ -50,7 +50,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
 {
     const uint32_t *record;
     uint32_t check, key;
-    fmap_t *map         = *ctx->fmap;
+    fmap_t *map         = ctx->fmap;
     unsigned int blocks = map->len / (8 * 4);
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");
@@ -160,7 +160,7 @@ int cli_check_riff_exploit(cli_ctx *ctx)
     const uint32_t *buf;
     int big_endian, retval;
     off_t offset;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in cli_check_riff_exploit()\n");
 

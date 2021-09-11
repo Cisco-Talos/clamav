@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdbool.h>
 #ifndef _WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
@@ -81,6 +82,7 @@
 #include "cache.h"
 #include "readdb.h"
 #include "stats.h"
+#include "json_api.h"
 
 cl_unrar_error_t (*cli_unrar_open)(const char *filename, void **hArchive, char **comment, uint32_t *comment_size, uint8_t debug_flag);
 cl_unrar_error_t (*cli_unrar_peek_file_header)(void *hArchive, unrar_metadata_t *file_metadata);
@@ -302,10 +304,12 @@ static void *get_module_function(void *handle, const char *name)
 
 static void rarload(void)
 {
+#ifndef UNRAR_LINKED
 #ifdef _WIN32
     HMODULE rhandle = NULL;
 #else
     void *rhandle = NULL;
+#endif
 #endif
 
     if (is_rar_inited) return;
@@ -397,16 +401,16 @@ const char *cl_strerror(int clerror)
         case CL_EMEM:
             return "Can't allocate memory";
         case CL_ETIMEOUT:
-            return "CL_ETIMEOUT: Time limit reached";
+            return "Exceeded time limit";
         /* internal (needed for debug messages) */
         case CL_EMAXREC:
-            return "CL_EMAXREC";
+            return "Exceeded time max recursion depth";
         case CL_EMAXSIZE:
-            return "CL_EMAXSIZE";
+            return "Exceeded max scan size";
         case CL_EMAXFILES:
-            return "CL_EMAXFILES";
+            return "Exceeded max scan files";
         case CL_EFORMAT:
-            return "CL_EFORMAT: Bad format or broken data";
+            return "Bad format or broken data";
         case CL_EBYTECODE:
             return "Error during bytecode execution";
         case CL_EBYTECODE_TESTFAIL:
@@ -468,13 +472,13 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Setup default limits */
-    new->maxscantime   = CLI_DEFAULT_TIMELIMIT;
-    new->maxscansize   = CLI_DEFAULT_MAXSCANSIZE;
-    new->maxfilesize   = CLI_DEFAULT_MAXFILESIZE;
-    new->maxreclevel   = CLI_DEFAULT_MAXRECLEVEL;
-    new->maxfiles      = CLI_DEFAULT_MAXFILES;
-    new->min_cc_count  = CLI_DEFAULT_MIN_CC_COUNT;
-    new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
+    new->maxscantime         = CLI_DEFAULT_TIMELIMIT;
+    new->maxscansize         = CLI_DEFAULT_MAXSCANSIZE;
+    new->maxfilesize         = CLI_DEFAULT_MAXFILESIZE;
+    new->max_recursion_level = CLI_DEFAULT_MAXRECLEVEL;
+    new->maxfiles            = CLI_DEFAULT_MAXFILES;
+    new->min_cc_count        = CLI_DEFAULT_MIN_CC_COUNT;
+    new->min_ssn_count       = CLI_DEFAULT_MIN_SSN_COUNT;
     /* Engine Max sizes */
     new->maxembeddedpe      = CLI_DEFAULT_MAXEMBEDDEDPE;
     new->maxhtmlnormalize   = CLI_DEFAULT_MAXHTMLNORMALIZE;
@@ -635,9 +639,9 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
         case CL_ENGINE_MAX_RECURSION:
             if (!num) {
                 cli_warnmsg("MaxRecursion: the value of 0 is not allowed, using default: %u\n", CLI_DEFAULT_MAXRECLEVEL);
-                engine->maxreclevel = CLI_DEFAULT_MAXRECLEVEL;
+                engine->max_recursion_level = CLI_DEFAULT_MAXRECLEVEL;
             } else
-                engine->maxreclevel = num;
+                engine->max_recursion_level = num;
             break;
         case CL_ENGINE_MAX_FILES:
             engine->maxfiles = num;
@@ -815,7 +819,7 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
         case CL_ENGINE_MAX_FILESIZE:
             return engine->maxfilesize;
         case CL_ENGINE_MAX_RECURSION:
-            return engine->maxreclevel;
+            return engine->max_recursion_level;
         case CL_ENGINE_MAX_FILES:
             return engine->maxfiles;
         case CL_ENGINE_MAX_EMBEDDEDPE:
@@ -946,27 +950,27 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
         return NULL;
     }
 
-    settings->ac_only            = engine->ac_only;
-    settings->ac_mindepth        = engine->ac_mindepth;
-    settings->ac_maxdepth        = engine->ac_maxdepth;
-    settings->tmpdir             = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
-    settings->keeptmp            = engine->keeptmp;
-    settings->maxscantime        = engine->maxscantime;
-    settings->maxscansize        = engine->maxscansize;
-    settings->maxfilesize        = engine->maxfilesize;
-    settings->maxreclevel        = engine->maxreclevel;
-    settings->maxfiles           = engine->maxfiles;
-    settings->maxembeddedpe      = engine->maxembeddedpe;
-    settings->maxhtmlnormalize   = engine->maxhtmlnormalize;
-    settings->maxhtmlnotags      = engine->maxhtmlnotags;
-    settings->maxscriptnormalize = engine->maxscriptnormalize;
-    settings->maxziptypercg      = engine->maxziptypercg;
-    settings->min_cc_count       = engine->min_cc_count;
-    settings->min_ssn_count      = engine->min_ssn_count;
-    settings->bytecode_security  = engine->bytecode_security;
-    settings->bytecode_timeout   = engine->bytecode_timeout;
-    settings->bytecode_mode      = engine->bytecode_mode;
-    settings->pua_cats           = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
+    settings->ac_only             = engine->ac_only;
+    settings->ac_mindepth         = engine->ac_mindepth;
+    settings->ac_maxdepth         = engine->ac_maxdepth;
+    settings->tmpdir              = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
+    settings->keeptmp             = engine->keeptmp;
+    settings->maxscantime         = engine->maxscantime;
+    settings->maxscansize         = engine->maxscansize;
+    settings->maxfilesize         = engine->maxfilesize;
+    settings->max_recursion_level = engine->max_recursion_level;
+    settings->maxfiles            = engine->maxfiles;
+    settings->maxembeddedpe       = engine->maxembeddedpe;
+    settings->maxhtmlnormalize    = engine->maxhtmlnormalize;
+    settings->maxhtmlnotags       = engine->maxhtmlnotags;
+    settings->maxscriptnormalize  = engine->maxscriptnormalize;
+    settings->maxziptypercg       = engine->maxziptypercg;
+    settings->min_cc_count        = engine->min_cc_count;
+    settings->min_ssn_count       = engine->min_ssn_count;
+    settings->bytecode_security   = engine->bytecode_security;
+    settings->bytecode_timeout    = engine->bytecode_timeout;
+    settings->bytecode_mode       = engine->bytecode_mode;
+    settings->pua_cats            = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
 
     settings->cb_pre_cache   = engine->cb_pre_cache;
     settings->cb_pre_scan    = engine->cb_pre_scan;
@@ -1002,26 +1006,26 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
 
 cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
-    engine->ac_only            = settings->ac_only;
-    engine->ac_mindepth        = settings->ac_mindepth;
-    engine->ac_maxdepth        = settings->ac_maxdepth;
-    engine->keeptmp            = settings->keeptmp;
-    engine->maxscantime        = settings->maxscantime;
-    engine->maxscansize        = settings->maxscansize;
-    engine->maxfilesize        = settings->maxfilesize;
-    engine->maxreclevel        = settings->maxreclevel;
-    engine->maxfiles           = settings->maxfiles;
-    engine->maxembeddedpe      = settings->maxembeddedpe;
-    engine->maxhtmlnormalize   = settings->maxhtmlnormalize;
-    engine->maxhtmlnotags      = settings->maxhtmlnotags;
-    engine->maxscriptnormalize = settings->maxscriptnormalize;
-    engine->maxziptypercg      = settings->maxziptypercg;
-    engine->min_cc_count       = settings->min_cc_count;
-    engine->min_ssn_count      = settings->min_ssn_count;
-    engine->bytecode_security  = settings->bytecode_security;
-    engine->bytecode_timeout   = settings->bytecode_timeout;
-    engine->bytecode_mode      = settings->bytecode_mode;
-    engine->engine_options     = settings->engine_options;
+    engine->ac_only             = settings->ac_only;
+    engine->ac_mindepth         = settings->ac_mindepth;
+    engine->ac_maxdepth         = settings->ac_maxdepth;
+    engine->keeptmp             = settings->keeptmp;
+    engine->maxscantime         = settings->maxscantime;
+    engine->maxscansize         = settings->maxscansize;
+    engine->maxfilesize         = settings->maxfilesize;
+    engine->max_recursion_level = settings->max_recursion_level;
+    engine->maxfiles            = settings->maxfiles;
+    engine->maxembeddedpe       = settings->maxembeddedpe;
+    engine->maxhtmlnormalize    = settings->maxhtmlnormalize;
+    engine->maxhtmlnotags       = settings->maxhtmlnotags;
+    engine->maxscriptnormalize  = settings->maxscriptnormalize;
+    engine->maxziptypercg       = settings->maxziptypercg;
+    engine->min_cc_count        = settings->min_cc_count;
+    engine->min_ssn_count       = settings->min_ssn_count;
+    engine->bytecode_security   = settings->bytecode_security;
+    engine->bytecode_timeout    = settings->bytecode_timeout;
+    engine->bytecode_mode       = settings->bytecode_mode;
+    engine->engine_options      = settings->engine_options;
 
     if (engine->tmpdir)
         MPOOL_FREE(engine->mempool, engine->tmpdir);
@@ -1085,13 +1089,23 @@ cl_error_t cl_engine_settings_free(struct cl_settings *settings)
     return CL_SUCCESS;
 }
 
-void cli_check_blockmax(cli_ctx *ctx, int rc)
+void cli_append_virus_if_heur_exceedsmax(cli_ctx *ctx, char *vname)
 {
-    if (SCAN_HEURISTIC_EXCEEDS_MAX && !ctx->limit_exceeded) {
-        cli_append_virus(ctx, "Heuristics.Limits.Exceeded");
-        ctx->limit_exceeded = 1;
-        cli_dbgmsg("Limit %s Exceeded: scanning may be incomplete and additional analysis needed for this file.\n",
-                   cl_strerror(rc));
+    if (!ctx->limit_exceeded) {
+        ctx->limit_exceeded = true; // guard against adding an alert (or metadata) a million times for non-fatal exceeds-max conditions
+                                    // TODO: consider changing this from a bool to a threshold so we could at least see more than 1 limits exceeded
+
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
+            cli_append_possibly_unwanted(ctx, vname);
+            cli_dbgmsg("%s: scanning may be incomplete and additional analysis needed for this file.\n", vname);
+        }
+
+#if HAVE_JSON
+        /* Also record the event in the scan metadata, under "ParseErrors" */
+        if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
+            cli_json_parse_error(ctx->wrkproperty, vname);
+        }
+#endif
     }
 }
 
@@ -1101,52 +1115,62 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
     unsigned long needed;
 
     /* if called without limits, go on, unpack, scan */
-    if (!ctx) return CL_CLEAN;
+    if (!ctx) return ret;
 
     needed = (need1 > need2) ? need1 : need2;
     needed = (needed > need3) ? needed : need3;
 
     /* Enforce timelimit */
-    ret = cli_checktimelimit(ctx);
+    if (CL_ETIMEOUT == (ret = cli_checktimelimit(ctx))) {
+        /* Abort the scan ... */
+        ret = CL_ETIMEOUT;
+    }
 
-    /* if we have global scan limits */
+    /* Enforce global scan-size limit */
     if (needed && ctx->engine->maxscansize) {
         /* if the remaining scansize is too small... */
         if (ctx->engine->maxscansize - ctx->scansize < needed) {
-            /* ... we tell the caller to skip this file */
+            /* Skip this file */
             cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxscansize, (unsigned long int)ctx->scansize, needed);
             ret = CL_EMAXSIZE;
+            cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
         }
     }
 
-    /* if we have per-file size limits, and we are overlimit... */
+    /* Enforce per-file file-size limit */
     if (needed && ctx->engine->maxfilesize && ctx->engine->maxfilesize < needed) {
-        /* ... we tell the caller to skip this file */
+        /* Skip this file */
         cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxfilesize, needed);
         ret = CL_EMAXSIZE;
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
     }
 
+    /* Enforce limit on number of embedded files */
     if (ctx->engine->maxfiles && ctx->scannedfiles >= ctx->engine->maxfiles) {
+        /* Abort the scan ... */
         cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
         ret = CL_EMAXFILES;
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+        ctx->abort_scan = true;
     }
-
-    if (ret != CL_SUCCESS)
-        cli_check_blockmax(ctx, ret);
 
     return ret;
 }
 
-cl_error_t cli_updatelimits(cli_ctx *ctx, unsigned long needed)
+cl_error_t cli_updatelimits(cli_ctx *ctx, size_t needed)
 {
     cl_error_t ret = cli_checklimits("cli_updatelimits", ctx, needed, 0, 0);
 
-    if (ret != CL_CLEAN) return ret;
+    if (ret != CL_SUCCESS) {
+        return ret;
+    }
+
     ctx->scannedfiles++;
     ctx->scansize += needed;
     if (ctx->scansize > ctx->engine->maxscansize)
         ctx->scansize = ctx->engine->maxscansize;
-    return CL_CLEAN;
+
+    return CL_SUCCESS;
 }
 
 /**
@@ -1167,11 +1191,18 @@ cl_error_t cli_checktimelimit(cli_ctx *ctx)
     if (ctx->time_limit.tv_sec != 0) {
         struct timeval now;
         if (gettimeofday(&now, NULL) == 0) {
-            if (now.tv_sec > ctx->time_limit.tv_sec)
-                ret = CL_ETIMEOUT;
-            else if (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec)
-                ret = CL_ETIMEOUT;
+            if (now.tv_sec > ctx->time_limit.tv_sec) {
+                ctx->abort_scan = true;
+                ret             = CL_ETIMEOUT;
+            } else if (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec) {
+                ctx->abort_scan = true;
+                ret             = CL_ETIMEOUT;
+            }
         }
+    }
+
+    if (CL_ETIMEOUT == ret) {
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanTime");
     }
 
 done:
@@ -1276,7 +1307,7 @@ int cli_unlink(const char *pathname)
 void cli_virus_found_cb(cli_ctx *ctx)
 {
     if (ctx->engine->cb_virus_found)
-        ctx->engine->cb_virus_found(fmap_fd(*ctx->fmap), (const char *)*ctx->virname, ctx->cb_ctx);
+        ctx->engine->cb_virus_found(fmap_fd(ctx->fmap), (const char *)*ctx->virname, ctx->cb_ctx);
 }
 
 cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
@@ -1299,8 +1330,8 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
         return CL_CLEAN;
     }
     if ((ctx->fmap != NULL) &&
-        ((*ctx->fmap) != NULL) &&
-        (CL_VIRUS != cli_checkfp_virus(ctx, virname, 0))) {
+        (ctx->recursion_stack != NULL) &&
+        (CL_VIRUS != cli_check_fp(ctx, virname))) {
         return CL_CLEAN;
     }
     if (!SCAN_ALLMATCHES && ctx->num_viruses != 0) {
@@ -1308,11 +1339,11 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
             return CL_CLEAN;
         }
     }
-    if (ctx->limit_exceeded == 0 || SCAN_ALLMATCHES) {
-        ctx->num_viruses++;
-        *ctx->virname = virname;
-        cli_virus_found_cb(ctx);
-    }
+
+    ctx->num_viruses++;
+    *ctx->virname = virname;
+    cli_virus_found_cb(ctx);
+
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
         json_object *arrobj, *virobj;
@@ -1350,47 +1381,171 @@ const char *cli_get_last_virus_str(const cli_ctx *ctx)
     return "";
 }
 
-void cli_set_container(cli_ctx *ctx, cli_file_t type, size_t size)
+cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer)
 {
-    ctx->containers[ctx->recursion].type = type;
-    ctx->containers[ctx->recursion].size = size;
-    if (type >= CL_TYPE_MSEXE && type != CL_TYPE_HTML && type != CL_TYPE_OTHER && type != CL_TYPE_IGNORED)
-        ctx->containers[ctx->recursion].flag = CONTAINER_FLAG_VALID;
-    else
-        ctx->containers[ctx->recursion].flag = 0;
-}
+    cl_error_t status = CL_SUCCESS;
 
-cli_file_t cli_get_container(cli_ctx *ctx, int index)
-{
-    if (index < 0)
-        index = ctx->recursion + index + 1;
-    while (index >= 0 && index <= (int)ctx->recursion) {
-        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
-            return ctx->containers[index].type;
-        index--;
+    recursion_level_t *current_container = NULL;
+    recursion_level_t *new_container     = NULL;
+
+    // Check the regular limits
+    if (CL_SUCCESS != (status = cli_checklimits("cli_updatelimits", ctx, map->len, 0, 0))) {
+        cli_dbgmsg("cli_recursion_stack_push: Some content was skipped. The scan result will not be cached.\n");
+        emax_reached(ctx); // Disable caching for all recursion layers.
+        goto done;
     }
-    return CL_TYPE_ANY;
-}
 
-cli_file_t cli_get_container_intermediate(cli_ctx *ctx, int index)
-{
-    if (index < 0)
-        index = ctx->recursion + index + 1;
-    if (index >= 0 && index <= (int)ctx->recursion)
-        return ctx->containers[index].type;
-    return CL_TYPE_ANY;
-}
-
-size_t cli_get_container_size(cli_ctx *ctx, int index)
-{
-    if (index < 0)
-        index = ctx->recursion + index + 1;
-    while (index >= 0 && index <= (int)ctx->recursion) {
-        if (ctx->containers[index].flag & CONTAINER_FLAG_VALID)
-            return ctx->containers[index].size;
-        index--;
+    // Check the recursion limit
+    if (ctx->recursion_level == ctx->recursion_stack_size - 1) {
+        cli_dbgmsg("cli_recursion_stack_push: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion_level, ctx->engine->max_recursion_level);
+        cli_dbgmsg("cli_recursion_stack_push: Some content was skipped. The scan result will not be cached.\n");
+        emax_reached(ctx); // Disable caching for all recursion layers.
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
+        status = CL_EMAXREC;
+        goto done;
     }
-    return ctx->containers[0].size;
+
+    current_container = &ctx->recursion_stack[ctx->recursion_level];
+    ctx->recursion_level++;
+    new_container = &ctx->recursion_stack[ctx->recursion_level];
+
+    memset(new_container, 0, sizeof(recursion_level_t));
+
+    new_container->fmap = map;
+    new_container->type = type;
+    new_container->size = map->len - map->nested_offset;
+
+    if (is_new_buffer) {
+        new_container->recursion_level_buffer      = current_container->recursion_level_buffer + 1;
+        new_container->recursion_level_buffer_fmap = 0;
+    } else {
+        new_container->recursion_level_buffer_fmap = current_container->recursion_level_buffer_fmap + 1;
+    }
+
+    if (ctx->next_layer_is_normalized) {
+        // Normalized layers should be ignored when using the get_type() and get_intermediate_type()
+        // functions so that signatures that specify the container or intermediates need not account
+        // for normalized layers "contained in" HTML / Javascript / etc.
+        new_container->is_normalized_layer = true;
+        ctx->next_layer_is_normalized      = false;
+    }
+
+    ctx->fmap = new_container->fmap;
+
+done:
+    return status;
+}
+
+cl_fmap_t *cli_recursion_stack_pop(cli_ctx *ctx)
+{
+    cl_fmap_t *popped_map = NULL;
+
+    if (0 == ctx->recursion_level) {
+        cli_dbgmsg("cli_recursion_stack_pop: recursion_level == 0, cannot pop off more layers!\n");
+        goto done;
+    }
+
+    /* save off the fmap to return it to the caller, in case they need it */
+    popped_map = ctx->recursion_stack[ctx->recursion_level].fmap;
+
+    /* We're done with this layer, clear it */
+    memset(&ctx->recursion_stack[ctx->recursion_level], 0, sizeof(recursion_level_t));
+    ctx->recursion_level--;
+
+    /* Set the ctx->fmap convenience pointer to the current layer's fmap */
+    ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
+
+done:
+    return popped_map;
+}
+
+void cli_recursion_stack_change_type(cli_ctx *ctx, cli_file_t type)
+{
+    ctx->recursion_stack[ctx->recursion_level].type = type;
+}
+
+/**
+ * @brief Convert the desired index into the recursion stack to an actual index, excluding normalized layers.
+ *
+ * Accepts negative indexes, which is in fact the primary use case.
+ *
+ * For index:
+ *  0 == the outermost (bottom) layer of the stack.
+ *  1 == the first layer (probably never explicitly used).
+ * -1 == the present innermost (top) layer of the stack.
+ * -2 == the parent layer (or "container"). That is, the second from the top of the stack.
+ *
+ * @param ctx   The scanning context.
+ * @param index The index (probably negative) of the layer we think we want.
+ * @return int  -1 if layer doesn't exist, else the index of the desired layer in the recursion_stack
+ */
+static int recursion_stack_get(cli_ctx *ctx, int index)
+{
+    int desired_layer;
+    int current_layer = (int)ctx->recursion_level;
+
+    if (index < 0) {
+        desired_layer = ctx->recursion_level + index + 1; // The +1 is so that -1 == the current layer
+                                                          //               and -2 == the parent layer (the container)
+    } else {
+        desired_layer = index;
+    }
+
+    if (desired_layer > current_layer) {
+        desired_layer = ctx->recursion_level + 1; // layer doesn't exist
+        goto done;
+    }
+
+    while (current_layer >= desired_layer && current_layer > 0) {
+        if (ctx->recursion_stack[current_layer].is_normalized_layer) {
+            // The current layer is normalized, so we should step back an extra layer
+            // It's okay if desired_layer goes negative.
+            desired_layer--;
+        }
+
+        current_layer--;
+    }
+
+done:
+    return desired_layer;
+}
+
+cli_file_t cli_recursion_stack_get_type(cli_ctx *ctx, int index)
+{
+    int index_ignoring_normalized_layers;
+
+    // translate requested index into index of non-normalized layer
+    index_ignoring_normalized_layers = recursion_stack_get(ctx, index);
+
+    if (0 > index_ignoring_normalized_layers) {
+        // Layer too low, does not exist.
+        // Most likely we're at the top layer and there is no container. That's okay.
+        return CL_TYPE_ANY;
+    } else if (ctx->recursion_level < (uint32_t)index_ignoring_normalized_layers) {
+        // layer too high, does not exist. This should never happen!
+        return CL_TYPE_IGNORED;
+    }
+
+    return ctx->recursion_stack[index_ignoring_normalized_layers].type;
+}
+
+size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index)
+{
+    int index_ignoring_normalized_layers;
+
+    // translate requested index into index of non-normalized layer
+    index_ignoring_normalized_layers = recursion_stack_get(ctx, index);
+
+    if (0 > index_ignoring_normalized_layers) {
+        // Layer too low, does not exist.
+        // Most likely we're at the top layer and there is no container. That's okay.
+        return ctx->recursion_stack[0].size;
+    } else {
+        // layer too high, does not exist. This should never happen!
+        return 0;
+    }
+
+    return ctx->recursion_stack[index_ignoring_normalized_layers].size;
 }
 
 #ifdef C_WINDOWS

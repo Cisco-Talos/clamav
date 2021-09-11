@@ -110,7 +110,7 @@ static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, 
 int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     struct ICON_ENV icon_env;
-    fmap_t *map        = *ctx->fmap;
+    fmap_t *map        = ctx->fmap;
     uint32_t err_total = 0;
 
     icon_env.ctx    = ctx;
@@ -171,7 +171,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
     struct cli_exe_info *peinfo = icon_env->peinfo;
 
     int err            = 0;
-    fmap_t *map        = *ctx->fmap;
+    fmap_t *map        = ctx->fmap;
     const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size), 16);
 
     if (grp && !err) {
@@ -1368,7 +1368,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 
     if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
         return CL_SUCCESS;
-    map   = *ctx->fmap;
+    map   = ctx->fmap;
     tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->sub_tmpdir ? ctx->sub_tmpdir : cli_gettmpdir()) : NULL;
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
 

@@ -529,7 +529,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
         return CL_ETMPDIR;
     }
 
-    nsist.map = *ctx->fmap;
+    nsist.map = ctx->fmap;
     if (ctx->engine->keeptmp) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
 
     do {
@@ -557,7 +557,7 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
         }
     } while (ret == CL_SUCCESS);
 
-    if (ret == CL_BREAK || ret == CL_EMAXFILES)
+    if (ret == CL_BREAK)
         ret = CL_CLEAN;
 
     nsis_shutdown(&nsist);

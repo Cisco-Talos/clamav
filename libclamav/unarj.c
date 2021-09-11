@@ -863,7 +863,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         ret = FALSE;
         goto done;
     }
-    if ((header_size + sizeof(header_size)) > (metadata->map->real_len - metadata->offset)) {
+    if ((header_size + sizeof(header_size)) > (metadata->map->len - metadata->offset)) {
         cli_dbgmsg("arj_read_header: invalid header_size: %u, exceeds length of file.\n", header_size);
         ret = FALSE;
         goto done;
@@ -1001,7 +1001,7 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
         ret = CL_EFORMAT;
         goto done;
     }
-    if ((header_size + sizeof(header_size)) > (metadata->map->real_len - metadata->offset)) {
+    if ((header_size + sizeof(header_size)) > (metadata->map->len - metadata->offset)) {
         cli_dbgmsg("arj_read_file_header: invalid header_size: %u, exceeds length of file.\n", header_size);
         ret = CL_EFORMAT;
         goto done;
@@ -1139,12 +1139,12 @@ done:
     return ret;
 }
 
-cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off)
+cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata)
 {
     UNUSEDPARAM(dirname);
     cli_dbgmsg("in cli_unarj_open\n");
     metadata->map    = map;
-    metadata->offset = off;
+    metadata->offset = 0;
     if (!is_arj_archive(metadata)) {
         cli_dbgmsg("Not in ARJ format\n");
         return CL_EFORMAT;

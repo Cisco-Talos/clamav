@@ -147,7 +147,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
         const char *block;
         size_t nread;
 
-        block = fmap_need_off_once_len(*ctx->fmap, pos, BLOCKSIZE, &nread);
+        block = fmap_need_off_once_len(ctx->fmap, pos, BLOCKSIZE, &nread);
         cli_dbgmsg("cli_untar: pos = %lu\n", (unsigned long)pos);
 
         if (!in_block && !nread)
@@ -224,6 +224,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             switch (type) {
                 default:
                     cli_dbgmsg("cli_untar: unknown type flag %c\n", type);
+                    /* fall-through */
                 case '0':  /* plain file */
                 case '\0': /* plain file */
                 case '7':  /* contiguous file */

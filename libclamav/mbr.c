@@ -109,7 +109,7 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
     /* size of total file must be a multiple of the sector size */
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
     if ((maplen % sectorsize) != 0) {
         cli_dbgmsg("cli_scanmbr: File sized %lu is not a multiple of sector size %lu\n",
                    (unsigned long)maplen, (unsigned long)sectorsize);
@@ -120,7 +120,7 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
     pos = (MBR_SECTOR * sectorsize) + mbr_base;
 
     /* read the master boot record */
-    if (fmap_readn(*ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
+    if (fmap_readn(ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
         cli_dbgmsg("cli_scanmbr: Invalid master boot record\n");
         return CL_EFORMAT;
     }
@@ -158,7 +158,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
     /* size of total file must be a multiple of the sector size */
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
     if ((maplen % sectorsize) != 0) {
         cli_dbgmsg("cli_scanmbr: File sized %lu is not a multiple of sector size %lu\n",
                    (unsigned long)maplen, (unsigned long)sectorsize);
@@ -169,7 +169,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     pos = (MBR_SECTOR * sectorsize) + mbr_base;
 
     /* read the master boot record */
-    if (fmap_readn(*ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
+    if (fmap_readn(ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
         cli_dbgmsg("cli_scanmbr: Invalid master boot record\n");
         return CL_EFORMAT;
     }
@@ -184,7 +184,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* MBR is valid, examine bootstrap code */
-    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
+    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
             detection = CL_VIRUS;
@@ -240,7 +240,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             partoff  = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
-            ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -278,7 +278,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
 
         /* read the extended boot record */
         pos += (logiclba * sectorsize) + mbr_base;
-        if (fmap_readn(*ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
+        if (fmap_readn(ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
             cli_dbgmsg("cli_scanebr: Invalid extended boot record\n");
             return CL_EFORMAT;
         }
@@ -381,7 +381,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                         return CL_EFORMAT;
                     }
 
-                    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+                    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
                     if (ret != CL_CLEAN) {
                         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                             detection = CL_VIRUS;
@@ -560,7 +560,7 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
 
         /* read the extended boot record */
         pos += (logiclba * sectorsize) + mbr_base;
-        if (fmap_readn(*ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
+        if (fmap_readn(ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
             cli_dbgmsg("cli_scanebr: Invalid extended boot record\n");
             partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;

@@ -4078,7 +4078,11 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                 break;
             }
             default:
-                cli_dbgmsg("[cli_xlm_extract_macros:parse_formula] Encountered unknown ptg token 0x%02x\n", ptg);
+                if (ptg < sizeof(TOKENS) / sizeof(char *)) {
+                    cli_dbgmsg("[cli_extract_xlm_macros_and_images:parse_formula] Encountered unexpected ptg token: %s\n", TOKENS[ptg]);
+                } else {
+                    cli_dbgmsg("[cli_extract_xlm_macros_and_images:parse_formula] Encountered unknown ptg token: 0x%02x\n", ptg);
+                }
                 goto done;
         }
     }
@@ -4373,15 +4377,10 @@ cl_error_t cli_xlm_extract_macros(const char *dir, cli_ctx *ctx, struct uniq *U,
         goto done;
     }
 
-    ctx->recursion += 1;
-    cli_set_container(ctx, CL_TYPE_MSOLE2, 0); //TODO: set correct container size
-
     if (cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
-        ctx->recursion -= 1;
         ret = CL_VIRUS;
         goto done;
     }
-    ctx->recursion -= 1;
 
     /* If a read failed, return with an error. */
     if (size_read == (size_t)-1) {

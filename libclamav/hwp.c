@@ -59,17 +59,17 @@
 #if HWP5_DEBUG
 #define hwp5_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#define hwp5_debug(...) ;
+#define hwp5_debug(...) {};
 #endif
 #if HWP3_DEBUG
 #define hwp3_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#define hwp3_debug(...) ;
+#define hwp3_debug(...) {};
 #endif
 #if HWPML_DEBUG
 #define hwpml_debug(...) cli_dbgmsg(__VA_ARGS__)
 #else
-#define hwpml_debug(...) ;
+#define hwpml_debug(...) {};
 #endif
 
 typedef cl_error_t (*hwp_cb)(void *cbdata, int fd, const char *filepath, cli_ctx *ctx);
@@ -278,7 +278,7 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
 /*** HWPOLE2 ***/
 cl_error_t cli_scanhwpole2(cli_ctx *ctx)
 {
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     uint32_t usize, asize;
 
     asize = (uint32_t)(map->len - sizeof(usize));
@@ -516,7 +516,7 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
     cl_error_t iret;
 
     //TODO: use fmap_readn?
-    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
+    if (!(hwp3_ptr = fmap_need_off_once(ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
         cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
@@ -610,7 +610,7 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
     if (!SCAN_COLLECT_METADATA)
         return CL_SUCCESS;
 
-    if (!(hwp3_ptr = fmap_need_off_once(*ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
+    if (!(hwp3_ptr = fmap_need_off_once(ctx->fmap, offset, HWP3_DOCSUMMARY_SIZE))) {
         cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
     }
@@ -1521,7 +1521,7 @@ static inline cl_error_t parsehwp3_infoblk_1(cli_ctx *ctx, fmap_t *dmap, size_t 
     cl_error_t ret = CL_SUCCESS;
 
     uint32_t infoid, infolen;
-    fmap_t *map = (dmap ? dmap : *ctx->fmap);
+    fmap_t *map = (dmap ? dmap : ctx->fmap);
     int i, count;
     long long unsigned infoloc = (long long unsigned)(*offset);
 #if HWP3_DEBUG
@@ -1783,7 +1783,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     } else {
         hwp3_debug("HWP3.x: Document Content Stream starts @ offset %zu\n", offset);
 
-        map  = *ctx->fmap;
+        map  = ctx->fmap;
         dmap = NULL;
     }
 
@@ -1881,7 +1881,7 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
 
     struct hwp3_docinfo docinfo;
     size_t offset = 0, new_offset = 0;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
 #if HAVE_JSON
     /*
@@ -1921,7 +1921,7 @@ cl_error_t cli_scanhwp3(cli_ctx *ctx)
     }
 
     if (docinfo.di_compressed)
-        ret = decompress_and_callback(ctx, *ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
+        ret = decompress_and_callback(ctx, ctx->fmap, offset, 0, "HWP3.x", hwp3_cb, NULL);
     else
         ret = hwp3_cb(&offset, 0, ctx->sub_filepath, ctx);
 
@@ -2125,7 +2125,7 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
         return CL_ENULLARG;
 
     memset(&cbdata, 0, sizeof(cbdata));
-    cbdata.map = *ctx->fmap;
+    cbdata.map = ctx->fmap;
 
     reader = xmlReaderForIO(msxml_read_cb, NULL, &cbdata, "hwpml.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!reader) {

@@ -156,22 +156,34 @@ static const struct pcre_testdata_s {
 static cli_ctx ctx;
 static struct cl_scan_options options;
 
-static fmap_t *thefmap     = NULL;
+static fmap_t thefmap;
 static const char *virname = NULL;
 static void setup(void)
 {
     struct cli_matcher *root;
     virname = NULL;
-    thefmap = NULL;
+
+    memset(&thefmap, 0, sizeof(thefmap));
 
     memset(&ctx, 0, sizeof(ctx));
     memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.options = &options;
 
     ctx.virname = &virname;
-    ctx.fmap    = &thefmap;
     ctx.engine  = cl_engine_new();
     ck_assert_msg(!!ctx.engine, "cl_engine_new() failed");
+
+    ctx.dconf = ctx.engine->dconf;
+
+    ctx.recursion_stack_size = ctx.engine->max_recursion_level;
+    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ck_assert_msg(!!ctx.recursion_stack, "cli_calloc() for recursion_stack failed");
+
+    // ctx was memset, so recursion_level starts at 0.
+    ctx.recursion_stack[ctx.recursion_level].fmap = &thefmap;
+
+    ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
+
     root = (struct cli_matcher *)MPOOL_CALLOC(ctx.engine->mempool, 1, sizeof(struct cli_matcher));
     ck_assert_msg(root != NULL, "root == NULL");
 #ifdef USE_MPOOL
@@ -184,6 +196,7 @@ static void setup(void)
 static void teardown(void)
 {
     cl_engine_free((struct cl_engine *)ctx.engine);
+    free(ctx.recursion_stack);
 }
 
 START_TEST(test_ac_scanbuff)
