@@ -63,7 +63,7 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* read driver description map at sector 0  */
-    if (fmap_readn(*ctx->fmap, &ddm, pos, sizeof(ddm)) != sizeof(ddm)) {
+    if (fmap_readn(ctx->fmap, &ddm, pos, sizeof(ddm)) != sizeof(ddm)) {
         cli_dbgmsg("cli_scanapm: Invalid Apple driver description map\n");
         return CL_EFORMAT;
     }
@@ -83,7 +83,7 @@ int cli_scanapm(cli_ctx *ctx)
     sectorsize = ddm.blockSize;
 
     /* size of total file must be described by the ddm */
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
     if ((ddm.blockSize * ddm.blockCount) != maplen) {
         cli_dbgmsg("cli_scanapm: File described %u size does not match %lu actual size\n",
                    (ddm.blockSize * ddm.blockCount), (unsigned long)maplen);
@@ -92,7 +92,7 @@ int cli_scanapm(cli_ctx *ctx)
 
     /* check for old-school partition map */
     if (sectorsize == 2048) {
-        if (fmap_readn(*ctx->fmap, &aptable, APM_FALLBACK_SECTOR_SIZE, sizeof(aptable)) != sizeof(aptable)) {
+        if (fmap_readn(ctx->fmap, &aptable, APM_FALLBACK_SECTOR_SIZE, sizeof(aptable)) != sizeof(aptable)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
             return CL_EFORMAT;
         }
@@ -107,7 +107,7 @@ int cli_scanapm(cli_ctx *ctx)
     /* read partition table at sector 1 (or after the ddm if old-school) */
     pos = APM_PTABLE_BLOCK * sectorsize;
 
-    if (fmap_readn(*ctx->fmap, &aptable, pos, sizeof(aptable)) != sizeof(aptable)) {
+    if (fmap_readn(ctx->fmap, &aptable, pos, sizeof(aptable)) != sizeof(aptable)) {
         cli_dbgmsg("cli_scanapm: Invalid Apple partition table\n");
         return CL_EFORMAT;
     }
@@ -165,7 +165,7 @@ int cli_scanapm(cli_ctx *ctx)
     for (i = 2; i <= max_prtns; ++i) {
         /* read partition table entry */
         pos = i * sectorsize;
-        if (fmap_readn(*ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
+        if (fmap_readn(ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
             return CL_EFORMAT;
         }
@@ -223,7 +223,7 @@ int cli_scanapm(cli_ctx *ctx)
                    apentry.pBlockStart, apentry.pBlockCount, partoff, partsize);
 
         /* send the partition to cli_magic_scan_nested_fmap_type */
-        ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
+        ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
         if (ret != CL_CLEAN) {
             if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                 detection = CL_VIRUS;
@@ -261,7 +261,7 @@ static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *a
     for (i = 1; i <= max_prtns; ++i) {
         /* read partition table entry */
         pos = i * sectorsize;
-        if (fmap_readn(*ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
+        if (fmap_readn(ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
             partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;

@@ -35,7 +35,21 @@ struct cli_target_info {
     int status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
+/**
+ * Initialize a struct cli_target_info so that it's ready to have its exeinfo
+ * populated by the call to cli_targetinfo and/or destroyed by
+ * cli_targetinfo_destroy.
+ *
+ * @param info a pointer to the struct cli_target_info to initialize
+ */
 void cli_targetinfo_init(struct cli_target_info *info);
+
+/**
+ * Free resources associated with a struct cli_target_info initialized
+ * via cli_targetinfo_init
+ *
+ * @param info a pointer to the struct cli_target_info to destroy
+ */
 void cli_targetinfo_destroy(struct cli_target_info *info);
 
 #include "matcher-ac.h"
@@ -290,11 +304,34 @@ cl_error_t cli_exp_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_da
 
 cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
-cl_error_t cli_checkfp(cli_ctx *ctx);
-cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion_cnt);
+/**
+ * @brief Determine if an alert is a known false positive, using each fmap in the the ctx->container stack to check MD5, SHA1, and SHA256 hashes.
+ *
+ * @param ctx           The scanning context.
+ * @param vname         (Optional) The name of the signature alert.
+ * @return cl_error_t   CL_CLEAN If an allow-list hash matches with one of the fmap hashes in the scan recursion stack.
+ *                      CL_VIRUS If no allow-list hash matches.
+ */
+cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname);
 
 cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2);
 
-void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map);
+/** Parse the executable headers and, if successful, populate exeinfo
+ *
+ * If target refers to a supported executable file type, the exe header
+ * will be parsed and, if successful, info->status will be set to 1.
+ * If parsing the exe header fails, info->status will be set to -1.
+ * The caller MUST destroy info via a call to cli_targetinfo_destroy
+ * regardless of what info->status is set to.
+ *
+ * @param info A structure to populate with info from the exe header. This
+ *             MUST be initialized via cli_targetinfo_init prior to calling
+ * @param target the target executable file type. Possible values are:
+ *               - 1 - PE32 / PE32+
+ *               - 6 - ELF
+ *               - 9 - MachO
+ * @param ctx The current scan context
+ */
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, cli_ctx *ctx);
 
 #endif

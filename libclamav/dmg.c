@@ -113,7 +113,7 @@ int cli_scandmg(cli_ctx *ctx)
         return CL_ENULLARG;
     }
 
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
     if (maplen <= 512) {
         cli_dbgmsg("cli_scandmg: DMG smaller than DMG koly block!\n");
         return CL_CLEAN;
@@ -121,7 +121,7 @@ int cli_scandmg(cli_ctx *ctx)
     pos = maplen - 512;
 
     /* Grab koly block */
-    if (fmap_readn(*ctx->fmap, &hdr, pos, sizeof(hdr)) != sizeof(hdr)) {
+    if (fmap_readn(ctx->fmap, &hdr, pos, sizeof(hdr)) != sizeof(hdr)) {
         cli_dbgmsg("cli_scandmg: Invalid DMG trailer block\n");
         return CL_EFORMAT;
     }
@@ -179,7 +179,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* scan XML with cli_magic_scan_nested_fmap_type */
-    ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, (size_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
+    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, (size_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -189,7 +189,7 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* page data from map */
-    outdata = fmap_need_off_once_len(*ctx->fmap, hdr.xmlOffset, hdr.xmlLength, &nread);
+    outdata = fmap_need_off_once_len(ctx->fmap, hdr.xmlOffset, hdr.xmlLength, &nread);
     if (!outdata || (nread != hdr.xmlLength)) {
         cli_errmsg("cli_scandmg: Failed getting XML from map, len %d\n", (int)hdr.xmlLength);
         if (!ctx->engine->keeptmp)
@@ -663,7 +663,7 @@ static int dmg_stripe_store(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mis
     if (len == 0)
         return CL_CLEAN;
 
-    obuf = (void *)fmap_need_off_once(*ctx->fmap, off, len);
+    obuf = (void *)fmap_need_off_once(ctx->fmap, off, len);
     if (!obuf) {
         cli_warnmsg("dmg_stripe_store: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
@@ -696,7 +696,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
         return CL_CLEAN;
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_in = (uint8_t *)fmap_need_off_once(*ctx->fmap, off, len);
+    strm.next_in = (uint8_t *)fmap_need_off_once(ctx->fmap, off, len);
     if (!strm.next_in) {
         cli_warnmsg("dmg_stripe_adc: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
@@ -778,7 +778,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
         return CL_CLEAN;
 
     memset(&strm, 0, sizeof(strm));
-    strm.next_in = (void *)fmap_need_off_once(*ctx->fmap, off, len);
+    strm.next_in = (void *)fmap_need_off_once(ctx->fmap, off, len);
     if (!strm.next_in) {
         cli_warnmsg("dmg_stripe_inflate: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
@@ -890,7 +890,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
         if (strm.avail_in == 0) {
             size_t next_len = (len > sizeof(obuf)) ? sizeof(obuf) : len;
             dmg_bzipmsg("dmg_stripe_bzip: off %lu len %lu next_len %lu\n", off, len, next_len);
-            strm.next_in = (void *)fmap_need_off_once(*ctx->fmap, off, next_len);
+            strm.next_in = (void *)fmap_need_off_once(ctx->fmap, off, next_len);
             if (strm.next_in == NULL) {
                 cli_dbgmsg("dmg_stripe_bzip: expected more stream\n");
                 ret = CL_EMAP;
@@ -1101,7 +1101,7 @@ static int dmg_extract_xml(cli_ctx *ctx, char *dir, struct dmg_koly_block *hdr)
     int ofd;
 
     /* Prep TOC XML for output */
-    outdata = fmap_need_off_once_len(*ctx->fmap, hdr->xmlOffset, hdr->xmlLength, &nread);
+    outdata = fmap_need_off_once_len(ctx->fmap, hdr->xmlOffset, hdr->xmlLength, &nread);
     if (!outdata || (nread != hdr->xmlLength)) {
         cli_errmsg("cli_scandmg: Failed getting XML from map, len " STDu64 "\n", hdr->xmlLength);
         return CL_EMAP;

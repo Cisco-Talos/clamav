@@ -209,7 +209,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     unsigned int arch = 0, ep = 0, err;
     struct cli_exe_section *sections = NULL;
     char name[16];
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     ssize_t at;
 
     if (fileinfo) {
@@ -333,12 +333,12 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
         }
         at += sizeof(load_cmd);
         /*
-	if((m64 && EC32(load_cmd.cmdsize, conv) % 8) || (!m64 && EC32(load_cmd.cmdsize, conv) % 4)) {
-	    cli_dbgmsg("cli_scanmacho: Invalid command size (%u)\n", EC32(load_cmd.cmdsize, conv));
-	    free(sections);
-	    RETURN_BROKEN;
-	}
-	*/
+        if((m64 && EC32(load_cmd.cmdsize, conv) % 8) || (!m64 && EC32(load_cmd.cmdsize, conv) % 4)) {
+            cli_dbgmsg("cli_scanmacho: Invalid command size (%u)\n", EC32(load_cmd.cmdsize, conv));
+            free(sections);
+            RETURN_BROKEN;
+        }
+        */
         load_cmd.cmd = EC32(load_cmd.cmd, conv);
         if ((m64 && load_cmd.cmd == 0x19) || (!m64 && load_cmd.cmd == 0x01)) { /* LC_SEGMENT */
             if (m64) {
@@ -511,11 +511,9 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 }
 
-int cli_machoheader(fmap_t *map, struct cli_exe_info *fileinfo)
+int cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 {
-    cli_ctx ctx;
-    ctx.fmap = &map;
-    return cli_scanmacho(&ctx, fileinfo);
+    return cli_scanmacho(ctx, fileinfo);
 }
 
 int cli_scanmacho_unibin(cli_ctx *ctx)
@@ -524,7 +522,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
     struct macho_fat_arch fat_arch;
     unsigned int conv, i, matcher = 0;
     int ret     = CL_CLEAN;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     ssize_t at;
 
     if (fmap_readn(map, &fat_header, 0, sizeof(fat_header)) != sizeof(fat_header)) {
@@ -585,7 +583,6 @@ int cli_unpackmacho(cli_ctx *ctx)
     int ndesc;
     struct cli_bc_ctx *bc_ctx;
     int ret;
-    fmap_t *map = *ctx->fmap;
 
     /* Bytecode BC_MACHO_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
@@ -596,7 +593,7 @@ int cli_unpackmacho(cli_ctx *ctx)
 
     cli_bytecode_context_setctx(bc_ctx, ctx);
 
-    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_MACHO_UNPACKER, map);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_MACHO_UNPACKER, ctx->fmap);
     switch (ret) {
         case CL_VIRUS:
             cli_bytecode_context_destroy(bc_ctx);

@@ -49,6 +49,7 @@
 #include "mpool.h"
 #define UNZIP_PRIVATE
 #include "unzip.h"
+#include "is_tar.h"
 
 // clang-format off
 static const struct ftmap_s {
@@ -218,8 +219,6 @@ cli_file_t cli_compare_ftm_file(const unsigned char *buf, size_t buflen, const s
 
     return cli_texttype(buf, buflen);
 }
-
-int is_tar(const unsigned char *buf, unsigned int nbytes);
 
 /* organize by length, cannot exceed SIZEOF_LOCAL_HEADER */
 // clang-format off

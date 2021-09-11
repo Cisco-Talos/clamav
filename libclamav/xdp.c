@@ -94,7 +94,6 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
 {
 #if HAVE_LIBXML2
     xmlTextReaderPtr reader = NULL;
-    fmap_t *map             = *(ctx->fmap);
     const char *buf;
     const xmlChar *name, *value;
     char *decoded;
@@ -103,12 +102,12 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
     char *dumpname;
     size_t i;
 
-    buf = (const char *)fmap_need_off_once(map, map->offset, map->len);
+    buf = (const char *)fmap_need_off_once(ctx->fmap, ctx->fmap->nested_offset, ctx->fmap->len);
     if (!(buf))
         return CL_EREAD;
 
     if (ctx->engine->keeptmp) {
-        dumpname = dump_xdp(ctx, buf, map->len);
+        dumpname = dump_xdp(ctx, buf, ctx->fmap->len);
         if (dumpname)
             free(dumpname);
     }
@@ -120,7 +119,7 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
      * silently ignore the error and return CL_SUCCESS so the filetyping code can
      * continue on.
      */
-    reader = xmlReaderForMemory(buf, (int)(map->len), "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
+    reader = xmlReaderForMemory(buf, (int)(ctx->fmap->len), "noname.xml", NULL, CLAMAV_MIN_XMLREADER_FLAGS);
     if (!(reader))
         return CL_SUCCESS;
 
