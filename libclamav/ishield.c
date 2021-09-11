@@ -193,7 +193,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
     const uint8_t *buf;
     unsigned int fcount, scanned = 0;
     int ret;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in ishield-msi\n");
     if (!(buf = fmap_need_off_once(map, off, 0x20))) {
@@ -362,7 +362,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
     long fsize;
     off_t coff           = off;
     struct IS_CABSTUFF c = {NULL, -1, 0, 0};
-    fmap_t *map          = *ctx->fmap;
+    fmap_t *map          = ctx->fmap;
     unsigned fc          = 0;
     int virus_found      = 0;
 
@@ -468,7 +468,7 @@ static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize)
     char *fname;
     const char *buf;
     int ofd, ret = CL_CLEAN;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     if (!fsize) {
         cli_dbgmsg("ishield: skipping empty file\n");
@@ -518,7 +518,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
     unsigned int off, i, scanned = 0;
     int ret = CL_BREAK;
     char hash[33], *hdr;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     const struct IS_HDR *h1;
     struct IS_OBJECTS *objs;
@@ -716,7 +716,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
     z_stream z;
     uint64_t outsz = 0;
     int success    = 0;
-    fmap_t *map    = *ctx->fmap;
+    fmap_t *map    = ctx->fmap;
 
     if (!(outbuf = cli_malloc(IS_CABBUFSZ))) {
         cli_errmsg("is_extract_cab: Unable to allocate memory for outbuf\n");

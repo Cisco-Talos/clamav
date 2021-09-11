@@ -145,7 +145,7 @@ struct elf_section_hdr64 {
 
 int cli_scanelf(cli_ctx *ctx);
 
-int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo);
+int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo);
 
 int cli_unpackelf(cli_ctx *ctx);
 

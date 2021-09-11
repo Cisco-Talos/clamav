@@ -656,7 +656,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 #endif
 
     /* non-critical return suppression */
-    if (ret == CL_ETIMEOUT || ret == CL_BREAK)
+    if (ret == CL_BREAK)
         ret = CL_SUCCESS;
 
     /* important but non-critical suppression */

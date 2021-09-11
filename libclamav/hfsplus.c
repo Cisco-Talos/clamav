@@ -138,11 +138,11 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
     }
 
     /* Start with volume header, 512 bytes at offset 1024 */
-    if ((*ctx->fmap)->len < 1536) {
+    if (ctx->fmap->len < 1536) {
         cli_dbgmsg("hfsplus_volumeheader: too short for HFS+\n");
         return CL_EFORMAT;
     }
-    mPtr = fmap_need_off_once(*ctx->fmap, 1024, 512);
+    mPtr = fmap_need_off_once(ctx->fmap, 1024, 512);
     if (!mPtr) {
         cli_errmsg("hfsplus_volumeheader: cannot read header from map\n");
         return CL_EMAP;
@@ -244,7 +244,7 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
             cli_errmsg("hfsplus_readheader: %s: invalid headerType %d\n", name, headerType);
             return CL_EARG;
     }
-    mPtr = fmap_need_off_once(*ctx->fmap, offset, volHeader->blockSize);
+    mPtr = fmap_need_off_once(ctx->fmap, offset, volHeader->blockSize);
     if (!mPtr) {
         cli_dbgmsg("hfsplus_readheader: %s: headerNode is out-of-range\n", name);
         return CL_EFORMAT;
@@ -400,7 +400,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
             size_t written;
             off_t offset = currBlock * volHeader->blockSize;
             /* move map to next block */
-            mPtr = fmap_need_off_once(*ctx->fmap, offset, volHeader->blockSize);
+            mPtr = fmap_need_off_once(ctx->fmap, offset, volHeader->blockSize);
             if (!mPtr) {
                 cli_errmsg("hfsplus_scanfile: map error\n");
                 ret = CL_EMAP;
@@ -714,7 +714,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
             readSize = endSize;
         }
 
-        if (fmap_readn(*ctx->fmap, buff + buffOffset, fileOffset, readSize) != readSize) {
+        if (fmap_readn(ctx->fmap, buff + buffOffset, fileOffset, readSize) != readSize) {
             cli_dbgmsg("hfsplus_fetch_node: not all bytes read\n");
             return CL_EFORMAT;
         }

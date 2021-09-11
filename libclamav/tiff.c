@@ -54,7 +54,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         status = CL_EARG;
         goto done;
     }
-    map = *ctx->fmap;
+    map = ctx->fmap;
 
     /* check the magic */
     if (fmap_readn(map, magic, offset, 4) != 4) {
