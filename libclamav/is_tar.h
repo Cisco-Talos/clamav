@@ -44,4 +44,13 @@ union record {
 /* The magic field is filled with this if uname and gname are valid. */
 #define TMAGIC "ustar  " /* 7 chars and a null */
 
+/**
+ * @brief Figure out whether a given buffer is a tar archive.
+ *
+ * @param buf       Pointer to the buffer
+ * @param nbytes    Size of the buffer
+ * @return int      0 if the checksum is bad (i.e., probably not a tar archive),
+ *	                1 for old UNIX tar file,
+ *	                2 for Unix Std (POSIX) tar file.
+ */
 int is_tar(const unsigned char *buf, unsigned int nbytes);

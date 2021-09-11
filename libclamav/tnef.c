@@ -69,14 +69,14 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
     int ret, alldone;
     off_t fsize, pos = 0;
 
-    fsize = ctx->fmap[0]->len;
+    fsize = ctx->fmap->len;
 
     if (fsize < (off_t)MIN_SIZE) {
         cli_dbgmsg("cli_tngs: file too small, ignoring\n");
         return CL_CLEAN;
     }
 
-    if (fmap_readn(*ctx->fmap, &i32, pos, sizeof(uint32_t)) != sizeof(uint32_t)) {
+    if (fmap_readn(ctx->fmap, &i32, pos, sizeof(uint32_t)) != sizeof(uint32_t)) {
         /* The file is at least MIN_SIZE bytes, so it "can't" fail */
         return CL_EREAD;
     }
@@ -86,7 +86,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
         return CL_EFORMAT;
     }
 
-    if (fmap_readn(*ctx->fmap, &i16, pos, sizeof(uint16_t)) != sizeof(uint16_t)) {
+    if (fmap_readn(ctx->fmap, &i16, pos, sizeof(uint16_t)) != sizeof(uint16_t)) {
         /* The file is at least MIN_SIZE bytes, so it "can't" fail */
         return CL_EREAD;
     }
@@ -101,7 +101,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
         uint16_t type = 0, tag = 0;
         int32_t length = 0;
 
-        switch (tnef_header(*ctx->fmap, &pos, &part, &type, &tag, &length)) {
+        switch (tnef_header(ctx->fmap, &pos, &part, &type, &tag, &length)) {
             case 0:
                 alldone = 1;
                 break;
@@ -134,7 +134,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                     fb = NULL;
                 }
                 fb = fileblobCreate();
-                if (tnef_message(*ctx->fmap, &pos, type, tag, length, fsize) != 0) {
+                if (tnef_message(ctx->fmap, &pos, type, tag, length, fsize) != 0) {
                     cli_dbgmsg("TNEF: Error reading TNEF message\n");
                     ret     = CL_EFORMAT;
                     alldone = 1;
@@ -142,7 +142,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 break;
             case LVL_ATTACHMENT:
                 cli_dbgmsg("TNEF - found attachment\n");
-                if (tnef_attachment(*ctx->fmap, &pos, type, tag, length, dir, &fb, fsize) != 0) {
+                if (tnef_attachment(ctx->fmap, &pos, type, tag, length, dir, &fb, fsize) != 0) {
                     cli_dbgmsg("TNEF: Error reading TNEF attachment\n");
                     ret     = CL_EFORMAT;
                     alldone = 1;
@@ -171,7 +171,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                         cli_warnmsg("Saving dump to %s:  refer to https://docs.clamav.net/manual/Installing.html\n", filename);
 
                         pos = 0;
-                        while ((count = fmap_readn(*ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1) {
+                        while ((count = fmap_readn(ctx->fmap, buffer, pos, sizeof(buffer))) != (size_t)-1) {
                             pos += count;
                             cli_writen(fout, buffer, count);
                         }
@@ -206,6 +206,8 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
 #ifdef CL_DEBUG
     uint32_t i32;
     char *string;
+#else
+    UNUSEDPARAM(map);
 #endif
 
     cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type,

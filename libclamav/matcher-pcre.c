@@ -219,12 +219,13 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         cflags = NULL;
     }
 
-    if (lsigid)
+    if (lsigid) {
         pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) as subsig %d for lsigid %d\n",
                   pattern, cflags ? " with flags " : "", cflags ? cflags : "", trigger, lsigid[1], lsigid[0]);
-    else
+    } else {
         pm_dbgmsg("cli_pcre_addpatt: Adding /%s/%s%s triggered on (%s) [no lsigid]\n",
                   pattern, cflags ? " with flags " : "", cflags ? cflags : "", trigger);
+    }
 
 #ifdef PCRE_BYPASS
     /* check for trigger bypass */
@@ -342,8 +343,9 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
                       pm->flags & CLI_PCRE_GLOBAL ? "CLAMAV_GLOBAL " : "",
                       pm->flags & CLI_PCRE_ROLLING ? "CLAMAV_ROLLING " : "",
                       pm->flags & CLI_PCRE_ENCOMPASS ? "CLAMAV_ENCOMPASS " : "");
-        } else
+        } else {
             pm_dbgmsg("Matcher:  NONE\n");
+        }
 
         if (pm->pdata.options) {
 #if USING_PCRE2
@@ -367,8 +369,9 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
                       pm->pdata.options & PCRE_DOLLAR_ENDONLY ? "PCRE_DOLLAR_ENDONLY " : "",
                       pm->pdata.options & PCRE_UNGREEDY ? "PCRE_UNGREEDY " : "");
 #endif
-        } else
+        } else {
             pm_dbgmsg("Compiler: NONE\n");
+        }
     }
 
     /* add metadata to the performance tracker */

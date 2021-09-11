@@ -60,6 +60,7 @@ cli_ctx *convenience_ctx(int fd)
     cl_error_t status        = CL_EMEM;
     cli_ctx *ctx             = NULL;
     struct cl_engine *engine = NULL;
+    cl_fmap_t *new_map       = NULL;
 
     /* build engine */
     engine = cl_engine_new();
@@ -85,6 +86,13 @@ cli_ctx *convenience_ctx(int fd)
         goto done;
     }
 
+    /* fake input fmap */
+    new_map = fmap(fd, 0, 0, NULL);
+    if (NULL == new_map) {
+        printf("convenience_ctx: fmap failed\n");
+        goto done;
+    }
+
     /* prepare context */
     ctx = cli_calloc(1, sizeof(cli_ctx));
     if (!ctx) {
@@ -94,20 +102,22 @@ cli_ctx *convenience_ctx(int fd)
 
     ctx->engine = (const struct cl_engine *)engine;
 
-    ctx->containers = cli_calloc(sizeof(cli_ctx_container), ctx->engine->maxreclevel + 2);
-    if (NULL == ctx->containers) {
-        printf("convenience_ctx: failed to allocate ctx containers.");
-        goto done;
-    }
-    ctx->containers[0].type = CL_TYPE_ANY;
-
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
-    ctx->fmap = cli_calloc(sizeof(fmap_t *), ctx->engine->maxreclevel + 2);
-    if (!(ctx->fmap)) {
-        printf("convenience_ctx: fmap initialization failed\n");
+    ctx->recursion_stack_size = ctx->engine->max_recursion_level;
+    ctx->recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
+    if (!ctx->recursion_stack) {
+        status = CL_EMEM;
         goto done;
     }
+
+    // ctx was calloc'd, so recursion_level starts at 0.
+    ctx->recursion_stack[ctx->recursion_level].fmap = new_map;
+    ctx->recursion_stack[ctx->recursion_level].type = CL_TYPE_ANY;                           // ANY for the top level, because we don't yet know the type.
+    ctx->recursion_stack[ctx->recursion_level].size = new_map->len - new_map->nested_offset; // Realistically nested_offset will be 0,
+                                                                                             // but taking the diff is the "right" way.
+
+    ctx->fmap = ctx->recursion_stack[ctx->recursion_level].fmap;
 
     ctx->options = cli_calloc(1, sizeof(struct cl_scan_options));
     if (!ctx->options) {
@@ -117,24 +127,19 @@ cli_ctx *convenience_ctx(int fd)
     ctx->options->general |= CL_SCAN_GENERAL_HEURISTICS;
     ctx->options->parse = ~(0);
 
-    if (!(*ctx->fmap = fmap(fd, 0, 0, NULL))) {
-        printf("convenience_ctx: fmap failed\n");
-        goto done;
-    }
-
     status = CL_SUCCESS;
 
 done:
     if (CL_SUCCESS != status) {
         if (NULL != ctx) {
-            if (NULL != ctx->fmap) {
-                free(ctx->fmap);
+            if (NULL != new_map) {
+                funmap(new_map);
             }
             if (NULL != ctx->options) {
                 free(ctx->options);
             }
-            if (NULL != ctx->containers) {
-                free(ctx->containers);
+            if (NULL != ctx->recursion_stack) {
+                free(ctx->recursion_stack);
             }
             free(ctx);
             ctx = NULL;
@@ -147,33 +152,37 @@ done:
     return ctx;
 }
 
-void destroy_ctx(int desc, cli_ctx *ctx)
+void destroy_ctx(cli_ctx *ctx)
 {
-    if (desc >= 0)
-        close(desc);
-
     if (NULL != ctx) {
-        if (NULL != ctx->fmap) {
-            if (NULL != *(ctx->fmap)) {
-                funmap(*(ctx->fmap));
-                *(ctx->fmap) = NULL;
+        if (NULL != ctx->recursion_stack) {
+            /* Clean up any fmaps */
+            while (ctx->recursion_level > 0) {
+                if (NULL != ctx->recursion_stack[ctx->recursion_level].fmap) {
+                    funmap(ctx->recursion_stack[ctx->recursion_level].fmap);
+                    ctx->recursion_stack[ctx->recursion_level].fmap = NULL;
+                }
+                ctx->recursion_level -= 1;
+            }
+            if (NULL != ctx->recursion_stack[0].fmap) {
+                funmap(ctx->recursion_stack[0].fmap);
+                ctx->recursion_stack[0].fmap = NULL;
             }
 
-            free(ctx->fmap);
-            ctx->fmap = NULL;
+            free(ctx->recursion_stack);
+            ctx->recursion_stack = NULL;
         }
+
         if (NULL != ctx->engine) {
             cl_engine_free((struct cl_engine *)ctx->engine);
             ctx->engine = NULL;
         }
+
         if (NULL != ctx->options) {
             free(ctx->options);
             ctx->options = NULL;
         }
-        if (NULL != ctx->containers) {
-            free(ctx->containers);
-            ctx->containers = NULL;
-        }
+
         free(ctx);
     }
 }
@@ -1087,17 +1096,18 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
 
 static int sigtool_scandir(const char *dirname, int hex_output)
 {
-    DIR *dd;
+    int status = -1;
+    DIR *dd    = NULL;
     struct dirent *dent;
     STATBUF statbuf;
-    char *fname;
     const char *tmpdir;
-    char *dir;
-    int ret = CL_CLEAN, desc;
-    cli_ctx *ctx;
+    char *fname    = NULL;
+    char *dir      = NULL;
+    cl_error_t ret = CL_CLEAN;
+    int desc       = -1;
+    cli_ctx *ctx   = NULL;
     int has_vba = 0, has_xlm = 0;
 
-    fname = NULL;
     if ((dd = opendir(dirname)) != NULL) {
         while ((dent = readdir(dd))) {
             if (dent->d_ino) {
@@ -1105,18 +1115,18 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                     /* build the full name */
                     fname = (char *)cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
                     if (!fname) {
-                        closedir(dd);
-                        return -1;
+                        status = -1;
+                        goto done;
                     }
+
                     sprintf(fname, "%s" PATHSEP "%s", dirname, dent->d_name);
 
                     /* stat the file */
                     if (LSTAT(fname, &statbuf) != -1) {
                         if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
                             if (sigtool_scandir(fname, hex_output)) {
-                                free(fname);
-                                closedir(dd);
-                                return CL_VIRUS;
+                                status = CL_VIRUS;
+                                goto done;
                             }
                         } else {
                             if (S_ISREG(statbuf.st_mode)) {
@@ -1127,53 +1137,55 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                                 dir = cli_gentemp(tmpdir);
                                 if (!dir) {
                                     printf("cli_gentemp() failed\n");
-                                    free(fname);
-                                    closedir(dd);
-                                    return -1;
+                                    status = -1;
+                                    goto done;
                                 }
 
                                 if (mkdir(dir, 0700)) {
                                     printf("Can't create temporary directory %s\n", dir);
-                                    free(fname);
-                                    closedir(dd);
-                                    free(dir);
-                                    return CL_ETMPDIR;
+                                    status = CL_ETMPDIR;
+                                    goto done;
                                 }
 
                                 if ((desc = open(fname, O_RDONLY | O_BINARY)) == -1) {
                                     printf("Can't open file %s\n", fname);
-                                    free(fname);
-                                    closedir(dd);
-                                    free(dir);
-                                    return 1;
+                                    status = 1;
+                                    goto done;
                                 }
 
                                 if (!(ctx = convenience_ctx(desc))) {
-                                    free(fname);
-                                    close(desc);
-                                    closedir(dd);
-                                    free(dir);
-                                    return 1;
+                                    status = 1;
+                                    goto done;
                                 }
                                 if ((ret = cli_ole2_extract(dir, ctx, &files, &has_vba, &has_xlm, NULL))) {
                                     printf("ERROR %s\n", cl_strerror(ret));
-                                    destroy_ctx(desc, ctx);
-                                    cli_rmdirs(dir);
-                                    free(dir);
-                                    closedir(dd);
-                                    free(fname);
-                                    return ret;
+
+                                    status = ret;
+                                    goto done;
                                 }
 
                                 if (has_vba && files)
                                     sigtool_vba_scandir(dir, hex_output, files);
-                                destroy_ctx(desc, ctx);
+
+                                // Cleanup
+                                if (desc >= 0) {
+                                    close(desc);
+                                    desc = -1;
+                                }
+
+                                destroy_ctx(ctx);
+                                ctx = NULL;
+
                                 cli_rmdirs(dir);
                                 free(dir);
+                                dir = NULL;
                             }
                         }
                     }
+
+                    // Cleanup
                     free(fname);
+                    fname = NULL;
                 }
             }
         }
@@ -1182,8 +1194,27 @@ static int sigtool_scandir(const char *dirname, int hex_output)
         return CL_EOPEN;
     }
 
-    closedir(dd);
-    return 0;
+    status = 0;
+
+done:
+    if (desc >= 0) {
+        close(desc);
+    }
+    if (NULL != dd) {
+        closedir(dd);
+    }
+    if (NULL != ctx) {
+        destroy_ctx(ctx);
+    }
+    if (NULL != dir) {
+        cli_rmdirs(dir);
+        free(dir);
+    }
+    if (NULL != fname) {
+        free(fname);
+    }
+
+    return status;
 }
 
 int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)

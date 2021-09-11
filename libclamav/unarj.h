@@ -36,7 +36,7 @@ typedef struct arj_metadata_tag {
     size_t offset;
 } arj_metadata_t;
 
-cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata, size_t off);
+cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *metadata);
 cl_error_t cli_unarj_prepare_file(const char *dirname, arj_metadata_t *metadata);
 cl_error_t cli_unarj_extract_file(const char *dirname, arj_metadata_t *metadata);
 

@@ -50,7 +50,7 @@ static const uint8_t hqxtbl[] = {
 
 int cli_binhex(cli_ctx *ctx)
 {
-    fmap_t *map            = *ctx->fmap;
+    fmap_t *map            = ctx->fmap;
     const uint8_t *encoded = NULL;
     uint8_t decoded[BUFSIZ], spare_bits = 0, last_byte = 0, this_byte = 0, offset = 0;
     size_t enc_done = 0, enc_todo = map->len;

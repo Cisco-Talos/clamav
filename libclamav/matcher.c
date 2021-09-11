@@ -30,6 +30,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <stdbool.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -291,7 +292,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
         if (!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
             return ret;
 
-        ret = matcher_run(troot, buffer, length, &virname, acdata ? (acdata[0]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, *ctx->fmap, NULL, NULL, ctx);
+        ret = matcher_run(troot, buffer, length, &virname, acdata ? (acdata[0]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
 
         if (!acdata)
             cli_ac_freedata(&mdata);
@@ -311,7 +312,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
     if (!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
         return ret;
 
-    ret = matcher_run(groot, buffer, length, &virname, acdata ? (acdata[1]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, *ctx->fmap, NULL, NULL, ctx);
+    ret = matcher_run(groot, buffer, length, &virname, acdata ? (acdata[1]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
 
     if (!acdata)
         cli_ac_freedata(&mdata);
@@ -504,13 +505,6 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, un
     return CL_SUCCESS;
 }
 
-/**
- * Initialize a struct cli_target_info so that it's ready to have its exeinfo
- * populated by the call to cli_targetinfo and/or destroyed by
- * cli_targetinfo_destroy.
- *
- * @param info a pointer to the struct cli_target_info to initialize
- */
 void cli_targetinfo_init(struct cli_target_info *info)
 {
 
@@ -521,27 +515,11 @@ void cli_targetinfo_init(struct cli_target_info *info)
     cli_exe_info_init(&(info->exeinfo), 0);
 }
 
-/** Parse the executable headers and, if successful, populate exeinfo
- *
- * @param info A structure to populate with info from the exe header. This
- *             MUST be initialized via cli_targetinfo_init prior to calling
- * @param target the target executable file type. Possible values are:
- *               - 1 - PE32 / PE32+
- *               - 6 - ELF
- *               - 9 - MachO
- * @param map The fmap_t backing the file being scanned
- *
- * @return If target refers to a supported executable file type, the exe header
- *         will be parsed and, if successful, info->status will be set to 1.
- *         If parsing the exe header fails, info->status will be set to -1.
- *         The caller MUST destroy info via a call to cli_targetinfo_destroy
- *         regardless of what info->status is set to.
- */
-void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *map)
+void cli_targetinfo(struct cli_target_info *info, unsigned int target, cli_ctx *ctx)
 {
-    int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
+    int (*einfo)(cli_ctx *, struct cli_exe_info *) = NULL;
 
-    info->fsize = map->len;
+    info->fsize = ctx->fmap->len;
 
     if (target == 1)
         einfo = cli_pe_targetinfo;
@@ -552,18 +530,12 @@ void cli_targetinfo(struct cli_target_info *info, unsigned int target, fmap_t *m
     else
         return;
 
-    if (einfo(map, &info->exeinfo))
+    if (einfo(ctx, &info->exeinfo))
         info->status = -1;
     else
         info->status = 1;
 }
 
-/**
- * Free resources associated with a struct cli_target_info initialized
- * via cli_targetinfo_init
- *
- * @param info a pointer to the struct cli_target_info to destroy
- */
 void cli_targetinfo_destroy(struct cli_target_info *info)
 {
 
@@ -575,17 +547,14 @@ void cli_targetinfo_destroy(struct cli_target_info *info)
     info->status = 0;
 }
 
-cl_error_t cli_checkfp(cli_ctx *ctx)
+cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
 {
-    return cli_checkfp_virus(ctx, NULL, 0);
-}
-
-cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion_cnt)
-{
+    cl_error_t status = CL_VIRUS;
     char md5[33];
     unsigned int i;
     const char *virname = NULL;
     fmap_t *map;
+    int32_t stack_index;
     const char *ptr;
     uint8_t shash1[SHA1_HASH_SIZE * 2 + 1];
     uint8_t shash256[SHA256_HASH_SIZE * 2 + 1];
@@ -593,122 +562,137 @@ cl_error_t cli_checkfp_virus(cli_ctx *ctx, const char *vname, uint32_t recursion
     unsigned char *digest;
     size_t size;
 
-    if (*(ctx->fmap - recursion_cnt) == NULL) { /* first fmap in the list is always NULL */
-        return CL_VIRUS;
-    }
+    stack_index = (int32_t)ctx->recursion_level;
 
-    digest = (*(ctx->fmap - recursion_cnt))->maphash;
-    size   = (*(ctx->fmap - recursion_cnt))->len;
+    while (stack_index >= 0) {
+        map = ctx->recursion_stack[stack_index].fmap;
 
-    if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
-        cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
-        return CL_CLEAN;
-    } else if (cli_hm_scan_wild(digest, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
-        cli_dbgmsg("cli_checkfp(md5): Found false positive detection (fp sig: %s), size: *\n", virname);
-        return CL_CLEAN;
-    }
+        if (CL_SUCCESS != fmap_get_MD5(map, &digest)) {
+            cli_dbgmsg("cli_check_fp: Failed to get a hash for the map at stack index # %u\n", stack_index);
+            stack_index--;
+            continue;
+        }
+        size = map->len;
 
-    if (cli_debug_flag || ctx->engine->cb_hash) {
-        for (i = 0; i < 16; i++)
-            sprintf(md5 + i * 2, "%02x", digest[i]);
-        md5[32] = 0;
-        cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int)size,
-                   vname ? vname : "Name");
-    }
+        /*
+         * First, check the MD5 digest.
+         * MD5 is default, so it always exists.
+         */
+        if (cli_hm_scan(digest, size, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+            cli_dbgmsg("cli_check_fp(md5): Found false positive detection (fp sig: %s), size: %d\n", virname, (int)size);
+            return CL_CLEAN;
+        } else if (cli_hm_scan_wild(digest, &virname, ctx->engine->hm_fp, CLI_HASH_MD5) == CL_VIRUS) {
+            cli_dbgmsg("cli_check_fp(md5): Found false positive detection (fp sig: %s), size: *\n", virname);
+            return CL_CLEAN;
+        }
 
-    map         = *(ctx->fmap - recursion_cnt); /* traverse backwards in the fmap list by the number of times recurses*/
-    have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
-    have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
-    if (have_sha1 || have_sha256) {
-        if ((ptr = fmap_need_off_once(map, 0, size))) {
-            if (have_sha1) {
-                cl_sha1(ptr, size, &shash1[SHA1_HASH_SIZE], NULL);
+        if (cli_debug_flag || ctx->engine->cb_hash) {
+            const char *name = ctx->recursion_stack[stack_index].fmap->name;
+            const char *type = cli_ftname(ctx->recursion_stack[stack_index].type);
 
-                if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
-                    return CL_CLEAN;
+            for (i = 0; i < 16; i++)
+                sprintf(md5 + i * 2, "%02x", digest[i]);
+            md5[32] = 0;
+
+            cli_dbgmsg("FP SIGNATURE: %s:%u:%s  # Name: %s, Type: %s\n",
+                       md5, (unsigned int)size, vname ? vname : "Name", name ? name : "n/a", type);
+        }
+
+        have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
+        have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
+        if (have_sha1 || have_sha256) {
+            if ((ptr = fmap_need_off_once(map, 0, size))) {
+                if (have_sha1) {
+                    cl_sha1(ptr, size, &shash1[SHA1_HASH_SIZE], NULL);
+
+                    if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+                        return CL_CLEAN;
+                    }
+                    if (cli_hm_scan_wild(&shash1[SHA1_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha1): Found false positive detection (fp sig: %s)\n", virname);
+                        return CL_CLEAN;
+                    }
+                    /* See whether the hash matches those loaded in from .cat files
+                     * (associated with the .CAB file type) */
+                    if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha1): Found .CAB false positive detection via catalog file\n");
+                        return CL_CLEAN;
+                    }
                 }
-                if (cli_hm_scan_wild(&shash1[SHA1_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha1): Found false positive detection (fp sig: %s)\n", virname);
-                    return CL_CLEAN;
-                }
-                /* See whether the hash matches those loaded in from .cat files
-                 * (associated with the .CAB file type) */
-                if (cli_hm_scan(&shash1[SHA1_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA1) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha1): Found .CAB false positive detection via catalog file\n");
-                    return CL_CLEAN;
-                }
-            }
 
-            if (have_sha256) {
-                cl_sha256(ptr, size, &shash256[SHA256_HASH_SIZE], NULL);
+                if (have_sha256) {
+                    cl_sha256(ptr, size, &shash256[SHA256_HASH_SIZE], NULL);
 
-                if (cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
-                    return CL_CLEAN;
-                }
-                if (cli_hm_scan_wild(&shash256[SHA256_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha256): Found false positive detection (fp sig: %s)\n", virname);
-                    return CL_CLEAN;
-                }
-                /* See whether the hash matches those loaded in from .cat files
-                 * (associated with the .CAB file type) */
-                if (cli_hm_scan(&shash256[SHA256_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
-                    cli_dbgmsg("cli_checkfp(sha256): Found .CAB false positive detection via catalog file\n");
-                    return CL_CLEAN;
+                    if (cli_hm_scan(&shash256[SHA256_HASH_SIZE], size, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+                        return CL_CLEAN;
+                    }
+                    if (cli_hm_scan_wild(&shash256[SHA256_HASH_SIZE], &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha256): Found false positive detection (fp sig: %s)\n", virname);
+                        return CL_CLEAN;
+                    }
+                    /* See whether the hash matches those loaded in from .cat files
+                     * (associated with the .CAB file type) */
+                    if (cli_hm_scan(&shash256[SHA256_HASH_SIZE], 1, &virname, ctx->engine->hm_fp, CLI_HASH_SHA256) == CL_VIRUS) {
+                        cli_dbgmsg("cli_check_fp(sha256): Found .CAB false positive detection via catalog file\n");
+                        return CL_CLEAN;
+                    }
                 }
             }
         }
-    }
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
-    if (SCAN_DEV_COLLECT_SHA && (ctx->sha_collect > 0)) {
-        if ((ptr = fmap_need_off_once(map, 0, size))) {
-            if (!have_sha256)
-                cl_sha256(ptr, size, shash256 + SHA256_HASH_SIZE, NULL);
+        if (SCAN_DEV_COLLECT_SHA && (ctx->sha_collect > 0)) {
+            if ((ptr = fmap_need_off_once(map, 0, size))) {
+                if (!have_sha256)
+                    cl_sha256(ptr, size, shash256 + SHA256_HASH_SIZE, NULL);
 
-            for (i = 0; i < SHA256_HASH_SIZE; i++)
-                sprintf((char *)shash256 + i * 2, "%02x", shash256[SHA256_HASH_SIZE + i]);
+                for (i = 0; i < SHA256_HASH_SIZE; i++)
+                    sprintf((char *)shash256 + i * 2, "%02x", shash256[SHA256_HASH_SIZE + i]);
 
-            if (!have_sha1)
-                cl_sha1(ptr, size, shash1 + SHA1_HASH_SIZE);
+                if (!have_sha1)
+                    cl_sha1(ptr, size, shash1 + SHA1_HASH_SIZE);
 
-            for (i = 0; i < SHA1_HASH_SIZE; i++)
-                sprintf((char *)shash1 + i * 2, "%02x", shash1[SHA1_HASH_SIZE + i]);
+                for (i = 0; i < SHA1_HASH_SIZE; i++)
+                    sprintf((char *)shash1 + i * 2, "%02x", shash1[SHA1_HASH_SIZE + i]);
 
-            if (NULL == ctx->target_filepath) {
-                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname ? vname : "noname", "NO_IDEA");
-            } else {
-                cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname ? vname : "noname", ctx->target_filepath);
-            }
-        } else
-            cli_errmsg("can't compute sha\n!");
+                if (NULL == ctx->target_filepath) {
+                    cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname ? vname : "noname", "NO_IDEA");
+                } else {
+                    cli_errmsg("COLLECT:%s:%s:%u:%s:%s\n", shash256, shash1, size, vname ? vname : "noname", ctx->target_filepath);
+                }
+            } else
+                cli_errmsg("can't compute sha\n!");
 
-        ctx->sha_collect = -1;
-    }
+            ctx->sha_collect = -1;
+        }
 #endif
 
-    if (ctx->engine->cb_hash)
-        ctx->engine->cb_hash(fmap_fd(*ctx->fmap), size, (const unsigned char *)md5, vname ? vname : "noname", ctx->cb_ctx);
+        if (ctx->engine->cb_hash)
+            ctx->engine->cb_hash(fmap_fd(ctx->fmap), size, (const unsigned char *)md5, vname ? vname : "noname", ctx->cb_ctx);
 
-    if (ctx->engine->cb_stats_add_sample) {
-        stats_section_t sections;
-        memset(&sections, 0x00, sizeof(stats_section_t));
+        if (ctx->engine->cb_stats_add_sample) {
+            stats_section_t sections;
+            memset(&sections, 0x00, sizeof(stats_section_t));
 
-        if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) &&
-            !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
-            cli_genhash_pe(ctx, CL_GENHASH_PE_CLASS_SECTION, 1, &sections);
+            if (!(ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_PE_STATS) &&
+                !(ctx->engine->dconf->stats & (DCONF_STATS_DISABLED | DCONF_STATS_PE_SECTION_DISABLED)))
+                cli_genhash_pe(ctx, CL_GENHASH_PE_CLASS_SECTION, 1, &sections);
 
-        // TODO We probably only want to call cb_stats_add_sample when
-        // sections.section != NULL... leaving as is for now
-        ctx->engine->cb_stats_add_sample(vname ? vname : "noname", digest, size, &sections, ctx->engine->stats_data);
+            // TODO We probably only want to call cb_stats_add_sample when
+            // sections.section != NULL... leaving as is for now
+            ctx->engine->cb_stats_add_sample(vname ? vname : "noname", digest, size, &sections, ctx->engine->stats_data);
 
-        if (sections.sections) {
-            free(sections.sections);
+            if (sections.sections) {
+                free(sections.sections);
+            }
         }
+
+        stack_index -= 1;
     }
 
-    return cli_checkfp_virus(ctx, vname, recursion_cnt + 1);
+    return status;
 }
 
 static cl_error_t matchicon(cli_ctx *ctx, struct cli_exe_info *exeinfo, const char *grp1, const char *grp2)
@@ -776,21 +760,40 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
 
 cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
 {
-    cl_error_t ret = CL_EMEM;
+    cl_error_t status = CL_CLEAN;
     int empty;
-    fmap_t *map = *ctx->fmap; /* Store off the parent fmap for easy reference */
+    fmap_t *new_map = NULL;
+    fmap_t *map     = ctx->fmap; /* Store off the parent fmap for easy reference */
 
-    ctx->fmap++; /* Perform scan with child fmap */
-    if (NULL != (*ctx->fmap = fmap_check_empty(desc, 0, 0, &empty, name))) {
-        ret                  = cli_scan_fmap(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
-        map->dont_cache_flag = (*ctx->fmap)->dont_cache_flag;
-        funmap(*ctx->fmap);
+    new_map = fmap_check_empty(desc, 0, 0, &empty, name);
+    if (NULL == new_map) {
+        if (!empty) {
+            cli_dbgmsg("cli_scan_desc: Failed to allocate new map for file descriptor scan.\n");
+            status = CL_EMEM;
+        }
+        goto done;
     }
-    ctx->fmap--; /* Restore the parent fmap */
 
-    if (empty)
-        return CL_CLEAN;
-    return ret;
+    status = cli_recursion_stack_push(ctx, new_map, ftype, true); /* Perform scan with child fmap */
+    if (CL_SUCCESS != status) {
+        cli_dbgmsg("cli_scan_desc: Failed to scan fmap.\n");
+        goto done;
+    }
+
+    status = cli_scan_fmap(ctx, ftype, ftonly, ftoffset, acmode, acres, NULL);
+
+    map->dont_cache_flag = ctx->fmap->dont_cache_flag; /* Set the parent layer's "don't cache" flag to match the child.
+                                                          TODO: This may not be needed since `emax_reached()` should've
+                                                          already done that for us. */
+
+    (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
+
+done:
+    if (NULL != new_map) {
+        funmap(new_map);
+    }
+
+    return status;
 }
 
 static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
@@ -798,13 +801,13 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
     uint32_t i, icnt = ac_lsig->tdb.intermediates[0];
     int32_t j = -1;
 
-    if (ctx->recursion < icnt)
+    if (ctx->recursion_level < icnt)
         return 0;
 
     for (i = icnt; i > 0; i--) {
         if (ac_lsig->tdb.intermediates[i] == CL_TYPE_ANY)
             continue;
-        if (ac_lsig->tdb.intermediates[i] != cli_get_container_intermediate(ctx, j--))
+        if (ac_lsig->tdb.intermediates[i] != cli_recursion_stack_get_type(ctx, j--))
             return 0;
     }
     return 1;
@@ -812,72 +815,110 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
 
 static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
+    cl_error_t status           = CL_CLEAN;
     unsigned evalcnt            = 0;
     uint64_t evalids            = 0;
-    fmap_t *map                 = *ctx->fmap;
+    fmap_t *new_map             = NULL;
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
     char *exp                   = ac_lsig->u.logic;
     char *exp_end               = exp + strlen(exp);
-    cl_error_t rc;
 
-    rc = cli_ac_chkmacro(root, acdata, lsid);
-    if (rc != CL_SUCCESS)
-        return rc;
+    status = cli_ac_chkmacro(root, acdata, lsid);
+    if (status != CL_SUCCESS)
+        return status;
+
     if (cli_ac_chklsig(exp, exp_end, acdata->lsigcnt[lsid], &evalcnt, &evalids, 0) == 1) {
-        if (ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_get_container(ctx, -1))
-            return CL_CLEAN;
+        if (ac_lsig->tdb.container && ac_lsig->tdb.container[0] != cli_recursion_stack_get_type(ctx, -2))
+            goto done;
         if (ac_lsig->tdb.intermediates && !intermediates_eval(ctx, ac_lsig))
-            return CL_CLEAN;
-        if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > map->len || ac_lsig->tdb.filesize[1] < map->len))
-            return CL_CLEAN;
+            goto done;
+        if (ac_lsig->tdb.filesize && (ac_lsig->tdb.filesize[0] > ctx->fmap->len || ac_lsig->tdb.filesize[1] < ctx->fmap->len))
+            goto done;
 
         if (ac_lsig->tdb.ep || ac_lsig->tdb.nos) {
             if (!target_info || target_info->status != 1)
-                return CL_CLEAN;
+                goto done;
             if (ac_lsig->tdb.ep && (ac_lsig->tdb.ep[0] > target_info->exeinfo.ep || ac_lsig->tdb.ep[1] < target_info->exeinfo.ep))
-                return CL_CLEAN;
+                goto done;
             if (ac_lsig->tdb.nos && (ac_lsig->tdb.nos[0] > target_info->exeinfo.nsections || ac_lsig->tdb.nos[1] < target_info->exeinfo.nsections))
-                return CL_CLEAN;
+                goto done;
         }
 
         if (hash && ac_lsig->tdb.handlertype) {
             if (0 != memcmp(ctx->handlertype_hash, hash, 16)) {
-                ctx->recursion++;
-                memcpy(ctx->handlertype_hash, hash, 16);
-                if (cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]) == CL_VIRUS) {
-                    ctx->recursion--;
-                    return CL_VIRUS;
+                /*
+                 * Create an fmap window into our current fmap using the original offset & length, and rescan as the new type
+                 *
+                 * TODO: Unsure if creating an fmap is the right move, or if we should rescan with the current fmap as-is,
+                 * since it's not really a container so much as it is type reassignment. This new fmap layer protect agains
+                 * a possible infinite loop by applying the scan recursion limit, but maybe there's a better way?
+                 * Testing with both HandlerType type reassignment sigs + Container/Intermediates sigs should indicate if
+                 * a change is needed.
+                 */
+                new_map = fmap_duplicate(ctx->fmap, 0, ctx->fmap->len, ctx->fmap->name);
+                if (NULL == new_map) {
+                    status = CL_EMEM;
+                    cli_dbgmsg("Failed to duplicate the current fmap for a re-scan as a different type.\n");
+                    goto done;
                 }
-                ctx->recursion--;
-                return CL_CLEAN;
+
+                memcpy(ctx->handlertype_hash, hash, 16);
+
+                status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true); /* Perform scan with child fmap */
+                if (CL_SUCCESS != status) {
+                    cli_dbgmsg("Failed to re-scan fmap as a new type.\n");
+                    goto done;
+                }
+
+                status = cli_magic_scan(ctx, ac_lsig->tdb.handlertype[0]);
+
+                (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
+
+                if (CL_VIRUS == status) {
+                    status = CL_VIRUS;
+                    goto done;
+                }
+
+                goto done;
             }
         }
 
         if (ac_lsig->tdb.icongrp1 || ac_lsig->tdb.icongrp2) {
-            if (!target_info || target_info->status != 1)
-                return CL_CLEAN;
-            if (matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2) == CL_VIRUS) {
+            if (!target_info || target_info->status != 1) {
+                goto done;
+            }
+
+            if (CL_VIRUS == matchicon(ctx, &target_info->exeinfo, ac_lsig->tdb.icongrp1, ac_lsig->tdb.icongrp2)) {
                 if (!ac_lsig->bc_idx) {
-                    rc = cli_append_virus(ctx, ac_lsig->virname);
-                    if (rc != CL_CLEAN)
-                        return rc;
-                } else if (cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
-                    return CL_VIRUS;
+                    status = cli_append_virus(ctx, ac_lsig->virname);
+                    if (status != CL_CLEAN) {
+                        goto done;
+                    }
+                } else if (CL_VIRUS == cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap)) {
+                    status = CL_VIRUS;
+                    goto done;
                 }
             }
-            return CL_CLEAN;
+            goto done;
         }
         if (!ac_lsig->bc_idx) {
-            rc = cli_append_virus(ctx, ac_lsig->virname);
-            if (rc != CL_CLEAN)
-                return rc;
+            status = cli_append_virus(ctx, ac_lsig->virname);
+            if (status != CL_CLEAN) {
+                goto done;
+            }
         }
-        if (cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], map) == CL_VIRUS) {
-            return CL_VIRUS;
+        if (CL_VIRUS == cli_bytecode_runlsig(ctx, target_info, &ctx->engine->bcs, ac_lsig->bc_idx, acdata->lsigcnt[lsid], acdata->lsigsuboff_first[lsid], ctx->fmap)) {
+            status = CL_VIRUS;
+            goto done;
         }
     }
 
-    return CL_CLEAN;
+done:
+    if (NULL != new_map) {
+        free_duplicate_fmap(new_map);
+    }
+
+    return status;
 }
 
 #ifdef HAVE_YARA
@@ -890,8 +931,8 @@ static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     (void)hash;
 
     memset(&context, 0, sizeof(YR_SCAN_CONTEXT));
-    context.fmap      = *ctx->fmap;
-    context.file_size = (*ctx->fmap)->len;
+    context.fmap      = ctx->fmap;
+    context.file_size = ctx->fmap->len;
     if (target_info != NULL) {
         if (target_info->status == 1)
             context.entry_point = target_info->exeinfo.ep;
@@ -948,14 +989,13 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
     unsigned char digest[CLI_HASH_AVAIL_TYPES][32];
     struct cli_matcher *groot = NULL, *troot = NULL;
     struct cli_target_info info;
-    fmap_t *map = *ctx->fmap;
     struct cli_matcher *hdb, *fp;
     const char *virname;
     uint32_t viruses_found = 0;
     void *md5ctx, *sha1ctx, *sha256ctx;
 
     if (!ctx->engine) {
-        cli_errmsg("cli_scan_desc: engine == NULL\n");
+        cli_errmsg("cli_scan_fmap: engine == NULL\n");
         return CL_ENULLARG;
     }
 
@@ -1008,7 +1048,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
     }
 
     cli_targetinfo_init(&info);
-    cli_targetinfo(&info, i, map);
+    cli_targetinfo(&info, i, ctx);
 
     if (-1 == info.status) {
         cli_dbgmsg("cli_scan_fmap: Failed to successfully parse the executable header. "
@@ -1085,7 +1125,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             return ret;
         }
         if (troot->bm_offmode) {
-            if (map->len >= CLI_DEFAULT_BM_OFFMODE_FSIZE) {
+            if (ctx->fmap->len >= CLI_DEFAULT_BM_OFFMODE_FSIZE) {
                 if ((ret = cli_bm_initoff(troot, &toff, &info))) {
                     if (!ftonly) {
                         cli_ac_freedata(&gdata);
@@ -1125,8 +1165,8 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
 
     if (!ftonly && hdb) {
         if (!refhash) {
-            if (cli_hm_have_size(hdb, CLI_HASH_MD5, map->len) ||
-                cli_hm_have_size(fp, CLI_HASH_MD5, map->len) ||
+            if (cli_hm_have_size(hdb, CLI_HASH_MD5, ctx->fmap->len) ||
+                cli_hm_have_size(fp, CLI_HASH_MD5, ctx->fmap->len) ||
                 cli_hm_have_wild(hdb, CLI_HASH_MD5) ||
                 cli_hm_have_wild(fp, CLI_HASH_MD5)) {
                 compute_hash[CLI_HASH_MD5] = 1;
@@ -1138,18 +1178,18 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             memcpy(digest[CLI_HASH_MD5], refhash, 16);
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, map->len) ||
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA1, ctx->fmap->len) ||
             cli_hm_have_wild(hdb, CLI_HASH_SHA1) ||
-            cli_hm_have_size(fp, CLI_HASH_SHA1, map->len) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA1, ctx->fmap->len) ||
             cli_hm_have_wild(fp, CLI_HASH_SHA1)) {
             compute_hash[CLI_HASH_SHA1] = 1;
         } else {
             compute_hash[CLI_HASH_SHA1] = 0;
         }
 
-        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, map->len) ||
+        if (cli_hm_have_size(hdb, CLI_HASH_SHA256, ctx->fmap->len) ||
             cli_hm_have_wild(hdb, CLI_HASH_SHA256) ||
-            cli_hm_have_size(fp, CLI_HASH_SHA256, map->len) ||
+            cli_hm_have_size(fp, CLI_HASH_SHA256, ctx->fmap->len) ||
             cli_hm_have_wild(fp, CLI_HASH_SHA256)) {
             compute_hash[CLI_HASH_SHA256] = 1;
         } else {
@@ -1157,16 +1197,16 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
         }
     }
 
-    while (offset < map->len) {
-        bytes = MIN(map->len - offset, SCANBUFF);
-        if (!(buff = fmap_need_off_once(map, offset, bytes)))
+    while (offset < ctx->fmap->len) {
+        bytes = MIN(ctx->fmap->len - offset, SCANBUFF);
+        if (!(buff = fmap_need_off_once(ctx->fmap, offset, bytes)))
             break;
         if (ctx->scanned)
             *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
         if (troot) {
             virname = NULL;
-            ret     = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, map, bm_offmode ? &toff : NULL, &tpoff, ctx);
+            ret     = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, bm_offmode ? &toff : NULL, &tpoff, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
@@ -1193,7 +1233,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
 
         if (!ftonly) {
             virname = NULL;
-            ret     = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, map, NULL, &gpoff, ctx);
+            ret     = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, NULL, &gpoff, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
@@ -1268,7 +1308,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
                 continue;
 
             /* Do hash scan */
-            if ((ret = cli_hm_scan(digest[hashtype], map->len, &virname, hdb, hashtype)) == CL_VIRUS) {
+            if ((ret = cli_hm_scan(digest[hashtype], ctx->fmap->len, &virname, hdb, hashtype)) == CL_VIRUS) {
                 found += 1;
             }
             if (!found || SCAN_ALLMATCHES) {
@@ -1281,7 +1321,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
                 for (hashtype2 = CLI_HASH_MD5; hashtype2 < CLI_HASH_AVAIL_TYPES; hashtype2++) {
                     if (!compute_hash[hashtype2])
                         continue;
-                    if (cli_hm_scan(digest[hashtype2], map->len, NULL, fp, hashtype2) == CL_VIRUS) {
+                    if (cli_hm_scan(digest[hashtype2], ctx->fmap->len, NULL, fp, hashtype2) == CL_VIRUS) {
                         found = 0;
                         ret   = CL_CLEAN;
                         break;
@@ -1353,11 +1393,11 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
     cl_error_t ret             = CL_CLEAN;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
-               cli_ftname(cli_get_container(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
+               cli_ftname(cli_recursion_stack_get_type(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,
                encrypted, filepos, res1, res2);
 
     if (ctx->engine && ctx->engine->cb_meta)
-        if (ctx->engine->cb_meta(cli_ftname(cli_get_container(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
+        if (ctx->engine->cb_meta(cli_ftname(cli_recursion_stack_get_type(ctx, -1)), fsizec, fname, fsizer, encrypted, filepos, ctx->cb_ctx) == CL_VIRUS) {
             cli_dbgmsg("inner file blocked by callback: %s\n", fname);
 
             ret = cli_append_virus(ctx, "Detected.By.Callback");
@@ -1370,7 +1410,7 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
         return CL_CLEAN;
 
     do {
-        if (cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_get_container(ctx, -1))
+        if (cdb->ctype != CL_TYPE_ANY && cdb->ctype != cli_recursion_stack_get_type(ctx, -1))
             continue;
 
         if (cdb->encrypted != 2 && cdb->encrypted != encrypted)
@@ -1388,7 +1428,7 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
             continue;                                                     \
     }
 
-        CDBRANGE(cdb->csize, cli_get_container_size(ctx, -1));
+        CDBRANGE(cdb->csize, cli_recursion_stack_get_size(ctx, -1));
         CDBRANGE(cdb->fsizec, fsizec);
         CDBRANGE(cdb->fsizer, fsizer);
         CDBRANGE(cdb->filepos, filepos);

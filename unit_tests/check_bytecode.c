@@ -77,8 +77,17 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     ck_assert_msg(!!cctx.engine, "cannot create engine");
     rc = cl_engine_compile(engine);
     ck_assert_msg(!rc, "cannot compile engine");
-    cctx.fmap = cli_calloc(sizeof(fmap_t *), engine->maxreclevel + 2);
-    ck_assert_msg(!!cctx.fmap, "cannot allocate fmap");
+
+    cctx.dconf = cctx.engine->dconf;
+
+    cctx.recursion_stack_size = cctx.engine->max_recursion_level;
+    cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+    ck_assert_msg(!!cctx.recursion_stack, "cli_calloc() for recursion_stack failed");
+
+    // ctx was memset, so recursion_level starts at 0.
+    cctx.recursion_stack[cctx.recursion_level].fmap = NULL;
+
+    cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
 
     ck_assert_msg(fd >= 0, "retmagic open failed");
     f = fdopen(fd, "r");
@@ -149,7 +158,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         funmap(map);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
-    free(cctx.fmap);
+    free(cctx.recursion_stack);
     cl_engine_free(engine);
     if (fdin >= 0)
         close(fdin);

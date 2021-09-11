@@ -181,11 +181,11 @@ ole2_list_size(ole2_list_t *list)
 
 int ole2_list_push(ole2_list_t *list, uint32_t val)
 {
-    ole2_list_node_t * new_node = NULL;
-    int status = CL_EMEM;
+    ole2_list_node_t *new_node = NULL;
+    int status                 = CL_EMEM;
 
-    CLI_MALLOC(new_node, sizeof(ole2_list_node_t), 
-            cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
+    CLI_MALLOC(new_node, sizeof(ole2_list_node_t),
+               cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
     new_node->Val  = val;
     new_node->Next = list->Head;
@@ -239,13 +239,13 @@ char *
 cli_ole2_get_property_name2(const char *name, int size)
 {
     int i, j;
-    char * newname = NULL;
+    char *newname = NULL;
 
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    CLI_MALLOC(newname, size*7, 
-        cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
+    CLI_MALLOC(newname, size * 7,
+               cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
 
     j = 0;
     /* size-2 to ignore trailing NULL */
@@ -284,16 +284,16 @@ get_property_name(char *name, int size)
 {
     const char *carray = "0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz._";
     int csize          = size >> 1;
-    char * newname = NULL;
-    char * cname = NULL;
-    char *oname = name;
+    char *newname      = NULL;
+    char *cname        = NULL;
+    char *oname        = name;
 
     if (csize <= 0) {
         return NULL;
     }
 
-    CLI_MALLOC(newname, size, 
-        cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
+    CLI_MALLOC(newname, size,
+               cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
     cname = newname;
 
     while (--csize) {
@@ -594,10 +594,15 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     if ((rec_level > 100) || (*file_count > 100000)) {
         return CL_SUCCESS;
     }
-    if (ctx && ctx->engine->maxreclevel && (rec_level > ctx->engine->maxreclevel)) {
-        cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
-        return CL_SUCCESS;
+
+    if (ctx && ctx->engine->max_recursion_level && (rec_level > ctx->engine->max_recursion_level)) {
+        // Note: engine->max_recursion_level is re-purposed here out of convenience.
+        //       ole2 recursion does not leverage the ctx->recursion_stack stack.
+        cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->max_recursion_level);
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
+        return CL_EMAXREC;
     }
+
     //push the 'root' node for the level onto the local list
     if ((ret = ole2_list_push(&node_list, prop_index)) != CL_SUCCESS) {
         ole2_list_delete(&node_list);
@@ -707,6 +712,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 ole2_listmsg("file node\n");
                 if (ctx && ctx->engine->maxfiles && ((*file_count > ctx->engine->maxfiles) || (ctx->scannedfiles > ctx->engine->maxfiles - *file_count))) {
                     cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
+                    cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                     ole2_list_delete(&node_list);
                     return CL_EMAXFILES;
                 }
@@ -828,14 +834,14 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
 {
     cl_error_t ret = CL_BREAK;
     char newname[1024];
-    char* name = NULL;
-    unsigned char * buff = NULL;
+    char *name            = NULL;
+    unsigned char *buff   = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    int ofd = -1;
-    char* hash = NULL;
-    bitset_t* blk_bitset = NULL;
-    uint32_t cnt = 0;
+    int ofd              = -1;
+    char *hash           = NULL;
+    bitset_t *blk_bitset = NULL;
+    uint32_t cnt         = 0;
 
     UNUSEDPARAM(ctx);
 
@@ -879,9 +885,9 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, 
-        cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-        ret = CL_EMEM);
+    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
+               cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+               ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1131,11 +1137,11 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
  */
 static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t *prop, cli_ctx *ctx, bool *found_macro, bool *found_image)
 {
-    cl_error_t status   = CL_EPARSE;
-    unsigned char * buff = NULL;
+    cl_error_t status     = CL_EPARSE;
+    unsigned char *buff   = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    bitset_t * blk_bitset = NULL;
+    bitset_t *blk_bitset           = NULL;
     struct biff_parser_state state = {0};
 
     if (prop->type != 2) {
@@ -1148,9 +1154,9 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, 
-        cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
-        status = CL_EMEM);
+    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
+               cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
+               status = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1206,7 +1212,6 @@ done:
     return status;
 }
 
-
 /**
  * @brief enum file Handler - checks for VBA presence
  *
@@ -1218,13 +1223,13 @@ done:
  */
 static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    cl_error_t status = CL_EREAD;
-    char* name = NULL;
-    unsigned char * hwp_check = NULL;
-    int32_t offset = 0;
+    cl_error_t status        = CL_EREAD;
+    char *name               = NULL;
+    unsigned char *hwp_check = NULL;
+    int32_t offset           = 0;
 #if HAVE_JSON
-    json_object* arrobj = NULL;
-    json_object* strmobj = NULL;
+    json_object *arrobj  = NULL;
+    json_object *strmobj = NULL;
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
     if (name) {
@@ -1319,7 +1324,6 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                         hdr->is_hwp = hwp_new;
                     }
                 } while (0);
-
             }
         }
     }
@@ -1517,15 +1521,15 @@ mso_end:
 
 static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    cl_error_t ret      = CL_BREAK;
-    char* tempfile = NULL;
-    char * name = NULL;
-    unsigned char * buff = NULL;
+    cl_error_t ret        = CL_BREAK;
+    char *tempfile        = NULL;
+    char *name            = NULL;
+    unsigned char *buff   = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    int ofd = -1;
-    int is_mso = 0;
-    bitset_t * blk_bitset = NULL;
+    int ofd              = -1;
+    int is_mso           = 0;
+    bitset_t *blk_bitset = NULL;
 
     UNUSEDPARAM(dir);
 
@@ -1804,10 +1808,10 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
                sizeof(bool) -           // has_image
                sizeof(hwp5_header_t *); // is_hwp
 
-    if ((size_t)((*ctx->fmap)->len) < (size_t)(hdr_size)) {
+    if ((size_t)(ctx->fmap->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
     }
-    hdr.map      = *ctx->fmap;
+    hdr.map      = ctx->fmap;
     hdr.m_length = hdr.map->len;
     phdr         = fmap_need_off_once(hdr.map, 0, hdr_size);
     if (phdr) {
