@@ -54,6 +54,8 @@ cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, con
 /**
  * @brief Perform a magic scan on the current ctx.
  *
+ * Calls to cli_magic_scan() should be wrapped with a cli_recursion_stack_push/pop, except in scan_common()
+ *
  * @param ctx       Scanning context structure.
  * @param type      CL_TYPE of data to be scanned.
  * @return int      CL_SUCCESS, or an error code.
@@ -116,5 +118,14 @@ cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *o
  * @return cl_error_t
  */
 cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx);
+
+/**
+ * @brief Mark all scan recursion fmap layers as non-cacheable.
+ *
+ * This is to prevent libclamav from regurgitating the scan result for something that wasn't fully scanned.
+ *
+ * @param ctx   The scanning context.
+ */
+void emax_reached(cli_ctx *ctx);
 
 #endif

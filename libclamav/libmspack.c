@@ -340,7 +340,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
     int files;
     int virus_num                  = 0;
     struct mspack_name mspack_fmap = {
-        .fmap = *ctx->fmap,
+        .fmap = ctx->fmap,
         .org  = sfx_offset,
     };
     struct mspack_system_ex ops_ex;
@@ -448,7 +448,7 @@ int cli_scanmschm(cli_ctx *ctx)
     int files;
     int virus_num                  = 0;
     struct mspack_name mspack_fmap = {
-        .fmap = *ctx->fmap,
+        .fmap = ctx->fmap,
     };
     struct mspack_system_ex ops_ex;
     memset(&ops_ex, 0, sizeof(struct mspack_system_ex));

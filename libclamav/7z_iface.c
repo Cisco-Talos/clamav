@@ -97,7 +97,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     archiveStream.s.Read    = FileInStream_fmap_Read;
     archiveStream.s.Seek    = FileInStream_fmap_Seek;
     archiveStream.s.curpos  = 0;
-    archiveStream.file.fmap = *ctx->fmap;
+    archiveStream.file.fmap = ctx->fmap;
 
     LookToRead_CreateVTable(&lookStream, False);
 

@@ -70,7 +70,7 @@ cl_error_t cli_scansis(cli_ctx *ctx)
     char *tmpd;
     unsigned int i;
     uint32_t uid[4];
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in scansis()\n");
 
@@ -265,7 +265,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
     uint32_t sleft = 0, smax = 0;
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
-    fmap_t *map             = *ctx->fmap;
+    fmap_t *map             = ctx->fmap;
     uint32_t *ptrs          = NULL;
     void *decomp            = NULL;
     int fd                  = -1;
@@ -718,7 +718,7 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
     uint32_t field, optst[] = {T_CONTROLLERCHECKSUM, T_DATACHECKSUM, T_COMPRESSED};
     unsigned int i;
 
-    s->map   = *ctx->fmap;
+    s->map   = ctx->fmap;
     s->pos   = 0;
     s->smax  = 0;
     s->sleft = 0;
