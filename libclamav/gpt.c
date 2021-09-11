@@ -116,7 +116,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 
     /* sector size calculation */
     if (sectorsize == 0) {
-        sectorsize = gpt_detect_size((*ctx->fmap));
+        sectorsize = gpt_detect_size(ctx->fmap);
         cli_dbgmsg("cli_scangpt: detected %lu sector size\n", (unsigned long)sectorsize);
     }
     if (sectorsize == 0) {
@@ -125,7 +125,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* size of total file must be a multiple of the sector size */
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
     if ((maplen % sectorsize) != 0) {
         cli_dbgmsg("cli_scangpt: File sized %lu is not a multiple of sector size %lu\n",
                    (unsigned long)maplen, (unsigned long)sectorsize);
@@ -145,7 +145,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
 
     /* read primary gpt header */
     cli_dbgmsg("cli_scangpt: Using primary GPT header\n");
-    if (fmap_readn(*ctx->fmap, &phdr, pos, sizeof(phdr)) != sizeof(phdr)) {
+    if (fmap_readn(ctx->fmap, &phdr, pos, sizeof(phdr)) != sizeof(phdr)) {
         cli_dbgmsg("cli_scangpt: Invalid primary GPT header\n");
         return CL_EFORMAT;
     }
@@ -159,7 +159,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         state = SECONDARY_ONLY;
 
         /* read secondary gpt header */
-        if (fmap_readn(*ctx->fmap, &shdr, pos, sizeof(shdr)) != sizeof(shdr)) {
+        if (fmap_readn(ctx->fmap, &shdr, pos, sizeof(shdr)) != sizeof(shdr)) {
             cli_dbgmsg("cli_scangpt: Invalid secondary GPT header\n");
             return CL_EFORMAT;
         }
@@ -175,7 +175,7 @@ int cli_scangpt(cli_ctx *ctx, size_t sectorsize)
         state = PRIMARY_ONLY;
 
         /* check validity of secondary header; still using the primary */
-        if (fmap_readn(*ctx->fmap, &shdr, pos, sizeof(shdr)) != sizeof(shdr)) {
+        if (fmap_readn(ctx->fmap, &shdr, pos, sizeof(shdr)) != sizeof(shdr)) {
             cli_dbgmsg("cli_scangpt: Invalid secondary GPT header\n");
         } else if (gpt_validate_header(ctx, shdr, sectorsize)) {
             cli_dbgmsg("cli_scangpt: Secondary GPT header is invalid\n");
@@ -289,7 +289,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     cli_dbgmsg("Partition Entry Count: %u\n", hdr.tableNumEntries);
     cli_dbgmsg("Partition Entry Size: %u\n", hdr.tableEntrySize);
 
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
 
     /* check engine maxpartitions limit */
     if (hdr.tableNumEntries < ctx->engine->maxpartitions) {
@@ -302,7 +302,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     pos = hdr.tableStartLBA * sectorsize;
     for (i = 0; i < max_prtns; ++i) {
         /* read in partition entry */
-        if (fmap_readn(*ctx->fmap, &gpe, pos, sizeof(gpe)) != sizeof(gpe)) {
+        if (fmap_readn(ctx->fmap, &gpe, pos, sizeof(gpe)) != sizeof(gpe)) {
             cli_dbgmsg("cli_scangpt: Invalid GPT partition entry\n");
             return CL_EFORMAT;
         }
@@ -344,7 +344,7 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             /* send the partition to cli_magic_scan_nested_fmap_type */
             part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_magic_scan_nested_fmap_type(*ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+            ret       = cli_magic_scan_nested_fmap_type(ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
             if (NULL != namestr) {
                 free(namestr);
             }
@@ -374,7 +374,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     size_t maplen, ptable_start, ptable_len;
     unsigned char *ptable;
 
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
 
     /* checking header crc32 checksum */
     crc32_ref       = le32_to_host(hdr.headerCRC32);
@@ -468,7 +468,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /** END HEADER CHECKS **/
 
     /* checking partition table crc32 checksum */
-    ptable     = (unsigned char *)fmap_need_off_once((*ctx->fmap), ptable_start, ptable_len);
+    ptable     = (unsigned char *)fmap_need_off_once(ctx->fmap, ptable_start, ptable_len);
     crc32_calc = crc32(0, ptable, ptable_len);
     if (crc32_calc != hdr.tableCRC32) {
         cli_dbgmsg("cli_scangpt: GPT partition table checksum mismatch\n");
@@ -490,7 +490,7 @@ static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
     pos      = (MBR_SECTOR * sectorsize) + mbr_base;
 
-    if (fmap_readn(*ctx->fmap, &pmbr, pos, sizeof(pmbr)) != sizeof(pmbr)) {
+    if (fmap_readn(ctx->fmap, &pmbr, pos, sizeof(pmbr)) != sizeof(pmbr)) {
         cli_dbgmsg("cli_scangpt: Invalid primary MBR header\n");
         return CL_EFORMAT;
     }
@@ -540,17 +540,17 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
     /* sector size calculation */
     sectorsize = GPT_DEFAULT_SECTOR_SIZE;
 
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
 
     ppos = 1 * sectorsize;      /* sector 1 (second sector) is the primary gpt header */
     spos = maplen - sectorsize; /* last sector is the secondary gpt header */
 
     /* read in the primary and secondary gpt headers */
-    if (fmap_readn(*ctx->fmap, &phdr, ppos, sizeof(phdr)) != sizeof(phdr)) {
+    if (fmap_readn(ctx->fmap, &phdr, ppos, sizeof(phdr)) != sizeof(phdr)) {
         cli_dbgmsg("cli_scangpt: Invalid primary GPT header\n");
         return;
     }
-    if (fmap_readn(*ctx->fmap, &shdr, spos, sizeof(shdr)) != sizeof(shdr)) {
+    if (fmap_readn(ctx->fmap, &shdr, spos, sizeof(shdr)) != sizeof(shdr)) {
         cli_dbgmsg("cli_scangpt: Invalid secondary GPT header\n");
         return;
     }
@@ -591,7 +591,7 @@ static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_
     uint32_t max_prtns = 0;
     int virus_found    = 0;
 
-    maplen = (*ctx->fmap)->real_len;
+    maplen = ctx->fmap->len;
 
     /* convert endian to host to check partition table */
     hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
@@ -609,7 +609,7 @@ static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_
     pos = hdr.tableStartLBA * sectorsize;
     for (i = 0; i < max_prtns; ++i) {
         /* read in partition entry */
-        if (fmap_readn(*ctx->fmap, &gpe, pos, sizeof(gpe)) != sizeof(gpe)) {
+        if (fmap_readn(ctx->fmap, &gpe, pos, sizeof(gpe)) != sizeof(gpe)) {
             cli_dbgmsg("cli_scangpt: Invalid GPT partition entry\n");
             partition_intersection_list_free(&prtncheck);
             return CL_EFORMAT;

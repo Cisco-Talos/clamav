@@ -165,12 +165,17 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "javascript", ctx->jsnormdir);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
+                cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+
                 ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
-                    else
+                    else {
+                        cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
+
                         ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                    }
                 }
                 close(fd);
             }
@@ -2771,7 +2776,7 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
 {
     ctx->fmap           = map;
-    ctx->file_size      = map->len + map->offset;
+    ctx->file_size      = map->len + map->nested_offset;
     ctx->hooks.filesize = &ctx->file_size;
     return 0;
 }
@@ -2906,9 +2911,9 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
                     cli_dbgmsg("Bytecode %u unpacked file\n", bc->id);
                 lseek(fd, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning unpacked file ******\n");
-                cctx->recursion++;
+
                 ret = cli_magic_scan_desc(fd, tempfile, cctx, NULL);
-                cctx->recursion--;
+
                 if (!cctx->engine->keeptmp)
                     if (ftruncate(fd, 0) == -1)
                         cli_dbgmsg("ftruncate failed on %d\n", fd);

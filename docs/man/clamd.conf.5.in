@@ -547,7 +547,7 @@ Default: 25M
 \fBMaxRecursion NUMBER\fR
 Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR file, all files within it will also be scanned. This options specifies how deeply the process should be continued. \fBWarning: setting this limit too high may result in severe damage to the system.\fR
 .br
-Default: 16
+Default: 17
 .TP
 \fBMaxFiles NUMBER\fR
 Number of files to be scanned within an archive, a document, or any other kind of container. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR

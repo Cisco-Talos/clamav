@@ -33,7 +33,7 @@ cl_error_t cli_json_timeout_cycle_check(cli_ctx *ctx, int *toval)
     if (SCAN_COLLECT_METADATA) {
         if (*toval <= 0) {
             if (cli_checktimelimit(ctx) != CL_SUCCESS) {
-                cli_errmsg("cli_json_timeout_cycle_check: timeout!\n");
+                cli_dbgmsg("cli_json_timeout_cycle_check: timeout!\n");
                 return CL_ETIMEOUT;
             }
             (*toval)++;

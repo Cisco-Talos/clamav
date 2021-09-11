@@ -101,7 +101,7 @@ cl_error_t cli_msexpand(cli_ctx *ctx, int ofd)
     const unsigned char *rbuff = NULL; // rbuff will be set to a real address by READBYTES
                                        // in the first iteration of the loop.
     unsigned int j = B_SIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
-    fmap_t *map   = *ctx->fmap;
+    fmap_t *map   = ctx->fmap;
     off_t cur_off = sizeof(*hdr);
     unsigned int fsize;
     size_t ret;

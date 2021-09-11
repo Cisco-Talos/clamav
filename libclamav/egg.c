@@ -1590,7 +1590,7 @@ done:
     return status;
 }
 
-cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char*** comments, uint32_t* nComments)
+cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t* nComments)
 {
     cl_error_t status = CL_EPARSE;
     cl_error_t retval;
@@ -1610,7 +1610,7 @@ cl_error_t cli_egg_open(fmap_t* map, size_t sfx_offset, void** hArchive, char***
         goto done;
     }
     handle->map    = map;
-    handle->offset = sfx_offset;
+    handle->offset = 0;
 
     /*
      * 1st:

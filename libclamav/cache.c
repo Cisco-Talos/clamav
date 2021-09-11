@@ -456,7 +456,7 @@ static void printnode(const char *prefix, struct cache_set *cs, struct node *n)
         printf("NULL\n");
 }
 #else
-#define printnode(a, b, c) (0)
+#define printnode(a, b, c)
 #endif
 
 /* #define PRINT_CHAINS */
@@ -551,7 +551,7 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
 }
 
 /* Looks up an hash in the tree and maintains the replacement chain */
-static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t reclevel)
+static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
 {
     int64_t hash[2];
 
@@ -576,7 +576,15 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 #ifdef PRINT_CHAINS
         printchain("after", cs);
 #endif
-        if (reclevel >= p->minrec)
+
+        // The recursion_level check here to prevent a "clean" result from exceeding max recursion from
+        // causing a false negative if the same file is scanned where the recursion depth is lower.
+        // e.g. if max-rec set to 4 and "file5" is malicious, a scan of file1 should not cause a scan of file3 to be "clean"
+        //      root
+        //      ├── file1 -> file2 -> file3 -> file4 -> file5
+        //      └── file3 -> file4 -> file5
+        // See: https://bugzilla.clamav.net/show_bug.cgi?id=1856
+        if (recursion_level >= p->minrec)
             return 1;
     }
     return 0;
@@ -585,15 +593,15 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 /* If the hash is present nothing happens.
    Otherwise a new node is created for the hash picking one from the begin of the chain.
    Used nodes are moved to the end of the chain */
-static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t reclevel)
+static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
 {
     struct node *newnode;
     int64_t hash[2];
 
     memcpy(hash, md5, 16);
     if (splay(hash, size, cs)) {
-        if (cs->root->minrec > reclevel)
-            cs->root->minrec = reclevel;
+        if (cs->root->minrec > recursion_level)
+            cs->root->minrec = recursion_level;
         return; /* Already there */
     }
 
@@ -666,7 +674,7 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
     newnode->digest[1] = hash[1];
     newnode->up        = NULL;
     newnode->size      = size;
-    newnode->minrec    = reclevel;
+    newnode->minrec    = recursion_level;
     cs->root           = newnode;
 
     ptree("3: %lld\n", hash[1]);
@@ -826,7 +834,7 @@ void cli_cache_destroy(struct cl_engine *engine)
 }
 
 /* Looks up an hash in the proper tree */
-static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t reclevel)
+static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
 {
     unsigned int key = getkey(md5);
     int ret          = CL_VIRUS;
@@ -842,7 +850,7 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 
     /* cli_warnmsg("cache_lookup_hash: key is %u\n", key); */
 
-    ret = (cacheset_lookup(&c->cacheset, md5, len, reclevel)) ? CL_CLEAN : CL_VIRUS;
+    ret = (cacheset_lookup(&c->cacheset, md5, len, recursion_level)) ? CL_CLEAN : CL_VIRUS;
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
     // if(ret == CL_CLEAN) cli_warnmsg("cached\n");
@@ -865,8 +873,8 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         return;
     }
 
-    level = (*ctx->fmap && (*ctx->fmap)->dont_cache_flag) ? ctx->recursion : 0;
-    if (ctx->found_possibly_unwanted && (level || !ctx->recursion))
+    level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
+    if (ctx->found_possibly_unwanted && (level || 0 == ctx->recursion_level))
         return;
     if (SCAN_ALLMATCHES && (ctx->num_viruses > 0)) {
         cli_dbgmsg("cache_add: alert found within same topfile, skipping cache\n");
@@ -956,8 +964,8 @@ cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx)
         return CL_VIRUS;
     }
 
-    map = *ctx->fmap;
-    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion);
+    map = ctx->fmap;
+    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion_level);
     cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");
     return ret;
 }

@@ -428,7 +428,7 @@ int cli_scanxar(cli_ctx *ctx)
 #if HAVE_LIBXML2
     int fd = -1;
     struct xar_header hdr;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
     size_t length, offset, size, at;
     int encoding;
     z_stream strm;
@@ -443,7 +443,7 @@ int cli_scanxar(cli_ctx *ctx)
     memset(&strm, 0x00, sizeof(z_stream));
 
     /* retrieve xar header */
-    if (fmap_readn(*ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
+    if (fmap_readn(ctx->fmap, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
         cli_dbgmsg("cli_scanxar: Invalid header, too short.\n");
         return CL_EFORMAT;
     }
@@ -469,7 +469,7 @@ int cli_scanxar(cli_ctx *ctx)
     /* cli_dbgmsg("hdr.chksum_alg %i\n", hdr.chksum_alg); */
 
     /* Uncompress TOC */
-    strm.next_in = (unsigned char *)fmap_need_off_once(*ctx->fmap, hdr.size, hdr.toc_length_compressed);
+    strm.next_in = (unsigned char *)fmap_need_off_once(ctx->fmap, hdr.size, hdr.toc_length_compressed);
     if (strm.next_in == NULL) {
         cli_dbgmsg("cli_scanxar: fmap_need_off_once fails on TOC.\n");
         return CL_EREAD;

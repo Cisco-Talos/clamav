@@ -33,6 +33,7 @@
 #include <limits.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "clamav.h"
 
@@ -80,6 +81,7 @@ struct cl_fmap {
     HANDLE fh;
     HANDLE mh;
 #endif
+    bool have_maphash;
     unsigned char maphash[16];
     uint64_t *bitmap;
     char *name;
@@ -273,6 +275,15 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
  */
 int fmap_fd(fmap_t *m);
 
-cl_error_t fmap_get_MD5(unsigned char *hash, fmap_t *map);
+/**
+ * @brief   Get a pointer to the fmap hash.
+ *
+ * Will calculate the hash if not already previously calculated.
+ *
+ * @param map       The map in question.
+ * @param[out] hash A pointer to the hash.
+ * @return cl_error_t CL_SUCCESS if was able to get the hash, else some error.
+ */
+cl_error_t fmap_get_MD5(fmap_t *map, unsigned char **hash);
 
 #endif

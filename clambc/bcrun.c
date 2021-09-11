@@ -367,6 +367,7 @@ int main(int argc, char *argv[])
         struct cl_engine *engine = cl_engine_new();
         fmap_t *map              = NULL;
         memset(&cctx, 0, sizeof(cctx));
+
         if (!engine) {
             fprintf(stderr, "Unable to create engine\n");
             optfree(opts);
@@ -394,11 +395,22 @@ int main(int argc, char *argv[])
         }
         ctx->ctx    = &cctx;
         cctx.engine = engine;
-        cctx.fmap   = cli_calloc(sizeof(fmap_t *), engine->maxreclevel + 2);
-        if (!cctx.fmap) {
+
+        cctx.recursion_stack_size = cctx.engine->max_recursion_level;
+        cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+        if (!cctx.recursion_stack) {
             fprintf(stderr, "Out of memory\n");
             exit(3);
         }
+
+        // ctx was memset, so recursion_level starts at 0.
+        cctx.recursion_stack[cctx.recursion_level].fmap = map;
+        cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY;                   /* ANY for the top level, because we don't yet know the type. */
+        cctx.recursion_stack[cctx.recursion_level].size = map->len - map->nested_offset; /* Realistically nested_offset will be 0,
+                                                                                          * but taking the diff is the "right" way. */
+
+        cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
+
         memset(&dbg_state, 0, sizeof(dbg_state));
         dbg_state.file     = "<libclamav>";
         dbg_state.line     = 0;
@@ -466,7 +478,7 @@ int main(int argc, char *argv[])
         if (map)
             funmap(map);
         cl_engine_free(engine);
-        free(cctx.fmap);
+        free(cctx.recursion_stack);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);

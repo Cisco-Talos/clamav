@@ -45,13 +45,13 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
     cli_ctx *ctx = iso->ctx;
     size_t loff;
     unsigned int blocks_per_sect = (2048 / iso->blocksz);
-    if (block > (((*ctx->fmap)->len - iso->base_offset) / iso->sectsz) * blocks_per_sect)
+    if (block > ((ctx->fmap->len - iso->base_offset) / iso->sectsz) * blocks_per_sect)
         return NULL;                                  /* Block is out of file */
     loff = (block / blocks_per_sect) * iso->sectsz;   /* logical sector */
     loff += (block % blocks_per_sect) * iso->blocksz; /* logical block within the sector */
     if (temp)
-        return fmap_need_off_once(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
-    return fmap_need_off(*ctx->fmap, iso->base_offset + loff, iso->blocksz);
+        return fmap_need_off_once(ctx->fmap, iso->base_offset + loff, iso->blocksz);
+    return fmap_need_off(ctx->fmap, iso->base_offset + loff, iso->blocksz);
 }
 
 static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len)
@@ -217,7 +217,7 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
             dir += entrysz;
         }
 
-        fmap_unneed_ptr(*ctx->fmap, dir_orig, iso->blocksz);
+        fmap_unneed_ptr(ctx->fmap, dir_orig, iso->blocksz);
     }
     if (viruses_found == 1)
         return CL_VIRUS;
@@ -233,7 +233,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
     if (offset < 32768)
         return CL_CLEAN; /* Need 16 sectors at least 2048 bytes long */
 
-    privol = fmap_need_off(*ctx->fmap, offset, 2448 + 6);
+    privol = fmap_need_off(ctx->fmap, offset, 2448 + 6);
     if (!privol)
         return CL_CLEAN;
 
@@ -253,7 +253,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
     iso.joliet      = 0;
 
     for (i = 16; i < 32; i++) { /* scan for a joliet secondary volume descriptor */
-        next = fmap_need_off_once(*ctx->fmap, iso.base_offset + i * iso.sectsz, 2048);
+        next = fmap_need_off_once(ctx->fmap, iso.base_offset + i * iso.sectsz, 2048);
         if (!next)
             break; /* Out of disk */
         if (*next == 0xff || memcmp(next + 1, "CD001", 5))
@@ -283,7 +283,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
     /* TODO rr, el torito, udf ? */
 
     /* NOTE: freeing sector now. it is still safe to access as we don't alloc anymore */
-    fmap_unneed_off(*ctx->fmap, offset, 2448);
+    fmap_unneed_off(ctx->fmap, offset, 2448);
     if (iso.joliet)
         privol = next;
 

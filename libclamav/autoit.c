@@ -646,7 +646,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     unsigned int files = 0;
     char tempfile[1024];
     struct UNP UNP;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     if (!fmap_need_ptr_once(map, base, 16))
         return CL_CLEAN;
@@ -972,7 +972,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     const char prefixes[] = {'\0', '\0', '@', '$', '\0', '.', '"', '#'};
     const char *opers[]   = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=", "?", ":"};
     struct UNP UNP;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     /* Useless due to a bug in CRC calculation - LMAO!!1 */
     /*   if (cli_readn(desc, buf, 24)!=24) */
@@ -1491,7 +1491,7 @@ int cli_scanautoit(cli_ctx *ctx, off_t offset)
     const uint8_t *version;
     int r;
     char *tmpd;
-    fmap_t *map = *ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in scanautoit()\n");
 

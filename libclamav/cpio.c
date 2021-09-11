@@ -108,7 +108,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 
     memset(name, 0, sizeof(name));
 
-    while (fmap_readn(*ctx->fmap, &hdr_old, pos, sizeof(hdr_old)) == sizeof(hdr_old)) {
+    while (fmap_readn(ctx->fmap, &hdr_old, pos, sizeof(hdr_old)) == sizeof(hdr_old)) {
         pos += sizeof(hdr_old);
         if (!hdr_old.magic && trailer) {
             ret = CL_SUCCESS;
@@ -130,7 +130,7 @@ int cli_scancpio_old(cli_ctx *ctx)
         if (hdr_old.namesize) {
             hdr_namesize = EC16(hdr_old.namesize, conv);
             namesize     = MIN(sizeof(name), hdr_namesize);
-            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
                 return CL_EFORMAT;
             }
@@ -168,7 +168,7 @@ int cli_scancpio_old(cli_ctx *ctx)
             if (ret == CL_EMAXFILES) {
                 goto leave;
             } else if (ret == CL_SUCCESS) {
-                ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, fmap_name);
+                ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, fmap_name);
                 if (ret == CL_VIRUS) {
                     if (!SCAN_ALLMATCHES)
                         return ret;
@@ -198,7 +198,9 @@ int cli_scancpio_odc(cli_ctx *ctx)
     size_t pos      = 0;
     int virus_found = 0;
 
-    while (fmap_readn(*ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
+    memset(&hdr_odc, 0, sizeof(hdr_odc));
+
+    while (fmap_readn(ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
         pos += sizeof(hdr_odc);
         if (!hdr_odc.magic[0] && trailer)
             goto leave;
@@ -220,7 +222,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
-            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
                 ret = CL_EFORMAT;
                 goto leave;
@@ -257,7 +259,7 @@ int cli_scancpio_odc(cli_ctx *ctx)
         if (ret == CL_EMAXFILES) {
             goto leave;
         } else if (ret == CL_SUCCESS) {
-            ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
             if (ret == CL_VIRUS) {
                 if (!SCAN_ALLMATCHES)
                     return ret;
@@ -286,7 +288,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
 
     memset(name, 0, 513);
 
-    while (fmap_readn(*ctx->fmap, &hdr_newc, pos, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
+    while (fmap_readn(ctx->fmap, &hdr_newc, pos, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
         pos += sizeof(hdr_newc);
         if (!hdr_newc.magic[0] && trailer)
             goto leave;
@@ -308,7 +310,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
-            if (fmap_readn(*ctx->fmap, &name, pos, namesize) != namesize) {
+            if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
                 ret = CL_EFORMAT;
                 goto leave;
@@ -350,7 +352,7 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
         if (ret == CL_EMAXFILES) {
             goto leave;
         } else if (ret == CL_SUCCESS) {
-            ret = cli_magic_scan_nested_fmap_type(*ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
             if (ret == CL_VIRUS) {
                 if (!SCAN_ALLMATCHES)
                     return ret;

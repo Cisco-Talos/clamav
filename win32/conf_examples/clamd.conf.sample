@@ -506,7 +506,7 @@ TCPAddr 127.0.0.1
 # file, all files within it will also be scanned. This options specifies how
 # deeply the process should be continued.
 # Note: setting this limit too high may result in severe damage to the system.
-# Default: 16
+# Default: 17
 #MaxRecursion 10
 
 # Number of files to be scanned within an archive, a document, or any other
