@@ -245,7 +245,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
             cli_dbgmsg("%s: %s\n", localname, value);
         }
 
-        if (!CT && !PN) continue;
+        if (!CT || !PN) continue;
 
         if (!xmlStrcmp(CT, (const xmlChar *)"application/vnd.openxmlformats-package.core-properties+xml")) {
             /* default: /docProps/core.xml*/
