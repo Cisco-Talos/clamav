@@ -77,6 +77,9 @@
 #include "cdiff.h"
 #include "tar.h"
 
+// common rust
+#include "cdiff.h"
+
 #include "vba.h"
 
 #define MAX_DEL_LOOKAHEAD 5000
