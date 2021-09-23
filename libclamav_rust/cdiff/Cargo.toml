@@ -1,0 +1,17 @@
+[package]
+name = "cdiff"
+version = "0.0.1"
+authors = ["John Humlick <jhumlick@cisco.com>"]
+
+[lib]
+name = "cdiff"
+path = "cdiff.rs"
+crate-type = ["staticlib"]
+
+edition = "2018"
+[dependencies]
+openssl-sys = "0.9"
+openssl = "0.10"
+hex = "0.4.2"
+flate2 = "1.0.3"
+thiserror = "1.0.26"

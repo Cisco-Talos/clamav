@@ -29,7 +29,8 @@ set_target_properties( sigtool PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries( sigtool
     PRIVATE
         ClamAV::libclamav
-        ClamAV::common )
+        ClamAV::common
+        ClamAV::cdiff )
 if(WIN32)
     install(TARGETS sigtool DESTINATION .)
 else()

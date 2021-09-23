@@ -29,6 +29,7 @@ set_target_properties( libfreshclam_obj PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}"
 target_link_libraries( libfreshclam_obj
     PUBLIC
         ClamAV::common
+        ClamAV::cdiff
         CURL::libcurl
         OpenSSL::SSL
         OpenSSL::Crypto )
@@ -58,6 +59,8 @@ if(ENABLE_SHARED_LIB)
         PUBLIC
             libfreshclam.h )
     target_link_libraries( freshclam
+        PRIVATE
+            ClamAV::cdiff
         PUBLIC
             libfreshclam_obj )
     if(WIN32)
@@ -107,6 +110,8 @@ if(ENABLE_STATIC_LIB)
         PUBLIC
             libfreshclam.h )
     target_link_libraries(freshclam_static
+        PRIVATE
+            ClamAV::cdiff
         PUBLIC
             libfreshclam_obj )
     set_target_properties(freshclam_static PROPERTIES
