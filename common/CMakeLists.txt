@@ -15,7 +15,6 @@ add_library( common STATIC )
 target_sources( common
     PRIVATE
         cert_util.c
-        cdiff.c
         actions.c
         clamdcom.c
         getopt.c
@@ -27,7 +26,6 @@ target_sources( common
         tar.c
     PUBLIC
         cert_util.h
-        cdiff.h
         actions.h
         clamdcom.h
         fdpassing.h

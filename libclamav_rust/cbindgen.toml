@@ -17,12 +17,14 @@ no_includes = false
 after_includes = ""
 
 [export]
-include = []
+include = ["cdiff_apply"]
 exclude = [
     "cli_dbgmsg",
     "cli_errmsg",
     "cli_infomsg_simple",
     "cli_warnmsg",
+    "cli_versig2",
+    "cli_get_debug_flag",
 ]
 # prefix = "CAPI_"
 item_types = []
