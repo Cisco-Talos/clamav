@@ -4,11 +4,14 @@ name = "clamav_rust"
 version = "0.0.1"
 edition = "2018"
 
-[profile.dev.package."*"]
-opt-level = 2
-
 [dependencies]
 log = {version = "*", features = ["std"]}
+openssl-sys = "0.9"
+openssl = "0.10"
+hex = "0.4.2"
+flate2 = "1.0.3"
+thiserror = "1.0.26"
+tempfile = "3.2.0"
 
 [lib]
 crate-type = ["staticlib"]
