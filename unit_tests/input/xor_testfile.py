@@ -53,9 +53,6 @@ def main():
 
     # Write out the result to the destination file.
     try:
-        if not out_file.parent.exists():
-            out_file.parent.mkdir()
-
         with out_file.open('w+b') as out_file_fd:
             out_file_fd.write(out_file_bytes)
 
