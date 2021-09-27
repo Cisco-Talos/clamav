@@ -72,7 +72,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 140
+#define CL_FLEVEL 141
 #define CL_FLEVEL_DCONF CL_FLEVEL
 #define CL_FLEVEL_SIGTOOL CL_FLEVEL
 
@@ -996,7 +996,7 @@ const char *cli_strerror(int errnum, char *buf, size_t len);
 #ifdef _WIN32
 /**
  * @brief   Attempt to get a filename from an open file handle.
- * 
+ *
  * Windows only.
  *
  * @param hFile          File handle
@@ -1050,91 +1050,90 @@ uint8_t cli_get_debug_flag();
  */
 uint8_t cli_set_debug_flag(uint8_t debug_flag);
 
-
 #ifndef STRDUP
-#define STRDUP(buf, var, ...)                  \
-    do {                                       \
-        var = strdup(buf);                     \
-        if (NULL == var) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define STRDUP(buf, var, ...) \
+    do {                      \
+        var = strdup(buf);    \
+        if (NULL == var) {    \
+            do {              \
+                __VA_ARGS__;  \
+            } while (0);      \
+            goto done;        \
+        }                     \
     } while (0)
 #endif
 
 #ifndef FREE
-#define FREE(var)                              \
-    do {                                       \
-        if (NULL != var) {                     \
-            free(var);                         \
-            var = NULL;                        \
-        }                                      \
+#define FREE(var)          \
+    do {                   \
+        if (NULL != var) { \
+            free(var);     \
+            var = NULL;    \
+        }                  \
     } while (0)
 #endif
 
 #ifndef MALLOC
-#define MALLOC(var, size, ...)                 \
-    do {                                       \
-        var = malloc(size);                    \
-        if (NULL == var) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define MALLOC(var, size, ...) \
+    do {                       \
+        var = malloc(size);    \
+        if (NULL == var) {     \
+            do {               \
+                __VA_ARGS__;   \
+            } while (0);       \
+            goto done;         \
+        }                      \
     } while (0)
 #endif
 
 #ifndef CLI_MALLOC
-#define CLI_MALLOC(var, size, ...)             \
-    do {                                       \
-        var = cli_malloc(size);                \
-        if (NULL == var) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define CLI_MALLOC(var, size, ...) \
+    do {                           \
+        var = cli_malloc(size);    \
+        if (NULL == var) {         \
+            do {                   \
+                __VA_ARGS__;       \
+            } while (0);           \
+            goto done;             \
+        }                          \
     } while (0)
 #endif
 
 #ifndef CALLOC
-#define CALLOC(var, nmemb, size, ...)       \
-    do {                                       \
-        (var) = calloc(nmemb, size);           \
-        if (NULL == var) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define CALLOC(var, nmemb, size, ...) \
+    do {                              \
+        (var) = calloc(nmemb, size);  \
+        if (NULL == var) {            \
+            do {                      \
+                __VA_ARGS__;          \
+            } while (0);              \
+            goto done;                \
+        }                             \
     } while (0)
 #endif
 
 #ifndef CLI_CALLOC
-#define CLI_CALLOC(var, nmemb, size, ...)      \
-    do {                                       \
-        (var) = cli_calloc(nmemb, size);       \
-        if (NULL == var) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define CLI_CALLOC(var, nmemb, size, ...) \
+    do {                                  \
+        (var) = cli_calloc(nmemb, size);  \
+        if (NULL == var) {                \
+            do {                          \
+                __VA_ARGS__;              \
+            } while (0);                  \
+            goto done;                    \
+        }                                 \
     } while (0)
 #endif
 
 #ifndef VERIFY_POINTER
-#define VERIFY_POINTER(ptr, ...)            \
-    do {                                       \
-        if (NULL == ptr) {                     \
-            do {                               \
-                __VA_ARGS__;                   \
-            } while (0);                       \
-            goto done;                         \
-        }                                      \
+#define VERIFY_POINTER(ptr, ...) \
+    do {                         \
+        if (NULL == ptr) {       \
+            do {                 \
+                __VA_ARGS__;     \
+            } while (0);         \
+            goto done;           \
+        }                        \
     } while (0)
 #endif
 

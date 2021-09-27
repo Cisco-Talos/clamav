@@ -3,6 +3,12 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 0.104.1
+
+ClamAV 0.103.2 is a critical patch release with the following fixes:
+
+-
+
 ## 0.104.0
 
 ClamAV 0.104.0 includes the following improvements and changes.
@@ -168,6 +174,55 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tuomo Soini
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.3
+
+ClamAV 0.103.3 is a patch release with the following fixes:
+
+- Fixed a scan performance issue when ENGINE_OPTIONS_FORCE_TO_DISK is enabled.
+  This issue did not impacted most users but for those affected it caused every
+  scanned file to be copied to the temp directory before the scan.
+
+- Fix ClamDScan crashes when using the `--fdpass --multiscan` command-line
+  options in combination with the ClamD `ExcludePath` config file options.
+
+- Fixed an issue where the `mirrors.dat` file is owned by root when starting as
+  root (or with sudo) and using daemon-mode. File ownership will be set to the
+  `DatabaseOwner` just before FreshClam switches to run as that user.
+
+- Renamed the `mirrors.dat` file to `freshclam.dat`.
+
+  We used to recommend deleting `mirrors.dat` if FreshClam failed to update.
+  This is because `mirrors.dat` used to keep track of offline mirrors and
+  network interruptions were known to cause FreshClam to think that all mirrors
+  were offline. ClamAV now uses a paid CDN instead of a mirror network, and the
+  new FreshClam DAT file no longer stores that kind of information.
+  The UUID used in ClamAV's HTTP User-Agent is stored in the FreshClam DAT file
+  and we want the UUID to persist between runs, even if there was a failure.
+
+  Unfortunately, some users have FreshClam configured to automatically delete
+  `mirrors.dat` if FreshClam failed. Renaming `mirrors.dat` to `freshclam.dat`
+  should make it so those scripts don't delete important FreshClam data.
+
+- Disabled the `HTTPUserAgent` config option if the `DatabaseMirror` uses
+  clamav.net. This will prevent users from being inadvertently blocked and
+  will ensure that we can keep better metrics on which ClamAV versions are
+  being used.
+
+  This change effectively deprecates the `HTTPUserAgent` option for most users.
+
+- Moved the detection for Heuristics.PNG.CVE-2010-1205 behind the
+  ClamScan `--alert-broken-media` option (ClamD `AlertBrokenMedia yes`) option.
+  This type of PNG issue appears to be common enough to be an annoyance, and
+  the CVE is old enough that no one should be vulnerable at this point.
+
+- Fix ClamSubmit failures after changes to Cloudflare "__cfduid" cookies.
+  See: https://blog.cloudflare.com/deprecating-cfduid-cookie/
+
+Special thanks to the following for code contributions and bug reports:
+
+- Stephen Agate
+- Tom Briden
 
 ## 0.103.2
 
