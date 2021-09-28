@@ -1289,7 +1289,11 @@ static fc_error_t downloadFile(
     switch (http_code) {
         case 200:
         case 206: {
-            status = FC_SUCCESS;
+            if (0 == receivedFile.size) {
+                status = FC_EEMPTYFILE;
+            } else {
+                status = FC_SUCCESS;
+            }
             break;
         }
         case 304: {
@@ -2413,8 +2417,8 @@ fc_error_t updatedb(
      */
 #ifdef _WIN32
     if (!access(newLocalFilename, R_OK) && unlink(newLocalFilename)) {
-        logg("!updatedb: Can't delete old database %s. Please fix the problem manually and try again.\n", newLocalFilename);
-        status = FC_EEMPTYFILE;
+        logg("!Update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", newLocalFilename);
+        status = FC_EDBDIRACCESS;
         goto done;
     }
 #endif
@@ -2600,7 +2604,7 @@ fc_error_t updatecustomdb(
         }
         snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, databaseName);
         if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            logg("!updatecustomdb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+            logg("!Custom database update failed: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
             free(tmpfile_with_extension);
             status = FC_EDBDIRACCESS;
             goto done;
@@ -2623,8 +2627,8 @@ fc_error_t updatecustomdb(
      */
 #ifdef _WIN32
     if (!access(databaseName, R_OK) && unlink(databaseName)) {
-        logg("!updatecustomdb: Can't delete old database %s. Please fix the problem manually and try again.\n", databaseName);
-        status = FC_EEMPTYFILE;
+        logg("!Custom database update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", databaseName);
+        status = FC_EDBDIRACCESS;
         goto done;
     }
 #endif
