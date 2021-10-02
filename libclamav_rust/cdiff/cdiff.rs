@@ -31,27 +31,32 @@ use std::{
 };
 
 use flate2::read::GzDecoder;
+// use crypto instead of openssl
 use openssl::sha;
 use thiserror::Error;
 
-const DSIGBUFF: usize = 350;
+const MAX_DSIG_SIZE: usize = 350;
 const FILEBUFF: usize = 8192;
 
 const PSS_NSTR: &str = "14783905874077467090262228516557917570254599638376203532031989214105552847269687489771975792123442185817287694951949800908791527542017115600501303394778618535864845235700041590056318230102449612217458549016089313306591388590790796515819654102320725712300822356348724011232654837503241736177907784198700834440681124727060540035754699658105895050096576226753008596881698828185652424901921668758326578462003247906470982092298106789657211905488986281078346361469524484829559560886227198091995498440676639639830463593211386055065360288422394053998134458623712540683294034953818412458362198117811990006021989844180721010947\0";
 const PSS_ESTR: &str = "100002053\0";
 
-#[derive(Clone)]
-struct Node {
+struct DelNode {
     line_no: usize,
-    line1: Option<String>,
-    line2: Option<String>,
+    del_line: String,
+}
+
+struct XchgNode {
+    line_no: usize,
+    orig_line: String,
+    new_line: String,
 }
 
 struct Context {
     open_db: Option<String>,
     add_start: Option<Vec<String>>,
-    del_start: Option<Vec<Node>>,
-    xchg_start: Option<Vec<Node>>,
+    del_start: Option<Vec<DelNode>>,
+    xchg_start: Option<Vec<XchgNode>>,
 }
 
 /// CdiffError enumerates all possible errors returned by this library.
@@ -93,6 +98,12 @@ pub enum CdiffError {
     #[error("Failed to parse dsig!")]
     ParseDsigError,
 
+    #[error("Not all delete lines processed at file end")]
+    NotAllDeleteProcessed,
+
+    #[error("Not all exchange lines processed at file end")]
+    NotAllExchangeProcessed,
+
     /// Represents all other cases of `std::io::Error`.
     #[error(transparent)]
     IOError(#[from] std::io::Error),
@@ -104,7 +115,7 @@ pub enum CdiffError {
 #[derive(Debug)]
 pub struct DelOp<'a> {
     line_no: usize,
-    line: &'a str,
+    del_line: &'a str,
 }
 
 // Method to parse the cdiff line describing a delete operation
@@ -116,11 +127,11 @@ impl<'a> DelOp<'a> {
         Ok(DelOp {
             line_no: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line_no".to_string()))?
+                .ok_or_else(|| CdiffError::NoMoreData("line_no".to_string()))?
                 .parse::<usize>()?,
-            line: iter
+            del_line: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("del_line".to_string()))?,
         })
     }
 }
@@ -144,24 +155,24 @@ impl<'a> MoveOp<'a> {
         Ok(MoveOp {
             src: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("src".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("src".to_string()))?,
             dst: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("dst".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("dst".to_string()))?,
             start_line_no: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line_no".to_string()))?
+                .ok_or_else(|| CdiffError::NoMoreData("start_line_no".to_string()))?
                 .parse::<usize>()?,
             start_line: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("start_line".to_string()))?,
             end_line_no: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("end_line_no".to_string()))?
+                .ok_or_else(|| CdiffError::NoMoreData("end_line_no".to_string()))?
                 .parse::<usize>()?,
             end_line: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("end_line".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("end_line".to_string()))?,
         })
     }
 }
@@ -173,23 +184,25 @@ pub struct XchgOp<'a> {
     new_line: &'a str,
 }
 
+/// Todo: rewrite this code so that it can handle multiple whitespaces between fields
+
 // Method to parse the cdiff line describing an exchange operation
 impl<'a> XchgOp<'a> {
     pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        // Extract src db, dst db, start line no, start line, end line no, end line
-        let mut iter = data.split_whitespace();
+        // Extract start line no, orig line, and new line
+        let mut iter = data.splitn(3, char::is_whitespace);
 
         Ok(XchgOp {
             line_no: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line_no".to_string()))?
+                .ok_or_else(|| CdiffError::NoMoreData("line_no".to_string()))?
                 .parse::<usize>()?,
             orig_line: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("start_line".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("orig_line".to_string()))?,
             new_line: iter
                 .next()
-                .ok_or(CdiffError::NoMoreData("end_line".to_string()))?,
+                .ok_or_else(|| CdiffError::NoMoreData("new_line".to_string()))?,
         })
     }
 }
@@ -308,21 +321,18 @@ pub fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
     };
 
     match process_lines(&mut ctx, reader, header_len as usize) {
-        Ok(_) => return 0,
+        Ok(_) => 0,
         Err(e) => {
-            eprint!("{}", e.to_string());
-            return -1;
+            eprintln!("{}", e.to_string());
+            -1
         }
     }
 }
 
 fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), CdiffError> {
     // Test for existing open db
-    match &ctx.open_db {
-        Some(x) => {
-            return Err(CdiffError::NotClosedBeforeOpening(x.to_string(), db_name));
-        }
-        _ => (),
+    if let Some(x) = &ctx.open_db {
+        return Err(CdiffError::NotClosedBeforeOpening(x.to_string(), db_name));
     }
 
     if !db_name
@@ -334,7 +344,7 @@ fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), Cdiff
     ctx.open_db = Some(db_name);
 
     eprintln!("data {:?}", ctx.open_db);
-    return Ok(());
+    Ok(())
 }
 
 fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), CdiffError> {
@@ -350,13 +360,12 @@ fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), Cdif
             (*add_start).push(signature);
         }
         _ => {
-            let mut add_start = Vec::new();
-            add_start.push(signature);
+            let add_start = vec![signature];
             ctx.add_start = Some(add_start);
         }
     }
 
-    return Ok(());
+    Ok(())
     // eprintln!("signature {:?}", ctx.add_start);
 }
 
@@ -367,13 +376,12 @@ fn cmd_del(mut ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
         _ => return Err(CdiffError::NoDBForAction("DEL".to_string())),
     }
 
-    eprintln!("Deleting {} on line {}", del_op.line, del_op.line_no);
+    eprintln!("Deleting {} on line {}", del_op.del_line, del_op.line_no);
 
     // Create a new node for deletion
-    let del_node = Node {
+    let del_node = DelNode {
         line_no: del_op.line_no,
-        line1: Some(del_op.line.to_string()),
-        line2: None,
+        del_line: del_op.del_line.to_string(),
     };
 
     // Create a new vector or append to existing one in order
@@ -383,27 +391,26 @@ fn cmd_del(mut ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
             for i in 0..=n {
                 // eprintln!(
                 //     "Deletion: Inserting line_no {} with current line_no {}",
-                //     line_no, del_start[i].line_no
+                //     del_op.line_no, del_start[i].line_no
                 // );
                 if del_op.line_no < del_start[i].line_no {
-                    // eprintln!("Deletion: Inserting into element {}", i);
+                    //eprintln!("Deletion: Inserting into element {}", i);
                     (*del_start).insert(i, del_node);
                     break;
                 } else if i == n {
-                    eprintln!("Deletion: Appending to node list");
+                    //eprintln!("Deletion: Appending to node list");
                     (*del_start).push(del_node);
                     break;
                 }
             }
         }
         _ => {
-            let mut del_start = Vec::new();
-            eprintln!("Deletion: Creating new node list");
-            del_start.push(del_node);
+            let del_start = vec![del_node];
+            //eprintln!("Deletion: Creating new node list");
             ctx.del_start = Some(del_start);
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 fn cmd_xchg(mut ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
@@ -419,10 +426,10 @@ fn cmd_xchg(mut ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
     );
 
     // Create a new node for exchange
-    let xchg_node = Node {
+    let xchg_node = XchgNode {
         line_no: xchg_op.line_no,
-        line1: Some(xchg_op.new_line.to_string()),
-        line2: Some(xchg_op.orig_line.to_string()),
+        orig_line: xchg_op.orig_line.to_string(),
+        new_line: xchg_op.new_line.to_string(),
     };
 
     // Create a new vector or append to existing one
@@ -437,28 +444,25 @@ fn cmd_xchg(mut ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
             ctx.xchg_start = Some(xchg_start);
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
     #[derive(PartialEq)]
     enum State {
-        INIT,
-        MOVE,
-        END,
+        Init,
+        Move,
+        End,
     }
 
-    let mut state = State::INIT;
+    let mut state = State::Init;
 
     // Test for move with open db
-    match &ctx.open_db {
-        Some(x) => {
-            return Err(CdiffError::NotClosedBeforeAction(
-                x.to_string(),
-                "MOVE".to_string(),
-            ))
-        }
-        _ => (),
+    if let Some(x) = &ctx.open_db {
+        return Err(CdiffError::NotClosedBeforeAction(
+            x.to_string(),
+            "MOVE".to_string(),
+        ));
     }
 
     // Open src in read-only mode
@@ -479,9 +483,9 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
     for (line_no, line) in src_reader.lines().enumerate() {
         let line = line?;
 
-        if state == State::INIT && line_no == move_op.start_line_no {
+        if state == State::Init && line_no == move_op.start_line_no {
             if line.starts_with(move_op.start_line) {
-                state = State::MOVE;
+                state = State::Move;
             } else {
                 return Err(CdiffError::PatternDoesNotMatch(
                     "MOVE".to_string(),
@@ -491,11 +495,11 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
             }
         }
         // Write everything between start and end to dst
-        else if state == State::MOVE {
+        else if state == State::Move {
             writeln!(dst_file, "{}", line)?;
             if line_no == move_op.end_line_no {
                 if line.starts_with(move_op.end_line) {
-                    state = State::END;
+                    state = State::End;
                 } else {
                     return Err(CdiffError::PatternDoesNotMatch(
                         "MOVE".to_string(),
@@ -512,15 +516,15 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
     }
 
     // Check that we handled start and end
-    if state != State::END {
+    if state != State::End {
         return Err(CdiffError::MoveOpFailed);
     }
 
     // Delete src and replace it with tmp
-    fs::remove_file(move_op.src.clone())?;
-    fs::rename("_tmp_move_file", move_op.src.clone())?;
+    fs::remove_file(move_op.src)?;
+    fs::rename("_tmp_move_file", move_op.src)?;
 
-    return Ok(());
+    Ok(())
 }
 
 fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
@@ -533,34 +537,16 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
     let open_db = ctx.open_db.as_ref().unwrap();
     eprintln!("Close DB {}", open_db);
 
-    let delete_lines: bool;
-    let xchg_lines: bool;
+    let mut delete_lines: bool = false;
+    let mut xchg_lines: bool = false;
 
-    // Test for lines to delete
-    let blank_node: Node = Node {
-        line_no: 0,
-        line1: None,
-        line2: None,
-    };
-    let mut del_vec: Vec<Node> = vec![blank_node.clone()];
-    let mut del_vec_len: usize = 0;
-    if let Some(del_vec_ref) = &mut ctx.del_start {
-        del_vec = std::mem::take(del_vec_ref);
-        del_vec_len = del_vec.len();
+    if ctx.del_start.is_some() {
         delete_lines = true;
-    } else {
-        delete_lines = false;
+        println!("Found lines to delete");
     }
 
-    // Test for lines to exchange
-    let mut xchg_vec: Vec<Node> = vec![blank_node.clone()];
-    let mut xchg_vec_len: usize = 0;
-    if let Some(xchg_vec_ref) = &mut ctx.xchg_start {
-        xchg_vec = std::mem::take(xchg_vec_ref);
-        xchg_vec_len = xchg_vec.len();
+    if ctx.xchg_start.is_some() {
         xchg_lines = true;
-    } else {
-        xchg_lines = false;
     }
 
     if delete_lines || xchg_lines {
@@ -571,86 +557,96 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         let src_reader = BufReader::new(src_file);
 
         // Create tmp file and open for writing
-        let mut tmp_file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open("_tmp_move_file")?;
+        // let mut tmp_file = OpenOptions::new()
+        //     .write(true)
+        //     .create_new(true)
+        //     .open("_tmp_move_file")?;
+        let tmp_named_file = tempfile::Builder::new()
+            .prefix("_tmp_move_file")
+            .tempfile_in("./")?;
+        let mut tmp_file = tmp_named_file.as_file();
 
         let mut cur_del_node: usize = 0;
         let mut cur_xchg_node: usize = 0;
+
+        let mut del_vec: Vec<DelNode> = vec![];
+        let mut xchg_vec: Vec<XchgNode> = vec![];
+
+        // Test for lines to delete
+        let mut del_vec_len: usize = 0;
+        if let Some(del_vec_ref) = &mut ctx.del_start {
+            del_vec = std::mem::take(del_vec_ref);
+            del_vec_len = del_vec.len();
+        }
+
+        // Test for lines to exchange
+        let mut xchg_vec_len: usize = 0;
+        if let Some(xchg_vec_ref) = &mut ctx.xchg_start {
+            xchg_vec = std::mem::take(xchg_vec_ref);
+            xchg_vec_len = xchg_vec.len();
+        }
 
         for (mut line_no, line) in src_reader.lines().enumerate() {
             let line = line?;
 
             // cdiff lines start at 1
-            line_no = line_no + 1;
+            line_no += 1;
+
+            // if delete_lines {
+            //     println!("First element in delete list: cur_line == {} line_no == {} del_line = {}",
+            //     line_no, del_vec[0].line_no, del_vec[0].del_line);
+            //     println!("is_empty {}, cur_del_node {}, del_vec_len {}",
+            //     !del_vec.is_empty(), cur_del_node, del_vec_len);
+            // }
 
             if delete_lines
-                && del_vec.len() > 0
-                && cur_del_node < del_vec.len()
+                && !del_vec.is_empty()
+                && cur_del_node < del_vec_len
                 && line_no == del_vec[cur_del_node].line_no
             {
-                match &del_vec[cur_del_node].line1 {
-                    Some(del_line) => {
-                        // Make sure that the line we are deleting matches what is expected
-                        if line.starts_with(del_line.as_str()) == false {
-                            return Err(CdiffError::PatternDoesNotMatch(
-                                "delete".to_string(),
-                                line_no,
-                                open_db.to_string(),
-                            ));
-                        }
-                        // Increment del node
-                        cur_del_node = cur_del_node + 1;
-                        if cur_del_node > del_vec_len {
-                            cur_del_node = 0;
-                        }
-                        // Do nothing - Do not write this line to file
-                    }
-                    // This shouldn't happen, but handle an error here
-                    None => {
-                        return Err(CdiffError::PatternDoesNotMatch(
-                            "delete".to_string(),
-                            line_no,
-                            open_db.to_string(),
-                        ))
-                    }
+                let del_line = &del_vec[cur_del_node].del_line;
+
+                eprintln!(
+                    "deleting line on line_no starting with: {} {} {}",
+                    line, line_no, del_line
+                );
+                // Make sure that the line we are deleting matches what is expected
+                if !line.starts_with(del_line.as_str()) {
+                    return Err(CdiffError::PatternDoesNotMatch(
+                        "delete".to_string(),
+                        line_no,
+                        open_db.to_string(),
+                    ));
                 }
+                // Increment del node
+                cur_del_node += 1;
+                if cur_del_node > del_vec_len {
+                    del_vec_len = 0;
+                }
+                // Do nothing - Do not write this line to file
             } else if xchg_lines
-                && xchg_vec.len() > 0
-                && cur_xchg_node < xchg_vec.len()
+                && !xchg_vec.is_empty()
+                && cur_xchg_node < xchg_vec_len
                 && line_no == xchg_vec[cur_xchg_node].line_no
             {
-                match &xchg_vec[cur_xchg_node].line1 {
-                    Some(orig_line) => {
-                        match &xchg_vec[cur_xchg_node].line2 {
-                            Some(new_line) => {
-                                eprintln!(
-                                    "Comparing line with orig_line: {} == {}",
-                                    line, orig_line
-                                );
-                                if line.starts_with(orig_line.as_str()) == false {
-                                    return Err(CdiffError::PatternDoesNotMatch(
-                                        "exchange".to_string(),
-                                        line_no,
-                                        open_db.to_string(),
-                                    ));
-                                }
-                                // Write exchange line to file
-                                writeln!(tmp_file, "{}", new_line)?;
+                let orig_line = &xchg_vec[cur_xchg_node].orig_line;
+                let new_line = &xchg_vec[cur_xchg_node].new_line;
 
-                                // Increment xchange node
-                                cur_xchg_node = cur_xchg_node + 1;
-                                if cur_xchg_node > xchg_vec_len {
-                                    cur_xchg_node = 0;
-                                }
-                            }
-                            // Handle error
-                            None => (),
-                        }
-                    }
-                    // Handle error
-                    None => (),
+                eprintln!("Comparing line with orig_line: {} == {}", line, orig_line);
+                if !line.starts_with(orig_line.as_str()) {
+                    return Err(CdiffError::PatternDoesNotMatch(
+                        "exchange".to_string(),
+                        line_no,
+                        open_db.to_string(),
+                    ));
+                }
+                // Write exchange line to file
+                writeln!(tmp_file, "{}", new_line)?;
+
+                // Increment xchange node
+                cur_xchg_node += 1;
+                if cur_xchg_node > xchg_vec_len {
+                    xchg_vec_len = 0;
                 }
             }
             // Write the line as is
@@ -658,28 +654,35 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
                 writeln!(tmp_file, "{}", line)?;
             }
         }
+        // Make sure that all delete and exchange lines were processed
+        if delete_lines && cur_del_node < del_vec.len() {
+            return Err(CdiffError::NotAllDeleteProcessed);
+        }
+
+        if xchg_lines && cur_xchg_node < xchg_vec.len() {
+            return Err(CdiffError::NotAllExchangeProcessed);
+        }
+
         // Delete the old file and replace it with tmp
         fs::remove_file(open_db.clone())?;
-        fs::rename("_tmp_move_file", open_db.clone())?;
+        //fs::rename("_tmp_move_file", open_db.clone())?;
+        fs::rename(tmp_named_file.path(), open_db.clone())?;
     }
 
     // Test for lines to add
-    match &ctx.add_start {
-        Some(add_start) => {
-            let mut db_file = OpenOptions::new().append(true).open(open_db.clone())?;
-            for sig in add_start {
-                eprintln!("Writing signature {} to file {}", sig, open_db);
-                writeln!(db_file, "{}", sig)?;
-            }
-            ctx.add_start = None;
+    if let Some(add_start) = &ctx.add_start {
+        let mut db_file = OpenOptions::new().append(true).open(open_db.clone())?;
+        for sig in add_start {
+            eprintln!("Writing signature {} to file {}", sig, open_db);
+            writeln!(db_file, "{}", sig)?;
         }
-        _ => (),
+        ctx.add_start = None;
     }
     ctx.open_db = None;
     ctx.del_start = None;
     ctx.xchg_start = None;
     eprintln!("Close finished");
-    return Ok(());
+    Ok(())
 }
 
 fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
@@ -687,7 +690,7 @@ fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
         Some(open_db) => fs::remove_file(open_db.clone())?,
         _ => return Err(CdiffError::NoDBForAction("UNLINK".to_string())),
     }
-    return Ok(());
+    Ok(())
 }
 
 fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
@@ -717,36 +720,28 @@ fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
     eprintln!("cmd = {}", cmd);
 
     // Call the appropriate command function
-    match &cmd[..] {
-        "OPEN" => {
-            return cmd_open(ctx, data);
-        }
-        "ADD" => {
-            return cmd_add(ctx, data);
-        }
+    match cmd.as_str() {
+        "OPEN" => cmd_open(ctx, data),
+        "ADD" => cmd_add(ctx, data),
         "DEL" => {
             let del_op = DelOp::new(data.as_str())?;
-            return cmd_del(ctx, del_op);
+            cmd_del(ctx, del_op)
         }
         "XCHG" => {
             let xchg_op = XchgOp::new(data.as_str())?;
-            return cmd_xchg(ctx, xchg_op);
+            cmd_xchg(ctx, xchg_op)
         }
-        "CLOSE" => {
-            return cmd_close(ctx);
-        }
+        "CLOSE" => cmd_close(ctx),
         "MOVE" => {
             let move_op = MoveOp::new(data.as_str())?;
-            return cmd_move(ctx, move_op);
+            cmd_move(ctx, move_op)
         }
-        "UNLINK" => {
-            return cmd_unlink(ctx);
-        }
-        _ => return Err(CdiffError::InvalidCommand(cmd.to_string())),
+        "UNLINK" => cmd_unlink(ctx),
+        _ => Err(CdiffError::InvalidCommand(cmd.to_string())),
     }
 }
 
-fn process_lines<'a, T>(
+fn process_lines<T>(
     ctx: &mut Context,
     reader: T,
     uncompressed_size: usize,
@@ -759,7 +754,7 @@ where
     for line in reader.lines() {
         match line {
             Ok(line) => {
-                n = n + 1;
+                n += 1;
                 decompressed_bytes = decompressed_bytes + line.len() + 1;
                 eprintln!("Line {}: {:?}", n, line);
                 process_line(ctx, line)?;
@@ -773,7 +768,7 @@ where
         "Expected {} decompressed bytes, read {} decompressed bytes",
         uncompressed_size, decompressed_bytes
     );
-    return Ok(());
+    Ok(())
 }
 
 /*
@@ -782,33 +777,28 @@ To Do: write unit tests
 */
 fn read_dsig(file: &mut File) -> Result<Vec<u8>, CdiffError> {
     // Verify file length
-    if file.metadata().unwrap().len() < DSIGBUFF as u64 {
-        return Err(CdiffError::NotEnoughBytes(DSIGBUFF));
+    if file.metadata()?.len() < MAX_DSIG_SIZE as u64 {
+        return Err(CdiffError::NotEnoughBytes(MAX_DSIG_SIZE));
     }
     // Seek to the dsig_offset
-    file.seek(SeekFrom::End(-(DSIGBUFF as i64)))?;
+    file.seek(SeekFrom::End(-(MAX_DSIG_SIZE as i64)))?;
     // Read from dsig_offset to EOF
     let mut dsig: Vec<u8> = vec![];
     file.read_to_end(&mut dsig)?;
     eprintln!("dsig length is {}", dsig.len());
     // Find the signature
-    let mut offset: usize = DSIGBUFF + 1;
+    let offset: usize = MAX_DSIG_SIZE + 1;
     // Read in reverse until the delimiter ':' is found
-    for i in (0..=dsig.len() - 1).rev() {
-        if dsig[i] == b':' {
-            eprintln!(":");
-            offset = i + 1;
-            break;
+    // let offset = dsig.iter().enumerate().rev().find(|(i, value)| **value == b':');
+    if let Some(dsig) = dsig.rsplit(|v| *v == b':').next() {
+        if dsig.len() > MAX_DSIG_SIZE {
+            Err(CdiffError::ParseDsigError)
         } else {
-            eprintln!("{:#X}", dsig[i]);
-            eprintln!("Removed 1 element");
+            Ok(dsig.to_vec())
         }
+    } else {
+        Ok(dsig[offset..].to_vec())
     }
-    if dsig.len() > DSIGBUFF {
-        return Err(CdiffError::ParseDsigError);
-    }
-    eprintln!("offset = {}", offset);
-    Ok(dsig[offset..].to_vec())
 }
 
 // Returns the parsed, uncompressed file size from the header, as well
@@ -830,14 +820,15 @@ fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
     let mut colons = 0;
     let mut file_size_vec = Vec::new();
     eprintln!("n == {}", n);
-    for i in 0..=n {
+    //for i in 0..=n {
+    for (i, value) in buf.iter().enumerate().take(n + 1) {
         // Colon found, increment count.
-        if buf[i] == b':' {
-            colons = colons + 1;
+        if *value == b':' {
+            colons += 1;
         }
         // We are reading the file size now.
         else if colons == 2 {
-            file_size_vec.push(buf[i]);
+            file_size_vec.push(*value);
         }
 
         // We are done reading the file size.
@@ -847,8 +838,10 @@ fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
             return Ok((file_size_str.parse::<u32>()?, i + 1));
         }
     }
-    return Err(CdiffError::MalformedFile("insufficient colons".to_string()));
+    Err(CdiffError::MalformedFile("insufficient colons".to_string()))
 }
+
+// Sha256 read instead of update
 
 // Calculate the sha256 of the first len bytes of a file
 fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
@@ -876,15 +869,15 @@ fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
             hasher.update(&buf);
             //print_file_data(buf, n);
         }
-        sum = sum + n;
+        sum += n;
     }
 }
 
 fn print_file_data(buf: Vec<u8>, len: usize) {
-    for i in 0..len {
-        eprint!("{:#02X} ", buf[i]);
+    for (i, value) in buf.iter().enumerate().take(len) {
+        eprint!("{:#02X} ", value);
         if (i + 1) % 16 == 0 {
-            eprintln!("");
+            eprintln!();
         }
     }
     eprintln!("\n");
@@ -893,6 +886,17 @@ fn print_file_data(buf: Vec<u8>, len: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// CdiffTestError enumerates all possible errors returned by this testing library.
+    #[derive(Error, Debug)]
+    pub enum CdiffTestError {
+        /// Represents all other cases of `std::io::Error`.
+        #[error(transparent)]
+        IOError(#[from] std::io::Error),
+
+        #[error(transparent)]
+        FromUtf8Error(#[from] std::string::FromUtf8Error),
+    }
 
     #[test]
     fn parse_move_works() {
@@ -931,6 +935,342 @@ mod tests {
         println!("{:?}", err.to_string());
         assert_eq!(err.to_string(), start_line_err.to_string());
     }
+
+    /*
+     * Helper function to set up a test folder and initialize a pseudo-db file
+     * with specified data.
+     */
+    fn initialize_db_file_with_data(
+        initial_data: Vec<String>,
+    ) -> Result<tempfile::TempPath, CdiffTestError> {
+        let mut file = tempfile::Builder::new()
+            .tempfile_in("./")
+            .expect("Failed to create temp file");
+        for line in initial_data {
+            writeln!(file, "{}", line).expect("Failed to write line to temp file");
+        }
+        Ok(file.into_temp_path())
+    }
+
+    fn compare_file_with_expected(
+        temp_file_path: tempfile::TempPath,
+        expected_data: &mut Vec<String>,
+    ) {
+        let db_file = File::open(temp_file_path).unwrap();
+        let reader = BufReader::new(db_file);
+        // We will be popping lines off a stack, so we need to reverse the vec
+        expected_data.reverse();
+        for (index, line) in reader.lines().enumerate() {
+            let expected_line = expected_data
+                .pop()
+                .expect("Expected data ran out before file!");
+            assert_eq!(
+                expected_line,
+                line.expect("Failed to read line from temp file")
+            );
+            eprintln!(
+                "Data \"{}\" matches expected result on line {}",
+                expected_line, index
+            );
+        }
+        // expected_data should be empty here
+        assert_eq!(expected_data.len(), 0);
+    }
+
+    fn construct_ctx_from_path(path: &tempfile::TempPath) -> Context {
+        let ctx: Context = Context {
+            open_db: Some(path.to_str().unwrap().to_string()),
+            add_start: None,
+            del_start: None,
+            xchg_start: None,
+        };
+        ctx
+    }
+
+    #[test]
+    fn delete_first_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec!["AAAA".to_string(), "BBBB".to_string(), "CCCC".to_string()];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let del_op = DelOp::new("1 ClamAV-VDB:14").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn delete_second_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let del_op = DelOp::new("2 AAAA").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn delete_last_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let del_op = DelOp::new("4 CCCC").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn delete_line_not_match() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let del_op = DelOp::new("1 CCCC").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => panic!("cmd_close should have failed!"),
+            Err(e) => {
+                assert!(e
+                    .to_string()
+                    .starts_with("Cannot perform action delete on line"));
+            }
+        }
+    }
+
+    #[test]
+    fn delete_out_of_bounds() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let del_op = DelOp::new("5 CCCC").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => panic!("cmd_close should have failed!"),
+            Err(e) => {
+                assert_eq!(e.to_string(), "Not all delete lines processed at file end");
+            }
+        }
+    }
+
+    #[test]
+    fn exchange_first_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:15 Aug 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let xchg_op = XchgOp::new("1 ClamAV-VDB:14 ClamAV-VDB:15 Aug 2021 14-29 -0400").unwrap();
+        cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn exchange_second_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "DDDD".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let xchg_op = XchgOp::new("2 AAAA DDDD").unwrap();
+        cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn exchange_last_line() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "DDDD".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let xchg_op = XchgOp::new("4 CCCC DDDD").unwrap();
+        cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    #[test]
+    fn exchange_out_of_bounds() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        let xchg_op = XchgOp::new("5 DDDD EEEE").unwrap();
+        cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
+        match cmd_close(&mut ctx) {
+            Ok(_) => panic!("cmd_close should have failed!"),
+            Err(e) => {
+                assert_eq!(
+                    e.to_string(),
+                    "Not all exchange lines processed at file end"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn add_delete_exchange() {
+        let initial_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "AAAA".to_string(),
+            "BBBB".to_string(),
+            "CCCC".to_string(),
+        ];
+        let mut expected_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
+            "DDDD".to_string(),
+            "CCCC".to_string(),
+            "EEEE".to_string(),
+        ];
+
+        let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
+
+        // Create contextual data structure with open_db path
+        let mut ctx = construct_ctx_from_path(&db_file_path);
+
+        // Add a line
+        cmd_add(&mut ctx, "EEEE".to_string()).unwrap();
+
+        // Delete the 2nd line
+        let del_op = DelOp::new("2 AAAA").unwrap();
+        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
+
+        // Exchange the 3rd line
+        let xchg_op = XchgOp::new("3 BBBB DDDD").unwrap();
+        cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
+
+        // Perform all operations and close the file
+        match cmd_close(&mut ctx) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+        }
+        compare_file_with_expected(db_file_path, &mut expected_data);
+    }
+
+    // Todo: Write a unit test to handle an xchgop with multiple whitespace entries between fields.
 
     /*
     TO DO: Add unit tests that describe how we think a move operation will work, since they are extremely rare
