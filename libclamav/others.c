@@ -1413,7 +1413,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
 
     new_container->fmap = map;
     new_container->type = type;
-    new_container->size = map->len - map->nested_offset;
+    new_container->size = map->len;
 
     if (is_new_buffer) {
         new_container->recursion_level_buffer      = current_container->recursion_level_buffer + 1;

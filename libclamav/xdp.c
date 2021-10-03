@@ -102,7 +102,7 @@ cl_error_t cli_scanxdp(cli_ctx *ctx)
     char *dumpname;
     size_t i;
 
-    buf = (const char *)fmap_need_off_once(ctx->fmap, ctx->fmap->nested_offset, ctx->fmap->len);
+    buf = (const char *)fmap_need_off_once(ctx->fmap, 0, ctx->fmap->len);
     if (!(buf))
         return CL_EREAD;
 

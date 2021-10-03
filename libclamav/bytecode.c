@@ -2776,7 +2776,7 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, fmap_t *map)
 {
     ctx->fmap           = map;
-    ctx->file_size      = map->len + map->nested_offset;
+    ctx->file_size      = map->len;
     ctx->hooks.filesize = &ctx->file_size;
     return 0;
 }
