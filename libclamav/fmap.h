@@ -45,23 +45,26 @@ struct cl_fmap {
     void *handle;
     clcb_pread pread_cb;
 
+    /* memory interface */
+    const void *data;
+
     /* internal */
     time_t mtime;
     uint64_t pages;
     uint64_t pgsz;
     uint64_t paged;
     uint16_t aging;
-    uint16_t dont_cache_flag;
-    uint16_t handle_is_fd;
+    uint16_t dont_cache_flag; /** incidates that we should cache scan results for this fmap. Used if limits exceeded */
+    uint16_t handle_is_fd;    /** non-zero if map->handle is an fd. */
+    size_t offset;            /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
+    size_t nested_offset;     /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
+    size_t real_len;          /** len from start of original fmap (data) to end of current (possibly nested) map. */
+                              /* real_len == nested_offset + len.
+                                 real_len is needed for nested maps because we only reference the original mapping data.
+                                 We convert caller's fmap offsets & lengths to real data offsets using nested_offset & real_len. */
 
-    /* memory interface */
-    const void *data;
-
-    /* common interface */
-    size_t offset;        /* file offset */
-    size_t nested_offset; /* buffer offset for nested scan*/
-    size_t real_len;      /* amount of data mapped from file, starting at offset */
-    size_t len;           /* length of data accessible via current fmap */
+    /* external */
+    size_t len; /** length of data from nested_offset, accessible via current fmap */
 
     /* real_len = nested_offset + len
      * file_offset = offset + nested_offset + need_offset
@@ -153,36 +156,124 @@ static inline void funmap(fmap_t *m)
     m->unmap(m);
 }
 
+/**
+ * @brief Get a pointer to the file data if the requested offset & len are within the fmap.
+ *
+ * For fmap's created from file descriptors, this will also page the requested file map pages.
+ *
+ * This will lock the pages containing the requested data.
+ * You must call fmap_unneed_off() / fmap_unneed_ptr() when you're done accessing the data to
+ * release the page locks.
+ *
+ * @param m     The fmap.
+ * @param at    The map offset requested.
+ * @param len   The data length requested.
+ * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_off(fmap_t *m, size_t at, size_t len)
 {
     return m->need(m, at, len, 1);
 }
 
+/**
+ * @brief Get a pointer to the file data if the requested offset & len are within the fmap.
+ *
+ * For fmap's created from file descriptors, this will also page the requested file map pages.
+ *
+ * This is just like fmap_need_off() except it will not lock the pages, and you don't need
+ * to call fmap_unneed_off() / fmap_unneed_ptr() to release the page locks.
+ *
+ * @param m     The fmap.
+ * @param at    The map offset requested.
+ * @param len   The data length requested.
+ * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_off_once(fmap_t *m, size_t at, size_t len)
 {
     return m->need(m, at, len, 0);
 }
 
+/**
+ * @brief Return an offset into the current fmap given a pointer into the fmap data.
+ *
+ * For a nested (duplicate) fmap, the returned offset will be appropriate to the nested map.
+ * For example, if the ptr points to the start of the nested file, the returned offset will be 0.
+ * So this should be true, even for a nested fmap:
+ *   void *ptr = fmap_need_off(m, 0, 10);
+ *   size_t off = fmap_need_ptr(m, ptr, 10);
+ *   assert(ptr == off);
+ *
+ * @param m     The fmap
+ * @param ptr   A pointer into the fmap->data
+ * @return size_t The offset into the fmap
+ */
 static inline size_t fmap_ptr2off(const fmap_t *m, const void *ptr)
 {
     return (size_t)((const char *)ptr - (const char *)m->data) - m->nested_offset;
 }
 
+/**
+ * @brief Get a pointer to the file data given a pointer into the map->data & len that are within the fmap.
+ *
+ * For fmap's created from file descriptors, this will also page the requested file map pages.
+ *
+ * This will lock the pages containing the requested data.
+ * You must call fmap_unneed_off() / fmap_unneed_ptr() when you're done accessing the data to
+ * release the page locks.
+ *
+ * @param m     The fmap.
+ * @param ptr   A pointer into the fmap->data.
+ * @param len   The data length requested.
+ * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_ptr(fmap_t *m, const void *ptr, size_t len)
 {
     return m->need(m, fmap_ptr2off(m, ptr), len, 1);
 }
 
+/**
+ * @brief Get a pointer to the file data given a pointer into the map->data & len that are within the fmap.
+ *
+ * For fmap's created from file descriptors, this will also page the requested file map pages.
+ *
+ * This is just like fmap_need_ptr() except it will not lock the pages, and you don't need
+ * to call fmap_unneed_off() / fmap_unneed_ptr() to release the page locks.
+ *
+ * @param m     The fmap.
+ * @param ptr   A pointer into the fmap->data.
+ * @param len   The data length requested.
+ * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_ptr_once(fmap_t *m, const void *ptr, size_t len)
 {
     return m->need(m, fmap_ptr2off(m, ptr), len, 0);
 }
 
+/**
+ * @brief Release page locks for an fmap.
+ *
+ * You must call this after "needing" memory with fmap_need_ptr() or fmap_need_off() once
+ * you're done accessing the data.
+ *
+ * @param m     The fmap.
+ * @param at    The map offset requested.
+ * @param len   The data length requested.
+ */
 static inline void fmap_unneed_off(fmap_t *m, size_t at, size_t len)
 {
     m->unneed_off(m, at, len);
 }
 
+/**
+ * @brief Release page locks for an fmap.
+ *
+ * You must call this after "needing" memory with fmap_need_ptr() or fmap_need_off() once
+ * you're done accessing the data.
+ *
+ * @param m     The fmap.
+ * @param ptr   A pointer into the fmap->data.
+ * @param len   The data length requested.
+ */
 static inline void fmap_unneed_ptr(fmap_t *m, const void *ptr, size_t len)
 {
     fmap_unneed_off(m, fmap_ptr2off(m, ptr), len);
@@ -215,21 +306,68 @@ static inline size_t fmap_readn(fmap_t *m, void *dst, size_t at, size_t len)
     return (len <= INT_MAX) ? len : (size_t)-1;
 }
 
+/**
+ * @brief Given a pointer into the map data, return that pointer if there is a NULL terminator
+ *        between ptr and the len_hint.
+ *
+ * Like fmap_need_offstr, but takes a pointer into the map data instead of an offset.
+ *
+ * @param m         The fmap.
+ * @param ptr       pointer to the start of string.
+ * @param len_hint  max length of string. if 0, will use rest of map as max string length.
+ * @return const void* pointer of string, or NULL if no NULL terminator found.
+ */
 static inline const void *fmap_need_str(fmap_t *m, const void *ptr, size_t len_hint)
 {
     return m->need_offstr(m, fmap_ptr2off(m, ptr), len_hint);
 }
 
+/**
+ * @brief Return a pointer at the given offset into an fmap iff there is a
+ *        null terminator between `at` and `len_hint` or the end of the map.
+ *        if `len_hint` is 0.
+ *
+ * @param m         The fmap.
+ * @param at        offset of the start of string.
+ * @param len_hint  max length of string. if 0, will use rest of map as max string length.
+ * @return const void* pointer of string, or NULL if no NULL terminator found.
+ */
 static inline const void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 {
     return m->need_offstr(m, at, len_hint);
 }
 
+/**
+ * @brief Read a string into `dst`, stopping at a newline or at EOF.
+ *
+ * Kind of like `fgets()`, but for fmaps, and slightly better in that `at` is in/out,
+ * giving you the offset in the fmap after the end of the read.
+ *
+ * Will null-terminate the string read into dst.
+ *
+ * @param m             The fmap.
+ * @param dst           A destination buffer.
+ * @param[in,out] at    In: Offset in the map to read from. Out: Offset after the read.
+ * @param max_len       Max size to read (aka no bigger than the size of the dst buffer).
+ * @return const void*  Returns `dst` on success, else NULL.
+ */
 static inline const void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
     return m->gets(m, dst, at, max_len);
 }
 
+/**
+ * @brief Get a pointer to the file data if the requested offset & max-len are within the fmap.
+ *
+ * Just like `fmap_need_off_once()` except the `len` param is a maximum-len.
+ * If successful, the `lenout` param will indicate the _actual_ len of data available.
+ *
+ * @param m             The fmap.
+ * @param at            The map offset requested.
+ * @param len           Maximum length of data requested.
+ * @param[out] lenout   The actual len of data available.
+ * @return const void*  A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t len, size_t *lenout)
 {
     const void *p;
@@ -244,6 +382,18 @@ static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t le
     return p;
 }
 
+/**
+ * @brief Get a pointer to the file data if the requested offset & max-len are within the fmap.
+ *
+ * Just like `fmap_need_off_once()` except the `len` param is a maximum-len.
+ * If successful, the `lenout` param will indicate the _actual_ len of data available.
+ *
+ * @param m             The fmap.
+ * @param ptr           A pointer into the fmap->data.
+ * @param len           Maximum length of data requested.
+ * @param[out] lenout   The actual len of data available.
+ * @return const void* A pointer into to the fmap->data at the requested ofset. NULL if offset/len are not contained in the fmap.
+ */
 static inline const void *fmap_need_ptr_once_len(fmap_t *m, const void *ptr, size_t len, size_t *lenout)
 {
     return fmap_need_off_once_len(m, fmap_ptr2off(m, ptr), len, lenout);

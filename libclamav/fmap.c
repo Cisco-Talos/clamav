@@ -269,6 +269,11 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         duplicate_map->nested_offset += offset;
         duplicate_map->len = MIN(length, map->len - offset);
 
+        /* The real_len is the nested_offset + the len of the nested fmap.
+           real_len is mostly just a shorthand for when doing bounds checking.
+           We do not need to keep track of the original length of the OG fmap */
+        duplicate_map->real_len = duplicate_map->nested_offset + duplicate_map->len;
+
         if (!CLI_ISCONTAINED2(map->nested_offset, map->len,
                               duplicate_map->nested_offset, duplicate_map->len)) {
             size_t len1, len2;
@@ -276,7 +281,7 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
             len2 = duplicate_map->nested_offset + duplicate_map->len;
             cli_warnmsg("fmap_duplicate: internal map error: %zu, %zu; %zu, %zu\n",
                         map->nested_offset, len1,
-                        duplicate_map->offset, len2);
+                        duplicate_map->nested_offset, len2);
         }
 
         /* This also means the hash will be different.
@@ -522,6 +527,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
         /* Also not worth reusing the loop below */
         volatile char faultme;
         faultme = ((char *)m->data)[(first_page + i) * m->pgsz];
+        (void)faultme; // silence "warning: variable ‘faultme’ set but not used"
     }
     fmap_unlock;
     for (i = 0; i <= count; i++, page++) {
@@ -587,8 +593,8 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
             eintr_off = 0;
             while (readsz) {
                 ssize_t got;
-                off_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
-                got                 = m->pread_cb(m->handle, pptr, readsz, target_offset);
+                uint64_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
+                got                    = m->pread_cb(m->handle, pptr, readsz, target_offset);
 
                 if (got < 0 && errno == EINTR)
                     continue;
@@ -604,7 +610,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                     cli_strerror(errno, errtxt, sizeof(errtxt));
                     cli_errmsg("fmap_readpage: pread error: %s\n", errtxt);
                 } else {
-                    cli_warnmsg("fmap_readpage: pread fail: asked for %zu bytes @ offset %zu, got %zd\n", readsz, (size_t)target_offset, got);
+                    cli_warnmsg("fmap_readpage: pread fail: asked for %zu bytes @ offset " STDu64 ", got %zd\n", readsz, target_offset, got);
                 }
                 return 1;
             }
@@ -729,7 +735,10 @@ static void unmap_malloc(fmap_t *m)
 static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 {
     uint64_t i, first_page, last_page;
-    void *ptr = (void *)((char *)m->data + at);
+    void *ptr;
+
+    at += m->nested_offset;
+    ptr = (void *)((char *)m->data + at);
 
     if (!len_hint || len_hint > m->real_len - at)
         len_hint = m->real_len - at;
@@ -769,18 +778,18 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
     uint64_t i, first_page, last_page;
-    char *src     = (void *)((char *)m->data + *at);
+    char *src     = (char *)m->data + m->nested_offset + *at;
     char *endptr  = NULL;
-    size_t len    = MIN(max_len - 1, m->real_len - *at);
+    size_t len    = MIN(max_len - 1, m->len - *at);
     size_t fullen = len;
 
-    if (!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
+    if (!len || !CLI_ISCONTAINED(0, m->real_len, m->nested_offset + *at, len))
         return NULL;
 
     fmap_aging(m);
 
-    first_page = fmap_which_page(m, *at);
-    last_page  = fmap_which_page(m, *at + len - 1);
+    first_page = fmap_which_page(m, m->nested_offset + *at);
+    last_page  = fmap_which_page(m, m->nested_offset + *at + len - 1);
 
     for (i = first_page; i <= last_page; i++) {
         char *thispage = (char *)m->data + i * m->pgsz;
@@ -790,7 +799,7 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
             return NULL;
 
         if (i == first_page) {
-            scanat = *at % m->pgsz;
+            scanat = m->nested_offset + *at % m->pgsz;
             scansz = MIN(len, m->pgsz - scanat);
         } else {
             scanat = 0;
@@ -872,7 +881,7 @@ extern cl_fmap_t *cl_fmap_open_memory(const void *start, size_t len)
 }
 
 static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock)
-{ /* WIN32 */
+{
     UNUSEDPARAM(lock);
     if (!len) {
         return NULL;
@@ -894,7 +903,10 @@ static void mem_unneed_off(fmap_t *m, size_t at, size_t len)
 
 static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 {
-    char *ptr = (char *)m->data + at;
+    char *ptr;
+
+    at += m->nested_offset;
+    ptr = (char *)m->data + at;
 
     if (!len_hint || len_hint > m->real_len - at)
         len_hint = m->real_len - at;
@@ -909,10 +921,11 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
-    char *src = (char *)m->data + *at, *endptr = NULL;
-    size_t len = MIN(max_len - 1, m->real_len - *at);
+    char *src    = (char *)m->data + m->nested_offset + *at;
+    char *endptr = NULL;
+    size_t len   = MIN(max_len - 1, m->len - *at);
 
-    if (!len || !CLI_ISCONTAINED(0, m->real_len, *at, len))
+    if (!len || !CLI_ISCONTAINED(0, m->real_len, m->nested_offset + *at, len))
         return NULL;
 
     if ((endptr = memchr(src, '\n', len))) {

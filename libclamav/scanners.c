@@ -4886,9 +4886,8 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, siz
     cl_error_t status = CL_CLEAN;
     fmap_t *new_map   = NULL;
 
-    cli_dbgmsg("magic_scan_nested_fmap_type: [%zu, +%zu), [" STDi64 ", +%zu)\n",
-               map->nested_offset, map->len,
-               (int64_t)offset, length);
+    cli_dbgmsg("magic_scan_nested_fmap_type: [0, +%zu), [%zu, +%zu)\n",
+               map->len, offset, length);
 
     if (offset >= map->len) {
         cli_dbgmsg("magic_scan_nested_fmap_type: Invalid offset: %zu\n", offset);
@@ -4936,36 +4935,40 @@ done:
 /* For map scans that may be forced to disk */
 cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
-    size_t old_off = map->nested_offset;
-    size_t old_len = map->len;
     cl_error_t ret = CL_CLEAN;
 
     cli_dbgmsg("cli_magic_scan_nested_fmap_type: [%zu, +%zu)\n", offset, length);
-    if (offset >= old_len) {
+    if (offset >= map->len) {
         cli_dbgmsg("Invalid offset: %zu\n", offset);
         return CL_CLEAN;
     }
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_FORCE_TO_DISK) {
-        /* if this is forced to disk, then need to write the nested map and scan it */
+        /*
+         * Force to disk!
+         *
+         * Write the offset + length section of the fmap to disk, and scan it.
+         */
         const uint8_t *mapdata = NULL;
         char *tempfile         = NULL;
         int fd                 = -1;
         size_t nread           = 0;
 
         /* Then check length */
-        if (!length)
-            length = old_len - offset;
-        if (length > old_len - offset) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %zu -> %zu\n", length, old_len - offset);
-            length = old_len - offset;
+        if (!length) {
+            /* Caller didn't specify len, use rest of the map */
+            length = map->len - offset;
+        }
+        if (length > map->len - offset) {
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: Data truncated: %zu -> %zu\n", length, map->len - offset);
+            length = map->len - offset;
         }
         if (length <= 5) {
             cli_dbgmsg("cli_magic_scan_nested_fmap_type: Small data (%u bytes)\n", (unsigned int)length);
             return CL_CLEAN;
         }
-        if (!CLI_ISCONTAINED(old_off, old_len, old_off + offset, length)) {
-            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu]\n", old_off, old_len);
+        if (!CLI_ISCONTAINED(0, map->len, offset, length)) {
+            cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu] not within [0, %zu]\n", offset, length, map->len);
             return CL_CLEAN;
         }
 
@@ -5002,7 +5005,11 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
         }
         free(tempfile);
     } else {
-        /* Not forced to disk, use nested map */
+        /*
+         * Not forced to disk.
+         *
+         * Just use nested map by scanning given fmap at offset + length.
+         */
         ret = magic_scan_nested_fmap_type(map, offset, length, ctx, type, name);
     }
     return ret;
@@ -5034,7 +5041,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
  * @param[out] scanned      The number of bytes scanned.
  * @param engine            The scanning engine.
  * @param scanoptions       Scanning options.
- * @param[inout] context    An opaque context structure allowing the caller to record details about the sample being scanned.
+ * @param[in,out] context   An opaque context structure allowing the caller to record details about the sample being scanned.
  * @return int              CL_CLEAN, CL_VIRUS, or an error code if an error occured during the scan.
  */
 static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
@@ -5078,9 +5085,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     // ctx was memset, so recursion_level starts at 0.
     ctx.recursion_stack[ctx.recursion_level].fmap = map;
-    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY;                   // ANY for the top level, because we don't yet know the type.
-    ctx.recursion_stack[ctx.recursion_level].size = map->len - map->nested_offset; // Realistically nested_offset will be 0,
-                                                                                   // but taking the diff is the "right" way.
+    ctx.recursion_stack[ctx.recursion_level].type = CL_TYPE_ANY; // ANY for the top level, because we don't yet know the type.
+    ctx.recursion_stack[ctx.recursion_level].size = map->len;
 
     ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
