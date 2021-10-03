@@ -405,9 +405,8 @@ int main(int argc, char *argv[])
 
         // ctx was memset, so recursion_level starts at 0.
         cctx.recursion_stack[cctx.recursion_level].fmap = map;
-        cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY;                   /* ANY for the top level, because we don't yet know the type. */
-        cctx.recursion_stack[cctx.recursion_level].size = map->len - map->nested_offset; /* Realistically nested_offset will be 0,
-                                                                                          * but taking the diff is the "right" way. */
+        cctx.recursion_stack[cctx.recursion_level].type = CL_TYPE_ANY; /* ANY for the top level, because we don't yet know the type. */
+        cctx.recursion_stack[cctx.recursion_level].size = map->len;
 
         cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
 
