@@ -1386,6 +1386,15 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
+#define CDBRANGE(field, val)                                              \
+    if (field[0] != CLI_OFF_ANY) {                                        \
+        if (field[0] == field[1] && field[0] != val)                      \
+            continue;                                                     \
+        else if (field[0] != field[1] && ((field[0] && field[0] > val) || \
+                                          (field[1] && field[1] < val)))  \
+            continue;                                                     \
+    }
+
 cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t fsizer, int encrypted, unsigned int filepos, int res1, void *res2)
 {
     const struct cli_cdb *cdb;
@@ -1418,15 +1427,6 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
 
         if (cdb->res1 && (cdb->ctype == CL_TYPE_ZIP || cdb->ctype == CL_TYPE_RAR) && cdb->res1 != res1)
             continue;
-
-#define CDBRANGE(field, val)                                              \
-    if (field[0] != CLI_OFF_ANY) {                                        \
-        if (field[0] == field[1] && field[0] != val)                      \
-            continue;                                                     \
-        else if (field[0] != field[1] && ((field[0] && field[0] > val) || \
-                                          (field[1] && field[1] < val)))  \
-            continue;                                                     \
-    }
 
         CDBRANGE(cdb->csize, cli_recursion_stack_get_size(ctx, -1));
         CDBRANGE(cdb->fsizec, fsizec);

@@ -1183,7 +1183,7 @@ typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset)
  * @brief Open a map given a handle.
  *
  * Open a map for scanning custom data accessed by a handle and pread (lseek +
- * read)-like interface. For example a WIN32 HANDLE.
+ * read)-like interface. For example a file descriptor or a WIN32 HANDLE.
  * By default fmap will use aging to discard old data, unless you tell it not
  * to.
  *
@@ -1192,12 +1192,12 @@ typedef off_t (*clcb_pread)(void *handle, void *buf, size_t count, off_t offset)
  * @param handle        A handle that may be accessed using lseek + read.
  * @param offset        Initial offset to start scanning.
  * @param len           Length of the data from the start (not the offset).
- * @param use_aging     Set to a non-zero value to enable aging.
  * @param pread_cb      A callback function to read data from the handle.
+ * @param use_aging     Set to a non-zero value to enable aging.
  * @return cl_fmap_t*   A map representing the handle interface.
  */
 extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
-                                      clcb_pread, int use_aging);
+                                      clcb_pread pread_cb, int use_aging);
 
 /**
  * @brief Open a map given a buffer.
