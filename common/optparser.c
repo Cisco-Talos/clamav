@@ -344,6 +344,8 @@ const struct clam_option __clam_options[] = {
 
     {"LeaveTemporaryFiles", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Don't remove temporary files (for debugging purposes).", "no"},
 
+    {"GenerateMetadataJson", NULL, 0, CLOPT_TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Record metadata about the file being scanned.\nScan metadata is useful for file analysis purposes and for debugging scan behavior.\nThe JSON metadata will be printed after the scan is complete if Debug is enabled.\nA metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.", "no"},
+
     {"User", NULL, 0, CLOPT_TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Run the daemon as a specified user (the process must be started by root).", "clamav"},
 
     /* Scan options */

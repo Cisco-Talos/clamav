@@ -273,6 +273,14 @@ Do not remove temporary files (for debugging purpose).
 .br
 Default: no
 .TP
+\fBGenerateMetadataJson BOOL\fR
+Record metadata about the file being scanned.
+Scan metadata is useful for file analysis purposes and for debugging scan behavior.
+The JSON metadata will be printed after the scan is complete if Debug is enabled.
+A metadata.json file will be written to the scan temp directory if LeaveTemporaryFiles is enabled.
+.br
+Default: no
+.TP
 \fBUser STRING\fR
 Run the daemon as a specified user (the process must be started by root).
 .br
