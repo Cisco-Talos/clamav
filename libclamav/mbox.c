@@ -751,7 +751,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
         }
 
         if ((*lineFoldCnt) >= HEURISTIC_EMAIL_MAX_LINE_FOLDS_PER_HEADER) {
-            if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
+            if (SCAN_HEURISTIC_EXCEEDS_MAX) {
                 cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxLineFoldCnt");
                 *heuristicFound = TRUE;
             }
@@ -767,7 +767,7 @@ haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (totalLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES) {
-        if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxHeaderBytes");
             *heuristicFound = TRUE;
         }
@@ -782,7 +782,7 @@ haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFoun
 {
 
     if (totalHeaderCnt > HEURISTIC_EMAIL_MAX_HEADERS) {
-        if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxEmailHeaders");
             *heuristicFound = TRUE;
         }
@@ -797,7 +797,7 @@ haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc
 {
 
     if (mimePartCnt >= HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE) {
-        if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEPartsPerMessage");
             *rc = VIRUS;
         }
@@ -812,7 +812,7 @@ haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
 {
 
     if (argCnt >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) {
-        if (ctx->options->general & CL_SCAN_GENERAL_HEURISTICS) {
+        if (SCAN_HEURISTIC_EXCEEDS_MAX) {
             cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEArguments");
             *heuristicFound = TRUE;
         }
