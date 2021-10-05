@@ -319,8 +319,7 @@ if (WIN32)
         FILES
             ${CMAKE_CURRENT_SOURCE_DIR}/NEWS.md
             ${CMAKE_CURRENT_SOURCE_DIR}/README.md
-        DESTINATION "."
-        COMPONENT documentation)
+        DESTINATION ".")
 
 elseif(APPLE)
     set(CPACK_GENERATOR productbuild)
