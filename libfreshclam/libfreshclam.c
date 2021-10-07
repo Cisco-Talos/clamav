@@ -665,6 +665,15 @@ fc_error_t fc_update_database(
                     break;
                 }
                 case FC_EFORBIDDEN: {
+                    char retry_after_string[26];
+                    struct tm *tm_info;
+                    tm_info = localtime(&g_freshclamDat->retry_after);
+                    if (NULL == tm_info) {
+                        logg("!Failed to query the local time for the retry-after date!\n");
+                        status = FC_ERROR;
+                        goto done;
+                    }
+                    strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
                     logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
                     logg("This could mean several things:\n");
                     logg(" 1. You are running an out-of-date version of ClamAV / FreshClam.\n");
@@ -676,6 +685,7 @@ fc_error_t fc_update_database(
                     logg("   c. If you have checked (a) and (b), please open a ticket at\n");
                     logg("      https://github.com/Cisco-Talos/clamav/issues\n");
                     logg("      and we will investigate why your network is blocked.\n");
+                    logg("^You are on cool-down until after: %s\n", retry_after_string);
                     status = ret;
                     goto done;
                     break;
@@ -762,15 +772,17 @@ fc_error_t fc_update_databases(
                 goto done;
             }
             strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-            logg("^FreshClam previously received error code 429 from the ClamAV Content Delivery Network (CDN).\n");
-            logg("This means that you have been rate limited by the CDN.\n");
-            logg(" 1. Run FreshClam no more than once an hour to check for updates.\n");
+            logg("^FreshClam previously received error code 429 or 403 from the ClamAV Content Delivery Network (CDN).\n");
+            logg("This means that you have been rate limited or blocked by the CDN.\n");
+            logg(" 1. Verify that you're running a supported ClamAV version.\n");
+            logg("    See https://docs.clamav.net/faq/faq-eol.html for details.\n");
+            logg(" 2. Run FreshClam no more than once an hour to check for updates.\n");
             logg("    FreshClam should check DNS first to see if an update is needed.\n");
-            logg(" 2. If you have more than 10 hosts on your network attempting to download,\n");
+            logg(" 3. If you have more than 10 hosts on your network attempting to download,\n");
             logg("    it is recommended that you set up a private mirror on your network using\n");
             logg("    cvdupdate (https://pypi.org/project/cvdupdate/) to save bandwidth on the\n");
             logg("    CDN and your own network.\n");
-            logg(" 3. Please do not open a ticket asking for an exemption from the rate limit,\n");
+            logg(" 4. Please do not open a ticket asking for an exemption from the rate limit,\n");
             logg("    it will not be granted.\n");
             logg("^You are still on cool-down until after: %s\n", retry_after_string);
             status = FC_SUCCESS;
@@ -871,6 +883,15 @@ fc_error_t fc_download_url_database(
                 break;
             }
             case FC_EFORBIDDEN: {
+                char retry_after_string[26];
+                struct tm *tm_info;
+                tm_info = localtime(&g_freshclamDat->retry_after);
+                if (NULL == tm_info) {
+                    logg("!Failed to query the local time for the retry-after date!\n");
+                    status = FC_ERROR;
+                    goto done;
+                }
+                strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
                 logg("^FreshClam received error code 403 from the ClamAV Content Delivery Network (CDN).\n");
                 logg("This could mean several things:\n");
                 logg(" 1. You are running an out-of-date version of ClamAV / FreshClam.\n");
@@ -882,6 +903,7 @@ fc_error_t fc_download_url_database(
                 logg("   c. If you have checked (a) and (b), please open a ticket at\n");
                 logg("      https://github.com/Cisco-Talos/clamav/issues\n");
                 logg("      and we will investigate why your network is blocked.\n");
+                logg("^You are on cool-down until after: %s\n", retry_after_string);
                 status = ret;
                 goto done;
                 break;
