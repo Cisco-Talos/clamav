@@ -1010,6 +1010,12 @@ static fc_error_t remote_cvdhead(
         }
         case 403: {
             status = FC_EFORBIDDEN;
+
+            /* Try again in no less than 24 hours if freshclam received a 403 FORBIDDEN. */
+            g_freshclamDat->retry_after = time(NULL) + 60 * 60 * 24;
+
+            (void)save_freshclam_dat();
+
             break;
         }
         case 429: {
@@ -1306,6 +1312,12 @@ static fc_error_t downloadFile(
         }
         case 403: {
             status = FC_EFORBIDDEN;
+
+            /* Try again in no less than 24 hours if freshclam received a 403 FORBIDDEN. */
+            g_freshclamDat->retry_after = time(NULL) + 60 * 60 * 24;
+
+            (void)save_freshclam_dat();
+
             break;
         }
         case 429: {
