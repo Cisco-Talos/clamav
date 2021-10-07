@@ -181,6 +181,19 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+        command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0  # "fine" (on cooldown, refusing to try again for now)
+
+        expected_results = [
+            'FreshClam previously received error code 429 or 403',
+            'You are still on cool-down until after',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
     def test_freshclam_03_http_403_daemonized(self):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
 
