@@ -64,8 +64,19 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 #else
     UNUSEDPARAM(encoding);
 #endif
+
+    if (NULL == begin) {
+        cli_dbgmsg("ole2_convert_utf: invalid parameter\n");
+        return NULL;
+    }
+
+    if (sz == 0) {
+        cli_dbgmsg("ole2_convert_utf: converting empty string\n");
+        return cli_calloc(1, 1); // Just send back an empty NULL-terminated string.
+    }
+
     /* applies in the both case */
-    if (sctx->codepage == 20127 || sctx->codepage == CODEPAGE_UTF8) {
+    if (sctx->codepage == CODEPAGE_US_7BIT_ASCII || sctx->codepage == CODEPAGE_UTF8) {
         char *track;
         size_t bcnt, scnt;
 
