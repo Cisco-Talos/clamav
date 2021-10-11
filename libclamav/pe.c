@@ -2847,13 +2847,17 @@ int cli_scanpe(cli_ctx *ctx)
             if ((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
                 ret = scan_pe_mdb(ctx, &(peinfo->sections[i]));
                 if (ret != CL_CLEAN) {
-                    // TODO Handle allmatch
-                    if (ret != CL_VIRUS)
+                    if (ret == CL_VIRUS && !SCAN_ALLMATCHES) {
+                        cli_dbgmsg("------------------------------------\n");
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
+                    } else if (ret != CL_VIRUS) {
                         cli_errmsg("cli_scanpe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
 
-                    cli_dbgmsg("------------------------------------\n");
-                    cli_exe_info_destroy(peinfo);
-                    return ret;
+                        cli_dbgmsg("------------------------------------\n");
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
+                    }
                 }
             }
         }
