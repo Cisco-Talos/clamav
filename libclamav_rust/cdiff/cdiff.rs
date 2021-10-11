@@ -31,7 +31,6 @@ use std::{
 };
 
 use flate2::read::GzDecoder;
-// use crypto instead of openssl
 use openssl::sha;
 use thiserror::Error;
 
@@ -118,10 +117,9 @@ pub struct DelOp<'a> {
     del_line: &'a str,
 }
 
-// Method to parse the cdiff line describing a delete operation
+/// Method to parse the cdiff line describing a delete operation
 impl<'a> DelOp<'a> {
     pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        // Extract src db, dst db, start line no, start line, end line no, end line
         let mut iter = data.split_whitespace();
 
         Ok(DelOp {
@@ -146,10 +144,9 @@ pub struct MoveOp<'a> {
     end_line: &'a str,
 }
 
-// Method to parse the cdiff line describing a move operation
+/// Method to parse the cdiff line describing a move operation
 impl<'a> MoveOp<'a> {
     pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        // Extract src db, dst db, start line no, start line, end line no, end line
         let mut iter = data.split_whitespace();
 
         Ok(MoveOp {
@@ -184,12 +181,9 @@ pub struct XchgOp<'a> {
     new_line: &'a str,
 }
 
-/// Todo: rewrite this code so that it can handle multiple whitespaces between fields
-
-// Method to parse the cdiff line describing an exchange operation
+/// Method to parse the cdiff line describing an exchange operation
 impl<'a> XchgOp<'a> {
     pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        // Extract start line no, orig line, and new line
         let mut iter = data.splitn(3, char::is_whitespace);
 
         Ok(XchgOp {
@@ -207,8 +201,8 @@ impl<'a> XchgOp<'a> {
     }
 }
 
-// int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
 extern "C" {
+    /// int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
     fn cli_versig2(digest: *const u8, dsig: *const i8, n: *const u8, e: *const u8) -> i32;
     fn logg(fmt: *const u8, args: ...) -> i32;
 }
@@ -329,6 +323,7 @@ pub fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
     }
 }
 
+/// Set up Context structure with data parsed from command open
 fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), CdiffError> {
     // Test for existing open db
     if let Some(x) = &ctx.open_db {
@@ -347,6 +342,7 @@ fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), Cdiff
     Ok(())
 }
 
+/// Set up Context structure with data parsed from command add
 fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), CdiffError> {
     // Test for add without an open db
     match &ctx.open_db {
@@ -369,6 +365,7 @@ fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), Cdif
     // eprintln!("signature {:?}", ctx.add_start);
 }
 
+/// Set up Context structure with data parsed from command delete
 fn cmd_del(mut ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
     // Test for add without an open db
     match &ctx.open_db {
@@ -413,6 +410,7 @@ fn cmd_del(mut ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
     Ok(())
 }
 
+/// Set up Context structure with data parsed from command exchange
 fn cmd_xchg(mut ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
     // Test for add without an open db
     match &ctx.open_db {
@@ -447,8 +445,9 @@ fn cmd_xchg(mut ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
     Ok(())
 }
 
+/// Move range of lines from one DB file into another
 fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug)]
     enum State {
         Init,
         Move,
@@ -472,21 +471,25 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
     let mut dst_file = OpenOptions::new().append(true).open(move_op.dst)?;
 
     // Create tmp file and open for writing
-    let mut tmp_file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open("_tmp_move_file")?;
+    let tmp_named_file = tempfile::Builder::new()
+        .prefix("_tmp_move_file")
+        .tempfile_in("./")?;
+    let mut tmp_file = tmp_named_file.as_file();
 
     // Create a buffered reader and loop over src, line by line
     let src_reader = BufReader::new(src_file);
 
-    for (line_no, line) in src_reader.lines().enumerate() {
+    for (mut line_no, line) in src_reader.lines().enumerate() {
         let line = line?;
 
+        // cdiff files start at line 1
+        line_no += 1;
         if state == State::Init && line_no == move_op.start_line_no {
             if line.starts_with(move_op.start_line) {
                 state = State::Move;
+                writeln!(dst_file, "{}", line)?;
             } else {
+                eprintln!("{} does not match {}", line, move_op.start_line);
                 return Err(CdiffError::PatternDoesNotMatch(
                     "MOVE".to_string(),
                     line_no,
@@ -522,11 +525,12 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
 
     // Delete src and replace it with tmp
     fs::remove_file(move_op.src)?;
-    fs::rename("_tmp_move_file", move_op.src)?;
+    fs::rename(tmp_named_file.path(), move_op.src)?;
 
     Ok(())
 }
 
+/// Utilize Context structure built by various prior command calls to perform I/O on open file
 fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
     // Test for existing open db
     match &ctx.open_db {
@@ -557,10 +561,6 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         let src_reader = BufReader::new(src_file);
 
         // Create tmp file and open for writing
-        // let mut tmp_file = OpenOptions::new()
-        //     .write(true)
-        //     .create_new(true)
-        //     .open("_tmp_move_file")?;
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
             .tempfile_in("./")?;
@@ -665,7 +665,6 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
 
         // Delete the old file and replace it with tmp
         fs::remove_file(open_db.clone())?;
-        //fs::rename("_tmp_move_file", open_db.clone())?;
         fs::rename(tmp_named_file.path(), open_db.clone())?;
     }
 
@@ -685,6 +684,7 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
     Ok(())
 }
 
+/// Set up Context structure with data parsed from command unlink
 fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
     match &ctx.open_db {
         Some(open_db) => fs::remove_file(open_db.clone())?,
@@ -693,6 +693,7 @@ fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
     Ok(())
 }
 
+/// Handle a specific command line in a cdiff file, calling the appropriate handler function
 fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
     // Find the index at the end of the command (note that the CLOSE command has no trailing data)
     let spc_idx = match line.find(|c: char| c.is_whitespace()) {
@@ -741,6 +742,7 @@ fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
     }
 }
 
+/// Main loop for iterating over cdiff command lines and handling them
 fn process_lines<T>(
     ctx: &mut Context,
     reader: T,
@@ -771,10 +773,7 @@ where
     Ok(())
 }
 
-/*
-Find the signature at the end of the file, prefixed by ':'
-To Do: write unit tests
-*/
+/// Find the signature at the end of the file, prefixed by ':'
 fn read_dsig(file: &mut File) -> Result<Vec<u8>, CdiffError> {
     // Verify file length
     if file.metadata()?.len() < MAX_DSIG_SIZE as u64 {
@@ -841,9 +840,7 @@ fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
     Err(CdiffError::MalformedFile("insufficient colons".to_string()))
 }
 
-// Sha256 read instead of update
-
-// Calculate the sha256 of the first len bytes of a file
+/// Calculate the sha256 of the first len bytes of a file
 fn get_hash(file: &mut File, len: usize) -> Result<[u8; 32], CdiffError> {
     let mut hasher = sha::Sha256::new();
 
@@ -936,12 +933,9 @@ mod tests {
         assert_eq!(err.to_string(), start_line_err.to_string());
     }
 
-    /*
-     * Helper function to set up a test folder and initialize a pseudo-db file
-     * with specified data.
-     */
+    /// Helper function to set up a test folder and initialize a pseudo-db file with specified data.
     fn initialize_db_file_with_data(
-        initial_data: Vec<String>,
+        initial_data: Vec<&str>,
     ) -> Result<tempfile::TempPath, CdiffTestError> {
         let mut file = tempfile::Builder::new()
             .tempfile_in("./")
@@ -952,9 +946,10 @@ mod tests {
         Ok(file.into_temp_path())
     }
 
+    /// Compare provided vector data with file contents
     fn compare_file_with_expected(
         temp_file_path: tempfile::TempPath,
-        expected_data: &mut Vec<String>,
+        expected_data: &mut Vec<&str>,
     ) {
         let db_file = File::open(temp_file_path).unwrap();
         let reader = BufReader::new(db_file);
@@ -989,13 +984,8 @@ mod tests {
 
     #[test]
     fn delete_first_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec!["AAAA".to_string(), "BBBB".to_string(), "CCCC".to_string()];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["AAAA", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1013,17 +1003,8 @@ mod tests {
 
     #[test]
     fn delete_second_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1041,17 +1022,8 @@ mod tests {
 
     #[test]
     fn delete_last_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1069,12 +1041,7 @@ mod tests {
 
     #[test]
     fn delete_line_not_match() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1095,12 +1062,7 @@ mod tests {
 
     #[test]
     fn delete_out_of_bounds() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1119,18 +1081,8 @@ mod tests {
 
     #[test]
     fn exchange_first_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:15 Aug 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:15 Aug 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1148,18 +1100,8 @@ mod tests {
 
     #[test]
     fn exchange_second_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "DDDD".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "DDDD", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1177,18 +1119,8 @@ mod tests {
 
     #[test]
     fn exchange_last_line() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "DDDD".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "DDDD"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1206,12 +1138,7 @@ mod tests {
 
     #[test]
     fn exchange_out_of_bounds() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1233,18 +1160,8 @@ mod tests {
 
     #[test]
     fn add_delete_exchange() {
-        let initial_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "AAAA".to_string(),
-            "BBBB".to_string(),
-            "CCCC".to_string(),
-        ];
-        let mut expected_data = vec![
-            "ClamAV-VDB:14 Jul 2021 14-29 -0400".to_string(),
-            "DDDD".to_string(),
-            "CCCC".to_string(),
-            "EEEE".to_string(),
-        ];
+        let initial_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "AAAA", "BBBB", "CCCC"];
+        let mut expected_data = vec!["ClamAV-VDB:14 Jul 2021 14-29 -0400", "DDDD", "CCCC", "EEEE"];
 
         let db_file_path = initialize_db_file_with_data(initial_data).unwrap();
 
@@ -1270,9 +1187,67 @@ mod tests {
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
 
-    // Todo: Write a unit test to handle an xchgop with multiple whitespace entries between fields.
+    #[test]
+    fn move_db() {
+        // Define initial databases
+        let dst_data = vec!["ClamAV-VDB:15 Aug 2021 14-30 -0400", "AAAA", "BBBB", "CCCC"];
 
-    /*
-    TO DO: Add unit tests that describe how we think a move operation will work, since they are extremely rare
-    */
+        let src_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400",
+            "AAAA",
+            "BBBB",
+            "CCCC",
+            "DDDD",
+            "EEEE",
+            "FFFF",
+            "GGGG",
+        ];
+
+        // Define expected databases after move operation
+        let mut expected_dst_data = vec![
+            "ClamAV-VDB:15 Aug 2021 14-30 -0400",
+            "AAAA",
+            "BBBB",
+            "CCCC",
+            "DDDD",
+            "EEEE",
+            "FFFF",
+        ];
+
+        let mut expected_src_data = vec![
+            "ClamAV-VDB:14 Jul 2021 14-29 -0400",
+            "AAAA",
+            "BBBB",
+            "CCCC",
+            "GGGG",
+        ];
+
+        // Initialize databases
+        let dst_file_path = initialize_db_file_with_data(dst_data).unwrap();
+        let src_file_path = initialize_db_file_with_data(src_data).unwrap();
+
+        let mut ctx: Context = Context {
+            open_db: None,
+            add_start: None,
+            del_start: None,
+            xchg_start: None,
+        };
+
+        let move_args = format!(
+            "{} {} 5 DDDD 7 FFFF",
+            src_file_path.to_str().unwrap(),
+            dst_file_path.to_str().unwrap()
+        );
+
+        // Move lines 5-7 from src to dst
+        let move_op = MoveOp::new(move_args.as_str()).unwrap();
+
+        match cmd_move(&mut ctx, move_op) {
+            Ok(_) => (),
+            Err(e) => panic!("cmd_move failed with: {}", e.to_string()),
+        }
+
+        compare_file_with_expected(src_file_path, &mut expected_src_data);
+        compare_file_with_expected(dst_file_path, &mut expected_dst_data);
+    }
 }
