@@ -276,3 +276,52 @@ class TC(testcase.TestCase):
             'Test.Case.BC.PDF.hook FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_11_allmatch_hash_sigs(self):
+        self.step_name('Test that each type of hash sig is detected in all-match mode')
+
+        os.mkdir(str(TC.path_db / 'allmatch-test-sigs'))
+
+        (TC.path_db / 'allmatch-test-sigs' / 'clam.hdb').write_text(
+            "aa15bcf478d165efd2065190eb473bcb:544:Test.MD5.Hash:73\n"
+            "aa15bcf478d165efd2065190eb473bcb:*:Test.MD5.Hash.NoSize:73\n"
+        )
+        (TC.path_db / 'allmatch-test-sigs' / 'clam.hsb').write_text(
+            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:544:Test.Sha256.Hash:73\n"
+            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:*:Test.Sha256.Hash.NoSize:73\n"
+            "62dd70f5e7530e0239901ac186f1f9ae39292561:544:Test.Sha1.Hash:73\n"
+            "62dd70f5e7530e0239901ac186f1f9ae39292561:*:Test.Sha1.NoSize:73\n"
+        )
+        (TC.path_db / 'allmatch-test-sigs' / 'clam.imp').write_text(
+            "98c88d882f01a3f6ac1e5f7dfd761624:39:Test.Import.Hash\n"
+            "98c88d882f01a3f6ac1e5f7dfd761624:*:Test.Import.Hash.NoSize\n"
+        )
+        (TC.path_db / 'allmatch-test-sigs' / 'clam.mdb').write_text(
+            "512:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash:73\n"
+            "*:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash.NoSize:73\n"
+        )
+
+        testfiles = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'allmatch-test-sigs',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.MD5.Hash.UNOFFICIAL FOUND',
+            'Test.MD5.Hash.NoSize.UNOFFICIAL FOUND',
+            'Test.Sha1.Hash.UNOFFICIAL FOUND',
+            'Test.Sha1.NoSize.UNOFFICIAL FOUND',
+            'Test.Sha256.Hash.UNOFFICIAL FOUND',
+            'Test.Sha256.Hash.NoSize.UNOFFICIAL FOUND',
+            'Test.PESection.Hash.UNOFFICIAL FOUND',
+            'Test.PESection.Hash.NoSize.UNOFFICIAL FOUND',
+            'Test.Import.Hash.UNOFFICIAL FOUND',
+            'Test.Import.Hash.NoSize.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
