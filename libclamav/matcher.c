@@ -1297,7 +1297,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             if (found % 2) {
                 viruses_found = 1;
                 ret           = cli_append_virus(ctx, virname);
-                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
+                if (ret != CL_CLEAN && !SCAN_ALLMATCHES)
                     break;
                 virname = NULL;
             }
@@ -1305,7 +1305,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             if (found > 1) {
                 viruses_found = 1;
                 ret           = cli_append_virus(ctx, virname_w);
-                if (!SCAN_ALLMATCHES || ret != CL_CLEAN)
+                if (ret != CL_CLEAN && !SCAN_ALLMATCHES)
                     break;
             }
         }
