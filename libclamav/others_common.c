@@ -61,6 +61,7 @@
 #include "matcher-ac.h"
 #include "str.h"
 #include "entconv.h"
+#include "clamav_rust.h"
 
 #define MSGBUFSIZ 8192
 
@@ -122,15 +123,15 @@ void cli_logg_unsetup(void)
 uint8_t cli_debug_flag              = 0;
 uint8_t cli_always_gen_section_hash = 0;
 
-static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
+static void clrs_eprint_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
 {
     UNUSEDPARAM(severity);
     UNUSEDPARAM(msg);
     UNUSEDPARAM(context);
-    fputs(fullmsg, stderr);
+    clrs_eprint(fullmsg);
 }
 
-static clcb_msg msg_callback = fputs_callback;
+static clcb_msg msg_callback = clrs_eprint_callback;
 
 void cl_set_clcb_msg(clcb_msg callback)
 {
@@ -176,7 +177,7 @@ inline void cli_dbgmsg(const char *str, ...)
 {
     if (UNLIKELY(cli_get_debug_flag())) {
         MSGCODE(buff, len, "LibClamAV debug: ");
-        fputs(buff, stderr);
+        clrs_eprint(buff);
     }
 }
 

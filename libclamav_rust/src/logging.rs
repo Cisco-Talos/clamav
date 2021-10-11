@@ -20,7 +20,10 @@
  *  MA 02110-1301, USA.
  */
 
-use std::ffi::CString;
+use std::{
+    ffi::{CStr, CString},
+    os::raw::c_char,
+};
 
 use log::{set_max_level, Level, LevelFilter, Metadata, Record};
 
@@ -80,4 +83,10 @@ mod tests {
         warn!("my old");
         error!("friend.");
     }
+}
+
+#[no_mangle]
+pub extern "C" fn clrs_eprint(c_buf: *const c_char) -> () {
+    let msg = unsafe { CStr::from_ptr(c_buf) }.to_string_lossy();
+    eprint!("{}", msg);
 }
