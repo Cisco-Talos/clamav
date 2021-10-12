@@ -196,7 +196,7 @@ your build will depend on which type of generator you're using:
   These generate a build system that can only build a single build type.
 
   With a single-config generator, you need to specify the build type up
-  front. You can do this using the `-C` option. For example:
+  front. You can do this using the `-G` option. For example:
   ```sh
   # Configure
   cmake .. -G Ninja -D CMAKE_BUILD_TYPE=RelWithDebInfo
