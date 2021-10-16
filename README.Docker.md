@@ -268,7 +268,7 @@ following flags can be passed to the `docker run` command with the
 So to additionally also enable `clamav-milter`, the following flag can be
 added:
 ```bash
-    --env 'CLAMAV_NO_MILTERED=false'
+    --env 'CLAMAV_NO_MILTERD=false'
 ```
 
 Further more, all of the configuration files that live in `/etc/clamav` can be
