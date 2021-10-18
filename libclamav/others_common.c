@@ -62,8 +62,6 @@
 #include "str.h"
 #include "entconv.h"
 
-#include "libclamav_rust/clamav_rust.h"
-
 #define MSGBUFSIZ 8192
 
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
