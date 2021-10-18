@@ -4933,7 +4933,6 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         rc = CL_EMEM;
         goto done;
     }
-
     /*
      * The first fmap in ctx.fmap must be NULL so we can fmap-- while not NULL.
      * But we need an fmap to be set so we can append viruses or report the
