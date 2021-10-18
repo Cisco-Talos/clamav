@@ -633,6 +633,8 @@ static unsigned int parse_local_file_header(
     zip = local_header + SIZEOF_LOCAL_HEADER;
     zsize -= SIZEOF_LOCAL_HEADER;
 
+    memset(name, '\0', 256);
+
     if (zsize <= LOCAL_HEADER_flen) {
         cli_dbgmsg("cli_unzip: local header - fname out of file\n");
         fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
