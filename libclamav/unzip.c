@@ -673,9 +673,11 @@ static unsigned int parse_local_file_header(
     }
 
     if (detect_encrypted && (LOCAL_HEADER_flags & F_ENCR) && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
+        cl_error_t fp_check;
         cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-        *ret = cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
-        if ((*ret == CL_VIRUS && !SCAN_ALLMATCHES) || *ret != CL_CLEAN) {
+        fp_check = cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
+        if ((fp_check == CL_VIRUS && !SCAN_ALLMATCHES) || fp_check != CL_CLEAN) {
+            *ret = fp_check;
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
             goto done;
         }
@@ -734,6 +736,8 @@ static unsigned int parse_local_file_header(
             record->method              = LOCAL_HEADER_method;
             record->flags               = LOCAL_HEADER_flags;
             record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
+
+            *ret = CL_SUCCESS;
         }
 
         zip += csize;
@@ -807,6 +811,8 @@ parse_central_directory_file_header(
     int last                      = 0;
     const uint8_t *central_header = NULL;
     int virus_found               = 0;
+
+    *ret = CL_EPARSE;
 
     if (!(central_header = fmap_need_off(map, coff, SIZEOF_CENTRAL_HEADER)) || CENTRAL_HEADER_magic != ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_BEGIN) {
         if (central_header) {
@@ -895,6 +901,7 @@ parse_central_directory_file_header(
                 }
             }
         }
+        *ret = CL_SUCCESS;
     }
 
 done:
@@ -994,16 +1001,28 @@ cl_error_t index_the_central_directory(
 
     cli_dbgmsg("cli_unzip: checking for non-recursive zip bombs...\n");
 
-    while (0 != (coff = parse_central_directory_file_header(map,
-                                                            coff,
-                                                            fsize,
-                                                            NULL, // num_files_unziped not required
-                                                            index + 1,
-                                                            &ret,
-                                                            ctx,
-                                                            NULL, // tmpd not required
-                                                            NULL,
-                                                            &(zip_catalogue[records_count])))) {
+    do {
+        coff = parse_central_directory_file_header(map,
+                                                   coff,
+                                                   fsize,
+                                                   NULL, // num_files_unziped not required
+                                                   index + 1,
+                                                   &ret,
+                                                   ctx,
+                                                   NULL, // tmpd not required
+                                                   NULL,
+                                                   &(zip_catalogue[records_count]));
+
+        if (CL_EPARSE != ret) {
+            // Found a record.
+            records_count++;
+        }
+
+        if (0 == coff) {
+            // No more files (previous was last).
+            break;
+        }
+
         if (ret == CL_VIRUS) {
             if (SCAN_ALLMATCHES)
                 virus_found = 1;
@@ -1029,9 +1048,10 @@ cl_error_t index_the_central_directory(
                                        // We still need to scan the files we found while reviewing the file records up to this limit.
             break;
         }
-        records_count++;
 
         if (records_count % ZIP_RECORDS_CHECK_BLOCKSIZE == 0) {
+            struct zip_record *zip_catalogue_new = NULL;
+
             cli_dbgmsg("   cli_unzip: Exceeded zip record block size, allocating more space...\n");
 
             /* allocate more space for zip records */
@@ -1042,16 +1062,19 @@ cl_error_t index_the_central_directory(
                 goto done;
             }
 
-            zip_catalogue = cli_realloc2(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
-            if (NULL == zip_catalogue) {
+            zip_catalogue_new = cli_realloc2(zip_catalogue, sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE * (num_record_blocks + 1));
+            if (NULL == zip_catalogue_new) {
                 status = CL_EMEM;
                 goto done;
             }
+            zip_catalogue     = zip_catalogue_new;
+            zip_catalogue_new = NULL;
+
             num_record_blocks++;
             /* zero out the memory for the new records */
             memset(&(zip_catalogue[records_count]), 0, sizeof(struct zip_record) * (ZIP_RECORDS_CHECK_BLOCKSIZE * num_record_blocks - records_count));
         }
-    }
+    } while (1);
 
     if (ret == CL_VIRUS) {
         if (SCAN_ALLMATCHES)
@@ -1124,6 +1147,13 @@ done:
 
     if (CL_SUCCESS != status) {
         if (NULL != zip_catalogue) {
+            size_t i;
+            for (i = 0; i < records_count; i++) {
+                if (NULL != zip_catalogue[i].original_filename) {
+                    free(zip_catalogue[i].original_filename);
+                    zip_catalogue[i].original_filename = NULL;
+                }
+            }
             free(zip_catalogue);
             zip_catalogue = NULL;
         }
