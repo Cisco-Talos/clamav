@@ -33,8 +33,8 @@ typedef struct message {
     char **mimeArguments;
     char *mimeDispositionType; /* probably attachment */
     text *body_first, *body_last;
-    cli_ctx *ctx;          /* When set we can scan the message, otherwise NULL */
-    int numberOfArguments; /* count of mimeArguments */
+    cli_ctx *ctx;             /* When set we can scan the message, otherwise NULL */
+    size_t numberOfArguments; /* count of mimeArguments */
     int base64chars;
 
     /*
@@ -74,7 +74,6 @@ void messageSetEncoding(message *m, const char *enctype);
 encoding_type messageGetEncoding(const message *m);
 int messageAddLine(message *m, line_t *line);
 int messageAddStr(message *m, const char *data);
-int messageAddStrAtTop(message *m, const char *data);
 int messageMoveText(message *m, text *t, message *old_message);
 text *messageGetBody(message *m);
 unsigned char *base64Flush(message *m, unsigned char *buf);
