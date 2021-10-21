@@ -39,9 +39,9 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
@@ -61,17 +61,6 @@
 
 #define RFC2045LENGTH 76 /* maximum number of characters on a line */
 
-#ifdef HAVE_STDBOOL_H
-#include <stdbool.h>
-#else
-#ifdef FALSE
-typedef unsigned char bool;
-#else
-typedef enum { FALSE = 0,
-               TRUE  = 1 } bool;
-#endif
-#endif
-
 static int messageHasArgument(const message *m, const char *variable);
 static void messageIsEncoding(message *m);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
@@ -85,8 +74,8 @@ static unsigned char hex(char c);
 static unsigned char base64(char c);
 static unsigned char uudecode(char c);
 #endif
-static const char *messageGetArgument(const message *m, int arg);
-static void *messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text);
+static const char *messageGetArgument(const message *m, size_t arg);
+static void *messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), int (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text);
 static int usefulArg(const char *arg);
 static void messageDedup(message *m);
 static char *rfc2231(const char *in);
@@ -161,7 +150,9 @@ messageCreate(void)
 
 void messageDestroy(message *m)
 {
-    assert(m != NULL);
+    if (NULL == m) {
+        return;
+    }
 
     messageReset(m);
 
@@ -170,9 +161,11 @@ void messageDestroy(message *m)
 
 void messageReset(message *m)
 {
-    int i;
+    size_t i;
 
-    assert(m != NULL);
+    if (NULL == m) {
+        return;
+    }
 
     if (m->mimeSubtype)
         free(m->mimeSubtype);
@@ -189,10 +182,15 @@ void messageReset(message *m)
     if (m->body_first)
         textDestroy(m->body_first);
 
-    assert(m->base64chars == 0);
+    if (0 != m->base64chars) {
+        cli_errmsg("Internal email parse error: message base64chars should be 0 when resetting the message\n");
+    }
 
     if (m->encodingTypes) {
-        assert(m->numberOfEncTypes > 0);
+        if (0 == m->numberOfEncTypes) {
+            cli_errmsg("Internal email parse error: message numberOfEncTypes should be 0 if encoding types are set\n");
+        }
+
         free(m->encodingTypes);
     }
 
@@ -220,9 +218,13 @@ int messageSetMimeType(message *mess, const char *type)
     int typeval;
     static table_t *mime_table;
 
-    assert(mess != NULL);
+    if (mess == NULL) {
+        cli_dbgmsg("messageSetMimeType: NULL message pointer\n");
+        return 0;
+    }
+
     if (type == NULL) {
-        cli_dbgmsg("Empty content-type field\n");
+        cli_dbgmsg("messageSetMimeType: Empty content-type field\n");
         return 0;
     }
 
@@ -270,19 +272,19 @@ int messageSetMimeType(message *mess, const char *type)
             mess->mimeType = MEXTENSION;
         else {
             /*
-			 * Force scanning of strange messages
-			 */
+             * Force scanning of strange messages
+             */
             if (strcasecmp(type, "plain") == 0) {
                 cli_dbgmsg("Incorrect MIME type: `plain', set to Text\n");
                 mess->mimeType = TEXT;
             } else {
                 /*
-				 * Don't handle broken e-mail probably sending
-				 *	Content-Type: plain/text
-				 * instead of
-				 *	Content-Type: text/plain
-				 * as an attachment
-				 */
+                 * Don't handle broken e-mail probably sending
+                 *    Content-Type: plain/text
+                 * instead of
+                 *    Content-Type: text/plain
+                 * as an attachment
+                 */
                 int highestSimil = 0, t = -1;
                 const char *closest = NULL;
 
@@ -314,20 +316,26 @@ int messageSetMimeType(message *mess, const char *type)
 mime_type
 messageGetMimeType(const message *m)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: message is pointer is NULL when trying to get MIME type\n");
+        return NOMIME;
+    }
 
     return m->mimeType;
 }
 
 void messageSetMimeSubtype(message *m, const char *subtype)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: message is pointer is NULL when trying to set MIME sub-type\n");
+        return;
+    }
 
     if (subtype == NULL) {
         /*
-		 * Handle broken content-type lines, e.g.
-		 *	Content-Type: text/
-		 */
+         * Handle broken content-type lines, e.g.
+         *    Content-Type: text/
+         */
         cli_dbgmsg("Empty content subtype\n");
         subtype = "";
     }
@@ -346,7 +354,10 @@ messageGetMimeSubtype(const message *m)
 
 void messageSetDispositionType(message *m, const char *disptype)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: message is pointer is NULL when trying to set disposition type\n");
+        return;
+    }
 
     if (m->mimeDispositionType)
         free(m->mimeDispositionType);
@@ -356,11 +367,11 @@ void messageSetDispositionType(message *m, const char *disptype)
     }
 
     /*
-	 * It's broken for there to be an entry such as "Content-Disposition:"
-	 * However some spam and viruses are rather broken, it's a sign
-	 * that something is wrong if we get that - maybe we should force a
-	 * scan of this part
-	 */
+     * It's broken for there to be an entry such as "Content-Disposition:"
+     * However some spam and viruses are rather broken, it's a sign
+     * that something is wrong if we get that - maybe we should force a
+     * scan of this part
+     */
     while (*disptype && isspace((int)*disptype))
         disptype++;
     if (*disptype) {
@@ -379,17 +390,20 @@ messageGetDispositionType(const message *m)
 
 /*
  * TODO:
- *	Arguments are held on a per message basis, they should be held on
+ *    Arguments are held on a per message basis, they should be held on
  * a per section basis. Otherwise what happens if two sections have two
  * different values for charset? Probably doesn't matter for the use this
  * code will be given, but will need fixing if this code is used elsewhere
  */
 void messageAddArgument(message *m, const char *arg)
 {
-    int offset;
+    size_t offset;
     char *p;
 
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add an argument\n");
+        return;
+    }
 
     if (arg == NULL)
         return; /* Note: this is not an error condition */
@@ -434,9 +448,9 @@ void messageAddArgument(message *m, const char *arg)
     if (strchr(p, '=') == NULL) {
         if (strncmp(p, "filename", 8) == 0) {
             /*
-			 * FIXME: Bounce message handling is corrupting the in
-			 * core copies of headers
-			 */
+             * FIXME: Bounce message handling is corrupting the in
+             * core copies of headers
+             */
             if (strlen(p) > 8) {
                 cli_dbgmsg("Possible data corruption fixed\n");
                 p[8] = '=';
@@ -453,11 +467,11 @@ void messageAddArgument(message *m, const char *arg)
     }
 
     /*
-	 * This is terribly broken from an RFC point of view but is useful
-	 * for catching viruses which have a filename but no type of
-	 * mime. By pretending defaulting to an application rather than
-	 * to nomime we can ensure they're saved and scanned
-	 */
+     * This is terribly broken from an RFC point of view but is useful
+     * for catching viruses which have a filename but no type of
+     * mime. By pretending defaulting to an application rather than
+     * to nomime we can ensure they're saved and scanned
+     */
     if ((strncasecmp(p, "filename=", 9) == 0) || (strncasecmp(p, "name=", 5) == 0))
         if (messageGetMimeType(m) == NOMIME) {
             cli_dbgmsg("Force mime encoding to application\n");
@@ -468,8 +482,8 @@ void messageAddArgument(message *m, const char *arg)
 /*
  * Add in all the arguments.
  * Cope with:
- *	name="foo bar.doc"
- *	charset=foo name=bar
+ *    name="foo bar.doc"
+ *    charset=foo name=bar
  */
 void messageAddArguments(message *m, const char *s)
 {
@@ -477,7 +491,10 @@ void messageAddArguments(message *m, const char *s)
 
     cli_dbgmsg("Add arguments '%s'\n", string);
 
-    assert(string != NULL);
+    if (string == NULL) {
+        cli_errmsg("Internal email parser error: message is pointer is NULL when trying to add message arguments\n");
+        return;
+    }
 
     while (*string) {
         const char *key, *cptr;
@@ -494,23 +511,23 @@ void messageAddArguments(message *m, const char *s)
         data = strchr(string, '=');
 
         /*
-		 * Some spam breaks RFC2045 by using ':' instead of '='
-		 * e.g.:
-		 *	Content-Type: text/html; charset:ISO-8859-1
-		 * should be:
-		 *	Content-type: text/html; charset=ISO-8859-1
-		 *
-		 * We give up with lines that are completely broken because
-		 * we don't have ESP and don't know what was meant to be there.
-		 * It's unlikely to really be a problem.
-		 */
+         * Some spam breaks RFC2045 by using ':' instead of '='
+         * e.g.:
+         *    Content-Type: text/html; charset:ISO-8859-1
+         * should be:
+         *    Content-type: text/html; charset=ISO-8859-1
+         *
+         * We give up with lines that are completely broken because
+         * we don't have ESP and don't know what was meant to be there.
+         * It's unlikely to really be a problem.
+         */
         if (data == NULL)
             data = strchr(string, ':');
 
         if (data == NULL) {
             /*
-			 * Completely broken, give up
-			 */
+             * Completely broken, give up
+             */
             cli_dbgmsg("Can't parse header \"%s\"\n", s);
             return;
         }
@@ -518,14 +535,14 @@ void messageAddArguments(message *m, const char *s)
         string = &data[1];
 
         /*
-		 * Handle white space to the right of the equals sign
-		 * This breaks RFC2045 which has:
-		 *	parameter := attribute "=" value
-		 *	attribute := token   ; case-insensitive
-		 *	token  :=  1*<any (ASCII) CHAR except SPACE, CTLs,
-		 *		or tspecials>
-		 * But too many MUAs ignore this
-		 */
+         * Handle white space to the right of the equals sign
+         * This breaks RFC2045 which has:
+         *    parameter := attribute "=" value
+         *    attribute := token   ; case-insensitive
+         *    token  :=  1*<any (ASCII) CHAR except SPACE, CTLs,
+         *        or tspecials>
+         * But too many MUAs ignore this
+         */
         while (isspace(*string) && (*string != '\0'))
             string++;
 
@@ -538,9 +555,9 @@ void messageAddArguments(message *m, const char *s)
             char *ptr, *kcopy;
 
             /*
-			 * The field is in quotes, so look for the
-			 * closing quotes
-			 */
+             * The field is in quotes, so look for the
+             * closing quotes
+             */
             kcopy = cli_strdup(key);
 
             if (kcopy == NULL)
@@ -583,15 +600,15 @@ void messageAddArguments(message *m, const char *s)
 
             if (ptr == NULL) {
                 /*
-				 * Weird e-mail header such as:
-				 * Content-Type: application/octet-stream; name="
-				 * "
-				 * Content-Transfer-Encoding: base64
-				 * Content-Disposition: attachment; filename="
-				 * "
-				 *
-				 * Use the end of line as data.
-				 */
+                 * Weird e-mail header such as:
+                 * Content-Type: application/octet-stream; name="
+                 * "
+                 * Content-Transfer-Encoding: base64
+                 * Content-Disposition: attachment; filename="
+                 * "
+                 *
+                 * Use the end of line as data.
+                 */
             } else
                 *ptr = '\0';
 
@@ -613,9 +630,9 @@ void messageAddArguments(message *m, const char *s)
             }
 
             /*
-			 * The field is not in quotes, so look for the closing
-			 * white space
-			 */
+             * The field is not in quotes, so look for the closing
+             * white space
+             */
             while ((*string != '\0') && !isspace(*string))
                 string++;
 
@@ -635,11 +652,16 @@ void messageAddArguments(message *m, const char *s)
 }
 
 static const char *
-messageGetArgument(const message *m, int arg)
+messageGetArgument(const message *m, size_t arg)
 {
-    assert(m != NULL);
-    assert(arg >= 0);
-    assert(arg < m->numberOfArguments);
+    if (m == NULL) {
+        cli_errmsg("Internal email parse error: message pointer is NULL when trying to get a message argument\n");
+        return "";
+    }
+
+    if (arg >= m->numberOfArguments) {
+        return "";
+    }
 
     return (m->mimeArguments[arg]) ? m->mimeArguments[arg] : "";
 }
@@ -651,11 +673,13 @@ messageGetArgument(const message *m, int arg)
 char *
 messageFindArgument(const message *m, const char *variable)
 {
-    int i;
+    size_t i;
     size_t len;
 
-    assert(m != NULL);
-    assert(variable != NULL);
+    if (m == NULL || variable == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when finding message arguments\n");
+        return NULL;
+    }
 
     len = strlen(variable);
 
@@ -687,14 +711,14 @@ messageFindArgument(const message *m, const char *variable)
                     return NULL;
 
                 /*
-				 * fix un-quoting of boundary strings from
-				 * header, occurs if boundary was given as
-				 *	'boundary="_Test_";'
-				 *
-				 * At least two quotes in string, assume
-				 * quoted argument
-				 * end string at next quote
-				 */
+                 * fix un-quoting of boundary strings from
+                 * header, occurs if boundary was given as
+                 *    'boundary="_Test_";'
+                 *
+                 * At least two quotes in string, assume
+                 * quoted argument
+                 * end string at next quote
+                 */
                 if ((p = strchr(ret, '"')) != NULL) {
                     ret[strlen(ret) - 1] = '\0';
                     *p                   = '\0';
@@ -722,11 +746,13 @@ messageGetFilename(const message *m)
 static int
 messageHasArgument(const message *m, const char *variable)
 {
-    int i;
+    size_t i;
     size_t len;
 
-    assert(m != NULL);
-    assert(variable != NULL);
+    if (m == NULL || variable == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when checking if message has arguments\n");
+        return 0;
+    }
 
     len = strlen(variable);
 
@@ -765,8 +791,10 @@ void messageSetEncoding(message *m, const char *enctype)
     int i;
     char *type;
 
-    assert(m != NULL);
-    assert(enctype != NULL);
+    if (m == NULL || enctype == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when setting message encoding type\n");
+        return;
+    }
 
     /*m->encodingType = EEXTENSION;*/
 
@@ -781,10 +809,10 @@ void messageSetEncoding(message *m, const char *enctype)
     }
 
     /*
-	 * Iterate through
-	 *	Content-Transfer-Encoding: base64 binary
-	 * cli_strtok's fieldno counts from 0
-	 */
+     * Iterate through
+     *    Content-Transfer-Encoding: base64 binary
+     * cli_strtok's fieldno counts from 0
+     */
     i = 0;
     while ((type = cli_strtok(enctype, i++, " \t")) != NULL) {
         int highestSimil    = 0;
@@ -796,21 +824,21 @@ void messageSetEncoding(message *m, const char *enctype)
 
             if ((lowertype != tolower(e->string[0])) && (lowertype != 'x'))
                 /*
-				 * simil is expensive, I'm yet to encounter only
-				 * one example of a missent encoding when the
-				 * first character was wrong, so lets assume no
-				 * match to save the call.
-				 *
-				 * That example was quoted-printable sent as
-				 * X-quoted-printable.
-				 */
+                 * simil is expensive, I'm yet to encounter only
+                 * one example of a missent encoding when the
+                 * first character was wrong, so lets assume no
+                 * match to save the call.
+                 *
+                 * That example was quoted-printable sent as
+                 * X-quoted-printable.
+                 */
                 continue;
 
             if (strcmp(e->string, "uuencode") == 0)
                 /*
-				 * No need to test here - fast track visa will have
-				 * handled uuencoded files
-				 */
+                 * No need to test here - fast track visa will have
+                 * handled uuencoded files
+                 */
                 continue;
 
             sim = simil(type, e->string);
@@ -846,12 +874,12 @@ void messageSetEncoding(message *m, const char *enctype)
 
         if (e->string == NULL) {
             /*
-			 * The stated encoding type is illegal, so we
-			 * use a best guess of what it should be.
-			 *
-			 * 50% is arbitrary. For example 7bi will match as
-			 * 66% certain to be 7bit
-			 */
+             * The stated encoding type is illegal, so we
+             * use a best guess of what it should be.
+             *
+             * 50% is arbitrary. For example 7bi will match as
+             * 66% certain to be 7bit
+             */
             if (highestSimil >= 50) {
                 cli_dbgmsg("Unknown encoding type \"%s\" - guessing as %s (%u%% certainty)\n",
                            type, closest, highestSimil);
@@ -859,9 +887,9 @@ void messageSetEncoding(message *m, const char *enctype)
             } else {
                 cli_dbgmsg("Unknown encoding type \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", type);
                 /*
-				 * Err on the side of safety, enable all
-				 * decoding modules
-				 */
+                 * Err on the side of safety, enable all
+                 * decoding modules
+                 */
                 messageSetEncoding(m, "base64");
                 messageSetEncoding(m, "quoted-printable");
             }
@@ -874,7 +902,10 @@ void messageSetEncoding(message *m, const char *enctype)
 encoding_type
 messageGetEncoding(const message *m)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when checking message encoding type\n");
+        return NOENCODING;
+    }
 
     if (m->numberOfEncTypes == 0)
         return NOENCODING;
@@ -883,7 +914,10 @@ messageGetEncoding(const message *m)
 
 int messageAddLine(message *m, line_t *line)
 {
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when adding line to message.\n");
+        return -1;
+    }
 
     if (m->body_first == NULL)
         m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
@@ -918,17 +952,20 @@ int messageAddStr(message *m, const char *data)
 {
     line_t *repeat = NULL;
 
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("messageAddStr: invalid arguments\n");
+        return -1;
+    }
 
     if (data) {
         if (*data == '\0')
             data = NULL;
         else {
             /*
-			 * If it's only white space, just store one space to
-			 * save memory. You must store something since it may
-			 * be a header line
-			 */
+             * If it's only white space, just store one space to
+             * save memory. You must store something since it may
+             * be a header line
+             */
             int iswhite = 1;
             const char *p;
 
@@ -947,30 +984,34 @@ int messageAddStr(message *m, const char *data)
     if (m->body_first == NULL)
         m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
     else {
-        assert(m->body_last != NULL);
-        if ((data == NULL) && (m->body_last->t_line == NULL))
-            /*
-			 * Although this would save time and RAM, some
-			 * phish signatures have been built which need the
-			 * blank lines
-			 */
-            if (messageGetMimeType(m) != TEXT)
-                /* don't save two blank lines in succession */
-                return 1;
+        if (m->body_last == NULL) {
+            cli_errmsg("Internal email parser error: message 'body_last' pointer should not be NULL if 'body_first' is set.\n");
+        } else {
+            if ((data == NULL) && (m->body_last->t_line == NULL))
+                /*
+                 * Although this would save time and RAM, some
+                 * phish signatures have been built which need the
+                 * blank lines
+                 */
+                if (messageGetMimeType(m) != TEXT)
+                    /* don't save two blank lines in succession */
+                    return 1;
 
-        m->body_last->t_next = (text *)cli_malloc(sizeof(text));
-        if (m->body_last->t_next == NULL) {
-            messageDedup(m);
             m->body_last->t_next = (text *)cli_malloc(sizeof(text));
             if (m->body_last->t_next == NULL) {
-                cli_errmsg("messageAddStr: out of memory\n");
-                return -1;
+                messageDedup(m);
+                m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+                if (m->body_last->t_next == NULL) {
+                    cli_errmsg("messageAddStr: out of memory\n");
+                    return -1;
+                }
             }
-        }
 
-        if (data && m->body_last->t_line && (strcmp(data, lineGetData(m->body_last->t_line)) == 0))
-            repeat = m->body_last->t_line;
-        m->body_last = m->body_last->t_next;
+            if (data && m->body_last->t_line && (strcmp(data, lineGetData(m->body_last->t_line)) == 0))
+                repeat = m->body_last->t_line;
+
+            m->body_last = m->body_last->t_next;
+        }
     }
 
     if (m->body_last == NULL) {
@@ -1005,37 +1046,6 @@ int messageAddStr(message *m, const char *data)
 }
 
 /*
- * Add the given line to the start of the given message
- * A copy of the given line is taken which the caller must free
- * Line must not be terminated by a \n
- */
-int messageAddStrAtTop(message *m, const char *data)
-{
-    text *oldfirst;
-
-    assert(m != NULL);
-
-    if (m->body_first == NULL)
-        return messageAddLine(m, lineCreate(data));
-
-    oldfirst      = m->body_first;
-    m->body_first = (text *)cli_malloc(sizeof(text));
-    if (m->body_first == NULL) {
-        m->body_first = oldfirst;
-        return -1;
-    }
-
-    m->body_first->t_next = oldfirst;
-    m->body_first->t_line = lineCreate((data) ? data : "");
-
-    if (m->body_first->t_line == NULL) {
-        cli_errmsg("messageAddStrAtTop: out of memory\n");
-        return -1;
-    }
-    return 1;
-}
-
-/*
  * Put the contents of the given text at the end of the current object.
  * Can be used either to move a text object into a message, or to move a
  * message's text into another message only moving from a given offset.
@@ -1048,13 +1058,13 @@ int messageMoveText(message *m, text *t, message *old_message)
     int rc;
 
     if (m->body_first == NULL) {
-        if (old_message) {
+        if ((NULL != old_message) &&
+            (NULL != old_message->body_first)) {
             text *u;
             /*
-			 * t is within old_message which is about to be
-			 * destroyed
-			 */
-            assert(old_message->body_first != NULL);
+             * t is within old_message which is about to be
+             * destroyed
+             */
 
             m->body_first = t;
             for (u = old_message->body_first; u != t;) {
@@ -1074,7 +1084,6 @@ int messageMoveText(message *m, text *t, message *old_message)
                     return -1;
                 }
             }
-            assert(old_message->body_last->t_next == NULL);
 
             m->body_last            = old_message->body_last;
             old_message->body_first = old_message->body_last = NULL;
@@ -1125,7 +1134,7 @@ messageIsEncoding(message *m)
     const char *line             = lineGetData(m->body_last->t_line);
 
     /*if(m->ctx == NULL)
-		cli_dbgmsg("messageIsEncoding, ctx == NULL\n");*/
+        cli_dbgmsg("messageIsEncoding, ctx == NULL\n");*/
 
     if ((m->encoding == NULL) &&
         (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
@@ -1137,15 +1146,15 @@ messageIsEncoding(message *m)
         m->bounce = m->body_last;
     /* Not needed with fast track visa technology */
     /*else if((m->uuencode == NULL) && isuuencodebegin(line))
-		m->uuencode = m->body_last;*/
+        m->uuencode = m->body_last;*/
     else if ((m->binhex == NULL) &&
              strstr(line, "BinHex") &&
              (simil(line, binhex) > 90))
         /*
-			 * Look for close matches for BinHex, but
-			 * simil() is expensive so only do it if it's
-			 * likely to be found
-			 */
+             * Look for close matches for BinHex, but
+             * simil() is expensive so only do it if it's
+             * likely to be found
+             */
         m->binhex = m->body_last;
     else if ((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
         m->yenc = m->body_last;
@@ -1158,7 +1167,9 @@ messageIsEncoding(message *m)
 text *
 messageGetBody(message *m)
 {
-    assert(m != NULL);
+    if (NULL == m)
+        return NULL;
+
     return m->body_first;
 }
 
@@ -1170,14 +1181,15 @@ messageGetBody(message *m)
  * last item that was exported. That's sufficient for now.
  */
 static void *
-messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), void (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text)
+messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy)(void *), void (*setFilename)(void *, const char *, const char *), int (*addData)(void *, const unsigned char *, size_t), void *(*exportText)(text *, void *, int), void (*setCTX)(void *, cli_ctx *), int destroy_text)
 {
     void *ret;
     text *t_line;
     char *filename;
     int i;
 
-    assert(m != NULL);
+    if (NULL == m)
+        return NULL;
 
     if (messageGetBody(m) == NULL)
         return NULL;
@@ -1191,22 +1203,22 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
     if (m->numberOfEncTypes == 0) {
         /*
-		 * Fast copy
-		 */
+         * Fast copy
+         */
         cli_dbgmsg("messageExport: Entering fast copy mode\n");
 
 #if 0
-		filename = messageGetFilename(m);
+        filename = messageGetFilename(m);
 
-		if(filename == NULL) {
-			cli_dbgmsg("Unencoded attachment sent with no filename\n");
-			messageAddArgument(m, "name=attachment");
-		} else if((strcmp(filename, "textportion") != 0) && (strcmp(filename, "mixedtextportion") != 0))
-			/*
-			 * Some virus attachments don't say how they've
-			 * been encoded. We assume base64
-			 */
-			messageSetEncoding(m, "base64");
+        if(filename == NULL) {
+            cli_dbgmsg("Unencoded attachment sent with no filename\n");
+            messageAddArgument(m, "name=attachment");
+        } else if((strcmp(filename, "textportion") != 0) && (strcmp(filename, "mixedtextportion") != 0))
+            /*
+             * Some virus attachments don't say how they've
+             * been encoded. We assume base64
+             */
+            messageSetEncoding(m, "base64");
 #else
         filename = (char *)messageFindArgument(m, "filename");
         if (filename == NULL) {
@@ -1217,10 +1229,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
                 messageAddArgument(m, "name=attachment");
             } else
                 /*
-				 * Some virus attachments don't say how they've
-				 * been encoded. We assume base64.
-				 * RFC says encoding should be 7-bit.
-				 */
+                 * Some virus attachments don't say how they've
+                 * been encoded. We assume base64.
+                 * RFC says encoding should be 7-bit.
+                 */
                 messageSetEncoding(m, "7-bit");
         }
 #endif
@@ -1254,14 +1266,14 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
         }
         cli_dbgmsg("messageExport: enctype %d is %d\n", i, (int)enctype);
         /*
-		 * Find the filename to decode
-		 */
+         * Find the filename to decode
+         */
         if (((enctype == YENCODE) || (i == 0)) && yEncBegin(m)) {
             const char *f;
 
             /*
-			 * TODO: handle multipart yEnc encoded files
-			 */
+             * TODO: handle multipart yEnc encoded files
+             */
             t_line = yEncBegin(m);
             f      = lineGetData(t_line->t_line);
 
@@ -1285,11 +1297,11 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
         } else {
             if (enctype == UUENCODE) {
                 /*
-				 * The body will have been stripped out by the
-				 * fast track visa system. Treat as plain/text,
-				 * which means we'll still scan for funnies
-				 * outside of the uuencoded portion.
-				 */
+                 * The body will have been stripped out by the
+                 * fast track visa system. Treat as plain/text,
+                 * which means we'll still scan for funnies
+                 * outside of the uuencoded portion.
+                 */
                 cli_dbgmsg("messageExport: treat uuencode as text/plain\n");
                 enctype = m->encodingTypes[i] = NOENCODING;
             }
@@ -1300,13 +1312,13 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
                 messageAddArgument(m, "name=attachment");
             } else if (enctype == NOENCODING)
                 /*
-				 * Some virus attachments don't say how
-				 * they've been encoded. We assume
-				 * base64.
-				 *
-				 * FIXME: don't do this if it's a fall
-				 * through from uuencode
-				 */
+                 * Some virus attachments don't say how
+                 * they've been encoded. We assume
+                 * base64.
+                 *
+                 * FIXME: don't do this if it's a fall
+                 * through from uuencode
+                 */
                 messageSetEncoding(m, "base64");
 
             (*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
@@ -1318,9 +1330,9 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             free((char *)filename);
 
         /*
-		 * t_line should now point to the first (encoded) line of the
-		 * message
-		 */
+         * t_line should now point to the first (encoded) line of the
+         * message
+         */
         if (t_line == NULL) {
             cli_dbgmsg("Empty attachment not saved\n");
             (*destroy)(ret);
@@ -1329,8 +1341,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
         if (enctype == NOENCODING) {
             /*
-			 * Fast copy
-			 */
+             * Fast copy
+             */
             if (i == m->numberOfEncTypes - 1) {
                 /* last one */
                 (void)exportText(t_line, ret, destroy_text);
@@ -1349,20 +1361,26 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             size_t datasize;
 
             if (enctype == YENCODE) {
-                if (line == NULL)
+                if (line == NULL) {
                     continue;
-                if (strncmp(line, "=yend ", 6) == 0)
+                }
+                if (strncmp(line, "=yend ", 6) == 0) {
                     break;
+                }
             }
 
             /*
-			 * Add two bytes for '\n' and '\0'
-			 */
+             * Add two bytes for '\n' and '\0'
+             */
             datasize = (line) ? strlen(line) + 2 : 0;
 
-            if (datasize >= sizeof(smallbuf))
+            if (datasize >= sizeof(smallbuf)) {
                 data = bigbuf = (unsigned char *)cli_malloc(datasize);
-            else {
+                if (NULL == data) {
+                    cli_dbgmsg("Failed to allocate data buffer of size %z\n", datasize);
+                    break;
+                }
+            } else {
                 bigbuf   = NULL;
                 data     = smallbuf;
                 datasize = sizeof(smallbuf);
@@ -1370,30 +1388,31 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
             uptr = decodeLine(m, enctype, line, data, datasize);
             if (uptr == NULL) {
-                if (data == bigbuf)
+                if (data == bigbuf) {
                     free(data);
+                }
                 break;
             }
 
             if (uptr != data) {
-                assert((size_t)(uptr - data) < datasize);
                 (*addData)(ret, data, (size_t)(uptr - data));
                 size += (size_t)(uptr - data);
             }
 
-            if (data == bigbuf)
+            if (data == bigbuf) {
                 free(data);
+            }
 
             /*
-			 * According to RFC2045, '=' is used to pad out
-			 * the last byte and should be used as evidence
-			 * of the end of the data. Some mail clients
-			 * annoyingly then put plain text after the '='
-			 * byte and viruses exploit this bug. Sigh
-			 */
+             * According to RFC2045, '=' is used to pad out
+             * the last byte and should be used as evidence
+             * of the end of the data. Some mail clients
+             * annoyingly then put plain text after the '='
+             * byte and viruses exploit this bug. Sigh
+             */
             /*if(enctype == BASE64)
-				if(strchr(line, '='))
-					break;*/
+                if(strchr(line, '='))
+                    break;*/
             if (line && destroy_text && (i == m->numberOfEncTypes - 1)) {
                 lineUnlink(t_line->t_line);
                 t_line->t_line = NULL;
@@ -1409,8 +1428,9 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             unsigned char *ptr;
 
             ptr = base64Flush(m, data);
-            if (ptr)
+            if (ptr) {
                 (*addData)(ret, data, (size_t)(ptr - data));
+            }
         }
     }
 
@@ -1423,7 +1443,7 @@ base64Flush(message *m, unsigned char *buf)
     cli_dbgmsg("%d trailing bytes to export\n", m->base64chars);
 
     if (m->base64chars) {
-        unsigned char *ret = decode(m, NULL, buf, base64, FALSE);
+        unsigned char *ret = decode(m, NULL, buf, base64, false);
 
         m->base64chars = 0;
 
@@ -1446,7 +1466,7 @@ int messageSavePartial(message *m, const char *dir, const char *md5id, unsigned 
                        (void *(*)(void))fileblobCreate,
                        (void (*)(void *))fileblobDestroy,
                        (void (*)(void *, const char *, const char *))fileblobPartialSet,
-                       (void (*)(void *, const unsigned char *, size_t))fileblobAddData,
+                       (int (*)(void *, const unsigned char *, size_t))fileblobAddData,
                        (void *(*)(text *, void *, int))textToFileblob,
                        (void (*)(void *, cli_ctx *))fileblobSetCTX,
                        0);
@@ -1470,7 +1490,7 @@ messageToFileblob(message *m, const char *dir, int destroy)
                        (void *(*)(void))fileblobCreate,
                        (void (*)(void *))fileblobDestroy,
                        (void (*)(void *, const char *, const char *))fileblobSetFilename,
-                       (void (*)(void *, const unsigned char *, size_t))fileblobAddData,
+                       (int (*)(void *, const unsigned char *, size_t))fileblobAddData,
                        (void *(*)(text *, void *, int))textToFileblob,
                        (void (*)(void *, cli_ctx *))fileblobSetCTX,
                        destroy);
@@ -1496,7 +1516,7 @@ messageToBlob(message *m, int destroy)
                       (void *(*)(void))blobCreate,
                       (void (*)(void *))blobDestroy,
                       (void (*)(void *, const char *, const char *))blobSetFilename,
-                      (void (*)(void *, const unsigned char *, size_t))blobAddData,
+                      (int (*)(void *, const unsigned char *, size_t))blobAddData,
                       (void *(*)(text *, void *, int))textToBlob,
                       (void (*)(void *, cli_ctx *))NULL,
                       destroy);
@@ -1519,12 +1539,15 @@ messageToText(message *m)
     text *first = NULL, *last = NULL;
     const text *t_line;
 
-    assert(m != NULL);
+    if (m == NULL) {
+        cli_errmsg("Internal email parser error: invalid arguments when converting message to text.\n");
+        return NULL;
+    }
 
     if (m->numberOfEncTypes == 0) {
         /*
-		 * Fast copy
-		 */
+         * Fast copy
+         */
         for (t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
             if (first == NULL)
                 first = last = cli_malloc(sizeof(text));
@@ -1549,9 +1572,9 @@ messageToText(message *m)
         return first;
     }
     /*
-	 * Scan over the data a number of times once for each claimed encoding
-	 * type
-	 */
+     * Scan over the data a number of times once for each claimed encoding
+     * type
+     */
     for (i = 0; i < m->numberOfEncTypes; i++) {
         const encoding_type enctype = m->encodingTypes[i];
 
@@ -1563,8 +1586,8 @@ messageToText(message *m)
             case BINARY:
             case EIGHTBIT:
                 /*
-				 * Fast copy
-				 */
+                 * Fast copy
+                 */
                 for (t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
                     if (first == NULL)
                         first = last = cli_malloc(sizeof(text));
@@ -1606,6 +1629,7 @@ messageToText(message *m)
                     return NULL;
                 }
                 t_line = t_line->t_next;
+                /* fall-through */
             default:
                 if ((i == 0) && binhexBegin(m))
                     cli_warnmsg("Binhex messages not supported yet.\n");
@@ -1619,20 +1643,26 @@ messageToText(message *m)
 
             if (enctype == BASE64)
                 /*
-				 * ignore blanks - breaks RFC which is
-				 * probably the point!
-				 */
+                 * ignore blanks - breaks RFC which is
+                 * probably the point!
+                 */
                 if (line == NULL)
                     continue;
 
-            assert((line == NULL) || (strlen(line) <= sizeof(data)));
+            if ((line != NULL) && (strlen(line) > sizeof(data))) {
+                cli_errmsg("Internal email parser error: line size greater than size of receiving data buffer\n");
+                break;
+            }
 
             uptr = decodeLine(m, enctype, line, data, sizeof(data));
 
             if (uptr == NULL)
                 break;
 
-            assert(uptr <= &data[sizeof(data)]);
+            if ((size_t)(uptr - data) > sizeof(data)) {
+                cli_errmsg("Internal email parser error: line size greater than size of receiving data buffer\n");
+                break;
+            }
 
             if (first == NULL)
                 first = last = cli_malloc(sizeof(text));
@@ -1645,14 +1675,14 @@ messageToText(message *m)
                 break;
 
             /*
-			 * If the decoded line is the same as the encoded
-			 * there's no need to take a copy, just link it.
-			 * Note that the comparison is done without the
-			 * trailing newline that the decoding routine may have
-			 * added - that's why there's a strncmp rather than a
-			 * strcmp - that'd be bad for MIME decoders, but is OK
-			 * for AV software
-			 */
+             * If the decoded line is the same as the encoded
+             * there's no need to take a copy, just link it.
+             * Note that the comparison is done without the
+             * trailing newline that the decoding routine may have
+             * added - that's why there's a strncmp rather than a
+             * strcmp - that'd be bad for MIME decoders, but is OK
+             * for AV software
+             */
             if ((data[0] == '\n') || (data[0] == '\0'))
                 last->t_line = NULL;
             else if (line && (strncmp((const char *)data, line, strlen(line)) == 0)) {
@@ -1671,7 +1701,7 @@ messageToText(message *m)
             unsigned char data[4];
 
             memset(data, '\0', sizeof(data));
-            if (decode(m, NULL, data, base64, FALSE) && data[0]) {
+            if (decode(m, NULL, data, base64, false) && data[0]) {
                 if (first == NULL)
                     first = last = cli_malloc(sizeof(text));
                 else if (last) {
@@ -1705,13 +1735,13 @@ yEncBegin(message *m)
 const text *
 binhexBegin(message *m)
 {
-	const text *t_line;
+    const text *t_line;
 
-	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if(strcasecmp(t_line->t_text, "(This file must be converted with BinHex 4.0)") == 0)
-			return t_line;
+    for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+        if(strcasecmp(t_line->t_text, "(This file must be converted with BinHex 4.0)") == 0)
+            return t_line;
 
-	return NULL;
+    return NULL;
 }
 #else
 text *
@@ -1729,13 +1759,13 @@ binhexBegin(message *m)
 text *
 bounceBegin(message *m)
 {
-	const text *t_line;
+    const text *t_line;
 
-	for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
-		if(cli_compare_ftm_file(t_line->t_text, strlen(t_line->t_text)) == CL_TYPE_MAIL)
-			return t_line;
+    for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next)
+        if(cli_compare_ftm_file(t_line->t_text, strlen(t_line->t_text)) == CL_TYPE_MAIL)
+            return t_line;
 
-	return NULL;
+    return NULL;
 }
 #else
 text *
@@ -1759,15 +1789,15 @@ bounceBegin(message *m)
 int
 messageIsAllText(const message *m)
 {
-	const text *t;
+    const text *t;
 
-	for(t = messageGetBody(m); t; t = t->t_next)
-		if(strncasecmp(t->t_text,
-			"Content-Transfer-Encoding",
-			strlen("Content-Transfer-Encoding")) == 0)
-				return 0;
+    for(t = messageGetBody(m); t; t = t->t_next)
+        if(strncasecmp(t->t_text,
+            "Content-Transfer-Encoding",
+            strlen("Content-Transfer-Encoding")) == 0)
+                return 0;
 
-	return 1;
+    return 1;
 }
 #else
 text *
@@ -1792,15 +1822,16 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
     char base64buf[RFC2045LENGTH + 1];
 
     /*cli_dbgmsg("decodeLine(et = %d buflen = %u)\n", (int)et, buflen);*/
-
-    assert(m != NULL);
-    assert(buf != NULL);
+    if (NULL == m || NULL == buf) {
+        cli_dbgmsg("decodeLine: invalid parameters\n");
+        return NULL;
+    }
 
     switch (et) {
         case BINARY:
             /*
-			 * TODO: find out what this is, encoded as binary??
-			 */
+             * TODO: find out what this is, encoded as binary??
+             */
             /* fall through */
         case NOENCODING:
         case EIGHTBIT:
@@ -1816,13 +1847,13 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 break;
             }
 
-            softbreak = FALSE;
+            softbreak = false;
             while (buflen && *line) {
                 if (*line == '=') {
                     unsigned char byte;
 
                     if ((*++line == '\0') || (*line == '\n')) {
-                        softbreak = TRUE;
+                        softbreak = true;
                         /* soft line break */
                         break;
                     }
@@ -1831,41 +1862,43 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 
                     if ((*++line == '\0') || (*line == '\n')) {
                         /*
-						 * broken e-mail, not
-						 * adhering to RFC2045
-						 */
+                         * broken e-mail, not
+                         * adhering to RFC2045
+                         */
                         *buf++ = byte;
                         break;
                     }
 
                     /*
-					 * Handle messages that use a broken
-					 * quoted-printable encoding of
-					 * href=\"http://, instead of =3D
-					 */
+                     * Handle messages that use a broken
+                     * quoted-printable encoding of
+                     * href=\"http://, instead of =3D
+                     */
                     if (byte != '=')
                         byte = (byte << 4) | hex(*line);
                     else
                         line -= 2;
 
                     *buf++ = byte;
-                } else
+                } else {
                     *buf++ = *line;
+                }
                 ++line;
                 --buflen;
             }
-            if (!softbreak)
+            if (!softbreak) {
                 /* Put the new line back in */
                 *buf++ = '\n';
+            }
             break;
 
         case BASE64:
             if (line == NULL)
                 break;
             /*
-			 * RFC2045 sets the maximum length to 76 bytes
-			 * but many e-mail clients ignore that
-			 */
+             * RFC2045 sets the maximum length to 76 bytes
+             * but many e-mail clients ignore that
+             */
             if (strlen(line) < sizeof(base64buf)) {
                 strcpy(base64buf, line);
                 copy = base64buf;
@@ -1882,8 +1915,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             sanitiseBase64(copy);
 
             /*
-			 * Klez doesn't always put "=" on the last line
-			 */
+             * Klez doesn't always put "=" on the last line
+             */
             buf = decode(m, copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
 
             if (copy != base64buf)
@@ -1891,7 +1924,8 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
             break;
 
         case UUENCODE:
-            assert(m->base64chars == 0);
+            if (0 != m->base64chars)
+                break;
 
             if ((line == NULL) || (*line == '\0')) /* empty line */
                 break;
@@ -1904,9 +1938,9 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
                 break;
 
             /*
-			 * reallen contains the number of bytes that were
-			 *	encoded
-			 */
+             * reallen contains the number of bytes that were
+             *    encoded
+             */
             reallen = (size_t)uudecode(*line++);
             if (reallen <= 0)
                 break;
@@ -1916,10 +1950,10 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 
             if ((len > buflen) || (reallen > len))
                 /*
-				 * In practice this should never occur since
-				 * the maximum length of a uuencoded line is
-				 * 62 characters
-				 */
+                 * In practice this should never occur since
+                 * the maximum length of a uuencoded line is
+                 * 62 characters
+                 */
                 cli_dbgmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
             else {
                 (void)decode(m, line, buf, uudecode, (len & 3) == 0);
@@ -1981,8 +2015,8 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
     unsigned char cb1, cb2, cb3; /* carried over from last line */
 
     /*cli_dbgmsg("decode %s (len %d isFast %d base64chars %d)\n", in,
-		in ? strlen(in) : 0,
-		isFast, m->base64chars);*/
+        in ? strlen(in) : 0,
+        isFast, m->base64chars);*/
 
     cb1 = cb2 = cb3 = '\0';
 
@@ -1995,10 +2029,13 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             /* FALLTHROUGH */
         case 1:
             cb1    = m->base64_1;
-            isFast = FALSE;
+            isFast = false;
             break;
         default:
-            assert(m->base64chars <= 3);
+            if (3 < m->base64chars) {
+                cli_errmsg("email message decode error: invalid base64chars value: %d\n", m->base64chars);
+                return out;
+            }
     }
 
     if (isFast)
@@ -2008,13 +2045,13 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             b2 = (*decoder)(*in++);
             b3 = (*decoder)(*in++);
             /*
-			 * Put this line here to help on some compilers which
-			 * can make use of some architecture's ability to
-			 * multiprocess when different variables can be
-			 * updated at the same time - here b3 is used in
-			 * one line, b1/b2 in the next and b4 in the next after
-			 * that, b3 and b4 rely on in but b1/b2 don't
-			 */
+             * Put this line here to help on some compilers which
+             * can make use of some architecture's ability to
+             * multiprocess when different variables can be
+             * updated at the same time - here b3 is used in
+             * one line, b1/b2 in the next and b4 in the next after
+             * that, b3 and b4 rely on in but b1/b2 don't
+             */
             *out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
             b4     = (*decoder)(*in++);
             *out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
@@ -2067,7 +2104,8 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                 *out++ = b1 << 2;
                 break;
             default:
-                assert(0);
+                cli_errmsg("email message decode error: invalid nbytes value: %d\n", nbytes);
+                return out;
         }
     } else
         while (*in) {
@@ -2117,14 +2155,17 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                     continue;
                 case 3:
                     m->base64_3 = b3;
+                    /* fall-through */
                 case 2:
                     m->base64_2 = b2;
+                    /* fall-through */
                 case 1:
                     m->base64_1    = b1;
                     m->base64chars = nbytes;
                     break;
                 default:
-                    assert(0);
+                    cli_errmsg("email message decode error: invalid nbytes value: %d\n", nbytes);
+                    return out;
             }
             break; /* nbytes != 4 => EOL */
         }
@@ -2143,9 +2184,9 @@ hex(char c)
     cli_dbgmsg("Illegal hex character '%c'\n", c);
 
     /*
-	 * Some mails (notably some spam) break RFC2045 by failing to encode
-	 * the '=' character
-	 */
+     * Some mails (notably some spam) break RFC2045 by failing to encode
+     * the '=' character
+     */
     return '=';
 }
 
@@ -2198,7 +2239,7 @@ void messageSetCTX(message *m, cli_ctx *ctx)
 
 int messageContainsVirus(const message *m)
 {
-    return m->isInfected ? TRUE : FALSE;
+    return m->isInfected ? true : false;
 }
 
 /*
@@ -2206,8 +2247,8 @@ int messageContainsVirus(const message *m)
  * deduping the message
  *
  * FIXME: this can take a long time. The real solution is for system admins
- *	to refrain from setting ulimits too low, then this routine won't be
- *	called
+ *    to refrain from setting ulimits too low, then this routine won't be
+ *    called
  */
 static void
 messageDedup(message *m)
@@ -2238,8 +2279,8 @@ messageDedup(message *m)
         if (r1 == 255)
             continue;
         /*
-		 * We don't want to foul up any pointers
-		 */
+         * We don't want to foul up any pointers
+         */
         if (t1 == m->encoding)
             continue;
         if (t1 == m->bounce)
@@ -2282,7 +2323,7 @@ messageDedup(message *m)
  * free, or NULL on error.
  *
  * TODO: Currently only handles paragraph 4 of RFC2231 e.g.
- *	 protocol*=ansi-x3.4-1968''application%2Fpgp-signature;
+ *     protocol*=ansi-x3.4-1968''application%2Fpgp-signature;
  */
 static char *
 rfc2231(const char *in)
@@ -2335,9 +2376,9 @@ rfc2231(const char *in)
     ptr = strstr(in, "*0=");
     if (ptr != NULL)
         /*
-		 * Parameter continuation, with no continuation
-		 * Thunderbird 1.5 (and possibly other versions) does this
-		 */
+         * Parameter continuation, with no continuation
+         * Thunderbird 1.5 (and possibly other versions) does this
+         */
         field = CONTENTS;
     else {
         ptr   = strstr(in, "*=");
@@ -2361,10 +2402,10 @@ rfc2231(const char *in)
     }
 
     /*
-	 * memcpy(out, in, (ptr - in));
-	 * out = &out[ptr - in];
-	 * in = ptr;
-	 */
+     * memcpy(out, in, (ptr - in));
+     * out = &out[ptr - in];
+     * in = ptr;
+     */
     out = ret;
     while (in != ptr)
         *out++ = *in++;
@@ -2374,9 +2415,9 @@ rfc2231(const char *in)
     while (*ptr++ != '=') continue;
 
     /*
-	 * We don't do anything with the language and character set, just skip
-	 * over them!
-	 */
+     * We don't do anything with the language and character set, just skip
+     * over them!
+     */
     while (*ptr) {
         switch (field) {
             case LANGUAGE:
@@ -2409,11 +2450,11 @@ rfc2231(const char *in)
         }
         if (*ptr++ == '\0')
             /*
-			 * Incorrect message that has just one character after
-			 * a '%'.
-			 * FIXME: stash something in out that would, for example
-			 *	treat %2 as %02, assuming field == CONTENTS
-			 */
+             * Incorrect message that has just one character after
+             * a '%'.
+             * FIXME: stash something in out that would, for example
+             *    treat %2 as %02, assuming field == CONTENTS
+             */
             break;
     }
 
@@ -2432,7 +2473,7 @@ rfc2231(const char *in)
 
 /*
  * common/simil:
- *	From Computing Magazine 20/8/92
+ *    From Computing Magazine 20/8/92
  * Returns %ge number from 0 to 100 - how similar are 2 strings?
  * 100 for exact match, < for error
  */
@@ -2524,7 +2565,7 @@ static unsigned int
 compare(char *ls1, char **rs1, char *ls2, char **rs2)
 {
     unsigned int common, maxchars = 0;
-    bool some_similarity = FALSE;
+    bool some_similarity = false;
     char *s1, *s2;
     char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
     char *cs1, *cs2, *start1, *end1, *end2;
@@ -2540,7 +2581,7 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
         if (s1 < end1) {
             while (s1 < end1 && s2 < end2) {
                 if (tolower(*s1) == tolower(*s2)) {
-                    some_similarity = TRUE;
+                    some_similarity = true;
                     cs1             = s1;
                     cs2             = s2;
                     common          = 0;
