@@ -34,7 +34,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@v3.21.2
 
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
@@ -60,7 +60,7 @@ jobs:
         run: cmake -E make_directory ${{runner.workspace}}/build
 
       - name: Run CMake+Ninja with triplet (cmd)
-        uses: lukka/run-cmake@main
+        uses: lukka/run-cmake@v3.4
         id: runcmake_cmd
         with:
           cmakeGenerator: "Ninja" # Visual Studio 15 2017
@@ -97,7 +97,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@v3.21.2
 
       - name: Create Build Directory
         shell: bash
@@ -151,7 +151,7 @@ jobs:
       - name: Install pytest for easier to read test results
         run: python3 -m pip install pytest
 
-      - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@v3.21.2
 
       - name: Create Build Directory
         shell: bash
