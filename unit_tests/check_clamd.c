@@ -148,11 +148,6 @@ static void conn_teardown(void)
 
 #define NONEXISTENT_REPLY NONEXISTENT ": File path check failure: No such file or directory. ERROR"
 
-#ifndef _WIN32
-#define ACCDENIED OBJDIR PATHSEP "accdenied"
-#define ACCDENIED_REPLY ": Access denied. ERROR"
-#endif
-
 static int isroot = 0;
 
 static void commands_setup(void)
@@ -169,22 +164,7 @@ static void commands_setup(void)
     ck_assert_msg(fd == -1, "Nonexistent file exists!\n");
 
 #ifndef _WIN32
-    /*
-     * Prepare a file path that is write-only.
-     * Note: doesn't work on Windows (O_RWONLY is implicitly readable), so we skip this test on Windows.
-     */
-    fd = open(ACCDENIED, O_CREAT | O_WRONLY, S_IWUSR);
-    ck_assert_msg(fd != -1,
-                  "Failed to create file for access denied tests: %s\n", strerror(errno));
-    ck_assert_msg(fchmod(fd, S_IWUSR) != -1,
-                  "Failed to chmod: %s\n", strerror(errno));
-    /* must not be empty file */
-    ck_assert_msg((size_t)write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
-                  "Failed to write into testfile: %s\n", strerror(errno));
-    close(fd);
-
-    /* Prepare the "isroot" global so we can skip the access-denied tests when run as root
-       because... you know, root will ignore permissions and still read the file. */
+    /* Prepare the "isroot" global so we can skip some tests when run as root */
     if (!geteuid()) {
         isroot = 1;
     }
@@ -233,12 +213,6 @@ static struct basic_test {
     {"SCAN " NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_OK},
     {"CONTSCAN " NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_REJECT},
     {"MULTISCAN " NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_REJECT},
-/* commands for access denied files */
-#ifndef _WIN32
-    {"SCAN " ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_OK},
-    {"CONTSCAN " ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_REJECT},
-    {"MULTISCAN " ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_REJECT},
-#endif
     /* commands with invalid/missing arguments */
     {"SCAN", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     {"CONTSCAN", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
