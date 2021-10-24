@@ -1402,7 +1402,8 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
         goto done;
     }
 
-#elif __APPLE__
+#elif C_DARWIN
+
     char fname[PATH_MAX];
     memset(&fname, 0, PATH_MAX);
 
@@ -1462,6 +1463,8 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
     cl_error_t status    = CL_EARG;
 #ifdef _WIN32
     HANDLE hFile = INVALID_HANDLE_VALUE;
+#elif C_DARWIN
+    int fd = -1;
 #endif
 
     cli_dbgmsg("Checking realpath of %s\n", file_name);
@@ -1471,17 +1474,8 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
         goto done;
     }
 
-#ifndef _WIN32
+#ifdef _WIN32
 
-    real_file_path = realpath(file_name, NULL);
-    if (NULL == real_file_path) {
-        status = CL_EMEM;
-        goto done;
-    }
-
-    status = CL_SUCCESS;
-
-#else
     hFile = CreateFileA(file_name,                  // file to open
                         GENERIC_READ,               // open for reading
                         FILE_SHARE_READ,            // share for reading
@@ -1497,6 +1491,39 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
 
     status = cli_get_filepath_from_handle(hFile, &real_file_path);
 
+#elif C_DARWIN
+
+    /* Using the filepath from filedesc method on macOS because
+       realpath will fail to check the realpath of a symbolic link if
+       the link doesn't point to anything.
+       Plus, we probably don't wan tot follow the link in this case anyways,
+       so this will check the realpath of the link, and not of the thing the
+       link points to. */
+    fd = open(file_name, O_RDONLY | O_SYMLINK);
+    if (fd == -1) {
+        char err[128];
+        cli_strerror(errno, err, sizeof(err));
+        if (errno == EACCES) {
+            status = CL_EACCES;
+        } else {
+            status = CL_EOPEN;
+        }
+        cli_dbgmsg("Can't open file %s: %s\n", file_name, err);
+        goto done;
+    }
+
+    status = cli_get_filepath_from_filedesc(fd, &real_file_path);
+
+#else
+
+    real_file_path = realpath(file_name, NULL);
+    if (NULL == real_file_path) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
 #endif
 
     *real_filename = real_file_path;
@@ -1506,6 +1533,10 @@ done:
 #ifdef _WIN32
     if (hFile != INVALID_HANDLE_VALUE) {
         CloseHandle(hFile);
+    }
+#elif C_DARWIN
+    if (fd != -1) {
+        close(fd);
     }
 #endif
 
