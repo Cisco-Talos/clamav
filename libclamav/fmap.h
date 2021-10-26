@@ -54,7 +54,7 @@ struct cl_fmap {
     uint64_t pgsz;
     uint64_t paged;
     uint16_t aging;
-    uint16_t dont_cache_flag; /** incidates that we should cache scan results for this fmap. Used if limits exceeded */
+    uint16_t dont_cache_flag; /** indicates if we should not cache scan results for this fmap. Used if limits exceeded */
     uint16_t handle_is_fd;    /** non-zero if map->handle is an fd. */
     size_t offset;            /** file offset representing start of original fmap, if the fmap created reading from a file starting at offset other than 0 */
     size_t nested_offset;     /** offset from start of original fmap (data) for nested scan. 0 for orig fmap. */
