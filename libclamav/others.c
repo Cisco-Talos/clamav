@@ -1540,7 +1540,7 @@ size_t cli_recursion_stack_get_size(cli_ctx *ctx, int index)
         // Layer too low, does not exist.
         // Most likely we're at the top layer and there is no container. That's okay.
         return ctx->recursion_stack[0].size;
-    } else {
+    } else if (ctx->recursion_level < (uint32_t)index_ignoring_normalized_layers) {
         // layer too high, does not exist. This should never happen!
         return 0;
     }
