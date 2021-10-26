@@ -4299,20 +4299,10 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     old_hook_lsig_matches  = ctx->hook_lsig_matches;
     ctx->hook_lsig_matches = NULL;
 
-    if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev)) ||
-        (ctx->recursion_level == ctx->recursion_stack_size - 1)) {
+    if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev))) {
         /*
          * Scanning in raw mode (stdin, etc.)
-         *   or at last level of recursion.
          */
-        if (ctx->recursion_level == ctx->recursion_stack_size - 1) {
-            emax_reached(ctx); // Disable caching for all recursion layers.
-            // cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
-            cli_dbgmsg("cli_magic_scan: Hit recursion limit, only scanning raw file\n");
-        } else {
-            cli_dbgmsg("cli_magic_scan: Raw mode: No support for special files\n");
-        }
-
         ret = dispatch_prescan_callback(ctx->engine->cb_pre_scan, ctx, filetype);
         if (CL_CLEAN != ret) {
             if (ret == CL_VIRUS) {
@@ -4323,14 +4313,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             goto done;
         }
 
-        if ((ret = cli_scan_fmap(ctx, CL_TYPE_ANY, 0, NULL, AC_SCAN_VIR, NULL, hash)) == CL_VIRUS)
+        if (CL_VIRUS == (ret = cli_scan_fmap(ctx, CL_TYPE_ANY, 0, NULL, AC_SCAN_VIR, NULL, hash)))
             cli_dbgmsg("cli_magic_scan: %s found in descriptor %d\n", cli_get_last_virus(ctx), fmap_fd(ctx->fmap));
-        else if (ret == CL_CLEAN) {
-            if (ctx->recursion_level != ctx->engine->max_recursion_level - 1)
-                cache_clean = 1; /* Only cache if limits are not reached */
-            else
-                emax_reached(ctx);
-        }
 
         goto done;
     }
@@ -4845,7 +4829,6 @@ done:
 
         case CL_CLEAN:
             cache_clean = 1;
-            ret         = CL_CLEAN;
             break;
 
         default:
@@ -4898,12 +4881,13 @@ done:
         }
         perf_stop(ctx, PERFT_POSTCB);
     }
-    if (cb_retcode == CL_CLEAN && cache_clean) {
+
+    if (cb_retcode == CL_CLEAN && cache_clean && !ctx->fmap->dont_cache_flag && !SCAN_COLLECT_METADATA) {
         perf_start(ctx, PERFT_CACHE);
-        if (!(SCAN_COLLECT_METADATA))
-            cache_add(hash, hashed_size, ctx);
+        cache_add(hash, hashed_size, ctx);
         perf_stop(ctx, PERFT_CACHE);
     }
+
     if (ret == CL_VIRUS && SCAN_ALLMATCHES) {
         ret = CL_CLEAN;
     }
