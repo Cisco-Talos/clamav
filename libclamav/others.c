@@ -391,7 +391,7 @@ const char *cl_strerror(int clerror)
             return "Exceeded time limit";
         /* internal (needed for debug messages) */
         case CL_EMAXREC:
-            return "Exceeded time max recursion depth";
+            return "Exceeded max recursion depth";
         case CL_EMAXSIZE:
             return "Exceeded max scan size";
         case CL_EMAXFILES:
