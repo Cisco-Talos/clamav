@@ -130,10 +130,10 @@ cli_ctx *convenience_ctx(int fd)
 
 done:
     if (CL_SUCCESS != status) {
+        if (NULL != new_map) {
+            funmap(new_map);
+        }
         if (NULL != ctx) {
-            if (NULL != new_map) {
-                funmap(new_map);
-            }
             if (NULL != ctx->options) {
                 free(ctx->options);
             }

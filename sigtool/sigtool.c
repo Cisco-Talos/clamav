@@ -288,7 +288,7 @@ done:
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
     }
-    if (NULL == engine) {
+    if (NULL != engine) {
         cl_engine_free(engine);
     }
     if (-1 != fd) {
@@ -2297,7 +2297,7 @@ done:
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
     }
-    if (NULL == engine) {
+    if (NULL != engine) {
         cl_engine_free(engine);
     }
 }
@@ -3437,7 +3437,7 @@ static int dumpcerts(const struct optstruct *opts)
     /* build engine */
     if (!(engine = cl_engine_new())) {
         mprintf("!dumpcerts: Can't create new engine\n");
-        return -1;
+        goto done;
     }
     cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
 
@@ -3510,7 +3510,7 @@ done:
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
     }
-    if (NULL == engine) {
+    if (NULL != engine) {
         cl_engine_free(engine);
     }
     if (-1 != fd) {
