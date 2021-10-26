@@ -865,11 +865,13 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 
 done:
     if (CL_SUCCESS != status) {
-        if (NULL != m->name) {
-            free(m->name);
+        if (NULL != m) {
+            if (NULL != m->name) {
+                free(m->name);
+            }
+            free(m);
+            m = NULL;
         }
-        free(m);
-        m = NULL;
     }
 
     return m;
