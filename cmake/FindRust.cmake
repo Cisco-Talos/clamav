@@ -154,20 +154,45 @@ function(add_rust_library)
 
     # Build the library and generate the c-binding, if `cbindgen` is required.
     if(${cbindgen_REQUIRED})
-        add_custom_command(
-            OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-            COMMAND ${cbindgen_EXECUTABLE} --lang c -o ${ARGS_WORKING_DIRECTORY}/${ARGS_TARGET}.h ${ARGS_WORKING_DIRECTORY}
-            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-            DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
+                COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
+                COMMAND ${cbindgen_EXECUTABLE} --lang c -o ${ARGS_WORKING_DIRECTORY}/${ARGS_TARGET}.h ${ARGS_WORKING_DIRECTORY}
+                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+                DEPENDS ${LIB_SOURCES}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        else()
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+                COMMAND ${cbindgen_EXECUTABLE} --lang c -o ${ARGS_WORKING_DIRECTORY}/${ARGS_TARGET}.h ${ARGS_WORKING_DIRECTORY}
+                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+                DEPENDS ${LIB_SOURCES}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        endif()
     else()
-        add_custom_command(
-            OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-            DEPENDS ${LIB_SOURCES}
-            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:\n\t ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
+                COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
+                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+                DEPENDS ${LIB_SOURCES}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        else()
+            add_custom_command(
+                OUTPUT "${OUTPUT}"
+                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+                DEPENDS ${LIB_SOURCES}
+                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+        endif()
     endif()
 
     # Create a target from the build output
@@ -264,7 +289,11 @@ elseif(ANDROID)
 elseif(IOS)
     set(LIB_TARGET "universal")
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(LIB_TARGET "x86_64-apple-darwin")
+    if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+        set(LIB_TARGET "universal-apple-darwin")
+    else()
+        set(LIB_TARGET "x86_64-apple-darwin")
+    endif()
 else()
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(LIB_TARGET "x86_64-unknown-linux-gnu")
@@ -277,7 +306,9 @@ if(IOS)
     set(CARGO_ARGS "lipo")
 else()
     set(CARGO_ARGS "build")
-    list(APPEND CARGO_ARGS "--target" ${LIB_TARGET})
+    if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$") #  Don't specify the target for universal, we'll do that manually for each build.
+        list(APPEND CARGO_ARGS "--target" ${LIB_TARGET})
+    endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)
