@@ -224,7 +224,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
         off += sizeof(fb);
         fb.fname[sizeof(fb.fname) - 1] = '\0';
         csize                          = le64_to_host(fb.csize);
-        if (!CLI_ISCONTAINED(0, map->len, off, csize)) {
+        if (!CLI_ISCONTAINED_0_TO(map->len, off, csize)) {
             cli_dbgmsg("ishield-msi: next stream is out of file, giving up\n");
             return CL_CLEAN;
         }
