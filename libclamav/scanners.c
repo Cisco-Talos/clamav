@@ -3931,8 +3931,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cli_file_t dettype = 0;
     uint8_t typercg    = 1;
     size_t hashed_size;
-    unsigned char *hash = NULL;
-    bitset_t *old_hook_lsig_matches;
+    unsigned char *hash             = NULL;
+    bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
     int cache_clean = 0;
 #if HAVE_JSON
@@ -4951,7 +4951,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
             cli_dbgmsg("cli_magic_scan_nested_fmap_type: Small data (%u bytes)\n", (unsigned int)length);
             return CL_CLEAN;
         }
-        if (!CLI_ISCONTAINED(0, map->len, offset, length)) {
+        if (!CLI_ISCONTAINED_0_TO(map->len, offset, length)) {
             cli_dbgmsg("cli_magic_scan_nested_fmap_type: map error occurred [%zu, %zu] not within [0, %zu]\n", offset, length, map->len);
             return CL_CLEAN;
         }

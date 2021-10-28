@@ -125,7 +125,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         *empty = 1;
         return NULL;
     }
-    if (!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+    if (!CLI_ISCONTAINED_0_TO(st.st_size, offset, len)) {
         cli_warnmsg("fmap: attempted oof mapping\n");
         return NULL;
     }
@@ -187,7 +187,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         *empty = 1;
         return NULL;
     }
-    if (!CLI_ISCONTAINED(0, st.st_size, offset, len)) {
+    if (!CLI_ISCONTAINED_0_TO(st.st_size, offset, len)) {
         cli_warnmsg("fmap: attempted oof mapping\n");
         return NULL;
     }
@@ -274,8 +274,8 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
            We do not need to keep track of the original length of the OG fmap */
         duplicate_map->real_len = duplicate_map->nested_offset + duplicate_map->len;
 
-        if (!CLI_ISCONTAINED2(map->nested_offset, map->len,
-                              duplicate_map->nested_offset, duplicate_map->len)) {
+        if (!CLI_ISCONTAINED_2(map->nested_offset, map->len,
+                               duplicate_map->nested_offset, duplicate_map->len)) {
             size_t len1, len2;
             len1 = map->nested_offset + map->len;
             len2 = duplicate_map->nested_offset + duplicate_map->len;
@@ -506,6 +506,8 @@ static void fmap_aging(fmap_t *m)
             m->paged -= avail;
         }
     }
+#else
+    UNUSEDPARAM(m);
 #endif
 }
 
@@ -649,7 +651,7 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
         return NULL;
 
     at += m->nested_offset;
-    if (!CLI_ISCONTAINED(0, m->real_len, at, len))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len))
         return NULL;
 
     fmap_aging(m);
@@ -698,7 +700,7 @@ static void handle_unneed_off(fmap_t *m, size_t at, size_t len)
     }
 
     at += m->nested_offset;
-    if (!CLI_ISCONTAINED(0, m->real_len, at, len)) {
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len)) {
         cli_warnmsg("fmap: attempted oof unneed\n");
         return;
     }
@@ -719,6 +721,8 @@ static void unmap_mmap(fmap_t *m)
     if (munmap((void *)m->data, len) == -1) /* munmap() failed */
         cli_warnmsg("funmap: unable to unmap memory segment at address: %p with length: %zu\n", (void *)m->data, len);
     fmap_unlock;
+#else
+    UNUSEDPARAM(m);
 #endif
 }
 
@@ -743,7 +747,7 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
     if (!len_hint || len_hint > m->real_len - at)
         len_hint = m->real_len - at;
 
-    if (!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint))
         return NULL;
 
     fmap_aging(m);
@@ -783,7 +787,7 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     size_t len    = MIN(max_len - 1, m->len - *at);
     size_t fullen = len;
 
-    if (!len || !CLI_ISCONTAINED(0, m->real_len, m->nested_offset + *at, len))
+    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
         return NULL;
 
     fmap_aging(m);
@@ -799,7 +803,7 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
             return NULL;
 
         if (i == first_page) {
-            scanat = m->nested_offset + *at % m->pgsz;
+            scanat = (m->nested_offset + *at) % m->pgsz;
             scansz = MIN(len, m->pgsz - scanat);
         } else {
             scanat = 0;
@@ -889,7 +893,7 @@ static const void *mem_need(fmap_t *m, size_t at, size_t len, int lock)
         return NULL;
     }
     at += m->nested_offset;
-    if (!CLI_ISCONTAINED(0, m->real_len, at, len)) {
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len)) {
         return NULL;
     }
 
@@ -913,7 +917,7 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint)
     if (!len_hint || len_hint > m->real_len - at)
         len_hint = m->real_len - at;
 
-    if (!CLI_ISCONTAINED(0, m->real_len, at, len_hint))
+    if (!CLI_ISCONTAINED(m->nested_offset, m->len, at, len_hint))
         return NULL;
 
     if (memchr(ptr, 0, len_hint))
@@ -927,7 +931,7 @@ static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     char *endptr = NULL;
     size_t len   = MIN(max_len - 1, m->len - *at);
 
-    if (!len || !CLI_ISCONTAINED(0, m->real_len, m->nested_offset + *at, len))
+    if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
         return NULL;
 
     if ((endptr = memchr(src, '\n', len))) {
@@ -996,8 +1000,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
             prefix            = malloc(prefix_len);
             if (NULL == prefix) {
                 cli_errmsg("fmap_dump_to_file: Failed to allocate memory for tempfile prefix.\n");
-                if (NULL != filebase)
-                    free(filebase);
+                free(filebase);
                 return CL_EMEM;
             }
             snprintf(prefix, prefix_len, "%s.%zu-%zu", filebase, start_offset, end_offset);
