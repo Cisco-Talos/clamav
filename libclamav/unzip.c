@@ -1171,7 +1171,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             continue;
         if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
             uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED(0, fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
+            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
             coff = chptr;
             break;
         }
@@ -1445,7 +1445,7 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
             continue;
         if (cli_readint32(ptr) == ZIP_MAGIC_CENTRAL_DIRECTORY_RECORD_END) {
             uint32_t chptr = cli_readint32(&ptr[16]);
-            if (!CLI_ISCONTAINED(0, fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
+            if (!CLI_ISCONTAINED_0_TO(fsize, chptr, SIZEOF_CENTRAL_HEADER)) continue;
             coff = chptr;
             break;
         }
