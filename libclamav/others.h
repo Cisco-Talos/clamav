@@ -98,13 +98,31 @@ extern uint8_t cli_always_gen_section_hash;
      (size_t)(sb) < (size_t)(bb) + (size_t)(bb_size))
 
 /*
- * CLI_ISCONTAINED2(bb, bb_size, sb, sb_size) checks if sb (small buffer) is
+ * CLI_ISCONTAINED_0_TO(bb_size, sb, sb_size) checks if sb (small offset) is
+ * within bb (big offset) where the big offset always starts at 0.
+ *
+ * bb and sb are offsets for the main buffer and the
+ * sub-buffer respectively, and bb_size and sb_size are their sizes
+ *
+ * The macro can be used to protect against wraps.
+ *
+ * CLI_ISCONTAINED_0_TO is the same as CLI_ISCONTAINED except that `bb` is gone
+ * and assumed ot be zero.
+ */
+#define CLI_ISCONTAINED_0_TO(bb_size, sb, sb_size)            \
+    ((size_t)(bb_size) > 0 && (size_t)(sb_size) > 0 &&        \
+     (size_t)(sb_size) <= (size_t)(bb_size) &&                \
+     (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb_size) && \
+     (size_t)(sb) < (size_t)(bb_size))
+
+/*
+ * CLI_ISCONTAINED_2(bb, bb_size, sb, sb_size) checks if sb (small buffer) is
  * within bb (big buffer).
  *
- * CLI_ISCONTAINED2 is the same as CLI_ISCONTAINED except that it allows for
+ * CLI_ISCONTAINED_2 is the same as CLI_ISCONTAINED except that it allows for
  * small-buffers with sb_size == 0.
  */
-#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)                           \
+#define CLI_ISCONTAINED_2(bb, bb_size, sb, sb_size)                          \
     ((size_t)(bb_size) > 0 &&                                                \
      (size_t)(sb_size) <= (size_t)(bb_size) &&                               \
      (size_t)(sb) >= (size_t)(bb) &&                                         \
