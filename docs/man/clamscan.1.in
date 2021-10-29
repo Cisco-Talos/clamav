@@ -136,13 +136,13 @@ Scan mail files. If you turn off this option, the original files will still be s
 Enable email signature-based phishing detection.
 .TP
 \fB\-\-phishing\-scan\-urls[=yes(*)/no]\fR
-Enable URL signature-based phishing detection (Phishing.Heuristics.Email.*)
+Enable URL signature-based phishing detection (Heuristics.Phishing.Email.*)
 .TP
 \fB\-\-heuristic\-alerts[=yes(*)/no]\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP
 \fB\-\-heuristic\-scan\-precedence[=yes/no(*)]\fR
-Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
+Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
 .TP
 \fB\-\-normalize[=yes(*)/no]\fR
 Normalize (compress whitespace, downcase, etc.) html, script, and text files. Use normalize=no for yara compatibility.
