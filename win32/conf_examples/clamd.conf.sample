@@ -621,7 +621,7 @@ TCPAddr localhost
 #PCREMaxFileSize 100M
 
 # When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or
-# MaxRecursion limit will be flagged with the virus
+# MaxRecursion limit will be flagged with the virus name starting with
 # "Heuristics.Limits.Exceeded".
 # Default: no
 #AlertExceedsMax yes

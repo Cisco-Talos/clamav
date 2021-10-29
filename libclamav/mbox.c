@@ -752,7 +752,7 @@ hitLineFoldCnt(const char *const line, size_t *lineFoldCnt, cli_ctx *ctx, bool *
 
         if ((*lineFoldCnt) >= HEURISTIC_EMAIL_MAX_LINE_FOLDS_PER_HEADER) {
             if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-                cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxLineFoldCnt");
+                cli_append_virus(ctx, "Heuristics.Limits.Exceeded.EmailLineFoldCnt");
                 *heuristicFound = TRUE;
             }
 
@@ -768,7 +768,7 @@ haveTooManyHeaderBytes(size_t totalLen, cli_ctx *ctx, bool *heuristicFound)
 
     if (totalLen > HEURISTIC_EMAIL_MAX_HEADER_BYTES) {
         if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-            cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxHeaderBytes");
+            cli_append_virus(ctx, "Heuristics.Limits.Exceeded.EmailHeaderBytes");
             *heuristicFound = TRUE;
         }
 
@@ -783,7 +783,7 @@ haveTooManyEmailHeaders(size_t totalHeaderCnt, cli_ctx *ctx, bool *heuristicFoun
 
     if (totalHeaderCnt > HEURISTIC_EMAIL_MAX_HEADERS) {
         if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-            cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxEmailHeaders");
+            cli_append_virus(ctx, "Heuristics.Limits.Exceeded.EmailHeaders");
             *heuristicFound = TRUE;
         }
 
@@ -798,7 +798,7 @@ haveTooManyMIMEPartsPerMessage(size_t mimePartCnt, cli_ctx *ctx, mbox_status *rc
 
     if (mimePartCnt >= HEURISTIC_EMAIL_MAX_MIME_PARTS_PER_MESSAGE) {
         if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-            cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEPartsPerMessage");
+            cli_append_virus(ctx, "Heuristics.Limits.Exceeded.EmailMIMEPartsPerMessage");
             *rc = VIRUS;
         }
 
@@ -813,7 +813,7 @@ haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
 
     if (argCnt >= HEURISTIC_EMAIL_MAX_ARGUMENTS_PER_HEADER) {
         if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-            cli_append_virus(ctx, "Heuristics.Email.ExceedsMaxMIMEArguments");
+            cli_append_virus(ctx, "Heuristics.Limits.Exceeded.EmailMIMEArguments");
             *heuristicFound = TRUE;
         }
 
