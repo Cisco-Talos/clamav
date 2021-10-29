@@ -389,7 +389,7 @@ Enable email signature-based phishing detection.
 Default: yes
 .TP
 \fBPhishingScanURLs BOOL\fR
-Enable URL signature-based phishing detection (Phishing.Heuristics.Email.*)
+Enable URL signature-based phishing detection (Heuristics.Phishing.Email.*)
 .br
 Default: yes
 .TP
@@ -503,7 +503,7 @@ Alert on OLE2 files containing VBA macros (Heuristics.OLE2.ContainsMacros).
 Default: no
 .TP
 \fBAlertExceedsMax BOOL\fR
-Alert on files that exceed max file size, max scan size, or max recursion limit (Heuristics.Limits.Exceeded).
+When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or MaxRecursion limit will be flagged with the virus name starting with "Heuristics.Limits.Exceeded".
 .br
 Default: no
 .TP
