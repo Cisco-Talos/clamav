@@ -213,6 +213,9 @@ pub fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
         "cdiff_apply called with file_descriptor={}, mode={}",
         file_descriptor, mode
     );
+
+    let is_cdiff: bool = mode == 1;
+
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
@@ -221,90 +224,102 @@ pub fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
     let mut file = unsafe { File::from_raw_fd(file_descriptor) };
     eprintln!("Printing contents of file...");
 
-    let dsig = read_dsig(&mut file);
-    let dsig = match dsig {
-        Ok(dsig) => dsig,
-        Err(e) => {
-            eprintln!("{:?}", e.to_string());
+    let mut header_length: usize = 0;
+
+    // Only read dsig, header, etc. if this is a cdiff file
+    if is_cdiff {
+        let dsig = read_dsig(&mut file);
+        let dsig = match dsig {
+            Ok(dsig) => dsig,
+            Err(e) => {
+                eprintln!("{:?}", e.to_string());
+                return -1;
+            }
+        };
+        eprintln!("Final dsig length is {}", dsig.len());
+        print_file_data(dsig.clone(), dsig.len() as usize);
+
+        // Get file length
+        let file_len = match file.metadata() {
+            Ok(file_len) => file_len.len() as usize,
+            Err(e) => {
+                eprint!("Failed to get file length: {}", e.to_string());
+                return -1;
+            }
+        };
+        let footer_offset = file_len - dsig.len() - 1;
+
+        // The SHA is calculated from the contents of the beginning of the file
+        // up until the ':' before the dsig at the end of the file.
+        let sha256 = get_hash(&mut file, footer_offset);
+        let sha256 = match sha256 {
+            Ok(sha256) => sha256,
+            Err(e) => {
+                eprint!("Failed to calculate sha256: {}", e.to_string());
+                return -1;
+            }
+        };
+
+        //eprintln!("sha256 is {} bytes", sha256.len());
+        eprintln!("sha256: {}", hex::encode(sha256));
+
+        // cli_versig2 will expect dsig to be a null-terminated string
+        let dsig_cstring = CString::new(dsig);
+        let dsig_cstring = match dsig_cstring {
+            Ok(dsig_cstring) => dsig_cstring,
+            Err(e) => {
+                eprint!("Failed to parse dsig: {}", e.to_string());
+                return -1;
+            }
+        };
+
+        // Verfify cdiff
+        let versig_result = unsafe {
+            cli_versig2(
+                sha256.to_vec().as_ptr(),
+                dsig_cstring.as_ptr(),
+                PSS_NSTR.as_ptr(),
+                PSS_ESTR.as_ptr(),
+            )
+        };
+        if versig_result != 0 {
+            eprintln!("cdiff_apply: Incorrect digital signature");
             return -1;
         }
-    };
-    eprintln!("Final dsig length is {}", dsig.len());
-    print_file_data(dsig.clone(), dsig.len() as usize);
 
-    // Get file length
-    let file_len = match file.metadata() {
-        Ok(file_len) => file_len.len() as usize,
-        Err(e) => {
-            eprint!("Failed to get file length: {}", e.to_string());
-            return -1;
-        }
-    };
-    let footer_offset = file_len - dsig.len() - 1;
+        // Read file length from header
+        let header_result = read_size(&mut file);
+        let (header_len, header_offset) = match header_result {
+            Ok(hl) => hl,
+            Err(e) => {
+                eprint!("{}", e.to_string());
+                return -1;
+            }
+        };
+        eprintln!(
+            "Header len is {}, file len is {}, header offset is {}",
+            header_len, file_len, header_offset
+        );
 
-    // The SHA is calculated from the contents of the beginning of the file
-    // up until the ':' before the dsig at the end of the file.
-    let sha256 = get_hash(&mut file, footer_offset);
-    let sha256 = match sha256 {
-        Ok(sha256) => sha256,
-        Err(e) => {
-            eprint!("Failed to calculate sha256: {}", e.to_string());
-            return -1;
-        }
-    };
-
-    //eprintln!("sha256 is {} bytes", sha256.len());
-    eprintln!("sha256: {}", hex::encode(sha256));
-
-    // cli_versig2 will expect dsig to be a null-terminated string
-    let dsig_cstring = CString::new(dsig);
-    let dsig_cstring = match dsig_cstring {
-        Ok(dsig_cstring) => dsig_cstring,
-        Err(e) => {
-            eprint!("Failed to parse dsig: {}", e.to_string());
-            return -1;
-        }
-    };
-
-    // Verfify cdiff
-    let versig_result = unsafe {
-        cli_versig2(
-            sha256.to_vec().as_ptr(),
-            dsig_cstring.as_ptr(),
-            PSS_NSTR.as_ptr(),
-            PSS_ESTR.as_ptr(),
-        )
-    };
-    if versig_result != 0 {
-        eprintln!("cdiff_apply: Incorrect digital signature");
-        return -1;
+        let current_pos = file.seek(SeekFrom::Start(header_offset as u64));
+        let current_pos = match current_pos {
+            Ok(current_pos) => current_pos as usize,
+            Err(e) => {
+                eprintln!("{}", e.to_string());
+                return -1;
+            }
+        };
+        eprintln!("Current file offset is {}", current_pos);
+        header_length = header_len as usize;
     }
 
-    // Read file length from header
-    let header_result = read_size(&mut file);
-    let (header_len, header_offset) = match header_result {
-        Ok(hl) => hl,
-        Err(e) => {
-            eprint!("{}", e.to_string());
-            return -1;
-        }
+    // Set reader according to whether this is a script or cdiff
+    let reader: Box<dyn BufRead> = if is_cdiff {
+        let gz = GzDecoder::new(file);
+        Box::new(BufReader::new(gz))
+    } else {
+        Box::new(BufReader::new(file))
     };
-    eprintln!(
-        "Header len is {}, file len is {}, header offset is {}",
-        header_len, file_len, header_offset
-    );
-
-    let current_pos = file.seek(SeekFrom::Start(header_offset as u64));
-    let current_pos = match current_pos {
-        Ok(current_pos) => current_pos as usize,
-        Err(e) => {
-            eprintln!("{}", e.to_string());
-            return -1;
-        }
-    };
-    eprintln!("Current file offset is {}", current_pos);
-    let gz = GzDecoder::new(file);
-    let reader = BufReader::new(gz);
 
     // Create contextual data structure
     let mut ctx: Context = Context {
@@ -314,7 +329,7 @@ pub fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
         xchg_start: None,
     };
 
-    match process_lines(&mut ctx, reader, header_len as usize) {
+    match process_lines(&mut ctx, reader, header_length) {
         Ok(_) => 0,
         Err(e) => {
             eprintln!("{}", e.to_string());
@@ -756,6 +771,11 @@ where
     for line in reader.lines() {
         match line {
             Ok(line) => {
+                // Line buffer resize commands are a vestige from cdiff.c
+                if line.starts_with('#') {
+                    eprintln!("Buffer resize detected in line {}", line);
+                    continue;
+                }
                 n += 1;
                 decompressed_bytes = decompressed_bytes + line.len() + 1;
                 eprintln!("Line {}: {:?}", n, line);
