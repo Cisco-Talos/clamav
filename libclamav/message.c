@@ -1377,7 +1377,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             if (datasize >= sizeof(smallbuf)) {
                 data = bigbuf = (unsigned char *)cli_malloc(datasize);
                 if (NULL == data) {
-                    cli_dbgmsg("Failed to allocate data buffer of size %z\n", datasize);
+                    cli_dbgmsg("Failed to allocate data buffer of size %zu\n", datasize);
                     break;
                 }
             } else {
