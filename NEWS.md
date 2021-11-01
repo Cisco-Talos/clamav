@@ -5,9 +5,90 @@ differ slightly from third-party binary packages.
 
 ## 0.104.1
 
-ClamAV 0.103.2 is a critical patch release with the following fixes:
+ClamAV 0.104.1 is a critical patch release with the following fixes:
 
--
+- FreshClam:
+  - Add a 24-hour cool-down for FreshClam clients that have received an HTTP
+    403 (Forbidden) response from the CDN.
+    This is to reduce the volume of 403-response data served to blocked
+    FreshClam clients that are configured with a tight update-loop.
+  - Fixed a bug where FreshClam treats an empty CDIFF as an incremental update
+    failure instead of as an intentional request to download the whole CVD.
+
+- ClamDScan: Fix a scan error when broken symlinks are encountered on macOS with
+  "FollowDirectorySymlinks" and "FollowFileSymlinks" options disabled.
+
+- Overhauled the scan recursion / nested archive extraction logic and added new
+  limits on embedded file-type recognition performed during the "raw" scan of
+  each file. This limits embedded file-type misidentification and prevents
+  detecting embedded file content that is found/extracted and scanned at other
+  layers in the scanning process.
+
+- Fix an issue with the FMap module that failed to read from some nested files.
+
+- Fixed an issue where failing to load some rules from a Yara file containing
+  multiple rules may cause a crash.
+
+- Fixed assorted compiler warnings.
+
+- Fixed assorted Coverity static code analysis issues.
+
+- Scan limits:
+  - Added virus-name suffixes to the alerts that trigger when a scan limit has
+    been exceeded. Rather than simply `Heuristics.Limits.Exceeded`, you may now
+    see limit-specific virus-names, to include:
+    - `Heuristics.Limits.Exceeded.MaxFileSize`
+    - `Heuristics.Limits.Exceeded.MaxScanSize`
+    - `Heuristics.Limits.Exceeded.MaxFiles`
+    - `Heuristics.Limits.Exceeded.MaxRecursion`
+    - `Heuristics.Limits.Exceeded.MaxScanTime`
+  - Renamed the `Heuristics.Email.ExceedsMax.*` alerts to align with the other
+    limit alerts names. These alerts include:
+    - `Heuristics.Limits.Exceeded.EmailLineFoldcnt`
+    - `Heuristics.Limits.Exceeded.EmailHeaderBytes`
+    - `Heuristics.Limits.Exceeded.EmailHeaders`
+    - `Heuristics.Limits.Exceeded.EmailMIMEPartsPerMessage`
+    - `Heuristics.Limits.Exceeded.EmailMIMEArguments`
+  - Fixed an issue where the Email-related scan limits would alert even when the
+    "AlertExceedsMax" (`--alert-exceeds-max`) scan option is not enabled.
+  - Fixes an issue in the Zip parser where exceeding the "MaxFiles" limit or
+    the "MaxFileSize" limit would abort the scan but would fail to alert.
+    The Zip scan limit issues were independently identified and reported by
+    Aaron Leliaert and Max Allan.
+
+- Fixed a leak in the Email parser when using the `--gen-json` scan option.
+
+- Fixed an issue where a failure to record metadata in the Email parser when
+  using the `--gen-json` scan option could cause the Email parser to abort the
+  scan early and fail to extract and scan additional content.
+
+- Fixed a file name memory leak in the Zip parser.
+
+- Fixed an issue where certain signature patterns may cause a crash or cause
+  unintended matches on some systems when converting characters to uppercase if
+  a UTF-8 unicode single-byte grapheme becomes a multi-byte grapheme.
+  Patch courtesy of Andrea De Pasquale.
+
+- CMake:
+  - Fix a packaging issue with the Windows `*.msi` installer so that it will
+    include all of the required files.
+  - Add support for developer code-signing on macOS during the build.
+  - Fix an issue finding and linking with the `tinfo` library on systems where
+    `tinfo` is separate from `ncurses`. Patch courtesy of Luca Barbato.
+
+- Tests: Improved the Freshclam incremental update tests to verify correct
+  behavior when a zero-byte CDIFF is downloaded and the CVD served to FreshClam
+  is older than advertised.
+
+- Docker: Remove the `freshclam.dat` file when building the Docker image with
+  the databases-included so FreshClam agents running in the container will have
+  a unique ID in the HTTP User-Agent.
+
+Special thanks to the following for code contributions and bug reports:
+- Aaron Leliaert
+- Andrea De Pasquale
+- Luca Barbato
+- Max Allan
 
 ## 0.104.0
 
@@ -146,6 +227,23 @@ patch versions do not generally introduce new options:
   feature. Patch courtesy of Andrea De Pasquale.
 
 - Fixed bytecode match evaluation for PDF bytecode hooks in PDF file scans.
+
+- Fixed a crash in programs that use libclamav when the programs don't set a
+  callback for the "virus found" event.
+  Patch courtesy of Markus Strehle.
+
+- Added checks to the the SIS archive parser to prevent an SIS file entry from
+  pointing to the archive, which would result in a loop. This was not an actual
+  infinite loop, as ClamAV's scan recursion limit limits the depth of nested
+  archive extraction.
+
+- ClamOnAcc: Fixed a socket file descriptor leak that could result in a crash
+  when all available file descriptors are exhausted.
+
+- FreshClam: Fixed an issue where FreshClam would download a CVD repeatedly if a
+  zero-byte CDIFF is downloaded or if the incremental update failed and if the
+  CVD downloaded after that is older than advertised.
+  Patch courtesy of Andrew Williams.
 
 - Other minor bug fixes.
 
