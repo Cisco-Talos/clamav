@@ -27,13 +27,8 @@
 # guidelines, see ${CMAKE_ROOT}/Modules/readme.txt.
 
 
-#Setting this to 6.0.0 for now, since that is what is installed by default by Ubuntu 18
-#(At the time of this writing)
-set (LLVM_FIND_VERSION "6.0.0")
-
-
-#Not tested with anything other than llvm-8 (yet), but leave this in there for
-#when I get back to it.
+#Setting this to 8.0.0, which is the minimum supported by the llvm runtime.
+set (LLVM_FIND_VERSION "8.0.0")
 
 # Try suffixed versions to pick up the newest LLVM install available on Debian
 # derivatives.

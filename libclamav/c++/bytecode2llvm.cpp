@@ -46,23 +46,12 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
-#if LLVM_VERSION < 35
-#include "llvm/Analysis/Verifier.h"
-#include "llvm/AutoUpgrade.h"
-#include "llvm/Support/TargetFolder.h"
-#else
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/AutoUpgrade.h"
-//#include "llvm/Analysis/TargetFolder.h"
-#endif
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
-#if LLVM_VERSION < 36
-#include "llvm/ExecutionEngine/JIT.h"
-#else
 #include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Object/ObjectFile.h"
-#endif
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Support/Compiler.h"
@@ -75,15 +64,6 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/PrettyStackTrace.h"
 
-#if LLVM_VERSION < 29
-#include "llvm/System/DataTypes.h"
-#include "llvm/System/Host.h"
-#include "llvm/System/Memory.h"
-#include "llvm/System/Mutex.h"
-#include "llvm/System/Signals.h"
-#include "llvm/System/Threading.h"
-#include "llvm/System/ThreadLocal.h"
-#else
 #include "llvm/PassRegistry.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/FileSystem.h"
@@ -93,13 +73,8 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/ThreadLocal.h"
-#endif
 
-#if LLVM_VERSION < 33
-#include "llvm/IntrinsicInst.h"
-#else
 #include "llvm/IR/IntrinsicInst.h"
-#endif
 
 #include "llvm/Support/Timer.h"
 
@@ -108,65 +83,32 @@ extern "C" {
     void LLVMInitializePowerPCAsmPrinter();
 }
 
-#if LLVM_VERSION < 30
-#include "llvm/Target/TargetSelect.h"
-#else
 #include "llvm/Support/TargetSelect.h"
-#endif
 
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
-#if LLVM_VERSION < 32
-#include "llvm/Analysis/DebugInfo.h"
-#elif LLVM_VERSION < 35
-#include "llvm/DebugInfo.h"
-#else
 #include "llvm/IR/DebugInfo.h"
-#endif
 
-#if LLVM_VERSION < 32
-#include "llvm/Support/IRBuilder.h"
-#include "llvm/Target/TargetData.h"
-#elif LLVM_VERSION < 33
-#include "llvm/IRBuilder.h"
-#include "llvm/DataLayout.h"
-#else
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/DataLayout.h"
-#endif
 
-#if LLVM_VERSION < 33
-#include "llvm/CallingConv.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Function.h"
-#include "llvm/LLVMContext.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/Module.h"
-#else
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
-#endif
 
 
 #include <llvm/IR/Instructions.h>
 
 
-#if LLVM_VERSION < 34
-#include "llvm/Support/CFG.h"
-#else
 #include "llvm/Analysis/CFG.h"
-#endif
 
-#if LLVM_VERSION >= 35
 #include "llvm/IR/Dominators.h"
-#endif
 
 //#define TIMING
 #undef TIMING
@@ -219,6 +161,11 @@ extern "C" {
 #include "type_desc.h"
 
 
+#if LLVM_VERSION < 80
+#error "LLVM_VERSION < 80 not supported"
+#endif
+
+
 
 
 
@@ -243,30 +190,18 @@ struct cli_bcengine {
 };
 
 extern "C" uint8_t cli_debug_flag;
-#if LLVM_VERSION >= 29
 namespace llvm {
     void initializeRuntimeLimitsPass(PassRegistry&);
 };
-#endif
 namespace {
 
-#if LLVM_VERSION >= 28
 #define llvm_report_error(x) report_fatal_error(x)
 #define llvm_install_error_handler(x) install_fatal_error_handler(x)
 #define DwarfExceptionHandling JITExceptionHandling
 
-#if 0
-#define SetCurrentDebugLocation(x) SetCurrentDebugLocation(DebugLoc::getFromDILocation(x))
-#endif
-
 #define DEFINEPASS(passname) passname() : FunctionPass(ID)
-#else
-#define DEFINEPASS(passname) passname() : FunctionPass(&ID)
-#endif
 
-#if LLVM_VERSION >= 29
 #define NORETURN LLVM_ATTRIBUTE_NORETURN
-#endif
 
     static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
 
@@ -358,11 +293,7 @@ namespace {
         jit_exception_handler();
     }
 
-#if LLVM_VERSION < 33
-    void llvm_error_handler(void *user_data, const std::string &reason)
-#else
         void llvm_error_handler(void *user_data, const std::string &reason, bool gen_crash_diag = true)
-#endif
         {
             // Output it to stderr, it might exceed the 1k/4k limit of cli_errmsg
             cli_errmsg("[Bytecode JIT]: [LLVM error] %s\n", reason.c_str());
@@ -454,36 +385,15 @@ namespace {
 #endif
 #endif
             .Default(0);
-        if (addr)
+        if (addr) {
             return addr;
+        }
 
-#if LLVM_VERSION < 36
-        std::string reason((Twine("Attempt to call external function ")+name).str());
-        llvm_error_handler(0, reason);
-#else
-        // noUnknownFunctions relies on addGlobalMapping, which doesn't work with MCJIT.
-        // Now the function pointers are found with SymbolSearching.
-#endif
         return 0;
     }
 
     class NotifyListener : public JITEventListener {
         public:
-#if LLVM_VERSION < 36
-            virtual void NotifyFunctionEmitted(const Function &F,
-                    void *Code, size_t Size,
-                    const EmittedFunctionDetails &Details)
-            {
-                if (!cli_debug_flag)
-                    return;
-                cli_dbgmsg_internal("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
-#if LLVM_VERSION < 31
-                        F.getNameStr().c_str(), (long)Size, Code);
-#else
-                F.getName().str().c_str(), (long)Size, Code);
-#endif
-            }
-#else
             // MCJIT doesn't emit single functions, but instead whole objects.
             virtual void NotifyObjectEmitted(const object::ObjectFile &Obj,
                     const RuntimeDyld::LoadedObjectInfo &L)
@@ -494,7 +404,6 @@ namespace {
                         Obj.getFileFormatName().str().c_str(),
                         Obj.getFileName().str().c_str(), Obj.getData().size());
             }
-#endif
     };
 
     class TimerWrapper {
@@ -526,11 +435,7 @@ namespace {
 
     class LLVMTypeMapper {
         private:
-#if LLVM_VERSION < 30
-            std::vector<PATypeHolder> TypeMap;
-#else
             std::vector<Type*> TypeMap;
-#endif
             LLVMContext &Context;
             unsigned numTypes;
             constType *getStatic(uint16_t ty)
@@ -564,23 +469,13 @@ namespace {
             // invalidated, so we must use a TypeHolder to an Opaque type as a
             // start.
             for (unsigned i=0;i<count;i++) {
-#if LLVM_VERSION < 30
-                TypeMap.push_back(OpaqueType::get(Context));
-#else
                 TypeMap.push_back(0);
-#endif
             }
             for (unsigned i=0;i<count;i++) {
                 const struct cli_bc_type *type = &types[i];
 
                 constType *Ty = buildType(type, types, Hidden, 0);
-#if LLVM_VERSION < 30
-                // Make the opaque type a concrete type, doing recursive type
-                // unification if needed.
-                cast<OpaqueType>(TypeMap[i].get())->refineAbstractTypeTo(Ty);
-#else
                 TypeMap[i] = Ty;
-#endif
             }
         }
 
@@ -631,9 +526,6 @@ namespace {
                     return getStatic(ty);
                 ty -= 69;
                 assert((ty < numTypes) && "TypeID out of range");
-#if LLVM_VERSION < 30
-                return TypeMap[ty].get();
-#else
                 Type *Ty = TypeMap[ty];
                 if (Ty)
                     return Ty;
@@ -641,7 +533,6 @@ namespace {
                 Ty = buildType(&types[ty], types, Hidden, 1);
                 TypeMap[ty] = Ty;
                 return Ty;
-#endif
             }
     };
 
@@ -704,10 +595,8 @@ namespace {
         public:
         static char ID;
         DEFINEPASS(RuntimeLimits) {
-#if LLVM_VERSION >= 29
             PassRegistry &Registry = *PassRegistry::getPassRegistry();
             initializeRuntimeLimitsPass(Registry);
-#endif
         }
 
         virtual bool runOnFunction(Function &F) {
@@ -727,11 +616,7 @@ namespace {
             }
             BBSetTy  needsTimeoutCheck;
             BBMapTy BBMap;
-#if LLVM_VERSION < 35
-            DominatorTree &DT = getAnalysis<DominatorTree>();
-#else
             DominatorTree &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-#endif
             for (Function::iterator I=F.begin(),E=F.end(); I != E; ++I) {
                 BasicBlock *BB = &*I;
                 unsigned apicalls = 0;
@@ -801,29 +686,13 @@ namespace {
             CallInst* AbrtC = CallInst::Create(abrtTy, func_abort, "", AbrtBB);
             AbrtC->setCallingConv(CallingConv::C);
             AbrtC->setTailCall(true);
-#if LLVM_VERSION < 32
-            AbrtC->setDoesNotReturn(true);
-            AbrtC->setDoesNotThrow(true);
-#else
             AbrtC->setDoesNotReturn();
             AbrtC->setDoesNotThrow();
-#endif
             new UnreachableInst(F.getContext(), AbrtBB);
 
             IRBuilder<> Builder(F.getContext());
 
             Value *Flag = F.arg_begin();
-#if LLVM_VERSION < 30
-            Function *LSBarrier = Intrinsic::getDeclaration(F.getParent(),
-                    Intrinsic::memory_barrier);
-            Value *MBArgs[] = {
-                ConstantInt::getFalse(F.getContext()),
-                ConstantInt::getFalse(F.getContext()),
-                ConstantInt::getTrue(F.getContext()),
-                ConstantInt::getFalse(F.getContext()),
-                ConstantInt::getFalse(F.getContext())
-            };
-#endif
             verifyFunction(F);
             BasicBlock *BB = &F.getEntryBlock();
 
@@ -849,12 +718,7 @@ namespace {
 
                 Builder.SetInsertPoint(pInst);
 
-#if LLVM_VERSION < 30
-                // store-load barrier: will be a no-op on x86 but not other arches
-                Builder.CreateCall(LSBarrier, ARRAYREF(Value*, MBArgs, MBArgs+5));
-#else
                 Builder.CreateFence(AtomicOrdering::Release);
-#endif
 
                 // Load Flag that tells us we timed out (first byte in bc_ctx)
                 Instruction *Cond = Builder.CreateLoad(Flag, true);
@@ -885,11 +749,7 @@ namespace {
             AU.setPreservesAll();
             AU.addRequired<LoopInfoWrapperPass>();
             AU.addRequired<ScalarEvolutionWrapperPass>();
-#if LLVM_VERSION < 35
-            AU.addRequired<DominatorTree>();
-#else
             AU.addRequired<DominatorTreeWrapperPass>();
-#endif
         }
     };
     char RuntimeLimits::ID;
@@ -1157,11 +1017,7 @@ namespace {
                 : bc(bc), M(M), Context(M->getContext()), EE(EE),
                 PM(PM),PMUnsigned(PMUnsigned), TypeMap(), apiFuncs(apiFuncs),apiMap(apiMap),
                 compiledFunctions(cFuncs), BytecodeID("bc"+Twine(bc->id)),
-#if LLVM_VERSION < 32
-                Folder(EE->getTargetData()), Builder(Context, Folder), Values(), CF(CF) {
-#else
                     Folder(EE->getDataLayout()), Builder(Context), Values(), CF(CF) {
-#endif
 
                             for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
                                 unsigned id = cli_globals[i].globalid;
@@ -1171,16 +1027,10 @@ namespace {
                             numArgs = 0;
                         }
 
-#if LLVM_VERSION < 30
-                        template <typename InputIterator>
-#endif
                             Value* createGEP(Value *Base, constType *ETy, ARRAYREFPARAM(Value*,InputIterator Start,InputIterator End,ARef)) {
                                     return Builder.CreateGEP(Base,ARRAYREFP(Start,End,ARef));
                                 }
 
-#if LLVM_VERSION < 30
-                                template <typename InputIterator>
-#endif
                                     bool createGEP(unsigned dest, Value *Base, ARRAYREFPARAM(Value*,InputIterator Start,InputIterator End,ARef)) {
                                         assert(((dest >= numArgs) && (dest < numLocals+numArgs)) && "Instruction destination out of range");
                                         constType *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
@@ -1204,18 +1054,10 @@ namespace {
                                         mdnodes.resize(i+1);
                                     assert(i < mdnodes.size());
                                     const struct cli_bc_dbgnode *node = &bc->dbgnodes[i];
-#if LLVM_VERSION < 36
-                                    Value **Vals = new Value*[node->numelements];
-#else
                                     Metadata **Vals = new Metadata*[node->numelements];
-#endif
                                     for (unsigned j=0;j<node->numelements;j++) {
                                         const struct cli_bc_dbgnode_element* el = &node->elements[j];
-#if LLVM_VERSION < 36
-                                        Value *V;
-#else
                                         Metadata *V;
-#endif
                                         if (!el->len) {
                                             if (el->nodeid == ~0u)
                                                 V = 0;
@@ -1226,21 +1068,12 @@ namespace {
                                         } else if (el->string) {
                                             V = MDString::get(Context, StringRef(el->string, el->len));
                                         } else {
-#if LLVM_VERSION < 36
-                                            V = ConstantInt::get(IntegerType::get(Context, el->len),
-                                                    el->constant);
-#else
                                             V = ConstantAsMetadata::get(ConstantInt::get(IntegerType::get(Context, el->len),
                                                         el->constant));
-#endif
                                         }
                                         Vals[j] = V;
                                     }
-#if LLVM_VERSION < 36
-                                    MDNode *N = MDNode::get(Context, ARRAYREF(Value*,Vals, node->numelements));
-#else
                                     MDNode *N = MDNode::get(Context, ARRAYREF(Metadata*,Vals, node->numelements));
-#endif
                                     delete[] Vals;
                                     mdnodes[i] = N;
                                     return N;
@@ -1253,18 +1086,10 @@ namespace {
                                         // Have an alloca -> some instruction uses its address otherwise
                                         // mem2reg would have converted it to an SSA register.
                                         // Enable stack protector for this function.
-#if LLVM_VERSION < 29
-                                        // LLVM 2.9 has broken SSP, it does a 'mov 0x28, $rax', which tries
-                                        // to read from the address 0x28 and crashes
-                                        F->addFnAttr(Attribute::StackProtectReq);
-#endif
                                     }
                                     // always add stackprotect attribute (bb #2239), so we know this
                                     // function was verified. If there is no alloca it won't actually add
                                     // stack protector in emitted code so this won't slow down the app.
-#if LLVM_VERSION < 29
-                                    F->addFnAttr(Attribute::StackProtect);
-#endif
                                 }
 
                                 Value *GEPOperand(Value *V) {
@@ -1283,11 +1108,7 @@ namespace {
                                         }
                                         V = SI->getOperand(0);
                                     }
-#if LLVM_VERSION < 32
-                                    if (EE->getTargetData()->getPointerSize() == 8) {
-#else
                                         if (EE->getDataLayout().getPointerSize() == 8) {
-#endif
                                             // eliminate useless trunc, GEP can take i64 too
                                             if (TruncInst *I = dyn_cast<TruncInst>(V)) {
                                                 Value *Src = I->getOperand(0);
@@ -1358,15 +1179,6 @@ namespace {
                                             Functions[j]->setDoesNotThrow();
                                             Functions[j]->setCallingConv(CallingConv::Fast);
                                             Functions[j]->setLinkage(GlobalValue::InternalLinkage);
-#ifdef C_LINUX
-                                            /* bb #2270, this should really be fixed either by LLVM or GCC.*/
-#if LLVM_VERSION < 32
-                                            Functions[j]->addFnAttr(Attribute::constructStackAlignmentFromInt(16));
-#else
-                                            // TODO: How does this translate?
-                                            //	    Functions[j]->addFnAttr(Attribute::StackAlignment);
-#endif
-#endif
                                         }
                                         constType *I32Ty = Type::getInt32Ty(Context);
                                         for (unsigned j=0;j<bc->num_func;j++) {
@@ -1677,11 +1489,7 @@ namespace {
                                                                 }
                                                                 CallInst *CI = Builder.CreateCall(DestF, ARRAYREF(Value*, args.begin(), args.end()));
                                                                 CI->setCallingConv(CallingConv::Fast);
-#if LLVM_VERSION < 32
-                                                                CI->setDoesNotThrow(true);
-#else
                                                                 CI->setDoesNotThrow();
-#endif
                                                                 if (CI->getType()->getTypeID() != Type::VoidTyID)
                                                                     Store(inst->dest, CI);
                                                                 break;
@@ -1702,11 +1510,7 @@ namespace {
                                                                         args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
                                                                     }
                                                                     CallInst *CI = Builder.CreateCall(DestF, ARRAYREFVECTOR(Value*, args));
-#if LLVM_VERSION < 32
-                                                                    CI->setDoesNotThrow(true);
-#else
                                                                     CI->setDoesNotThrow();
-#endif
                                                                     Store(inst->dest, CI);
                                                                 }
                                                                 break;
@@ -1780,15 +1584,10 @@ namespace {
                                                                 Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
                                                                 Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
                                                                 Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 29
-                                                                CallInst *c = Builder.CreateCall4(CF->FMemset, Dst, Val, Len,
-                                                                        ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
                                                                 CallInst *c = Builder.CreateCall(CF->FMemset, {Dst, Val, Len,
                                                                         ConstantInt::get(Type::getInt32Ty(Context), 1),
                                                                         ConstantInt::get(Type::getInt1Ty(Context), 0)}
                                                                         );
-#endif
                                                                 c->setTailCall(true);
                                                                 c->setDoesNotThrow();
                                                                 UpgradeCall(c, CF->FMemset);
@@ -1801,15 +1600,10 @@ namespace {
                                                                 Value *Src = convertOperand(func, inst, inst->u.three[1]);
                                                                 Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
                                                                 Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 29
-                                                                CallInst *c = Builder.CreateCall4(CF->FMemcpy, Dst, Src, Len,
-                                                                        ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
                                                                 CallInst *c = Builder.CreateCall(CF->FMemcpy, {Dst, Src, Len,
                                                                         ConstantInt::get(Type::getInt32Ty(Context), 1),
                                                                         ConstantInt::get(Type::getInt1Ty(Context), 0)}
                                                                         );
-#endif
                                                                 c->setTailCall(true);
                                                                 c->setDoesNotThrow();
                                                                 UpgradeCall(c, CF->FMemcpy);
@@ -1822,14 +1616,9 @@ namespace {
                                                                 Value *Src = convertOperand(func, inst, inst->u.three[1]);
                                                                 Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
                                                                 Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
-#if LLVM_VERSION < 29
-                                                                CallInst *c = Builder.CreateCall4(CF->FMemmove, Dst, Src, Len,
-                                                                        ConstantInt::get(Type::getInt32Ty(Context), 1));
-#else
                                                                 CallInst *c = Builder.CreateCall(CF->FMemmove, {Dst, Src, Len,
                                                                         ConstantInt::get(Type::getInt32Ty(Context), 1),
                                                                         ConstantInt::get(Type::getInt1Ty(Context), 0)});
-#endif
                                                                 c->setTailCall(true);
                                                                 c->setDoesNotThrow();
                                                                 UpgradeCall(c, CF->FMemmove);
@@ -1841,11 +1630,7 @@ namespace {
                                                                 Dst = Builder.CreatePointerCast(Dst, PointerType::getUnqual(Type::getInt8Ty(Context)));
                                                                 Value *Src = convertOperand(func, inst, inst->u.three[1]);
                                                                 Src = Builder.CreatePointerCast(Src, PointerType::getUnqual(Type::getInt8Ty(Context)));
-#if LLVM_VERSION < 32
-                                                                Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
-#else
                                                                 Value *Len = convertOperand(func, EE->getDataLayout().getIntPtrType(Context), inst->u.three[2]);
-#endif
                                                                 CallInst *c = Builder.CreateCall(CF->FRealmemcmp, {Dst, Src, Len});
                                                                 c->setTailCall(true);
                                                                 c->setDoesNotThrow();
@@ -1870,11 +1655,7 @@ namespace {
                                                             {
                                                                 CallInst *C = Builder.CreateCall(CF->FBSwap16, convertOperand(func, inst, inst->u.unaryop));
                                                                 C->setTailCall(true);
-#if LLVM_VERSION < 32
-                                                                C->setDoesNotThrow(true);
-#else
                                                                 C->setDoesNotThrow();
-#endif
                                                                 Store(inst->dest, C);
                                                                 break;
                                                             }
@@ -1882,11 +1663,7 @@ namespace {
                                                             {
                                                                 CallInst *C = Builder.CreateCall(CF->FBSwap32, convertOperand(func, inst, inst->u.unaryop));
                                                                 C->setTailCall(true);
-#if LLVM_VERSION < 32
-                                                                C->setDoesNotThrow(true);
-#else
                                                                 C->setDoesNotThrow();
-#endif
                                                                 Store(inst->dest, C);
                                                                 break;
                                                             }
@@ -1894,11 +1671,7 @@ namespace {
                                                             {
                                                                 CallInst *C = Builder.CreateCall(CF->FBSwap64, convertOperand(func, inst, inst->u.unaryop));
                                                                 C->setTailCall(true);
-#if LLVM_VERSION < 32
-                                                                C->setDoesNotThrow(true);
-#else
                                                                 C->setDoesNotThrow();
-#endif
                                                                 Store(inst->dest, C);
                                                                 break;
                                                             }
@@ -1935,11 +1708,7 @@ namespace {
 
                                             // If successful so far, run verifyFunction
                                             if (!broken) {
-#if LLVM_VERSION < 35
-                                                if (verifyFunction(*F, PrintMessageAction)) {
-#else
                                                     if (verifyFunction(*F, &errs())) {
-#endif
                                                         // verification failed
                                                         broken = true;
                                                         cli_warnmsg("[Bytecode JIT]: Verification failed\n");
@@ -2011,11 +1780,7 @@ namespace {
                                             // entrypoint can only be C, emit wrapper
                                             Function *F = Function::Create(Functions[0]->getFunctionType(),
                                                     Function::ExternalLinkage,
-#if LLVM_VERSION < 33
-                                                    Functions[0]->getName()+"_wrap", M);
-#else
                                             Functions[0]->getName().str()+"_wrap", M);
-#endif
                                             F->setDoesNotThrow();
                                             BasicBlock *BB = BasicBlock::Create(Context, "", F);
                                             std::vector<Value*> Args;
@@ -2030,12 +1795,9 @@ namespace {
                                                 ReturnInst::Create(Context, CI, BB);
 
                                                 delete [] Functions;
-#if LLVM_VERSION < 35
-                                                if (verifyFunction(*F, PrintMessageAction))
-#else
-                                                    if (verifyFunction(*F, &errs()))
-#endif
+                                                    if (verifyFunction(*F, &errs())) {
                                                         return 0;
+                                                    }
 
                                                 apiMap.irgenTimer.stopTimer();
                                                 return F;
@@ -2055,20 +1817,10 @@ namespace {
                                                     // It is safer to just run all codegen under the mutex,
                                                     // it is not like we are going to codegen from multiple threads
                                                     // at a time anyway.
-                                                    //	    if (!llvm_is_multithreaded())
-#if LLVM_VERSION < 36
-                                                    llvm_api_lock.acquire();
-#else
                                                     llvm_api_lock.lock();
-#endif
                                                 }
                                                 ~LLVMApiScopedLock() {
-                                                    //	    if (!llvm_is_multithreaded())
-#if LLVM_VERSION < 36
-                                                    llvm_api_lock.release();
-#else
                                                     llvm_api_lock.unlock();
-#endif
                                                 }
                                         };
 
@@ -2090,17 +1842,8 @@ namespace {
                                                     "clamjit.fail", M);
                                             CF->FHandler->setDoesNotReturn();
                                             CF->FHandler->setDoesNotThrow();
-#if LLVM_VERSION == 32
-                                            CF->FHandler->addFnAttr(Attributes::NoInline);
-#else
                                             CF->FHandler->addFnAttr(Attribute::NoInline);
-#endif
-#if LLVM_VERSION < 36
-                                            // addGlobalMapping still exists in LLVM 3.6, but it doesn't work with MCJIT, which now replaces the JIT implementation.
-                                            EE->addGlobalMapping(CF->FHandler, (void*)(intptr_t)jit_exception_handler);
-#else
                                             sys::DynamicLibrary::AddSymbol(CF->FHandler->getName(), (void*)(intptr_t)jit_exception_handler);
-#endif
                                             EE->InstallLazyFunctionCreator(noUnknownFunctions);
                                             EE->getPointerToFunction(CF->FHandler);
 
@@ -2109,62 +1852,34 @@ namespace {
                                             args.push_back(Type::getInt8Ty(Context));
                                             args.push_back(Type::getInt32Ty(Context));
                                             args.push_back(Type::getInt32Ty(Context));
-#if LLVM_VERSION >= 29
                                             args.push_back(Type::getInt1Ty(Context));
-#endif
                                             FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
                                                     args, false);
                                             CF->FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 29
-                                                    "llvm.memset.i32",
-#else
                                                     "llvm.memset.p0i8.i32",
-#endif
                                                     M);
                                             CF->FMemset->setDoesNotThrow();
-#if LLVM_VERSION < 32
-                                            CF->FMemset->setDoesNotCapture(1, true);
-#else
                                             addNoCapture(CF->FMemset);
-#endif
 
                                             args.clear();
                                             args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
                                             args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
                                             args.push_back(Type::getInt32Ty(Context));
                                             args.push_back(Type::getInt32Ty(Context));
-#if LLVM_VERSION >= 29
                                             args.push_back(Type::getInt1Ty(Context));
-#endif
                                             FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
                                                     args, false);
                                             CF->FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 29
-                                                    "llvm.memmove.i32",
-#else
                                                     "llvm.memmove.p0i8.i32",
-#endif
                                                     M);
                                             CF->FMemmove->setDoesNotThrow();
-#if LLVM_VERSION < 32
-                                            CF->FMemmove->setDoesNotCapture(1, true);
-#else
                                             addNoCapture(CF->FMemmove);
-#endif
 
                                             CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-#if LLVM_VERSION < 29
-                                                    "llvm.memcpy.i32",
-#else
                                                     "llvm.memcpy.p0i8.p0i8.i32",
-#endif
                                                     M);
                                             CF->FMemcpy->setDoesNotThrow();
-#if LLVM_VERSION < 32
-                                            CF->FMemcpy->setDoesNotCapture(1, true);
-#else
                                             addNoCapture(CF->FMemcpy);
-#endif
 
                                             args.clear();
                                             args.push_back(Type::getInt16Ty(Context));
@@ -2190,60 +1905,34 @@ namespace {
                                             FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
                                             CF->FRealmemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
                                                     "memset", M);
-#if LLVM_VERSION < 36
-                                            EE->addGlobalMapping(CF->FRealmemset, (void*)(intptr_t)memset);
-#else
                                             sys::DynamicLibrary::AddSymbol(CF->FRealmemset->getName(), (void*)(intptr_t)memset);
-#endif
                                             EE->getPointerToFunction(CF->FRealmemset);
                                             CF->FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
                                                     "memmove", M);
-#if LLVM_VERSION < 36
-                                            EE->addGlobalMapping(CF->FRealMemmove, (void*)(intptr_t)memmove);
-#else
                                             sys::DynamicLibrary::AddSymbol(CF->FRealMemmove->getName(), (void*)(intptr_t)memmove);
-#endif
                                             EE->getPointerToFunction(CF->FRealMemmove);
                                             CF->FRealmemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
                                                     "memcpy", M);
-#if LLVM_VERSION < 36
-                                            EE->addGlobalMapping(CF->FRealmemcpy, (void*)(intptr_t)memcpy);
-#else
                                             sys::DynamicLibrary::AddSymbol(CF->FRealmemcpy->getName(), (void*)(intptr_t)memcpy);
-#endif
                                             EE->getPointerToFunction(CF->FRealmemcpy);
 
                                             args.clear();
                                             args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
                                             args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
-#if LLVM_VERSION < 32
-                                            args.push_back(EE->getTargetData()->getIntPtrType(Context));
-#else
                                             args.push_back(EE->getDataLayout().getIntPtrType(Context));
-#endif
                                             FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
                                                     args, false);
                                             CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
-#if LLVM_VERSION < 36
-                                            EE->addGlobalMapping(CF->FRealmemcmp, (void*)(intptr_t)memcmp);
-#else
                                             sys::DynamicLibrary::AddSymbol(CF->FRealmemcmp->getName(), (void*)(intptr_t)memcmp);
-#endif
                                             EE->getPointerToFunction(CF->FRealmemcmp);
                                         }
 
                                     }
-#if LLVM_VERSION >= 29
                                     INITIALIZE_PASS_BEGIN(RuntimeLimits, "rl", "Runtime Limits", false, false)
                                         INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
                                         INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
-#if LLVM_VERSION < 35
-                                        INITIALIZE_PASS_DEPENDENCY(DominatorTree)
-#else
                                         INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-#endif
                                         INITIALIZE_PASS_END(RuntimeLimits, "rl" ,"Runtime Limits", false, false)
-#endif
 
                                         static pthread_mutex_t watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
                                     static pthread_cond_t watchdog_cond = PTHREAD_COND_INITIALIZER;
@@ -2457,27 +2146,11 @@ namespace {
 
                                         cl_hash_data((char*)"md5", salt, 48, guardbuf, NULL);
                                     }
-#if LLVM_VERSION < 32
-                                    static void addFPasses(legacy::FunctionPassManager &FPM, bool trusted, const TargetData *TD)
-#elif LLVM_VERSION < 35
-                                        static void addFPasses(legacy::FunctionPassManager &FPM, bool trusted, const DataLayout *TD)
-#elif LLVM_VERSION < 36
-                                        static void addFPasses(legacy::FunctionPassManager &FPM, bool trusted, const Module *M)
-#else
                                         static void addFPasses(legacy::FunctionPassManager &FPM, bool trusted, Module *M)
-#endif
                                         {
                                             // Set up the optimizer pipeline.  Start with registering info about how
                                             // the target lays out data structures.
-#if LLVM_VERSION < 32
-                                            FPM.add(new TargetData(*TD));
-#elif LLVM_VERSION < 35
-                                            FPM.add(new DataLayout(*TD));
-#elif LLVM_VERSION < 36
-                                            FPM.add(new DataLayoutPass(M));
-#else
 
-#endif
                                             // Promote allocas to registers.
                                             FPM.add(createPromoteMemoryToRegisterPass());
                                             FPM.add(new BrSimplifier());
@@ -2498,32 +2171,10 @@ namespace {
                                                 {
                                                     // Create the JIT.
                                                     std::string ErrorMsg;
-#if LLVM_VERSION < 36
-                                                    EngineBuilder builder(M);
-#else
                                                     EngineBuilder builder(std::move(std::unique_ptr<Module>(M)));
-#endif
 
-#if LLVM_VERSION >= 31
                                                     TargetOptions Options;
-#if 0
-#ifdef CL_DEBUG
-                                                    //disable this for now, it leaks
-                                                    Options.JITEmitDebugInfo = false;
-                                                    //	Options.JITEmitDebugInfo = true;
-#else
-                                                    Options.JITEmitDebugInfo = false;
-#endif
-#else
-                                                    llvm::errs() << "<" << __LINE__ << ">" << "Since it's disabled anyway, remove it\n";
-#endif
-#if LLVM_VERSION < 34
-                                                    Options.DwarfExceptionHandling = false;
-#else
-                                                    // TODO: How to do this now?
-#endif
                                                     builder.setTargetOptions(Options);
-#endif
 
                                                     builder.setErrorStr(&ErrorMsg);
                                                     builder.setEngineKind(EngineKind::JIT);
@@ -2543,37 +2194,17 @@ namespace {
                                                     // Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
                                                     // for now.
                                                     EE->DisableLazyCompilation();
-#if LLVM_VERSION < 36
-                                                    EE->DisableSymbolSearching();
-#else
                                                     // This must be enabled for AddSymbol to work.
                                                     EE->DisableSymbolSearching(false);
-#endif
 
                                                     struct CommonFunctions CF;
                                                     addFunctionProtos(&CF, EE, M);
 
                                                     legacy::FunctionPassManager OurFPM(M), OurFPMUnsigned(M);
-#if LLVM_VERSION < 32
-                                                    M->setDataLayout(EE->getTargetData()->getStringRepresentation());
-#else
                                                     M->setDataLayout(EE->getDataLayout().getStringRepresentation());
-#endif
-#if LLVM_VERSION < 31
-                                                    M->setTargetTriple(sys::getHostTriple());
-#else
                                                     M->setTargetTriple(sys::getDefaultTargetTriple());
-#endif
-#if LLVM_VERSION < 32
-                                                    addFPasses(OurFPM, true, EE->getTargetData());
-                                                    addFPasses(OurFPMUnsigned, false, EE->getTargetData());
-#elif LLVM_VERSION < 35
-                                                    addFPasses(OurFPM, true, EE->getDataLayout());
-                                                    addFPasses(OurFPMUnsigned, false, EE->getDataLayout());
-#else
                                                     addFPasses(OurFPM, true, M);
                                                     addFPasses(OurFPMUnsigned, false, M);
-#endif
 
 
                                                     //TODO: create a wrapper that calls pthread_getspecific
@@ -2626,12 +2257,8 @@ namespace {
                                                             std::string reason((Twine("No mapping for builtin api ")+api->name).str());
                                                             llvm_error_handler(0, reason);
                                                         }
-#if LLVM_VERSION < 36
-                                                        EE->addGlobalMapping(F, dest);
-#else
                                                         // addGlobalMapping doesn't work with MCJIT, so use symbol searching instead.
                                                         sys::DynamicLibrary::AddSymbol(F->getName(), dest);
-#endif
                                                         EE->getPointerToFunction(F);
                                                         apiFuncs[i] = F;
                                                     }
@@ -2645,21 +2272,12 @@ namespace {
                                                     if (2*sizeof(void*) <= 16 && cli_rndnum(2)==2) {
                                                         plus = sizeof(void*);
                                                     }
-#if LLVM_VERSION < 36
-                                                    EE->addGlobalMapping(Guard, (void*)(&bcs->engine->guard.b[plus]));
-#else
                                                     sys::DynamicLibrary::AddSymbol(Guard->getName(), (void*)(&bcs->engine->guard.b[plus]));
-#endif
                                                     setGuard(bcs->engine->guard.b);
                                                     bcs->engine->guard.b[plus+sizeof(void*)-1] = 0x00;
-                                                    //	printf("%p\n", *(void**)(&bcs->engine->guard.b[plus]));
                                                     Function *SFail = Function::Create(FTy, Function::ExternalLinkage,
                                                             "__stack_chk_fail", M);
-#if LLVM_VERSION < 36
-                                                    EE->addGlobalMapping(SFail, (void*)(intptr_t)jit_ssp_handler);
-#else
                                                     sys::DynamicLibrary::AddSymbol(SFail->getName(), (void*)(intptr_t)jit_ssp_handler);
-#endif
                                                     EE->getPointerToFunction(SFail);
 
                                                     llvm::Function **Functions = new Function*[bcs->count];
@@ -2694,26 +2312,7 @@ namespace {
                                                         }
                                                     }
                                                     legacy::PassManager PM;
-#if LLVM_VERSION < 32
-                                                    PM.add(new TargetData(*EE->getTargetData()));
-#elif LLVM_VERSION < 35
-                                                    PM.add(new DataLayout(*EE->getDataLayout()));
-#elif LLVM_VERSION < 36
-                                                    PM.add(new DataLayoutPass(M));
-#endif
-                                                    // TODO: only run this on the untrusted bytecodes, not all of them...
-                                                    if (has_untrusted)
-#if 0
-                                                        PM.add(createClamBCRTChecks());
-#else
-                                                    //ARAGUSA: FIX HERE
-                                                    llvm::errs() << "<" << __LINE__ << ">" << "REPLACE ClamBCRTChecks<END>\n";
-#endif
 
-
-
-
-#if LLVM_VERSION >= 36
                                                     // With LLVM 3.6 (MCJIT) this Pass is required to work around
                                                     // a crash in LLVM caused by the SCCP Pass:
                                                     // Pass 'Sparse Conditional Constant Propagation' is not initialized.
@@ -2722,7 +2321,6 @@ namespace {
                                                     //
                                                     // Program received signal SIGSEGV, Segmentation fault.
                                                     PM.add(createGVNPass());
-#endif
                                                     PM.add(createSCCPPass());
                                                     PM.add(createCFGSimplificationPass());
                                                     PM.add(createGlobalOptimizerPass());
@@ -2735,9 +2333,7 @@ namespace {
                                                     PM.run(*M);
                                                     pmTimer2.stopTimer();
 
-#if LLVM_VERSION >= 36
                                                     EE->finalizeObject();
-#endif
                                                     PrettyStackTraceString CrashInfo2("Native machine codegen");
                                                     TimerWrapper codegenTimer("Native codegen");
                                                     codegenTimer.startTimer();
@@ -2776,17 +2372,9 @@ namespace {
 
                                     int bytecode_init(void)
                                     {
-                                        // If already initialized return
-#if LLVM_VERSION < 35
-                                        if (llvm_is_multithreaded()) {
-                                            cli_warnmsg("bytecode_init: already initialized\n");
-                                            return CL_EARG;
-                                        }
-#else
                                         if (!LLVMIsMultithreaded()) {
                                             cli_warnmsg("bytecode_init: LLVM is compiled without multithreading support\n");
                                         }
-#endif
 
                                         // LLVM safety assertion prevention fix
                                         // TODO: do we want to do a full shutdown?
@@ -2794,50 +2382,21 @@ namespace {
                                         llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
                                         sys::PrintStackTraceOnErrorSignal();
-#if LLVM_VERSION >= 34
                                         llvm::EnablePrettyStackTrace();
 #endif
-#else
-#if LLVM_VERSION < 34
-                                        llvm::DisablePrettyStackTrace = true;
-#endif
-#endif
                                         atexit(do_shutdown);
-
-#if LLVM_VERSION < 31
-#ifdef CL_DEBUG
-                                        //disable this for now, it leaks
-                                        llvm::JITEmitDebugInfo = false;
-                                        //    llvm::JITEmitDebugInfo = true;
-#else
-                                        llvm::JITEmitDebugInfo = false;
-#endif
-                                        llvm::DwarfExceptionHandling = false;
-#endif
-#if LLVM_VERSION < 33
-                                        llvm_start_multithreaded();
-#else
-                                        // This is now deprecated/useless: Multi-threading can only be enabled/disabled with the compile time define LLVM_ENABLE_THREADS in LLVM.
-#endif
 
                                         // If we have a native target, initialize it to ensure it is linked in and
                                         // usable by the JIT.
 #ifndef AC_APPLE_UNIVERSAL_BUILD
                                         InitializeNativeTarget();
-#if LLVM_VERSION >= 36
                                         InitializeNativeTargetAsmPrinter();
                                         InitializeNativeTargetAsmParser();
-#endif
 #else
                                         InitializeAllTargets();
 #endif
 
-#if LLVM_VERSION < 35
-                                        if (!llvm_is_multithreaded()) {
-#else
                                             if (!LLVMIsMultithreaded()) {
-#endif
-                                                //TODO:cli_dbgmsg
                                                 DEBUGERR << "WARNING: ClamAV JIT built w/o atomic builtins\n"
                                                     << "On x86 for best performance ClamAV should be built for i686, not i386!\n";
                                             }
@@ -2910,17 +2469,6 @@ namespace {
                                             if (I == LinePrinter.files.end()) {
                                                 lines = new linesTy;
                                                 std::string ErrorMessage;
-#if LLVM_VERSION < 29
-                                                lines->buffer = MemoryBuffer::getFile(path, &ErrorMessage);
-#elif LLVM_VERSION < 35
-                                                OwningPtr<MemoryBuffer> File;
-                                                error_code ec = MemoryBuffer::getFile(path, File);
-                                                if (ec) {
-                                                    ErrorMessage = ec.message();
-                                                    lines->buffer = 0;
-                                                } else
-                                                    lines->buffer = File.take();
-#else
                                                 ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr = MemoryBuffer::getFile(path);
                                                 if (!FileOrErr) {
                                                     lines->buffer = 0;
@@ -2928,7 +2476,6 @@ namespace {
                                                 else {
                                                     lines->buffer = FileOrErr.get().release();
                                                 }
-#endif
                                                 if (!lines->buffer) {
                                                     errs() << "Unable to open file '" << path << "'\n";
                                                     delete lines;
@@ -2961,14 +2508,6 @@ namespace {
                                             }
                                             assert(ctx->line < lines->linev.size());
 
-#if LLVM_VERSION < 28
-                                            int line = (int)ctx->line ? (int)ctx->line : -1;
-                                            int col = (int)ctx->col ? (int)ctx->col : -1;
-                                            //TODO: print this ourselves, instead of using SMDiagnostic
-                                            SMDiagnostic diag(ctx->file, line, col,
-                                                    "", std::string(lines->linev[ctx->line-1], lines->linev[ctx->line]-1));
-                                            diag.Print("[trace]", errs());
-#endif
                                         }
 
                                         int have_clamjit=1;
@@ -2996,11 +2535,7 @@ namespace {
                                             void stop(const char *msg, llvm::Function* F, llvm::Instruction* I)
                                             {
                                                 if (F && F->hasName()) {
-#if LLVM_VERSION < 31
-                                                    cli_warnmsg("[Bytecode JIT] in function %s: %s", F->getNameStr().c_str(), msg);
-#else
                                                     cli_warnmsg("[Bytecode JIT] in function %s: %s", F->getName().str().c_str(), msg);
-#endif
                                                 } else {
                                                     cli_warnmsg("[Bytecode JIT] %s", msg);
                                                 }
@@ -3008,6 +2543,15 @@ namespace {
                                         }
 
 
+
+
+
+
+
+
+
+
+#if 0
 					/*
 					 * aragusa, TODO: I do not believe the
 					 * rest of this is used at this point,
@@ -3235,3 +2779,4 @@ namespace {
                                                     }
                                                     errs() << *I << ":\n";
                                                 }
+#endif
