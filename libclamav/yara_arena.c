@@ -168,7 +168,7 @@ int _yr_arena_make_relocatable(
   YR_RELOC* reloc;
   YR_ARENA_PAGE* page;
 
-  size_t offset;
+  ssize_t offset;
   size_t base_offset;
 
   int result = ERROR_SUCCESS;
@@ -178,7 +178,7 @@ int _yr_arena_make_relocatable(
   assert(page != NULL);
 
   base_offset = (uint8_t*) base - page->address;
-  offset = va_arg(offsets, size_t);
+  offset = va_arg(offsets, ssize_t);
 
   while (offset != -1)
   {
@@ -337,7 +337,7 @@ void* yr_arena_base_address(
 void* yr_arena_next_address(
   YR_ARENA* arena,
   void* address,
-  int offset)
+  size_t offset)
 {
   YR_ARENA_PAGE* page;
 

@@ -3282,7 +3282,7 @@ void cli_bytevalue_describe(const struct cli_bc *bc, unsigned funcid)
 
 void cli_byteinst_describe(const struct cli_bc_inst *inst, unsigned *bbnum)
 {
-    unsigned j;
+    int j;
     char inst_str[256];
     const struct cli_apicall *api;
 
