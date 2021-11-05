@@ -58,8 +58,14 @@ if(NCURSES_NOT_FOUND EQUAL -1)
     set(HAVE_LIBNCURSES 1)
     set(CURSES_INCLUDE "<ncurses.h>")
 
-    set(CURSES_LIBRARY ${PC_NCurses_LINK_LIBRARIES})
-    set(CURSES_VERSION ${PC_NCurses_VERSION})
+    if (DEFINED PC_NCurses_LINK_LIBRARIES)
+        set(CURSES_LIBRARY ${PC_NCurses_LINK_LIBRARIES})
+    else()
+        find_library(CURSES_LIBRARY
+            NAMES ncurses
+            PATHS ${PC_NCurses_LIBRARY_DIRS}
+        )
+    endif()
 
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(CURSES
