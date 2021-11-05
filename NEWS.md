@@ -3,6 +3,12 @@
 Note: This file refers to the source tarball. Things described here may differ
  slightly from the binary packages.
 
+## 0.103.5
+
+ClamAV 0.103.5 is a critical patch release with the following fixes:
+
+Special thanks to the following for code contributions and bug reports:
+
 ## 0.103.4
 
 ClamAV 0.103.4 is a critical patch release with the following fixes:
