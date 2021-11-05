@@ -3,6 +3,12 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 0.104.2
+
+ClamAV 0.104.2 is a critical patch release with the following fixes:
+
+Special thanks to the following for code contributions and bug reports:
+
 ## 0.104.1
 
 ClamAV 0.104.1 is a critical patch release with the following fixes:
@@ -272,6 +278,109 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tuomo Soini
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.4
+
+ClamAV 0.103.4 is a critical patch release with the following fixes:
+
+- FreshClam:
+  - Add a 24-hour cool-down for FreshClam clients that have received an HTTP
+    403 (Forbidden) response from the CDN.
+    This is to reduce the volume of 403-response data served to blocked
+    FreshClam clients that are configured with a tight update-loop.
+  - Fixed a bug where FreshClam treats an empty CDIFF as an incremental update
+    failure instead of as an intentional request to download the whole CVD.
+
+- ClamDScan: Fix a scan error when broken symlinks are encountered on macOS with
+  "FollowDirectorySymlinks" and "FollowFileSymlinks" options disabled.
+
+- Overhauled the scan recursion / nested archive extraction logic and added new
+  limits on embedded file-type recognition performed during the "raw" scan of
+  each file. This limits embedded file-type misidentification and prevents
+  detecting embedded file content that is found/extracted and scanned at other
+  layers in the scanning process.
+
+- Fix an issue with the FMap module that failed to read from some nested files.
+
+- Fixed an issue where failing to load some rules from a Yara file containing
+  multiple rules may cause a crash.
+
+- Fixed assorted compiler warnings.
+
+- Fixed assorted Coverity static code analysis issues.
+
+- Scan limits:
+  - Added virus-name suffixes to the alerts that trigger when a scan limit has
+    been exceeded. Rather than simply `Heuristics.Limits.Exceeded`, you may now
+    see limit-specific virus-names, to include:
+    - `Heuristics.Limits.Exceeded.MaxFileSize`
+    - `Heuristics.Limits.Exceeded.MaxScanSize`
+    - `Heuristics.Limits.Exceeded.MaxFiles`
+    - `Heuristics.Limits.Exceeded.MaxRecursion`
+    - `Heuristics.Limits.Exceeded.MaxScanTime`
+  - Renamed the `Heuristics.Email.ExceedsMax.*` alerts to align with the other
+    limit alerts names. These alerts include:
+    - `Heuristics.Limits.Exceeded.EmailLineFoldcnt`
+    - `Heuristics.Limits.Exceeded.EmailHeaderBytes`
+    - `Heuristics.Limits.Exceeded.EmailHeaders`
+    - `Heuristics.Limits.Exceeded.EmailMIMEPartsPerMessage`
+    - `Heuristics.Limits.Exceeded.EmailMIMEArguments`
+  - Fixed an issue where the Email-related scan limits would alert even when the
+    "AlertExceedsMax" (`--alert-exceeds-max`) scan option is not enabled.
+  - Fixes an issue in the Zip parser where exceeding the "MaxFiles" limit or
+    the "MaxFileSize" limit would abort the scan but would fail to alert.
+    The Zip scan limit issues were independently identified and reported by
+    Aaron Leliaert and Max Allan.
+
+- Fixed a leak in the Email parser when using the `--gen-json` scan option.
+
+- Fixed an issue where a failure to record metadata in the Email parser when
+  using the `--gen-json` scan option could cause the Email parser to abort the
+  scan early and fail to extract and scan additional content.
+
+- Fixed a file name memory leak in the Zip parser.
+
+- Fixed an issue where certain signature patterns may cause a crash or cause
+  unintended matches on some systems when converting characters to uppercase if
+  a UTF-8 unicode single-byte grapheme becomes a multi-byte grapheme.
+  Patch courtesy of Andrea De Pasquale.
+
+Other fixes backported from 0.104.0:
+
+- Fixed a crash in programs that use libclamav when the programs don't set a
+  callback for the "virus found" event.
+  Patch courtesy of Markus Strehle.
+
+- Added checks to the the SIS archive parser to prevent an SIS file entry from
+  pointing to the archive, which would result in a loop. This was not an actual
+  infinite loop, as ClamAV's scan recursion limit limits the depth of nested
+  archive extraction.
+
+- ClamOnAcc: Fixed a socket file descriptor leak that could result in a crash
+  when all available file descriptors are exhausted.
+
+- FreshClam: Fixed an issue where FreshClam would download a CVD repeatedly if a
+  zero-byte CDIFF is downloaded or if the incremental update failed and if the
+  CVD downloaded after that is older than advertised.
+  Patch courtesy of Andrew Williams.
+
+- ClamDScan:
+  - Fixed a memory leak of the scan target filename when using the
+    `--fdpass` or `--stream` options.
+  - Fixed an issue where ClamDScan would fail to scan any file after excluding
+    a file with the "ExcludePath" option when using when using the `--multiscan`
+    (`-m`) option along with either `--fdpass` or `--stream`.
+    Also fixed a memory leak of the accidentally-excluded paths in this case.
+  - Fixed a single file path memory leak when using `--fdpass`.
+  - Fixed an issue where the "ExcludePath" regex may fail to exclude absolute
+    paths when the scan is invoked with a relative path.
+
+Special thanks to the following for code contributions and bug reports:
+- Aaron Leliaert
+- Andrea De Pasquale
+- Andrew Williams
+- Markus Strehle
+- Max Allan
 
 ## 0.103.3
 
