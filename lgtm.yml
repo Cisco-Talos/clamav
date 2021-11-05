@@ -1,0 +1,16 @@
+path_classifiers:
+  test:
+    - "unit_tests/*"
+queries:
+  - exclude: cpp/use-of-goto
+extraction:
+  cpp:
+    after_prepare:
+      - python3 -m pip install cmake
+      - export PATH=/opt/work/.local/bin:$PATH
+    configure:
+      command:
+        - mkdir $LGTM_SRC/build && cd $LGTM_SRC/build && /opt/work/.local/bin/cmake ..
+    index:
+      build_command:
+        - cd $LGTM_SRC/build && /opt/work/.local/bin/cmake --build .
