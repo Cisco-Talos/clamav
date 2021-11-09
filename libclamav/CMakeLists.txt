@@ -268,8 +268,6 @@ if(LLVM_FOUND)
     target_sources( bytecode_runtime
         PRIVATE
             c++/detect.cpp
-            c++/ClamBCRTChecks.cpp
-            c++/PointerTracking.cpp
             c++/bytecode2llvm.cpp
             bytecode_priv.h
             bytecode.h )

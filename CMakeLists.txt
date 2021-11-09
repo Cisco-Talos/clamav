@@ -468,11 +468,38 @@ find_package(JSONC REQUIRED)
 set(HAVE_JSON 1)
 
 if(BYTECODE_RUNTIME STREQUAL "llvm")
+    set (LLVM_FIND_VERSION "8.0.0")
     find_package(LLVM REQUIRED)
     if(LLVM_FOUND)
-        # Set variable required by libclamav to use llvm instead of interpreter
-        set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
-        set(LLVM_LIBRARIES "${LLVM_LIBRARIES};-ltinfo")
+        if (LLVM_AVAILABLE_LIBS)
+            # Found using LLVMConfig.cmake
+            message("LLVM found using LLVMConfig.cmake")
+            set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
+            set(LLVM_LIBRARIES ${LLVM_AVAILABLE_LIBS})
+
+            if (${LLVM_PACKAGE_VERSION} VERSION_LESS "8.0.0")
+                message(FATAL "LLVM version ${LLVM_PACKAGE_VERSION} is too old")
+            endif()
+
+        else()
+            # Found using FindLLVM.cmake
+            message("LLVM found using FindLLVM.cmake")
+
+            # Set variable required by libclamav to use llvm instead of interpreter
+            set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
+            set(LLVM_LIBRARIES "${LLVM_LIBRARIES};-ltinfo")
+            message("LLVM_FOUND ${LLVM_FOUND}")
+
+            if (${LLVM_VERSION_STRING} VERSION_GREATER_EQUAL "9.0.0")
+                if (${LLVM_VERSION_STRING} VERSION_LESS "10.0.0")
+                    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+                endif()
+            endif()
+
+            if (${LLVM_VERSION_STRING} VERSION_LESS "8.0.0")
+                message(FATAL "LLVM version ${LLVM_VERSION_STRING} is too old")
+            endif()
+        endif()
     endif()
 endif()
 
