@@ -541,7 +541,7 @@ Default: no
 \fBMaxScanTime SIZE\fR
 This option sets the maximum amount of time a scan may take to complete. The value is in milliseconds. The value of 0 disables the limit. \fBWARNING: disabling this limit or setting it too high may result allow scanning of certain files to lock up the scanning process/threads resulting in a Denial of Service.\fR
 .br
-Default: 12000
+Default: 120000
 .TP
 \fBMaxScanSize SIZE\fR
 Sets the maximum amount of data to be scanned for each input file. Archives and other containers are recursively extracted and scanned up to this value. The size of an archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward the max scan size. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
