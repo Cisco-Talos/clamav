@@ -4747,6 +4747,10 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
 
                 /* Successfully opened the daily CLD file and read the header info. */
                 engine->num_total_signatures += daily_cld->sigs;
+            } else {
+                free(dbfile);
+                dbfile = NULL;
+                continue;
             }
 
         } else if (!strcmp(dent->d_name, "daily.cvd")) {
@@ -4761,6 +4765,10 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
                 }
                 /* Successfully opened the daily CVD file and ready the header info. */
                 engine->num_total_signatures += daily_cvd->sigs;
+            } else {
+                free(dbfile);
+                dbfile = NULL;
+                continue;
             }
 
         } else if (!strcmp(dent->d_name, "local.gdb")) {
