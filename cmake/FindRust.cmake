@@ -276,6 +276,7 @@ if(WIN32)
     else()
         set(LIB_TARGET "i686-pc-windows-msvc")
     endif()
+
 elseif(ANDROID)
     if(ANDROID_SYSROOT_ABI STREQUAL "x86")
         set(LIB_TARGET "i686-linux-android")
@@ -286,19 +287,55 @@ elseif(ANDROID)
     elseif(ANDROID_SYSROOT_ABI STREQUAL "arm64")
         set(LIB_TARGET "aarch64-linux-android")
     endif()
+
 elseif(IOS)
     set(LIB_TARGET "universal")
+
+# For reference determining target platform:
+#  CMake Systems: https://github.com/Kitware/CMake/blob/master/Modules/CMakeDetermineSystem.cmake
+#  Rust Targets:  https://doc.rust-lang.org/nightly/rustc/platform-support.html
 elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
         set(LIB_TARGET "universal-apple-darwin")
+
     else()
-        set(LIB_TARGET "x86_64-apple-darwin")
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
+            set(LIB_TARGET "aarch64-apple-darwin")
+        else()
+            set(LIB_TARGET "x86_64-apple-darwin")
+        endif()
     endif()
-else()
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(LIB_TARGET "x86_64-unknown-linux-gnu")
+        set(LIB_TARGET "x86_64-unknown-freebsd")
     else()
-        set(LIB_TARGET "i686-unknown-linux-gnu")
+        set(LIB_TARGET "i686-unknown-freebsd")
+    endif()
+
+elseif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(LIB_TARGET "x86_64-unknown-openbsd")
+    else()
+        set(LIB_TARGET "i686-unknown-openbsd")
+    endif()
+
+else() # Probably Linux
+    if(EXISTS "/lib/libc.musl-x86_64.so.1")
+        # TODO: Add support for other musl targets
+        # For now, assume it's x86_64 on alpine
+        set(LIB_TARGET "x86_64-alpine-linux-musl")
+
+    else()
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+            set(LIB_TARGET "aarch64-unknown-linux-gnu")
+
+        elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(LIB_TARGET "x86_64-unknown-linux-gnu")
+
+        else()
+            set(LIB_TARGET "i686-unknown-linux-gnu")
+        endif()
     endif()
 endif()
 
