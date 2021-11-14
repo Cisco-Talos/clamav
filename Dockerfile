@@ -39,6 +39,8 @@ RUN apk add --no-cache \
         pcre2-dev \
         py3-pytest \
         zlib-dev \
+        rust \
+        cargo \
     && \
     mkdir -p "./build" && cd "./build" && \
     cmake .. \
