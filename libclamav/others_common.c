@@ -64,6 +64,7 @@
 
 #define MSGBUFSIZ 8192
 
+static bool rand_seeded            = false;
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
 
 #ifdef CL_THREAD_SAFE
@@ -906,7 +907,7 @@ const char *cli_strerror(int errnum, char *buf, size_t len)
 
 static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned char *dig)
 {
-    unsigned char digest[16];
+    unsigned char digest[16] = {0};
     char *md5str, *pt;
     int i;
 
@@ -929,10 +930,11 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
 unsigned int cli_rndnum(unsigned int max)
 {
-    if (name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
+    if (!rand_seeded) { /* minimizes re-seeding after the first call to cli_gentemp() */
         struct timeval tv;
         gettimeofday(&tv, (struct timezone *)0);
         srand(tv.tv_usec + clock() + rand());
+        rand_seeded = true;
     }
 
     return 1 + (unsigned int)(max * (rand() / (1.0 + RAND_MAX)));
