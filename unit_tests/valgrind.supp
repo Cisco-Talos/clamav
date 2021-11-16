@@ -314,3 +314,21 @@
    fun:recvloop
    fun:main
 }
+{
+   rust_statx_hack-unaddressable_bytes
+   Memcheck:Param
+   statx(file_name)
+   fun:statx
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx17h3116b93d19baec3cE
+   ...
+}
+{
+   rust_statx_hack-unaddressable_bytes2
+   Memcheck:Param
+   statx(buf)
+   fun:statx
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx17h3116b93d19baec3cE
+   ...
+}
