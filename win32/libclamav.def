@@ -77,6 +77,9 @@ EXPORTS cl_hash_destroy @69
 EXPORTS cl_engine_stats_enable @70
 EXPORTS cl_engine_set_clcb_virus_found @71
 EXPORTS cl_engine_get_str @72
+EXPORTS cl_scanmap_callback @73
+EXPORTS cl_fmap_close @74
+EXPORTS cl_fmap_open_memory @75
 
 ; path variables
 ; --------------
