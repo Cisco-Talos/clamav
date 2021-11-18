@@ -185,6 +185,28 @@ if(WIN32)
     file(TO_NATIVE_PATH ${CMAKE_BINARY_DIR}                                     BUILD)
     file(TO_NATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR}                             TMP)
 
+    set(NEW_PATH "$<TARGET_FILE_DIR:check_clamav>;$ENV{PATH}")
+
+    file(TO_NATIVE_PATH $<TARGET_FILE:OpenSSL::SSL>                             LIBSSL)
+    file(TO_NATIVE_PATH $<TARGET_FILE:OpenSSL::Crypto>                          LIBCRYPTO)
+    file(TO_NATIVE_PATH $<TARGET_FILE:ZLIB::ZLIB>                               LIBZ)
+    file(TO_NATIVE_PATH $<TARGET_FILE:BZip2::BZip2>                             LIBBZ2)
+    file(TO_NATIVE_PATH $<TARGET_FILE:PCRE2::pcre2>                             LIBPCRE2)
+    file(TO_NATIVE_PATH $<TARGET_FILE:LibXml2::LibXml2>                         LIBXML2)
+    file(TO_NATIVE_PATH $<TARGET_FILE:CURL::libcurl>                            LIBCURL)
+    file(TO_NATIVE_PATH $<TARGET_FILE:JSONC::jsonc>                             LIBJSONC)
+    file(TO_NATIVE_PATH $<TARGET_FILE:PThreadW32::pthreadw32>                   LIBPTHREADW32)
+    file(TO_NATIVE_PATH $<TARGET_FILE:ClamAV::win32_compat>                     LIBWIN32COMPAT)
+
+    if(ENABLE_STATIC_LIB)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamav_static>                        LIBCLAMAV)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clammspack_static>                    LIBCLAMMSPACK)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_iface_static>               LIBCLAMUNRARIFACE)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamunrar_static>                     LIBCLAMUNRAR)
+    else()
+        file(TO_NATIVE_PATH $<TARGET_FILE:clamav>                               LIBCLAMAV)
+        file(TO_NATIVE_PATH $<TARGET_FILE:clammspack>                           LIBCLAMMSPACK)
+    endif()
     file(TO_NATIVE_PATH $<TARGET_FILE:check_clamav>                             CHECK_CLAMAV)
     if(ENABLE_APP)
         file(TO_NATIVE_PATH $<TARGET_FILE:check_clamd>                              CHECK_CLAMD)
@@ -214,6 +236,29 @@ else()
     set(BUILD              ${CMAKE_BINARY_DIR})
     set(TMP                ${CMAKE_CURRENT_BINARY_DIR})
 
+    set(NEW_PATH "$ENV{PATH}")
+
+    set(LIBSSL             $<TARGET_FILE:OpenSSL::SSL>)
+    set(LIBCRYPTO          $<TARGET_FILE:OpenSSL::Crypto>)
+    set(LIBZ               $<TARGET_FILE:ZLIB::ZLIB>)
+    set(LIBBZ2             $<TARGET_FILE:BZip2::BZip2>)
+    set(LIBPCRE2           $<TARGET_FILE:PCRE2::pcre2>)
+    set(LIBXML2            $<TARGET_FILE:LibXml2::LibXml2>)
+    set(LIBCURL            $<TARGET_FILE:CURL::libcurl>)
+    set(LIBJSONC           $<TARGET_FILE:JSONC::jsonc>)
+    if(Iconv_FOUND AND NOT Iconv_IS_BUILT_IN)
+        set(LIBICONV           ${Iconv_LIBRARIES})
+    endif()
+
+    if(ENABLE_STATIC_LIB)
+        set(LIBCLAMAV            $<TARGET_FILE:clamav_static>)
+        set(LIBCLAMMSPACK        $<TARGET_FILE:clammspack_static>)
+        set(LIBCLAMUNRARIFACE    $<TARGET_FILE:clamunrar_iface_static>)
+        set(LIBCLAMUNRAR         $<TARGET_FILE:clamunrar_static>)
+    else()
+        set(LIBCLAMAV            $<TARGET_FILE:clamav>)
+        set(LIBCLAMMSPACK        $<TARGET_FILE:clammspack>)
+    endif()
     set(CHECK_CLAMAV       $<TARGET_FILE:check_clamav>)
     if(ENABLE_APP)
         set(CHECK_CLAMD        $<TARGET_FILE:check_clamd>)
@@ -243,9 +288,26 @@ set(ENVIRONMENT
     CK_FORK=no
     CK_DEFAULT_TIMEOUT=60
     LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
+    DYLD_LIBRARY_PATH=${LD_LIBRARY_PATH}
     SOURCE=${SOURCE}
     BUILD=${BUILD}
     TMP=${TMP}
+    PATH=${NEW_PATH}
+    LIBSSL=${LIBSSL}
+    LIBCRYPTO=${LIBCRYPTO}
+    LIBZ=${LIBZ}
+    LIBBZ2=${LIBBZ2}
+    LIBPCRE2=${LIBPCRE2}
+    LIBXML2=${LIBXML2}
+    LIBCURL=${LIBCURL}
+    LIBJSONC=${LIBJSONC}
+    LIBICONV=${LIBICONV}
+    LIBPTHREADW32=${LIBPTHREADW32}
+    LIBWIN32COMPAT=${LIBWIN32COMPAT}
+    LIBCLAMAV=${LIBCLAMAV}
+    LIBCLAMMSPACK=${LIBCLAMMSPACK}
+    LIBCLAMUNRARIFACE=${LIBCLAMUNRARIFACE}
+    LIBCLAMUNRAR=${LIBCLAMUNRAR}
     CHECK_CLAMAV=${CHECK_CLAMAV}
     CHECK_CLAMD=${CHECK_CLAMD}
     CHECK_FPU_ENDIAN=${CHECK_FPU_ENDIAN}
@@ -281,6 +343,9 @@ if(Valgrind_FOUND)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST libclamav_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
 endif()
+
+add_rust_test(NAME libclamav_rust WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/libclamav_rust")
+set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
 if(ENABLE_APP)
     add_test(NAME clamscan COMMAND ${PythonTest_COMMAND};clamscan_test.py
