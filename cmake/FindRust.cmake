@@ -222,9 +222,21 @@ function(add_rust_test)
     set(oneValueArgs NAME WORKING_DIRECTORY)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+    set(MY_CARGO_ARGS "test")
+    if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$") #  Don't specify the target for universal, we'll do that manually for each build.
+        list(APPEND MY_CARGO_ARGS "--target" ${LIB_TARGET})
+    endif()
+
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        list(APPEND MY_CARGO_ARGS "--release")
+    endif()
+
+    list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
+    list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
+
     add_test(
-        NAME test-${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} test -vv --color always
+        NAME ${ARGS_NAME}
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} -vv --color always
         WORKING_DIRECTORY ${ARGS_WORKING_DIRECTORY}
     )
 endfunction()
@@ -269,6 +281,12 @@ foreach(LINE ${LINE_LIST})
         break()
     endif()
 endforeach()
+
+# Determine default LLVM target triple
+execute_process(COMMAND ${rustc_EXECUTABLE} -vV
+    OUTPUT_VARIABLE RUSTC_VV_OUT ERROR_QUIET)
+string(REGEX REPLACE "^.*host: ([a-zA-Z0-9_\\-]+).*" "\\1" DEFAULT_LIB_TARGET1 "${RUSTC_VV_OUT}")
+string(STRIP ${DEFAULT_LIB_TARGET1} DEFAULT_LIB_TARGET)
 
 if(WIN32)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -322,9 +340,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
 
 else() # Probably Linux
     if(EXISTS "/lib/libc.musl-x86_64.so.1")
-        # TODO: Add support for other musl targets
-        # For now, assume it's x86_64 on alpine
-        set(LIB_TARGET "x86_64-alpine-linux-musl")
+        # Just use the default target, no cross-compiling on libc.musl today :(
+        set(LIB_TARGET "${DEFAULT_LIB_TARGET}")
 
     else()
         if(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
