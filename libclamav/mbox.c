@@ -92,7 +92,7 @@
 #include <features.h>
 #endif
 
-#if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
+#if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1 && !defined(__UCLIBC__) || defined(__UCLIBC_HAS_BACKTRACE__)
 #define HAVE_BACKTRACE
 #endif
 #endif
