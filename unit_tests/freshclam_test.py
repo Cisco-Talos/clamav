@@ -662,20 +662,16 @@ class WebServerHandler_02(BaseHTTPRequestHandler):
             #       someone wants to run these tests without internet access.
             self.send_response(206) # Partial file
             self.send_header('Content-type', 'application/octet-stream')
-            self.end_headers()
             page =b'ClamAV-VDB:21 Sep 2020 09-52 -0400:25934:4320797:63:2ee5a3e4285b496656117ae3809b6040:gMj7NXhxfew0+bToOF8GX7xPHPGXhOSD+CSuf3E7SHhLmVZCJUVhPS01h42I0W1py7L+BmM2yhPIW8t/oGPFw8+hdD4DU/ceET15wnPWU4lsJJeRkl46Z4D8INe9Oq36ixT1xEIkERogPE3qr6wszmjT2Xe2VcmydTXN2GfPQX:raynman:1600696324                                                                                                                                                                                                                                               '
-            self.wfile.write(page)
-
         else:
             # Send the 403 FORBIDDEN header.
             self.send_response(403) # Forbidden (blocked)
             self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
             page= b'''<html><body>
                     No CVD for you!
                     </body></html>'''
-            self.wfile.write(page)
+        self.end_headers()
+        self.wfile.write(page)
 
 class WebServerHandler_04(BaseHTTPRequestHandler):
     '''
@@ -689,21 +685,17 @@ class WebServerHandler_04(BaseHTTPRequestHandler):
             #       someone wants to run these tests without internet access.
             self.send_response(206) # Partial file
             self.send_header('Content-type', 'application/octet-stream')
-            self.end_headers()
             page =b'ClamAV-VDB:21 Sep 2020 09-52 -0400:25934:4320797:63:2ee5a3e4285b496656117ae3809b6040:gMj7NXhxfew0+bToOF8GX7xPHPGXhOSD+CSuf3E7SHhLmVZCJUVhPS01h42I0W1py7L+BmM2yhPIW8t/oGPFw8+hdD4DU/ceET15wnPWU4lsJJeRkl46Z4D8INe9Oq36ixT1xEIkERogPE3qr6wszmjT2Xe2VcmydTXN2GfPQX:raynman:1600696324                                                                                                                                                                                                                                               '
-            self.wfile.write(page)
-
         else:
             # Send the 429 Too-Many-Requests header.
             self.send_response(429) # Too-Many-Requests (rate limiting)
             self.send_header('Content-type', 'text/html')
             self.send_header('Retry-After', '60') # Try again in a minute ;-)!
-            self.end_headers()
-
             page= b'''<html><body>
                     Retry later please!
                     </body></html>'''
-            self.wfile.write(page)
+        self.end_headers()
+        self.wfile.write(page)
 
 class WebServerHandler_WWW(BaseHTTPRequestHandler):
     '''
