@@ -363,6 +363,10 @@ occasion send a `ping` to `clamd` on the default port and wait for the pong
 from `clamd`. If `clamd` fails to respond, Docker will treat this as an error.
 The healthcheck results can be viewed with `docker inspect`.
 
+When the container starts up, the health-check also starts up. As loading the
+virus database can take some time, there is a delay configured in the
+`Dockerfile` to try and avoid this race condition.
+
 ## Performance
 
 The performance impact of running `clamd` in Docker is negligible. Docker is
