@@ -85,6 +85,10 @@ Do not use `--pull always` with the larger ClamAV images.
 
 > _Tip_: It's common to see `-it` instead of `--interactive --tty`.
 
+In some situations it may be desirable to set (any of) the containers to a
+specific timezone. The `--env` parameter can be used to set the `TZ` variable
+to change the default of `Etc/UTC`.
+
 ### Running ClamD using a Locally Built Image
 
 You can run a container using an image built locally
