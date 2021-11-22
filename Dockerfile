@@ -85,6 +85,8 @@ LABEL maintainer="ClamAV bugs <clamav-bugs@external.cisco.com>"
 EXPOSE 3310
 EXPOSE 7357
 
+ENV TZ Etc/UTC
+
 RUN apk add --no-cache \
         fts \
         json-c \
@@ -97,6 +99,7 @@ RUN apk add --no-cache \
         ncurses-libs \
         pcre2 \
         tini \
+        tzdata \
         zlib \
     && \
     addgroup -S "clamav" && \
