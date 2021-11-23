@@ -635,42 +635,50 @@ void *onas_ddd_th(void *arg)
                 child = event->name;
 
                 if (path == NULL) {
-                    logg("*ClamInotif: watch descriptor not found in lookup table ... skipping\n");
+                    logg("*ClamInotif: watch descriptor (wd:%d) not found in lookup table ... skipping\n", wd);
                     continue;
                 }
 
-                len              = strlen(path);
-                size_t size      = strlen(child) + len + 2;
-                char *child_path = (char *)cli_malloc(size);
-                if (child_path == NULL) {
-                    logg("*ClamInotif: could not allocate space for child path ... aborting\n");
-                    return NULL;
-                }
-
-                if (path[len - 1] == '/') {
-                    snprintf(child_path, --size, "%s%s", path, child);
+                if (event->mask & IN_UNMOUNT) {
+                    logg("!ClamInotif: inofify event IN_UNMOUNT (mask:%d) occured, clamonacc should be restartet because a filesystem monitored by inotify was umounted.\n", event->mask);
+                } else if (event->mask & IN_Q_OVERFLOW) {
+                    logg("!ClamInotif: inotify event IN_Q_OVERFLOW (mask:%d) occured, clamonacc should be restartet because a inotify events were dropped by the kernel and the internal clamonacc inotify data structures are likely invalid.\n", event->mask);
+                } else if (event->mask & IN_IGNORED ) {
+                    // Ignore for debugging purposes
                 } else {
-                    snprintf(child_path, size, "%s/%s", path, child);
+                    len              = strlen(path);
+                    size_t size      = strlen(child) + len + 2;
+                    char *child_path = (char *)cli_malloc(size);
+                    if (child_path == NULL) {
+                        logg("*ClamInotif: could not allocate space for child path ... aborting\n");
+                        return NULL;
+                    }
+
+                    if (path[len - 1] == '/') {
+                        snprintf(child_path, --size, "%s%s", path, child);
+                    } else {
+                        snprintf(child_path, size, "%s/%s", path, child);
+                    }
+
+                    if (event->mask & IN_DELETE) {
+                        onas_ddd_handle_in_delete(ctx, path, child_path, event, wd);
+
+                    } else if (event->mask & IN_MOVED_FROM) {
+                        onas_ddd_handle_in_moved_from(ctx, path, child_path, event, wd);
+
+                    } else if (event->mask & IN_CREATE) {
+                        onas_ddd_handle_in_create(ctx, path, child_path, event, wd, in_mask);
+
+                    } else if (event->mask & IN_CLOSE_WRITE) {
+                        onas_ddd_handle_in_close_write(ctx, child_path);
+
+                    } else if (event->mask & IN_MOVED_TO) {
+                        onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
+                    }
+
+                    free(child_path);
+                    child_path = NULL;
                 }
-
-                if (event->mask & IN_DELETE) {
-                    onas_ddd_handle_in_delete(ctx, path, child_path, event, wd);
-
-                } else if (event->mask & IN_MOVED_FROM) {
-                    onas_ddd_handle_in_moved_from(ctx, path, child_path, event, wd);
-
-                } else if (event->mask & IN_CREATE) {
-                    onas_ddd_handle_in_create(ctx, path, child_path, event, wd, in_mask);
-
-                } else if (event->mask & IN_CLOSE_WRITE) {
-                    onas_ddd_handle_in_close_write(ctx, child_path);
-
-                } else if (event->mask & IN_MOVED_TO) {
-                    onas_ddd_handle_in_moved_to(ctx, path, child_path, event, wd, in_mask);
-                }
-
-                free(child_path);
-                child_path = NULL;
             }
         }
     }
