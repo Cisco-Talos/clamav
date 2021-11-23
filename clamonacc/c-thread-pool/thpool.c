@@ -18,7 +18,9 @@
 #include <time.h>
 #if defined(__linux__)
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #endif
+#include "output.h"
 
 #include "thpool.h"
 
@@ -469,12 +471,14 @@ static struct job* jobqueue_pull(jobqueue* jobqueue_p){
 		  			break;
 
 		case 1:  /* if one job in queue */
+					logg("*jobqueue_pull: Thread %d pulled last job from queue.\n", syscall(SYS_gettid));
 					jobqueue_p->front = NULL;
 					jobqueue_p->rear  = NULL;
 					jobqueue_p->len = 0;
 					break;
 
 		default: /* if >1 jobs in queue */
+					logg("*jobqueue_pull: Thread %d pulled a job from queue.\n", syscall(SYS_gettid));
 					jobqueue_p->front = job_p->prev;
 					jobqueue_p->len--;
 					/* more than one job in queue -> post it */
