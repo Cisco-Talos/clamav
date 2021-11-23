@@ -150,7 +150,7 @@ void *onas_scan_queue_th(void *arg)
     sigfillset(&sigset);
     sigdelset(&sigset, SIGUSR2);
     /* The behavior of a process is undefined after it ignores a
-	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGSEGV);
@@ -159,6 +159,7 @@ void *onas_scan_queue_th(void *arg)
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
     logg("*ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
     onas_init_event_queue();
