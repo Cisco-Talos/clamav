@@ -159,6 +159,7 @@ void *onas_scan_queue_th(void *arg)
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
     logg(LOGG_DEBUG, "ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
     onas_init_event_queue();

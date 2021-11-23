@@ -384,11 +384,13 @@ void *onas_ddd_th(void *arg)
      * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
     sigdelset(&sigset, SIGTERM);
     sigdelset(&sigset, SIGINT);
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 
     logg(LOGG_DEBUG, "ClamInotif: starting inotify event loop ...\n");
 
