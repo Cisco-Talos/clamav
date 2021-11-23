@@ -30,6 +30,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+#if defined(__linux__)
+#include <sys/prctl.h>
+#endif
 #include <string.h>
 
 // libclamav
@@ -140,6 +143,17 @@ static void onas_destroy_event_queue()
 
 void *onas_scan_queue_th(void *arg)
 {
+    /* Set thread name for profiling and debuging */
+    const char thread_name[] = "clamonacc-sq";
+
+#if defined(__linux__)
+    /* Use prctl instead to prevent using _GNU_SOURCE flag and implicit declaration */
+    prctl(PR_SET_NAME, thread_name);
+#elif defined(__APPLE__) && defined(__MACH__)
+    pthread_setname_np(thread_name);
+#else
+    logg("^ClamScanQueue: Setting of the thread name is currently not supported on this system\n");
+#endif
 
     /* not a ton of use for context right now, but perhaps in the future we can pass in more options */
     struct onas_context *ctx = (struct onas_context *)arg;
