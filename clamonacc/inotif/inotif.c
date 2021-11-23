@@ -30,6 +30,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <pthread.h>
+#if defined(__linux__)
+#include <sys/prctl.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -359,6 +362,18 @@ cl_error_t onas_enable_inotif_ddd(struct onas_context **ctx)
 
 void *onas_ddd_th(void *arg)
 {
+    /* Set thread name for profiling and debuging */
+    const char thread_name[] = "clamonacc-ddd";
+
+#if defined(__linux__)
+    /* Use prctl instead to prevent using _GNU_SOURCE flag and implicit declaration */
+    prctl(PR_SET_NAME, thread_name);
+#elif defined(__APPLE__) && defined(__MACH__)
+    pthread_setname_np(thread_name);
+#else
+    logg("^ClamInotif: Setting of the thread name is currently not supported on this system\n");
+#endif
+
     struct onas_context *ctx = (struct onas_context *)arg;
     sigset_t sigset;
     const struct optstruct *pt;
