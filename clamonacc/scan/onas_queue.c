@@ -152,7 +152,7 @@ void *onas_scan_queue_th(void *arg)
 #elif defined(__APPLE__) && defined(__MACH__)
     pthread_setname_np(thread_name);
 #else
-    logg("^ClamScanQueue: Setting of the thread name is currently not supported on this system\n");
+    logg(LOGG_WARNING, "ClamScanQueue: Setting of the thread name is currently not supported on this system\n");
 #endif
 
     /* not a ton of use for context right now, but perhaps in the future we can pass in more options */
