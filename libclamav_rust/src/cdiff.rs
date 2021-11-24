@@ -24,7 +24,7 @@ extern crate openssl;
 use std::{
     ffi::CString,
     fs::{self, File, OpenOptions},
-    io::{prelude::*, BufReader, Read, Seek, SeekFrom},
+    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom},
     iter::*,
     os::unix::io::FromRawFd,
     process,
@@ -288,7 +288,7 @@ pub extern "C" fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
             }
         };
 
-        // Verfify cdiff
+        // Verify cdiff
         let versig_result = unsafe {
             cli_versig2(
                 sha256.to_vec().as_ptr(),
@@ -517,7 +517,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         if state == State::Init && line_no == move_op.start_line_no {
             if line.starts_with(move_op.start_line) {
                 state = State::Move;
-                writeln!(dst_file, "{}", line)?;
+                dst_file.write(line.as_bytes())?;
+                dst_file.write(b"\n")?;
             } else {
                 error!("{} does not match {}", line, move_op.start_line);
                 return Err(CdiffError::PatternDoesNotMatch(
@@ -529,7 +530,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         }
         // Write everything between start and end to dst
         else if state == State::Move {
-            writeln!(dst_file, "{}", line)?;
+            dst_file.write(line.as_bytes())?;
+            dst_file.write(b"\n")?;
             if line_no == move_op.end_line_no {
                 if line.starts_with(move_op.end_line) {
                     state = State::End;
@@ -544,7 +546,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         }
         // Write everything outside of start and end to tmp
         else {
-            writeln!(tmp_file, "{}", line)?;
+            tmp_file.write(line.as_bytes())?;
+            tmp_file.write(b"\n")?;
         }
     }
 
@@ -594,7 +597,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
             .tempfile_in("./")?;
-        let mut tmp_file = tmp_named_file.as_file();
+        let tmp_file = tmp_named_file.as_file();
+        let mut tmp_file = BufWriter::new(tmp_file);
 
         let mut cur_del_node: usize = 0;
         let mut cur_xchg_node: usize = 0;
@@ -671,7 +675,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
                     ));
                 }
                 // Write exchange line to file
-                writeln!(tmp_file, "{}", new_line)?;
+                tmp_file.write(new_line.as_bytes())?;
+                tmp_file.write(b"\n")?;
 
                 // Increment xchange node
                 cur_xchg_node += 1;
@@ -681,7 +686,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
             }
             // Write the line as is
             else {
-                writeln!(tmp_file, "{}", line)?;
+                tmp_file.write(line.as_bytes())?;
+                tmp_file.write(b"\n")?;
             }
         }
         // Make sure that all delete and exchange lines were processed
@@ -694,16 +700,19 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         }
 
         // Delete the old file and replace it with tmp
-        fs::remove_file(open_db.clone())?;
-        fs::rename(tmp_named_file.path(), open_db.clone())?;
+        fs::remove_file(open_db)?;
+        fs::rename(tmp_named_file.path(), open_db)?;
+
+        tmp_file.flush()?;
     }
 
     // Test for lines to add
     if let Some(add_start) = &ctx.add_start {
-        let mut db_file = OpenOptions::new().append(true).open(open_db.clone())?;
+        let mut db_file = OpenOptions::new().append(true).open(open_db)?;
         for sig in add_start {
             debug!("Writing signature {} to file {}", sig, open_db);
-            writeln!(db_file, "{}", sig)?;
+            db_file.write(sig.as_bytes())?;
+            db_file.write(b"\n")?;
         }
         ctx.add_start = None;
     }
@@ -717,7 +726,7 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
 /// Set up Context structure with data parsed from command unlink
 fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
     match &ctx.open_db {
-        Some(open_db) => fs::remove_file(open_db.clone())?,
+        Some(open_db) => fs::remove_file(open_db)?,
         _ => return Err(CdiffError::NoDBForAction("UNLINK".to_string())),
     }
     Ok(())
@@ -737,16 +746,16 @@ fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
         },
     };
 
+    // Get the data and clean it up
+    let data: String = line.chars().skip(spc_idx + 1).collect::<String>();
+    let data: String = data.trim().to_owned();
+
     // Get the command
     let cmd: String = if spc_idx > 0 {
         line.chars().take(spc_idx).collect()
     } else {
-        line.clone()
+        line
     };
-
-    // Get the data and clean it up
-    let data: String = line.chars().skip(spc_idx + 1).collect::<String>();
-    let data: String = data.trim().to_owned();
 
     debug!("cmd = {}", cmd);
 
@@ -976,7 +985,9 @@ mod tests {
             .tempfile_in("./")
             .expect("Failed to create temp file");
         for line in initial_data {
-            writeln!(file, "{}", line).expect("Failed to write line to temp file");
+            file.write(line.as_bytes())
+                .expect("Failed to write line to temp file");
+            file.write(b"\n")?;
         }
         Ok(file.into_temp_path())
     }
