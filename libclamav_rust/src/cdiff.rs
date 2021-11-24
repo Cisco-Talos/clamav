@@ -288,7 +288,7 @@ pub extern "C" fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
             }
         };
 
-        // Verfify cdiff
+        // Verify cdiff
         let versig_result = unsafe {
             cli_versig2(
                 sha256.to_vec().as_ptr(),
@@ -694,13 +694,13 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         }
 
         // Delete the old file and replace it with tmp
-        fs::remove_file(open_db.clone())?;
-        fs::rename(tmp_named_file.path(), open_db.clone())?;
+        fs::remove_file(open_db)?;
+        fs::rename(tmp_named_file.path(), open_db)?;
     }
 
     // Test for lines to add
     if let Some(add_start) = &ctx.add_start {
-        let mut db_file = OpenOptions::new().append(true).open(open_db.clone())?;
+        let mut db_file = OpenOptions::new().append(true).open(open_db)?;
         for sig in add_start {
             debug!("Writing signature {} to file {}", sig, open_db);
             writeln!(db_file, "{}", sig)?;
@@ -717,7 +717,7 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
 /// Set up Context structure with data parsed from command unlink
 fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
     match &ctx.open_db {
-        Some(open_db) => fs::remove_file(open_db.clone())?,
+        Some(open_db) => fs::remove_file(open_db)?,
         _ => return Err(CdiffError::NoDBForAction("UNLINK".to_string())),
     }
     Ok(())
@@ -737,16 +737,16 @@ fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
         },
     };
 
+    // Get the data and clean it up
+    let data: String = line.chars().skip(spc_idx + 1).collect::<String>();
+    let data: String = data.trim().to_owned();
+
     // Get the command
     let cmd: String = if spc_idx > 0 {
         line.chars().take(spc_idx).collect()
     } else {
-        line.clone()
+        line
     };
-
-    // Get the data and clean it up
-    let data: String = line.chars().skip(spc_idx + 1).collect::<String>();
-    let data: String = data.trim().to_owned();
 
     debug!("cmd = {}", cmd);
 
