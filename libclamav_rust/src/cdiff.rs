@@ -24,7 +24,7 @@ extern crate openssl;
 use std::{
     ffi::CString,
     fs::{self, File, OpenOptions},
-    io::{prelude::*, BufReader, Read, Seek, SeekFrom},
+    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom},
     iter::*,
     os::unix::io::FromRawFd,
     process,
@@ -597,7 +597,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
             .tempfile_in("./")?;
-        let mut tmp_file = tmp_named_file.as_file();
+        let tmp_file = tmp_named_file.as_file();
+        let mut tmp_file = BufWriter::new(tmp_file);
 
         let mut cur_del_node: usize = 0;
         let mut cur_xchg_node: usize = 0;
@@ -701,6 +702,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         // Delete the old file and replace it with tmp
         fs::remove_file(open_db)?;
         fs::rename(tmp_named_file.path(), open_db)?;
+
+        tmp_file.flush()?;
     }
 
     // Test for lines to add
