@@ -296,7 +296,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
     if (type & ONAS_IN) {
         wd = hnode->wd;
 
-        if (!inotify_rm_watch(fd, wd)) return CL_EARG;
+        if (!inotify_rm_watch(fd, wd) && errno != ENOENT ) return CL_EARG;
 
         /* Unlink the hash node from the watch descriptor lookup table */
         hnode->wd = 0;
