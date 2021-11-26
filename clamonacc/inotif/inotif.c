@@ -631,7 +631,10 @@ void *onas_ddd_th(void *arg)
 
                 event = (const struct inotify_event *)p;
                 wd    = event->wd;
-                path  = wdlt[wd];
+                if (wd >= 0)
+                    path  = wdlt[wd];
+                else
+                    path  = NULL;
                 child = event->name;
 
                 if (path == NULL) {
