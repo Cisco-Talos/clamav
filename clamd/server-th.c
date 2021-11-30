@@ -137,8 +137,15 @@ static void scanner_thread(void *arg)
     if (conn->filename)
         free(conn->filename);
     logg("$Finished scanthread\n");
-    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR
-                                                                       : EXIT_OK)) {
+    enum thrmgr_exit exit_code;
+    if (virus != 0) {
+        exit_code = EXIT_OTHER;
+    } else if (errors != 0) {
+        exit_code = EXIT_ERROR;
+    } else {
+        exit_code = EXIT_OK;
+    }
+    if (thrmgr_group_finished(conn->group, exit_code)) {
         logg("$Scanthread: connection shut down (FD %d)\n", conn->sd);
         /* close connection if we were last in group */
         shutdown(conn->sd, 2);
