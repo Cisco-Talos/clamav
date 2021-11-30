@@ -23,11 +23,6 @@
 #  - rustdoc
 #  - rustfmt
 #  - bindgen
-#  - cbindgen
-#
-# Note that `cbindgen` is presently 3rd-party, and is not included with the
-# standard Rust installation. `bindgen` is a part of the rust toolchain, but
-# might need to be installed separately.
 #
 # Callers can make any program mandatory by setting `<program>_REQUIRED` before
 # the call to `find_package(Rust)`
@@ -35,7 +30,6 @@
 # Eg:
 #
 #    if(MAINTAINER_MODE)
-#        set(cbindgen_REQUIRED 1)
 #        set(bindgen_REQUIRED 1)
 #    endif()
 #    find_package(Rust REQUIRED)
@@ -152,47 +146,24 @@ function(add_rust_library)
     list(APPEND MY_CARGO_ARGS "--target-dir" ${CMAKE_CURRENT_BINARY_DIR})
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
-    # Build the library and generate the c-binding, if `cbindgen` is required.
-    if(${cbindgen_REQUIRED})
-        if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
-            add_custom_command(
-                OUTPUT "${OUTPUT}"
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
-                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
-                COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
-                COMMAND ${cbindgen_EXECUTABLE} --lang c -o ${ARGS_WORKING_DIRECTORY}/${ARGS_TARGET}.h ${ARGS_WORKING_DIRECTORY}
-                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-                DEPENDS ${LIB_SOURCES}
-                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-        else()
-            add_custom_command(
-                OUTPUT "${OUTPUT}"
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-                COMMAND ${cbindgen_EXECUTABLE} --lang c -o ${ARGS_WORKING_DIRECTORY}/${ARGS_TARGET}.h ${ARGS_WORKING_DIRECTORY}
-                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-                DEPENDS ${LIB_SOURCES}
-                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-        endif()
+    # Build the library and generate the c-binding
+    if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
+            COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
+            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     else()
-        if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
-            add_custom_command(
-                OUTPUT "${OUTPUT}"
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
-                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
-                COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
-                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-                DEPENDS ${LIB_SOURCES}
-                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-        else()
-            add_custom_command(
-                OUTPUT "${OUTPUT}"
-                COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
-                WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
-                DEPENDS ${LIB_SOURCES}
-                COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
-        endif()
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+            WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     endif()
 
     # Create a target from the build output
@@ -255,7 +226,6 @@ find_rust_program(rust-lldb)
 find_rust_program(rustdoc)
 find_rust_program(rustfmt)
 find_rust_program(bindgen)
-find_rust_program(cbindgen)
 
 # Determine the native libs required to link w/ rust static libs
 # message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null")

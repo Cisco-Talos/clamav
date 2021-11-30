@@ -13,3 +13,6 @@ log = {version = "*", features = ["std"]}
 [lib]
 crate-type = ["staticlib"]
 name = "clamav_rust"
+
+[build-dependencies]
+cbindgen = "0.20.0"

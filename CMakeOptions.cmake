@@ -35,7 +35,7 @@ option(OPTIMIZE
     ON)
 
 option(MAINTAINER_MODE
-    "Update generated sources. Requires flex, bison, cbindgen."
+    "Update generated sources. Requires flex, bison."
     ${MAINTAINER_MODE_DEFAULT})
 
 option(ENABLE_WERROR
