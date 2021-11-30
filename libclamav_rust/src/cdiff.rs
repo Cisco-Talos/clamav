@@ -213,10 +213,8 @@ extern "C" {
 fn is_debug_enabled() -> bool {
     unsafe {
         let debug_flag = cli_get_debug_flag();
-        match debug_flag {
-            0 => false,
-            _ => true,
-        }
+        // Return true if debug_flag is not 0
+        !matches!(debug_flag, 0)
     }
 }
 
@@ -517,8 +515,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         if state == State::Init && line_no == move_op.start_line_no {
             if line.starts_with(move_op.start_line) {
                 state = State::Move;
-                dst_file.write(line.as_bytes())?;
-                dst_file.write(b"\n")?;
+                dst_file.write_all(line.as_bytes())?;
+                dst_file.write_all(b"\n")?;
             } else {
                 error!("{} does not match {}", line, move_op.start_line);
                 return Err(CdiffError::PatternDoesNotMatch(
@@ -530,8 +528,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         }
         // Write everything between start and end to dst
         else if state == State::Move {
-            dst_file.write(line.as_bytes())?;
-            dst_file.write(b"\n")?;
+            dst_file.write_all(line.as_bytes())?;
+            dst_file.write_all(b"\n")?;
             if line_no == move_op.end_line_no {
                 if line.starts_with(move_op.end_line) {
                     state = State::End;
@@ -546,8 +544,8 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
         }
         // Write everything outside of start and end to tmp
         else {
-            tmp_file.write(line.as_bytes())?;
-            tmp_file.write(b"\n")?;
+            tmp_file.write_all(line.as_bytes())?;
+            tmp_file.write_all(b"\n")?;
         }
     }
 
@@ -675,8 +673,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
                     ));
                 }
                 // Write exchange line to file
-                tmp_file.write(new_line.as_bytes())?;
-                tmp_file.write(b"\n")?;
+                tmp_file.write_all(new_line.as_bytes())?;
+                tmp_file.write_all(b"\n")?;
 
                 // Increment xchange node
                 cur_xchg_node += 1;
@@ -686,8 +684,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
             }
             // Write the line as is
             else {
-                tmp_file.write(line.as_bytes())?;
-                tmp_file.write(b"\n")?;
+                tmp_file.write_all(line.as_bytes())?;
+                tmp_file.write_all(b"\n")?;
             }
         }
         // Make sure that all delete and exchange lines were processed
@@ -711,8 +709,8 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
         let mut db_file = OpenOptions::new().append(true).open(open_db)?;
         for sig in add_start {
             debug!("Writing signature {} to file {}", sig, open_db);
-            db_file.write(sig.as_bytes())?;
-            db_file.write(b"\n")?;
+            db_file.write_all(sig.as_bytes())?;
+            db_file.write_all(b"\n")?;
         }
         ctx.add_start = None;
     }
@@ -921,7 +919,7 @@ fn print_file_data(buf: Vec<u8>, len: usize) {
             eprint!("");
         }
     }
-    eprint!("\n");
+    eprintln!();
 }
 
 #[cfg(test)]
