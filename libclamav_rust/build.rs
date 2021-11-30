@@ -27,13 +27,32 @@ const LIB_LINK_WINDOWS: [&str; 4] = ["wsock32", "ws2_32", "Shell32", "User32"];
 // Windows library names that must have the leading `lib` trimmed (if encountered)
 const WINDOWS_TRIM_LOCAL_LIB: [&str; 2] = ["libclamav", "libclammspack"];
 
-fn main() {
+const C_HEADER_OUTPUT: &str = "clamav_rust.h";
+
+fn main() -> Result<(), &'static str> {
+    detect_clamav_build()?;
+    execute_cbindgen()?;
+    Ok(())
+}
+
+fn execute_cbindgen() -> Result<(), &'static str> {
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
+    let build_dir = PathBuf::from(env::var("BUILD").unwrap_or(".".into()));
+    let outfile_path = build_dir.join(C_HEADER_OUTPUT);
+
+    // Useful for build diagnostics
+    eprintln!("cbindgen outputting {:?}", &outfile_path);
+    cbindgen::generate(crate_dir)
+        .expect("Unable to generate bindings")
+        .write_to_file(&outfile_path);
+
+    Ok(())
+}
+
+fn detect_clamav_build() -> Result<(), &'static str> {
     println!("cargo:rerun-if-env-changed=LIBCLAMAV");
 
-    let found_libclamav = search_and_link_lib("LIBCLAMAV").unwrap();
-    dbg!(&found_libclamav);
-
-    if found_libclamav {
+    if search_and_link_lib("LIBCLAMAV")? {
         // Need to link with libclamav dependencies
         for var in &LIB_ENV_LINK {
             let _ = search_and_link_lib(var);
@@ -48,6 +67,8 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }
 
 //

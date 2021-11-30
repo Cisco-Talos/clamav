@@ -113,18 +113,12 @@ include(CMakeOptions.cmake)
 # Find Build Tools
 #
 if(MAINTAINER_MODE)
-    # cbindgen required to update C headers for Rust libraries.
-    set(cbindgen_REQUIRED 1)
-    set(CBINDGEN ON)
-
     # Bison, Flex required to build Yara module for libclamav.
     find_package(BISON REQUIRED)
     find_package(FLEX  REQUIRED)
 
     # TODO: Gperf required to generate JS-normalization code.
     # find_package(GPERF REQUIRED)
-else()
-    set(CBINDGEN OFF)
 endif()
 find_package(Rust REQUIRED)
 
@@ -962,6 +956,12 @@ else()
         COMPONENT libraries)
 endif()
 
+# include CTest to enable testing before we add any subdirectories which may
+# add additional tests (like with `add_rust_test()`)
+if(ENABLE_TESTS)
+    include(CTest)
+endif()
+
 #
 # ClamAV Build targets!
 #
@@ -987,8 +987,8 @@ if(WIN32)
     add_subdirectory( win32/compat )
 endif()
 
-add_subdirectory( libclamav_rust )
 add_subdirectory( libclamav )
+add_subdirectory( libclamav_rust )
 
 if(NOT ENABLE_LIBCLAMAV_ONLY)
     add_subdirectory( common )
@@ -1035,7 +1035,6 @@ if(ENABLE_EXAMPLES)
     add_subdirectory( examples )
 endif()
 
-include(CTest)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 if(ENABLE_TESTS)
     add_subdirectory( unit_tests )
@@ -1097,7 +1096,6 @@ ${b}        Maintainer Mode:    ${e}${MAINTAINER_MODE}")
 if(MAINTAINER_MODE)
 message("\
 ${R}    Maintainer Mode Tools:  ${e}
-${y}        cbindgen:           ${e}${cbindgen_EXECUTABLE} (${cbindgen_VERSION})
 ${y}        bison:              ${e}${BISON_EXECUTABLE} (${BISON_VERSION})
 ${y}        flex:               ${e}${FLEX_EXECUTABLE} (${FLEX_VERSION})")
 endif()
