@@ -22,15 +22,19 @@ extern crate hex;
 extern crate openssl;
 
 use std::{
+    ffi::CStr,
     ffi::CString,
     fs::{self, File, OpenOptions},
-    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom},
+    io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
+    os::raw::c_char,
     os::unix::io::FromRawFd,
     process,
 };
 
 use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use log::*;
 use openssl::sha;
 use thiserror::Error;
@@ -206,6 +210,15 @@ extern "C" {
     /// int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str)
     fn cli_versig2(digest: *const u8, dsig: *const i8, n: *const u8, e: *const u8) -> i32;
 
+    // static char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
+    fn cli_getdsig(
+        host: *const u8,
+        user: *const u8,
+        data: *const u8,
+        datalen: u32,
+        mode: u8,
+    ) -> *const c_char;
+
     /// uint8_t cli_get_debug_flag()
     fn cli_get_debug_flag() -> u8;
 }
@@ -218,6 +231,209 @@ fn is_debug_enabled() -> bool {
     }
 }
 
+/// Convert a plaintext script file of cdiff commands into a cdiff formatted file
+///
+/// This function makes a single C call to cli_getdsig to obtain a signed
+/// signature from the sha256 of the contents written.
+///
+/// # Safety
+///
+/// This function is only meant to be called from sigtool.c
+/// If sigtool is ever ported to rust, this function should be
+/// rewritten.
+#[no_mangle]
+pub unsafe extern "C" fn script2cdiff(
+    script: *const c_char,
+    builder: *const c_char,
+    server: *const c_char,
+) -> i32 {
+    // Deref the script file name pointer so we can use it
+    let script_file_name: &str = match std::ffi::CStr::from_ptr(script).to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to read first argument to script2diff: {}", e);
+            return -1;
+        }
+    };
+
+    // Make a copy of the script file name to use for the cdiff file
+    let cdiff_file_name_string = script_file_name.to_string();
+    let mut cdiff_file_name = cdiff_file_name_string.as_str();
+    debug!("script file name: {:?}", cdiff_file_name);
+
+    // Remove the "".script" suffix
+    if let Some(file_name) = cdiff_file_name.strip_suffix(".script") {
+        cdiff_file_name = file_name;
+    }
+
+    // Get right-most hyphen index
+    let hyphen_index: usize = match cdiff_file_name.rfind('-') {
+        Some(i) => i,
+        None => {
+            error!("Provided file name does not contain a hyphen.");
+            return -1;
+        }
+    };
+
+    // Get the version, which should be to the right of the hyphen
+    let version_string = match cdiff_file_name.get((hyphen_index + 1)..) {
+        Some(s) => s,
+        None => {
+            error!("Provided file name does not contain a version.");
+            return -1;
+        }
+    };
+
+    // Parse the version into usize
+    let version = match version_string.to_string().parse::<usize>() {
+        Ok(u) => u,
+        Err(e) => {
+            error!("Failed to parse version in script file name: {}", e);
+            return -1;
+        }
+    };
+
+    // Add .cdiff suffix
+    let cdiff_file_name = format!("{}.{}", cdiff_file_name, "cdiff");
+    debug!("Writing to: {:?}", cdiff_file_name);
+
+    // Open cdiff_file_name for writing
+    let mut cdiff_file: File = match File::create(&cdiff_file_name) {
+        Ok(f) => f,
+        Err(e) => {
+            error!("Failed to open file {} for writing: {}", cdiff_file_name, e);
+            return -1;
+        }
+    };
+
+    // Open the original script file for reading
+    let script_file: File = match File::open(&script_file_name) {
+        Ok(f) => f,
+        Err(e) => {
+            error!(
+                "Failed to open file {} for reading: {}",
+                script_file_name, e
+            );
+            return -1;
+        }
+    };
+
+    // Get file length
+    let script_file_len = match script_file.metadata() {
+        Ok(script_file_len) => script_file_len.len() as usize,
+        Err(e) => {
+            error!("Failed to get script file length: {}", e.to_string());
+            return -1;
+        }
+    };
+
+    // Write header to cdiff file
+    if let Err(e) = write!(cdiff_file, "ClamAV-Diff:{}:{}:", version, script_file_len) {
+        error!("Failed to write header to {}: {}", cdiff_file_name, e);
+        return -1;
+    }
+
+    // Set up buffered reader and gz writer
+    let reader = BufReader::new(script_file);
+    let mut gz = GzEncoder::new(cdiff_file, Compression::default());
+
+    // Read lines from script_file, compress and write to cdiff_file
+    for (mut line_no, line) in reader.lines().enumerate() {
+        // Cdiff lines start at 1
+        line_no += 1;
+
+        let mut line: String = match line {
+            Ok(s) => s,
+            Err(e) => {
+                error!("Failed to read line {}: {}", line_no, e);
+                return -1;
+            }
+        };
+        // Each line written must be newline separated per cdiff spec
+        line.push('\n');
+        if let Err(e) = gz.write_all(line.as_bytes()) {
+            error!("Failed to write line {}: {}", line_no, e);
+            return -1;
+        }
+    }
+
+    // Get cdiff file writer back from flate2
+    let mut cdiff_file = match gz.finish() {
+        Ok(file) => file,
+        Err(e) => {
+            error!("Failed to write compressed stream: {}", e);
+            return -1;
+        }
+    };
+
+    // Get the new cdiff file len
+    let cdiff_file_len = match cdiff_file.metadata() {
+        Ok(cdiff_file_len) => cdiff_file_len.len() as usize,
+        Err(e) => {
+            error!("Failed to get cdiff file length: {}", e);
+            return -1;
+        }
+    };
+    debug!("Wrote {} bytes to {}", cdiff_file_len, cdiff_file_name);
+
+    // Calculate SHA256 to get the DSIG
+    let bytes = match std::fs::read(&cdiff_file_name) {
+        Ok(file) => file,
+        Err(e) => {
+            error!("Failed to open {} for reading: {}", cdiff_file_name, e);
+            return -1;
+        }
+    };
+    let sha256 = sha::sha256(&bytes);
+
+    let dsig = cli_getdsig(
+        server as *const u8,
+        builder as *const u8,
+        sha256.to_vec().as_ptr(),
+        32,
+        2,
+    );
+
+    let dsig_str = CStr::from_ptr(dsig);
+
+    // Write cdiff footer delimiter
+    if let Err(e) = cdiff_file.write_all(b":") {
+        error!(
+            "Failed to write footer delimiter to {}: {}",
+            cdiff_file_name, e
+        );
+        return -1;
+    }
+
+    // Write dsig to cdiff footer
+    if let Err(e) = cdiff_file.write_all(dsig_str.to_bytes()) {
+        error!("Failed to write footer to {}: {}", cdiff_file_name, e);
+        return -1;
+    }
+
+    // Exit success
+    0
+}
+
+/// Apply cdiff (patch) file to all database files described in the cdiff.
+///
+/// A cdiff file contains a header consisting of a description, version, and
+/// script file length (in bytes), all delimited by ':'
+///
+/// A cdiff file contains a gzipped body between the header and the footer, the
+/// contents of which must be newline delimited. The body consists of all bytes
+/// after the last ':' in the header and before the first ':' in the footer. The
+/// body consists of cdiff commands.
+///
+/// A cdiff file contains a footer that is the signed signature of the sha256
+/// file contains of the header and the body. The footer begins after the first
+/// ':' character to the left of EOF.
+///
+///  # Safety
+///
+/// This function is only meant to be called from sigtool.c
+/// If sigtool is ever ported to rust, this function should be
+/// rewritten.
 #[no_mangle]
 pub extern "C" fn cdiff_apply(file_descriptor: i32, mode: u16) -> i32 {
     debug!(
@@ -624,13 +840,6 @@ fn cmd_close(mut ctx: &mut Context) -> Result<(), CdiffError> {
             // cdiff lines start at 1
             line_no += 1;
 
-            // if delete_lines {
-            //     debug!("First element in delete list: cur_line == {} line_no == {} del_line = {}",
-            //     line_no, del_vec[0].line_no, del_vec[0].del_line);
-            //     debug!("is_empty {}, cur_del_node {}, del_vec_len {}",
-            //     !del_vec.is_empty(), cur_del_node, del_vec_len);
-            // }
-
             if delete_lines
                 && !del_vec.is_empty()
                 && cur_del_node < del_vec_len
@@ -983,9 +1192,9 @@ mod tests {
             .tempfile_in("./")
             .expect("Failed to create temp file");
         for line in initial_data {
-            file.write(line.as_bytes())
+            file.write_all(line.as_bytes())
                 .expect("Failed to write line to temp file");
-            file.write(b"\n")?;
+            file.write_all(b"\n")?;
         }
         Ok(file.into_temp_path())
     }
