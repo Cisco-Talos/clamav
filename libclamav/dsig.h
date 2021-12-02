@@ -31,5 +31,6 @@
 
 int cli_versig(const char *md5, const char *dsig);
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str);
+const char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode);
 
 #endif

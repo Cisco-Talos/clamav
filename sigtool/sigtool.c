@@ -29,36 +29,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <zlib.h>
 #include <time.h>
 #include <locale.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifndef _WIN32
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#else
-#include "w32_stat.h"
-#endif
 #include <dirent.h>
 #include <ctype.h>
 #include <libgen.h>
-
-#ifdef HAVE_TERMIOS_H
-#include <termios.h>
-#endif
 
 // libclamav
 #include "clamav.h"
 #include "matcher.h"
 #include "cvd.h"
+#include "dsig.h"
 #include "str.h"
 #include "ole2_extract.h"
 #include "htmlnorm.h"
@@ -488,120 +473,6 @@ static int utf16decode(const struct optstruct *opts)
     return 0;
 }
 
-static char *getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
-{
-    char buff[512], cmd[128], pass[30], *pt;
-    struct sockaddr_in server;
-    int sockd, bread, len;
-#ifdef HAVE_TERMIOS_H
-    struct termios old, new;
-#endif
-
-    memset(&server, 0x00, sizeof(struct sockaddr_in));
-
-    if ((pt = getenv("SIGNDPASS"))) {
-        strncpy(pass, pt, sizeof(pass));
-        pass[sizeof(pass) - 1] = '\0';
-    } else {
-        mprintf("Password: ");
-
-#ifdef HAVE_TERMIOS_H
-        if (tcgetattr(0, &old)) {
-            mprintf("!getdsig: tcgetattr() failed\n");
-            return NULL;
-        }
-        new = old;
-        new.c_lflag &= ~ECHO;
-        if (tcsetattr(0, TCSAFLUSH, &new)) {
-            mprintf("!getdsig: tcsetattr() failed\n");
-            return NULL;
-        }
-#endif
-        if (scanf("%30s", pass) == EOF) {
-            mprintf("!getdsig: Can't get password\n");
-#ifdef HAVE_TERMIOS_H
-            tcsetattr(0, TCSAFLUSH, &old);
-#endif
-            return NULL;
-        }
-
-#ifdef HAVE_TERMIOS_H
-        if (tcsetattr(0, TCSAFLUSH, &old)) {
-            mprintf("!getdsig: tcsetattr() failed\n");
-            memset(pass, 0, sizeof(pass));
-            return NULL;
-        }
-#endif
-        mprintf("\n");
-    }
-
-    if ((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("socket()");
-        mprintf("!getdsig: Can't create socket\n");
-        memset(pass, 0, sizeof(pass));
-        return NULL;
-    }
-
-    server.sin_family      = AF_INET;
-    server.sin_addr.s_addr = inet_addr(host);
-    server.sin_port        = htons(33101);
-
-    if (connect(sockd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-        perror("connect()");
-        closesocket(sockd);
-        mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
-        memset(pass, 0, sizeof(pass));
-        return NULL;
-    }
-    memset(cmd, 0, sizeof(cmd));
-
-    if (mode == 1)
-        snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
-    else if (mode == 2)
-        snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
-    else
-        snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS2:%s:%s:", user, pass);
-
-    len = strlen(cmd);
-    pt  = cmd + len;
-    memcpy(pt, data, datalen);
-    len += datalen;
-
-    if (send(sockd, cmd, len, 0) < 0) {
-        mprintf("!getdsig: Can't write to socket\n");
-        closesocket(sockd);
-        memset(cmd, 0, sizeof(cmd));
-        memset(pass, 0, sizeof(pass));
-        return NULL;
-    }
-
-    memset(cmd, 0, sizeof(cmd));
-    memset(pass, 0, sizeof(pass));
-    memset(buff, 0, sizeof(buff));
-
-    if ((bread = recv(sockd, buff, sizeof(buff) - 1, 0)) > 0) {
-        buff[bread] = '\0';
-        if (!strstr(buff, "Signature:")) {
-            mprintf("!getdsig: Error generating digital signature\n");
-            mprintf("!getdsig: Answer from remote server: %s\n", buff);
-            closesocket(sockd);
-            return NULL;
-        } else {
-            mprintf("Signature received (length = %lu)\n", (unsigned long)strlen(buff) - 10);
-        }
-    } else {
-        mprintf("!getdsig: Communication error with remote server\n");
-        closesocket(sockd);
-        return NULL;
-    }
-
-    closesocket(sockd);
-
-    pt = buff;
-    pt += 10;
-    return strdup(pt);
-}
-
 static char *sha256file(const char *file, unsigned int *size)
 {
     FILE *fh;
@@ -712,7 +583,7 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
         while ((bytes = fread(buffer, 1, sizeof(buffer), fh)))
             cl_update_hash(ctx, buffer, bytes);
         cl_finish_hash(ctx, digest);
-        if (!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
+        if (!(pt = cli_getdsig(optget(opts, "server")->strarg, builder, digest, 32, 3))) {
             mprintf("!writeinfo: Can't get digital signature from remote server\n");
             fclose(fh);
             return -1;
@@ -726,135 +597,6 @@ static int writeinfo(const char *dbname, const char *builder, const char *header
 
 static int diffdirs(const char *old, const char *new, const char *patch);
 static int verifydiff(const char *diff, const char *cvd, const char *incdir);
-
-static int script2cdiff(const char *script, const char *builder, const struct optstruct *opts)
-{
-    char *cdiff, *pt, buffer[FILEBUFF];
-    unsigned char digest[32];
-    void *ctx;
-    STATBUF sb;
-    FILE *scripth, *cdiffh;
-    gzFile gzh;
-    unsigned int ver, osize;
-    int bytes;
-
-    if (CLAMSTAT(script, &sb) == -1) {
-        mprintf("!script2diff: Can't stat file %s\n", script);
-        return -1;
-    }
-    osize = (unsigned int)sb.st_size;
-
-    cdiff = strdup(script);
-    if (NULL == cdiff) {
-        mprintf("!script2cdiff: Unable to allocate memory for file name\n");
-        return -1;
-    }
-    pt = strstr(cdiff, ".script");
-    if (!pt) {
-        mprintf("!script2cdiff: Incorrect file name (no .script extension)\n");
-        free(cdiff);
-        return -1;
-    }
-    strcpy(pt, ".cdiff");
-
-    if (!(pt = strchr(script, '-'))) {
-        mprintf("!script2cdiff: Incorrect file name syntax\n");
-        free(cdiff);
-        return -1;
-    }
-
-    if (sscanf(++pt, "%u.script", &ver) == EOF) {
-        mprintf("!script2cdiff: Incorrect file name syntax\n");
-        free(cdiff);
-        return -1;
-    }
-
-    if (!(cdiffh = fopen(cdiff, "wb"))) {
-        mprintf("!script2cdiff: Can't open %s for writing\n", cdiff);
-        free(cdiff);
-        return -1;
-    }
-
-    if (fprintf(cdiffh, "ClamAV-Diff:%u:%u:", ver, osize) < 0) {
-        mprintf("!script2cdiff: Can't write to %s\n", cdiff);
-        fclose(cdiffh);
-        free(cdiff);
-        return -1;
-    }
-    fclose(cdiffh);
-
-    if (!(scripth = fopen(script, "rb"))) {
-        mprintf("!script2cdiff: Can't open file %s for reading\n", script);
-        unlink(cdiff);
-        free(cdiff);
-        return -1;
-    }
-
-    if (!(gzh = gzopen(cdiff, "ab9f"))) {
-        mprintf("!script2cdiff: Can't open file %s for appending\n", cdiff);
-        unlink(cdiff);
-        free(cdiff);
-        fclose(scripth);
-        return -1;
-    }
-
-    while ((bytes = fread(buffer, 1, sizeof(buffer), scripth)) > 0) {
-        if (!gzwrite(gzh, buffer, bytes)) {
-            mprintf("!script2cdiff: Can't gzwrite to %s\n", cdiff);
-            unlink(cdiff);
-            free(cdiff);
-            fclose(scripth);
-            gzclose(gzh);
-            return -1;
-        }
-    }
-    fclose(scripth);
-    gzclose(gzh);
-
-    if (!(cdiffh = fopen(cdiff, "rb"))) {
-        mprintf("!script2cdiff: Can't open %s for reading/writing\n", cdiff);
-        unlink(cdiff);
-        free(cdiff);
-        return -1;
-    }
-
-    ctx = cl_hash_init("sha256");
-    if (!(ctx)) {
-        unlink(cdiff);
-        free(cdiff);
-        fclose(cdiffh);
-        return -1;
-    }
-
-    while ((bytes = fread(buffer, 1, sizeof(buffer), cdiffh)))
-        cl_update_hash(ctx, (unsigned char *)buffer, bytes);
-
-    fclose(cdiffh);
-    cl_finish_hash(ctx, digest);
-
-    if (!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 2))) {
-        mprintf("!script2cdiff: Can't get digital signature from remote server\n");
-        unlink(cdiff);
-        free(cdiff);
-        return -1;
-    }
-
-    if (!(cdiffh = fopen(cdiff, "ab"))) {
-        mprintf("!script2cdiff: Can't open %s for appending\n", cdiff);
-        free(pt);
-        unlink(cdiff);
-        free(cdiff);
-        return -1;
-    }
-    fprintf(cdiffh, ":%s", pt);
-    free(pt);
-    fclose(cdiffh);
-
-    mprintf("Created %s\n", cdiff);
-    free(cdiff);
-
-    return 0;
-}
 
 static int qcompare(const void *a, const void *b)
 {
@@ -1166,7 +908,7 @@ static int build(const struct optstruct *opts)
     free(pt);
 
     if (!optget(opts, "unsigned")->enabled) {
-        if (!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 1))) {
+        if (!(pt = cli_getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 1))) {
             mprintf("!build: Can't get digital signature from remote server\n");
             fclose(fh);
             unlink(tarfile);
@@ -1316,7 +1058,7 @@ static int build(const struct optstruct *opts)
             mprintf("!Generated file is incorrect, renamed to %s\n", broken);
         }
     } else {
-        ret = script2cdiff(patch, builder, opts);
+        ret = script2cdiff(patch, builder, optget(opts, "server")->strarg);
     }
 
     return ret;

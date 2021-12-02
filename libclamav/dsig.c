@@ -37,6 +37,23 @@
 #include "str.h"
 #include "bignum.h"
 
+#ifndef _WIN32
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
+#else
+#include "w32_stat.h"
+#endif
+
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #define CLI_NSTR "118640995551645342603070001658453189751527774412027743746599405743243142607464144767361060640655844749760788890022283424922762488917565551002467771109669598189410434699034532232228621591089508178591428456220796841621637175567590476666928698770143328137383952820383197532047771780196576957695822641224262693037"
 
 #define CLI_ESTR "100001027"
@@ -101,6 +118,120 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e
     mp_clear(&r);
 
     return plain;
+}
+
+const char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
+{
+    char buff[512], cmd[128], pass[30], *pt;
+    struct sockaddr_in server;
+    int sockd, bread, len;
+#ifdef HAVE_TERMIOS_H
+    struct termios old, new;
+#endif
+
+    memset(&server, 0x00, sizeof(struct sockaddr_in));
+
+    if ((pt = getenv("SIGNDPASS"))) {
+        strncpy(pass, pt, sizeof(pass));
+        pass[sizeof(pass) - 1] = '\0';
+    } else {
+        cli_infomsg(NULL, "Password: ");
+
+#ifdef HAVE_TERMIOS_H
+        if (tcgetattr(0, &old)) {
+            cli_errmsg("getdsig: tcgetattr() failed\n");
+            return NULL;
+        }
+        new = old;
+        new.c_lflag &= ~ECHO;
+        if (tcsetattr(0, TCSAFLUSH, &new)) {
+            cli_errmsg("getdsig: tcsetattr() failed\n");
+            return NULL;
+        }
+#endif
+        if (scanf("%30s", pass) == EOF) {
+            cli_errmsg("getdsig: Can't get password\n");
+#ifdef HAVE_TERMIOS_H
+            tcsetattr(0, TCSAFLUSH, &old);
+#endif
+            return NULL;
+        }
+
+#ifdef HAVE_TERMIOS_H
+        if (tcsetattr(0, TCSAFLUSH, &old)) {
+            cli_errmsg("getdsig: tcsetattr() failed\n");
+            memset(pass, 0, sizeof(pass));
+            return NULL;
+        }
+#endif
+        cli_infomsg(NULL, "\n");
+    }
+
+    if ((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("socket()");
+        cli_errmsg("getdsig: Can't create socket\n");
+        memset(pass, 0, sizeof(pass));
+        return NULL;
+    }
+
+    server.sin_family      = AF_INET;
+    server.sin_addr.s_addr = inet_addr(host);
+    server.sin_port        = htons(33101);
+
+    if (connect(sockd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
+        perror("connect()");
+        closesocket(sockd);
+        cli_errmsg("getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
+        memset(pass, 0, sizeof(pass));
+        return NULL;
+    }
+    memset(cmd, 0, sizeof(cmd));
+
+    if (mode == 1)
+        snprintf(cmd, sizeof(cmd) - datalen, "ClamSign:%s:%s:", user, pass);
+    else if (mode == 2)
+        snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
+    else
+        snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS2:%s:%s:", user, pass);
+
+    len = strlen(cmd);
+    pt  = cmd + len;
+    memcpy(pt, data, datalen);
+    len += datalen;
+
+    if (send(sockd, cmd, len, 0) < 0) {
+        cli_errmsg("getdsig: Can't write to socket\n");
+        closesocket(sockd);
+        memset(cmd, 0, sizeof(cmd));
+        memset(pass, 0, sizeof(pass));
+        return NULL;
+    }
+
+    memset(cmd, 0, sizeof(cmd));
+    memset(pass, 0, sizeof(pass));
+    memset(buff, 0, sizeof(buff));
+
+    if ((bread = recv(sockd, buff, sizeof(buff) - 1, 0)) > 0) {
+        buff[bread] = '\0';
+        if (!strstr(buff, "Signature:")) {
+            cli_errmsg("getdsig: Error generating digital signature\n");
+            cli_errmsg("getdsig: Answer from remote server: %s\n", buff);
+            closesocket(sockd);
+            return NULL;
+        } else {
+            cli_infomsg(NULL, "Signature received (length = %lu)\n", (unsigned long)strlen(buff) - 10);
+        }
+    } else {
+        cli_errmsg("getdsig: Communication error with remote server\n");
+        closesocket(sockd);
+        return NULL;
+    }
+
+    closesocket(sockd);
+
+    pt = buff;
+    pt += 10;
+    return strdup(pt);
 }
 
 int cli_versig(const char *md5, const char *dsig)
