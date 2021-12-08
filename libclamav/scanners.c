@@ -5260,7 +5260,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
             status = CL_EMEM;
             goto done;
         }
-        strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-", &tm_struct);
+        strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-", &tm_struct);
         strcpy(new_temp_prefix + strlen("YYYYMMDD_HHMMSS-"), target_basename);
     } else {
         /* Just use date */
@@ -5271,7 +5271,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
             status = CL_EMEM;
             goto done;
         }
-        strftime(new_temp_prefix, new_temp_prefix_len, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
+        strftime(new_temp_prefix, new_temp_prefix_len + 1, "%Y%m%d_%H%M%S-scantemp", &tm_struct);
     }
 
     /* Place the new temp sub-directory within the configured temp directory */
