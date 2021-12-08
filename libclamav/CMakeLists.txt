@@ -535,7 +535,7 @@ if(ENABLE_SHARED_LIB)
             PUBLIC
                 PThreadW32::pthreadw32
                 ClamAV::win32_compat
-                wsock32 ws2_32 )
+                wsock32 ws2_32 bcrypt )
     else()
         target_link_libraries( clamav
             PUBLIC
@@ -646,7 +646,7 @@ if(ENABLE_STATIC_LIB)
             PUBLIC
                 PThreadW32::pthreadw32
                 ClamAV::win32_compat
-                wsock32 ws2_32 )
+                wsock32 ws2_32 bcrypt )
     else()
         target_link_libraries( clamav_static
             PUBLIC

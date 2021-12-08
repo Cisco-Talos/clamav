@@ -1,21 +1,21 @@
 [package]
 authors = ["The ClamAV Team <clamav-bugs@external.cisco.com>"]
+edition = "2018"
 name = "clamav_rust"
 version = "0.0.1"
-edition = "2018"
 
 [dependencies]
-log = {version = "*", features = ["std"]}
-openssl-sys = "0.9"
-openssl = "0.10"
-hex = "0.4.2"
-flate2 = "1.0.3"
-thiserror = "1.0.26"
-tempfile = "3.2.0"
+flate2 = "1"
+hex = "0.4"
+libc = "0.2"
+log = {version = "0.4", features = ["std"]}
+sha2 = "0.10"
+tempfile = "3"
+thiserror = "1"
 
 [lib]
 crate-type = ["staticlib"]
 name = "clamav_rust"
 
 [build-dependencies]
-cbindgen = "0.20.0"
+cbindgen = "0.20"

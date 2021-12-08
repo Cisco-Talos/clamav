@@ -80,7 +80,7 @@
 // common
 #include "optparser.h"
 #include "output.h"
-#include "cdiff.h"
+#include "clamav_rust.h"
 #include "tar.h"
 #include "clamdcom.h"
 #include "cert_util.h"
