@@ -59,11 +59,8 @@
 #include "output.h"
 #include "optparser.h"
 #include "misc.h"
-#include "cdiff.h"
+#include "clamav_rust.h"
 #include "tar.h"
-
-// common rust
-#include "cdiff.h"
 
 #include "vba.h"
 

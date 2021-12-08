@@ -47,6 +47,7 @@ fn main() -> Result<(), &'static str> {
     // Dump the command line and interesting environment variables for diagnostic
     // purposes. These will end up in a 'stderr' file under the target directory,
     // in a ".../clamav_rust-<hex>" subdirectory
+
     eprintln!("build.rs command line: {:?}", std::env::args());
     eprintln!("Environment:");
     std::env::vars()
