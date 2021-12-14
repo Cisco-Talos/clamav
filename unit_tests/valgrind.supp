@@ -315,20 +315,38 @@
    fun:main
 }
 {
-   rust_statx_hack-unaddressable_bytes
+   <statx1>
    Memcheck:Param
    statx(file_name)
    fun:statx
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx17h3116b93d19baec3cE
+   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
 {
-   rust_statx_hack-unaddressable_bytes2
+   <statx2>
    Memcheck:Param
    statx(buf)
    fun:statx
    fun:statx
-   fun:_ZN3std3sys4unix2fs9try_statx17h3116b93d19baec3cE
+   fun:_ZN3std3sys4unix2fs9try_statx*
+   ...
+}
+{
+   <statx3>
+   Memcheck:Param
+   statx(file_name)
+   fun:syscall
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx*
+   ...
+}
+{
+   <statx4>
+   Memcheck:Param
+   statx(buf)
+   fun:syscall
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
