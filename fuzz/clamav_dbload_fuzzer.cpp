@@ -51,8 +51,6 @@ class ClamAVState
         cl_set_clcb_msg(clamav_message_callback);
 
         cl_init(CL_INIT_DEFAULT);
-        engine = cl_engine_new();
-        cl_engine_compile(engine);
 
         dboptions =
             CL_DB_PHISHING | CL_DB_PHISHING_URLS |
@@ -99,14 +97,11 @@ class ClamAVState
 
     ~ClamAVState()
     {
-        cl_engine_free(engine);
-
         if (NULL != tmp_db_name) {
             unlink(tmp_db_name);
         }
     }
 
-    struct cl_engine* engine;
     const char* tmp_db_name;
     unsigned int dboptions;
 };
@@ -117,18 +112,40 @@ ClamAVState kClamAVState;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    unsigned int sigs = 0;
-    FILE* fuzzdb      = NULL;
+    cl_error_t ret;
+    unsigned int sigs        = 0;
+    FILE* fuzzdb             = NULL;
+    struct cl_engine* engine = NULL;
 
     fuzzdb = fopen(kClamAVState.tmp_db_name, "w");
     fwrite(data, size, 1, fuzzdb);
     fclose(fuzzdb);
 
-    cl_load(
-        kClamAVState.tmp_db_name,
-        kClamAVState.engine,
-        &sigs,
-        kClamAVState.dboptions);
+    /* need new engine each time. can't add sigs to compiled engine */
+    engine = cl_engine_new();
+
+    /* load the fuzzer-generated sig db */
+    if (CL_SUCCESS != (ret = cl_load(
+                           kClamAVState.tmp_db_name,
+                           engine,
+                           &sigs,
+                           kClamAVState.dboptions))) {
+        printf("cl_load: %s\n", cl_strerror(ret));
+        goto done;
+    }
+
+    /* build engine */
+    if (CL_SUCCESS != (ret = cl_engine_compile(engine))) {
+        printf("cl_engine_compile: %s\n", cl_strerror(ret));
+        goto done;
+    }
+
+done:
+
+    /* Clean up for the next round */
+    if (NULL != engine) {
+        cl_engine_free(engine);
+    }
 
     return 0;
 }
