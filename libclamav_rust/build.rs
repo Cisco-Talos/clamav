@@ -1,6 +1,17 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+// Note to maintainers: this is currently a hybrid of examination of the
+// CMake environment, and leaning on Rust `cfg` elements. Ideally, it
+// should be possible to work in this space (e.g., execute tests from an
+// IDE) without having to rely on CMake elements to properly link the
+// unit tests). Hence the bizarre mix of CMake inspection and Cargo-based
+// elements.
+//
+// It's handy to know that all the `cfg` goodies are defined here:
+//
+// https://doc.rust-lang.org/reference/conditional-compilation.html
+
 // A list of environment variables to query to determine additional libraries
 // that need to be linked to resolve dependencies.
 const LIB_ENV_LINK: [&str; 12] = [
@@ -53,6 +64,7 @@ fn detect_clamav_build() -> Result<(), &'static str> {
     println!("cargo:rerun-if-env-changed=LIBCLAMAV");
 
     if search_and_link_lib("LIBCLAMAV")? {
+        eprintln!("NOTE: LIBCLAMAV defined. Examining LIB* environment variables");
         // Need to link with libclamav dependencies
         for var in &LIB_ENV_LINK {
             let _ = search_and_link_lib(var);
@@ -65,7 +77,19 @@ fn detect_clamav_build() -> Result<(), &'static str> {
             for lib in &LIB_LINK_WINDOWS {
                 println!("cargo:rustc-link-lib={}", lib);
             }
+        } else {
+            // Link the test executable with libstdc++ on unix systems,
+            // This is needed for fully-static build where clamav & 3rd party
+            // dependencies excluding the std libs are static.
+            if cfg!(target_os = "linux") {
+                eprintln!("NOTE: linking libstdc++ (linux target)");
+                println!("cargo:rustc-link-lib=stdc++");
+            } else {
+                eprintln!("NOTE: NOT linking libstdc++ (non-linux target)");
+            }
         }
+    } else {
+        println!("NOTE: LIBCLAMAV not defined");
     }
 
     Ok(())
@@ -76,6 +100,7 @@ fn detect_clamav_build() -> Result<(), &'static str> {
 // linking directives as a side-effect
 //
 fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str> {
+    eprintln!("  - checking for {:?} in environment", environment_variable);
     let filepath_str = match env::var(environment_variable) {
         Err(env::VarError::NotPresent) => return Ok(false),
         Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
@@ -89,7 +114,12 @@ fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str>
     };
 
     let parsed_path = parse_lib_path(&filepath_str)?;
+    eprintln!(
+        "  - adding {:?} to rustc library search path",
+        &parsed_path.dir
+    );
     println!("cargo:rustc-link-search={}", parsed_path.dir);
+    eprintln!("  - requesting that rustc link {:?}", &parsed_path.libname);
     println!("cargo:rustc-link-lib={}", parsed_path.libname);
 
     return Ok(true);
