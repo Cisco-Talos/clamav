@@ -1,6 +1,8 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
+use bindgen::builder;
+
 // Note to maintainers: this is currently a hybrid of examination of the
 // CMake environment, and leaning on Rust `cfg` elements. Ideally, it
 // should be possible to work in this space (e.g., execute tests from an
@@ -14,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 // A list of environment variables to query to determine additional libraries
 // that need to be linked to resolve dependencies.
-const LIB_ENV_LINK: [&str; 12] = [
+const LIB_ENV_LINK: &[&str] = &[
     "LIBSSL",
     "LIBCRYPTO",
     "LIBZ",
@@ -30,13 +32,47 @@ const LIB_ENV_LINK: [&str; 12] = [
 ];
 
 // The same, but additional values to check on Windows platforms
-const LIB_ENV_LINK_WINDOWS: [&str; 2] = ["LIBPTHREADW32", "LIBWIN32COMPAT"];
+const LIB_ENV_LINK_WINDOWS: &[&str] = &["LIBPTHREADW32", "LIBWIN32COMPAT"];
 
 // Additional [verbatim] libraries to link on Windows platforms
-const LIB_LINK_WINDOWS: [&str; 4] = ["wsock32", "ws2_32", "Shell32", "User32"];
+const LIB_LINK_WINDOWS: &[&str] = &["wsock32", "ws2_32", "Shell32", "User32"];
 
 // Windows library names that must have the leading `lib` trimmed (if encountered)
-const WINDOWS_TRIM_LOCAL_LIB: [&str; 2] = ["libclamav", "libclammspack"];
+const WINDOWS_TRIM_LOCAL_LIB: &[&str] = &["libclamav", "libclammspack"];
+
+// Generate bindings for these functions:
+const BINDGEN_FUNCTIONS: &[&str] = &[
+    "cli_ctx",
+    "cli_warnmsg",
+    "cli_dbgmsg_no_inline",
+    "cli_infomsg_simple",
+    "cli_errmsg",
+    "cli_append_virus",
+    "cli_versig2",
+    "cli_getdsig",
+    "cli_get_debug_flag",
+];
+
+// Generate bindings for these types (structs, enums):
+const BINDGEN_TYPES: &[&str] = &["cli_matcher", "cli_ac_data", "cli_ac_result"];
+
+// Find the required functions and types in these headers:
+const BINDGEN_HEADERS: &[&str] = &[
+    "../libclamav/matcher.h",
+    "../libclamav/matcher-ac.h",
+    "../libclamav/others.h",
+    "../libclamav/dsig.h",
+];
+
+// Find the required headers in these directories:
+const BINDGEN_INCLUDE_PATHS: &[&str] = &[
+    "-I../libclamav",
+    "-I../libclamunrar_iface",
+    "-I../libclammspack",
+];
+
+// Write the bindings to this file:
+const BINDGEN_OUTPUT_FILE: &str = "src/sys.rs";
 
 const C_HEADER_OUTPUT: &str = "clamav_rust.h";
 
@@ -58,14 +94,54 @@ fn main() -> Result<(), &'static str> {
 
     // We only want to execute cbindgen for `cargo build`, not `cargo test`.
     // FindRust.cmake defines $CARGO_CMD so we can differentiate.
-    if "build" == env::var("CARGO_CMD").or(Ok("".to_string()))? {
+    let cargo_cmd = env::var("CARGO_CMD").unwrap_or("".into());
+    if cargo_cmd == "build" {
+        execute_bindgen()?;
         execute_cbindgen()?;
     } else {
-        eprintln!("NOTE: Not performing cbindgen as CARGO_CMD != build");
+        eprintln!("NOTE: Not generating bindings because CARGO_CMD != build");
     }
+
     Ok(())
 }
 
+/// Use bindgen to generate Rust bindings to call into C libraries.
+fn execute_bindgen() -> Result<(), &'static str> {
+    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
+    let build_include_path = format!("-I{}", build_dir.join("..").to_str().unwrap());
+
+    // Configure and generate bindings.
+    let mut builder = builder()
+        // Silence code-style warnings for generated bindings.
+        .raw_line("#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]")
+        // Make the bindings pretty.
+        .rustfmt_bindings(true)
+        // Enable bindgen to find generated headers in the build directory, too.
+        .clang_arg(build_include_path);
+
+    for &include_path in BINDGEN_INCLUDE_PATHS {
+        builder = builder.clang_arg(include_path);
+    }
+    for &header in BINDGEN_HEADERS {
+        builder = builder.header(header);
+    }
+    for &c_function in BINDGEN_FUNCTIONS {
+        builder = builder.allowlist_function(c_function);
+    }
+    for &c_type in BINDGEN_TYPES {
+        builder = builder.allowlist_type(c_type);
+    }
+
+    // Generate!
+    let bindings = builder.generate().unwrap();
+
+    // Write the generated bindings to an output file.
+    bindings.write_to_file(BINDGEN_OUTPUT_FILE).unwrap();
+
+    Ok(())
+}
+
+/// Use cbindgen to generate C-header's for Rust static libraries.
 fn execute_cbindgen() -> Result<(), &'static str> {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
     let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
@@ -86,15 +162,15 @@ fn detect_clamav_build() -> Result<(), &'static str> {
     if search_and_link_lib("LIBCLAMAV")? {
         eprintln!("NOTE: LIBCLAMAV defined. Examining LIB* environment variables");
         // Need to link with libclamav dependencies
-        for var in &LIB_ENV_LINK {
+        for var in LIB_ENV_LINK {
             let _ = search_and_link_lib(var);
         }
 
         if cfg!(windows) {
-            for var in &LIB_ENV_LINK_WINDOWS {
+            for var in LIB_ENV_LINK_WINDOWS {
                 let _ = search_and_link_lib(var);
             }
-            for lib in &LIB_LINK_WINDOWS {
+            for lib in LIB_LINK_WINDOWS {
                 println!("cargo:rustc-link-lib={}", lib);
             }
         } else {

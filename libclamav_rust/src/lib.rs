@@ -20,6 +20,9 @@
  *  MA 02110-1301, USA.
  */
 
+/// cbindgen:ignore
+pub mod sys;
+
 pub mod cdiff;
 pub mod logging;
 pub mod util;

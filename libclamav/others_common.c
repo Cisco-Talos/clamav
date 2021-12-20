@@ -180,6 +180,14 @@ inline void cli_dbgmsg(const char *str, ...)
     }
 }
 
+void cli_dbgmsg_no_inline(const char *str, ...)
+{
+    if (UNLIKELY(cli_get_debug_flag())) {
+        MSGCODE(buff, len, "LibClamAV debug: ");
+        fputs(buff, stderr);
+    }
+}
+
 int cli_matchregex(const char *str, const char *regex)
 {
     regex_t reg;
