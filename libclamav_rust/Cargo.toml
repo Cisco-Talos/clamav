@@ -19,3 +19,4 @@ name = "clamav_rust"
 
 [build-dependencies]
 cbindgen = "0.20"
+bindgen = "0.59"

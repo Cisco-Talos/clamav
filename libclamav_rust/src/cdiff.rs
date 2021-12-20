@@ -24,7 +24,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
-    os::raw::{c_char, c_uchar},
+    os::raw::c_char,
     process,
 };
 
@@ -33,6 +33,8 @@ use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use log::{debug, error, warn};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
+
+use crate::sys;
 
 /// Maximum size of a digital signature
 const MAX_SIG_SIZE: usize = 350;
@@ -255,28 +257,9 @@ impl<'a> XchgOp<'a> {
     }
 }
 
-extern "C" {
-    fn cli_versig2(
-        digest: *const c_uchar,
-        dsig: *const c_char,
-        n: *const c_char,
-        e: *const c_char,
-    ) -> i32;
-
-    fn cli_getdsig(
-        host: *const u8,
-        user: *const u8,
-        data: *const u8,
-        datalen: u32,
-        mode: u8,
-    ) -> *const c_char;
-
-    fn cli_get_debug_flag() -> u8;
-}
-
 fn is_debug_enabled() -> bool {
     unsafe {
-        let debug_flag = cli_get_debug_flag();
+        let debug_flag = sys::cli_get_debug_flag();
         // Return true if debug_flag is not 0
         !matches!(debug_flag, 0)
     }
@@ -418,9 +401,9 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         // These strings should not contain interior NULs
         let server = CString::new(server).unwrap();
         let builder = CString::new(builder).unwrap();
-        let dsig_ptr = cli_getdsig(
-            server.as_c_str().as_ptr() as *const u8,
-            builder.as_c_str().as_ptr() as *const u8,
+        let dsig_ptr = sys::cli_getdsig(
+            server.as_c_str().as_ptr() as *const c_char,
+            builder.as_c_str().as_ptr() as *const c_char,
             sha256.to_vec().as_ptr(),
             32,
             2,
@@ -511,7 +494,7 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
             let n = CString::new(PUBLIC_KEY_MODULUS).unwrap();
             let e = CString::new(PUBLIC_KEY_EXPONENT).unwrap();
             let versig_result = unsafe {
-                cli_versig2(
+                sys::cli_versig2(
                     sha256.to_vec().as_ptr(),
                     dsig_cstring.as_ptr(),
                     n.as_ptr() as *const c_char,

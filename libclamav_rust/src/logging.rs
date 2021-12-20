@@ -21,16 +21,10 @@
  */
 
 use std::ffi::CString;
-use std::os::raw::c_char;
 
 use log::{set_max_level, Level, LevelFilter, Metadata, Record};
 
-extern "C" {
-    fn cli_warnmsg(str: *const c_char, ...) -> ();
-    fn cli_dbgmsg(str: *const c_char, ...) -> ();
-    fn cli_infomsg_simple(str: *const c_char, ...) -> ();
-    fn cli_errmsg(str: *const c_char, ...) -> ();
-}
+use crate::sys;
 
 pub struct ClamLogger;
 
@@ -46,16 +40,16 @@ impl log::Log for ClamLogger {
 
             match record.level() {
                 Level::Debug => unsafe {
-                    cli_dbgmsg(ptr);
+                    sys::cli_dbgmsg_no_inline(ptr);
                 },
                 Level::Error => unsafe {
-                    cli_errmsg(ptr);
+                    sys::cli_errmsg(ptr);
                 },
                 Level::Info => unsafe {
-                    cli_infomsg_simple(ptr);
+                    sys::cli_infomsg_simple(ptr);
                 },
                 Level::Warn => unsafe {
-                    cli_warnmsg(ptr);
+                    sys::cli_warnmsg(ptr);
                 },
                 _ => {}
             }

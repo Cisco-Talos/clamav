@@ -17,15 +17,8 @@ after_includes = ""
 
 [export]
 include = ["cdiff_apply", "script2cdiff"]
-exclude = [
-    "cli_dbgmsg",
-    "cli_errmsg",
-    "cli_infomsg_simple",
-    "cli_warnmsg",
-    "cli_versig2",
-    "cli_get_debug_flag",
-    "cli_getdsig",
-]
+exclude = []
+
 # prefix = "CAPI_"
 item_types = []
 renaming_overrides_prefixing = false
