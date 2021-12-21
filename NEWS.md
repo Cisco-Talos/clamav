@@ -30,6 +30,10 @@ ClamAV 0.103.5 is a critical patch release with the following fixes:
 - Increased the maximum line length for ClamAV config files from 512 bytes to
   1024 bytes to allow for longer config option strings.
 
+- SigTool: Fix insufficient buffer size for `--list-sigs` that caused a failure
+  when listing a database containing one or more very long signatures.
+  This fix was backported from 0.104.
+
 Special thanks to the following for code contributions and bug reports:
 - Laurent Delosieres
 
