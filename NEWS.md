@@ -7,6 +7,15 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.5 is a critical patch release with the following fixes:
 
+- [CVE-2022-20698](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20698):
+  Fix for invalid pointer read that may cause a crash.
+  Affects 0.104.1, 0.103.4 and prior when ClamAV is compiled with libjson-c and
+  the `CL_SCAN_GENERAL_COLLECT_METADATA` scan option (the `clamscan --gen-json`
+  option) is enabled.
+
+  Cisco would like to thank Laurent Delosieres of ManoMano for reporting this
+  vulnerability.
+
 - Fixed ability to disable the file size limit with libclamav C API, like this:
   ```c
     cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, 0);
@@ -22,6 +31,7 @@ ClamAV 0.103.5 is a critical patch release with the following fixes:
   1024 bytes to allow for longer config option strings.
 
 Special thanks to the following for code contributions and bug reports:
+- Laurent Delosieres
 
 ## 0.103.4
 
