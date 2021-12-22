@@ -94,7 +94,7 @@ fn main() -> Result<(), &'static str> {
 
     // We only want to generate bindings for `cargo build`, not `cargo test`.
     // FindRust.cmake defines $CARGO_CMD so we can differentiate.
-    let cargo_cmd = env::var("CARGO_CMD").unwrap_or("".into());
+    let cargo_cmd = env::var("CARGO_CMD").unwrap_or_else(|_| "".into());
     if cargo_cmd == "build" {
         // Always generate the C-headers when CMake kicks off a build.
         execute_cbindgen()?;
@@ -106,7 +106,7 @@ fn main() -> Result<(), &'static str> {
         // to update them, as needed.
         // On the plus-side, this means that our `.rs` file is present before our
         // first build, so at least rust-analyzer will be happy.
-        let maintainer_mode = env::var("MAINTAINER_MODE").unwrap_or("".into());
+        let maintainer_mode = env::var("MAINTAINER_MODE").unwrap_or_else(|_| "".into());
         if maintainer_mode == "ON" {
             execute_bindgen()?;
         }
@@ -119,7 +119,7 @@ fn main() -> Result<(), &'static str> {
 
 /// Use bindgen to generate Rust bindings to call into C libraries.
 fn execute_bindgen() -> Result<(), &'static str> {
-    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
+    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
     let build_include_path = format!("-I{}", build_dir.join("..").to_str().unwrap());
 
     // Configure and generate bindings.
@@ -160,7 +160,7 @@ fn execute_bindgen() -> Result<(), &'static str> {
 /// Use cbindgen to generate C-header's for Rust static libraries.
 fn execute_cbindgen() -> Result<(), &'static str> {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
-    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
+    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
     let outfile_path = build_dir.join(C_HEADER_OUTPUT);
 
     // Useful for build diagnostics
@@ -234,7 +234,7 @@ fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str>
     eprintln!("  - requesting that rustc link {:?}", &parsed_path.libname);
     println!("cargo:rustc-link-lib={}", parsed_path.libname);
 
-    return Ok(true);
+    Ok(true)
 }
 
 struct ParsedLibraryPath {
@@ -255,7 +255,7 @@ fn parse_lib_path<'a>(path: &'a str) -> Result<ParsedLibraryPath, &'static str> 
     // This can't fail because it came from a &str
     let dir = path
         .parent()
-        .unwrap_or(Path::new("."))
+        .unwrap_or_else(|| Path::new("."))
         .to_str()
         .unwrap()
         .to_owned();
