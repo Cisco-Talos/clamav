@@ -5328,7 +5328,7 @@ cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **vir
         status = CL_CLEAN;
         goto done;
     }
-    if ((uint64_t)sb.st_size > engine->maxfilesize) {
+    if ((engine->maxfilesize > 0) && ((uint64_t)sb.st_size > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (" STDu64 " bytes), ignoring\n", (uint64_t)sb.st_size);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
             if (engine->cb_virus_found)
@@ -5365,7 +5365,7 @@ done:
 
 cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
-    if (map->len > engine->maxfilesize) {
+    if ((engine->maxfilesize > 0) && (map->len > engine->maxfilesize)) {
         cli_dbgmsg("cl_scandesc_callback: File too large (%zu bytes), ignoring\n", map->len);
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
             if (engine->cb_virus_found)
