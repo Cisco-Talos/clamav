@@ -179,7 +179,7 @@ typedef struct cli_ctx_tag {
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
-    unsigned long scansize;
+    uint64_t scansize;
     struct cl_scan_options *options;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;

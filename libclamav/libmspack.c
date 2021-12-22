@@ -34,7 +34,7 @@ struct mspack_name {
 
 struct mspack_system_ex {
     struct mspack_system ops;
-    off_t max_size;
+    uint64_t max_size;
 };
 
 struct mspack_handle {
@@ -45,7 +45,7 @@ struct mspack_handle {
     off_t offset;
 
     FILE *f;
-    off_t max_size;
+    uint64_t max_size;
 };
 
 static struct mspack_file *mspack_fmap_open(struct mspack_system *self,
@@ -170,7 +170,7 @@ static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
 {
     struct mspack_handle *mspack_handle = (struct mspack_handle *)file;
     size_t count;
-    off_t max_size;
+    uint64_t max_size;
 
     if (bytes < 0 || !mspack_handle) {
         cli_dbgmsg("%s() err %d\n", __func__, __LINE__);
@@ -189,7 +189,7 @@ static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
     if (!max_size)
         return bytes;
 
-    max_size = max_size < (off_t)bytes ? max_size : (off_t)bytes;
+    max_size = max_size < (uint64_t)bytes ? max_size : (uint64_t)bytes;
 
     mspack_handle->max_size -= max_size;
 
@@ -366,7 +366,7 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
     }
     files = 0;
     for (cab_f = cab_h->files; cab_f; cab_f = cab_f->next) {
-        off_t max_size;
+        uint64_t max_size;
         char *tmp_fname = NULL;
 
         ret = cli_matchmeta(ctx, cab_f->filename, 0, cab_f->length, 0,
@@ -387,13 +387,27 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
             }
         }
 
-        if (ctx->engine->maxscansize &&
-            ctx->scansize + ctx->engine->maxfilesize >=
-                ctx->engine->maxscansize)
-            max_size = ctx->engine->maxscansize -
-                       ctx->scansize;
-        else
-            max_size = ctx->engine->maxfilesize ? ctx->engine->maxfilesize : 0xffffffff;
+        if (ctx->engine->maxfilesize > 0) {
+            // max filesize has been set
+            if ((ctx->engine->maxscansize > 0) &&
+                (ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)) {
+                // ... but would exceed max scansize, shrink it.
+                max_size = ctx->engine->maxscansize - ctx->scansize;
+            } else {
+                // ... and will work
+                max_size = ctx->engine->maxfilesize;
+            }
+        } else {
+            // max filesize not specified
+            if ((ctx->engine->maxscansize > 0) &&
+                (ctx->scansize + UINT32_MAX >= ctx->engine->maxscansize)) {
+                // ... but UINT32_MAX would exceed max scansize, shrink it.
+                max_size = ctx->engine->maxscansize - ctx->scansize;
+            } else {
+                // ... use UINT32_MAX
+                max_size = UINT32_MAX;
+            }
+        }
 
         tmp_fname = cli_gentemp(ctx->sub_tmpdir);
         if (!tmp_fname) {
@@ -468,7 +482,7 @@ int cli_scanmschm(cli_ctx *ctx)
     }
     files = 0;
     for (mschm_f = mschm_h->files; mschm_f; mschm_f = mschm_f->next) {
-        off_t max_size;
+        uint64_t max_size;
         char *tmp_fname;
 
         ret = cli_matchmeta(ctx, mschm_f->filename, 0, mschm_f->length,
@@ -489,13 +503,27 @@ int cli_scanmschm(cli_ctx *ctx)
             }
         }
 
-        if (ctx->engine->maxscansize &&
-            ctx->scansize + ctx->engine->maxfilesize >=
-                ctx->engine->maxscansize)
-            max_size = ctx->engine->maxscansize -
-                       ctx->scansize;
-        else
-            max_size = ctx->engine->maxfilesize ? ctx->engine->maxfilesize : 0xffffffff;
+        if (ctx->engine->maxfilesize > 0) {
+            // max filesize has been set
+            if ((ctx->engine->maxscansize > 0) &&
+                (ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)) {
+                // ... but would exceed max scansize, shrink it.
+                max_size = ctx->engine->maxscansize - ctx->scansize;
+            } else {
+                // ... and will work
+                max_size = ctx->engine->maxfilesize;
+            }
+        } else {
+            // max filesize not specified
+            if ((ctx->engine->maxscansize > 0) &&
+                (ctx->scansize + UINT32_MAX >= ctx->engine->maxscansize)) {
+                // ... but UINT32_MAX would exceed max scansize, shrink it.
+                max_size = ctx->engine->maxscansize - ctx->scansize;
+            } else {
+                // ... use UINT32_MAX
+                max_size = UINT32_MAX;
+            }
+        }
 
         ops_ex.max_size = max_size;
 
