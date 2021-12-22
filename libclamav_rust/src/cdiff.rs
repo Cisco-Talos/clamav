@@ -25,7 +25,8 @@ use std::{
     io::{prelude::*, BufReader, BufWriter, Read, Seek, SeekFrom, Write},
     iter::*,
     os::raw::c_char,
-    process,
+    path::PathBuf,
+    str,
 };
 
 use crate::util;
@@ -36,8 +37,8 @@ use thiserror::Error;
 
 use crate::sys;
 
-/// Maximum size of a digital signature
-const MAX_SIG_SIZE: usize = 350;
+/// Size of a digital signature
+const SIG_SIZE: usize = 350;
 
 /// A sane buffer size for various read operations
 const READ_SIZE: usize = 8192;
@@ -65,8 +66,8 @@ pub enum ApplyMode {
 #[derive(Debug)]
 struct EditNode {
     line_no: usize,
-    orig_line: String,
-    new_line: Option<String>,
+    orig_line: Vec<u8>,
+    new_line: Option<Vec<u8>>,
 }
 
 #[derive(Default)]
@@ -82,66 +83,29 @@ struct Context {
     edits: BTreeMap<usize, EditNode>,
 
     // Lines to append to the database
-    additions: Vec<String>,
+    additions: Vec<u8>,
 }
 
-/// Possible errores returned by cdiff_apply()
-#[derive(Error, Debug)]
+/// Possible errors returned by cdiff_apply() and script2cdiff
+#[derive(Debug, Error)]
 pub enum CdiffError {
-    #[error("No DB open for action {0}")]
-    NoDBForAction(&'static str),
+    #[error("Error in header: {0}")]
+    Header(#[from] HeaderError),
 
-    #[error("File {0} not closed before calling action MOVE")]
-    NotClosedBeforeAction(String),
+    /// An error encountered while handling CDIFF input
+    ///
+    /// This error *may* wrap a processing error if the command has side effects
+    /// (e.g., MOVE or CLOSE)
+    #[error("{1} on line {0}")]
+    Input(usize, InputError),
 
-    #[error("File {0} not closed before opening {1}")]
-    NotClosedBeforeOpening(String, String),
+    /// An error encountered while handling a particular CDiff command
+    #[error("processing {1} command on line {2}: {0}")]
+    Processing(ProcessingError, &'static str, usize),
 
-    #[error("Forbidden characters found in database name {0}")]
-    ForbiddenCharactersInDB(String),
-
-    #[error("Invalid command provided: {0}")]
-    InvalidCommand(String),
-
-    #[error("Unexpected end of line while parsing field: {0}")]
-    NoMoreData(&'static str),
-
-    #[error("File contains fewer than {0} bytes")]
-    NotEnoughBytes(usize),
-
-    #[error("Incorrect file format - {0}")]
-    MalformedFile(String),
-
-    #[error("Move operation failed")]
-    MoveOpFailed,
-
-    #[error("Failed to parse string as a number")]
-    ParseIntError(#[from] std::num::ParseIntError),
-
-    #[error("Cannot perform action {0} on line {1} in file {2}. Pattern does not match")]
-    PatternDoesNotMatch(&'static str, usize, String),
-
-    #[error("Failed to parse dsig!")]
-    ParseDsigError,
-
-    #[error("Not all edit processed at file end ({0} remaining)")]
-    NotAllEditProcessed(&'static str),
-
-    /// Represents all other cases of `std::io::Error`.
-    #[error(transparent)]
-    IOError(#[from] std::io::Error),
-
-    #[error(transparent)]
-    FromUtf8Error(#[from] std::string::FromUtf8Error),
-
-    #[error("NUL found within buffer to be interpreted as NUL-terminated string")]
-    NulError(#[from] std::ffi::NulError),
-
-    #[error("Incorrect digital signature")]
-    InvalidDigitalSignature,
-
-    #[error("Conflicting actions found for line {0}")]
-    ConflictingAction(usize),
+    /// An error encountered while handling the digital signature
+    #[error("processing signature: {0}")]
+    Signature(#[from] SignatureError),
 
     //
     // These are particular to script2cdiff()
@@ -169,63 +133,214 @@ pub enum CdiffError {
 
     #[error("Unable to read from file {0}: {1}")]
     FileRead(String, std::io::Error),
+
+    #[error("Incorrect digital signature")]
+    InvalidDigitalSignature,
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("NUL found within CString")]
+    CstringNulError(#[from] std::ffi::NulError),
+}
+
+/// Errors particular to input handling (i.e., syntax, or side effects from
+/// handling input)
+#[derive(Error, Debug)]
+pub enum InputError {
+    #[error("Unsupported command provided: {0}")]
+    UnknownCommand(String),
+
+    #[error("No DB open for action {0}")]
+    NoDBForAction(&'static str),
+
+    #[error("File {0} not closed before opening {1}")]
+    NotClosedBeforeOpening(String, String),
+
+    #[error("{0} not Unicode")]
+    NotUnicode(&'static str),
+
+    #[error("Forbidden characters found in database name {0}")]
+    ForbiddenCharactersInDB(String),
+
+    #[error("{0} missing for {1}")]
+    MissingParameter(&'static str, &'static str),
+
+    #[error("Command missing")]
+    MissingCommand,
+
+    #[error("Invalid line number: {0}")]
+    InvalidLineNo(InvalidNumber),
+
+    /// the line, when taken as a whole, is not valid unicode
+    #[error("not unicode")]
+    LineNotUnicode(#[from] std::str::Utf8Error),
+
+    /// Errors encountered while excuting a command
+    #[error("processing: {0}")]
+    Processing(#[from] ProcessingError),
+
+    #[error("no final newline")]
+    MissingNL,
+}
+
+/// Errors encountered while processing
+#[derive(Debug, Error)]
+pub enum ProcessingError {
+    #[error("File {0} not closed before calling action MOVE")]
+    NotClosedBeforeAction(String),
+
+    #[error("Unexpected end of line while parsing field: {0}")]
+    NoMoreData(&'static str),
+
+    #[error("Move operation failed")]
+    MoveOpFailed,
+
+    #[error("Failed to parse string as a number")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
+    #[error("Cannot perform action {0} on line {1} in file {2}. Pattern does not match")]
+    PatternDoesNotMatch(&'static str, usize, PathBuf),
+
+    #[error("Not all edit processed at file end ({0} remaining)")]
+    NotAllEditProcessed(&'static str),
+
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
+
+    #[error(transparent)]
+    FromUtf8StrError(#[from] std::str::Utf8Error),
+
+    #[error("NUL found within buffer to be interpreted as NUL-terminated string")]
+    NulError(#[from] std::ffi::NulError),
+
+    #[error("Conflicting actions found for line {0}")]
+    ConflictingAction(usize),
+
+    ///
+    /// Generic remaps
+    ///
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum HeaderError {
+    #[error("invalid magic")]
+    BadMagic,
+
+    #[error("too-few colon-separated fields")]
+    TooFewFields,
+
+    #[error("invalid size")]
+    InvalidSize(#[from] InvalidNumber),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum SignatureError {
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Fewer than {SIG_SIZE} bytes remaining for signature")]
+    TooSmall,
+
+    #[error("Digital signature larger than {SIG_SIZE} bytes")]
+    TooLarge,
+}
+
+#[derive(Error, Debug)]
+pub enum InvalidNumber {
+    #[error("not unicode")]
+    NotUnicode(#[from] std::str::Utf8Error),
+
+    #[error("unparseable")]
+    Unparseable(#[from] std::num::ParseIntError),
 }
 
 #[derive(Debug)]
 pub struct DelOp<'a> {
     line_no: usize,
-    del_line: &'a str,
+    del_line: &'a [u8],
 }
 
 /// Method to parse the cdiff line describing a delete operation
 impl<'a> DelOp<'a> {
-    pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        let mut iter = data.split_whitespace();
+    pub fn new(data: &'a [u8]) -> Result<Self, InputError> {
+        let mut iter = data.split(|b| *b == b' ');
+        let line_no = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("DEL", "line_no"))?,
+        )
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?
+        .parse::<usize>()
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?;
+        let del_line = iter
+            .next()
+            .ok_or(InputError::MissingParameter("DEL", "orig_line"))?;
 
-        Ok(DelOp {
-            line_no: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("line_no"))?
-                .parse::<usize>()?,
-            del_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("del_line"))?,
-        })
+        Ok(DelOp { line_no, del_line })
     }
 }
 
 #[derive(Debug)]
 pub struct MoveOp<'a> {
-    src: &'a str,
-    dst: &'a str,
+    src: PathBuf,
+    dst: PathBuf,
     start_line_no: usize,
-    start_line: &'a str,
+    start_line: &'a [u8],
     end_line_no: usize,
-    end_line: &'a str,
+    end_line: &'a [u8],
 }
 
 /// Method to parse the cdiff line describing a move operation
 impl<'a> MoveOp<'a> {
-    pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        let mut iter = data.split_whitespace();
+    pub fn new(data: &'a [u8]) -> Result<Self, InputError> {
+        let mut iter = data.split(|b| *b == b' ');
+
+        let src = PathBuf::from(str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("MOVE", "src"))?,
+        )?);
+
+        let dst = PathBuf::from(str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("MOVE", "dst"))?,
+        )?);
+
+        let start_line_no = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("MOVE", "start_line_no"))?,
+        )
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?
+        .parse::<usize>()
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?;
+
+        let start_line = iter
+            .next()
+            .ok_or(InputError::MissingParameter("MOVE", "start_line"))?;
+
+        let end_line_no = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("MOVE", "end_line"))?,
+        )
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?
+        .parse::<usize>()
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?;
+
+        let end_line = iter
+            .next()
+            .ok_or(InputError::MissingParameter("MOVE", "end_line"))?;
 
         Ok(MoveOp {
-            src: iter.next().ok_or_else(|| CdiffError::NoMoreData("src"))?,
-            dst: iter.next().ok_or_else(|| CdiffError::NoMoreData("dst"))?,
-            start_line_no: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("start_line_no"))?
-                .parse::<usize>()?,
-            start_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("start_line"))?,
-            end_line_no: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("end_line_no"))?
-                .parse::<usize>()?,
-            end_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("end_line"))?,
+            src,
+            dst,
+            start_line_no,
+            start_line,
+            end_line_no,
+            end_line,
         })
     }
 }
@@ -233,26 +348,30 @@ impl<'a> MoveOp<'a> {
 #[derive(Debug)]
 pub struct XchgOp<'a> {
     line_no: usize,
-    orig_line: &'a str,
-    new_line: &'a str,
+    orig_line: &'a [u8],
+    new_line: &'a [u8],
 }
 
 /// Method to parse the cdiff line describing an exchange operation
 impl<'a> XchgOp<'a> {
-    pub fn new(data: &'a str) -> Result<Self, CdiffError> {
-        let mut iter = data.splitn(3, char::is_whitespace);
+    pub fn new(data: &'a [u8]) -> Result<Self, InputError> {
+        let mut iter = data.splitn(3, |b| *b == b' ');
+        let line_no = str::from_utf8(
+            iter.next()
+                .ok_or(InputError::MissingParameter("XCHG", "line_no"))?,
+        )
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?
+        .parse::<usize>()
+        .map_err(|e| InputError::InvalidLineNo(e.into()))?;
 
         Ok(XchgOp {
-            line_no: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("line_no"))?
-                .parse::<usize>()?,
+            line_no,
             orig_line: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("orig_line"))?,
+                .ok_or(InputError::MissingParameter("XCHG", "orig_line"))?,
             new_line: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("new_line"))?,
+                .ok_or(InputError::MissingParameter("XCHG", "new_line"))?,
         })
     }
 }
@@ -360,17 +479,11 @@ pub fn script2cdiff(script_file_name: &str, builder: &str, server: &str) -> Resu
         .map_err(|e| CdiffError::FileWrite(script_file_name.to_owned(), e))?;
 
     // Set up buffered reader and gz writer
-    let reader = BufReader::new(script_file);
+    let mut reader = BufReader::new(script_file);
     let mut gz = GzEncoder::new(cdiff_file, Compression::default());
 
-    // Read lines from script_file, compress and write to cdiff_file
-    for line in reader.lines() {
-        let mut line = line.map_err(|e| CdiffError::FileRead(script_file_name.to_owned(), e))?;
-        // Each line written must be newline separated per cdiff spec
-        line.push('\n');
-        gz.write_all(line.as_bytes())
-            .map_err(|e| CdiffError::FileWrite(cdiff_file_name.to_owned(), e))?;
-    }
+    // Pipe the input into the compressor
+    std::io::copy(&mut reader, &mut gz)?;
 
     // Get cdiff file writer back from flate2
     let mut cdiff_file = gz
@@ -520,7 +633,7 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
     };
 
     // Set reader according to whether this is a script or cdiff
-    let reader: Box<dyn BufRead> = match mode {
+    let mut reader: Box<dyn BufRead> = match mode {
         ApplyMode::Cdiff => {
             let gz = GzDecoder::new(file);
             Box::new(BufReader::new(gz))
@@ -531,50 +644,55 @@ pub fn cdiff_apply(file: &mut File, mode: ApplyMode) -> Result<(), CdiffError> {
     // Create contextual data structure
     let mut ctx: Context = Context::default();
 
-    process_lines(&mut ctx, reader, header_length)
+    process_lines(&mut ctx, &mut reader, header_length)
 }
 
 /// Set up Context structure with data parsed from command open
-fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), CdiffError> {
+fn cmd_open(ctx: &mut Context, db_name: Option<&[u8]>) -> Result<(), InputError> {
+    let db_name = db_name.ok_or(InputError::MissingParameter("OPEN", "line_no"))?;
+    let db_name = str::from_utf8(db_name).map_err(|_| InputError::NotUnicode("database name"))?;
     // Test for existing open db
     if let Some(x) = &ctx.open_db {
-        return Err(CdiffError::NotClosedBeforeOpening(x.into(), db_name));
+        return Err(InputError::NotClosedBeforeOpening(
+            x.into(),
+            db_name.to_owned(),
+        ));
     }
 
     if !db_name
         .chars()
         .all(|x: char| x.is_alphanumeric() || x == '\\' || x == '/' || x == '.')
     {
-        return Err(CdiffError::ForbiddenCharactersInDB(db_name));
+        return Err(InputError::ForbiddenCharactersInDB(db_name.to_owned()));
     }
-    ctx.open_db = Some(db_name);
+    ctx.open_db = Some(db_name.to_owned());
 
     Ok(())
 }
 
 /// Set up Context structure with data parsed from command add
-fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), CdiffError> {
+fn cmd_add(ctx: &mut Context, signature: &[u8]) -> Result<(), InputError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
-        return Err(CdiffError::NoDBForAction("ADD"));
+    if ctx.open_db.is_none() {
+        return Err(InputError::NoDBForAction("ADD"));
     }
-    ctx.additions.push(signature);
+    ctx.additions.extend_from_slice(signature);
 
     Ok(())
 }
 
 /// Set up Context structure with data parsed from command delete
-fn cmd_del(ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
+fn cmd_del(ctx: &mut Context, del_op: DelOp) -> Result<(), InputError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
-        return Err(CdiffError::NoDBForAction("DEL"));
+    if ctx.open_db.is_none() {
+        return Err(InputError::NoDBForAction("DEL"));
     }
 
     ctx.edits.insert(
         del_op.line_no,
         EditNode {
             line_no: del_op.line_no,
-            orig_line: del_op.del_line.to_string(),
+            orig_line: del_op.del_line.to_owned(),
             new_line: None,
         },
     );
@@ -582,25 +700,25 @@ fn cmd_del(ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
 }
 
 /// Set up Context structure with data parsed from command exchange
-fn cmd_xchg(ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
+fn cmd_xchg(ctx: &mut Context, xchg_op: XchgOp) -> Result<(), InputError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
-        return Err(CdiffError::NoDBForAction("XCHG"));
+    if ctx.open_db.is_none() {
+        return Err(InputError::NoDBForAction("XCHG"));
     }
 
     ctx.edits.insert(
         xchg_op.line_no,
         EditNode {
             line_no: xchg_op.line_no,
-            orig_line: xchg_op.orig_line.to_string(),
-            new_line: Some(xchg_op.new_line.to_string()),
+            orig_line: xchg_op.orig_line.to_owned(),
+            new_line: Some(xchg_op.new_line.to_owned()),
         },
     );
     Ok(())
 }
 
 /// Move range of lines from one DB file into another
-fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
+fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), InputError> {
     #[derive(PartialEq, Debug)]
     enum State {
         Init,
@@ -612,176 +730,215 @@ fn cmd_move(ctx: &mut Context, move_op: MoveOp) -> Result<(), CdiffError> {
 
     // Test for move with open db
     if let Some(x) = &ctx.open_db {
-        return Err(CdiffError::NotClosedBeforeAction(x.into()));
+        return Err(ProcessingError::NotClosedBeforeAction(x.into()).into());
     }
 
-    // Open src in read-only mode
-    let src_file = File::open(move_op.src)?;
-
     // Open dst in append mode
-    let mut dst_file = OpenOptions::new().append(true).open(move_op.dst)?;
+    let mut dst_file = OpenOptions::new()
+        .append(true)
+        .open(&move_op.dst)
+        .map_err(|e| InputError::Processing(e.into()))?;
 
     // Create tmp file and open for writing
     let tmp_named_file = tempfile::Builder::new()
         .prefix("_tmp_move_file")
-        .tempfile_in("./")?;
+        .tempfile_in("./")
+        .map_err(|e| InputError::Processing(e.into()))?;
     let mut tmp_file = tmp_named_file.as_file();
 
-    // Create a buffered reader and loop over src, line by line
-    let src_reader = BufReader::new(src_file);
+    // Open src in read-only mode
+    let mut src_reader =
+        BufReader::new(File::open(&move_op.src).map_err(ProcessingError::from)?);
 
-    for (mut line_no, line) in src_reader.lines().enumerate() {
-        let line = line?;
-
+    let mut line = vec![];
+    let mut line_no = 0;
+    loop {
         // cdiff files start at line 1
         line_no += 1;
+        line.clear();
+        let n_read = src_reader
+            .read_until(b'\n', &mut line)
+            .map_err(ProcessingError::from)?;
+        if n_read == 0 {
+            break;
+        }
         if state == State::Init && line_no == move_op.start_line_no {
             if line.starts_with(move_op.start_line) {
                 state = State::Move;
-                dst_file.write_all(line.as_bytes())?;
-                dst_file.write_all(b"\n")?;
+                dst_file.write_all(&line).map_err(ProcessingError::from)?;
             } else {
-                error!("{} does not match {}", line, move_op.start_line);
-                return Err(CdiffError::PatternDoesNotMatch(
-                    "MOVE",
-                    line_no,
-                    move_op.src.to_string(),
-                ));
+                return Err(
+                    ProcessingError::PatternDoesNotMatch("MOVE", line_no, move_op.src).into(),
+                );
             }
         }
         // Write everything between start and end to dst
         else if state == State::Move {
-            dst_file.write_all(line.as_bytes())?;
-            dst_file.write_all(b"\n")?;
+            dst_file.write_all(&line).map_err(ProcessingError::from)?;
             if line_no == move_op.end_line_no {
                 if line.starts_with(move_op.end_line) {
                     state = State::End;
                 } else {
-                    return Err(CdiffError::PatternDoesNotMatch(
+                    return Err(ProcessingError::PatternDoesNotMatch(
                         "MOVE",
                         line_no,
-                        move_op.dst.to_string(),
-                    ));
+                        move_op.dst,
+                    )
+                    .into());
                 }
             }
         }
         // Write everything outside of start and end to tmp
         else {
-            tmp_file.write_all(line.as_bytes())?;
-            tmp_file.write_all(b"\n")?;
+            tmp_file.write_all(&line).map_err(ProcessingError::from)?;
         }
     }
 
+    // Ensure the file is no longer open for read so that Windows will be willing
+    // to allow it to be overwritten.
+    drop(src_reader);
+
     // Check that we handled start and end
     if state != State::End {
-        return Err(CdiffError::MoveOpFailed);
+        return Err(ProcessingError::MoveOpFailed.into());
     }
 
     // Delete src and replace it with tmp
     #[cfg(windows)]
-    fs::remove_file(move_op.src)?;
-    fs::rename(tmp_named_file.path(), move_op.src)?;
+    fs::remove_file(&move_op.src).map_err(ProcessingError::from)?;
+    fs::rename(tmp_named_file.path(), &move_op.src).map_err(ProcessingError::from)?;
 
     Ok(())
 }
 
 /// Utilize Context structure built by various prior command calls to perform I/O on open file
-fn cmd_close(ctx: &mut Context) -> Result<(), CdiffError> {
+fn cmd_close(ctx: &mut Context) -> Result<(), InputError> {
     let open_db = ctx
         .open_db
         .take()
-        .ok_or_else(|| CdiffError::NoDBForAction("CLOSE"))?;
+        .ok_or(InputError::NoDBForAction("CLOSE"))?;
 
     let mut edits = ctx.edits.iter_mut();
     let mut next_edit = edits.next();
 
     if next_edit.is_some() {
         // Open src in read-only mode
-        let src_file = File::open(&open_db)?;
-
-        // Create a buffered reader and loop over src, line by line
-        let src_reader = BufReader::new(src_file);
+        let mut src_reader = BufReader::new(File::open(&open_db).map_err(ProcessingError::from)?);
 
         // Create tmp file and open for writing
         let tmp_named_file = tempfile::Builder::new()
             .prefix("_tmp_move_file")
-            .tempfile_in("./")?;
+            .tempfile_in("./")
+            .map_err(ProcessingError::from)?;
         let tmp_file = tmp_named_file.as_file();
         let mut tmp_file = BufWriter::new(tmp_file);
 
-        for (line_no, line) in src_reader
-            .lines()
-            .enumerate()
-            // Line numbers in the CDiff file begin at 1, not zero
-            .map(|(i, line)| (i + 1, line))
-        {
-            let cur_line = line?;
+        let mut linebuf = Vec::new();
+        for line_no in 1.. {
+            linebuf.clear();
+            let n_read = src_reader
+                .read_until(b'\n', &mut linebuf)
+                .map_err(ProcessingError::from)?;
+            if n_read == 0 {
+                // No more input
+                break;
+            }
+            
+            match linebuf.pop() {
+                Some(b'\n') => (),
+                Some(_) => return Err(InputError::MissingNL),
+                None => unreachable!(),
+            }
+            let cur_line = &linebuf;
 
+            // This is a placeholder so that we can provide a reference to
+            // something in the same scope
+            let repl_line;
             let new_line = if let Some((_, edit)) = &next_edit {
                 if line_no == edit.line_no {
                     // Matching line.  Check for content match
                     if cur_line.starts_with(&edit.orig_line) {
-                        let new_line = next_edit.unwrap().1.new_line.take();
+                        repl_line = next_edit.unwrap().1.new_line.take();
                         next_edit = edits.next();
-                        new_line
+
+                        repl_line.as_deref()
                     } else {
-                        return Err(CdiffError::PatternDoesNotMatch(
+                        dbg!(&cur_line, &edit.orig_line);
+                        return Err(ProcessingError::PatternDoesNotMatch(
                             if edit.new_line.is_some() {
                                 "exchange"
                             } else {
                                 "delete"
                             },
                             line_no,
-                            open_db,
-                        ));
+                            open_db.into(),
+                        )
+                        .into());
                     }
                 } else {
-                    Some(cur_line)
+                    Some(&cur_line[..])
                 }
             } else {
-                Some(cur_line)
+                Some(&cur_line[..])
             };
 
             // Anything to output?
             if let Some(new_line) = new_line {
-                tmp_file.write_all(new_line.as_bytes())?;
-                tmp_file.write_all(b"\n")?;
+                tmp_file
+                    .write_all(new_line)
+                    .map_err(ProcessingError::from)?;
+                tmp_file.write_all(b"\n").map_err(ProcessingError::from)?;
             }
         }
 
+        // Make sure the source file is closed; Windows doth protest
+        drop(src_reader);
+
         // Make sure that all delete and exchange lines were processed
         if let Some((_, edit)) = next_edit {
-            return Err(CdiffError::NotAllEditProcessed(
-                if edit.new_line.is_some() {
+            return Err(
+                ProcessingError::NotAllEditProcessed(if edit.new_line.is_some() {
                     "exchange"
                 } else {
                     "delete"
-                },
-            ));
+                })
+                .into(),
+            );
         }
 
         // Clean up the context
         ctx.edits.clear();
 
+        // Flush and close the temporary file.
+        // On Windows, it must be closed before it can be renamed.
+        let tmpfile_path = {
+            let _ = tmp_file.into_inner().unwrap();
+            let (_, path) = tmp_named_file.into_parts();
+            path
+        };
+
         // Replace the file in-place
         #[cfg(windows)]
-        fs::remove_file(&open_db)?;
-        fs::rename(tmp_named_file.path(), &open_db)?;
-
-        tmp_file.flush()?;
+        if let Err(e) = fs::remove_file(&open_db) {
+            // Try to remove the tempfile, since we failed to remove the original
+            fs::remove_file(tmpfile_path).map_err(ProcessingError::from)?;
+            return Err(ProcessingError::from(e).into());
+        }
+        if let Err(e) = fs::rename(&tmpfile_path, &open_db) {
+            fs::remove_file(&tmpfile_path).map_err(ProcessingError::from)?;
+            return Err(ProcessingError::from(e).into());
+        }
     }
 
     // Test for lines to add
     if !ctx.additions.is_empty() {
-        let mut db_file = OpenOptions::new().append(true).open(&open_db)?;
-        for sig in &ctx.additions {
-            debug!(
-                "cmd_close() - writing signature {} to file {}",
-                sig, &open_db
-            );
-            db_file.write_all(sig.as_bytes())?;
-            db_file.write_all(b"\n")?;
-        }
+        let mut db_file = OpenOptions::new()
+            .append(true)
+            .open(&open_db)
+            .map_err(ProcessingError::from)?;
+        db_file
+            .write_all(&ctx.additions)
+            .map_err(ProcessingError::from)?;
         ctx.additions.clear();
     }
 
@@ -791,86 +948,72 @@ fn cmd_close(ctx: &mut Context) -> Result<(), CdiffError> {
 }
 
 /// Set up Context structure with data parsed from command unlink
-fn cmd_unlink(ctx: &mut Context) -> Result<(), CdiffError> {
+fn cmd_unlink(ctx: &mut Context) -> Result<(), InputError> {
     if let Some(open_db) = &ctx.open_db {
-        fs::remove_file(open_db)?
+        fs::remove_file(open_db).map_err(ProcessingError::from)?;
     } else {
-        return Err(CdiffError::NoDBForAction("UNLINK"));
+        return Err(InputError::NoDBForAction("UNLINK"));
     }
     Ok(())
 }
 
 /// Handle a specific command line in a cdiff file, calling the appropriate handler function
-fn process_line(ctx: &mut Context, line: String) -> Result<(), CdiffError> {
-    // Find the index at the end of the command (note that the CLOSE command has no trailing data)
-    let spc_idx = match line.find(|c: char| c.is_whitespace()) {
-        Some(spc_idx) => spc_idx,
-        None => match line == "CLOSE" {
-            true => 0,
-            _ => {
-                error!("Unable to parse cmd");
-                process::abort();
-            }
-        },
-    };
-
-    // Get the data and clean it up
-    let data: String = line.chars().skip(spc_idx + 1).collect::<String>();
-    let data: String = data.trim().to_owned();
-
-    // Get the command
-    let cmd: String = if spc_idx > 0 {
-        line.chars().take(spc_idx).collect()
-    } else {
-        line
-    };
-
-    debug!("cmd = {}", cmd);
+fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
+    let mut tokens = line.splitn(2, |b| *b == b' ' || *b == b'\n');
+    let cmd = tokens.next().ok_or(InputError::MissingCommand)?;
+    let remainder_with_nl = tokens.next();
+    let remainder = remainder_with_nl
+        .map(|s| s.strip_suffix(&[b'\n']))
+        .flatten();
 
     // Call the appropriate command function
-    match cmd.as_str() {
-        "OPEN" => cmd_open(ctx, data),
-        "ADD" => cmd_add(ctx, data),
-        "DEL" => {
-            let del_op = DelOp::new(data.as_str())?;
+    match cmd {
+        b"OPEN" => cmd_open(ctx, remainder),
+        b"ADD" => cmd_add(ctx, remainder_with_nl.unwrap()),
+        b"DEL" => {
+            let del_op = DelOp::new(remainder.unwrap())?;
             cmd_del(ctx, del_op)
         }
-        "XCHG" => {
-            let xchg_op = XchgOp::new(data.as_str())?;
+        b"XCHG" => {
+            let xchg_op = XchgOp::new(remainder.unwrap())?;
             cmd_xchg(ctx, xchg_op)
         }
-        "CLOSE" => cmd_close(ctx),
-        "MOVE" => {
-            let move_op = MoveOp::new(data.as_str())?;
+        b"MOVE" => {
+            let move_op = MoveOp::new(remainder.unwrap())?;
             cmd_move(ctx, move_op)
         }
-        "UNLINK" => cmd_unlink(ctx),
-        _ => Err(CdiffError::InvalidCommand(cmd.to_string())),
+        b"CLOSE" => cmd_close(ctx),
+        b"UNLINK" => cmd_unlink(ctx),
+        _ => Err(InputError::UnknownCommand(
+            String::from_utf8(cmd.to_owned()).unwrap(),
+        )),
     }
 }
 
 /// Main loop for iterating over cdiff command lines and handling them
 fn process_lines<T>(
     ctx: &mut Context,
-    reader: T,
+    reader: &mut T,
     uncompressed_size: usize,
 ) -> Result<(), CdiffError>
 where
     T: BufRead,
 {
     let mut decompressed_bytes = 0;
-    for (n, line) in reader.lines().enumerate() {
-        match line {
-            Ok(line) => {
-                if line.starts_with('#') {
-                    continue;
+    let mut linebuf = vec![];
+    let mut line_no = 0;
+    loop {
+        line_no += 1;
+        linebuf.clear();
+        match reader.read_until(b'\n', &mut linebuf)? {
+            0 => break,
+            n_read => {
+                decompressed_bytes = decompressed_bytes + n_read + 1;
+                match linebuf.get(0) {
+                    // Skip comment lines
+                    Some(b'#') => continue,
+                    _ => process_line(ctx, &linebuf).map_err(|e| CdiffError::Input(line_no, e))?,
                 }
-                decompressed_bytes = decompressed_bytes + line.len() + 1;
-                debug!("process_lines()  - line {}: {:?}", n, line);
-                process_line(ctx, line)?;
-            }
-            Err(e) => {
-                return Err(CdiffError::MalformedFile(e.to_string()));
             }
         }
     }
@@ -882,14 +1025,14 @@ where
 }
 
 /// Find the signature at the end of the file, prefixed by ':'
-fn read_dsig(file: &mut File) -> Result<Vec<u8>, CdiffError> {
+fn read_dsig(file: &mut File) -> Result<Vec<u8>, SignatureError> {
     // Verify file length
-    if file.metadata()?.len() < MAX_SIG_SIZE as u64 {
-        return Err(CdiffError::NotEnoughBytes(MAX_SIG_SIZE));
+    if file.metadata()?.len() < SIG_SIZE as u64 {
+        return Err(SignatureError::TooSmall);
     }
 
     // Seek to the dsig_offset
-    file.seek(SeekFrom::End(-(MAX_SIG_SIZE as i64)))?;
+    file.seek(SeekFrom::End(-(SIG_SIZE as i64)))?;
 
     // Read from dsig_offset to EOF
     let mut dsig: Vec<u8> = vec![];
@@ -897,13 +1040,12 @@ fn read_dsig(file: &mut File) -> Result<Vec<u8>, CdiffError> {
     debug!("read_dsig() - dsig length is {}", dsig.len());
 
     // Find the signature
-    let offset: usize = MAX_SIG_SIZE + 1;
+    let offset: usize = SIG_SIZE + 1;
 
     // Read in reverse until the delimiter ':' is found
-    // let offset = dsig.iter().enumerate().rev().find(|(i, value)| **value == b':');
     if let Some(dsig) = dsig.rsplit(|v| *v == b':').next() {
-        if dsig.len() > MAX_SIG_SIZE {
-            Err(CdiffError::ParseDsigError)
+        if dsig.len() > SIG_SIZE {
+            Err(SignatureError::TooLarge)
         } else {
             Ok(dsig.to_vec())
         }
@@ -914,7 +1056,7 @@ fn read_dsig(file: &mut File) -> Result<Vec<u8>, CdiffError> {
 
 // Returns the parsed, uncompressed file size from the header, as well
 // as the offset in the file that the header ends.
-fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
+fn read_size(file: &mut File) -> Result<(u32, usize), HeaderError> {
     // Seek to beginning of file.
     file.seek(SeekFrom::Start(0))?;
 
@@ -923,7 +1065,7 @@ fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
     let mut buf = Vec::with_capacity(prefix.len());
     file.take(prefix.len() as u64).read_to_end(&mut buf)?;
     if buf.as_slice() != prefix.to_vec().as_slice() {
-        return Err(CdiffError::MalformedFile("malformed header".to_string()));
+        return Err(HeaderError::BadMagic);
     }
 
     // Read up to READ_SIZE to parse out the file size.
@@ -942,12 +1084,18 @@ fn read_size(file: &mut File) -> Result<(u32, usize), CdiffError> {
 
         // We are done reading the file size.
         if colons == 3 {
-            let file_size_str = String::from_utf8(file_size_vec)?;
-            debug!("read_size() - file_size_str == {}", file_size_str);
-            return Ok((file_size_str.parse::<u32>()?, i + 1));
+            let file_size_str =
+                str::from_utf8(&file_size_vec).map_err(|e| HeaderError::InvalidSize(e.into()))?;
+            return Ok((
+                file_size_str
+                    .parse::<u32>()
+                    .map_err(|e| HeaderError::InvalidSize(e.into()))?,
+                i + 1,
+            ));
         }
     }
-    Err(CdiffError::MalformedFile("insufficient colons".to_string()))
+
+    Err(HeaderError::TooFewFields)
 }
 
 /// Calculate the sha256 of the first len bytes of a file
@@ -991,6 +1139,7 @@ fn print_file_data(buf: Vec<u8>, len: usize) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
 
     /// CdiffTestError enumerates all possible errors returned by this testing library.
     #[derive(Error, Debug)]
@@ -1005,40 +1154,32 @@ mod tests {
 
     #[test]
     fn parse_move_works() {
-        println!("MOVE was called!");
-
-        let move_op = MoveOp::new("a b 1 hello 2 world").expect("Should've worked!");
+        let move_op = MoveOp::new(b"a b 1 hello 2 world").expect("Should've worked!");
 
         println!("{:?}", move_op);
 
-        assert_eq!(move_op.src, "a");
-        assert_eq!(move_op.dst, "b");
+        assert_eq!(move_op.src, Path::new("a"));
+        assert_eq!(move_op.dst, Path::new("b"));
         assert_eq!(move_op.start_line_no, 1);
-        assert_eq!(move_op.start_line, "hello");
+        assert_eq!(move_op.start_line, b"hello");
         assert_eq!(move_op.end_line_no, 2);
-        assert_eq!(move_op.end_line, "world");
+        assert_eq!(move_op.end_line, b"world");
     }
 
     #[test]
     fn parse_move_fail_int() {
-        println!("MOVE was called!");
-
-        let err = MoveOp::new("a b NOTANUMBER hello 2 world").expect_err("Should've failed!");
-        let parse_string = "NOTANUMBER".to_string();
-        let parse_error = parse_string.parse::<usize>().unwrap_err();
-        let number_error = CdiffError::ParseIntError(parse_error);
-        println!("{:?}", err.to_string());
-        assert_eq!(err.to_string(), number_error.to_string());
+        assert!(matches!(
+            MoveOp::new(b"a b NOTANUMBER hello 2 world"),
+            Err(InputError::InvalidLineNo(InvalidNumber::Unparseable(_)))
+        ));
     }
 
     #[test]
     fn parse_move_fail_eof() {
-        println!("MOVE was called!");
-
-        let err = MoveOp::new("a b 1").expect_err("Should've failed!");
-        let start_line_err = CdiffError::NoMoreData("start_line");
-        println!("{:?}", err.to_string());
-        assert_eq!(err.to_string(), start_line_err.to_string());
+        assert!(matches!(
+            MoveOp::new(b"a b 1"),
+            Err(InputError::MissingParameter("MOVE", "start_line"))
+        ));
     }
 
     /// Helper function to set up a test folder and initialize a pseudo-db file with specified data.
@@ -1100,11 +1241,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let del_op = DelOp::new("1 ClamAV-VDB:14").unwrap();
+        let del_op = DelOp::new(b"1 ClamAV-VDB:14").unwrap();
         cmd_del(&mut ctx, del_op).expect("cmd_del failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1119,11 +1260,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let del_op = DelOp::new("2 AAAA").unwrap();
+        let del_op = DelOp::new(b"2 AAAA").unwrap();
         cmd_del(&mut ctx, del_op).expect("cmd_del failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1138,11 +1279,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let del_op = DelOp::new("4 CCCC").unwrap();
+        let del_op = DelOp::new(b"4 CCCC").unwrap();
         cmd_del(&mut ctx, del_op).expect("cmd_del failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1156,16 +1297,14 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let del_op = DelOp::new("1 CCCC").unwrap();
-        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
-        match cmd_close(&mut ctx) {
-            Ok(_) => panic!("cmd_close should have failed!"),
-            Err(e) => {
-                assert!(e
-                    .to_string()
-                    .starts_with("Cannot perform action delete on line"));
-            }
-        }
+        let del_op = DelOp::new(b"1 CCCC").unwrap();
+        cmd_del(&mut ctx, del_op).unwrap();
+        assert!(matches!(
+            cmd_close(&mut ctx),
+            Err(InputError::Processing(
+                ProcessingError::PatternDoesNotMatch(_, _, _)
+            ))
+        ));
     }
 
     #[test]
@@ -1177,14 +1316,14 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let del_op = DelOp::new("5 CCCC").unwrap();
-        cmd_del(&mut ctx, del_op).expect("cmd_del failed");
-        match cmd_close(&mut ctx) {
-            Ok(_) => panic!("cmd_close should have failed!"),
-            Err(e) => {
-                assert!(matches!(e, CdiffError::NotAllEditProcessed("delete")));
-            }
-        }
+        let del_op = DelOp::new(b"5 CCCC").unwrap();
+        cmd_del(&mut ctx, del_op).unwrap();
+        assert!(matches!(
+            cmd_close(&mut ctx),
+            Err(InputError::Processing(
+                ProcessingError::NotAllEditProcessed("delete")
+            ))
+        ));
     }
 
     #[test]
@@ -1197,11 +1336,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let xchg_op = XchgOp::new("1 ClamAV-VDB:14 ClamAV-VDB:15 Aug 2021 14-29 -0400").unwrap();
+        let xchg_op = XchgOp::new(b"1 ClamAV-VDB:14 ClamAV-VDB:15 Aug 2021 14-29 -0400").unwrap();
         cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1216,11 +1355,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let xchg_op = XchgOp::new("2 AAAA DDDD").unwrap();
+        let xchg_op = XchgOp::new(b"2 AAAA DDDD").unwrap();
         cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1235,11 +1374,11 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let xchg_op = XchgOp::new("4 CCCC DDDD").unwrap();
+        let xchg_op = XchgOp::new(b"4 CCCC DDDD").unwrap();
         cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1253,14 +1392,14 @@ mod tests {
         // Create contextual data structure with open_db path
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
-        let xchg_op = XchgOp::new("5 DDDD EEEE").unwrap();
+        let xchg_op = XchgOp::new(b"5 DDDD EEEE").unwrap();
         cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
-        match cmd_close(&mut ctx) {
-            Ok(_) => panic!("cmd_close should have failed!"),
-            Err(e) => {
-                assert!(matches!(e, CdiffError::NotAllEditProcessed("exchange")));
-            }
-        }
+        assert!(matches!(
+            cmd_close(&mut ctx),
+            Err(InputError::Processing(
+                ProcessingError::NotAllEditProcessed("exchange")
+            ))
+        ));
     }
 
     #[test]
@@ -1274,20 +1413,20 @@ mod tests {
         let mut ctx = construct_ctx_from_path(&db_file_path);
 
         // Add a line
-        cmd_add(&mut ctx, "EEEE".to_string()).unwrap();
+        cmd_add(&mut ctx, b"EEEE").unwrap();
 
         // Delete the 2nd line
-        let del_op = DelOp::new("2 AAAA").unwrap();
+        let del_op = DelOp::new(b"2 AAAA").unwrap();
         cmd_del(&mut ctx, del_op).expect("cmd_del failed");
 
         // Exchange the 3rd line
-        let xchg_op = XchgOp::new("3 BBBB DDDD").unwrap();
+        let xchg_op = XchgOp::new(b"3 BBBB DDDD").unwrap();
         cmd_xchg(&mut ctx, xchg_op).expect("cmd_xchg failed");
 
         // Perform all operations and close the file
         match cmd_close(&mut ctx) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_close failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_close failed with: {}", e),
         }
         compare_file_with_expected(db_file_path, &mut expected_data);
     }
@@ -1340,11 +1479,11 @@ mod tests {
         );
 
         // Move lines 5-7 from src to dst
-        let move_op = MoveOp::new(move_args.as_str()).unwrap();
+        let move_op = MoveOp::new(move_args.as_bytes()).unwrap();
 
         match cmd_move(&mut ctx, move_op) {
             Ok(_) => (),
-            Err(e) => panic!("cmd_move failed with: {}", e.to_string()),
+            Err(e) => panic!("cmd_move failed with: {}", e),
         }
 
         compare_file_with_expected(src_file_path, &mut expected_src_data);
