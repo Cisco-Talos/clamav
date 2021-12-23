@@ -7,6 +7,17 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.5 is a critical patch release with the following fixes:
 
+- Fixed ability to disable the file size limit with libclamav C API, like this:
+  ```c
+    cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, 0);
+  ```
+  This issue didn't impact ClamD or ClamScan which also can disable the limit by
+  setting it to zero using `MaxFileSize 0` in `clamd.conf` for ClamD, or
+  `clamscan --max-filesize=0` for ClamScan.
+
+  Note: Internally, the max file size is still set to 2 GiB. Disabling the limit
+  for a scan will fall back on the internal 2 GiB limitation.
+
 Special thanks to the following for code contributions and bug reports:
 
 ## 0.103.4
