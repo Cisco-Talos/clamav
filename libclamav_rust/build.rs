@@ -40,15 +40,34 @@ const WINDOWS_TRIM_LOCAL_LIB: [&str; 2] = ["libclamav", "libclammspack"];
 
 const C_HEADER_OUTPUT: &str = "clamav_rust.h";
 
+// Environment variable name prefixes worth including for diags
+const ENV_PATTERNS: &[&str] = &["CARGO_", "RUST", "LIB"];
+
 fn main() -> Result<(), &'static str> {
+    // Dump the command line and interesting environment variables for diagnostic
+    // purposes. These will end up in a 'stderr' file under the target directory,
+    // in a ".../clamav_rust-<hex>" subdirectory
+    eprintln!("build.rs command line: {:?}", std::env::args());
+    eprintln!("Environment:");
+    std::env::vars()
+        .filter(|(k, _)| ENV_PATTERNS.iter().any(|prefix| k.starts_with(prefix)))
+        .for_each(|(k, v)| eprintln!("  {}={:?}", k, v));
+
     detect_clamav_build()?;
-    execute_cbindgen()?;
+
+    // We only want to execute cbindgen for `cargo build`, not `cargo test`.
+    // FindRust.cmake defines $CARGO_CMD so we can differentiate.
+    if "build" == env::var("CARGO_CMD").or(Ok("".to_string()))? {
+        execute_cbindgen()?;
+    } else {
+        eprintln!("NOTE: Not performing cbindgen as CARGO_CMD != build");
+    }
     Ok(())
 }
 
 fn execute_cbindgen() -> Result<(), &'static str> {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
-    let build_dir = PathBuf::from(env::var("BUILD").unwrap_or(".".into()));
+    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
     let outfile_path = build_dir.join(C_HEADER_OUTPUT);
 
     // Useful for build diagnostics
