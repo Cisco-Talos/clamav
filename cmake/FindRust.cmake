@@ -34,20 +34,35 @@
 #    endif()
 #    find_package(Rust REQUIRED)
 #
-# This module also provides an `add_rust_library()` function which allows a
-# caller to create a Rust static library target which you can link to with
-# `target_link_libraries()`.
+# This module also provides:
 #
-# Your Rust static library target will itself depend on the native static libs
-# you get from `rustc --crate-type staticlib --print=native-static-libs /dev/null`
+#  - `add_rust_library()` - This allows a caller to create a Rust static library
+#   target which you can link to with `target_link_libraries()`.
 #
-# Example `add_rust_library()` usage:
+#   Your Rust static library target will itself depend on the native static libs
+#   you get from `rustc --crate-type staticlib --print=native-static-libs /dev/null`
 #
-#    add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-#    add_library(YourProject::yourlib ALIAS yourlib)
+#   The CARGO_CMD environment variable will be set to "BUILD" so you can tell
+#   it's not building the unit tests inside your (optional) `build.rs` file.
 #
-#    add_executable(yourexe)
-#    target_link_libraries(yourexe YourProject::yourlib)
+#   Example `add_rust_library()` usage:
+#
+#       add_rust_library(TARGET yourlib WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+#       add_library(YourProject::yourlib ALIAS yourlib)
+#
+#       add_executable(yourexe)
+#       target_link_libraries(yourexe YourProject::yourlib)
+#
+#  - `add_rust_test()` - This allows a caller to run `cargo test` for a specific
+#    Rust target as a CTest test.
+#
+#   The CARGO_CMD environment variable will be set to "TEST" so you can tell
+#   it's not building the unit tests inside your (optional) `build.rs` file.
+#
+#   Example `add_rust_library()` usage:
+#
+#       add_rust_test(NAME yourlib WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/yourlib")
+#       set_property(TEST yourlib PROPERTY ENVIRONMENT ${ENVIRONMENT})
 #
 
 if(NOT DEFINED CARGO_HOME)
@@ -150,8 +165,8 @@ function(add_rust_library)
     if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
             COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
@@ -160,7 +175,7 @@ function(add_rust_library)
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
@@ -179,7 +194,7 @@ function(add_rust_library)
     set_target_properties(${ARGS_TARGET}
         PROPERTIES
             IMPORTED_LOCATION "${OUTPUT}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ARGS_WORKING_DIRECTORY};${CMAKE_CURRENT_BINARY_DIR}"
     )
 
     # Vendor the dependencies, if desired
@@ -207,7 +222,7 @@ function(add_rust_test)
 
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} -vv --color always
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} -vv --color always
         WORKING_DIRECTORY ${ARGS_WORKING_DIRECTORY}
     )
 endfunction()
