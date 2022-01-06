@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for Windows.
  *
- *  Copyright (C) 2019-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Micah Snyder
  *
@@ -46,8 +46,8 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     cl_error_t ret = CL_EOPEN;
     int pt_err;
 
-    cert_store_t *store        = NULL;
-    bool locked                = false;
+    cert_store_t *store = NULL;
+    bool locked         = false;
 
     hStore = CertOpenSystemStoreA(NULL, "ROOT");
     if (NULL == hStore) {
@@ -75,7 +75,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     store->system_certs.count        = 0;
-	store->system_certs.certificates = NULL;
+    store->system_certs.certificates = NULL;
 
     while (NULL != (pWinCertContext = CertEnumCertificatesInStore(hStore, pWinCertContext))) {
         int addCertResult                 = 0;
@@ -88,9 +88,9 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
             continue;
         }
 
-		store->system_certs.certificates = realloc(
+        store->system_certs.certificates = realloc(
             store->system_certs.certificates,
-			(numCertificatesFound + 1) * sizeof(*store->system_certs.certificates));
+            (numCertificatesFound + 1) * sizeof(*store->system_certs.certificates));
         if (store->system_certs.certificates == NULL) {
             mprintf("!Failed to reserve memory for system cert list\n");
             goto done;
@@ -121,7 +121,6 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
         numCertificatesFound++;
     }
-
 
     lastError = GetLastError();
     switch (lastError) {

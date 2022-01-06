@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm, Trog, Török Edvin
@@ -137,7 +137,8 @@ static void scanner_thread(void *arg)
     if (conn->filename)
         free(conn->filename);
     logg("$Finished scanthread\n");
-    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK)) {
+    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR
+                                                                       : EXIT_OK)) {
         logg("$Scanthread: connection shut down (FD %d)\n", conn->sd);
         /* close connection if we were last in group */
         shutdown(conn->sd, 2);

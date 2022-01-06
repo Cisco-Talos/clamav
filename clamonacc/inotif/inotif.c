@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Mickey Sola
  *
@@ -712,7 +712,7 @@ static void onas_ddd_handle_in_create(struct onas_context *ctx,
                                       const char *path, const char *child_path, const struct inotify_event *event, int wd, uint64_t in_mask)
 {
 
-    if (!(event->mask & IN_ISDIR)){
+    if (!(event->mask & IN_ISDIR)) {
         return;
     }
 

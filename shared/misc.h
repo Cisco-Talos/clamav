@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -91,13 +91,13 @@ int daemonize_all_return(void);
  * function is being called as root, the ownership of log_file will
  * be changed to user.
  */
-int daemonize_parent_wait(const char * const user, const char * const log_file);
+int daemonize_parent_wait(const char *const user, const char *const log_file);
 
 /*Sends a SIGINT to the parent process.  It also closes stdin, stdout,
  * and stderr.*/
 void daemonize_signal_parent(pid_t parentPid);
 
-int drop_privileges( const char * const user, const char * const log_file);
+int drop_privileges(const char *const user, const char *const log_file);
 #endif /* _WIN32 */
 
 const char *get_version(void);

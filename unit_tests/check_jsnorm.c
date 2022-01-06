@@ -1,7 +1,7 @@
 /*
  *  Unit tests for JS normalizer.
  *
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -76,7 +76,7 @@ END_TEST
 
 START_TEST(test_operators)
 {
-    const struct operator*op = in_op_set(op_test[_i].str, strlen(op_test[_i].str));
+    const struct operator* op = in_op_set(op_test[_i].str, strlen(op_test[_i].str));
     if (op_test[_i].is)
         ck_assert_msg(op && !strcmp(op->name, op_test[_i].str), "operator mismatch");
     else

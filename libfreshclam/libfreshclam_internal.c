@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
  *
@@ -166,12 +166,12 @@ static void uuid_v4_gen(char *buffer)
 
 fc_error_t load_freshclam_dat(void)
 {
-    fc_error_t status      = FC_EINIT;
-    int handle             = -1;
-    ssize_t bread          = 0;
+    fc_error_t status        = FC_EINIT;
+    int handle               = -1;
+    ssize_t bread            = 0;
     freshclam_dat_v1_t *mdat = NULL;
-    uint32_t version       = 0;
-    char magic[13]         = {0};
+    uint32_t version         = 0;
+    char magic[13]           = {0};
 
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
@@ -251,7 +251,7 @@ fc_error_t load_freshclam_dat(void)
                 free(g_freshclamDat);
             }
             g_freshclamDat = mdat;
-            mdat         = NULL;
+            mdat           = NULL;
             break;
         }
         default: {

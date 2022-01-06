@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+#  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 #  Copyright (C) 2007-2013 Sourcefire, Inc.
 #  Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
 #  Fixes by Arkadiusz Miskiewicz <misiek@pld.org.pl>

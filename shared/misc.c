@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -328,7 +328,7 @@ static void daemonize_child_initialized_handler(int sig)
     exit(0);
 }
 
-int daemonize_parent_wait(const char * const user, const char * const log_file)
+int daemonize_parent_wait(const char *const user, const char *const log_file)
 {
     int daemonizePid = daemonize_all_return();
     if (daemonizePid == -1) {
@@ -352,8 +352,8 @@ int daemonize_parent_wait(const char * const user, const char * const log_file)
             return -1;
         }
 
-        if (NULL != user){
-            if (drop_privileges(user, log_file)){
+        if (NULL != user) {
+            if (drop_privileges(user, log_file)) {
                 return -1;
             }
         }
@@ -374,13 +374,14 @@ void daemonize_signal_parent(pid_t parentPid)
     kill(parentPid, SIGINT);
 }
 
-int drop_privileges( const char * const user_name, const char * const log_file) {
+int drop_privileges(const char *const user_name, const char *const log_file)
+{
     int ret = 1;
 
     /*This function is called in a bunch of places, and rather than change the error checking
      * in every function, we are just going to return success if there is no work to do.
      */
-    if ((0 == geteuid()) && (NULL != user_name)){
+    if ((0 == geteuid()) && (NULL != user_name)) {
         struct passwd *user = NULL;
 
         if ((user = getpwnam(user_name)) == NULL) {
@@ -404,14 +405,14 @@ int drop_privileges( const char * const user_name, const char * const log_file) 
 #endif
 
         /*Change ownership of the log file to the user we are going to switch to.*/
-        if (NULL != log_file){
+        if (NULL != log_file) {
             int ret = lchown(log_file, user->pw_uid, user->pw_gid);
-            if (ret){
+            if (ret) {
                 fprintf(stderr, "ERROR: lchown to user '%s' failed on\n", user->pw_name);
                 fprintf(stderr, "log file '%s'.\n", log_file);
                 fprintf(stderr, "Error was '%s'\n", strerror(errno));
                 logg("^lchown to user '%s' failed on log file '%s'.  Error was '%s'\n",
-                        user->pw_name, log_file, strerror(errno));
+                     user->pw_name, log_file, strerror(errno));
                 goto done;
             }
         }

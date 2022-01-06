@@ -1,4 +1,4 @@
-dnl   Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+dnl   Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 dnl   Copyright (C) 2007-2013 Sourcefire, Inc.
 dnl   Copyright (C) 2002-2007 Tomasz Kojm <tkojm@clamav.net>
 dnl   socklen_t check (c) Alexander V. Lukyanov <lav@yars.free.net>
