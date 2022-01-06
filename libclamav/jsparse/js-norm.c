@@ -1,7 +1,7 @@
 /*
  *  Javascript normalizer.
  *
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -1660,7 +1660,7 @@ static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 {
     size_t len = MIN(5, scanner->insize - scanner->pos);
     while (len) {
-        const struct operator*kw = in_op_set(&scanner->in[scanner->pos], len);
+        const struct operator* kw = in_op_set(&scanner->in[scanner->pos], len);
         if (kw) {
             TOKEN_SET(lvalp, cstring, kw->name);
             scanner->pos += len;

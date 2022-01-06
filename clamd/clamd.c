@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -80,7 +80,6 @@
 #include <sys/wait.h>
 #endif
 
-
 short debug_mode = 0, logok = 0;
 short foreground = -1;
 
@@ -89,7 +88,7 @@ static void help(void)
     printf("\n");
     printf("                      Clam AntiVirus: Daemon %s\n", get_version());
     printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    printf("           (C) 2021 Cisco Systems, Inc.\n");
+    printf("           (C) 2022 Cisco Systems, Inc.\n");
     printf("\n");
     printf("    clamd [options]\n");
     printf("\n");
@@ -144,9 +143,9 @@ int main(int argc, char **argv)
 #ifdef C_LINUX
     STATBUF sb;
 #endif
-    pid_t mainpid = 0;
-    mode_t old_umask = 0;
-    const char * user_name = NULL;
+    pid_t mainpid         = 0;
+    mode_t old_umask      = 0;
+    const char *user_name = NULL;
 
     if (check_flevel())
         exit(1);
@@ -156,8 +155,8 @@ int main(int argc, char **argv)
     sa.sa_handler = SIG_IGN;
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
-    if(!setlocale(LC_CTYPE, "")) {
-       mprintf("^Failed to set locale\n");
+    if (!setlocale(LC_CTYPE, "")) {
+        mprintf("^Failed to set locale\n");
     }
 #endif
 
@@ -214,7 +213,7 @@ int main(int argc, char **argv)
     }
     free(pt);
 
-    if ((opt = optget(opts, "User"))->enabled){
+    if ((opt = optget(opts, "User"))->enabled) {
         user_name = opt->strarg;
     }
 
@@ -252,48 +251,47 @@ int main(int argc, char **argv)
         logg_file = NULL;
     }
 
-
 #ifndef WIN32
-        /* fork into background */
-        if (foreground == -1) {
-            if (optget(opts, "Foreground")->enabled) {
-                foreground = 1;
-            } else {
-                foreground = 0;
+    /* fork into background */
+    if (foreground == -1) {
+        if (optget(opts, "Foreground")->enabled) {
+            foreground = 1;
+        } else {
+            foreground = 0;
+        }
+    }
+    if (foreground == 0) {
+        int daemonizeRet = 0;
+#ifdef C_BSD
+        /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
+        for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+            if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
+                logg("!fcntl for lsockets[] failed\n");
+                close(lsockets[ret]);
+                ret = 1;
+                break;
             }
         }
-        if (foreground == 0) {
-            int daemonizeRet = 0;
-#ifdef C_BSD
-            /* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
 #endif
-            gengine = engine;
-            atexit(free_engine);
-            daemonizeRet = daemonize_parent_wait(user_name, logg_file);
-            if (daemonizeRet < 0){
-                logg("!daemonize() failed: %s\n", strerror(errno));
-                return 1;
-            }
-            gengine = NULL;
-#ifdef C_BSD
-            for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
-                if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
-                    logg("!fcntl for lsockets[] failed\n");
-                    close(lsockets[ret]);
-                    ret = 1;
-                    break;
-                }
-            }
-#endif
+        gengine = engine;
+        atexit(free_engine);
+        daemonizeRet = daemonize_parent_wait(user_name, logg_file);
+        if (daemonizeRet < 0) {
+            logg("!daemonize() failed: %s\n", strerror(errno));
+            return 1;
         }
+        gengine = NULL;
+#ifdef C_BSD
+        for (ret = 0; (unsigned int)ret < nlsockets; ret++) {
+            if (fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK) == -1) {
+                logg("!fcntl for lsockets[] failed\n");
+                close(lsockets[ret]);
+                ret = 1;
+                break;
+            }
+        }
+#endif
+    }
 
 #endif
 
@@ -321,10 +319,10 @@ int main(int argc, char **argv)
         /*If the file has already been created by a different user, it will just be
          * rewritten by us, but not change the ownership, so do that explicitly.
          */
-        if (0 == geteuid()){
-            struct passwd * pw = getpwuid(0);
-            int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
-            if (ret){
+        if (0 == geteuid()) {
+            struct passwd *pw = getpwuid(0);
+            int ret           = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+            if (ret) {
                 logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
                 exit(2);
             }
@@ -782,7 +780,7 @@ int main(int argc, char **argv)
              * now, since everything is initialized.*/
 
             /*signal the parent process.*/
-            if (parentPid != getpid()){
+            if (parentPid != getpid()) {
                 daemonize_signal_parent(parentPid);
             }
 #endif

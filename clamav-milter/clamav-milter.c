@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2008-2013 Sourcefire, Inc.
  *
  *  Author: aCaB <acab@clamav.net>
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
     sigset_t sigset;
     struct sigaction act;
-    const char * user_name = NULL;
+    const char *user_name = NULL;
 
     cl_initialize_crypto();
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
         printf("\n");
         printf("                       Clam AntiVirus: Milter Mail Scanner %s\n", get_version());
         printf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-        printf("           (C) 2021 Cisco Systems, Inc.\n");
+        printf("           (C) 2022 Cisco Systems, Inc.\n");
         printf("\n");
         printf("    %s [-c <config-file>]\n\n", argv[0]);
         printf("\n");
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     }
     free(pt);
 
-    if ((opt = optget(opts, "User"))->enabled){
+    if ((opt = optget(opts, "User"))->enabled) {
         user_name = opt->strarg;
     }
 
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
     if ((opt = optget(opts, "PidFile"))->enabled) {
         FILE *fd;
         mode_t old_umask = umask(0002);
-        int err = 0;
+        int err          = 0;
 
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
             logg("!Can't save PID in file %s\n", opt->strarg);
@@ -434,14 +434,14 @@ int main(int argc, char **argv)
         umask(old_umask);
 
 #ifndef _WIN32
-        if (0 == err){
+        if (0 == err) {
             /*If the file has already been created by a different user, it will just be
              * rewritten by us, but not change the ownership, so do that explicitly.
              */
-            if (0 == geteuid()){
-                struct passwd * pw = getpwuid(0);
-                int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
-                if (ret){
+            if (0 == geteuid()) {
+                struct passwd *pw = getpwuid(0);
+                int ret           = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+                if (ret) {
                     logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
                     err = 1;
                 }
@@ -449,7 +449,7 @@ int main(int argc, char **argv)
         }
 #endif /*_WIN32*/
 
-        if (err){
+        if (err) {
             localnets_free();
             whitelist_free();
             logg_close();
@@ -460,7 +460,7 @@ int main(int argc, char **argv)
 
 #ifndef _WIN32
     dropPrivRet = drop_privileges(user_name, logg_file);
-    if (dropPrivRet){
+    if (dropPrivRet) {
         optfree(opts);
         return dropPrivRet;
     }
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
     /* We have been daemonized, and initialization is done.  Signal
      * the parent process so that it can exit cleanly.
      */
-    if (parentPid != getpid()){ //we have been daemonized
+    if (parentPid != getpid()) { //we have been daemonized
         daemonize_signal_parent(parentPid);
     }
 #endif
