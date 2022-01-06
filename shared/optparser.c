@@ -897,7 +897,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     const char *name = NULL, *arg;
     int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret;
     struct optstruct *opts = NULL, *opts_last = NULL, *opt;
-    char buffer[512], *buff;
+    char buffer[1024], *buff;
     struct option longopts[MAXCMDOPTS];
     char shortopts[MAXCMDOPTS];
     regex_t regex;
