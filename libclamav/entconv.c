@@ -1,7 +1,7 @@
 /*
  *  HTML Entity & Encoding normalization.
  *
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -871,9 +871,8 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     }
 
                     for (i = 0; i < cchWideChar; i++) {
-                        lpWideCharStr[i] = (WCHAR)(
-                            ((pCodeUnits[i] << 8) & 0xFF00) |
-                            ((pCodeUnits[i] >> 8) & 0x00FF));
+                        lpWideCharStr[i] = (WCHAR)(((pCodeUnits[i] << 8) & 0xFF00) |
+                                                   ((pCodeUnits[i] >> 8) & 0x00FF));
                     }
                     in = (char*)lpWideCharStr;
                     /* in_size didn't change */

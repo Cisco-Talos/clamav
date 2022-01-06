@@ -1,7 +1,7 @@
 /*
  * Fuzz target for cl_scanmap_callback()
  *
- * Copyright (C) 2018-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2018-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Authors: Micah Snyder, Alex Gaynor
  *
  * Redistribution and use in source and binary forms, with or without
@@ -59,23 +59,23 @@ class ClamAVState
         scanopts.parse |=
 #if defined(CLAMAV_FUZZ_ARCHIVE)
             CL_SCAN_PARSE_ARCHIVE;
-#elif defined(    CLAMAV_FUZZ_MAIL)
+#elif defined(CLAMAV_FUZZ_MAIL)
             CL_SCAN_PARSE_MAIL;
-#elif defined(    CLAMAV_FUZZ_OLE2)
+#elif defined(CLAMAV_FUZZ_OLE2)
             CL_SCAN_PARSE_OLE2;
-#elif defined(    CLAMAV_FUZZ_PDF)
+#elif defined(CLAMAV_FUZZ_PDF)
             CL_SCAN_PARSE_PDF;
-#elif defined(    CLAMAV_FUZZ_HTML)
+#elif defined(CLAMAV_FUZZ_HTML)
             CL_SCAN_PARSE_HTML;
-#elif defined(    CLAMAV_FUZZ_PE)
+#elif defined(CLAMAV_FUZZ_PE)
             CL_SCAN_PARSE_PE;
-#elif defined(    CLAMAV_FUZZ_ELF)
+#elif defined(CLAMAV_FUZZ_ELF)
             CL_SCAN_PARSE_ELF;
-#elif defined(    CLAMAV_FUZZ_SWF)
+#elif defined(CLAMAV_FUZZ_SWF)
             CL_SCAN_PARSE_SWF;
-#elif defined(    CLAMAV_FUZZ_XMLDOCS)
+#elif defined(CLAMAV_FUZZ_XMLDOCS)
             CL_SCAN_PARSE_XMLDOCS;
-#elif defined(    CLAMAV_FUZZ_HWP3)
+#elif defined(CLAMAV_FUZZ_HWP3)
             CL_SCAN_PARSE_HWP3;
 #else
             ~(0);
@@ -84,7 +84,6 @@ class ClamAVState
         scanopts.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* Enable the gen-json feature */
         scanopts.heuristic |= ~(0);                           /* Enable all heuristic code */
         scanopts.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* Enable all-match, so heuristic alerts don't end the scan early */
-
     }
 
     ~ClamAVState()
