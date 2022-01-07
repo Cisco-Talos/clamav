@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
@@ -232,7 +232,7 @@ void help(void)
     mprintf("\n");
     mprintf("                       Clam AntiVirus: Scanner %s\n", get_version());
     mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf("           (C) 2021 Cisco Systems, Inc.\n");
+    mprintf("           (C) 2022 Cisco Systems, Inc.\n");
     mprintf("\n");
     mprintf("    clamscan [options] [file/directory/-]\n");
     mprintf("\n");
