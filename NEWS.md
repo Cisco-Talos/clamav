@@ -18,6 +18,9 @@ ClamAV 0.103.5 is a critical patch release with the following fixes:
   Note: Internally, the max file size is still set to 2 GiB. Disabling the limit
   for a scan will fall back on the internal 2 GiB limitation.
 
+- Increased the maximum line length for ClamAV config files from 512 bytes to
+  1024 bytes to allow for longer config option strings.
+
 Special thanks to the following for code contributions and bug reports:
 
 ## 0.103.4
