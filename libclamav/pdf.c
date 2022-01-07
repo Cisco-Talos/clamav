@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2007-2013 Sourcefire, Inc.
  *
  *  Authors: Nigel Horne, Török Edvin
@@ -3099,8 +3099,9 @@ void pdf_handle_enc(struct pdf_struct *pdf)
     }
 
     len = obj->size;
-    q   = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
-                        : (const char *)(obj->start + pdf->map);
+
+    q = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
+                      : (const char *)(obj->start + pdf->map);
 
     O = U = UE = StmF = StrF = EFF = NULL;
     do {

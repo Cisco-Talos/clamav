@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2020 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+# Copyright (C) 2019-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
 add_compile_definitions(RARDLL)
 add_compile_definitions(WARN_DLOPEN_FAIL)

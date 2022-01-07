@@ -1,7 +1,7 @@
 /*
  * Fuzz target for cl_scanfile()
  *
- * Copyright (C) 2018-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ * Copyright (C) 2018-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  * Authors: Micah Snyder, Alex Gaynor
  *
  * Redistribution and use in source and binary forms, with or without
@@ -117,7 +117,7 @@ ClamAVState kClamAVState;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    FILE* fuzzfile                  = NULL;
+    FILE* fuzzfile = NULL;
 
     fuzzfile = fopen(kClamAVState.tmp_file_name, "w");
     fwrite(data, size, 1, fuzzfile);
