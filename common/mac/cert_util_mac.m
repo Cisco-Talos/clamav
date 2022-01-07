@@ -1,7 +1,7 @@
 /*
  *  OpenSSL certificate verification for macOS.
  *
- *  Copyright (C) 2016-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *
  *  Authors: Russ Kubik
  *

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2016-2017 Cisco and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2016-2022 Cisco and/or its affiliates. All rights reserved.
  *
  *  Author: Kevin Lin
  *
@@ -22,7 +22,7 @@
  *  OpenSSL library under certain conditions as described in each
  *  individual source file, and distribute linked combinations
  *  including the two.
- *  
+ *
  *  You must obey the GNU General Public License in all respects
  *  for all of the code used other than OpenSSL.  If you modify
  *  file(s) with this exception, you may extend this exception to your
@@ -38,10 +38,10 @@
 
 /**
  * @brief       Wrapper function for pdf_decodestream_internal.
- * 
+ *
  * Allocate a token object to store decoded filter data.
  * Parse/decode the filter data and scan it.
- * 
+ *
  * @param pdf       Pdf context structure.
  * @param obj       The object we found the filter content in.
  * @param params    Dictionary parameters describing the filter data.

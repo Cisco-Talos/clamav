@@ -1,7 +1,7 @@
 /*
  *  JIT compile ClamAV bytecode.
  *
- *  Copyright (C) 2013-2021 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
+ *  Copyright (C) 2013-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
  *  Copyright (C) 2009-2013 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
@@ -465,9 +465,9 @@ class NotifyListener : public JITEventListener
             return;
         cli_dbgmsg("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
 #if LLVM_VERSION < 31
-                            F.getNameStr().c_str(), (long)Size, Code);
+                   F.getNameStr().c_str(), (long)Size, Code);
 #else
-                            F.getName().str().c_str(), (long)Size, Code);
+                   F.getName().str().c_str(), (long)Size, Code);
 #endif
     }
 #else
@@ -478,8 +478,8 @@ class NotifyListener : public JITEventListener
         if (!cli_debug_flag)
             return;
         cli_dbgmsg("[Bytecode JIT]; emitted %s %s of %zd bytes\n",
-                            Obj.getFileFormatName().str().c_str(),
-                            Obj.getFileName().str().c_str(), Obj.getData().size());
+                   Obj.getFileFormatName().str().c_str(),
+                   Obj.getFileName().str().c_str(), Obj.getData().size());
     }
 #endif
 };
