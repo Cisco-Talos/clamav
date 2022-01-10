@@ -33,13 +33,6 @@
 #include "cache.h"
 #include "fmap.h"
 
-// #define USE_LRUHASHCACHE /* The replacement policy algorithm to use */
-#define USE_SPLAY
-
-#if defined(CL_THREAD_SAFE) && defined(USE_LRUHASHCACHE)
-static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 /* The number of root trees and the chooser function
    Each tree is protected by a mutex against concurrent access */
 /* #define TREES 1 */
@@ -57,237 +50,7 @@ static inline unsigned int getkey(uint8_t *hash)
 /* The number of nodes in each tree */
 #define NODES 256
 
-/* LRUHASHCACHE --------------------------------------------------------------------- */
-#ifdef USE_LRUHASHCACHE
-struct cache_key {
-    int64_t digest[2];
-    uint32_t size; /* 0 is used to mark an empty hash slot! */
-    struct cache_key *lru_next, *lru_prev;
-};
-
-struct cache_set {
-    struct cache_key *data;
-    size_t maxelements; /* considering load factor */
-    size_t maxdeleted;
-    size_t elements;
-    size_t deleted;
-    struct cache_key *lru_head, *lru_tail;
-};
-
-#define CACHE_KEY_DELETED ~0u
-#define CACHE_KEY_EMPTY 0
-
-static void cacheset_lru_remove(struct cache_set *map, size_t howmany)
-{
-    while (howmany--) {
-        struct cache_key *old;
-        assert(map->lru_head);
-        /* Remove a key from the head of the list */
-        old = map->lru_head;
-        assert(!old->lru_prev);
-        map->lru_head = old->lru_next;
-        old->size     = CACHE_KEY_DELETED;
-        /* This slot is now deleted, it is not empty,
-	 * because previously we could have inserted a key that has seen this
-	 * slot as occupied, to find that key we need to ensure that all keys
-	 * that were occupied when the key was inserted, are seen as occupied
-	 * when searching too.
-	 * Of course when inserting a new value, we treat deleted slots as
-	 * empty.
-	 * We only replace old values with new values, but there is no guarantee
-	 * that the newly inserted value would hash to same place as the value
-	 * we remove due to LRU! */
-        if (old == map->lru_tail)
-            map->lru_tail = 0;
-        map->elements--;
-        map->deleted++;
-    }
-}
-
-static inline int cacheset_lookup_internal(struct cache_set *map,
-                                           const char *md5, size_t size,
-                                           uint32_t *insert_pos, int deletedok)
-{
-    const struct cache_key *data = map->data;
-    uint32_t capmask             = NODES - 1;
-    const struct cache_key *k;
-    uint32_t idx, tries = 0;
-    uint64_t md5_0, md5_1;
-    uint64_t md5a[2];
-
-    memcpy(&md5a, md5, 16);
-    md5_0 = md5a[0];
-    md5_1 = md5a[1];
-    idx   = md5_1 & capmask;
-    k     = &data[idx];
-    while (k->size != CACHE_KEY_EMPTY && tries <= capmask) {
-        if (k->digest[0] == md5_0 &&
-            k->digest[1] == md5_1 &&
-            k->size == size) {
-            /* found key */
-            *insert_pos = idx;
-            return 1;
-        }
-        if (deletedok && k->size == CACHE_KEY_DELETED) {
-            /* treat deleted slot as empty */
-            *insert_pos = idx;
-            return 0;
-        }
-        idx = (idx + tries++) & capmask;
-        k   = &data[idx];
-    }
-    /* found empty pos */
-    *insert_pos = idx;
-    return 0;
-}
-
-static inline void lru_remove(struct cache_set *map, struct cache_key *newkey)
-{
-    if (newkey->lru_next)
-        newkey->lru_next->lru_prev = newkey->lru_prev;
-    if (newkey->lru_prev)
-        newkey->lru_prev->lru_next = newkey->lru_next;
-    if (newkey == map->lru_head)
-        map->lru_head = newkey->lru_next;
-}
-
-static inline void lru_addtail(struct cache_set *map, struct cache_key *newkey)
-{
-    if (!map->lru_head)
-        map->lru_head = newkey;
-    if (map->lru_tail)
-        map->lru_tail->lru_next = newkey;
-    newkey->lru_next = NULL;
-    newkey->lru_prev = map->lru_tail;
-    map->lru_tail    = newkey;
-}
-
-static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool);
-static int cacheset_init(struct cache_set *map, mpool_t *mempool);
-
-static void cacheset_rehash(struct cache_set *map, mpool_t *mempool)
-{
-    unsigned i;
-    int ret;
-    struct cache_set tmp_set;
-    struct cache_key *key;
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&pool_mutex);
-#endif
-    ret = cacheset_init(&tmp_set, mempool);
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&pool_mutex);
-#endif
-    if (ret)
-        return;
-
-    key = map->lru_head;
-    for (i = 0; key && i < tmp_set.maxelements / 2; i++) {
-        cacheset_add(&tmp_set, (unsigned char *)&key->digest, key->size, mempool);
-        key = key->lru_next;
-    }
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&pool_mutex);
-#endif
-    MPOOL_FREE(mempool, map->data);
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&pool_mutex);
-#endif
-    memcpy(map, &tmp_set, sizeof(tmp_set));
-}
-
-static void cacheset_add(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool)
-{
-    int ret;
-    uint32_t pos;
-    struct cache_key *newkey;
-
-    if (map->elements >= map->maxelements) {
-        cacheset_lru_remove(map, 1);
-        if (map->deleted >= map->maxdeleted) {
-            cacheset_rehash(map, mempool);
-        }
-    }
-    assert(map->elements < map->maxelements);
-
-    ret    = cacheset_lookup_internal(map, md5, size, &pos, 1);
-    newkey = &map->data[pos];
-    if (newkey->size == CACHE_KEY_DELETED)
-        map->deleted--;
-    if (ret) {
-        /* was already added, remove from LRU list */
-        lru_remove(map, newkey);
-    }
-    /* add new key to tail of LRU list */
-    memcpy(&map->data[pos].digest, md5, sizeof(map->data[pos].digest));
-    map->data[pos].size = size;
-    lru_addtail(map, newkey);
-
-    map->elements++;
-
-    assert(pos < map->maxelements);
-}
-
-static void cacheset_remove(struct cache_set *map, unsigned char *md5, size_t size, mpool_t *mempool)
-{
-    int ret;
-    uint32_t pos;
-    struct cache_key *newkey;
-    ret    = cacheset_lookup_internal(map, md5, size, &pos, 1);
-    newkey = &map->data[pos];
-    if (!ret || (newkey->size == CACHE_KEY_DELETED)) {
-        /* already deleted */
-        return;
-    }
-    /* remove from list */
-    lru_remove(map, newkey);
-    newkey->size = CACHE_KEY_DELETED;
-    map->deleted++;
-    map->elements--;
-    if (map->deleted >= map->maxdeleted) {
-        cacheset_rehash(map, mempool);
-    }
-}
-
-static int cacheset_lookup(struct cache_set *map, unsigned char *md5, size_t size)
-{
-    struct cache_key *newkey;
-    int ret;
-    uint32_t pos;
-
-    ret = cacheset_lookup_internal(map, md5, size, &pos, 0);
-    if (!ret)
-        return 0;
-    newkey = &map->data[pos];
-    /* update LRU position: move to tail */
-    lru_remove(map, newkey);
-    lru_addtail(map, newkey);
-    return 1;
-}
-
-static int cacheset_init(struct cache_set *map, mpool_t *mempool)
-{
-    map->data = MPOOL_CALLOC(mempool, NODES, sizeof(*map->data));
-    if (!map->data)
-        return CL_EMEM;
-    map->maxelements = 80 * NODES / 100;
-    map->maxdeleted  = NODES - map->maxelements - 1;
-    map->elements    = 0;
-    map->lru_head = map->lru_tail = NULL;
-    return 0;
-}
-
-static inline void cacheset_destroy(struct cache_set *cs, mpool_t *mempool)
-{
-    MPOOL_FREE(mempool, cs->data);
-    cs->data = NULL;
-}
-
-#endif /* USE_LRUHASHCACHE */
-
 /* SPLAY --------------------------------------------------------------------- */
-#ifdef USE_SPLAY
-
 struct node { /* a node */
     int64_t digest[2];
     struct node *left;
@@ -593,7 +356,7 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
 /* If the hash is present nothing happens.
    Otherwise a new node is created for the hash picking one from the begin of the chain.
    Used nodes are moved to the end of the chain */
-static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
+static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5, size_t size, uint32_t recursion_level)
 {
     struct node *newnode;
     int64_t hash[2];
@@ -602,13 +365,12 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
     if (splay(hash, size, cs)) {
         if (cs->root->minrec > recursion_level)
             cs->root->minrec = recursion_level;
-        return; /* Already there */
+        return NULL; /* Already there */
     }
 
     ptree("1:\n");
     if (printtree(cs, cs->root, 0)) {
-        cli_errmsg("cacheset_add: inconsistent tree before choosing newnode, good luck\n");
-        return;
+        return "cacheset_add: inconsistent tree before choosing newnode, good luck";
     }
 
     newnode = cs->first;
@@ -617,18 +379,15 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
             break;
         if (newnode->next) {
             if (newnode == newnode->next) {
-                cli_errmsg("cacheset_add: cache chain in a bad state\n");
-                return;
+                return "cacheset_add: cache chain in a bad state";
             }
             newnode = newnode->next;
         } else {
-            cli_warnmsg("cacheset_add: end of chain reached\n");
-            return;
+            return "cacheset_add: end of chain reached";
         }
     }
     if (!newnode) {
-        cli_errmsg("cacheset_add: tree has got no end nodes\n");
-        return;
+        return "cacheset_add: tree has got no end nodes";
     }
     if (newnode->up) {
         if (newnode->up->left == newnode)
@@ -650,8 +409,7 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     ptree("2:\n");
     if (printtree(cs, cs->root, 0)) {
-        cli_errmsg("cacheset_add: inconsistent tree before adding newnode, good luck\n");
-        return;
+        return "cacheset_add: inconsistent tree before adding newnode, good luck";
     }
 
     if (!cs->root) {
@@ -679,10 +437,10 @@ static inline void cacheset_add(struct cache_set *cs, unsigned char *md5, size_t
 
     ptree("3: %lld\n", hash[1]);
     if (printtree(cs, cs->root, 0)) {
-        cli_errmsg("cacheset_add: inconsistent tree after adding newnode, good luck\n");
-        return;
+        return "cacheset_add: inconsistent tree after adding newnode, good luck";
     }
     printnode("newnode", cs, newnode);
+    return NULL;
 }
 
 /* If the hash is not present nothing happens other than splaying the tree.
@@ -756,7 +514,6 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
 
     printchain("remove (after)", cs);
 }
-#endif /* USE_SPLAY */
 
 /* COMMON STUFF --------------------------------------------------------------------- */
 
@@ -861,7 +618,8 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 /* Adds an hash to the cache */
 void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
-    unsigned int key = getkey(md5);
+    unsigned int key   = getkey(md5);
+    const char *errmsg = NULL;
     uint32_t level;
     struct CACHE *c;
 
@@ -890,19 +648,14 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 
     /* cli_warnmsg("cache_add: key is %u\n", key); */
 
-#ifdef USE_LRUHASHCACHE
-    cacheset_add(&c->cacheset, md5, size, ctx->engine->mempool);
-#else
-#ifdef USE_SPLAY
-    cacheset_add(&c->cacheset, md5, size, level);
-#else
-#error #define USE_SPLAY or USE_LRUHASHCACHE
-#endif
-#endif
+    errmsg = cacheset_add(&c->cacheset, md5, size, level);
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
 #endif
+    if (errmsg != NULL) {
+        cli_errmsg("%s\n", errmsg);
+    }
     cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
     return;
 }
@@ -931,15 +684,7 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
     }
 #endif
 
-#ifdef USE_LRUHASHCACHE
-    cacheset_remove(&c->cacheset, md5, size, engine->mempool);
-#else
-#ifdef USE_SPLAY
     cacheset_remove(&c->cacheset, md5, size);
-#else
-#error #define USE_SPLAY or USE_LRUHASHCACHE
-#endif
-#endif
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
