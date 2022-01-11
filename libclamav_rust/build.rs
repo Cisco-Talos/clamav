@@ -128,6 +128,10 @@ fn execute_bindgen() -> Result<(), &'static str> {
         .raw_line("#![allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]")
         // Make the bindings pretty.
         .rustfmt_bindings(true)
+        // Disable the layout tests.
+        // We're commiting to source control. Pointer width, integer size, etc
+        // are probably not the same when generated as when compiled.
+        .layout_tests(false)
         // Enable bindgen to find generated headers in the build directory, too.
         .clang_arg(build_include_path);
 
