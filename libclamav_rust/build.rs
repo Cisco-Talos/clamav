@@ -92,12 +92,24 @@ fn main() -> Result<(), &'static str> {
 
     detect_clamav_build()?;
 
-    // We only want to execute cbindgen for `cargo build`, not `cargo test`.
+    // We only want to generate bindings for `cargo build`, not `cargo test`.
     // FindRust.cmake defines $CARGO_CMD so we can differentiate.
     let cargo_cmd = env::var("CARGO_CMD").unwrap_or("".into());
     if cargo_cmd == "build" {
-        execute_bindgen()?;
+        // Always generate the C-headers when CMake kicks off a build.
         execute_cbindgen()?;
+
+        // Only generate the `.rs` bindings when maintainer-mode is enabled.
+        //
+        // Bindgen requires libclang, which may not readily available, so we
+        // will commit the bindings to version control and use maintainer-mode
+        // to update them, as needed.
+        // On the plus-side, this means that our `.rs` file is present before our
+        // first build, so at least rust-analyzer will be happy.
+        let maintainer_mode = env::var("MAINTAINER_MODE").unwrap_or("".into());
+        if maintainer_mode == "ON" {
+            execute_bindgen()?;
+        }
     } else {
         eprintln!("NOTE: Not generating bindings because CARGO_CMD != build");
     }
