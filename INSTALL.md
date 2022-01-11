@@ -80,6 +80,7 @@ The Windows Visual Studio and Autotools build systems have been removed.
 You will need:
 - CMake (3.14+ for Unix/Linux; 3.16+ for Windows)
 - A C compiler toolchain such as `gcc`, `clang`, or Microsoft Visual Studio.
+- The Rust compiler toolchain.
 
 Recommended tools:
 - pkg-config
@@ -89,6 +90,7 @@ For Maintainer-mode only (not recommended):
 - Flex
 - Bison
 - Gperf
+- Rust bindgen
 
 ### External Library Dependencies
 
@@ -496,6 +498,7 @@ The following is a complete list of CMake options unique to configuring ClamAV:
   _Default: `ON`_
 
 - `MAINTAINER_MODE`: Generate Yara lexer and grammar C source with Flex & Bison.
+  Generate Rust bindings (`libclamav_rust/src/sys.rs`).
   *To-do*: Also generate JS parse source with Gperf.
 
   _Default: `OFF`_

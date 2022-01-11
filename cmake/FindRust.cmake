@@ -165,8 +165,8 @@ function(add_rust_library)
     if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
             COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
@@ -175,7 +175,7 @@ function(add_rust_library)
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
-            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS}
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_WORKING_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
