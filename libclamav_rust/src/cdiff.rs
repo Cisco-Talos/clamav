@@ -185,11 +185,9 @@ impl<'a> DelOp<'a> {
         Ok(DelOp {
             line_no: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("line_no"))?
+                .ok_or(CdiffError::NoMoreData("line_no"))?
                 .parse::<usize>()?,
-            del_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("del_line"))?,
+            del_line: iter.next().ok_or(CdiffError::NoMoreData("del_line"))?,
         })
     }
 }
@@ -210,22 +208,18 @@ impl<'a> MoveOp<'a> {
         let mut iter = data.split_whitespace();
 
         Ok(MoveOp {
-            src: iter.next().ok_or_else(|| CdiffError::NoMoreData("src"))?,
-            dst: iter.next().ok_or_else(|| CdiffError::NoMoreData("dst"))?,
+            src: iter.next().ok_or(CdiffError::NoMoreData("src"))?,
+            dst: iter.next().ok_or(CdiffError::NoMoreData("dst"))?,
             start_line_no: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("start_line_no"))?
+                .ok_or(CdiffError::NoMoreData("start_line_no"))?
                 .parse::<usize>()?,
-            start_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("start_line"))?,
+            start_line: iter.next().ok_or(CdiffError::NoMoreData("start_line"))?,
             end_line_no: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("end_line_no"))?
+                .ok_or(CdiffError::NoMoreData("end_line_no"))?
                 .parse::<usize>()?,
-            end_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("end_line"))?,
+            end_line: iter.next().ok_or(CdiffError::NoMoreData("end_line"))?,
         })
     }
 }
@@ -245,14 +239,10 @@ impl<'a> XchgOp<'a> {
         Ok(XchgOp {
             line_no: iter
                 .next()
-                .ok_or_else(|| CdiffError::NoMoreData("line_no"))?
+                .ok_or(CdiffError::NoMoreData("line_no"))?
                 .parse::<usize>()?,
-            orig_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("orig_line"))?,
-            new_line: iter
-                .next()
-                .ok_or_else(|| CdiffError::NoMoreData("new_line"))?,
+            orig_line: iter.next().ok_or(CdiffError::NoMoreData("orig_line"))?,
+            new_line: iter.next().ok_or(CdiffError::NoMoreData("new_line"))?,
         })
     }
 }
@@ -555,7 +545,7 @@ fn cmd_open(ctx: &mut Context, db_name: std::string::String) -> Result<(), Cdiff
 /// Set up Context structure with data parsed from command add
 fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), CdiffError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
+    if ctx.open_db.is_none() {
         return Err(CdiffError::NoDBForAction("ADD"));
     }
     ctx.additions.push(signature);
@@ -566,7 +556,7 @@ fn cmd_add(ctx: &mut Context, signature: std::string::String) -> Result<(), Cdif
 /// Set up Context structure with data parsed from command delete
 fn cmd_del(ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
+    if ctx.open_db.is_none() {
         return Err(CdiffError::NoDBForAction("DEL"));
     }
 
@@ -584,7 +574,7 @@ fn cmd_del(ctx: &mut Context, del_op: DelOp) -> Result<(), CdiffError> {
 /// Set up Context structure with data parsed from command exchange
 fn cmd_xchg(ctx: &mut Context, xchg_op: XchgOp) -> Result<(), CdiffError> {
     // Test for add without an open db
-    if !ctx.open_db.is_some() {
+    if ctx.open_db.is_none() {
         return Err(CdiffError::NoDBForAction("XCHG"));
     }
 
@@ -690,7 +680,7 @@ fn cmd_close(ctx: &mut Context) -> Result<(), CdiffError> {
     let open_db = ctx
         .open_db
         .take()
-        .ok_or_else(|| CdiffError::NoDBForAction("CLOSE"))?;
+        .ok_or(CdiffError::NoDBForAction("CLOSE"))?;
 
     let mut edits = ctx.edits.iter_mut();
     let mut next_edit = edits.next();

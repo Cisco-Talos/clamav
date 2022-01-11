@@ -160,7 +160,7 @@ fn execute_bindgen() -> Result<(), &'static str> {
 /// Use cbindgen to generate C-header's for Rust static libraries.
 fn execute_cbindgen() -> Result<(), &'static str> {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").or(Err("CARGO_MANIFEST_DIR not specified"))?;
-    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or(".".into()));
+    let build_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| ".".into()));
     let outfile_path = build_dir.join(C_HEADER_OUTPUT);
 
     // Useful for build diagnostics
@@ -234,7 +234,7 @@ fn search_and_link_lib(environment_variable: &str) -> Result<bool, &'static str>
     eprintln!("  - requesting that rustc link {:?}", &parsed_path.libname);
     println!("cargo:rustc-link-lib={}", parsed_path.libname);
 
-    return Ok(true);
+    Ok(true)
 }
 
 struct ParsedLibraryPath {
@@ -255,7 +255,7 @@ fn parse_lib_path<'a>(path: &'a str) -> Result<ParsedLibraryPath, &'static str> 
     // This can't fail because it came from a &str
     let dir = path
         .parent()
-        .unwrap_or(Path::new("."))
+        .unwrap_or_else(|| Path::new("."))
         .to_str()
         .unwrap()
         .to_owned();

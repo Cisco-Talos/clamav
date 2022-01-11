@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn parse_move_works() {
         let init_status = clrs_log_init();
-        assert!(init_status == true);
+        assert!(init_status);
         debug!("Hello");
         info!("darkness");
         warn!("my old");
