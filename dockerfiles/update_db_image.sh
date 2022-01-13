@@ -82,7 +82,7 @@ clamav_db_update()
 	for _tag in ${clamav_docker_tags}; do
 		{
 			echo "FROM ${docker_registry}/${clamav_docker_image}:${_tag}"
-			echo "RUN freshclam --foreground --stdout && rm /var/lib/clamav/freshclam.dat"
+			echo "RUN freshclam --foreground --stdout && rm /var/lib/clamav/freshclam.dat || rm /var/lib/clamav/mirrors.dat || true"
 		} | docker image build --pull --rm --tag "${docker_registry}/${clamav_docker_image}:${_tag%%_base}" -
 		docker image push "${docker_registry}/${clamav_docker_image}:${_tag%%_base}"
 	done
