@@ -3,6 +3,13 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 0.104.3
+
+ClamAV 0.104.3 is a critical patch release with the following fixes:
+
+
+Special thanks to the following for code contributions and bug reports:
+
 ## 0.104.2
 
 ClamAV 0.104.2 is a critical patch release with the following fixes:
@@ -302,6 +309,40 @@ The ClamAV team thanks the following individuals for their code submissions:
 - Tuomo Soini
 - Vasile Papp
 - Yasuhiro Kimura
+
+## 0.103.5
+
+ClamAV 0.103.5 is a critical patch release with the following fixes:
+
+- [CVE-2022-20698](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-20698):
+  Fix for invalid pointer read that may cause a crash.
+  Affects 0.104.1, 0.103.4 and prior when ClamAV is compiled with libjson-c and
+  the `CL_SCAN_GENERAL_COLLECT_METADATA` scan option (the `clamscan --gen-json`
+  option) is enabled.
+
+  Cisco would like to thank Laurent Delosieres of ManoMano for reporting this
+  vulnerability.
+
+- Fixed ability to disable the file size limit with libclamav C API, like this:
+  ```c
+    cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, 0);
+  ```
+  This issue didn't impact ClamD or ClamScan which also can disable the limit by
+  setting it to zero using `MaxFileSize 0` in `clamd.conf` for ClamD, or
+  `clamscan --max-filesize=0` for ClamScan.
+
+  Note: Internally, the max file size is still set to 2 GiB. Disabling the limit
+  for a scan will fall back on the internal 2 GiB limitation.
+
+- Increased the maximum line length for ClamAV config files from 512 bytes to
+  1024 bytes to allow for longer config option strings.
+
+- SigTool: Fix insufficient buffer size for `--list-sigs` that caused a failure
+  when listing a database containing one or more very long signatures.
+  This fix was backported from 0.104.
+
+Special thanks to the following for code contributions and bug reports:
+- Laurent Delosieres
 
 ## 0.103.4
 
