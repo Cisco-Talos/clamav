@@ -533,7 +533,7 @@ But if you:
 
 ```sh
   -D BZIP2_INCLUDE_DIR="_filepath of bzip2 header directory_"
-  -D BZIP2_LIBRARIES="_filepath of bzip2 library_"
+  -D BZIP2_LIBRARY_RELEASE="_filepath of bzip2 library_"
 ```
 
 ### `zlib`
