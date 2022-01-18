@@ -632,9 +632,9 @@ void *onas_ddd_th(void *arg)
                 event = (const struct inotify_event *)p;
                 wd    = event->wd;
                 if (wd >= 0)
-                    path  = wdlt[wd];
+                    path = wdlt[wd];
                 else
-                    path  = NULL;
+                    path = NULL;
                 child = event->name;
 
                 if (path == NULL) {
@@ -646,7 +646,7 @@ void *onas_ddd_th(void *arg)
                     logg("!ClamInotif: inofify event IN_UNMOUNT (mask:%d) occured, clamonacc should be restartet because a filesystem monitored by inotify was umounted.\n", event->mask);
                 } else if (event->mask & IN_Q_OVERFLOW) {
                     logg("!ClamInotif: inotify event IN_Q_OVERFLOW (mask:%d) occured, clamonacc should be restartet because a inotify events were dropped by the kernel and the internal clamonacc inotify data structures are likely invalid.\n", event->mask);
-                } else if (event->mask & IN_IGNORED ) {
+                } else if (event->mask & IN_IGNORED) {
                     // Ignore for debugging purposes
                 } else {
                     len              = strlen(path);
