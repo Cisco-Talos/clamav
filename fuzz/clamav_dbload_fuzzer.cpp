@@ -119,6 +119,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     fuzzdb = fopen(kClamAVState.tmp_db_name, "w");
     fwrite(data, size, 1, fuzzdb);
+    fflush(fuzzdb);
     fclose(fuzzdb);
 
     /* need new engine each time. can't add sigs to compiled engine */

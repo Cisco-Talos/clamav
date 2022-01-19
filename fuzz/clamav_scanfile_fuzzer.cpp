@@ -121,6 +121,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     fuzzfile = fopen(kClamAVState.tmp_file_name, "w");
     fwrite(data, size, 1, fuzzfile);
+    fflush(fuzzfile);
     fclose(fuzzfile);
 
     const char* virus_name = nullptr;
