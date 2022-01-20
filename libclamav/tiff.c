@@ -46,8 +46,14 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
     uint16_t i, num_entries;
     struct tiff_ifd entry;
     size_t value_size;
+    uint32_t last_offset = 0;
+    uint32_t * processed_offsets = NULL;
+    uint32_t num_processed_offsets = 0;
+    uint32_t max_processed_offsets = 100;
 
     cli_dbgmsg("in cli_parsetiff()\n");
+
+    CLI_CALLOC(processed_offsets, max_processed_offsets, 4, status = CL_EMEM);
 
     if (NULL == ctx) {
         cli_dbgmsg("TIFF: passed context was NULL\n");
@@ -81,6 +87,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         status = CL_EPARSE;
         goto done;
     }
+    /* offset of the first IFD */
     offset = tiff32_to_host(big_endian, offset);
 
     cli_dbgmsg("cli_parsetiff: first IFD located @ offset %u\n", offset);
@@ -91,6 +98,8 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         status = CL_EPARSE;
         goto done;
     }
+
+    processed_offsets[num_processed_offsets++] = offset;
 
     /* each IFD represents a subfile, though only the first one normally matters */
     do {
@@ -181,6 +190,8 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
 
         ifd_count++;
 
+        last_offset = offset;
+
         /* acquire next IFD location, gets 0 if last IFD */
         if (fmap_readn(map, &offset, offset, sizeof(offset)) != sizeof(offset)) {
             cli_dbgmsg("cli_parsetiff: Failed to aquire next IFD location, file appears to be truncated.\n");
@@ -189,6 +200,35 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
             goto done;
         }
         offset = tiff32_to_host(big_endian, offset);
+
+        if (offset){
+            /*ok, I can't see where we need *BOTH* of these checks, but it is
+             * more thorough this way.*/
+
+            /*If the offsets are not in order, that is suspicious.*/
+            if (last_offset > offset){
+                cli_dbgmsg("cli_parsetiff: Next offset is before current offset, file appears to be malformed.\n");
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.InvalidIFDOffset");
+                status = CL_EPARSE;
+                goto done;
+            }
+
+            /*If we have already processed this offset, then it would cause us
+             * to loop, which is most likely intentional.*/
+            if (num_processed_offsets == max_processed_offsets){
+                max_processed_offsets += 100;
+                CLI_REALLOC(processed_offsets, max_processed_offsets * 4, status = CL_EMEM; goto done);
+            }
+            for (i = 0; i < num_processed_offsets; i++){
+                if (offset == processed_offsets[i]){
+                    cli_dbgmsg("cli_parsetiff: Offset is listed in the file multiple times, file appears to be malformed.\n");
+                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.InvalidIFDOffset");
+                    status = CL_EPARSE;
+                    goto done;
+                }
+            }
+            processed_offsets[num_processed_offsets++] = offset;
+        }
     } while (offset);
 
     cli_dbgmsg("cli_parsetiff: examined %u IFD(s)\n", ifd_count);
@@ -196,6 +236,8 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
     status = CL_CLEAN;
 
 done:
+    FREE(processed_offsets);
+
     if (status == CL_EPARSE) {
         /* We added with cli_append_possibly_unwanted so it will alert at the end if nothing else matches. */
         status = CL_CLEAN;

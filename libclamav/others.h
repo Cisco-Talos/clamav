@@ -1248,4 +1248,33 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
     } while (0)
 #endif
 
+#ifndef CLI_REALLOC
+#define CLI_REALLOC(var, size, ...)           \
+    do {                                      \
+        void * vTmp = cli_realloc(var, size); \
+        if (NULL == vTmp) {                   \
+            do {                              \
+                __VA_ARGS__;                  \
+            } while (0);                      \
+            goto done;                        \
+        }                                     \
+        var = vTmp;                           \
+    } while (0)
+#endif
+
+#ifndef CLI_REALLOC2
+#define CLI_REALLOC2(var, size, ...)           \
+    do {                                       \
+        void * vTmp = cli_realloc2(var, size); \
+        if (NULL == vTmp) {                    \
+            do {                               \
+                __VA_ARGS__;                   \
+            } while (0);                       \
+            goto done;                         \
+        }                                      \
+        var = vTmp;                            \
+    } while (0)
+#endif
+
+
 #endif
