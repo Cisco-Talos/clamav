@@ -148,23 +148,32 @@ static int mspack_fmap_read(struct mspack_file *file, void *buffer, int bytes)
     }
 
     if (mspack_handle->type == FILETYPE_FMAP) {
+        /* Use fmap */
         offset = mspack_handle->offset + mspack_handle->org;
 
-        ret = fmap_readn(mspack_handle->fmap, buffer, offset, bytes);
-        if (ret != bytes) {
-            cli_dbgmsg("%s() %d %d, %d\n", __func__, __LINE__, bytes, ret);
-            return ret;
+        count = fmap_readn(mspack_handle->fmap, buffer, (size_t)offset, (size_t)bytes);
+        if (count == (size_t)-1) {
+            cli_dbgmsg("%s() %d requested %d bytes, read failed (-1)\n", __func__, __LINE__, bytes);
+            return -1;
+        } else if ((int)count < bytes) {
+            cli_dbgmsg("%s() %d requested %d bytes, read %zu bytes\n", __func__, __LINE__, bytes, count);
         }
 
-        mspack_handle->offset += bytes;
-        return bytes;
+        mspack_handle->offset += (off_t)count;
+
+        return (int)count;
+    } else {
+        /* Use file descriptor */
+        count = fread(buffer, bytes, 1, mspack_handle->f);
+        if (count < 1) {
+            cli_dbgmsg("%s() %d requested %d bytes, read failed (%zu)\n", __func__, __LINE__, bytes, count);
+            return -1;
+        }
+
+        ret = (int)count;
+
+        return ret;
     }
-    count = fread(buffer, bytes, 1, mspack_handle->f);
-    if (count < 1) {
-        cli_dbgmsg("%s() %d %d, %zu\n", __func__, __LINE__, bytes, count);
-        return -1;
-    }
-    return bytes;
 }
 
 static int mspack_fmap_write(struct mspack_file *file, void *buffer, int bytes)
