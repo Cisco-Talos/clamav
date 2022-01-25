@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 void fp_read_unsigned_bin(fp_int *a, const unsigned char *b, int c)
 {
@@ -61,6 +61,6 @@ void fp_read_unsigned_bin(fp_int *a, const unsigned char *b, int c)
   fp_clamp (a);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_read_unsigned_bin.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/02/17 02:58:19 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

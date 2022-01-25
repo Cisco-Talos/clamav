@@ -1,13 +1,13 @@
 /*
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 #if defined(TFM_PRESCOTT) && defined(TFM_SSE2)
    #undef TFM_SSE2
@@ -57,12 +57,12 @@ asm(                                            \
 
 #define SQRADDSC(i, j)                                    \
 asm(                                                     \
-     "movl  %6,%%eax     \n\t"                            \
-     "mull  %7           \n\t"                            \
+     "movl  %3,%%eax     \n\t"                            \
+     "mull  %4           \n\t"                            \
      "movl  %%eax,%0     \n\t"                            \
      "movl  %%edx,%1     \n\t"                            \
      "xorl  %2,%2        \n\t"                            \
-     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "0"(sc0), "1"(sc1), "2"(sc2), "g"(i), "g"(j) :"%eax","%edx","cc");
+     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "g"(i), "g"(j) :"%eax","%edx","cc");
 
 #define SQRADDAC(i, j)                                    \
 asm(                                                     \
@@ -109,7 +109,7 @@ asm(                                                     \
      "addq  %%rax,%0     \n\t"                            \
      "adcq  %%rdx,%1     \n\t"                            \
      "adcq  $0,%2        \n\t"                            \
-     :"=r"(c0), "=r"(c1), "=r"(c2): "0"(c0), "1"(c1), "2"(c2), "g"(i) :"%rax","%rdx","cc");
+     :"=r"(c0), "=r"(c1), "=r"(c2): "0"(c0), "1"(c1), "2"(c2), "x"(i) :"%rax","%rdx","cc");
 
 #define SQRADD2(i, j)                                     \
 asm(                                                     \
@@ -125,12 +125,12 @@ asm(                                                     \
 
 #define SQRADDSC(i, j)                                    \
 asm(                                                     \
-     "movq  %6,%%rax     \n\t"                            \
-     "mulq  %7           \n\t"                            \
+     "movq  %3,%%rax     \n\t"                            \
+     "mulq  %4           \n\t"                            \
      "movq  %%rax,%0     \n\t"                            \
      "movq  %%rdx,%1     \n\t"                            \
      "xorq  %2,%2        \n\t"                            \
-     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "0"(sc0), "1"(sc1), "2"(sc2), "g"(i), "g"(j) :"%rax","%rdx","cc");
+     :"=r"(sc0), "=r"(sc1), "=r"(sc2): "g"(i), "g"(j) :"%rax","%rdx","cc");
 
 #define SQRADDAC(i, j)                                                         \
 asm(                                                     \
@@ -261,7 +261,7 @@ asm(                                                             \
 "  ADCS   %1,%1,r1                 \n\t"                         \
 "  ADC    %2,%2,#0                 \n\t"                         \
 :"=r"(c0), "=r"(c1), "=r"(c2) : "0"(c0), "1"(c1), "2"(c2), "r"(i) : "r0", "r1", "cc");
-	
+
 /* for squaring some of the terms are doubled... */
 #define SQRADD2(i, j)                                            \
 asm(                                                             \
@@ -639,7 +639,7 @@ asm(                              \
    t = c0 + ((fp_word)i) * ((fp_word)j);  c0 = t;    \
    t = c1 + (t >> DIGIT_BIT);             c1 = t; c2 += t >> DIGIT_BIT; \
    } while (0);
-  
+
 
 /* for squaring some of the terms are doubled... */
 #define SQRADD2(i, j)                                                 \
@@ -672,6 +672,6 @@ asm(                              \
 
 #endif
 
-/* $Source: /cvs/libtom/tomsfastmath/src/sqr/fp_sqr_comba.c,v $ */
-/* $Revision: 1.4 $ */
-/* $Date: 2007/03/14 23:47:42 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

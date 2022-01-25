@@ -1,10 +1,10 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
 
@@ -12,7 +12,7 @@
 
 */
 
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 #if defined(TFM_PRESCOTT) && defined(TFM_SSE2)
    #undef TFM_SSE2
@@ -133,7 +133,7 @@ asm(                                                     \
 #elif defined(TFM_ARM)
 /* ARM code */
 
-#define COMBA_START 
+#define COMBA_START
 
 #define COMBA_CLEAR \
    c0 = c1 = c2 = 0;
@@ -174,8 +174,8 @@ asm(                                                          \
 #define COMBA_STORE2(x) \
    x = c1;
 
-#define COMBA_FINI 
-   
+#define COMBA_FINI
+
 /* untested: will mulhwu change the flags?  Docs say no */
 #define MULADD(i, j)              \
 asm(                              \
@@ -203,8 +203,8 @@ asm(                              \
 #define COMBA_STORE2(x) \
    x = c1;
 
-#define COMBA_FINI 
-   
+#define COMBA_FINI
+
 /* untested: will mulhdu change the flags?  Docs say no */
 #define MULADD(i, j)              \
 asm(                              \
@@ -233,8 +233,8 @@ asm(                              \
 #define COMBA_STORE2(x) \
    x = c1;
 
-#define COMBA_FINI 
-   
+#define COMBA_FINI
+
 #define MULADD(i, j)             \
 asm(                             \
    " mulu.d r2,%6,%7        \n\t"\
@@ -259,8 +259,8 @@ asm(                             \
 #define COMBA_STORE2(x) \
    x = c1;
 
-#define COMBA_FINI 
-   
+#define COMBA_FINI
+
 #define MULADD(i, j)              \
 asm(                              \
    " multu  %6,%7          \n\t"  \
@@ -293,12 +293,15 @@ asm(                              \
 #define COMBA_STORE2(x) \
    x = c1;
 
-#define COMBA_FINI 
-   
-#define MULADD(i, j)                                                              \
-   do { fp_word t;                                                                \
-   t = (fp_word)c0 + ((fp_word)i) * ((fp_word)j); c0 = t;                         \
-   t = (fp_word)c1 + (t >> DIGIT_BIT);            c1 = t; c2 += t >> DIGIT_BIT;   \
+#define COMBA_FINI
+
+#define MULADD(i, j)                                    \
+   do { fp_word t;                                      \
+   t = (fp_word)c0 + ((fp_word)i) * ((fp_word)j);       \
+   c0 = t;                                              \
+   t = (fp_word)c1 + (t >> DIGIT_BIT);                  \
+   c1 = t;                                              \
+   c2 += t >> DIGIT_BIT;                                \
    } while (0);
 
 #endif
@@ -314,7 +317,7 @@ void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
 
    COMBA_START;
    COMBA_CLEAR;
-   
+
    /* get size of output and trim */
    pa = A->used + B->used;
    if (pa >= FP_SIZE) {
@@ -338,7 +341,7 @@ void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
       tmpx = A->dp + tx;
       tmpy = B->dp + ty;
 
-      /* this is the number of times the loop will iterrate, essentially its 
+      /* this is the number of times the loop will iterrate, essentially its
          while (tx++ < a->used && ty-- >= 0) { ... }
        */
       iy = MIN(A->used-tx, ty+1);
@@ -346,7 +349,9 @@ void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
       /* execute loop */
       COMBA_FORWARD;
       for (iz = 0; iz < iy; ++iz) {
-          MULADD(*tmpx++, *tmpy--);
+          fp_digit _tmpx = *tmpx++;
+          fp_digit _tmpy = *tmpy--;
+          MULADD(_tmpx, _tmpy);
       }
 
       /* store term */
@@ -362,7 +367,7 @@ void fp_mul_comba(fp_int *A, fp_int *B, fp_int *C)
 
 #endif
 
-/* $Source: /cvs/libtom/tomsfastmath/src/mul/fp_mul_comba.c,v $ */
-/* $Revision: 1.4 $ */
-/* $Date: 2007/03/14 23:47:42 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */
 

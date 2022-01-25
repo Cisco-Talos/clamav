@@ -487,7 +487,7 @@ static inline void printchain(const char *prefix, struct cache_set *cs)
     }
 }
 #else
-#define printchain(a, b) (0)
+#define printchain(a, b)
 #endif
 
 /* Looks up a node and splays it up to the root of the tree */

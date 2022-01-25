@@ -6,8 +6,8 @@ void fp_sqr_comba_small(fp_int *A, fp_int *B)
 {
    fp_digit *a, b[32], c0, c1, c2, sc0, sc1, sc2;
 #ifdef TFM_ISO
-   fp_word   tt;   
-#endif   
+   fp_word tt;
+#endif
    switch (A->used) { 
    case 1:
       a = A->dp;
@@ -1512,11 +1512,12 @@ void fp_sqr_comba_small(fp_int *A, fp_int *B)
       memcpy(B->dp, b, 32 * sizeof(fp_digit));
       fp_clamp(B);
       break;
+
 }
 }
 
 #endif /* TFM_SMALL_SET */
 
-/* $Source: /cvs/libtom/tomsfastmath/src/sqr/fp_sqr_comba_small_set.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2007/02/15 00:31:32 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

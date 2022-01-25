@@ -63,9 +63,9 @@ typedef struct cli_crt_t {
      * so it must have at least enough space for the largest hash in
      * cli_crt_hashtype */
     uint8_t tbshash[SHA512_HASH_SIZE];
-    mp_int n;
-    mp_int e;
-    mp_int sig;
+    fp_int n;
+    fp_int e;
+    fp_int sig;
     time_t not_before;
     time_t not_after;
     cli_crt_hashtype hashtype;
@@ -82,7 +82,7 @@ typedef struct {
     unsigned int items;
 } crtmgr;
 
-int cli_crt_init(cli_crt *x509);
+void cli_crt_init(cli_crt *x509);
 void cli_crt_clear(cli_crt *x509);
 void crtmgr_init(crtmgr *m);
 void crtmgr_free(crtmgr *m);

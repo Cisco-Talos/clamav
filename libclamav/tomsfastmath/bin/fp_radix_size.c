@@ -1,22 +1,19 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
-
-int fp_radix_size(fp_int *a, int radix, int *size);
+#include <tfm_private.h>
 
 int fp_radix_size(fp_int *a, int radix, int *size)
 {
-  int     digs;
   fp_int  t;
   fp_digit d;
-   
+
   *size = 0;
 
   /* check range of the radix */
@@ -38,7 +35,6 @@ int fp_radix_size(fp_int *a, int radix, int *size)
     t.sign = FP_ZPOS;
   }
 
-  digs = 0;
   while (fp_iszero (&t) == FP_NO) {
     fp_div_d (&t, (fp_digit) radix, &t, &d);
     (*size)++;
@@ -50,6 +46,6 @@ int fp_radix_size(fp_int *a, int radix, int *size)
 
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_radix_size.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

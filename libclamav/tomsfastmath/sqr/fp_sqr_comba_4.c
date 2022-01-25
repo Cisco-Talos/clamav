@@ -1,7 +1,7 @@
 #define TFM_DEFINES
 #include "fp_sqr_comba.c"
 
-#ifdef TFM_SQR4
+#if defined(TFM_SQR4) && FP_SIZE >= 8
 void fp_sqr_comba4(fp_int *A, fp_int *B)
 {
    fp_digit *a, b[8], c0, c1, c2, sc0, sc1, sc2;
@@ -10,7 +10,7 @@ void fp_sqr_comba4(fp_int *A, fp_int *B)
 #endif
 
    a = A->dp;
-   COMBA_START; 
+   COMBA_START;
 
    /* clear carries */
    CLEAR_CARRY;
@@ -21,32 +21,32 @@ void fp_sqr_comba4(fp_int *A, fp_int *B)
 
    /* output 1 */
    CARRY_FORWARD;
-   SQRADD2(a[0], a[1]); 
+   SQRADD2(a[0], a[1]);
    COMBA_STORE(b[1]);
 
    /* output 2 */
    CARRY_FORWARD;
-   SQRADD2(a[0], a[2]); SQRADD(a[1], a[1]); 
+   SQRADD2(a[0], a[2]); SQRADD(a[1], a[1]);
    COMBA_STORE(b[2]);
 
    /* output 3 */
    CARRY_FORWARD;
-   SQRADD2(a[0], a[3]); SQRADD2(a[1], a[2]); 
+   SQRADD2(a[0], a[3]); SQRADD2(a[1], a[2]);
    COMBA_STORE(b[3]);
 
    /* output 4 */
    CARRY_FORWARD;
-   SQRADD2(a[1], a[3]); SQRADD(a[2], a[2]); 
+   SQRADD2(a[1], a[3]); SQRADD(a[2], a[2]);
    COMBA_STORE(b[4]);
 
    /* output 5 */
    CARRY_FORWARD;
-   SQRADD2(a[2], a[3]); 
+   SQRADD2(a[2], a[3]);
    COMBA_STORE(b[5]);
 
    /* output 6 */
    CARRY_FORWARD;
-   SQRADD(a[3], a[3]); 
+   SQRADD(a[3], a[3]);
    COMBA_STORE(b[6]);
    COMBA_STORE2(b[7]);
    COMBA_FINI;
@@ -59,6 +59,6 @@ void fp_sqr_comba4(fp_int *A, fp_int *B)
 #endif
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/sqr/fp_sqr_comba_4.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/02/17 03:39:01 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

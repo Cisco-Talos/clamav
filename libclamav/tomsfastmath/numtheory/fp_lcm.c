@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* c = [a, b] */
 void fp_lcm(fp_int *a, fp_int *b, fp_int *c)
@@ -26,6 +26,6 @@ void fp_lcm(fp_int *a, fp_int *b, fp_int *c)
    }   
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/numtheory/fp_lcm.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2007/01/24 21:25:19 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

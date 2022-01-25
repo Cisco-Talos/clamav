@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* d = a + b (mod c) */
 int fp_addmod(fp_int *a, fp_int *b, fp_int *c, fp_int *d)
@@ -18,6 +18,6 @@ int fp_addmod(fp_int *a, fp_int *b, fp_int *c, fp_int *d)
   return fp_mod(&tmp, c, d);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/addsub/fp_addmod.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

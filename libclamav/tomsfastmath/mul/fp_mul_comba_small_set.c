@@ -1226,3 +1226,8 @@ void fp_mul_comba_small(fp_int *A, fp_int *B, fp_int *C)
 }
 
 #endif
+
+
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

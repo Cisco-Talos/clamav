@@ -52,7 +52,7 @@
 #include "scanners.h"
 #include "conv.h"
 #include "xdp.h"
-#include "bignum_fast.h"
+#include "bignum.h"
 #include "filetypes.h"
 
 static char *dump_xdp(cli_ctx *ctx, const char *start, size_t sz);

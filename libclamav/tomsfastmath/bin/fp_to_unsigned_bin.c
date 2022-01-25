@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 void fp_to_unsigned_bin(fp_int *a, unsigned char *b)
 {
@@ -24,6 +24,6 @@ void fp_to_unsigned_bin(fp_int *a, unsigned char *b)
   fp_reverse (b, x);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_to_unsigned_bin.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/02/27 02:38:44 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

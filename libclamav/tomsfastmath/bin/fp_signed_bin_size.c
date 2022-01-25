@@ -7,13 +7,13 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 int fp_signed_bin_size(fp_int *a)
 {
   return 1 + fp_unsigned_bin_size (a);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_signed_bin_size.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

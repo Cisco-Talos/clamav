@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 int fp_cmp_mag(fp_int *a, fp_int *b)
 {
@@ -30,6 +30,6 @@ int fp_cmp_mag(fp_int *a, fp_int *b)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/addsub/fp_cmp_mag.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

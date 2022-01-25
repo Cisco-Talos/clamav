@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* c = a * b */
 void fp_mul_d(fp_int *a, fp_digit b, fp_int *c)
@@ -35,6 +35,6 @@ void fp_mul_d(fp_int *a, fp_digit b, fp_int *c)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/mul/fp_mul_d.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

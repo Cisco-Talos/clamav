@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include "clamav.h"
 #include "textnorm.h"
-#include "bignum_fast.h"
+#include "bignum.h"
 
 int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_t out_len)
 {

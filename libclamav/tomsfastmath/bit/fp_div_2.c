@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* b = a/2 */
 void fp_div_2(fp_int * a, fp_int * b)
@@ -48,6 +48,6 @@ void fp_div_2(fp_int * a, fp_int * b)
   fp_clamp (b);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bit/fp_div_2.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

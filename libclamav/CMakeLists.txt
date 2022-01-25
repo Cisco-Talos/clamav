@@ -23,6 +23,15 @@ endif()
 
 add_definitions(-DTHIS_IS_LIBCLAMAV)
 
+# Enable overflow checks in TomsFastMath's fp_exptmod() function.
+add_definitions(-DTFM_CHECK)
+
+# Just enable ASM in in TomsFastMath's on x86-64 where we know it works.
+# on i686 we run out of registers with -fPIC, and on ia64 we miscompile.
+if(NOT CMAKE_COMPILER_IS_GNUCC OR NOT (CMAKE_SIZEOF_VOID_P EQUAL 8))
+    add_definitions(-DTFM_NO_ASM)
+endif()
+
 # 3rd party libraries included in libclamav
 add_library( regex OBJECT )
 target_sources( regex
@@ -242,10 +251,11 @@ target_sources( tomsfastmath
         tomsfastmath/sqr/fp_sqr_comba_small_set.c
         tomsfastmath/sqr/fp_sqrmod.c
     PUBLIC
-        bignum.h
-        bignum_fast.h )
+        bignum.h )
 target_include_directories( tomsfastmath
-    PRIVATE ${CMAKE_BINARY_DIR}
+    PRIVATE
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/tomsfastmath/headers
     PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR} )
 set_target_properties( tomsfastmath PROPERTIES
     COMPILE_FLAGS "${WARNCFLAGS}" )

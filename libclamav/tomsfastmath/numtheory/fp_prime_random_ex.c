@@ -1,13 +1,13 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* This is possibly the mother of all prime generation functions, muahahahahaha! */
 int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback cb, void *dat)
@@ -16,7 +16,7 @@ int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback
    int res, err, bsize, maskOR_msb_offset;
 
    /* sanity check the input */
-   if (size <= 1 || t <= 0) {
+   if (size <= 1 || cb == NULL || t <= 0 || t > FP_PRIME_SIZE) {
       return FP_VAL;
    }
 
@@ -35,7 +35,7 @@ int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback
    }
 
    /* calc the maskAND value for the MSbyte*/
-   maskAND = 0xFF >> (8 - (size & 7));
+   maskAND = 0xFF >> ((8 - (size & 7)) & 7);
 
    /* calc the maskOR_msb */
    maskOR_msb        = 0;
@@ -58,7 +58,7 @@ int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback
          err = FP_VAL;
          goto error;
       }
- 
+
       /* work over the MSbyte */
       tmp[0]    &= maskAND;
       tmp[0]    |= 1 << ((size - 1) & 7);
@@ -71,16 +71,16 @@ int fp_prime_random_ex(fp_int *a, int t, int size, int flags, tfm_prime_callback
       fp_read_unsigned_bin(a, tmp, bsize);
 
       /* is it prime? */
-      res = fp_isprime(a);
+      res = fp_isprime_ex(a, t);
       if (res == FP_NO) continue;
 
       if (flags & TFM_PRIME_SAFE) {
          /* see if (a-1)/2 is prime */
          fp_sub_d(a, 1, a);
          fp_div_2(a, a);
- 
+
          /* is it prime? */
-         res = fp_isprime(a);
+         res = fp_isprime_ex(a, t);
       }
    } while (res == FP_NO);
 
@@ -96,6 +96,6 @@ error:
    return err;
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/numtheory/fp_prime_random_ex.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2007/01/24 21:25:19 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

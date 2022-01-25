@@ -7,9 +7,9 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
-void fp_read_signed_bin(fp_int *a, unsigned char *b, int c)
+void fp_read_signed_bin(fp_int *a, const unsigned char *b, int c)
 {
   /* read magnitude */
   fp_read_unsigned_bin (a, b + 1, c - 1);
@@ -22,6 +22,6 @@ void fp_read_signed_bin(fp_int *a, unsigned char *b, int c)
   }
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_read_signed_bin.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

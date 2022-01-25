@@ -58,6 +58,8 @@
 
 #define CLI_ESTR "100001027"
 
+#define MP_GET(a) ((a)->used > 0 ? (a)->dp[0] : 0)
+
 static char cli_ndecode(unsigned char value)
 {
     unsigned int i;
@@ -79,43 +81,35 @@ static char cli_ndecode(unsigned char value)
     return -1;
 }
 
-static unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e, mp_int n)
+static unsigned char *cli_decodesig(const char *sig, unsigned int plen, fp_int e, fp_int n)
 {
     int i, slen = strlen(sig), dec;
     unsigned char *plain;
-    mp_int r, p, c;
+    fp_int r, p, c;
 
-    mp_init(&r);
-    mp_init(&c);
+    fp_init(&r);
+    fp_init(&c);
     for (i = 0; i < slen; i++) {
         if ((dec = cli_ndecode(sig[i])) < 0) {
-            mp_clear(&r);
-            mp_clear(&c);
             return NULL;
         }
-        mp_set_int(&r, dec);
-        mp_mul_2d(&r, 6 * i, &r);
-        mp_add(&r, &c, &c);
+        fp_set(&r, dec);
+        fp_mul_2d(&r, 6 * i, &r);
+        fp_add(&r, &c, &c);
     }
 
     plain = (unsigned char *)cli_calloc(plen + 1, sizeof(unsigned char));
     if (!plain) {
         cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
-        mp_clear(&r);
-        mp_clear(&c);
         return NULL;
     }
-    mp_init(&p);
-    mp_exptmod(&c, &e, &n, &p); /* plain = cipher^e mod n */
-    mp_clear(&c);
-    mp_set_int(&c, 256);
+    fp_init(&p);
+    fp_exptmod(&c, &e, &n, &p); /* plain = cipher^e mod n */
+    fp_set(&c, 256);
     for (i = plen - 1; i >= 0; i--) { /* reverse */
-        mp_div(&p, &c, &p, &r);
-        plain[i] = mp_get_int(&r);
+        fp_div(&p, &c, &p, &r);
+        plain[i] = MP_GET(&r);
     }
-    mp_clear(&c);
-    mp_clear(&p);
-    mp_clear(&r);
 
     return plain;
 }
@@ -236,7 +230,7 @@ const char *cli_getdsig(const char *host, const char *user, const unsigned char 
 
 int cli_versig(const char *md5, const char *dsig)
 {
-    mp_int n, e;
+    fp_int n, e;
     char *pt, *pt2;
 
     if (strlen(md5) != 32 || !isalnum(md5[0])) {
@@ -245,14 +239,12 @@ int cli_versig(const char *md5, const char *dsig)
         return CL_EVERIFY;
     }
 
-    mp_init(&n);
-    mp_read_radix(&n, CLI_NSTR, 10);
-    mp_init(&e);
-    mp_read_radix(&e, CLI_ESTR, 10);
+    fp_init(&n);
+    fp_read_radix(&n, CLI_NSTR, 10);
+    fp_init(&e);
+    fp_read_radix(&e, CLI_ESTR, 10);
 
     if (!(pt = (char *)cli_decodesig(dsig, 16, e, n))) {
-        mp_clear(&n);
-        mp_clear(&e);
         return CL_EVERIFY;
     }
 
@@ -264,14 +256,10 @@ int cli_versig(const char *md5, const char *dsig)
     if (strncmp(md5, pt2, 32)) {
         cli_dbgmsg("cli_versig: Signature doesn't match.\n");
         free(pt2);
-        mp_clear(&n);
-        mp_clear(&e);
         return CL_EVERIFY;
     }
 
     free(pt2);
-    mp_clear(&n);
-    mp_clear(&e);
 
     cli_dbgmsg("cli_versig: Digital signature is correct.\n");
     return CL_SUCCESS;
@@ -287,16 +275,14 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     unsigned char mask[BLK_LEN], data[BLK_LEN], final[8 + 2 * HASH_LEN], c[4];
     unsigned int i, rounds;
     void *ctx;
-    mp_int n, e;
+    fp_int n, e;
 
-    mp_init(&e);
-    mp_read_radix(&e, e_str, 10);
-    mp_init(&n);
-    mp_read_radix(&n, n_str, 10);
+    fp_init(&e);
+    fp_read_radix(&e, e_str, 10);
+    fp_init(&n);
+    fp_read_radix(&n, n_str, 10);
 
     decoded = cli_decodesig(dsig_str, PAD_LEN, e, n);
-    mp_clear(&n);
-    mp_clear(&e);
     if (!decoded)
         return CL_EVERIFY;
 
