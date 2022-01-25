@@ -47,7 +47,11 @@ static pthread_mutex_t pool_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define TREES 256
 static inline unsigned int getkey(uint8_t *hash)
 {
-    return *hash;
+    if (hash) {
+        return *hash;
+    }
+
+    return 0;
 }
 /* #define TREES 4096 */
 /* static inline unsigned int getkey(uint8_t *hash) { return hash[0] | ((unsigned int)(hash[1] & 0xf)<<8) ; } */
@@ -836,9 +840,16 @@ void cli_cache_destroy(struct cl_engine *engine)
 /* Looks up an hash in the proper tree */
 static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
 {
-    unsigned int key = getkey(md5);
+    unsigned int key = 0;
     int ret          = CL_VIRUS;
     struct CACHE *c;
+
+    if (!md5) {
+	cli_dbgmsg("cache_lookup: No hash available. Nothing to look up.\n");
+        return ret;
+    }
+
+    key = getkey(md5);
 
     c = &cache[key];
 #ifdef CL_THREAD_SAFE
@@ -861,7 +872,8 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 /* Adds an hash to the cache */
 void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
-    unsigned int key = getkey(md5);
+
+    unsigned int key = 0;
     uint32_t level;
     struct CACHE *c;
 
@@ -873,6 +885,12 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         return;
     }
 
+    if (!md5) {
+	cli_dbgmsg("cache_add: No hash available. Nothing to add to cache.\n");
+        return;
+    }
+
+    key = getkey(md5);
     level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
     if (ctx->found_possibly_unwanted && (level || 0 == ctx->recursion_level))
         return;
@@ -910,7 +928,7 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 /* Removes a hash from the cache */
 void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine)
 {
-    unsigned int key = getkey(md5);
+    unsigned int key = 0;
     struct CACHE *c;
 
     if (!engine || !engine->cache)
@@ -921,7 +939,12 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
         return;
     }
 
-    /* cli_warnmsg("cache_remove: key is %u\n", key); */
+    if (!md5) {
+	cli_dbgmsg("cache_remove: No hash available. Nothing to remove from cache.\n");
+        return;
+    }
+
+    key = getkey(md5);
 
     c = &engine->cache[key];
 #ifdef CL_THREAD_SAFE
