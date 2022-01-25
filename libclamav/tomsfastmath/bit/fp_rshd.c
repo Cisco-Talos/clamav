@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 void fp_rshd(fp_int *a, int x)
 {
@@ -35,6 +35,6 @@ void fp_rshd(fp_int *a, int x)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bit/fp_rshd.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

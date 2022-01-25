@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* computes a = B**n mod b without division or multiplication useful for
  * normalizing numbers in a Montgomery system.
@@ -38,6 +38,6 @@ void fp_montgomery_calc_normalization(fp_int *a, fp_int *b)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_calc_normalization.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

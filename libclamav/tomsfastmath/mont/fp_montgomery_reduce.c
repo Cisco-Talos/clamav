@@ -1,19 +1,19 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /******************************************************************/
-#if defined(TFM_X86) && !defined(TFM_SSE2) 
+#if defined(TFM_X86) && !defined(TFM_SSE2)
 /* x86-32 code */
 
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -29,7 +29,7 @@ asm(                                                      \
    "adcl $0,%%edx \n\t"                                   \
    "movl %%edx,%1 \n\t"                                   \
 :"=g"(_c[LO]), "=r"(cy)                                   \
-:"0"(_c[LO]), "1"(cy), "g"(mu), "g"(*tmpm++)              \
+:"0"(_c[LO]), "1"(cy), "r"(mu), "r"(*tmpm++)              \
 : "%eax", "%edx", "cc")
 
 #define PROPCARRY                           \
@@ -45,7 +45,7 @@ asm(                                        \
 #elif defined(TFM_X86_64)
 /* x86-64 code */
 
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -168,7 +168,7 @@ asm(                                        \
 : "%rax", "cc")
 
 /******************************************************************/
-#elif defined(TFM_SSE2)  
+#elif defined(TFM_SSE2)
 /* SSE2 code (assumes 32-bit fp_digits) */
 /* XMM register assignments:
  * xmm0  *tmpm++, then Mu * (*tmpm++)
@@ -286,7 +286,7 @@ asm(                                        \
 #elif defined(TFM_ARM)
    /* ARMv4 code */
 
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -315,7 +315,7 @@ asm(                               \
 #elif defined(TFM_PPC32)
 
 /* PPC32 */
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -325,28 +325,24 @@ asm(                               \
 asm(                                 \
    " mullw    16,%3,%4       \n\t"   \
    " mulhwu   17,%3,%4       \n\t"   \
-   " addc     16,16,%0       \n\t"   \
+   " addc     16,16,%2       \n\t"   \
    " addze    17,17          \n\t"   \
-   " lwz      18,%1          \n\t"   \
-   " addc     16,16,18       \n\t"   \
+   " addc     %1,16,%5       \n\t"   \
    " addze    %0,17          \n\t"   \
-   " stw      16,%1          \n\t"   \
-:"=r"(cy),"=m"(_c[0]):"0"(cy),"r"(mu),"r"(tmpm[0]),"1"(_c[0]):"16", "17", "18","cc"); ++tmpm;
+:"=r"(cy),"=r"(_c[0]):"0"(cy),"r"(mu),"r"(tmpm[0]),"1"(_c[0]):"16", "17", "cc"); ++tmpm;
 
 #define PROPCARRY                    \
 asm(                                 \
-   " lwz      16,%1         \n\t"    \
-   " addc     16,16,%0      \n\t"    \
-   " stw      16,%1         \n\t"    \
-   " xor      %0,%0,%0      \n\t"    \
-   " addze    %0,%0         \n\t"    \
-:"=r"(cy),"=m"(_c[0]):"0"(cy),"1"(_c[0]):"16","cc");
+   " addc     %1,%3,%2      \n\t"    \
+   " xor      %0,%2,%2      \n\t"    \
+   " addze    %0,%2         \n\t"    \
+:"=r"(cy),"=r"(_c[0]):"0"(cy),"1"(_c[0]):"cc");
 
 /******************************************************************/
 #elif defined(TFM_PPC64)
 
 /* PPC64 */
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -377,7 +373,7 @@ asm(                                 \
 #elif defined(TFM_AVR32)
 
 /* AVR32 */
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -407,7 +403,7 @@ asm(                                 \
 #elif defined(TFM_MIPS)
 
 /* MIPS */
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -440,7 +436,7 @@ asm(                                 \
 #else
 
 /* ISO C code */
-#define MONT_START 
+#define MONT_START
 #define MONT_FINI
 #define LOOP_END
 #define LOOP_START \
@@ -509,7 +505,7 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
        _c   = c + x;
        tmpm = m->dp;
        y = 0;
-       #if (defined(TFM_SSE2) || defined(TFM_X86_64))
+       #if defined(INNERMUL8)
         for (; y < (pa & ~7); y += 8) {
               INNERMUL8;
               _c   += 8;
@@ -526,7 +522,7 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
            PROPCARRY;
            ++_c;
        }
-  }         
+  }
 
   /* now copy out */
   _c   = c + pa;
@@ -543,7 +539,7 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 
   a->used = pa+1;
   fp_clamp(a);
-  
+
   /* if A >= m then A = A - m */
   if (fp_cmp_mag (a, m) != FP_LT) {
     s_fp_sub (a, m, a);
@@ -551,6 +547,6 @@ void fp_montgomery_reduce(fp_int *a, fp_int *m, fp_digit mp)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/mont/fp_montgomery_reduce.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/03/14 23:47:42 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

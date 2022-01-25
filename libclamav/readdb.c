@@ -3060,11 +3060,10 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         }
 
         memcpy(ca.subject, subject, sizeof(ca.subject));
-        if (mp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4]) / 2) || mp_read_unsigned_bin(&(ca.e), exp, sizeof(exp) - 1)) {
-            cli_errmsg("cli_loadcrt: line %u: Cannot convert exponent to binary data\n", (unsigned int)line);
-            ret = CL_EMALFDB;
-            goto end;
-        }
+
+        fp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4]) / 2);
+
+        fp_read_unsigned_bin(&(ca.e), exp, sizeof(exp) - 1);
 
         switch (tokens[6][0]) {
             case '1':

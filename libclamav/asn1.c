@@ -694,10 +694,8 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         cli_dbgmsg("asn1_get_rsa_pubkey: cannot read n\n");
         return 1;
     }
-    if (mp_read_unsigned_bin(&x509->n, obj.content, avail2)) {
-        cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert n to big number\n");
-        return 1;
-    }
+
+    fp_read_unsigned_bin(&x509->n, obj.content, avail2);
 
     if (asn1_expect_objtype(map, obj.next, &avail, &obj, ASN1_TYPE_INTEGER)) /* INTEGER - exp */
         return 1;
@@ -713,10 +711,9 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         cli_dbgmsg("asn1_get_rsa_pubkey: cannot read e\n");
         return 1;
     }
-    if (mp_read_unsigned_bin(&x509->e, obj.content, obj.size)) {
-        cli_dbgmsg("asn1_get_rsa_pubkey: cannot convert e to big number\n");
-        return 1;
-    }
+
+    fp_read_unsigned_bin(&x509->e, obj.content, obj.size);
+
     return 0;
 }
 
@@ -741,8 +738,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
     int ret = ASN1_GET_X509_UNRECOVERABLE_ERROR;
     unsigned int version;
 
-    if (cli_crt_init(&x509))
-        return ret;
+    cli_crt_init(&x509);
 
     do {
         if (asn1_expect_objtype(map, *asn1data, size, &crt, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE */
@@ -1110,10 +1106,9 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             cli_dbgmsg("asn1_get_x509: cannot read signature\n");
             break;
         }
-        if (mp_read_unsigned_bin(&x509.sig, obj.content, obj.size)) {
-            cli_dbgmsg("asn1_get_x509: cannot convert signature to big number\n");
-            break;
-        }
+
+        fp_read_unsigned_bin(&x509.sig, obj.content, obj.size);
+
         if (crt.size) {
             cli_dbgmsg("asn1_get_x509: found unexpected extra data in signature\n");
             break;

@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 static int s_is_power_of_two(fp_digit b, int *p)
 {
@@ -93,6 +93,6 @@ int fp_div_d(fp_int *a, fp_digit b, fp_int *c, fp_digit *d)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/divide/fp_div_d.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/01/12 15:13:54 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

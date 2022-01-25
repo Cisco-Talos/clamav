@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* c = a mod b, 0 <= c < b  */
 int fp_mod_d(fp_int *a, fp_digit b, fp_digit *c)
@@ -15,6 +15,6 @@ int fp_mod_d(fp_int *a, fp_digit b, fp_digit *c)
    return fp_div_d(a, b, NULL, c);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/divide/fp_mod_d.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

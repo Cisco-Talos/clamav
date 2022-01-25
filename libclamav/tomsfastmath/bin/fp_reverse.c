@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* reverse an array, used for radix code */
 void fp_reverse (unsigned char *s, int len)
@@ -26,6 +26,6 @@ void fp_reverse (unsigned char *s, int len)
   }
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_reverse.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/02/27 02:38:44 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* unsigned subtraction ||a|| >= ||b|| ALWAYS! */
 void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
@@ -27,7 +27,7 @@ void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
   for (; x < a->used; x++) {
      t         = ((fp_word)a->dp[x]) - t;
      c->dp[x]  = (fp_digit)t;
-     t         = (t >> DIGIT_BIT);
+     t         = (t >> DIGIT_BIT)&1;
    }
   for (; x < oldused; x++) {
      c->dp[x] = 0;
@@ -35,6 +35,6 @@ void s_fp_sub(fp_int *a, fp_int *b, fp_int *c)
   fp_clamp(c);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/addsub/s_fp_sub.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

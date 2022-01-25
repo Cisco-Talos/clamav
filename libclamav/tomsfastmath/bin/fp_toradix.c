@@ -1,59 +1,31 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
+/**
+ * a:		pointer to fp_int representing the input number
+ * str:		output buffer
+ * radix:	number of character to use for encoding of the number
+ *
+ * The radix value can be in the range 2 to 64. This function converts number
+ * a into a string str. Please don't use this function because a too small
+ * chosen str buffer would lead to an overflow which can not be detected.
+ * Please use fp_toradix_n() instead.
+ *
+ * Return: FP_VAL on error, FP_OKAY on success.
+ */
 int fp_toradix(fp_int *a, char *str, int radix)
 {
-  int     digs;
-  fp_int  t;
-  fp_digit d;
-  char   *_s = str;
-
-  /* check range of the radix */
-  if (radix < 2 || radix > 64) {
-    return FP_VAL;
-  }
-
-  /* quick out if its zero */
-  if (fp_iszero(a) == 1) {
-     *str++ = '0';
-     *str = '\0';
-     return FP_OKAY;
-  }
-
-  fp_init_copy(&t, a);
-
-  /* if it is negative output a - */
-  if (t.sign == FP_NEG) {
-    ++_s;
-    *str++ = '-';
-    t.sign = FP_ZPOS;
-  }
-
-  digs = 0;
-  while (fp_iszero (&t) == FP_NO) {
-    fp_div_d (&t, (fp_digit) radix, &t, &d);
-    *str++ = fp_s_rmap[d];
-    ++digs;
-  }
-
-  /* reverse the digits of the string.  In this case _s points
-   * to the first digit [exluding the sign] of the number]
-   */
-  fp_reverse ((unsigned char *)_s, digs);
-
-  /* append a NULL so the string is properly terminated */
-  *str = '\0';
-  return FP_OKAY;
+   return fp_toradix_n(a, str, radix, INT_MAX);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_toradix.c,v $ */
-/* $Revision: 1.2 $ */
-/* $Date: 2007/02/27 02:38:44 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

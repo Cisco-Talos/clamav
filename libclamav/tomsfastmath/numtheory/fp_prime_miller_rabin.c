@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* Miller-Rabin test of "a" to the base of "b" as described in 
  * HAC pp. 139 Algorithm 4.24
@@ -72,6 +72,6 @@ void fp_prime_miller_rabin (fp_int * a, fp_int * b, int *result)
   *result = FP_YES;
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/numtheory/fp_prime_miller_rabin.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2007/01/24 21:25:19 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

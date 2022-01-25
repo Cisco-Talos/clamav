@@ -1,18 +1,21 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 int fp_read_radix(fp_int *a, const char *str, int radix)
 {
   int     y, neg;
   char    ch;
+
+  /* set the integer to the default of zero */
+  fp_zero (a);
 
   /* make sure the radix is ok */
   if (radix < 2 || radix > 64) {
@@ -29,16 +32,13 @@ int fp_read_radix(fp_int *a, const char *str, int radix)
     neg = FP_ZPOS;
   }
 
-  /* set the integer to the default of zero */
-  fp_zero (a);
-
   /* process each digit of the string */
   while (*str) {
     /* if the radix < 36 the conversion is case insensitive
      * this allows numbers like 1AB and 1ab to represent the same  value
      * [e.g. in hex]
      */
-    ch = (char) ((radix < 36) ? toupper (*str) : *str);
+    ch = (char) ((radix <= 36) ? toupper ((int)*str) : *str);
     for (y = 0; y < 64; y++) {
       if (ch == fp_s_rmap[y]) {
          break;
@@ -65,6 +65,6 @@ int fp_read_radix(fp_int *a, const char *str, int radix)
   return FP_OKAY;
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/bin/fp_read_radix.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

@@ -42,23 +42,20 @@
 #define OID_2_16_840_1_101_3_4_2_3 "\x60\x86\x48\x01\x65\x03\x04\x02\x03"
 #define OID_sha512 OID_2_16_840_1_101_3_4_2_3
 
-int cli_crt_init(cli_crt *x509)
-{
-    int ret;
+#define FP_INIT_MULTI(a, b, c) (fp_init(a), fp_init(b), fp_init(c))
+#define FP_CLEAR_MULTI(...)
 
+void cli_crt_init(cli_crt *x509)
+{
     memset(x509, 0, sizeof(*x509));
 
-    if ((ret = mp_init_multi(&x509->n, &x509->e, &x509->sig, NULL))) {
-        cli_errmsg("cli_crt_init: mp_init_multi failed with %d\n", ret);
-        return 1;
-    }
-    return 0;
+    // FP_INIT_MULTI is a memset for each and cannot fail.
+    FP_INIT_MULTI(&x509->n, &x509->e, &x509->sig);
 }
 
 void cli_crt_clear(cli_crt *x509)
 {
-    UNUSEDPARAM(x509);
-    mp_clear_multi(&x509->n, &x509->e, &x509->sig, NULL);
+    FP_CLEAR_MULTI(&x509->n, &x509->e, &x509->sig);
 }
 
 /* Look for an existing certificate in the trust store `m`.  This search allows
@@ -121,7 +118,7 @@ cli_crt *crtmgr_trust_list_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
             if (x509->hashtype != i->hashtype ||
                 memcmp(x509->issuer, i->issuer, sizeof(i->issuer)) ||
                 x509->ignore_serial != i->ignore_serial ||
-                mp_cmp(&x509->e, &i->e)) {
+                fp_cmp(&x509->e, &i->e)) {
                 continue;
             }
         }
@@ -138,7 +135,7 @@ cli_crt *crtmgr_trust_list_lookup(crtmgr *m, cli_crt *x509, int crb_crts_only)
             (i->codeSign | x509->codeSign) == i->codeSign &&
             (i->timeSign | x509->timeSign) == i->timeSign &&
             !memcmp(x509->subject, i->subject, sizeof(i->subject)) &&
-            !mp_cmp(&x509->n, &i->n)) {
+            !fp_cmp(&x509->n, &i->n)) {
             return i;
         }
     }
@@ -169,7 +166,7 @@ cli_crt *crtmgr_block_list_lookup(crtmgr *m, cli_crt *x509)
 
         if (!i->isBlocked ||
             memcmp(i->subject, x509->subject, sizeof(i->subject)) ||
-            mp_cmp(&x509->n, &i->n)) {
+            fp_cmp(&x509->n, &i->n)) {
             continue;
         }
 
@@ -197,7 +194,6 @@ cli_crt *crtmgr_lookup(crtmgr *m, cli_crt *x509)
 int crtmgr_add(crtmgr *m, cli_crt *x509)
 {
     cli_crt *i;
-    int ret = 0;
 
     if (x509->isBlocked) {
         if (crtmgr_block_list_lookup(m, x509)) {
@@ -215,17 +211,12 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
     if (!i)
         return 1;
 
-    if ((ret = mp_init_multi(&i->n, &i->e, &i->sig, NULL))) {
-        cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
-        free(i);
-        return 1;
-    }
-    if ((ret = mp_copy(&x509->n, &i->n)) || (ret = mp_copy(&x509->e, &i->e)) || (ret = mp_copy(&x509->sig, &i->sig))) {
-        cli_warnmsg("crtmgr_add: failed to mp_init failed with %d\n", ret);
-        cli_crt_clear(i);
-        free(i);
-        return 1;
-    }
+    // FP_INIT_MULTI is a memset for each and cannot fail.
+    FP_INIT_MULTI(&i->n, &i->e, &i->sig);
+
+    fp_copy(&x509->n, &i->n);
+    fp_copy(&x509->e, &i->e);
+    fp_copy(&x509->sig, &i->sig);
 
     if ((x509->name))
         i->name = strdup(x509->name);
@@ -290,12 +281,12 @@ void crtmgr_free(crtmgr *m)
         crtmgr_del(m, m->crts);
 }
 
-static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash)
+static int crtmgr_rsa_verify(cli_crt *x509, fp_int *sig, cli_crt_hashtype hashtype, const uint8_t *refhash)
 {
-    int keylen = mp_unsigned_bin_size(&x509->n), siglen = mp_unsigned_bin_size(sig);
+    int keylen = fp_unsigned_bin_size(&x509->n), siglen = fp_unsigned_bin_size(sig);
     int ret, j, objlen, hashlen;
     uint8_t d[513];
-    mp_int x;
+    fp_int x;
 
     if (hashtype == CLI_SHA1RSA) {
         hashlen = SHA1_HASH_SIZE;
@@ -312,32 +303,28 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
         return 1;
     }
 
-    if ((ret = mp_init(&x))) {
-        cli_errmsg("crtmgr_rsa_verify: mp_init failed with %d\n", ret);
-        return 1;
-    }
+    fp_init(&x);
 
     do {
         if (MAX(keylen, siglen) - MIN(keylen, siglen) > 1) {
             cli_dbgmsg("crtmgr_rsa_verify: keylen and siglen differ by more than one\n");
             break;
         }
-        if ((ret = mp_exptmod(sig, &x509->e, &x509->n, &x))) {
-            cli_warnmsg("crtmgr_rsa_verify: verification failed: mp_exptmod failed with %d\n", ret);
+        if ((ret = fp_exptmod(sig, &x509->e, &x509->n, &x))) {
+            cli_warnmsg("crtmgr_rsa_verify: verification failed: fp_exptmod failed with %d\n", ret);
             break;
         }
-        if (mp_unsigned_bin_size(&x) != keylen - 1) {
+        if (fp_unsigned_bin_size(&x) != keylen - 1) {
             cli_dbgmsg("crtmgr_rsa_verify: keylen-1 doesn't match expected size of exptmod result\n");
             break;
         }
-        if (((unsigned int)mp_unsigned_bin_size(&x)) > sizeof(d)) {
+        if (((unsigned int)fp_unsigned_bin_size(&x)) > sizeof(d)) {
             cli_dbgmsg("crtmgr_rsa_verify: exptmod result would overrun working buffer\n");
             break;
         }
-        if ((ret = mp_to_unsigned_bin(&x, d))) {
-            cli_warnmsg("crtmgr_rsa_verify: mp_unsigned_bin_size failed with %d\n", ret);
-            break;
-        }
+
+        fp_to_unsigned_bin(&x, d);
+
         if (*d != 1) { /* block type 1 */
             cli_dbgmsg("crtmgr_rsa_verify: expected block type 1 at d[0]\n");
             break;
@@ -451,12 +438,10 @@ static int crtmgr_rsa_verify(cli_crt *x509, mp_int *sig, cli_crt_hashtype hashty
             break;
         }
 
-        mp_clear(&x);
         return 0;
 
     } while (0);
 
-    mp_clear(&x);
     return 1;
 }
 
@@ -508,22 +493,16 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
 cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *serial, const void *signature, unsigned int signature_len, cli_crt_hashtype hashtype, const uint8_t *refhash, cli_vrfy_type vrfytype)
 {
     cli_crt *i;
-    mp_int sig;
-    int ret;
+    fp_int sig;
 
     if (signature_len < 1024 / 8 || signature_len > 4096 / 8 + 1) {
         cli_dbgmsg("crtmgr_verify_pkcs7: unsupported sig len: %u\n", signature_len);
         return NULL;
     }
-    if ((ret = mp_init(&sig))) {
-        cli_dbgmsg("crtmgr_verify_pkcs7: mp_init failed with %d\n", ret);
-        return NULL;
-    }
 
-    if ((ret = mp_read_unsigned_bin(&sig, signature, signature_len))) {
-        cli_dbgmsg("crtmgr_verify_pkcs7: mp_read_unsigned_bin failed with %d\n", ret);
-        return NULL;
-    }
+    fp_init(&sig);
+
+    fp_read_unsigned_bin(&sig, signature, signature_len);
 
     for (i = m->crts; i; i = i->next) {
         if (vrfytype == VRFY_CODE && !i->codeSign)
@@ -538,7 +517,7 @@ cli_crt *crtmgr_verify_pkcs7(crtmgr *m, const uint8_t *issuer, const uint8_t *se
             cli_dbgmsg("crtmgr_verify_pkcs7: found cert with matching issuer and serial but RSA verification failed\n");
         }
     }
-    mp_clear(&sig);
+
     return i;
 }
 

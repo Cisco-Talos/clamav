@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* computes a = 2**b */
 void fp_2expt(fp_int *a, int b)
@@ -34,6 +34,6 @@ void fp_2expt(fp_int *a, int b)
 }
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/exptmod/fp_2expt.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

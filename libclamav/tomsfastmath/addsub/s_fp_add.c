@@ -7,7 +7,7 @@
  * 
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 /* unsigned addition */
 void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
@@ -18,7 +18,7 @@ void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
   y       = MAX(a->used, b->used);
   oldused = MIN(c->used, FP_SIZE);
   c->used = y;
-
+ 
   t = 0;
   for (x = 0; x < y; x++) {
       t         += ((fp_word)a->dp[x]) + ((fp_word)b->dp[x]);
@@ -37,6 +37,6 @@ void s_fp_add(fp_int *a, fp_int *b, fp_int *c)
   fp_clamp(c);
 }
 
-/* $Source: /cvs/libtom/tomsfastmath/src/addsub/s_fp_add.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */

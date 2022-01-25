@@ -1,13 +1,13 @@
 /* TomsFastMath, a fast ISO C bignum library.
- * 
+ *
  * This project is meant to fill in where LibTomMath
  * falls short.  That is speed ;-)
  *
  * This project is public domain and free for all purposes.
- * 
+ *
  * Tom St Denis, tomstdenis@gmail.com
  */
-#include "bignum_fast.h"
+#include <tfm_private.h>
 
 const char *fp_ident(void)
 {
@@ -15,11 +15,14 @@ const char *fp_ident(void)
 
    memset(buf, 0, sizeof(buf));
    snprintf(buf, sizeof(buf)-1,
-"TomsFastMath (%s)\n"
+"TomsFastMath " TFM_VERSION_S "\n"
+#if defined(TFM_IDENT_BUILD_DATE)
+"Built on " __DATE__ " at " __TIME__ "\n"
+#endif
 "\n"
 "Sizeofs\n"
-"\tfp_digit = %llu\n"
-"\tfp_word  = %llu\n"
+"\tfp_digit = %lu\n"
+"\tfp_word  = %lu\n"
 "\n"
 "FP_MAX_SIZE = %u\n"
 "\n"
@@ -70,11 +73,11 @@ const char *fp_ident(void)
 #ifdef TFM_HUGE
 " TFM_HUGE "
 #endif
-            "\n", __DATE__, (long long unsigned)sizeof(fp_digit), (long long unsigned)sizeof(fp_word), FP_MAX_SIZE);
+"\n", (unsigned long)sizeof(fp_digit), (unsigned long)sizeof(fp_word), FP_MAX_SIZE);
 
    if (sizeof(fp_digit) == sizeof(fp_word)) {
-      strncat(buf, "WARNING: sizeof(fp_digit) == sizeof(fp_word), this build is likely to not work properly.\n", 
-              sizeof(buf)-strlen(buf)-1);
+      strncat(buf, "WARNING: sizeof(fp_digit) == sizeof(fp_word), this build is likely to not work properly.\n",
+              sizeof(buf) - strlen(buf) - 1);
    }
    return buf;
 }
@@ -90,6 +93,6 @@ int main(void)
 #endif
 
 
-/* $Source: /cvs/libtom/tomsfastmath/src/misc/fp_ident.c,v $ */
-/* $Revision: 1.1 $ */
-/* $Date: 2006/12/31 21:25:53 $ */
+/* $Source$ */
+/* $Revision$ */
+/* $Date$ */
