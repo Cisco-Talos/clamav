@@ -979,8 +979,17 @@ if(NOT ENABLE_EXTERNAL_MSPACK)
     add_subdirectory( libclammspack )
     set(LIBMSPACK "ClamAV::libmspack")
 else()
-    find_package(MSPack)
+    find_package(MSPack REQUIRED)
     set(LIBMSPACK "MSPack::mspack")
+endif()
+
+if(NOT ENABLE_EXTERNAL_TOMSFASTMATH)
+    # TomsFastMath built as an object library within libclamav, at least for now.
+    set(LIBTFM "tomsfastmath")
+else()
+    find_package(TomsFastMath REQUIRED)
+    set(HAVE_SYSTEM_TOMSFASTMATH 1)
+    set(LIBTFM "TomsFastMath::TomsFastMath")
 endif()
 
 if(WIN32)

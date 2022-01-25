@@ -35,7 +35,7 @@ Cache Variables
 The following cache variables may also be set:
 
 ``MSPack_INCLUDE_DIR``
-  The directory containing ``foo.h``.
+  The directory containing ``mspack.h``.
 ``MSPack_LIBRARY``
   The path to the MSPack library.
 
