@@ -52,7 +52,7 @@ if(ENABLE_APP)
             regex
             lzma_sdk
             yara
-            tomsfastmath
+            ${LIBTFM}
             bytecode_runtime
             JSONC::jsonc
             ${LIBMSPACK}
@@ -92,7 +92,7 @@ if(ENABLE_APP)
             regex
             lzma_sdk
             yara
-            tomsfastmath
+            ${LIBTFM}
             bytecode_runtime
             JSONC::jsonc
             ${LIBMSPACK}
@@ -144,7 +144,7 @@ target_link_libraries(check_clamav
         regex
         lzma_sdk
         yara
-        tomsfastmath
+        ${LIBTFM}
         bytecode_runtime
         JSONC::jsonc
         ${LIBMSPACK}
@@ -198,6 +198,10 @@ if(WIN32)
     file(TO_NATIVE_PATH $<TARGET_FILE:PThreadW32::pthreadw32>                   LIBPTHREADW32)
     file(TO_NATIVE_PATH $<TARGET_FILE:ClamAV::win32_compat>                     LIBWIN32COMPAT)
 
+    if (ENABLE_EXTERNAL_TOMSFASTMATH)
+        file(TO_NATIVE_PATH $<TARGET_FILE:${LIBTFM}>                            LIBTFM_PATH)
+    endif()
+
     if(ENABLE_STATIC_LIB)
         file(TO_NATIVE_PATH $<TARGET_FILE:clamav_static>                        LIBCLAMAV)
         file(TO_NATIVE_PATH $<TARGET_FILE:clammspack_static>                    LIBCLAMMSPACK)
@@ -230,7 +234,10 @@ else()
     if (ENABLE_UNRAR)
         set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:ClamAV::libunrar_iface>:$<TARGET_FILE_DIR:ClamAV::libunrar>)
     endif()
-
+    if (ENABLE_EXTERNAL_TOMSFASTMATH)
+        set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:$<TARGET_FILE_DIR:${LIBTFM}>)
+        set(LIBTFM_PATH     $<TARGET_FILE:${LIBTFM}>)
+    endif()
 
     set(SOURCE             ${CMAKE_SOURCE_DIR})
     set(BUILD              ${CMAKE_BINARY_DIR})
@@ -302,6 +309,7 @@ set(ENVIRONMENT
     LIBCURL=${LIBCURL}
     LIBJSONC=${LIBJSONC}
     LIBICONV=${LIBICONV}
+    LIBTFM=${LIBTFM_PATH}
     LIBPTHREADW32=${LIBPTHREADW32}
     LIBWIN32COMPAT=${LIBWIN32COMPAT}
     LIBCLAMAV=${LIBCLAMAV}
