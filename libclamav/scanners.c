@@ -2103,7 +2103,7 @@ done:
     return status;
 }
 
-static cl_error_t cli_ole2_tempdir_scan_xlm(const char *dir, cli_ctx *ctx, struct uniq *U)
+static cl_error_t cli_ole2_tempdir_scan_for_xlm_and_images(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
     cl_error_t ret             = CL_CLEAN;
     char *hash                 = NULL;
@@ -2114,7 +2114,7 @@ static cl_error_t cli_ole2_tempdir_scan_xlm(const char *dir, cli_ctx *ctx, struc
 
     if (CL_SUCCESS != (ret = uniq_get(U, STR_WORKBOOK, sizeof(STR_WORKBOOK) - 1, &hash, &hashcnt))) {
         if (CL_SUCCESS != (ret = uniq_get(U, STR_BOOK, sizeof(STR_BOOK) - 1, &hash, &hashcnt))) {
-            cli_dbgmsg("cli_ole2_tempdir_scan_xlm: uniq_get('%s') failed with ret code (%d)!\n", STR_BOOK, ret);
+            cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: uniq_get('%s') failed with ret code (%d)!\n", STR_BOOK, ret);
             goto done;
         }
     }
@@ -2126,18 +2126,12 @@ static cl_error_t cli_ole2_tempdir_scan_xlm(const char *dir, cli_ctx *ctx, struc
                 case CL_EMEM:
                     goto done;
                 default:
-                    cli_dbgmsg("cli_ole2_tempdir_scan_xlm: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
+                    cli_dbgmsg("cli_ole2_tempdir_scan_for_xlm_and_images: An error occured when parsing XLM BIFF temp file, skipping to next file.\n");
             }
         }
     }
 
 done:
-    if (SCAN_HEURISTIC_MACROS) {
-        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
-        if (ret == CL_VIRUS)
-            viruses_found++;
-    }
-
     if (SCAN_ALLMATCHES && viruses_found)
         return CL_VIRUS;
     return ret;
@@ -2592,10 +2586,22 @@ static cl_error_t cli_ole2_scan_tempdir(
         }
     }
 
+    if (has_xlm) {
+        if (SCAN_HEURISTIC_MACROS) {
+            status = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
+            if (status == CL_VIRUS) {
+                viruses_found++;
+                if (!SCAN_ALLMATCHES) {
+                    goto done;
+                }
+            }
+        }
+    }
+
     if (has_xlm || has_image) {
         /* TODO: Consider moving image extraction to handler_enum and
          * removing the has_image and found_image stuff. */
-        status = cli_ole2_tempdir_scan_xlm(dir, ctx, files);
+        status = cli_ole2_tempdir_scan_for_xlm_and_images(dir, ctx, files);
         if (CL_VIRUS == status) {
             viruses_found++;
             if (!SCAN_ALLMATCHES) {
