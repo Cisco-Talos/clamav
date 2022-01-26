@@ -919,8 +919,36 @@ static inline int cli_getpagesize(void)
 
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
+
+/**
+ * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
 void *cli_realloc(void *ptr, size_t size);
+
+/**
+ * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * WARNING: This differs from cli_realloc() in that it will free the ptr if the allocation fails.
+ * If you're using `goto done;` error handling, this may result in a double-free!!
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
 void *cli_realloc2(void *ptr, size_t size);
+
 char *cli_strdup(const char *s);
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
@@ -1270,6 +1298,31 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
             } while (0);         \
             goto done;           \
         }                        \
+    } while (0)
+#endif
+
+/**
+ * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * NOTE: cli_realloc() will NOT free var if size==0. It is safe to free var after `done:`.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+#ifndef CLI_REALLOC
+#define CLI_REALLOC(var, size, ...)          \
+    do {                                     \
+        void *vTmp = cli_realloc(var, size); \
+        if (NULL == vTmp) {                  \
+            do {                             \
+                __VA_ARGS__;                 \
+            } while (0);                     \
+            goto done;                       \
+        }                                    \
+        var = vTmp;                          \
     } while (0)
 #endif
 

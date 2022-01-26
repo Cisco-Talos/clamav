@@ -4816,15 +4816,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
                 } else {
                     /* already found the beginning of a drawing group, extract the remaining chunks */
-                    unsigned char *tmp = NULL;
                     drawinggroup_len += biff_header.length;
-                    tmp = realloc(drawinggroup, drawinggroup_len);
-                    if (NULL == tmp) {
-                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    drawinggroup = tmp;
+                    CLI_REALLOC(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
                     // cli_dbgmsg("Collected %d drawing group bytes\n", biff_header.length);
                 }
@@ -4834,15 +4827,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 if ((OPC_MSODRAWINGGROUP == previous_biff8_opcode) &&
                     (NULL != drawinggroup)) {
                     /* already found the beginning of an image, extract the remaining chunks */
-                    unsigned char *tmp = NULL;
                     drawinggroup_len += biff_header.length;
-                    tmp = realloc(drawinggroup, drawinggroup_len);
-                    if (NULL == tmp) {
-                        cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
-                        status = CL_EMEM;
-                        goto done;
-                    }
-                    drawinggroup = tmp;
+                    CLI_REALLOC(drawinggroup, drawinggroup_len, status = CL_EMEM);
                     memcpy(drawinggroup + (drawinggroup_len - biff_header.length), data, biff_header.length);
                     // cli_dbgmsg("Collected %d image bytes\n", biff_header.length);
                 }
@@ -5017,9 +5003,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     status = CL_SUCCESS;
 
 done:
-    if (NULL != drawinggroup) {
-        free(drawinggroup);
-    }
+    FREE(drawinggroup);
 
     if (in_fd != -1) {
         close(in_fd);
@@ -5034,15 +5018,9 @@ done:
         out_fd = -1;
     }
 
-    if (data != NULL) {
-        free(data);
-        data = NULL;
-    }
+    FREE(data);
 
-    if (tempfile != NULL) {
-        free(tempfile);
-        tempfile = NULL;
-    }
+    FREE(tempfile);
 
     return status;
 }
