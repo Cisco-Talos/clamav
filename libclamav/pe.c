@@ -107,9 +107,6 @@
 
 #define PE_MAXNAMESIZE 256
 #define PE_MAXIMPORTS 1024
-// TODO On Vista and above, up to 65535 sections are allowed.  Make sure
-// that using this lower limit from XP is acceptable in all cases
-#define PE_MAXSECTIONS 96
 
 #define EC64(x) ((uint64_t)cli_readint64(&(x))) /* Convert little endian to host */
 #define EC32(x) ((uint32_t)cli_readint32(&(x)))
@@ -2744,7 +2741,7 @@ int cli_scanpe(cli_ctx *ctx)
 {
     uint8_t polipos = 0;
     char epbuff[4096], *tempfile;
-    uint32_t epsize;
+    size_t epsize;
     size_t bytes;
     unsigned int i, j, found, upx_success = 0, err;
     unsigned int ssize = 0, dsize = 0, corrupted_cur;
@@ -2868,6 +2865,11 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     epsize = fmap_readn(map, epbuff, peinfo->ep, 4096);
+    if ((size_t)-1 == epsize) {
+        /* Do not continue, all future logic requires at least a partial read into epbuff */
+        cli_exe_info_destroy(peinfo);
+        return CL_CLEAN;
+    }
 
     /* Disasm scan disabled since it's now handled by the bytecode */
 
@@ -3035,6 +3037,7 @@ int cli_scanpe(cli_ctx *ctx)
                                 cli_dbgmsg("cli_scanpe: kriz: using #%d as size counter\n", kzdsize);
                             }
                             opsz = 4;
+                            /* fall-through */
                         case 0x48:
                         case 0x49:
                         case 0x4a:
@@ -3048,6 +3051,7 @@ int cli_scanpe(cli_ctx *ctx)
                                 kzlen -= opsz;
                                 break;
                             }
+                            /* fall-through */
                         default:
                             kzcode--;
                             kzlen++;
@@ -3077,8 +3081,10 @@ int cli_scanpe(cli_ctx *ctx)
                     break;
                 case KZSXORPRFX:
                     kzstate++;
-                    if (op == 0x3e)
+                    if (op == 0x3e) {
                         break;
+                    }
+                    /* fall-through */
                 case KZSXOR:
                     if (op == 0x80 && *kzcode == kzdptr + 0xb0) {
                         kzxorlen = kzlen;
@@ -4530,7 +4536,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     struct pe_image_optional_hdr32 *opt32;
     struct pe_image_optional_hdr64 *opt64;
     struct pe_image_section_hdr *section_hdrs = NULL;
-    unsigned int i, j, section_pe_idx;
+    size_t i, j, section_pe_idx;
     unsigned int err;
     uint32_t salign, falign;
     size_t fsize;
@@ -4754,7 +4760,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     }
 
     peinfo->nsections = EC16(file_hdr->NumberOfSections);
-    if (peinfo->nsections == 0 || peinfo->nsections > PE_MAXSECTIONS) {
+    if (peinfo->nsections == 0) {
 
 #if HAVE_JSON
         if (opts & CLI_PEHEADER_OPT_COLLECT_JSON) {
@@ -4767,8 +4773,6 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             !ctx->corrupted_input) {
             if (peinfo->nsections == 0) {
                 cli_dbgmsg("cli_peheader: Invalid NumberOfSections (0)\n");
-            } else {
-                cli_dbgmsg("cli_peheader: Invalid NumberOfSections (>%d)\n", PE_MAXSECTIONS);
             }
         }
         ret = CLI_PEHEADER_RET_BROKEN_PE;
@@ -5118,7 +5122,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     // that PointerToRawData is expected to be a multiple of the file
     // alignment.  Should we report this is as a PE with an error?
 
-    for (i = 0; falign != 0x200 && i < peinfo->nsections; i++) {
+    for (i = 0; falign != 0x200 && i < (size_t)peinfo->nsections; i++) {
         /* file alignment fallback mode - blah */
         if (falign && section_hdrs[i].SizeOfRawData && EC32(section_hdrs[i].PointerToRawData) % falign && !(EC32(section_hdrs[i].PointerToRawData) % 0x200)) {
             cli_dbgmsg("cli_peheader: Encountered section with unexpected alignment - triggering fallback mode\n");
@@ -5150,7 +5154,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
          * section from the list or zero out it's size. */
         if (section->rsz) { /* Don't bother with virtual only sections */
             if (section->raw >= fsize || section->uraw >= fsize) {
-                cli_dbgmsg("cli_peheader: Broken PE file - Section %d starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
+                cli_dbgmsg("cli_peheader: Broken PE file - Section %zu starts or exists beyond the end of file (Offset@ %lu, Total filesize %lu)\n", section_pe_idx, (unsigned long)section->raw, (unsigned long)fsize);
 
                 if (opts & CLI_PEHEADER_OPT_REMOVE_MISSING_SECTIONS) {
                     if (peinfo->nsections == 1) {
@@ -5158,10 +5162,10 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                         goto done;
                     }
 
-                    for (j = i; j < peinfo->nsections - 1; j++)
+                    for (j = i; j < (size_t)(peinfo->nsections - 1); j++)
                         memcpy(&(peinfo->sections[j]), &(peinfo->sections[j + 1]), sizeof(struct cli_exe_section));
 
-                    for (j = i; j < peinfo->nsections - 1; j++)
+                    for (j = i; j < (size_t)(peinfo->nsections - 1); j++)
                         memcpy(&section_hdrs[j], &section_hdrs[j + 1], sizeof(struct pe_image_section_hdr));
 
                     peinfo->nsections--;
@@ -5178,12 +5182,12 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
                 /* If a section is truncated, adjust it's size value */
                 if (!CLI_ISCONTAINED_0_TO(fsize, section->raw, section->rsz)) {
-                    cli_dbgmsg("cli_peheader: PE Section %d raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
+                    cli_dbgmsg("cli_peheader: PE Section %zu raw+rsz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->raw + section->rsz) - fsize);
                     section->rsz = fsize - section->raw;
                 }
 
                 if (!CLI_ISCONTAINED_0_TO(fsize, section->uraw, section->ursz)) {
-                    cli_dbgmsg("cli_peheader: PE Section %d uraw+ursz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->uraw + section->ursz) - fsize);
+                    cli_dbgmsg("cli_peheader: PE Section %zu uraw+ursz extends past the end of the file by %lu bytes\n", section_pe_idx, (section->uraw + section->ursz) - fsize);
                     section->ursz = fsize - section->uraw;
                 }
             }
@@ -5209,7 +5213,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             section->vsz = PESALIGN(section->ursz, salign);
 
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
-            cli_dbgmsg("Section %d\n", section_pe_idx);
+            cli_dbgmsg("Section %zu\n", section_pe_idx);
             cli_dbgmsg("Section name: %s\n", sname);
             cli_dbgmsg("Section data (from headers - in memory)\n");
             cli_dbgmsg("VirtualSize: 0x%x 0x%x\n", section->uvsz, section->vsz);
@@ -5344,7 +5348,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
         err = 0;
         for (i = 0; i < vlist.count; i++) { /* enum all version_information res - RESUMABLE */
-            cli_dbgmsg("cli_peheader: parsing version info @ rva %x (%u/%u)\n", vlist.rvas[i], i + 1, vlist.count);
+            cli_dbgmsg("cli_peheader: parsing version info @ rva %x (%zu/%u)\n", vlist.rvas[i], i + 1, vlist.count);
             rva = cli_rawaddr(vlist.rvas[i], peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (err)
                 continue;
