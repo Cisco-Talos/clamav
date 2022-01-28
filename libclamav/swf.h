@@ -36,7 +36,7 @@
 
 #include "others.h"
 
-int cli_scanswf(cli_ctx *ctx);
+cl_error_t cli_scanswf(cli_ctx *ctx);
 
 typedef enum {
     TAG_END                 = 0,

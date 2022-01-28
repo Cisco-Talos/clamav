@@ -119,19 +119,21 @@ struct swf_file_hdr {
     uint32_t filesize;
 };
 
-static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
+static cl_error_t scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     struct CLI_LZMA lz;
     unsigned char inbuff[FILEBUFF], outbuff[FILEBUFF];
     fmap_t *map = ctx->fmap;
     /* strip off header */
-    off_t offset = 8;
+    size_t offset = 8;
     uint32_t d_insize;
     size_t outsize = 8;
-    int ret, lret;
+    cl_error_t ret;
+    int lret;
     size_t count;
     char *tmpname;
     int fd;
+    size_t n_read;
 
     if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
         cli_errmsg("scanzws: Can't generate temporary file\n");
@@ -174,8 +176,8 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     }
 
     /* first buffer required for initializing LZMA */
-    ret = fmap_readn(map, inbuff, offset, FILEBUFF);
-    if (ret < 0) {
+    n_read = fmap_readn(map, inbuff, offset, FILEBUFF);
+    if (n_read == (size_t)-1) {
         cli_errmsg("scanzws: Error reading SWF file\n");
         close(fd);
         if (cli_unlink(tmpname)) {
@@ -186,7 +188,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         return CL_EUNPACK;
     }
     /* nothing written, likely truncated */
-    if (!ret) {
+    if (0 == n_read) {
         cli_errmsg("scanzws: possibly truncated file\n");
         close(fd);
         if (cli_unlink(tmpname)) {
@@ -196,12 +198,12 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         free(tmpname);
         return CL_EFORMAT;
     }
-    offset += ret;
+    offset += n_read;
 
     memset(&lz, 0, sizeof(lz));
     lz.next_in   = inbuff;
     lz.next_out  = outbuff;
-    lz.avail_in  = ret;
+    lz.avail_in  = n_read;
     lz.avail_out = FILEBUFF;
 
     lret = cli_LzmaInit(&lz, hdr->filesize);
@@ -220,8 +222,8 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         if (lz.avail_in == 0) {
             lz.next_in = inbuff;
 
-            ret = fmap_readn(map, inbuff, offset, FILEBUFF);
-            if (ret < 0) {
+            n_read = fmap_readn(map, inbuff, offset, FILEBUFF);
+            if ((size_t)-1 == n_read) {
                 cli_errmsg("scanzws: Error reading SWF file\n");
                 cli_LzmaShutdown(&lz);
                 close(fd);
@@ -232,10 +234,10 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                 free(tmpname);
                 return CL_EUNPACK;
             }
-            if (!ret)
+            if (0 == n_read)
                 break;
-            lz.avail_in = ret;
-            offset += ret;
+            lz.avail_in = n_read;
+            offset += n_read;
         }
         lret  = cli_LzmaDecode(&lz);
         count = FILEBUFF - lz.avail_out;
@@ -299,14 +301,17 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     return ret;
 }
 
-static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
+static cl_error_t scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     z_stream stream;
     char inbuff[FILEBUFF], outbuff[FILEBUFF];
-    fmap_t *map    = ctx->fmap;
-    int offset     = 8, ret, zret, zend;
+    fmap_t *map   = ctx->fmap;
+    size_t offset = 8;
+    int zret, zend;
+    cl_error_t ret;
     size_t outsize = 8;
     size_t count;
+    size_t n_read;
     char *tmpname;
     int fd;
 
@@ -350,8 +355,8 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     do {
         if (stream.avail_in == 0) {
             stream.next_in = (Bytef *)inbuff;
-            ret            = fmap_readn(map, inbuff, offset, FILEBUFF);
-            if (ret < 0) {
+            n_read         = fmap_readn(map, inbuff, offset, FILEBUFF);
+            if (n_read == (size_t)-1) {
                 cli_errmsg("scancws: Error reading SWF file\n");
                 close(fd);
                 inflateEnd(&stream);
@@ -362,10 +367,10 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                 free(tmpname);
                 return CL_EUNPACK;
             }
-            if (!ret)
+            if (0 == n_read)
                 break;
-            stream.avail_in = ret;
-            offset += ret;
+            stream.avail_in = n_read;
+            offset += n_read;
         }
         zret  = inflate(&stream, Z_SYNC_FLUSH);
         count = FILEBUFF - stream.avail_out;
@@ -442,7 +447,7 @@ static const char *tagname(tag_id id)
     return NULL;
 }
 
-int cli_scanswf(cli_ctx *ctx)
+cl_error_t cli_scanswf(cli_ctx *ctx)
 {
     struct swf_file_hdr file_hdr;
     fmap_t *map = ctx->fmap;
@@ -495,7 +500,10 @@ int cli_scanswf(cli_ctx *ctx)
         cli_dbgmsg("SWF: FrameSize xMin %u xMax %u yMin %u yMax %u\n", xMin, xMax, yMin, yMax);
     }
 
+    /* We don't need the value from foo, we're just reading to increment the offset safely. */
     GETWORD(foo);
+    UNUSEDPARAM(foo);
+
     GETWORD(val);
     cli_dbgmsg("SWF: Frames total: %d\n", val);
 
@@ -520,7 +528,7 @@ int cli_scanswf(cli_ctx *ctx)
             cli_dbgmsg("SWF: Invalid tag length.\n");
             return CL_EFORMAT;
         }
-        if ((offset + tag_len) < offset) {
+        if (tag_len > SIZE_MAX - offset) {
             cli_warnmsg("SWF: Tag length too large.\n");
             break;
         }
