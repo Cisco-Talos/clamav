@@ -434,7 +434,16 @@ int logg(const char *str, ...)
                 cli_ctime(&currtime, timestr, sizeof(timestr));
                 /* cut trailing \n */
                 timestr[strlen(timestr) - 1] = '\0';
-                mprintf("%s -> %s", timestr, buff);
+
+                if (*buff == '!') {
+                    mprintf("%s -> ERROR: %s", timestr, buff + 1);
+                } else if (*buff == '^') {
+                    mprintf("%s -> WARNING: %s", timestr, buff + 1);
+                } else if (*buff == '~') {
+                    mprintf("%s -> %s", timestr, buff + 1);
+                } else
+                    mprintf("%s -> %s", timestr, buff);
+                
             } else {
                 mprintf("%s", buff);
             }
