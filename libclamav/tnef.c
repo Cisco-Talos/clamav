@@ -268,7 +268,7 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
 
     /*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-    if (!CLI_ISCONTAINED_2(0, fsize, offset, length)) {
+    if (!CLI_ISCONTAINED_2_0_TO(fsize, offset, length)) {
         cli_dbgmsg("TNEF: Incorrect length field in tnef_message\n");
         return -1;
     }
@@ -327,13 +327,13 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
             todo = length;
             while (todo) {
                 unsigned char buf[BUFSIZ];
-                int32_t got = fmap_readn(map, buf, *pos, MIN(sizeof(buf), todo));
-                if (got <= 0)
+                size_t got = fmap_readn(map, buf, *pos, MIN(sizeof(buf), todo));
+                if (got == 0 || got == (size_t)-1)
                     break;
-                (*pos) += got;
+                (*pos) += (off_t)got;
 
                 fileblobAddData(*fbref, buf, got);
-                todo -= got;
+                todo -= (uint32_t)got;
             }
             break;
         default:
@@ -344,11 +344,11 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
 
     /*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-    if (!CLI_ISCONTAINED_2(0, fsize, (off_t)offset, (off_t)length)) {
+    if (!CLI_ISCONTAINED_2_0_TO(fsize, offset, length)) {
         cli_dbgmsg("TNEF: Incorrect length field in tnef_attachment\n");
         return -1;
     }
-    (*pos) = (long)(offset + length); /* shouldn't be needed */
+    (*pos) = offset + (off_t)length; /* shouldn't be needed */
 
     (*pos) += 2;
 
