@@ -130,6 +130,22 @@ extern uint8_t cli_always_gen_section_hash;
      (size_t)(sb) + (size_t)(sb_size) >= (size_t)(bb) &&                     \
      (size_t)(sb) <= (size_t)(bb) + (size_t)(bb_size))
 
+/*
+ * CLI_ISCONTAINED_2(bb, bb_size, sb, sb_size) checks if sb (small buffer) is
+ * within bb (big buffer).
+ *
+ * CLI_ISCONTAINED_2 is the same as CLI_ISCONTAINED except that it allows for
+ * small-buffers with sb_size == 0.
+ *
+ * CLI_ISCONTAINED_2_0_TO is the same as CLI_ISCONTAINED_2 except that `bb` is gone
+ * and assumed ot be zero.
+ */
+#define CLI_ISCONTAINED_2_0_TO(bb_size, sb, sb_size)          \
+    ((size_t)(bb_size) > 0 &&                                 \
+     (size_t)(sb_size) <= (size_t)(bb_size) &&                \
+     (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb_size) && \
+     (size_t)(sb) <= (size_t)(bb_size))
+
 #define CLI_MAX_ALLOCATION (182 * 1024 * 1024)
 
 #ifdef HAVE_SYS_PARAM_H
