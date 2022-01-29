@@ -55,14 +55,14 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     do {
         store = cert_store_get_int();
         if (!store) {
-            mprintf("!Failed to retrieve cert store\n");
+            mprintf(ERROR, "Failed to retrieve cert store\n");
             break;
         }
 
         pt_err = pthread_mutex_lock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf("!Mutex lock failed\n");
+            mprintf(ERROR, "Mutex lock failed\n");
         }
 
         if (store->loaded) {
@@ -77,10 +77,10 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
         if (trusted_certs && trusted_cert_count > 0) {
             if (cert_store_set_trusted_int(trusted_certs, trusted_cert_count) == 0) {
-                mprintf("*Trusted certificates loaded: %zu\n",
+                mprintf(DEBUG, "Trusted certificates loaded: %zu\n",
                         store->trusted_certs.count);
             } else {
-                mprintf("^Continuing without trusted certificates\n");
+                mprintf(WARNING, "Continuing without trusted certificates\n");
                 /* proceed as if we succeeded using only certificates from the
                  * system */
             }
@@ -94,7 +94,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         pt_err = pthread_mutex_unlock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf("!Mutex unlock failed\n");
+            mprintf(ERROR, "Mutex unlock failed\n");
         }
     }
 

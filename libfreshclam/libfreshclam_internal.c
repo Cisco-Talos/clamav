@@ -2308,9 +2308,9 @@ fc_error_t updatedb(
 #endif
         {
             if (remoteVersion - localVersion == 1) {
-                mprintf("Current database is 1 version behind.\n");
+                mprintf(INFO, "Current database is 1 version behind.\n");
             } else {
-                mprintf("Current database is %u versions behind.\n", remoteVersion - localVersion);
+                mprintf(INFO, "Current database is %u versions behind.\n", remoteVersion - localVersion);
             }
         }
         for (i = localVersion + 1; i <= remoteVersion; i++) {
@@ -2325,7 +2325,7 @@ fc_error_t updatedb(
                 if (!mprintf_quiet)
 #endif
                 {
-                    mprintf("Downloading database patch # %u...\n", i);
+                    mprintf(INFO, "Downloading database patch # %u...\n", i);
                 }
                 ret = downloadPatch(database, tmpdir, i, server, llogerr);
                 if (ret == FC_ECONNECTION || ret == FC_EFAILEDGET) {

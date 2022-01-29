@@ -167,12 +167,12 @@ int main(int argc, char **argv)
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGUSR2, &sa, NULL);
     if (!setlocale(LC_CTYPE, "")) {
-        mprintf("^Failed to set locale\n");
+        mprintf(WARNING, "Failed to set locale\n");
     }
 #endif
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        mprintf("!Can't parse command line options\n");
+        mprintf(ERROR, "Can't parse command line options\n");
         return 1;
     }
 

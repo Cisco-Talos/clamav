@@ -205,7 +205,7 @@ int main(int argc, char **argv)
             break;
         case CL_EARG:
         default:
-            mprintf("!Clamonacc: can't setup fanotify\n");
+            mprintf(ERROR, "Clamonacc: can't setup fanotify\n");
             ret = 2;
             goto done;
             break;
@@ -222,14 +222,14 @@ int main(int argc, char **argv)
                 break;
             case CL_EARG:
             default:
-                mprintf("!Clamonacc: can't setup fanotify\n");
+                mprintf(ERROR, "Clamonacc: can't setup fanotify\n");
                 ret = 2;
                 goto done;
                 break;
         }
     }
 #else
-    mprintf("!Clamonacc: currently, this application only runs on linux systems with fanotify enabled\n");
+    mprintf(ERROR, "Clamonacc: currently, this application only runs on linux systems with fanotify enabled\n");
     goto done;
 #endif
 
@@ -306,7 +306,7 @@ int onas_start_eloop(struct onas_context **ctx)
     int ret = 0;
 
     if (!ctx || !*ctx) {
-        mprintf("!Clamonacc: unable to start clamonacc. (bad context)\n");
+        mprintf(ERROR, "Clamonacc: unable to start clamonacc. (bad context)\n");
         return CL_EARG;
     }
 
@@ -420,30 +420,30 @@ void help(void)
 {
     mprintf_stdout = 1;
 
-    mprintf("\n");
-    mprintf("           ClamAV: On Access Scanning Application and Client %s\n", get_version());
-    mprintf("           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf("           (C) 2022 Cisco Systems, Inc.\n");
-    mprintf("\n");
-    mprintf("    clamonacc [options] [file/directory/-]\n");
-    mprintf("\n");
-    mprintf("    --help                 -h          Show this help\n");
-    mprintf("    --version              -V          Print version number and exit\n");
-    mprintf("    --verbose              -v          Be verbose\n");
-    mprintf("    --log=FILE             -l FILE     Save scanning output to FILE\n");
-    mprintf("    --foreground           -F          Output to foreground and do not daemonize\n");
-    mprintf("    --watch-list=FILE      -W FILE     Watch directories from FILE\n");
-    mprintf("    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
-    mprintf("    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
-    mprintf("    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
-    mprintf("    --remove                           Remove infected files. Be careful!\n");
-    mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
-    mprintf("    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
-    mprintf("    --config-file=FILE     -c FILE     Read configuration from FILE\n");
-    mprintf("    --allmatch             -z          Continue scanning within file after finding a match.\n");
-    mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
-    mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
-    mprintf("\n");
+    mprintf(INFO, "\n");
+    mprintf(INFO, "           ClamAV: On Access Scanning Application and Client %s\n", get_version());
+    mprintf(INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    mprintf(INFO, "           (C) 2022 Cisco Systems, Inc.\n");
+    mprintf(INFO, "\n");
+    mprintf(INFO, "    clamonacc [options] [file/directory/-]\n");
+    mprintf(INFO, "\n");
+    mprintf(INFO, "    --help                 -h          Show this help\n");
+    mprintf(INFO, "    --version              -V          Print version number and exit\n");
+    mprintf(INFO, "    --verbose              -v          Be verbose\n");
+    mprintf(INFO, "    --log=FILE             -l FILE     Save scanning output to FILE\n");
+    mprintf(INFO, "    --foreground           -F          Output to foreground and do not daemonize\n");
+    mprintf(INFO, "    --watch-list=FILE      -W FILE     Watch directories from FILE\n");
+    mprintf(INFO, "    --exclude-list=FILE    -e FILE     Exclude directories from FILE\n");
+    mprintf(INFO, "    --ping                 -p A[:I]    Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf(INFO, "    --wait                 -w          Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
+    mprintf(INFO, "    --remove                           Remove infected files. Be careful!\n");
+    mprintf(INFO, "    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
+    mprintf(INFO, "    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
+    mprintf(INFO, "    --config-file=FILE     -c FILE     Read configuration from FILE\n");
+    mprintf(INFO, "    --allmatch             -z          Continue scanning within file after finding a match.\n");
+    mprintf(INFO, "    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
+    mprintf(INFO, "    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
+    mprintf(INFO, "\n");
 
     exit(0);
 }

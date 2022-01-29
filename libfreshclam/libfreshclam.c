@@ -153,7 +153,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
         logg_file = cli_strdup(fcConfig->logFile);
         if (0 != logg(INFO_NF, "--------------------------------------\n")) {
-            mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
+            mprintf(ERROR, "Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
             status = FC_ELOGGING;
             goto done;
         }
@@ -164,7 +164,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     if (fcConfig->logFlags & FC_CONFIG_LOG_SYSLOG) {
         int logFacility = LOG_LOCAL6;
         if ((0 == logg_syslog) && (NULL != fcConfig->logFacility) && (-1 == (logFacility = logg_facility(fcConfig->logFacility)))) {
-            mprintf("!LogFacility: %s: No such facility.\n", fcConfig->logFacility);
+            mprintf(ERROR, "LogFacility: %s: No such facility.\n", fcConfig->logFacility);
             status = FC_ELOGGING;
             goto done;
         }
@@ -177,9 +177,9 @@ fc_error_t fc_initialize(fc_config *fcConfig)
     /* Optional connection settings. */
     if (NULL != fcConfig->localIP) {
 #if !((LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 33)))
-        mprintf("!The LocalIP feature was requested but this local IP support is not presently available.\n");
-        mprintf("!Your installation was built with libcurl version %u.%u.%u.\n", LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
-        mprintf("!LocalIP requires libcurl version 7.33.0 or higher and must include the c-ares optional dependency.\n");
+        mprintf(ERROR, "The LocalIP feature was requested but this local IP support is not presently available.\n");
+        mprintf(ERROR, "Your installation was built with libcurl version %u.%u.%u.\n", LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
+        mprintf(ERROR, "LocalIP requires libcurl version 7.33.0 or higher and must include the c-ares optional dependency.\n");
 #else
         g_localIP = cli_strdup(fcConfig->localIP);
 #endif
@@ -351,9 +351,9 @@ fc_error_t fc_prune_database_directory(char **databaseList, uint32_t nDatabases)
                 }
                 if (!bFound) {
                     /* Prune CVD/CLD */
-                    mprintf("Pruning unwanted or deprecated database file %s.\n", dent->d_name);
+                    mprintf(INFO, "Pruning unwanted or deprecated database file %s.\n", dent->d_name);
                     if (unlink(dent->d_name)) {
-                        mprintf("!Failed to prune unwanted database file %s, consider removing it manually.\n", dent->d_name);
+                        mprintf(ERROR, "Failed to prune unwanted database file %s, consider removing it manually.\n", dent->d_name);
                         status = FC_EDBDIRACCESS;
                         goto done;
                     }
