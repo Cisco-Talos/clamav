@@ -1122,7 +1122,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     if (optget(opts, "ArchiveBlockEncrypted")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
             logg(
-                "^Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
+                WARNING,
+                "Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
                 "encrypted archives _and_ documents. Please update your "
                 "configuration to use replacement options \"AlertEncrypted\", or "
                 "\"AlertEncryptedArchive\" and/or \"AlertEncryptedDoc\".\n");
@@ -1130,7 +1131,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
         } else {
             logg(
-                "^Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
+                WARNING,
+                "Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
                 "encrypted documents. Please update your configuration to use "
                 "replacement options \"AlertEncrypted\", or "
                 "\"AlertEncryptedArchive\" and/or \"AlertEncryptedDoc\".\n");
