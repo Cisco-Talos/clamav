@@ -118,7 +118,7 @@ int EnablePrivilege(LPCSTR PrivilegeName, DWORD yesno)
     LUID luid;
 
     if (!LoadLibraryA("advapi32.dll")) {
-        logg("^EnablePrivilege functions are missing\n");
+        logg(WARNING, "EnablePrivilege functions are missing\n");
         return 0;
     }
 
@@ -198,7 +198,7 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
     PROCESSENTRY32 ps;
     MODULEENTRY32 me32;
 
-    logg(" *** Memory Scan: using ToolHelp ***\n\n");
+    logg(INFO, " *** Memory Scan: using ToolHelp ***\n\n");
 
     hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnap == INVALID_HANDLE_VALUE)
@@ -239,14 +239,14 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
                 HANDLE p;
 
                 if (err == ERROR_BAD_NETPATH) {
-                    logg("^Warning scanning files on non-ansi network paths is not "
+                    logg(WARNING, "Warning scanning files on non-ansi network paths is not "
                          "supported\n");
-                    logg("^File: %s\n", me32.szExePath);
+                    logg(WARNING, "File: %s\n", me32.szExePath);
                     continue;
                 }
 
                 if ((err != ERROR_INVALID_NAME) && (err != ERROR_PATH_NOT_FOUND)) {
-                    logg("^Expected ERROR_INVALID_NAME/ERROR_PATH_NOT_FOUND but got %d\n",
+                    logg(WARNING, "Expected ERROR_INVALID_NAME/ERROR_PATH_NOT_FOUND but got %d\n",
                          err);
                     continue;
                 }
@@ -254,14 +254,14 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
                 p = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE,
                                 ps.th32ProcessID);
                 if (!GetModuleFileNameEx(p, NULL, name, MAX_PATH)) {
-                    logg("^GetModuleFileNameExW() failed %d\n", GetLastError());
+                    logg(WARNING, "GetModuleFileNameExW() failed %d\n", GetLastError());
                     CloseHandle(p);
                     continue;
                 }
                 CloseHandle(p);
 
                 if (!(converted = getaltpath(name))) {
-                    logg("^Cannot map filename to ANSI codepage\n");
+                    logg(WARNING, "Cannot map filename to ANSI codepage\n");
                     continue;
                 }
                 strcpy(me32.szExePath, converted);
@@ -291,7 +291,7 @@ int walkmodules_psapi(proc_callback callback, void *data, struct mem_info *info)
     MODULEINFO mi;
     int i, j;
 
-    logg(" *** Memory Scan: using PsApi ***\n\n");
+    logg(INFO, " *** Memory Scan: using PsApi ***\n\n");
 
     if (!EnumProcesses(procs, sizeof(procs), &needed))
         return -1;
@@ -356,17 +356,17 @@ int kill_process(DWORD pid)
 {
     HANDLE hProc;
     if (GetCurrentProcessId() == pid) {
-        logg("^Don't want to kill myself\n");
+        logg(WARNING, "Don't want to kill myself\n");
         return 1;
     }
 
     if ((hProc = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, pid))) {
         TerminateProcess(hProc, 0);
         if (WaitForSingleObject(hProc, TIMEOUT_MODULE) != WAIT_OBJECT_0)
-            logg("^Unable to unload process from memory\n");
+            logg(WARNING, "Unable to unload process from memory\n");
         CloseHandle(hProc);
     } else
-        logg("^OpenProcess() failed %lu\n", GetLastError());
+        logg(WARNING, "OpenProcess() failed %lu\n", GetLastError());
     return 1; /* Skip to next process anyway */
 }
 
@@ -378,7 +378,7 @@ int unload_module(DWORD pid, HANDLE hModule)
     HANDLE hProc;
 
     if (GetCurrentProcessId() == pid) {
-        logg("^Don't want to unload modules from myself\n");
+        logg(WARNING, "Don't want to unload modules from myself\n");
         return 1;
     }
 
@@ -387,7 +387,7 @@ int unload_module(DWORD pid, HANDLE hModule)
                         FALSE, pid);
 
     if (!hProc) {
-        logg("^OpenProcess() failed %lu\n", GetLastError());
+        logg(WARNING, "OpenProcess() failed %lu\n", GetLastError());
         return 1; /* Skip to next process */
     }
 
@@ -397,7 +397,7 @@ int unload_module(DWORD pid, HANDLE hModule)
         if (WaitForSingleObject(ht, TIMEOUT_MODULE) == WAIT_TIMEOUT) {
             CloseHandle(ht);
             CloseHandle(hProc);
-            logg("The module may trying to trick us, killing the process, please "
+            logg(INFO, "The module may trying to trick us, killing the process, please "
                  "rescan\n");
             return kill_process(pid);
         }
@@ -406,10 +406,10 @@ int unload_module(DWORD pid, HANDLE hModule)
     } else {
         DWORD res = GetLastError();
         if (res == ERROR_CALL_NOT_IMPLEMENTED) {
-            logg("^Module unloading is not supported on this OS\n");
+            logg(WARNING, "Module unloading is not supported on this OS\n");
             rc = -1; /* Don't complain about removing/moving the file */
         } else {
-            logg("!CreateRemoteThread() failed %lu\n", res);
+            logg(ERROR, "CreateRemoteThread() failed %lu\n", res);
             rc = 1; /* Skip to next process */
         }
     }
@@ -420,7 +420,7 @@ int unload_module(DWORD pid, HANDLE hModule)
 
 #define FILLBYTES(dst)                            \
     if (IsBadReadPtr(seek, sizeof(dst))) {        \
-        logg("!ScanMem Align: Bad pointer!!!\n"); \
+        logg(ERROR, "ScanMem Align: Bad pointer!!!\n"); \
         return 1;                                 \
     }                                             \
     memcpy(&dst, seek, sizeof(dst))
@@ -518,7 +518,7 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
     hFile = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL,
                        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
-        logg("Error creating %s\n", filename);
+        logg(INFO, "Error creating %s\n", filename);
         free(buffer);
         return ret;
     }
@@ -536,10 +536,10 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
     int ret             = CL_CLEAN;
     const char *virname = NULL;
 
-    logg("*Scanning %s\n", filename);
+    logg(DEBUG, "Scanning %s\n", filename);
 
     if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) == -1) {
-        logg("^Can't open file %s, %s\n", filename, strerror(errno));
+        logg(WARNING, "Can't open file %s, %s\n", filename, strerror(errno));
         return -1;
     }
 
@@ -564,10 +564,10 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
     } else { //clamscan
         ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
         if (ret == CL_VIRUS) {
-            logg("~%s: %s FOUND\n", filename, virname);
+            logg(INFO, "%s: %s FOUND\n", filename, virname);
             info->ifiles++;
         } else if (scan_data->printclean) {
-            logg("~%s: OK    \n", filename);
+            logg(INFO, "%s: OK    \n", filename);
         }
     }
 
@@ -639,10 +639,10 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
 
     if (scan_data->res == CL_VIRUS) {
         if (isprocess && scan_data->kill) {
-            logg("Unloading program %s from memory\n", modulename);
+            logg(INFO, "Unloading program %s from memory\n", modulename);
             rc = kill_process(ProcStruct.th32ProcessID);
         } else if (scan_data->unload) {
-            logg("Unloading module %s from %s\n", me32.szModule, modulename);
+            logg(INFO, "Unloading module %s from %s\n", me32.szModule, modulename);
             if ((rc = unload_module(ProcStruct.th32ProcessID, me32.hModule)) == -1)
                 /* CreateProcessThread() is not implemented */
                 return 0;
@@ -671,7 +671,7 @@ int scanmem(struct mem_info *info)
     HMODULE k32_ok   = LoadLibrary("kernel32.dll");
 
     if (!(psapi_ok || k32_ok)) {
-        logg(" *** Memory Scanning is not supported on this OS ***\n\n");
+        logg(INFO, " *** Memory Scanning is not supported on this OS ***\n\n");
         return -1;
     }
 
@@ -691,10 +691,10 @@ int scanmem(struct mem_info *info)
         }
     }
 
-    logg(" *** Scanning Programs in Computer Memory ***\n");
+    logg(INFO, " *** Scanning Programs in Computer Memory ***\n");
 
     if (!EnablePrivilege(SE_DEBUG_NAME, SE_PRIVILEGE_ENABLED))
-        logg("---Please login as an Administrator to scan System processes loaded "
+        logg(INFO, "---Please login as an Administrator to scan System processes loaded "
              "in computer memory---\n");
 
     if (k32_ok)
@@ -703,8 +703,8 @@ int scanmem(struct mem_info *info)
         walkmodules_psapi(scanmem_cb, (void *)&data, info);
     free_cache(&data.files);
 
-    logg("\n *** Scanned %lu processes - %lu modules ***\n", data.processes,
+    logg(INFO, "\n *** Scanned %lu processes - %lu modules ***\n", data.processes,
          data.modules);
-    logg(" *** Computer Memory Scan Completed ***\n\n");
+    logg(INFO, " *** Computer Memory Scan Completed ***\n\n");
     return data.res;
 }

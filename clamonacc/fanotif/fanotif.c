@@ -75,7 +75,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     ddd_pid = 0;
 
     if (!ctx || !*ctx) {
-        logg("!ClamFanotif: unable to start clamonacc. (bad context)\n");
+        logg(ERROR, "ClamFanotif: unable to start clamonacc. (bad context)\n");
         return CL_EARG;
     }
 
@@ -83,12 +83,12 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     (*ctx)->fan_mask = fan_mask;
 
     if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
-        logg("*ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
+        logg(DEBUG, "ClamFanotif: kernel-level blocking feature enabled ... preventing malicious files access attempts\n");
         (*ctx)->fan_mask |= FAN_ACCESS_PERM | FAN_OPEN_PERM;
     } else {
-        logg("*ClamFanotif: kernel-level blocking feature disabled ...\n");
+        logg(DEBUG, "ClamFanotif: kernel-level blocking feature disabled ...\n");
         if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
-            logg("*ClamFanotif: feature not available when watching mounts ... \n");
+            logg(DEBUG, "ClamFanotif: feature not available when watching mounts ... \n");
         }
         (*ctx)->fan_mask |= FAN_ACCESS | FAN_OPEN;
     }
@@ -103,10 +103,10 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     if ((pt = optget((*ctx)->clamdopts, "OnAccessMountPath"))->enabled) {
         while (pt) {
             if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD | FAN_MARK_MOUNT, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
-                logg("!ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
+                logg(ERROR, "ClamFanotif: can't include mountpoint '%s'\n", pt->strarg);
                 return CL_EARG;
             } else {
-                logg("*ClamFanotif: recursively watching the mount point '%s'\n", pt->strarg);
+                logg(DEBUG, "ClamFanotif: recursively watching the mount point '%s'\n", pt->strarg);
             }
             pt = (struct optstruct *)pt->nextarg;
         }
@@ -117,23 +117,23 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         if ((pt = optget((*ctx)->clamdopts, "OnAccessIncludePath"))->enabled) {
             while (pt) {
                 if (0 == strcmp(clamd_tmpdir, pt->strarg)) {
-                    logg("!ClamFanotif: Not watching path '%s'\n", pt->strarg);
-                    logg("!ClamFanotif: ClamOnAcc should not watch the directory clamd is using for temp files\n");
-                    logg("!ClamFanotif: Consider setting TemporaryDirectory in clamd.conf to a different directory.\n");
+                    logg(ERROR, "ClamFanotif: Not watching path '%s'\n", pt->strarg);
+                    logg(ERROR, "ClamFanotif: ClamOnAcc should not watch the directory clamd is using for temp files\n");
+                    logg(ERROR, "ClamFanotif: Consider setting TemporaryDirectory in clamd.conf to a different directory.\n");
                     pt = (struct optstruct *)pt->nextarg;
                     continue;
                 }
 
                 if (fanotify_mark(onas_fan_fd, FAN_MARK_ADD, (*ctx)->fan_mask, (*ctx)->fan_fd, pt->strarg) != 0) {
-                    logg("!ClamFanotif: can't include path '%s'\n", pt->strarg);
+                    logg(ERROR, "ClamFanotif: can't include path '%s'\n", pt->strarg);
                     return CL_EARG;
                 } else {
-                    logg("*ClamFanotif: watching directory '%s' (non-recursively)\n", pt->strarg);
+                    logg(DEBUG, "ClamFanotif: watching directory '%s' (non-recursively)\n", pt->strarg);
                 }
                 pt = (struct optstruct *)pt->nextarg;
             }
         } else {
-            logg("!ClamFanotif: please specify at least one path with OnAccessIncludePath\n");
+            logg(ERROR, "ClamFanotif: please specify at least one path with OnAccessIncludePath\n");
             return CL_EARG;
         }
     }
@@ -141,9 +141,9 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
     /* Load other options. */
     (*ctx)->sizelimit = optget((*ctx)->clamdopts, "OnAccessMaxFileSize")->numarg;
     if ((*ctx)->sizelimit) {
-        logg("*ClamFanotif: max file size limited to %lu bytes\n", (*ctx)->sizelimit);
+        logg(DEBUG, "ClamFanotif: max file size limited to %lu bytes\n", (*ctx)->sizelimit);
     } else {
-        logg("*ClamFanotif: file size limit disabled\n");
+        logg(DEBUG, "ClamFanotif: file size limit disabled\n");
     }
 
     return CL_SUCCESS;
@@ -165,7 +165,7 @@ int onas_fan_eloop(struct onas_context **ctx)
     FD_ZERO(&rfds);
     FD_SET((*ctx)->fan_fd, &rfds);
 
-    logg("*ClamFanotif: starting fanotify event loop with process id (%d) ... \n", getpid());
+    logg(DEBUG, "ClamFanotif: starting fanotify event loop with process id (%d) ... \n", getpid());
     do {
         ret = select((*ctx)->fan_fd + 1, &rfds, NULL, NULL, NULL);
     } while ((ret == -1 && errno == EINTR));
@@ -175,23 +175,23 @@ int onas_fan_eloop(struct onas_context **ctx)
         switch (errno) {
             case EOVERFLOW:
                 if (time(NULL) - start >= 30) {
-                    logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
-                    logg("*ClamFanotif: file too large for fanotify ... recovering and continuing scans...\n");
+                    logg(DEBUG, "ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+                    logg(DEBUG, "ClamFanotif: file too large for fanotify ... recovering and continuing scans...\n");
                     start = time(NULL);
                 }
 
                 errno = 0;
                 continue;
             case EACCES:
-                logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
-                logg("*ClamFanotif: check your SELinux audit logs and consider adding an exception \
+                logg(DEBUG, "ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+                logg(DEBUG, "ClamFanotif: check your SELinux audit logs and consider adding an exception \
 						... recovering and continuing scans...\n");
 
                 errno = 0;
                 continue;
             case EMFILE:
-                logg("*ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
-                logg("*ClamFanotif: waiting for consumer thread to catch up then retrying ...\n");
+                logg(DEBUG, "ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+                logg(DEBUG, "ClamFanotif: waiting for consumer thread to catch up then retrying ...\n");
                 sleep(3);
 
                 errno = 0;
@@ -203,7 +203,7 @@ int onas_fan_eloop(struct onas_context **ctx)
         fmd = (struct fanotify_event_metadata *)buf;
         while (FAN_EVENT_OK(fmd, bread)) {
             if (fmd->vers != FANOTIFY_METADATA_VERSION) {
-                logg("!ClamFanotif: Mismatch of fanotify metadata version.\n");
+                logg(ERROR, "ClamFanotif: Mismatch of fanotify metadata version.\n");
                 return 2;
             }
             scan = 1;
@@ -213,9 +213,9 @@ int onas_fan_eloop(struct onas_context **ctx)
                 len   = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
-                    logg("!ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
+                    logg(ERROR, "ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
                     if (errno == EBADF) {
-                        logg("ClamWorker: fd already closed ... recovering ...\n");
+                        logg(INFO, "ClamWorker: fd already closed ... recovering ...\n");
                         fmd = FAN_EVENT_NEXT(fmd, bread);
                         continue;
                     } else {
@@ -227,7 +227,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                 if ((check = onas_fan_checkowner(fmd->pid, (*ctx)->clamdopts))) {
                     scan = 0;
                     if (check != CHK_SELF) {
-                        logg("*ClamFanotif: %s skipped (excluded UID)\n", fname);
+                        logg(DEBUG, "ClamFanotif: %s skipped (excluded UID)\n", fname);
                     }
                 }
 
@@ -237,7 +237,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                     event_data = cli_calloc(1, sizeof(struct onas_scan_event));
                     if (NULL == event_data) {
                         close(fmd->fd);
-                        logg("!ClamFanotif: could not allocate memory for event data struct\n");
+                        logg(ERROR, "ClamFanotif: could not allocate memory for event data struct\n");
                         return 2;
                     }
 
@@ -251,7 +251,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                     if (NULL == event_data->fmd) {
                         close(fmd->fd);
                         free(event_data);
-                        logg("!ClamFanotif: could not allocate memory for event data struct fmd\n");
+                        logg(ERROR, "ClamFanotif: could not allocate memory for event data struct fmd\n");
                         return 2;
                     }
                     memcpy(event_data->fmd, fmd, sizeof(struct fanotify_event_metadata));
@@ -260,22 +260,22 @@ int onas_fan_eloop(struct onas_context **ctx)
                         close(fmd->fd);
                         free(event_data->fmd);
                         free(event_data);
-                        logg("!ClamFanotif: could not allocate memory for event data struct pathname\n");
+                        logg(ERROR, "ClamFanotif: could not allocate memory for event data struct pathname\n");
                         return 2;
                     }
 
-                    logg("*ClamFanotif: attempting to feed consumer queue\n");
+                    logg(DEBUG, "ClamFanotif: attempting to feed consumer queue\n");
                     /* feed consumer queue */
                     if (CL_SUCCESS != onas_queue_event(event_data)) {
                         close(fmd->fd);
                         free(event_data->pathname);
                         free(event_data->fmd);
                         free(event_data);
-                        logg("!ClamFanotif: error occurred while feeding consumer queue ... \n");
+                        logg(ERROR, "ClamFanotif: error occurred while feeding consumer queue ... \n");
                         if ((*ctx)->retry_on_error) {
                             err_cnt++;
                             if (err_cnt < (*ctx)->retry_attempts) {
-                                logg("ClamFanotif: ... recovering ...\n");
+                                logg(INFO, "ClamFanotif: ... recovering ...\n");
                                 fmd = FAN_EVENT_NEXT(fmd, bread);
                                 continue;
                             }
@@ -291,15 +291,15 @@ int onas_fan_eloop(struct onas_context **ctx)
 
                         if (-1 == write((*ctx)->fan_fd, &res, sizeof(res))) {
                             close(fmd->fd);
-                            logg("!ClamFanotif: error occurred while excluding event\n");
+                            logg(ERROR, "ClamFanotif: error occurred while excluding event\n");
                             return 2;
                         }
                     }
 
                     if (-1 == close(fmd->fd)) {
-                        logg("!ClamFanotif: error occurred while closing metadata fd, %d\n", fmd->fd);
+                        logg(ERROR, "ClamFanotif: error occurred while closing metadata fd, %d\n", fmd->fd);
                         if (errno == EBADF) {
-                            logg("ClamFanotif: fd already closed ... recovering ...\n");
+                            logg(INFO, "ClamFanotif: fd already closed ... recovering ...\n");
                         } else {
                             return 2;
                         }
@@ -314,7 +314,7 @@ int onas_fan_eloop(struct onas_context **ctx)
     }
 
     if (bread < 0) {
-        logg("!ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
+        logg(ERROR, "ClamFanotif: internal error (failed to read data) ... %s\n", strerror(errno));
         return 2;
     }
 

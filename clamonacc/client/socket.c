@@ -83,7 +83,7 @@ int onas_get_sockd()
         if (connect(sockd, (struct sockaddr *)&onas_sock.sock, sizeof(onas_sock.sock)) == 0)
             return sockd;
         else {
-            logg("!ClamSock: Could not connect to clamd on LocalSocket \n");
+            logg(ERROR, "ClamSock: Could not connect to clamd on LocalSocket \n");
             closesocket(sockd);
         }
     }

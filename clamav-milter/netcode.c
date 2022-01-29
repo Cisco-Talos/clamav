@@ -135,12 +135,12 @@ static int nc_connect(int s, struct CP_ENTRY *cpe)
                 tv.tv_usec = 0;
                 continue;
             }
-            logg("*Failed to establish a connection to clamd\n");
+            logg(DEBUG, "Failed to establish a connection to clamd\n");
             close(s);
             return -1;
         }
         if (getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, (socklen_t *)&s_len) || s_err) {
-            logg("*Failed to establish a connection to clamd\n");
+            logg(DEBUG, "Failed to establish a connection to clamd\n");
             close(s);
             return -1;
         }
@@ -159,7 +159,7 @@ int nc_send(int s, const void *buff, size_t len)
         char er[256];
 
         if (!res) {
-            logg("!Connection closed while sending data\n");
+            logg(ERROR, "Connection closed while sending data\n");
             close(s);
             return 1;
         }
@@ -190,7 +190,7 @@ int nc_send(int s, const void *buff, size_t len)
                     tv.tv_usec = 0;
                     continue;
                 }
-                logg("!Failed to stream to clamd\n");
+                logg(ERROR, "Failed to stream to clamd\n");
                 close(s);
                 return 1;
             }
@@ -243,7 +243,7 @@ char *nc_recv(int s)
     while (1) {
         now = time(NULL);
         if (now >= timeout) {
-            logg("!Timed out while reading clamd reply\n");
+            logg(ERROR, "Timed out while reading clamd reply\n");
             close(s);
             return NULL;
         }
@@ -262,7 +262,7 @@ char *nc_recv(int s)
 
         res = recv(s, &buf[len], sizeof(buf) - len, 0);
         if (!res) {
-            logg("!Connection closed while reading from socket\n");
+            logg(ERROR, "Connection closed while reading from socket\n");
             close(s);
             return NULL;
         }
@@ -277,13 +277,13 @@ char *nc_recv(int s)
         len += res;
         if (len && buf[len - 1] == '\n') break;
         if (len >= sizeof(buf)) {
-            logg("!Overlong reply from clamd\n");
+            logg(ERROR, "Overlong reply from clamd\n");
             close(s);
             return NULL;
         }
     }
     if (!(ret = (char *)malloc(len + 1))) {
-        logg("!malloc(%d) failed\n", len + 1);
+        logg(ERROR, "malloc(%d) failed\n", len + 1);
         close(s);
         return NULL;
     }
@@ -325,21 +325,21 @@ int nc_connect_rand(int *main, int *alt, int *local)
     if (*local) {
         char *unlinkme;
         if (cli_gentempfd(tempdir, &unlinkme, alt) != CL_SUCCESS) {
-            logg("!Failed to create temporary file\n");
+            logg(ERROR, "Failed to create temporary file\n");
             close(*main);
             return 1;
         }
         unlink(unlinkme);
         free(unlinkme);
         if (nc_send(*main, "nFILDES\n", 8)) {
-            logg("!FD scan request failed\n");
+            logg(ERROR, "FD scan request failed\n");
             close(*alt);
             close(*main);
             return 1;
         }
     } else {
         if (nc_send(*main, "nINSTREAM\n", 10)) {
-            logg("!Failed to communicate with clamd\n");
+            logg(ERROR, "Failed to communicate with clamd\n");
             close(*main);
             return 1;
         }
@@ -362,7 +362,7 @@ static int resolve(char *name, uint32_t *family, uint32_t *host)
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(name, NULL, &hints, &res)) {
-        logg("!Can't resolve LocalNet hostname %s\n", name);
+        logg(ERROR, "Can't resolve LocalNet hostname %s\n", name);
         return 1;
     }
     if (res->ai_addrlen == sizeof(struct sockaddr_in) && res->ai_addr->sa_family == AF_INET) {
@@ -385,7 +385,7 @@ static int resolve(char *name, uint32_t *family, uint32_t *host)
             }
         }
     } else {
-        logg("!Unsupported address type for LocalNet %s\n", name);
+        logg(ERROR, "Unsupported address type for LocalNet %s\n", name);
         freeaddrinfo(res);
         return 1;
     }
@@ -400,7 +400,7 @@ static struct LOCALNET *localnet(char *name, char *mask)
     unsigned int i;
 
     if (!l) {
-        logg("!Out of memory while resolving LocalNet\n");
+        logg(ERROR, "Out of memory while resolving LocalNet\n");
         return NULL;
     }
 
@@ -420,7 +420,7 @@ static struct LOCALNET *localnet(char *name, char *mask)
         nmask = atoi(mask);
 
     if ((l->family == INET6_HOST && nmask > 128) || (l->family == INET_HOST && nmask > 32)) {
-        logg("!Bad netmask '/%s' for LocalNet %s\n", mask, name);
+        logg(ERROR, "Bad netmask '/%s' for LocalNet %s\n", mask, name);
         free(l);
         return NULL;
     }
@@ -458,7 +458,7 @@ int islocalnet_name(char *name)
 
     if (!lnet) return 0;
     if (resolve(name, &family, host)) {
-        logg("*Cannot resolv %s\n", name);
+        logg(DEBUG, "Cannot resolv %s\n", name);
         return 0;
     }
     return islocalnet(family, host);

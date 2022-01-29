@@ -93,7 +93,7 @@ void virusaction(const char *filename, const char *virname,
                  const struct optstruct *opts)
 {
     if (optget(opts, "VirusEvent")->enabled)
-        logg("^VirusEvent is not supported on this platform"); /* Yet */
+        logg(WARNING, "VirusEvent is not supported on this platform"); /* Yet */
 }
 
 #else
@@ -178,7 +178,7 @@ void virusaction(const char *filename, const char *virname,
         while (waitpid(pid, NULL, 0) == -1 && errno == EINTR) continue;
     } else {
         pthread_mutex_unlock(&virusaction_lock);
-        logg("!VirusEvent: fork failed.\n");
+        logg(ERROR, "VirusEvent: fork failed.\n");
     }
     if (path)
         xfree(env[0]);
@@ -226,7 +226,7 @@ realloc_polldata(struct fd_data *data)
         free(data->poll_data);
     data->poll_data = malloc(data->nfds * sizeof(*data->poll_data));
     if (!data->poll_data) {
-        logg("!realloc_polldata: Memory allocation failed for poll_data\n");
+        logg(ERROR, "realloc_polldata: Memory allocation failed for poll_data\n");
         return -1;
     }
     data->poll_data_nfds = data->nfds;
@@ -268,7 +268,7 @@ void fds_cleanup(struct fd_data *data)
     for (i = j; i < data->nfds; i++)
         data->buf[i].fd = -1;
     data->nfds = j;
-    logg("$Number of file descriptors polled: %u fds\n",
+    logg(DEBUG_NV, "Number of file descriptors polled: %u fds\n",
          (unsigned)data->nfds);
     /* Shrink buffer */
     newbuf = realloc(data->buf, j * sizeof(*newbuf));
@@ -305,7 +305,7 @@ read_fd_data(struct fd_buf *buf)
         struct iovec iov[1];
 
         if (buf->recvfd != -1) {
-            logg("$Closing unclaimed FD: %d\n", buf->recvfd);
+            logg(DEBUG_NV, "Closing unclaimed FD: %d\n", buf->recvfd);
             close(buf->recvfd);
             buf->recvfd = -1;
         }
@@ -321,14 +321,14 @@ read_fd_data(struct fd_buf *buf)
         if (n < 0)
             return -1;
         if (msg.msg_flags & MSG_TRUNC) {
-            logg("^Message truncated at %d bytes\n", (int)n);
+            logg(WARNING, "Message truncated at %d bytes\n", (int)n);
             return -1;
         }
         if (msg.msg_flags & MSG_CTRUNC) {
             if (msg.msg_controllen > 0)
-                logg("^Control message truncated at %d bytes, %d data read\n", (int)msg.msg_controllen, (int)n);
+                logg(WARNING, "Control message truncated at %d bytes, %d data read\n", (int)msg.msg_controllen, (int)n);
             else
-                logg("^Control message truncated, no control data received, %d bytes read"
+                logg(WARNING, "Control message truncated, no control data received, %d bytes read"
 #ifdef C_LINUX
                      "(Is SELinux/AppArmor enabled, and blocking file descriptor passing?)"
 #endif
@@ -343,11 +343,11 @@ read_fd_data(struct fd_buf *buf)
                     cmsg->cmsg_level == SOL_SOCKET &&
                     cmsg->cmsg_type == SCM_RIGHTS) {
                     if (buf->recvfd != -1) {
-                        logg("$Unclaimed file descriptor received. closing: %d\n", buf->recvfd);
+                        logg(DEBUG_NV, "Unclaimed file descriptor received. closing: %d\n", buf->recvfd);
                         close(buf->recvfd);
                     }
                     buf->recvfd = *(int *)CMSG_DATA(cmsg);
-                    logg("$Receveived a file descriptor: %d\n", buf->recvfd);
+                    logg(DEBUG_NV, "Receveived a file descriptor: %d\n", buf->recvfd);
                 }
             }
         }
@@ -381,7 +381,7 @@ buf_init(struct fd_buf *buf, int listen_only, int timeout)
             /* plus extra space for a \0 so we can make sure every command is \0
              * terminated */
             if (!(buf->buffer = malloc(buf->bufsize + 1))) {
-                logg("!add_fd: Memory allocation failed for command buffer\n");
+                logg(ERROR, "add_fd: Memory allocation failed for command buffer\n");
                 return -1;
             }
         }
@@ -405,7 +405,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only, int timeout)
     struct fd_buf *buf;
     unsigned n;
     if (fd < 0) {
-        logg("!add_fd: invalid fd passed to add_fd\n");
+        logg(ERROR, "add_fd: invalid fd passed to add_fd\n");
         return -1;
     }
     /* we may already have this fd, if
@@ -421,7 +421,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only, int timeout)
     n++;
     buf = realloc(data->buf, n * sizeof(*buf));
     if (!buf) {
-        logg("!add_fd: Memory allocation failed for fd_buf\n");
+        logg(ERROR, "add_fd: Memory allocation failed for fd_buf\n");
         return -1;
     }
     data->buf               = buf;
@@ -516,7 +516,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
     else
         timeout = -1;
     if (timeout > 0)
-        logg("$fds_poll_recv: timeout after %d seconds\n", timeout);
+        logg(DEBUG_NV, "fds_poll_recv: timeout after %d seconds\n", timeout);
 #ifdef HAVE_POLL
     /* Use poll() if available, preferred because:
      *  - can poll any number of FDs
@@ -558,12 +558,12 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
                     continue;
                 if (data->buf[i].fd != data->poll_data[i].fd) {
                     /* should never happen */
-                    logg("!poll_recv_fds FD mismatch\n");
+                    logg(ERROR, "poll_recv_fds FD mismatch\n");
                     continue;
                 }
                 revents = data->poll_data[i].revents;
                 if (revents & (POLLIN | POLLHUP)) {
-                    logg("$Received POLLIN|POLLHUP on fd %d\n",
+                    logg(DEBUG_NV, "Received POLLIN|POLLHUP on fd %d\n",
                          data->poll_data[i].fd);
                 }
 #ifndef _WIN32
@@ -586,11 +586,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
                 if (revents & (POLLHUP | POLLERR | POLLNVAL)) {
                     if (revents & (POLLHUP | POLLNVAL)) {
                         /* remote disconnected */
-                        logg("*Client disconnected (FD %d)\n",
+                        logg(DEBUG, "Client disconnected (FD %d)\n",
                              data->poll_data[i].fd);
                     } else {
                         /* error on file descriptor */
-                        logg("^Error condition on fd %d\n",
+                        logg(WARNING, "Error condition on fd %d\n",
                              data->poll_data[i].fd);
                     }
                     data->buf[i].got_newdata = -1;
@@ -609,7 +609,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
         for (i = 0; i < data->nfds; i++) {
             int fd = data->buf[i].fd;
             if (fd >= FD_SETSIZE) {
-                logg("!File descriptor is too high for FD_SET\n");
+                logg(ERROR, "File descriptor is too high for FD_SET\n");
                 return -1;
             }
 
@@ -642,14 +642,14 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
                         int ret = read_fd_data(&data->buf[i]);
                         if (ret == -1 || !ret) {
                             if (ret == -1)
-                                logg("!Error condition on fd %d\n",
+                                logg(ERROR, "Error condition on fd %d\n",
                                      data->buf[i].fd);
                             else {
                                 /* avoid SHUT_WR problem on Mac OS X */
                                 int ret = send(data->buf[i].fd, &i, 0, 0);
                                 if (!ret || (ret == -1 && errno == EINTR))
                                     continue;
-                                logg("*Client disconnected\n");
+                                logg(DEBUG, "Client disconnected\n");
                             }
                             data->buf[i].got_newdata = -1;
                         }
@@ -689,10 +689,10 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
     if (retval == -1 && errno != EINTR) {
         char err[128];
 #ifdef HAVE_POLL
-        logg("!poll_recv_fds: poll failed: %s\n",
+        logg(ERROR, "poll_recv_fds: poll failed: %s\n",
              cli_strerror(errno, err, sizeof(err)));
 #else
-        logg("!poll_recv_fds: select failed: %s\n",
+        logg(ERROR, "poll_recv_fds: select failed: %s\n",
              cli_strerror(errno, err, sizeof(err)));
 #endif
     }

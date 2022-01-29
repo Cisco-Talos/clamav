@@ -118,7 +118,7 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
         }
 
         if (NULL == ipaddr) {
-            logg("!ClamClient: Clamonacc does not support binding to INADDR_ANY, \
+            logg(ERROR, "ClamClient: Clamonacc does not support binding to INADDR_ANY, \
 					please specify an address with TCPAddr in your clamd.conf config file\n");
             *err = CL_EARG;
             return ret;
@@ -126,7 +126,7 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 
         curlcode = onas_curl_init(&curl, ipaddr, (*ctx)->portnum, timeout);
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not init curl, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not init curl, %s\n", curl_easy_strerror(curlcode));
             *err = CL_EARG;
             return ret;
         }
@@ -134,9 +134,9 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
         curlcode = curl_easy_perform(curl);
         if (CURLE_OK != curlcode) {
             if (optget((*ctx)->opts, "ping")->enabled || optget((*ctx)->opts, "wait")->enabled) {
-                logg("~ClamClient: Initial connection failed, %s. Will try again...\n", curl_easy_strerror(curlcode));
+                logg(INFO, "ClamClient: Initial connection failed, %s. Will try again...\n", curl_easy_strerror(curlcode));
             } else {
-                logg("!ClamClient: Could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
+                logg(ERROR, "ClamClient: Could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
             }
             curl_easy_cleanup(curl);
             *err = CL_EARG;
@@ -145,7 +145,7 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 
 #ifndef ONAS_DEBUG
         if (onas_sendln(curl, zPING, sizeof(zPING), timeout)) {
-            logg("!ClamClient: could not ping clamd, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not ping clamd, %s\n", curl_easy_strerror(curlcode));
             *err = CL_EARG;
             curl_easy_cleanup(curl);
             return ret;
@@ -181,7 +181,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     const char zPING[] = "zPING";
 
     if (ctx == NULL) {
-        logg("!null parameter was passed\n");
+        logg(ERROR, "null parameter was passed\n");
         return -1;
     }
 
@@ -189,7 +189,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
 
     b_remote = onas_check_remote(ctx, &err);
     if (CL_SUCCESS != err) {
-        logg("*ClamClient: could not check to see if daemon was remote... PINGing again...\n");
+        logg(DEBUG, "ClamClient: could not check to see if daemon was remote... PINGing again...\n");
     }
 
     if (!b_remote) {
@@ -197,7 +197,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     } else {
         curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
             /* curl cleanup done in onas_curl_init on error */
             ret = -1;
             goto done;
@@ -211,7 +211,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
         attempt_str = cli_strdup(opt->strarg);
         if (attempt_str) {
             if (NULL == attempt_str) {
-                logg("!could not allocate memory for string\n");
+                logg(ERROR, "could not allocate memory for string\n");
                 ret = -1;
                 goto done;
             }
@@ -221,7 +221,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
                 interval_str++;
                 interval = cli_strntoul(interval_str, strlen(interval_str), &errchk, 10);
                 if (interval_str + strlen(interval_str) > errchk) {
-                    logg("^interval_str would go past end of buffer\n");
+                    logg(WARNING, "interval_str would go past end of buffer\n");
                     ret = -1;
                     goto done;
                 }
@@ -230,7 +230,7 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
             }
             attempts = cli_strntoul(attempt_str, strlen(attempt_str), &errchk, 10);
             if (attempt_str + strlen(attempt_str) > errchk) {
-                logg("^attempt_str would go past end of buffer\n");
+                logg(WARNING, "attempt_str would go past end of buffer\n");
                 ret = -1;
                 goto done;
             }
@@ -243,13 +243,13 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     do {
         curlcode = curl_easy_perform(curl);
         if (CURLE_OK != curlcode) {
-            logg("*ClamClient: could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
+            logg(DEBUG, "ClamClient: could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
         } else if (CURLE_OK == onas_sendln(curl, zPING, sizeof(zPING), timeout)) {
 
             if (!optget((*ctx)->opts, "wait")->enabled) {
-                logg("PONG\n");
+                logg(INFO, "PONG\n");
             } else {
-                logg("*ClamClient: Connected.\n");
+                logg(DEBUG, "ClamClient: Connected.\n");
             }
 
             ret = 0;
@@ -259,14 +259,14 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
         if (i + 1 < attempts) {
             if (optget((*ctx)->opts, "wait")->enabled) {
                 if (interval == 1)
-                    logg("*Will try again in %lu second\n", interval);
+                    logg(DEBUG, "Will try again in %lu second\n", interval);
                 else
-                    logg("*Will try again in %lu seconds\n", interval);
+                    logg(DEBUG, "Will try again in %lu seconds\n", interval);
             } else {
                 if (interval == 1)
-                    logg("PINGing again in %lu second\n", interval);
+                    logg(INFO, "PINGing again in %lu second\n", interval);
                 else
-                    logg("PINGing again in %lu seconds\n", interval);
+                    logg(INFO, "PINGing again in %lu seconds\n", interval);
             }
             sleep(interval);
         }
@@ -276,9 +276,9 @@ int16_t onas_ping_clamd(struct onas_context **ctx)
     /* timed out */
     ret = 1;
     if (optget((*ctx)->opts, "wait")->enabled) {
-        logg("Wait timeout exceeded; Could not connect to clamd\n");
+        logg(INFO, "Wait timeout exceeded; Could not connect to clamd\n");
     } else {
-        logg("PING timeout exceeded; No response from clamd\n");
+        logg(INFO, "PING timeout exceeded; No response from clamd\n");
     }
 
 done:
@@ -311,7 +311,7 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
     CURLcode curlcode = CURLE_OK;
 
     if (!curl || !ipaddr) {
-        logg("!ClamClient: invalid (NULL) args passed to onas_curl_init\n");
+        logg(ERROR, "ClamClient: invalid (NULL) args passed to onas_curl_init\n");
         return CURLE_FAILED_INIT;
     }
 
@@ -325,14 +325,14 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
         curlcode = curl_easy_setopt(*curl, CURLOPT_UNIX_SOCKET_PATH, ipaddr);
 #endif
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with local unix socket, %s\n", curl_easy_strerror(curlcode));
             curl_easy_cleanup(*curl);
             return curlcode;
         }
 
         curlcode = curl_easy_setopt(*curl, CURLOPT_URL, "http://localhost/");
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with local address, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with local address, %s\n", curl_easy_strerror(curlcode));
             curl_easy_cleanup(*curl);
             return curlcode;
         }
@@ -341,14 +341,14 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 
         curlcode = curl_easy_setopt(*curl, CURLOPT_PORT, port);
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with tcp port, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with tcp port, %s\n", curl_easy_strerror(curlcode));
             curl_easy_cleanup(*curl);
             return curlcode;
         }
 
         curlcode = curl_easy_setopt(*curl, CURLOPT_URL, ipaddr);
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with tcp address, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with tcp address, %s\n", curl_easy_strerror(curlcode));
             curl_easy_cleanup(*curl);
             return curlcode;
         }
@@ -356,14 +356,14 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 
     curlcode = curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1L);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not setup curl to not use signals, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not setup curl to not use signals, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
 
     curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT_MS, (long)timeout);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not setup curl with connect timeout, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not setup curl with connect timeout, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
@@ -371,7 +371,7 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
     /* we implement our own transfer protocol via send and recv, so we only need to connect */
     curlcode = curl_easy_setopt(*curl, CURLOPT_CONNECT_ONLY, 1L);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not setup curl to connect only, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
@@ -379,7 +379,7 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
 #ifdef ONAS_DEBUG
     curlcode = curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not tell curl to be verbose, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not tell curl to be verbose, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
@@ -388,14 +388,14 @@ CURLcode onas_curl_init(CURL **curl, const char *ipaddr, int64_t port, int64_t t
     /* don't care about the body of the return message */
     curlcode = curl_easy_setopt(*curl, CURLOPT_NOBODY, 1L);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not setup curl to send HEAD request, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not setup curl to send HEAD request, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
 
     curlcode = curl_easy_setopt(*curl, CURLOPT_HEADER, 0L);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not setup curl to not send header, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not setup curl to not send header, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(*curl);
         return curlcode;
     }
@@ -422,8 +422,8 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
 
     if ((opt = optget(opts, "log"))->enabled) {
         logg_file = opt->strarg;
-        if (logg("--------------------------------------\n")) {
-            logg("!ClamClient: problem with internal logger\n");
+        if (logg(INFO, "--------------------------------------\n")) {
+            logg(ERROR, "ClamClient: problem with internal logger\n");
             return CL_EARG;
         }
     } else {
@@ -450,23 +450,23 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         if (onas_set_sock_only_once(*ctx) == CL_EWRITE) {
             return CL_EWRITE;
         }
-        logg("*ClamClient: client setup to scan via fd passing\n");
+        logg(DEBUG, "ClamClient: client setup to scan via fd passing\n");
         (*ctx)->scantype = FILDES;
         (*ctx)->session  = optget(opts, "multiscan")->enabled;
     } else
 #endif
         if (remote) {
-        logg("*ClamClient: client setup to scan via streaming\n");
+        logg(DEBUG, "ClamClient: client setup to scan via streaming\n");
         (*ctx)->scantype = STREAM;
         (*ctx)->session  = optget(opts, "multiscan")->enabled;
     } else if (optget(opts, "multiscan")->enabled) {
-        logg("*ClamClient: client setup to scan in multiscan mode\n");
+        logg(DEBUG, "ClamClient: client setup to scan in multiscan mode\n");
         (*ctx)->scantype = MULTI;
     } else if (optget(opts, "allmatch")->enabled) {
-        logg("*ClamClient: client setup to scan in all-match mode\n");
+        logg(DEBUG, "ClamClient: client setup to scan in all-match mode\n");
         (*ctx)->scantype = ALLMATCH;
     } else {
-        logg("*ClamClient: client setup for continuous scanning\n");
+        logg(DEBUG, "ClamClient: client setup for continuous scanning\n");
         (*ctx)->scantype = CONT;
     }
 
@@ -491,7 +491,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     b_remote = onas_check_remote(ctx, &err);
     if (CL_SUCCESS != err) {
-        logg("!ClamClient: could not check to see if daemon was remote\n");
+        logg(ERROR, "ClamClient: could not check to see if daemon was remote\n");
         return 2;
     }
 
@@ -500,7 +500,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
     } else {
         curlcode = onas_curl_init(&curl, optget((*ctx)->clamdopts, "TCPAddr")->strarg, (*ctx)->portnum, timeout);
         if (CURLE_OK != curlcode) {
-            logg("!ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: could not setup curl with tcp address and port, %s\n", curl_easy_strerror(curlcode));
             /* curl cleanup done in onas_curl_init on error */
             return 2;
         }
@@ -510,7 +510,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {
-        logg("*ClamClient: could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
+        logg(DEBUG, "ClamClient: could not connect to clamd, %s\n", curl_easy_strerror(curlcode));
         curl_easy_cleanup(curl);
         return 2;
     }
@@ -522,7 +522,7 @@ int onas_get_clamd_version(struct onas_context **ctx)
 
     while ((len = onas_recvln(&rcv, &buff, NULL, timeout))) {
         if (len == -1) {
-            logg("*ClamClient: clamd did not respond with version information\n");
+            logg(DEBUG, "ClamClient: clamd did not respond with version information\n");
             break;
         }
         printf("%s\n", buff);
@@ -563,7 +563,7 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
 
     curlcode = onas_curl_init(&curl, tcpaddr, portnum, timeout);
     if (CURLE_OK != curlcode) {
-        logg("!ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
+        logg(ERROR, "ClamClient: could not init curl for scanning, %s\n", curl_easy_strerror(curlcode));
         /* curl cleanup done in onas_curl_init on error */
         return CL_ECREAT;
     }
@@ -571,21 +571,21 @@ int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uin
     curlcode = curl_easy_perform(curl);
     if (CURLE_OK != curlcode) {
         if (!disconnected) {
-            logg("!ClamClient: Connection to clamd failed, %s.\n", curl_easy_strerror(curlcode));
+            logg(ERROR, "ClamClient: Connection to clamd failed, %s.\n", curl_easy_strerror(curlcode));
             disconnected = true;
         }
         curl_easy_cleanup(curl);
         return CL_ECREAT;
     }
     if (disconnected) {
-        logg("~ClamClient: Connection to clamd re-established.\n");
+        logg(INFO, "ClamClient: Connection to clamd re-established.\n");
         disconnected = false;
     }
 
     if ((ret = onas_dsresult(curl, scantype, maxstream, fname, fd, timeout, &ret, err, ret_code)) >= 0) {
         *infected = ret;
     } else {
-        logg("*ClamClient: connection could not be established ... return code %d\n", *ret_code);
+        logg(DEBUG, "ClamClient: connection could not be established ... return code %d\n", *ret_code);
         errors = 1;
     }
 
