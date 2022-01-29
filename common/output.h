@@ -39,11 +39,26 @@ int mdprintf(int desc, const char *str, ...) __attribute__((format(printf, 2, 3)
 int mdprintf(int desc, const char *str, ...);
 #endif
 
-#ifdef __GNUC__
-int logg(const char *str, ...) __attribute__((format(printf, 1, 2)));
-#else
-int logg(const char *str, ...);
-#endif
+/*
+ * legend:
+ * NAME     OLD        EXPLAIN
+ * INFO     none or ~   normal
+ * INFO_NF  #           normal, no foreground
+ * DEBUG    *           debug, verbose
+ * DEBUG_NV $           debug, non-verbose
+ * WARNING  ^           warning
+ * ERROR    !           ERROR
+ */
+enum loglevel_t{
+    INFO, 
+    INFO_NF, 
+    DEBUG, 
+    DEBUG_NV, 
+    WARNING, 
+    ERROR
+};
+
+int logg(int loglevel, const char *str, ...);
 
 void logg_close(void);
 extern short int logg_verbose, logg_nowarn, logg_lock, logg_time, logg_noflush, logg_rotate;
@@ -55,11 +70,7 @@ extern short logg_syslog;
 int logg_facility(const char *name);
 #endif
 
-#ifdef __GNUC__
-void mprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
-#else
-void mprintf(const char *str, ...);
-#endif
+void mprintf(int loglevel, const char *str, ...);
 
 extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout, mprintf_send_timeout, mprintf_progress;
 
