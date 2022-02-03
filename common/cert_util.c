@@ -46,14 +46,14 @@ static cl_error_t _x509_to_pem(X509 *cert,
     char *pem_data = NULL;
 
     if (cert == NULL || data == NULL || len == NULL) {
-        mprintf(ERROR, "_x509_to_pem: Invalid argument\n");
+        mprintf(LOGG_ERROR, "_x509_to_pem: Invalid argument\n");
         goto done;
     }
 
     /* Output the certs to a new BIO using the PEM format */
     out = BIO_new(BIO_s_mem());
     if (!out) {
-        mprintf(ERROR, "BIO_new failed\n");
+        mprintf(LOGG_ERROR, "BIO_new failed\n");
         goto done;
     }
 
@@ -64,14 +64,14 @@ static cl_error_t _x509_to_pem(X509 *cert,
     /* Convert the BIO to char* */
     pem_len = BIO_get_mem_data(out, &pem_data);
     if (pem_len <= 0 || !pem_data) {
-        mprintf(ERROR, "BIO_new: BIO_get_mem_data failed\n");
+        mprintf(LOGG_ERROR, "BIO_new: BIO_get_mem_data failed\n");
         BIO_free_all(out);
         goto done;
     }
 
     *data = calloc(1, pem_len + 1);
     if (!*data) {
-        mprintf(ERROR, "BIO_new: malloc failed\n");
+        mprintf(LOGG_ERROR, "BIO_new: malloc failed\n");
         BIO_free_all(out);
         goto done;
     }
@@ -119,21 +119,21 @@ static cl_error_t _x509_to_pem_append(X509 *ca_cert,
 
     if (ca_cert == NULL || total_buf_len == NULL ||
         remaining_buf_len == NULL || *cert_data == NULL) {
-        mprintf(ERROR, "NULL parameter given\n");
+        mprintf(LOGG_ERROR, "NULL parameter given\n");
         goto done;
     }
 
     current_len = *total_buf_len;
 
     if (_x509_to_pem(ca_cert, &pem_data, &pem_data_len) != 0) {
-        mprintf(ERROR, "Failed to convert x509 certificate to PEM\n");
+        mprintf(LOGG_ERROR, "Failed to convert x509 certificate to PEM\n");
         goto done;
     }
 
     if (pem_data_len > (int)*remaining_buf_len) {
         tmp = realloc(*cert_data, current_len + pem_data_len + 1);
         if (tmp == NULL) {
-            mprintf(ERROR, "Could not realloc enough memory for PEM "
+            mprintf(LOGG_ERROR, "Could not realloc enough memory for PEM "
                     "certificate\n");
 
             free(*cert_data);
@@ -199,7 +199,7 @@ void cert_store_unload(void)
     pt_err = pthread_mutex_lock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
 
     cert_store_unload_int();
@@ -207,7 +207,7 @@ void cert_store_unload(void)
     pt_err = pthread_mutex_unlock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex unlock failed\n");
+        mprintf(LOGG_ERROR, "Mutex unlock failed\n");
     }
 }
 
@@ -236,7 +236,7 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     a = X509_get_subject_name(cert_a);
 
     if (-1 == X509_NAME_print_ex(bio_out_a, a, 0, XN_FLAG_SEP_SPLUS_SPC)) {
-        mprintf(ERROR, "Failed to print x509 certificate name!\n");
+        mprintf(LOGG_ERROR, "Failed to print x509 certificate name!\n");
         goto done;
     }
     BIO_get_mem_ptr(bio_out_a, &biomem_a);
@@ -244,7 +244,7 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     b = X509_get_subject_name(cert_b);
 
     if (-1 == X509_NAME_print_ex(bio_out_b, b, 0, XN_FLAG_SEP_SPLUS_SPC)) {
-        mprintf(ERROR, "Failed to print x509 certificate name!\n");
+        mprintf(LOGG_ERROR, "Failed to print x509 certificate name!\n");
         goto done;
     }
     BIO_get_mem_ptr(bio_out_b, &biomem_b);
@@ -284,14 +284,14 @@ cl_error_t x509_get_cert_name(X509 *cert, char **name)
     a = X509_get_subject_name(cert);
 
     if (-1 == X509_NAME_print_ex(bio_out, a, 0, XN_FLAG_SEP_SPLUS_SPC)) {
-        mprintf(ERROR, "Failed to print x509 certificate name!\n");
+        mprintf(LOGG_ERROR, "Failed to print x509 certificate name!\n");
         goto done;
     }
     BIO_get_mem_ptr(bio_out, &biomem);
 
     cert_name = malloc(biomem->length + 1);
     if (!cert_name) {
-        mprintf(ERROR, "Failed to allocate memory for certificate name biomem structure!\n");
+        mprintf(LOGG_ERROR, "Failed to allocate memory for certificate name biomem structure!\n");
         goto done;
     }
 
@@ -323,13 +323,13 @@ cl_error_t cert_store_export_pem(char **cert_data,
     bool add_additional_ca_cert = true;
 
     if ((cert_data == NULL) || (cert_data_len == NULL)) {
-        mprintf(ERROR, "One or more arguments are NULL\n");
+        mprintf(LOGG_ERROR, "One or more arguments are NULL\n");
         goto done;
     }
 
     *cert_data = calloc(1, STARTING_RAW_PEM_LENGTH + 1);
     if (*cert_data == NULL) {
-        mprintf(ERROR, "Could not allocate memory for PEM certs\n");
+        mprintf(LOGG_ERROR, "Could not allocate memory for PEM certs\n");
         goto done;
     }
     *cert_data_len = 0;
@@ -337,7 +337,7 @@ cl_error_t cert_store_export_pem(char **cert_data,
     pt_err = pthread_mutex_lock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
     locked = true;
 
@@ -430,7 +430,7 @@ done:
         pt_err = pthread_mutex_unlock(&_cert_store.mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf(ERROR, "Mutex unlock failed\n");
+            mprintf(LOGG_ERROR, "Mutex unlock failed\n");
         }
         locked = false;
     }
@@ -451,14 +451,14 @@ cl_error_t cert_store_set_trusted_int(X509 **trusted_certs, size_t trusted_cert_
 
     do {
         if ((trusted_certs == NULL) || (trusted_cert_count == 0)) {
-            mprintf(ERROR, "Empty trusted certificate list\n");
+            mprintf(LOGG_ERROR, "Empty trusted certificate list\n");
             break;
         }
 
         tmp_trusted.certificates = calloc(trusted_cert_count,
                                           sizeof(*tmp_trusted.certificates));
         if (!tmp_trusted.certificates) {
-            mprintf(ERROR, "Failed to reserve memory for trusted certs\n");
+            mprintf(LOGG_ERROR, "Failed to reserve memory for trusted certs\n");
             break;
         }
 
@@ -480,7 +480,7 @@ cl_error_t cert_store_set_trusted_int(X509 **trusted_certs, size_t trusted_cert_
             tmp_trusted.certificates[tmp_trusted.count] =
                 X509_dup(trusted_certs[i]);
             if (!tmp_trusted.certificates[tmp_trusted.count]) {
-                mprintf(ERROR, "X509_dup failed at index: %zu\n", i);
+                mprintf(LOGG_ERROR, "X509_dup failed at index: %zu\n", i);
                 continue; /* continue on error */
             }
 
@@ -509,7 +509,7 @@ cl_error_t cert_store_set_trusted(X509 **trusted_certs, size_t trusted_cert_coun
     pt_err = pthread_mutex_lock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
 
     if (_cert_store.loaded) {
@@ -519,7 +519,7 @@ cl_error_t cert_store_set_trusted(X509 **trusted_certs, size_t trusted_cert_coun
     pt_err = pthread_mutex_unlock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex unlock failed\n");
+        mprintf(LOGG_ERROR, "Mutex unlock failed\n");
     }
 
     return ret;
@@ -533,7 +533,7 @@ size_t cert_store_remove_trusted(void)
     pt_err = pthread_mutex_lock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
 
     if (_cert_store.loaded) {
@@ -544,7 +544,7 @@ size_t cert_store_remove_trusted(void)
     pt_err = pthread_mutex_unlock(&_cert_store.mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf(ERROR, "Mutex unlock failed\n");
+        mprintf(LOGG_ERROR, "Mutex unlock failed\n");
     }
 
     return count;
@@ -558,7 +558,7 @@ void cert_fill_X509_store(X509_STORE *store, X509 **certs, size_t cert_count)
     if (store && certs && cert_count > 0) {
         for (i = 0; i < cert_count; ++i) {
             if (!certs[i]) {
-                mprintf(ERROR, "NULL cert at index %zu in X509 cert list; skipping\n", i);
+                mprintf(LOGG_ERROR, "NULL cert at index %zu in X509 cert list; skipping\n", i);
                 continue;
             }
             if (X509_STORE_add_cert(store, certs[i]) != 1) {
@@ -571,10 +571,10 @@ void cert_fill_X509_store(X509_STORE *store, X509 **certs, size_t cert_count)
 #endif
                 err = ERR_get_error();
                 if (X509_R_CERT_ALREADY_IN_HASH_TABLE == ERR_GET_REASON(err)) {
-                    mprintf(DEBUG, "Certificate skipped; already exists in store: %s\n",
+                    mprintf(LOGG_DEBUG, "Certificate skipped; already exists in store: %s\n",
                             (name ? name : ""));
                 } else {
-                    mprintf(ERROR, "Failed to add certificate to store: %s (%lu) [%s]\n",
+                    mprintf(LOGG_ERROR, "Failed to add certificate to store: %s (%lu) [%s]\n",
                             ERR_error_string(err, NULL), err,
                             (name ? name : ""));
                 }
@@ -596,24 +596,24 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
 
     do {
         if (!store) {
-            mprintf(ERROR, "NULL X509 store\n");
+            mprintf(LOGG_ERROR, "NULL X509 store\n");
             break;
         }
 
         cert_store = cert_store_get_int();
         if (!cert_store) {
-            mprintf(ERROR, "Failed to retrieve cert store\n");
+            mprintf(LOGG_ERROR, "Failed to retrieve cert store\n");
             break;
         }
 
         pt_err = pthread_mutex_lock(&cert_store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf(ERROR, "Mutex lock failed\n");
+            mprintf(LOGG_ERROR, "Mutex lock failed\n");
         }
 
         if (!cert_store->loaded) {
-            mprintf(ERROR, "Cert store not loaded\n");
+            mprintf(LOGG_ERROR, "Cert store not loaded\n");
             break;
         }
 
@@ -640,10 +640,10 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
             name = additional_ca_cert->name;
 #endif
             if (X509_R_CERT_ALREADY_IN_HASH_TABLE == ERR_GET_REASON(err)) {
-                mprintf(INFO, "Certificate is already in trust [%s]\n",
+                mprintf(LOGG_INFO, "Certificate is already in trust [%s]\n",
                         (name ? name : ""));
             } else {
-                mprintf(ERROR, "Failed to add CA certificate for the SSL context. "
+                mprintf(LOGG_ERROR, "Failed to add CA certificate for the SSL context. "
                         "Error: %d [%s]\n",
                         ERR_GET_REASON(err),
                         (name ? name : ""));
@@ -661,7 +661,7 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
         pt_err = pthread_mutex_unlock(&cert_store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf(ERROR, "Mutex unlock failed\n");
+            mprintf(LOGG_ERROR, "Mutex unlock failed\n");
         }
     }
 }
@@ -676,13 +676,13 @@ CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
 
     cert_store = cert_store_get_int();
     if (!cert_store) {
-        mprintf(ERROR, "Failed to retrieve cert store\n");
+        mprintf(LOGG_ERROR, "Failed to retrieve cert store\n");
         goto done;
     }
 
     if (!cert_store->loaded) {
         if (CL_SUCCESS != cert_store_load(NULL, 0)) {
-            mprintf(ERROR, "Failed to load cert store\n");
+            mprintf(LOGG_ERROR, "Failed to load cert store\n");
             goto done;
         }
     }

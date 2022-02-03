@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 #endif
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
-        mprintf(ERROR, "Can't parse command line options\n");
+        mprintf(LOGG_ERROR, "Can't parse command line options\n");
         exit(2);
     }
 
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
     if ((opt = optget(opts, "log"))->enabled) {
         logg_file = opt->strarg;
         if (logg(LOGG_INFO, "--------------------------------------\n")) {
-            mprintf(ERROR, "Problem with internal logger.\n");
+            mprintf(LOGG_ERROR, "Problem with internal logger.\n");
             optfree(opts);
             optfree(clamdopts);
             exit(2);
@@ -222,40 +222,40 @@ void help(void)
 {
     mprintf_stdout = 1;
 
-    mprintf(INFO, "\n");
-    mprintf(INFO, "                      Clam AntiVirus: Daemon Client %s\n", get_version());
-    mprintf(INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
-    mprintf(INFO, "           (C) 2022 Cisco Systems, Inc.\n");
-    mprintf(INFO, "\n");
-    mprintf(INFO, "    clamdscan [options] [file/directory/-]\n");
-    mprintf(INFO, "\n");
-    mprintf(INFO, "    --help              -h             Show this help\n");
-    mprintf(INFO, "    --version           -V             Print version number and exit\n");
-    mprintf(INFO, "    --verbose           -v             Be verbose\n");
-    mprintf(INFO, "    --quiet                            Be quiet, only output error messages\n");
-    mprintf(INFO, "    --stdout                           Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
-    mprintf(INFO, "                                       (this help is always written to stdout)\n");
-    mprintf(INFO, "    --log=FILE          -l FILE        Save scan report in FILE\n");
-    mprintf(INFO, "    --file-list=FILE    -f FILE        Scan files from FILE\n");
-    mprintf(INFO, "    --ping              -p A[:I]       Ping clamd up to [A] times at optional interval [I] until it responds.\n");
-    mprintf(INFO, "    --wait              -w             Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
-    mprintf(INFO, "    --remove                           Remove infected files. Be careful!\n");
-    mprintf(INFO, "    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
-    mprintf(INFO, "    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
-    mprintf(INFO, "    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf(LOGG_INFO, "\n");
+    mprintf(LOGG_INFO, "                      Clam AntiVirus: Daemon Client %s\n", get_version());
+    mprintf(LOGG_INFO, "           By The ClamAV Team: https://www.clamav.net/about.html#credits\n");
+    mprintf(LOGG_INFO, "           (C) 2022 Cisco Systems, Inc.\n");
+    mprintf(LOGG_INFO, "\n");
+    mprintf(LOGG_INFO, "    clamdscan [options] [file/directory/-]\n");
+    mprintf(LOGG_INFO, "\n");
+    mprintf(LOGG_INFO, "    --help              -h             Show this help\n");
+    mprintf(LOGG_INFO, "    --version           -V             Print version number and exit\n");
+    mprintf(LOGG_INFO, "    --verbose           -v             Be verbose\n");
+    mprintf(LOGG_INFO, "    --quiet                            Be quiet, only output error messages\n");
+    mprintf(LOGG_INFO, "    --stdout                           Write to stdout instead of stderr. Does not affect 'debug' messages.\n");
+    mprintf(LOGG_INFO, "                                       (this help is always written to stdout)\n");
+    mprintf(LOGG_INFO, "    --log=FILE          -l FILE        Save scan report in FILE\n");
+    mprintf(LOGG_INFO, "    --file-list=FILE    -f FILE        Scan files from FILE\n");
+    mprintf(LOGG_INFO, "    --ping              -p A[:I]       Ping clamd up to [A] times at optional interval [I] until it responds.\n");
+    mprintf(LOGG_INFO, "    --wait              -w             Wait up to 30 seconds for clamd to start. Optionally use alongside --ping to set attempts [A] and interval [I] to check clamd.\n");
+    mprintf(LOGG_INFO, "    --remove                           Remove infected files. Be careful!\n");
+    mprintf(LOGG_INFO, "    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
+    mprintf(LOGG_INFO, "    --copy=DIRECTORY                   Copy infected files into DIRECTORY\n");
+    mprintf(LOGG_INFO, "    --config-file=FILE                 Read configuration from FILE.\n");
 #ifdef _WIN32
-    mprintf(INFO, "    --memory                           Scan loaded executable modules\n");
-    mprintf(INFO, "    --kill                             Kill/Unload infected loaded modules\n");
-    mprintf(INFO, "    --unload                           Unload infected modules from processes\n");
+    mprintf(LOGG_INFO, "    --memory                           Scan loaded executable modules\n");
+    mprintf(LOGG_INFO, "    --kill                             Kill/Unload infected loaded modules\n");
+    mprintf(LOGG_INFO, "    --unload                           Unload infected modules from processes\n");
 #endif
-    mprintf(INFO, "    --allmatch            -z           Continue scanning within file after finding a match.\n");
-    mprintf(INFO, "    --multiscan           -m           Force MULTISCAN mode\n");
-    mprintf(INFO, "    --infected            -i           Only print infected files\n");
-    mprintf(INFO, "    --no-summary                       Disable summary at end of scanning\n");
-    mprintf(INFO, "    --reload                           Request clamd to reload virus database\n");
-    mprintf(INFO, "    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
-    mprintf(INFO, "    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
-    mprintf(INFO, "\n");
+    mprintf(LOGG_INFO, "    --allmatch            -z           Continue scanning within file after finding a match.\n");
+    mprintf(LOGG_INFO, "    --multiscan           -m           Force MULTISCAN mode\n");
+    mprintf(LOGG_INFO, "    --infected            -i           Only print infected files\n");
+    mprintf(LOGG_INFO, "    --no-summary                       Disable summary at end of scanning\n");
+    mprintf(LOGG_INFO, "    --reload                           Request clamd to reload virus database\n");
+    mprintf(LOGG_INFO, "    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
+    mprintf(LOGG_INFO, "    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
+    mprintf(LOGG_INFO, "\n");
 
     exit(0);
 }

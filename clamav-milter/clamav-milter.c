@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
     opts = optparse(NULL, argc, argv, 1, OPT_MILTER, 0, NULL);
     if (!opts) {
-        mprintf(ERROR, "Can't parse command line options\n");
+        mprintf(LOGG_ERROR, "Can't parse command line options\n");
         return 1;
     }
 
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
     if (opts->filename) {
         int x;
         for (x = 0; opts->filename[x]; x++)
-            mprintf(WARNING, "Ignoring option %s\n", opts->filename[x]);
+            mprintf(LOGG_WARNING, "Ignoring option %s\n", opts->filename[x]);
     }
 
     if (optget(opts, "version")->enabled) {

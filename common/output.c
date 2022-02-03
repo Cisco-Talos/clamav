@@ -415,9 +415,9 @@ int logg(loglevel_t loglevel, const char *str, ...)
                 cli_ctime(&currtime, timestr, sizeof(timestr));
                 /* cut trailing \n */
                 timestr[strlen(timestr) - 1] = '\0';
-                mprintf(INFO, "%s -> %s", timestr, buff);
+                mprintf(LOGG_INFO, "%s -> %s", timestr, buff);
             } else {
-                mprintf(INFO, "%s", buff);
+                mprintf(LOGG_INFO, "%s", buff);
             }
         }
     }

@@ -426,7 +426,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
             fprintf(stderr, "\007");
     } else if (ret == CL_CLEAN) {
         if (!printinfected && printclean)
-            mprintf(INFO, "%s: OK\n", filename);
+            mprintf(LOGG_INFO, "%s: OK\n", filename);
 
         info.files++;
     } else {
@@ -622,7 +622,7 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
             fprintf(stderr, "\007");
     } else if (ret == CL_CLEAN) {
         if (!printinfected)
-            mprintf(INFO, "stdin: OK\n");
+            mprintf(LOGG_INFO, "stdin: OK\n");
     } else {
         if (!printinfected)
             logg(LOGG_INFO, "stdin: %s ERROR\n", cl_strerror(ret));

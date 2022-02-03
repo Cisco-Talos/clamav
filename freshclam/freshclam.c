@@ -447,7 +447,7 @@ static fc_error_t get_server_node(
     size_t urlLen = 0;
 
     if ((NULL == server) || (NULL == defaultProtocol) || (NULL == serverUrl)) {
-        mprintf(ERROR, "get_server_node: Invalid args!\n");
+        mprintf(LOGG_ERROR, "get_server_node: Invalid args!\n");
         goto done;
     }
 
@@ -507,14 +507,14 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
     uint32_t nItems = 0;
 
     if ((NULL == item) || (NULL == stringList) || (NULL == nListItems)) {
-        mprintf(ERROR, "string_list_add: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "string_list_add: Invalid arguments.\n");
         goto done;
     }
 
     nItems  = *nListItems + 1;
     newList = (char **)cli_realloc(*stringList, nItems * sizeof(char *));
     if (newList == NULL) {
-        mprintf(ERROR, "string_list_add: Failed to allocate memory for optional database list entry.\n");
+        mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list entry.\n");
         status = FC_EMEM;
         goto done;
     }
@@ -523,7 +523,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
 
     newList[nItems - 1] = cli_strdup(item);
     if (newList[nItems - 1] == NULL) {
-        mprintf(ERROR, "string_list_add: Failed to allocate memory for optional database list item.\n");
+        mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list item.\n");
         status = FC_EMEM;
         goto done;
     }
@@ -582,7 +582,7 @@ static fc_error_t get_database_server_list(
     uint32_t numServers = 0;
 
     if ((NULL == opts) || (NULL == serverList) || (NULL == nServers) || (NULL == bPrivate)) {
-        mprintf(ERROR, "get_database_server_list: Invalid args!\n");
+        mprintf(LOGG_ERROR, "get_database_server_list: Invalid args!\n");
         goto done;
     }
 
@@ -605,7 +605,7 @@ static fc_error_t get_database_server_list(
             }
 
             if (FC_SUCCESS != (ret = get_server_node(opt->strarg, "http", &serverUrl))) {
-                mprintf(ERROR, "get_database_server_list: Failed to read PrivateMirror server %s", opt->strarg);
+                mprintf(LOGG_ERROR, "get_database_server_list: Failed to read PrivateMirror server %s", opt->strarg);
                 status = ret;
                 goto done;
             }
@@ -613,7 +613,7 @@ static fc_error_t get_database_server_list(
             if (FC_SUCCESS != (ret = string_list_add(serverUrl, &servers, &numServers))) {
                 free(serverUrl);
 
-                mprintf(ERROR, "get_database_server_list: Failed to add string to list.\n");
+                mprintf(LOGG_ERROR, "get_database_server_list: Failed to add string to list.\n");
                 status = ret;
                 goto done;
             }
@@ -632,7 +632,7 @@ static fc_error_t get_database_server_list(
             char *serverUrl = NULL;
 
             if (FC_SUCCESS != (ret = get_server_node(opt->strarg, "https", &serverUrl))) {
-                mprintf(ERROR, "get_database_server_list: Failed to parse DatabaseMirror server %s.", opt->strarg);
+                mprintf(LOGG_ERROR, "get_database_server_list: Failed to parse DatabaseMirror server %s.", opt->strarg);
                 status = ret;
                 goto done;
             }
@@ -640,7 +640,7 @@ static fc_error_t get_database_server_list(
             if (FC_SUCCESS != (ret = string_list_add(serverUrl, &servers, &numServers))) {
                 free(serverUrl);
 
-                mprintf(ERROR, "get_database_server_list: Failed to add string to list.\n");
+                mprintf(LOGG_ERROR, "get_database_server_list: Failed to add string to list.\n");
                 status = ret;
                 goto done;
             }
@@ -680,7 +680,7 @@ static fc_error_t get_string_list(const struct optstruct *opt, char ***stringLis
     uint32_t nItems = 0;
 
     if ((NULL == opt) || (NULL == stringList) || (NULL == nListItems)) {
-        mprintf(ERROR, "get_string_list: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "get_string_list: Invalid arguments.\n");
         goto done;
     }
 
@@ -691,7 +691,7 @@ static fc_error_t get_string_list(const struct optstruct *opt, char ***stringLis
     if (opt->enabled) {
         while (opt) {
             if (FC_SUCCESS != (ret = string_list_add(opt->strarg, stringList, nListItems))) {
-                mprintf(ERROR, "get_string_list: Failed to add string to list.\n");
+                mprintf(LOGG_ERROR, "get_string_list: Failed to add string to list.\n");
                 status = ret;
                 goto done;
             }
@@ -724,7 +724,7 @@ static fc_error_t initialize(struct optstruct *opts)
     memset(&fcConfig, 0, sizeof(fc_config));
 
     if (NULL == opts) {
-        mprintf(ERROR, "initialize: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "initialize: Invalid arguments.\n");
         goto done;
     }
 
@@ -812,7 +812,7 @@ static fc_error_t initialize(struct optstruct *opts)
      * Initilize libclamav.
      */
     if (CL_SUCCESS != (cl_init_retcode = cl_init(CL_INIT_DEFAULT))) {
-        mprintf(ERROR, "initialize: Can't initialize libclamav: %s\n", cl_strerror(cl_init_retcode));
+        mprintf(LOGG_ERROR, "initialize: Can't initialize libclamav: %s\n", cl_strerror(cl_init_retcode));
         status = FC_EINIT;
         goto done;
     }
@@ -964,7 +964,7 @@ static fc_error_t initialize(struct optstruct *opts)
      * Initilize libfreshclam.
      */
     if (FC_SUCCESS != (ret = fc_initialize(&fcConfig))) {
-        mprintf(ERROR, "initialize: libfreshclam init failed.\n");
+        mprintf(LOGG_ERROR, "initialize: libfreshclam init failed.\n");
         status = ret;
         goto done;
     }
@@ -1009,7 +1009,7 @@ fc_error_t get_official_database_lists(
     const char *hardcodedOptionalDatabaseList[] = {"safebrowsing", "test"};
 
     if ((NULL == standardDatabases) || (NULL == nStandardDatabases) || (NULL == optionalDatabases) || (NULL == nOptionalDatabases)) {
-        mprintf(ERROR, "get_official_database_lists: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "get_official_database_lists: Invalid arguments.\n");
         goto done;
     }
 
@@ -1093,7 +1093,7 @@ fc_error_t select_from_official_databases(
     uint32_t i;
 
     if ((NULL == databaseList) || (0 == nDatabases)) {
-        mprintf(ERROR, "select_from_official_databases: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "select_from_official_databases: Invalid arguments.\n");
         goto done;
     }
 
@@ -1101,12 +1101,12 @@ fc_error_t select_from_official_databases(
     *nDatabases   = 0;
 
     if ((0 < nOptIns) && (NULL == optInList)) {
-        mprintf(ERROR, "select_from_official_databases: Invalid arguments. Number of opt-in databases does not match empty database array.\n");
+        mprintf(LOGG_ERROR, "select_from_official_databases: Invalid arguments. Number of opt-in databases does not match empty database array.\n");
         goto done;
     }
 
     if ((0 < nOptOuts) && (NULL == optOutList)) {
-        mprintf(ERROR, "select_from_official_databases: Invalid arguments. Number of opt-out databases does not match empty database array.\n");
+        mprintf(LOGG_ERROR, "select_from_official_databases: Invalid arguments. Number of opt-out databases does not match empty database array.\n");
         goto done;
     }
 
@@ -1230,7 +1230,7 @@ fc_error_t select_specific_databases(
     if ((NULL == specificDatabaseList) || (0 == nSpecificDatabases) ||
         (NULL == databaseList) || (0 == nDatabases) ||
         (NULL == bCustom)) {
-        mprintf(ERROR, "select_from_official_databases: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "select_from_official_databases: Invalid arguments.\n");
         goto done;
     }
 
@@ -1435,12 +1435,12 @@ fc_error_t perform_database_update(
     STATBUF statbuf;
 
     if (NULL == serverList) {
-        mprintf(ERROR, "perform_database_update: Invalid arguments.\n");
+        mprintf(LOGG_ERROR, "perform_database_update: Invalid arguments.\n");
         goto done;
     }
     if (((NULL == databaseList) || (0 == nDatabases)) &&
         ((NULL == urlDatabaseList) || (0 == nUrlDatabases))) {
-        mprintf(ERROR, "perform_database_update: No databases requested.\n");
+        mprintf(LOGG_ERROR, "perform_database_update: No databases requested.\n");
         goto done;
     }
 
@@ -1593,7 +1593,7 @@ int main(int argc, char **argv)
         exit(FC_EINIT);
 
     if ((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
-        mprintf(ERROR, "Can't parse command line options\n");
+        mprintf(LOGG_ERROR, "Can't parse command line options\n");
         status = FC_EINIT;
         goto done;
     }
@@ -1656,7 +1656,7 @@ int main(int argc, char **argv)
         goto done;
     }
     if (optget(opts, "list-mirrors")->enabled) {
-        mprintf(WARNING, "Deprecated option --list-mirrors. Individual mirrors are no longer tracked, as official signature distribution is now done through the CloudFlare CDN.\n");
+        mprintf(LOGG_WARNING, "Deprecated option --list-mirrors. Individual mirrors are no longer tracked, as official signature distribution is now done through the CloudFlare CDN.\n");
         status = FC_SUCCESS;
         goto done;
     }
@@ -1665,7 +1665,7 @@ int main(int argc, char **argv)
      * Collect list of database servers from DatabaseMirror(s) or PrivateMirror(s).
      */
     if (FC_SUCCESS != (ret = get_database_server_list(opts, &serverList, &nServers, &bPrivate))) {
-        mprintf(ERROR, "Unable to find DatabaseMirror or PrivateMirror option(s) that specify database server FQDNs.\n");
+        mprintf(LOGG_ERROR, "Unable to find DatabaseMirror or PrivateMirror option(s) that specify database server FQDNs.\n");
         status = ret;
         goto done;
     }
@@ -1685,7 +1685,7 @@ int main(int argc, char **argv)
          * Get list of specific databases from command line args.
          */
         if (FC_SUCCESS != (ret = get_string_list(optget(opts, "update-db"), &specificDatabaseList, &nSpecificDatabases))) {
-            mprintf(ERROR, "Error when attempting to read ExtraDatabase entries.\n");
+            mprintf(LOGG_ERROR, "Error when attempting to read ExtraDatabase entries.\n");
             status = ret;
             goto done;
         }
@@ -1702,7 +1702,7 @@ int main(int argc, char **argv)
             free_string_list(specificDatabaseList, nSpecificDatabases);
             specificDatabaseList = NULL;
 
-            mprintf(ERROR, "Failed to select specific databases from available official databases.\n");
+            mprintf(LOGG_ERROR, "Failed to select specific databases from available official databases.\n");
             status = ret;
             goto done;
         }
@@ -1714,12 +1714,12 @@ int main(int argc, char **argv)
              * Collect list of "custom"/unofficial URL-based databases.
              */
             if (FC_SUCCESS != (ret = get_string_list(optget(opts, "DatabaseCustomURL"), &urlDatabaseList, &nUrlDatabases))) {
-                mprintf(ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
+                mprintf(LOGG_ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
                 status = ret;
                 goto done;
             }
             if ((NULL == urlDatabaseList) || (0 == nUrlDatabases)) {
-                mprintf(ERROR, "--update-db=custom requires at least one DatabaseCustomURL in freshclam.conf\n");
+                mprintf(LOGG_ERROR, "--update-db=custom requires at least one DatabaseCustomURL in freshclam.conf\n");
                 status = FC_ECONFIG;
                 goto done;
             }
@@ -1737,7 +1737,7 @@ int main(int argc, char **argv)
          * Collect list of database opt-ins.
          */
         if (FC_SUCCESS != (ret = get_string_list(optget(opts, "ExtraDatabase"), &optInList, &nOptIns))) {
-            mprintf(ERROR, "Error when attempting to read ExtraDatabase entries.\n");
+            mprintf(LOGG_ERROR, "Error when attempting to read ExtraDatabase entries.\n");
             status = ret;
             goto done;
         }
@@ -1749,7 +1749,7 @@ int main(int argc, char **argv)
             free_string_list(optInList, nOptIns);
             optInList = NULL;
 
-            mprintf(ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
+            mprintf(LOGG_ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
             status = ret;
             goto done;
         }
@@ -1760,7 +1760,7 @@ int main(int argc, char **argv)
                 free_string_list(optOutList, nOptOuts);
                 optOutList = NULL;
 
-                mprintf(ERROR, "Failed to add bytecode to list of opt-out databases.\n");
+                mprintf(LOGG_ERROR, "Failed to add bytecode to list of opt-out databases.\n");
                 status = ret;
                 goto done;
             }
@@ -1781,7 +1781,7 @@ int main(int argc, char **argv)
             free_string_list(optOutList, nOptOuts);
             optOutList = NULL;
 
-            mprintf(ERROR, "Failed to select databases from list of official databases.\n");
+            mprintf(LOGG_ERROR, "Failed to select databases from list of official databases.\n");
             status = ret;
             goto done;
         }
@@ -1794,7 +1794,7 @@ int main(int argc, char **argv)
          * Collect list of "custom"/unofficial URL-based databases.
          */
         if (FC_SUCCESS != (ret = get_string_list(optget(opts, "DatabaseCustomURL"), &urlDatabaseList, &nUrlDatabases))) {
-            mprintf(ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
+            mprintf(LOGG_ERROR, "Error when attempting to read ExcludeDatabase entries.\n");
             status = ret;
             goto done;
         }
@@ -1807,7 +1807,7 @@ int main(int argc, char **argv)
      * Initialize libraries and configuration options.
      */
     if (FC_SUCCESS != initialize(opts)) {
-        mprintf(ERROR, "Initialization error!\n");
+        mprintf(LOGG_ERROR, "Initialization error!\n");
         status = FC_EINIT;
         goto done;
     }
