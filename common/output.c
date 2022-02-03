@@ -309,8 +309,8 @@ int logg(loglevel_t loglevel, const char *str, ...)
     struct flock fl;
 #endif
 
-    if ((loglevel == DEBUG_NV && logg_verbose < 2) ||
-        (loglevel == DEBUG && !logg_verbose))
+    if ((loglevel == LOGG_DEBUG_NV && logg_verbose < 2) ||
+        (loglevel == LOGG_DEBUG && !logg_verbose))
         return 0;
 
     ARGLEN(args, str, len);
@@ -380,7 +380,7 @@ int logg(loglevel_t loglevel, const char *str, ...)
         /* Need to avoid logging time for verbose messages when logverbose
                is not set or we get a bunch of timestamps in the log without
                newlines... */
-        if (logg_time && ((loglevel != DEBUG) || logg_verbose)) {
+        if (logg_time && ((loglevel != LOGG_DEBUG) || logg_verbose)) {
             char timestr[32];
             time(&currtime);
             cli_ctime(&currtime, timestr, sizeof(timestr));
@@ -389,16 +389,16 @@ int logg(loglevel_t loglevel, const char *str, ...)
             fprintf(logg_fp, "%s -> ", timestr);
         }
 
-        if (loglevel == ERROR) {
+        if (loglevel == LOGG_ERROR) {
             fprintf(logg_fp, "ERROR: %s", buff);
             flush = 1;
-        } else if (loglevel == WARNING) {
+        } else if (loglevel == LOGG_WARNING) {
             if (!logg_nowarn)
                 fprintf(logg_fp, "WARNING: %s", buff);
             flush = 1;
-        } else if (loglevel == DEBUG || loglevel == DEBUG_NV) {
+        } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
             fprintf(logg_fp, "%s", buff);
-        } else if (loglevel == INFO_NF || loglevel == INFO) {
+        } else if (loglevel == LOGG_INFO_NF || loglevel == LOGG_INFO) {
             fprintf(logg_fp, "%s", buff);
         } else
             fprintf(logg_fp, "%s", buff);
@@ -408,7 +408,7 @@ int logg(loglevel_t loglevel, const char *str, ...)
     }
 
     if (logg_foreground) {
-        if (loglevel != INFO_NF) {
+        if (loglevel != LOGG_INFO_NF) {
             if (logg_time) {
                 char timestr[32];
                 time(&currtime);
@@ -425,12 +425,12 @@ int logg(loglevel_t loglevel, const char *str, ...)
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if (logg_syslog) {
         cli_chomp(buff);
-        if (loglevel == ERROR) {
+        if (loglevel == LOGG_ERROR) {
             syslog(LOG_ERR, "%s", buff);
-        } else if (loglevel == WARNING) {
+        } else if (loglevel == LOGG_WARNING) {
             if (!logg_nowarn)
                 syslog(LOG_WARNING, "%s", buff);
-        } else if (loglevel == DEBUG || loglevel == DEBUG_NV) {
+        } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
             syslog(LOG_DEBUG, "%s", buff);
         } else
             syslog(LOG_INFO, "%s", buff);
@@ -505,21 +505,21 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
         len            = sizeof(buffer) + 1;
     } while (0);
 #endif
-    if (loglevel == ERROR) {
+    if (loglevel == LOGG_ERROR) {
         if (!mprintf_stdout)
             fd = stderr;
         fprintf(fd, "ERROR: %s", buff);
     } else if (!mprintf_quiet) {
-        if (loglevel == WARNING) {
+        if (loglevel == LOGG_WARNING) {
             if (!mprintf_nowarn) {
                 if (!mprintf_stdout)
                     fd = stderr;
                 fprintf(fd, "WARNING: %s", buff);
             }
-        } else if (loglevel == DEBUG) {
+        } else if (loglevel == LOGG_DEBUG) {
             if (mprintf_verbose)
                 fprintf(fd, "%s", buff);
-        } else if (loglevel == INFO) {
+        } else if (loglevel == LOGG_INFO) {
             fprintf(fd, "%s", buff);
         } else
             fprintf(fd, "%s", buff);
