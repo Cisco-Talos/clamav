@@ -545,7 +545,7 @@ cl_error_t onas_rm_listnode(struct onas_lnode *head, const char *dirname)
 
     while ((curr = curr->next)) {
         if (NULL == curr->dirname) {
-            logg(DEBUG, "ClamHash: node's directory name is NULL!\n");
+            logg(LOGG_DEBUG, "ClamHash: node's directory name is NULL!\n");
             return CL_ERROR;
         } else if (!strncmp(curr->dirname, dirname, n)) {
             if (curr->next != NULL)
@@ -688,7 +688,7 @@ int onas_ht_add_hierarchy(struct onas_ht *ht, const char *pathname)
 
     char *const pathargv[] = {(char *)pathname, NULL};
     if (!(ftsp = _priv_fts_open(pathargv, ftspopts, NULL))) {
-        logg(ERROR, "ClamHash: could not open '%s'\n", pathname);
+        logg(LOGG_ERROR, "ClamHash: could not open '%s'\n", pathname);
         ret = CL_EARG;
         goto out;
     }

@@ -57,7 +57,7 @@ int clamd_connect(const char *cfgfile, const char *option)
     int sockd;
 
     if ((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        logg(ERROR, "%s: Can't find or parse configuration file %s\n", option,
+        logg(LOGG_ERROR, "%s: Can't find or parse configuration file %s\n", option,
              cfgfile);
         return -11;
     }
@@ -70,7 +70,7 @@ int clamd_connect(const char *cfgfile, const char *option)
         server.sun_path[sizeof(server.sun_path) - 1] = '\0';
 
         if ((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-            logg(WARNING, "Clamd was NOT notified: Can't create socket endpoint for %s: %s\n",
+            logg(LOGG_WARNING, "Clamd was NOT notified: Can't create socket endpoint for %s: %s\n",
                  opt->strarg, strerror(errno));
             optfree(opts);
             return -1;
@@ -78,7 +78,7 @@ int clamd_connect(const char *cfgfile, const char *option)
 
         if (connect(sockd, (struct sockaddr *)&server,
                     sizeof(struct sockaddr_un)) < 0) {
-            logg(WARNING, "Clamd was NOT notified: Can't connect to clamd through %s: %s\n",
+            logg(LOGG_WARNING, "Clamd was NOT notified: Can't connect to clamd through %s: %s\n",
                  opt->strarg, strerror(errno));
             closesocket(sockd);
             optfree(opts);
@@ -103,7 +103,7 @@ int clamd_connect(const char *cfgfile, const char *option)
             ret = getaddrinfo(opt->strarg, port, &hints, &res);
 
             if (ret) {
-                logg(ERROR, "%s: Can't resolve hostname %s (%s)\n", option,
+                logg(LOGG_ERROR, "%s: Can't resolve hostname %s (%s)\n", option,
                      opt->strarg ? opt->strarg : "",
                      (ret ==
                       EAI_SYSTEM)
@@ -115,13 +115,13 @@ int clamd_connect(const char *cfgfile, const char *option)
 
             for (p = res; p != NULL; p = p->ai_next) {
                 if ((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                    logg(ERROR, "%s: Can't create TCP socket to connect to %s: %s\n",
+                    logg(LOGG_ERROR, "%s: Can't create TCP socket to connect to %s: %s\n",
                          option, opt->strarg ? opt->strarg : "localhost", strerror(errno));
                     continue;
                 }
 
                 if (connect(sockd, p->ai_addr, p->ai_addrlen) == -1) {
-                    logg(ERROR, "%s: Can't connect to clamd on %s:%s: %s\n", option,
+                    logg(LOGG_ERROR, "%s: Can't connect to clamd on %s:%s: %s\n", option,
                          opt->strarg ? opt->strarg : "localhost", port, strerror(errno));
                     closesocket(sockd);
                     continue;
@@ -137,7 +137,7 @@ int clamd_connect(const char *cfgfile, const char *option)
             opt = opt->nextarg;
         }
     } else {
-        logg(ERROR, "%s: No communication socket specified in %s\n", option,
+        logg(LOGG_ERROR, "%s: No communication socket specified in %s\n", option,
              cfgfile);
         optfree(opts);
         return 1;
@@ -156,7 +156,7 @@ int notify(const char *cfgfile)
         return 1;
 
     if (sendln(sockd, "RELOAD", 7) < 0) {
-        logg(ERROR, "NotifyClamd: Could not write to clamd socket: %s\n", strerror(errno));
+        logg(LOGG_ERROR, "NotifyClamd: Could not write to clamd socket: %s\n", strerror(errno));
         closesocket(sockd);
         return 1;
     }
@@ -164,13 +164,13 @@ int notify(const char *cfgfile)
     memset(buff, 0, sizeof(buff));
     if ((bread = recv(sockd, buff, sizeof(buff), 0)) > 0) {
         if (!strstr(buff, "RELOADING")) {
-            logg(ERROR, "NotifyClamd: Unknown answer from clamd: '%s'\n", buff);
+            logg(LOGG_ERROR, "NotifyClamd: Unknown answer from clamd: '%s'\n", buff);
             closesocket(sockd);
             return -1;
         }
     }
 
     closesocket(sockd);
-    logg(INFO, "Clamd successfully notified about the update.\n");
+    logg(LOGG_INFO, "Clamd successfully notified about the update.\n");
     return 0;
 }

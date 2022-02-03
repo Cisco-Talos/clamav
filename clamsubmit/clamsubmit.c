@@ -112,12 +112,12 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         sp = ptr + clen + 1;
         ep = strchr(sp, ';');
         if (ep == NULL) {
-            logg(ERROR, "header_cb(): malformed cookie\n");
+            logg(LOGG_ERROR, "header_cb(): malformed cookie\n");
             return 0;
         }
         mem = malloc(ep - sp + 1);
         if (mem == NULL) {
-            logg(ERROR, "header_cb(): malloc failed\n");
+            logg(LOGG_ERROR, "header_cb(): malloc failed\n");
             return 0;
         }
         memcpy(mem, sp, ep - sp);
@@ -125,7 +125,7 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         if (!strncmp(mem, "_clamav-net_session", strlen("_clamav-net_session")))
             hd->session = mem;
         else {
-            logg(ERROR, "header_cb(): unrecognized cookie\n");
+            logg(LOGG_ERROR, "header_cb(): unrecognized cookie\n");
             free(mem);
         }
     }
@@ -141,7 +141,7 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
     if (len) {
         str = realloc(wd->str, wd->len + len + 1);
         if (str == NULL) {
-            logg(ERROR, "write_cb() realloc failure\n");
+            logg(LOGG_ERROR, "write_cb() realloc failure\n");
             return 0;
         }
         memcpy(str + wd->len, ptr, len);
@@ -167,10 +167,10 @@ const char *presigned_get_string(json_object *ps_json_obj, char *key)
     if (json_object_object_get_ex(ps_json_obj, key, &json_obj)) {
         json_str = json_object_get_string(json_obj);
         if (json_str == NULL) {
-            logg(ERROR, "Error: json_object_get_string() for %s.\n", key);
+            logg(LOGG_ERROR, "Error: json_object_get_string() for %s.\n", key);
         }
     } else {
-        logg(ERROR, "Error: json_object_object_get_ex() for %s.\n", key);
+        logg(LOGG_ERROR, "Error: json_object_object_get_ex() for %s.\n", key);
     }
     return json_str;
 }
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
 
     clam_curl = curl_easy_init();
     if (clam_curl == NULL) {
-        logg(ERROR, "ERROR: Could not initialize libcurl.\n");
+        logg(LOGG_ERROR, "ERROR: Could not initialize libcurl.\n");
         goto done;
     }
 
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
     userAgent[sizeof(userAgent) - 1] = 0;
 
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_USERAGENT, userAgent)) {
-        logg(ERROR, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+        logg(LOGG_ERROR, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
     }
 
     while ((ch = my_getopt(argc, argv, OPTS)) > 0) {
@@ -261,13 +261,13 @@ int main(int argc, char *argv[])
         usage(argv[0]);
 
     if (malware == false && fpvname == NULL) {
-        logg(ERROR, "Detected virus name(-V) required for false positive submissions.\n");
+        logg(LOGG_ERROR, "Detected virus name(-V) required for false positive submissions.\n");
         usage(argv[0]);
     }
     if (strlen(filename) == 1 && filename[0] == '-') {
         filename = read_stream();
         if (!(filename)) {
-            logg(ERROR, "ERROR: Unable to read stream\n");
+            logg(LOGG_ERROR, "ERROR: Unable to read stream\n");
             goto done;
         }
         fromStream = 1;
@@ -276,20 +276,20 @@ int main(int argc, char *argv[])
     if (g_debug) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_VERBOSE, 1L)) {
-            logg(ERROR, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+            logg(LOGG_ERROR, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
         }
         if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_STDERR, stdout)) {
-            logg(ERROR, "!ERROR: Failed to direct curl debug output to stdout!\n");
+            logg(LOGG_ERROR, "!ERROR: Failed to direct curl debug output to stdout!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-        logg(ERROR, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+        logg(LOGG_ERROR, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
     }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(clam_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        logg(ERROR, "ERROR: Failed to set SSL CTX function!\n");
+        logg(LOGG_ERROR, "ERROR: Failed to set SSL CTX function!\n");
     }
 #else
     set_tls_ca_bundle(clam_curl);
@@ -311,29 +311,29 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, header_cb);
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        logg(ERROR, "Error in GET %s: %s\n", url_for_auth_token, curl_easy_strerror(res));
+        logg(LOGG_ERROR, "Error in GET %s: %s\n", url_for_auth_token, curl_easy_strerror(res));
         goto done;
     }
     if (wd.str != NULL) {
         sp = strstr(wd.str, "name=\"authenticity_token\"");
         if (sp == NULL) {
-            logg(ERROR, "Authenticity token element not found.\n");
+            logg(LOGG_ERROR, "Authenticity token element not found.\n");
             goto done;
         }
         sp = strstr(sp, "value=");
         if (sp == NULL) {
-            logg(ERROR, "Authenticity token value not found.\n");
+            logg(LOGG_ERROR, "Authenticity token value not found.\n");
             goto done;
         }
         sp += 7;
         ep = strchr(sp, '"');
         if (ep == NULL) {
-            logg(ERROR, "Authenticity token malformed.\n");
+            logg(LOGG_ERROR, "Authenticity token malformed.\n");
             goto done;
         }
         authenticity_token = malloc(ep - sp + 1);
         if (authenticity_token == NULL) {
-            logg(ERROR, "no memory for authenticity token.\n");
+            logg(LOGG_ERROR, "no memory for authenticity token.\n");
             goto done;
         }
         memcpy(authenticity_token, sp, ep - sp);
@@ -345,17 +345,17 @@ int main(int argc, char *argv[])
 
     /* record the session cookie for later use, if exists */
     if (NULL == hd_malware.session) {
-        logg(ERROR, "clamav.net/presigned response missing session ID cookie.\nWill try without the cookie.\n");
+        logg(LOGG_ERROR, "clamav.net/presigned response missing session ID cookie.\nWill try without the cookie.\n");
         // goto done; // Note: unclear if the session cookie is required. Can't hurt to try w/out it?
     } else {
         len            = strlen(hd_malware.session) + 3;
         session_cookie = malloc(len);
         if (session_cookie == NULL) {
-            logg(ERROR, "No memory for GET presigned cookies\n");
+            logg(LOGG_ERROR, "No memory for GET presigned cookies\n");
             goto done;
         }
         if (snprintf(session_cookie, len, "%s;", hd_malware.session) > len) {
-            logg(ERROR, "snprintf() failed formatting GET presigned cookies\n");
+            logg(LOGG_ERROR, "snprintf() failed formatting GET presigned cookies\n");
             goto done;
         }
     }
@@ -380,11 +380,11 @@ int main(int argc, char *argv[])
     len                       = strlen(authenticity_token) + strlen("X-CSRF-Token: ") + 1;
     authenticity_token_header = malloc(len);
     if (authenticity_token_header == NULL) {
-        logg(ERROR, "No memory for GET presigned X-CSRF-Token\n");
+        logg(LOGG_ERROR, "No memory for GET presigned X-CSRF-Token\n");
         goto done;
     }
     if (snprintf(authenticity_token_header, len, "X-CSRF-Token: %s", authenticity_token) > len) {
-        logg(ERROR, "snprintf() failed for GET presigned X-CSRF-Token\n");
+        logg(LOGG_ERROR, "snprintf() failed for GET presigned X-CSRF-Token\n");
         goto done;
     }
     slist = curl_slist_append(slist, authenticity_token_header);
@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
 
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        logg(ERROR, "Error in GET reports: %s\n", curl_easy_strerror(res));
+        logg(LOGG_ERROR, "Error in GET reports: %s\n", curl_easy_strerror(res));
         goto done;
     }
     curl_slist_free_all(slist);
@@ -409,29 +409,29 @@ int main(int argc, char *argv[])
      */
     ps_json_obj = json_tokener_parse(wd.str);
     if (ps_json_obj == NULL) {
-        logg(ERROR, "Error in json_tokener_parse of %.*s\n", wd.len, wd.str);
+        logg(LOGG_ERROR, "Error in json_tokener_parse of %.*s\n", wd.len, wd.str);
         goto done;
     }
     json_str = presigned_get_string(ps_json_obj, "key");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing key from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing key from json object\n");
         goto done;
     }
     sp = strchr(json_str, '/');
     if (sp == NULL) {
-        logg(ERROR, "Error: malformed 'key' string in GET presigned response (missing '/'.\n");
+        logg(LOGG_ERROR, "Error: malformed 'key' string in GET presigned response (missing '/'.\n");
         goto done;
     }
     sp++;
     ep = strchr(sp, '-');
     if (ep == NULL) {
-        logg(ERROR, "Error: malformed 'key' string in GET presigned response (missing '-'.\n");
+        logg(LOGG_ERROR, "Error: malformed 'key' string in GET presigned response (missing '-'.\n");
         goto done;
     }
 
     submissionID = malloc(ep - sp + 1);
     if (submissionID == NULL) {
-        logg(ERROR, "Error: malloc submissionID.\n");
+        logg(LOGG_ERROR, "Error: malloc submissionID.\n");
         goto done;
     }
     memcpy(submissionID, sp, ep - sp);
@@ -439,31 +439,31 @@ int main(int argc, char *argv[])
 
     aws_curl = curl_easy_init();
     if (!(aws_curl)) {
-        logg(ERROR, "ERROR: Could not initialize libcurl POST presigned\n");
+        logg(LOGG_ERROR, "ERROR: Could not initialize libcurl POST presigned\n");
         goto done;
     }
 
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_USERAGENT, userAgent)) {
-        logg(ERROR, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+        logg(LOGG_ERROR, "!create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
     }
 
     if (g_debug) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_VERBOSE, 1L)) {
-            logg(ERROR, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
+            logg(LOGG_ERROR, "!ERROR: Failed to set CURLOPT_VERBOSE!\n");
         }
         if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_STDERR, stdout)) {
-            logg(ERROR, "!ERROR: Failed to direct curl debug output to stdout!\n");
+            logg(LOGG_ERROR, "!ERROR: Failed to direct curl debug output to stdout!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1)) {
-        logg(ERROR, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
+        logg(LOGG_ERROR, "ERROR: Failed to set HTTP version to 1.1 (to prevent 2.0 responses which we don't yet parse properly)!\n");
     }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(aws_curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        logg(ERROR, "ERROR: Failed to set SSL CTX function!\n");
+        logg(LOGG_ERROR, "ERROR: Failed to set SSL CTX function!\n");
     }
 #else
     set_tls_ca_bundle(aws_curl);
@@ -473,49 +473,49 @@ int main(int argc, char *argv[])
 
     json_str = presigned_get_string(ps_json_obj, "acl");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing acl from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing acl from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "acl", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "policy");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing policy from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing policy from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "policy", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-meta-original-filename");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing x-amz-meta-original-filename from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing x-amz-meta-original-filename from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-meta-original-filename", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-credential");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing x-amz-credential from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing x-amz-credential from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-credential", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-algorithm");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing x-amz-algorithm from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing x-amz-algorithm from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-algorithm", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-date");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing x-amz-date from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing x-amz-date from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-date", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
 
     json_str = presigned_get_string(ps_json_obj, "x-amz-signature");
     if (json_str == NULL) {
-        logg(ERROR, "Error in presigned_get_string parsing x-amz-signature from json object\n");
+        logg(LOGG_ERROR, "Error in presigned_get_string parsing x-amz-signature from json object\n");
         goto done;
     }
     curl_formadd(&post, &last, CURLFORM_COPYNAME, "x-amz-signature", CURLFORM_COPYCONTENTS, json_str, CURLFORM_END);
@@ -529,7 +529,7 @@ int main(int argc, char *argv[])
 
     res = curl_easy_perform(aws_curl);
     if (res != CURLE_OK) {
-        logg(ERROR, "Error in POST AWS: %s\n", curl_easy_strerror(res));
+        logg(LOGG_ERROR, "Error in POST AWS: %s\n", curl_easy_strerror(res));
         goto done;
     }
     curl_slist_free_all(slist);
@@ -574,7 +574,7 @@ int main(int argc, char *argv[])
     curl_easy_setopt(clam_curl, CURLOPT_HEADERFUNCTION, NULL);
     res = curl_easy_perform(clam_curl);
     if (res != CURLE_OK) {
-        logg(ERROR, "Error in POST submit: %s\n", curl_easy_strerror(res));
+        logg(LOGG_ERROR, "Error in POST submit: %s\n", curl_easy_strerror(res));
         goto done;
     } else {
         long response_code;
@@ -582,22 +582,22 @@ int main(int argc, char *argv[])
         if (response_code / 100 == 3) {
             curl_easy_getinfo(clam_curl, CURLINFO_REDIRECT_URL, &url_for_auth_token);
             if (url_for_auth_token == NULL) {
-                logg(ERROR, "POST submit Location URL is NULL.\n");
+                logg(LOGG_ERROR, "POST submit Location URL is NULL.\n");
                 goto done;
             }
             sp = strstr(url_for_auth_token, "/reports/");
             if (sp == NULL) {
-                logg(ERROR, "POST submit Location URL is malformed.\n");
+                logg(LOGG_ERROR, "POST submit Location URL is malformed.\n");
             } else if (!strcmp(sp, "/reports/success")) {
-                logg(INFO, "Submission success!\n");
+                logg(LOGG_INFO, "Submission success!\n");
                 status = 0;
             } else if (!strcmp(sp, "/reports/failure")) {
-                logg(INFO, "Submission failed\n");
+                logg(LOGG_INFO, "Submission failed\n");
             } else {
-                logg(INFO, "Unknown submission status %s\n", sp);
+                logg(LOGG_INFO, "Unknown submission status %s\n", sp);
             }
         } else {
-            logg(ERROR, "Unexpected POST submit response code: %li\n", response_code);
+            logg(LOGG_ERROR, "Unexpected POST submit response code: %li\n", response_code);
         }
     }
 

@@ -136,7 +136,7 @@ static void scanner_thread(void *arg)
 
     if (conn->filename)
         free(conn->filename);
-    logg(DEBUG_NV, "Finished scanthread\n");
+    logg(LOGG_DEBUG_NV, "Finished scanthread\n");
     enum thrmgr_exit exit_code;
     if (virus != 0) {
         exit_code = EXIT_OTHER;
@@ -146,7 +146,7 @@ static void scanner_thread(void *arg)
         exit_code = EXIT_OK;
     }
     if (thrmgr_group_finished(conn->group, exit_code)) {
-        logg(DEBUG_NV, "Scanthread: connection shut down (FD %d)\n", conn->sd);
+        logg(LOGG_DEBUG_NV, "Scanthread: connection shut down (FD %d)\n", conn->sd);
         /* close connection if we were last in group */
         shutdown(conn->sd, 2);
         closesocket(conn->sd);
@@ -188,20 +188,20 @@ void sighandler_th(int sig)
     /* a signal doesn't always wake poll(), for example on FreeBSD */
     if (action && syncpipe_wake_recv_w != -1)
         if (write(syncpipe_wake_recv_w, "", 1) != 1)
-            logg(DEBUG_NV, "Failed to write to syncpipe\n");
+            logg(LOGG_DEBUG_NV, "Failed to write to syncpipe\n");
 }
 
 static int need_db_reload(void)
 {
     if (!dbstat.entries) {
-        logg(INFO, "No stats for Database check - forcing reload\n");
+        logg(LOGG_INFO, "No stats for Database check - forcing reload\n");
         return TRUE;
     }
     if (cl_statchkdir(&dbstat) == 1) {
-        logg(INFO, "SelfCheck: Database modification detected. Forcing reload.\n");
+        logg(LOGG_INFO, "SelfCheck: Database modification detected. Forcing reload.\n");
         return TRUE;
     }
-    logg(INFO, "SelfCheck: Database status OK.\n");
+    logg(LOGG_INFO, "SelfCheck: Database status OK.\n");
     return FALSE;
 }
 
@@ -223,38 +223,38 @@ static void *reload_th(void *arg)
     int retval;
 
     if (NULL == rldata || NULL == rldata->dbdir || NULL == rldata->settings) {
-        logg(ERROR, "reload_th: Invalid arguments, unable to load signature databases.\n");
+        logg(LOGG_ERROR, "reload_th: Invalid arguments, unable to load signature databases.\n");
         status = CL_EARG;
         goto done;
     }
 
-    logg(INFO, "Reading databases from %s\n", rldata->dbdir);
+    logg(LOGG_INFO, "Reading databases from %s\n", rldata->dbdir);
 
     if (NULL == (engine = cl_engine_new())) {
-        logg(ERROR, "reload_th: Can't initialize antivirus engine\n");
+        logg(LOGG_ERROR, "reload_th: Can't initialize antivirus engine\n");
         goto done;
     }
 
     retval = cl_engine_settings_apply(engine, rldata->settings);
     if (CL_SUCCESS != retval) {
-        logg(ERROR, "reload_th: Failed to apply previous engine settings: %s\n", cl_strerror(retval));
+        logg(LOGG_ERROR, "reload_th: Failed to apply previous engine settings: %s\n", cl_strerror(retval));
         status = CL_EMEM;
         goto done;
     }
 
     retval = cl_load(rldata->dbdir, engine, &sigs, rldata->dboptions);
     if (CL_SUCCESS != retval) {
-        logg(ERROR, "reload_th: Database load failed: %s\n", cl_strerror(retval));
+        logg(LOGG_ERROR, "reload_th: Database load failed: %s\n", cl_strerror(retval));
         goto done;
     }
 
     retval = cl_engine_compile(engine);
     if (CL_SUCCESS != retval) {
-        logg(ERROR, "reload_th: Database initialization error: can't compile engine: %s\n", cl_strerror(retval));
+        logg(LOGG_ERROR, "reload_th: Database initialization error: can't compile engine: %s\n", cl_strerror(retval));
         goto done;
     }
 
-    logg(INFO, "Database correctly reloaded (%u signatures)\n", sigs);
+    logg(LOGG_INFO, "Database correctly reloaded (%u signatures)\n", sigs);
     status = CL_SUCCESS;
 
 done:
@@ -286,7 +286,7 @@ done:
 #else
     if (syncpipe_wake_recv_w != -1)
         if (write(syncpipe_wake_recv_w, "", 1) != 1)
-            logg(DEBUG_NV, "Failed to write to syncpipe\n");
+            logg(LOGG_DEBUG_NV, "Failed to write to syncpipe\n");
 #endif
 
     return NULL;
@@ -309,14 +309,14 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
     pthread_attr_t th_attr;
 
     if (NULL == opts || NULL == engine) {
-        logg(ERROR, "reload_db: Invalid arguments, unable to load signature databases.\n");
+        logg(LOGG_ERROR, "reload_db: Invalid arguments, unable to load signature databases.\n");
         status = CL_EARG;
         goto done;
     }
 
     rldata = malloc(sizeof(struct reload_th_t));
     if (!rldata) {
-        logg(ERROR, "Failed to allocate reload context\n");
+        logg(LOGG_ERROR, "Failed to allocate reload context\n");
         status = CL_EMEM;
         goto done;
     }
@@ -328,14 +328,14 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
         /* copy current settings */
         rldata->settings = cl_engine_settings_copy(*engine);
         if (!rldata->settings) {
-            logg(ERROR, "Can't make a copy of the current engine settings\n");
+            logg(LOGG_ERROR, "Can't make a copy of the current engine settings\n");
             goto done;
         }
     }
 
     rldata->dbdir = strdup(optget(opts, "DatabaseDirectory")->strarg);
     if (!rldata->dbdir) {
-        logg(ERROR, "Can't duplicate the database directory path\n");
+        logg(LOGG_ERROR, "Can't duplicate the database directory path\n");
         goto done;
     }
 
@@ -346,7 +346,7 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
 
     retval = cl_statinidir(rldata->dbdir, &dbstat);
     if (CL_SUCCESS != retval) {
-        logg(ERROR, "cl_statinidir() failed: %s\n", cl_strerror(retval));
+        logg(LOGG_ERROR, "cl_statinidir() failed: %s\n", cl_strerror(retval));
         goto done;
     }
 
@@ -366,7 +366,7 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
     }
 
     if (pthread_attr_init(&th_attr)) {
-        logg(ERROR, "Failed to init reload thread attributes\n");
+        logg(LOGG_ERROR, "Failed to init reload thread attributes\n");
         goto done;
     }
 
@@ -377,9 +377,9 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
 
     retval = pthread_create(&th, &th_attr, reload_th, rldata);
     if (pthread_attr_destroy(&th_attr))
-        logg(WARNING, "Failed to release reload thread attributes\n");
+        logg(LOGG_WARNING, "Failed to release reload thread attributes\n");
     if (retval) {
-        logg(ERROR, "Failed to spawn reload thread\n");
+        logg(LOGG_ERROR, "Failed to spawn reload thread\n");
         goto done;
     }
 
@@ -388,23 +388,23 @@ static cl_error_t reload_db(struct cl_engine **engine, unsigned int dboptions, c
         int join_ret = pthread_join(th, NULL);
         switch (join_ret) {
             case 0:
-                logg(INFO, "Database reload completed.\n");
+                logg(LOGG_INFO, "Database reload completed.\n");
                 break;
 
             case EDEADLK:
-                logg(ERROR, "A deadlock was detected when waiting for the database reload thread.\n");
+                logg(LOGG_ERROR, "A deadlock was detected when waiting for the database reload thread.\n");
                 goto done;
 
             case ESRCH:
-                logg(ERROR, "Failed to find database reload thread.\n");
+                logg(LOGG_ERROR, "Failed to find database reload thread.\n");
                 goto done;
 
             case EINVAL:
-                logg(ERROR, "The database reload thread is not a joinable thread.\n");
+                logg(LOGG_ERROR, "The database reload thread is not a joinable thread.\n");
                 goto done;
 
             default:
-                logg(ERROR, "An unknown error occured when waiting for the database reload thread: %d\n", join_ret);
+                logg(LOGG_ERROR, "An unknown error occured when waiting for the database reload thread: %d\n", join_ret);
                 goto done;
         }
     }
@@ -532,12 +532,12 @@ static void *acceptloop_th(void *arg)
         /* TODO: what about sockets that get rm-ed? */
         if (!fds->nfds) {
             /* no more sockets to poll, all gave an error */
-            logg(ERROR, "Main socket gone: fatal\n");
+            logg(LOGG_ERROR, "Main socket gone: fatal\n");
             break;
         }
 
         if (new_sd == -1 && errno != EINTR) {
-            logg(ERROR, "Failed to poll sockets, fatal\n");
+            logg(LOGG_ERROR, "Failed to poll sockets, fatal\n");
             pthread_mutex_lock(&exit_mutex);
             progexit = 1;
             pthread_mutex_unlock(&exit_mutex);
@@ -553,13 +553,13 @@ static void *acceptloop_th(void *arg)
             if (buf->fd == data->syncpipe_wake_accept[0]) {
                 /* dummy sync pipe, just to wake us */
                 if (read(buf->fd, buff, sizeof(buff)) < 0) {
-                    logg(WARNING, "Syncpipe read failed\n");
+                    logg(LOGG_WARNING, "Syncpipe read failed\n");
                 }
                 continue;
             }
 #endif
             if (buf->got_newdata == -1) {
-                logg(DEBUG_NV, "Acceptloop closed FD: %d\n", buf->fd);
+                logg(LOGG_DEBUG_NV, "Acceptloop closed FD: %d\n", buf->fd);
                 shutdown(buf->fd, 2);
                 closesocket(buf->fd);
                 buf->fd = -1;
@@ -596,22 +596,22 @@ static void *acceptloop_th(void *arg)
                 flags = fcntl(new_sd, F_GETFL, 0);
                 if (flags != -1) {
                     if (fcntl(new_sd, F_SETFL, flags | O_NONBLOCK) == -1) {
-                        logg(WARNING, "Can't set socket to nonblocking mode, errno %d\n",
+                        logg(LOGG_WARNING, "Can't set socket to nonblocking mode, errno %d\n",
                              errno);
                     }
                 } else {
-                    logg(WARNING, "Can't get socket flags, errno %d\n", errno);
+                    logg(LOGG_WARNING, "Can't get socket flags, errno %d\n", errno);
                 }
 #else
-                logg(WARNING, "Nonblocking sockets not available!\n");
+                logg(LOGG_WARNING, "Nonblocking sockets not available!\n");
 #endif
-                logg(DEBUG_NV, "Got new connection, FD %d\n", new_sd);
+                logg(LOGG_DEBUG_NV, "Got new connection, FD %d\n", new_sd);
                 pthread_mutex_lock(recv_fds->buf_mutex);
                 ret = fds_add(recv_fds, new_sd, 0, commandtimeout);
                 pthread_mutex_unlock(recv_fds->buf_mutex);
 
                 if (ret == -1) {
-                    logg(ERROR, "fds_add failed\n");
+                    logg(LOGG_ERROR, "fds_add failed\n");
                     closesocket(new_sd);
                     continue;
                 }
@@ -621,13 +621,13 @@ static void *acceptloop_th(void *arg)
                 SetEvent(event_wake_recv);
 #else
                 if (write(data->syncpipe_wake_recv[1], "", 1) == -1) {
-                    logg(ERROR, "write syncpipe failed\n");
+                    logg(LOGG_ERROR, "write syncpipe failed\n");
                     continue;
                 }
 #endif
             } else if (errno != EINTR) {
                 /* very bad - need to exit or restart */
-                logg(ERROR, "accept() failed: %s\n", cli_strerror(errno, buff, BUFFSIZE));
+                logg(LOGG_ERROR, "accept() failed: %s\n", cli_strerror(errno, buff, BUFFSIZE));
                 /* give the poll loop a chance to close disconnected FDs */
                 break;
             }
@@ -648,7 +648,7 @@ static void *acceptloop_th(void *arg)
         for (i = 0; i < fds->nfds; i++) {
             if (fds->buf[i].fd == -1)
                 continue;
-            logg(DEBUG_NV, "Shutdown: closed fd %d\n", fds->buf[i].fd);
+            logg(LOGG_DEBUG_NV, "Shutdown: closed fd %d\n", fds->buf[i].fd);
             shutdown(fds->buf[i].fd, 2);
             closesocket(fds->buf[i].fd);
         }
@@ -663,7 +663,7 @@ static void *acceptloop_th(void *arg)
     SetEvent(event_wake_recv);
 #else
     if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
-        logg(DEBUG_NV, "Syncpipe write failed\n");
+        logg(LOGG_DEBUG_NV, "Syncpipe write failed\n");
     }
 #endif
     return NULL;
@@ -683,13 +683,13 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
         const char *argument;
         enum commands cmdtype;
         if (conn->group && oldstyle) {
-            logg(DEBUG_NV, "Received oldstyle command inside IDSESSION: %s\n", cmd);
+            logg(LOGG_DEBUG_NV, "Received oldstyle command inside IDSESSION: %s\n", cmd);
             conn_reply_error(conn, "Only nCMDS\\n and zCMDS\\0 are accepted inside IDSESSION.");
             *error = 1;
             break;
         }
         cmdtype = parse_command(cmd, &argument, oldstyle);
-        logg(DEBUG_NV, "got command %s (%u, %u), argument: %s\n",
+        logg(LOGG_DEBUG_NV, "got command %s (%u, %u), argument: %s\n",
              cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
         if (cmdtype == COMMAND_FILDES) {
             if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
@@ -699,18 +699,18 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
                 /* put term back */
                 buf->buffer[pos + cmdlen] = term;
                 cmdlen                    = 0;
-                logg(DEBUG_NV, "RECVTH: mode -> MODE_WAITANCILL\n");
+                logg(LOGG_DEBUG_NV, "RECVTH: mode -> MODE_WAITANCILL\n");
                 break;
             }
             /* eat extra \0 for controlmsg */
             cmdlen++;
-            logg(DEBUG_NV, "RECVTH: FILDES command complete\n");
+            logg(LOGG_DEBUG_NV, "RECVTH: FILDES command complete\n");
         }
         conn->term = term;
         buf->term  = term;
 
         if ((rc = execute_or_dispatch_command(conn, cmdtype, argument)) < 0) {
-            logg(ERROR, "Command dispatch failed\n");
+            logg(LOGG_ERROR, "Command dispatch failed\n");
             if (rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
                 pthread_mutex_lock(&exit_mutex);
                 progexit = 1;
@@ -719,20 +719,20 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             *error = 1;
         }
         if (thrmgr_group_need_terminate(conn->group)) {
-            logg(DEBUG_NV, "Receive thread: have to terminate group\n");
+            logg(LOGG_DEBUG_NV, "Receive thread: have to terminate group\n");
             *error = CL_ETIMEOUT;
             break;
         }
         if (*error || !conn->group || rc) {
             if (rc && thrmgr_group_finished(conn->group, EXIT_OK)) {
-                logg(DEBUG_NV, "Receive thread: closing conn (FD %d), group finished\n", conn->sd);
+                logg(LOGG_DEBUG_NV, "Receive thread: closing conn (FD %d), group finished\n", conn->sd);
                 /* if there are no more active jobs */
                 shutdown(conn->sd, 2);
                 closesocket(conn->sd);
                 buf->fd     = -1;
                 conn->group = NULL;
             } else if (conn->mode != MODE_STREAM) {
-                logg(DEBUG_NV, "mode -> MODE_WAITREPLY\n");
+                logg(LOGG_DEBUG_NV, "mode -> MODE_WAITREPLY\n");
                 /* no more commands are accepted */
                 conn->mode = MODE_WAITREPLY;
                 /* Stop monitoring this FD, it will be closed either
@@ -770,10 +770,10 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             /* TODO: this doesn't belong here */
             buf->dumpname = conn->filename;
             buf->dumpfd   = conn->scanfd;
-            logg(DEBUG_NV, "Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
+            logg(LOGG_DEBUG_NV, "Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
         }
         if (conn->mode != MODE_COMMAND) {
-            logg(DEBUG_NV, "Breaking command loop, mode is no longer MODE_COMMAND\n");
+            logg(LOGG_DEBUG_NV, "Breaking command loop, mode is no longer MODE_COMMAND\n");
             break;
         }
         conn->id++;
@@ -784,7 +784,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
     buf->group = conn->group;
     buf->quota = conn->quota;
     if (conn->scanfd != -1 && conn->scanfd != buf->dumpfd) {
-        logg(DEBUG_NV, "Unclaimed file descriptor received, closing: %d\n", conn->scanfd);
+        logg(LOGG_DEBUG_NV, "Unclaimed file descriptor received, closing: %d\n", conn->scanfd);
         close(conn->scanfd);
         /* protocol error */
         conn_reply_error(conn, "PROTOCOL ERROR: ancillary data sent without FILDES.");
@@ -799,9 +799,9 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
         } else
             buf->off = 0;
         if (buf->off)
-            logg(DEBUG_NV, "Moved partial command: %lu\n", (unsigned long)buf->off);
+            logg(LOGG_DEBUG_NV, "Moved partial command: %lu\n", (unsigned long)buf->off);
         else
-            logg(DEBUG_NV, "Consumed entire command\n");
+            logg(LOGG_DEBUG_NV, "Consumed entire command\n");
         /* adjust pos to account for the buffer shuffle */
         pos = 0;
     }
@@ -816,7 +816,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
     size_t pos = *ppos;
     size_t cmdlen;
 
-    logg(DEBUG_NV, "mode == MODE_STREAM\n");
+    logg(LOGG_DEBUG_NV, "mode == MODE_STREAM\n");
     /* we received some data, set readtimeout */
     time(&buf->timeout_at);
     buf->timeout_at += readtimeout;
@@ -828,7 +828,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                 memmove(&cs, buf->buffer + pos, 4);
                 pos += 4;
                 buf->chunksize = ntohl(cs);
-                logg(DEBUG_NV, "Got chunksize: %u\n", buf->chunksize);
+                logg(LOGG_DEBUG_NV, "Got chunksize: %u\n", buf->chunksize);
                 if (!buf->chunksize) {
                     /* chunksize 0 marks end of stream */
                     conn->scanfd = buf->dumpfd;
@@ -837,10 +837,10 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                     buf->mode    = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
                     if (buf->mode == MODE_WAITREPLY)
                         buf->fd = -1;
-                    logg(DEBUG_NV, "Chunks complete\n");
+                    logg(LOGG_DEBUG_NV, "Chunks complete\n");
                     buf->dumpname = NULL;
                     if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
-                        logg(ERROR, "Command dispatch failed\n");
+                        logg(LOGG_ERROR, "Command dispatch failed\n");
                         if (rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
                             pthread_mutex_lock(&exit_mutex);
                             progexit = 1;
@@ -856,7 +856,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                     }
                 }
                 if (buf->chunksize > buf->quota) {
-                    logg(WARNING, "INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n",
+                    logg(LOGG_WARNING, "INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n",
                          (unsigned long)buf->chunksize, (unsigned long)buf->quota);
                     conn_reply_error(conn, "INSTREAM size limit exceeded.");
                     *error = 1;
@@ -865,7 +865,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                 } else {
                     buf->quota -= buf->chunksize;
                 }
-                logg(DEBUG_NV, "Quota Remaining: %lu\n", buf->quota);
+                logg(LOGG_DEBUG_NV, "Quota Remaining: %lu\n", buf->quota);
             } else {
                 /* need more data, so return and wait for some */
                 memmove(buf->buffer, &buf->buffer[pos], buf->off - pos);
@@ -881,10 +881,10 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
         buf->chunksize -= cmdlen;
         if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) == (size_t)-1) {
             conn_reply_error(conn, "Error writing to temporary file");
-            logg(ERROR, "INSTREAM: Can't write to temporary file.\n");
+            logg(LOGG_ERROR, "INSTREAM: Can't write to temporary file.\n");
             *error = 1;
         }
-        logg(DEBUG_NV, "Processed %llu bytes of chunkdata, pos %llu\n", (long long unsigned)cmdlen, (long long unsigned)pos);
+        logg(LOGG_DEBUG_NV, "Processed %llu bytes of chunkdata, pos %llu\n", (long long unsigned)cmdlen, (long long unsigned)pos);
         pos += cmdlen;
         if (pos == buf->off) {
             buf->off = 0;
@@ -932,83 +932,83 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     /* set up limits */
     if ((opt = optget(opts, "MaxScanTime"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANTIME, opt->numarg))) {
-            logg(ERROR, "cl_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_SCANTIME) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANTIME, NULL);
     if (val)
-        logg(INFO, "Limits: Global time limit set to %llu milliseconds.\n", val);
+        logg(LOGG_INFO, "Limits: Global time limit set to %llu milliseconds.\n", val);
     else
-        logg(WARNING, "Limits: Global time limit protection disabled.\n");
+        logg(LOGG_WARNING, "Limits: Global time limit protection disabled.\n");
 
     if ((opt = optget(opts, "MaxScanSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
-            logg(ERROR, "cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL);
     if (val)
-        logg(INFO, "Limits: Global size limit set to %llu bytes.\n", val);
+        logg(LOGG_INFO, "Limits: Global size limit set to %llu bytes.\n", val);
     else
-        logg(WARNING, "Limits: Global size limit protection disabled.\n");
+        logg(LOGG_WARNING, "Limits: Global size limit protection disabled.\n");
 
     if ((opt = optget(opts, "MaxFileSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
-            logg(ERROR, "cl_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL);
     if (val)
-        logg(INFO, "Limits: File size limit set to %llu bytes.\n", val);
+        logg(LOGG_INFO, "Limits: File size limit set to %llu bytes.\n", val);
     else
-        logg(WARNING, "Limits: File size limit protection disabled.\n");
+        logg(LOGG_WARNING, "Limits: File size limit protection disabled.\n");
 
 #ifndef _WIN32
     if (getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
         if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
-            logg(WARNING, "System limit for file size is lower than engine->maxfilesize\n");
+            logg(LOGG_WARNING, "System limit for file size is lower than engine->maxfilesize\n");
         if (rlim.rlim_cur < (rlim_t)cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
-            logg(WARNING, "System limit for file size is lower than engine->maxscansize\n");
+            logg(LOGG_WARNING, "System limit for file size is lower than engine->maxscansize\n");
     } else {
-        logg(WARNING, "Cannot obtain resource limits for file size\n");
+        logg(LOGG_WARNING, "Cannot obtain resource limits for file size\n");
     }
 #endif
 
     if ((opt = optget(opts, "MaxRecursion"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
-            logg(ERROR, "cl_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_RECURSION, NULL);
     if (val)
-        logg(INFO, "Limits: Recursion level limit set to %u.\n", (unsigned int)val);
+        logg(LOGG_INFO, "Limits: Recursion level limit set to %u.\n", (unsigned int)val);
     else
-        logg(WARNING, "Limits: Recursion level limit protection disabled.\n");
+        logg(LOGG_WARNING, "Limits: Recursion level limit protection disabled.\n");
 
     if ((opt = optget(opts, "MaxFiles"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
-            logg(ERROR, "cl_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILES, NULL);
     if (val)
-        logg(INFO, "Limits: Files limit set to %u.\n", (unsigned int)val);
+        logg(LOGG_INFO, "Limits: Files limit set to %u.\n", (unsigned int)val);
     else
-        logg(WARNING, "Limits: Files limit protection disabled.\n");
+        logg(LOGG_WARNING, "Limits: Files limit protection disabled.\n");
 
 #ifndef _WIN32
     if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
-        logg(DEBUG, "Limits: Core-dump limit is %lu.\n", (unsigned long)rlim.rlim_cur);
+        logg(LOGG_DEBUG, "Limits: Core-dump limit is %lu.\n", (unsigned long)rlim.rlim_cur);
     }
 #endif
 
@@ -1016,113 +1016,113 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if ((opt = optget(opts, "MaxEmbeddedPE"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_EMBEDDEDPE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_EMBEDDEDPE, NULL);
-    logg(INFO, "Limits: MaxEmbeddedPE limit set to %llu bytes.\n", val);
+    logg(LOGG_INFO, "Limits: MaxEmbeddedPE limit set to %llu bytes.\n", val);
 
     if ((opt = optget(opts, "MaxHTMLNormalize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_HTMLNORMALIZE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNORMALIZE, NULL);
-    logg(INFO, "Limits: MaxHTMLNormalize limit set to %llu bytes.\n", val);
+    logg(LOGG_INFO, "Limits: MaxHTMLNormalize limit set to %llu bytes.\n", val);
 
     if ((opt = optget(opts, "MaxHTMLNoTags"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_HTMLNOTAGS) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_HTMLNOTAGS, NULL);
-    logg(INFO, "Limits: MaxHTMLNoTags limit set to %llu bytes.\n", val);
+    logg(LOGG_INFO, "Limits: MaxHTMLNoTags limit set to %llu bytes.\n", val);
 
     if ((opt = optget(opts, "MaxScriptNormalize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_SCRIPTNORMALIZE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCRIPTNORMALIZE, NULL);
-    logg(INFO, "Limits: MaxScriptNormalize limit set to %llu bytes.\n", val);
+    logg(LOGG_INFO, "Limits: MaxScriptNormalize limit set to %llu bytes.\n", val);
 
     if ((opt = optget(opts, "MaxZipTypeRcg"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(CL_ENGINE_MAX_ZIPTYPERCG) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_ZIPTYPERCG, NULL);
-    logg(INFO, "Limits: MaxZipTypeRcg limit set to %llu bytes.\n", val);
+    logg(LOGG_INFO, "Limits: MaxZipTypeRcg limit set to %llu bytes.\n", val);
 
     if ((opt = optget(opts, "MaxPartitions"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_PARTITIONS, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(MaxPartitions) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(MaxPartitions) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_PARTITIONS, NULL);
-    logg(INFO, "Limits: MaxPartitions limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: MaxPartitions limit set to %llu.\n", val);
 
     if ((opt = optget(opts, "MaxIconsPE"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_ICONSPE, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(MaxIconsPE) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(MaxIconsPE) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_ICONSPE, NULL);
-    logg(INFO, "Limits: MaxIconsPE limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: MaxIconsPE limit set to %llu.\n", val);
 
     if ((opt = optget(opts, "MaxRecHWP3"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECHWP3, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(MaxRecHWP3) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(MaxRecHWP3) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_MAX_RECHWP3, NULL);
-    logg(INFO, "Limits: MaxRecHWP3 limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: MaxRecHWP3 limit set to %llu.\n", val);
 
     /* options are handled in main (clamd.c) */
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MATCH_LIMIT, NULL);
-    logg(INFO, "Limits: PCREMatchLimit limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: PCREMatchLimit limit set to %llu.\n", val);
 
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_RECMATCH_LIMIT, NULL);
-    logg(INFO, "Limits: PCRERecMatchLimit limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: PCRERecMatchLimit limit set to %llu.\n", val);
 
     if ((opt = optget(opts, "PCREMaxFileSize"))->active) {
         if ((ret = cl_engine_set_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, opt->numarg))) {
-            logg(ERROR, "cli_engine_set_num(PCREMaxFileSize) failed: %s\n", cl_strerror(ret));
+            logg(LOGG_ERROR, "cli_engine_set_num(PCREMaxFileSize) failed: %s\n", cl_strerror(ret));
             cl_engine_free(engine);
             return 1;
         }
     }
     val = cl_engine_get_num(engine, CL_ENGINE_PCRE_MAX_FILESIZE, NULL);
-    logg(INFO, "Limits: PCREMaxFileSize limit set to %llu.\n", val);
+    logg(LOGG_INFO, "Limits: PCREMaxFileSize limit set to %llu.\n", val);
 
     if (optget(opts, "ScanArchive")->enabled) {
-        logg(INFO, "Archive support enabled.\n");
+        logg(LOGG_INFO, "Archive support enabled.\n");
         options.parse |= CL_SCAN_PARSE_ARCHIVE;
     } else {
-        logg(INFO, "Archive support disabled.\n");
+        logg(LOGG_INFO, "Archive support disabled.\n");
     }
 
     /* TODO: Remove deprecated option in a future feature release. */
     if (optget(opts, "ArchiveBlockEncrypted")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
             logg(
-                WARNING,
+                LOGG_WARNING,
                 "Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
                 "encrypted archives _and_ documents. Please update your "
                 "configuration to use replacement options \"AlertEncrypted\", or "
@@ -1131,7 +1131,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
         } else {
             logg(
-                WARNING,
+                LOGG_WARNING,
                 "Using deprecated option \"ArchiveBlockEncrypted\" to alert on "
                 "encrypted documents. Please update your configuration to use "
                 "replacement options \"AlertEncrypted\", or "
@@ -1142,129 +1142,129 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     if (optget(opts, "AlertEncrypted")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
-            logg(INFO, "Alerting of encrypted archives _and_ documents enabled.\n");
+            logg(LOGG_INFO, "Alerting of encrypted archives _and_ documents enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
         } else {
-            logg(INFO, "Alerting of encrypted documents enabled.\n");
+            logg(LOGG_INFO, "Alerting of encrypted documents enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
         }
     }
 
     if (optget(opts, "AlertEncryptedArchive")->enabled) {
         if (options.parse & CL_SCAN_PARSE_ARCHIVE) {
-            logg(INFO, "Alerting of encrypted archives enabled.\n");
+            logg(LOGG_INFO, "Alerting of encrypted archives enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
         } else {
-            logg(WARNING, "Encrypted archive alerting requested, but archive support "
+            logg(LOGG_WARNING, "Encrypted archive alerting requested, but archive support "
                  "is disabled!\n");
         }
     }
 
     if (optget(opts, "AlertEncryptedDoc")->enabled) {
-        logg(INFO, "Alerting of encrypted documents enabled.\n");
+        logg(LOGG_INFO, "Alerting of encrypted documents enabled.\n");
         options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
     }
 
     /* TODO: Remove deprecated option in a future feature release. */
     if (optget(opts, "BlockMax")->enabled) {
-        logg(WARNING, "Using deprecated option \"BlockMax\" to enable heuristic alerts "
+        logg(LOGG_WARNING, "Using deprecated option \"BlockMax\" to enable heuristic alerts "
              "when scans exceed set maximums. Please update your configuration "
              "to use replacement option \"AlertExceedsMax\".\n");
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     } else if (optget(opts, "AlertExceedsMax")->enabled) {
-        logg(INFO, "Heuristic alerting enabled for scans that exceed set maximums.\n");
+        logg(LOGG_INFO, "Heuristic alerting enabled for scans that exceed set maximums.\n");
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     } else {
-        logg(INFO, "AlertExceedsMax heuristic detection disabled.\n");
+        logg(LOGG_INFO, "AlertExceedsMax heuristic detection disabled.\n");
     }
 
     /* TODO: Remove deprecated option in a future feature release. */
     if (!optget(opts, "AlgorithmicDetection")->enabled) {
-        logg(WARNING, "Using deprecated option \"AlgorithmicDetection\" to disable "
+        logg(LOGG_WARNING, "Using deprecated option \"AlgorithmicDetection\" to disable "
              "heuristic alerts. Please update your configuration to use "
              "replacement option \"HeuristicAlerts\".\n");
     } else if (!optget(opts, "HeuristicAlerts")->enabled) {
-        logg(INFO, "Heuristic alerts disabled.\n");
+        logg(LOGG_INFO, "Heuristic alerts disabled.\n");
     } else {
-        logg(INFO, "Heuristic alerts enabled.\n");
+        logg(LOGG_INFO, "Heuristic alerts enabled.\n");
         options.general |= CL_SCAN_GENERAL_HEURISTICS;
     }
 
     if (optget(opts, "ScanPE")->enabled) {
-        logg(INFO, "Portable Executable support enabled.\n");
+        logg(LOGG_INFO, "Portable Executable support enabled.\n");
         options.parse |= CL_SCAN_PARSE_PE;
     } else {
-        logg(INFO, "Portable Executable support disabled.\n");
+        logg(LOGG_INFO, "Portable Executable support disabled.\n");
     }
 
     if (optget(opts, "ScanELF")->enabled) {
-        logg(INFO, "ELF support enabled.\n");
+        logg(LOGG_INFO, "ELF support enabled.\n");
         options.parse |= CL_SCAN_PARSE_ELF;
     } else {
-        logg(INFO, "ELF support disabled.\n");
+        logg(LOGG_INFO, "ELF support disabled.\n");
     }
 
     /* TODO: Remove deprecated option in a future feature release */
     if (optget(opts, "ScanPE")->enabled || optget(opts, "ScanELF")->enabled) {
         if ((optget(opts, "DetectBrokenExecutables")->enabled) ||
             (optget(opts, "AlertBrokenExecutables")->enabled)) {
-            logg(INFO, "Alerting on broken executables enabled.\n");
+            logg(LOGG_INFO, "Alerting on broken executables enabled.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_BROKEN;
         }
     }
 
     if (optget(opts, "AlertBrokenMedia")->enabled) {
         options.heuristic |= CL_SCAN_HEURISTIC_BROKEN_MEDIA;
-        logg(INFO, "Media (Graphics) Format Validatation enabled\n");
+        logg(LOGG_INFO, "Media (Graphics) Format Validatation enabled\n");
     }
 
     if (optget(opts, "ScanMail")->enabled) {
-        logg(INFO, "Mail files support enabled.\n");
+        logg(LOGG_INFO, "Mail files support enabled.\n");
         options.parse |= CL_SCAN_PARSE_MAIL;
 
         if (optget(opts, "ScanPartialMessages")->enabled) {
-            logg(INFO, "Mail: RFC1341 handling enabled.\n");
+            logg(LOGG_INFO, "Mail: RFC1341 handling enabled.\n");
             options.mail |= CL_SCAN_MAIL_PARTIAL_MESSAGE;
         }
 
     } else {
-        logg(INFO, "Mail files support disabled.\n");
+        logg(LOGG_INFO, "Mail files support disabled.\n");
     }
 
     if (optget(opts, "ScanOLE2")->enabled) {
-        logg(INFO, "OLE2 support enabled.\n");
+        logg(LOGG_INFO, "OLE2 support enabled.\n");
         options.parse |= CL_SCAN_PARSE_OLE2;
 
         /* TODO: Remove deprecated option in a future feature release */
         if ((optget(opts, "OLE2BlockMacros")->enabled) ||
             (optget(opts, "AlertOLE2Macros")->enabled)) {
-            logg(INFO, "OLE2: Alerting on all VBA macros.\n");
+            logg(LOGG_INFO, "OLE2: Alerting on all VBA macros.\n");
             options.heuristic |= CL_SCAN_HEURISTIC_MACROS;
         }
     } else {
-        logg(INFO, "OLE2 support disabled.\n");
+        logg(LOGG_INFO, "OLE2 support disabled.\n");
     }
 
     if (optget(opts, "ScanPDF")->enabled) {
-        logg(INFO, "PDF support enabled.\n");
+        logg(LOGG_INFO, "PDF support enabled.\n");
         options.parse |= CL_SCAN_PARSE_PDF;
     } else {
-        logg(INFO, "PDF support disabled.\n");
+        logg(LOGG_INFO, "PDF support disabled.\n");
     }
 
     if (optget(opts, "ScanSWF")->enabled) {
-        logg(INFO, "SWF support enabled.\n");
+        logg(LOGG_INFO, "SWF support enabled.\n");
         options.parse |= CL_SCAN_PARSE_SWF;
     } else {
-        logg(INFO, "SWF support disabled.\n");
+        logg(LOGG_INFO, "SWF support disabled.\n");
     }
 
     if (optget(opts, "ScanHTML")->enabled) {
-        logg(INFO, "HTML support enabled.\n");
+        logg(LOGG_INFO, "HTML support enabled.\n");
         options.parse |= CL_SCAN_PARSE_HTML;
     } else {
-        logg(INFO, "HTML support disabled.\n");
+        logg(LOGG_INFO, "HTML support disabled.\n");
     }
 
 #ifdef PRELUDE
@@ -1278,17 +1278,17 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #endif
 
     if (optget(opts, "ScanXMLDOCS")->enabled) {
-        logg(INFO, "XMLDOCS support enabled.\n");
+        logg(LOGG_INFO, "XMLDOCS support enabled.\n");
         options.parse |= CL_SCAN_PARSE_XMLDOCS;
     } else {
-        logg(INFO, "XMLDOCS support disabled.\n");
+        logg(LOGG_INFO, "XMLDOCS support disabled.\n");
     }
 
     if (optget(opts, "ScanHWP3")->enabled) {
-        logg(INFO, "HWP3 support enabled.\n");
+        logg(LOGG_INFO, "HWP3 support enabled.\n");
         options.parse |= CL_SCAN_PARSE_HWP3;
     } else {
-        logg(INFO, "HWP3 support disabled.\n");
+        logg(LOGG_INFO, "HWP3 support disabled.\n");
     }
 
     if (optget(opts, "PhishingScanURLs")->enabled) {
@@ -1296,13 +1296,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         if ((optget(opts, "PhishingAlwaysBlockCloak")->enabled) ||
             (optget(opts, "AlertPhishingCloak")->enabled)) {
             options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_CLOAK;
-            logg(INFO, "Phishing: Always checking for cloaked urls\n");
+            logg(LOGG_INFO, "Phishing: Always checking for cloaked urls\n");
         }
         /* TODO: Remove deprecated option in a future feature release */
         if ((optget(opts, "PhishingAlwaysBlockSSLMismatch")->enabled) ||
             (optget(opts, "AlertPhishingSSLMismatch")->enabled)) {
             options.heuristic |= CL_SCAN_HEURISTIC_PHISHING_SSL_MISMATCH;
-            logg(INFO, "Phishing: Always checking for ssl mismatches\n");
+            logg(LOGG_INFO, "Phishing: Always checking for ssl mismatches\n");
         }
     }
 
@@ -1310,12 +1310,12 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     if ((optget(opts, "PartitionIntersection")->enabled) ||
         (optget(opts, "AlertPartitionIntersection")->enabled)) {
         options.heuristic |= CL_SCAN_HEURISTIC_PARTITION_INTXN;
-        logg(INFO, "Raw DMG: Alert on partitions intersections\n");
+        logg(LOGG_INFO, "Raw DMG: Alert on partitions intersections\n");
     }
 
     if (optget(opts, "HeuristicScanPrecedence")->enabled) {
         options.general |= CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE;
-        logg(INFO, "Heuristic: precedence enabled\n");
+        logg(LOGG_INFO, "Heuristic: precedence enabled\n");
     }
 
     if (optget(opts, "StructuredDataDetection")->enabled) {
@@ -1323,26 +1323,26 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
         if ((opt = optget(opts, "StructuredMinCreditCardCount"))->enabled) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_CC_COUNT, opt->numarg))) {
-                logg(ERROR, "cl_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
+                logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
                 cl_engine_free(engine);
                 return 1;
             }
         }
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
-        logg(INFO, "Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int)val);
+        logg(LOGG_INFO, "Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int)val);
 
         if (optget(opts, "StructuredCCOnly")->enabled)
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_CC;
 
         if ((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
             if ((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
-                logg(ERROR, "cl_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
+                logg(LOGG_ERROR, "cl_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
                 cl_engine_free(engine);
                 return 1;
             }
         }
         val = cl_engine_get_num(engine, CL_ENGINE_MIN_SSN_COUNT, NULL);
-        logg(INFO, "Structured: Minimum Social Security Number Count set to %u\n", (unsigned int)val);
+        logg(LOGG_INFO, "Structured: Minimum Social Security Number Count set to %u\n", (unsigned int)val);
 
         if (optget(opts, "StructuredSSNFormatNormal")->enabled)
             options.heuristic |= CL_SCAN_HEURISTIC_STRUCTURED_SSN_NORMAL;
@@ -1362,7 +1362,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         options.general |= CL_SCAN_GENERAL_COLLECT_METADATA;
 #else
     if (optget(opts, "GenerateMetadataJson")->enabled) {
-        logg(ERROR, "Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
+        logg(LOGG_ERROR, "Can't generate json (gen-json). libjson-c dev library was missing or misconfigured when ClamAV was built.\n");
         cl_engine_free(engine);
         return 1;
     }
@@ -1370,12 +1370,12 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     selfchk = optget(opts, "SelfCheck")->numarg;
     if (!selfchk) {
-        logg(INFO, "Self checking disabled.\n");
+        logg(LOGG_INFO, "Self checking disabled.\n");
     } else {
-        logg(INFO, "Self checking every %u seconds.\n", selfchk);
+        logg(LOGG_INFO, "Self checking every %u seconds.\n", selfchk);
     }
 
-    logg(DEBUG, "Listening daemon: PID: %u\n", (unsigned int)getpid());
+    logg(LOGG_DEBUG, "Listening daemon: PID: %u\n", (unsigned int)getpid());
     max_threads               = optget(opts, "MaxThreads")->numarg;
     max_queue                 = optget(opts, "MaxQueue")->numarg;
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
@@ -1408,7 +1408,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
 #ifdef HAVE_ENABLE_EXTENDED_FILE_STDIO
         if (enable_extended_FILE_stdio(-1, -1) == -1) {
-            logg(WARNING, "Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
+            logg(LOGG_WARNING, "Unable to set extended FILE stdio, clamd will be limited to max 256 open files\n");
             rlim.rlim_cur = rlim.rlim_cur > 255 ? 255 : rlim.rlim_cur;
         } else {
             solaris_has_extended_stdio++;
@@ -1417,7 +1417,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #elif !defined(_LP64)
         if (solaris_has_extended_stdio && rlim.rlim_cur > 255) {
             rlim.rlim_cur = 255;
-            logg(WARNING, "Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
+            logg(LOGG_WARNING, "Solaris only supports 256 open files for 32-bit processes, you need at least Solaris 10u4, or compile as 64-bit to support more!\n");
         }
 #endif
 
@@ -1432,7 +1432,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
             rlim.rlim_cur = rlim.rlim_max;
             if (setrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-                logg(ERROR, "setrlimit() for RLIMIT_NOFILE to %lu failed: %s\n",
+                logg(LOGG_ERROR, "setrlimit() for RLIMIT_NOFILE to %lu failed: %s\n",
                      (unsigned long)rlim.rlim_cur, strerror(errno));
                 rlim.rlim_cur = saved_soft_limit;
             }
@@ -1445,27 +1445,27 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         if (max_queue < max_threads) {
             max_queue = max_threads;
             if (warn)
-                logg(WARNING, "MaxQueue value too low, increasing to: %d\n", max_queue);
+                logg(LOGG_WARNING, "MaxQueue value too low, increasing to: %d\n", max_queue);
         }
         if (max_max_queue < max_threads) {
-            logg(WARNING, "MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %lu\n",
+            logg(LOGG_WARNING, "MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %lu\n",
                  maxrec * max_threads, (unsigned long)rlim.rlim_cur);
             max_max_queue = max_threads;
         }
         if (max_queue > max_max_queue) {
             max_queue = max_max_queue;
             if (warn)
-                logg(WARNING, "MaxQueue value too high, lowering to: %d\n", max_queue);
+                logg(LOGG_WARNING, "MaxQueue value too high, lowering to: %d\n", max_queue);
         } else if (max_queue < 2 * max_threads && max_queue < max_max_queue) {
             max_queue = 2 * max_threads;
             if (max_queue > max_max_queue)
                 max_queue = max_max_queue;
             /* always warn here */
-            logg(WARNING, "MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
+            logg(LOGG_WARNING, "MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
         }
     }
 #endif
-    logg(DEBUG, "MaxQueue set to: %d\n", max_queue);
+    logg(LOGG_DEBUG, "MaxQueue set to: %d\n", max_queue);
     acceptdata.max_queue = max_queue;
 
 #ifndef _WIN32
@@ -1508,7 +1508,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
     for (i = 0; i < nsockets; i++)
         if (fds_add(&acceptdata.fds, socketds[i], 1, 0) == -1) {
-            logg(ERROR, "fds_add failed\n");
+            logg(LOGG_ERROR, "fds_add failed\n");
             cl_engine_free(engine);
             return 1;
         }
@@ -1519,25 +1519,25 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
         (pipe(acceptdata.syncpipe_wake_accept) == -1)) {
 
-        logg(ERROR, "pipe failed\n");
+        logg(LOGG_ERROR, "pipe failed\n");
         exit(-1);
     }
     syncpipe_wake_recv_w = acceptdata.syncpipe_wake_recv[1];
 
     if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1, 0) == -1 ||
         fds_add(&acceptdata.fds, acceptdata.syncpipe_wake_accept[0], 1, 0)) {
-        logg(ERROR, "failed to add pipe fd\n");
+        logg(LOGG_ERROR, "failed to add pipe fd\n");
         exit(-1);
     }
 #endif
 
     if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
-        logg(ERROR, "thrmgr_new failed\n");
+        logg(LOGG_ERROR, "thrmgr_new failed\n");
         exit(-1);
     }
 
     if (pthread_create(&accept_th, NULL, acceptloop_th, &acceptdata)) {
-        logg(ERROR, "pthread_create failed\n");
+        logg(LOGG_ERROR, "pthread_create failed\n");
         exit(-1);
     }
 
@@ -1557,7 +1557,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #else
         if (!fds->nfds) {
             /* at least the dummy/sync pipe should have remained */
-            logg(ERROR, "All recv() descriptors gone: fatal\n");
+            logg(LOGG_ERROR, "All recv() descriptors gone: fatal\n");
             pthread_mutex_lock(&exit_mutex);
             progexit = 1;
             pthread_mutex_unlock(&exit_mutex);
@@ -1566,7 +1566,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
 #endif
         if (new_sd == -1 && errno != EINTR) {
-            logg(ERROR, "Failed to poll sockets, fatal\n");
+            logg(LOGG_ERROR, "Failed to poll sockets, fatal\n");
             pthread_mutex_lock(&exit_mutex);
             progexit = 1;
             pthread_mutex_unlock(&exit_mutex);
@@ -1584,26 +1584,26 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
                 /* dummy sync pipe, just to wake us */
                 if (read(buf->fd, buff, sizeof(buff)) < 0) {
-                    logg(WARNING, "Syncpipe read failed\n");
+                    logg(LOGG_WARNING, "Syncpipe read failed\n");
                 }
                 continue;
             }
 #endif
             if (buf->got_newdata == -1) {
                 if (buf->mode == MODE_WAITREPLY) {
-                    logg(DEBUG_NV, "mode WAIT_REPLY -> closed\n");
+                    logg(LOGG_DEBUG_NV, "mode WAIT_REPLY -> closed\n");
                     buf->fd = -1;
                     thrmgr_group_terminate(buf->group);
                     thrmgr_group_finished(buf->group, EXIT_ERROR);
                     continue;
                 } else {
-                    logg(DEBUG_NV, "client read error or EOF on read\n");
+                    logg(LOGG_DEBUG_NV, "client read error or EOF on read\n");
                     error = 1;
                 }
             }
 
             if (buf->fd != -1 && buf->got_newdata == -2) {
-                logg(DEBUG_NV, "Client read timed out\n");
+                logg(LOGG_DEBUG_NV, "Client read timed out\n");
                 mdprintf(buf->fd, "COMMAND READ TIMED OUT\n");
                 error = 1;
             }
@@ -1611,7 +1611,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             rr_last = i;
             if (buf->mode == MODE_WAITANCILL) {
                 buf->mode = MODE_COMMAND;
-                logg(DEBUG_NV, "mode -> MODE_COMMAND\n");
+                logg(LOGG_DEBUG_NV, "mode -> MODE_COMMAND\n");
             }
             while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
                    buf->mode != MODE_WAITANCILL) {
@@ -1643,9 +1643,9 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 if (!error) {
                     if (buf->mode == MODE_WAITREPLY && buf->off) {
                         /* Client is not supposed to send anything more */
-                        logg(WARNING, "Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
+                        logg(LOGG_WARNING, "Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
                         buf->buffer[buf->off] = '\0';
-                        logg(DEBUG_NV, "Garbage: %s\n", buf->buffer);
+                        logg(LOGG_DEBUG_NV, "Garbage: %s\n", buf->buffer);
                         error = 1;
                     } else if (buf->mode == MODE_STREAM) {
                         rc = handle_stream(&conn, buf, opts, &error, &pos, readtimeout);
@@ -1671,14 +1671,14 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 thrmgr_group_terminate(buf->group);
                 if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
                     if (buf->fd < 0) {
-                        logg(DEBUG_NV, "Skipping shutdown of bad socket after error (FD %d)\n", buf->fd);
+                        logg(LOGG_DEBUG_NV, "Skipping shutdown of bad socket after error (FD %d)\n", buf->fd);
                     } else {
-                        logg(DEBUG_NV, "Shutting down socket after error (FD %d)\n", buf->fd);
+                        logg(LOGG_DEBUG_NV, "Shutting down socket after error (FD %d)\n", buf->fd);
                         shutdown(buf->fd, 2);
                         closesocket(buf->fd);
                     }
                 } else
-                    logg(DEBUG_NV, "Socket not shut down due to active tasks\n");
+                    logg(LOGG_DEBUG_NV, "Socket not shut down due to active tasks\n");
                 buf->fd = -1;
             }
         }
@@ -1696,7 +1696,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                         continue;
                     thrmgr_group_terminate(fds->buf[i].group);
                     if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR)) {
-                        logg(DEBUG_NV, "Shutdown closed fd %d\n", fds->buf[i].fd);
+                        logg(LOGG_DEBUG_NV, "Shutdown closed fd %d\n", fds->buf[i].fd);
                         shutdown(fds->buf[i].fd, 2);
                         closesocket(fds->buf[i].fd);
                         fds->buf[i].fd = -1;
@@ -1710,7 +1710,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
         /* SIGHUP */
         if (sighup) {
-            logg(INFO, "SIGHUP caught: re-opening log file.\n");
+            logg(LOGG_INFO, "SIGHUP caught: re-opening log file.\n");
             logg_close();
             sighup = 0;
             if (!logg_file && (opt = optget(opts, "LogFile"))->enabled)
@@ -1741,7 +1741,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 reload_stage = RELOAD_STAGE__RELOADING;
                 pthread_mutex_unlock(&reload_stage_mutex);
                 if (CL_SUCCESS != reload_db(&engine, dboptions, opts, thr_pool)) {
-                    logg(WARNING, "Database reload setup failed, keeping the previous instance\n");
+                    logg(LOGG_WARNING, "Database reload setup failed, keeping the previous instance\n");
                     pthread_mutex_lock(&reload_mutex);
                     reload = 0;
                     pthread_mutex_unlock(&reload_mutex);
@@ -1755,7 +1755,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 /* New database available */
                 if (g_newengine) {
                     /* Reload succeeded */
-                    logg(INFO, "Activating the newly loaded database...\n");
+                    logg(LOGG_INFO, "Activating the newly loaded database...\n");
                     thrmgr_setactiveengine(g_newengine);
                     if (optget(opts, "ConcurrentDatabaseReload")->enabled) {
                         /* If concurrent database reload, we now need to free the old engine. */
@@ -1764,7 +1764,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                     engine      = g_newengine;
                     g_newengine = NULL;
                 } else {
-                    logg(WARNING, "Database reload failed, keeping the previous instance\n");
+                    logg(LOGG_WARNING, "Database reload failed, keeping the previous instance\n");
                 }
                 reload_stage = RELOAD_STAGE__IDLE;
                 pthread_mutex_unlock(&reload_stage_mutex);
@@ -1787,13 +1787,13 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     SetEvent(event_wake_accept);
 #else
     if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
-        logg(WARNING, "Write to syncpipe failed\n");
+        logg(LOGG_WARNING, "Write to syncpipe failed\n");
     }
 #endif
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
-    logg(DEBUG, "Waiting for all threads to finish\n");
+    logg(LOGG_DEBUG, "Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
     if (engine) {
         thrmgr_setactiveengine(NULL);
@@ -1815,20 +1815,20 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         cl_statfree(&dbstat);
     if (sd_listen_fds(0) == 0) {
         /* only close the sockets, when not using systemd socket activation */
-        logg(DEBUG, "Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
+        logg(LOGG_DEBUG, "Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
         for (i = 0; i < nsockets; i++)
             shutdown(socketds[i], 2);
     }
 
     if ((opt = optget(opts, "PidFile"))->enabled) {
         if (unlink(opt->strarg) == -1)
-            logg(ERROR, "Can't unlink the pid file %s\n", opt->strarg);
+            logg(LOGG_ERROR, "Can't unlink the pid file %s\n", opt->strarg);
         else
-            logg(INFO, "Pid file removed.\n");
+            logg(LOGG_INFO, "Pid file removed.\n");
     }
 
     time(&current_time);
-    logg(INFO, "--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
+    logg(LOGG_INFO, "--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
 }

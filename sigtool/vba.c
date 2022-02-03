@@ -1189,7 +1189,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
             }
         }
     } else {
-        logg(ERROR, "Can't open directory %s.\n", dirname);
+        logg(LOGG_ERROR, "Can't open directory %s.\n", dirname);
         return CL_EOPEN;
     }
 
@@ -1232,7 +1232,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
     unsigned int j;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
-        logg(ERROR, "ScanDir -> uniq_get('_vba_project') failed.\n");
+        logg(LOGG_ERROR, "ScanDir -> uniq_get('_vba_project') failed.\n");
         return ret;
     }
 
@@ -1268,7 +1268,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
     }
 
     if (CL_SUCCESS != (ret = uniq_get(U, "powerpoint document", 19, &hash, &hashcnt))) {
-        logg(ERROR, "ScanDir -> uniq_get('powerpoint document') failed.\n");
+        logg(LOGG_ERROR, "ScanDir -> uniq_get('powerpoint document') failed.\n");
         return ret;
     }
 
@@ -1291,7 +1291,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
     }
 
     if (CL_SUCCESS != (ret = uniq_get(U, "worddocument", 12, &hash, &hashcnt))) {
-        logg(ERROR, "ScanDir -> uniq_get('worddocument') failed.\n");
+        logg(LOGG_ERROR, "ScanDir -> uniq_get('worddocument') failed.\n");
         return ret;
     }
 
@@ -1346,7 +1346,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
             }
         }
     } else {
-        logg(ERROR, "ScanDir -> Can't open directory %s.\n", dirname);
+        logg(LOGG_ERROR, "ScanDir -> Can't open directory %s.\n", dirname);
         return CL_EOPEN;
     }
 

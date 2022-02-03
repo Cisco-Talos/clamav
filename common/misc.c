@@ -385,7 +385,7 @@ int drop_privileges(const char *const user_name, const char *const log_file)
         struct passwd *user = NULL;
 
         if ((user = getpwnam(user_name)) == NULL) {
-            logg(WARNING, "Can't get information about user %s.\n", user_name);
+            logg(LOGG_WARNING, "Can't get information about user %s.\n", user_name);
             fprintf(stderr, "ERROR: Can't get information about user %s.\n", user_name);
             goto done;
         }
@@ -393,13 +393,13 @@ int drop_privileges(const char *const user_name, const char *const log_file)
 #ifdef HAVE_INITGROUPS
         if (initgroups(user_name, user->pw_gid)) {
             fprintf(stderr, "ERROR: initgroups() failed.\n");
-            logg(WARNING, "initgroups() failed.\n");
+            logg(LOGG_WARNING, "initgroups() failed.\n");
             goto done;
         }
 #elif HAVE_SETGROUPS
         if (setgroups(1, &user->pw_gid)) {
             fprintf(stderr, "ERROR: setgroups() failed.\n");
-            logg(WARNING, "setgroups() failed.\n");
+            logg(LOGG_WARNING, "setgroups() failed.\n");
             goto done;
         }
 #endif
@@ -411,7 +411,7 @@ int drop_privileges(const char *const user_name, const char *const log_file)
                 fprintf(stderr, "ERROR: lchown to user '%s' failed on\n", user->pw_name);
                 fprintf(stderr, "log file '%s'.\n", log_file);
                 fprintf(stderr, "Error was '%s'\n", strerror(errno));
-                logg(WARNING, "lchown to user '%s' failed on log file '%s'.  Error was '%s'\n",
+                logg(LOGG_WARNING, "lchown to user '%s' failed on log file '%s'.  Error was '%s'\n",
                      user->pw_name, log_file, strerror(errno));
                 goto done;
             }
@@ -419,13 +419,13 @@ int drop_privileges(const char *const user_name, const char *const log_file)
 
         if (setgid(user->pw_gid)) {
             fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int)user->pw_gid);
-            logg(WARNING, "setgid(%d) failed.\n", (int)user->pw_gid);
+            logg(LOGG_WARNING, "setgid(%d) failed.\n", (int)user->pw_gid);
             goto done;
         }
 
         if (setuid(user->pw_uid)) {
             fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int)user->pw_uid);
-            logg(WARNING, "setuid(%d) failed.\n", (int)user->pw_uid);
+            logg(LOGG_WARNING, "setuid(%d) failed.\n", (int)user->pw_uid);
             goto done;
         }
     }

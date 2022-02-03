@@ -99,8 +99,8 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
 
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)path, &real_filename)) {
-            logg(DEBUG, "Failed to determine real filename of %s.\n", path);
-            logg(DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
+            logg(LOGG_DEBUG, "Failed to determine real filename of %s.\n", path);
+            logg(LOGG_DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             path = real_filename;
         }
@@ -114,23 +114,23 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
     c->files++;
     switch (reason) {
         case error_stat:
-            logg(ERROR, "Can't access file %s\n", path);
+            logg(LOGG_ERROR, "Can't access file %s\n", path);
             c->errors++;
             status = CL_SUCCESS;
             goto done;
         case error_mem:
-            logg(ERROR, "Memory allocation failed in ftw\n");
+            logg(LOGG_ERROR, "Memory allocation failed in ftw\n");
             c->errors++;
             status = CL_EMEM;
             goto done;
         case warning_skipped_dir:
-            logg(WARNING, "Directory recursion limit reached\n");
+            logg(LOGG_WARNING, "Directory recursion limit reached\n");
             /* fall-through */
         case warning_skipped_link:
             status = CL_SUCCESS;
             goto done;
         case warning_skipped_special:
-            logg(WARNING, "%s: Not supported file type\n", path);
+            logg(LOGG_WARNING, "%s: Not supported file type\n", path);
             c->errors++;
             status = CL_SUCCESS;
             goto done;
@@ -190,10 +190,10 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
 
     if (!cdata.errors && (ftw == CL_SUCCESS || ftw == CL_BREAK)) {
         if (cdata.printok)
-            logg(INFO, "%s: OK\n", file);
+            logg(LOGG_INFO, "%s: OK\n", file);
         return 0;
     } else if (!cdata.files) {
-        logg(INFO, "%s: No files scanned\n", file);
+        logg(LOGG_INFO, "%s: No files scanned\n", file);
         return 0;
     }
     return 1;
@@ -241,25 +241,25 @@ static int dspresult(struct client_parallel_data *c)
             if (!*id) id = NULL;
         }
         if (!id) {
-            logg(ERROR, "Bogus session id from clamd\n");
+            logg(LOGG_ERROR, "Bogus session id from clamd\n");
             return 1;
         }
         filename = (*id)->file;
         if (len > 7) {
             char *colon = strrchr(bol, ':');
             if (!colon) {
-                logg(ERROR, "Failed to parse reply\n");
+                logg(LOGG_ERROR, "Failed to parse reply\n");
                 free((void *)filename);
                 return 1;
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 c->infected++;
                 c->printok = 0;
-                logg(INFO, "%s%s\n", filename, colon);
+                logg(LOGG_INFO, "%s%s\n", filename, colon);
                 if (action) action(filename);
             } else if (!memcmp(eol - 7, " ERROR", 6)) {
                 c->errors++;
                 c->printok = 0;
-                logg(INFO, "%s%s\n", filename, colon);
+                logg(LOGG_INFO, "%s%s\n", filename, colon);
             }
         }
         free((void *)filename);
@@ -288,8 +288,8 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
 
     if (reason != visit_directory_toplev) {
         if (CL_SUCCESS != cli_realpath((const char *)filename, &real_filename)) {
-            logg(DEBUG, "Failed to determine real filename of %s.\n", filename);
-            logg(DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
+            logg(LOGG_DEBUG, "Failed to determine real filename of %s.\n", filename);
+            logg(LOGG_DEBUG, "Quarantine of the file may fail if file path contains symlinks.\n");
         } else {
             free(filename); /* callback is responsible for free'ing filename parameter. */
             filename = real_filename;
@@ -304,21 +304,21 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     c->files++;
     switch (reason) {
         case error_stat:
-            logg(ERROR, "Can't access file %s\n", filename);
+            logg(LOGG_ERROR, "Can't access file %s\n", filename);
             c->errors++;
             status = CL_SUCCESS;
             goto done;
         case error_mem:
-            logg(ERROR, "Memory allocation failed in ftw\n");
+            logg(LOGG_ERROR, "Memory allocation failed in ftw\n");
             c->errors++;
             status = CL_EMEM;
             goto done;
         case warning_skipped_dir:
-            logg(WARNING, "Directory recursion limit reached\n");
+            logg(LOGG_WARNING, "Directory recursion limit reached\n");
             status = CL_SUCCESS;
             goto done;
         case warning_skipped_special:
-            logg(WARNING, "%s: Not supported file type\n", filename);
+            logg(LOGG_WARNING, "%s: Not supported file type\n", filename);
             c->errors++;
             /* fall-through */
         case warning_skipped_link:
@@ -340,7 +340,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         FD_SET(c->sockd, &wfds);
         if (select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
             if (errno == EINTR) continue;
-            logg(ERROR, "select() failed during session: %s\n", strerror(errno));
+            logg(LOGG_ERROR, "select() failed during session: %s\n", strerror(errno));
             status = CL_BREAK;
             goto done;
         }
@@ -373,7 +373,7 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
 
     cid = (struct SCANID *)malloc(sizeof(struct SCANID));
     if (!cid) {
-        logg(ERROR, "Failed to allocate scanid entry: %s\n", strerror(errno));
+        logg(LOGG_ERROR, "Failed to allocate scanid entry: %s\n", strerror(errno));
         status = CL_BREAK;
         goto done;
     }
@@ -439,7 +439,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     *err += cdata.errors;
 
     if (cdata.ids) {
-        logg(ERROR, "Clamd closed the connection before scanning all files.\n");
+        logg(LOGG_ERROR, "Clamd closed the connection before scanning all files.\n");
         return 1;
     }
     if (cdata.errors)
@@ -449,6 +449,6 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
         return 0;
 
     if (cdata.printok)
-        logg(INFO, "%s: OK\n", file);
+        logg(LOGG_INFO, "%s: OK\n", file);
     return 0;
 }

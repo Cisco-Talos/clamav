@@ -122,7 +122,7 @@ static void add_topools(threadpool_t *t)
 {
     struct threadpool_list *new = malloc(sizeof(*new));
     if (!new) {
-        logg(ERROR, "Unable to add threadpool to list\n");
+        logg(LOGG_ERROR, "Unable to add threadpool to list\n");
         return;
     }
     new->pool = t;
@@ -319,12 +319,12 @@ void thrmgr_destroy(threadpool_t *threadpool)
         return;
     }
     if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-        logg(ERROR, "Mutex lock failed\n");
+        logg(LOGG_ERROR, "Mutex lock failed\n");
         exit(-1);
     }
     if (threadpool->state != POOL_VALID) {
         if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-            logg(ERROR, "Mutex unlock failed\n");
+            logg(LOGG_ERROR, "Mutex unlock failed\n");
             exit(-1);
         }
         return;
@@ -346,7 +346,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
     }
     remove_frompools(threadpool);
     if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-        logg(ERROR, "Mutex unlock failed\n");
+        logg(LOGG_ERROR, "Mutex unlock failed\n");
         exit(-1);
     }
 
@@ -368,12 +368,12 @@ void thrmgr_wait_for_threads(threadpool_t *threadpool)
         return;
     }
     if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-        logg(ERROR, "Mutex lock failed\n");
+        logg(LOGG_ERROR, "Mutex lock failed\n");
         exit(-1);
     }
     if (threadpool->state != POOL_VALID) {
         if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-            logg(ERROR, "Mutex unlock failed\n");
+            logg(LOGG_ERROR, "Mutex unlock failed\n");
             exit(-1);
         }
         return;
@@ -395,7 +395,7 @@ void thrmgr_wait_for_threads(threadpool_t *threadpool)
 
     /* Ok threads all exited, we can release the lock */
     if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-        logg(ERROR, "Mutex unlock failed\n");
+        logg(LOGG_ERROR, "Mutex unlock failed\n");
         exit(-1);
     }
     return;
@@ -521,7 +521,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
         else
 #endif
             stacksize = 1048576;
-    logg(INFO, "Set stacksize to %lu\n", (unsigned long int)stacksize);
+    logg(LOGG_INFO, "Set stacksize to %lu\n", (unsigned long int)stacksize);
     pthread_attr_setstacksize(&(threadpool->pool_attr), stacksize);
 #endif
     threadpool->state = POOL_VALID;
@@ -646,12 +646,12 @@ static void *thrmgr_pop(threadpool_t *pool)
     }
 
     if (!thrmgr_contended(pool, 0)) {
-        logg(DEBUG_NV, "THRMGR: queue (single) crossed low threshold -> signaling\n");
+        logg(LOGG_DEBUG_NV, "THRMGR: queue (single) crossed low threshold -> signaling\n");
         pthread_cond_signal(&pool->queueable_single_cond);
     }
 
     if (!thrmgr_contended(pool, 1)) {
-        logg(DEBUG_NV, "THRMGR: queue (bulk) crossed low threshold -> signaling\n");
+        logg(LOGG_DEBUG_NV, "THRMGR: queue (bulk) crossed low threshold -> signaling\n");
         pthread_cond_signal(&pool->queueable_bulk_cond);
     }
 
@@ -668,7 +668,7 @@ static void *thrmgr_worker(void *arg)
     /* loop looking for work */
     for (;;) {
         if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-            logg(ERROR, "Fatal: mutex lock failed\n");
+            logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
             exit(-2);
         }
         if (!stats_inited) {
@@ -696,7 +696,7 @@ static void *thrmgr_worker(void *arg)
         }
 
         if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-            logg(ERROR, "Fatal: mutex unlock failed\n");
+            logg(LOGG_ERROR, "Fatal: mutex unlock failed\n");
             exit(-2);
         }
         if (job_data) {
@@ -707,7 +707,7 @@ static void *thrmgr_worker(void *arg)
     }
     if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
         /* Fatal error */
-        logg(ERROR, "Fatal: mutex lock failed\n");
+        logg(LOGG_ERROR, "Fatal: mutex lock failed\n");
         exit(-2);
     }
     threadpool->thr_alive--;
@@ -718,7 +718,7 @@ static void *thrmgr_worker(void *arg)
     stats_destroy(threadpool);
     if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
         /* Fatal error */
-        logg(ERROR, "Fatal: mutex unlock failed\n");
+        logg(LOGG_ERROR, "Fatal: mutex unlock failed\n");
         exit(-2);
     }
     return NULL;
@@ -735,7 +735,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
 
     /* Lock the threadpool */
     if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-        logg(ERROR, "Mutex lock failed\n");
+        logg(LOGG_ERROR, "Mutex lock failed\n");
         return FALSE;
     }
 
@@ -758,9 +758,9 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
         }
 
         while (thrmgr_contended(threadpool, bulk)) {
-            logg(DEBUG_NV, "THRMGR: contended, sleeping\n");
+            logg(LOGG_DEBUG_NV, "THRMGR: contended, sleeping\n");
             pthread_cond_wait(queueable_cond, &threadpool->pool_mutex);
-            logg(DEBUG_NV, "THRMGR: contended, woken\n");
+            logg(LOGG_DEBUG_NV, "THRMGR: contended, woken\n");
         }
 
         if (!work_queue_add(queue, user_data)) {
@@ -774,7 +774,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
             /* Start a new thread */
             if (pthread_create(&thr_id, &(threadpool->pool_attr),
                                thrmgr_worker, threadpool) != 0) {
-                logg(ERROR, "pthread_create failed\n");
+                logg(LOGG_ERROR, "pthread_create failed\n");
             } else {
                 threadpool->thr_alive++;
             }
@@ -784,7 +784,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
     } while (0);
 
     if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-        logg(ERROR, "Mutex unlock failed\n");
+        logg(LOGG_ERROR, "Mutex unlock failed\n");
         return FALSE;
     }
     return ret;
@@ -801,13 +801,13 @@ int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *use
     if (group) {
         pthread_mutex_lock(&group->mutex);
         group->jobs++;
-        logg(DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
+        logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
         pthread_mutex_unlock(&group->mutex);
     }
     if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, bulk)) && group) {
         pthread_mutex_lock(&group->mutex);
         group->jobs--;
-        logg(DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
+        logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
         pthread_mutex_unlock(&group->mutex);
     }
     return ret;
@@ -825,7 +825,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
         return 1;
     }
     pthread_mutex_lock(&group->mutex);
-    logg(DEBUG_NV, "THRMGR: group_finished: %p, %d\n", group, group->jobs);
+    logg(LOGG_DEBUG_NV, "THRMGR: group_finished: %p, %d\n", group, group->jobs);
     group->exit_total++;
     switch (exitc) {
         case EXIT_OK:
@@ -841,13 +841,13 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
         if (!--group->jobs) {
             ret = 1;
         } else
-            logg(DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
+            logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
         if (group->jobs == 1)
             pthread_cond_signal(&group->only);
     }
     pthread_mutex_unlock(&group->mutex);
     if (ret) {
-        logg(DEBUG_NV, "THRMGR: group_finished: freeing %p\n", group);
+        logg(LOGG_DEBUG_NV, "THRMGR: group_finished: freeing %p\n", group);
         pthread_mutex_destroy(&group->mutex);
         pthread_cond_destroy(&group->only);
         free(group);
@@ -877,10 +877,10 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     if (!--group->jobs)
         needfree = 1;
     else
-        logg(DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
+        logg(LOGG_DEBUG_NV, "THRMGR: active jobs for %p: %d\n", group, group->jobs);
     pthread_mutex_unlock(&group->mutex);
     if (needfree) {
-        logg(DEBUG_NV, "THRMGR: group finished freeing %p\n", group);
+        logg(LOGG_DEBUG_NV, "THRMGR: group finished freeing %p\n", group);
         free(group);
     }
 }
@@ -895,17 +895,17 @@ jobgroup_t *thrmgr_group_new(void)
     group->jobs    = 1;
     group->exit_ok = group->exit_error = group->exit_total = group->force_exit = 0;
     if (pthread_mutex_init(&group->mutex, NULL)) {
-        logg(WARNING, "Failed to initialize group mutex");
+        logg(LOGG_WARNING, "Failed to initialize group mutex");
         free(group);
         return NULL;
     }
     if (pthread_cond_init(&group->only, NULL)) {
-        logg(WARNING, "Failed to initialize group cond");
+        logg(LOGG_WARNING, "Failed to initialize group cond");
         pthread_mutex_destroy(&group->mutex);
         free(group);
         return NULL;
     }
-    logg(DEBUG_NV, "THRMGR: new group: %p\n", group);
+    logg(LOGG_DEBUG_NV, "THRMGR: new group: %p\n", group);
     return group;
 }
 

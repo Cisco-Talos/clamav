@@ -149,7 +149,7 @@ int main(int argc, char **argv)
     /* initialize logger */
     if ((opt = optget(opts, "log"))->enabled) {
         logg_file = opt->strarg;
-        if (logg(INFO_NF, "\n-------------------------------------------------------------------------------\n\n")) {
+        if (logg(LOGG_INFO_NF, "\n-------------------------------------------------------------------------------\n\n")) {
             mprintf(ERROR, "Problem with internal logger.\n");
             optfree(opts);
             return 2;
@@ -179,45 +179,45 @@ int main(int argc, char **argv)
         dms = t2.tv_usec - t1.tv_usec;
         ds -= (dms < 0) ? (1) : (0);
         dms += (dms < 0) ? (1000000) : (0);
-        logg(INFO, "\n----------- SCAN SUMMARY -----------\n");
-        logg(INFO, "Known viruses: %u\n", info.sigs);
-        logg(INFO, "Engine version: %s\n", get_version());
-        logg(INFO, "Scanned directories: %u\n", info.dirs);
-        logg(INFO, "Scanned files: %u\n", info.files);
-        logg(INFO, "Infected files: %u\n", info.ifiles);
+        logg(LOGG_INFO, "\n----------- SCAN SUMMARY -----------\n");
+        logg(LOGG_INFO, "Known viruses: %u\n", info.sigs);
+        logg(LOGG_INFO, "Engine version: %s\n", get_version());
+        logg(LOGG_INFO, "Scanned directories: %u\n", info.dirs);
+        logg(LOGG_INFO, "Scanned files: %u\n", info.files);
+        logg(LOGG_INFO, "Infected files: %u\n", info.ifiles);
         if (info.errors)
-            logg(INFO, "Total errors: %u\n", info.errors);
+            logg(LOGG_INFO, "Total errors: %u\n", info.errors);
         if (notremoved) {
-            logg(INFO, "Not removed: %u\n", notremoved);
+            logg(LOGG_INFO, "Not removed: %u\n", notremoved);
         }
         if (notmoved) {
-            logg(INFO, "Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
+            logg(LOGG_INFO, "Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
         }
         mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-        logg(INFO, "Data scanned: %2.2lf MB\n", mb);
+        logg(LOGG_INFO, "Data scanned: %2.2lf MB\n", mb);
         rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
-        logg(INFO, "Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
-        logg(INFO, "Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
+        logg(LOGG_INFO, "Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks / (double)info.rblocks : 0);
+        logg(LOGG_INFO, "Time: %u.%3.3u sec (%u m %u s)\n", ds, dms / 1000, ds / 60, ds % 60);
 
 #ifdef _WIN32
         if (0 != localtime_s(&tmp, &date_start)) {
 #else
         if (!localtime_r(&date_start, &tmp)) {
 #endif
-            logg(ERROR, "Failed to get local time for Start Date.\n");
+            logg(LOGG_ERROR, "Failed to get local time for Start Date.\n");
         }
         strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
-        logg(INFO, "Start Date: %s\n", buffer);
+        logg(LOGG_INFO, "Start Date: %s\n", buffer);
 
 #ifdef _WIN32
         if (0 != localtime_s(&tmp, &date_end)) {
 #else
         if (!localtime_r(&date_end, &tmp)) {
 #endif
-            logg(ERROR, "Failed to get local time for End Date.\n");
+            logg(LOGG_ERROR, "Failed to get local time for End Date.\n");
         }
         strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
-        logg(INFO, "End Date:   %s\n", buffer);
+        logg(LOGG_INFO, "End Date:   %s\n", buffer);
     }
 
     optfree(opts);

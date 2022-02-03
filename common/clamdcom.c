@@ -60,7 +60,7 @@ int sendln(int sockd, const char *line, unsigned int len)
         int sent = send(sockd, line, len, 0);
         if (sent <= 0) {
             if (sent && errno == EINTR) continue;
-            logg(ERROR, "Can't send to clamd: %s\n", strerror(errno));
+            logg(LOGG_ERROR, "Can't send to clamd: %s\n", strerror(errno));
             return 1;
         }
         line += sent;
@@ -101,9 +101,9 @@ int recvln(struct RCVLN *s, char **rbol, char **reol)
                 if (s->r || s->cur != s->buf) {
                     *s->cur = '\0';
                     if (strcmp(s->buf, "UNKNOWN COMMAND\n"))
-                        logg(ERROR, "Communication error\n");
+                        logg(LOGG_ERROR, "Communication error\n");
                     else
-                        logg(ERROR, "Command rejected by clamd (wrong clamd version?)\n");
+                        logg(LOGG_ERROR, "Command rejected by clamd (wrong clamd version?)\n");
                     return -1;
                 }
                 return 0;
@@ -124,7 +124,7 @@ int recvln(struct RCVLN *s, char **rbol, char **reol)
         }
         s->r += s->cur - s->bol;
         if (!eol && s->r == sizeof(s->buf)) {
-            logg(ERROR, "Overlong reply from clamd\n");
+            logg(LOGG_ERROR, "Overlong reply from clamd\n");
             return -1;
         }
         if (!eol) {
@@ -154,7 +154,7 @@ int chkpath(const char *path, struct optstruct *clamdopts)
     if ((opt = optget(clamdopts, "ExcludePath"))->enabled) {
         while (opt) {
             if (match_regex(path, opt->strarg) == 1) {
-                logg(DEBUG, "%s: Excluded\n", path);
+                logg(LOGG_DEBUG, "%s: Excluded\n", path);
                 status = 1;
                 goto done;
             }
@@ -184,7 +184,7 @@ int send_fdpass(int sockd, const char *filename)
 
     if (filename) {
         if ((fd = open(filename, O_RDONLY)) < 0) {
-            logg(INFO, "%s: Failed to open file\n", filename);
+            logg(LOGG_INFO, "%s: Failed to open file\n", filename);
             return 0;
         }
     } else
@@ -207,7 +207,7 @@ int send_fdpass(int sockd, const char *filename)
     cmsg->cmsg_type         = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
     if (sendmsg(sockd, &msg, 0) == -1) {
-        logg(ERROR, "FD send failed: %s\n", strerror(errno));
+        logg(LOGG_ERROR, "FD send failed: %s\n", strerror(errno));
         close(fd);
         return -1;
     }
@@ -227,7 +227,7 @@ int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
 
     if (filename) {
         if ((fd = safe_open(filename, O_RDONLY | O_BINARY)) < 0) {
-            logg(INFO, "%s: Failed to open file. ERROR\n", filename);
+            logg(LOGG_INFO, "%s: Failed to open file. ERROR\n", filename);
             return 0;
         }
     } else {
@@ -255,7 +255,7 @@ int send_stream(int sockd, const char *filename, struct optstruct *clamdopts)
     }
     close(fd);
     if (len) {
-        logg(ERROR, "Failed to read from %s.\n", filename ? filename : "STDIN");
+        logg(LOGG_ERROR, "Failed to read from %s.\n", filename ? filename : "STDIN");
         return 0;
     }
     *buf = 0;
@@ -280,7 +280,7 @@ int dconnect(struct optstruct *clamdopts)
             if (connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock)) == 0)
                 return sockd;
             else {
-                logg(ERROR, "Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
+                logg(LOGG_ERROR, "Could not connect to clamd on LocalSocket %s: %s\n", opt->strarg, strerror(errno));
                 close(sockd);
             }
         }
@@ -301,19 +301,19 @@ int dconnect(struct optstruct *clamdopts)
             hints.ai_socktype = SOCK_STREAM;
 
             if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
-                logg(ERROR, "Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
+                logg(LOGG_ERROR, "Could not lookup %s: %s\n", ipaddr ? ipaddr : "", gai_strerror(res));
                 opt = opt->nextarg;
                 continue;
             }
 
             for (p = info; p != NULL; p = p->ai_next) {
                 if ((sockd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-                    logg(ERROR, "Can't create the socket: %s\n", strerror(errno));
+                    logg(LOGG_ERROR, "Can't create the socket: %s\n", strerror(errno));
                     continue;
                 }
 
                 if (connect(sockd, p->ai_addr, p->ai_addrlen) < 0) {
-                    logg(ERROR, "Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
+                    logg(LOGG_ERROR, "Could not connect to clamd on %s: %s\n", opt->strarg, strerror(errno));
                     closesocket(sockd);
                     continue;
                 }
@@ -354,13 +354,13 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
         case CONT:
         case ALLMATCH:
             if (!filename) {
-                logg(INFO, "Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
+                logg(LOGG_INFO, "Filename cannot be NULL for MULTISCAN or CONTSCAN.\n");
                 infected = -1;
                 goto done;
             }
             len = strlen(filename) + strlen(scancmd[scantype]) + 3;
             if (!(bol = malloc(len))) {
-                logg(ERROR, "Cannot allocate a command buffer: %s\n", strerror(errno));
+                logg(LOGG_ERROR, "Cannot allocate a command buffer: %s\n", strerror(errno));
                 infected = -1;
                 goto done;
             }
@@ -400,7 +400,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
             goto done;
         }
         beenthere = 1;
-        if (!filename) logg(INFO, "%s\n", bol);
+        if (!filename) logg(LOGG_INFO, "%s\n", bol);
         if (len > 7) {
             char *colon = strrchr(bol, ':');
             if (colon && colon[1] != ' ') {
@@ -414,10 +414,10 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
             if (!colon) {
                 char *unkco = "UNKNOWN COMMAND";
                 if (!strncmp(bol, unkco, sizeof(unkco) - 1))
-                    logg(INFO, "clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
+                    logg(LOGG_INFO, "clamd replied \"UNKNOWN COMMAND\". Command was %s\n",
                          (scantype < 0 || scantype > MAX_SCANTYPE) ? "unidentified" : scancmd[scantype]);
                 else
-                    logg(INFO, "Failed to parse reply: \"%s\"\n", bol);
+                    logg(LOGG_INFO, "Failed to parse reply: \"%s\"\n", bol);
                 infected = -1;
                 goto done;
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
@@ -436,10 +436,10 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                 }
                 if (filename) {
                     if (scantype >= STREAM) {
-                        logg(INFO, "%s%s FOUND\n", filename, colon);
+                        logg(LOGG_INFO, "%s%s FOUND\n", filename, colon);
                         if (action) action(filename);
                     } else {
-                        logg(INFO, "%s FOUND\n", bol);
+                        logg(LOGG_INFO, "%s FOUND\n", bol);
                         *colon = '\0';
                         if (action)
                             action(bol);
@@ -452,27 +452,27 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                     *printok = 0;
                 if (filename) {
                     if (scantype >= STREAM)
-                        logg(INFO, "%s%s\n", filename, colon);
+                        logg(LOGG_INFO, "%s%s\n", filename, colon);
                     else
-                        logg(INFO, "%s\n", bol);
+                        logg(LOGG_INFO, "%s\n", bol);
                 }
             }
         }
     }
     if (!beenthere) {
         if (!filename) {
-            logg(INFO, "STDIN: noreply from clamd\n.");
+            logg(LOGG_INFO, "STDIN: noreply from clamd\n.");
             infected = -1;
             goto done;
         }
         if (CLAMSTAT(filename, &sb) == -1) {
-            logg(INFO, "%s: stat() failed with %s, clamd may not be responding\n",
+            logg(LOGG_INFO, "%s: stat() failed with %s, clamd may not be responding\n",
                  filename, strerror(errno));
             infected = -1;
             goto done;
         }
         if (!S_ISDIR(sb.st_mode)) {
-            logg(INFO, "%s: no reply from clamd\n", filename);
+            logg(LOGG_INFO, "%s: no reply from clamd\n", filename);
             infected = -1;
             goto done;
         }

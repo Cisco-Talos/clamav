@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     }
 
     if ((clamdopts = optparse(optget(opts, "config-file")->strarg, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-        logg(ERROR, "Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
+        logg(LOGG_ERROR, "Can't parse clamd configuration file %s\n", optget(opts, "config-file")->strarg);
         optfree(opts);
         exit(2);
     }
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 
     if ((opt = optget(opts, "log"))->enabled) {
         logg_file = opt->strarg;
-        if (logg(INFO, "--------------------------------------\n")) {
+        if (logg(LOGG_INFO, "--------------------------------------\n")) {
             mprintf(ERROR, "Problem with internal logger.\n");
             optfree(opts);
             optfree(clamdopts);
@@ -179,37 +179,37 @@ int main(int argc, char **argv)
         dms = t2.tv_usec - t1.tv_usec;
         ds -= (dms < 0) ? (1) : (0);
         dms += (dms < 0) ? (1000000) : (0);
-        logg(INFO, "\n----------- SCAN SUMMARY -----------\n");
-        logg(INFO, "Infected files: %d\n", infected);
+        logg(LOGG_INFO, "\n----------- SCAN SUMMARY -----------\n");
+        logg(LOGG_INFO, "Infected files: %d\n", infected);
         if (err)
-            logg(INFO, "Total errors: %d\n", err);
+            logg(LOGG_INFO, "Total errors: %d\n", err);
         if (notremoved) {
-            logg(INFO, "Not removed: %d\n", notremoved);
+            logg(LOGG_INFO, "Not removed: %d\n", notremoved);
         }
         if (notmoved) {
-            logg(INFO, "Not moved: %d\n", notmoved);
+            logg(LOGG_INFO, "Not moved: %d\n", notmoved);
         }
-        logg(INFO, "Time: %d.%3.3d sec (%d m %d s)\n", ds, dms / 1000, ds / 60, ds % 60);
+        logg(LOGG_INFO, "Time: %d.%3.3d sec (%d m %d s)\n", ds, dms / 1000, ds / 60, ds % 60);
 
 #ifdef _WIN32
         if (0 != localtime_s(&tmp, &date_start)) {
 #else
         if (!localtime_r(&date_start, &tmp)) {
 #endif
-            logg(ERROR, "Failed to get local time for Start Date.\n");
+            logg(LOGG_ERROR, "Failed to get local time for Start Date.\n");
         }
         strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
-        logg(INFO, "Start Date: %s\n", buffer);
+        logg(LOGG_INFO, "Start Date: %s\n", buffer);
 
 #ifdef _WIN32
         if (0 != localtime_s(&tmp, &date_end)) {
 #else
         if (!localtime_r(&date_end, &tmp)) {
 #endif
-            logg(ERROR, "Failed to get local time for End Date.\n");
+            logg(LOGG_ERROR, "Failed to get local time for End Date.\n");
         }
         strftime(buffer, sizeof(buffer), "%Y:%m:%d %H:%M:%S", &tmp);
-        logg(INFO, "End Date:   %s\n", buffer);
+        logg(LOGG_INFO, "End Date:   %s\n", buffer);
     }
 
     logg_close();

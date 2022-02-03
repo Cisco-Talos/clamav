@@ -175,21 +175,21 @@ fc_error_t load_freshclam_dat(void)
 
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
-        logg(ERROR, "Can't change dir to %s\n", g_databaseDirectory);
+        logg(LOGG_ERROR, "Can't change dir to %s\n", g_databaseDirectory);
         status = FC_EDIRECTORY;
         goto done;
     }
-    logg(DEBUG, "Current working dir is %s\n", g_databaseDirectory);
+    logg(LOGG_DEBUG, "Current working dir is %s\n", g_databaseDirectory);
 
     if (-1 == (handle = open("freshclam.dat", O_RDONLY | O_BINARY))) {
         char currdir[PATH_MAX];
 
         if (getcwd(currdir, sizeof(currdir)))
-            logg(DEBUG, "Can't open freshclam.dat in %s\n", currdir);
+            logg(LOGG_DEBUG, "Can't open freshclam.dat in %s\n", currdir);
         else
-            logg(DEBUG, "Can't open freshclam.dat in the current directory\n");
+            logg(LOGG_DEBUG, "Can't open freshclam.dat in the current directory\n");
 
-        logg(DEBUG, "It probably doesn't exist yet. That's ok.\n");
+        logg(LOGG_DEBUG, "It probably doesn't exist yet. That's ok.\n");
         status = FC_EFILE;
         goto done;
     }
@@ -197,18 +197,18 @@ fc_error_t load_freshclam_dat(void)
     if (strlen(MIRRORS_DAT_MAGIC) != (bread = read(handle, &magic, strlen(MIRRORS_DAT_MAGIC)))) {
         char error_message[260];
         cli_strerror(errno, error_message, 260);
-        logg(ERROR, "Can't read magic from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        logg(LOGG_ERROR, "Can't read magic from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
         goto done;
     }
     if (0 != strncmp(magic, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
-        logg(DEBUG, "Magic bytes for freshclam.dat did not match expectations.\n");
+        logg(LOGG_DEBUG, "Magic bytes for freshclam.dat did not match expectations.\n");
         goto done;
     }
 
     if (sizeof(uint32_t) != (bread = read(handle, &version, sizeof(uint32_t)))) {
         char error_message[260];
         cli_strerror(errno, error_message, 260);
-        logg(ERROR, "Can't read version from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+        logg(LOGG_ERROR, "Can't read version from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
         goto done;
     }
 
@@ -218,7 +218,7 @@ fc_error_t load_freshclam_dat(void)
             off_t file_size = lseek(handle, 0L, SEEK_END);
 
             if (strlen(MIRRORS_DAT_MAGIC) + sizeof(freshclam_dat_v1_t) != (size_t)file_size) {
-                logg(DEBUG, "freshclam.dat is bigger than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
+                logg(LOGG_DEBUG, "freshclam.dat is bigger than expected: %zu != %ld\n", sizeof(freshclam_dat_v1_t), file_size);
                 goto done;
             }
 
@@ -226,13 +226,13 @@ fc_error_t load_freshclam_dat(void)
             if (-1 == lseek(handle, strlen(MIRRORS_DAT_MAGIC), SEEK_SET)) {
                 char error_message[260];
                 cli_strerror(errno, error_message, 260);
-                logg(ERROR, "Can't seek to %lu, error: %s\n", strlen(MIRRORS_DAT_MAGIC), error_message);
+                logg(LOGG_ERROR, "Can't seek to %lu, error: %s\n", strlen(MIRRORS_DAT_MAGIC), error_message);
                 goto done;
             }
 
             mdat = malloc(sizeof(freshclam_dat_v1_t));
             if (NULL == mdat) {
-                logg(ERROR, "Failed to allocate memory for freshclam.dat\n");
+                logg(LOGG_ERROR, "Failed to allocate memory for freshclam.dat\n");
                 status = FC_EMEM;
                 goto done;
             }
@@ -240,7 +240,7 @@ fc_error_t load_freshclam_dat(void)
             if (sizeof(freshclam_dat_v1_t) != (bread = read(handle, mdat, sizeof(freshclam_dat_v1_t)))) {
                 char error_message[260];
                 cli_strerror(errno, error_message, 260);
-                logg(ERROR, "Can't read from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
+                logg(LOGG_ERROR, "Can't read from freshclam.dat. Bytes read: %zi, error: %s\n", bread, error_message);
                 goto done;
             }
 
@@ -260,23 +260,23 @@ fc_error_t load_freshclam_dat(void)
             break;
         }
         default: {
-            logg(DEBUG, "freshclam.dat version is different than expected: %u != %u\n", 1, version);
+            logg(LOGG_DEBUG, "freshclam.dat version is different than expected: %u != %u\n", 1, version);
             goto done;
         }
     }
 
-    logg(DEBUG, "Loaded freshclam.dat:\n");
-    logg(DEBUG, "  version:    %d\n", g_freshclamDat->version);
-    logg(DEBUG, "  uuid:       %s\n", g_freshclamDat->uuid);
+    logg(LOGG_DEBUG, "Loaded freshclam.dat:\n");
+    logg(LOGG_DEBUG, "  version:    %d\n", g_freshclamDat->version);
+    logg(LOGG_DEBUG, "  uuid:       %s\n", g_freshclamDat->uuid);
     if (g_freshclamDat->retry_after > 0) {
         char retry_after_string[26];
         struct tm *tm_info = localtime(&g_freshclamDat->retry_after);
         if (NULL == tm_info) {
-            logg(ERROR, "Failed to query the local time for the retry-after date!\n");
+            logg(LOGG_ERROR, "Failed to query the local time for the retry-after date!\n");
             goto done;
         }
         strftime(retry_after_string, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-        logg(DEBUG, "  retry-after: %s\n", retry_after_string);
+        logg(LOGG_DEBUG, "  retry-after: %s\n", retry_after_string);
     }
 
     status = FC_SUCCESS;
@@ -304,7 +304,7 @@ fc_error_t save_freshclam_dat(void)
     int handle        = -1;
 
     if (NULL == g_freshclamDat) {
-        logg(ERROR, "Attempted to save freshclam.dat before initializing data struct!\n");
+        logg(LOGG_ERROR, "Attempted to save freshclam.dat before initializing data struct!\n");
         goto done;
     }
 
@@ -312,22 +312,22 @@ fc_error_t save_freshclam_dat(void)
         char currdir[PATH_MAX];
 
         if (getcwd(currdir, sizeof(currdir)))
-            logg(ERROR, "Can't create freshclam.dat in %s\n", currdir);
+            logg(LOGG_ERROR, "Can't create freshclam.dat in %s\n", currdir);
         else
-            logg(ERROR, "Can't create freshclam.dat in the current directory\n");
+            logg(LOGG_ERROR, "Can't create freshclam.dat in the current directory\n");
 
-        logg(INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+        logg(LOGG_INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
         status = FC_EDBDIRACCESS;
         goto done;
     }
     if (-1 == write(handle, MIRRORS_DAT_MAGIC, strlen(MIRRORS_DAT_MAGIC))) {
-        logg(ERROR, "Can't write to freshclam.dat\n");
+        logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
     if (-1 == write(handle, g_freshclamDat, sizeof(freshclam_dat_v1_t))) {
-        logg(ERROR, "Can't write to freshclam.dat\n");
+        logg(LOGG_ERROR, "Can't write to freshclam.dat\n");
     }
 
-    logg(DEBUG, "Saved freshclam.dat\n");
+    logg(LOGG_DEBUG, "Saved freshclam.dat\n");
 
     status = FC_SUCCESS;
 done:
@@ -344,7 +344,7 @@ fc_error_t new_freshclam_dat(void)
 
     freshclam_dat_v1_t *mdat = calloc(1, sizeof(freshclam_dat_v1_t));
     if (NULL == mdat) {
-        logg(ERROR, "Failed to allocate memory for freshclam.dat\n");
+        logg(LOGG_ERROR, "Failed to allocate memory for freshclam.dat\n");
         status = FC_EMEM;
         goto done;
     }
@@ -358,10 +358,10 @@ fc_error_t new_freshclam_dat(void)
     }
     g_freshclamDat = mdat;
 
-    logg(DEBUG, "Creating new freshclam.dat\n");
+    logg(LOGG_DEBUG, "Creating new freshclam.dat\n");
 
     if (FC_SUCCESS != save_freshclam_dat()) {
-        logg(ERROR, "Failed to save freshclam.dat!\n");
+        logg(LOGG_ERROR, "Failed to save freshclam.dat!\n");
         status = FC_EFILE;
         goto done;
     }
@@ -578,7 +578,7 @@ static fc_error_t create_curl_handle(
     char userAgent[128];
 
     if (NULL == curlHandle) {
-        logg(ERROR, "create_curl_handle: Invalid arguments!\n");
+        logg(LOGG_ERROR, "create_curl_handle: Invalid arguments!\n");
         goto done;
     }
 
@@ -586,7 +586,7 @@ static fc_error_t create_curl_handle(
 
     curl = curl_easy_init();
     if (NULL == curl) {
-        logg(ERROR, "create_curl_handle: curl_easy_init failed!\n");
+        logg(LOGG_ERROR, "create_curl_handle: curl_easy_init failed!\n");
         status = FC_EINIT;
         goto done;
     }
@@ -609,39 +609,39 @@ static fc_error_t create_curl_handle(
     if (mprintf_verbose) {
         /* ask libcurl to show us the verbose output */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_VERBOSE!\n");
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_VERBOSE!\n");
         }
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_STDERR, stdout)) {
-            logg(ERROR, "create_curl_handle: Failed to direct curl debug output to stdout!\n");
+            logg(LOGG_ERROR, "create_curl_handle: Failed to direct curl debug output to stdout!\n");
         }
     }
 
     if (bHttp) {
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_USERAGENT, userAgent)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_USERAGENT (%s)!\n", userAgent);
         }
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, g_connectTimeout)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_CONNECTTIMEOUT (%u)!\n", g_connectTimeout);
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_CONNECTTIMEOUT (%u)!\n", g_connectTimeout);
         }
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, g_requestTimeout)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_LOW_SPEED_TIME  (%u)!\n", g_requestTimeout);
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_LOW_SPEED_TIME  (%u)!\n", g_requestTimeout);
         }
         if (g_requestTimeout > 0) {
             /* Minimum speed is 1 byte/second over the previous g_requestTimeout seconds. */
             int minimumSpeed = 1;
 
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, minimumSpeed)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_LOW_SPEED_LIMIT  (%u)!\n", minimumSpeed);
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_LOW_SPEED_LIMIT  (%u)!\n", minimumSpeed);
             }
         }
 
         if (bAllowRedirect) {
             /* allow three redirects */
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_FOLLOWLOCATION!\n");
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_FOLLOWLOCATION!\n");
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 3L)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_MAXREDIRS!\n");
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_MAXREDIRS!\n");
             }
         }
     }
@@ -649,44 +649,44 @@ static fc_error_t create_curl_handle(
 #if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 33))
     if (g_localIP) {
         if (NULL == strchr(g_localIP, ':')) {
-            logg(DEBUG, "Local IPv4 address requested: %s\n", g_localIP);
+            logg(LOGG_DEBUG, "Local IPv4 address requested: %s\n", g_localIP);
             curl_ret = curl_easy_setopt(curl, CURLOPT_DNS_LOCAL_IP4, g_localIP); // Option requires libcurl built with c-ares
             switch (curl_ret) {
                 case CURLE_BAD_FUNCTION_ARGUMENT:
-                    logg(ERROR, "create_curl_handle: Unable to bind DNS resolves to %s. Invalid IPv4 address.\n", g_localIP);
+                    logg(LOGG_ERROR, "create_curl_handle: Unable to bind DNS resolves to %s. Invalid IPv4 address.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
                     break;
                 case CURLE_UNKNOWN_OPTION:
                 case CURLE_NOT_BUILT_IN:
-                    logg(ERROR, "create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
+                    logg(LOGG_ERROR, "create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
                 default:
                     break;
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv4)!\n");
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv4)!\n");
             }
         } else {
-            logg(DEBUG, "Local IPv6 address requested: %s\n", g_localIP);
+            logg(LOGG_DEBUG, "Local IPv6 address requested: %s\n", g_localIP);
             curl_ret = curl_easy_setopt(curl, CURLOPT_DNS_LOCAL_IP6, g_localIP); // Option requires libcurl built with c-ares
             switch (curl_ret) {
                 case CURLE_BAD_FUNCTION_ARGUMENT:
-                    logg(WARNING, "create_curl_handle: Unable to bind DNS resolves to %s. Invalid IPv4 address.\n", g_localIP);
+                    logg(LOGG_WARNING, "create_curl_handle: Unable to bind DNS resolves to %s. Invalid IPv4 address.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
                     break;
                 case CURLE_UNKNOWN_OPTION:
                 case CURLE_NOT_BUILT_IN:
-                    logg(WARNING, "create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
+                    logg(LOGG_WARNING, "create_curl_handle: Unable to bind DNS resolves to %s. Option requires that libcurl was built with c-ares.\n", g_localIP);
                     status = FC_ECONFIG;
                     goto done;
                 default:
                     break;
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv6)!\n");
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_IPRESOLVE (IPv6)!\n");
             }
         }
     }
@@ -695,36 +695,36 @@ static fc_error_t create_curl_handle(
         /*
          * Proxy requested.
          */
-        logg(DEBUG, "Using proxy: %s:%u\n", g_proxyServer, g_proxyPort);
+        logg(LOGG_DEBUG, "Using proxy: %s:%u\n", g_proxyServer, g_proxyPort);
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROXY, g_proxyServer)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_PROXY (%s)!\n", g_proxyServer);
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_PROXY (%s)!\n", g_proxyServer);
         }
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROXYPORT, g_proxyPort)) {
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYPORT (%u)!\n", g_proxyPort);
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYPORT (%u)!\n", g_proxyPort);
         }
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPPROXYTUNNEL, 1L)) { // Necessary?
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_HTTPPROXYTUNNEL (1)!\n");
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_HTTPPROXYTUNNEL (1)!\n");
         }
 #ifdef CURLOPT_SUPPRESS_CONNECT_HEADERS
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SUPPRESS_CONNECT_HEADERS, 1L)) { // Necessary?
-            logg(ERROR, "create_curl_handle: Failed to set CURLOPT_SUPPRESS_CONNECT_HEADERS (1)!\n");
+            logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_SUPPRESS_CONNECT_HEADERS (1)!\n");
         }
 #endif
 
         if (g_proxyUsername) {
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROXYUSERNAME, g_proxyUsername)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYUSERNAME (%s)!\n", g_proxyUsername);
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYUSERNAME (%s)!\n", g_proxyUsername);
             }
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROXYPASSWORD, g_proxyPassword)) {
-                logg(ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYPASSWORD (%s)!\n", g_proxyPassword);
+                logg(LOGG_ERROR, "create_curl_handle: Failed to set CURLOPT_PROXYPASSWORD (%s)!\n", g_proxyPassword);
             }
         }
     }
 
 #if defined(C_DARWIN) || defined(_WIN32)
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, *sslctx_function)) {
-        logg(DEBUG, "create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
+        logg(LOGG_DEBUG, "create_curl_handle: Failed to set SSL CTX function. Your libcurl may use an SSL backend that does not support CURLOPT_SSL_CTX_FUNCTION.\n");
     }
 #else
     set_tls_ca_bundle(curl);
@@ -760,7 +760,7 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
     char *newBuffer = realloc(receivedData->buffer, receivedData->size + real_size + 1);
     if (NULL == newBuffer) {
-        logg(ERROR, "remote_cvdhead - recv callback: Failed to allocate memory CVD header data.\n");
+        logg(LOGG_ERROR, "remote_cvdhead - recv callback: Failed to allocate memory CVD header data.\n");
         return 0;
     }
 
@@ -840,7 +840,7 @@ static fc_error_t remote_cvdhead(
     long http_code = 0;
 
     if (NULL == cvd) {
-        logg(ERROR, "remote_cvdhead: Invalid arguments.\n");
+        logg(LOGG_ERROR, "remote_cvdhead: Invalid arguments.\n");
         goto done;
     }
 
@@ -857,13 +857,13 @@ static fc_error_t remote_cvdhead(
     url    = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
-    logg(INFO, "Trying to retrieve CVD header from %s\n", url);
+    logg(LOGG_INFO, "Trying to retrieve CVD header from %s\n", url);
 
     if (FC_SUCCESS != (ret = create_curl_handle(
                            bHttpServer, // Set extra HTTP-specific headers.
                            1,           // Allow redirects.
                            &curl))) {   // [out] curl session handle.
-        logg(ERROR, "remote_cvdhead: Failed to create curl handle.\n");
+        logg(LOGG_ERROR, "remote_cvdhead: Failed to create curl handle.\n");
         status = ret;
         goto done;
     }
@@ -890,30 +890,30 @@ static fc_error_t remote_cvdhead(
        if both callbacks are set. */
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
-            logg(ERROR, "remote_cvdhead: Failed to set transfer info function!\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set transfer info function!\n");
         }
         /* pass the struct pointer into the xferinfo function, note that this is
            an alias to CURLOPT_PROGRESSDATA */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
-            logg(ERROR, "remote_cvdhead: Failed to set transfer info data structure!\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set transfer info data structure!\n");
         }
 #else
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
-            logg(ERROR, "remote_cvdhead: Failed to set progress function!\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set progress function!\n");
         }
         /* pass the struct pointer into the progress function */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
-            logg(ERROR, "remote_cvdhead: Failed to set progress data structure!\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set progress data structure!\n");
         }
 #endif
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
-            logg(ERROR, "remote_cvdhead: Failed to disable progress function!\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to disable progress function!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_URL, url)) {
-        logg(ERROR, "remote_cvdhead: Failed to set CURLOPT_URL for curl session (%s).\n", url);
+        logg(LOGG_ERROR, "remote_cvdhead: Failed to set CURLOPT_URL for curl session (%s).\n", url);
         status = FC_EFAILEDGET;
         goto done;
     }
@@ -925,41 +925,41 @@ static fc_error_t remote_cvdhead(
         struct curl_slist *temp = NULL;
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L)) {
-            logg(ERROR, "remote_cvdhead: Failed to set CURLOPT_HTTPGET for curl session.\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set CURLOPT_HTTPGET for curl session.\n");
         }
 
 #ifdef FRESHCLAM_NO_CACHE
         if (NULL == (temp = curl_slist_append(slist, "Cache-Control: no-cache"))) { // Necessary?
-            logg(ERROR, "remote_cvdhead: Failed to append \"Cache-Control: no-cache\" header to custom curl header list.\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to append \"Cache-Control: no-cache\" header to custom curl header list.\n");
         } else {
             slist = temp;
         }
 #endif
         if (NULL == (temp = curl_slist_append(slist, "Connection: close"))) {
-            logg(ERROR, "remote_cvdhead: Failed to append \"Connection: close\" header to custom curl header list.\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to append \"Connection: close\" header to custom curl header list.\n");
         } else {
             slist = temp;
         }
         if (NULL != slist) {
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist)) {
-                logg(ERROR, "remote_cvdhead: Failed to add custom header list to curl session.\n");
+                logg(LOGG_ERROR, "remote_cvdhead: Failed to add custom header list to curl session.\n");
             }
         }
     }
 
     if (0 != ifModifiedSince) {
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_TIMEVALUE, ifModifiedSince)) {
-            logg(ERROR, "remote_cvdhead: Failed to set if-Modified-Since time value for curl session.\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set if-Modified-Since time value for curl session.\n");
         }
         /* If-Modified-Since the above time stamp */
         else if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFMODSINCE)) {
-            logg(ERROR, "remote_cvdhead: Failed to set if-Modified-Since time condition for curl session.\n");
+            logg(LOGG_ERROR, "remote_cvdhead: Failed to set if-Modified-Since time condition for curl session.\n");
         }
     }
 
     /* Request only the first 512 bytes (CVD_HEADER_SIZE) */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_RANGE, "0-511")) {
-        logg(ERROR, "remote_cvdhead: Failed to set CURLOPT_RANGE CVD_HEADER_SIZE for curl session.\n");
+        logg(LOGG_ERROR, "remote_cvdhead: Failed to set CURLOPT_RANGE CVD_HEADER_SIZE for curl session.\n");
     }
 
     receivedData.buffer = cli_malloc(1); /* will be grown as needed by the realloc above */
@@ -967,12 +967,12 @@ static fc_error_t remote_cvdhead(
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback)) {
-        logg(ERROR, "remote_cvdhead: Failed to set write-data memory callback function for curl session.\n");
+        logg(LOGG_ERROR, "remote_cvdhead: Failed to set write-data memory callback function for curl session.\n");
     }
 
     /* Pass our 'receivedData' struct to the callback function */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&receivedData)) {
-        logg(ERROR, "remote_cvdhead: Failed to set receivedData struct for write-data callback function for curl session.\n");
+        logg(LOGG_ERROR, "remote_cvdhead: Failed to set receivedData struct for write-data callback function for curl session.\n");
     }
 
     /*
@@ -987,11 +987,11 @@ static fc_error_t remote_cvdhead(
          * show the more generic information from curl_easy_strerror instead.
          */
         size_t len = strlen(errbuf);
-        logg(INFO, "%cremote_cvdhead: Download failed (%d) ", logerr ? '!' : '^', curl_ret);
+        logg(LOGG_INFO, "%cremote_cvdhead: Download failed (%d) ", logerr ? '!' : '^', curl_ret);
         if (len)
-            logg(INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
+            logg(LOGG_INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
-            logg(INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
+            logg(LOGG_INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
         status = FC_ECONNECTION;
         goto done;
     }
@@ -1044,23 +1044,23 @@ static fc_error_t remote_cvdhead(
         }
         case 404: {
             if (g_proxyServer)
-                logg(WARNING, "remote_cvdhead: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
+                logg(LOGG_WARNING, "remote_cvdhead: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
             else
-                logg(WARNING, "remote_cvdhead: file not found: %s\n", url);
+                logg(LOGG_WARNING, "remote_cvdhead: file not found: %s\n", url);
             status = FC_EFAILEDGET;
             goto done;
         }
         case 522: {
-            logg(WARNING, "remote_cvdhead: Origin Connection Time-out. Cloudflare was unable to reach the origin web server and the request timed out. URL: %s\n", url);
+            logg(LOGG_WARNING, "remote_cvdhead: Origin Connection Time-out. Cloudflare was unable to reach the origin web server and the request timed out. URL: %s\n", url);
             status = FC_EFAILEDGET;
             goto done;
         }
         default: {
             if (g_proxyServer)
-                logg(INFO, "%cremote_cvdhead: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
+                logg(LOGG_INFO, "%cremote_cvdhead: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
                      logerr ? '!' : '^', http_code, server, g_proxyServer, g_proxyPort);
             else
-                logg(INFO, "%cremote_cvdhead: Unexpected response (%li) from %s\n",
+                logg(LOGG_INFO, "%cremote_cvdhead: Unexpected response (%li) from %s\n",
                      logerr ? '!' : '^', http_code, server);
             status = FC_EFAILEDGET;
             goto done;
@@ -1071,7 +1071,7 @@ static fc_error_t remote_cvdhead(
      * Identify start of CVD header in response body.
      */
     if (receivedData.size < CVD_HEADER_SIZE) {
-        logg(INFO, "%cremote_cvdhead: Malformed CVD header (too short)\n", logerr ? '!' : '^');
+        logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (too short)\n", logerr ? '!' : '^');
         status = FC_EFAILEDGET;
         goto done;
     }
@@ -1087,7 +1087,7 @@ static fc_error_t remote_cvdhead(
             (receivedData.buffer && !*receivedData.buffer) ||
             (receivedData.buffer && !isprint(receivedData.buffer[i]))) {
 
-            logg(INFO, "%cremote_cvdhead: Malformed CVD header (bad chars)\n", logerr ? '!' : '^');
+            logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (bad chars)\n", logerr ? '!' : '^');
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -1098,11 +1098,11 @@ static fc_error_t remote_cvdhead(
      * Parse CVD info into CVD info struct.
      */
     if (!(cvdhead = cl_cvdparse(head))) {
-        logg(INFO, "%cremote_cvdhead: Malformed CVD header (can't parse)\n", logerr ? '!' : '^');
+        logg(LOGG_INFO, "%cremote_cvdhead: Malformed CVD header (can't parse)\n", logerr ? '!' : '^');
         status = FC_EFAILEDGET;
         goto done;
     } else {
-        logg(INFO, "OK\n");
+        logg(LOGG_INFO, "OK\n");
     }
 
     *cvd   = cvdhead;
@@ -1149,18 +1149,18 @@ static fc_error_t downloadFile(
     struct FileStruct receivedFile = {-1, 0};
 
     if ((NULL == url) || (NULL == destfile)) {
-        logg(ERROR, "downloadFile: Invalid arguments.\n");
+        logg(LOGG_ERROR, "downloadFile: Invalid arguments.\n");
         goto done;
     }
 
-    logg(DEBUG, "Retrieving %s\n", url);
+    logg(LOGG_DEBUG, "Retrieving %s\n", url);
 
     if (0 == strncasecmp(url, "http", strlen("http"))) {
         bHttpServer = 1;
     }
 
     if (FC_SUCCESS != (ret = create_curl_handle(bHttpServer, bAllowRedirect, &curl))) {
-        logg(ERROR, "downloadFile: Failed to create curl handle.\n");
+        logg(LOGG_ERROR, "downloadFile: Failed to create curl handle.\n");
         status = ret;
         goto done;
     }
@@ -1187,38 +1187,38 @@ static fc_error_t downloadFile(
        if both callbacks are set. */
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, xferinfo)) {
-            logg(ERROR, "downloadFile: Failed to set transfer info function!\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set transfer info function!\n");
         }
         /* pass the struct pointer into the xferinfo function, note that this is
        an alias to CURLOPT_PROGRESSDATA */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &prog)) {
-            logg(ERROR, "downloadFile: Failed to set transfer info data structure!\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set transfer info data structure!\n");
         }
 #else
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress)) {
-            logg(ERROR, "downloadFile: Failed to set progress function!\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set progress function!\n");
         }
         /* pass the struct pointer into the progress function */
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &prog)) {
-            logg(ERROR, "downloadFile: Failed to set progress data structure!\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set progress data structure!\n");
         }
 #endif
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L)) {
-            logg(ERROR, "downloadFile: Failed to disable progress function!\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to disable progress function!\n");
         }
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_URL, url)) {
-        logg(ERROR, "downloadFile: Failed to set CURLOPT_URL for curl session (%s).\n", url);
+        logg(LOGG_ERROR, "downloadFile: Failed to set CURLOPT_URL for curl session (%s).\n", url);
     }
     if (0 != ifModifiedSince) {
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_TIMEVALUE, ifModifiedSince)) {
-            logg(ERROR, "downloadFile: Failed to set if-Modified-Since time value for curl session.\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set if-Modified-Since time value for curl session.\n");
         }
         /* If-Modified-Since the above time stamp */
         else if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFMODSINCE)) {
-            logg(ERROR, "downloadFile: Failed to set if-Modified-Since time condition for curl session.\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set if-Modified-Since time condition for curl session.\n");
         }
     }
 
@@ -1229,24 +1229,24 @@ static fc_error_t downloadFile(
         struct curl_slist *temp = NULL;
 
         if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L)) {
-            logg(ERROR, "downloadFile: Failed to set CURLOPT_HTTPGET for curl session.\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to set CURLOPT_HTTPGET for curl session.\n");
         }
 
 #ifdef FRESHCLAM_NO_CACHE
         if (NULL == (temp = curl_slist_append(slist, "Cache-Control: no-cache"))) { // Necessary?
-            logg(ERROR, "downloadFile: Failed to append \"Cache-Control: no-cache\" header to custom curl header list.\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to append \"Cache-Control: no-cache\" header to custom curl header list.\n");
         } else {
             slist = temp;
         }
 #endif
         if (NULL == (temp = curl_slist_append(slist, "Connection: close"))) { // Necessary?
-            logg(ERROR, "downloadFile: Failed to append \"Connection: close\" header to custom curl header list.\n");
+            logg(LOGG_ERROR, "downloadFile: Failed to append \"Connection: close\" header to custom curl header list.\n");
         } else {
             slist = temp;
         }
         if (NULL != slist) {
             if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist)) {
-                logg(ERROR, "downloadFile: Failed to add custom header list to curl session.\n");
+                logg(LOGG_ERROR, "downloadFile: Failed to add custom header list to curl session.\n");
             }
         }
     }
@@ -1257,11 +1257,11 @@ static fc_error_t downloadFile(
         char currdir[PATH_MAX];
 
         if (getcwd(currdir, sizeof(currdir)))
-            logg(ERROR, "downloadFile: Can't create new file %s in %s\n", destfile, currdir);
+            logg(LOGG_ERROR, "downloadFile: Can't create new file %s in %s\n", destfile, currdir);
         else
-            logg(ERROR, "downloadFile: Can't create new file %s in the current directory\n", destfile);
+            logg(LOGG_ERROR, "downloadFile: Can't create new file %s in the current directory\n", destfile);
 
-        logg(INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
+        logg(LOGG_INFO, "Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
         status = FC_EDBDIRACCESS;
         goto done;
     }
@@ -1269,15 +1269,15 @@ static fc_error_t downloadFile(
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileCallback)) {
-        logg(ERROR, "downloadFile: Failed to set write-data fwrite callback function for curl session.\n");
+        logg(LOGG_ERROR, "downloadFile: Failed to set write-data fwrite callback function for curl session.\n");
     }
 
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&receivedFile)) {
-        logg(ERROR, "downloadFile: Failed to set write-data file handle for curl session.\n");
+        logg(LOGG_ERROR, "downloadFile: Failed to set write-data file handle for curl session.\n");
     }
 
-    logg(DEBUG, "downloadFile: Download source:      %s\n", url);
-    logg(DEBUG, "downloadFile: Download destination: %s\n", destfile);
+    logg(LOGG_DEBUG, "downloadFile: Download source:      %s\n", url);
+    logg(LOGG_DEBUG, "downloadFile: Download destination: %s\n", destfile);
 
     /* Perform download */
     memset(errbuf, 0, sizeof(errbuf));
@@ -1289,11 +1289,11 @@ static fc_error_t downloadFile(
          * show the more generic information from curl_easy_strerror instead.
          */
         size_t len = strlen(errbuf);
-        logg(INFO, "%cDownload failed (%d) ", logerr ? '!' : '^', curl_ret);
+        logg(LOGG_INFO, "%cDownload failed (%d) ", logerr ? '!' : '^', curl_ret);
         if (len)
-            logg(INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
+            logg(LOGG_INFO, "%c Message: %s%s", logerr ? '!' : '^', errbuf, ((errbuf[len - 1] != '\n') ? "\n" : ""));
         else
-            logg(INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
+            logg(LOGG_INFO, "%c Message: %s\n", logerr ? '!' : '^', curl_easy_strerror(curl_ret));
         status = FC_ECONNECTION;
         goto done;
     }
@@ -1350,23 +1350,23 @@ static fc_error_t downloadFile(
         }
         case 404: {
             if (g_proxyServer)
-                logg(WARNING, "downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
+                logg(LOGG_WARNING, "downloadFile: file not found: %s (Proxy: %s:%u)\n", url, g_proxyServer, g_proxyPort);
             else
-                logg(WARNING, "downloadFile: file not found: %s\n", url);
+                logg(LOGG_WARNING, "downloadFile: file not found: %s\n", url);
             status = FC_EFAILEDGET;
             break;
         }
         case 522: {
-            logg(WARNING, "downloadFile: Origin Connection Time-out. Cloudflare was unable to reach the origin web server and the request timed out. URL: %s\n", url);
+            logg(LOGG_WARNING, "downloadFile: Origin Connection Time-out. Cloudflare was unable to reach the origin web server and the request timed out. URL: %s\n", url);
             status = FC_EFAILEDGET;
             break;
         }
         default: {
             if (g_proxyServer)
-                logg(INFO, "%cdownloadFile: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
+                logg(LOGG_INFO, "%cdownloadFile: Unexpected response (%li) from %s (Proxy: %s:%u)\n",
                      logerr ? '!' : '^', http_code, url, g_proxyServer, g_proxyPort);
             else
-                logg(INFO, "%cdownloadFile: Unexpected response (%li) from %s\n",
+                logg(LOGG_INFO, "%cdownloadFile: Unexpected response (%li) from %s\n",
                      logerr ? '!' : '^', http_code, url);
             status = FC_EFAILEDGET;
         }
@@ -1412,7 +1412,7 @@ static fc_error_t getcvd(
     size_t urlLen                = 0;
 
     if ((NULL == cvdfile) || (NULL == tmpfile) || (NULL == server)) {
-        logg(ERROR, "getcvd: Invalid arguments.\n");
+        logg(LOGG_ERROR, "getcvd: Invalid arguments.\n");
         goto done;
     }
 
@@ -1422,11 +1422,11 @@ static fc_error_t getcvd(
 
     ret = downloadFile(url, tmpfile, 1, logerr, ifModifiedSince);
     if (ret == FC_UPTODATE) {
-        logg(INFO, "%s is up-to-date.\n", cvdfile);
+        logg(LOGG_INFO, "%s is up-to-date.\n", cvdfile);
         status = ret;
         goto done;
     } else if (ret > FC_UPTODATE) {
-        logg(INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, url);
+        logg(LOGG_INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', cvdfile, url);
         status = ret;
         goto done;
     }
@@ -1434,38 +1434,38 @@ static fc_error_t getcvd(
     /* Temporarily rename file to correct extension for verification. */
     tmpfile_with_extension = strdup(tmpfile);
     if (!tmpfile_with_extension) {
-        logg(ERROR, "Can't allocate memory for temp file with extension!\n");
+        logg(LOGG_ERROR, "Can't allocate memory for temp file with extension!\n");
         status = FC_EMEM;
         goto done;
     }
     strncpy(tmpfile_with_extension + strlen(tmpfile_with_extension) - 4, cvdfile + strlen(cvdfile) - 4, 4);
     if (rename(tmpfile, tmpfile_with_extension) == -1) {
-        logg(ERROR, "Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+        logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
 
     if (CL_SUCCESS != (cl_ret = cl_cvdverify(tmpfile_with_extension))) {
-        logg(ERROR, "Verification: %s\n", cl_strerror(cl_ret));
+        logg(LOGG_ERROR, "Verification: %s\n", cl_strerror(cl_ret));
         status = FC_EBADCVD;
         goto done;
     }
 
     if (NULL == (cvd = cl_cvdhead(tmpfile_with_extension))) {
-        logg(ERROR, "Can't read CVD header of new %s database.\n", cvdfile);
+        logg(LOGG_ERROR, "Can't read CVD header of new %s database.\n", cvdfile);
         status = FC_EBADCVD;
         goto done;
     }
 
     /* Rename the file back to the original, since verification passed. */
     if (rename(tmpfile_with_extension, tmpfile) == -1) {
-        logg(ERROR, "Can't rename %s to %s: %s\n", tmpfile_with_extension, tmpfile, strerror(errno));
+        logg(LOGG_ERROR, "Can't rename %s to %s: %s\n", tmpfile_with_extension, tmpfile, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
 
     if (cvd->version < remoteVersion) {
-        logg(DEBUG, "The %s database downloaded from %s is older than the version advertised in the DNS TXT record.\n",
+        logg(LOGG_DEBUG, "The %s database downloaded from %s is older than the version advertised in the DNS TXT record.\n",
              cvdfile,
              server);
         status = FC_EMIRRORNOTSYNC;
@@ -1513,7 +1513,7 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
     char cvdfile[DB_FILENAME_MAX];
 
     if ((NULL == database) || (NULL == tmpdir)) {
-        logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: Invalid arguments.\n");
+        logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Invalid arguments.\n");
         status = FC_EARG;
         goto done;
     }
@@ -1530,19 +1530,19 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
          */
         ret = snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", database);
         if (((int)sizeof(cvdfile) <= ret) || (-1 == ret)) {
-            logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: database parameter value too long to create cvd file name: %s\n", database);
+            logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: database parameter value too long to create cvd file name: %s\n", database);
             goto done;
         }
 
         if (-1 == access(cvdfile, R_OK)) {
             ret = snprintf(cvdfile, sizeof(cvdfile), "%s.cld", database);
             if (((int)sizeof(cvdfile) <= ret) || (-1 == ret)) {
-                logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: database parameter value too long to create cld file name: %s\n", database);
+                logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: database parameter value too long to create cld file name: %s\n", database);
                 goto done;
             }
 
             if (-1 == access(cvdfile, R_OK)) {
-                logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't find (or access) local CVD or CLD for %s database\n", database);
+                logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't find (or access) local CVD or CLD for %s database\n", database);
                 goto done;
             }
         }
@@ -1551,19 +1551,19 @@ static fc_error_t mkdir_and_chdir_for_cdiff_tmp(const char *database, const char
          * 2) Create the incremental update temp directory.
          */
         if (-1 == mkdir(tmpdir, 0755)) {
-            logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't create directory %s\n", tmpdir);
+            logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't create directory %s\n", tmpdir);
             goto done;
         }
 
         if (-1 == cli_cvdunpack(cvdfile, tmpdir)) {
-            logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
+            logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
             cli_rmdirs(tmpdir);
             goto done;
         }
     }
 
     if (-1 == chdir(tmpdir)) {
-        logg(ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't change directory to %s\n", tmpdir);
+        logg(LOGG_ERROR, "mkdir_and_chdir_for_cdiff_tmp: Can't change directory to %s\n", tmpdir);
         goto done;
     }
 
@@ -1596,12 +1596,12 @@ static fc_error_t downloadPatch(
     olddir[0] = '\0';
 
     if ((NULL == database) || (NULL == tmpdir) || (NULL == server) || (0 == version)) {
-        logg(ERROR, "downloadPatch: Invalid arguments.\n");
+        logg(LOGG_ERROR, "downloadPatch: Invalid arguments.\n");
         goto done;
     }
 
     if (NULL == getcwd(olddir, sizeof(olddir))) {
-        logg(ERROR, "downloadPatch: Can't get path of current working directory\n");
+        logg(LOGG_ERROR, "downloadPatch: Can't get path of current working directory\n");
         status = FC_EDIRECTORY;
         goto done;
     }
@@ -1623,22 +1623,22 @@ static fc_error_t downloadPatch(
 
     if (FC_SUCCESS != (ret = downloadFile(url, tempname, 1, logerr, 0))) {
         if (ret == FC_EEMPTYFILE) {
-            logg(INFO, "Empty script %s, need to download entire database\n", patch);
+            logg(LOGG_INFO, "Empty script %s, need to download entire database\n", patch);
         } else {
-            logg(INFO, "%cdownloadPatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, url);
+            logg(LOGG_INFO, "%cdownloadPatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, url);
         }
         status = ret;
         goto done;
     }
 
     if (-1 == (fd = open(tempname, O_RDONLY | O_BINARY))) {
-        logg(ERROR, "downloadPatch: Can't open %s for reading\n", tempname);
+        logg(LOGG_ERROR, "downloadPatch: Can't open %s for reading\n", tempname);
         status = FC_EFILE;
         goto done;
     }
 
     if (-1 == cdiff_apply(fd, 1)) {
-        logg(ERROR, "downloadPatch: Can't apply patch\n");
+        logg(LOGG_ERROR, "downloadPatch: Can't apply patch\n");
         status = FC_EFAILEDUPDATE;
         goto done;
     }
@@ -1662,7 +1662,7 @@ done:
 
     if ('\0' != olddir[0]) {
         if (-1 == chdir(olddir)) {
-            logg(ERROR, "downloadPatch: Can't chdir to %s\n", olddir);
+            logg(LOGG_ERROR, "downloadPatch: Can't chdir to %s\n", olddir);
             status = FC_EDIRECTORY;
         }
     }
@@ -1683,7 +1683,7 @@ static struct cl_cvd *currentdb(const char *database, char **localname)
     struct cl_cvd *cvd = NULL;
 
     if (NULL == database) {
-        logg(ERROR, "currentdb: Invalid args!\n");
+        logg(LOGG_ERROR, "currentdb: Invalid args!\n");
         goto done;
     }
 
@@ -1733,18 +1733,18 @@ static fc_error_t buildcld(
     int fd              = -1;
 
     if ((NULL == tmpdir) || (NULL == database) || (NULL == newfile)) {
-        logg(ERROR, "buildcld: Invalid arguments.\n");
+        logg(LOGG_ERROR, "buildcld: Invalid arguments.\n");
         goto done;
     }
 
     if (!getcwd(olddir, sizeof(olddir))) {
-        logg(ERROR, "buildcld: Can't get path of current working directory\n");
+        logg(LOGG_ERROR, "buildcld: Can't get path of current working directory\n");
         status = FC_EDIRECTORY;
         goto done;
     }
 
     if (-1 == chdir(tmpdir)) {
-        logg(ERROR, "buildcld: Can't access directory %s\n", tmpdir);
+        logg(LOGG_ERROR, "buildcld: Can't access directory %s\n", tmpdir);
         status = FC_EDIRECTORY;
         goto done;
     }
@@ -1752,13 +1752,13 @@ static fc_error_t buildcld(
     snprintf(info, sizeof(info), "%s.info", database);
     info[sizeof(info) - 1] = 0;
     if (-1 == (fd = open(info, O_RDONLY | O_BINARY))) {
-        logg(ERROR, "buildcld: Can't open %s\n", info);
+        logg(LOGG_ERROR, "buildcld: Can't open %s\n", info);
         status = FC_EFILE;
         goto done;
     }
 
     if (-1 == read(fd, buff, CVD_HEADER_SIZE)) {
-        logg(ERROR, "buildcld: Can't read %s\n", info);
+        logg(LOGG_ERROR, "buildcld: Can't read %s\n", info);
         status = FC_EFILE;
         goto done;
     }
@@ -1768,19 +1768,19 @@ static fc_error_t buildcld(
     fd = -1;
 
     if (NULL == (pt = strchr(buff, '\n'))) {
-        logg(ERROR, "buildcld: Bad format of %s\n", info);
+        logg(LOGG_ERROR, "buildcld: Bad format of %s\n", info);
         status = FC_EFAILEDUPDATE;
         goto done;
     }
     memset(pt, ' ', CVD_HEADER_SIZE + buff - pt);
 
     if (-1 == (fd = open(newfile, O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0644))) {
-        logg(ERROR, "buildcld: Can't open %s for writing\n", newfile);
+        logg(LOGG_ERROR, "buildcld: Can't open %s for writing\n", newfile);
         status = FC_EFILE;
         goto done;
     }
     if (CVD_HEADER_SIZE != write(fd, buff, CVD_HEADER_SIZE)) {
-        logg(ERROR, "buildcld: Can't write to %s\n", newfile);
+        logg(LOGG_ERROR, "buildcld: Can't write to %s\n", newfile);
         status = FC_EFILE;
         goto done;
     }
@@ -1789,27 +1789,27 @@ static fc_error_t buildcld(
         close(fd);
         fd = -1;
         if (NULL == (gzs = gzopen(newfile, "ab9f"))) {
-            logg(ERROR, "buildcld: gzopen() failed for %s\n", newfile);
+            logg(LOGG_ERROR, "buildcld: gzopen() failed for %s\n", newfile);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
     }
 
     if (-1 == access("COPYING", R_OK)) {
-        logg(ERROR, "buildcld: COPYING file not found\n");
+        logg(LOGG_ERROR, "buildcld: COPYING file not found\n");
         status = FC_EFAILEDUPDATE;
         goto done;
     }
 
     if (-1 == tar_addfile(fd, gzs, "COPYING")) {
-        logg(ERROR, "buildcld: Can't add COPYING to new %s.cld - please check if there is enough disk space available\n", database);
+        logg(LOGG_ERROR, "buildcld: Can't add COPYING to new %s.cld - please check if there is enough disk space available\n", database);
         status = FC_EFAILEDUPDATE;
         goto done;
     }
 
     if (-1 != access(info, R_OK)) {
         if (-1 == tar_addfile(fd, gzs, info)) {
-            logg(ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", info, database);
+            logg(LOGG_ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", info, database);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
@@ -1817,14 +1817,14 @@ static fc_error_t buildcld(
 
     if (-1 != access("daily.cfg", R_OK)) {
         if (-1 == tar_addfile(fd, gzs, "daily.cfg")) {
-            logg(ERROR, "buildcld: Can't add daily.cfg to new %s.cld - please check if there is enough disk space available\n", database);
+            logg(LOGG_ERROR, "buildcld: Can't add daily.cfg to new %s.cld - please check if there is enough disk space available\n", database);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
     }
 
     if (NULL == (dir = opendir(tmpdir))) {
-        logg(ERROR, "buildcld: Can't open directory %s\n", tmpdir);
+        logg(LOGG_ERROR, "buildcld: Can't open directory %s\n", tmpdir);
         status = FC_EDIRECTORY;
         goto done;
     }
@@ -1835,7 +1835,7 @@ static fc_error_t buildcld(
                 continue;
 
             if (tar_addfile(fd, gzs, dent->d_name) == -1) {
-                logg(ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", dent->d_name, database);
+                logg(LOGG_ERROR, "buildcld: Can't add %s to new %s.cld - please check if there is enough disk space available\n", dent->d_name, database);
                 status = FC_EFAILEDUPDATE;
                 goto done;
             }
@@ -1848,12 +1848,12 @@ done:
 
     if (-1 != fd) {
         if (-1 == close(fd)) {
-            logg(ERROR, "buildcld: close() failed for %s\n", newfile);
+            logg(LOGG_ERROR, "buildcld: close() failed for %s\n", newfile);
         }
     }
     if (NULL != gzs) {
         if (gzclose(gzs)) {
-            logg(ERROR, "buildcld: gzclose() failed for %s\n", newfile);
+            logg(LOGG_ERROR, "buildcld: gzclose() failed for %s\n", newfile);
         }
     }
     if (NULL != dir) {
@@ -1868,7 +1868,7 @@ done:
 
     if ('\0' != olddir[0]) {
         if (-1 == chdir(olddir)) {
-            logg(ERROR, "buildcld: Can't return to previous directory %s\n", olddir);
+            logg(LOGG_ERROR, "buildcld: Can't return to previous directory %s\n", olddir);
             status = FC_EDIRECTORY;
         }
     }
@@ -1902,7 +1902,7 @@ static fc_error_t query_remote_database_version(
     int remote_is_cld     = 0;
 
     if ((NULL == database) || (NULL == server) || (NULL == remoteVersion) || (NULL == remoteFilename)) {
-        logg(ERROR, "query_remote_database_version: Invalid args!\n");
+        logg(LOGG_ERROR, "query_remote_database_version: Invalid args!\n");
         goto done;
     }
 
@@ -1922,14 +1922,14 @@ static fc_error_t query_remote_database_version(
         char *verStrDnsPrimary = NULL;
 
         if (0 == (field = textrecordfield(database))) {
-            logg(DEBUG, "query_remote_database_version: Database name \"%s\" isn't listed in DNS update info.\n", database);
+            logg(LOGG_DEBUG, "query_remote_database_version: Database name \"%s\" isn't listed in DNS update info.\n", database);
         } else if (NULL == (verStrDnsPrimary = cli_strtok(dnsUpdateInfo, field, ":"))) {
-            logg(WARNING, "Invalid DNS update info. Falling back to HTTP mode.\n");
+            logg(LOGG_WARNING, "Invalid DNS update info. Falling back to HTTP mode.\n");
         } else if (!cli_isnumber(verStrDnsPrimary)) {
-            logg(WARNING, "Broken database version in TXT record. Falling back to HTTP mode.\n");
+            logg(LOGG_WARNING, "Broken database version in TXT record. Falling back to HTTP mode.\n");
         } else {
             newVersion = atoi(verStrDnsPrimary);
-            logg(DEBUG, "query_remote_database_version: %s version from DNS: %d\n", cvdfile, newVersion);
+            logg(LOGG_DEBUG, "query_remote_database_version: %s version from DNS: %d\n", cvdfile, newVersion);
         }
         free(verStrDnsPrimary);
 
@@ -1944,13 +1944,13 @@ static fc_error_t query_remote_database_version(
             dnqueryDomain = malloc(dnqueryDomainLen + 1);
             snprintf(dnqueryDomain, dnqueryDomainLen + 1, "%s.cvd.clamav.net", database);
             if (NULL == (extradnsreply = dnsquery(dnqueryDomain, T_TXT, NULL))) {
-                logg(WARNING, "No timestamp in TXT record for %s\n", cvdfile);
+                logg(LOGG_WARNING, "No timestamp in TXT record for %s\n", cvdfile);
             } else {
                 char *recordTimeStr  = NULL;
                 char *verStrDnsExtra = NULL;
 
                 if (NULL == (recordTimeStr = cli_strtok(extradnsreply, DNS_EXTRADBINFO_RECORDTIME, ":"))) {
-                    logg(WARNING, "No recordtime field in TXT record for %s\n", cvdfile);
+                    logg(LOGG_WARNING, "No recordtime field in TXT record for %s\n", cvdfile);
                 } else {
                     int recordTime;
                     time_t currentTime;
@@ -1959,17 +1959,17 @@ static fc_error_t query_remote_database_version(
                     free(recordTimeStr);
                     time(&currentTime);
                     if ((int)currentTime - recordTime > 10800) {
-                        logg(WARNING, "DNS record is older than 3 hours.\n");
+                        logg(LOGG_WARNING, "DNS record is older than 3 hours.\n");
                     } else if (NULL != (verStrDnsExtra = cli_strtok(extradnsreply, 0, ":"))) {
                         if (!cli_isnumber(verStrDnsExtra)) {
-                            logg(WARNING, "Broken database version in TXT record for %s\n", cvdfile);
+                            logg(LOGG_WARNING, "Broken database version in TXT record for %s\n", cvdfile);
                         } else {
                             newVersion = atoi(verStrDnsExtra);
-                            logg(DEBUG, "%s version from DNS: %d\n", cvdfile, newVersion);
+                            logg(LOGG_DEBUG, "%s version from DNS: %d\n", cvdfile, newVersion);
                         }
                         free(verStrDnsExtra);
                     } else {
-                        logg(WARNING, "Invalid DNS reply. Falling back to HTTP mode.\n");
+                        logg(LOGG_WARNING, "Invalid DNS reply. Falling back to HTTP mode.\n");
                     }
                 }
             }
@@ -2010,16 +2010,16 @@ static fc_error_t query_remote_database_version(
 
         switch (ret) {
             case FC_SUCCESS: {
-                logg(DEBUG, "%s database version obtained using HTTP GET: %u\n", database, remote->version);
+                logg(LOGG_DEBUG, "%s database version obtained using HTTP GET: %u\n", database, remote->version);
                 break;
             }
             case FC_UPTODATE: {
-                logg(DEBUG, "%s database version up-to-date, according to HTTP response code from server.\n", database);
+                logg(LOGG_DEBUG, "%s database version up-to-date, according to HTTP response code from server.\n", database);
                 status = FC_UPTODATE;
                 goto done;
             }
             default: {
-                logg(WARNING, "Failed to get %s database version information from server: %s\n", database, server);
+                logg(LOGG_WARNING, "Failed to get %s database version information from server: %s\n", database, server);
                 status = ret;
                 goto done;
             }
@@ -2080,7 +2080,7 @@ static fc_error_t check_for_new_database_version(
         (NULL == localVersion) || (NULL == remoteVersion) ||
         (NULL == localFilename) || (NULL == remoteFilename) ||
         (NULL == localTimestamp)) {
-        logg(ERROR, "check_for_new_database_version: Invalid args!\n");
+        logg(LOGG_ERROR, "check_for_new_database_version: Invalid args!\n");
         goto done;
     }
 
@@ -2094,9 +2094,9 @@ static fc_error_t check_for_new_database_version(
      * Check local database version (if exists)
      */
     if (NULL == (local_database = currentdb(database, &localname))) {
-        logg(DEBUG, "check_for_new_database_version: No local copy of \"%s\" database.\n", database);
+        logg(LOGG_DEBUG, "check_for_new_database_version: No local copy of \"%s\" database.\n", database);
     } else {
-        logg(DEBUG, "check_for_new_database_version: Local copy of %s found: %s.\n", database, localname);
+        logg(LOGG_DEBUG, "check_for_new_database_version: Local copy of %s found: %s.\n", database, localname);
         *localTimestamp = local_database->stime;
         localver        = local_database->version;
     }
@@ -2116,11 +2116,11 @@ static fc_error_t check_for_new_database_version(
     switch (ret) {
         case FC_SUCCESS: {
             if (0 == localver) {
-                logg(INFO, "%s database available for download (remote version: %d)\n",
+                logg(LOGG_INFO, "%s database available for download (remote version: %d)\n",
                      database, remotever);
                 break;
             } else if (localver < remotever) {
-                logg(INFO, "%s database available for update (local version: %d, remote version: %d)\n",
+                logg(LOGG_INFO, "%s database available for update (local version: %d, remote version: %d)\n",
                      database, localver, remotever);
                 break;
             }
@@ -2128,11 +2128,11 @@ static fc_error_t check_for_new_database_version(
         }
         case FC_UPTODATE: {
             if (NULL == local_database) {
-                logg(ERROR, "check_for_new_database_version: server claims we're up-to-date, but we don't have a local database!\n");
+                logg(LOGG_ERROR, "check_for_new_database_version: server claims we're up-to-date, but we don't have a local database!\n");
                 status = FC_EFAILEDGET;
                 goto done;
             }
-            logg(INFO, "%s database is up-to-date (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
+            logg(LOGG_INFO, "%s database is up-to-date (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
                  localname,
                  local_database->version,
                  local_database->sigs,
@@ -2146,12 +2146,12 @@ static fc_error_t check_for_new_database_version(
         }
         case FC_EFORBIDDEN: {
             /* We tried to look up the version using HTTP and were actively blocked. */
-            logg(ERROR, "check_for_new_database_version: Blocked from using server %s.\n", server);
+            logg(LOGG_ERROR, "check_for_new_database_version: Blocked from using server %s.\n", server);
             status = FC_EFORBIDDEN;
             goto done;
         }
         default: {
-            logg(ERROR, "check_for_new_database_version: Failed to find %s database using server %s.\n", database, server);
+            logg(LOGG_ERROR, "check_for_new_database_version: Failed to find %s database using server %s.\n", database, server);
             status = FC_EFAILEDGET;
             goto done;
         }
@@ -2161,7 +2161,7 @@ static fc_error_t check_for_new_database_version(
     if (NULL != remotename) {
         *remoteFilename = cli_strdup(remotename);
         if (NULL == *remoteFilename) {
-            logg(ERROR, "check_for_new_database_version: Failed to allocate memory for remote filename.\n");
+            logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for remote filename.\n");
             status = FC_EMEM;
             goto done;
         }
@@ -2170,7 +2170,7 @@ static fc_error_t check_for_new_database_version(
         *localVersion  = localver;
         *localFilename = cli_strdup(localname);
         if (NULL == *localFilename) {
-            logg(ERROR, "check_for_new_database_version: Failed to allocate memory for local filename.\n");
+            logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for local filename.\n");
             status = FC_EMEM;
             goto done;
         }
@@ -2225,7 +2225,7 @@ fc_error_t updatedb(
     unsigned int i, j;
 
     if ((NULL == database) || (NULL == server) || (NULL == signo) || (NULL == dbFilename) || (NULL == bUpdated)) {
-        logg(ERROR, "updatedb: Invalid args!\n");
+        logg(LOGG_ERROR, "updatedb: Invalid args!\n");
         goto done;
     }
 
@@ -2247,7 +2247,7 @@ fc_error_t updatedb(
                            &localFilename,
                            &remoteFilename,
                            &localTimestamp))) {
-        logg(DEBUG, "updatedb: %s database update failed.\n", database);
+        logg(LOGG_DEBUG, "updatedb: %s database update failed.\n", database);
         status = ret;
         goto done;
     }
@@ -2270,7 +2270,7 @@ fc_error_t updatedb(
          */
         ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
         if (FC_UPTODATE == ret) {
-            logg(WARNING, "Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
+            logg(LOGG_WARNING, "Expected newer version of %s database but the server's copy is not newer than our local file (version %d).\n", database, localVersion);
             if (NULL != localFilename) {
                 /* Received a 304 (not modified), must be up-to-date after all */
                 *dbFilename = cli_strdup(localFilename);
@@ -2280,7 +2280,7 @@ fc_error_t updatedb(
             /* Let's accept this older version, but keep the error code.
              * We'll have fc_update_database() retry using CDIFFs.
              */
-            logg(DEBUG, "Received an older %s CVD than was advertised. We'll keep it and try updating to the latest version with CDIFFs.\n", database);
+            logg(LOGG_DEBUG, "Received an older %s CVD than was advertised. We'll keep it and try updating to the latest version with CDIFFs.\n", database);
             status = ret;
         } else if (FC_SUCCESS != ret) {
             status = ret;
@@ -2351,9 +2351,9 @@ fc_error_t updatedb(
              * Incremental update failed or intentionally disabled.
              */
             if (ret == FC_EEMPTYFILE) {
-                logg(DEBUG, "Empty CDIFF found. Skip incremental updates for this version and download %s\n", remoteFilename);
+                logg(LOGG_DEBUG, "Empty CDIFF found. Skip incremental updates for this version and download %s\n", remoteFilename);
             } else {
-                logg(WARNING, "Incremental update failed, trying to download %s\n", remoteFilename);
+                logg(LOGG_WARNING, "Incremental update failed, trying to download %s\n", remoteFilename);
             }
 
             ret = getcvd(remoteFilename, tmpfile, server, localTimestamp, remoteVersion, logerr);
@@ -2363,7 +2363,7 @@ fc_error_t updatedb(
                      * If we did there could be an infinite loop.
                      * Best option is to accept the older CVD.
                      */
-                    logg(WARNING, "Received an older %s CVD than was advertised. Incremental updates either failed or are disabled, so we'll have to settle for a slightly out-of-date database.\n", database);
+                    logg(LOGG_WARNING, "Received an older %s CVD than was advertised. Incremental updates either failed or are disabled, so we'll have to settle for a slightly out-of-date database.\n", database);
                     status = FC_SUCCESS;
                 } else {
                     status = ret;
@@ -2373,7 +2373,7 @@ fc_error_t updatedb(
 
             newLocalFilename = cli_strdup(remoteFilename);
         } else if (0 == numPatchesReceived) {
-            logg(INFO, "The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
+            logg(LOGG_INFO, "The database server doesn't have the latest patch for the %s database (version %u). The server will likely have updated if you check again in a few hours.\n", database, remoteVersion);
             *dbFilename = cli_strdup(localFilename);
             goto up_to_date;
         } else {
@@ -2381,13 +2381,13 @@ fc_error_t updatedb(
              * CDIFFs downloaded; Use CDIFFs to turn old CVD/CLD into new updated CLD.
              */
             if (numPatchesReceived < remoteVersion - localVersion) {
-                logg(INFO, "Downloaded %u patches for %s, which is fewer than the %u expected patches.\n", numPatchesReceived, database, remoteVersion - localVersion);
-                logg(INFO, "We'll settle for this partial-update, at least for now.\n");
+                logg(LOGG_INFO, "Downloaded %u patches for %s, which is fewer than the %u expected patches.\n", numPatchesReceived, database, remoteVersion - localVersion);
+                logg(LOGG_INFO, "We'll settle for this partial-update, at least for now.\n");
             }
 
             size_t newLocalFilenameLen = 0;
             if (FC_SUCCESS != buildcld(tmpdir, database, tmpfile, g_bCompressLocalDatabase)) {
-                logg(ERROR, "updatedb: Incremental update failed. Failed to build CLD.\n");
+                logg(LOGG_ERROR, "updatedb: Incremental update failed. Failed to build CLD.\n");
                 status = FC_EFAILEDUPDATE;
                 goto done;
             }
@@ -2414,7 +2414,7 @@ fc_error_t updatedb(
         }
         snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, newLocalFilename);
         if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            logg(ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+            logg(LOGG_ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
             free(tmpfile_with_extension);
             status = FC_EDBDIRACCESS;
             goto done;
@@ -2424,9 +2424,9 @@ fc_error_t updatedb(
         tmpfile_with_extension = NULL;
 
         /* Run callback to test it. */
-        logg(DEBUG, "updatedb: Running g_cb_download_complete callback...\n");
+        logg(LOGG_DEBUG, "updatedb: Running g_cb_download_complete callback...\n");
         if (FC_SUCCESS != (ret = g_cb_download_complete(tmpfile, context))) {
-            logg(DEBUG, "updatedb: callback failed: %s (%d)\n", fc_strerror(ret), ret);
+            logg(LOGG_DEBUG, "updatedb: callback failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
             goto done;
         }
@@ -2437,13 +2437,13 @@ fc_error_t updatedb(
      */
 #ifdef _WIN32
     if (!access(newLocalFilename, R_OK) && unlink(newLocalFilename)) {
-        logg(ERROR, "Update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", newLocalFilename);
+        logg(LOGG_ERROR, "Update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", newLocalFilename);
         status = FC_EDBDIRACCESS;
         goto done;
     }
 #endif
     if (rename(tmpfile, newLocalFilename) == -1) {
-        logg(ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, newLocalFilename, strerror(errno));
+        logg(LOGG_ERROR, "updatedb: Can't rename %s to %s: %s\n", tmpfile, newLocalFilename, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
@@ -2451,30 +2451,30 @@ fc_error_t updatedb(
     /* If we just updated from a CVD to a CLD, delete the old CVD */
     if ((NULL != localFilename) && !access(localFilename, R_OK) && strcmp(newLocalFilename, localFilename))
         if (unlink(localFilename))
-            logg(WARNING, "updatedb: Can't delete the old database file %s. Please remove it manually.\n", localFilename);
+            logg(LOGG_WARNING, "updatedb: Can't delete the old database file %s. Please remove it manually.\n", localFilename);
 
     /* Parse header to record number of sigs. */
     if (NULL == (cvd = cl_cvdhead(newLocalFilename))) {
-        logg(ERROR, "updatedb: Can't parse new database %s\n", newLocalFilename);
+        logg(LOGG_ERROR, "updatedb: Can't parse new database %s\n", newLocalFilename);
         status = FC_EFILE;
         goto done;
     }
 
-    logg(INFO, "%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
+    logg(LOGG_INFO, "%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n",
          newLocalFilename, cvd->version, cvd->sigs, cvd->fl, cvd->builder);
 
     flevel = cl_retflevel();
     if (flevel < cvd->fl) {
-        logg(WARNING, "Your ClamAV installation is OUTDATED!\n");
-        logg(WARNING, "Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
-        logg(INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
+        logg(LOGG_WARNING, "Your ClamAV installation is OUTDATED!\n");
+        logg(LOGG_WARNING, "Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
+        logg(LOGG_INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
     }
 
     *signo      = cvd->sigs;
     *bUpdated   = 1;
     *dbFilename = cli_strdup(newLocalFilename);
     if (NULL == *dbFilename) {
-        logg(ERROR, "updatedb: Failed to allocate memory for database filename.\n");
+        logg(LOGG_ERROR, "updatedb: Failed to allocate memory for database filename.\n");
         status = FC_EMEM;
         goto done;
     }
@@ -2531,7 +2531,7 @@ fc_error_t updatecustomdb(
     time_t dbtime = 0;
 
     if ((NULL == url) || (NULL == signo) || (NULL == dbFilename) || (NULL == bUpdated)) {
-        logg(ERROR, "updatecustomdb: Invalid args!\n");
+        logg(LOGG_ERROR, "updatecustomdb: Invalid args!\n");
         goto done;
     }
 
@@ -2559,38 +2559,38 @@ fc_error_t updatecustomdb(
         databaseName = strrchr(rpath, '/');
 #endif
         if ((NULL == databaseName) || strlen(databaseName++) < strlen(".ext") + 1) {
-            logg(INFO, "DatabaseCustomURL: Incorrect URL\n");
+            logg(LOGG_INFO, "DatabaseCustomURL: Incorrect URL\n");
             status = FC_EFAILEDUPDATE;
             goto done;
         }
 
         if (CLAMSTAT(rpath, &statbuf) == -1) {
-            logg(INFO, "DatabaseCustomURL: file %s missing\n", rpath);
+            logg(LOGG_INFO, "DatabaseCustomURL: file %s missing\n", rpath);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
         remote_dbtime = statbuf.st_mtime;
         dbtime        = (CLAMSTAT(databaseName, &statbuf) != -1) ? statbuf.st_mtime : 0;
         if (dbtime > remote_dbtime) {
-            logg(INFO, "%s is up-to-date (version: custom database)\n", databaseName);
+            logg(LOGG_INFO, "%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
         }
 
         /* FIXME: preserve file permissions, calculate % */
         if (-1 == cli_filecopy(rpath, tmpfile)) {
-            logg(INFO, "DatabaseCustomURL: Can't copy file %s into database directory\n", rpath);
+            logg(LOGG_INFO, "DatabaseCustomURL: Can't copy file %s into database directory\n", rpath);
             status = FC_EFAILEDUPDATE;
             goto done;
         }
 
-        logg(INFO, "Downloading %s [100%%]\n", databaseName);
+        logg(LOGG_INFO, "Downloading %s [100%%]\n", databaseName);
     } else {
         /*
          * Download from URL.  http(s) or ftp(s)
          */
         databaseName = strrchr(url, '/');
         if ((NULL == databaseName) || (strlen(databaseName++) < 5)) {
-            logg(INFO, "DatabaseCustomURL: Incorrect URL\n");
+            logg(LOGG_INFO, "DatabaseCustomURL: Incorrect URL\n");
             status = FC_EFAILEDUPDATE;
             goto done;
         }
@@ -2599,10 +2599,10 @@ fc_error_t updatecustomdb(
 
         ret = downloadFile(url, tmpfile, 1, logerr, dbtime);
         if (ret == FC_UPTODATE) {
-            logg(INFO, "%s is up-to-date (version: custom database)\n", databaseName);
+            logg(LOGG_INFO, "%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
         } else if (ret > FC_UPTODATE) {
-            logg(INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', databaseName, url);
+            logg(LOGG_INFO, "%cCan't download %s from %s\n", logerr ? '!' : '^', databaseName, url);
             status = ret;
             goto done;
         }
@@ -2624,7 +2624,7 @@ fc_error_t updatecustomdb(
         }
         snprintf(tmpfile_with_extension, tmpfile_with_extension_len + 1, "%s-%s", tmpfile, databaseName);
         if (rename(tmpfile, tmpfile_with_extension) == -1) {
-            logg(ERROR, "Custom database update failed: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
+            logg(LOGG_ERROR, "Custom database update failed: Can't rename %s to %s: %s\n", tmpfile, tmpfile_with_extension, strerror(errno));
             free(tmpfile_with_extension);
             status = FC_EDBDIRACCESS;
             goto done;
@@ -2634,9 +2634,9 @@ fc_error_t updatecustomdb(
         tmpfile_with_extension = NULL;
 
         /* Run callback to test it. */
-        logg(DEBUG, "updatecustomdb: Running g_cb_download_complete callback...\n");
+        logg(LOGG_DEBUG, "updatecustomdb: Running g_cb_download_complete callback...\n");
         if (FC_SUCCESS != (ret = g_cb_download_complete(tmpfile, context))) {
-            logg(DEBUG, "updatecustomdb: callback failed: %s (%d)\n", fc_strerror(ret), ret);
+            logg(LOGG_DEBUG, "updatecustomdb: callback failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
             goto done;
         }
@@ -2647,13 +2647,13 @@ fc_error_t updatecustomdb(
      */
 #ifdef _WIN32
     if (!access(databaseName, R_OK) && unlink(databaseName)) {
-        logg(ERROR, "Custom database update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", databaseName);
+        logg(LOGG_ERROR, "Custom database update failed. Can't delete the old database %s to replace it with a new database. Please fix the problem manually and try again.\n", databaseName);
         status = FC_EDBDIRACCESS;
         goto done;
     }
 #endif
     if (rename(tmpfile, databaseName) == -1) {
-        logg(ERROR, "updatecustomdb: Can't rename %s to %s: %s\n", tmpfile, databaseName, strerror(errno));
+        logg(LOGG_ERROR, "updatecustomdb: Can't rename %s to %s: %s\n", tmpfile, databaseName, strerror(errno));
         status = FC_EDBDIRACCESS;
         goto done;
     }
@@ -2666,7 +2666,7 @@ fc_error_t updatecustomdb(
         unsigned int flevel;
 
         if (NULL == (cvd = cl_cvdhead(databaseName))) {
-            logg(ERROR, "updatecustomdb: Can't parse new database %s\n", databaseName);
+            logg(LOGG_ERROR, "updatecustomdb: Can't parse new database %s\n", databaseName);
             status = FC_EFILE;
             goto done;
         }
@@ -2675,9 +2675,9 @@ fc_error_t updatecustomdb(
 
         flevel = cl_retflevel();
         if (flevel < cvd->fl) {
-            logg(WARNING, "Your ClamAV installation is OUTDATED!\n");
-            logg(WARNING, "Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
-            logg(INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
+            logg(LOGG_WARNING, "Your ClamAV installation is OUTDATED!\n");
+            logg(LOGG_WARNING, "Current functionality level = %d, recommended = %d\n", flevel, cvd->fl);
+            logg(LOGG_INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
         }
 
         cl_cvdfree(cvd);
@@ -2687,7 +2687,7 @@ fc_error_t updatecustomdb(
         sigs = countlines(databaseName);
     }
 
-    logg(INFO, "%s updated (version: custom database, sigs: %u)\n", databaseName, sigs);
+    logg(LOGG_INFO, "%s updated (version: custom database, sigs: %u)\n", databaseName, sigs);
     *signo    = sigs;
     *bUpdated = 1;
 
@@ -2695,7 +2695,7 @@ up_to_date:
 
     *dbFilename = cli_strdup(databaseName);
     if (NULL == *dbFilename) {
-        logg(ERROR, "Failed to allocate memory for database filename.\n");
+        logg(LOGG_ERROR, "Failed to allocate memory for database filename.\n");
         status = FC_EMEM;
         goto done;
     }

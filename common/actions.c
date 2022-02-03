@@ -154,11 +154,11 @@ static HANDLE win32_openat(
     cchNextDirectoryName = MultiByteToWideChar(CP_UTF8, 0, filename, -1, NULL, 0);
     filenameW            = malloc(cchNextDirectoryName * sizeof(WCHAR));
     if (NULL == filenameW) {
-        logg(INFO, "win32_openat: failed to allocate memory for next directory name UTF16LE string\n");
+        logg(LOGG_INFO, "win32_openat: failed to allocate memory for next directory name UTF16LE string\n");
         goto done;
     }
     if (0 == MultiByteToWideChar(CP_UTF8, 0, filename, -1, filenameW, cchNextDirectoryName)) {
-        logg(INFO, "win32_openat: failed to allocate buffer for unicode version of intermediate directory name.\n");
+        logg(LOGG_INFO, "win32_openat: failed to allocate buffer for unicode version of intermediate directory name.\n");
         goto done;
     }
     pRtlInitUnicodeString(&filenameU, filenameW);
@@ -183,32 +183,32 @@ static HANDLE win32_openat(
         NULL,           // EaBuffer
         0);             // EaLength
     if (!NT_SUCCESS(ntStatus) || (NULL == next_handle)) {
-        logg(INFO, "win32_openat: Failed to open file '%s'. \nError: 0x%x \nioStatusBlock: 0x%x\n", filename, ntStatus, ioStatusBlock.Information);
+        logg(LOGG_INFO, "win32_openat: Failed to open file '%s'. \nError: 0x%x \nioStatusBlock: 0x%x\n", filename, ntStatus, ioStatusBlock.Information);
         goto done;
     }
-    logg(DEBUG, "win32_openat: Opened file \"%s\"\n", filename);
+    logg(LOGG_DEBUG, "win32_openat: Opened file \"%s\"\n", filename);
 
     if (0 == GetFileInformationByHandleEx(
                  next_handle,                        // hFile,
                  FileAttributeTagInfo,               // FileInformationClass
                  &tagInfo,                           // lpFileInformation
                  sizeof(FILE_ATTRIBUTE_TAG_INFO))) { // dwBufferSize
-        logg(INFO, "win32_openat: Failed to get file information by handle '%s'.  Error: %d.\n", filename, GetLastError());
+        logg(LOGG_INFO, "win32_openat: Failed to get file information by handle '%s'.  Error: %d.\n", filename, GetLastError());
 
         CloseHandle(next_handle);
         next_handle = NULL;
         goto done;
     }
-    logg(DEBUG, "win32_openat: tagInfo.FileAttributes: 0x%0x\n", tagInfo.FileAttributes);
-    logg(DEBUG, "win32_openat: tagInfo.ReparseTag:     0x%0x\n", tagInfo.ReparseTag);
+    logg(LOGG_DEBUG, "win32_openat: tagInfo.FileAttributes: 0x%0x\n", tagInfo.FileAttributes);
+    logg(LOGG_DEBUG, "win32_openat: tagInfo.ReparseTag:     0x%0x\n", tagInfo.ReparseTag);
     if (0 != (tagInfo.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
-        logg(INFO, "win32_openat: File is a soft link: '%s' Aborting path traversal.\n\n", filename);
+        logg(LOGG_INFO, "win32_openat: File is a soft link: '%s' Aborting path traversal.\n\n", filename);
 
         CloseHandle(next_handle);
         next_handle = NULL;
         goto done;
     }
-    logg(DEBUG, "win32_openat: File or directory is not a soft link.\n\n");
+    logg(LOGG_DEBUG, "win32_openat: File or directory is not a soft link.\n\n");
 
 done:
     if (NULL != filenameW) {
@@ -265,37 +265,37 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
 #endif
 
     if (NULL == directory || NULL == out_handle) {
-        logg(INFO, "traverse_to: Invalid arguments!\n");
+        logg(LOGG_INFO, "traverse_to: Invalid arguments!\n");
         goto done;
     }
 
 #ifdef _WIN32
     ntdll = LoadLibraryA("ntdll.dll");
     if (NULL == ntdll) {
-        logg(INFO, "traverse_to: failed to load ntdll!\n");
+        logg(LOGG_INFO, "traverse_to: failed to load ntdll!\n");
         goto done;
     }
     pNtCreateFile = (PNTCF)GetProcAddress(ntdll, "NtCreateFile");
     if (NULL == pNtCreateFile) {
-        logg(INFO, "traverse_to: failed to get NtCreateFile proc address!\n");
+        logg(LOGG_INFO, "traverse_to: failed to get NtCreateFile proc address!\n");
         goto done;
     }
     pRtlInitUnicodeString = (PRIUS)GetProcAddress(ntdll, "RtlInitUnicodeString");
     if (NULL == pRtlInitUnicodeString) {
-        logg(INFO, "traverse_to: failed to get pRtlInitUnicodeString proc address!\n");
+        logg(LOGG_INFO, "traverse_to: failed to get pRtlInitUnicodeString proc address!\n");
         goto done;
     }
 #endif
 
     tokenized_directory = strdup(directory);
     if (NULL == tokenized_directory) {
-        logg(INFO, "traverse_to: Failed to get copy of directory path to be tokenized!\n");
+        logg(LOGG_INFO, "traverse_to: Failed to get copy of directory path to be tokenized!\n");
         goto done;
     }
 
     tokens_count = cli_strtokenize(tokenized_directory, *PATHSEP, PATH_MAX / 2, tokens);
     if (0 == tokens_count) {
-        logg(INFO, "traverse_to: tokenize of target directory returned 0 tokens!\n");
+        logg(LOGG_INFO, "traverse_to: tokenize of target directory returned 0 tokens!\n");
         goto done;
     }
 
@@ -306,7 +306,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
      */
     current_handle = open("/", O_RDONLY | O_NOFOLLOW);
     if (-1 == current_handle) {
-        logg(INFO, "traverse_to: Failed to open file descriptor for '/' directory.\n");
+        logg(LOGG_INFO, "traverse_to: Failed to open file descriptor for '/' directory.\n");
         goto done;
     }
 #endif
@@ -316,7 +316,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
     }
 
     if (0 == tokens_count) {
-        logg(INFO, "traverse_to: Failed to get copy of directory path to be tokenized!\n");
+        logg(LOGG_INFO, "traverse_to: Failed to get copy of directory path to be tokenized!\n");
         goto done;
     }
 
@@ -328,7 +328,7 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
 #ifndef _WIN32
         next_handle = openat(current_handle, tokens[i], O_RDONLY | O_NOFOLLOW);
         if (-1 == next_handle) {
-            logg(INFO, "traverse_to: Failed open %s\n", tokens[i]);
+            logg(LOGG_INFO, "traverse_to: Failed open %s\n", tokens[i]);
             goto done;
         }
         close(current_handle);
@@ -369,14 +369,14 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
                                        shareAccess);
         }
         if (NULL == next_handle) {
-            logg(INFO, "traverse_to: Failed open %s\n", tokens[i]);
+            logg(LOGG_INFO, "traverse_to: Failed open %s\n", tokens[i]);
             goto done;
         }
         CloseHandle(current_handle);
         current_handle = next_handle;
         next_handle    = NULL;
 #endif
-        logg(DEBUG, "traverse_to: Handle opened for '%s' directory.\n", tokens[i]);
+        logg(LOGG_DEBUG, "traverse_to: Handle opened for '%s' directory.\n", tokens[i]);
     }
 
     status      = 0;
@@ -426,22 +426,22 @@ static int traverse_rename(const char *source, const char *destination)
 #endif
 
     if (NULL == source || NULL == destination) {
-        logg(INFO, "traverse_rename: Invalid arguments!\n");
+        logg(LOGG_INFO, "traverse_rename: Invalid arguments!\n");
         goto done;
     }
 
 #ifndef _WIN32
     if (0 != traverse_to(source, true, &source_directory_fd)) {
-        logg(INFO, "traverse_rename: Failed to open file descriptor for source directory!\n");
+        logg(LOGG_INFO, "traverse_rename: Failed to open file descriptor for source directory!\n");
         goto done;
     }
 #else
     if (0 != traverse_to(source, false, &source_file_handle)) {
-        logg(INFO, "traverse_rename: Failed to open file descriptor for source file!\n");
+        logg(LOGG_INFO, "traverse_rename: Failed to open file descriptor for source file!\n");
         goto done;
     }
     if (0 != traverse_to(destination, true, &destination_dir_handle)) {
-        logg(INFO, "traverse_rename: Failed to open file descriptor for destination directory!\n");
+        logg(LOGG_INFO, "traverse_rename: Failed to open file descriptor for destination directory!\n");
         goto done;
     }
 #endif
@@ -449,12 +449,12 @@ static int traverse_rename(const char *source, const char *destination)
 #ifndef _WIN32
     ret = cli_basename(source, strlen(source), &source_basename);
     if (CL_SUCCESS != ret) {
-        logg(INFO, "traverse_rename: Failed to get basename of source path:%s\n\tError: %d\n", source, (int)ret);
+        logg(LOGG_INFO, "traverse_rename: Failed to get basename of source path:%s\n\tError: %d\n", source, (int)ret);
         goto done;
     }
 
     if (0 != renameat(source_directory_fd, source_basename, -1, destination)) {
-        logg(INFO, "traverse_rename: Failed to rename: %s\n\tto: %s\nError:%s\n", source, destination, strerror(errno));
+        logg(LOGG_INFO, "traverse_rename: Failed to rename: %s\n\tto: %s\nError:%s\n", source, destination, strerror(errno));
         goto done;
     }
 #else
@@ -462,17 +462,17 @@ static int traverse_rename(const char *source, const char *destination)
     cchDestFilepath = MultiByteToWideChar(CP_UTF8, 0, destination, strlen(destination), NULL, 0);
     destFilepathW   = calloc(cchDestFilepath * sizeof(WCHAR), 1);
     if (NULL == destFilepathW) {
-        logg(INFO, "traverse_rename: failed to allocate memory for destination basename UTF16LE string\n");
+        logg(LOGG_INFO, "traverse_rename: failed to allocate memory for destination basename UTF16LE string\n");
         goto done;
     }
     if (0 == MultiByteToWideChar(CP_UTF8, 0, destination, strlen(destination), destFilepathW, cchDestFilepath)) {
-        logg(INFO, "traverse_rename: failed to allocate buffer for UTF16LE version of destination file basename.\n");
+        logg(LOGG_INFO, "traverse_rename: failed to allocate buffer for UTF16LE version of destination file basename.\n");
         goto done;
     }
 
     fileInfo = calloc(1, sizeof(FILE_RENAME_INFO) + cchDestFilepath * sizeof(WCHAR));
     if (NULL == fileInfo) {
-        logg(INFO, "traverse_rename: failed to allocate memory for fileInfo struct\n");
+        logg(LOGG_INFO, "traverse_rename: failed to allocate memory for fileInfo struct\n");
         goto done;
     }
 
@@ -486,7 +486,7 @@ static int traverse_rename(const char *source, const char *destination)
                      fileInfo,                                                      // FileInformation
                      sizeof(FILE_RENAME_INFO) + cchDestFilepath * sizeof(WCHAR))) { // Length
 
-        logg(INFO, "traverse_rename: Failed to set file rename info for '%s' to '%s'.\nError: %d\n", source, destination, GetLastError());
+        logg(LOGG_INFO, "traverse_rename: Failed to set file rename info for '%s' to '%s'.\nError: %d\n", source, destination, GetLastError());
         goto done;
     }
 #endif
@@ -544,7 +544,7 @@ static int traverse_unlink(const char *target)
     char *target_basename = NULL;
 
     if (NULL == target) {
-        logg(INFO, "traverse_unlink: Invalid arguments!\n");
+        logg(LOGG_INFO, "traverse_unlink: Invalid arguments!\n");
         goto done;
     }
 
@@ -555,19 +555,19 @@ static int traverse_unlink(const char *target)
     /* On Windows, we want a handle to the file, not the directory */
     if (0 != traverse_to(target, false, &target_file_handle)) {
 #endif
-        logg(INFO, "traverse_unlink: Failed to open file descriptor for target directory!\n");
+        logg(LOGG_INFO, "traverse_unlink: Failed to open file descriptor for target directory!\n");
         goto done;
     }
 
     ret = cli_basename(target, strlen(target), &target_basename);
     if (CL_SUCCESS != ret) {
-        logg(INFO, "traverse_unlink: Failed to get basename of target path: %s\n\tError: %d\n", target, (int)ret);
+        logg(LOGG_INFO, "traverse_unlink: Failed to get basename of target path: %s\n\tError: %d\n", target, (int)ret);
         goto done;
     }
 
 #ifndef _WIN32
     if (0 != unlinkat(target_directory_fd, target_basename, 0)) {
-        logg(INFO, "traverse_unlink: Failed to unlink: %s\nError:%s\n", target, strerror(errno));
+        logg(LOGG_INFO, "traverse_unlink: Failed to unlink: %s\nError:%s\n", target, strerror(errno));
         goto done;
     }
 #else
@@ -578,11 +578,11 @@ static int traverse_unlink(const char *target)
                      &fileInfo,                        // FileInformation
                      sizeof(FILE_DISPOSITION_INFO))) { // Length
 
-        logg(INFO, "traverse_unlink: Failed to set file disposition to 'DELETE' for '%s'.\n", target);
+        logg(LOGG_INFO, "traverse_unlink: Failed to set file disposition to 'DELETE' for '%s'.\n", target);
         goto done;
     }
     if (FALSE == CloseHandle(target_file_handle)) {
-        logg(INFO, "traverse_unlink: Failed to set close & delete file '%s'.\n", target);
+        logg(LOGG_INFO, "traverse_unlink: Failed to set close & delete file '%s'.\n", target);
         goto done;
     }
     target_file_handle = NULL;
@@ -626,14 +626,14 @@ static void action_move(const char *filename)
 #else
     if (fd < 0 || (((copied = 1)) && filecopy(filename, nuname))) {
 #endif
-        logg(ERROR, "Can't move file %s to %s\n", filename, nuname);
+        logg(LOGG_ERROR, "Can't move file %s to %s\n", filename, nuname);
         notmoved++;
         if (nuname) traverse_unlink(nuname);
     } else {
         if (copied && (0 != traverse_unlink(filename)))
-            logg(ERROR, "Can't unlink '%s' after copy: %s\n", filename, strerror(errno));
+            logg(LOGG_ERROR, "Can't unlink '%s' after copy: %s\n", filename, strerror(errno));
         else
-            logg(INFO, "%s: moved to '%s'\n", filename, nuname);
+            logg(LOGG_INFO, "%s: moved to '%s'\n", filename, nuname);
     }
 
 done:
@@ -649,11 +649,11 @@ static void action_copy(const char *filename)
     int fd = getdest(filename, &nuname);
 
     if (fd < 0 || filecopy(filename, nuname)) {
-        logg(ERROR, "Can't copy file '%s'\n", filename);
+        logg(LOGG_ERROR, "Can't copy file '%s'\n", filename);
         notmoved++;
         if (nuname) traverse_unlink(nuname);
     } else
-        logg(INFO, "%s: copied to '%s'\n", filename, nuname);
+        logg(LOGG_INFO, "%s: copied to '%s'\n", filename, nuname);
 
     if (fd >= 0) close(fd);
     if (nuname) free(nuname);
@@ -668,10 +668,10 @@ static void action_remove(const char *filename)
     }
 
     if (0 != traverse_unlink(filename)) {
-        logg(ERROR, "Can't remove file '%s'\n", filename);
+        logg(LOGG_ERROR, "Can't remove file '%s'\n", filename);
         notremoved++;
     } else {
-        logg(INFO, "%s: Removed.\n", filename);
+        logg(LOGG_INFO, "%s: Removed.\n", filename);
     }
 
 done:
@@ -683,7 +683,7 @@ static int isdir(void)
 {
     STATBUF sb;
     if (CLAMSTAT(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
-        logg(ERROR, "'%s' doesn't exist or is not a directory\n", actarget);
+        logg(LOGG_ERROR, "'%s' doesn't exist or is not a directory\n", actarget);
         return 0;
     }
     return 1;
@@ -704,7 +704,7 @@ int actsetup(const struct optstruct *opts)
 #ifndef _WIN32
         ret = cli_realpath((const char *)actarget, &actarget);
         if (CL_SUCCESS != ret || NULL == actarget) {
-            logg(INFO, "action_setup: Failed to get realpath of %s\n", actarget);
+            logg(LOGG_INFO, "action_setup: Failed to get realpath of %s\n", actarget);
             return 0;
         }
 #endif

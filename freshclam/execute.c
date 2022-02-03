@@ -43,18 +43,18 @@ void execute(const char *type, const char *text, int bDaemonized)
 
     if (!bDaemonized) {
         if (sscanf(text, "EXIT_%d", &ret) == 1) {
-            logg(DEBUG, "%s: EXIT_%d\n", type, ret);
+            logg(LOGG_DEBUG, "%s: EXIT_%d\n", type, ret);
             exit(ret);
         }
         if (system(text) == -1)
-            logg(INFO, "%s: system(%s) failed\n", type, text);
+            logg(LOGG_INFO, "%s: system(%s) failed\n", type, text);
 
         return;
     }
 
 #ifdef _WIN32
     if (system(text) == -1) {
-        logg(WARNING, "%s: couldn't execute \"%s\".\n", type, text);
+        logg(LOGG_WARNING, "%s: couldn't execute \"%s\".\n", type, text);
         return;
     }
 #else
@@ -63,17 +63,17 @@ void execute(const char *type, const char *text, int bDaemonized)
         switch (pid = fork()) {
             case 0:
                 if (-1 == system(text)) {
-                    logg(WARNING, "%s: couldn't execute \"%s\".\n", type, text);
+                    logg(LOGG_WARNING, "%s: couldn't execute \"%s\".\n", type, text);
                 }
                 exit(0);
             case -1:
-                logg(WARNING, "%s::fork() failed, %s.\n", type, strerror(errno));
+                logg(LOGG_WARNING, "%s::fork() failed, %s.\n", type, strerror(errno));
                 break;
             default:
                 g_active_children++;
         }
     } else {
-        logg(WARNING, "%s: already %d processes active.\n", type, g_active_children);
+        logg(LOGG_WARNING, "%s: already %d processes active.\n", type, g_active_children);
     }
 #endif
 }
