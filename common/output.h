@@ -70,7 +70,11 @@ typedef enum loglevel {
  *
  * @return 0 fur success and -1 for error, e.g. log file access problems
  */
+#ifdef __GNUC__
+int logg(loglevel_t loglevel, const char *str, ...) __attribute__((format(printf, 2, 3)));
+#else
 int logg(loglevel_t loglevel, const char *str, ...);
+#endif
 
 void logg_close(void);
 extern short int logg_verbose, logg_nowarn, logg_lock, logg_time, logg_noflush, logg_rotate;
@@ -82,7 +86,11 @@ extern short logg_syslog;
 int logg_facility(const char *name);
 #endif
 
+#ifdef __GNUC__
+void mprintf(loglevel_t loglevel, const char *str, ...) __attribute__((format(printf, 2, 3)));
+#else
 void mprintf(loglevel_t loglevel, const char *str, ...);
+#endif
 
 extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout, mprintf_send_timeout, mprintf_progress;
 
