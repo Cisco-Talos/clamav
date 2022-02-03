@@ -182,7 +182,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
     /* Try and use the memory buffer first */
     if (m_area) {
         /* maximum we can copy into the buffer,
-		 * we could have less than max_len bytes available */
+         * we could have less than max_len bytes available */
         chunk_len = MIN(m_area->length - m_area->offset, max_len - 1);
         if (!chunk_len) {
             free(chunk);
@@ -208,7 +208,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
             chunk[chunk_len] = '\0';
             m_area->offset += chunk_len;
             /* point ptr to end of chunk,
-			 * so we can check and rewind to a space below */
+             * so we can check and rewind to a space below */
             ptr = start + chunk_len;
         } else {
             /* copy portion that doesn't contain NULL chars */
@@ -226,11 +226,11 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
                 ptr = end;
             }
             /* we have unknown number of NULL chars,
-			 * copy char-by-char and skip them */
+             * copy char-by-char and skip them */
             while ((ptr < end) && (chunk_len < max_len - 1)) {
                 const unsigned char c = *ptr++;
                 /* we can't use chunk_len to determine how many bytes we read, since
-				 * we skipped chars */
+                 * we skipped chars */
                 if (c) {
                     chunk[chunk_len++] = c;
                 }
@@ -268,7 +268,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
             end   = chunk + chunk_len;
 
             /* start of NULL chars, we will copy non-NULL characters
-			 * to this position */
+             * to this position */
             chunk_len = ptr - chunk;
 
             /* find first non-NULL char */
@@ -1143,7 +1143,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (in_script && !isspace(*ptr)) {
                         unsigned char c = tolower(*ptr);
                         /* dump script to nocomment.html, since we no longer have
-					 * comment.html/script.html */
+                         * comment.html/script.html */
                         if (c == '\'') c = '"';
                         html_output_c(file_buff_o2, c);
                     }
@@ -1171,13 +1171,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 js_begin = js_end = NULL;
                             }
                             /*don't output newlines in nocomment.html
-						 * html_output_c(file_buff_o2, '\n');*/
+                             * html_output_c(file_buff_o2, '\n');*/
                         }
                         if (hrefs && hrefs->scanContents && in_ahref) {
                             if (strcmp(tag, "/a") == 0) {
                                 html_tag_contents_done(hrefs, in_ahref, &contents);
                                 in_ahref = 0; /* we are no longer inside an <a href>
-							nesting <a> tags not supported, and shouldn't be supported*/
+                                                        nesting <a> tags not supported, and shouldn't be supported*/
                             }
                             href_contents_begin = ptr;
                         }

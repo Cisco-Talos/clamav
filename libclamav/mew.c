@@ -68,29 +68,29 @@
 static const char *lzma_bswap_4861dc(struct lzmastate *p, const char *old_edx)
 {
     /* dumb_dump_start
-	 *
+         *
 
-	old_edx was 'uint32_t *' before and in mew_lzma there was
-	&new_edx where new_edx = var1C
+        old_edx was 'uint32_t *' before and in mew_lzma there was
+        &new_edx where new_edx = var1C
 
-	uint32_t loc_esi, loc_edi;
-	uint8_t *loc_eax;
+        uint32_t loc_esi, loc_edi;
+        uint8_t *loc_eax;
 
-	p->p2 = loc_esi = 0;
-	p->p0 = loc_eax = (uint8_t *)*old_edx;
-	*old_edx = 5;
-	do {
-		loc_esi = p->p2 << 8;
-		loc_edi = *(uint8_t *)((loc_eax)++);
-		loc_esi |= loc_edi;
-		(*old_edx)--;
-		p->p2 = loc_esi;
-	} while (*old_edx);
-	p->p0 = loc_eax;
-	p->p1 = 0xffffffff;
+        p->p2 = loc_esi = 0;
+        p->p0 = loc_eax = (uint8_t *)*old_edx;
+        *old_edx = 5;
+        do {
+                loc_esi = p->p2 << 8;
+                loc_edi = *(uint8_t *)((loc_eax)++);
+                loc_esi |= loc_edi;
+                (*old_edx)--;
+                p->p2 = loc_esi;
+        } while (*old_edx);
+        p->p0 = loc_eax;
+        p->p1 = 0xffffffff;
 
-	* dumb_dump_end
-	*/
+        * dumb_dump_end
+        */
 
     /* XXX, mine replacement */
     p->p2 = EC32(CE32(((uint32_t)cli_readint32(old_edx + 1))));
@@ -213,8 +213,8 @@ static uint32_t lzma_4862e0(struct lzmastate *p, const char **old_ecx, uint32_t 
     }
     /* loc_48630b */
     /* unneeded
-	*old_ecx = (uint8_t *)loc_ebx;
-	  */
+     *old_ecx = (uint8_t *)loc_ebx;
+     */
 
     *old_edx = 1 << (loc_ebx & 0xff);
     ret -= *old_edx;
@@ -604,8 +604,8 @@ int mew_lzma(char *orgsource, const char *buf, uint32_t size_sum, uint32_t vma, 
                         new_eax |= var34;
                         /* loc_486522 */
                         /* keeping it here instead of at the top
-					 * seems to work faster
-					 */
+                         * seems to work faster
+                         */
                         if (new_eax < 0x100) {
                             new_ecx = var0C_ecxcopy;
                         }

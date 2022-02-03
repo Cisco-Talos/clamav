@@ -85,7 +85,7 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
             return NULL;
         }
         /* inline version of
-		 * out += snprintf(out, max_num_length, "&#x%x;", u16) */
+         * out += snprintf(out, max_num_length, "&#x%x;", u16) */
         out[0] = '&';
         out[1] = '#';
         out[2] = 'x';
@@ -303,8 +303,8 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
                         output[j++] = 0xff;
 
                         /*out[j++] = ((input[i] & 0x07) << 2) | ((input[i+1] >> 4) & 0x3);
-							out[j++] = (input[i+1] << 4) | ((input[i+2] >> 2) & 0x0F);
-							out[j++] = (input[i+2] << 6) | (input[i+2] & 0x3F);*/
+                                                        out[j++] = (input[i+1] << 4) | ((input[i+2] >> 2) & 0x0F);
+                                                        out[j++] = (input[i+2] << 6) | (input[i+2] & 0x3F);*/
                     } else {
                         cli_dbgmsg(MODULE_NAME "invalid UTF8 character encountered\n");
                         break;
@@ -352,7 +352,7 @@ static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom
     int has_bom          = 0;
     uint8_t enc_bytes    = 1; /* default is UTF8, which has a minimum of 1 bytes */
     /* undecided 32-bit encodings are treated as ucs4, and
-	 * 16 bit as utf16*/
+     * 16 bit as utf16*/
     switch (bom[0]) {
         case 0x00:
             if (bom[1] == 0x00) {
@@ -517,8 +517,8 @@ struct iconv_cache {
 static void iconv_cache_init(struct iconv_cache* cache)
 {
     /*	cache->tab = NULL;
-	cache->len = 0;
-	cache->used = 0; - already done by memset*/
+        cache->len = 0;
+        cache->used = 0; - already done by memset*/
     cli_dbgmsg(MODULE_NAME "Initializing iconv pool:%p\n", (void*)cache);
     cli_hashtab_init(&cache->hashtab, 32);
 }
@@ -689,7 +689,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
     }
     /* convert encoding conv->tmp_area. conv->out_area */
     alignfix = inleft % 4; /* iconv gives an error if we give him 3 bytes to convert,
-			       and we are using ucs4, ditto for utf16, and 1 byte*/
+                               and we are using ucs4, ditto for utf16, and 1 byte*/
     inleft -= alignfix;
 
     if (!inleft && alignfix) {
@@ -718,8 +718,8 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
             continue;
         }
         /*cli_dbgmsg(MODULE_NAME "resuming (inleft:%lu, outleft:%lu, inpos:%ld, %ld)\n",
-					inleft, outleft, input - (char*)in_m_area->buffer,
-					out - (char*)out_m_area->buffer);*/
+                                        inleft, outleft, input - (char*)in_m_area->buffer,
+                                        out - (char*)out_m_area->buffer);*/
         /* output raw byte, and resume at next byte */
         if (outleft < 2) break;
         outleft -= 2;

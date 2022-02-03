@@ -26,7 +26,7 @@
 
 #include "../clamonacc.h"
 
-//void *onas_fan_th(void *arg);
+// void *onas_fan_th(void *arg);
 cl_error_t onas_setup_fanotif(struct onas_context **ctx);
 int onas_fan_eloop(struct onas_context **ctx);
 

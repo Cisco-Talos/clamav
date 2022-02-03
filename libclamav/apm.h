@@ -63,7 +63,7 @@ struct apm_driver_desc_entry {
     uint32_t block __attribute__((packed));
     uint16_t size __attribute__((packed));
     uint16_t type __attribute__((packed));
-}; //NOTE may need to be renamed
+}; // NOTE may need to be renamed
 
 /* 512(82)-byte driver descriptor map (Block0), big endian */
 struct apm_driver_desc_map {

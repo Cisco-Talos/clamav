@@ -333,7 +333,7 @@ int daemonize_parent_wait(const char *const user, const char *const log_file)
     int daemonizePid = daemonize_all_return();
     if (daemonizePid == -1) {
         return -1;
-    } else if (daemonizePid) { //parent
+    } else if (daemonizePid) { // parent
         /* The parent will wait until either the child process
          * exits, or signals the parent that it's initialization is
          * complete.  If it exits, it is due to an error condition,
@@ -360,7 +360,7 @@ int daemonize_parent_wait(const char *const user, const char *const log_file)
 
         int exitStatus;
         wait(&exitStatus);
-        if (WIFEXITED(exitStatus)) { //error
+        if (WIFEXITED(exitStatus)) { // error
             exitStatus = WEXITSTATUS(exitStatus);
             exit(exitStatus);
         }

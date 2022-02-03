@@ -32,7 +32,7 @@
                o Get imports via magic
                o Get imports via leascan
                o if (!pe) pe=scan4pe();
-	       o if (!pe) forgepe();
+               o if (!pe) forgepe();
 */
 
 /*

@@ -294,7 +294,7 @@ cl_error_t cli_scanhwpole2(cli_ctx *ctx)
         cli_dbgmsg("HWPOLE2: Matched uncompressed prefix and size: %u == %u\n", usize, asize);
 
     return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx, CL_TYPE_ANY, NULL);
-    //return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx, CL_TYPE_OLE2);
+    // return cli_magic_scan_nested_fmap_type(map, 4, 0, ctx, CL_TYPE_OLE2);
 }
 
 /*** HWP5 ***/
@@ -444,10 +444,10 @@ cl_error_t cli_scanhwp5_stream(cli_ctx *ctx, hwp5_header_t *hwp5, char *name, in
 
 /* all fields use little endian and unicode encoding, if appliable */
 
-//File Identification Information - (30 total bytes)
+// File Identification Information - (30 total bytes)
 #define HWP3_IDENTITY_INFO_SIZE 30
 
-//Document Information - (128 total bytes)
+// Document Information - (128 total bytes)
 #define HWP3_DOCINFO_SIZE 128
 
 #define DI_WRITEPROT 24    /* offset 24 (4 bytes) - write protection */
@@ -465,7 +465,7 @@ struct hwp3_docinfo {
     uint16_t di_infoblksize;
 };
 
-//Document Summary - (1008 total bytes)
+// Document Summary - (1008 total bytes)
 #define HWP3_DOCSUMMARY_SIZE 1008
 struct hwp3_docsummary_entry {
     size_t offset;
@@ -483,7 +483,7 @@ struct hwp3_docsummary_entry {
     {896, "Etc2"}};
 #define NUM_DOCSUMMARY_FIELDS sizeof(hwp3_docsummary_fields) / sizeof(struct hwp3_docsummary_entry)
 
-//Document Paragraph Information - (43 or 230 total bytes)
+// Document Paragraph Information - (43 or 230 total bytes)
 #define HWP3_PARAINFO_SIZE_S 43
 #define HWP3_PARAINFO_SIZE_L 230
 #define HWP3_LINEINFO_SIZE 14
@@ -512,7 +512,7 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
     const uint8_t *hwp3_ptr;
     cl_error_t iret;
 
-    //TODO: use fmap_readn?
+    // TODO: use fmap_readn?
     if (!(hwp3_ptr = fmap_need_off_once(ctx->fmap, offset, HWP3_DOCINFO_SIZE))) {
         cli_errmsg("HWP3.x: Failed to read fmap for hwp docinfo\n");
         return CL_EMAP;
@@ -1861,7 +1861,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
         size_t dlen       = offset - start;
 
         ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL);
-        //ret = cli_magic_scan_nested_fmap_type(map, 0, 0, ctx, CL_TYPE_ANY);
+        // ret = cli_magic_scan_nested_fmap_type(map, 0, 0, ctx, CL_TYPE_ANY);
 
         if (ret == CL_SUCCESS)
             ret = subret;

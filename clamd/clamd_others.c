@@ -190,7 +190,7 @@ void virusaction(const char *filename, const char *virname,
 #endif /* _WIN32 */
 
 /* Function: writen
-	Try hard to write the specified number of bytes
+        Try hard to write the specified number of bytes
 */
 int writen(int fd, void *buff, unsigned int count)
 {
@@ -291,9 +291,9 @@ read_fd_data(struct fd_buf *buf)
         return -1;
 
         /* Read the pending packet, it may contain more than one command, but
-     * that is to the cmdparser to handle.
-     * It will handle 1st command, and then move leftover to beginning of buffer
-     */
+         * that is to the cmdparser to handle.
+         * It will handle 1st command, and then move leftover to beginning of buffer
+         */
 #ifdef HAVE_FD_PASSING
     {
         struct msghdr msg;
@@ -330,9 +330,9 @@ read_fd_data(struct fd_buf *buf)
             else
                 logg(LOGG_WARNING, "Control message truncated, no control data received, %d bytes read"
 #ifdef C_LINUX
-                     "(Is SELinux/AppArmor enabled, and blocking file descriptor passing?)"
+                                   "(Is SELinux/AppArmor enabled, and blocking file descriptor passing?)"
 #endif
-                     "\n",
+                                   "\n",
                      (int)n);
             return -1;
         }

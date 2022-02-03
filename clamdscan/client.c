@@ -459,11 +459,11 @@ int client(const struct optstruct *opts, int *infected, int *err)
             }
             errors += client_scan(fname, scantype, infected, err, maxrec, session, flags);
             /* this may be too strict
-	    if(errors >= 10) {
-		logg(LOGG_ERROR, "Too many errors\n");
-		break;
-	    }
-	    */
+            if(errors >= 10) {
+                logg(LOGG_ERROR, "Too many errors\n");
+                break;
+            }
+            */
         }
     }
 #ifdef _WIN32

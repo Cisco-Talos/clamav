@@ -43,9 +43,9 @@ int is_tar(const unsigned char *buf, unsigned int nbytes)
     p   = header->charptr;
     for (i = sizeof(union record); --i >= 0;) {
         /*
-		 * We can't use unsigned char here because of old compilers,
-		 * e.g. V7.
-		 */
+         * We can't use unsigned char here because of old compilers,
+         * e.g. V7.
+         */
         sum += 0xFF & *p++;
     }
 

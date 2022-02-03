@@ -274,9 +274,9 @@ textMove(text *t_head, text *t)
         t_head = t_head->t_next;
 
     /*
-	 * Move the first line manually so that the caller is left clean but
-	 * empty, the rest is moved by a simple pointer reassignment
-	 */
+     * Move the first line manually so that the caller is left clean but
+     * empty, the rest is moved by a simple pointer reassignment
+     */
     t_head->t_next = (text *)cli_malloc(sizeof(text));
     if (t_head->t_next == NULL) {
         cli_errmsg("textMove: Unable to allocate memory for head->next\n");
@@ -319,9 +319,9 @@ textToBlob(text *t, blob *b, int destroy)
         return b;
 
     /*
-	 * copy b. If b is NULL and an error occurs we know we need to free
-	 *	before returning
-	 */
+     * copy b. If b is NULL and an error occurs we know we need to free
+     *	before returning
+     */
     bin = b;
     if (b == NULL) {
         b = blobCreate();
@@ -429,9 +429,9 @@ static void *
 textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, int destroy)
 {
     /*
-	 * Have two loops rather than one, so that we're not checking the
-	 * value of "destroy" lots and lots of times
-	 */
+     * Have two loops rather than one, so that we're not checking the
+     * value of "destroy" lots and lots of times
+     */
 #if 0
 	while(t_text) {
 		(*cb)(t_text->t_line, arg);

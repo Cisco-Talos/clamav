@@ -156,11 +156,11 @@ double calc_entropy(const unsigned char *data, size_t size)
     return entropy;
 }
 
-#define FILLBYTES(dst)                         \
-    if (IsBadReadPtr(seek, sizeof(dst))) {     \
+#define FILLBYTES(dst)                                    \
+    if (IsBadReadPtr(seek, sizeof(dst))) {                \
         logg(LOGG_ERROR, "exeScanner: Bad pointer!!!\n"); \
-        goto cleanup;                          \
-    }                                          \
+        goto cleanup;                                     \
+    }                                                     \
     memcpy(&dst, seek, sizeof(dst));
 
 /* Packed exe heuristic detection, errors are handled as like of non packed data

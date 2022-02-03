@@ -433,13 +433,13 @@ cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_lim
 
         /* options override through metadata manipulation */
 #if USING_PCRE2
-        //pm->pdata.options |= PCRE2_NEVER_UTF; /* disables (?UTF*) potential security vuln */
-        //pm->pdata.options |= PCRE2_UCP;
-        //pm->pdata.options |= PCRE2_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
+        // pm->pdata.options |= PCRE2_NEVER_UTF; /* disables (?UTF*) potential security vuln */
+        // pm->pdata.options |= PCRE2_UCP;
+        // pm->pdata.options |= PCRE2_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
 #else
-        //pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) potential security vuln */
-        //pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
-        //pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
+        // pm->pdata.options |= PCRE_NEVER_UTF; /* implemented in 8.33, disables (?UTF*) potential security vuln */
+        // pm->pdata.options |= PCRE_UCP;/* implemented in 8.20 */
+        // pm->pdata.options |= PCRE_AUTO_CALLOUT; /* used with CALLOUT(-BACK) function */
 #endif
 
         if (dconf && (dconf->pcre & PCRE_CONF_OPTIONS)) {

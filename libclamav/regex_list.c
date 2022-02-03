@@ -118,9 +118,9 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
             const size_t pos = real_len - match_len - 1;
             if (real_url[pos] != '.') {
                 /* we need to shift left, and insert a '.'
-				 * we have an extra '.' at the beginning inserted by get_host to have room,
-				 * orig_real_url has to be used here,
-				 * because we want to overwrite that extra '.' */
+                 * we have an extra '.' at the beginning inserted by get_host to have room,
+                 * orig_real_url has to be used here,
+                 * because we want to overwrite that extra '.' */
                 size_t orig_real_len = strlen(orig_real_url);
                 cli_dbgmsg("No dot here:%s\n", real_url + pos);
                 real_url = orig_real_url;
@@ -157,7 +157,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     char *buffer  = NULL;
     char *bufrev  = NULL;
     cl_error_t rc = CL_SUCCESS;
-    //int filter_search_rc = 0;
+    // int filter_search_rc = 0;
     int root;
     struct cli_ac_data mdata;
     struct cli_ac_result *res = NULL;
@@ -232,8 +232,8 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     // has had no effect for 12+ years at this point, though, so it's probably
     // safe to wait a bit longer without it.
     //
-    //filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
-    //if (filter_search_rc == -1) {
+    // filter_search_rc = filter_search(&matcher->filter, (const unsigned char *)bufrev, buffer_len);
+    // if (filter_search_rc == -1) {
     //    free(buffer);
     //    free(bufrev);
     //    /* filter says this suffix doesn't match.
@@ -258,7 +258,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         }
         while (!rc && regex) {
             /* loop over multiple regexes corresponding to
-				 * this suffix */
+             * this suffix */
             if (!regex->preg) {
                 /* we matched a static pattern */
                 rc = validate_subdomain(regex, pre_fixup, buffer, buffer_len, real_url, real_len, orig_real_url);
@@ -443,26 +443,26 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         }
     }
     /*
-	 * Regexlist db format, common to .wdb (allow list) and .pdb (domain list) files.
+     * Regexlist db format, common to .wdb (allow list) and .pdb (domain list) files.
      *
-	 * Multiple lines of form, (empty lines are skipped):
- 	 * Flags RealURL DisplayedURL
-	 * Where:
-	 * Flags:
-	 *
-	 * .pdb files:
-	 * R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing
-	 * flags that should be filtered.
-	 * [i.e. phishcheck urls.flags that we don't want to be done for this particular host]
-	 *
-	 * .wdb files:
-	 * X - full URL regex
-	 * Y - host-only regex
-	 * M - host simple pattern
-	 *
-	 * If a line in the file doesn't conform to this format, loading fails
-	 *
-	 */
+     * Multiple lines of form, (empty lines are skipped):
+     * Flags RealURL DisplayedURL
+     * Where:
+     * Flags:
+     *
+     * .pdb files:
+     * R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing
+     * flags that should be filtered.
+     * [i.e. phishcheck urls.flags that we don't want to be done for this particular host]
+     *
+     * .wdb files:
+     * X - full URL regex
+     * Y - host-only regex
+     * M - host simple pattern
+     *
+     * If a line in the file doesn't conform to this format, loading fails
+     *
+     */
     while (cli_dbgets(buffer, FILEBUFF, fd, dbio)) {
         char *pattern;
         char *flags;
@@ -674,7 +674,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
     regex->nxt     = NULL;
     el             = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
     /* TODO: what if suffixes are prefixes of eachother and only one will
-	 * match? */
+     * match? */
     if (el) {
         /* existing suffix */
         assert((size_t)el->data < matcher->suffix_cnt);

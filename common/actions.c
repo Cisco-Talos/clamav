@@ -350,23 +350,23 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
             char *driveroot      = malloc(driveroot_len);
             snprintf(driveroot, driveroot_len + 1, "\\??\\%s\\", tokens[0]);
             next_handle = win32_openat(current_handle,
-                                       driveroot,
-                                       pNtCreateFile,
-                                       pRtlInitUnicodeString,
-                                       desiredAccess,
-                                       fileAttributes,
-                                       createOptions,
-                                       shareAccess);
+                                               driveroot,
+                                               pNtCreateFile,
+                                               pRtlInitUnicodeString,
+                                               desiredAccess,
+                                               fileAttributes,
+                                               createOptions,
+                                               shareAccess);
             free(driveroot);
         } else {
             next_handle = win32_openat(current_handle,
-                                       tokens[i],
-                                       pNtCreateFile,
-                                       pRtlInitUnicodeString,
-                                       desiredAccess,
-                                       fileAttributes,
-                                       createOptions,
-                                       shareAccess);
+                                               tokens[i],
+                                               pNtCreateFile,
+                                               pRtlInitUnicodeString,
+                                               desiredAccess,
+                                               fileAttributes,
+                                               createOptions,
+                                               shareAccess);
         }
         if (NULL == next_handle) {
             logg(LOGG_INFO, "traverse_to: Failed open %s\n", tokens[i]);

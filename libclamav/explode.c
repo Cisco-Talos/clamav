@@ -28,7 +28,7 @@
  *
  * To the best of my knowledge, it's patent free:
  * http://www.unisys.com/about__unisys/lzw
-*/
+ */
 
 /* To Cami and Dario, the only lawyers I can stand */
 

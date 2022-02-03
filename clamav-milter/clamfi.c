@@ -495,8 +495,8 @@ sfsistat clamfi_connect(_UNUSED_ SMFICTX *ctx, char *hostname, _SOCK_ADDR *hosta
 {
     while (1) {
         /* Postfix doesn't seem to honor passing a NULL hostaddr and hostname
-	   set to "localhost" for non-smtp messages (they still appear as SMTP
-	   messages from 127.0.0.1). Here's a small workaround. */
+           set to "localhost" for non-smtp messages (they still appear as SMTP
+           messages from 127.0.0.1). Here's a small workaround. */
         if (hostaddr) {
             if (islocalnet_sock(hostaddr)) {
                 logg(LOGG_DEBUG, "Skipping scan for %s (in LocalNet)\n", hostname);

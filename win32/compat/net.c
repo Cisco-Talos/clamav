@@ -452,9 +452,9 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event)
                 items[i].event = NULL;
             } else {
                 char c; /* Ugly workaround to FD_CLOSE not being persistent
-			   better win32 code is possible at the cost of a larger diff vs. the unix
-			   netcode - for now it stays ugly...
-			*/
+                           better win32 code is possible at the cost of a larger diff vs. the unix
+                           netcode - for now it stays ugly...
+                        */
                 int n = recv(fds[i].fd, &c, 1, MSG_PEEK);
                 if (!n)
                     items[i].polldata->revents = POLLHUP;

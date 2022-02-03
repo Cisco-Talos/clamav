@@ -468,7 +468,7 @@ int main(int argc, char **argv)
     /* We have been daemonized, and initialization is done.  Signal
      * the parent process so that it can exit cleanly.
      */
-    if (parentPid != getpid()) { //we have been daemonized
+    if (parentPid != getpid()) { // we have been daemonized
         daemonize_signal_parent(parentPid);
     }
 #endif
