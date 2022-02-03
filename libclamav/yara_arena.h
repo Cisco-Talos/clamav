@@ -80,7 +80,7 @@ void* yr_arena_base_address(
 void* yr_arena_next_address(
     YR_ARENA* arena,
     void* address,
-    int offset);
+    size_t offset);
 
 
 int yr_arena_coalesce(
