@@ -298,18 +298,6 @@ void logg_close(void)
 #endif
 }
 
-/*
- * legend:
- * NAME     EXPLAIN
- * INFO     normal
- * INFO_NF  normal, no foreground (logfile and syslog only)
- * DEBUG    debug, verbose
- * DEBUG_NV debug, non-verbose
- * WARNING  warning
- * ERROR    ERROR
- * 
- * @return 0 fur success and -1 for error, e.g. log file access problems
- */
 int logg(loglevel_t loglevel, const char *str, ...)
 {
     va_list args;

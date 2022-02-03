@@ -41,13 +41,13 @@ int mdprintf(int desc, const char *str, ...);
 
 /*
  * legend:
- * NAME     EXPLAIN
- * INFO     normal
- * INFO_NF  normal, no foreground (logfile and syslog only)
- * DEBUG    debug, verbose
- * DEBUG_NV debug, non-verbose
- * WARNING  warning
- * ERROR    ERROR
+ * NAME          EXPLAIN
+ * LOGG_INFO     normal
+ * LOGG_INFO_NF  normal, no foreground (logfile and syslog only)
+ * LOGG_DEBUG    debug, verbose
+ * LOGG_DEBUG_NV debug, non-verbose
+ * LOGG_WARNING  warning
+ * LOGG_ERROR    ERROR
  */
 typedef enum loglevel{
     LOGG_INFO, 
@@ -60,13 +60,13 @@ typedef enum loglevel{
 
 /*
  * @param loglevel legend:
- * NAME     EXPLAIN
- * INFO     normal
- * INFO_NF  normal, no foreground (logfile and syslog only)
- * DEBUG    debug, verbose
- * DEBUG_NV debug, non-verbose
- * WARNING  warning
- * ERROR    ERROR
+ * NAME          EXPLAIN
+ * LOGG_INFO     normal
+ * LOGG_INFO_NF  normal, no foreground (logfile and syslog only)
+ * LOGG_DEBUG    debug, verbose
+ * LOGG_DEBUG_NV debug, non-verbose
+ * LOGG_WARNING  warning
+ * LOGG_ERROR    ERROR
  * 
  * @return 0 fur success and -1 for error, e.g. log file access problems
  */
