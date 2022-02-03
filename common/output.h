@@ -41,24 +41,36 @@ int mdprintf(int desc, const char *str, ...);
 
 /*
  * legend:
- * NAME     OLD        EXPLAIN
- * INFO     none or ~   normal
- * INFO_NF  #           normal, no foreground
- * DEBUG    *           debug, verbose
- * DEBUG_NV $           debug, non-verbose
- * WARNING  ^           warning
- * ERROR    !           ERROR
+ * NAME     EXPLAIN
+ * INFO     normal
+ * INFO_NF  normal, no foreground (logfile and syslog only)
+ * DEBUG    debug, verbose
+ * DEBUG_NV debug, non-verbose
+ * WARNING  warning
+ * ERROR    ERROR
  */
-enum loglevel_t{
-    INFO, 
-    INFO_NF, 
-    DEBUG, 
-    DEBUG_NV, 
-    WARNING, 
-    ERROR
-};
+typedef enum loglevel{
+    LOGG_INFO, 
+    LOGG_INFO_NF, 
+    LOGG_DEBUG, 
+    LOGG_DEBUG_NV, 
+    LOGG_WARNING, 
+    LOGG_ERROR
+} loglevel_t;
 
-int logg(int loglevel, const char *str, ...);
+/*
+ * @param loglevel legend:
+ * NAME     EXPLAIN
+ * INFO     normal
+ * INFO_NF  normal, no foreground (logfile and syslog only)
+ * DEBUG    debug, verbose
+ * DEBUG_NV debug, non-verbose
+ * WARNING  warning
+ * ERROR    ERROR
+ * 
+ * @return 0 fur success and -1 for error, e.g. log file access problems
+ */
+int logg(loglevel_t loglevel, const char *str, ...);
 
 void logg_close(void);
 extern short int logg_verbose, logg_nowarn, logg_lock, logg_time, logg_noflush, logg_rotate;
@@ -70,7 +82,7 @@ extern short logg_syslog;
 int logg_facility(const char *name);
 #endif
 
-void mprintf(int loglevel, const char *str, ...);
+void mprintf(loglevel_t loglevel, const char *str, ...);
 
 extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout, mprintf_send_timeout, mprintf_progress;
 

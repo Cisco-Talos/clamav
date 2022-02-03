@@ -300,15 +300,17 @@ void logg_close(void)
 
 /*
  * legend:
- * NAME     OLD        EXPLAIN
- * INFO     none or ~   normal
- * INFO_NF  #           normal, no foreground
- * DEBUG    *           debug, verbose
- * DEBUG_NV $           debug, non-verbose
- * WARNING  ^           warning
- * ERROR    !           ERROR
+ * NAME     EXPLAIN
+ * INFO     normal
+ * INFO_NF  normal, no foreground (logfile and syslog only)
+ * DEBUG    debug, verbose
+ * DEBUG_NV debug, non-verbose
+ * WARNING  warning
+ * ERROR    ERROR
+ * 
+ * @return 0 fur success and -1 for error, e.g. log file access problems
  */
-int logg(int loglevel, const char *str, ...)
+int logg(loglevel_t loglevel, const char *str, ...)
 {
     va_list args;
     char buffer[1025], *abuffer = NULL, *buff;
@@ -456,7 +458,7 @@ int logg(int loglevel, const char *str, ...)
     return 0;
 }
 
-void mprintf(int loglevel, const char *str, ...)
+void mprintf(loglevel_t loglevel, const char *str, ...)
 {
     va_list args;
     FILE *fd;
