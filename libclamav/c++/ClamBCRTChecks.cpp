@@ -244,8 +244,8 @@ TD                  = DLP ? &DLP->getDataLayout() : 0;
                     continue;
                 }
                 // this statement disable checks on user-defined CallInst
-                // if (!F->isDeclaration())
-                // continue;
+                //if (!F->isDeclaration())
+                //continue;
                 insns.push_back(CI);
             }
         }
@@ -447,7 +447,7 @@ const DataLayout *TD;
             Value *FalseB = getPointerBase(SI->getFalseValue());
             if (TrueB && FalseB) {
                 SelectInst *NewSI   = SelectInst::Create(SI->getCondition(), TrueB,
-                                                         FalseB, ".select.base", &*It);
+                                                       FalseB, ".select.base", &*It);
                 Changed             = true;
                 return BaseMap[Ptr] = NewSI;
             }
@@ -475,10 +475,10 @@ const DataLayout *TD;
                 // redundant check, should not be possible
                 if (It == ItEnd) {
                     // Houston, the impossible has become possible
-                    // printDiagnostic("Idx is outside of Function parameters", F);
+                    //printDiagnostic("Idx is outside of Function parameters", F);
                     errs() << "Idx is outside of Function parameters\n";
                     errs() << *F << "\n";
-                    // valid = 0;
+                    //valid = 0;
                     break;
                 }
             }
@@ -486,10 +486,10 @@ const DataLayout *TD;
             Val = &(*It);
         } else {
             // Idx is outside function parameter list
-            // printDiagnostic("Idx is outside of Function parameters", F);
+            //printDiagnostic("Idx is outside of Function parameters", F);
             errs() << "Idx is outside of Function parameters\n";
             errs() << *F << "\n";
-            // valid = 0;
+            //valid = 0;
         }
         return Val;
     }
@@ -514,7 +514,7 @@ const DataLayout *TD;
                 bool checks = true;
                 // last argument check
                 if (A->getArgNo() == (FT->getNumParams() - 1)) {
-                    // printDiagnostic("pointer argument cannot be last argument", F);
+                    //printDiagnostic("pointer argument cannot be last argument", F);
                     errs() << "pointer argument cannot be last argument\n";
                     errs() << *F << "\n";
                     checks = false;
@@ -522,7 +522,7 @@ const DataLayout *TD;
 
                 // argument after pointer MUST be a integer (unsigned probably too)
                 if (checks && !FT->getParamType(A->getArgNo() + 1)->isIntegerTy()) {
-                    // printDiagnostic("argument following pointer argument is not an integer", F);
+                    //printDiagnostic("argument following pointer argument is not an integer", F);
                     errs() << "argument following pointer argument is not an integer\n";
                     errs() << *F << "\n";
                     checks = false;
@@ -552,7 +552,7 @@ const DataLayout *TD;
                 bool checks = true;
                 // last argument check
                 if (A->getArgNo() == (FT->getNumParams() - 1)) {
-                    // printDiagnostic("pointer argument cannot be last argument", F);
+                    //printDiagnostic("pointer argument cannot be last argument", F);
                     errs() << "pointer argument cannot be last argument\n";
                     errs() << *F << "\n";
                     checks = false;
@@ -560,7 +560,7 @@ const DataLayout *TD;
 
                 // argument after pointer MUST be a integer (unsigned probably too)
                 if (checks && !FT->getParamType(A->getArgNo() + 1)->isIntegerTy()) {
-                    // printDiagnostic("argument following pointer argument is not an integer", F);
+                    //printDiagnostic("argument following pointer argument is not an integer", F);
                     errs() << "argument following pointer argument is not an integer\n";
                     errs() << *F << "\n";
                     checks = false;
@@ -601,7 +601,7 @@ const DataLayout *TD;
             Value *FalseB = getPointerBounds(SI->getFalseValue());
             if (TrueB && FalseB) {
                 SelectInst *NewSI      = SelectInst::Create(SI->getCondition(), TrueB,
-                                                            FalseB, ".select.bounds", &*It);
+                                                       FalseB, ".select.bounds", &*It);
                 Changed                = true;
                 return BoundsMap[Base] = NewSI;
             }
@@ -628,8 +628,8 @@ const DataLayout *TD;
             if (size > 1) {
                 Constant *C = cast<Constant>(V);
                 C           = ConstantExpr::getMul(C,
-                                                   ConstantInt::get(Type::getInt32Ty(C->getContext()),
-                                                                    size));
+                                         ConstantInt::get(Type::getInt32Ty(C->getContext()),
+                                                          size));
                 V           = C;
             }
         }
@@ -692,7 +692,7 @@ const DataLayout *TD;
         BasicBlock *newBB       = SplitBlock(BB, &*It, this);
         PHINode *PN;
         unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
-        // verifyFunction(*BB->getParent());
+        //verifyFunction(*BB->getParent());
         if (!AbrtBB) {
             std::vector<constType *> args;
             FunctionType *abrtTy = FunctionType::get(Type::getVoidTy(BB->getContext()), args, false);
@@ -700,7 +700,7 @@ const DataLayout *TD;
             FunctionType *rterrTy = FunctionType::get(Type::getInt32Ty(BB->getContext()), args, false);
             Constant *func_abort  = BB->getParent()->getParent()->getOrInsertFunction("abort", abrtTy);
             Constant *func_rterr  = BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error",
-                                                                                      rterrTy);
+                                                                                     rterrTy);
             AbrtBB                = BasicBlock::Create(BB->getContext(), "rterr.trig", BB->getParent());
 
             PN = PHINode::Create(Type::getInt32Ty(BB->getContext()), HINT(1) "",
@@ -727,7 +727,7 @@ const DataLayout *TD;
 #endif
             new UnreachableInst(BB->getContext(), AbrtBB);
             DT->addNewBlock(AbrtBB, BB);
-            // verifyFunction(*BB->getParent());
+            //verifyFunction(*BB->getParent());
         } else {
             PN = cast<PHINode>(AbrtBB->begin());
         }
@@ -767,7 +767,7 @@ const DataLayout *TD;
         }
         Value *Cond = new ICmpInst(TI, strict ? ICmpInst::ICMP_ULT : ICmpInst::ICMP_ULE, IdxV, LimitV);
         BranchInst::Create(newBB, AbrtBB, Cond, TI);
-        // TI->eraseFromParent();
+        //TI->eraseFromParent();
         delInst.push_back(TI);
         // Update dominator info
         BasicBlock *DomBB =
@@ -929,7 +929,7 @@ const DataLayout *TD;
             valid &= insertCheck(SLen, Limit, I, false);
         }
 
-        // TODO: nullpointer check
+        //TODO: nullpointer check
         const SCEV *Max = SE->getUMaxExpr(OffsetP, Limit);
         if (Max == Limit)
             return valid;

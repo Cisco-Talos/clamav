@@ -207,9 +207,9 @@ static uint8_t *parse_char_class(const char *pat, size_t *pos)
                     /* collating sequence not handled */
                     free(bitmap);
                     /* we are parsing the regex for a
-                     * filter, be conservative and
-                     * tell the filter that anything could
-                     * match here */
+					 * filter, be conservative and
+					 * tell the filter that anything could
+					 * match here */
                     while (pat[*pos] != ']') ++*pos;
                     ++*pos;
                     while (pat[*pos] != ']') ++*pos;
@@ -308,7 +308,7 @@ static struct node *parse_regex(const char *p, size_t *last)
                 break;
             case '\\':
                 /* next char is escaped, advance pointer
-                 * and let fall-through handle it */
+				 * and let fall-through handle it */
                 ++*last;
             default:
                 right = make_leaf(p[*last]);
@@ -367,7 +367,7 @@ static cl_error_t build_suffixtree_ascend(struct node *n, struct text_buffer *bu
                     if (build_suffixtree_descend(n->u.children.left, buf, cb, cbdata, regex) != CL_SUCCESS)
                         return CL_EMEM;
                     /* we're done here, descend will call
-                     * ascend if needed */
+					 * ascend if needed */
                     return CL_SUCCESS;
                 } else {
                     n = n->parent;
@@ -396,7 +396,7 @@ static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *b
     if (!n)
         return CL_SUCCESS;
     /* find out end of the regular expression,
-     * if it ends with a static pattern */
+	 * if it ends with a static pattern */
     switch (n->type) {
         case alternate:
             /* save pos as restart point */

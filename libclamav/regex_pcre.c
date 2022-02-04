@@ -448,7 +448,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
                     snprintf(outstr + (2 * j), sizeof(outstr) - (2 * j), "%02x", (unsigned int)*(start + j));
 
                 cli_dbgmsg("cli_pcre_report:  %d: %s%s\n", i, outstr, trunc ? " (trunc)" : "");
-                // cli_dbgmsg("cli_pcre_report:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
+                //cli_dbgmsg("cli_pcre_report:  %d: %.*s%s\n", i, length, start, trunc ? " (trunc)":"");
             }
 
             named_substr_print(pd, buffer, ovector);

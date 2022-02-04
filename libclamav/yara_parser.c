@@ -766,9 +766,9 @@ YR_STRING* yr_parser_reduce_string_declaration(
         &halt,
         sizeof(int8_t),
         NULL);
-    // TBD: seems like we will need the following yr_arena_coalesce, but it is not working.
-    // Yara condition code will work OK as long as it is less than 64K.
-    // FAIL_ON_COMPILER_ERROR(yr_arena_coalesce(compiler->code_arena));
+    //TBD: seems like we will need the following yr_arena_coalesce, but it is not working.
+    //Yara condition code will work OK as long as it is less than 64K.
+    //FAIL_ON_COMPILER_ERROR(yr_arena_coalesce(compiler->code_arena));
     rule->code_start = yr_arena_base_address(compiler->code_arena);
     yr_arena_append(compiler->the_arena, compiler->code_arena);
     FAIL_ON_COMPILER_ERROR(yr_arena_create(65536, 0, &compiler->code_arena));
@@ -873,7 +873,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
         meta->type    = type;
 
         return meta;
-#if 0 // meta w.i.p.
+#if 0 //meta w.i.p.
   meta = cli_calloc(1, sizeof(YR_META));
   if (meta == NULL) {
       cli_errmsg("yara_parser: no mem for YR_META.\n");

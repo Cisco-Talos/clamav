@@ -330,7 +330,7 @@ START_TEST(test_compat_commands)
 
     if (!test->extra) {
         /* FILDES won't support this, because it expects
-         * strlen("FILDES\n") characters, then 1 character and the FD. */
+	 * strlen("FILDES\n") characters, then 1 character and the FD. */
         /* one packet, \r\n delimited command, followed by "extra" if needed */
         snprintf(nsend, sizeof(nsend), "%s\r\n", test->command);
         conn_setup();
@@ -552,8 +552,8 @@ START_TEST(test_fildes)
 
     if (!closefd) {
         /* closefd:
-         *  1 - close fd right after sending
-         *  0 - close fd after receiving reply */
+	 *  1 - close fd right after sending
+	 *  0 - close fd after receiving reply */
         close(fd);
     }
 }
@@ -768,7 +768,7 @@ static void test_idsession_commands(int split, int instream)
         if (instream && test->ids == IDS_END) {
             uint32_t chunk;
             /* IDS_END - in middle of other commands, perfect for inserting
-             * INSTREAM */
+	     * INSTREAM */
             ck_assert_msg(p + sizeof(INSTREAM_CMD) + 544 < buf + sizeof(buf), "Buffer too small");
             memcpy(p, INSTREAM_CMD, sizeof(INSTREAM_CMD));
             p += sizeof(INSTREAM_CMD);

@@ -220,7 +220,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
         /* change the '[' and ']' to '{' and '}' since there are now two bytes */
         rechar = hexovr;
-        while ((rechar = strchr(rechar, '['))) { // TEST TODO
+        while ((rechar = strchr(rechar, '['))) { //TEST TODO
             *rechar = '{';
 
             if (!(rechar = strchr(rechar, ']'))) {
@@ -285,7 +285,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
                     hexovr[len] = hexcpy[i];
                 }
             } else {
-                // snprintf(hexovr+len, ovrlen-len, "%02x%c%c", 0, hexcpy[i], hexcpy[i+1]);
+                //snprintf(hexovr+len, ovrlen-len, "%02x%c%c", 0, hexcpy[i], hexcpy[i+1]);
                 snprintf(hexovr + len, ovrlen - len, "%c%c%02x", hexcpy[i], hexcpy[i + 1], 0);
                 ++i;
             }
@@ -2041,7 +2041,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         }
         if (sigs != oldsigs) {
             /* compiler ensures Engine field in lsig matches the one in bytecode,
-             * so this should never happen. */
+           * so this should never happen. */
             cli_errmsg("Bytecode logical signature skipped, but bytecode itself not?");
             return CL_EMALFDB;
         }
@@ -2050,8 +2050,8 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if (bc->kind != BC_LOGICAL) {
         if (bc->lsig) {
             /* runlsig will only flip a status bit, not report a match,
-             * when the hooks are executed we only execute the hook if its
-             * status bit is on */
+	     * when the hooks are executed we only execute the hook if its
+	     * status bit is on */
             bc->hook_lsig_id = ++engine->hook_lsig_ids;
         }
         if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
@@ -3581,7 +3581,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
         /* string type handler */
         if (STRING_IS_NULL(string)) {
             cli_warnmsg("load_oneyara: skipping NULL string %s\n", newident);
-            // str_error++; /* kill the insertion? */
+            //str_error++; /* kill the insertion? */
             continue;
 #ifdef YARA_FINISHED
         } else if (STRING_IS_LITERAL(string)) {
@@ -4049,7 +4049,7 @@ void cli_yara_free(struct cl_engine *engine)
     }
 }
 
-// TODO - pua? dbio?
+//TODO - pua? dbio?
 static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *filename)
 {
     YR_COMPILER compiler;

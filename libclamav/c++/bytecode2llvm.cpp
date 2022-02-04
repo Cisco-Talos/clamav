@@ -284,7 +284,7 @@ class ScopedExceptionHandler
     void Set()
     {
         /* set the exception handler's return location to here for the
-         * current thread */
+	     * current thread */
         ExceptionReturn.set((const jmp_buf *)&env);
     }
     ~ScopedExceptionHandler()
@@ -399,7 +399,7 @@ static int64_t rtlib_srl_i64(int64_t a, int32_t b)
 #endif
 static int64_t rtlib_sra_i64(int64_t a, int32_t b)
 {
-    return CLI_SRS(a, b); // CLI_./..
+    return CLI_SRS(a, b); //CLI_./..
 }
 
 static void rtlib_bzero(void *s, size_t n)
@@ -841,7 +841,7 @@ class RuntimeLimits : public FunctionPass
             }
             DEBUG(errs() << *I << "\n");
         }
-        // verifyFunction(F);
+        //verifyFunction(F);
         return true;
     }
 
@@ -919,20 +919,20 @@ public:
     SimpleGlobalDCE(ExecutionEngine *EE) : ModulePass(&ID), EE(EE) {}
 
     virtual bool runOnModule(Module &M) {
-        bool Changed = false;
-        std::vector<GlobalValue*> toErase;
-        for (Module::global_iterator I = M.global_begin(), E = M.global_end(); I != E; ++I) {
-            GlobalValue *GV = &*I;
-            if (GV->use_empty() && !EE->getPointerToGlobalIfAvailable(GV))
-                toErase.push_back(GV);
-        }
-        for (std::vector<GlobalValue*>::iterator I=toErase.begin(), E=toErase.end();
-             I != E; ++I) {
-            (*I)->eraseFromParent();
-            Changed = true;
-        }
+	bool Changed = false;
+	std::vector<GlobalValue*> toErase;
+	for (Module::global_iterator I = M.global_begin(), E = M.global_end(); I != E; ++I) {
+	    GlobalValue *GV = &*I;
+	    if (GV->use_empty() && !EE->getPointerToGlobalIfAvailable(GV))
+		toErase.push_back(GV);
+	}
+	for (std::vector<GlobalValue*>::iterator I=toErase.begin(), E=toErase.end();
+	     I != E; ++I) {
+	    (*I)->eraseFromParent();
+	    Changed = true;
+	}
 
-        return Changed;
+	return Changed;
     }
 };
 char SimpleGlobalDCE::ID;
@@ -1115,7 +1115,7 @@ class LLVMCodegen
             GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
             Type *IP8Ty        = PointerType::getUnqual(Type::getInt8Ty(Ty->getContext()));
             Constant *C        = ConstantExpr::getPointerCast(GV, IP8Ty);
-            // TODO: check constant bounds here
+            //TODO: check constant bounds here
             return ConstantExpr::getPointerCast(
                 ConstantExpr::getInBoundsGetElementPtr(C, ARRAYREF(Value *, idxs, 1)),
                 PTy);
@@ -1339,7 +1339,7 @@ class LLVMCodegen
             unsigned id   = cli_globals[i].globalid;
             constType *Ty = apiMap.get(cli_globals[i].type, NULL, NULL);
             /*if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
-                Ty = PointerType::getUnqual(ATy->getElementType());*/
+		Ty = PointerType::getUnqual(ATy->getElementType());*/
             GVtypeMap[id] = Ty;
         }
 
@@ -1367,8 +1367,8 @@ class LLVMCodegen
             }
             Constant *C = buildConstant(Ty, bc->globals[i], c);
             GV          = new GlobalVariable(*M, Ty, true,
-                                             GlobalValue::InternalLinkage,
-                                             C, "glob" + Twine(i));
+                                    GlobalValue::InternalLinkage,
+                                    C, "glob" + Twine(i));
             globals.push_back(GV);
         }
         Function **Functions = new Function *[bc->num_func];
@@ -1384,7 +1384,7 @@ class LLVMCodegen
             FunctionType *FTy = FunctionType::get(RetTy, argTypes,
                                                   false);
             Functions[j]      = Function::Create(FTy, Function::InternalLinkage,
-                                                 BytecodeID + "f" + Twine(j), M);
+                                            BytecodeID + "f" + Twine(j), M);
             Functions[j]->setDoesNotThrow();
             Functions[j]->setCallingConv(CallingConv::Fast);
             Functions[j]->setLinkage(GlobalValue::InternalLinkage);
@@ -1424,7 +1424,7 @@ class LLVMCodegen
             }
             for (unsigned i = func->numArgs; i < func->numValues; i++) {
                 if (!func->types[i]) {
-                    // instructions without return value, like store
+                    //instructions without return value, like store
                     Values[i] = 0;
                     continue;
                 }
@@ -1442,7 +1442,7 @@ class LLVMCodegen
                     unsigned offset = GVoffsetMap[g];
 
                     Constant *Idx  = ConstantInt::get(Type::getInt32Ty(Context),
-                                                      offset);
+                                                     offset);
                     Value *Idxs[2] = {
                         ConstantInt::get(Type::getInt32Ty(Context), 0),
                         Idx};
@@ -1553,7 +1553,7 @@ class LLVMCodegen
                             break;
                         }
                         case OP_BC_SDIV: {
-                            // TODO: also verify Op0 == -1 && Op1 = INT_MIN
+                            //TODO: also verify Op0 == -1 && Op1 = INT_MIN
                             Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
                             InsertVerify(Bad, Fail, CF->FHandler, F);
                             Store(inst->dest, Builder.CreateSDiv(Op0, Op1));
@@ -1566,7 +1566,7 @@ class LLVMCodegen
                             break;
                         }
                         case OP_BC_SREM: {
-                            // TODO: also verify Op0 == -1 && Op1 = INT_MIN
+                            //TODO: also verify Op0 == -1 && Op1 = INT_MIN
                             Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
                             InsertVerify(Bad, Fail, CF->FHandler, F);
                             Store(inst->dest, Builder.CreateSRem(Op0, Op1));
@@ -2019,10 +2019,10 @@ class LLVMCodegen
             return 0;
 
         /*			DEBUG(errs() << "Generating code\n");
-                        // Codegen current function as executable machine code.
-                        EE->getPointerToFunction(Functions[j]);
-                        void *code = EE->getPointerToFunction(F);
-                        DEBUG(errs() << "Code generation finished\n");*/
+			// Codegen current function as executable machine code.
+			EE->getPointerToFunction(Functions[j]);
+			void *code = EE->getPointerToFunction(F);
+			DEBUG(errs() << "Code generation finished\n");*/
 
         //		compiledFunctions[func] = code;
         apiMap.irgenTimer.stopTimer();
@@ -2067,9 +2067,9 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
 {
     LLVMContext &Context = M->getContext();
     FunctionType *FTy    = FunctionType::get(Type::getVoidTy(Context),
-                                             false);
+                                          false);
     CF->FHandler         = Function::Create(FTy, Function::ExternalLinkage,
-                                            "clamjit.fail", M);
+                                    "clamjit.fail", M);
     CF->FHandler->setDoesNotReturn();
     CF->FHandler->setDoesNotThrow();
 #if LLVM_VERSION == 32
@@ -2152,26 +2152,26 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(Type::getInt16Ty(Context));
     FunctionType *FuncTy_5 = FunctionType::get(Type::getInt16Ty(Context), args, false);
     CF->FBSwap16           = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i16", M);
+                                    "llvm.bswap.i16", M);
     CF->FBSwap16->setDoesNotThrow();
 
     args.clear();
     args.push_back(Type::getInt32Ty(Context));
     FunctionType *FuncTy_6 = FunctionType::get(Type::getInt32Ty(Context), args, false);
     CF->FBSwap32           = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i32", M);
+                                    "llvm.bswap.i32", M);
     CF->FBSwap32->setDoesNotThrow();
 
     args.clear();
     args.push_back(Type::getInt64Ty(Context));
     FunctionType *FuncTy_7 = FunctionType::get(Type::getInt64Ty(Context), args, false);
     CF->FBSwap64           = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i64", M);
+                                    "llvm.bswap.i64", M);
     CF->FBSwap64->setDoesNotThrow();
 
     FunctionType *DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
     CF->FRealmemset       = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
-                                             "memset", M);
+                                       "memset", M);
 #if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealmemset, (void *)(intptr_t)memset);
 #else
@@ -2204,7 +2204,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(EE->getDataLayout()->getIntPtrType(Context));
 #endif
     FuncTy_5        = FunctionType::get(Type::getInt32Ty(Context),
-                                        args, false);
+                                 args, false);
     CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
 #if LLVM_VERSION < 36
     EE->addGlobalMapping(CF->FRealmemcmp, (void *)(intptr_t)memcmp);
@@ -2277,7 +2277,7 @@ static void *bytecode_watchdog(void *arg)
         while (item == watchdog_head) {
             item->in_use = 1;
             ret          = pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
-                                                  &item->abstimeout);
+                                         &item->abstimeout);
             if (ret == ETIMEDOUT)
                 break;
             if (ret) {
@@ -2408,7 +2408,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 
     if (ctx->bytecode_timeout) {
         /* only spawn if timeout is set.
-         * we don't set timeout for selfcheck (see bb #2235) */
+	 * we don't set timeout for selfcheck (see bb #2235) */
         if (watchdog_arm(&witem, ctx->bytecode_timeout, &ctx->timeout))
             return CL_EBYTECODE;
     }
@@ -2492,7 +2492,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 #if LLVM_VERSION >= 31
                 TargetOptions Options;
 #ifdef CL_DEBUG
-                // disable this for now, it leaks
+                //disable this for now, it leaks
                 Options.JITEmitDebugInfo = false;
 //	Options.JITEmitDebugInfo = true;
 #else
@@ -2556,7 +2556,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                         addFPasses(OurFPMUnsigned, false, M);
 #endif
 
-                // TODO: create a wrapper that calls pthread_getspecific
+                //TODO: create a wrapper that calls pthread_getspecific
                 unsigned maxh        = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
                 constType *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
 
@@ -2566,7 +2566,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                     const struct cli_apicall *api = &cli_apicalls[i];
                     constFunctionType *FTy        = cast<FunctionType>(apiMap.get(69 + api->type, NULL, NULL));
                     Function *F                   = Function::Create(FTy, Function::ExternalLinkage,
-                                                                     api->name, M);
+                                                   api->name, M);
                     void *dest;
                     switch (api->kind) {
                         case 0:
@@ -2618,7 +2618,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
                 // stack protector
                 FunctionType *FTy     = FunctionType::get(Type::getVoidTy(M->getContext()),
-                                                          false);
+                                                      false);
                 GlobalVariable *Guard = new GlobalVariable(*M, PointerType::getUnqual(Type::getInt8Ty(M->getContext())),
                                                            true, GlobalValue::ExternalLinkage, 0, "__stack_chk_guard");
                 unsigned plus         = 0;
@@ -2786,7 +2786,7 @@ int bytecode_init(void)
 
 #if LLVM_VERSION < 31
 #ifdef CL_DEBUG
-    // disable this for now, it leaks
+    //disable this for now, it leaks
     llvm::JITEmitDebugInfo = false;
 //    llvm::JITEmitDebugInfo = true;
 #else
@@ -2817,7 +2817,7 @@ int bytecode_init(void)
 #else
     if (!LLVMIsMultithreaded()) {
 #endif
-        // TODO:cli_dbgmsg
+        //TODO:cli_dbgmsg
         DEBUG(errs() << "WARNING: ClamAV JIT built w/o atomic builtins\n"
                      << "On x86 for best performance ClamAV should be built for i686, not i386!\n");
     }
@@ -2940,7 +2940,7 @@ void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
 #if LLVM_VERSION < 28
     int line = (int)ctx->line ? (int)ctx->line : -1;
     int col  = (int)ctx->col ? (int)ctx->col : -1;
-    // TODO: print this ourselves, instead of using SMDiagnostic
+    //TODO: print this ourselves, instead of using SMDiagnostic
     SMDiagnostic diag(ctx->file, line, col,
                       "", std::string(lines->linev[ctx->line - 1], lines->linev[ctx->line] - 1));
     diag.Print("[trace]", errs());

@@ -83,7 +83,7 @@ struct pe_image_optional_hdr32 {
     uint32_t SizeOfHeapCommit;
     uint32_t LoaderFlags; /*< ? */
     uint32_t NumberOfRvaAndSizes;
-    // struct pe_image_data_dir DataDirectory[16];
+    //struct pe_image_data_dir DataDirectory[16];
 };
 
 /** PE 64-bit optional header
@@ -119,7 +119,7 @@ struct pe_image_optional_hdr64 {
     uint64_t SizeOfHeapCommit;
     uint32_t LoaderFlags; /* ? */
     uint32_t NumberOfRvaAndSizes;
-    // struct pe_image_data_dir DataDirectory[16];
+    //struct pe_image_data_dir DataDirectory[16];
 };
 
 /** PE section header

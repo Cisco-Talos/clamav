@@ -109,8 +109,8 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 break;
             default:
                 /*
-                 * Assume truncation, not file I/O error
-                 */
+				 * Assume truncation, not file I/O error
+				 */
                 cli_warnmsg("cli_tnef: file truncated, returning CLEAN\n");
                 ret     = CL_CLEAN;
                 alldone = 1;
@@ -154,9 +154,9 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 cli_warnmsg("TNEF - unknown level %d tag 0x%x\n", (int)part, (int)tag);
 
                 /*
-                 * Dump the file incase it was part of an
-                 * email that's about to be deleted
-                 */
+				 * Dump the file incase it was part of an
+				 * email that's about to be deleted
+				 */
                 if (cli_debug_flag) {
                     int fout       = -1;
                     char *filename = cli_gentemp(ctx->sub_tmpdir);
@@ -216,8 +216,8 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
     offset = *pos;
 
     /*
-     * a lot of this stuff should be only discovered in debug mode...
-     */
+	 * a lot of this stuff should be only discovered in debug mode...
+	 */
     switch (tag) {
         case attBODY:
             cli_warnmsg("TNEF body not being scanned - if you believe this file contains a virus, submit it to www.clamav.net\n");
@@ -372,10 +372,10 @@ tnef_header(fmap_t *map, off_t *pos, uint8_t *part, uint16_t *type, uint16_t *ta
     if (rc != sizeof(uint32_t)) {
         if (((*part == '\n') || (*part == '\r')) && (rc == 0)) {
             /*
-             * trailing newline in the file, could be caused by
-             * broken quoted-printable encoding in the source
-             * message missing a final '='
-             */
+			 * trailing newline in the file, could be caused by
+			 * broken quoted-printable encoding in the source
+			 * message missing a final '='
+			 */
             cli_dbgmsg("tnef_header: ignoring trailing newline\n");
             return 0;
         }

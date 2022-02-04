@@ -134,7 +134,7 @@ static cl_error_t _x509_to_pem_append(X509 *ca_cert,
         tmp = realloc(*cert_data, current_len + pem_data_len + 1);
         if (tmp == NULL) {
             mprintf(LOGG_ERROR, "Could not realloc enough memory for PEM "
-                                "certificate\n");
+                    "certificate\n");
 
             free(*cert_data);
             *cert_data     = NULL;
@@ -644,7 +644,7 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
                         (name ? name : ""));
             } else {
                 mprintf(LOGG_ERROR, "Failed to add CA certificate for the SSL context. "
-                                    "Error: %d [%s]\n",
+                        "Error: %d [%s]\n",
                         ERR_GET_REASON(err),
                         (name ? name : ""));
             }

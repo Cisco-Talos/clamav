@@ -256,8 +256,8 @@ int command(client_conn_t *conn, int *virus)
             pthread_mutex_unlock(&conn->thrpool->pool_mutex);
             if (ret) {
                 /* multiscan has 1 control thread, so there needs to be at least
-                   1 threads that is a non-multiscan controlthread to scan and
-                   make progress. */
+		   1 threads that is a non-multiscan controlthread to scan and
+		   make progress. */
                 logg(LOGG_WARNING, "Not enough threads for multiscan. Max: %d, Alive: %d, Multiscan: %d+1\n",
                      max, alive, multiscan);
                 conn_reply(conn, conn->filename, "Not enough threads for multiscan. Increase MaxThreads.", "ERROR");
@@ -559,7 +559,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             pthread_mutex_unlock(&reload_mutex);
             mdprintf(desc, "RELOADING%c", term);
             /* we set reload flag, and we'll reload before closing the
-             * connection */
+	     * connection */
             return 1;
         case COMMAND_PING:
             if (conn->group)

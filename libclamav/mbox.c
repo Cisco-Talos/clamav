@@ -492,7 +492,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             } else
                 /* at this point, the \n has been removed */
                 if (messageAddStr(m, buffer) < 0)
-                    break;
+                break;
         } while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1));
 
         if (retcode == CL_SUCCESS) {

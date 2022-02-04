@@ -32,7 +32,7 @@
 #include "clamav-types.h"
 #include "uniq.h"
 
-// Page 58 CONTINUE record Microsoft Office Excel97-2007Binary File Format (.xls) Specification
+//Page 58 CONTINUE record Microsoft Office Excel97-2007Binary File Format (.xls) Specification
 #define BIFF8_MAX_RECORD_LENGTH 8228
 
 typedef enum biff8_opcode {

@@ -501,8 +501,8 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
         v    = readNumber(p, off, len, ok);
         dest = &func->constants[func->numConstants];
         /* Write the constant to the correct place according to its type.
-         * This is needed on big-endian machines, because constants are always
-         * read as u64, but accessed as one of these types: u8, u16, u32, u64 */
+	 * This is needed on big-endian machines, because constants are always
+	 * read as u64, but accessed as one of these types: u8, u16, u32, u64 */
         *dest = 0;
         ty    = 8 * readFixedNumber(p, off, len, ok, 1);
         if (!ty) {
@@ -1207,7 +1207,7 @@ static bbid_t readBBID(struct cli_bc_func *func, const unsigned char *buffer, un
 static uint16_t get_type(struct cli_bc_func *func, operand_t op)
 {
     if (op >= func->numValues)
-        return 64;
+	return 64;
     return func->types[op];
 }*/
 static int16_t get_optype(const struct cli_bc_func *bcfunc, operand_t op)
@@ -1725,11 +1725,11 @@ DEAD CODE
                 break;
             case PARSE_SKIP:
                 /* stop at S (source code), readdb.c knows how to skip this one
-                 * */
+		 * */
                 if (buffer[0] == 'S')
                     end = 1;
                 /* noop parse, but we need to use dbgets with dynamic buffer,
-                 * otherwise we get 'Line too long for provided buffer' */
+		 * otherwise we get 'Line too long for provided buffer' */
                 break;
         }
     }
@@ -1912,7 +1912,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
         }
         /*cli_event_debug(jit_ev, BCEV_EXEC_TIME);
         cli_event_debug(interp_ev, BCEV_EXEC_TIME);
-        cli_event_debug(g_sigevents, bc->sigtime_id);*/
+	cli_event_debug(g_sigevents, bc->sigtime_id);*/
         if (!ok) {
             cli_events_free(jit_ev);
             cli_events_free(interp_ev);
@@ -2317,8 +2317,8 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
                         MAP(inst->u.three[2]);
                     break;
                     /*		case OP_BC_GEPN:
-                    *TODO
-                    break;*/
+		    *TODO
+		    break;*/
                 case OP_BC_MEMSET:
                 case OP_BC_MEMCPY:
                 case OP_BC_MEMMOVE:
@@ -2673,7 +2673,7 @@ int cli_bytecode_prepare2(struct cl_engine *engine, struct cli_all_bc *bcs, unsi
         cli_dbgmsg("Bytecode: disable status is %d\n", ctx->bytecode_disable_status);
         rc = cli_bytecode_context_getresult_int(ctx);
         /* check magic number, don't use 0 here because it is too easy for a
-         * buggy bytecode to return 0 */
+	 * buggy bytecode to return 0 */
         if ((unsigned int)rc != (unsigned int)0xda7aba5e) {
             cli_warnmsg("Bytecode: selftest failed with code %08x. Please report to https://github.com/Cisco-Talos/clamav/issues\n",
                         rc);
@@ -2811,7 +2811,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     if (bc->hook_lsig_id) {
         cli_dbgmsg("hook lsig id %d matched (bc %d)\n", bc->hook_lsig_id, bc->id);
         /* this is a bytecode for a hook, defer running it until hook is
-         * executed, so that it has all the info for the hook */
+	     * executed, so that it has all the info for the hook */
         if (cctx->hook_lsig_matches)
             cli_bitset_set(cctx->hook_lsig_matches, bc->hook_lsig_id - 1);
         /* save match counts */

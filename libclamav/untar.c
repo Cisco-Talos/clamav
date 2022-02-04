@@ -244,9 +244,9 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
                 case 'K':
                 case 'L':
                     /* GNU extension - ././@LongLink
-                     * Discard the blocks with the extended filename,
-                     * the last header will contain parts of it anyway
-                     */
+					 * Discard the blocks with the extended filename,
+					 * the last header will contain parts of it anyway
+					 */
                 case 'N': /* Old GNU format way of storing long filenames. */
                 case 'A': /* Solaris ACL */
                 case 'E': /* Solaris Extended attribute s*/

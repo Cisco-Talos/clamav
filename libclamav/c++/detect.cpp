@@ -121,11 +121,11 @@ void cli_detect_env_jit(struct cli_environment *env)
             if (env->arch != earch) {
                 /* bb #2153, bb #2214 */
                 /* configure can't detect -m32, so it thinks we are x86_64, when
-                 * in fact we are i386 only.
-                 * LLVM correctly detects which one it is using preprocessor
-                 * macros, so don't warn here, startup.cbc will just have to
-                 * rely on the LLVM provided info, and not the configure
-                 * provided one! */
+		 * in fact we are i386 only.
+		 * LLVM correctly detects which one it is using preprocessor
+		 * macros, so don't warn here, startup.cbc will just have to
+		 * rely on the LLVM provided info, and not the configure
+		 * provided one! */
                 if (env->arch != arch_i386)
                     conflicts = true;
             }

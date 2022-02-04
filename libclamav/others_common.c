@@ -545,9 +545,9 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 
         if ((flags & FOLLOW_SYMLINK_MASK) != FOLLOW_SYMLINK_MASK) {
             /* Following only one of directory/file symlinks, or none, may
-             * need to lstat.
-             * If we're following both file and directory symlinks, we don't need
-             * to lstat(), we can just stat() directly.*/
+	         * need to lstat.
+	         * If we're following both file and directory symlinks, we don't need
+	         * to lstat(), we can just stat() directly.*/
             if (*ft != ft_link) {
                 /* need to lstat to determine if it is a symlink */
                 if (LSTAT(fname, statbuf) == -1)
@@ -578,7 +578,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
         if (S_ISDIR(statbuf->st_mode) &&
             (*ft != ft_link || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
             /* A directory, or (a symlink to a directory and we're following dir
-             * symlinks) */
+	         * symlinks) */
             *ft = ft_directory;
         } else if (S_ISREG(statbuf->st_mode) &&
                    (*ft != ft_link || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
@@ -671,7 +671,7 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
         char *pathend;
         /* trim slashes so that dir and dir/ behave the same when
-         * they are symlinks, and we are not following symlinks */
+	     * they are symlinks, and we are not following symlinks */
 #ifndef _WIN32
         while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
 #endif
@@ -786,7 +786,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
                 case DT_LNK:
                     if (!(flags & FOLLOW_SYMLINK_MASK)) {
                         /* we don't follow symlinks, don't bother
-                         * stating it */
+			             * stating it */
                         errno = 0;
                         continue;
                     }

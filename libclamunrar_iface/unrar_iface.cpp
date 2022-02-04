@@ -442,7 +442,7 @@ int CALLBACK CallbackProc(UINT msg, LPARAM UserData, LPARAM P1, LPARAM P2)
     switch (msg) {
         case UCM_CHANGEVOLUMEW: {
             /* We don't support RAR's split into multiple volumes
-             * ClamAV is not aware of more than 1 file at a time */
+         * ClamAV is not aware of more than 1 file at a time */
             status = -1;
             unrar_dbgmsg("CallbackProc: Archive has multiple volumes, but we don't support multiple volumes.\n");
             break;

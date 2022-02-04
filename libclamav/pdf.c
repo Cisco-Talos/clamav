@@ -3118,9 +3118,9 @@ void pdf_handle_enc(struct pdf_struct *pdf)
         }
 
         /* we can have both of these:
-         * /AESV2/Length /Standard/Length
-         * /Length /Standard
-         * make sure we don't mistake AES's length for Standard's */
+        * /AESV2/Length /Standard/Length
+        * /Length /Standard
+        * make sure we don't mistake AES's length for Standard's */
         length = pdf_readint(q2, len - (q2 - q), "/Length");
         if (length == ~0u)
             length = pdf_readint(q, len, "/Length");

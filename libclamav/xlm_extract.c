@@ -3877,7 +3877,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                 if (data[data_pos + 2] == 1 && data_pos + 2 + 2 * data[data_pos + 1] <= data_size) {
                     char *utf8       = NULL;
                     size_t utf8_size = 0;
-                    // TODO: Is this really times two here? Or is the string length in bytes?
+                    //TODO: Is this really times two here? Or is the string length in bytes?
                     size_t str_len = data[data_pos + 1] * 2;
                     if (str_len > data_size - data_pos) {
                         str_len = data_size - data_pos;
@@ -4897,8 +4897,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 break;
             }
             case OPC_STRING: {
-                // Documented in Microsoft Office Excel97-2007Binary File Format (.xls) Specification
-                // Page 17: Unicode Strings in BIFF8
+                //Documented in Microsoft Office Excel97-2007Binary File Format (.xls) Specification
+                //Page 17: Unicode Strings in BIFF8
                 if (biff_header.length >= 4) {
                     uint16_t string_length = data[0] | (data[1] << 8);
                     uint8_t flags          = data[2];
@@ -4961,7 +4961,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                     break;
                 }
 
-                // Not implemented. See Microsoft Office Excel97-2007Binary File Format (.xls) Specification Page 18 for details.
+                //Not implemented. See Microsoft Office Excel97-2007Binary File Format (.xls) Specification Page 18 for details.
                 break;
             }
             default: {

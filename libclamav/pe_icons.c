@@ -1375,7 +1375,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     /* read the bitmap header */
     if (err || !(rawimage = fmap_need_off_once(map, icoff, 4))) {
         icon_env->err_oof++;
-        // cli_dbgmsg("parseicon: offset to icon is out of file\n");
+        //cli_dbgmsg("parseicon: offset to icon is out of file\n");
         return CL_SUCCESS;
     }
 
@@ -1383,13 +1383,13 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
     if (err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
         icon_env->err_bhoof++;
-        // cli_dbgmsg("parseicon: bmp header is out of file\n");
+        //cli_dbgmsg("parseicon: bmp header is out of file\n");
         return CL_SUCCESS;
     }
 
     if ((size_t)READ32(bmphdr.sz) < sizeof(bmphdr)) {
         icon_env->err_bhts++;
-        // cli_dbgmsg("parseicon: BMP header too small\n");
+        //cli_dbgmsg("parseicon: BMP header too small\n");
         return CL_SUCCESS;
     }
 
@@ -1401,12 +1401,12 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     depth  = READ16(bmphdr.depth);
     if (width > 256 || height > 256 || width < 16 || height < 16) {
         icon_env->err_tstl++;
-        // cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
+        //cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
         return CL_SUCCESS;
     }
     if (width < height * 3 / 4 || height < width * 3 / 4) {
         icon_env->err_insl++;
-        // cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
+        //cli_dbgmsg("parseicon: Image not square enough (%ux%u)\n", width, height);
         return CL_SUCCESS;
     }
 

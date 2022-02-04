@@ -73,10 +73,10 @@ enum BytecodeKind {
     /** specifies a PDF hook, executes at a predetermined point of PDF parsing for PDF files */
     BC_PDF,
     /** specifies a PE hook, executes at a predetermined point in PE parsing for PE files,
-     * both packed and unpacked files */
+      * both packed and unpacked files */
     BC_PE_ALL,
     /** specifies a PRECLASS hook, executes at the end of file property collection and
-     * operates on the original file targeted for property collection */
+      * operates on the original file targeted for property collection */
     BC_PRECLASS,
     /** specifies an ELF unpacker, executed on ELF files on a logical trigger */
     BC_ELF_UNPACKER,
@@ -90,10 +90,10 @@ enum BytecodeKind {
  * LibClamAV functionality level constants
  */
 enum FunctionalityLevels {
-    FUNC_LEVEL_096     = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
-    FUNC_LEVEL_096_dev = 52,
-    FUNC_LEVEL_096_1   = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
-                              * requires this minimum functionality level */
+    FUNC_LEVEL_096       = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
+    FUNC_LEVEL_096_dev   = 52,
+    FUNC_LEVEL_096_1     = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
+                                * requires this minimum functionality level */
     FUNC_LEVEL_096_1_dev = 54,
     FUNC_LEVEL_096_2     = 54, /**< LibClamAV release 0.96.2: PDF Hooks require this minimum level */
     FUNC_LEVEL_096_2_dev = 55,
@@ -356,7 +356,7 @@ const uint16_t __clambc_kind;
  * @param[in] a 0xf00dbeef
  * @param[in] b 0xbeeff00d
  * @return 0x12345678 if parameters match, 0x55 otherwise
- */
+*/
 uint32_t test1(uint32_t a, uint32_t b);
 
 /**
@@ -634,7 +634,7 @@ uint32_t buffer_pipe_read_avail(int32_t id);
   * @return pointer to buffer, or NULL if buffer has less than
   * specified amount
   */
-// uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
+//uint8_t *buffer_pipe_read_get(int32_t id, uint32_t amount);
 const uint8_t* buffer_pipe_read_get(int32_t id, uint32_t amount);
 
 /**
@@ -1147,7 +1147,7 @@ uint32_t pdf_getobjsize(int32_t objidx);
  * @param[in] amount - size returned by pdf_getobjsize (or smaller)
  * @return NULL - invalid objidx/amount
  * @return pointer - pointer to original object */
-// uint8_t *pdf_getobj(int32_t objidx, uint32_t amount);
+//uint8_t *pdf_getobj(int32_t objidx, uint32_t amount);
 const uint8_t* pdf_getobj(int32_t objidx, uint32_t amount);
 
 /**
@@ -1328,9 +1328,9 @@ int32_t json_get_boolean(int32_t objid);
  */
 int32_t json_get_int(int32_t objid);
 
-// int64_t json_get_int64(int32_t objid);
+//int64_t json_get_int64(int32_t objid);
 /* bytecode does not support double type */
-// double json_get_double(int32_t objid);
+//double json_get_double(int32_t objid);
 
 /* ----------------- END 0.98.4 APIs ---------------------------------- */
 /* ----------------- BEGIN 0.101.0 APIs ------------------------------- */

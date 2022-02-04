@@ -753,7 +753,7 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     resourceHeader.dataLength = be32_to_host(resourceHeader.dataLength);
     resourceHeader.mapLength  = be32_to_host(resourceHeader.mapLength);
 
-    // TODO: Need to get offset of cmpf resource in data stream
+    //TODO: Need to get offset of cmpf resource in data stream
 
     if (lseek(fd, resourceHeader.mapOffset, SEEK_SET) != resourceHeader.mapOffset) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to map in temporary file\n");
@@ -845,7 +845,7 @@ static int hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResource
         return CL_EREAD;
     }
 
-    *numBlocks = le32_to_host(*numBlocks); // Let's do a little little endian just for fun, shall we?
+    *numBlocks = le32_to_host(*numBlocks); //Let's do a little little endian just for fun, shall we?
     *table     = cli_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
     if (!*table) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to allocate memory for block table\n");
@@ -1027,8 +1027,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                     }
 
                     memcpy(&header, attribute, sizeof(header));
-                    // In the sample I had (12de189078b1e260d669a2b325d688a3a39cb5b9697e00fb1777e1ecc64f4e91), this was stored in little endian.
-                    // According to the doc, it should be in big endian.
+                    //In the sample I had (12de189078b1e260d669a2b325d688a3a39cb5b9697e00fb1777e1ecc64f4e91), this was stored in little endian.
+                    //According to the doc, it should be in big endian.
 
                     if (header.magic == DECMPFS_HEADER_MAGIC_LE) {
                         header.magic           = cbswap32(header.magic);
@@ -1059,7 +1059,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                 break;
                             }
 
-                            if ((attribute[sizeof(header)] & 0x0f) == 0x0f) { // Data is stored uncompressed
+                            if ((attribute[sizeof(header)] & 0x0f) == 0x0f) { //Data is stored uncompressed
                                 if (attributeSize - sizeof(header) - 1 != header.fileSize) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Expected file size different from size of data available\n");
                                     free(tmpname);
@@ -1140,20 +1140,20 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             break;
                         }
                         case HFSPLUS_COMPRESSION_RESOURCE: {
-                            // FIXME: This is hackish. We're assuming (which is
-                            // correct according to the spec) that there's only
-                            // one resource, and that it's the compressed data.
-                            // Ideally we should check that there is only one
-                            // resource, that its type is correct, and that its
-                            // name is cmpf.
+                            //FIXME: This is hackish. We're assuming (which is
+                            //correct according to the spec) that there's only
+                            //one resource, and that it's the compressed data.
+                            //Ideally we should check that there is only one
+                            //resource, that its type is correct, and that its
+                            //name is cmpf.
                             char *resourceFile = NULL;
                             int ifd            = -1;
                             size_t written     = 0;
 
-                            // 4096 is an approximative value, there should be
-                            // at least 16 (resource header) + 30 (map header) +
-                            // 4096 bytes (data that doesn't fit in an
-                            // attribute)
+                            //4096 is an approximative value, there should be
+                            //at least 16 (resource header) + 30 (map header) +
+                            //4096 bytes (data that doesn't fit in an
+                            //attribute)
                             if (fileRec.resourceFork.logicalSize < 4096) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Error: Expected more data in the compressed resource fork\n");
                                 ret = CL_EFORMAT;

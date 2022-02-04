@@ -58,8 +58,7 @@ static inline void swapfunc(char *, char *, int, int);
 #define SWAPINIT(a, es) swaptype = ((char *)a - (char *)0) % sizeof(long) || \
                                            es % sizeof(long)                 \
                                        ? 2                                   \
-                                   : es == sizeof(long) ? 0                  \
-                                                        : 1;
+                                       : es == sizeof(long) ? 0 : 1;
 
 static inline void
     swapfunc(a, b, n, swaptype) char *a,
@@ -88,8 +87,7 @@ int n, swaptype;
 #define MED3_R(arg, a, b, c, d) (d ? (med3_r(arg, a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? (b) : (CMP1(a, c) < 0 ? (c) : (a))) : (CMP1(b, c) > 0 ? (b) : (CMP1(a, c) < 0 ? (a) : (c)))))
 
 static inline char *
-med3(a, b, c, cmp)
-char *a,
+    med3(a, b, c, cmp) char *a,
     *b, *c;
 int (*cmp)(const void *, const void *);
 {

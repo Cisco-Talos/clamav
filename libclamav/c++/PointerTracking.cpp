@@ -209,7 +209,7 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
         }
         Ty = GV->getType();
         return SE->getConstant(Type::getInt32Ty(P->getContext()), 1);
-        // TODO: implement more tracking for globals
+        //TODO: implement more tracking for globals
     }
 
     if (CallInst *CI = dyn_cast<CallInst>(V)) {
@@ -275,7 +275,7 @@ Value *PointerTracking::computeAllocationCountValue(Value *P, constType *&Ty) co
         }
         Ty = cast<PointerType>(GV->getType())->getElementType();
         return ConstantInt::get(Type::getInt32Ty(P->getContext()), 1);
-        // TODO: implement more tracking for globals
+        //TODO: implement more tracking for globals
     }
 
     if (CallInst *CI = dyn_cast<CallInst>(V)) {
@@ -310,7 +310,7 @@ const SCEV *PointerTracking::computeAllocationCountForType(Value *P,
     uint64_t wantSize    = TD->getTypeAllocSize(Ty);
     if (elementSize == wantSize)
         return Count;
-    if (elementSize % wantSize) // fractional counts not possible
+    if (elementSize % wantSize) //fractional counts not possible
         return SE->getCouldNotCompute();
     return SE->getMulExpr(Count, SE->getConstant(Count->getType(),
                                                  elementSize / wantSize));
@@ -353,7 +353,7 @@ enum SolverResult PointerTracking::checkLimits(const SCEV *Offset,
                                                const SCEV *Limit,
                                                BasicBlock *BB)
 {
-    // FIXME: merge implementation
+    //FIXME: merge implementation
     return Unknown;
 }
 

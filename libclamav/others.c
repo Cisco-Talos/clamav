@@ -1284,7 +1284,7 @@ int cli_unlink(const char *pathname)
     if (unlink(pathname) == -1) {
 #ifdef _WIN32
         /* Windows may fail to unlink a file if it is marked read-only,
-         * even if the user has permissions to delete the file. */
+		 * even if the user has permissions to delete the file. */
         if (-1 == _chmod(pathname, _S_IWRITE)) {
             char err[128];
             cli_warnmsg("cli_unlink: _chmod failure - %s\n", cli_strerror(errno, err, sizeof(err)));

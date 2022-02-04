@@ -727,7 +727,7 @@ static inline size_t cli_hashset_search(const struct cli_hashset *hs, const uint
         /* entry used, key different -> collision */
         idx = (idx + tries++) & (hs->mask);
         /* quadratic probing, with c1 = c2 = 1/2, guaranteed to walk the entire table
-         * for table sizes power of 2.*/
+		 * for table sizes power of 2.*/
     }
     /* we have either found the key, or a candidate insertion position */
     return idx;
@@ -753,7 +753,7 @@ static int cli_hashset_grow(struct cli_hashset *hs)
     int rc;
 
     /* in-place growing is not possible, since the new keys
-     * will hash to different locations. */
+	 * will hash to different locations. */
     cli_dbgmsg(MODULE_NAME "Growing hashset, used: %u, capacity: %u\n", hs->count, hs->capacity);
     /* create a bigger hashset */
 
@@ -779,7 +779,7 @@ static int cli_hashset_grow(struct cli_hashset *hs)
 int cli_hashset_addkey(struct cli_hashset *hs, const uint32_t key)
 {
     /* check that we didn't reach the load factor.
-     * Even if we don't know yet whether we'd add this key */
+	 * Even if we don't know yet whether we'd add this key */
     if (hs->count + 1 > hs->limit) {
         int rc = cli_hashset_grow(hs);
         if (rc) {

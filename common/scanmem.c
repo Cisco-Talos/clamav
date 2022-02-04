@@ -240,7 +240,7 @@ int walkmodules_th(proc_callback callback, void *data, struct mem_info *info)
 
                 if (err == ERROR_BAD_NETPATH) {
                     logg(LOGG_WARNING, "Warning scanning files on non-ansi network paths is not "
-                                       "supported\n");
+                         "supported\n");
                     logg(LOGG_WARNING, "File: %s\n", me32.szExePath);
                     continue;
                 }
@@ -398,7 +398,7 @@ int unload_module(DWORD pid, HANDLE hModule)
             CloseHandle(ht);
             CloseHandle(hProc);
             logg(LOGG_INFO, "The module may trying to trick us, killing the process, please "
-                            "rescan\n");
+                 "rescan\n");
             return kill_process(pid);
         }
         CloseHandle(ht);
@@ -418,11 +418,11 @@ int unload_module(DWORD pid, HANDLE hModule)
     return rc;
 }
 
-#define FILLBYTES(dst)                                       \
-    if (IsBadReadPtr(seek, sizeof(dst))) {                   \
+#define FILLBYTES(dst)                            \
+    if (IsBadReadPtr(seek, sizeof(dst))) {        \
         logg(LOGG_ERROR, "ScanMem Align: Bad pointer!!!\n"); \
-        return 1;                                            \
-    }                                                        \
+        return 1;                                 \
+    }                                             \
     memcpy(&dst, seek, sizeof(dst))
 
 /* PE Realignment - FIXME: a lot of code is copy/paste from exeScanner.c */
@@ -543,7 +543,7 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
         return -1;
     }
 
-    if (info->d) { // clamdscan
+    if (info->d) { //clamdscan
         if (optget(info->opts, "stream")->enabled)
             scantype = STREAM;
         else if (optget(info->opts, "multiscan")->enabled)
@@ -561,7 +561,7 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
             info->ifiles++;
             ret = CL_VIRUS;
         }
-    } else { // clamscan
+    } else { //clamscan
         ret = cl_scandesc(fd, filename, &virname, &info->blocks, info->engine, info->options);
         if (ret == CL_VIRUS) {
             logg(LOGG_INFO, "%s: %s FOUND\n", filename, virname);
@@ -695,7 +695,7 @@ int scanmem(struct mem_info *info)
 
     if (!EnablePrivilege(SE_DEBUG_NAME, SE_PRIVILEGE_ENABLED))
         logg(LOGG_INFO, "---Please login as an Administrator to scan System processes loaded "
-                        "in computer memory---\n");
+             "in computer memory---\n");
 
     if (k32_ok)
         walkmodules_th(scanmem_cb, (void *)&data, info);

@@ -215,7 +215,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
         for (k = j; k < len - 1 && (k - j < MAXSOPATLEN); k++) {
             q = cli_readint16(&pattern[k]);
             /* we want to favor subsigs that add as little as
-             * possible to the filter */
+			 * possible to the filter */
             num += filter_isset(m, k - j, q) ? 0 : MAXSOPATLEN - (k - j);
             if ((k == j || k == j + 1) && (q == 0x0000 || q == 0xffff))
                 num += k == j ? 10000 : 1000; /* bad */
@@ -223,7 +223,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
         /* it is very important to keep the end set small */
         num += 10 * (filter_end_isset(m, k - j - 1, q) ? 0 : 1);
         /* it is very important to have signatures as long as possible
-         * */
+		 * */
         num += 5 * (MAXSOPATLEN - (k - j));
         /* if we are lower length than threshold penalize */
         if (k - j + 1 < 4)
@@ -254,7 +254,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
         filter_set_atpos(m, j, q);
     }
     /* we use variable length patterns, use last character to mark pattern end,
-     * can lead to false positives.*/
+	 * can lead to false positives.*/
     /* mark that at state j, the q-gram q can end the pattern */
     if (j) {
         j--;
@@ -265,7 +265,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
 
 struct char_spec {
     /* if non-null i-th character = alt[start + step*i]; start+step*i < end;
-     */
+	 */
     struct cli_ac_special *alt;
     uint8_t start;
     uint8_t end;
@@ -452,7 +452,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     }
     if (i == j) {
         /* all static, use add_static it has better heuristics for this
-         * case */
+		 * case */
         return filter_add_static(m, patc, j, pat->virname);
     }
     cli_perf_log_count(TRIE_ORIG_LEN, j > 8 ? 8 : j);
@@ -511,7 +511,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                     default:
                         stop = 1;
                         break; /* TODO: should something be done here?
-                                * */
+					 * */
                 }
                 break;
             case CLI_MATCH_NIBBLE_HIGH:
@@ -585,15 +585,15 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     /* try to choose best subpattern */
 
     /* calculating the score for all possible i start pos
-     * and all possible length is too slow, so choose best among N choices
-     * only */
+	 * and all possible length is too slow, so choose best among N choices
+	 * only */
     for (i = 0; i < j - 1 && choices_cnt < MAX_CHOICES; i++) {
         enum badness base0 = like, base1 = like;
         unsigned kend = MIN(j - 1, (i + MAXSOPATLEN) & ~1), k;
         int ki        = -0xff;
         /* add 2 scores: pattern with max length, one where we stop at
-         * first negative, and one we stop at last positive, but never
-         * include reject */
+		 * first negative, and one we stop at last positive, but never
+		 * include reject */
         assert(kend - 1 < j - 1);
         if (char_badness[i] == reject)
             continue;
@@ -644,7 +644,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
             get_score(char_badness[k], p, m, &chars[k], &chars[k + 1],
                       &iscore, &score_end);
             /* give more importance to the score of the characters
-             * at the beginning */
+			 * at the beginning */
             /* TODO: tune magic number here */
             if (p < 6) {
                 iscore *= (6 - p);
@@ -653,8 +653,8 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
             score += iscore;
             if (score + score_end > best_score) {
                 /* we may have negative scores, so truncating
-                 * the pattern could actually get us a higher
-                 * score */
+				 * the pattern could actually get us a higher
+				 * score */
                 best_score     = score + score_end;
                 best_score_len = p + 2;
                 best_score_i   = i;
@@ -679,7 +679,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
         spec0 = &chars[best_score_i + i];
         spec1 = &chars[best_score_i + i + 1];
         /* use overlapping little-endian 2-grams, overlapping because match can start
-         * at any position (including odd) */
+		 * at any position (including odd) */
 
         for (k0 = spec0->start; k0 <= spec0->end; k0 += spec0->step) {
             for (k1 = spec1->start; k1 <= spec1->end; k1 += spec1->step) {
@@ -758,8 +758,8 @@ long filter_search(const struct filter *m, const unsigned char *data, unsigned l
         uint8_t match_end;
         state = (state << 1) | B[q0];
         /* state marks with a 0 bit all active states
-         * End[q0] marks with a 0 bit all states where the q-gram 'q' can end a pattern
-         * if we got two 0's at matching positions, it means we encountered a pattern's end */
+		 * End[q0] marks with a 0 bit all states where the q-gram 'q' can end a pattern
+		 * if we got two 0's at matching positions, it means we encountered a pattern's end */
         match_end = state | End[q0];
         if (match_end != 0xff) {
 
@@ -767,7 +767,7 @@ long filter_search(const struct filter *m, const unsigned char *data, unsigned l
             /* to reduce false positives check if qgram can finish the pattern */
             /* return position of probable match */
             /* find first 0 starting from MSB, the position of that bit as counted from LSB, is the length of the
-             * longest pattern that could match */
+			 * longest pattern that could match */
             return j >= MAXSOPATLEN ? j - MAXSOPATLEN : 0;
         }
     }

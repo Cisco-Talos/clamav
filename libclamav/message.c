@@ -1151,10 +1151,10 @@ messageIsEncoding(message *m)
              strstr(line, "BinHex") &&
              (simil(line, binhex) > 90))
         /*
-         * Look for close matches for BinHex, but
-         * simil() is expensive so only do it if it's
-         * likely to be found
-         */
+             * Look for close matches for BinHex, but
+             * simil() is expensive so only do it if it's
+             * likely to be found
+             */
         m->binhex = m->body_last;
     else if ((m->yenc == NULL) && (strncmp(line, "=ybegin line=", 13) == 0))
         m->yenc = m->body_last;

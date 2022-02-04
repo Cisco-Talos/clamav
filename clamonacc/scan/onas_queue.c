@@ -150,7 +150,7 @@ void *onas_scan_queue_th(void *arg)
     sigfillset(&sigset);
     sigdelset(&sigset, SIGUSR2);
     /* The behavior of a process is undefined after it ignores a
-     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGSEGV);

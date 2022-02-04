@@ -218,8 +218,8 @@ int thrmgr_printstats(int f, char term)
             continue;
         }
         /* now we can access desc->, knowing that they won't get freed
-         * because the other tasks can't quit while pool_mutex is taken
-         */
+		 * because the other tasks can't quit while pool_mutex is taken
+		 */
         switch (pool->state) {
             case POOL_INVALID:
                 state = "INVALID";
@@ -255,14 +255,14 @@ int thrmgr_printstats(int f, char term)
                      task->filename ? task->filename : "");
             if (task->engine) {
                 /* we usually have at most 2 engines so a linear
-                 * search is good enough */
+				 * search is good enough */
                 size_t i;
                 for (i = 0; i < seen_cnt; i++) {
                     if (seen[i] == task->engine)
                         break;
                 }
                 /* we need to count the memusage from the same
-                 * engine only once */
+				 * engine only once */
                 if (i == seen_cnt) {
                     const struct cl_engine **s;
                     /* new engine */
@@ -515,7 +515,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
     if (stacksize < 1048576) /* at least 1MB please */
 #if defined(C_HPUX) && defined(USE_MPOOL)
         /* Set aside one cli_pagesize() for the stack's pthread header,
-         * giving a 1M region to fit a 1M large-page */
+		 * giving a 1M region to fit a 1M large-page */
         if (cli_getpagesize() < 1048576)
             stacksize = 1048576 - cli_getpagesize();
         else
@@ -928,7 +928,7 @@ void thrmgr_group_terminate(jobgroup_t *group)
 {
     if (group) {
         /* we may not be the last active job, now
-         * the last active job will free resources */
+	 * the last active job will free resources */
         pthread_mutex_lock(&group->mutex);
         group->force_exit = 1;
         pthread_mutex_unlock(&group->mutex);

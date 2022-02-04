@@ -267,7 +267,7 @@ static int dspresult(struct client_parallel_data *c)
         *id = (*id)->next;
         free(bol);
     } while (rcv.cur != rcv.buf); /* clamd sends whole lines, so, on partial lines, we just assume
-                                    more data can be recv()'d with close to zero latency */
+				    more data can be recv()'d with close to zero latency */
     return 0;
 }
 
@@ -331,8 +331,8 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
 
     while (1) {
         /* consume all the available input to let some of the clamd
-         * threads blocked on send() to be dead.
-         * by doing so we shouldn't deadlock on the next recv() */
+	     * threads blocked on send() to be dead.
+	     * by doing so we shouldn't deadlock on the next recv() */
         fd_set rfds, wfds;
         FD_ZERO(&rfds);
         FD_SET(c->sockd, &rfds);

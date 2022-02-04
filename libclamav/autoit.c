@@ -613,7 +613,7 @@ struct UNP {
 
 static uint32_t getbits(struct UNP *UNP, uint32_t size)
 {
-    // cli_dbgmsg("In getbits, (size: %u, bits_avail: %u, UNP->cur_input: %u)\n", size, UNP->bits_avail, UNP->cur_input);
+    //cli_dbgmsg("In getbits, (size: %u, bits_avail: %u, UNP->cur_input: %u)\n", size, UNP->bits_avail, UNP->cur_input);
     UNP->bitmap.half.h = 0;
     if (size > UNP->bits_avail && ((size - UNP->bits_avail - 1) / 16 + 1) * 2 > UNP->csize - UNP->cur_input) {
         cli_dbgmsg("autoit: getbits() - not enough bits available\n");
@@ -622,7 +622,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size)
     }
     while (size) {
         if (!UNP->bits_avail) {
-            // cli_dbgmsg("cur_input: %u (size: %u)\n", UNP->cur_input, size);
+            //cli_dbgmsg("cur_input: %u (size: %u)\n", UNP->cur_input, size);
             UNP->bitmap.half.l |= UNP->inputbuf[UNP->cur_input++] << 8;
             UNP->bitmap.half.l |= UNP->inputbuf[UNP->cur_input++];
             UNP->bits_avail = 16;
@@ -1125,7 +1125,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         break;
                     }
 
-                    // cli_dbgmsg("cur_output: %u, bs: %u, bb: %u\n", UNP.cur_output, bs, bb);
+                    //cli_dbgmsg("cur_output: %u, bs: %u, bb: %u\n", UNP.cur_output, bs, bb);
                     if (!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
                         !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output - bb], bs)) {
                         UNP.error = 1;
@@ -1413,11 +1413,11 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             buf = newout;
                         }
 
-                        // TODO: Fix Autoit plus bug
-                        //  if (op == 0x49) /* + */ and next op ==0x05 /*int32*/ and that int32 is negative...
-                        //  skip next line (and don't add "+")
-                        //  Background: "$a= (-4)" gets incorrect compiled. Decompiled it will be get "$A= (+ -4)"
-                        //  That doesn't effects the interpreter however when recompiling decompiled output that will result in a syntax error
+                        //TODO: Fix Autoit plus bug
+                        // if (op == 0x49) /* + */ and next op ==0x05 /*int32*/ and that int32 is negative...
+                        // skip next line (and don't add "+")
+                        // Background: "$a= (-4)" gets incorrect compiled. Decompiled it will be get "$A= (+ -4)"
+                        // That doesn't effects the interpreter however when recompiling decompiled output that will result in a syntax error
 
                         UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op - 0x40]);
                         break;

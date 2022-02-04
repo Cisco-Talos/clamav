@@ -59,7 +59,7 @@ char *cli_to_utf8_maybe_alloc(const char *s)
     /* Check if already UTF8 first... */
     if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, wdup, len)) {
         /* XP acts funny on MB_ERR_INVALID_CHARS, so we translate back and compare
-           On Vista+ the flag is honored and there is no such overhead */
+	   On Vista+ the flag is honored and there is no such overhead */
         int ulen;
         if ((ulen = WideCharToMultiByte(CP_UTF8, 0, wdup, -1, NULL, 0, NULL, NULL))) {
             if (ulen > sizeof(tmpu)) {

@@ -569,10 +569,10 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         goto done;
     }
     /*
-     * Skip white space and pick up leading +/- sign if any.
-     * If base is 0, allow 0x for hex and 0 for octal, else
-     * assume decimal; if base is already 16, allow 0x.
-     */
+   * Skip white space and pick up leading +/- sign if any.
+   * If base is 0, allow 0x for hex and 0 for octal, else
+   * assume decimal; if base is already 16, allow 0x.
+   */
     do {
         c = *s;
     } while (isspace(c) && (++s < nptr + n));
@@ -610,22 +610,22 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         base = c == '0' ? 8 : 10;
 
     /*
-     * Compute the cutoff value between legal numbers and illegal
-     * numbers.  That is the largest legal value, divided by the
-     * base.  An input number that is greater than this value, if
-     * followed by a legal input character, is too big.  One that
-     * is equal to this value may be valid or not; the limit
-     * between valid and invalid numbers is then based on the last
-     * digit.  For instance, if the range for longs is
-     * [-2147483648..2147483647] and the input base is 10,
-     * cutoff will be set to 214748364 and cutlim to either
-     * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
-     * a value > 214748364, or equal but the next digit is > 7 (or 8),
-     * the number is too big, and we will return a range error.
-     *
-     * Set any if any `digits' consumed; make it negative to indicate
-     * overflow.
-     */
+   * Compute the cutoff value between legal numbers and illegal
+   * numbers.  That is the largest legal value, divided by the
+   * base.  An input number that is greater than this value, if
+   * followed by a legal input character, is too big.  One that
+   * is equal to this value may be valid or not; the limit
+   * between valid and invalid numbers is then based on the last
+   * digit.  For instance, if the range for longs is
+   * [-2147483648..2147483647] and the input base is 10,
+   * cutoff will be set to 214748364 and cutlim to either
+   * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
+   * a value > 214748364, or equal but the next digit is > 7 (or 8),
+   * the number is too big, and we will return a range error.
+   *
+   * Set any if any `digits' consumed; make it negative to indicate
+   * overflow.
+   */
     cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
     cutlim = cutoff % (unsigned long)base;
     cutoff /= (unsigned long)base;
@@ -691,8 +691,8 @@ unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
     register int neg = 0, any = 0, cutlim;
 
     /*
-     * See cli_strntol for comments as to the logic used.
-     */
+   * See cli_strntol for comments as to the logic used.
+   */
     do {
         c = *s;
     } while (isspace(c) && (++s < nptr + n));
@@ -914,8 +914,8 @@ static inline size_t output_utf8(uint16_t u, unsigned char *dst)
         return 2;
     }
     /* u < 0x10000 because we only handle utf-16,
-     * values in range 0xd800 - 0xdfff aren't valid, but we don't check for
-     * that*/
+   * values in range 0xd800 - 0xdfff aren't valid, but we don't check for
+   * that*/
     *dst++ = 0xe0 | (u >> 12);         /* 1110xxxx */
     *dst++ = 0x80 | ((u >> 6) & 0x3f); /* 10yyyyyy */
     *dst   = 0x80 | (u & 0x3f);        /* 10zzzzzz */
@@ -929,7 +929,7 @@ char *cli_unescape(const char *str)
     size_t k, i = 0;
     const size_t len = strlen(str);
     /* unescaped string is at most as long as original,
-     * it will usually be shorter */
+   * it will usually be shorter */
     R = cli_malloc(len + 1);
     if (!R) {
         cli_errmsg("cli_unescape: Unable to allocate memory for string\n");

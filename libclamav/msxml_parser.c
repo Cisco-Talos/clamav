@@ -591,7 +591,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 
     /* Error Handler (setting handler on tree walker causes segfault) */
     if (!(flags & MSXML_FLAG_WALK))
-        // xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
+        //xmlTextReaderSetErrorHandler(reader, NULL, NULL); /* xml default handler */
         xmlTextReaderSetErrorHandler(reader, msxml_error_handler, NULL);
 
     /* Main Processing Loop */

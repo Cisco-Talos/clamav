@@ -99,7 +99,7 @@ struct cli_exe_info {
 
     /** Size of the  header (aligned). This corresponds to
      *  SizeOfHeaders in the optional header
-     */
+    */
     uint32_t hdr_size;
 
     /** Hashset for versioninfo matching */

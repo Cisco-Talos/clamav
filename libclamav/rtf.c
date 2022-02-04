@@ -162,7 +162,7 @@ static int push_state(struct stack* stack, struct rtf_state* state)
     if (compare_state(state, &base_state)) {
         state->default_elements++;
         return 0; /* this is default state, don't push it, we'll know when we pop it that it was the default one,
-                          we store in the state how many default elements we have on the stack */
+			  we store in the state how many default elements we have on the stack */
     }
     if (stack->stack_cnt >= stack->stack_size) {
         /* grow stack */
@@ -406,7 +406,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                 if (!data->bread) {
                     if (out_data[0] != 0xd0 || out_data[1] != 0xcf) {
                         /* this is not an ole2 doc, but some ole (stream?) to be
-                         * decoded by cli_decode_ole_object*/
+								 * decoded by cli_decode_ole_object*/
                         char out[4];
                         data->bread = 1; /* flag to indicate this needs to be scanned with cli_decode_ole_object*/
                         cli_writeint32(out, data->desc_len);

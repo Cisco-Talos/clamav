@@ -723,22 +723,22 @@ static struct optstruct *optget_i(struct optstruct *opts, const char *name)
 /*
 static void optprint(const struct optstruct *opts)
 {
-        const struct optstruct *h;
+	const struct optstruct *h;
 
     printf("\nOPTIONS:\n\n");
 
     while(opts) {
-        printf("OPT_NAME: %s\n", opts->name);
-        printf("OPT_CMD: %s\n", opts->cmd);
-        printf("OPT_STRARG: %s\n", opts->strarg ? opts->strarg : "NONE");
-        printf("OPT_NUMARG: %d\n", opts->numarg);
-        h = opts;
-        while((h = h->nextarg)) {
-            printf("SUBARG_OPT_STRARG: %s\n", h->strarg ? h->strarg : "NONE");
-            printf("SUBARG_OPT_NUMARG: %d\n", h->numarg);
-        }
-        printf("----------------\n");
-        opts = opts->next;
+	printf("OPT_NAME: %s\n", opts->name);
+	printf("OPT_CMD: %s\n", opts->cmd);
+	printf("OPT_STRARG: %s\n", opts->strarg ? opts->strarg : "NONE");
+	printf("OPT_NUMARG: %d\n", opts->numarg);
+	h = opts;
+	while((h = h->nextarg)) {
+	    printf("SUBARG_OPT_STRARG: %s\n", h->strarg ? h->strarg : "NONE");
+	    printf("SUBARG_OPT_NUMARG: %d\n", h->numarg);
+	}
+	printf("----------------\n");
+	opts = opts->next;
     }
 }
 */

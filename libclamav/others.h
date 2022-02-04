@@ -312,15 +312,15 @@ struct cl_engine {
     /* Limits */
     uint32_t maxscantime;         /* Time limit (in milliseconds) */
     uint64_t maxscansize;         /* during the scanning of archives this size
-                                   * will never be exceeded
-                                   */
+				           * will never be exceeded
+				           */
     uint64_t maxfilesize;         /* compressed files will only be decompressed
-                                   * and scanned up to this size
-                                   */
+				           * and scanned up to this size
+				           */
     uint32_t max_recursion_level; /* maximum recursion level for archives */
     uint32_t maxfiles;            /* maximum number of files to be scanned
-                                   * within a single archive
-                                   */
+				           * within a single archive
+				           */
     /* This is for structured data detection.  You can set the minimum
      * number of occurrences of an CC# or SSN before the system will
      * generate a notification.

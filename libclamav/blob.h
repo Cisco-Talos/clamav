@@ -55,9 +55,9 @@ typedef struct fileblob {
     FILE *fp;
     int fd;
     blob b;         /*
-                     * b.name is the name of the attachment as stored in the
-                     * email, not the full path name of the temporary file
-                     */
+			 * b.name is the name of the attachment as stored in the
+			 * email, not the full path name of the temporary file
+			 */
     char *fullname; /* full pathname of the file */
     cli_ctx *ctx;   /* When set we can scan the blob, otherwise NULL */
     unsigned long bytes_scanned;

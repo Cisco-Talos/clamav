@@ -1281,8 +1281,8 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
                     if (asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data)) {
                         cli_dbgmsg("asn1_parse_countersignature: contentType != pkcs7-data, checking for timestampToken instead\n");
                         /* Some signatures use OID_timestampToken instead, so allow
-                         * that also (despite the 2008 spec saying that this value
-                         * must be pkcs7-data) */
+                     * that also (despite the 2008 spec saying that this value
+                     * must be pkcs7-data) */
                         deeper.content = backupPtr;
                         deep.size      = backupSize;
                         if (asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_timestampToken), OID_timestampToken)) {

@@ -91,7 +91,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
                 logg(LOGG_DEBUG, "%s: Failed to open file. ERROR\n", filename);
                 return 0;
             }
-            // logg(LOGG_INFO, "DEBUG: >>>>> fd is %d\n", fd);
+            //logg(LOGG_INFO, "DEBUG: >>>>> fd is %d\n", fd);
             close_flag = 1;
         }
     }

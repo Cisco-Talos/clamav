@@ -31,7 +31,7 @@
 /* GPT sector size is normally 512 bytes be can be set to much larger
  * values. Sector size for GPT can be found by the offset the GPT header
  * signature is located (marking the beginning of the second sector.
- */
+*/
 #define GPT_SIGNATURE 0x4546492050415254ULL
 #define GPT_SIGNATURE_STR "EFI PART"
 #define GPT_PRIMARY_HDR_LBA 1

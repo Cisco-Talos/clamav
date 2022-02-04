@@ -177,8 +177,8 @@ static cl_error_t fill_buf(arj_decode_t *decode_data, int n)
                 decode_data->buf = fmap_need_off_once_len(decode_data->map, decode_data->offset, 8192, &len);
                 if (!decode_data->buf || !len) {
                     /* the file is most likely corrupted, so
-                     * we return CL_EFORMAT instead of CL_EREAD
-                     */
+				 * we return CL_EFORMAT instead of CL_EREAD
+				 */
                     decode_data->status = CL_EFORMAT;
                     return CL_EFORMAT;
                 }

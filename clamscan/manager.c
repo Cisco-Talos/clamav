@@ -1524,74 +1524,74 @@ int scanmanager(const struct optstruct *opts)
 #endif
         /* check filetype */
         if (!opts->filename && !optget(opts, "file-list")->enabled) {
-            /* we need full path for some reasons (eg. archive handling) */
-            if (!getcwd(cwd, sizeof(cwd))) {
-                logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
-                ret = 2;
-            } else {
-                CLAMSTAT(cwd, &sb);
-                scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
-            }
-
-        } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-            ret = scanstdin(engine, &options);
+        /* we need full path for some reasons (eg. archive handling) */
+        if (!getcwd(cwd, sizeof(cwd))) {
+            logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
+            ret = 2;
         } else {
-            if (opts->filename && optget(opts, "file-list")->enabled)
-                logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+            CLAMSTAT(cwd, &sb);
+            scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
+        }
+
+    } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
+        ret = scanstdin(engine, &options);
+    } else {
+        if (opts->filename && optget(opts, "file-list")->enabled)
+            logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
 #ifdef _WIN32
-            /* scan first memory if requested */
-            if (optget(opts, "memory")->enabled) {
-                minfo.d       = 0;
-                minfo.files   = info.files;
-                minfo.ifiles  = info.ifiles;
-                minfo.blocks  = info.blocks;
-                minfo.engine  = engine;
-                minfo.opts    = opts;
-                minfo.options = &options;
-                ret           = scanmem(&minfo);
-            }
+        /* scan first memory if requested */
+        if (optget(opts, "memory")->enabled) {
+            minfo.d       = 0;
+            minfo.files   = info.files;
+            minfo.ifiles  = info.ifiles;
+            minfo.blocks  = info.blocks;
+            minfo.engine  = engine;
+            minfo.opts    = opts;
+            minfo.options = &options;
+            ret           = scanmem(&minfo);
+        }
 #endif
-            while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
-                if (LSTAT(file, &sb) == -1) {
-                    perror(file);
-                    logg(LOGG_WARNING, "%s: Can't access file\n", file);
-                    ret = 2;
-                } else {
-                    for (i = strlen(file) - 1; i > 0; i--) {
-                        if (file[i] == *PATHSEP)
-                            file[i] = 0;
-                        else
-                            break;
-                    }
-
-                    if (S_ISLNK(sb.st_mode)) {
-                        if (dirlnk == 0 && filelnk == 0) {
-                            if (!printinfected)
-                                logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                        } else if (CLAMSTAT(file, &sb) != -1) {
-                            if (S_ISREG(sb.st_mode) && filelnk) {
-                                scanfile(file, engine, opts, &options);
-                            } else if (S_ISDIR(sb.st_mode) && dirlnk) {
-                                scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                            } else {
-                                if (!printinfected)
-                                    logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                            }
-                        }
-                    } else if (S_ISREG(sb.st_mode)) {
-                        scanfile(file, engine, opts, &options);
-                    } else if (S_ISDIR(sb.st_mode)) {
-                        scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                    } else {
-                        logg(LOGG_WARNING, "%s: Not supported file type\n", file);
-                        ret = 2;
-                    }
+        while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
+            if (LSTAT(file, &sb) == -1) {
+                perror(file);
+                logg(LOGG_WARNING, "%s: Can't access file\n", file);
+                ret = 2;
+            } else {
+                for (i = strlen(file) - 1; i > 0; i--) {
+                    if (file[i] == *PATHSEP)
+                        file[i] = 0;
+                    else
+                        break;
                 }
 
-                free(file);
+                if (S_ISLNK(sb.st_mode)) {
+                    if (dirlnk == 0 && filelnk == 0) {
+                        if (!printinfected)
+                            logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                    } else if (CLAMSTAT(file, &sb) != -1) {
+                        if (S_ISREG(sb.st_mode) && filelnk) {
+                            scanfile(file, engine, opts, &options);
+                        } else if (S_ISDIR(sb.st_mode) && dirlnk) {
+                            scandirs(file, engine, opts, &options, 1, sb.st_dev);
+                        } else {
+                            if (!printinfected)
+                                logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                        }
+                    }
+                } else if (S_ISREG(sb.st_mode)) {
+                    scanfile(file, engine, opts, &options);
+                } else if (S_ISDIR(sb.st_mode)) {
+                    scandirs(file, engine, opts, &options, 1, sb.st_dev);
+                } else {
+                    logg(LOGG_WARNING, "%s: Not supported file type\n", file);
+                    ret = 2;
+                }
             }
+
+            free(file);
         }
+    }
 
     if ((opt = optget(opts, "statistics"))->enabled) {
         while (opt) {

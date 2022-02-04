@@ -381,7 +381,7 @@ void *onas_ddd_th(void *arg)
     sigdelset(&sigset, SIGUSR1);
     sigdelset(&sigset, SIGUSR2);
     /* The behavior of a process is undefined after it ignores a
-     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGTERM);
