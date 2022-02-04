@@ -182,17 +182,9 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
     }
 
     if (root->bcomp_metas) {
-        ret = cli_bcomp_scanbuf(orig_buffer, orig_length, virname, acres, root, mdata, ctx);
+        ret = cli_bcomp_scanbuf(orig_buffer, orig_length, acres, root, mdata, ctx);
         if (ret != CL_CLEAN) {
-            if (ret == CL_VIRUS) {
-                if (SCAN_ALLMATCHES)
-                    viruses_found = 1;
-                else {
-                    ret = cli_append_virus(ctx, *virname);
-                    if (ret != CL_CLEAN)
-                        return ret;
-                }
-            } else if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
+            if (ret > CL_TYPENO && acmode & AC_SCAN_VIR)
                 saved_ret = ret;
             else
                 return ret;
