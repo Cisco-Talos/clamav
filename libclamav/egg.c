@@ -2461,7 +2461,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_AZO: {
                     cli_warnmsg("cli_egg_extract_file: AZO decompression not yet supported.\n");
                     goto done;
-                    //break;
+                    // break;
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_LZMA: {
                     cli_warnmsg("cli_egg_extract_file: LZMA decompression not yet supported.\n");

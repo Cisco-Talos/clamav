@@ -312,13 +312,13 @@ int main(int argc, char **argv)
         FILE *fd;
         old_umask = umask(0022);
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            //logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
+            // logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
             logg(LOGG_ERROR, "Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
             exit(2);
         } else {
             if (fprintf(fd, "%u\n", (unsigned int)mainpid) < 0) {
                 logg(LOGG_ERROR, "Can't save PID to file %s: %s\n", opt->strarg, strerror(errno));
-                //logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
+                // logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
                 fclose(fd);
                 exit(2);
             }
@@ -431,9 +431,9 @@ int main(int argc, char **argv)
 #if defined(RLIMIT_DATA) && defined(C_BSD)
         if (getrlimit(RLIMIT_DATA, &rlim) == 0) {
             /* bb #1941.
-            * On 32-bit FreeBSD if you set ulimit -d to >2GB then mmap() will fail
-            * too soon (after ~120 MB).
-            * Set limit lower than 2G if on 32-bit */
+             * On 32-bit FreeBSD if you set ulimit -d to >2GB then mmap() will fail
+             * too soon (after ~120 MB).
+             * Set limit lower than 2G if on 32-bit */
             uint64_t lim = rlim.rlim_cur;
             if (sizeof(void *) == 4 &&
                 lim > (1ULL << 31)) {

@@ -66,7 +66,7 @@
 
 #define MAX_DEL_LOOKAHEAD 5000
 
-//struct s_info info;
+// struct s_info info;
 short recursion = 0, bell = 0;
 short printinfected = 0, printclean = 1;
 
@@ -2255,7 +2255,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
                         return NULL;
                     }
 
-                    //mprintf(LOGG_INFO, "decodehexspecial: %s\n", h);
+                    // mprintf(LOGG_INFO, "decodehexspecial: %s\n", h);
                     if (!(c = cli_hex2str(h))) {
                         mprintf(LOGG_ERROR, "Decoding failed (3): %s\n", h);
                         free(hexcpy);

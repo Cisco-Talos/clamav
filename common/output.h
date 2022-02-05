@@ -49,12 +49,12 @@ int mdprintf(int desc, const char *str, ...);
  * LOGG_WARNING  warning
  * LOGG_ERROR    ERROR
  */
-typedef enum loglevel{
-    LOGG_INFO, 
-    LOGG_INFO_NF, 
-    LOGG_DEBUG, 
-    LOGG_DEBUG_NV, 
-    LOGG_WARNING, 
+typedef enum loglevel {
+    LOGG_INFO,
+    LOGG_INFO_NF,
+    LOGG_DEBUG,
+    LOGG_DEBUG_NV,
+    LOGG_WARNING,
     LOGG_ERROR
 } loglevel_t;
 
@@ -67,7 +67,7 @@ typedef enum loglevel{
  * LOGG_DEBUG_NV debug, non-verbose
  * LOGG_WARNING  warning
  * LOGG_ERROR    ERROR
- * 
+ *
  * @return 0 fur success and -1 for error, e.g. log file access problems
  */
 #ifdef __GNUC__

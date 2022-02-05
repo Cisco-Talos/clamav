@@ -567,7 +567,7 @@ static void *acceptloop_th(void *arg)
             }
 
             /* don't accept unlimited number of connections, or
-	         * we'll run out of file descriptors */
+             * we'll run out of file descriptors */
             pthread_mutex_lock(recv_fds->buf_mutex);
             while (recv_fds->nfds > (unsigned)max_queue) {
                 pthread_mutex_lock(&exit_mutex);
@@ -1157,7 +1157,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
             options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
         } else {
             logg(LOGG_WARNING, "Encrypted archive alerting requested, but archive support "
-                 "is disabled!\n");
+                               "is disabled!\n");
         }
     }
 
@@ -1169,8 +1169,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     /* TODO: Remove deprecated option in a future feature release. */
     if (optget(opts, "BlockMax")->enabled) {
         logg(LOGG_WARNING, "Using deprecated option \"BlockMax\" to enable heuristic alerts "
-             "when scans exceed set maximums. Please update your configuration "
-             "to use replacement option \"AlertExceedsMax\".\n");
+                           "when scans exceed set maximums. Please update your configuration "
+                           "to use replacement option \"AlertExceedsMax\".\n");
         options.heuristic |= CL_SCAN_HEURISTIC_EXCEEDS_MAX;
     } else if (optget(opts, "AlertExceedsMax")->enabled) {
         logg(LOGG_INFO, "Heuristic alerting enabled for scans that exceed set maximums.\n");
@@ -1182,8 +1182,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     /* TODO: Remove deprecated option in a future feature release. */
     if (!optget(opts, "AlgorithmicDetection")->enabled) {
         logg(LOGG_WARNING, "Using deprecated option \"AlgorithmicDetection\" to disable "
-             "heuristic alerts. Please update your configuration to use "
-             "replacement option \"HeuristicAlerts\".\n");
+                           "heuristic alerts. Please update your configuration to use "
+                           "replacement option \"HeuristicAlerts\".\n");
     } else if (!optget(opts, "HeuristicAlerts")->enabled) {
         logg(LOGG_INFO, "Heuristic alerts disabled.\n");
     } else {
@@ -1392,15 +1392,15 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         int solaris_has_extended_stdio = 0;
 #endif
         /* Condition to not run out of file descriptors:
-	     * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
-	     * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
-	     * */
+         * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE
+         * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
+         * */
 #ifdef C_SOLARIS
 
         /*
-	     **  If compiling 64bit, then set the solaris_has_extended_stdio
-	     **  flag
-	     */
+         **  If compiling 64bit, then set the solaris_has_extended_stdio
+         **  flag
+         */
 
 #if defined(_LP64)
         solaris_has_extended_stdio++;
@@ -1422,10 +1422,10 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 #endif
 
         /*
-	     **  If compiling in 64bit or the file stdio has been extended,
-	     **  then increase the soft limit for the number of open files
-	     **  as the default is usually 256
-	     */
+         **  If compiling in 64bit or the file stdio has been extended,
+         **  then increase the soft limit for the number of open files
+         **  as the default is usually 256
+         */
 
         if (solaris_has_extended_stdio) {
             rlim_t saved_soft_limit = rlim.rlim_cur;

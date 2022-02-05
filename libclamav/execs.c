@@ -38,16 +38,16 @@ void cli_exe_info_init(struct cli_exe_info *exeinfo, uint32_t offset)
     ///* Initialize all of the members which are actually used by the matcher
     // * and by the bytecode runtime.  The rest is executable specific and
     // * we'll leave it to be populated by the exe parsing code. */
-    //exeinfo->offset = offset;
-    //exeinfo->sections = NULL;
-    //exeinfo->nsections = 0;
-    //exeinfo->ep = 0;
+    // exeinfo->offset = offset;
+    // exeinfo->sections = NULL;
+    // exeinfo->nsections = 0;
+    // exeinfo->ep = 0;
     ///* NOTE: These are PE-specific to an extent, but we should still
     // * initialize them for other exe types because they are used by
     // * the matcher/bytecode runtime. */
-    //exeinfo->hdr_size = 0;
-    //exeinfo->res_addr = 0;
-    //cli_hashset_init_noalloc(&(exeinfo->vinfo));
+    // exeinfo->hdr_size = 0;
+    // exeinfo->res_addr = 0;
+    // cli_hashset_init_noalloc(&(exeinfo->vinfo));
 }
 
 void cli_exe_info_destroy(struct cli_exe_info *exeinfo)

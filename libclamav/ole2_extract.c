@@ -91,8 +91,8 @@ typedef struct ole2_header_tag {
 
     uint32_t signature __attribute__((packed));
     uint32_t sbat_cutoff __attribute__((packed)); /* cutoff for files held
-                                                         * in small blocks
-                                                         * (4096) */
+                                                   * in small blocks
+                                                   * (4096) */
 
     int32_t sbat_start __attribute__((packed));
     int32_t sbat_block_count __attribute__((packed));
@@ -603,7 +603,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         return CL_EMAXREC;
     }
 
-    //push the 'root' node for the level onto the local list
+    // push the 'root' node for the level onto the local list
     if ((ret = ole2_list_push(&node_list, prop_index)) != CL_SUCCESS) {
         ole2_list_delete(&node_list);
         return ret;
@@ -620,13 +620,13 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
 
         current_block = hdr->prop_start;
 
-        //pop off a node to work on
+        // pop off a node to work on
         curindex = ole2_list_pop(&node_list);
         ole2_listmsg("current index: %d\n", curindex);
         if ((curindex < 0) || (curindex > (int32_t)hdr->max_block_no)) {
             continue;
         }
-        //read in the sector referenced by the current index
+        // read in the sector referenced by the current index
         idx = curindex / 4;
         for (i = 0; i < idx; i++) {
             current_block = ole2_get_next_block_number(hdr, current_block);
@@ -1069,7 +1069,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                     case BIFF_PARSER_BOUNDSHEET_RECORD:
                         if (state->data_offset == 4) {
                             state->tmp = buff[i];
-                        } else if (state->data_offset == 5 && buff[i] == 1) { //Excel 4.0 macro sheet
+                        } else if (state->data_offset == 5 && buff[i] == 1) { // Excel 4.0 macro sheet
                             cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Found XLM macro sheet\n");
 #if HAVE_JSON
                             if (SCAN_COLLECT_METADATA && (ctx->wrkproperty != NULL)) {
@@ -1103,7 +1103,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                         }
                         break;
                     default:
-                        //Should never arrive here
+                        // Should never arrive here
                         cli_dbgmsg("[scan_biff_for_xlm_macros_and_images] Unexpected state value %d\n", (int)state->state);
                         break;
                 }

@@ -1474,7 +1474,7 @@ fc_error_t perform_database_update(
 
     if ((NULL != databaseList) && (0 < nDatabases)) {
         /*
-        * Download/update the desired official databases.
+         * Download/update the desired official databases.
          */
         ret = fc_update_databases(
             databaseList,
@@ -1926,7 +1926,7 @@ int main(int argc, char **argv)
          * written the PidFile.  If it does not get this signal, it
          * will wait for our exit status (and we don't exit in daemon mode).
          */
-        if (parentPid != getpid()) { //we have been daemonized
+        if (parentPid != getpid()) { // we have been daemonized
             daemonize_signal_parent(parentPid);
         }
 #endif

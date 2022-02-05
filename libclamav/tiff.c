@@ -121,7 +121,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
             entry.numval = tiff32_to_host(big_endian, entry.numval);
             entry.value  = tiff32_to_host(big_endian, entry.value);
 
-            //cli_dbgmsg("%02u: %u %u %u %u\n", i, entry.tag, entry.type, entry.numval, entry.value);
+            // cli_dbgmsg("%02u: %u %u %u %u\n", i, entry.tag, entry.type, entry.numval, entry.value);
 
             value_size = entry.numval;
             switch (entry.type) {

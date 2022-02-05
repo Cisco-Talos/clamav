@@ -41,7 +41,7 @@
 #include "matcher.h"
 
 /* NOTE: Photoshop stores data in BIG ENDIAN format, this is the opposite
-	to virtually everything else */
+        to virtually everything else */
 
 #define special_endian_convert_16(v) be16_to_host(v)
 #define special_endian_convert_32(v) be32_to_host(v)
@@ -148,10 +148,10 @@ static int riff_read_chunk(fmap_t *map, off_t *offset, int big_endian, int rec_l
         return 0;
     }
     /* FIXME: WTF!?
-	if (lseek(fd, offset, SEEK_SET) != offset) {
-		return 2;
-	}
-	*/
+        if (lseek(fd, offset, SEEK_SET) != offset) {
+                return 2;
+        }
+        */
     return 1;
 }
 

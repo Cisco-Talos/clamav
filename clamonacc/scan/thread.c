@@ -243,7 +243,7 @@ static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data
             if (event_data->sizelimit) {
                 if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
                     /* okay to skip w/o allow/deny since dir comes from inotify
-					 * events and (probably) won't block w/ protection enabled */
+                     * events and (probably) won't block w/ protection enabled */
                     event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
                     logg(LOGG_DEBUG, "ClamWorker: size limit surpassed while doing extra scanning ... skipping object ...\n");
                 }
@@ -279,8 +279,8 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
     if (event_data->sizelimit) {
         if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
             /* don't skip so we avoid lockups, but don't scan either;
-			 * while it should be obvious, this will unconditionally set
-			 * the bit in the map to 0 regardless of original orientation */
+             * while it should be obvious, this will unconditionally set
+             * the bit in the map to 0 regardless of original orientation */
             event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
         }
     }
@@ -348,8 +348,8 @@ void *onas_scan_worker(void *arg)
         onas_scan_thread_handle_file(event_data, event_data->pathname);
     } else {
         /* something went very wrong, so check if we have an open fd,
-		 * try to close it to resolve any potential lingering permissions event,
-		 * then move to cleanup */
+         * try to close it to resolve any potential lingering permissions event,
+         * then move to cleanup */
         if (event_data->fmd) {
             if (event_data->fmd->fd >= 0) {
                 close(event_data->fmd->fd);
@@ -360,7 +360,7 @@ void *onas_scan_worker(void *arg)
 #endif
 done:
     /* our job to cleanup event data: worker queue just kicks us off in a thread pool, drops the event object
-	 * from the queue and forgets about us */
+     * from the queue and forgets about us */
 
     if (NULL != event_data) {
         if (NULL != event_data->pathname) {

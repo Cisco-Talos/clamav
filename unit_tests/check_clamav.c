@@ -1284,7 +1284,7 @@ static void data_setup(void)
     ck_assert_msg(!!data2, "unable to allocate memory for fixture");
     p = data;
     /* make multiple copies of le_data, we need to run readint tests in a loop, so we need
-         * to give it some data to run it on */
+     * to give it some data to run it on */
     for (i = 0; i < DATA_REP; i++) {
         memcpy(p, le_data, sizeof(le_data));
         p += sizeof(le_data);

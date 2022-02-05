@@ -421,57 +421,57 @@ int _yr_compiler_compile_rules(
     if (result == ERROR_SUCCESS) {
         compiler->automaton_arena = NULL;
         result                    = yr_arena_append(
-            arena,
-            compiler->code_arena);
+                               arena,
+                               compiler->code_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->code_arena = NULL;
         result               = yr_arena_append(
-            arena,
-            compiler->re_code_arena);
+                          arena,
+                          compiler->re_code_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->re_code_arena = NULL;
         result                  = yr_arena_append(
-            arena,
-            compiler->rules_arena);
+                             arena,
+                             compiler->rules_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->rules_arena = NULL;
         result                = yr_arena_append(
-            arena,
-            compiler->strings_arena);
+                           arena,
+                           compiler->strings_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->strings_arena = NULL;
         result                  = yr_arena_append(
-            arena,
-            compiler->externals_arena);
+                             arena,
+                             compiler->externals_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->externals_arena = NULL;
         result                    = yr_arena_append(
-            arena,
-            compiler->namespaces_arena);
+                               arena,
+                               compiler->namespaces_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->namespaces_arena = NULL;
         result                     = yr_arena_append(
-            arena,
-            compiler->metas_arena);
+                                arena,
+                                compiler->metas_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->metas_arena = NULL;
         result                = yr_arena_append(
-            arena,
-            compiler->sz_arena);
+                           arena,
+                           compiler->sz_arena);
     }
 
     if (result == ERROR_SUCCESS) {

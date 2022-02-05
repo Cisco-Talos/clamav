@@ -67,7 +67,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
      * don't add these to the filter. */
     if (root->filter && !root->bm_offmode) {
         /* the bm_suffix load balancing below can shorten the sig,
-	 * we want to see the entire signature! */
+         * we want to see the entire signature! */
         if (filter_add_static(root->filter, pattern->pattern, pattern->length, pattern->virname) == -1) {
             cli_warnmsg("cli_bm_addpatt: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
