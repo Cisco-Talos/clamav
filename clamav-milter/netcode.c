@@ -55,7 +55,7 @@
 
 #include "netcode.h"
 
-#define strerror_print(msg) logg(msg ": %s\n", cli_strerror(errno, er, sizeof(er)))
+#define strerror_print(loglevel, msg) logg(loglevel, msg ": %s\n", cli_strerror(errno, er, sizeof(er)))
 
 enum {
     NON_SMTP,
@@ -85,18 +85,18 @@ static int nc_socket(struct CP_ENTRY *cpe)
     char er[256];
 
     if (s == -1) {
-        strerror_print("!Failed to create socket");
+        strerror_print(LOGG_ERROR, "!Failed to create socket");
         return -1;
     }
     flags = fcntl(s, F_GETFL, 0);
     if (flags == -1) {
-        strerror_print("!fcntl_get failed");
+        strerror_print(LOGG_ERROR, "fcntl_get failed");
         close(s);
         return -1;
     }
     flags |= O_NONBLOCK;
     if (fcntl(s, F_SETFL, flags) == -1) {
-        strerror_print("!fcntl_set failed");
+        strerror_print(LOGG_ERROR, "fcntl_set failed");
         close(s);
         return -1;
     }
@@ -112,7 +112,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe)
 
     if (!res) return 0;
     if (errno != EINPROGRESS) {
-        strerror_print("*connect failed");
+        strerror_print(LOGG_DEBUG, "connect failed");
         close(s);
         return -1;
     }
@@ -169,7 +169,7 @@ int nc_send(int s, const void *buff, size_t len)
             continue;
         }
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            strerror_print("!send failed");
+            strerror_print(LOGG_ERROR, "send failed");
             close(s);
             return 1;
         }
@@ -225,7 +225,7 @@ int nc_sendmsg(int s, int fd)
 
     if ((ret = sendmsg(s, &msg, 0)) == -1) {
         char er[256];
-        strerror_print("!clamfi_eom: FD send failed");
+        strerror_print(LOGG_ERROR, "clamfi_eom: FD send failed");
         close(s);
     }
     return ret;
@@ -270,7 +270,7 @@ char *nc_recv(int s)
             char er[256];
             if (errno == EAGAIN)
                 continue;
-            strerror_print("!recv failed after successful select");
+            strerror_print(LOGG_ERROR, "recv failed after successful select");
             close(s);
             return NULL;
         }
