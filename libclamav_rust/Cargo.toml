@@ -14,6 +14,8 @@ tempfile = "3"
 thiserror = "1"
 image = "0.24"
 rustdct = "0.7"
+transpose = "0.2"
+num-traits = "0.2"
 
 [lib]
 crate-type = ["staticlib"]
