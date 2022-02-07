@@ -12,8 +12,8 @@ log = { version = "0.4", features = ["std"] }
 sha2 = "0.10"
 tempfile = "3"
 thiserror = "1"
-image = "0.23"
-img_hash = "*"
+image = "0.24"
+rustdct = "0.7"
 
 [lib]
 crate-type = ["staticlib"]
