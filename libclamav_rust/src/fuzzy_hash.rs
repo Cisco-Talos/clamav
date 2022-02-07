@@ -351,10 +351,22 @@ pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, FuzzyHashErr
         .map(|x| if x > mean { 1 } else { 0 })
         .collect();
 
-    // construct hash integer from bits
-    let hash: u64 = hashvec.iter().fold(0, |res, &bit| (res << 1) ^ bit);
+    // Construct hash vec<u8> from bits.
+    let hash_bytes: Vec<u8> = hashvec
+        .chunks(8)
+        .map_while(|chunk| {
+            let chunk = chunk.to_owned();
+            chunk
+                .iter()
+                .rev()
+                .enumerate()
+                .fold(None, |accum, (n, val)| {
+                    accum.or(Some(0)).map(|accum| accum | ((*val as u8) << n))
+                })
+        })
+        .collect();
 
-    debug!("Image hash: {:?}", hex::encode(hash_bytes));
+    debug!("Image hash: {:?}", hex::encode(&hash_bytes));
 
-    Ok(hash_bytes.to_vec())
+    Ok(hash_bytes)
 }
