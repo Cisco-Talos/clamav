@@ -46,6 +46,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
     uint16_t i, num_entries;
     struct tiff_ifd entry;
     size_t value_size;
+    uint32_t last_offset = 0;
 
     cli_dbgmsg("in cli_parsetiff()\n");
 
@@ -81,6 +82,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         status = CL_EPARSE;
         goto done;
     }
+    /* offset of the first IFD */
     offset = tiff32_to_host(big_endian, offset);
 
     cli_dbgmsg("cli_parsetiff: first IFD located @ offset %u\n", offset);
@@ -181,6 +183,8 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
 
         ifd_count++;
 
+        last_offset = offset;
+
         /* acquire next IFD location, gets 0 if last IFD */
         if (fmap_readn(map, &offset, offset, sizeof(offset)) != sizeof(offset)) {
             cli_dbgmsg("cli_parsetiff: Failed to aquire next IFD location, file appears to be truncated.\n");
@@ -189,6 +193,16 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
             goto done;
         }
         offset = tiff32_to_host(big_endian, offset);
+
+        if (offset) {
+            /*If the offsets are not in order, that is suspicious.*/
+            if (last_offset >= offset) {
+                cli_dbgmsg("cli_parsetiff: Next offset is before current offset, file appears to be malformed.\n");
+                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.OutOfOrderIFDOffset");
+                status = CL_EPARSE;
+                goto done;
+            }
+        }
     } while (offset);
 
     cli_dbgmsg("cli_parsetiff: examined %u IFD(s)\n", ifd_count);
