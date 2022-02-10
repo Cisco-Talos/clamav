@@ -3163,6 +3163,33 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+/*convert the ascii sha1 in 'token' to binary and store in
+ * hashDest.
+ */
+static cl_error_t set_sha1(const char *const token, uint8_t hashDest[SHA1_HASH_SIZE],
+                           const char *const varname, uint32_t line)
+{
+
+    cl_error_t ret               = CL_SUCCESS;
+    uint8_t hash[SHA1_HASH_SIZE] = {0};
+
+    if ((2 * SHA1_HASH_SIZE) != strlen(token)) {
+        cli_errmsg("cli_loadcrt: line %u: %s is not the appropriate length for a SHA1 Hash\n", (unsigned int)line, varname);
+        ret = CL_EMALFDB;
+        goto done;
+    }
+
+    if (0 > cli_hex2str_to(token, (char *)hash, strlen(token))) {
+        cli_errmsg("cli_loadcrt: line %u: Cannot convert %s to binary string\n", (unsigned int)line, varname);
+        ret = CL_EMALFDB;
+        goto done;
+    }
+    memcpy(hashDest, hash, SHA1_HASH_SIZE);
+
+done:
+    return ret;
+}
+
 /*
  * name;trusted;subject;serial;pubkey;exp;codesign;timesign;certsign;notbefore;comment[;minFL[;maxFL]]
  * Name and comment are ignored. They're just for the end user.
@@ -3175,8 +3202,8 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     char *tokens[CRT_TOKENS + 1];
     size_t line = 0, tokens_count;
     cli_crt ca;
-    int ret       = CL_SUCCESS;
-    char *subject = NULL, *pubkey = NULL, *serial = NULL;
+    int ret             = CL_SUCCESS;
+    char *pubkey        = NULL;
     const uint8_t exp[] = "\x01\x00\x01";
 
     if (!(engine->dconf->pe & PE_CONF_CERTS)) {
@@ -3206,14 +3233,14 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
         if (tokens_count > CRT_TOKENS || tokens_count < CRT_TOKENS - 2) {
             cli_errmsg("cli_loadcrt: line %u: Invalid number of tokens: %u\n", (unsigned int)line, (unsigned int)tokens_count);
             ret = CL_EMALFDB;
-            goto end;
+            goto done;
         }
 
         if (tokens_count > CRT_TOKENS - 2) {
             if (!cli_isnumber(tokens[CRT_TOKENS - 2])) {
                 cli_errmsg("cli_loadcrt: line %u: Invalid minimum feature level\n", (unsigned int)line);
                 ret = CL_EMALFDB;
-                goto end;
+                goto done;
             }
             if ((unsigned int)atoi(tokens[CRT_TOKENS - 2]) > cl_retflevel()) {
                 cli_dbgmsg("cli_loadcrt: Cert %s not loaded (required f-level: %u)\n", tokens[0], cl_retflevel());
@@ -3224,7 +3251,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
                 if (!cli_isnumber(tokens[CRT_TOKENS - 1])) {
                     cli_errmsg("cli_loadcrt: line %u: Invalid maximum feature level\n", (unsigned int)line);
                     ret = CL_EMALFDB;
-                    goto end;
+                    goto done;
                 }
 
                 if ((unsigned int)atoi(tokens[CRT_TOKENS - 1]) < cl_retflevel()) {
@@ -3244,42 +3271,35 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             default:
                 cli_errmsg("cli_loadcrt: line %u: Invalid trust specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
-                goto end;
+                goto done;
         }
 
-        subject = cli_hex2str(tokens[2]);
         if (strlen(tokens[3])) {
-            serial = cli_hex2str(tokens[3]);
-            if (!serial) {
-                cli_errmsg("cli_loadcrt: line %u: Cannot convert serial to binary string\n", (unsigned int)line);
-                ret = CL_EMALFDB;
-                goto end;
+            ret = set_sha1(tokens[3], ca.serial, "serial", line);
+            if (CL_SUCCESS != ret) {
+                goto done;
             }
-            memcpy(ca.serial, serial, sizeof(ca.serial));
-            free(serial);
         } else {
             ca.ignore_serial = 1;
             memset(ca.serial, 0xca, sizeof(ca.serial));
         }
-        pubkey = cli_hex2str(tokens[4]);
 
         if (engine->engine_options & ENGINE_OPTIONS_PE_DUMPCERTS) {
             cli_dbgmsg("cli_loadcrt: subject: %s\n", tokens[2]);
             cli_dbgmsg("cli_loadcrt: public key: %s\n", tokens[4]);
         }
 
-        if (!subject) {
-            cli_errmsg("cli_loadcrt: line %u: Cannot convert subject to binary string\n", (unsigned int)line);
-            ret = CL_EMALFDB;
-            goto end;
+        ret = set_sha1(tokens[2], ca.subject, "subject", line);
+        if (CL_SUCCESS != ret) {
+            goto done;
         }
+
+        pubkey = cli_hex2str(tokens[4]);
         if (!pubkey) {
             cli_errmsg("cli_loadcrt: line %u: Cannot convert public key to binary string\n", (unsigned int)line);
             ret = CL_EMALFDB;
-            goto end;
+            goto done;
         }
-
-        memcpy(ca.subject, subject, sizeof(ca.subject));
 
         fp_read_unsigned_bin(&(ca.n), (const unsigned char *)pubkey, strlen(tokens[4]) / 2);
 
@@ -3295,7 +3315,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             default:
                 cli_errmsg("cli_loadcrt: line %u: Invalid code sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
-                goto end;
+                goto done;
         }
 
         switch (tokens[7][0]) {
@@ -3308,7 +3328,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             default:
                 cli_errmsg("cli_loadcrt: line %u: Invalid time sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
-                goto end;
+                goto done;
         }
 
         switch (tokens[8][0]) {
@@ -3321,7 +3341,7 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
             default:
                 cli_errmsg("cli_loadcrt: line %u: Invalid cert sign specification. Expected 0 or 1\n", (unsigned int)line);
                 ret = CL_EMALFDB;
-                goto end;
+                goto done;
         }
 
         if (strlen(tokens[0]))
@@ -3335,16 +3355,12 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
 
         ca.hashtype = CLI_HASHTYPE_ANY;
         crtmgr_add(&(engine->cmgr), &ca);
-        free(subject);
-        free(pubkey);
-        subject = pubkey = NULL;
+
+        FREE(pubkey);
     }
 
-end:
-    if (subject)
-        free(subject);
-    if (pubkey)
-        free(pubkey);
+done:
+    FREE(pubkey);
 
     cli_dbgmsg("Number of certs: %d\n", engine->cmgr.items);
     cli_crt_clear(&ca);
