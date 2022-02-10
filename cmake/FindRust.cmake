@@ -222,7 +222,7 @@ function(add_rust_test)
 
     add_test(
         NAME ${ARGS_NAME}
-        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} -vv --color always
+        COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=test" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --color always
         WORKING_DIRECTORY ${ARGS_WORKING_DIRECTORY}
     )
 endfunction()
