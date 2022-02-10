@@ -641,10 +641,35 @@ static void ac_free_special(struct cli_ac_patt *p)
     MPOOL_FREE(mempool, p->special_table);
 }
 
+/*Find all duplicate pointers and zero them so that we won't get double-free
+ * errors when we iterate over the cli_matcher to free all the trans
+ * pointers.*/
+static void zero_duplicate_trans_nodes(struct cli_matcher *root, const size_t idx) {
+    size_t j;
+    for (j = 0; j < root->ac_nodes; j++) {
+        if (j == idx){
+            continue;
+        }
+        if (NULL == root->ac_nodetable[j]){
+            continue;
+        }
+        if (root->ac_nodetable[idx]->trans == root->ac_nodetable[j]->trans) {
+            root->ac_nodetable[j]->trans = NULL;
+        }
+    }
+    if (root->ac_root){
+        if ( root->ac_nodetable[idx]->trans == root->ac_root->trans){
+            root->ac_root->trans = NULL;
+        }
+    }
+
+}
+
 void cli_ac_free(struct cli_matcher *root)
 {
-    uint32_t i;
-    struct cli_ac_patt *patt;
+    uint32_t i = 0;
+    //uint32_t j = 0;
+    struct cli_ac_patt *patt = NULL;
 
     for (i = 0; i < root->ac_patterns; i++) {
         patt = root->ac_pattable[i];
@@ -666,7 +691,9 @@ void cli_ac_free(struct cli_matcher *root)
         if (!IS_LEAF(root->ac_nodetable[i]) &&
             root->ac_nodetable[i]->fail &&
             root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans) {
+            zero_duplicate_trans_nodes(root, i);
             MPOOL_FREE(root->mempool, root->ac_nodetable[i]->trans);
+            root->ac_nodetable[i]->trans = NULL;
         }
     }
 
@@ -676,8 +703,18 @@ void cli_ac_free(struct cli_matcher *root)
     if (root->ac_listtable)
         MPOOL_FREE(root->mempool, root->ac_listtable);
 
-    for (i = 0; i < root->ac_nodes; i++)
+    for (i = 0; i < root->ac_nodes; i++) {
+        if (NULL == root->ac_nodetable[i]){
+            continue;
+        }
+        if (!IS_LEAF(root->ac_nodetable[i])) {
+            zero_duplicate_trans_nodes(root, i);
+            MPOOL_FREE(root->mempool, root->ac_nodetable[i]->trans);
+            root->ac_nodetable[i]->trans = NULL;
+        }
         MPOOL_FREE(root->mempool, root->ac_nodetable[i]);
+        root->ac_nodetable[i] = NULL;
+    }
 
     if (root->ac_nodetable)
         MPOOL_FREE(root->mempool, root->ac_nodetable);

@@ -39,7 +39,6 @@
 
 #include <limits.h>
 #include <sys/types.h>
-#include <assert.h>
 
 #include "regex/regex.h"
 
@@ -162,13 +161,35 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     struct cli_ac_data mdata;
     struct cli_ac_result *res = NULL;
 
-    assert(matcher);
-    assert(real_url);
-    assert(display_url);
+    if (NULL == matcher) {
+        rc = CL_ENULLARG;
+        cli_errmsg("regex_list_match: matcher must be initialized\n");
+        goto done;
+    }
+
+    if (NULL == real_url) {
+        rc = CL_ENULLARG;
+        cli_errmsg("regex_list_match: real_url must be initialized\n");
+        goto done;
+    }
+
+    if (NULL == display_url) {
+        rc = CL_ENULLARG;
+        cli_errmsg("regex_list_match: display_url must be initialized\n");
+        goto done;
+    }
+
     *info = NULL;
-    if (!matcher->list_inited)
-        return CL_SUCCESS;
-    assert(matcher->list_built);
+    if (!matcher->list_inited) {
+        rc = CL_SUCCESS;
+        goto done;
+    }
+    if (0 == matcher->list_built) {
+        cli_errmsg("regex_list_match: matcher->list_built must be initialized\n");
+        rc = CL_ENULLARG;
+        goto done;
+    }
+
     /* skip initial '.' inserted by get_host */
     if (real_url[0] == '.') real_url++;
     if (display_url[0] == '.') display_url++;
@@ -279,6 +300,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         cli_dbgmsg("Lookup result: not in regex list\n");
     else
         cli_dbgmsg("Lookup result: in regex list\n");
+done:
     return rc;
 }
 
@@ -287,11 +309,25 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
 cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefiltering)
 {
 #ifdef USE_MPOOL
-    mpool_t *mp = matcher->mempool;
+    mpool_t *mp = NULL;
 #endif
-    cl_error_t rc;
+    cl_error_t rc = CL_SUCCESS;
 
-    assert(matcher);
+    if (NULL == matcher) {
+        cli_errmsg("init_regex_list: matcher must be initialized\n");
+        rc = CL_ENULLARG;
+        goto done;
+    }
+
+#ifdef USE_MPOOL
+    mp = matcher->mempool;
+    if (NULL == mp) {
+        cli_errmsg("init_regex_list: matcher->mempool must be initialized\n");
+        rc = CL_ENULLARG;
+        goto done;
+    }
+#endif
+
     memset(matcher, 0, sizeof(*matcher));
 
     matcher->list_inited = 1;
@@ -301,23 +337,25 @@ cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefilte
 #ifdef USE_MPOOL
     matcher->mempool          = mp;
     matcher->suffixes.mempool = mp;
-    assert(mp && "mempool must be initialized");
 #endif
+
     if ((rc = cli_ac_init(&matcher->suffixes, 2, 32, dconf_prefiltering))) {
-        return rc;
+        goto done;
     }
 #ifdef USE_MPOOL
     matcher->sha256_hashes.mempool  = mp;
     matcher->hostkey_prefix.mempool = mp;
 #endif
     if ((rc = cli_bm_init(&matcher->sha256_hashes))) {
-        return rc;
+        goto done;
     }
     if ((rc = cli_bm_init(&matcher->hostkey_prefix))) {
-        return rc;
+        goto done;
     }
     filter_init(&matcher->filter);
-    return CL_SUCCESS;
+
+done:
+    return rc;
 }
 
 static int functionality_level_check(char *line)
@@ -424,7 +462,10 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
     int line = 0, entry = 0;
     char buffer[FILEBUFF];
 
-    assert(matcher);
+    if (NULL == matcher) {
+        cli_errmsg("load_regex_matcher: matcher must be initialized\n");
+        return CL_ENULLARG;
+    }
 
     if (matcher->list_inited == -1)
         return CL_EMALFDB; /* already failed to load */
@@ -507,8 +548,9 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
 
         if ((buffer[0] == 'R' && !is_allow_list_lookup) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_allow_list_lookup)) {
             /* regex for hostname*/
-            if ((rc = regex_list_add_pattern(matcher, pattern)))
+            if ((rc = regex_list_add_pattern(matcher, pattern))) {
                 return rc == CL_EMEM ? CL_EMEM : CL_EMALFDB;
+            }
         } else if ((buffer[0] == 'H' && !is_allow_list_lookup) || (buffer[0] == 'M' && is_allow_list_lookup)) {
             /*matches displayed host*/
             if ((rc = add_static_pattern(matcher, pattern)))
@@ -561,7 +603,10 @@ cl_error_t cli_build_regex_list(struct regex_matcher *matcher)
 /* Done with this matcher, free resources */
 void regex_list_done(struct regex_matcher *matcher)
 {
-    assert(matcher);
+    if (NULL == matcher) {
+        cli_errmsg("regex_list_done: matcher must be initialized\n");
+        goto done;
+    }
 
     if (matcher->list_inited == 1) {
         size_t i;
@@ -591,24 +636,55 @@ void regex_list_done(struct regex_matcher *matcher)
         cli_bm_free(&matcher->sha256_hashes);
         cli_bm_free(&matcher->hostkey_prefix);
     }
+
+done:
+    return;
 }
 
 int is_regex_ok(struct regex_matcher *matcher)
 {
-    assert(matcher);
-    return (!matcher->list_inited || matcher->list_inited != -1); /* either we don't have a regexlist, or we initialized it successfully */
+    int ret = 0;
+    if (NULL == matcher) {
+        cli_errmsg("is_regex_ok: matcher must be initialized\n");
+    } else {
+        ret = (!matcher->list_inited || matcher->list_inited != -1); /* either we don't have a regexlist, or we initialized it successfully */
+    }
+
+    return ret;
 }
 
-static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
+static cl_error_t add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
 {
-    struct cli_matcher *root = &matcher->suffixes;
-    struct cli_ac_patt *new  = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*new));
+    struct cli_matcher *root = NULL;
+    struct cli_ac_patt *new  = NULL;
     size_t i;
-    int ret;
+    cl_error_t ret = CL_SUCCESS;
 
-    if (!new)
-        return CL_EMEM;
-    assert(root && suffix);
+    if (NULL == matcher) {
+        cli_errmsg("add_newsuffix: matcher must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
+
+    root = &matcher->suffixes;
+    if (NULL == root) {
+        cli_errmsg("add_newsuffix: root must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
+
+    if (NULL == suffix) {
+        cli_errmsg("add_newsuffix: suffix must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
+
+    new = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*new));
+    if (!new) {
+        cli_errmsg("add_newsuffix: unable to add \n");
+        ret = CL_EMEM;
+        goto done;
+    }
 
     new->rtype      = 0;
     new->type       = 0;
@@ -627,21 +703,32 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
     new->pattern = MPOOL_MALLOC(matcher->mempool, sizeof(new->pattern[0]) * len);
     if (!new->pattern) {
         MPOOL_FREE(matcher->mempool, new);
+
         cli_errmsg("add_newsuffix: Unable to allocate memory for new->pattern\n");
-        return CL_EMEM;
+        ret = CL_EMEM;
+        goto done;
     }
-    for (i = 0; i < len; i++)
+    for (i = 0; i < len; i++) {
         new->pattern[i] = suffix[i]; /*new->pattern is short int* */
+    }
 
     new->customdata = info;
     new->virname    = NULL;
     if ((ret = cli_ac_addpatt(root, new))) {
         MPOOL_FREE(matcher->mempool, new->pattern);
         MPOOL_FREE(matcher->mempool, new);
-        return ret;
+
+        goto done;
     }
-    filter_add_static(&matcher->filter, (const unsigned char *)suffix, len, "regex");
-    return CL_SUCCESS;
+
+    if (filter_add_static(&matcher->filter, (const unsigned char *)suffix, len, "regex") < 0) {
+        cli_errmsg("add_newsuffix: Unable to add filter\n");
+        ret = CL_ERROR;
+        goto done;
+    }
+
+done:
+    return ret;
 }
 
 #define MODULE "regex_list: "
@@ -660,43 +747,83 @@ static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
 static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
     struct regex_matcher *matcher = cbdata;
-    struct regex_list *regex      = cli_malloc(sizeof(*regex));
-    const struct cli_element *el;
-    void *tmp_matcher; /*	save original address if OOM occurs */
+    struct regex_list *regex      = NULL;
+    const struct cli_element *el  = NULL;
+    void *tmp_matcher             = NULL; /*	save original address if OOM occurs */
+    cl_error_t ret                = CL_SUCCESS;
 
-    assert(matcher);
-    if (!regex) {
-        cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
-        return CL_EMEM;
+    if (NULL == matcher) {
+        cli_errmsg("add_pattern_suffix: matcher must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
     }
-    regex->pattern = iregex->pattern ? cli_strdup(iregex->pattern) : NULL;
-    regex->preg    = iregex->preg;
-    regex->nxt     = NULL;
-    el             = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
+    if (NULL == suffix) {
+        cli_errmsg("add_pattern_suffix: suffix must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
+    if (NULL == iregex) {
+        cli_errmsg("add_pattern_suffix: iregex must be initialized\n");
+        ret = CL_ENULLARG;
+        goto done;
+    }
+
+    CLI_MALLOC(regex, sizeof(*regex),
+               cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
+               ret = CL_EMEM);
+
+    if (NULL == iregex->pattern) {
+        regex->pattern = NULL;
+    } else {
+        CLI_STRDUP(iregex->pattern, regex->pattern,
+                   cli_errmsg("add_pattern_suffix: unable to strdup iregex->pattern");
+                   ret = CL_EMEM);
+    }
+    regex->preg = iregex->preg;
+    regex->nxt  = NULL;
+    el          = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
     /* TODO: what if suffixes are prefixes of eachother and only one will
 	 * match? */
     if (el) {
         /* existing suffix */
-        assert((size_t)el->data < matcher->suffix_cnt);
+        if ((size_t)el->data >= matcher->suffix_cnt) {
+            cli_errmsg("add_pattern_suffix: el-> data too large");
+            ret = CL_ERROR;
+            goto done;
+        }
         list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
         size_t n    = matcher->suffix_cnt++;
         el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
-        tmp_matcher = cli_realloc(matcher->suffix_regexes, (n + 1) * sizeof(*matcher->suffix_regexes));
-        if (!tmp_matcher) {
-            free(regex);
-            return CL_EMEM;
-        }
-        matcher->suffix_regexes         = tmp_matcher; /*  success, point at new memory location   */
+        CLI_REALLOC(matcher->suffix_regexes, 
+                (n + 1) * sizeof(*matcher->suffix_regexes), 
+                cli_errmsg("add_pattern_suffix: Unable to reallocate memory for matcher->suffix_regexes\n");
+                ret = CL_EMEM );
         matcher->suffix_regexes[n].tail = regex;
         matcher->suffix_regexes[n].head = regex;
-        if (suffix[0] == '/' && suffix[1] == '\0')
+        if (suffix[0] == '/' && suffix[1] == '\0') {
             matcher->root_regex_idx = n;
-        add_newsuffix(matcher, regex, suffix, suffix_len);
+        }
+
+        ret = add_newsuffix(matcher, regex, suffix, suffix_len);
+
+        if (CL_SUCCESS != ret) {
+            matcher->suffix_cnt--;
+            cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
+            /*shrink the size back to what it was.*/
+            CLI_REALLOC(matcher->suffix_regexes, (matcher->suffix_cnt) * sizeof(*matcher->suffix_regexes) );
+        }
     }
-    return CL_SUCCESS;
+
+done:
+    if (CL_SUCCESS != ret) {
+        FREE(regex->pattern);
+        FREE(regex);
+    }
+
+    return ret;
 }
 
 static size_t reverse_string(char *pattern)
@@ -732,14 +859,17 @@ static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *patter
 {
     size_t len;
     struct regex_list regex;
-    cl_error_t rc;
+    cl_error_t rc = CL_EMEM;
 
-    len           = reverse_string(pattern);
-    regex.nxt     = NULL;
-    regex.pattern = cli_strdup(pattern);
-    regex.preg    = NULL;
-    rc            = add_pattern_suffix(matcher, pattern, len, &regex);
-    free(regex.pattern);
+    len       = reverse_string(pattern);
+    regex.nxt = NULL;
+    CLI_STRDUP(pattern, regex.pattern,
+               cli_errmsg("add_static_pattern: Cannot allocate memory for regex.pattern\n");
+               rc = CL_EMEM);
+    regex.preg = NULL;
+    rc         = add_pattern_suffix(matcher, pattern, len, &regex);
+done:
+    FREE(regex.pattern);
     return rc;
 }
 
