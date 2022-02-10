@@ -564,7 +564,6 @@ static void decode_de(yystype *params[], struct text_buffer *txtbuf)
     const char *o;
     const char **tokens;
 
-    memset(txtbuf, 0, sizeof(*txtbuf));
     if (!p || !k)
         return;
     for (o = k; *o; o++)
@@ -622,6 +621,8 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
     size_t i, nesting = 1, j;
     yystype *parameters[6];
     const size_t parameters_cnt = 6;
+    yystype *first              = NULL;
+    yystype *last               = NULL;
 
     for (i = start; i < cnt; i++) {
         if (tokens[i].type == TOK_FUNCTION) {
@@ -654,8 +655,14 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                         while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
                     i++;
                 }
-                if (j == parameters_cnt)
+                if (j == parameters_cnt) {
+                    if (NULL == first) {
+                        first = parameters[0];
+                    }
+                    last = parameters[parameters_cnt - 1];
+
                     decode_de(parameters, &res->txtbuf);
+                }
             }
         }
     } else {
@@ -671,12 +678,18 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                 while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
             i++;
         }
-        if (j == parameters_cnt)
+        if (j == parameters_cnt) {
+            if (NULL == first) {
+                first = parameters[0];
+            }
+            last = parameters[parameters_cnt - 1];
+
             decode_de(parameters, &res->txtbuf);
+        }
     }
-    if (parameters[0] && parameters[parameters_cnt - 1]) {
-        res->pos_begin = parameters[0] - tokens;
-        res->pos_end   = parameters[parameters_cnt - 1] - tokens + 1;
+    if (first && last) {
+        res->pos_begin = first - tokens;
+        res->pos_end   = last - tokens + 1;
         if (tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
             tokens[res->pos_end + 1].type == TOK_BRACKET_CLOSE &&
             tokens[res->pos_end + 2].type == TOK_PAR_CLOSE)
@@ -800,6 +813,7 @@ static void run_decoders(struct parser_state *state)
     for (i = 0; i < tokens->cnt; i++) {
         const char *cstring = TOKEN_GET(&tokens->data[i], cstring);
         struct decode_result res;
+        memset(&(res.txtbuf), 0, sizeof(res.txtbuf));
         res.pos_begin = res.pos_end = 0;
         res.append                  = 0;
         if (tokens->data[i].type == TOK_FUNCTION && i + 13 < tokens->cnt) {
@@ -839,7 +853,7 @@ static void run_decoders(struct parser_state *state)
                 cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
                 --state->rec;
             }
-            free(res.txtbuf.data);
+            FREE(res.txtbuf.data);
             /* state->tokens still refers to the embedded/nested context here */
             if (!res.append) {
                 if (CL_EARG == replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens)) {
