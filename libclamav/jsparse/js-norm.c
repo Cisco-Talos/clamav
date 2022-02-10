@@ -248,7 +248,7 @@ static struct scope *scope_done(struct scope *s)
 
 static const char *scope_declare(struct scope *s, const char *token, const size_t len, struct parser_state *state)
 {
-    const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, state->var_uniq++);
+    const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)(state->var_uniq++));
     /* cli_hashtab_insert either finds an already existing entry, or allocates a
 	 * new one, we return the allocated string */
     return el ? el->key : NULL;
@@ -266,21 +266,21 @@ static const char *scope_use(struct scope *s, const char *token, const size_t le
 	 * Later if we find a declaration it will automatically assign a uniq ID
 	 * to it. If not, we'll know that we have to push ID == -1 tokens to an
 	 * outer scope.*/
-    el = cli_hashtab_insert(&s->id_map, token, len, -1);
+    el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)-1);
     return el ? el->key : NULL;
 }
 
-static long scope_lookup(struct scope *s, const char *token, const size_t len)
+static size_t scope_lookup(struct scope *s, const char *token, const size_t len)
 {
     while (s) {
         const struct cli_element *el = cli_hashtab_find(&s->id_map, token, len);
-        if (el && el->data != -1) {
-            return el->data;
+        if (el && (size_t)el->data != (size_t)-1) {
+            return (size_t)el->data;
         }
         /* not found in current scope, try in outer scope */
         s = s->parent;
     }
-    return -1;
+    return (size_t)-1;
 }
 
 static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
@@ -381,12 +381,12 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
         case TOK_IDENTIFIER_NAME:
             output_space(lastchar, 'a', out);
             if (s) {
-                long id = scope_lookup(scope, s, strlen(s));
-                if (id == -1) {
+                size_t id = scope_lookup(scope, s, strlen(s));
+                if (id == (size_t)-1) {
                     /* identifier not normalized */
                     buf_outs(s, out);
                 } else {
-                    snprintf(sbuf, sizeof(sbuf), "n%03ld", id);
+                    snprintf(sbuf, sizeof(sbuf), "n%03zu", id);
                     buf_outs(sbuf, out);
                 }
             }
@@ -564,7 +564,6 @@ static void decode_de(yystype *params[], struct text_buffer *txtbuf)
     const char *o;
     const char **tokens;
 
-    memset(txtbuf, 0, sizeof(*txtbuf));
     if (!p || !k)
         return;
     for (o = k; *o; o++)
@@ -622,6 +621,8 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
     size_t i, nesting = 1, j;
     yystype *parameters[6];
     const size_t parameters_cnt = 6;
+    yystype *first              = NULL;
+    yystype *last               = NULL;
 
     for (i = start; i < cnt; i++) {
         if (tokens[i].type == TOK_FUNCTION) {
@@ -654,8 +655,14 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                         while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
                     i++;
                 }
-                if (j == parameters_cnt)
+                if (j == parameters_cnt) {
+                    if (NULL == first) {
+                        first = parameters[0];
+                    }
+                    last = parameters[parameters_cnt - 1];
+
                     decode_de(parameters, &res->txtbuf);
+                }
             }
         }
     } else {
@@ -671,12 +678,18 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                 while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
             i++;
         }
-        if (j == parameters_cnt)
+        if (j == parameters_cnt) {
+            if (NULL == first) {
+                first = parameters[0];
+            }
+            last = parameters[parameters_cnt - 1];
+
             decode_de(parameters, &res->txtbuf);
+        }
     }
-    if (parameters[0] && parameters[parameters_cnt - 1]) {
-        res->pos_begin = parameters[0] - tokens;
-        res->pos_end   = parameters[parameters_cnt - 1] - tokens + 1;
+    if (first && last) {
+        res->pos_begin = first - tokens;
+        res->pos_end   = last - tokens + 1;
         if (tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
             tokens[res->pos_end + 1].type == TOK_BRACKET_CLOSE &&
             tokens[res->pos_end + 2].type == TOK_PAR_CLOSE)
@@ -800,6 +813,7 @@ static void run_decoders(struct parser_state *state)
     for (i = 0; i < tokens->cnt; i++) {
         const char *cstring = TOKEN_GET(&tokens->data[i], cstring);
         struct decode_result res;
+        memset(&(res.txtbuf), 0, sizeof(res.txtbuf));
         res.pos_begin = res.pos_end = 0;
         res.append                  = 0;
         if (tokens->data[i].type == TOK_FUNCTION && i + 13 < tokens->cnt) {
@@ -839,7 +853,7 @@ static void run_decoders(struct parser_state *state)
                 cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
                 --state->rec;
             }
-            free(res.txtbuf.data);
+            FREE(res.txtbuf.data);
             /* state->tokens still refers to the embedded/nested context here */
             if (!res.append) {
                 if (CL_EARG == replace_token_range(&parent_tokens, res.pos_begin, res.pos_end, &state->tokens)) {
@@ -919,7 +933,7 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
     snprintf(filename, 1024, "%s" PATHSEP "javascript", tempdir);
 
     buf.pos   = 0;
-    buf.outfd = open(filename, O_CREAT | O_WRONLY, 0600);
+    buf.outfd = open(filename, O_CREAT | O_WRONLY | O_BINARY, 0600);
     if (buf.outfd < 0) {
         cli_errmsg(MODULE "cannot open output file for writing: %s\n", filename);
         return;

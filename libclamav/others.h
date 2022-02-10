@@ -1103,4 +1103,12 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath);
  */
 cl_error_t cli_realpath(const char *file_name, char **real_filename);
 
+#ifndef FREE
+#define FREE(VAR)      \
+    if (NULL != VAR) { \
+        free(VAR);     \
+        VAR = NULL;    \
+    }
+#endif /* FREE */
+
 #endif
