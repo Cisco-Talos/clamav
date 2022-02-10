@@ -496,7 +496,10 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
         pattern++;
 
         pattern_len = strlen(pattern);
-        if (pattern_len < FILEBUFF) {
+        /* '-3' to leave room for the '/' and null being
+         * appended below.
+         */
+        if (pattern_len < (FILEBUFF - 3)) {
             pattern[pattern_len]     = '/';
             pattern[pattern_len + 1] = '\0';
         } else {
