@@ -195,7 +195,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
         goto done;
     }
 
-    if (cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if (cli_add_content_match_pattern(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "hashpe: Can't parse signature\n");
         goto done;
     }
@@ -1977,7 +1977,7 @@ static void matchsig(const char *sig, const char *offset, int fd)
         goto done;
     }
 
-    if (cli_parse_add(engine->root[0], "test", sig, 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if (cli_add_content_match_pattern(engine->root[0], "test", sig, 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "matchsig: Can't parse signature\n");
         goto done;
     }
@@ -3188,7 +3188,7 @@ static int dumpcerts(const struct optstruct *opts)
         goto done;
     }
 
-    if (cli_parse_add(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
+    if (cli_add_content_match_pattern(engine->root[0], "test", "deadbeef", 0, 0, 0, "*", 0, NULL, 0) != CL_SUCCESS) {
         mprintf(LOGG_ERROR, "dumpcerts: Can't parse signature\n");
         goto done;
     }

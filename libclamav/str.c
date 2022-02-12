@@ -859,6 +859,7 @@ size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
 {
     size_t tokens_found, i;
     int within_pcre = 0;
+    char *start     = buffer;
 
     for (tokens_found = 0; tokens_found < token_count;) {
         tokens[tokens_found++] = buffer;
@@ -866,7 +867,8 @@ size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
         while (*buffer != '\0') {
             if (!within_pcre && (*buffer == delim))
                 break;
-            else if ((tokens_found > token_skip) && (*(buffer - 1) != '\\') &&
+            else if ((tokens_found > token_skip) &&
+                     ((buffer > start) && (*(buffer - 1) != '\\')) &&
                      (*buffer == '/'))
                 within_pcre = !within_pcre;
             buffer++;

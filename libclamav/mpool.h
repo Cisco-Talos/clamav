@@ -29,7 +29,6 @@
 #ifdef USE_MPOOL
 
 #include "clamav-types.h"
-#include "readdb.h"
 
 typedef struct MP mpool_t;
 struct cl_engine;

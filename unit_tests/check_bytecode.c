@@ -145,7 +145,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
 
     if (rc == CL_SUCCESS) {
         v = cli_bytecode_context_getresult_int(ctx);
-        ck_assert_msg(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
+        ck_assert_msg(v == expected, "Invalid return value from bytecode run, expected: " STDx64 ", have: " STDx64 "\n",
                       expected, v);
     }
     if (infile && expectedvirname) {
