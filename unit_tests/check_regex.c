@@ -122,10 +122,10 @@ static cl_error_t cb_expect_multi(void *cbdata, const char *suffix, size_t len, 
     ck_assert_msg(!!exp, "expected data");
     exp++;
     ck_assert_msg(!!*exp, "expected no suffix, got: %s\n", suffix);
-    ck_assert_msg(!!exp[cb_called], "expected less suffixes, but already got: %d\n", cb_called);
+    ck_assert_msg(!!exp[cb_called], "expected less suffixes, but already got: %zu\n", cb_called);
     ck_assert_msg(strcmp(exp[cb_called], suffix) == 0,
                   "suffix mismatch, was: %s, expected: %s\n", suffix, exp[cb_called]);
-    ck_assert_msg(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
+    ck_assert_msg(strlen(suffix) == len, "incorrect suffix len, expected: %zu, got: %zu\n", strlen(suffix), len);
     cb_called++;
     return CL_SUCCESS;
 }
@@ -148,7 +148,7 @@ START_TEST(test_suffix)
     p++;
     while (*p++) n++;
     ck_assert_msg(cb_called == n,
-                  "suffix number mismatch, expected: %d, was: %d\n", n, cb_called);
+                  "suffix number mismatch, expected: %zu, was: %zu\n", n, cb_called);
 }
 END_TEST
 

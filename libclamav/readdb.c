@@ -124,14 +124,16 @@ char *cli_virname(const char *virname, unsigned int official)
     return newname;
 }
 
-cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, const char *hexsig,
+                               uint8_t sigopts, uint16_t rtype, uint16_t type,
+                               const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     char *hexcpy, *start, *end, *mid;
     unsigned int i;
     int ret = CL_SUCCESS;
 
     /*
-     * cyclic loops with cli_parse_add are impossible now as cli_parse_add
+     * cyclic loops with cli_add_content_match_pattern are impossible now as cli_add_content_match_pattern
      * no longer calls cli_sigopts_handler; leaving here for safety
      */
     if (sigopts & ACPATT_OPTION_ONCE) {
@@ -183,12 +185,12 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         }
         /* WIDE sigopt is unsupported */
         if (sigopts & ACPATT_OPTION_WIDE) {
-            cli_errmsg("cli_parse_add: wide modifier [w] is not supported for regex subsigs\n");
+            cli_errmsg("cli_sigopts_handler: wide modifier [w] is not supported for regex subsigs\n");
             free(hexcpy);
             return CL_EMALFDB;
         }
 
-        ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
         free(hexcpy);
         return ret;
     }
@@ -200,7 +202,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
     if (start != end && mid && (*(++mid) == '#' || !strncmp(mid, ">>", 2) || !strncmp(mid, "<<", 2) || !strncmp(mid, "0#", 2))) {
         /* TODO byte compare currently does not have support for sigopts, pass through */
-        ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
         free(hexcpy);
         return ret;
     }
@@ -224,7 +226,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
             *rechar = '{';
 
             if (!(rechar = strchr(rechar, ']'))) {
-                cli_errmsg("cli_parse_add: unmatched '[' in signature %s\n", virname);
+                cli_errmsg("cli_sigopts_handler: unmatched '[' in signature %s\n", virname);
                 free(hexcpy);
                 free(hexovr);
                 return CL_EMALFDB;
@@ -292,7 +294,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         }
 
         /* NOCASE sigopt is handled in cli_ac_addsig */
-        ret = cli_parse_add(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
+        ret = cli_add_content_match_pattern(root, virname, hexovr, sigopts, rtype, type, offset, target, lsigid, options);
         free(hexovr);
         if (ret != CL_SUCCESS || !(sigopts & ACPATT_OPTION_ASCII)) {
             free(hexcpy);
@@ -304,50 +306,62 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     }
 
     /* ASCII sigopt; NOCASE sigopt is handled in cli_ac_addsig */
-    ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+    ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
     free(hexcpy);
     return ret;
 }
 
-#define PCRE_TOKENS 4
-cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+#define SUB_TOKENS 4
+cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *virname, char *hexsig,
+                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options,
+                                         int current_subsig_index, int num_subsigs, struct cli_lsig_tdb *tdb)
 {
-    struct cli_bm_patt *bm_new;
-    char *pt, *hexcpy, *start = NULL, *mid = NULL, *end = NULL, *n, l, r;
-    const char *wild;
-    int ret, asterisk = 0, range;
-    unsigned int i, j, hexlen, nest, parts = 0;
-    int mindist = 0, maxdist = 0, error = 0;
+    cl_error_t status = CL_EPARSE;
+    cl_error_t ret;
+    char *hexcpy = NULL;
 
-    hexlen = strlen(hexsig);
+    char *start = NULL, *mid = NULL, *end = NULL;
+
     if (hexsig[0] == '$') {
-        /* macro */
+        /*
+         * Looks like a macro subsignature
+         */
+        size_t hexlen;
         unsigned int smin, smax, tid;
         struct cli_ac_patt *patt;
 
+        hexlen = strlen(hexsig);
+
         if (hexsig[hexlen - 1] != '$') {
-            cli_errmsg("cli_parseadd(): missing terminator $\n");
-            return CL_EMALFDB;
+            cli_errmsg("Logical signature macro subsignature is missing the '$' terminator:  %s\n", hexsig);
+            status = CL_EMALFDB;
+            goto done;
         }
 
         if (!lsigid) {
-            cli_errmsg("cli_parseadd(): macro signatures only valid inside logical signatures\n");
-            return CL_EMALFDB;
+            cli_errmsg("Macro subsignatures are only valid inside logical signatures\n");
+            status = CL_EMALFDB;
+            goto done;
         }
 
         if (sscanf(hexsig, "${%u-%u}%u$", &smin, &smax, &tid) != 3) {
-            cli_errmsg("cli_parseadd(): invalid macro signature format\n");
-            return CL_EMALFDB;
+            cli_errmsg("Invalid logical macro subsignature format:  %s\n", hexsig);
+            status = CL_EMALFDB;
+            goto done;
         }
 
         if (tid >= 32) {
-            cli_errmsg("cli_parseadd(): only 32 macro groups are supported\n");
-            return CL_EMALFDB;
+            cli_errmsg("Invalid logical subsignature: only 32 macro groups are supported. %u macro groups found.\n", tid);
+            status = CL_EMALFDB;
+            goto done;
         }
 
         patt = MPOOL_CALLOC(root->mempool, 1, sizeof(*patt));
-        if (!patt)
-            return CL_EMEM;
+        if (!patt) {
+            cli_errmsg("Failed to allocate memory for macro AC pattern struct\n");
+            status = CL_EMEM;
+            goto done;
+        }
 
         /* this is not a pattern that will be matched by AC itself, rather it is a
          * pattern checked by the lsig code */
@@ -360,26 +374,57 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
         patt->pattern = MPOOL_CALLOC(root->mempool, patt->length[0], sizeof(*patt->pattern));
         if (!patt->pattern) {
             free(patt);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
 
         if ((ret = cli_ac_addpatt(root, patt))) {
             MPOOL_FREE(root->mempool, patt->pattern);
             free(patt);
-            return ret;
+            status = ret;
+            goto done;
         }
 
-        return CL_SUCCESS;
-    }
-    /* expected format => ^offset:trigger/regex/[cflags]$ */
-    if (strchr(hexsig, '/')) {
-        char *start, *end;
+        if (current_subsig_index > 0) {
+            /* allow mapping from lsig back to pattern for macros */
+            if (!tdb->macro_ptids)
+                tdb->macro_ptids = MPOOL_CALLOC(root->mempool, num_subsigs, sizeof(*tdb->macro_ptids));
+            if (!tdb->macro_ptids) {
+                status = CL_EMEM;
+                goto done;
+            }
+
+            tdb->macro_ptids[current_subsig_index - 1] = root->ac_patterns - 1;
+        }
+
+    } else if (strchr(hexsig, '/')) {
+        /*
+         * Looks like a pcre subsignature.
+         * expected format => ^offset:trigger/regex/[cflags]$
+         */
         const char *trigger, *pattern, *cflags;
+        int subtokens_count;
+        char *subtokens[SUB_TOKENS + 1];
+        const char *sig;
+
+        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
+        if (!subtokens_count) {
+            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        if ((subtokens_count % 2) == 0)
+            offset = subtokens[0];
+
+        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
 
         /* get copied */
-        hexcpy = cli_strdup(hexsig);
-        if (!hexcpy)
-            return CL_EMEM;
+        hexcpy = cli_strdup(sig);
+        if (!hexcpy) {
+            status = CL_EMEM;
+            goto done;
+        }
 
         /* get delimiters-ed */
         start = strchr(hexcpy, '/');
@@ -387,16 +432,16 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 
         /* get pcre-ed */
         if (start == end) {
-            cli_errmsg("cli_parseadd(): PCRE subsig mismatched '/' delimiter\n");
-            free(hexcpy);
-            return CL_EMALFDB;
+            cli_errmsg("PCRE subsig mismatched '/' delimiter\n");
+            status = CL_EMALFDB;
+            goto done;
         }
-#if HAVE_PCRE
+
         /* get checked */
         if (hexsig[0] == '/') {
-            cli_errmsg("cli_parseadd(): PCRE subsig must contain logical trigger\n");
-            free(hexcpy);
-            return CL_EMALFDB;
+            cli_errmsg("PCRE subsig must contain logical trigger\n");
+            status = CL_EMALFDB;
+            goto done;
         }
 
         /* get NULL-ed */
@@ -412,31 +457,154 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 
         /* normal trigger, get added */
         ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
-        free(hexcpy);
-        return ret;
-#else
-        free(hexcpy);
-        cli_errmsg("cli_parseadd(): cannot parse PCRE subsig without PCRE support\n");
-        return CL_EPARSE;
-#endif
-    } else if ((wild = strchr(hexsig, '{'))) {
-        if (sscanf(wild, "%c%u%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
+        if (CL_SUCCESS != ret) {
+            cli_errmsg("Problem adding PCRE subsignature.\n");
+            status = ret;
+            goto done;
+        }
+
+    } else if ((start = strchr(hexsig, '(')) && (mid = strchr(hexsig, '#')) && (end = strrchr(hexsig, '#')) && mid != end) {
+        /*
+         * Looks like an byte_compare subsignature.
+         */
+        if (CL_SUCCESS != (ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options))) {
+            cli_errmsg("Problem adding byte compare subsignature.\n");
+            status = ret;
+            goto done;
+        }
+
+    } else {
+        /*
+         * Looks like an AC/BM content match subsignature.
+         */
+        const char *sigopts = NULL;
+        uint8_t subsig_opts = 0;
+        int subtokens_count;
+        const char *sig;
+        char *subtokens[SUB_TOKENS + 1];
+
+        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
+        if (!subtokens_count) {
+            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        if ((subtokens_count % 2) == 0)
+            offset = subtokens[0];
+
+        if (subtokens_count == 3)
+            sigopts = subtokens[2];
+        else if (subtokens_count == 4)
+            sigopts = subtokens[3];
+
+        if (sigopts) { /* signature modifiers */
+            size_t j;
+            for (j = 0; j < strlen(sigopts); j++)
+                switch (sigopts[j]) {
+                    case 'i':
+                        subsig_opts |= ACPATT_OPTION_NOCASE;
+                        break;
+                    case 'f':
+                        subsig_opts |= ACPATT_OPTION_FULLWORD;
+                        break;
+                    case 'w':
+                        subsig_opts |= ACPATT_OPTION_WIDE;
+                        break;
+                    case 'a':
+                        subsig_opts |= ACPATT_OPTION_ASCII;
+                        break;
+                    default:
+                        cli_errmsg("Signature for %s uses invalid option: %02x\n", virname, sigopts[j]);
+                        status = CL_EMALFDB;
+                        goto done;
+                }
+        }
+
+        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
+
+        if (subsig_opts) {
+            ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
+        } else {
+            ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, target, lsigid, options);
+        }
+
+        if (CL_SUCCESS != ret) {
+            status = ret;
+            goto done;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    FREE(hexcpy);
+
+    return status;
+}
+
+#define PCRE_TOKENS 4
+/**
+ * @brief Load body-based content patterns that will be matched with AC or BM matchers
+ *
+ * May be used when loading db, ndb, ldb subsignatures, ftm, and even patterns crafted from yara rules.
+ *
+ * @param root
+ * @param virname
+ * @param hexsig
+ * @param sigopts
+ * @param rtype
+ * @param type
+ * @param offset
+ * @param target
+ * @param lsigid
+ * @param options
+ * @return cl_error_t
+ */
+cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
+                                         uint8_t sigopts, uint16_t rtype, uint16_t type,
+                                         const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+{
+    struct cli_bm_patt *bm_new;
+    char *pt, *hexcpy, *n, l, r;
+    const char *wild;
+    cl_error_t ret;
+    bool asterisk = false;
+    size_t range, i, j, hexlen, nest;
+    int mindist = 0, maxdist = 0, error = 0;
+    char *start = NULL;
+
+    hexlen = strlen(hexsig);
+
+    if ((wild = strchr(hexsig, '{'))) {
+        /*
+         * hexsig contains '{' for "{n}" or "{n-m}" wildcard
+         */
+        uint16_t parts = 1;
+
+        if (sscanf(wild, "%c%zu%c", &l, &range, &r) == 3 && l == '{' && r == '}' && range > 0 && range < 128) {
+            /*
+             * Parse "{n}" wildcard - Not a "{n-m}" range-style one.
+             * Replaces it with:  "??" * n  and then re-parses the modified hexsig with recursion.
+             */
             hexcpy = cli_calloc(hexlen + 2 * range, sizeof(char));
             if (!hexcpy)
                 return CL_EMEM;
 
             strncpy(hexcpy, hexsig, wild - hexsig);
-            for (i = 0; i < (unsigned int)range; i++)
+            for (i = 0; i < range; i++) {
                 strcat(hexcpy, "??");
+            }
 
             if (!(wild = strchr(wild, '}'))) {
-                cli_errmsg("cli_parse_add(): Problem adding signature: missing bracket\n");
+                cli_errmsg("cli_add_content_match_pattern: Problem adding signature: missing bracket\n");
                 free(hexcpy);
                 return CL_EMALFDB;
             }
 
             strcat(hexcpy, ++wild);
-            ret = cli_parse_add(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
+            ret = cli_add_content_match_pattern(root, virname, hexcpy, sigopts, rtype, type, offset, target, lsigid, options);
             free(hexcpy);
 
             return ret;
@@ -444,47 +612,63 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 
         root->ac_partsigs++;
 
-        if (!(hexcpy = cli_strdup(hexsig)))
-            return CL_EMEM;
-
+        /*
+         * Identify number of signature pattern parts (e.g. patterns separated by "{n}" or '*')
+         * Have to figure this out in advance because `cli_ac_addsig()` needs to know which i-out-of-n parts when adding.
+         */
         nest = 0;
         for (i = 0; i < hexlen; i++) {
-            if (hexsig[i] == '(')
+            if (hexsig[i] == '(') {
                 nest++;
-            else if (hexsig[i] == ')')
+
+            } else if (hexsig[i] == ')') {
                 nest--;
-            else if (hexsig[i] == '{') {
+
+            } else if (hexsig[i] == '{') {
+                /* Found "{n}" or "{min-max}" wildcard. That means we've found a new hexsig "part" */
+
                 if (nest) {
-                    cli_errmsg("cli_parse_add(): Alternative match contains unsupported ranged wildcard\n");
-                    free(hexcpy);
+                    /* Can't use "{n}" or "{min-max}" wildcard inside of a (aa|bb) alternative match pattern. */
+                    cli_errmsg("cli_add_content_match_pattern: Alternative match contains unsupported ranged wildcard\n");
                     return CL_EMALFDB;
                 }
+
                 parts++;
+
             } else if (hexsig[i] == '*') {
+                /* Found '*' wildcard. That means we've found a new hexsig "part" */
+
                 if (nest) {
-                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
-                    free(hexcpy);
+                    /* Can't use '*' wildcard inside of a (aa|bb) alternative match pattern. */
+                    cli_errmsg("cli_add_content_match_pattern: Alternative match cannot contain unbounded wildcards\n");
                     return CL_EMALFDB;
                 }
+
                 parts++;
             }
         }
 
-        if (parts)
-            parts++;
+        /*
+         * Now find each part again *cough*, and this time call cli_ac_addsig() for each.
+         */
+
+        // Make a copy of the whole pattern so that we can NULL-terminate the hexsig
+        // and pass it to cli_ac_addsig() without having to pass the part-length.
+        if (!(hexcpy = cli_strdup(hexsig)))
+            return CL_EMEM;
 
         start = pt = hexcpy;
         for (i = 1; i <= parts; i++) {
             if (i != parts) {
                 for (j = 0; j < strlen(start); j++) {
                     if (start[j] == '{') {
-                        asterisk = 0;
+                        asterisk = false;
                         pt       = start + j;
                         break;
                     }
 
                     if (start[j] == '*') {
-                        asterisk = 1;
+                        asterisk = true;
                         pt       = start + j;
                         break;
                     }
@@ -494,7 +678,7 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             }
 
             if ((ret = cli_ac_addsig(root, virname, start, sigopts, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
-                cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
+                cli_errmsg("cli_add_content_match_pattern: Problem adding signature (1).\n");
                 error = 1;
                 break;
             }
@@ -502,6 +686,8 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             if (i == parts)
                 break;
 
+            // This time around, we need to parse the integer values from "{n}" or "{min-max}"
+            //   to be used when we call `cli_ac_addsig()` for the next part.
             mindist = maxdist = 0;
 
             if (asterisk) {
@@ -522,11 +708,13 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             }
 
             if (!strchr(pt, '-')) {
+                // Pattern is "{n}"
                 if (!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
                     error = 1;
                     break;
                 }
             } else {
+                // pattern is "{min-max}"
                 if ((n = cli_strtok(pt, 0, "-"))) {
                     if (!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
                         error = 1;
@@ -557,10 +745,16 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 
         free(hexcpy);
         if (error) {
-            cli_errmsg("cli_parseadd(): Problem adding signature (1b).\n");
+            cli_errmsg("cli_add_content_match_pattern: Problem adding signature (1b).\n");
             return CL_EMALFDB;
         }
+
     } else if (strchr(hexsig, '*')) {
+        /*
+         * hexsig contains '*' for `*` wildcard
+         */
+        uint16_t parts = 1;
+
         root->ac_partsigs++;
 
         nest = 0;
@@ -571,44 +765,41 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
                 nest--;
             else if (hexsig[i] == '*') {
                 if (nest) {
-                    cli_errmsg("cli_parse_add(): Alternative match cannot contain unbounded wildcards\n");
+                    cli_errmsg("cli_add_content_match_pattern: Alternative match cannot contain unbounded wildcards\n");
                     return CL_EMALFDB;
                 }
                 parts++;
             }
         }
 
-        if (parts)
-            parts++;
-
         for (i = 1; i <= parts; i++) {
             if ((pt = cli_strtok(hexsig, i - 1, "*")) == NULL) {
-                cli_errmsg("cli_parse_add():Can't extract part %d of partial signature.\n", i);
+                cli_errmsg("cli_add_content_match_pattern: Can't extract part %zu of partial signature.\n", i);
                 return CL_EMALFDB;
             }
 
             if ((ret = cli_ac_addsig(root, virname, pt, sigopts, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
-                cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
+                cli_errmsg("cli_add_content_match_pattern: Problem adding signature (2).\n");
                 free(pt);
                 return ret;
             }
 
             free(pt);
         }
-    } else if ((start = strchr(hexsig, '(')) && (mid = strchr(hexsig, '#')) && (end = strrchr(hexsig, '#')) && mid != end) {
-
-        /* format seems to match byte_compare */
-        if (CL_SUCCESS != (ret = cli_bcomp_addpatt(root, virname, hexsig, lsigid, options))) {
-            cli_errmsg("cli_parse_add(): Problem adding signature (2b).\n");
-            return ret;
-        }
 
     } else if (root->ac_only || type || lsigid || sigopts || strpbrk(hexsig, "?([") || (root->bm_offmode && (!strcmp(offset, "*") || strchr(offset, ','))) || strstr(offset, "VI") || strchr(offset, '$')) {
+        /*
+         * format seems like it must be handled with the Aho-Corasick (AC) pattern matcher.
+         */
         if (CL_SUCCESS != (ret = cli_ac_addsig(root, virname, hexsig, sigopts, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
-            cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
+            cli_errmsg("cli_add_content_match_pattern: Problem adding signature (3).\n");
             return ret;
         }
+
     } else {
+        /*
+         * format seems like it can be handled with the Boyer-Moore (BM) pattern matcher.
+         */
         bm_new = (struct cli_bm_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_bm_patt));
         if (!bm_new)
             return CL_EMEM;
@@ -632,7 +823,7 @@ cl_error_t cli_parse_add(struct cli_matcher *root, const char *virname, const ch
             root->maxpatlen = bm_new->length;
 
         if (CL_SUCCESS != (ret = cli_bm_addpatt(root, bm_new, offset))) {
-            cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
+            cli_errmsg("cli_add_content_match_pattern: Problem adding signature (4).\n");
             MPOOL_FREE(root->mempool, bm_new->pattern);
             MPOOL_FREE(root->mempool, bm_new->virname);
             MPOOL_FREE(root->mempool, bm_new);
@@ -941,8 +1132,8 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
 
         if (*pt == '=') continue;
 
-        if (CL_SUCCESS != (ret = cli_parse_add(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
-            cli_dbgmsg("cli_loaddb: cli_parse_add failed on line %d\n", line);
+        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, start, pt, 0, 0, 0, "*", 0, NULL, options))) {
+            cli_dbgmsg("cli_loaddb: cli_add_content_match_pattern failed on line %d\n", line);
             ret = CL_EMALFDB;
             break;
         }
@@ -1338,7 +1529,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         offset = tokens[2];
         sig    = tokens[3];
 
-        if (CL_SUCCESS != (ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
+        if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
             ret = CL_EMALFDB;
             break;
         }
@@ -1703,19 +1894,17 @@ static inline int init_tdb(struct cli_lsig_tdb *tdb, struct cl_engine *engine, c
  * NOTE: Maximum of 64(see MAX_LDB_SUBSIGS) subsignatures (last would be token 66)
  */
 #define LDB_TOKENS 67
-#define SUB_TOKENS 4
-static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
+static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned int line, unsigned int *sigs, unsigned bc_idx, const char *buffer_cpy, int *skip)
 {
-    const char *sig, *virname, *offset, *logic, *sigopts;
+    const char *virname, *logic;
     struct cli_ac_lsig **newtable, *lsig;
-    char *tokens[LDB_TOKENS + 1], *subtokens[SUB_TOKENS + 1];
-    int i, j, subsigs, tokens_count, subtokens_count;
+    char *tokens[LDB_TOKENS + 1];
+    int i, subsigs, tokens_count;
     unsigned short target = 0;
     struct cli_matcher *root;
     struct cli_lsig_tdb tdb;
     uint32_t lsigid[2];
-    uint8_t subsig_opts;
-    int ret;
+    cl_error_t ret;
 
     UNUSEDPARAM(dbname);
 
@@ -1776,13 +1965,13 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
     }
 #endif
 
-    /* enforce MAX_LDB_SUBSIGS(currently 64) subsig cap */
+    /* enforce MAX_LDB_SUBSIGS subsig cap */
     if (subsigs > MAX_LDB_SUBSIGS) {
         cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
         return CL_EMALFDB;
     }
 
-    /* TDB */
+    /* Initialize Target Description Block (TDB) */
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname))) {
         (*sigs)--;
@@ -1834,64 +2023,16 @@ static int load_oneldb(char *buffer, int chkpua, struct cl_engine *engine, unsig
 
     for (i = 0; i < subsigs; i++) {
         lsigid[1] = i;
-        offset    = "*";
 
-        sigopts     = NULL;
-        subsig_opts = 0;
-
-        subtokens_count = cli_ldbtokenize(tokens[3 + i], ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
-        if (!subtokens_count) {
-            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
-            return CL_EMALFDB;
-        }
-
-        if ((subtokens_count % 2) == 0)
-            offset = subtokens[0];
-
-        if (subtokens_count == 3)
-            sigopts = subtokens[2];
-        else if (subtokens_count == 4)
-            sigopts = subtokens[3];
-
-        if (sigopts) { /* signature modifiers */
-            for (j = 0; j < (int)strlen(sigopts); j++)
-                switch (sigopts[j]) {
-                    case 'i':
-                        subsig_opts |= ACPATT_OPTION_NOCASE;
-                        break;
-                    case 'f':
-                        subsig_opts |= ACPATT_OPTION_FULLWORD;
-                        break;
-                    case 'w':
-                        subsig_opts |= ACPATT_OPTION_WIDE;
-                        break;
-                    case 'a':
-                        subsig_opts |= ACPATT_OPTION_ASCII;
-                        break;
-                    default:
-                        cli_errmsg("cli_loadldb: Signature for %s uses invalid option: %02x\n", virname, sigopts[j]);
-                        return CL_EMALFDB;
-                }
-        }
-
-        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
-
-        if (subsig_opts)
-            ret = cli_sigopts_handler(root, virname, sig, subsig_opts, 0, 0, offset, target, lsigid, options);
-        else
-            ret = cli_parse_add(root, virname, sig, 0, 0, 0, offset, target, lsigid, options);
-
-        if (ret)
+        // handle each LDB subsig
+        ret = readdb_parse_ldb_subsignature(root, virname, tokens[3 + i], "*", target, lsigid, options, i, subsigs, &tdb);
+        if (CL_SUCCESS != ret) {
+            if (bc_idx)
+                root->linked_bcs--;
+            root->ac_lsigs--;
+            FREE_TDB(tdb);
+            MPOOL_FREE(engine->mempool, lsig);
             return ret;
-
-        if (sig[0] == '$' && i) {
-            /* allow mapping from lsig back to pattern for macros */
-            if (!tdb.macro_ptids)
-                tdb.macro_ptids = MPOOL_CALLOC(root->mempool, subsigs, sizeof(*tdb.macro_ptids));
-            if (!tdb.macro_ptids)
-                return CL_EMEM;
-
-            tdb.macro_ptids[i - 1] = root->ac_patterns - 1;
         }
     }
 
@@ -2165,7 +2306,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 
         magictype = atoi(tokens[0]);
         if (magictype == 1) { /* A-C */
-            if (CL_SUCCESS != (ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
+            if (CL_SUCCESS != (ret = cli_add_content_match_pattern(engine->root[0], tokens[3], tokens[2], 0, rtype, type, tokens[1], 0, NULL, options)))
                 break;
 
         } else if ((magictype == 0) || (magictype == 4)) { /* memcmp() */

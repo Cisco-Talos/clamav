@@ -215,7 +215,7 @@ START_TEST(test_disasm_basic)
 
     };
     uint8_t *d;
-    off_t size;
+    ssize_t size;
     STATBUF st;
 
     ck_assert_msg(fd != -1, "mkstemp failed");
@@ -223,10 +223,10 @@ START_TEST(test_disasm_basic)
     ck_assert_msg(FSTAT(ref, &st) != -1, "fstat failed");
     disasmbuf(buf, sizeof(buf), fd);
     size = lseek(fd, 0, SEEK_CUR);
-    ck_assert_msg(size == st.st_size, "disasm size mismatch(value %u, expected: %u)", size, st.st_size);
+    ck_assert_msg(size == st.st_size, "disasm size mismatch(value %zd, expected: %zd)", size, (ssize_t)st.st_size);
     lseek(fd, 0, SEEK_SET);
     d = malloc(size * 2);
-    ck_assert_msg(d != NULL, "disasm malloc(%u) failed", size);
+    ck_assert_msg(d != NULL, "disasm malloc(%zd) failed", size * 2);
     ck_assert_msg(read(ref, d, size) == size, "disasm reference read failed");
     ck_assert_msg(read(fd, d + size, size) == size, "disasm read failed");
     close(fd);
