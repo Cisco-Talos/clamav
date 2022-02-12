@@ -132,9 +132,30 @@ struct cli_ac_result {
 
 #include "matcher.h"
 
+/**
+ * @brief Add a simple sub-pattern into the AC trie.
+ *
+ * Simple sub-patterns may not include any wildcards or [a-b] anchored byte ranges.
+ */
 cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
+
 cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen);
-cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial);
+
+/**
+ * @brief Increment the count for a subsignature of a logical signature.
+ *
+ * Increment a logical signature subsignature match count.
+ *
+ * @param root      The root storing all pattern matching data. I.e. "the database in memory."
+ * @param mdata     Match result data
+ * @param lsig_id   The current logical signature id
+ * @param subsig_id The current subsignature id
+ * @param realoff   Offset where the match occured
+ * @param partial   0 if whole pattern, or >0 for a partial-patterns. That is one split with wildcards like * or {n-m}.
+ * @return cl_error_t
+ */
+cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id, uint32_t realoff, int partial);
+
 cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1);
 int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only);
 void cli_ac_freedata(struct cli_ac_data *data);
@@ -143,6 +164,13 @@ cl_error_t cli_ac_buildtrie(struct cli_matcher *root);
 cl_error_t cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth, uint8_t dconf_prefiltering);
 cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info);
 void cli_ac_free(struct cli_matcher *root);
+
+/**
+ * @brief Add a complex sub-pattern into the AC trie.
+ *
+ * Complex sub-patterns are the body content between `{n-m}` and `{*}` wildcards in content match signatures.
+ * And `{n}` wildcards should have already been replaced with `??` characters and are included in the patterns.
+ */
 cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint8_t sigopts, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options);
 
 #endif

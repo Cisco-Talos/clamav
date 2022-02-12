@@ -1577,111 +1577,139 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsigid1, uint32_t lsigid2, uint32_t realoff, int partial)
+cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id, uint32_t realoff, int partial)
 {
-    const struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsigid1];
+    const struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsig_id];
     const struct cli_lsig_tdb *tdb    = &ac_lsig->tdb;
 
     if (realoff != CLI_OFF_NONE) {
-        if (mdata->lsigsuboff_first[lsigid1][lsigid2] == CLI_OFF_NONE)
-            mdata->lsigsuboff_first[lsigid1][lsigid2] = realoff;
+        if (mdata->lsigsuboff_first[lsig_id][subsig_id] == CLI_OFF_NONE) {
+            /* If this is the first subsig in the lsig, store the offset in the first-list. */
+            mdata->lsigsuboff_first[lsig_id][subsig_id] = realoff;
+        }
 
-        if (mdata->lsigsuboff_last[lsigid1][lsigid2] != CLI_OFF_NONE && ((!partial && realoff <= mdata->lsigsuboff_last[lsigid1][lsigid2]) || (partial && realoff < mdata->lsigsuboff_last[lsigid1][lsigid2])))
+        if (mdata->lsigsuboff_last[lsig_id][subsig_id] != CLI_OFF_NONE &&
+            /* If this isn't the first subsig match for this logical sig and the offset
+               is earlier in the file than the last subsig match, don't count it. */
+            ((!partial && realoff <= mdata->lsigsuboff_last[lsig_id][subsig_id]) ||
+             (partial && realoff < mdata->lsigsuboff_last[lsig_id][subsig_id]))) {
             return CL_SUCCESS;
+        }
 
-        mdata->lsigcnt[lsigid1][lsigid2]++;
-        if (mdata->lsigcnt[lsigid1][lsigid2] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[lsigid2])
-            mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
+        /* Increment the subsig count for this logical signature */
+        mdata->lsigcnt[lsig_id][subsig_id]++;
+
+        if (mdata->lsigcnt[lsig_id][subsig_id] <= 1 || !tdb->macro_ptids || !tdb->macro_ptids[subsig_id]) {
+            /* Store the offset of this subsig match in the last-list (except in certain circumstances) */
+            mdata->lsigsuboff_last[lsig_id][subsig_id] = realoff;
+        }
+
+        if (ac_lsig->type & CLI_YARA_OFFSET) {
+            /*
+             * There are 3 types of logical signatures: normal, yara-normal, and yara-offset
+             *
+             * For yara-offset logical signatures we allocate some structures to
+             * store yara subsignature match offsets.
+             */
+            struct cli_subsig_matches *ss_matches;
+            struct cli_lsig_matches *ls_matches;
+
+            cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsig_id, subsig_id, realoff);
+
+            ls_matches = mdata->lsig_matches[lsig_id];
+            if (ls_matches == NULL) { /* allocate cli_lsig_matches */
+                ls_matches = mdata->lsig_matches[lsig_id] = (struct cli_lsig_matches *)cli_calloc(1, sizeof(struct cli_lsig_matches) +
+                                                                                                         (ac_lsig->tdb.subsigs - 1) * sizeof(struct cli_subsig_matches *));
+                if (ls_matches == NULL) {
+                    cli_errmsg("lsig_sub_matched: cli_calloc failed for cli_lsig_matches\n");
+                    return CL_EMEM;
+                }
+                ls_matches->subsigs = ac_lsig->tdb.subsigs;
+            }
+            ss_matches = ls_matches->matches[subsig_id];
+            if (ss_matches == NULL) { /*  allocate cli_subsig_matches */
+                ss_matches = ls_matches->matches[subsig_id] = cli_malloc(sizeof(struct cli_subsig_matches));
+                if (ss_matches == NULL) {
+                    cli_errmsg("lsig_sub_matched: cli_malloc failed for cli_subsig_matches struct\n");
+                    return CL_EMEM;
+                }
+                ss_matches->next = 0;
+                ss_matches->last = sizeof(ss_matches->offsets) / sizeof(uint32_t) - 1;
+            }
+            if (ss_matches->next > ss_matches->last) { /* cli_matches out of space? realloc */
+                ss_matches = ls_matches->matches[subsig_id] = cli_realloc(ss_matches, sizeof(struct cli_subsig_matches) + sizeof(uint32_t) * ss_matches->last * 2);
+                if (ss_matches == NULL) {
+                    cli_errmsg("lsig_sub_matched: cli_realloc failed for cli_subsig_matches struct\n");
+                    return CL_EMEM;
+                }
+                ss_matches->last = sizeof(ss_matches->offsets) / sizeof(uint32_t) + ss_matches->last * 2 - 1;
+            }
+
+            ss_matches->offsets[ss_matches->next] = realoff; /* finally, store the offset */
+            ss_matches->next++;
+        }
     }
 
-    if (ac_lsig->type & CLI_YARA_OFFSET && realoff != CLI_OFF_NONE) {
-        struct cli_subsig_matches *ss_matches;
-        struct cli_lsig_matches *ls_matches;
-        cli_dbgmsg("lsig_sub_matched lsig %u:%u at %u\n", lsigid1, lsigid2, realoff);
-
-        ls_matches = mdata->lsig_matches[lsigid1];
-        if (ls_matches == NULL) { /* allocate cli_lsig_matches */
-            ls_matches = mdata->lsig_matches[lsigid1] = (struct cli_lsig_matches *)cli_calloc(1, sizeof(struct cli_lsig_matches) +
-                                                                                                     (ac_lsig->tdb.subsigs - 1) * sizeof(struct cli_subsig_matches *));
-            if (ls_matches == NULL) {
-                cli_errmsg("lsig_sub_matched: cli_calloc failed for cli_lsig_matches\n");
-                return CL_EMEM;
-            }
-            ls_matches->subsigs = ac_lsig->tdb.subsigs;
-        }
-        ss_matches = ls_matches->matches[lsigid2];
-        if (ss_matches == NULL) { /*  allocate cli_subsig_matches */
-            ss_matches = ls_matches->matches[lsigid2] = cli_malloc(sizeof(struct cli_subsig_matches));
-            if (ss_matches == NULL) {
-                cli_errmsg("lsig_sub_matched: cli_malloc failed for cli_subsig_matches struct\n");
-                return CL_EMEM;
-            }
-            ss_matches->next = 0;
-            ss_matches->last = sizeof(ss_matches->offsets) / sizeof(uint32_t) - 1;
-        }
-        if (ss_matches->next > ss_matches->last) { /* cli_matches out of space? realloc */
-            ss_matches = ls_matches->matches[lsigid2] = cli_realloc(ss_matches, sizeof(struct cli_subsig_matches) + sizeof(uint32_t) * ss_matches->last * 2);
-            if (ss_matches == NULL) {
-                cli_errmsg("lsig_sub_matched: cli_realloc failed for cli_subsig_matches struct\n");
-                return CL_EMEM;
-            }
-            ss_matches->last = sizeof(ss_matches->offsets) / sizeof(uint32_t) + ss_matches->last * 2 - 1;
-        }
-
-        ss_matches->offsets[ss_matches->next] = realoff; /* finally, store the offset */
-        ss_matches->next++;
-    }
-
-    if (mdata->lsigcnt[lsigid1][lsigid2] > 1) {
-        /* Check that the previous match had a macro match following it at the
-         * correct distance. This check is only done after the 1st match.*/
+    if ((tdb->macro_ptids != NULL) &&
+        (tdb->macro_ptids[subsig_id] > 0) &&
+        (mdata->lsigcnt[lsig_id][subsig_id] > 1)) {
+        /*
+         * This logical signature has a macro subsignature and this current subsignature has a macro following it.
+         *
+         * Check that the previous match had a macro match following it at the correct distance.
+         * This check is only done after the 1st match.
+         */
         const struct cli_ac_patt *macropt;
-        uint32_t id, last_macro_match, smin, smax, last_macroprev_match;
+        uint32_t id, last_macro_match, smin, smax, macro_group_id, last_macroprev_match;
 
-        if (!tdb->macro_ptids)
-            return CL_SUCCESS;
+        /*
+         * Look up the subsig for the upcoming macro to get anchor-min/max, and macro group id.
+         * Reminder: A macro subsignature takes the form:
+         *   ${anchor_min - anchor_max} macro_group_id$
+         */
+        id = tdb->macro_ptids[subsig_id];
 
-        id = tdb->macro_ptids[lsigid2];
-        if (!id)
-            return CL_SUCCESS;
+        macropt        = root->ac_pattable[id];
+        smin           = macropt->ch_mindist[0];
+        smax           = macropt->ch_maxdist[0];
+        macro_group_id = macropt->sigid;
 
-        macropt = root->ac_pattable[id];
-        smin    = macropt->ch_mindist[0];
-        smax    = macropt->ch_maxdist[0];
         /* start of last macro match */
-        last_macro_match = mdata->macro_lastmatch[macropt->sigid];
+        last_macro_match = mdata->macro_lastmatch[macro_group_id];
+
         /* start of previous lsig subsig match */
-        last_macroprev_match = mdata->lsigsuboff_last[lsigid1][lsigid2];
-        if (last_macro_match != CLI_OFF_NONE)
-            cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
-                       last_macroprev_match, smin, smax, last_macro_match);
+        last_macroprev_match = mdata->lsigsuboff_last[lsig_id][subsig_id];
 
         if (last_macro_match == CLI_OFF_NONE ||
             last_macroprev_match + smin > last_macro_match ||
             last_macroprev_match + smax < last_macro_match) {
             cli_dbgmsg("Canceled false lsig macro match\n");
             /* Previous match was false - cancel it */
-            mdata->lsigcnt[lsigid1][lsigid2]--;
-            mdata->lsigsuboff_last[lsigid1][lsigid2] = realoff;
+            mdata->lsigcnt[lsig_id][subsig_id]--;
+            mdata->lsigsuboff_last[lsig_id][subsig_id] = realoff;
         } else {
             /* mark the macro sig itself matched */
-            mdata->lsigcnt[lsigid1][lsigid2 + 1]++;
-            mdata->lsigsuboff_last[lsigid1][lsigid2 + 1] = last_macro_match;
+            cli_dbgmsg("Checking macro match: %u + (%u - %u) == %u\n",
+                       last_macroprev_match, smin, smax, last_macro_match);
+
+            mdata->lsigcnt[lsig_id][subsig_id + 1]++;
+            mdata->lsigsuboff_last[lsig_id][subsig_id + 1] = last_macro_match;
         }
     }
+
     return CL_SUCCESS;
 }
 
-cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsigid1)
+cl_error_t cli_ac_chkmacro(struct cli_matcher *root, struct cli_ac_data *data, unsigned lsig_id)
 {
-    const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsigid1]->tdb;
+    const struct cli_lsig_tdb *tdb = &root->ac_lsigtable[lsig_id]->tdb;
     unsigned i;
     cl_error_t rc;
 
     /* Loop through all subsigs, and if they are tied to macros check that the
      * macro matched at a correct distance */
     for (i = 0; i < tdb->subsigs; i++) {
-        rc = lsig_sub_matched(root, data, lsigid1, i, CLI_OFF_NONE, 0);
+        rc = lsig_sub_matched(root, data, lsig_id, i, CLI_OFF_NONE, 0);
         if (rc != CL_SUCCESS)
             return rc;
     }
@@ -1709,7 +1737,7 @@ cl_error_t cli_ac_scanbuff(
     uint16_t j;
     uint8_t found, viruses_found = 0;
     uint32_t **offmatrix, swp;
-    int type = CL_CLEAN;
+    cli_file_t type = CL_TYPE_ANY;
     struct cli_ac_result *newres;
     cl_error_t rc;
     cl_error_t ret;
@@ -2678,6 +2706,14 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 break;
             }
 
+            /*
+             * Detect special character classes
+             * - (B) word boundary
+             * - (L) CR, CRLF line boundaries
+             * - (W) Non-alphanumeric character
+             *
+             * For more details: https://docs.clamav.net/manual/Signatures/BodySignatureFormat.html#character-classes
+             */
             if (!strcmp(pt, "B")) {
                 if (!*start) {
                     new->boundary |= AC_BOUNDARY_RIGHT;
@@ -2803,7 +2839,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         /* so that we can show meaningful messages */
         new->virname = (char *)virname;
         if (filter_add_acpatt(root->filter, new) == -1) {
-            cli_warnmsg("cli_ac_addpatt: cannot use filter for trie\n");
+            cli_warnmsg("cli_ac_addsig: cannot use filter for trie\n");
             MPOOL_FREE(root->mempool, root->filter);
             root->filter = NULL;
         }
