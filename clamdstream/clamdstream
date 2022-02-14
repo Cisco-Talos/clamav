@@ -1,0 +1,158 @@
+#! /usr/bin/env python3
+
+helptext = '''Synopsis:
+    Helper function that drives clamd's remote TCP INSTREAM
+    facility by streaming the file over TCP
+
+    This allows a machine with no clamav installation to scan files using
+    a remote server.
+
+    Syntax of zINSTREAM was implemented based on trial error, man pages etc.
+
+Syntax:
+    clamdstream <host>[:<port>] <filename>|<dirname>
+
+    The script opens a port to the specified host, negotiates a connection
+    with the remote server on the specified port and instigates a
+    INSTREAM interaction, forwarding the file data over the TCP port.
+
+    The script then echos the response from the remote service.
+'''
+
+'''
+    The syntax of the clamd connection is:
+    nINSTREAM\n
+    <32 bits big endian size of data>
+    <data>
+    <32 bits big endian size of data> or <0x00000000> to finish
+    [<data>]
+    ...
+
+    Each INSTREAM invocation whole stream is treated as a single entity,
+    so the script uses a separate tcp connection for each file.
+
+    This file is Copyright 2022 Steve King debian.invux@com
+
+    but may be used under the terms of the
+    GNU General Public Licese v3 or any later version:
+
+    https://www.gnu.org/licenses/gpl-3.0.en.html
+
+'''
+
+import os
+import socket
+import stat
+import sys
+
+# Useful constants
+TCP_TIMEOUT   = 30.0        # seconds
+SEND_SIZE     = 1024        # bytes, for batching of reads and sends
+STREAM_SIZE   = 32 * 1024   # bytes, Maximim part of tile to send in one INSTREAM chunk clamd's default maximum is 25165825
+MAX_FILE_SIZE = 25165825    # ~25 Megabyte; maximum supported by debian clamd configuration
+DEFAULT_PORT  = 3310        # clamd default
+
+# Control how the script behaves
+
+# Parse the commandline
+
+if len(sys.argv) < 2:
+    sys.stderr.write("error: specify a hostname, or --help\n")
+    sys.exit(2)
+
+if (sys.argv[1] == "--help"):
+    sys.stdout.write("{}\n".format(helptext))
+    sys.exit()
+
+try:
+    (host,port) = sys.argv[1].split(':')
+except ValueError:
+    host = sys.argv[1]
+    port = DEFAULT_PORT
+
+
+def streamfile(filename):
+
+
+    # Process the file
+    try:
+        mode = os.stat(filename).st_mode
+    except OSError as err:
+        sys.stderr.write("warning: Could not open {} for stat\n".format(filename))
+        return
+
+    if stat.S_ISDIR(mode):
+        for dirfile in os.listdir(filename):
+            streamfile("{}".format(os.path.join(filename,dirfile)))
+        return
+
+    if stat.S_ISREG(mode):
+        try:
+            file = open(filename, mode='rb')
+
+            # Create the socket
+            try:
+                clamdsocket = socket.create_connection((host,port), TCP_TIMEOUT)
+            except TimeoutError as err:
+                sys.stderr.write ("error: Timeout connecting to {}:{}\n".format(host,port))
+                sys.exit(1)
+            except OSError as err:
+                sys.stderr.write ("error: Could not establish connection with {}:{}\n".format(host,port))
+                sys.stderr.write ("{}\n".format(str(err)))
+                sys.exit(1)
+
+            # Initalise the stream
+            clamdsocket.send(b"nINSTREAM\n")
+
+            # Assume the filesize doesn't change during our processing.
+            filesize = os.stat(filename).st_size
+
+            if filesize > 0:
+                processsize = filesize
+                if processsize > MAX_FILE_SIZE:
+                    processsize = MAX_FILE_SIZE
+                    sys.stderr.write("warning: file size for {} exceeds internal limit (sending first {} bytes)\n".format(filename, MAX_FILE_SIZE))
+
+                for stream in range(0, processsize, STREAM_SIZE):
+                    streamsize = STREAM_SIZE
+
+                    if stream + STREAM_SIZE > processsize:
+                        streamsize = processsize - stream
+
+                    if streamsize > 0:
+                        clamdsocket.send(streamsize.to_bytes(4, byteorder='big', signed=False))
+
+                        for block in range(0, streamsize, SEND_SIZE):
+                            blocksize = SEND_SIZE
+
+                            if blocksize + stream > processsize:
+                                blocksize = processsize - stream - block
+
+                            bytes = file.read(blocksize)
+                            clamdsocket.send(bytes)
+
+        
+                file.close()
+            # Mark the end of the stream
+            clamdsocket.send(int(0).to_bytes(4, byteorder='big', signed=False))
+
+            # Collect and print the response as it comes.
+            sys.stdout.write("{}: ".format(filename))
+            sys.stdout.flush()
+            response = clamdsocket.recv(4096)
+            sys.stdout.buffer.write(response)
+            sys.stdout.flush()
+
+            clamdsocket.close()
+        except OSError as err:
+            sys.stderr.write("warning: Could not open {} for reading\n".format(filename))
+    else:
+        sys.stderr.write("warning: {} is not a regular file\n".format(filename))
+
+
+
+# Main
+
+for filename in sys.argv[2:]:
+    # Process the file
+    streamfile(filename)
