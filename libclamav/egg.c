@@ -760,6 +760,10 @@ static void egg_free_egg_file(egg_file* file)
         free(file->filename.name_utf8);
         file->filename.name_utf8 = NULL;
     }
+    if (NULL != file->encrypt) {
+        free(file->encrypt);
+        file->encrypt = NULL;
+    }
     if (NULL != file->blocks) {
         for (i = 0; i < file->nBlocks; i++) {
             egg_free_egg_block(file->blocks[i]);
