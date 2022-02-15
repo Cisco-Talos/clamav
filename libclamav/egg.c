@@ -760,6 +760,10 @@ static void egg_free_egg_file(egg_file* file)
         free(file->filename.name_utf8);
         file->filename.name_utf8 = NULL;
     }
+    if (NULL != file->encrypt) {
+        free(file->encrypt);
+        file->encrypt = NULL;
+    }
     if (NULL != file->blocks) {
         for (i = 0; i < file->nBlocks; i++) {
             egg_free_egg_block(file->blocks[i]);
@@ -2461,7 +2465,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_AZO: {
                     cli_warnmsg("cli_egg_extract_file: AZO decompression not yet supported.\n");
                     goto done;
-                    //break;
+                    // break;
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_LZMA: {
                     cli_warnmsg("cli_egg_extract_file: LZMA decompression not yet supported.\n");
