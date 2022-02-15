@@ -649,9 +649,9 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
                 for (j = 0; j < parameters_cnt && i < cnt; j++) {
                     parameters[j] = &tokens[i++];
                     if (j != parameters_cnt - 1)
-                        while (tokens[i].type != TOK_COMMA && i < cnt) i++;
+                        while (i < cnt && tokens[i].type != TOK_COMMA) i++;
                     else
-                        while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
+                        while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) i++;
                     i++;
                 }
                 if (j == parameters_cnt)
@@ -666,9 +666,9 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
         for (j = 0; j < parameters_cnt && i < cnt; j++) {
             parameters[j] = &tokens[i++];
             if (j != parameters_cnt - 1)
-                while (tokens[i].type != TOK_COMMA && i < cnt) i++;
+                while (i < cnt && tokens[i].type != TOK_COMMA) i++;
             else
-                while (tokens[i].type != TOK_PAR_CLOSE && i < cnt) i++;
+                while (i < cnt && tokens[i].type != TOK_PAR_CLOSE) i++;
             i++;
         }
         if (j == parameters_cnt)
