@@ -52,7 +52,7 @@
 #ifdef _WIN32
 int localserver(const struct optstruct *opts)
 {
-    logg("!Localserver is not supported on this platform");
+    logg(LOGG_ERROR, "Localserver is not supported on this platform");
     return -1;
 }
 
@@ -71,7 +71,7 @@ int localserver(const struct optstruct *opts)
 
     int num_fd = sd_listen_fds(0);
     if (num_fd > 2) {
-        logg("!LOCAL: Received more than two file descriptors from systemd.\n");
+        logg(LOGG_ERROR, "LOCAL: Received more than two file descriptors from systemd.\n");
         return -1;
     } else if (num_fd > 0) {
         /* use socket passed by systemd */
@@ -87,10 +87,10 @@ int localserver(const struct optstruct *opts)
             }
         }
         if (sockfd == -2) {
-            logg("#LOCAL: No local AF_UNIX SOCK_STREAM socket received from systemd.\n");
+            logg(LOGG_INFO_NF, "LOCAL: No local AF_UNIX SOCK_STREAM socket received from systemd.\n");
             return -2;
         }
-        logg("#LOCAL: Received AF_UNIX SOCK_STREAM socket from systemd.\n");
+        logg(LOGG_INFO_NF, "LOCAL: Received AF_UNIX SOCK_STREAM socket from systemd.\n");
         return sockfd;
     }
     /* create socket */
@@ -123,7 +123,7 @@ int localserver(const struct optstruct *opts)
                     sock_mode = strtol(optget(opts, "LocalSocketMode")->strarg, &end, 8);
 
                     if (*end) {
-                        logg("!Invalid LocalSocketMode %s\n", optget(opts, "LocalSocketMode")->strarg);
+                        logg(LOGG_ERROR, "Invalid LocalSocketMode %s\n", optget(opts, "LocalSocketMode")->strarg);
                         free(sockdir);
                         return -1;
                     }
@@ -133,12 +133,12 @@ int localserver(const struct optstruct *opts)
 
                 old_umask = umask(0011); /* allow mode 777 for socket directory */
                 if (mkdir(sockdir, sock_mode)) {
-                    logg("!LOCAL: Could not create socket directory: %s: %s\n", sockdir, strerror(errno));
+                    logg(LOGG_ERROR, "LOCAL: Could not create socket directory: %s: %s\n", sockdir, strerror(errno));
                     if (errno == ENOENT) {
-                        logg("!LOCAL: Ensure parent directory exists.\n");
+                        logg(LOGG_ERROR, "LOCAL: Ensure parent directory exists.\n");
                     }
                 } else {
-                    logg("Localserver: Creating socket directory: %s\n", sockdir);
+                    logg(LOGG_INFO, "Localserver: Creating socket directory: %s\n", sockdir);
                 }
                 umask(old_umask); /* restore umask */
             }
@@ -148,52 +148,52 @@ int localserver(const struct optstruct *opts)
 
     if ((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         estr = strerror(errno);
-        logg("!LOCAL: Socket allocation error: %s\n", estr);
+        logg(LOGG_ERROR, "LOCAL: Socket allocation error: %s\n", estr);
         return -1;
     }
 
     if (bind(sockfd, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) == -1) {
         if (errno == EADDRINUSE) {
             if (connect(sockfd, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) >= 0) {
-                logg("!LOCAL: Socket file %s is in use by another process.\n", server.sun_path);
+                logg(LOGG_ERROR, "LOCAL: Socket file %s is in use by another process.\n", server.sun_path);
                 close(sockfd);
                 return -1;
             }
             if (optget(opts, "FixStaleSocket")->enabled) {
-                logg("#LOCAL: Removing stale socket file %s\n", server.sun_path);
+                logg(LOGG_INFO_NF, "LOCAL: Removing stale socket file %s\n", server.sun_path);
                 if (unlink(server.sun_path) == -1) {
                     estr = strerror(errno);
-                    logg("!LOCAL: Socket file %s could not be removed: %s\n", server.sun_path, estr);
+                    logg(LOGG_ERROR, "LOCAL: Socket file %s could not be removed: %s\n", server.sun_path, estr);
                     close(sockfd);
                     return -1;
                 }
                 if (bind(sockfd, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) == -1) {
                     estr = strerror(errno);
-                    logg("!LOCAL: Socket file %s could not be bound: %s (unlink tried)\n", server.sun_path, estr);
+                    logg(LOGG_ERROR, "LOCAL: Socket file %s could not be bound: %s (unlink tried)\n", server.sun_path, estr);
                     close(sockfd);
                     return -1;
                 }
             } else if (CLAMSTAT(server.sun_path, &foo) != -1) {
-                logg("!LOCAL: Socket file %s exists. Either remove it, or configure a different one.\n", server.sun_path);
+                logg(LOGG_ERROR, "LOCAL: Socket file %s exists. Either remove it, or configure a different one.\n", server.sun_path);
                 close(sockfd);
                 return -1;
             }
         } else {
             estr = strerror(errno);
-            logg("!LOCAL: Socket file %s could not be bound: %s\n", server.sun_path, estr);
+            logg(LOGG_ERROR, "LOCAL: Socket file %s could not be bound: %s\n", server.sun_path, estr);
             close(sockfd);
             return -1;
         }
     }
 
-    logg("#LOCAL: Unix socket file %s\n", server.sun_path);
+    logg(LOGG_INFO_NF, "LOCAL: Unix socket file %s\n", server.sun_path);
 
     backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
-    logg("#LOCAL: Setting connection queue length to %d\n", backlog);
+    logg(LOGG_INFO_NF, "LOCAL: Setting connection queue length to %d\n", backlog);
 
     if (listen(sockfd, backlog) == -1) {
         estr = strerror(errno);
-        logg("!LOCAL: listen() error: %s\n", estr);
+        logg(LOGG_ERROR, "LOCAL: listen() error: %s\n", estr);
         close(sockfd);
         return -1;
     }

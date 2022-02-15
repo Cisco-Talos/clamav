@@ -39,10 +39,41 @@ int mdprintf(int desc, const char *str, ...) __attribute__((format(printf, 2, 3)
 int mdprintf(int desc, const char *str, ...);
 #endif
 
+/*
+ * legend:
+ * NAME          EXPLAIN
+ * LOGG_INFO     normal
+ * LOGG_INFO_NF  normal, no foreground (logfile and syslog only)
+ * LOGG_DEBUG    debug, verbose
+ * LOGG_DEBUG_NV debug, non-verbose
+ * LOGG_WARNING  warning
+ * LOGG_ERROR    ERROR
+ */
+typedef enum loglevel {
+    LOGG_INFO,
+    LOGG_INFO_NF,
+    LOGG_DEBUG,
+    LOGG_DEBUG_NV,
+    LOGG_WARNING,
+    LOGG_ERROR
+} loglevel_t;
+
+/*
+ * @param loglevel legend:
+ * NAME          EXPLAIN
+ * LOGG_INFO     normal
+ * LOGG_INFO_NF  normal, no foreground (logfile and syslog only)
+ * LOGG_DEBUG    debug, verbose
+ * LOGG_DEBUG_NV debug, non-verbose
+ * LOGG_WARNING  warning
+ * LOGG_ERROR    ERROR
+ *
+ * @return 0 fur success and -1 for error, e.g. log file access problems
+ */
 #ifdef __GNUC__
-int logg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+int logg(loglevel_t loglevel, const char *str, ...) __attribute__((format(printf, 2, 3)));
 #else
-int logg(const char *str, ...);
+int logg(loglevel_t loglevel, const char *str, ...);
 #endif
 
 void logg_close(void);
@@ -56,9 +87,9 @@ int logg_facility(const char *name);
 #endif
 
 #ifdef __GNUC__
-void mprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
+void mprintf(loglevel_t loglevel, const char *str, ...) __attribute__((format(printf, 2, 3)));
 #else
-void mprintf(const char *str, ...);
+void mprintf(loglevel_t loglevel, const char *str, ...);
 #endif
 
 extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout, mprintf_send_timeout, mprintf_progress;

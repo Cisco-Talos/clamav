@@ -35,7 +35,7 @@ void prelude_logging(const char *filename, const char *virname, const char *virh
     UNUSEDPARAM(virhash);
     UNUSEDPARAM(virsize);
 
-    logg("You have to compile with libprelude using ./configure --enable-prelude\n");
+    logg(LOGG_INFO, "You have to compile with libprelude using ./configure --enable-prelude\n");
 }
 #else
 
@@ -98,32 +98,32 @@ int prelude_initialize_client(const char *analyzer_name)
 
     ret = prelude_init(0, NULL);
     if (ret < 0) {
-        logg("Unable to initialize the prelude library : %s", prelude_strerror(ret));
+        logg(LOGG_INFO, "Unable to initialize the prelude library : %s", prelude_strerror(ret));
         return -1;
     }
 
     ret = prelude_client_new(&prelude_client, analyzer_name);
     if (ret < 0) {
-        logg("Unable to create a prelude client object : %s", prelude_strerror(ret));
+        logg(LOGG_INFO, "Unable to create a prelude client object : %s", prelude_strerror(ret));
         return -1;
     }
 
     ret = idmef_analyzer_setup(prelude_client_get_analyzer(prelude_client), analyzer_name);
     if (ret < 0) {
-        logg("%s", prelude_strerror(ret));
+        logg(LOGG_INFO, "%s", prelude_strerror(ret));
         return -1;
     }
 
     ret = prelude_client_start(prelude_client);
     if (ret < 0 || !prelude_client) {
-        logg("Unable to start prelude client : %s", prelude_strerror(ret));
+        logg(LOGG_INFO, "Unable to start prelude client : %s", prelude_strerror(ret));
         prelude_client_destroy(prelude_client, PRELUDE_CLIENT_EXIT_STATUS_SUCCESS);
         return -1;
     }
 
     ret = prelude_client_set_flags(prelude_client, PRELUDE_CLIENT_FLAGS_ASYNC_SEND | PRELUDE_CLIENT_FLAGS_ASYNC_TIMER);
     if (ret < 0) {
-        logg("Unable to send asynchronous send and timer : %s", prelude_strerror(ret));
+        logg(LOGG_INFO, "Unable to send asynchronous send and timer : %s", prelude_strerror(ret));
         prelude_client_destroy(prelude_client, PRELUDE_CLIENT_EXIT_STATUS_SUCCESS);
         return -1;
     }
@@ -242,7 +242,7 @@ void prelude_logging(const char *filename, const char *virname, const char *virh
     if (ret < 0)
         goto err;
 
-    logg("le client : %s", prelude_client_get_config_filename(prelude_client));
+    logg(LOGG_INFO, "le client : %s", prelude_client_get_config_filename(prelude_client));
     prelude_client_send_idmef(prelude_client, idmef);
     idmef_message_destroy(idmef);
 
@@ -252,7 +252,7 @@ err:
     if (idmef != NULL)
         idmef_message_destroy(idmef);
 
-    logg("%s error: %s", prelude_strsource(ret), prelude_strerror(ret));
+    logg(LOGG_INFO, "%s error: %s", prelude_strsource(ret), prelude_strerror(ret));
     return;
 }
 #endif

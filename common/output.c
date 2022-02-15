@@ -298,26 +298,7 @@ void logg_close(void)
 #endif
 }
 
-/*
- * legend:
- *  ! - ERROR:
- *  ^ - WARNING:
- *  ~ - normal
- *  # - normal, not foreground (logfile and syslog only)
- *  * - verbose
- *  $ - debug
- *  none - normal
- *
- *	Default  Foreground LogVerbose Debug  Syslog
- *  !	  yes	   mprintf     yes      yes   LOG_ERR
- *  ^	  yes	   mprintf     yes	yes   LOG_WARNING
- *  ~	  yes	   mprintf     yes	yes   LOG_INFO
- *  #	  yes	     no	       yes	yes   LOG_INFO
- *  *	  no	   mprintf     yes	yes   LOG_DEBUG
- *  $	  no	   mprintf     no	yes   LOG_DEBUG
- *  none  yes	   mprintf     yes	yes   LOG_INFO
- */
-int logg(const char *str, ...)
+int logg(loglevel_t loglevel, const char *str, ...)
 {
     va_list args;
     char buffer[1025], *abuffer = NULL, *buff;
@@ -328,8 +309,8 @@ int logg(const char *str, ...)
     struct flock fl;
 #endif
 
-    if ((*str == '$' && logg_verbose < 2) ||
-        (*str == '*' && !logg_verbose))
+    if ((loglevel == LOGG_DEBUG_NV && logg_verbose < 2) ||
+        (loglevel == LOGG_DEBUG && !logg_verbose))
         return 0;
 
     ARGLEN(args, str, len);
@@ -399,7 +380,7 @@ int logg(const char *str, ...)
         /* Need to avoid logging time for verbose messages when logverbose
                is not set or we get a bunch of timestamps in the log without
                newlines... */
-        if (logg_time && ((*buff != '*') || logg_verbose)) {
+        if (logg_time && ((loglevel != LOGG_DEBUG) || logg_verbose)) {
             char timestr[32];
             time(&currtime);
             cli_ctime(&currtime, timestr, sizeof(timestr));
@@ -408,17 +389,17 @@ int logg(const char *str, ...)
             fprintf(logg_fp, "%s -> ", timestr);
         }
 
-        if (*buff == '!') {
-            fprintf(logg_fp, "ERROR: %s", buff + 1);
+        if (loglevel == LOGG_ERROR) {
+            fprintf(logg_fp, "ERROR: %s", buff);
             flush = 1;
-        } else if (*buff == '^') {
+        } else if (loglevel == LOGG_WARNING) {
             if (!logg_nowarn)
-                fprintf(logg_fp, "WARNING: %s", buff + 1);
+                fprintf(logg_fp, "WARNING: %s", buff);
             flush = 1;
-        } else if (*buff == '*' || *buff == '$') {
-            fprintf(logg_fp, "%s", buff + 1);
-        } else if (*buff == '#' || *buff == '~') {
-            fprintf(logg_fp, "%s", buff + 1);
+        } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
+            fprintf(logg_fp, "%s", buff);
+        } else if (loglevel == LOGG_INFO_NF || loglevel == LOGG_INFO) {
+            fprintf(logg_fp, "%s", buff);
         } else
             fprintf(logg_fp, "%s", buff);
 
@@ -427,16 +408,16 @@ int logg(const char *str, ...)
     }
 
     if (logg_foreground) {
-        if (buff[0] != '#') {
+        if (loglevel != LOGG_INFO_NF) {
             if (logg_time) {
                 char timestr[32];
                 time(&currtime);
                 cli_ctime(&currtime, timestr, sizeof(timestr));
                 /* cut trailing \n */
                 timestr[strlen(timestr) - 1] = '\0';
-                mprintf("%s -> %s", timestr, buff);
+                mprintf(LOGG_INFO, "%s -> %s", timestr, buff);
             } else {
-                mprintf("%s", buff);
+                mprintf(LOGG_INFO, "%s", buff);
             }
         }
     }
@@ -444,15 +425,13 @@ int logg(const char *str, ...)
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if (logg_syslog) {
         cli_chomp(buff);
-        if (buff[0] == '!') {
-            syslog(LOG_ERR, "%s", buff + 1);
-        } else if (buff[0] == '^') {
+        if (loglevel == LOGG_ERROR) {
+            syslog(LOG_ERR, "%s", buff);
+        } else if (loglevel == LOGG_WARNING) {
             if (!logg_nowarn)
-                syslog(LOG_WARNING, "%s", buff + 1);
-        } else if (buff[0] == '*' || buff[0] == '$') {
-            syslog(LOG_DEBUG, "%s", buff + 1);
-        } else if (buff[0] == '#' || buff[0] == '~') {
-            syslog(LOG_INFO, "%s", buff + 1);
+                syslog(LOG_WARNING, "%s", buff);
+        } else if (loglevel == LOGG_DEBUG || loglevel == LOGG_DEBUG_NV) {
+            syslog(LOG_DEBUG, "%s", buff);
         } else
             syslog(LOG_INFO, "%s", buff);
     }
@@ -467,7 +446,7 @@ int logg(const char *str, ...)
     return 0;
 }
 
-void mprintf(const char *str, ...)
+void mprintf(loglevel_t loglevel, const char *str, ...)
 {
     va_list args;
     FILE *fd;
@@ -478,21 +457,6 @@ void mprintf(const char *str, ...)
         return;
 
     fd = stdout;
-
-    /* legend:
-     * ! - error
-     * @ - error with logging
-     * ...
-     */
-
-    /*
-     *             ERROR    WARNING    STANDARD
-     * normal      stderr   stderr     stdout
-     *
-     * verbose     stderr   stderr     stdout
-     *
-     * quiet       stderr     no         no
-     */
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
@@ -541,26 +505,22 @@ void mprintf(const char *str, ...)
         len            = sizeof(buffer) + 1;
     } while (0);
 #endif
-    if (buff[0] == '!') {
+    if (loglevel == LOGG_ERROR) {
         if (!mprintf_stdout)
             fd = stderr;
-        fprintf(fd, "ERROR: %s", &buff[1]);
-    } else if (buff[0] == '@') {
-        if (!mprintf_stdout)
-            fd = stderr;
-        fprintf(fd, "ERROR: %s", &buff[1]);
+        fprintf(fd, "ERROR: %s", buff);
     } else if (!mprintf_quiet) {
-        if (buff[0] == '^') {
+        if (loglevel == LOGG_WARNING) {
             if (!mprintf_nowarn) {
                 if (!mprintf_stdout)
                     fd = stderr;
-                fprintf(fd, "WARNING: %s", &buff[1]);
+                fprintf(fd, "WARNING: %s", buff);
             }
-        } else if (buff[0] == '*') {
+        } else if (loglevel == LOGG_DEBUG) {
             if (mprintf_verbose)
-                fprintf(fd, "%s", &buff[1]);
-        } else if (buff[0] == '~') {
-            fprintf(fd, "%s", &buff[1]);
+                fprintf(fd, "%s", buff);
+        } else if (loglevel == LOGG_INFO) {
+            fprintf(fd, "%s", buff);
         } else
             fprintf(fd, "%s", buff);
     }

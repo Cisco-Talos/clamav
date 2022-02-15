@@ -191,21 +191,21 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
 
     if (b->isClosed) {
         /*
-		 * Should be cli_dbgmsg, but I want to see them for now,
-		 * and cli_dbgmsg doesn't support debug levels
-		 */
+         * Should be cli_dbgmsg, but I want to see them for now,
+         * and cli_dbgmsg doesn't support debug levels
+         */
         cli_warnmsg("Reopening closed blob\n");
         b->isClosed = 0;
     }
     /*
-	 * The payoff here is between reducing the number of calls to
-	 * malloc/realloc and not overallocating memory. A lot of machines
-	 * are more tight with memory than one may imagine which is why
-	 * we don't just allocate a *huge* amount and be done with it. Closing
-	 * the blob helps because that reclaims memory. If you know the maximum
-	 * size of a blob before you start adding data, use blobGrow() that's
-	 * the most optimum
-	 */
+     * The payoff here is between reducing the number of calls to
+     * malloc/realloc and not overallocating memory. A lot of machines
+     * are more tight with memory than one may imagine which is why
+     * we don't just allocate a *huge* amount and be done with it. Closing
+     * the blob helps because that reclaims memory. If you know the maximum
+     * size of a blob before you start adding data, use blobGrow() that's
+     * the most optimum
+     */
 #if HAVE_CLI_GETPAGESIZE
     if (pagesize == 0) {
         pagesize = cli_getpagesize();
@@ -217,7 +217,7 @@ int blobAddData(blob *b, const unsigned char *data, size_t len)
         growth = ((len / pagesize) + 1) * pagesize;
 
     /*cli_dbgmsg("blobGrow: b->size %lu, b->len %lu, len %lu, growth = %u\n",
-		b->size, b->len, len, growth);*/
+                b->size, b->len, len, growth);*/
 
     if (b->data == NULL) {
         assert(b->len == 0);
@@ -307,9 +307,9 @@ void blobClose(blob *b)
     }
 
     /*
-	 * Nothing more is going to be added to this blob. If it'll save more
-	 * than a trivial amount (say 64 bytes) of memory, shrink the allocation
-	 */
+     * Nothing more is going to be added to this blob. If it'll save more
+     * than a trivial amount (say 64 bytes) of memory, shrink the allocation
+     */
     if ((b->size - b->len) >= 64) {
         if (b->len == 0) { /* Not likely */
             free(b->data);
@@ -374,9 +374,9 @@ int blobGrow(blob *b, size_t len)
 
     if (b->isClosed) {
         /*
-		 * Should be cli_dbgmsg, but I want to see them for now,
-		 * and cli_dbgmsg doesn't support debug levels
-		 */
+         * Should be cli_dbgmsg, but I want to see them for now,
+         * and cli_dbgmsg doesn't support debug levels
+         */
         cli_warnmsg("Growing closed blob\n");
         b->isClosed = 0;
     }
@@ -541,9 +541,9 @@ void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
     blobSetFilename(&fb->b, dir, filename);
 
     /*
-	 * Reload the filename, it may be different from the one we've
-	 * asked for, e.g. '/'s taken out
-	 */
+     * Reload the filename, it may be different from the one we've
+     * asked for, e.g. '/'s taken out
+     */
     filename = blobGetFilename(&fb->b);
 
     assert(filename != NULL);

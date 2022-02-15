@@ -250,7 +250,7 @@ static const char *scope_declare(struct scope *s, const char *token, const size_
 {
     const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)(state->var_uniq++));
     /* cli_hashtab_insert either finds an already existing entry, or allocates a
-	 * new one, we return the allocated string */
+     * new one, we return the allocated string */
     return el ? el->key : NULL;
 }
 
@@ -259,13 +259,13 @@ static const char *scope_use(struct scope *s, const char *token, const size_t le
     const struct cli_element *el = cli_hashtab_find(&s->id_map, token, len);
     if (el) {
         /* identifier already found in current scope,
-		 * return here to avoid overwriting uniq id */
+         * return here to avoid overwriting uniq id */
         return el->key;
     }
     /* identifier not yet in current scope's hashtab, add with ID -1.
-	 * Later if we find a declaration it will automatically assign a uniq ID
-	 * to it. If not, we'll know that we have to push ID == -1 tokens to an
-	 * outer scope.*/
+     * Later if we find a declaration it will automatically assign a uniq ID
+     * to it. If not, we'll know that we have to push ID == -1 tokens to an
+     * outer scope.*/
     el = cli_hashtab_insert(&s->id_map, token, len, (const cli_element_data)-1);
     return el ? el->key : NULL;
 }
@@ -818,7 +818,7 @@ static void run_decoders(struct parser_state *state)
                    cstring &&
                    !strcmp("dF", cstring) && tokens->data[i + 1].type == TOK_PAR_OPEN) {
             /* TODO: also match signature of dF function (possibly
-		   * declared using unescape */
+             * declared using unescape */
 
             handle_df(tokens->data, i + 2, &res);
         } else if (i + 2 < tokens->cnt && tokens->data[i].type == TOK_IDENTIFIER_NAME &&
@@ -901,7 +901,7 @@ void cli_js_parse_done(struct parser_state *state)
     }
 
     /* we had to close unfinished strings, parenthesis,
-	 * so that the folders/decoders can run properly */
+     * so that the folders/decoders can run properly */
     run_folders(&state->tokens);
     run_decoders(state);
 
@@ -978,7 +978,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 
     if (!state->global) {
         /* this state has either not been initialized,
-		 * or cli_js_parse_done() was already called on it */
+         * or cli_js_parse_done() was already called on it */
         cli_warnmsg(MODULE "invalid state\n");
         return;
     }
@@ -1000,7 +1000,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 leng = yyget_leng(state->scanner);
                 if (current->last_token == TOK_DOT) {
                     /* this is a member name, don't normalize
-					*/
+                     */
                     TOKEN_SET(&val, string, cli_strdup(text));
                     val.type = TOK_UNNORM_IDENTIFIER;
                 } else {
@@ -1057,9 +1057,9 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                     case WaitParameterList:
                     case InsideFunctionDecl:
                         /* in a syntactically correct
-						 * file, we would already be in
-						 * the Base state when we see a {
-						 */
+                         * file, we would already be in
+                         * the Base state when we see a {
+                         */
                         current->fsm_state = Base;
                         /* fall-through */
                     case InsideVar:
@@ -1080,7 +1080,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                 if (!current->blocks) {
                     if (current->parent) {
                         /* add dummy FUNCTION token to
-						 * mark function end */
+                         * mark function end */
                         TOKEN_SET(&val, cstring, "}");
                         add_token(state, &val);
                         TOKEN_SET(&val, scope, NULL);
@@ -1105,17 +1105,17 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
             case TOK_COMMA:
                 if (current->fsm_state == InsideInitializer && current->brackets == 0 && current->blocks == 0) {
                     /* initializer ended only if we
-					 * encountered a comma, and [] are
-					 * balanced.
-					 * This avoids switching state on:
-					 * var x = [4,y,u];*/
+                     * encountered a comma, and [] are
+                     * balanced.
+                     * This avoids switching state on:
+                     * var x = [4,y,u];*/
                     current->fsm_state = InsideVar;
                 }
                 break;
             case TOK_SEMICOLON:
                 if (current->brackets == 0 && current->blocks == 0) {
                     /* avoid switching state on unbalanced []:
-					 * var x = [test;testi]; */
+                     * var x = [test;testi]; */
                     current->fsm_state = Base;
                 }
                 break;
@@ -1724,7 +1724,7 @@ static int yylex(YYSTYPE *lvalp, yyscan_t scanner)
             scanner->pos++;
         }
         /* its not necesarely an infloop if it changed
-		 * state, and it shouldn't infloop between states */
+         * state, and it shouldn't infloop between states */
     }
     scanner->lastpos    = scanner->pos;
     scanner->last_state = scanner->state;
@@ -1801,7 +1801,7 @@ static int yylex(YYSTYPE *lvalp, yyscan_t scanner)
             case SinglelineComment:
                 while (scanner->pos < scanner->insize) {
                     /* htmlnorm converts \n to space, so
-					 * stop on space too */
+                     * stop on space too */
                     if (in[scanner->pos] == '\n' || in[scanner->pos] == ' ')
                         break;
                     scanner->pos++;

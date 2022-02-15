@@ -249,7 +249,7 @@ LOCALE_PARAM_DECL
 
     while (*fmt != '\0') {
         /* A white space in the format string matches 0 more or white
-	 space in the input string.  */
+         space in the input string.  */
         if (ISSPACE(*fmt)) {
             while (ISSPACE(*rp))
                 ++rp;
@@ -258,7 +258,7 @@ LOCALE_PARAM_DECL
         }
 
         /* Any character but `%' must be matched by the same character
-	 in the iput string.  */
+         in the iput string.  */
         if (*fmt != '%') {
             match_char(*fmt++, *rp++);
             continue;
@@ -497,9 +497,9 @@ LOCALE_PARAM_DECL
                 break;
             case 's': {
                 /* The number of seconds may be very high so we cannot use
-	       the `get_number' macro.  Instead read the number
-	       character for character and construct the result while
-	       doing this.  */
+               the `get_number' macro.  Instead read the number
+               character for character and construct the result while
+               doing this.  */
                 time_t secs = 0;
                 if (*rp < '0' || *rp > '9')
                     /* We need at least one digit.  */
@@ -553,7 +553,7 @@ LOCALE_PARAM_DECL
                 if (*rp < '0' || *rp > '9')
                     return NULL;
                 /* XXX Ignore the number since we would need some more
-	     information to compute a real date.  */
+             information to compute a real date.  */
                 do
                     ++rp;
                 while (*rp >= '0' && *rp <= '9');
@@ -571,7 +571,7 @@ LOCALE_PARAM_DECL
             case 'V':
                 get_number(0, 53, 2);
                 /* XXX This cannot determine any field in TM without some
-	     information.  */
+             information.  */
                 break;
             case 'w':
                 /* Match number of weekday.  */
@@ -584,7 +584,7 @@ LOCALE_PARAM_DECL
                 /* Match year within century.  */
                 get_number(0, 99, 2);
                 /* The "Year 2000: The Millennium Rollover" paper suggests that
-	     values in the range 69-99 refer to the twentieth century.  */
+             values in the range 69-99 refer to the twentieth century.  */
                 tm->tm_year = val >= 69 ? val : val + 100;
                 /* Indicate that we want to use the century, if specified.  */
                 want_century = 1;
@@ -602,8 +602,8 @@ LOCALE_PARAM_DECL
                 break;
             case 'z':
                 /* We recognize two formats: if two digits are given, these
-	     specify hours.  If fours digits are used, minutes are
-	     also specified.  */
+             specify hours.  If fours digits are used, minutes are
+             also specified.  */
                 {
                     bool neg;
                     int n;
@@ -664,7 +664,7 @@ LOCALE_PARAM_DECL
                             *decided = raw;
                         }
                         /* The C locale has no era information, so use the
-		 normal representation.  */
+                 normal representation.  */
                         if (!recursive(HERE_D_T_FMT))
                             return NULL;
                         want_xday = 1;
@@ -701,7 +701,7 @@ LOCALE_PARAM_DECL
                             *decided = raw;
                         }
                         /* The C locale has no era information, so use the
-		 normal representation.  */
+                 normal representation.  */
                         goto match_century;
                     case 'y':
                         if (*decided != raw) {
@@ -829,7 +829,7 @@ LOCALE_PARAM_DECL
                 break;
 #else
                 /* We have no information about the era format.  Just use
-	     the normal format.  */
+             the normal format.  */
                 if (*fmt != 'c' && *fmt != 'C' && *fmt != 'y' && *fmt != 'Y' && *fmt != 'x' && *fmt != 'X')
                     /* This is an illegal format.  */
                     return NULL;
@@ -848,14 +848,14 @@ LOCALE_PARAM_DECL
                         break;
                     case 'H':
                         /* Match hour in 24-hour clock using alternate numeric
-		 symbols.  */
+                 symbols.  */
                         get_alt_number(0, 23, 2);
                         tm->tm_hour = val;
                         have_I      = 0;
                         break;
                     case 'I':
                         /* Match hour in 12-hour clock using alternate numeric
-		 symbols.  */
+                 symbols.  */
                         get_alt_number(1, 12, 2);
                         tm->tm_hour = val % 12;
                         have_I      = 1;
@@ -890,7 +890,7 @@ LOCALE_PARAM_DECL
                     case 'V':
                         get_alt_number(0, 53, 2);
                         /* XXX This cannot determine any field in TM without
-		 further information.  */
+                 further information.  */
                         break;
                     case 'w':
                         /* Match number of weekday using alternate numeric symbols.  */
@@ -937,7 +937,7 @@ LOCALE_PARAM_DECL
 #endif
     } else if (want_era) {
         /* No era found but we have seen an E modifier.  Rectify some
-	   values.  */
+           values.  */
         if (want_century && century == -1 && tm->tm_year < 69)
             tm->tm_year += 100;
     }

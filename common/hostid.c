@@ -58,7 +58,7 @@ char *get_hostid(void *cbdata)
     if (!is_valid_hostid())
         return strdup(STATS_ANON_UUID);
 
-    logg("HostID is valid: %s\n", hostid);
+    logg(LOGG_INFO, "HostID is valid: %s\n", hostid);
 
     return strdup(hostid);
 }

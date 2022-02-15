@@ -72,11 +72,11 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
         switch (*ret_code) {
             case CL_EACCES:
             case CL_ESTAT:
-                logg("*ClamMisc: Scan issue; Daemon could not find or access: %s)\n", fname);
+                logg(LOGG_DEBUG, "ClamMisc: Scan issue; Daemon could not find or access: %s)\n", fname);
                 break;
                 /* TODO: handle other errors */
             case CL_EPARSE:
-                logg("~ClamMisc: Internal issue; Failed to parse reply from daemon: %s)\n", fname);
+                logg(LOGG_INFO, "ClamMisc: Internal issue; Failed to parse reply from daemon: %s)\n", fname);
                 break;
             case CL_EREAD:
             case CL_EWRITE:
@@ -84,10 +84,10 @@ static int onas_scan(struct onas_scan_event *event_data, const char *fname, STAT
             case CL_ENULLARG:
             case CL_ERROR:
             default:
-                logg("~ClamMisc: Unexpected issue; Daemon failed to scan: %s\n", fname);
+                logg(LOGG_INFO, "ClamMisc: Unexpected issue; Daemon failed to scan: %s\n", fname);
         }
         if (retry_on_error) {
-            logg("*ClamMisc: reattempting scan ... \n");
+            logg(LOGG_DEBUG, "ClamMisc: reattempting scan ... \n");
             while (err) {
                 ret = onas_scan_safe(event_data, fname, sb, infected, err, ret_code);
 
@@ -149,7 +149,7 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
     uint8_t b_deny_on_error;
 
     if (NULL == event_data || NULL == fname || NULL == infected || NULL == err || NULL == ret_code) {
-        logg("!ClamWorker: scan failed (NULL arg given)\n");
+        logg(LOGG_ERROR, "ClamWorker: scan failed (NULL arg given)\n");
         return CL_ENULLARG;
     }
 
@@ -168,7 +168,7 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
         ret = onas_scan(event_data, fname, sb, infected, err, ret_code);
 
         if (*err && *ret_code != CL_SUCCESS) {
-            logg("*ClamWorker: scan failed with error code %d\n", *ret_code);
+            logg(LOGG_DEBUG, "ClamWorker: scan failed with error code %d\n", *ret_code);
         }
 
 #if defined(HAVE_SYS_FANOTIFY_H)
@@ -185,9 +185,9 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
         if (event_data->fmd->mask & FAN_ALL_PERM_EVENTS) {
             ret = write(event_data->fan_fd, &res, sizeof(res));
             if (ret == -1) {
-                logg("!ClamWorker: internal error (can't write to fanotify)\n");
+                logg(LOGG_ERROR, "ClamWorker: internal error (can't write to fanotify)\n");
                 if (errno == ENOENT) {
-                    logg("*ClamWorker: permission event has already been written ... recovering ...\n");
+                    logg(LOGG_DEBUG, "ClamWorker: permission event has already been written ... recovering ...\n");
                 } else {
                     ret = CL_EWRITE;
                 }
@@ -198,13 +198,13 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
     if (b_fanotify) {
 
 #ifdef ONAS_DEBUG
-        logg("*ClamWorker: closing fd, %d)\n", event_data->fmd->fd);
+        logg(LOGG_DEBUG, "ClamWorker: closing fd, %d)\n", event_data->fmd->fd);
 #endif
         if (-1 == close(event_data->fmd->fd)) {
 
-            logg("!ClamWorker: internal error (can't close fanotify meta fd, %d)\n", event_data->fmd->fd);
+            logg(LOGG_ERROR, "ClamWorker: internal error (can't close fanotify meta fd, %d)\n", event_data->fmd->fd);
             if (errno == EBADF) {
-                logg("*ClamWorker: fd already closed ... recovering ...\n");
+                logg(LOGG_DEBUG, "ClamWorker: fd already closed ... recovering ...\n");
             } else {
                 ret = CL_EUNLINK;
             }
@@ -243,9 +243,9 @@ static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data
             if (event_data->sizelimit) {
                 if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
                     /* okay to skip w/o allow/deny since dir comes from inotify
-					 * events and (probably) won't block w/ protection enabled */
+                     * events and (probably) won't block w/ protection enabled */
                     event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
-                    logg("*ClamWorker: size limit surpassed while doing extra scanning ... skipping object ...\n");
+                    logg(LOGG_DEBUG, "ClamWorker: size limit surpassed while doing extra scanning ... skipping object ...\n");
                 }
             }
 
@@ -279,8 +279,8 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
     if (event_data->sizelimit) {
         if (fres != 0 || (uint64_t)sb.st_size > event_data->sizelimit) {
             /* don't skip so we avoid lockups, but don't scan either;
-			 * while it should be obvious, this will unconditionally set
-			 * the bit in the map to 0 regardless of original orientation */
+             * while it should be obvious, this will unconditionally set
+             * the bit in the map to 0 regardless of original orientation */
             event_data->bool_opts &= ((uint16_t)~ONAS_SCTH_B_SCAN);
         }
     }
@@ -290,10 +290,10 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 #ifdef ONAS_DEBUG
     /* very noisy, debug only */
     if (event_data->bool_opts & ONAS_SCTH_B_INOTIFY) {
-        logg("*ClamWorker: Inotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n",
+        logg(LOGG_DEBUG, "ClamWorker: Inotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n",
              ret, infected, err, ret_code);
     } else {
-        logg("*ClamWorker: Fanotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n\tfd = %d\n",
+        logg(LOGG_DEBUG, "ClamWorker: Fanotify Scan Results ...\n\tret = %d ...\n\tinfected = %d ...\n\terr = %d ...\n\tret_code = %d\n\tfd = %d\n",
              ret, infected, err, ret_code, event_data->fmd->fd);
     }
 #endif
@@ -317,9 +317,9 @@ void *onas_scan_worker(void *arg)
     uint8_t b_fanotify;
 
     if (NULL == event_data || NULL == event_data->pathname) {
-        logg("ClamWorker: invalid worker arguments for scanning thread\n");
+        logg(LOGG_INFO, "ClamWorker: invalid worker arguments for scanning thread\n");
         if (event_data) {
-            logg("ClamWorker: pathname is null\n");
+            logg(LOGG_INFO, "ClamWorker: pathname is null\n");
         }
         goto done;
     }
@@ -332,24 +332,24 @@ void *onas_scan_worker(void *arg)
 
 #if defined(HAVE_SYS_FANOTIFY_H)
     if (b_inotify) {
-        logg("*ClamWorker: handling inotify event ...\n");
+        logg(LOGG_DEBUG, "ClamWorker: handling inotify event ...\n");
 
         if (b_dir) {
-            logg("*ClamWorker: performing (extra) scanning on directory '%s'\n", event_data->pathname);
+            logg(LOGG_DEBUG, "ClamWorker: performing (extra) scanning on directory '%s'\n", event_data->pathname);
             onas_scan_thread_handle_dir(event_data, event_data->pathname);
         } else if (b_file) {
-            logg("*ClamWorker: performing (extra) scanning on file '%s'\n", event_data->pathname);
+            logg(LOGG_DEBUG, "ClamWorker: performing (extra) scanning on file '%s'\n", event_data->pathname);
             onas_scan_thread_handle_file(event_data, event_data->pathname);
         }
 
     } else if (b_fanotify) {
 
-        logg("*ClamWorker: performing scanning on file '%s'\n", event_data->pathname);
+        logg(LOGG_DEBUG, "ClamWorker: performing scanning on file '%s'\n", event_data->pathname);
         onas_scan_thread_handle_file(event_data, event_data->pathname);
     } else {
         /* something went very wrong, so check if we have an open fd,
-		 * try to close it to resolve any potential lingering permissions event,
-		 * then move to cleanup */
+         * try to close it to resolve any potential lingering permissions event,
+         * then move to cleanup */
         if (event_data->fmd) {
             if (event_data->fmd->fd >= 0) {
                 close(event_data->fmd->fd);
@@ -360,7 +360,7 @@ void *onas_scan_worker(void *arg)
 #endif
 done:
     /* our job to cleanup event data: worker queue just kicks us off in a thread pool, drops the event object
-	 * from the queue and forgets about us */
+     * from the queue and forgets about us */
 
     if (NULL != event_data) {
         if (NULL != event_data->pathname) {
@@ -395,7 +395,7 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
 {
 
     if (NULL == ctx || NULL == event_data || NULL == *event_data) {
-        logg("*ClamScThread: context and scan event struct are null ...\n");
+        logg(LOGG_DEBUG, "ClamScThread: context and scan event struct are null ...\n");
         return CL_ENULLARG;
     }
 

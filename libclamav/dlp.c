@@ -234,7 +234,7 @@ int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
         return 0;
 
     j = (ssize_t)i;
-    //figure out luhn digits
+    // figure out luhn digits
     for (j = digits - 1; j >= 0; j--) {
         val = cc_digits[j] - '0';
         if (mult) {

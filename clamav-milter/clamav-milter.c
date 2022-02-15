@@ -62,18 +62,18 @@ static void milter_exit(int sig)
 {
     const struct optstruct *opt;
 
-    logg("*clamav-milter: milter_exit, signal %d\n", sig);
+    logg(LOGG_DEBUG, "clamav-milter: milter_exit, signal %d\n", sig);
 
 #ifndef _WIN32
     if ((opt = optget(opts, "MilterSocket"))) {
         if (unlink(opt->strarg) == -1)
-            logg("!Can't unlink the socket file %s\n", opt->strarg);
+            logg(LOGG_ERROR, "Can't unlink the socket file %s\n", opt->strarg);
         else
-            logg("Socket file removed.\n");
+            logg(LOGG_INFO, "Socket file removed.\n");
     }
 #endif
 
-    logg("clamav-milter: stopped\n");
+    logg(LOGG_INFO, "clamav-milter: stopped\n");
 
     optfree(opts);
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
     opts = optparse(NULL, argc, argv, 1, OPT_MILTER, 0, NULL);
     if (!opts) {
-        mprintf("!Can't parse command line options\n");
+        mprintf(LOGG_ERROR, "Can't parse command line options\n");
         return 1;
     }
 
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
     if (opts->filename) {
         int x;
         for (x = 0; opts->filename[x]; x++)
-            mprintf("^Ignoring option %s\n", opts->filename[x]);
+            mprintf(LOGG_WARNING, "Ignoring option %s\n", opts->filename[x]);
     }
 
     if (optget(opts, "version")->enabled) {
@@ -164,11 +164,11 @@ int main(int argc, char **argv)
 
     if ((opt = optget(opts, "Chroot"))->enabled) {
         if (chdir(opt->strarg) != 0) {
-            logg("!Cannot change directory to %s\n", opt->strarg);
+            logg(LOGG_ERROR, "Cannot change directory to %s\n", opt->strarg);
             return 1;
         }
         if (chroot(opt->strarg) != 0) {
-            logg("!chroot to %s failed. Are you root?\n", opt->strarg);
+            logg(LOGG_ERROR, "chroot to %s failed. Are you root?\n", opt->strarg);
             return 1;
         }
     }
@@ -201,20 +201,20 @@ int main(int argc, char **argv)
     }
 
     if (!(my_socket = optget(opts, "MilterSocket")->strarg)) {
-        logg("!Please configure the MilterSocket directive\n");
+        logg(LOGG_ERROR, "Please configure the MilterSocket directive\n");
         logg_close();
         optfree(opts);
         return 1;
     }
 
     if (smfi_setconn(my_socket) == MI_FAILURE) {
-        logg("!smfi_setconn failed\n");
+        logg(LOGG_ERROR, "smfi_setconn failed\n");
         logg_close();
         optfree(opts);
         return 1;
     }
     if (smfi_register(descr) == MI_FAILURE) {
-        logg("!smfi_register failed\n");
+        logg(LOGG_ERROR, "smfi_register failed\n");
         logg_close();
         optfree(opts);
         return 1;
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
     opt  = optget(opts, "FixStaleSocket");
     umsk = umask(0777); /* socket is created with 000 to avoid races */
     if (smfi_opensocket(opt->enabled) == MI_FAILURE) {
-        logg("!Failed to create socket %s\n", my_socket);
+        logg(LOGG_ERROR, "Failed to create socket %s\n", my_socket);
         logg_close();
         optfree(opts);
         return 1;
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
             if (*end) {
                 struct group *pgrp = getgrnam(gname);
                 if (!pgrp) {
-                    logg("!Unknown group %s\n", gname);
+                    logg(LOGG_ERROR, "Unknown group %s\n", gname);
                     logg_close();
                     optfree(opts);
                     return 1;
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
                 sock_gid = pgrp->gr_gid;
             }
             if (chown(sock_name, -1, sock_gid)) {
-                logg("!Failed to change socket ownership to group %s\n", gname);
+                logg(LOGG_ERROR, "Failed to change socket ownership to group %s\n", gname);
                 logg_close();
                 optfree(opts);
                 return 1;
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
         if (NULL != user_name) {
             struct passwd *user;
             if ((user = getpwnam(user_name)) == NULL) {
-                logg("ERROR: Can't get information about user %s.\n",
+                logg(LOGG_INFO, "ERROR: Can't get information about user %s.\n",
                      user_name);
                 logg_close();
                 optfree(opts);
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
             }
 
             if (chown(sock_name, user->pw_uid, -1)) {
-                logg("!Failed to change socket ownership to user %s\n", user->pw_name);
+                logg(LOGG_ERROR, "Failed to change socket ownership to user %s\n", user->pw_name);
                 optfree(opts);
                 logg_close();
                 return 1;
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
             char *end;
             sock_mode = strtol(optget(opts, "MilterSocketMode")->strarg, &end, 8);
             if (*end) {
-                logg("!Invalid MilterSocketMode %s\n", optget(opts, "MilterSocketMode")->strarg);
+                logg(LOGG_ERROR, "Invalid MilterSocketMode %s\n", optget(opts, "MilterSocketMode")->strarg);
                 logg_close();
                 optfree(opts);
                 return 1;
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
             sock_mode = 0777 & ~umsk;
 
         if (chmod(sock_name, sock_mode & 0666)) {
-            logg("!Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
+            logg(LOGG_ERROR, "Cannot set milter socket permission to %s\n", optget(opts, "MilterSocketMode")->strarg);
             logg_close();
             optfree(opts);
             return 1;
@@ -322,7 +322,7 @@ int main(int argc, char **argv)
 
         opt = optget(opts, "LogFacility");
         if ((fac = logg_facility(opt->strarg)) == -1) {
-            logg("!LogFacility: %s: No such facility.\n", opt->strarg);
+            logg(LOGG_ERROR, "LogFacility: %s: No such facility.\n", opt->strarg);
             logg_close();
             optfree(opts);
             return 1;
@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 #endif
 
     time(&currtime);
-    if (logg("#+++ Started at %s", ctime(&currtime))) {
+    if (logg(LOGG_INFO_NF, "+++ Started at %s", ctime(&currtime))) {
         fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
         logg_close();
         optfree(opts);
@@ -369,7 +369,7 @@ int main(int argc, char **argv)
 #ifndef _WIN32
     if (!optget(opts, "Foreground")->enabled) {
         if (-1 == daemonize_parent_wait(user_name, logg_file)) {
-            logg("!daemonize() failed\n");
+            logg(LOGG_ERROR, "daemonize() failed\n");
             localnets_free();
             allow_list_free();
             cpool_free();
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
             return 1;
         }
         if (chdir("/") == -1) {
-            logg("^Can't change current working directory to root\n");
+            logg(LOGG_WARNING, "Can't change current working directory to root\n");
         }
     }
 
@@ -401,14 +401,14 @@ int main(int argc, char **argv)
 
     maxfilesize = optget(opts, "MaxFileSize")->numarg;
     if (!maxfilesize) {
-        logg("^Invalid MaxFileSize, using default (%d)\n", CLI_DEFAULT_MAXFILESIZE);
+        logg(LOGG_WARNING, "Invalid MaxFileSize, using default (%d)\n", CLI_DEFAULT_MAXFILESIZE);
         maxfilesize = CLI_DEFAULT_MAXFILESIZE;
     }
     readtimeout = optget(opts, "ReadTimeout")->numarg;
 
     cpool_init(opts);
     if (!cp) {
-        logg("!Failed to init the socket pool\n");
+        logg(LOGG_ERROR, "Failed to init the socket pool\n");
         localnets_free();
         allow_list_free();
         logg_close();
@@ -422,11 +422,11 @@ int main(int argc, char **argv)
         int err          = 0;
 
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
-            logg("!Can't save PID in file %s\n", opt->strarg);
+            logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
             err = 1;
         } else {
             if (fprintf(fd, "%u\n", (unsigned int)getpid()) < 0) {
-                logg("!Can't save PID in file %s\n", opt->strarg);
+                logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
                 err = 1;
             }
             fclose(fd);
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
                 struct passwd *pw = getpwuid(0);
                 int ret           = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
                 if (ret) {
-                    logg("!Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
+                    logg(LOGG_ERROR, "Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
                     err = 1;
                 }
             }
@@ -468,7 +468,7 @@ int main(int argc, char **argv)
     /* We have been daemonized, and initialization is done.  Signal
      * the parent process so that it can exit cleanly.
      */
-    if (parentPid != getpid()) { //we have been daemonized
+    if (parentPid != getpid()) { // we have been daemonized
         daemonize_signal_parent(parentPid);
     }
 #endif

@@ -5680,13 +5680,13 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
         if (EC32(cert_hdr.length) != hlen) {
             /* This is the case that MS13-098 aimed to address, but it got
-                 * pushback to where the fix (not allowing additional, non-zero
-                 * bytes in the security directory) is now opt-in via a registry
-                 * key.  Given that most machines will treat these binaries as
-                 * valid, we'll still parse the signature and just trust that
-                 * our trust signatures are tailored enough to where any
-                 * instances of this are reasonable (for instance, I saw one
-                 * binary that appeared to use this to embed a license key.) */
+             * pushback to where the fix (not allowing additional, non-zero
+             * bytes in the security directory) is now opt-in via a registry
+             * key.  Given that most machines will treat these binaries as
+             * valid, we'll still parse the signature and just trust that
+             * our trust signatures are tailored enough to where any
+             * instances of this are reasonable (for instance, I saw one
+             * binary that appeared to use this to embed a license key.) */
             cli_dbgmsg("cli_check_auth_header: MS13-098 violation detected, but continuing on to verify certificate\n");
         }
 

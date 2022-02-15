@@ -83,8 +83,8 @@ static int td_isascii(const unsigned char *buf, unsigned int len)
     unsigned int i;
 
     /* Validate that the data all falls within the bounds of
-	 * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
-	 */
+     * plain ASCII, ISO-8859 text, and non-ISO extended ASCII (Mac, IBM PC)
+     */
     for (i = 0; i < len; i++)
         if (text_chars[buf[i]] == F)
             return 0;
@@ -99,9 +99,9 @@ static int td_isutf8(const unsigned char *buf, unsigned int len)
     for (i = 0; i < len; i++) {
         if ((buf[i] & 0x80) == 0) { /* 0xxxxxxx is plain ASCII */
             /*
-	     * Even if the whole file is valid UTF-8 sequences,
-	     * still reject it if it uses weird control characters.
-	     */
+             * Even if the whole file is valid UTF-8 sequences,
+             * still reject it if it uses weird control characters.
+             */
             if (text_chars[buf[i]] != T)
                 return 0;
 

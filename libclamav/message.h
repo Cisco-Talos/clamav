@@ -38,9 +38,9 @@ typedef struct message {
     int base64chars;
 
     /*
-	 * Markers for the start of various non MIME messages that could
-	 * be included within this message
-	 */
+     * Markers for the start of various non MIME messages that could
+     * be included within this message
+     */
     text *bounce;   /* start of a bounced message */
     text *binhex;   /* start of a binhex message */
     text *yenc;     /* start of a yEnc message */

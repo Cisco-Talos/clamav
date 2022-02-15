@@ -112,7 +112,7 @@ int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t *data, int32_t size)
     }
     cli_event_int(EV, BCEV_OFFSET, ctx->off);
     cli_event_fastdata(EV, BCEV_READ, data, size);
-    //cli_event_data(EV, BCEV_READ, data, n);
+    // cli_event_data(EV, BCEV_READ, data, n);
     ctx->off += n;
     return (int32_t)n;
 }
@@ -161,8 +161,8 @@ uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, u
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a)
 {
     cli_event_int(EV, BCEV_DBG_INT, a);
-    //cli_dbgmsg("bytecode debug: %d\n", a);
-    //return 0;
+    // cli_dbgmsg("bytecode debug: %d\n", a);
+    // return 0;
     if (!cli_debug_flag)
         return 0;
     return fprintf(stderr, "%d", a);
@@ -358,7 +358,7 @@ uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
     unsigned err                      = 0;
     const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
     ret                               = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
-                      ctx->file_size, pe->hdr_size);
+                                                    ctx->file_size, pe->hdr_size);
     if (err) {
         cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
         return PE_INVALID_RVA;
@@ -973,7 +973,7 @@ int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
 
     b->stream.avail_in = avail_in_orig;
     b->stream.next_in  = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
-                                                               b->stream.avail_in);
+                                                                b->stream.avail_in);
 
     if ((ret = cli_LzmaInit(&b->stream, 0)) != LZMA_RESULT_OK) {
         cli_dbgmsg("bytecode api: LzmaInit: Failed to initialize LZMA decompressor: %d!\n", ret);
@@ -2230,7 +2230,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
         return -2; /* error code for not an array */
     }
 
-    //len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
+    // len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
     len  = strlen(jstr);
 
@@ -2267,7 +2267,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t s
         return -2; /* error code for not an array */
     }
 
-    //len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
+    // len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
     len  = strlen(jstr);
 
@@ -2336,5 +2336,5 @@ int32_t cli_bcapi_json_get_int(struct cli_bc_ctx *ctx, int32_t objid)
 #endif
 }
 
-//int64_t cli_bcapi_json_get_int64(struct cli_bc_ctx *ctx, int32_t objid);
-//double cli_bcapi_json_get_double(struct cli_bc_ctx *ctx, int32_t objid);
+// int64_t cli_bcapi_json_get_int64(struct cli_bc_ctx *ctx, int32_t objid);
+// double cli_bcapi_json_get_double(struct cli_bc_ctx *ctx, int32_t objid);

@@ -156,11 +156,11 @@ double calc_entropy(const unsigned char *data, size_t size)
     return entropy;
 }
 
-#define FILLBYTES(dst)                         \
-    if (IsBadReadPtr(seek, sizeof(dst))) {     \
-        logg("!exeScanner: Bad pointer!!!\n"); \
-        goto cleanup;                          \
-    }                                          \
+#define FILLBYTES(dst)                                    \
+    if (IsBadReadPtr(seek, sizeof(dst))) {                \
+        logg(LOGG_ERROR, "exeScanner: Bad pointer!!!\n"); \
+        goto cleanup;                                     \
+    }                                                     \
     memcpy(&dst, seek, sizeof(dst));
 
 /* Packed exe heuristic detection, errors are handled as like of non packed data
@@ -187,20 +187,20 @@ int is_packed(const char *filename)
                         FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (hFile == INVALID_HANDLE_VALUE) {
-        elogg("exeScanner: CreateFileA failed %lu\n", GetLastError());
+        elogg(LOGG_INFO, "exeScanner: CreateFileA failed %lu\n", GetLastError());
         return packed; /* Returning packed, the module is loaded so it must exists
                       on disk */
     }
 
     hMapFile = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, "exeScanner");
     if (!hMapFile) {
-        elogg("exeScanner: CreateFileMappingA() failed %lu\n", GetLastError());
+        elogg(LOGG_INFO, "exeScanner: CreateFileMappingA() failed %lu\n", GetLastError());
         goto cleanup;
     }
 
     lpMapAddress = (LPBYTE)MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
     if (!lpMapAddress) {
-        elogg("exeScanner: MapViewOfFile() failed %lu\n", GetLastError());
+        elogg(LOGG_INFO, "exeScanner: MapViewOfFile() failed %lu\n", GetLastError());
         goto cleanup;
     }
 
@@ -209,7 +209,7 @@ int is_packed(const char *filename)
     /* DOS Signature 'MZ' */
     FILLBYTES(e_mz);
     if (e_mz != IMAGE_DOS_SIGNATURE) {
-        elogg("exeScanner: DOS Signature not found\n");
+        elogg(LOGG_INFO, "exeScanner: DOS Signature not found\n");
         goto cleanup;
     }
 
@@ -217,7 +217,7 @@ int is_packed(const char *filename)
 
     FILLBYTES(e_lfanew);
     if (!e_lfanew) {
-        elogg("exeScanner: Invalid PE offset\n");
+        elogg(LOGG_INFO, "exeScanner: Invalid PE offset\n");
         goto cleanup;
     }
     seek = lpMapAddress + e_lfanew;
@@ -225,7 +225,7 @@ int is_packed(const char *filename)
     /* PE Signature 'PE' */
     FILLBYTES(e_magic);
     if (e_magic != IMAGE_NT_SIGNATURE) {
-        elogg("exeScanner: PE Signature not found\n");
+        elogg(LOGG_INFO, "exeScanner: PE Signature not found\n");
         goto cleanup;
     }
     seek += sizeof(e_magic);
@@ -241,13 +241,13 @@ int is_packed(const char *filename)
     seek += sizeof(IMAGE_OPTIONAL_HEADER32);
 
     if (pehdr->Machine != IMAGE_FILE_MACHINE_I386) {
-        elogg("exeScanner: Not an x86 executable\n");
+        elogg(LOGG_INFO, "exeScanner: Not an x86 executable\n");
         goto cleanup;
     }
 
     /* Invalid sections number */
     if ((pehdr->NumberOfSections < 1) || (pehdr->NumberOfSections > 32)) {
-        elogg("exeScanner: Invalid sections number\n");
+        elogg(LOGG_INFO, "exeScanner: Invalid sections number\n");
         packed = 1;
         goto cleanup;
     }
@@ -276,16 +276,16 @@ int is_packed(const char *filename)
                 secname[c] = '?';
         secname[IMAGE_SIZEOF_SHORT_NAME - 1] = 0;
 
-        elogg("exeScanner: Section name: [%s] - Entropy %f\n", secname,
+        elogg(LOGG_INFO, "exeScanner: Section name: [%s] - Entropy %f\n", secname,
               section_entropy);
 
         if (!sechdr->SizeOfRawData)
             badsection = 1;
     }
 
-    elogg("exeScanner: Max entropy = %f\n", entropy);
+    elogg(LOGG_INFO, "exeScanner: Max entropy = %f\n", entropy);
     /* EP Check */
-    elogg("exeScanner: Entry Point rva: 0x%lx - raw: 0x%lx\n",
+    elogg(LOGG_INFO, "exeScanner: Entry Point rva: 0x%lx - raw: 0x%lx\n",
           opthdr->AddressOfEntryPoint, epoff);
 
     ep = lpMapAddress + epoff;
@@ -293,14 +293,14 @@ int is_packed(const char *filename)
 #ifdef DUMP_SIGNATURE
         int i;
         for (i = 0; i < EP_SIGNATURE_SIZE; i++)
-            elogg("%02x ", ep[i]);
-        elogg("\n[C Code]: ");
+            elogg(LOGG_INFO, "%02x ", ep[i]);
+        elogg(LOGG_INFO, "\n[C Code]: ");
         for (i = 0; i < EP_SIGNATURE_SIZE - 1; i++)
-            elogg("0x%02x, ", ep[i]);
-        elogg("0x%02x\n", ep[i]);
+            elogg(LOGG_INFO, "0x%02x, ", ep[i]);
+        elogg(LOGG_INFO, "0x%02x\n", ep[i]);
 #endif
         if ((sig = checksig(ep))) {
-            elogg("exeScanner: Signature check: %s\n", sig->name);
+            elogg(LOGG_INFO, "exeScanner: Signature check: %s\n", sig->name);
             entropy += sig->score;
             packed = (sig->score >= .0f);
             if (sig->score < .0f)
@@ -308,13 +308,13 @@ int is_packed(const char *filename)
                     "exeScanner: Whitelisted signature found, lowering entropy to %f\n",
                     entropy);
         } else
-            elogg("exeScanner: Signature check: Nothing found\n");
+            elogg(LOGG_INFO, "exeScanner: Signature check: Nothing found\n");
     } else
-        elogg("exeScanner: Invalid address of Entry Point\n");
+        elogg(LOGG_INFO, "exeScanner: Invalid address of Entry Point\n");
 
     if (badsection) {
         if ((entropy == .0f) || (entropy > ENTROPY_THRESHOLD)) {
-            elogg("exeScanner: found zero SizeOfRawData and entropy %f\n", entropy);
+            elogg(LOGG_INFO, "exeScanner: found zero SizeOfRawData and entropy %f\n", entropy);
             packed = 1;
             goto cleanup;
         }

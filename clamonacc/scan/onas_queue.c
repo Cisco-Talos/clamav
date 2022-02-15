@@ -150,7 +150,7 @@ void *onas_scan_queue_th(void *arg)
     sigfillset(&sigset);
     sigdelset(&sigset, SIGUSR2);
     /* The behavior of a process is undefined after it ignores a
-	 * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
     sigdelset(&sigset, SIGFPE);
     sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGSEGV);
@@ -160,14 +160,14 @@ void *onas_scan_queue_th(void *arg)
     sigdelset(&sigset, SIGBUS);
 #endif
 
-    logg("*ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
+    logg(LOGG_DEBUG, "ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
     onas_init_event_queue();
     threadpool thpool = thpool_init(ctx->maxthreads);
     g_thpool          = thpool;
 
     /* loop w/ onas_consume_event until we die */
     pthread_cleanup_push(onas_scan_queue_exit, NULL);
-    logg("*ClamScanQueue: waiting to consume events ...\n");
+    logg(LOGG_DEBUG, "ClamScanQueue: waiting to consume events ...\n");
     do {
         onas_consume_event(thpool);
     } while (1);
@@ -235,7 +235,7 @@ cl_error_t onas_scan_queue_start(struct onas_context **ctx)
     int32_t thread_started = 1;
 
     if (!ctx || !*ctx) {
-        logg("*ClamScanQueue: unable to start clamonacc. (bad context)\n");
+        logg(LOGG_DEBUG, "ClamScanQueue: unable to start clamonacc. (bad context)\n");
         return CL_EARG;
     }
 
@@ -247,7 +247,7 @@ cl_error_t onas_scan_queue_start(struct onas_context **ctx)
 
     if (0 != thread_started) {
         /* Failed to create thread */
-        logg("*ClamScanQueue: Unable to start event consumer queue thread ... \n");
+        logg(LOGG_DEBUG, "ClamScanQueue: Unable to start event consumer queue thread ... \n");
         return CL_ECREAT;
     }
 
@@ -258,12 +258,12 @@ static void onas_scan_queue_exit(void *arg)
 {
     UNUSEDPARAM(arg);
 
-    logg("*ClamScanQueue: onas_scan_queue_exit()\n");
+    logg(LOGG_DEBUG, "ClamScanQueue: onas_scan_queue_exit()\n");
     if (g_thpool) {
         thpool_wait(g_thpool);
         thpool_destroy(g_thpool);
         g_thpool = NULL;
     }
     onas_destroy_event_queue();
-    logg("ClamScanQueue: stopped\n");
+    logg(LOGG_INFO, "ClamScanQueue: stopped\n");
 }

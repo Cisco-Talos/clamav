@@ -74,11 +74,11 @@ static int cpool_addunix(char *path)
     struct CP_ENTRY *cpe = &cp->pool[cp->entries - 1];
 
     if (!cli_is_abspath(path)) {
-        logg("!Unix clamd socket must be an absolute path\n");
+        logg(LOGG_ERROR, "Unix clamd socket must be an absolute path\n");
         return 1;
     }
     if (!(srv = (struct sockaddr_un *)malloc(sizeof(*srv)))) {
-        logg("!Out of memory allocating unix socket space\n");
+        logg(LOGG_ERROR, "Out of memory allocating unix socket space\n");
         return 1;
     }
 
@@ -93,7 +93,7 @@ static int cpool_addunix(char *path)
     cpe->socklen                             = sizeof(*srv);
     SETGAI(cpe, NULL);
     if (!cp->local_cpe) cp->local_cpe = cpe;
-    logg("*Local socket unix:%s added to the pool (slot %d)\n", srv->sun_path, cp->entries);
+    logg(LOGG_DEBUG, "Local socket unix:%s added to the pool (slot %d)\n", srv->sun_path, cp->entries);
     return 0;
 }
 
@@ -117,7 +117,7 @@ static int cpool_addtcp(char *addr, char *port)
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(addr, port ? port : "3310", &hints, &res)) {
-        logg("^Can't resolve hostname %s\n", addr ? addr : "");
+        logg(LOGG_WARNING, "Can't resolve hostname %s\n", addr ? addr : "");
         return 1;
     }
     cpe->type = 1;
@@ -136,7 +136,7 @@ static int cpool_addtcp(char *addr, char *port)
     cpe->server    = res->ai_addr;
     cpe->socklen   = res->ai_addrlen;
     SETGAI(cpe, res);
-    logg("*%s socket tcp:%s:%s added to the pool (slot %d)\n", cpe->local ? "Local" : "Remote", addr ? addr : "localhost", port ? port : "3310", cp->entries);
+    logg(LOGG_DEBUG, "%s socket tcp:%s:%s added to the pool (slot %d)\n", cpe->local ? "Local" : "Remote", addr ? addr : "localhost", port ? port : "3310", cp->entries);
     return 0;
 }
 
@@ -145,7 +145,7 @@ static int addslot(void)
     struct CP_ENTRY *cpe;
 
     if (!(cpe = realloc(cp->pool, (cp->entries + 1) * sizeof(struct CP_ENTRY)))) {
-        logg("!Out of memory while initializing the connection pool\n");
+        logg(LOGG_ERROR, "Out of memory while initializing the connection pool\n");
         cpool_free();
         return 1;
     }
@@ -173,7 +173,7 @@ static void cpool_probe(void)
         if ((cpe->dead && (cpe->last_poll < now - 120 || !cp->alive)) || cpe->last_poll < now - 15 * 60 * 60) {
             cpe->last_poll = time(NULL);
             nc_ping_entry(cpe);
-            logg("*Probe for slot %u returned: %s\n", i, cpe->dead ? "failed" : "success");
+            logg(LOGG_DEBUG, "Probe for slot %u returned: %s\n", i, cpe->dead ? "failed" : "success");
         }
         dead += cpe->dead;
         cpe++;
@@ -181,7 +181,7 @@ static void cpool_probe(void)
     cp->alive = cp->entries - dead;
 
     if (!cp->alive)
-        logg("^No clamd server appears to be available\n");
+        logg(LOGG_WARNING, "No clamd server appears to be available\n");
 }
 
 static void *cpool_mon(_UNUSED_ void *v)
@@ -210,7 +210,7 @@ void cpool_init(struct optstruct *opts)
     int failed = 0;
 
     if (!(cp = calloc(sizeof(*cp), 1))) {
-        logg("!Out of memory while initializing the connection pool");
+        logg(LOGG_ERROR, "Out of memory while initializing the connection pool");
         return;
     }
 
@@ -231,7 +231,7 @@ void cpool_init(struct optstruct *opts)
                 }
                 failed = cpool_addtcp(socktype + 4, port);
             } else {
-                logg("!Failed to parse ClamdSocket directive '%s'\n", socktype);
+                logg(LOGG_ERROR, "Failed to parse ClamdSocket directive '%s'\n", socktype);
                 failed = 1;
             }
             if (failed) break;
@@ -244,7 +244,7 @@ void cpool_init(struct optstruct *opts)
     }
 
     if (!cp->entries) {
-        logg("!No ClamdSocket specified\n");
+        logg(LOGG_ERROR, "No ClamdSocket specified\n");
         cpool_free();
         return;
     }
@@ -258,7 +258,7 @@ void cpool_free(void)
     unsigned int i;
 
     if (!quitting) {
-        logg("*Killing the monitor and stopping\n");
+        logg(LOGG_DEBUG, "Killing the monitor and stopping\n");
         quitting = 1;
         pthread_cond_signal(&mon_cond);
         pthread_join(probe_th, NULL);

@@ -53,11 +53,11 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
     if (ttl)
         *ttl = 0;
     if (res_init() < 0) {
-        logg("^res_init failed\n");
+        logg(LOGG_WARNING, "res_init failed\n");
         return NULL;
     }
 
-    logg("*Querying %s\n", domain);
+    logg(LOGG_DEBUG, "Querying %s\n", domain);
 
     memset(answer, 0, PACKETSZ);
     if ((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0 || len > PACKETSZ) {
@@ -71,12 +71,12 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
         if (qtype == T_TXT)
             qtype = T_ANY;
         if ((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
-            logg("%cCan't query %s\n",
+            logg(LOGG_INFO, "%cCan't query %s\n",
                  (qtype == T_TXT || qtype == T_ANY) ? '^' : '*', domain);
             return NULL;
         }
 #else
-        logg("%cCan't query %s\n", (qtype == T_TXT) ? '^' : '*', domain);
+        logg(LOGG_INFO, "%cCan't query %s\n", (qtype == T_TXT) ? '^' : '*', domain);
         return NULL;
 #endif
     }
@@ -90,19 +90,19 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
     pt      = answer + sizeof(HEADER);
 
     if ((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
-        logg("^dn_expand failed\n");
+        logg(LOGG_WARNING, "dn_expand failed\n");
         return NULL;
     }
 
     pt += len;
     if (pt > answend - 4) {
-        logg("^Bad (too short) DNS reply\n");
+        logg(LOGG_WARNING, "Bad (too short) DNS reply\n");
         return NULL;
     }
 
     GETSHORT(type, pt);
     if (type != qtype) {
-        logg("^Broken DNS reply.\n");
+        logg(LOGG_WARNING, "Broken DNS reply.\n");
         return NULL;
     }
 
@@ -111,12 +111,12 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
     do { /* recurse through CNAME rr's */
         pt += size;
         if ((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
-            logg("^second dn_expand failed\n");
+            logg(LOGG_WARNING, "second dn_expand failed\n");
             return NULL;
         }
         pt += len;
         if (pt > answend - 10) {
-            logg("^Bad (too short) DNS reply\n");
+            logg(LOGG_WARNING, "Bad (too short) DNS reply\n");
             return NULL;
         }
         GETSHORT(type, pt);
@@ -124,18 +124,18 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
         GETLONG(cttl, pt);
         GETSHORT(size, pt);
         if (pt + size < answer || pt + size > answend) {
-            logg("^DNS rr overflow\n");
+            logg(LOGG_WARNING, "DNS rr overflow\n");
             return NULL;
         }
     } while (type == T_CNAME);
 
     if (type != T_TXT) {
-        logg("^Not a TXT record\n");
+        logg(LOGG_WARNING, "Not a TXT record\n");
         return NULL;
     }
 
     if (!size || (txtlen = *pt) >= size || !txtlen) {
-        logg("^Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
+        logg(LOGG_WARNING, "Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
         return NULL;
     }
 

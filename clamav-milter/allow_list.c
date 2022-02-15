@@ -70,7 +70,7 @@ int allow_list_init(const char *fname)
     struct WHLST *w;
 
     if (!(f = fopen(fname, "r"))) {
-        logg("!Cannot open allow list file '%s'\n", fname);
+        logg(LOGG_ERROR, "Cannot open allow list file '%s'\n", fname);
         return 1;
     }
 
@@ -95,7 +95,7 @@ int allow_list_init(const char *fname)
         }
         if (!len) continue;
         if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
-            logg("!Out of memory loading allow list file\n");
+            logg(LOGG_ERROR, "Out of memory loading allow list file\n");
             allow_list_free();
             fclose(f);
             return 1;
@@ -103,7 +103,7 @@ int allow_list_init(const char *fname)
         w->next  = (*addto);
         (*addto) = w;
         if (cli_regcomp(&w->preg, ptr, REG_ICASE | REG_NOSUB)) {
-            logg("!Failed to compile regex '%s' in allow list file\n", ptr);
+            logg(LOGG_ERROR, "Failed to compile regex '%s' in allow list file\n", ptr);
             allow_list_free();
             fclose(f);
             return 1;
@@ -140,7 +140,7 @@ int smtpauth_init(const char *r)
         int rxsize = 0, rxavail = 0, rxused = 0;
 
         if (!f) {
-            logg("!Cannot open allow list file '%s'\n", r + 5);
+            logg(LOGG_ERROR, "Cannot open allow list file '%s'\n", r + 5);
             return 1;
         }
         while (fgets(buf, sizeof(buf), f) != NULL) {
@@ -159,7 +159,7 @@ int smtpauth_init(const char *r)
                 ptr   = regex;
                 regex = realloc(regex, rxsize + 2048);
                 if (!regex) {
-                    logg("!Cannot allocate memory for SkipAuthenticated file\n");
+                    logg(LOGG_ERROR, "Cannot allocate memory for SkipAuthenticated file\n");
                     fclose(f);
                     return 1;
                 }
@@ -191,7 +191,7 @@ int smtpauth_init(const char *r)
             rxavail--;
         }
         if (rxavail < 4 && !(regex = realloc(regex, rxsize + 4))) {
-            logg("!Cannot allocate memory for SkipAuthenticated file\n");
+            logg(LOGG_ERROR, "Cannot allocate memory for SkipAuthenticated file\n");
             fclose(f);
             return 1;
         }
@@ -203,7 +203,7 @@ int smtpauth_init(const char *r)
     }
 
     if (cli_regcomp(&authreg, r, REG_ICASE | REG_NOSUB | REG_EXTENDED)) {
-        logg("!Failed to compile regex '%s' for SkipAuthenticated\n", r);
+        logg(LOGG_ERROR, "Failed to compile regex '%s' for SkipAuthenticated\n", r);
         if (regex) free(regex);
         return 1;
     }

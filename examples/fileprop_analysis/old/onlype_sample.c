@@ -57,7 +57,7 @@ int entrypoint()
 
             /* check the contained object's type */
             if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {
-                //if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
+                // if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
                 /* alert for submission */
                 root = 1;
             }
@@ -108,7 +108,7 @@ int entrypoint()
 
                 /* check the contained object's type */
                 if (strlen == 14 && !memcmp(str, "CL_TYPE_MSEXE", 14)) {
-                    //if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
+                    // if (!strcmp(str, strlen, "CL_TYPE_MSEXE", strlen)) {
                     /* alert for submission */
                     embedded = 1;
                     break;

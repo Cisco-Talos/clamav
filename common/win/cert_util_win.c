@@ -51,25 +51,25 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
     hStore = CertOpenSystemStoreA(NULL, "ROOT");
     if (NULL == hStore) {
-        mprintf("!Failed to open system certificate store.\n");
+        mprintf(LOGG_ERROR, "Failed to open system certificate store.\n");
         goto done;
     }
 
     store = cert_store_get_int();
     if (!store) {
-        mprintf("!Failed to retrieve cert store\n");
+        mprintf(LOGG_ERROR, "Failed to retrieve cert store\n");
         goto done;
     }
 
     pt_err = pthread_mutex_lock(&store->mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf("!Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
     locked = true;
 
     if (store->loaded) {
-        mprintf("Cert store already loaded\n");
+        mprintf(LOGG_INFO, "Cert store already loaded\n");
         ret = CL_SUCCESS;
         goto done;
     }
@@ -84,7 +84,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         x509 = NULL;
         x509 = d2i_X509(NULL, &encoded_cert, pWinCertContext->cbCertEncoded);
         if (NULL == x509) {
-            mprintf("!Failed to convert system certificate to x509.\n");
+            mprintf(LOGG_ERROR, "Failed to convert system certificate to x509.\n");
             continue;
         }
 
@@ -92,7 +92,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
             store->system_certs.certificates,
             (numCertificatesFound + 1) * sizeof(*store->system_certs.certificates));
         if (store->system_certs.certificates == NULL) {
-            mprintf("!Failed to reserve memory for system cert list\n");
+            mprintf(LOGG_ERROR, "Failed to reserve memory for system cert list\n");
             goto done;
         }
 
@@ -105,15 +105,15 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
             issuer = malloc(issuerLen);
             if (NULL == issuer) {
-                mprintf("!Failed to allocate memory for certificate name.\n");
+                mprintf(LOGG_ERROR, "Failed to allocate memory for certificate name.\n");
                 ret = CURLE_OUT_OF_MEMORY;
                 goto done;
             }
 
             if (0 == CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, issuer, issuerLen)) {
-                mprintf("!Failed to get friendly display name for certificate.\n");
+                mprintf(LOGG_ERROR, "Failed to get friendly display name for certificate.\n");
             } else {
-                mprintf("Certificate loaded from Windows certificate store: %s\n", issuer);
+                mprintf(LOGG_INFO, "Certificate loaded from Windows certificate store: %s\n", issuer);
             }
 
             free(issuer);
@@ -125,24 +125,24 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     lastError = GetLastError();
     switch (lastError) {
         case E_INVALIDARG:
-            mprintf("!The handle in the hCertStore parameter is not the same as that in the certificate context pointed to by pPrevCertContext.\n");
+            mprintf(LOGG_ERROR, "The handle in the hCertStore parameter is not the same as that in the certificate context pointed to by pPrevCertContext.\n");
             break;
         case CRYPT_E_NOT_FOUND:
         case ERROR_NO_MORE_FILES:
             if (0 == numCertificatesFound) {
-                mprintf("!No certificates were found.\n");
+                mprintf(LOGG_ERROR, "No certificates were found.\n");
             }
             break;
         default:
-            mprintf("!Unexpected error code from CertEnumCertificatesInStore()\n");
+            mprintf(LOGG_ERROR, "Unexpected error code from CertEnumCertificatesInStore()\n");
     }
 
     if (trusted_certs && trusted_cert_count > 0) {
         if (cert_store_set_trusted_int(trusted_certs, trusted_cert_count) == 0) {
-            mprintf("*Trusted certificates loaded: %zu\n",
+            mprintf(LOGG_DEBUG, "Trusted certificates loaded: %zu\n",
                     store->trusted_certs.count);
         } else {
-            mprintf("^Continuing without trusted certificates\n");
+            mprintf(LOGG_WARNING, "Continuing without trusted certificates\n");
             /* proceed as if we succeeded using only certificates from the
              * system */
         }
@@ -156,7 +156,7 @@ done:
         pt_err = pthread_mutex_unlock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf("!Mutex unlock failed\n");
+            mprintf(LOGG_ERROR, "Mutex unlock failed\n");
         }
         locked = false;
     }

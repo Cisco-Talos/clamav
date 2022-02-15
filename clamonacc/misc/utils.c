@@ -92,32 +92,32 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
                 pwd   = getpwuid(sb.st_uid);
                 if (NULL == pwd) {
                     if (errno) {
-                        logg("*ClamMisc: internal error (failed to exclude event) ... %s\n", strerror(errno));
+                        logg(LOGG_DEBUG, "ClamMisc: internal error (failed to exclude event) ... %s\n", strerror(errno));
                         switch (errno) {
                             case EIO:
-                                logg("*ClamMisc: system i/o failed while retrieving username information (excluding for safety)\n");
+                                logg(LOGG_DEBUG, "ClamMisc: system i/o failed while retrieving username information (excluding for safety)\n");
                                 return CHK_FOUND;
                                 break;
                             case EINTR:
-                                logg("*ClamMisc: caught signal while retrieving username information from system (excluding for safety)\n");
+                                logg(LOGG_DEBUG, "ClamMisc: caught signal while retrieving username information from system (excluding for safety)\n");
                                 return CHK_FOUND;
                                 break;
                             case EMFILE:
                             case ENFILE:
                                 if (3 >= retry) {
-                                    logg("*ClamMisc: waiting for consumer thread to catch up then retrying ...\n");
+                                    logg(LOGG_DEBUG, "ClamMisc: waiting for consumer thread to catch up then retrying ...\n");
                                     sleep(6);
                                     retry += 1;
                                     continue;
                                 } else {
-                                    logg("*ClamMisc: fds have been exhausted ... attempting to force the consumer thread to catch up ... (excluding for safety)\n");
+                                    logg(LOGG_DEBUG, "ClamMisc: fds have been exhausted ... attempting to force the consumer thread to catch up ... (excluding for safety)\n");
                                     pthread_cond_signal(&onas_scan_queue_empty_cond);
                                     sleep(6);
                                     return CHK_FOUND;
                                 }
                             case ERANGE:
                             default:
-                                logg("*ClamMisc: unknown error occurred (excluding for safety)\n");
+                                logg(LOGG_DEBUG, "ClamMisc: unknown error occurred (excluding for safety)\n");
                                 return CHK_FOUND;
                                 break;
                         }
@@ -136,10 +136,10 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
                 return CHK_FOUND;
         }
     } else if (errno == EACCES) {
-        logg("*ClamMisc: permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
+        logg(LOGG_DEBUG, "ClamMisc: permission denied to stat /proc/%d to exclude UIDs... perhaps SELinux denial?\n", pid);
     } else if (errno == ENOENT) {
         /* TODO: should this be configurable? */
-        logg("*ClamMisc: $/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
+        logg(LOGG_DEBUG, "ClamMisc: $/proc/%d vanished before UIDs could be excluded; scanning anyway\n", pid);
     }
 
     return CHK_CLEAN;
@@ -170,7 +170,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
     opt_file = fopen(fname, "r");
 
     if (NULL == opt_file) {
-        logg("!ClamMisc: could not open path list file `%s', %s\n", fname, errno ? strerror(errno) : "");
+        logg(LOGG_ERROR, "ClamMisc: could not open path list file `%s', %s\n", fname, errno ? strerror(errno) : "");
         *err = CL_EARG;
         free(opt_list);
         return NULL;
@@ -181,7 +181,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
         opt_list[*num_entries][strlen(opt_list[*num_entries]) - 1] = '\0';
         errno                                                      = 0;
         if (0 != CLAMSTAT(opt_list[*num_entries], &sb)) {
-            logg("*ClamMisc: when parsing path list ... could not stat '%s' ... %s ... skipping\n", opt_list[*num_entries], strerror(errno));
+            logg(LOGG_DEBUG, "ClamMisc: when parsing path list ... could not stat '%s' ... %s ... skipping\n", opt_list[*num_entries], strerror(errno));
             len = 0;
             free(opt_list[*num_entries]);
             opt_list[*num_entries] = NULL;
@@ -189,7 +189,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
         }
 
         if (!S_ISDIR(sb.st_mode)) {
-            logg("*ClamMisc: when parsing path list ... '%s' is not a directory ... skipping\n", opt_list[*num_entries]);
+            logg(LOGG_DEBUG, "ClamMisc: when parsing path list ... '%s' is not a directory ... skipping\n", opt_list[*num_entries]);
             len = 0;
             free(opt_list[*num_entries]);
             opt_list[*num_entries] = NULL;
@@ -197,8 +197,8 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
         }
 
         if (strcmp(opt_list[*num_entries], "/") == 0) {
-            logg("*ClamMisc: when parsing path list ... ignoring path '%s' while DDD is enabled ... skipping\n", opt_list[*num_entries]);
-            logg("*ClamMisc: use the OnAccessMountPath configuration option to watch '%s'\n", opt_list[*num_entries]);
+            logg(LOGG_DEBUG, "ClamMisc: when parsing path list ... ignoring path '%s' while DDD is enabled ... skipping\n", opt_list[*num_entries]);
+            logg(LOGG_DEBUG, "ClamMisc: use the OnAccessMountPath configuration option to watch '%s'\n", opt_list[*num_entries]);
             len = 0;
             free(opt_list[*num_entries]);
             opt_list[*num_entries] = NULL;

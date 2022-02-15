@@ -97,7 +97,7 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
 #endif
 
     if (CURLE_OK != curlcode) {
-        logg("!ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(curlcode));
+        logg(LOGG_ERROR, "ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(curlcode));
         return 1;
     }
 
@@ -106,7 +106,7 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
         do {
             curlcode = curl_easy_send(curl, line, len, &sent);
             if (CURLE_AGAIN == curlcode && onas_socket_wait(sockfd, 0, timeout) <= 0) {
-                logg("!ClamCom: TIMEOUT while waiting on socket (send)\n");
+                logg(LOGG_ERROR, "ClamCom: TIMEOUT while waiting on socket (send)\n");
                 return 1;
             }
         } while (CURLE_AGAIN == curlcode);
@@ -119,9 +119,9 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
                    are created & removed before the file can be sent to be
                    scanned. This isn't a critical error, so we'll log it in
                    verbose-mode only. */
-                logg("*Can't send to clamd: %s\n", strerror(errno));
+                logg(LOGG_DEBUG, "Can't send to clamd: %s\n", strerror(errno));
             } else {
-                logg("!Can't send to clamd: %s\n", strerror(errno));
+                logg(LOGG_ERROR, "Can't send to clamd: %s\n", strerror(errno));
             }
 
             return 1;
@@ -170,7 +170,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
 #endif
 
     if (CURLE_OK != rcv_data->curlcode) {
-        logg("!ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(rcv_data->curlcode));
+        logg(LOGG_ERROR, "ClamCom: could not get curl active socket info %s\n", curl_easy_strerror(rcv_data->curlcode));
         return -1;
     }
 
@@ -181,7 +181,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
                                                     sizeof(rcv_data->buf) - (rcv_data->curr - rcv_data->buf), &(rcv_data->retlen));
 
                 if (CURLE_AGAIN == rcv_data->curlcode && onas_socket_wait(sockfd, 1, timeout) <= 0) {
-                    logg("!ClamCom: TIMEOUT while waiting on socket (recv)\n");
+                    logg(LOGG_ERROR, "ClamCom: TIMEOUT while waiting on socket (recv)\n");
                     return -1;
                 }
 
@@ -197,9 +197,9 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
                     *rcv_data->curr = '\0';
 
                     if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n")) {
-                        logg("!Communication error, clamd received unknown command\n");
+                        logg(LOGG_ERROR, "Communication error, clamd received unknown command\n");
                     } else {
-                        logg("!Command rejected by clamd (wrong clamd version?)\n");
+                        logg(LOGG_ERROR, "Command rejected by clamd (wrong clamd version?)\n");
                     }
 
                     return -1;
@@ -231,7 +231,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
         rcv_data->retlen += rcv_data->curr - rcv_data->lnstart;
 
         if (!eol && rcv_data->retlen == sizeof(rcv_data->buf)) {
-            logg("!Overlong reply from clamd\n");
+            logg(LOGG_ERROR, "Overlong reply from clamd\n");
             return -1;
         }
 
@@ -273,9 +273,9 @@ int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, 
                 if (rcv_data->retlen || rcv_data->curr != rcv_data->buf) {
                     *rcv_data->curr = '\0';
                     if (strcmp(rcv_data->buf, "UNKNOWN COMMAND\n"))
-                        logg("!Communication error\n");
+                        logg(LOGG_ERROR, "Communication error\n");
                     else
-                        logg("!Command rejected by clamd (wrong clamd version?)\n");
+                        logg(LOGG_ERROR, "Command rejected by clamd (wrong clamd version?)\n");
                     return -1;
                 }
                 return 0;
@@ -296,7 +296,7 @@ int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, 
         }
         rcv_data->retlen += rcv_data->curr - rcv_data->lnstart;
         if (!eol && rcv_data->retlen == sizeof(rcv_data->buf)) {
-            logg("!Overlong reply from clamd\n");
+            logg(LOGG_ERROR, "Overlong reply from clamd\n");
             return -1;
         }
         if (!eol) {

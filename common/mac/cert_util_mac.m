@@ -130,7 +130,7 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
     status = SecKeychainOpen(kc_info.file_path, &keychain);
 
     if (status != errSecSuccess) {
-        mprintf("!Failed to open %s keychain: %s (%d)\n",
+        mprintf(LOGG_ERROR, "Failed to open %s keychain: %s (%d)\n",
                 kc_info.name,
                 kc_info.file_path,
                 status);
@@ -139,13 +139,13 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
 
     status = SecKeychainGetStatus(keychain, &keychainStatus);
     if (status != errSecSuccess) {
-        mprintf("!Failed to get the status of the %s keychain: %d\n",
+        mprintf(LOGG_ERROR, "Failed to get the status of the %s keychain: %d\n",
                 kc_info.name,
                 status);
         goto done;
     }
     if (!(keychainStatus & kSecReadPermStatus)) {
-        mprintf("!The %s keychain is not readable: %" PRIu32 "\n",
+        mprintf(LOGG_ERROR, "The %s keychain is not readable: %" PRIu32 "\n",
                 kc_info.name,
                 keychainStatus);
         goto done;
@@ -158,7 +158,7 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
          * has been tampered with.
          */
         if (keychainStatus & (kSecUnlockStateStatus | kSecWritePermStatus)) {
-            mprintf("!System Root Certificates Keychain has invalid permissions: %" PRIu32 "\n",
+            mprintf(LOGG_ERROR, "System Root Certificates Keychain has invalid permissions: %" PRIu32 "\n",
                     keychainStatus);
             /* continue on error */
         }
@@ -167,7 +167,7 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
     search_list = CFArrayCreate(kCFAllocatorDefault,
                                 (const void **)&keychain, 1, &kCFTypeArrayCallBacks);
     if (search_list == NULL) {
-        mprintf("!Failed to create %s keychain search list\n",
+        mprintf(LOGG_ERROR, "Failed to create %s keychain search list\n",
                 kc_info.name);
         goto done;
     }
@@ -179,7 +179,7 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
                                &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
     if (query == NULL) {
-        mprintf("!Failed to create %s keychain query dictionary\n",
+        mprintf(LOGG_ERROR, "Failed to create %s keychain query dictionary\n",
                 kc_info.name);
         goto done;
     }
@@ -187,10 +187,10 @@ static CFTypeRef _get_cert_ref(keychain_type_t keychain_type)
     status = SecItemCopyMatching(query, &items);
     if (status != errSecSuccess) {
         if (status == errSecItemNotFound) {
-            mprintf("*No items found in %s keychain\n",
+            mprintf(LOGG_DEBUG, "No items found in %s keychain\n",
                     kc_info.name);
         } else {
-            mprintf("!Unable to copy certificates from %s keychain (%d)\n",
+            mprintf(LOGG_ERROR, "Unable to copy certificates from %s keychain (%d)\n",
                     kc_info.name,
                     status);
         }
@@ -239,7 +239,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
     store = cert_store_get_int();
     if (!store) {
-        mprintf("!Failed to retrieve cert store\n");
+        mprintf(LOGG_ERROR, "Failed to retrieve cert store\n");
         goto done;
     }
 
@@ -259,7 +259,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         }
 
         if (CFGetTypeID(items) != CFArrayGetTypeID()) {
-            mprintf("!Expected array of certificates from %s keychain, "
+            mprintf(LOGG_ERROR, "Expected array of certificates from %s keychain, "
                     "got type %lu\n",
                     kc_info.name,
                     CFGetTypeID(items));
@@ -275,7 +275,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         kc_data->certs       = (CFArrayRef)items;
         kc_data->certs_count = CFArrayGetCount(items);
 
-        mprintf("*Found %ld certificates from %s keychain\n",
+        mprintf(LOGG_DEBUG, "Found %ld certificates from %s keychain\n",
                 kc_data->certs_count,
                 kc_info.name);
 
@@ -283,7 +283,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     if (total_certificates < 1) {
-        mprintf("!No certificate found in keychains. Expect at least one "
+        mprintf(LOGG_ERROR, "No certificate found in keychains. Expect at least one "
                 "certificate to be found in system root and system "
                 "keychains\n");
         goto done;
@@ -291,19 +291,19 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
     store = cert_store_get_int();
     if (!store) {
-        mprintf("!Failed to retrieve cert store\n");
+        mprintf(LOGG_ERROR, "Failed to retrieve cert store\n");
         goto done;
     }
 
     pt_err = pthread_mutex_lock(&store->mutex);
     if (pt_err) {
         errno = pt_err;
-        mprintf("!Mutex lock failed\n");
+        mprintf(LOGG_ERROR, "Mutex lock failed\n");
     }
     locked = true;
 
     if (store->loaded) {
-        mprintf("*Cert store already loaded\n");
+        mprintf(LOGG_DEBUG, "Cert store already loaded\n");
         ret = CL_SUCCESS;
         goto done;
     }
@@ -312,7 +312,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     store->system_certs.certificates = calloc(total_certificates,
                                               sizeof(*store->system_certs.certificates));
     if (store->system_certs.certificates == NULL) {
-        mprintf("!Failed to reserve memory for system cert list\n");
+        mprintf(LOGG_ERROR, "Failed to reserve memory for system cert list\n");
         goto done;
     }
 
@@ -342,13 +342,13 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 #endif
 
                     if (x509) {
-                        mprintf("*Found %s trusted certificate %s\n",
+                        mprintf(LOGG_DEBUG, "Found %s trusted certificate %s\n",
                                 kc_info.name,
                                 (name ? name : "<no name>"));
 
                         store->system_certs.certificates[store->system_certs.count++] = x509;
                     } else {
-                        mprintf("!Failed conversion of DER format to X.509\n");
+                        mprintf(LOGG_ERROR, "Failed conversion of DER format to X.509\n");
                     }
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
                     if (NULL != name) {
@@ -366,10 +366,10 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
     if (trusted_certs && trusted_cert_count > 0) {
         if (cert_store_set_trusted_int(trusted_certs, trusted_cert_count) == 0) {
-            mprintf("*Trusted certificates loaded: %zu\n",
+            mprintf(LOGG_DEBUG, "Trusted certificates loaded: %zu\n",
                     store->trusted_certs.count);
         } else {
-            mprintf("^Continuing without trusted certificates\n");
+            mprintf(LOGG_WARNING, "Continuing without trusted certificates\n");
             /* proceed as if we succeeded using only certificates from the
              * system */
         }
@@ -383,7 +383,7 @@ done:
         pt_err = pthread_mutex_unlock(&store->mutex);
         if (pt_err) {
             errno = pt_err;
-            mprintf("!Mutex unlock failed\n");
+            mprintf(LOGG_ERROR, "Mutex unlock failed\n");
         }
         locked = false;
     }

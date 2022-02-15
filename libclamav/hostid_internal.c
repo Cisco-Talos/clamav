@@ -130,9 +130,9 @@ struct device *get_devices(void)
             continue;
 
             /*
-         * Even though POSIX (BSD) sockets define AF_LINK, Linux decided to be clever
-         * and use AF_PACKET instead.
-         */
+             * Even though POSIX (BSD) sockets define AF_LINK, Linux decided to be clever
+             * and use AF_PACKET instead.
+             */
 #if defined(AF_PACKET)
         if (addr->ifa_addr->sa_family != AF_PACKET)
             continue;

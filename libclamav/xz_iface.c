@@ -74,7 +74,7 @@ int cli_XzDecode(struct CLI_XZ *XZ)
     inbytes  = XZ->avail_in;
     outbytes = XZ->avail_out;
     res      = XzUnpacker_Code(&XZ->state, XZ->next_out, &outbytes,
-                          XZ->next_in, &inbytes, CODER_FINISH_ANY, &XZ->status);
+                               XZ->next_in, &inbytes, CODER_FINISH_ANY, &XZ->status);
     XZ->avail_in -= inbytes;
     XZ->next_in += inbytes;
     XZ->avail_out -= outbytes;
