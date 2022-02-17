@@ -79,7 +79,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: windows-build
-          path: ${{runner.workspace}}/build/clamav-*.zip
+          path: ${{runner.workspace}}/build/
 
       - name: Test
         working-directory: ${{runner.workspace}}/build
