@@ -43,7 +43,7 @@ The following cache variables may also be set:
 
 find_package(PkgConfig QUIET)
 # First try for NCurses
-pkg_check_modules(PC_NCurses QUIET ncurses)
+pkg_search_module (PC_NCurses QUIET ncurses ncursesw)
 
 find_path(NCURSES_INCLUDE_DIR
   NAMES ncurses.h
