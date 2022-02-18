@@ -62,7 +62,7 @@ if(NCURSES_NOT_FOUND EQUAL -1)
         set(CURSES_LIBRARY ${PC_NCurses_LINK_LIBRARIES})
     else()
         find_library(CURSES_LIBRARY
-            NAMES ncurses
+            NAMES ncurses ncursesw
             PATHS ${PC_NCurses_LIBRARY_DIRS}
         )
     endif()
