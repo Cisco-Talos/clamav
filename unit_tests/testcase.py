@@ -127,7 +127,7 @@ class TestCase(unittest.TestCase):
         if os.getenv('VALGRIND') != None:
             cls.log_suffix = '.valgrind.log'
             cls.valgrind = Path(os.getenv("VALGRIND"))
-            cls.valgrind_args = '-v --trace-children=yes --track-fds=yes --leak-check=full '                  + \
+            cls.valgrind_args = '-v --trace-children=yes --track-fds=yes --leak-check=full --main-stacksize=16777216 --gen-suppressions=all ' + \
                                 '--suppressions={} '.format(cls.path_source / "unit_tests" / "valgrind.supp") + \
                                 '--log-file={} '.format(cls.path_tmp / "valgrind.log")                        + \
                                 '--error-exitcode=123'
@@ -792,14 +792,14 @@ class LogChecker:
             match = pattern.search(output)
             assert match, "Expected item `%s` not found in output:\n%s" % (
                 item,
-                self.__crop_output(output),
+                output,
             )
             current_found_position = match.start()
             # Compare current found position with last found position
             if order == STRICT_ORDER:
                 assert current_found_position >= last_found_position, (
                     "Expected item `%s` order is wrong in output:\n%s"
-                    % (item, self.__crop_output(output))
+                    % (item, output)
                 )
             last_found_position = current_found_position
 
@@ -826,7 +826,7 @@ class LogChecker:
             match = pattern.search(output)
             assert not match, (
                 "Unexpected item `%s` which should be absent "
-                "found in output:\n%s" % (item, self.__crop_output(output))
+                "found in output:\n%s" % (item, output)
             )
 
     def verify_expected_log(self, filename, expected=[], order=STRICT_ORDER):
