@@ -94,10 +94,12 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'ClamAV {}'.format(TC.version),
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout)
 
     def test_freshclam_01_file_copy(self):
         self.step_name('Basic freshclam test using file:// to "download" clamav.hdb')
@@ -138,12 +140,14 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'Downloading clamav.hdb',
             'Database test passed.',
             'clamav.hdb updated',
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout)
 
     def test_freshclam_02_http_403(self):
         self.step_name('Verify correct behavior when receiving 403 (forbidden)')
@@ -177,11 +181,13 @@ class TC(testcase.TestCase):
 
         assert output.ec == 17  # forbidden
 
-        expected_results = [
+        expected_stderr = [
             'FreshClam received error code 403',
             'Forbidden',
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr)
 
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, freshclam=TC.freshclam, freshclam_config=TC.freshclam_config
@@ -190,11 +196,13 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # "fine" (on cooldown, refusing to try again for now)
 
-        expected_results = [
+        expected_stderr = [
             'FreshClam previously received error code 429 or 403',
             'You are still on cool-down until after',
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr)
 
     def test_freshclam_03_http_403_daemonized(self):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
@@ -228,11 +236,13 @@ class TC(testcase.TestCase):
 
         assert output.ec == 17  # forbidden
 
-        expected_results = [
+        expected_stderr = [
             'FreshClam received error code 403',
             'Forbidden',
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr)
 
     def test_freshclam_04_http_429(self):
         self.step_name('Verify correct behavior when receiving 429 (too-many-requests)')
@@ -266,11 +276,13 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stderr = [
             'FreshClam received error code 429',
             'You are on cool-down',
         ]
-        self.verify_output(output.out, expected=expected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr)
 
     def test_freshclam_05_cdiff_update(self):
         self.step_name('Verify that freshclam can update from an older CVD to a newer with CDIFF patches')
@@ -317,13 +329,18 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'test.cld updated',
         ]
         unexpected_results = [
             'already up-to-date'
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
     @unittest.skipIf(operating_system != 'windows', 'This test is specific to Windows.')
     def test_freshclam_05_cdiff_update_UNC(self):
@@ -374,13 +391,18 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'test.cld updated',
         ]
         unexpected_results = [
             'already up-to-date'
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
     def test_freshclam_06_cdiff_partial_minus_1(self):
         self.step_name('Verify that freshclam will accept a partial update with 1 missing cdiff')
@@ -425,7 +447,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'Downloaded 2 patches for test, which is fewer than the 3 expected patches',
             'We\'ll settle for this partial-update, at least for now',
             'test.cld updated',
@@ -433,7 +455,12 @@ class TC(testcase.TestCase):
         unexpected_results = [
             'already up-to-date'
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
         #
         # Try again, we should be 1 behind which is tolerable and should not trigger a full CVD download
@@ -445,7 +472,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'The database server doesn\'t have the latest patch',
             'The server will likely have updated if you check again in a few hours',
         ]
@@ -453,7 +480,12 @@ class TC(testcase.TestCase):
             'test.cld updated',
             'test.cvd updated',
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
     def test_freshclam_07_cdiff_partial_minus_2(self):
         self.step_name('Verify that freshclam behavior with 2 missing cdiffs')
@@ -501,7 +533,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'Downloaded 1 patches for test, which is fewer than the 3 expected patches',
             'We\'ll settle for this partial-update, at least for now',
             'test.cld updated',
@@ -509,7 +541,12 @@ class TC(testcase.TestCase):
         unexpected_results = [
             'already up-to-date'
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
         #
         # Try again, we should be 2 behind which is NOT tolerable and SHOULD trigger a full CVD download
@@ -521,14 +558,15 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
-            'Incremental update failed, trying to download test.cvd',
-            'test.cvd updated',
-        ]
-        unexpected_results = [
-            'test.cld updated',
-        ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        expected_stdout = ['test.cvd updated']
+        expected_stderr = ['Incremental update failed, trying to download test.cvd']
+        unexpected_results = ['test.cld updated']
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr, unexpected=unexpected_results)
 
     def test_freshclam_07_no_cdiff_out_of_date_cvd(self):
         self.step_name('Verify that freshclam will properly handle an out-of-date CVD update after a zero-byte CDIFF')
@@ -586,14 +624,15 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
-            'Received an older test CVD than was advertised. Incremental updates either failed or ',
-            'test.cvd updated \\(version: 5',
-        ]
-        unexpected_results = [
-            'already up-to-date'
-        ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        expected_stdout = ['test.cvd updated \\(version: 5']
+        expected_stderr = ['Received an older test CVD than was advertised. Incremental updates either failed or ']
+        unexpected_results = ['already up-to-date']
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, expected=expected_stderr, unexpected=unexpected_results)
 
         #
         # 2nd attempt
@@ -605,7 +644,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'test.cld updated \\(version: 6',
         ]
         unexpected_results = [
@@ -614,7 +653,12 @@ class TC(testcase.TestCase):
             'cdiff_apply: lseek\\(desc, -350, SEEK_END\\) failed',
             'Incremental update failed, trying to download test.cvd',
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
         #
         # 3rd attempt
@@ -626,7 +670,7 @@ class TC(testcase.TestCase):
 
         assert output.ec == 0  # success
 
-        expected_results = [
+        expected_stdout = [
             'already up-to-date',
         ]
         unexpected_results = [
@@ -635,7 +679,11 @@ class TC(testcase.TestCase):
             'cdiff_apply: lseek\\(desc, -350, SEEK_END\\) failed',
             'Incremental update failed, trying to download test.cvd',
         ]
-        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
+        # verify stdout
+        self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_results)
+
+        # verify stderr
+        self.verify_output(output.err, unexpected=unexpected_results)
 
 def mock_database_mirror(handler, port=8001):
     '''
