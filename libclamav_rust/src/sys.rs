@@ -670,16 +670,15 @@ pub struct cli_events {
     _unused: [u8; 0],
 }
 pub type cli_events_t = cli_events;
-pub type ulong64 = ::std::os::raw::c_ulong;
+pub type ulong64 = ::std::os::raw::c_ulonglong;
 pub type fp_digit = ulong64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct fp_int {
-    pub dp: [fp_digit; 136usize],
+    pub dp: [fp_digit; 72usize],
     pub used: ::std::os::raw::c_int,
     pub sign: ::std::os::raw::c_int,
 }
-pub type mp_int = fp_int;
 pub const cli_crt_hashtype_CLI_HASHTYPE_ANY: cli_crt_hashtype = 0;
 pub const cli_crt_hashtype_CLI_SHA1RSA: cli_crt_hashtype = 1;
 pub const cli_crt_hashtype_CLI_MD5RSA: cli_crt_hashtype = 2;
@@ -701,9 +700,9 @@ pub struct cli_crt_t {
     pub serial: [u8; 20usize],
     pub ignore_serial: ::std::os::raw::c_int,
     pub tbshash: [u8; 64usize],
-    pub n: mp_int,
-    pub e: mp_int,
-    pub sig: mp_int,
+    pub n: fp_int,
+    pub e: fp_int,
+    pub sig: fp_int,
     pub not_before: time_t,
     pub not_after: time_t,
     pub hashtype: cli_crt_hashtype,
