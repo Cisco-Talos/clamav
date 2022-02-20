@@ -350,3 +350,23 @@
    fun:_ZN3std3sys4unix2fs9try_statx*
    ...
 }
+{
+   <statx5>
+   Memcheck:Param
+   fstatat(file_name)
+   fun:__fxstatat
+   fun:statx_generic*
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx*
+   ...
+}
+{
+   <statx6>
+   Memcheck:Param
+   fstatat(file_name)
+   fun:__fxstatat
+   fun:statx_generic*
+   fun:statx
+   fun:statx
+   fun:_ZN3std3sys4unix2fs9try_statx*
+}
