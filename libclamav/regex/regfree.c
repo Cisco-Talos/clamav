@@ -1,6 +1,5 @@
+/*	$OpenBSD: regfree.c,v 1.11 2015/12/28 22:27:03 mmcc Exp $ */
 /*-
- * This code is derived from OpenBSD's libc/regex, original license follows:
- *
  * Copyright (c) 1992, 1993, 1994 Henry Spencer.
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -38,19 +37,17 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "clamav.h"
-#include "others.h"
-#include "regex.h"
+#include <regex.h>
+#include <limits.h>
 
 #include "utils.h"
 #include "regex2.h"
 
 /*
- - cli_regfree - free everything
+ - regfree - free everything
  */
 void
-cli_regfree(regex_t *preg)
+regfree(regex_t *preg)
 {
 	struct re_guts *g;
 
@@ -63,13 +60,10 @@ cli_regfree(regex_t *preg)
 	preg->re_magic = 0;		/* mark it invalid */
 	g->magic = 0;			/* mark it invalid */
 
-	if (g->strip != NULL)
-		free((char *)g->strip);
-	if (g->sets != NULL)
-		free((char *)g->sets);
-	if (g->setbits != NULL)
-		free((char *)g->setbits);
-	if (g->must != NULL)
-		free(g->must);
-	free((char *)g);
+	free(g->strip);
+	free(g->sets);
+	free(g->setbits);
+	free(g->must);
+	free(g);
 }
+DEF_WEAK(regfree);
