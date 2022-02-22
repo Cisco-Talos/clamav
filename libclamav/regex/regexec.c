@@ -47,14 +47,15 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include <regex.h>
+#include "others.h"
+#include "regex.h"
 
 #include "utils.h"
 #include "regex2.h"
 
 /* macros for manipulating states, small version */
 #define	states	long
-#define	states1	states		/* for later use in regexec() decision */
+#define	states1	long		/* for later use in cli_regexec() decision */
 #define	CLEAR(v)	((v) = 0)
 #define	SET0(v, n)	((v) &= ~((unsigned long)1 << (n)))
 #define	SET1(v, n)	((v) |= (unsigned long)1 << (n))
@@ -109,8 +110,7 @@
 #define	ASSIGN(d, s)	memcpy(d, s, m->g->nstates)
 #define	EQ(a, b)	(memcmp(a, b, m->g->nstates) == 0)
 #define	STATEVARS	long vn; char *space
-#define	STATESETUP(m, nv)	{ (m)->space = reallocarray(NULL, 	    \
-    				(m)->g->nstates, (nv));			    \
+#define	STATESETUP(m, nv)	{ (m)->space = cli_malloc((nv)*(m)->g->nstates); \
 				if ((m)->space == NULL) return(REG_ESPACE); \
 				(m)->vn = 0; }
 #define	STATETEARDOWN(m)	{ free((m)->space); }
@@ -137,7 +137,7 @@
  * have been prototyped.
  */
 int				/* 0 success, REG_NOMATCH failure */
-regexec(const regex_t *preg, const char *string, size_t nmatch,
+cli_regexec(const regex_t *preg, const char *string, size_t nmatch,
     regmatch_t pmatch[], int eflags)
 {
 	struct re_guts *g = preg->re_g;
@@ -150,12 +150,12 @@ regexec(const regex_t *preg, const char *string, size_t nmatch,
 
 	if (preg->re_magic != MAGIC1 || g->magic != MAGIC2)
 		return(REG_BADPAT);
-	assert(!(g->iflags&BAD));
-	if (g->iflags&BAD)		/* backstop for no-debug case */
+	assert(!(g->iflags&REGEX_BAD));
+	if (g->iflags&REGEX_BAD)		/* backstop for no-debug case */
 		return(REG_BADPAT);
 	eflags = GOODFLAGS(eflags);
 
-	if (g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
+	if ((unsigned long)g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
 		return(smatcher(g, string, nmatch, pmatch, eflags));
 	else
 		return(lmatcher(g, string, nmatch, pmatch, eflags));

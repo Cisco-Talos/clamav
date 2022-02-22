@@ -209,9 +209,10 @@ matcher(struct re_guts *g, const char *string, size_t nmatch,
 
 		/* oh my, he wants the subexpressions... */
 		if (m->pmatch == NULL)
-			m->pmatch = reallocarray(NULL, m->g->nsub + 1,
-			    sizeof(regmatch_t));
+			m->pmatch = (regmatch_t *)cli_malloc((m->g->nsub + 1) *
+							sizeof(regmatch_t));
 		if (m->pmatch == NULL) {
+			free(m->lastpos);
 			STATETEARDOWN(m);
 			return(REG_ESPACE);
 		}
@@ -222,8 +223,8 @@ matcher(struct re_guts *g, const char *string, size_t nmatch,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = reallocarray(NULL,
-				    g->nplus+1, sizeof(char *));
+				m->lastpos = (char **)cli_malloc((g->nplus+1) *
+							sizeof(char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);
 				STATETEARDOWN(m);

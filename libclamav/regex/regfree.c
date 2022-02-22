@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <regex.h>
+#include "regex.h"
 #include <limits.h>
 
 #include "utils.h"
@@ -47,7 +47,7 @@
  - regfree - free everything
  */
 void
-regfree(regex_t *preg)
+cli_regfree(regex_t *preg)
 {
 	struct re_guts *g;
 
@@ -66,4 +66,3 @@ regfree(regex_t *preg)
 	free(g->must);
 	free(g);
 }
-DEF_WEAK(regfree);

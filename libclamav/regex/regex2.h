@@ -132,13 +132,13 @@ CHIN(const cset *cs, char c)
  * main compiled-expression structure
  */
 struct re_guts {
-	int magic;
 #		define	MAGIC2	((('R'^0200)<<8)|'E')
 	sop *strip;		/* malloced area for strip */
-	int csetsize;		/* number of bits in a cset vector */
-	int ncsets;		/* number of csets in use */
 	cset *sets;		/* -> cset [ncsets] */
 	uch *setbits;		/* -> uch[csetsize][ncsets/CHAR_BIT] */
+	int magic;
+	int csetsize;		/* number of bits in a cset vector */
+	int ncsets;		/* number of csets in use */
 	int cflags;		/* copy of regcomp() cflags argument */
 	sopno nstates;		/* = number of sops */
 	sopno firststate;	/* the initial OEND (normally 0) */
@@ -146,16 +146,16 @@ struct re_guts {
 	int iflags;		/* internal flags */
 #		define	USEBOL	01	/* used ^ */
 #		define	USEEOL	02	/* used $ */
-#		define	BAD	04	/* something wrong */
+#		define	REGEX_BAD	04	/* something wrong */
 	int nbol;		/* number of ^ used */
 	int neol;		/* number of $ used */
 	char *must;		/* match must contain this string */
 	int mlen;		/* length of must */
-	size_t nsub;		/* copy of re_nsub */
 	int backrefs;		/* does it use back references? */
+	size_t nsub;		/* copy of re_nsub */
 	sopno nplus;		/* how deep does it nest +s? */
 };
 
 /* misc utilities */
 #define	OUT	(CHAR_MAX+1)	/* a non-character value */
-#define	ISWORD(c)	(isalnum(c) || (c) == '_')
+#define	ISWORD(c)	(isalnum((c)&0xff) || (c) == '_')

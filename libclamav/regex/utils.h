@@ -36,8 +36,12 @@
  */
 
 /* utility definitions */
-#define	DUPMAX		_POSIX2_RE_DUP_MAX	/* xxx is this right? */
-#define	INFINITY	(DUPMAX + 1)
+#ifdef  _POSIX2_RE_DUP_MAX
+#define DUPMAX  _POSIX2_RE_DUP_MAX
+#else
+#define DUPMAX  255
+#endif
+#define	REGEX_INFINITY	(DUPMAX + 1)
 #define	NC		(CHAR_MAX - CHAR_MIN + 1)
 typedef unsigned char uch;
 
