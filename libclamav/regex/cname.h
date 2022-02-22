@@ -1,6 +1,6 @@
+/*	$OpenBSD: cname.h,v 1.6 2020/12/30 08:53:30 tb Exp $	*/
+
 /*-
- * This code is derived from OpenBSD's libc/regex, original license follows:
- *
  * Copyright (c) 1992, 1993, 1994 Henry Spencer.
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -36,7 +36,7 @@
  */
 
 /* character-name table */
-static struct cname {
+static const struct cname {
 	const char *name;
 	char code;
 } cnames[] = {
