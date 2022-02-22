@@ -1,6 +1,5 @@
+/*	$OpenBSD: regexec.c,v 1.14 2018/07/11 12:38:46 martijn Exp $ */
 /*-
- * This code is derived from OpenBSD's libc/regex, original license follows:
- *
  * Copyright (c) 1992, 1993, 1994 Henry Spencer.
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -36,7 +35,7 @@
  */
 
 /*
- * the outer shell of cli_regexec()
+ * the outer shell of regexec()
  *
  * This file includes engine.c *twice*, after muchos fiddling with the
  * macros that code uses.  This lets the same code operate on two different
@@ -48,17 +47,14 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-
-#include "clamav.h"
-#include "others.h"
-#include "regex.h"
+#include <regex.h>
 
 #include "utils.h"
 #include "regex2.h"
 
 /* macros for manipulating states, small version */
 #define	states	long
-#define	states1	long		/* for later use in cli_regexec() decision */
+#define	states1	states		/* for later use in regexec() decision */
 #define	CLEAR(v)	((v) = 0)
 #define	SET0(v, n)	((v) &= ~((unsigned long)1 << (n)))
 #define	SET1(v, n)	((v) |= (unsigned long)1 << (n))
@@ -110,10 +106,11 @@
 #define	SET0(v, n)	((v)[n] = 0)
 #define	SET1(v, n)	((v)[n] = 1)
 #define	ISSET(v, n)	((v)[n])
-#define	ASSIGN(d, s)	memmove(d, s, m->g->nstates)
+#define	ASSIGN(d, s)	memcpy(d, s, m->g->nstates)
 #define	EQ(a, b)	(memcmp(a, b, m->g->nstates) == 0)
 #define	STATEVARS	long vn; char *space
-#define	STATESETUP(m, nv)	{ (m)->space = cli_malloc((nv)*(m)->g->nstates); \
+#define	STATESETUP(m, nv)	{ (m)->space = reallocarray(NULL, 	    \
+    				(m)->g->nstates, (nv));			    \
 				if ((m)->space == NULL) return(REG_ESPACE); \
 				(m)->vn = 0; }
 #define	STATETEARDOWN(m)	{ free((m)->space); }
@@ -133,17 +130,18 @@
 #include "engine.c"
 
 /*
- - cli_regexec - interface for matching
+ - regexec - interface for matching
  *
  * We put this here so we can exploit knowledge of the state representation
  * when choosing which matcher to call.  Also, by this point the matchers
  * have been prototyped.
  */
 int				/* 0 success, REG_NOMATCH failure */
-cli_regexec(const regex_t *preg, const char *string, size_t nmatch,
+regexec(const regex_t *preg, const char *string, size_t nmatch,
     regmatch_t pmatch[], int eflags)
 {
 	struct re_guts *g = preg->re_g;
+
 #ifdef REDEBUG
 #	define	GOODFLAGS(f)	(f)
 #else
@@ -152,13 +150,13 @@ cli_regexec(const regex_t *preg, const char *string, size_t nmatch,
 
 	if (preg->re_magic != MAGIC1 || g->magic != MAGIC2)
 		return(REG_BADPAT);
-	assert(!(g->iflags&REGEX_BAD));
-	if (g->iflags&REGEX_BAD)		/* backstop for no-debug case */
+	assert(!(g->iflags&BAD));
+	if (g->iflags&BAD)		/* backstop for no-debug case */
 		return(REG_BADPAT);
 	eflags = GOODFLAGS(eflags);
 
-	if ((unsigned long)(g->nstates) <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
-		return(smatcher(g, (char *)string, nmatch, pmatch, eflags));
+	if (g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
+		return(smatcher(g, string, nmatch, pmatch, eflags));
 	else
-		return(lmatcher(g, (char *)string, nmatch, pmatch, eflags));
+		return(lmatcher(g, string, nmatch, pmatch, eflags));
 }

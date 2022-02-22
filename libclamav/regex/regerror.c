@@ -1,6 +1,5 @@
+/*	$OpenBSD: regerror.c,v 1.15 2020/12/30 08:56:38 tb Exp $ */
 /*-
- * This code is derived from OpenBSD's libc/regex, original license follows:
- *
  * Copyright (c) 1992, 1993, 1994 Henry Spencer.
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -41,21 +40,18 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-
-#include "clamav.h"
-#include "others.h"
-#include "regex.h"
+#include <regex.h>
 
 #include "utils.h"
 
 static const char *regatoi(const regex_t *, char *, int);
 
-static struct rerr {
+static const struct rerr {
 	int code;
 	const char *name;
 	const char *explain;
 } rerrs[] = {
-	{ REG_NOMATCH,	"REG_NOMATCH",	"cli_regexec() failed to match" },
+	{ REG_NOMATCH,	"REG_NOMATCH",	"regexec() failed to match" },
 	{ REG_BADPAT,	"REG_BADPAT",	"invalid regular expression" },
 	{ REG_ECOLLATE,	"REG_ECOLLATE",	"invalid collating element" },
 	{ REG_ECTYPE,	"REG_ECTYPE",	"invalid character class" },
@@ -75,14 +71,13 @@ static struct rerr {
 };
 
 /*
- - cli_regerror - the interface to error numbers
- = extern size_t cli_regerror(int, const regex_t *, char *, size_t);
+ - regerror - the interface to error numbers
+ = extern size_t regerror(int, const regex_t *, char *, size_t);
  */
-/* ARGSUSED */
 size_t
-cli_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
+regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 {
-	struct rerr *r;
+	const struct rerr *r;
 	size_t len;
 	int target = errcode &~ REG_ITOA;
 	const char *s;
@@ -98,7 +93,7 @@ cli_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 		if (errcode&REG_ITOA) {
 			if (r->code != 0) {
 				assert(strlen(r->name) < sizeof(convbuf));
-				(void) cli_strlcpy(convbuf, r->name, sizeof convbuf);
+				(void) strlcpy(convbuf, r->name, sizeof convbuf);
 			} else
 				(void)snprintf(convbuf, sizeof convbuf,
 				    "REG_0x%x", target);
@@ -107,12 +102,12 @@ cli_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 			s = r->explain;
 	}
 
-	len = strlen(s) + 1;
-	if (errbuf_size > 0) {
-		cli_strlcpy(errbuf, s, errbuf_size);
-	}
+	if (errbuf_size != 0)
+		len = strlcpy(errbuf, s, errbuf_size);
+	else
+		len = strlen(s);
 
-	return(len);
+	return len + 1;
 }
 
 /*
@@ -121,7 +116,7 @@ cli_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 static const char *
 regatoi(const regex_t *preg, char *localbuf, int localbufsize)
 {
-	struct rerr *r;
+	const struct rerr *r;
 
 	for (r = rerrs; r->code != 0; r++)
 		if (strcmp(r->name, preg->re_endp) == 0)
