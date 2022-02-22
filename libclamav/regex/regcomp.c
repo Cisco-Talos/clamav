@@ -40,7 +40,8 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <regex.h>
+#include "others.h"
+#include "regex.h"
 
 #include "utils.h"
 #include "regex2.h"
@@ -138,13 +139,14 @@ static int never = 0;		/* for use in asserts; shuts lint up */
  - regcomp - interface for parser and compilation
  */
 int				/* 0 success, otherwise REG_something */
-regcomp(regex_t *preg, const char *pattern, int cflags)
+cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 {
 	struct parse pa;
 	struct re_guts *g;
 	struct parse *p = &pa;
 	int i;
 	size_t len;
+	size_t maxlen;
 #ifdef REDEBUG
 #	define	GOODFLAGS(f)	(f)
 #else
@@ -163,11 +165,32 @@ regcomp(regex_t *preg, const char *pattern, int cflags)
 		len = strlen((char *)pattern);
 
 	/* do the mallocs early so failure handling is easy */
-	g = malloc(sizeof(struct re_guts));
+	g = (struct re_guts *)cli_malloc(sizeof(struct re_guts) +
+						(NC-1)*sizeof(unsigned char));
 	if (g == NULL)
 		return(REG_ESPACE);
+	/* Patch for bb11264 submitted by the Debian team:                */
+	/*
+	 * Limit the pattern space to avoid a 32-bit overflow on buffer
+	 * extension.  Also avoid any signed overflow in case of conversion
+	 * so make the real limit based on a 31-bit overflow.
+	 *
+	 * Likely not applicable on 64-bit systems but handle the case
+	 * generically (who are we to stop people from using ~715MB+
+	 * patterns?).
+	 */
+	maxlen = ((size_t)-1 >> 1) / sizeof(sop) * 2 / 3;
+	if (len >= maxlen) {
+		free((char *)g);
+		return(REG_ESPACE);
+	}
 	p->ssize = len/(size_t)2*(size_t)3 + (size_t)1;	/* ugh */
-	p->strip = reallocarray(NULL, p->ssize, sizeof(sop));
+	if (p->ssize < len) {
+		free((char *)g);
+		return(REG_ESPACE);
+	}
+
+	p->strip = (sop *)cli_calloc(p->ssize, sizeof(sop));
 	p->slen = 0;
 	if (p->strip == NULL) {
 		free(g);
@@ -219,13 +242,13 @@ regcomp(regex_t *preg, const char *pattern, int cflags)
 	preg->re_magic = MAGIC1;
 #ifndef REDEBUG
 	/* not debugging, so can't rely on the assert() in regexec() */
-	if (g->iflags&BAD)
+	if (g->iflags&REGEX_BAD)
 		SETERROR(REG_ASSERT);
 #endif
 
 	/* win or lose, we're done */
 	if (p->error != 0)	/* lose */
-		regfree(preg);
+		cli_regfree(preg);
 	return(p->error);
 }
 
@@ -236,8 +259,8 @@ static void
 p_ere(struct parse *p, int stop)	/* character this ERE should end at */
 {
 	char c;
-	sopno prevback;
-	sopno prevfwd;
+	sopno prevback = 0;
+	sopno prevfwd = 0;
 	sopno conc;
 	int first = 1;		/* is this the first alternative? */
 
@@ -387,7 +410,7 @@ p_ere_exp(struct parse *p)
 				count2 = p_count(p);
 				REQUIRE(count <= count2, REG_BADBR);
 			} else		/* single number with comma */
-				count2 = INFINITY;
+				count2 = REGEX_INFINITY;
 		} else		/* just a single number */
 			count2 = count;
 		repeat(p, pos, count, count2);
@@ -566,7 +589,7 @@ p_simp_re(struct parse *p,
 				count2 = p_count(p);
 				REQUIRE(count <= count2, REG_BADBR);
 			} else		/* single number with comma */
-				count2 = INFINITY;
+				count2 = REGEX_INFINITY;
 		} else		/* just a single number */
 			count2 = count;
 		repeat(p, pos, count, count2);
@@ -928,13 +951,13 @@ static void
 repeat(struct parse *p,
     sopno start,		/* operand from here to end of strip */
     int from,			/* repeated from this number */
-    int to)			/* to this number of times (maybe INFINITY) */
+    int to)			/* to this number of times (maybe REGEX_INFINITY) */
 {
 	sopno finish = HERE();
 #	define	N	2
 #	define	INF	3
 #	define	REP(f, t)	((f)*8 + (t))
-#	define	MAP(n)	(((n) <= 1) ? (n) : ((n) == INFINITY) ? INF : N)
+#	define	MAP(n)	(((n) <= 1) ? (n) : ((n) == REGEX_INFINITY) ? INF : N)
 	sopno copy;
 
 	if (p->error != 0)	/* head off possible runaway recursion */
@@ -1022,13 +1045,14 @@ allocset(struct parse *p)
 		p->ncsalloc += CHAR_BIT;
 		nc = p->ncsalloc;
 		assert(nc % CHAR_BIT == 0);
+		nbytes = nc / CHAR_BIT *css;
 
-		ptr = reallocarray(p->g->sets, nc, sizeof(cset));
+		ptr = (cset *)cli_realloc((char*)p->g->sets, nc * sizeof(cset));
 		if (ptr == NULL)
 			goto nomem;
 		p->g->sets = ptr;
 
-		ptr = reallocarray(p->g->setbits, nc / CHAR_BIT, css);
+		ptr = (uch *)cli_realloc((char*)p->g->setbits, nbytes);
 		if (ptr == NULL)
 			goto nomem;
 		nbytes = (nc / CHAR_BIT) * css;
@@ -1208,7 +1232,10 @@ doinsert(struct parse *p, sop op, size_t opnd, sopno pos)
 
 	sn = HERE();
 	EMIT(op, opnd);		/* do checks, ensure space */
-	assert(HERE() == sn+1);
+	if (HERE() != sn+1) {
+		SETERROR(REG_ASSERT);
+		return;
+	}
 	s = p->strip[sn];
 
 	/* adjust paren pointers */
@@ -1252,7 +1279,7 @@ enlarge(struct parse *p, sopno size)
 	if (p->ssize >= size)
 		return 1;
 
-	sp = reallocarray(p->strip, size, sizeof(sop));
+	sp = (sop *)cli_realloc(p->strip, size * sizeof(sop));
 	if (sp == NULL) {
 		SETERROR(REG_ESPACE);
 		return 0;
@@ -1269,7 +1296,7 @@ static void
 stripsnug(struct parse *p, struct re_guts *g)
 {
 	g->nstates = p->slen;
-	g->strip = reallocarray(p->strip, p->slen, sizeof(sop));
+	g->strip = (sop *)cli_realloc((char *)p->strip, p->slen * sizeof(sop));
 	if (g->strip == NULL) {
 		SETERROR(REG_ESPACE);
 		g->strip = p->strip;
@@ -1289,8 +1316,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;    /* start initialized in the default case, after that */
-	sop *newstart; /* newstart was initialized in the OCHAR case */
+	sop *start = NULL;    /* start initialized in the default case, after that */
+	sop *newstart = NULL; /* newstart was initialized in the OCHAR case */
 	sopno newlen;
 	sop s;
 	char *cp;
@@ -1324,7 +1351,7 @@ findmust(struct parse *p, struct re_guts *g)
 				/* assert() interferes w debug printouts */
 				if (OP(s) != O_QUEST && OP(s) != O_CH &&
 							OP(s) != OOR2) {
-					g->iflags |= BAD;
+					g->iflags |= REGEX_BAD;
 					return;
 				}
 			} while (OP(s) != O_QUEST && OP(s) != O_CH);
@@ -1341,9 +1368,13 @@ findmust(struct parse *p, struct re_guts *g)
 
 	if (g->mlen == 0)		/* there isn't one */
 		return;
+	if (start == NULL) {		/* something went wrong */
+		g->mlen = 0;
+		return;
+	}
 
 	/* turn it into a character string */
-	g->must = malloc((size_t)g->mlen + 1);
+	g->must = cli_malloc((size_t)g->mlen + 1);
 	if (g->must == NULL) {		/* argh; just forget it */
 		g->mlen = 0;
 		return;
@@ -1389,6 +1420,6 @@ pluscount(struct parse *p, struct re_guts *g)
 		}
 	} while (OP(s) != OEND);
 	if (plusnest != 0)
-		g->iflags |= BAD;
+		g->iflags |= REGEX_BAD;
 	return(maxnest);
 }

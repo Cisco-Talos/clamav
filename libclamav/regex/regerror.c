@@ -40,7 +40,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
-#include <regex.h>
+#include "regex.h"
 
 #include "utils.h"
 
@@ -75,7 +75,7 @@ static const struct rerr {
  = extern size_t regerror(int, const regex_t *, char *, size_t);
  */
 size_t
-regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
+cli_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 {
 	const struct rerr *r;
 	size_t len;
@@ -93,7 +93,7 @@ regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 		if (errcode&REG_ITOA) {
 			if (r->code != 0) {
 				assert(strlen(r->name) < sizeof(convbuf));
-				(void) strlcpy(convbuf, r->name, sizeof convbuf);
+				(void) cli_strlcpy(convbuf, r->name, sizeof convbuf);
 			} else
 				(void)snprintf(convbuf, sizeof convbuf,
 				    "REG_0x%x", target);
@@ -103,7 +103,7 @@ regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
 	}
 
 	if (errbuf_size != 0)
-		len = strlcpy(errbuf, s, errbuf_size);
+		len = cli_strlcpy(errbuf, s, errbuf_size);
 	else
 		len = strlen(s);
 
