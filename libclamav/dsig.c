@@ -116,7 +116,7 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, fp_int e
 
 const char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
 {
-    char buff[512], cmd[128], pass[30], *pt;
+    char buff[512], cmd[128], pass[31], *pt;
     struct sockaddr_in server;
     int sockd, bread, len;
 #ifdef HAVE_TERMIOS_H
