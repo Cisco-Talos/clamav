@@ -514,6 +514,12 @@ The following is a complete list of CMake options unique to configuring ClamAV:
 
   _Default: not set_
 
+- `RUST_COMPILER_TARGET`: Use a custom target triple to build the Rust components.
+  Needed for cross-compiling. You must also have installed the target toolchain.
+  See: https://doc.rust-lang.org/nightly/rustc/platform-support.html
+
+  _Default: not set_
+
 ## External Library Depedency Configuration Options
 
 The CMake tooling is good about finding installed dependencies on POSIX systems
@@ -688,8 +694,30 @@ cmake .. -D BYTECODE_RUNTIME="none"
 
 ## Compiling For Multiple Architectures (Cross-Compiling)
 
-For cross-compling information, see the cmake-toolchains documentation in the
+Cross-compiling in ClamAV with CMake & Rust is experimental at this time.
+If you have a need to cross-compile, your help and feedback testing and
+validating cross-compilation support would be appreciated.
+
+The CMake cross-compiling documentation can be found here:
 [CMake Manual](https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html)
+
+For a cross-build, the library dependencies must have also been built for the
+target platform, and the CMake options set to target these libraries.
+
+ClamAV's Rust toolchain integration also complicates the build.
+In addition to specifying the toolchain for C/C++ through the CMake options
+described in the CMake Manual, you will need to also select the target triple
+for the Rust compiler toolchain. If you have a mismatch of targets between the
+C and Rust toolchains, it will fail to compile properly.
+
+The ClamAV project provides a CMake option `-D RUST_COMPILER_TARGET=<triple>`
+that mimics the CMake option when using Clang to cross-compile.
+
+Rust installations typically only come with the target for your current system.
+So you will need to install the desired toolchain using `rustup target add`.
+Run `rustup target add --help` for help.
+For a list of available target triples, see:
+https://doc.rust-lang.org/nightly/rustc/platform-support.html
 
 ## Un-install
 

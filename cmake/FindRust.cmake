@@ -150,9 +150,9 @@ function(add_rust_library)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(WIN32)
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}/${ARGS_TARGET}.lib")
+        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${LIB_BUILD_TYPE}/${ARGS_TARGET}.lib")
     else()
-        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a")
+        set(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a")
     endif()
 
     file(GLOB_RECURSE LIB_SOURCES "${ARGS_WORKING_DIRECTORY}/*.rs")
@@ -167,7 +167,7 @@ function(add_rust_library)
             OUTPUT "${OUTPUT}"
             COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
             COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${LIB_TARGET}/${LIB_BUILD_TYPE}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${RUST_COMPILER_TARGET}/${LIB_BUILD_TYPE}"
             COMMAND lipo ARGS -create ${CMAKE_CURRENT_BINARY_DIR}/x86_64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a ${CMAKE_CURRENT_BINARY_DIR}/aarch64-apple-darwin/${LIB_BUILD_TYPE}/lib${ARGS_TARGET}.a -output "${OUTPUT}"
             WORKING_DIRECTORY "${ARGS_WORKING_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
@@ -210,7 +210,7 @@ function(add_rust_test)
 
     set(MY_CARGO_ARGS "test")
     if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$") #  Don't specify the target for universal, we'll do that manually for each build.
-        list(APPEND MY_CARGO_ARGS "--target" ${LIB_TARGET})
+        list(APPEND MY_CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
     endif()
 
     if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -267,87 +267,35 @@ foreach(LINE ${LINE_LIST})
     endif()
 endforeach()
 
-# Determine default LLVM target triple
-execute_process(COMMAND ${rustc_EXECUTABLE} -vV
-    OUTPUT_VARIABLE RUSTC_VV_OUT ERROR_QUIET)
-string(REGEX REPLACE "^.*host: ([a-zA-Z0-9_\\-]+).*" "\\1" DEFAULT_LIB_TARGET1 "${RUSTC_VV_OUT}")
-string(STRIP ${DEFAULT_LIB_TARGET1} DEFAULT_LIB_TARGET)
-
-if(WIN32)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(LIB_TARGET "x86_64-pc-windows-msvc")
-    else()
-        set(LIB_TARGET "i686-pc-windows-msvc")
-    endif()
-
-elseif(ANDROID)
-    if(ANDROID_SYSROOT_ABI STREQUAL "x86")
-        set(LIB_TARGET "i686-linux-android")
-    elseif(ANDROID_SYSROOT_ABI STREQUAL "x86_64")
-        set(LIB_TARGET "x86_64-linux-android")
-    elseif(ANDROID_SYSROOT_ABI STREQUAL "arm")
-        set(LIB_TARGET "arm-linux-androideabi")
-    elseif(ANDROID_SYSROOT_ABI STREQUAL "arm64")
-        set(LIB_TARGET "aarch64-linux-android")
-    endif()
-
-elseif(IOS)
-    set(LIB_TARGET "universal")
-
-# For reference determining target platform:
-#  CMake Systems: https://github.com/Kitware/CMake/blob/master/Modules/CMakeDetermineSystem.cmake
-#  Rust Targets:  https://doc.rust-lang.org/nightly/rustc/platform-support.html
-elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
-        set(LIB_TARGET "universal-apple-darwin")
-
-    else()
-        if(CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
-            set(LIB_TARGET "aarch64-apple-darwin")
+if(NOT RUST_COMPILER_TARGET)
+    # Automatically determine the Rust Target Triple.
+    # Note: Users may override automatic target detection by specifying their own. Most likely needed for cross-compiling.
+    #       For reference determining target platform: https://doc.rust-lang.org/nightly/rustc/platform-support.html
+    if(WIN32)
+        # For windows x86/x64, it's easy enough to guess the target.
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(RUST_COMPILER_TARGET "x86_64-pc-windows-msvc")
         else()
-            set(LIB_TARGET "x86_64-apple-darwin")
+            set(RUST_COMPILER_TARGET "i686-pc-windows-msvc")
         endif()
-    endif()
-
-elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(LIB_TARGET "x86_64-unknown-freebsd")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin AND "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+        # Special case for Darwin because we may want to build universal binaries.
+        set(RUST_COMPILER_TARGET "universal-apple-darwin")
     else()
-        set(LIB_TARGET "i686-unknown-freebsd")
-    endif()
+        # Determine default LLVM target triple.
+        execute_process(COMMAND ${rustc_EXECUTABLE} -vV
+            OUTPUT_VARIABLE RUSTC_VV_OUT ERROR_QUIET)
+        string(REGEX REPLACE "^.*host: ([a-zA-Z0-9_\\-]+).*" "\\1" DEFAULT_RUST_COMPILER_TARGET1 "${RUSTC_VV_OUT}")
+        string(STRIP ${DEFAULT_RUST_COMPILER_TARGET1} DEFAULT_RUST_COMPILER_TARGET)
 
-elseif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(LIB_TARGET "x86_64-unknown-openbsd")
-    else()
-        set(LIB_TARGET "i686-unknown-openbsd")
-    endif()
-
-else() # Probably Linux
-    if(EXISTS "/lib/libc.musl-x86_64.so.1")
-        # Just use the default target, no cross-compiling on libc.musl today :(
-        set(LIB_TARGET "${DEFAULT_LIB_TARGET}")
-
-    else()
-        if(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-            set(LIB_TARGET "aarch64-unknown-linux-gnu")
-
-        elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set(LIB_TARGET "x86_64-unknown-linux-gnu")
-
-        else()
-            set(LIB_TARGET "i686-unknown-linux-gnu")
-        endif()
+        set(RUST_COMPILER_TARGET "${DEFAULT_RUST_COMPILER_TARGET}")
     endif()
 endif()
 
-if(IOS)
-    set(CARGO_ARGS "lipo")
-else()
-    set(CARGO_ARGS "build")
-    if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$") #  Don't specify the target for universal, we'll do that manually for each build.
-        list(APPEND CARGO_ARGS "--target" ${LIB_TARGET})
-    endif()
+set(CARGO_ARGS "build")
+if (NOT "${RUST_COMPILER_TARGET}" MATCHES "^universal-apple-darwin$")
+    # Don't specify the target for macOS universal builds, we'll do that manually for each build.
+    list(APPEND CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
 endif()
 
 set(RUSTFLAGS "")
