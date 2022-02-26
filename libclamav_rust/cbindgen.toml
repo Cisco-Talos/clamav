@@ -23,6 +23,9 @@ include = [
     "fuzzy_hash::fuzzy_hash_calculate_image",
     "fuzzy_hash::fuzzy_hash_load_subsignature",
     "fuzzy_hash::fuzzy_hash_check",
+    "frs_error::FRSError",
+    "frs_error::frserror_fmt",
+    "frs_error::frserror_free",
 ]
 exclude = []
 
