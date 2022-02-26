@@ -20,22 +20,23 @@
  *  MA 02110-1301, USA.
  */
 
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    ffi::CStr,
+    mem::ManuallyDrop,
+    os::raw::c_char,
+    slice,
+};
+
 use image::{imageops::FilterType::Lanczos3, DynamicImage, ImageBuffer, Luma, Pixel, Rgb};
+use log::{debug, error, warn};
 use num_traits::{NumCast, ToPrimitive, Zero};
 use rustdct::DctPlanner;
+use thiserror::Error;
 use transpose::transpose;
 
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use std::ffi::CStr;
-use std::mem::ManuallyDrop;
-use std::os::raw::c_char;
-use std::slice;
-
-use log::{debug, error, warn};
-use thiserror::Error;
-
-use crate::{sys, validate_str_param};
+use crate::{frs_error::FRSError, frs_result, sys, validate_str_param};
 
 /// CdiffError enumerates all possible errors returned by this library.
 #[derive(Error, Debug)]
@@ -57,6 +58,9 @@ pub enum FuzzyHashError {
 
     #[error("Failed to load image: {0}")]
     ImageLoad(image::ImageError),
+
+    #[error("Invalid parameter: {0}")]
+    InvalidParameter(String),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -178,7 +182,8 @@ pub extern "C" fn _fuzzy_hash_load_subsignature(
     hexsig: *const c_char,
     lsig_id: u32,
     subsig_id: u32,
-) -> sys::cl_error_t {
+    err: *mut *mut FRSError,
+) -> bool {
     let hexsig = validate_str_param!(hexsig);
 
     let mut hashmap = unsafe {
@@ -187,26 +192,9 @@ pub extern "C" fn _fuzzy_hash_load_subsignature(
         ))
     };
 
-    let result: sys::cl_error_t =
-        match fuzzy_hash_load_subsignature(&mut hashmap, hexsig, lsig_id, subsig_id) {
-            Ok(_) => sys::cl_error_t_CL_SUCCESS,
-            Err(error) => {
-                error!(
-                    "Error when loading fuzzy hash logical subsignature '{}': {}",
-                    hexsig, error
-                );
+    let load_result = fuzzy_hash_load_subsignature(&mut hashmap, hexsig, lsig_id, subsig_id);
 
-                error!("Expected format: algorithm#hash[#hammingdistance]");
-                error!("  where");
-                error!("   - algorithm:       Must be 'fuzzy_img'");
-                error!("   - hash:            Must be an 8-byte hex string");
-                error!("   - hammingdistance: (optional) Must be an unsigned integer");
-
-                sys::cl_error_t_CL_EFORMAT
-            }
-        };
-
-    result
+    unsafe { frs_result!(result_in = load_result, err = err) }
 }
 
 /// Load a fuzzy hash subsignature
@@ -288,6 +276,7 @@ pub extern "C" fn _fuzzy_hash_calculate_image(
     file_size: usize,
     hash_out: *mut u8,
     hash_out_len: usize,
+    err: *mut *mut FRSError,
 ) -> bool {
     if file_bytes.is_null() {
         error!("invalid NULL pointer for image input buffer");
@@ -303,16 +292,23 @@ pub extern "C" fn _fuzzy_hash_calculate_image(
     let hash_result = fuzzy_hash_calculate_image(buffer);
     let hash_bytes = match hash_result {
         Ok(hash) => hash,
-        Err(err) => {
-            error!("Failed to calculate image fuzzy hash: {}", err);
-            return false;
+        Err(error) => {
+            error!("Failed to calculate image fuzzy hash: {}", error);
+            let hash_result: Result<(), FuzzyHashError> = Err(error);
+            return unsafe { frs_result!(result_in = hash_result, err = err) };
         }
     };
 
     if hash_out_len < hash_bytes.len() {
-        error!("output buffer is too small to hold the hash.");
-        return false;
+        let hash_result: Result<(), FuzzyHashError> =
+            Err(FuzzyHashError::InvalidParameter(format!(
+                "hash_bytes output parameter too small to hold the hash: {} < {}",
+                hash_out_len,
+                hash_bytes.len()
+            )));
+        return unsafe { frs_result!(result_in = hash_result, err = err) };
     }
+
     unsafe {
         hash_out.copy_from(hash_bytes.as_ptr(), hash_bytes.len());
     }

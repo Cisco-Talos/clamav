@@ -39,12 +39,12 @@ macro_rules! validate_str_param {
     ($ptr:ident) => {
         if $ptr.is_null() {
             warn!("{} is NULL", stringify!($ptr));
-            return sys::cl_error_t_CL_ENULLARG;
+            return false;
         } else {
             match unsafe { CStr::from_ptr($ptr) }.to_str() {
                 Err(e) => {
                     warn!("{} is not valid unicode: {}", stringify!($ptr), e);
-                    return sys::cl_error_t_CL_EARG;
+                    return false;
                 }
                 Ok(s) => s,
             }

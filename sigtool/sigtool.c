@@ -1055,10 +1055,11 @@ static int build(const struct optstruct *opts)
             mprintf(LOGG_ERROR, "Generated file is incorrect, renamed to %s\n", broken);
         }
     } else {
-        cl_error_t to_cdiff_ret;
-        to_cdiff_ret = script2cdiff(patch, builder, optget(opts, "server")->strarg);
-
-        ret = to_cdiff_ret == CL_SUCCESS ? 0 : -1;
+        if (!script2cdiff(patch, builder, optget(opts, "server")->strarg)) {
+            ret = -1;
+        } else {
+            ret = 0;
+        }
     }
 
     return ret;

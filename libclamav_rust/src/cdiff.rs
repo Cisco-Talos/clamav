@@ -390,7 +390,7 @@ pub extern "C" fn _script2cdiff(
     script: *const c_char,
     builder: *const c_char,
     server: *const c_char,
-) -> sys::cl_error_t {
+) -> bool {
     // validate_str_param! generates a false alarm here.  Marking the entire
     // function as unsafe triggers a different warning
     #![allow(clippy::not_unsafe_ptr_arg_deref)]
@@ -398,10 +398,10 @@ pub extern "C" fn _script2cdiff(
     let builder = validate_str_param!(builder);
     let server = validate_str_param!(server);
     match script2cdiff(script_file_name, builder, server) {
-        Ok(_) => sys::cl_error_t_CL_SUCCESS,
+        Ok(_) => true,
         Err(e) => {
             error!("{}", e);
-            sys::cl_error_t_CL_ERROR
+            false
         }
     }
 }
