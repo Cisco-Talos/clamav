@@ -323,6 +323,8 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
     char *start = NULL, *mid = NULL, *end = NULL;
 
+    FRSError *fuzzy_hash_load_error = NULL;
+
     if (hexsig[0] == '$') {
         /*
          * Looks like a macro subsignature
@@ -478,23 +480,30 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
         /*
          * format seems to match fuzzy image hash
          */
+        bool load_successful;
 
         if (lsigid != NULL) {
             /* fuzzy hash is a part of a logical signature (normal use case) */
-            if (CL_SUCCESS != (ret = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, lsigid[0], lsigid[1]))) {
-                cli_errmsg("Problem adding image fuzzy hash subsignature: %s\n", hexsig);
-                status = ret;
-                goto done;
-            }
+            load_successful = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, lsigid[0], lsigid[1], &fuzzy_hash_load_error);
         } else {
             /* No logical signature, must be `sigtool --test-sigs`
              * TODO: sigtool should really load the logical sig properly and we can get rid of this logic.
              * Note: similar functionality is inside of cli_bcomp_addpatt() and cli_pcre_addpatt() */
-            if (CL_SUCCESS != (ret = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, 0, 0))) {
-                cli_errmsg("Problem adding image fuzzy hash subsignature: %s\n", hexsig);
-                status = ret;
-                goto done;
-            }
+            load_successful = fuzzy_hash_load_subsignature(root->fuzzy_hashmap, hexsig, 0, 0, &fuzzy_hash_load_error);
+        }
+
+        if (!load_successful) {
+            cli_errmsg(
+                "Failed to load fuzzy hash logical subsignature '%s': %s\n"
+                "Expected format: algorithm#hash[#hammingdistance]\n"
+                "  where\n"
+                "   - algorithm:       Must be 'fuzzy_img'\n"
+                "   - hash:            Must be an 8-byte hex string\n"
+                "   - hammingdistance: (optional) Must be an unsigned integer\n",
+                hexsig, frserror_fmt(fuzzy_hash_load_error));
+
+            status = CL_EFORMAT;
+            goto done;
         }
 
     } else {
@@ -562,6 +571,10 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
     status = CL_SUCCESS;
 
 done:
+
+    if (NULL != fuzzy_hash_load_error) {
+        frserror_free(fuzzy_hash_load_error);
+    }
 
     FREE(hexcpy);
 

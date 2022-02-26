@@ -60,6 +60,31 @@ use std::{
 /// }
 /// ```
 ///
+/// Or for returning errors more explicitly without a function call:
+/// ```
+/// #[no_mangle]
+/// pub unsafe extern "C" fn checked_div_i64(
+///    numerator: i64,
+///    denominator: i64,
+///    result: *mut i64,
+///    err: *mut *mut FRSError,
+/// ) -> bool {
+///    let div_result = checked_div(numerator, denominator);
+///    let value = match div_result {
+///       Ok(value) => value,
+///       Err(err) => {
+///          return unsafe { frs_result!(result_in = div_result, err = err) };
+///       }
+///    }
+///
+///    // Do other things
+///    unsafe{ *result = value };
+///
+///    // Finally return
+///    true
+/// }
+/// ```
+///
 /// And from the C side:
 /// ``` c
 /// int64_t result;
@@ -104,6 +129,39 @@ macro_rules! frs_result {
                 Err(e) => {
                     *$err = Box::into_raw(Box::new(e.into()));
                     std::ptr::null()
+                }
+            }
+        }
+    };
+
+    (result_in=$result_in:ident, out=$result_out:ident, err=$err:ident) => {
+        if $err.is_null() {
+            panic!("{} is NULL", stringify!($err));
+        } else {
+            match $result_in {
+                Ok(result) => {
+                    *$result_out = result;
+                    true
+                }
+                Err(e) => {
+                    *$err = Box::into_raw(Box::new(e.into()));
+                    false
+                }
+            }
+        }
+    };
+
+    (result_in=$result_in:ident, err=$err:ident) => {
+        if $err.is_null() {
+            panic!("{} is NULL", stringify!($err));
+        } else {
+            match $result_in {
+                Ok(_) => {
+                    true
+                }
+                Err(e) => {
+                    *$err = Box::into_raw(Box::new(e.into()));
+                    false
                 }
             }
         }
