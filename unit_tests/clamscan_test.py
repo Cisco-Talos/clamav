@@ -325,3 +325,109 @@ class TC(testcase.TestCase):
             'Test.Import.Hash.NoSize.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_11_image_fuzzy_hash_sigs(self):
+        self.step_name('Test that each type of hash sig is detected in all-match mode')
+
+        os.mkdir(str(TC.path_db / 'image-fuzzy-hash-test-sigs'))
+
+        (TC.path_db / 'image-fuzzy-hash-test-sigs' / 'good.ldb').write_text(
+            "logo.png.good;Engine:150-255,Target:0;0;fuzzy_img#af2ad01ed42993c7#0\n"
+            "logo.png.bad.with.second.subsig;Engine:150-255,Target:0;0&1;deadbeef;fuzzy_img#af2ad01ed42993c7#0\n"
+            "logo.png.good.with.second.subsig;Engine:150-255,Target:0;0&1;49484452;fuzzy_img#af2ad01ed42993c7#0\n"
+        )
+
+        testfiles = TC.path_source / 'logo.png'
+
+        #
+        # First check with the good database in all-match mode.
+        #
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'image-fuzzy-hash-test-sigs' / 'good.ldb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_stdout = [
+            'logo.png.good.UNOFFICIAL FOUND',
+            'logo.png.good.with.second.subsig.UNOFFICIAL FOUND',
+        ]
+        unexpected_stdout = [
+            'logo.png.bad.with.second.subsig.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)
+
+        #
+        # Next check with the bad signatures
+        #
+
+        # Invalid hash
+        (TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-hash.ldb').write_text(
+            "logo.png.bad;Engine:150-255,Target:0;0;fuzzy_img#abcdef#0\n"
+        )
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-hash.ldb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+
+        expected_stderr = [
+            'LibClamAV Error: Failed to load',
+            'Invalid hash: Image fuzzy hash must be 16 characters in length: abcdef',
+        ]
+        unexpected_stdout = [
+            'logo.png.bad.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+        self.verify_output(output.out, unexpected=unexpected_stdout)
+
+        # Unsupported hamming distance
+        (TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-ham.ldb').write_text(
+            "logo.png.bad;Engine:150-255,Target:0;0;fuzzy_img#af2ad01ed42993c7#1\n"
+        )
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-ham.ldb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+
+        expected_stderr = [
+            'LibClamAV Error: Failed to load',
+            'Invalid hamming distance: 1',
+        ]
+        unexpected_stdout = [
+            'logo.png.bad.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+        self.verify_output(output.out, unexpected=unexpected_stdout)
+
+        # invalid algorithm
+        (TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-alg.ldb').write_text(
+            "logo.png.bad;Engine:150-255,Target:0;0;fuzzy_imgy#af2ad01ed42993c7#0\n"
+        )
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'image-fuzzy-hash-test-sigs' / 'invalid-alg.ldb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 2  # error
+
+        expected_stderr = [
+            'cli_loadldb: failed to parse subsignature 0 in logo.png',
+        ]
+        unexpected_stdout = [
+            'logo.png.bad.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+        self.verify_output(output.out, unexpected=unexpected_stdout)
