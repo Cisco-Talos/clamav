@@ -36,7 +36,7 @@ use rustdct::DctPlanner;
 use thiserror::Error;
 use transpose::transpose;
 
-use crate::{frs_error::FRSError, frs_result, sys, validate_str_param};
+use crate::{ffi_error, ffi_util::FFIError, rrf_call, sys, validate_str_param};
 
 /// CdiffError enumerates all possible errors returned by this library.
 #[derive(Error, Debug)]
@@ -61,6 +61,9 @@ pub enum FuzzyHashError {
 
     #[error("Invalid parameter: {0}")]
     InvalidParameter(String),
+
+    #[error("{0} parmeter is NULL")]
+    NullParam(&'static str),
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -100,6 +103,11 @@ impl std::fmt::Display for FuzzyHash {
     }
 }
 
+#[derive(Debug, Default)]
+pub struct FuzzyHashMap {
+    hashmap: HashMap<FuzzyHash, Vec<FuzzyHashMeta>>,
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct FuzzyHashMeta {
     lsigid: u32,
@@ -110,210 +118,203 @@ pub struct FuzzyHashMeta {
 
 /// Initialize the hashmap
 #[no_mangle]
-pub extern "C" fn fuzzy_hash_init_hashmap() -> sys::hashmap_ptr_t {
-    let hashmap: HashMap<FuzzyHash, Vec<FuzzyHashMeta>> = HashMap::new();
-    let hashmap = Box::new(hashmap);
-    Box::into_raw(hashmap) as sys::hashmap_ptr_t
+pub extern "C" fn fuzzy_hashmap_new() -> sys::fuzzyhashmap_t {
+    Box::into_raw(Box::new(FuzzyHashMap::default())) as sys::fuzzyhashmap_t
 }
 
 /// Free the hashmap
 #[no_mangle]
-pub extern "C" fn fuzzy_hash_free_hashmap(fuzzy_hashmap: sys::hashmap_ptr_t) {
+pub extern "C" fn fuzzy_hash_free_hashmap(fuzzy_hashmap: sys::fuzzyhashmap_t) {
     if fuzzy_hashmap.is_null() {
         warn!("Attempted to free a NULL hashmap pointer. Please report this at: https://github.com/Cisco-Talos/clamav/issues");
     } else {
-        let _ =
-            unsafe { Box::from_raw(fuzzy_hashmap as *mut HashMap<FuzzyHash, Vec<FuzzyHashMeta>>) };
+        let _ = unsafe { Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap) };
     }
 }
 
 /// C interface for fuzzy_hash_check().
 /// Handles all the unsafe ffi stuff.
+///
+/// # Safety
+///
+/// No parameters may be NULL
 #[export_name = "fuzzy_hash_check"]
-pub extern "C" fn _fuzzy_hash_check(
-    fuzzy_hashmap: sys::hashmap_ptr_t,
+pub unsafe extern "C" fn _fuzzy_hash_check(
+    fuzzy_hashmap: sys::fuzzyhashmap_t,
     mdata: *mut sys::cli_ac_data,
     image_fuzzy_hash: sys::image_fuzzy_hash_t,
 ) -> bool {
     let hash_bytes = image_fuzzy_hash.hash;
 
-    let hashmap = unsafe {
-        ManuallyDrop::new(Box::from_raw(
-            fuzzy_hashmap as *mut HashMap<FuzzyHash, Vec<FuzzyHashMeta>>,
-        ))
-    };
+    let hashmap = ManuallyDrop::new(Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap));
 
     debug!(
         "Checking image fuzzy hash '{}' for signature match",
         hex::encode(hash_bytes)
     );
 
-    if let Some(meta_vec) = fuzzy_hash_check(&hashmap, hash_bytes) {
+    if let Some(meta_vec) = hashmap.check(hash_bytes) {
         for meta in meta_vec {
-            unsafe {
-                sys::lsig_increment_subsig_match(mdata, meta.lsigid, meta.subsigid);
-            }
+            sys::lsig_increment_subsig_match(mdata, meta.lsigid, meta.subsigid);
         }
     }
 
     true
-}
-
-/// Check for fuzzy hash matches.
-///
-/// In this initial version, we're just doing a simple hash lookup and the
-/// hamming distance is not considered.
-///
-/// TODO: In a future version, replace this with an implementation that can find
-/// any hashes within the signature meta.hamming_distance.
-pub fn fuzzy_hash_check(
-    hashmap: &HashMap<FuzzyHash, Vec<FuzzyHashMeta>>,
-    hash: [u8; 8],
-) -> Option<&Vec<FuzzyHashMeta>> {
-    let hash = FuzzyHash::Image(ImageFuzzyHash { bytes: hash });
-    hashmap.get(&hash)
 }
 
 /// C interface for fuzzy_hash_load_subsignature().
 /// Handles all the unsafe ffi stuff.
+///
+/// # Safety
+///
+/// `hexsig` and `err` must not be NULL
 #[export_name = "fuzzy_hash_load_subsignature"]
-pub extern "C" fn _fuzzy_hash_load_subsignature(
-    fuzzy_hashmap: sys::hashmap_ptr_t,
+pub unsafe extern "C" fn _fuzzy_hash_load_subsignature(
+    fuzzy_hashmap: sys::fuzzyhashmap_t,
     hexsig: *const c_char,
     lsig_id: u32,
     subsig_id: u32,
-    err: *mut *mut FRSError,
+    err: *mut *mut FFIError,
 ) -> bool {
     let hexsig = validate_str_param!(hexsig);
 
-    let mut hashmap = unsafe {
-        ManuallyDrop::new(Box::from_raw(
-            fuzzy_hashmap as *mut HashMap<FuzzyHash, Vec<FuzzyHashMeta>>,
-        ))
-    };
+    let mut hashmap = ManuallyDrop::new(Box::from_raw(fuzzy_hashmap as *mut FuzzyHashMap));
 
-    let load_result = fuzzy_hash_load_subsignature(&mut hashmap, hexsig, lsig_id, subsig_id);
-
-    unsafe { frs_result!(result_in = load_result, err = err) }
-}
-
-/// Load a fuzzy hash subsignature
-/// Parse a fuzzy hash logical sig subsignature.
-/// Add the fuzzy hash to the matcher so it can be matched.
-pub fn fuzzy_hash_load_subsignature(
-    hashmap: &mut Box<HashMap<FuzzyHash, Vec<FuzzyHashMeta>>>,
-    hexsig: &str,
-    lsig_id: u32,
-    subsig_id: u32,
-) -> Result<(), FuzzyHashError> {
-    let mut hexsig_split = hexsig.split('#');
-
-    let algorithm = match hexsig_split.next() {
-        Some(x) => x,
-        None => return Err(FuzzyHashError::Format),
-    };
-
-    let hash = match hexsig_split.next() {
-        Some(x) => x,
-        None => return Err(FuzzyHashError::Format),
-    };
-
-    let distance: u32 = match hexsig_split.next() {
-        Some(x) => match x.parse::<u32>() {
-            Ok(n) => n,
-            Err(_) => {
-                return Err(FuzzyHashError::FormatHammingDistance(x.to_string()));
-            }
-        },
-        None => 0,
-    };
-
-    // TODO: Support non-zero distance
-    if distance != 0 {
-        error!(
-            "Non-zero hamming distances for image fuzzy hashes are not supported in this version."
-        );
-        return Err(FuzzyHashError::InvalidHammingDistance(distance));
-    }
-
-    match algorithm {
-        "fuzzy_img" => {
-            // Convert the hash string to an image fuzzy hash bytes struct
-            let image_fuzzy_hash = hash
-                .try_into()
-                .map_err(|e| FuzzyHashError::FormatHashBytes(format!("{}: {}", e, hash)))?;
-
-            let fuzzy_hash = FuzzyHash::Image(image_fuzzy_hash);
-
-            let meta: FuzzyHashMeta = FuzzyHashMeta {
-                lsigid: lsig_id,
-                subsigid: subsig_id,
-                #[cfg(feature = "not_ready")]
-                hamming_distance: distance,
-            };
-
-            // If the hash key does not exist in the hashmap, insert an empty vec.
-            // Then add the current meta struct to the entry.
-            hashmap
-                .entry(fuzzy_hash)
-                .or_insert_with(Vec::new)
-                .push(meta);
-
-            Ok(())
-        }
-        _ => {
-            error!("Unknown fuzzy hash algorithm: {}", algorithm);
-            Err(FuzzyHashError::UnknownAlgorithm(algorithm.to_string()))
-        }
-    }
+    rrf_call!(
+        err = err,
+        hashmap.load_subsignature(hexsig, lsig_id, subsig_id)
+    )
 }
 
 /// C interface for fuzzy_hash_calculate_image().
 /// Handles all the unsafe ffi stuff.
+///
+/// # Safety
+///
+/// `file_bytes` and `hash_out` must not be NULL
 #[export_name = "fuzzy_hash_calculate_image"]
-pub extern "C" fn _fuzzy_hash_calculate_image(
+pub unsafe extern "C" fn _fuzzy_hash_calculate_image(
     file_bytes: *const u8,
     file_size: usize,
     hash_out: *mut u8,
     hash_out_len: usize,
-    err: *mut *mut FRSError,
+    err: *mut *mut FFIError,
 ) -> bool {
-    if file_bytes.is_null() {
-        error!("invalid NULL pointer for image input buffer");
-        return false;
-    }
     if hash_out.is_null() {
-        error!("invalid NULL pointer for hash output buffer");
-        return false;
+        return ffi_error!(err = err, FuzzyHashError::NullParam("hash_out"));
     }
 
-    let buffer: &[u8] = unsafe { slice::from_raw_parts(file_bytes, file_size) };
+    let buffer = if file_bytes.is_null() {
+        return ffi_error!(err = err, FuzzyHashError::NullParam("file_bytes"));
+    } else {
+        slice::from_raw_parts(file_bytes, file_size)
+    };
 
     let hash_result = fuzzy_hash_calculate_image(buffer);
     let hash_bytes = match hash_result {
         Ok(hash) => hash,
-        Err(error) => {
-            error!("Failed to calculate image fuzzy hash: {}", error);
-            let hash_result: Result<(), FuzzyHashError> = Err(error);
-            return unsafe { frs_result!(result_in = hash_result, err = err) };
-        }
+        Err(error) => return ffi_error!(err = err, error),
     };
 
     if hash_out_len < hash_bytes.len() {
-        let hash_result: Result<(), FuzzyHashError> =
-            Err(FuzzyHashError::InvalidParameter(format!(
+        return ffi_error!(
+            err = err,
+            FuzzyHashError::InvalidParameter(format!(
                 "hash_bytes output parameter too small to hold the hash: {} < {}",
                 hash_out_len,
                 hash_bytes.len()
-            )));
-        return unsafe { frs_result!(result_in = hash_result, err = err) };
+            ))
+        );
     }
 
-    unsafe {
-        hash_out.copy_from(hash_bytes.as_ptr(), hash_bytes.len());
-    }
+    hash_out.copy_from(hash_bytes.as_ptr(), hash_bytes.len());
 
     true
+}
+
+impl FuzzyHashMap {
+    /// Check for fuzzy hash matches.
+    ///
+    /// In this initial version, we're just doing a simple hash lookup and the
+    /// hamming distance is not considered.
+    ///
+    /// TODO: In a future version, replace this with an implementation that can find
+    /// any hashes within the signature meta.hamming_distance.
+    pub fn check(&self, hash: [u8; 8]) -> Option<&Vec<FuzzyHashMeta>> {
+        let hash = FuzzyHash::Image(ImageFuzzyHash { bytes: hash });
+        self.hashmap.get(&hash)
+    }
+
+    /// Load a fuzzy hash subsignature
+    /// Parse a fuzzy hash logical sig subsignature.
+    /// Add the fuzzy hash to the matcher so it can be matched.
+    pub fn load_subsignature(
+        &mut self,
+        hexsig: &str,
+        lsig_id: u32,
+        subsig_id: u32,
+    ) -> Result<(), FuzzyHashError> {
+        let mut hexsig_split = hexsig.split('#');
+
+        let algorithm = match hexsig_split.next() {
+            Some(x) => x,
+            None => return Err(FuzzyHashError::Format),
+        };
+
+        let hash = match hexsig_split.next() {
+            Some(x) => x,
+            None => return Err(FuzzyHashError::Format),
+        };
+
+        let distance: u32 = match hexsig_split.next() {
+            Some(x) => match x.parse::<u32>() {
+                Ok(n) => n,
+                Err(_) => {
+                    return Err(FuzzyHashError::FormatHammingDistance(x.to_string()));
+                }
+            },
+            None => 0,
+        };
+
+        // TODO: Support non-zero distance
+        if distance != 0 {
+            error!(
+            "Non-zero hamming distances for image fuzzy hashes are not supported in this version."
+        );
+            return Err(FuzzyHashError::InvalidHammingDistance(distance));
+        }
+
+        match algorithm {
+            "fuzzy_img" => {
+                // Convert the hash string to an image fuzzy hash bytes struct
+                let image_fuzzy_hash = hash
+                    .try_into()
+                    .map_err(|e| FuzzyHashError::FormatHashBytes(format!("{}: {}", e, hash)))?;
+
+                let fuzzy_hash = FuzzyHash::Image(image_fuzzy_hash);
+
+                let meta: FuzzyHashMeta = FuzzyHashMeta {
+                    lsigid: lsig_id,
+                    subsigid: subsig_id,
+                    #[cfg(feature = "not_ready")]
+                    hamming_distance: distance,
+                };
+
+                // If the hash key does not exist in the hashmap, insert an empty vec.
+                // Then add the current meta struct to the entry.
+                self.hashmap
+                    .entry(fuzzy_hash)
+                    .or_insert_with(Vec::new)
+                    .push(meta);
+
+                Ok(())
+            }
+            _ => {
+                error!("Unknown fuzzy hash algorithm: {}", algorithm);
+                Err(FuzzyHashError::UnknownAlgorithm(algorithm.to_string()))
+            }
+        }
+    }
 }
 
 /// Given a buffer and size, generate an image fuzzy hash
@@ -466,9 +467,8 @@ pub fn fuzzy_hash_calculate_image(buffer: &[u8]) -> Result<Vec<u8>, FuzzyHashErr
         // Grab the first 8 rows.
         .take(8)
         // But only take the first 8 elements (columns) from each row.
-        .map(|chunk| chunk.chunks(8).take(1))
+        .flat_map(|chunk| chunk.chunks(8).take(1))
         // Flatten the 8x8 selection down to a vector of floats.
-        .flatten()
         .flatten()
         .copied()
         .collect::<Vec<f32>>();

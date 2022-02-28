@@ -941,9 +941,7 @@ fn process_line(ctx: &mut Context, line: &[u8]) -> Result<(), InputError> {
     let mut tokens = line.splitn(2, |b| *b == b' ' || *b == b'\n');
     let cmd = tokens.next().ok_or(InputError::MissingCommand)?;
     let remainder_with_nl = tokens.next();
-    let remainder = remainder_with_nl
-        .map(|s| s.strip_suffix(&[b'\n']))
-        .flatten();
+    let remainder = remainder_with_nl.and_then(|s| s.strip_suffix(&[b'\n']));
 
     // Call the appropriate command function
     match cmd {

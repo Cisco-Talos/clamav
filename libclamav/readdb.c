@@ -323,7 +323,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
     char *start = NULL, *mid = NULL, *end = NULL;
 
-    FRSError *fuzzy_hash_load_error = NULL;
+    FFIError *fuzzy_hash_load_error = NULL;
 
     if (hexsig[0] == '$') {
         /*
@@ -500,7 +500,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
                 "   - algorithm:       Must be 'fuzzy_img'\n"
                 "   - hash:            Must be an 8-byte hex string\n"
                 "   - hammingdistance: (optional) Must be an unsigned integer\n",
-                hexsig, frserror_fmt(fuzzy_hash_load_error));
+                hexsig, ffierror_fmt(fuzzy_hash_load_error));
 
             status = CL_EFORMAT;
             goto done;
@@ -573,7 +573,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 done:
 
     if (NULL != fuzzy_hash_load_error) {
-        frserror_free(fuzzy_hash_load_error);
+        ffierror_free(fuzzy_hash_load_error);
     }
 
     FREE(hexcpy);
@@ -906,7 +906,7 @@ cl_error_t cli_initroots(struct cl_engine *engine, unsigned int options)
                 }
             }
 
-            root->fuzzy_hashmap = fuzzy_hash_init_hashmap();
+            root->fuzzy_hashmap = fuzzy_hashmap_new();
         }
     }
     engine->root[1]->bm_offmode = 1; /* BM offset mode for PE files */

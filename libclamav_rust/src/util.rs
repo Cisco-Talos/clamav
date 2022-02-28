@@ -22,36 +22,6 @@
 
 use std::fs::File;
 
-/// Verify that the given parameter is not NULL, and valid UTF-8,
-/// returns a &str if successful else returns sys::cl_error_t_CL_EARG
-///
-/// # Examples
-///
-/// ```edition2018
-/// use util::validate_str_param;
-///
-/// # pub extern "C" fn _my_c_interface(blah: *const c_char) -> sys::cl_error_t {
-///    let blah = validate_str_param!(blah);
-/// # }
-/// ```
-#[macro_export]
-macro_rules! validate_str_param {
-    ($ptr:ident) => {
-        if $ptr.is_null() {
-            warn!("{} is NULL", stringify!($ptr));
-            return false;
-        } else {
-            match unsafe { CStr::from_ptr($ptr) }.to_str() {
-                Err(e) => {
-                    warn!("{} is not valid unicode: {}", stringify!($ptr), e);
-                    return false;
-                }
-                Ok(s) => s,
-            }
-        }
-    };
-}
-
 /// Obtain a std::fs::File from an i32 in a platform-independent manner.
 ///
 /// On Unix-like platforms, this is done with File::from_raw_fd().

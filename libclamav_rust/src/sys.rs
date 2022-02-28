@@ -1243,7 +1243,7 @@ pub union cli_ac_lsig__bindgen_ty_1 {
     pub logic: *mut ::std::os::raw::c_char,
     pub code_start: *mut u8,
 }
-pub type hashmap_ptr_t = *mut ::std::os::raw::c_void;
+pub type fuzzyhashmap_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_matcher {
@@ -1283,7 +1283,7 @@ pub struct cli_matcher {
     pub pcre_absoff_num: u32,
     pub bcomp_metas: u32,
     pub bcomp_metatable: *mut *mut cli_bcomp_meta,
-    pub fuzzy_hashmap: hashmap_ptr_t,
+    pub fuzzy_hashmap: fuzzyhashmap_t,
     pub linked_bcs: u32,
     pub mempool: *mut mpool_t,
 }
