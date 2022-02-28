@@ -128,7 +128,7 @@ struct cli_ac_lsig {
     struct cli_lsig_tdb tdb;
 };
 
-typedef void *hashmap_ptr_t;
+typedef void *fuzzyhashmap_t;
 
 struct cli_matcher {
     unsigned int type;
@@ -169,7 +169,7 @@ struct cli_matcher {
     struct cli_bcomp_meta **bcomp_metatable;
 
     /* Fuzzy Image Hash */
-    hashmap_ptr_t fuzzy_hashmap;
+    fuzzyhashmap_t fuzzy_hashmap;
 
     /* Bytecode Tracker */
     uint32_t linked_bcs;

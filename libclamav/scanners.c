@@ -4073,7 +4073,7 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
     image_fuzzy_hash_t hash = {0};
     json_object *header     = NULL;
 
-    FRSError *fuzzy_hash_calc_error = NULL;
+    FFIError *fuzzy_hash_calc_error = NULL;
 
     offset = fmap_need_off(ctx->fmap, 0, ctx->fmap->real_len);
 
@@ -4088,10 +4088,10 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
     if (!fuzzy_hash_calculate_image(offset, ctx->fmap->real_len, hash.hash, 8, &fuzzy_hash_calc_error)) {
         cli_dbgmsg("Failed to calculate image fuzzy hash for %s: %s\n",
                    cli_ftname(type),
-                   frserror_fmt(fuzzy_hash_calc_error));
+                   ffierror_fmt(fuzzy_hash_calc_error));
 
         if (SCAN_COLLECT_METADATA && (NULL != header)) {
-            (void)cli_jsonstr(header, "Error", frserror_fmt(fuzzy_hash_calc_error));
+            (void)cli_jsonstr(header, "Error", ffierror_fmt(fuzzy_hash_calc_error));
         }
 
         goto done;
@@ -4111,7 +4111,7 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
 
 done:
     if (NULL != fuzzy_hash_calc_error) {
-        frserror_free(fuzzy_hash_calc_error);
+        ffierror_free(fuzzy_hash_calc_error);
     }
     return status;
 }
