@@ -370,3 +370,14 @@
    fun:statx
    fun:_ZN3std3sys4unix2fs9try_statx*
 }
+{
+   <rayon-jpeg-decoder-error>
+   Memcheck:Cond
+   fun:drop_in_place<core::result::Result<(), std::sync::mpsc::SendError<alloc::vec::Vec<u8, alloc::alloc::Global>>>>
+   ...
+   fun:{closure#0}<rayon_core::registry::{impl#2}::spawn::{closure#0}, ()>
+   ...
+   fun:_ZN3std3sys4unix6thread6Thread3new12thread_start17hbba5bc368baac205E
+   fun:start_thread
+   fun:clone
+}
