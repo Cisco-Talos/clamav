@@ -607,7 +607,7 @@ static int build(const struct optstruct *opts)
     unsigned int i, sigs = 0, oldsigs = 0, entries = 0, version, real_header, fl, maxentries;
     STATBUF foo;
     unsigned char buffer[FILEBUFF];
-    char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512];
+    char *tarfile, header[513], smbuff[32], builder[33], *pt, olddb[512];
     char patch[32], broken[32], dbname[32], dbfile[32];
     const char *newcvd, *localdbdir = NULL;
     struct cl_engine *engine;
