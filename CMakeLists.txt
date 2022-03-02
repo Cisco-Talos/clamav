@@ -467,7 +467,8 @@ find_package(JSONC REQUIRED)
 # Set variable required by libclamav to use libjson-c
 set(HAVE_JSON 1)
 
-if(BYTECODE_RUNTIME STREQUAL "llvm")
+string (TOLOWER ${BYTECODE_RUNTIME} bytecodeRuntime)
+if(${bytecodeRuntime} STREQUAL "llvm")
     set (LLVM_FIND_VERSION "8.0.0")
     find_package(LLVM REQUIRED)
     if(LLVM_FOUND)

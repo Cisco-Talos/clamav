@@ -21,7 +21,6 @@
  *  MA 02110-1301, USA.
  */
 
-#define DEBUG_TYPE "clamavjit"
 #include <pthread.h>
 #ifndef _WIN32
 #include <sys/time.h>
