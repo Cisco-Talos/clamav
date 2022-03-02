@@ -376,7 +376,7 @@ static const oid_alternative_t *asn1_expect_algo_multi(fmap_t *map, const void *
 {
     struct cli_asn1 obj;
     unsigned int avail;
-    int i;
+    unsigned int i;
     const oid_alternative_t *oid_alt_ptr = NULL;
 
     if (asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE)) { /* SEQUENCE */
@@ -2163,7 +2163,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
 {
     struct cli_asn1 c;
     unsigned int size;
-    int i;
+    unsigned int i;
 
     // TODO As currently implemented, loading in a .cat file with -d requires
     // an accompanying .crb with trust entries that will cause the .cat
