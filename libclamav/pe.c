@@ -2411,9 +2411,9 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
 static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct cli_exe_info *peinfo)
 {
-    cl_error_t status = CL_SUCCESS;
+    cl_error_t status = CL_ERROR;
     cl_error_t ret;
-    struct pe_image_import_descriptor image;
+    struct pe_image_import_descriptor image = {0};
     const struct pe_image_import_descriptor *impdes;
     fmap_t *map = ctx->fmap;
     size_t left, fsize = map->len;
@@ -2430,6 +2430,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
      * uncommon case but can happen. */
     if (peinfo->dirs[1].VirtualAddress == 0 || peinfo->dirs[1].Size == 0) {
         cli_dbgmsg("scan_pe: import table data dir does not exist (skipping .imp scanning)\n");
+        status = CL_SUCCESS;
         goto done;
     }
 
@@ -2437,6 +2438,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     impoff = cli_rawaddr(peinfo->dirs[1].VirtualAddress, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     if (err || impoff + peinfo->dirs[1].Size > fsize) {
         cli_dbgmsg("scan_pe: invalid rva for import table data\n");
+        status = CL_SUCCESS;
         goto done;
     }
 
@@ -2541,6 +2543,8 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
             goto done;
         }
     }
+
+    status = CL_SUCCESS;
 
 done:
     if (needed_impoff) {
