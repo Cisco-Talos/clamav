@@ -129,6 +129,7 @@ void cli_detect_env_jit(struct cli_environment *env)
     // OS
     Triple::OSType os = triple.getOS();
     switch (os) {
+        default: /*Treat unhandled cases as UnknownOS.*/
         case Triple::UnknownOS:
             env->os = llvm_os_UnknownOS;
             break;
