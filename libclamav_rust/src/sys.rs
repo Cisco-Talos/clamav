@@ -1219,6 +1219,7 @@ pub struct cli_lsig_tdb {
     pub icongrp1: *const ::std::os::raw::c_char,
     pub icongrp2: *const ::std::os::raw::c_char,
     pub macro_ptids: *mut u32,
+    pub mempool: *mut mpool_t,
 }
 pub const lsig_type_CLI_LSIG_NORMAL: lsig_type = 0;
 pub const lsig_type_CLI_YARA_NORMAL: lsig_type = 1;
@@ -1284,6 +1285,7 @@ pub struct cli_matcher {
     pub bcomp_metatable: *mut *mut cli_bcomp_meta,
     pub fuzzy_hashmap: fuzzyhashmap_t,
     pub linked_bcs: u32,
+    pub mempool: *mut mpool_t,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
