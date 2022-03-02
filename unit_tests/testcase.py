@@ -21,7 +21,7 @@ import unittest
 
 from pathlib import Path
 
-EXECUTION_TIMEOUT = 200
+EXECUTION_TIMEOUT = 600
 TIMEOUT_EXIT_CODE = 111
 
 STRICT_ORDER = 0
