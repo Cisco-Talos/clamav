@@ -102,8 +102,8 @@ TCPAddr localhost
 
 # Close the connection when the data size limit is exceeded.
 # The value should match your MTA's limit for a maximum attachment size.
-# Default: 25M
-#StreamMaxLength 10M
+# Default: 100M
+#StreamMaxLength 25M
 
 # Limit port range.
 # Default: 1024
@@ -497,8 +497,8 @@ TCPAddr localhost
 # Value of 0 disables the limit
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
-# Default: 100M
-#MaxScanSize 150M
+# Default: 400M
+#MaxScanSize 1000M
 
 # Files larger than this limit won't be scanned. Affects the input file itself
 # as well as files contained inside it (when the input file is an archive, a
@@ -508,8 +508,8 @@ TCPAddr localhost
 # to the system.
 # Technical design limitations prevent ClamAV from scanning files greater than
 # 2 GB at this time.
-# Default: 25M
-#MaxFileSize 30M
+# Default: 100M
+#MaxFileSize 400M
 
 # Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR
 # file, all files within it will also be scanned. This options specifies how
@@ -530,29 +530,29 @@ TCPAddr localhost
 # will skip the additional analysis step.
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
-# Default: 10M
-#MaxEmbeddedPE 10M
+# Default: 40M
+#MaxEmbeddedPE 100M
 
 # Maximum size of a HTML file to normalize. HTML files larger than this value
 # will not be normalized or scanned.
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
-# Default: 10M
-#MaxHTMLNormalize 10M
+# Default: 40M
+#MaxHTMLNormalize 100M
 
 # Maximum size of a normalized HTML file to scan. HTML files larger than this
 # value after normalization will not be scanned.
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
-# Default: 2M
-#MaxHTMLNoTags 2M
+# Default: 8M
+#MaxHTMLNoTags 16M
 
 # Maximum size of a script file to normalize. Script content larger than this
 # value will not be normalized or scanned.
 # Note: disabling this limit or setting it too high may result in severe damage
 # to the system.
-# Default: 5M
-#MaxScriptNormalize 5M
+# Default: 20M
+#MaxScriptNormalize 50M
 
 # Maximum size of a ZIP file to reanalyze type recognition. ZIP files larger
 # than this value will skip the step to potentially reanalyze as PE.
@@ -617,8 +617,8 @@ TCPAddr localhost
 # Setting this value to zero disables the limit.
 # WARNING: setting this limit too high or disabling it may severely impact
 # performance.
-# Default: 25M
-#PCREMaxFileSize 100M
+# Default: 100M
+#PCREMaxFileSize 400M
 
 # When AlertExceedsMax is set, files exceeding the MaxFileSize, MaxScanSize, or
 # MaxRecursion limit will be flagged with the virus name starting with

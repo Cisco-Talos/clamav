@@ -144,7 +144,7 @@ Close the STREAM session when the data size limit is exceeded.
 .br
 The value should match your MTA's limit for the maximum attachment size.
 .br
-Default: 25M
+Default: 100M
 .TP
 \fBStreamMinPort NUMBER\fR
 The STREAM command uses an FTP-like protocol.
@@ -546,12 +546,12 @@ Default: 120000
 \fBMaxScanSize SIZE\fR
 Sets the maximum amount of data to be scanned for each input file. Archives and other containers are recursively extracted and scanned up to this value. The size of an archive plus the sum of the sizes of all files within archive count toward the scan size. For example, a 1M uncompressed archive containing a single 1M inner file counts as 2M toward the max scan size. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
 .br
-Default: 100M
+Default: 400M
 .TP
 \fBMaxFileSize SIZE\fR
 Files larger than this limit won't be scanned. Affects the input file itself as well as files contained inside it (when the input file is an archive, a document or some other kind of container). \fBWarning: disabling this limit or setting it too high may result in severe damage to the system. Technical design limitations prevent ClamAV from scanning files greater than 2 GB at this time.\fR
 .br
-Default: 25M
+Default: 100M
 .TP
 \fBMaxRecursion NUMBER\fR
 Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR file, all files within it will also be scanned. This options specifies how deeply the process should be continued. \fBWarning: setting this limit too high may result in severe damage to the system.\fR
@@ -570,7 +570,7 @@ Files larger than this value will skip the additional analysis step.
 .br
 Negative values are not allowed.
 .br
-Default: 10M
+Default: 40M
 .TP
 \fBMaxHTMLNormalize SIZE\fR
 This option sets the maximum size of a HTML file to normalize.
@@ -579,7 +579,7 @@ HTML files larger than this value will not be normalized or scanned.
 .br
 Negative values are not allowed.
 .br
-Default: 10M
+Default: 40M
 .TP
 \fBMaxHTMLNoTags SIZE\fR
 This option sets the maximum size of a normalized HTML file to scan.
@@ -588,7 +588,7 @@ HTML files larger than this value after normalization will not be scanned.
 .br
 Negative values are not allowed.
 .br
-Default: 2M
+Default: 8M
 .TP
 \fBMaxScriptNormalize SIZE\fR
 This option sets the maximum size of a script file to normalize.
@@ -597,7 +597,7 @@ Script content larger than this value will not be normalized or scanned.
 .br
 Negative values are not allowed.
 .br
-Default: 5M
+Default: 20M
 .TP
 \fBMaxZipTypeRcg SIZE\fR
 This option sets the maximum size of a ZIP file to reanalyze type recognition.
@@ -682,7 +682,7 @@ Setting this value to zero disables the limit.
 .br
 WARNING: setting this limit too high or disabling it may severely impact performance.
 .br
-Default: 25M
+Default: 100M
 .TP
 \fBOnAccessIncludePath STRING\fR
 This option specifies a directory (including all files and directories inside it), which should be scanned on access. This option can be used multiple times.
