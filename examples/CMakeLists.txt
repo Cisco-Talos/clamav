@@ -10,6 +10,10 @@ set_target_properties( ex1 PROPERTIES COMPILE_FLAGS "${WARNCFLAGS}" )
 target_link_libraries(ex1
     PRIVATE
         ClamAV::libclamav)
+if(LLVM_FOUND)
+    target_link_directories( ex1 PUBLIC ${LLVM_LIBRARY_DIRS} )
+    target_link_libraries( ex1 PUBLIC ${LLVM_LIBRARIES} )
+endif()
 
 if(ENABLE_STATIC_LIB)
     add_executable(ex1_static)
@@ -19,4 +23,8 @@ if(ENABLE_STATIC_LIB)
     target_link_libraries(ex1_static
         PRIVATE
             ClamAV::libclamav_static)
+    if(LLVM_FOUND)
+        target_link_directories( ex1_static PUBLIC ${LLVM_LIBRARY_DIRS} )
+        target_link_libraries( ex1_static PUBLIC ${LLVM_LIBRARIES} )
+    endif()
 endif()

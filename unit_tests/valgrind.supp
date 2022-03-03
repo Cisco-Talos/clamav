@@ -277,7 +277,7 @@
    binhex-overlapping-memmove
    Memcheck:Overlap
    fun:__memcpy_chk
-   fun:memmove
+   ...
    fun:cli_binhex
    ...
 }
