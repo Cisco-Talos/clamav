@@ -2411,125 +2411,150 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
 
 static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *impsz, int *genhash, struct cli_exe_info *peinfo)
 {
-    struct pe_image_import_descriptor *image;
+    cl_error_t status = CL_ERROR;
+    cl_error_t ret;
+    struct pe_image_import_descriptor image = {0};
+    const struct pe_image_import_descriptor *impdes;
     fmap_t *map = ctx->fmap;
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
-    const char *impdes, *buffer;
+    const char *buffer;
     void *hashctx[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
-    int nimps      = 0;
-    cl_error_t ret = CL_SUCCESS;
+    int nimps = 0;
     unsigned int err;
-    int first = 1;
+    int first          = 1;
+    bool needed_impoff = false;
 
     /* If the PE doesn't have an import table then skip it. This is an
      * uncommon case but can happen. */
     if (peinfo->dirs[1].VirtualAddress == 0 || peinfo->dirs[1].Size == 0) {
         cli_dbgmsg("scan_pe: import table data dir does not exist (skipping .imp scanning)\n");
-        return CL_SUCCESS;
+        status = CL_SUCCESS;
+        goto done;
     }
 
     // TODO Add EC32 wrappers
     impoff = cli_rawaddr(peinfo->dirs[1].VirtualAddress, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     if (err || impoff + peinfo->dirs[1].Size > fsize) {
         cli_dbgmsg("scan_pe: invalid rva for import table data\n");
-        return CL_SUCCESS;
+        status = CL_SUCCESS;
+        goto done;
     }
 
     // TODO Add EC32 wrapper
-    impdes = fmap_need_off(map, impoff, peinfo->dirs[1].Size);
+    impdes = (const struct pe_image_import_descriptor *)fmap_need_off(map, impoff, peinfo->dirs[1].Size);
     if (impdes == NULL) {
         cli_dbgmsg("scan_pe: failed to acquire fmap buffer\n");
-        return CL_EREAD;
+        status = CL_EREAD;
+        goto done;
     }
+    needed_impoff = true;
+
+    /* Safety: We can trust peinfo->dirs[1].Size only because `fmap_need_off()` (above)
+     * would have failed if the size exceeds the end of the fmap. */
     left = peinfo->dirs[1].Size;
 
     memset(hashctx, 0, sizeof(hashctx));
     if (genhash[CLI_HASH_MD5]) {
         hashctx[CLI_HASH_MD5] = cl_hash_init("md5");
         if (hashctx[CLI_HASH_MD5] == NULL) {
-            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
     }
     if (genhash[CLI_HASH_SHA1]) {
         hashctx[CLI_HASH_SHA1] = cl_hash_init("sha1");
         if (hashctx[CLI_HASH_SHA1] == NULL) {
-            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
     }
     if (genhash[CLI_HASH_SHA256]) {
         hashctx[CLI_HASH_SHA256] = cl_hash_init("sha256");
         if (hashctx[CLI_HASH_SHA256] == NULL) {
-            fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
     }
 
-    image = (struct pe_image_import_descriptor *)impdes;
-    while (left > sizeof(struct pe_image_import_descriptor) && image->Name != 0 && nimps < PE_MAXIMPORTS) {
+    while (left > sizeof(struct pe_image_import_descriptor) && nimps < PE_MAXIMPORTS) {
         char *dllname = NULL;
 
+        /* Get copy of image import descriptor to work with */
+        memcpy(&image, impdes, sizeof(struct pe_image_import_descriptor));
+
+        if (image.Name == 0) {
+            // Name RVA is 0, which doesn't seem right. I guess we skip the rest?
+            // TODO: Is that right?
+            break;
+        }
+
+        /* Prepare for next iteration, in case we need to `continue;` */
         left -= sizeof(struct pe_image_import_descriptor);
         nimps++;
+        impdes++;
 
         /* Endian Conversion */
-        image->u.OriginalFirstThunk = EC32(image->u.OriginalFirstThunk);
-        image->TimeDateStamp        = EC32(image->TimeDateStamp);
-        image->ForwarderChain       = EC32(image->ForwarderChain);
-        image->Name                 = EC32(image->Name);
-        image->FirstThunk           = EC32(image->FirstThunk);
+        image.u.OriginalFirstThunk = EC32(image.u.OriginalFirstThunk);
+        image.TimeDateStamp        = EC32(image.TimeDateStamp);
+        image.ForwarderChain       = EC32(image.ForwarderChain);
+        image.Name                 = EC32(image.Name);
+        image.FirstThunk           = EC32(image.FirstThunk);
 
         /* DLL name acquisition */
-        offset = cli_rawaddr(image->Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
+        offset = cli_rawaddr(image.Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
         if (err || offset > fsize) {
             cli_dbgmsg("scan_pe: invalid rva for dll name\n");
             /* TODO: ignore or return? */
             /*
-              image++;
-              continue;
+            continue;
              */
-            ret = CL_EFORMAT;
-            goto hash_imptbl_end;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         buffer = fmap_need_off_once(map, offset, MIN(PE_MAXNAMESIZE, fsize - offset));
         if (buffer == NULL) {
             cli_dbgmsg("scan_pe: failed to read name for dll\n");
-            ret = CL_EREAD;
-            goto hash_imptbl_end;
+            status = CL_EREAD;
+            goto done;
         }
 
         if (validate_impname(dllname, MIN(PE_MAXNAMESIZE, fsize - offset), 1) == 0) {
             cli_dbgmsg("scan_pe: invalid name for imported dll\n");
-            ret = CL_EFORMAT;
-            goto hash_imptbl_end;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         dllname = CLI_STRNDUP(buffer, MIN(PE_MAXNAMESIZE, fsize - offset));
         if (dllname == NULL) {
             cli_dbgmsg("scan_pe: cannot duplicate dll name\n");
-            ret = CL_EMEM;
-            goto hash_imptbl_end;
+            status = CL_EMEM;
+            goto done;
         }
 
         /* DLL function handling - inline function */
-        ret = hash_impfns(ctx, hashctx, impsz, image, dllname, peinfo, &first);
+        ret = hash_impfns(ctx, hashctx, impsz, &image, dllname, peinfo, &first);
         free(dllname);
         dllname = NULL;
-        if (ret != CL_SUCCESS)
-            goto hash_imptbl_end;
-
-        image++;
+        if (ret != CL_SUCCESS) {
+            status = ret;
+            goto done;
+        }
     }
 
-hash_imptbl_end:
-    fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
+    status = CL_SUCCESS;
+
+done:
+    if (needed_impoff) {
+        fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
+    }
+
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
         cl_finish_hash(hashctx[type], digest[type]);
-    return ret;
+
+    return status;
 }
 
 static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
