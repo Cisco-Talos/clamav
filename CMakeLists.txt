@@ -183,6 +183,11 @@ endif()
 #
 # Use the `lib` prefix on Windows, to match previous ClamAV build
 #
+if(LLVM_FOUND)
+    list(JOIN LLVM_LIBRARIES "," LLVM_LIBS)
+    list(JOIN LLVM_LIBRARY_DIRS "," LLVM_DIRS)
+endif()
+
 if(WIN32)
     set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
     set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
@@ -488,7 +493,6 @@ if(${bytecodeRuntime} STREQUAL "llvm")
 
             # Set variable required by libclamav to use llvm instead of interpreter
             set(LLVM_VERSION ${LLVM_VERSION_MAJOR}${LLVM_VERSION_MINOR})
-            set(LLVM_LIBRARIES "${LLVM_LIBRARIES};-ltinfo")
             message("LLVM_FOUND ${LLVM_FOUND}")
 
             if (${LLVM_VERSION_STRING} VERSION_GREATER_EQUAL "9.0.0")

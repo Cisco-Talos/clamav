@@ -179,6 +179,29 @@ fn detect_clamav_build() -> Result<(), &'static str> {
     if search_and_link_lib("LIBCLAMAV")? {
         eprintln!("NOTE: LIBCLAMAV defined. Examining LIB* environment variables");
         // Need to link with libclamav dependencies
+
+        // LLVM is optional, and don't have a path to each library like we do with the other libs.
+        let llvm_libs = env::var("LLVM_LIBS").unwrap_or("".into());
+        if llvm_libs != "" {
+            match env::var("LLVM_DIRS") {
+                Err(env::VarError::NotPresent) => eprintln!("LLVM_DIRS not set"),
+                Err(env::VarError::NotUnicode(_)) => return Err("environment value not unicode"),
+                Ok(s) => {
+                    if s.is_empty() {
+                        eprintln!("LLVM_DIRS not set");
+                    } else {
+                        s.split(',').for_each(|dirpath| {
+                            println!("cargo:rustc-link-search={}", dirpath);
+                        });
+                    }
+                }
+            };
+
+            llvm_libs.split(',').for_each(|libname| {
+                println!("cargo:rustc-link-lib={}", libname);
+            });
+        }
+
         for var in LIB_ENV_LINK {
             let _ = search_and_link_lib(var);
         }
