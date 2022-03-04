@@ -197,9 +197,19 @@ fn detect_clamav_build() -> Result<(), &'static str> {
                 }
             };
 
-            llvm_libs.split(',').for_each(|libname| {
-                println!("cargo:rustc-link-lib={}", libname);
-            });
+            llvm_libs
+                .split(',')
+                .for_each(|filepath_str| match parse_lib_path(&filepath_str) {
+                    Ok(parsed_path) => {
+                        println!("cargo:rustc-link-search={}", parsed_path.dir);
+                        eprintln!("  - requesting that rustc link {:?}", &parsed_path.libname);
+                        println!("cargo:rustc-link-lib={}", parsed_path.libname);
+                    }
+                    Err(_) => {
+                        eprintln!("  - requesting that rustc link {:?}", filepath_str);
+                        println!("cargo:rustc-link-lib={}", filepath_str);
+                    }
+                });
         }
 
         for var in LIB_ENV_LINK {
