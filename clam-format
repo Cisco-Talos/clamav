@@ -1,6 +1,6 @@
 #!/bin/bash
 
-clang-format -style='{ Language: Cpp, UseTab: Never, IndentWidth: 4, AlignTrailingComments: true, AlignConsecutiveAssignments: true, AlignAfterOpenBracket: true, AlignEscapedNewlines: Left, AlignOperands: true, AllowShortFunctionsOnASingleLine: Empty, AllowShortIfStatementsOnASingleLine: true, AllowShortLoopsOnASingleLine: true, BreakBeforeBraces: Linux, BreakBeforeTernaryOperators: true, ColumnLimit: 0, FixNamespaceComments: true, SortIncludes: false, MaxEmptyLinesToKeep: 1, SpaceBeforeParens: ControlStatements, IndentCaseLabels: true, DerivePointerAlignment: true }' -dump-config > .clang-format
+clang-format -style='{ Language: Cpp, UseTab: Never, IndentWidth: 4, AlignTrailingComments: true, AlignConsecutiveAssignments: false, AlignAfterOpenBracket: true, AlignEscapedNewlines: Left, AlignOperands: true, AllowShortFunctionsOnASingleLine: Empty, AllowShortIfStatementsOnASingleLine: true, AllowShortLoopsOnASingleLine: true, BreakBeforeBraces: Linux, BreakBeforeTernaryOperators: true, ColumnLimit: 0, FixNamespaceComments: true, SortIncludes: false, MaxEmptyLinesToKeep: 1, SpaceBeforeParens: ControlStatements, IndentCaseLabels: true, DerivePointerAlignment: true }' -dump-config > .clang-format
 
 clang-format -i -verbose clamav-milter/*.c
 clang-format -i -verbose clamav-milter/*.h
@@ -39,6 +39,12 @@ clang-format -i -verbose libfreshclam/*.c
 clang-format -i -verbose libfreshclam/*.h
 clang-format -i -verbose common/*.c
 clang-format -i -verbose common/*.h
+clang-format -i -verbose common/linux/*.c
+clang-format -i -verbose common/linux/*.h
+clang-format -i -verbose common/win/*.c
+clang-format -i -verbose common/win/*.h
+clang-format -i -verbose common/mac/*.c
+clang-format -i -verbose common/mac/*.h
 clang-format -i -verbose sigtool/*.c
 clang-format -i -verbose sigtool/*.h
 clang-format -i -verbose clamonacc/*.c
@@ -49,6 +55,8 @@ clang-format -i -verbose unit_tests/*.c
 clang-format -i -verbose unit_tests/*.h
 clang-format -i -verbose win32/compat/*.c
 clang-format -i -verbose win32/compat/*.h
+clang-format -i -verbose libclamav/c++/*.cpp
+clang-format -i -verbose libclamav/c++/*.h
 
 # Undo changes to specific files that we don't really want to reformat
 git checkout libclamav/iana_cctld.h
