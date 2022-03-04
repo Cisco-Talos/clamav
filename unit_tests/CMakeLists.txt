@@ -47,13 +47,9 @@ if(ENABLE_APP)
             check_fpu_endian.c)
     target_link_libraries(check_fpu_endian
         PRIVATE
-            libcheck::check
             ClamAV::libclamav
-            regex
-            lzma_sdk
-            yara
+            libcheck::check
             ${LIBTFM}
-            bytecode_runtime
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -86,14 +82,10 @@ if(ENABLE_APP)
         PRIVATE   check_clamd.c checks.h)
     target_link_libraries(check_clamd
         PRIVATE
-            libcheck::check
-            ClamAV::common
             ClamAV::libclamav
-            regex
-            lzma_sdk
-            yara
+            ClamAV::common
+            libcheck::check
             ${LIBTFM}
-            bytecode_runtime
             JSONC::jsonc
             ${LIBMSPACK}
             OpenSSL::SSL
@@ -139,13 +131,9 @@ target_sources(check_clamav
         check_uniq.c)
 target_link_libraries(check_clamav
     PRIVATE
-        libcheck::check
         ClamAV::libclamav
-        regex
-        lzma_sdk
-        yara
+        libcheck::check
         ${LIBTFM}
-        bytecode_runtime
         JSONC::jsonc
         ${LIBMSPACK}
         OpenSSL::SSL
