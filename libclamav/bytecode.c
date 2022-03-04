@@ -2531,7 +2531,7 @@ static int set_mode(struct cl_engine *engine, enum bytecode_mode mode)
     }
     cli_dbgmsg("Bytecode: mode changed to %d\n", mode);
     if (engine->bytecode_mode == CL_BYTECODE_MODE_TEST) {
-        if (mode == CL_BYTECODE_MODE_OFF || have_clamjit) {
+        if (mode == CL_BYTECODE_MODE_OFF || have_clamjit()) {
             cli_errmsg("bytecode: in test mode but JIT/bytecode is about to be disabled: %d\n", mode);
             engine->bytecode_mode = mode;
             return -1;

@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 #endif
     if (have_rar)
         printf("RAR ");
-    if (have_clamjit)
+    if (have_clamjit())
         printf("JIT");
     printf("\n");
 

@@ -88,7 +88,11 @@ void cli_bytecode_printversion(void)
 {
     printf("LLVM is not compiled or not linked\n");
 }
-int have_clamjit = 0;
+int have_clamjit()
+{
+    return 0;
+}
+
 void cli_printcxxver()
 {
     /* Empty */
