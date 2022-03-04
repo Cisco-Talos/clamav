@@ -498,7 +498,7 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
      *     | Magic(ENCRYP) |   10    |   AES/LEA Footer                                                                                           |
      *     |---------------|---------|------------------------------------------------------------------------------------------------------------|
      */
-    cl_error_t status    = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     egg_encrypt* encrypt = NULL;
 
     if (!index || 0 == size || !encryptInfo) {
@@ -579,7 +579,7 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
     }
 
     *encryptInfo = encrypt;
-    status       = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
 
@@ -594,7 +594,7 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
 {
     cl_error_t status = CL_EPARSE;
 
-    char* comment_utf8       = NULL;
+    char* comment_utf8 = NULL;
     size_t comment_utf8_size = 0;
 
     if (!index || 0 == size || !extraField || !commentInfo) {
@@ -609,7 +609,7 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
          * comment is encrypted, nothing to be done.
          */
         *commentInfo = cli_strdup("<encrypted>");
-        status       = CL_EUNPACK;
+        status = CL_EUNPACK;
         goto done;
     }
 
@@ -637,7 +637,7 @@ static cl_error_t egg_parse_comment_header(const uint8_t* index, size_t size, ex
     cli_dbgmsg("egg_parse_comment_header: comment:          %s\n", comment_utf8);
 
     *commentInfo = comment_utf8;
-    status       = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
     return status;
@@ -652,10 +652,10 @@ static cl_error_t egg_parse_block_headers(egg_handle* handle, egg_block** block)
 {
     cl_error_t status = CL_EPARSE;
 
-    egg_block* eggBlock       = NULL;
+    egg_block* eggBlock = NULL;
     block_header* blockHeader = NULL;
-    uint32_t magic            = 0;
-    const uint8_t* index      = 0;
+    uint32_t magic = 0;
+    const uint8_t* index = 0;
 
     if (!handle || !block) {
         cli_errmsg("egg_parse_block_headers: Invalid args!\n");
@@ -687,7 +687,7 @@ static cl_error_t egg_parse_block_headers(egg_handle* handle, egg_block** block)
         goto done;
     }
 
-    blockHeader           = (block_header*)index;
+    blockHeader = (block_header*)index;
     eggBlock->blockHeader = blockHeader;
 
     if (BLOCK_HEADER_MAGIC != le32_to_host(blockHeader->magic)) {
@@ -784,10 +784,10 @@ static cl_error_t egg_parse_archive_extra_field(egg_handle* handle)
 {
     cl_error_t status = CL_EPARSE;
 
-    const uint8_t* index    = NULL;
+    const uint8_t* index = NULL;
     extra_field* extraField = NULL;
-    uint32_t magic          = 0;
-    uint32_t size           = 0;
+    uint32_t magic = 0;
+    uint32_t size = 0;
 
     if (!handle) {
         cli_errmsg("egg_parse_archive_extra_field: Invalid args!\n");
@@ -1026,10 +1026,10 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
 {
     cl_error_t status = CL_EPARSE;
 
-    const uint8_t* index    = NULL;
+    const uint8_t* index = NULL;
     extra_field* extraField = NULL;
-    uint32_t magic          = 0;
-    uint32_t size           = 0;
+    uint32_t magic = 0;
+    uint32_t size = 0;
 
     if (!handle || !eggFile) {
         cli_errmsg("egg_parse_file_extra_field: Invalid args!\n");
@@ -1088,11 +1088,11 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
             /*
              * File Filename Header
              */
-            uint16_t codepage       = 0; /* Windows code page https://docs.microsoft.com/en-us/windows/desktop/Intl/code-page-identifiers) */
-            uint32_t name_size      = 0;
+            uint16_t codepage = 0; /* Windows code page https://docs.microsoft.com/en-us/windows/desktop/Intl/code-page-identifiers) */
+            uint32_t name_size = 0;
             uint32_t remaining_size = size;
 
-            char* name_utf8       = NULL;
+            char* name_utf8 = NULL;
             size_t name_utf8_size = 0;
 
             if (NULL != eggFile->filename.name_utf8) {
@@ -1193,7 +1193,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
              * File Comment Header
              */
             cl_error_t retval = CL_EPARSE;
-            char* comment     = NULL;
+            char* comment = NULL;
 
             index = (const uint8_t*)fmap_need_off_once(handle->map, handle->offset, size);
             if (!index) {
@@ -1227,7 +1227,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                         status = CL_EMEM;
                         goto done;
                     }
-                    eggFile->comments                     = comments_tmp;
+                    eggFile->comments = comments_tmp;
                     eggFile->comments[eggFile->nComments] = comment;
                     eggFile->nComments++;
                 }
@@ -1280,7 +1280,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                 goto done;
             }
 
-            windowsFileInformation          = (windows_file_information*)index;
+            windowsFileInformation = (windows_file_information*)index;
             eggFile->windowsFileInformation = windowsFileInformation;
 
             cli_dbgmsg("egg_parse_file_extra_field: windows_file_information->last_modified_time:   %016" PRIx64 "\n", le64_to_host(windowsFileInformation->last_modified_time));
@@ -1305,7 +1305,7 @@ static cl_error_t egg_parse_file_extra_field(egg_handle* handle, egg_file* eggFi
                 goto done;
             }
 
-            posixFileInformation          = (posix_file_information*)index;
+            posixFileInformation = (posix_file_information*)index;
             eggFile->posixFileInformation = posixFileInformation;
 
             cli_dbgmsg("egg_parse_file_extra_field: posix_file_information->mode:                 %08x ", le32_to_host(posixFileInformation->mode));
@@ -1345,10 +1345,10 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
     cl_error_t status = CL_EPARSE;
     cl_error_t retval;
 
-    egg_file* eggFile       = NULL;
+    egg_file* eggFile = NULL;
     file_header* fileHeader = NULL;
-    uint32_t magic          = 0;
-    const uint8_t* index    = 0;
+    uint32_t magic = 0;
+    const uint8_t* index = 0;
 
     if (!handle || !file) {
         cli_errmsg("egg_parse_file_headers: Invalid args!\n");
@@ -1380,7 +1380,7 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
         goto done;
     }
 
-    fileHeader    = (file_header*)index;
+    fileHeader = (file_header*)index;
     eggFile->file = fileHeader;
 
     if (FILE_HEADER_MAGIC != le32_to_host(fileHeader->magic)) {
@@ -1442,7 +1442,7 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
         }
     }
 
-    *file  = eggFile;
+    *file = eggFile;
     status = CL_SUCCESS;
 
 done:
@@ -1500,8 +1500,8 @@ static cl_error_t egg_parse_archive_headers(egg_handle* handle)
     cl_error_t retval;
 
     egg_header* eggHeader = NULL;
-    uint32_t magic        = 0;
-    const uint8_t* index  = 0;
+    uint32_t magic = 0;
+    const uint8_t* index = 0;
 
     if (!handle) {
         cli_errmsg("egg_parse_archive_headers: Invalid args!\n");
@@ -1594,8 +1594,8 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
 {
     cl_error_t status = CL_EPARSE;
     cl_error_t retval;
-    egg_handle* handle   = NULL;
-    uint32_t magic       = 0;
+    egg_handle* handle = NULL;
+    uint32_t magic = 0;
     const uint8_t* index = 0;
 
     if (!map || !hArchive) {
@@ -1609,7 +1609,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
         status = CL_EMEM;
         goto done;
     }
-    handle->map    = map;
+    handle->map = map;
     handle->offset = 0;
 
     /*
@@ -1677,7 +1677,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                     status = CL_EMEM;
                     goto done;
                 }
-                handle->files                 = files_tmp;
+                handle->files = files_tmp;
                 handle->files[handle->nFiles] = found_file;
                 handle->nFiles++;
             }
@@ -1706,7 +1706,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                         status = CL_EMEM;
                         goto done;
                     }
-                    handle->blocks                  = blocks_tmp;
+                    handle->blocks = blocks_tmp;
                     handle->blocks[handle->nBlocks] = found_block;
                     handle->nBlocks++;
                 } else {
@@ -1731,7 +1731,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                             status = CL_EMEM;
                             goto done;
                         }
-                        eggFile->blocks                   = blocks_tmp;
+                        eggFile->blocks = blocks_tmp;
                         eggFile->blocks[eggFile->nBlocks] = found_block;
                         eggFile->nBlocks++;
                     }
@@ -1743,8 +1743,8 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
              */
             char** comments_tmp;
             extra_field* extraField = NULL;
-            char* comment           = NULL;
-            uint32_t size           = 0;
+            char* comment = NULL;
+            uint32_t size = 0;
 
             index = (const uint8_t*)fmap_need_off_once(handle->map, handle->offset, sizeof(extra_field));
             if (!index) {
@@ -1805,7 +1805,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
                 status = CL_EMEM;
                 goto done;
             }
-            handle->comments                    = comments_tmp;
+            handle->comments = comments_tmp;
             handle->comments[handle->nComments] = comment;
             handle->nComments++;
             handle->offset += size;
@@ -1829,8 +1829,8 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
         }
     }
 
-    *hArchive  = handle;
-    *comments  = handle->comments;
+    *hArchive = handle;
+    *comments = handle->comments;
     *nComments = handle->nComments;
 
     status = CL_SUCCESS;
@@ -1847,7 +1847,7 @@ done:
 
 cl_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metadata)
 {
-    cl_error_t status  = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     egg_handle* handle = NULL;
     egg_file* currFile = NULL;
 
@@ -1892,7 +1892,7 @@ cl_error_t cli_egg_peek_file_header(void* hArchive, cl_egg_metadata* file_metada
          *
          * See the comments in cli_egg_extract_file() for more details.
          */
-        file_metadata->pack_size   = 0;
+        file_metadata->pack_size = 0;
         file_metadata->unpack_size = currFile->file->file_length;
     } else {
         uint64_t i = 0;
@@ -1947,7 +1947,7 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
         goto done;
     }
 
-    *decompressed      = NULL;
+    *decompressed = NULL;
     *decompressed_size = 0;
 
     if (!(decoded = (uint8_t*)cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
@@ -1959,9 +1959,9 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
     capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
-    stream.next_in   = (Bytef*)compressed;
-    stream.avail_in  = compressed_size;
-    stream.next_out  = (Bytef*)decoded;
+    stream.next_in = (Bytef*)compressed;
+    stream.avail_in = compressed_size;
+    stream.next_out = (Bytef*)decoded;
     stream.avail_out = BUFSIZ;
 
     zstat = inflateInit2(&stream, -15);
@@ -1991,8 +1991,8 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
                 status = CL_EMEM;
                 goto done;
             }
-            decoded          = decoded_tmp;
-            stream.next_out  = decoded + capacity;
+            decoded = decoded_tmp;
+            stream.next_out = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
             capacity += BUFSIZ;
@@ -2036,7 +2036,7 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2060,7 +2060,7 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
     cl_error_t status = CL_EPARSE;
 
     char* decoded_tmp;
-    char* decoded   = NULL;
+    char* decoded = NULL;
     uint32_t declen = 0, capacity = 0;
 
     bz_stream stream;
@@ -2072,7 +2072,7 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
         goto done;
     }
 
-    *decompressed      = NULL;
+    *decompressed = NULL;
     *decompressed_size = 0;
 
     if (!(decoded = (char*)cli_calloc(BUFSIZ, sizeof(Bytef)))) {
@@ -2084,9 +2084,9 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
     capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
-    stream.next_in   = compressed;
-    stream.avail_in  = compressed_size;
-    stream.next_out  = decoded;
+    stream.next_in = compressed;
+    stream.avail_in = compressed_size;
+    stream.next_out = decoded;
     stream.avail_out = BUFSIZ;
 
     if (BZ_OK != (bzstat = BZ2_bzDecompressInit(&stream, 0, 0))) {
@@ -2114,8 +2114,8 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
                 status = CL_EMEM;
                 goto done;
             }
-            decoded          = decoded_tmp;
-            stream.next_out  = decoded + capacity;
+            decoded = decoded_tmp;
+            stream.next_out = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
             capacity += BUFSIZ;
@@ -2153,7 +2153,7 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2188,7 +2188,7 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
         goto done;
     }
 
-    *decompressed      = NULL;
+    *decompressed = NULL;
     *decompressed_size = 0;
 
     if (!(decoded = (uint8_t*)cli_calloc(BUFSIZ, sizeof(char)))) {
@@ -2200,9 +2200,9 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
     capacity = BUFSIZ;
 
     memset(&stream, 0, sizeof(stream));
-    stream.next_in   = (Bytef*)compressed;
-    stream.avail_in  = compressed_size;
-    stream.next_out  = (Bytef*)decoded;
+    stream.next_in = (Bytef*)compressed;
+    stream.avail_in = compressed_size;
+    stream.next_out = (Bytef*)decoded;
     stream.avail_out = BUFSIZ;
 
     lzmastat = cli_LzmaInit(&stream, 0);
@@ -2232,8 +2232,8 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
                 status = CL_EMEM;
                 goto done;
             }
-            decoded          = decoded_tmp;
-            stream.next_out  = decoded + capacity;
+            decoded = decoded_tmp;
+            stream.next_out = decoded + capacity;
             stream.avail_out = BUFSIZ;
             declen += BUFSIZ;
             capacity += BUFSIZ;
@@ -2270,7 +2270,7 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
             break;
     }
 
-    *decompressed      = (char*)decoded;
+    *decompressed = (char*)decoded;
     *decompressed_size = declen;
 
     status = CL_SUCCESS;
@@ -2290,12 +2290,12 @@ done:
 
 cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const char** output_buffer, size_t* output_buffer_length)
 {
-    cl_error_t status          = CL_EPARSE;
-    egg_handle* handle         = NULL;
-    egg_file* currFile         = NULL;
-    char* decompressed         = NULL;
+    cl_error_t status = CL_EPARSE;
+    egg_handle* handle = NULL;
+    egg_file* currFile = NULL;
+    char* decompressed = NULL;
     uint64_t decompressed_size = 0;
-    uint64_t i                 = 0;
+    uint64_t i = 0;
 
     if (!hArchive || !filename || !output_buffer || !output_buffer_length) {
         cli_errmsg("cli_egg_extract_file: Invalid args!\n");
@@ -2303,7 +2303,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
         goto done;
     }
 
-    *output_buffer        = NULL;
+    *output_buffer = NULL;
     *output_buffer_length = 0;
 
     handle = (egg_handle*)hArchive;
@@ -2358,7 +2358,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
         for (i = 0; i < currFile->nBlocks; i++) {
             char* decompressed_tmp;
             egg_block* currBlock = currFile->blocks[i];
-            cl_error_t retval    = CL_EPARSE;
+            cl_error_t retval = CL_EPARSE;
 
             if (NULL == currBlock->blockHeader) {
                 cli_errmsg("cli_egg_extract_file: current egg_block missing header!\n");
@@ -2392,7 +2392,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                     break;
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_DEFLATE: {
-                    char* decompressed_block       = NULL;
+                    char* decompressed_block = NULL;
                     size_t decompressed_block_size = 0;
 
                     if (CL_SUCCESS != cli_egg_deflate_decompress(currBlock->compressedData,
@@ -2424,7 +2424,7 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
                 }
                 case BLOCK_HEADER_COMPRESS_ALGORITHM_BZIP2: {
 #if HAVE_BZLIB_H
-                    char* decompressed_block       = NULL;
+                    char* decompressed_block = NULL;
                     size_t decompressed_block_size = 0;
 
                     if (CL_SUCCESS != cli_egg_bzip2_decompress(currBlock->compressedData,
@@ -2518,10 +2518,10 @@ cl_error_t cli_egg_extract_file(void* hArchive, const char** filename, const cha
     }
 
     cli_dbgmsg("cli_egg_extract_file: File extracted: %s\n", currFile->filename.name_utf8);
-    *filename             = strdup(currFile->filename.name_utf8);
-    *output_buffer        = decompressed;
+    *filename = strdup(currFile->filename.name_utf8);
+    *output_buffer = decompressed;
     *output_buffer_length = decompressed_size;
-    status                = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
     if (NULL != handle) {
@@ -2540,7 +2540,7 @@ done:
 
 cl_error_t cli_egg_skip_file(void* hArchive)
 {
-    cl_error_t status  = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     egg_handle* handle = NULL;
 
     if (!hArchive) {

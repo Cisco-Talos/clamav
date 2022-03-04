@@ -76,10 +76,10 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
 {
     uint32_t buf[BUFSIZ / sizeof(uint32_t)];
     uint64_t len;
-    int ret        = 1;
+    int ret = 1;
     int close_flag = 0;
     STATBUF statbuf;
-    uint64_t bytesRead     = 0;
+    uint64_t bytesRead = 0;
     const char zINSTREAM[] = "zINSTREAM";
 
     if (-1 == fd) {
@@ -117,7 +117,7 @@ static int onas_send_stream(CURL *curl, const char *filename, int fd, int64_t ti
         goto strm_out;
     }
 
-    len    = statbuf.st_size;
+    len = statbuf.st_size;
     buf[0] = htonl(len);
     if (onas_sendln(curl, (const char *)buf, sizeof(uint32_t), timeout)) {
         ret = -1;
@@ -167,16 +167,16 @@ static int onas_send_fdpass(int sockd, int fd)
     }
 
     iov[0].iov_base = dummy;
-    iov[0].iov_len  = 1;
+    iov[0].iov_len = 1;
     memset(&msg, 0, sizeof(msg));
-    msg.msg_control         = fdbuf;
-    msg.msg_iov             = iov;
-    msg.msg_iovlen          = 1;
-    msg.msg_controllen      = CMSG_LEN(sizeof(int));
-    cmsg                    = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level        = SOL_SOCKET;
-    cmsg->cmsg_type         = SCM_RIGHTS;
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
 
     if (sendmsg(sockd, &msg, 0) == -1) {
@@ -191,7 +191,7 @@ static int onas_send_fdpass(int sockd, int fd)
  * Returns >0 on success, 0 soft fail, -1 hard fail */
 static int onas_fdpass(const char *filename, int fd, int sockd)
 {
-    int ret        = 1;
+    int ret = 1;
     int close_flag = 0;
 
     if (-1 == fd) {
@@ -238,7 +238,7 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
     char *bol, *eol;
     struct onas_rcvln rcv;
     STATBUF sb;
-    int sockd                                                        = -1;
+    int sockd = -1;
     int (*recv_func)(struct onas_rcvln *, char **, char **, int64_t) = NULL;
 
     sockd = onas_get_sockd();
@@ -352,8 +352,8 @@ int onas_dsresult(CURL *curl, int scantype, uint64_t maxstream, const char *file
 
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 static char last_filename[PATH_MAX + 1] = {'\0'};
-                *(eol - 7)                              = 0;
-                *printok                                = 0;
+                *(eol - 7) = 0;
+                *printok = 0;
 
                 if (scantype != ALLMATCH) {
                     infected++;

@@ -121,7 +121,7 @@ get_unicode_name(const char *name, int size, int big_endian)
     }
 
     increment = (big_endian) ? 1 : 2;
-    ret       = newname;
+    ret = newname;
 
     for (i = 0; i < size; i += increment) {
         if ((!(name[i] & 0x80)) && isprint(name[i])) {
@@ -186,8 +186,8 @@ static int
 vba_read_project_strings(int fd, int big_endian)
 {
     unsigned char *buf = NULL;
-    uint16_t buflen    = 0;
-    uint16_t length    = 0;
+    uint16_t buflen = 0;
+    uint16_t length = 0;
     int ret = 0, getnewlength = 1;
 
     for (;;) {
@@ -217,7 +217,7 @@ vba_read_project_strings(int fd, int big_endian)
                 break;
             }
             buflen = length;
-            buf    = newbuf;
+            buf = newbuf;
         }
 
         /* save current offset */
@@ -284,12 +284,12 @@ vba_read_project_strings(int fd, int big_endian)
 static size_t vba_normalize(unsigned char *buffer, size_t size)
 {
     enum {
-        NORMAL        = 0,
-        IN_STRING     = 1,
-        UNDERSCORE    = 2,
+        NORMAL = 0,
+        IN_STRING = 1,
+        UNDERSCORE = 2,
         UNDERSCORE_CR = 3,
-        SPACE         = 5,
-    } state  = NORMAL;
+        SPACE = 5,
+    } state = NORMAL;
     size_t o = 0;
     size_t i;
     for (i = 0; i < size; ++i) {
@@ -362,13 +362,13 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
 {
     cl_error_t ret = CL_SUCCESS;
     char fullname[1024];
-    int fd              = -1;
+    int fd = -1;
     unsigned char *data = NULL;
     size_t data_len;
     size_t data_offset;
     const char *stream_name = NULL;
-    char *tempfile          = NULL;
-    uint16_t codepage       = CODEPAGE_ISO8859_1;
+    char *tempfile = NULL;
+    uint16_t codepage = CODEPAGE_ISO8859_1;
     unsigned i;
     char *mbcs_name = NULL, *utf16_name = NULL;
     size_t mbcs_name_size = 0, utf16_name_size = 0;
@@ -383,7 +383,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
 
     snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s_%u", dir, hash, which);
     fullname[sizeof(fullname) - 1] = '\0';
-    fd                             = open(fullname, O_RDONLY | O_BINARY);
+    fd = open(fullname, O_RDONLY | O_BINARY);
 
     if (fd == -1) {
         ret = CL_EOPEN;
@@ -514,7 +514,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                         break;
                     default: {
                         char str_sys_kind[22];
-                        int len                                = snprintf(str_sys_kind, sizeof(str_sys_kind), "Unknown (0x%x)", sys_kind);
+                        int len = snprintf(str_sys_kind, sizeof(str_sys_kind), "Unknown (0x%x)", sys_kind);
                         str_sys_kind[sizeof(str_sys_kind) - 1] = '\0';
                         if (len > 0) {
                             CLI_WRITEN(str_sys_kind, (size_t)len);
@@ -535,7 +535,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint32_t lcid = le32_to_host(*(uint32_t *)&data[data_offset]);
                 char buf[64];
                 data_offset += size;
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTLCID: 0x%08x\n", lcid);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTLCID: 0x%08x\n", lcid);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -552,7 +552,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint32_t lcid_invoke = le32_to_host(*(uint32_t *)&data[data_offset]);
                 char buf[64];
                 data_offset += sizeof(uint32_t);
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTLCIDINVOKE: 0x%08x\n", lcid_invoke);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTLCIDINVOKE: 0x%08x\n", lcid_invoke);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -569,7 +569,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 codepage = le16_to_host(*(uint16_t *)&data[data_offset]);
                 char buf[64];
                 data_offset += sizeof(uint16_t);
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTCODEPAGE: 0x%04x\n", codepage);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTCODEPAGE: 0x%04x\n", codepage);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -688,7 +688,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint32_t context = le32_to_host(*(uint32_t *)&data[data_offset]);
                 char buf[64];
                 data_offset += size;
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTHELPCONTEXT: 0x%04x\n", context);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTHELPCONTEXT: 0x%04x\n", context);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -705,7 +705,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint32_t libflags = le32_to_host(*(uint32_t *)&data[data_offset]);
                 char buf[64];
                 data_offset += sizeof(uint32_t);
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTLIBFLAGS: 0x%04x\n", libflags);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTLIBFLAGS: 0x%04x\n", libflags);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -731,7 +731,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint16_t minor = le16_to_host(*(uint16_t *)&data[data_offset]);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTVERSION: %u.%u\n", major, minor);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTVERSION: %u.%u\n", major, minor);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -748,7 +748,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint16_t modules = le16_to_host(*(uint16_t *)&data[data_offset]);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTMODULES: %u\n", modules);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTMODULES: %u\n", modules);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -765,7 +765,7 @@ cl_error_t cli_vba_readdir_new(cli_ctx *ctx, const char *dir, struct uniq *U, co
                 uint16_t cookie = le16_to_host(*(uint16_t *)&data[data_offset]);
                 data_offset += sizeof(uint16_t);
                 char buf[64];
-                int buf_length       = snprintf(buf, sizeof(buf), "REM PROJECTCOOKIE: 0x%04x\n", cookie);
+                int buf_length = snprintf(buf, sizeof(buf), "REM PROJECTCOOKIE: 0x%04x\n", cookie);
                 buf[sizeof(buf) - 1] = '\0';
                 if (buf_length > 0) {
                     CLI_WRITEN(buf, (size_t)buf_length);
@@ -1364,7 +1364,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
     }
     snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s_%u", dir, hash, which);
     fullname[sizeof(fullname) - 1] = '\0';
-    fd                             = open(fullname, O_RDONLY | O_BINARY);
+    fd = open(fullname, O_RDONLY | O_BINARY);
 
     if (fd == -1)
         return NULL;
@@ -1477,7 +1477,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
         close(fd);
         return NULL;
     }
-    buf    = NULL;
+    buf = NULL;
     buflen = 0;
     for (i = 0; i < record_count; i++) {
         uint16_t length;
@@ -1496,7 +1496,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
             if (newbuf == NULL)
                 break;
             buflen = length;
-            buf    = newbuf;
+            buf = newbuf;
         }
         if (cli_readn(fd, buf, (size_t)length) != (size_t)length) {
             cli_dbgmsg("vba_readdir: read name failed\n");
@@ -1579,7 +1579,7 @@ cli_vba_inflate(int fd, off_t offset, size_t *size)
     memset(buffer, 0, sizeof(buffer));
     lseek(fd, offset + 3, SEEK_SET); /* 1byte ?? , 2byte length ?? */
     clean = TRUE;
-    pos   = 0;
+    pos = 0;
 
     while (cli_readn(fd, &flag, 1) == 1) {
         for (mask = 1; mask < 0x100; mask <<= 1) {
@@ -1594,8 +1594,8 @@ cli_vba_inflate(int fd, off_t offset, size_t *size)
                         *size = 0;
                     return NULL;
                 }
-                shift    = 12 - (winpos > 0x10) - (winpos > 0x20) - (winpos > 0x40) - (winpos > 0x80) - (winpos > 0x100) - (winpos > 0x200) - (winpos > 0x400) - (winpos > 0x800);
-                len      = (uint16_t)((token & ((1 << shift) - 1)) + 3);
+                shift = 12 - (winpos > 0x10) - (winpos > 0x20) - (winpos > 0x40) - (winpos > 0x80) - (winpos > 0x100) - (winpos > 0x200) - (winpos > 0x400) - (winpos > 0x800);
+                len = (uint16_t)((token & ((1 << shift) - 1)) + 3);
                 distance = token >> shift;
 
                 srcpos = pos - distance - 1;
@@ -1609,7 +1609,7 @@ cli_vba_inflate(int fd, off_t offset, size_t *size)
                     pos += len;
                 } else
                     while (len-- > 0) {
-                        srcpos                                 = (pos - distance - 1) % VBA_COMPRESSION_WINDOW;
+                        srcpos = (pos - distance - 1) % VBA_COMPRESSION_WINDOW;
                         buffer[pos++ % VBA_COMPRESSION_WINDOW] = buffer[srcpos];
                     }
             } else {
@@ -1789,13 +1789,13 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
         return FALSE;
     }
 
-    stream.zalloc    = Z_NULL;
-    stream.zfree     = Z_NULL;
-    stream.opaque    = (void *)NULL;
-    stream.next_in   = (Bytef *)inbuff;
-    stream.next_out  = outbuff;
+    stream.zalloc = Z_NULL;
+    stream.zfree = Z_NULL;
+    stream.opaque = (void *)NULL;
+    stream.next_in = (Bytef *)inbuff;
+    stream.next_out = outbuff;
     stream.avail_out = sizeof(outbuff);
-    stream.avail_in  = MIN(length, PPT_LZW_BUFFSIZE);
+    stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
 
     if (cli_readn(fd, inbuff, (size_t)stream.avail_in) != (size_t)stream.avail_in) {
         close(ofd);
@@ -1818,11 +1818,11 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
                 inflateEnd(&stream);
                 return FALSE;
             }
-            stream.next_out  = outbuff;
+            stream.next_out = outbuff;
             stream.avail_out = PPT_LZW_BUFFSIZE;
         }
         if (stream.avail_in == 0) {
-            stream.next_in  = inbuff;
+            stream.next_in = inbuff;
             stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
             if (cli_readn(fd, inbuff, (size_t)stream.avail_in) != (size_t)stream.avail_in) {
                 close(ofd);
@@ -1937,7 +1937,7 @@ word_read_fib(int fd, mso_fib_t *fib)
         return FALSE;
     }
     fib->macro_offset = vba_endian_convert_32(macro_details.offset, FALSE);
-    fib->macro_len    = vba_endian_convert_32(macro_details.len, FALSE);
+    fib->macro_len = vba_endian_convert_32(macro_details.len, FALSE);
 
     return TRUE;
 }
@@ -1975,7 +1975,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         return TRUE;
 
     msize = count * sizeof(struct macro);
-    m     = cli_malloc(msize);
+    m = cli_malloc(msize);
     if (m == NULL) {
         cli_errmsg("word_read_macro_entry: Unable to allocate memory for 'm'\n");
         return FALSE;
@@ -1987,10 +1987,10 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         return FALSE;
     }
     macro_entry = macro_info->entries;
-    n           = m;
+    n = m;
     do {
-        macro_entry->key    = n->key;
-        macro_entry->len    = vba_endian_convert_32(n->len, FALSE);
+        macro_entry->key = n->key;
+        macro_entry->len = vba_endian_convert_32(n->len, FALSE);
         macro_entry->offset = vba_endian_convert_32(n->offset, FALSE);
         macro_entry++;
         n++;
@@ -2182,10 +2182,10 @@ cli_wm_readdir(int fd)
         return NULL;
     }
 
-    end_offset         = fib.macro_offset + fib.macro_len;
-    done               = FALSE;
+    end_offset = fib.macro_offset + fib.macro_len;
+    done = FALSE;
     macro_info.entries = NULL;
-    macro_info.count   = 0;
+    macro_info.count = 0;
 
     while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
         if (cli_readn(fd, &info_id, 1) != 1) {
@@ -2233,8 +2233,8 @@ cli_wm_readdir(int fd)
     if (vba_project) {
         vba_project->length = (uint32_t *)cli_malloc(sizeof(uint32_t) *
                                                      macro_info.count);
-        vba_project->key    = (unsigned char *)cli_malloc(sizeof(unsigned char) *
-                                                          macro_info.count);
+        vba_project->key = (unsigned char *)cli_malloc(sizeof(unsigned char) *
+                                                       macro_info.count);
         if ((vba_project->length != NULL) &&
             (vba_project->key != NULL)) {
             int i;
@@ -2243,7 +2243,7 @@ cli_wm_readdir(int fd)
             for (i = 0; i < macro_info.count; i++) {
                 vba_project->offset[i] = m->offset;
                 vba_project->length[i] = m->len;
-                vba_project->key[i]    = m->key;
+                vba_project->key[i] = m->key;
                 m++;
             }
         } else {
@@ -2375,9 +2375,9 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
         return NULL;
     }
 
-    ret->name   = (char **)cli_malloc(sizeof(char *) * record_count);
-    ret->colls  = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
-    ret->dir    = cli_strdup(dir);
+    ret->name = (char **)cli_malloc(sizeof(char *) * record_count);
+    ret->colls = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
+    ret->dir = cli_strdup(dir);
     ret->offset = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
 
     if ((ret->colls == NULL) || (ret->name == NULL) || (ret->dir == NULL) || (ret->offset == NULL)) {
@@ -2386,7 +2386,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
         return NULL;
     }
     ret->count = record_count;
-    ret->U     = U;
+    ret->U = U;
 
     return ret;
 }

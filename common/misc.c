@@ -154,7 +154,7 @@ void print_version(const char *dbdir)
         daily = cl_cvdhead(path);
         if (daily) {
             db_version = daily->version;
-            db_time    = daily->stime;
+            db_time = daily->stime;
             cl_cvdfree(daily);
         }
     }
@@ -165,7 +165,7 @@ void print_version(const char *dbdir)
         if (daily) {
             if (daily->version > db_version) {
                 db_version = daily->version;
-                db_time    = daily->stime;
+                db_time = daily->stime;
             }
             cl_cvdfree(daily);
         }
@@ -213,7 +213,7 @@ const char *filelist(const struct optstruct *opts, int *err)
 
         if (fgets(buff, 1024, fs)) {
             buff[1024] = 0;
-            len        = strlen(buff);
+            len = strlen(buff);
             if (!len) {
                 fclose(fs);
                 return NULL;
@@ -312,7 +312,7 @@ int daemonize(void)
         return ret;
     }
 
-    ret       = daemonize_all_return();
+    ret = daemonize_all_return();
     pid_t pid = (pid_t)ret;
     /*parent process.*/
     if (pid > 0) {

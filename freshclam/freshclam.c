@@ -72,10 +72,10 @@
 
 #define DEFAULT_SERVER_PORT 443
 
-int g_sigchildWait                      = 1;
-short g_terminate                       = 0;
-short g_foreground                      = -1;
-const char *g_pidfile                   = NULL;
+int g_sigchildWait = 1;
+short g_terminate = 0;
+short g_foreground = -1;
+const char *g_pidfile = NULL;
 char g_freshclamTempDirectory[PATH_MAX] = {0};
 
 typedef struct fc_ctx_ {
@@ -146,7 +146,7 @@ static int writepid(const char *pidfile)
      */
     if (0 == geteuid()) {
         struct passwd *pw = getpwuid(0);
-        int ret           = lchown(pidfile, pw->pw_uid, pw->pw_gid);
+        int ret = lchown(pidfile, pw->pw_uid, pw->pw_gid);
         if (ret) {
             logg(LOGG_ERROR, "Can't change ownership of PID file %s '%s'\n", pidfile, strerror(errno));
             return 1;
@@ -339,9 +339,9 @@ fc_error_t download_complete_callback(const char *dbFilename, void *context)
 
                     /* read first / last line printed by child */
                     close(pipefd[1]);
-                    pipeHandle   = fdopen(pipefd[0], "r");
+                    pipeHandle = fdopen(pipefd[0], "r");
                     firstline[0] = 0;
-                    lastline[0]  = 0;
+                    lastline[0] = 0;
                     do {
                         if (!fgets(firstline, sizeof(firstline), pipeHandle))
                             break;
@@ -443,7 +443,7 @@ static fc_error_t get_server_node(
 {
     fc_error_t status = FC_EARG;
 
-    char *url     = NULL;
+    char *url = NULL;
     size_t urlLen = 0;
 
     if ((NULL == server) || (NULL == defaultProtocol) || (NULL == serverUrl)) {
@@ -465,7 +465,7 @@ static fc_error_t get_server_node(
         }
     } else if (!strstr(server, "://")) {
         urlLen = strlen(defaultProtocol) + strlen("://") + strlen(server);
-        url    = malloc(urlLen + 1);
+        url = malloc(urlLen + 1);
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to allocate memory for server url.\n");
             status = FC_EMEM;
@@ -474,7 +474,7 @@ static fc_error_t get_server_node(
         snprintf(url, urlLen + 1, "%s://%s", defaultProtocol, server);
     } else {
         urlLen = strlen(server);
-        url    = cli_strdup(server);
+        url = cli_strdup(server);
         if (NULL == url) {
             logg(LOGG_ERROR, "get_server_node: Failed to duplicate string for server url.\n");
             status = FC_EMEM;
@@ -483,7 +483,7 @@ static fc_error_t get_server_node(
     }
 
     *serverUrl = url;
-    status     = FC_SUCCESS;
+    status = FC_SUCCESS;
 
 done:
     return status;
@@ -503,7 +503,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
 {
     fc_error_t status = FC_EARG;
 
-    char **newList  = NULL;
+    char **newList = NULL;
     uint32_t nItems = 0;
 
     if ((NULL == item) || (NULL == stringList) || (NULL == nListItems)) {
@@ -511,7 +511,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
         goto done;
     }
 
-    nItems  = *nListItems + 1;
+    nItems = *nListItems + 1;
     newList = (char **)cli_realloc(*stringList, nItems * sizeof(char *));
     if (newList == NULL) {
         mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list entry.\n");
@@ -529,7 +529,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
     }
 
     *nListItems = nItems;
-    status      = FC_SUCCESS;
+    status = FC_SUCCESS;
 
 done:
 
@@ -578,7 +578,7 @@ static fc_error_t get_database_server_list(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
     const struct optstruct *opt;
-    char **servers      = NULL;
+    char **servers = NULL;
     uint32_t numServers = 0;
 
     if ((NULL == opts) || (NULL == serverList) || (NULL == nServers) || (NULL == bPrivate)) {
@@ -587,8 +587,8 @@ static fc_error_t get_database_server_list(
     }
 
     *serverList = NULL;
-    *nServers   = 0;
-    *bPrivate   = 0;
+    *nServers = 0;
+    *bPrivate = 0;
 
     if ((opt = optget(opts, "PrivateMirror"))->enabled) {
         /* Config specifies at least one PrivateMirror.
@@ -649,8 +649,8 @@ static fc_error_t get_database_server_list(
     }
 
     *serverList = servers;
-    *nServers   = numServers;
-    status      = FC_SUCCESS;
+    *nServers = numServers;
+    status = FC_SUCCESS;
 
 done:
 
@@ -676,7 +676,7 @@ static fc_error_t get_string_list(const struct optstruct *opt, char ***stringLis
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char **newList  = NULL;
+    char **newList = NULL;
     uint32_t nItems = 0;
 
     if ((NULL == opt) || (NULL == stringList) || (NULL == nListItems)) {
@@ -716,7 +716,7 @@ static fc_error_t initialize(struct optstruct *opts)
     fc_error_t status = FC_EARG;
     cl_error_t cl_init_retcode;
     fc_config fcConfig;
-    char *tempDirectory                = NULL;
+    char *tempDirectory = NULL;
     const struct optstruct *logFileOpt = NULL;
 
     STATBUF statbuf;
@@ -883,7 +883,7 @@ static fc_error_t initialize(struct optstruct *opts)
         fcConfig.localIP = (optget(opts, "LocalIPAddress"))->strarg;
 
     /* Select a path for the temp directory:  databaseDirectory/tmp */
-    tempDirectory          = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
+    tempDirectory = cli_gentemp_with_prefix(fcConfig.databaseDirectory, "tmp");
     fcConfig.tempDirectory = tempDirectory;
 
     /* Store the path of the temp directory so we can delete it later. */
@@ -954,7 +954,7 @@ static fc_error_t initialize(struct optstruct *opts)
         }
     }
 
-    fcConfig.maxAttempts    = optget(opts, "MaxAttempts")->numarg;
+    fcConfig.maxAttempts = optget(opts, "MaxAttempts")->numarg;
     fcConfig.connectTimeout = optget(opts, "ConnectTimeout")->numarg;
     fcConfig.requestTimeout = optget(opts, "ReceiveTimeout")->numarg;
 
@@ -1013,9 +1013,9 @@ fc_error_t get_official_database_lists(
         goto done;
     }
 
-    *standardDatabases  = NULL;
+    *standardDatabases = NULL;
     *nStandardDatabases = 0;
-    *optionalDatabases  = NULL;
+    *optionalDatabases = NULL;
     *nOptionalDatabases = 0;
 
     for (i = 0; i < sizeof(hardcodedStandardDatabaseList) / sizeof(hardcodedStandardDatabaseList[0]); i++) {
@@ -1043,12 +1043,12 @@ done:
     if (FC_SUCCESS != status) {
         if ((NULL != standardDatabases) && (*standardDatabases != NULL) && (nStandardDatabases != NULL)) {
             free_string_list(*standardDatabases, *nStandardDatabases);
-            *standardDatabases  = NULL;
+            *standardDatabases = NULL;
             *nStandardDatabases = 0;
         }
         if ((NULL != optionalDatabases) && (*optionalDatabases != NULL) && (nOptionalDatabases != NULL)) {
             free_string_list(*optionalDatabases, *nOptionalDatabases);
-            *optionalDatabases  = NULL;
+            *optionalDatabases = NULL;
             *nOptionalDatabases = 0;
         }
     }
@@ -1084,11 +1084,11 @@ fc_error_t select_from_official_databases(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char **standardDatabases    = NULL;
+    char **standardDatabases = NULL;
     uint32_t nStandardDatabases = 0;
-    char **optionalDatabases    = NULL;
+    char **optionalDatabases = NULL;
     uint32_t nOptionalDatabases = 0;
-    char **selectedDatabases    = NULL;
+    char **selectedDatabases = NULL;
     uint32_t nSelectedDatabases = 0;
     uint32_t i;
 
@@ -1098,7 +1098,7 @@ fc_error_t select_from_official_databases(
     }
 
     *databaseList = NULL;
-    *nDatabases   = 0;
+    *nDatabases = 0;
 
     if ((0 < nOptIns) && (NULL == optInList)) {
         mprintf(LOGG_ERROR, "select_from_official_databases: Invalid arguments. Number of opt-in databases does not match empty database array.\n");
@@ -1174,7 +1174,7 @@ fc_error_t select_from_official_databases(
     }
 
     *databaseList = selectedDatabases;
-    *nDatabases   = nSelectedDatabases;
+    *nDatabases = nSelectedDatabases;
 
     status = FC_SUCCESS;
 
@@ -1219,11 +1219,11 @@ fc_error_t select_specific_databases(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char **standardDatabases    = NULL;
+    char **standardDatabases = NULL;
     uint32_t nStandardDatabases = 0;
-    char **optionalDatabases    = NULL;
+    char **optionalDatabases = NULL;
     uint32_t nOptionalDatabases = 0;
-    char **selectedDatabases    = NULL;
+    char **selectedDatabases = NULL;
     uint32_t nSelectedDatabases = 0;
     uint32_t i;
 
@@ -1234,9 +1234,9 @@ fc_error_t select_specific_databases(
         goto done;
     }
 
-    *bCustom      = 0;
+    *bCustom = 0;
     *databaseList = NULL;
-    *nDatabases   = 0;
+    *nDatabases = 0;
 
     selectedDatabases = cli_calloc(nSpecificDatabases, sizeof(char *));
 
@@ -1296,7 +1296,7 @@ fc_error_t select_specific_databases(
     }
 
     *databaseList = selectedDatabases;
-    *nDatabases   = nSelectedDatabases;
+    *nDatabases = nSelectedDatabases;
 
     status = FC_SUCCESS;
 
@@ -1343,7 +1343,7 @@ static fc_error_t executeIfNewVersion(
          * Replace "%v" with version numbers, then execute command.
          */
         char *after_replace_version = NULL;
-        char *version               = newVersion;
+        char *version = newVersion;
 
         while (*version) {
             if (!strchr("0123456789.", *version)) {
@@ -1427,9 +1427,9 @@ fc_error_t perform_database_update(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
     time_t currtime;
-    char *dnsUpdateInfo    = NULL;
-    char *newVersion       = NULL;
-    uint32_t nUpdated      = 0;
+    char *dnsUpdateInfo = NULL;
+    char *newVersion = NULL;
+    uint32_t nUpdated = 0;
     uint32_t nTotalUpdated = 0;
 
     STATBUF statbuf;
@@ -1557,19 +1557,19 @@ int main(int argc, char **argv)
 {
     fc_error_t ret;
     fc_error_t status = FC_ECONNECTION;
-    char *cfgfile     = NULL;
-    const char *arg   = NULL;
+    char *cfgfile = NULL;
+    const char *arg = NULL;
 
     struct optstruct *opts = NULL;
     const struct optstruct *opt;
 
-    char **serverList               = NULL;
-    uint32_t nServers               = 0;
-    int bPrivate                    = 0;
+    char **serverList = NULL;
+    uint32_t nServers = 0;
+    int bPrivate = 0;
     const char *dnsUpdateInfoServer = NULL;
 
-    char **databaseList    = NULL;
-    uint32_t nDatabases    = 0;
+    char **databaseList = NULL;
+    uint32_t nDatabases = 0;
     char **urlDatabaseList = NULL;
     uint32_t nUrlDatabases = 0;
 
@@ -1577,7 +1577,7 @@ int main(int argc, char **argv)
 
 #ifdef HAVE_PWD_H
     const struct optstruct *logFileOpt = NULL;
-    const char *logFileName            = NULL;
+    const char *logFileName = NULL;
 #endif /* HAVE_PWD_H */
 
     fc_ctx fc_context = {0};
@@ -1676,7 +1676,7 @@ int main(int argc, char **argv)
          */
         char **specificDatabaseList = NULL;
         uint32_t nSpecificDatabases = 0;
-        int bCustom                 = 0;
+        int bCustom = 0;
 
         /* Don't prune the database directory if only specific dabases were requested from the command line. */
         bPrune = 0;
@@ -1728,8 +1728,8 @@ int main(int argc, char **argv)
         /*
          * Prep for standard database updates.
          */
-        char **optInList  = NULL;
-        uint32_t nOptIns  = 0;
+        char **optInList = NULL;
+        uint32_t nOptIns = 0;
         char **optOutList = NULL;
         uint32_t nOptOuts = 0;
 
@@ -1800,7 +1800,7 @@ int main(int argc, char **argv)
         }
     }
 
-    fc_context.bTestDatabases   = optget(opts, "TestDatabases")->enabled;
+    fc_context.bTestDatabases = optget(opts, "TestDatabases")->enabled;
     fc_context.bBytecodeEnabled = optget(opts, "Bytecode")->enabled;
 
     /*

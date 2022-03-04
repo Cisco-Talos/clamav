@@ -248,7 +248,7 @@ char *cli_str2hex(const char *string, unsigned int len)
         return NULL;
 
     for (i = 0, j = 0; i < len; i++, j += 2) {
-        hexstr[j]     = HEX[(string[i] >> 4) & 0xf];
+        hexstr[j] = HEX[(string[i] >> 4) & 0xf];
         hexstr[j + 1] = HEX[string[i] & 0xf];
     }
 
@@ -307,7 +307,7 @@ int cli_chomp(char *string)
  */
 char *cli_strtok(const char *line, int fieldno, const char *delim)
 {
-    int counter  = 0, i, j;
+    int counter = 0, i, j;
     char *buffer = NULL;
 
     /* step to arg # <fieldno> */
@@ -455,7 +455,7 @@ char *__cli_strndup(const char *s, size_t n)
         return NULL;
     }
 
-    len   = CLI_STRNLEN(s, n);
+    len = CLI_STRNLEN(s, n);
     alloc = malloc(len + 1);
 
     if (!alloc) {
@@ -522,7 +522,7 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
 
     for (tokens_found = 0; tokens_found < token_count;) {
         tokens[tokens_found++] = buffer;
-        buffer                 = strchr(buffer, delim);
+        buffer = strchr(buffer, delim);
         if (buffer) {
             *buffer++ = '\0';
         } else {
@@ -559,7 +559,7 @@ size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count,
  */
 long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
 {
-    register const char *s     = nptr;
+    register const char *s = nptr;
     register unsigned long acc = 0;
     register int c;
     register unsigned long cutoff;
@@ -583,7 +583,7 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
 
     if (c == '-') {
         neg = 1;
-        c   = *s++;
+        c = *s++;
         if (s >= nptr + n) {
             goto done;
         }
@@ -649,7 +649,7 @@ long cli_strntol(const char *nptr, size_t n, char **endptr, register int base)
         }
     }
     if (any < 0) {
-        acc   = neg ? LONG_MIN : LONG_MAX;
+        acc = neg ? LONG_MIN : LONG_MAX;
         errno = ERANGE;
     } else if (neg)
         acc = -acc;
@@ -684,7 +684,7 @@ done:
 unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
                            register int base)
 {
-    register const char *s     = nptr;
+    register const char *s = nptr;
     register unsigned long acc = 0;
     register int c;
     register unsigned long cutoff;
@@ -703,7 +703,7 @@ unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
 
     if (c == '-') {
         neg = 1;
-        c   = *s++;
+        c = *s++;
         if (s >= nptr + n) {
             goto done;
         }
@@ -750,7 +750,7 @@ unsigned long cli_strntoul(const char *nptr, size_t n, char **endptr,
         }
     }
     if (any < 0) {
-        acc   = ULONG_MAX;
+        acc = ULONG_MAX;
         errno = ERANGE;
     } else if (neg)
         acc = -acc;
@@ -789,7 +789,7 @@ cl_error_t cli_strntol_wrap(const char *buf, size_t buf_size,
         return CL_EPARSE;
     }
     errno = 0;
-    num   = cli_strntol(buf, buf_size, &endptr, base);
+    num = cli_strntol(buf, buf_size, &endptr, base);
     if ((num == LONG_MIN || num == LONG_MAX) && errno == ERANGE) {
         /* under- or overflow */
         return CL_EPARSE;
@@ -836,7 +836,7 @@ cl_error_t cli_strntoul_wrap(const char *buf, size_t buf_size,
         return CL_EPARSE;
     }
     errno = 0;
-    num   = cli_strntoul(buf, buf_size, &endptr, base);
+    num = cli_strntoul(buf, buf_size, &endptr, base);
     if ((num == ULONG_MAX) && (errno == ERANGE)) {
         /* under- or overflow */
         return CL_EPARSE;
@@ -859,7 +859,7 @@ size_t cli_ldbtokenize(char *buffer, const char delim, const size_t token_count,
 {
     size_t tokens_found, i;
     int within_pcre = 0;
-    char *start     = buffer;
+    char *start = buffer;
 
     for (tokens_found = 0; tokens_found < token_count;) {
         tokens[tokens_found++] = buffer;
@@ -911,8 +911,8 @@ static inline size_t output_utf8(uint16_t u, unsigned char *dst)
         return 1;
     }
     if (u < 0x800) {
-        *dst++ = 0xc0 | (u >> 6);   /* 110yyyyy */
-        *dst   = 0x80 | (u & 0x3f); /* 10zzzzzz */
+        *dst++ = 0xc0 | (u >> 6); /* 110yyyyy */
+        *dst = 0x80 | (u & 0x3f); /* 10zzzzzz */
         return 2;
     }
     /* u < 0x10000 because we only handle utf-16,
@@ -920,7 +920,7 @@ static inline size_t output_utf8(uint16_t u, unsigned char *dst)
      * that*/
     *dst++ = 0xe0 | (u >> 12);         /* 1110xxxx */
     *dst++ = 0x80 | ((u >> 6) & 0x3f); /* 10yyyyyy */
-    *dst   = 0x80 | (u & 0x3f);        /* 10zzzzzz */
+    *dst = 0x80 | (u & 0x3f);          /* 10zzzzzz */
     return 3;
 }
 
@@ -966,7 +966,7 @@ char *cli_unescape(const char *str)
         R[i++] = c;
     }
     R[i++] = '\0';
-    R      = cli_realloc2(R, i);
+    R = cli_realloc2(R, i);
     return R;
 }
 

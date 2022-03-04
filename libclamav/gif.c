@@ -164,14 +164,14 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 {
     cl_error_t status = CL_SUCCESS;
 
-    fmap_t *map   = NULL;
+    fmap_t *map = NULL;
     size_t offset = 0;
 
     const char *signature = NULL;
     char version[4];
     struct gif_screen_descriptor screen_desc;
     size_t global_color_table_size = 0;
-    bool have_image_data           = false;
+    bool have_image_data = false;
 
     cli_dbgmsg("in cli_parsegif()\n");
 
@@ -417,7 +417,7 @@ scan_overlay:
     if (offset < map->len) {
         cli_dbgmsg("GIF: Found extra data after the end of the GIF data stream: %zu bytes, we'll scan it!\n", map->len - offset);
         cl_error_t nested_scan_result = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
-        status                        = nested_scan_result != CL_SUCCESS ? nested_scan_result : status;
+        status = nested_scan_result != CL_SUCCESS ? nested_scan_result : status;
     }
 
 done:

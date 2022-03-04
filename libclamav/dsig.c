@@ -168,9 +168,9 @@ const char *cli_getdsig(const char *host, const char *user, const unsigned char 
         return NULL;
     }
 
-    server.sin_family      = AF_INET;
+    server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(host);
-    server.sin_port        = htons(33101);
+    server.sin_port = htons(33101);
 
     if (connect(sockd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
         perror("connect()");
@@ -189,7 +189,7 @@ const char *cli_getdsig(const char *host, const char *user, const unsigned char 
         snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS2:%s:%s:", user, pass);
 
     len = strlen(cmd);
-    pt  = cmd + len;
+    pt = cmd + len;
     memcpy(pt, data, datalen);
     len += datalen;
 
@@ -296,7 +296,7 @@ int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n
     free(decoded);
 
     c[0] = c[1] = 0;
-    rounds      = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
+    rounds = (BLK_LEN + HASH_LEN - 1) / HASH_LEN;
     for (i = 0; i < rounds; i++) {
         c[2] = (unsigned char)(i / 256);
         c[3] = (unsigned char)i;

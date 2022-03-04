@@ -72,7 +72,7 @@ struct LOCALNET {
 };
 
 struct LOCALNET *lnet = NULL;
-char *tempdir         = NULL;
+char *tempdir = NULL;
 
 /* for connect and send */
 #define TIMEOUT 30
@@ -106,7 +106,7 @@ static int nc_socket(struct CP_ENTRY *cpe)
 static int nc_connect(int s, struct CP_ENTRY *cpe)
 {
     time_t timeout = time(NULL) + TIMEOUT;
-    int res        = connect(s, cpe->server, cpe->socklen);
+    int res = connect(s, cpe->server, cpe->socklen);
     struct timeval tv;
     char er[256];
 
@@ -117,7 +117,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe)
         return -1;
     }
 
-    tv.tv_sec  = TIMEOUT;
+    tv.tv_sec = TIMEOUT;
     tv.tv_usec = 0;
     while (1) {
         fd_set fds;
@@ -131,7 +131,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe)
             time_t now;
 
             if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
-                tv.tv_sec  = timeout - now;
+                tv.tv_sec = timeout - now;
                 tv.tv_usec = 0;
                 continue;
             }
@@ -153,7 +153,7 @@ int nc_send(int s, const void *buff, size_t len)
     char *buf = (char *)buff;
 
     while (len) {
-        int res        = send(s, buf, len, 0);
+        int res = send(s, buf, len, 0);
         time_t timeout = time(NULL) + TIMEOUT;
         struct timeval tv;
         char er[256];
@@ -174,7 +174,7 @@ int nc_send(int s, const void *buff, size_t len)
             return 1;
         }
 
-        tv.tv_sec  = TIMEOUT;
+        tv.tv_sec = TIMEOUT;
         tv.tv_usec = 0;
         while (1) {
             fd_set fds;
@@ -186,7 +186,7 @@ int nc_send(int s, const void *buff, size_t len)
                 time_t now;
 
                 if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
-                    tv.tv_sec  = timeout - now;
+                    tv.tv_sec = timeout - now;
                     tv.tv_usec = 0;
                     continue;
                 }
@@ -210,16 +210,16 @@ int nc_sendmsg(int s, int fd)
     char dummy[] = "";
 
     iov[0].iov_base = dummy;
-    iov[0].iov_len  = 1;
+    iov[0].iov_len = 1;
     memset(&msg, 0, sizeof(msg));
-    msg.msg_control         = fdbuf;
-    msg.msg_iov             = iov;
-    msg.msg_iovlen          = 1;
-    msg.msg_controllen      = CMSG_LEN(sizeof(int));
-    cmsg                    = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level        = SOL_SOCKET;
-    cmsg->cmsg_type         = SCM_RIGHTS;
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
     /* FIXME: nonblock code needed (?) */
 
@@ -247,7 +247,7 @@ char *nc_recv(int s)
             close(s);
             return NULL;
         }
-        tv.tv_sec  = timeout - now;
+        tv.tv_sec = timeout - now;
         tv.tv_usec = 0;
 
         FD_ZERO(&fds);
@@ -358,7 +358,7 @@ static int resolve(char *name, uint32_t *family, uint32_t *host)
     }
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(name, NULL, &hints, &res)) {
@@ -473,7 +473,7 @@ int islocalnet_sock(struct sockaddr *sa)
     if (sa->sa_family == AF_INET) {
         struct sockaddr_in *sa4 = (struct sockaddr_in *)sa;
 
-        family  = INET_HOST;
+        family = INET_HOST;
         host[0] = htonl(sa4->sin_addr.s_addr);
     } else if (sa->sa_family == AF_INET6) {
         struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)sa;
@@ -523,8 +523,8 @@ int localnets_init(struct optstruct *opts)
                 return 1;
             }
             l->next = lnet;
-            lnet    = l;
-            opt     = opt->nextarg;
+            lnet = l;
+            opt = opt->nextarg;
         }
     }
     return 0;

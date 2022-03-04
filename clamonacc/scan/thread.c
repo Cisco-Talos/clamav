@@ -62,8 +62,8 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
  */
 static int onas_scan(struct onas_scan_event *event_data, const char *fname, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
-    int ret                = 0;
-    int i                  = 0;
+    int ret = 0;
+    int i = 0;
     uint8_t retry_on_error = event_data->bool_opts & ONAS_SCTH_B_RETRY_ON_E;
 
     ret = onas_scan_safe(event_data, fname, sb, infected, err, ret_code);
@@ -113,7 +113,7 @@ static cl_error_t onas_scan_safe(struct onas_scan_event *event_data, const char 
 {
 
     int ret = 0;
-    int fd  = -1;
+    int fd = -1;
 
 #if defined(HAVE_SYS_FANOTIFY_H)
     uint8_t b_fanotify;
@@ -153,13 +153,13 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
         return CL_ENULLARG;
     }
 
-    b_scan          = event_data->bool_opts & ONAS_SCTH_B_SCAN ? 1 : 0;
+    b_scan = event_data->bool_opts & ONAS_SCTH_B_SCAN ? 1 : 0;
     b_deny_on_error = event_data->bool_opts & ONAS_SCTH_B_DENY_ON_E ? 1 : 0;
 
 #if defined(HAVE_SYS_FANOTIFY_H)
     b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
     if (b_fanotify) {
-        res.fd       = event_data->fmd->fd;
+        res.fd = event_data->fmd->fd;
         res.response = FAN_ALLOW;
     }
 #endif
@@ -216,14 +216,14 @@ static cl_error_t onas_scan_thread_scanfile(struct onas_scan_event *event_data, 
 
 static cl_error_t onas_scan_thread_handle_dir(struct onas_scan_event *event_data, const char *pathname)
 {
-    FTS *ftsp        = NULL;
+    FTS *ftsp = NULL;
     int32_t ftspopts = FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV;
-    FTSENT *curr     = NULL;
+    FTSENT *curr = NULL;
 
-    int32_t infected    = 0;
-    int32_t err         = 0;
+    int32_t infected = 0;
+    int32_t err = 0;
     cl_error_t ret_code = CL_SUCCESS;
-    cl_error_t ret      = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
 
     int32_t fres = 0;
     STATBUF sb;
@@ -265,11 +265,11 @@ static cl_error_t onas_scan_thread_handle_file(struct onas_scan_event *event_dat
 {
 
     STATBUF sb;
-    int32_t infected    = 0;
-    int32_t err         = 0;
+    int32_t infected = 0;
+    int32_t err = 0;
     cl_error_t ret_code = CL_SUCCESS;
-    int fres            = 0;
-    cl_error_t ret      = 0;
+    int fres = 0;
+    cl_error_t ret = 0;
 
     if (NULL == pathname || NULL == event_data) {
         return CL_ENULLARG;
@@ -325,9 +325,9 @@ void *onas_scan_worker(void *arg)
     }
 
     /* load in boolean info from event struct; makes for easier reading--you're welcome */
-    b_dir      = event_data->bool_opts & ONAS_SCTH_B_DIR ? 1 : 0;
-    b_file     = event_data->bool_opts & ONAS_SCTH_B_FILE ? 1 : 0;
-    b_inotify  = event_data->bool_opts & ONAS_SCTH_B_INOTIFY ? 1 : 0;
+    b_dir = event_data->bool_opts & ONAS_SCTH_B_DIR ? 1 : 0;
+    b_file = event_data->bool_opts & ONAS_SCTH_B_FILE ? 1 : 0;
+    b_inotify = event_data->bool_opts & ONAS_SCTH_B_INOTIFY ? 1 : 0;
     b_fanotify = event_data->bool_opts & ONAS_SCTH_B_FANOTIFY ? 1 : 0;
 
 #if defined(HAVE_SYS_FANOTIFY_H)
@@ -399,11 +399,11 @@ cl_error_t onas_map_context_info_to_event_data(struct onas_context *ctx, struct 
         return CL_ENULLARG;
     }
 
-    (*event_data)->scantype       = ctx->scantype;
-    (*event_data)->timeout        = ctx->timeout;
-    (*event_data)->maxstream      = ctx->maxstream;
-    (*event_data)->fan_fd         = ctx->fan_fd;
-    (*event_data)->sizelimit      = ctx->sizelimit;
+    (*event_data)->scantype = ctx->scantype;
+    (*event_data)->timeout = ctx->timeout;
+    (*event_data)->maxstream = ctx->maxstream;
+    (*event_data)->fan_fd = ctx->fan_fd;
+    (*event_data)->sizelimit = ctx->sizelimit;
     (*event_data)->retry_attempts = ctx->retry_attempts;
 
     if (ctx->retry_on_error) {

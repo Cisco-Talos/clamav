@@ -102,8 +102,8 @@ int cli_scancpio_old(cli_ctx *ctx)
     char name[513];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;
-    int ret         = CL_CLEAN, conv;
-    size_t pos      = 0;
+    int ret = CL_CLEAN, conv;
+    size_t pos = 0;
     int virus_found = 0;
 
     memset(name, 0, sizeof(name));
@@ -129,7 +129,7 @@ int cli_scancpio_old(cli_ctx *ctx)
 
         if (hdr_old.namesize) {
             hdr_namesize = EC16(hdr_old.namesize, conv);
-            namesize     = MIN(sizeof(name), hdr_namesize);
+            namesize = MIN(sizeof(name), hdr_namesize);
             if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
                 return CL_EFORMAT;
@@ -194,8 +194,8 @@ int cli_scancpio_odc(cli_ctx *ctx)
     char name[513] = {0}, buff[12] = {0};
     unsigned int file = 0, trailer = 0;
     uint32_t filesize = 0, namesize = 0, hdr_namesize = 0;
-    int ret         = CL_CLEAN;
-    size_t pos      = 0;
+    int ret = CL_CLEAN;
+    size_t pos = 0;
     int virus_found = 0;
 
     memset(&hdr_odc, 0, sizeof(hdr_odc));
@@ -282,8 +282,8 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
     char name[513], buff[9];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize, pad;
-    int ret         = CL_CLEAN;
-    size_t pos      = 0;
+    int ret = CL_CLEAN;
+    size_t pos = 0;
     int virus_found = 0;
 
     memset(name, 0, 513);

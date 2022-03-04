@@ -73,15 +73,15 @@
 #endif
 
 enum dmgReadState {
-    DMG_FIND_BASE_PLIST         = 0,
-    DMG_FIND_BASE_DICT          = 1,
-    DMG_FIND_KEY_RESOURCE_FORK  = 2,
+    DMG_FIND_BASE_PLIST = 0,
+    DMG_FIND_BASE_DICT = 1,
+    DMG_FIND_KEY_RESOURCE_FORK = 2,
     DMG_FIND_DICT_RESOURCE_FORK = 3,
-    DMG_FIND_KEY_BLKX           = 4,
-    DMG_FIND_BLKX_CONTAINER     = 5,
-    DMG_FIND_KEY_DATA           = 6,
-    DMG_FIND_DATA_MISH          = 7,
-    DMG_MAX_STATE               = 8
+    DMG_FIND_KEY_BLKX = 4,
+    DMG_FIND_BLKX_CONTAINER = 5,
+    DMG_FIND_KEY_DATA = 6,
+    DMG_FIND_DATA_MISH = 7,
+    DMG_MAX_STATE = 8
 };
 
 static int dmg_extract_xml(cli_ctx *, char *, struct dmg_koly_block *);
@@ -100,7 +100,7 @@ int cli_scandmg(cli_ctx *ctx)
     size_t pos = 0;
     char *dirname;
     const char *outdata;
-    unsigned int file                       = 0;
+    unsigned int file = 0;
     struct dmg_mish_with_stripes *mish_list = NULL, *mish_list_tail = NULL;
     enum dmgReadState state = DMG_FIND_BASE_PLIST;
     int stateDepth[DMG_MAX_STATE];
@@ -302,9 +302,9 @@ int cli_scandmg(cli_ctx *ctx)
                 /* Add mish block to list */
                 if (mish_list_tail != NULL) {
                     mish_list_tail->next = mish_set;
-                    mish_list_tail       = mish_set;
+                    mish_list_tail = mish_set;
                 } else {
-                    mish_list      = mish_set;
+                    mish_list = mish_set;
                     mish_list_tail = mish_set;
                 }
                 mish_list_tail->next = NULL;
@@ -407,7 +407,7 @@ int cli_scandmg(cli_ctx *ctx)
             xmlFree(nodeName);
         } else if ((nodeType == XML_READER_TYPE_END_ELEMENT) && (state > DMG_FIND_BASE_PLIST)) {
             int significantEnd = 0;
-            int depth          = xmlTextReaderDepth(reader);
+            int depth = xmlTextReaderDepth(reader);
             if (depth < 0) {
                 break;
             } else if (depth < stateDepth[state - 1]) {
@@ -447,7 +447,7 @@ int cli_scandmg(cli_ctx *ctx)
         ret = dmg_handle_mish(ctx, file++, dirname, hdr.xmlOffset, mish_list);
         free(mish_list->mish);
         mish_list_tail = mish_list;
-        mish_list      = mish_list->next;
+        mish_list = mish_list->next;
         free(mish_list_tail);
     }
 
@@ -456,7 +456,7 @@ int cli_scandmg(cli_ctx *ctx)
     while (mish_list != NULL) {
         free(mish_list->mish);
         mish_list_tail = mish_list;
-        mish_list      = mish_list->next;
+        mish_list = mish_list->next;
         free(mish_list_tail);
     }
     if (!ctx->engine->keeptmp)
@@ -510,10 +510,10 @@ static int dmg_decode_mish(cli_ctx *ctx, unsigned int *mishblocknum, xmlChar *mi
         return CL_EFORMAT;
     }
 
-    mish_set->mish              = (struct dmg_mish_block *)decoded;
+    mish_set->mish = (struct dmg_mish_block *)decoded;
     mish_set->mish->startSector = be64_to_host(mish_set->mish->startSector);
     mish_set->mish->sectorCount = be64_to_host(mish_set->mish->sectorCount);
-    mish_set->mish->dataOffset  = be64_to_host(mish_set->mish->dataOffset);
+    mish_set->mish->dataOffset = be64_to_host(mish_set->mish->dataOffset);
     // mish_set->mish->bufferCount = be32_to_host(mish_set->mish->bufferCount);
     mish_set->mish->blockDataCount = be32_to_host(mish_set->mish->blockDataCount);
 
@@ -553,16 +553,16 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
     switch (stripeType) {
         case DMG_STRIPE_STORED:
             *data_to_write = 1;
-            usable         = 1;
+            usable = 1;
             break;
         case DMG_STRIPE_ADC:
             *data_to_write = 1;
-            usable         = 1;
+            usable = 1;
             break;
         case DMG_STRIPE_DEFLATE:
 #if HAVE_LIBZ
             *data_to_write = 1;
-            usable         = 1;
+            usable = 1;
 #else
             cli_warnmsg("dmg_track_sectors: Need zlib decompression to properly scan this file.\n");
             return CL_EFORMAT;
@@ -571,7 +571,7 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
         case DMG_STRIPE_BZ:
 #if HAVE_BZLIB_H
             *data_to_write = 1;
-            usable         = 1;
+            usable = 1;
 #else
             cli_warnmsg("dmg_track_sectors: Need bzip2 decompression to properly scan this file.\n");
             return CL_EFORMAT;
@@ -616,7 +616,7 @@ static int dmg_track_sectors(uint64_t *total, uint8_t *data_to_write,
 /* Stripe handling: zero block (type 0x0 or 0x2) */
 static int dmg_stripe_zeroes(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    int ret    = CL_CLEAN;
+    int ret = CL_CLEAN;
     size_t len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
     size_t written;
     uint8_t obuf[BUFSIZ];
@@ -684,9 +684,9 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
 {
     int adcret;
     adc_stream strm;
-    size_t off            = mish_set->stripes[index].dataOffset;
-    size_t len            = mish_set->stripes[index].dataLength;
-    uint64_t size_so_far  = 0;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    uint64_t size_so_far = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
     uint8_t obuf[BUFSIZ];
 
@@ -701,8 +701,8 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
         cli_warnmsg("dmg_stripe_adc: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
     }
-    strm.avail_in  = len;
-    strm.next_out  = obuf;
+    strm.avail_in = len;
+    strm.next_out = obuf;
     strm.avail_out = sizeof(obuf);
 
     adcret = adc_decompressInit(&strm);
@@ -728,7 +728,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
                         return CL_EWRITE;
                     }
                     size_so_far += written;
-                    strm.next_out  = obuf;
+                    strm.next_out = obuf;
                     strm.avail_out = sizeof(obuf);
                 }
                 continue;
@@ -742,7 +742,7 @@ static int dmg_stripe_adc(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_
                         return CL_EWRITE;
                     }
                     size_so_far += written;
-                    strm.next_out  = obuf;
+                    strm.next_out = obuf;
                     strm.avail_out = sizeof(obuf);
                 }
                 if (adcret == ADC_STREAM_END)
@@ -767,9 +767,9 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 {
     int zstat;
     z_stream strm;
-    size_t off            = mish_set->stripes[index].dataOffset;
-    size_t len            = mish_set->stripes[index].dataLength;
-    uint64_t size_so_far  = 0;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    uint64_t size_so_far = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
     uint8_t obuf[BUFSIZ];
 
@@ -783,8 +783,8 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
         cli_warnmsg("dmg_stripe_inflate: fmap need failed on stripe " STDu32 "\n", index);
         return CL_EMAP;
     }
-    strm.avail_in  = len;
-    strm.next_out  = obuf;
+    strm.avail_in = len;
+    strm.next_out = obuf;
     strm.avail_out = sizeof(obuf);
 
     zstat = inflateInit(&strm);
@@ -810,7 +810,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                         return CL_EWRITE;
                     }
                     size_so_far += written;
-                    strm.next_out  = (Bytef *)obuf;
+                    strm.next_out = (Bytef *)obuf;
                     strm.avail_out = sizeof(obuf);
                 }
                 continue;
@@ -824,7 +824,7 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
                         return CL_EWRITE;
                     }
                     size_so_far += written;
-                    strm.next_out  = (Bytef *)obuf;
+                    strm.next_out = (Bytef *)obuf;
                     strm.avail_out = sizeof(obuf);
                     if (zstat == Z_STREAM_END)
                         break;
@@ -858,10 +858,10 @@ static int dmg_stripe_inflate(cli_ctx *ctx, int fd, uint32_t index, struct dmg_m
 /* Stripe handling: bzip block (type 0x80000006) */
 static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish_with_stripes *mish_set)
 {
-    int ret               = CL_CLEAN;
-    size_t off            = mish_set->stripes[index].dataOffset;
-    size_t len            = mish_set->stripes[index].dataLength;
-    uint64_t size_so_far  = 0;
+    int ret = CL_CLEAN;
+    size_t off = mish_set->stripes[index].dataOffset;
+    size_t len = mish_set->stripes[index].dataLength;
+    uint64_t size_so_far = 0;
     uint64_t expected_len = mish_set->stripes[index].sectorCount * DMG_SECTOR_SIZE;
 #if HAVE_BZLIB_H
     int rc;
@@ -874,7 +874,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
 
 #if HAVE_BZLIB_H
     memset(&strm, 0, sizeof(strm));
-    strm.next_out  = (char *)obuf;
+    strm.next_out = (char *)obuf;
     strm.avail_out = sizeof(obuf);
     if (BZ2_bzDecompressInit(&strm, 0, 0) != BZ_OK) {
         cli_dbgmsg("dmg_stripe_bzip: bzDecompressInit failed\n");
@@ -920,7 +920,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                 if (size_so_far > expected_len) {
                     cli_warnmsg("dmg_stripe_bzip: expected size exceeded!\n");
                     ret = CL_EFORMAT;
-                    rc  = BZ_DATA_ERROR; /* prevent stream end block */
+                    rc = BZ_DATA_ERROR; /* prevent stream end block */
                     break;
                 }
 
@@ -935,7 +935,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                     break;
                 }
 
-                strm.next_out  = (char *)obuf;
+                strm.next_out = (char *)obuf;
                 strm.avail_out = sizeof(obuf);
 
                 if (rc == BZ_OK)
@@ -964,7 +964,7 @@ static int dmg_stripe_bzip(cli_ctx *ctx, int fd, uint32_t index, struct dmg_mish
                 break;
             }
 
-            strm.next_out  = (char *)obuf;
+            strm.next_out = (char *)obuf;
             strm.avail_out = sizeof(obuf);
         }
     } while ((rc == BZ_OK) && (len > 0));
@@ -985,10 +985,10 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
                            uint64_t xmlOffset, struct dmg_mish_with_stripes *mish_set)
 {
     struct dmg_block_data *blocklist = mish_set->stripes;
-    uint64_t totalSectors            = 0;
+    uint64_t totalSectors = 0;
     uint32_t i;
     unsigned long projected_size;
-    int ret        = CL_CLEAN, ofd;
+    int ret = CL_CLEAN, ofd;
     uint8_t sorted = 1, writeable_data = 0;
     char outfile[PATH_MAX + 1];
 
@@ -998,8 +998,8 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         // blocklist[i].reserved = be32_to_host(blocklist[i].reserved);
         blocklist[i].startSector = be64_to_host(blocklist[i].startSector);
         blocklist[i].sectorCount = be64_to_host(blocklist[i].sectorCount);
-        blocklist[i].dataOffset  = be64_to_host(blocklist[i].dataOffset);
-        blocklist[i].dataLength  = be64_to_host(blocklist[i].dataLength);
+        blocklist[i].dataOffset = be64_to_host(blocklist[i].dataOffset);
+        blocklist[i].dataLength = be64_to_host(blocklist[i].dataLength);
         cli_dbgmsg("mish %u stripe " STDu32 " type " STDx32 " start " STDu64
                    " count " STDu64 " source " STDu64 " length " STDu64 "\n",
                    mishblocknum, i, blocklist[i].type, blocklist[i].startSector, blocklist[i].sectorCount,
@@ -1034,7 +1034,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
         return CL_CLEAN;
     }
     projected_size = (unsigned long)(totalSectors * DMG_SECTOR_SIZE);
-    ret            = cli_checklimits("cli_scandmg", ctx, projected_size, 0, 0);
+    ret = cli_checklimits("cli_scandmg", ctx, projected_size, 0, 0);
     if (ret != CL_CLEAN) {
         /* limits exceeded */
         cli_dbgmsg("dmg_handle_mish: skipping block %u, limits exceeded\n", mishblocknum);
@@ -1044,7 +1044,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     /* Prepare for file */
     snprintf(outfile, sizeof(outfile) - 1, "%s" PATHSEP "dmg%02u", dir, mishblocknum);
     outfile[sizeof(outfile) - 1] = '\0';
-    ofd                          = open(outfile, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
+    ofd = open(outfile, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
     if (ofd < 0) {
         char err[128];
         cli_errmsg("cli_scandmg: Can't create temporary file %s: %s\n",

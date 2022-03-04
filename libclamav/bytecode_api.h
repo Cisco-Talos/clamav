@@ -64,7 +64,7 @@ enum BytecodeKind {
     /** generic bytecode, not tied a specific hook */
     BC_GENERIC = 0,
     /** triggered at startup, only one is allowed per ClamAV startup */
-    BC_STARTUP      = 1,
+    BC_STARTUP = 1,
     _BC_START_HOOKS = 256,
     /** executed on a logical trigger */
     BC_LOGICAL = 256,
@@ -90,18 +90,18 @@ enum BytecodeKind {
  * LibClamAV functionality level constants
  */
 enum FunctionalityLevels {
-    FUNC_LEVEL_096     = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
+    FUNC_LEVEL_096 = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
     FUNC_LEVEL_096_dev = 52,
-    FUNC_LEVEL_096_1   = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
+    FUNC_LEVEL_096_1 = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
                               * requires this minimum functionality level */
     FUNC_LEVEL_096_1_dev = 54,
-    FUNC_LEVEL_096_2     = 54, /**< LibClamAV release 0.96.2: PDF Hooks require this minimum level */
+    FUNC_LEVEL_096_2 = 54, /**< LibClamAV release 0.96.2: PDF Hooks require this minimum level */
     FUNC_LEVEL_096_2_dev = 55,
-    FUNC_LEVEL_096_3     = 55, /**< LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
-    FUNC_LEVEL_096_4     = 56, /**< LibClamAV release 0.96.4: minimum recommended engine version, older versions have quadratic load time */
-    FUNC_LEVEL_096_5     = 58, /**< LibClamAV release 0.96.5 */
+    FUNC_LEVEL_096_3 = 55, /**< LibClamAV release 0.96.3: BC_PE_ALL bytecodes require this minimum level */
+    FUNC_LEVEL_096_4 = 56, /**< LibClamAV release 0.96.4: minimum recommended engine version, older versions have quadratic load time */
+    FUNC_LEVEL_096_5 = 58, /**< LibClamAV release 0.96.5 */
 
-    FUNC_LEVEL_097   = 60, /**< LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
+    FUNC_LEVEL_097 = 60,   /**< LibClamAV release 0.97.0: older bytecodes may incorrectly use 57 */
     FUNC_LEVEL_097_1 = 61, /**< LibClamAV release 0.97.1 */
     FUNC_LEVEL_097_2 = 62, /**< LibClamAV release 0.97.2 */
     FUNC_LEVEL_097_3 = 63, /**< LibClamAV release 0.97.3: last bcc changes as former team resigns*/
@@ -111,7 +111,7 @@ enum FunctionalityLevels {
     FUNC_LEVEL_097_7 = 68, /**< LibClamAV release 0.97.7 */
     FUNC_LEVEL_097_8 = 69, /**< LibClamAV release 0.97.8 */
 
-    FUNC_LEVEL_098   = 74, /**< LibClamAV release 0.98.0 */
+    FUNC_LEVEL_098 = 74,   /**< LibClamAV release 0.98.0 */
     FUNC_LEVEL_098_1 = 76, /**< LibClamAV release 0.98.1: last syncing to clamav*/
     FUNC_LEVEL_098_2 = 77, /**< LibClamAV release 0.98.2 */
     FUNC_LEVEL_098_3 = 77, /**< LibClamAV release 0.98.3 */
@@ -120,35 +120,35 @@ enum FunctionalityLevels {
     FUNC_LEVEL_098_6 = 79, /**< LibClamAV release 0.98.6 */
     FUNC_LEVEL_098_7 = 80, /**< LibClamAV release 0.98.7: BC_PRECLASS bytecodes require minimum level */
 
-    FUNC_LEVEL_099   = 81, /**< LibClamAV release 0.99.0 */
+    FUNC_LEVEL_099 = 81,   /**< LibClamAV release 0.99.0 */
     FUNC_LEVEL_099_1 = 82, /**< LibClamAV release 0.99.1 */
     FUNC_LEVEL_099_2 = 82, /**< LibClamAV release 0.99.2: not a typo, the FLEVEL did not change */
     FUNC_LEVEL_099_3 = 84, /**< LibClamAV release 0.99.3 */
     FUNC_LEVEL_099_4 = 85, /**< LibClamAV release 0.99.4 */
 
     FUNC_LEVEL_0100_BETA = 90, /**< LibClamAV release 0.100.0-BETA */
-    FUNC_LEVEL_0100      = 91, /**< LibClamAV release 0.100.0 */
-    FUNC_LEVEL_0100_1    = 92, /**< LibClamAV release 0.100.1 */
-    FUNC_LEVEL_0100_2    = 93, /**< LibClamAV release 0.100.2 */
-    FUNC_LEVEL_0100_3    = 94, /**< LibClamAV release 0.100.3 */
+    FUNC_LEVEL_0100 = 91,      /**< LibClamAV release 0.100.0 */
+    FUNC_LEVEL_0100_1 = 92,    /**< LibClamAV release 0.100.1 */
+    FUNC_LEVEL_0100_2 = 93,    /**< LibClamAV release 0.100.2 */
+    FUNC_LEVEL_0100_3 = 94,    /**< LibClamAV release 0.100.3 */
 
     FUNC_LEVEL_0101_BETA = 100, /**< LibClamAV release 0.101.0-BETA */
-    FUNC_LEVEL_0101      = 101, /**< LibClamAV release 0.101.0 */
-    FUNC_LEVEL_0101_1    = 102, /**< LibClamAV release 0.101.1 */
-    FUNC_LEVEL_0101_2    = 102, /**< LibClamAV release 0.101.2 */
-    FUNC_LEVEL_0101_3    = 102, /**< LibClamAV release 0.101.3 */
-    FUNC_LEVEL_0101_4    = 105, /**< LibClamAV release 0.101.4 */
-    FUNC_LEVEL_0101_5    = 106, /**< LibClamAV release 0.101.5 */
+    FUNC_LEVEL_0101 = 101,      /**< LibClamAV release 0.101.0 */
+    FUNC_LEVEL_0101_1 = 102,    /**< LibClamAV release 0.101.1 */
+    FUNC_LEVEL_0101_2 = 102,    /**< LibClamAV release 0.101.2 */
+    FUNC_LEVEL_0101_3 = 102,    /**< LibClamAV release 0.101.3 */
+    FUNC_LEVEL_0101_4 = 105,    /**< LibClamAV release 0.101.4 */
+    FUNC_LEVEL_0101_5 = 106,    /**< LibClamAV release 0.101.5 */
 
     FUNC_LEVEL_0102_BETA = 110, /**< LibClamAV release 0.102.0-BETA */
-    FUNC_LEVEL_0102      = 111, /**< LibClamAV release 0.102.0 */
-    FUNC_LEVEL_0102_1    = 112, /**< LibClamAV release 0.102.1 */
+    FUNC_LEVEL_0102 = 111,      /**< LibClamAV release 0.102.0 */
+    FUNC_LEVEL_0102_1 = 112,    /**< LibClamAV release 0.102.1 */
 
     FUNC_LEVEL_0103_BETA = 120, /**< LibClamAV release 0.103.0-BETA */
-    FUNC_LEVEL_0103      = 121, /**< LibClamAV release 0.103.0 */
-    FUNC_LEVEL_0103_1    = 122, /**< LibClamAV release 0.103.1 */
-    FUNC_LEVEL_0103_2    = 123, /**< LibClamAV release 0.103.2 */
-    FUNC_LEVEL_0103_3    = 124, /**< LibClamAV release 0.103.2 */
+    FUNC_LEVEL_0103 = 121,      /**< LibClamAV release 0.103.0 */
+    FUNC_LEVEL_0103_1 = 122,    /**< LibClamAV release 0.103.1 */
+    FUNC_LEVEL_0103_2 = 123,    /**< LibClamAV release 0.103.2 */
+    FUNC_LEVEL_0103_3 = 124,    /**< LibClamAV release 0.103.2 */
 
     FUNC_LEVEL_0104 = 140, /**< LibClamAV release 0.104.0 */
 
@@ -246,9 +246,9 @@ enum bc_json_type {
   * LZMA return codes
   */
 enum lzma_returncode {
-    LZMA_RESULT_OK         = 0, /* Function completed successfully */
+    LZMA_RESULT_OK = 0,         /* Function completed successfully */
     LZMA_RESULT_DATA_ERROR = 1, /* The LZMA stream contained invalid data */
-    LZMA_STREAM_END        = 2  /* The LZMA stream ended unexpectedly */
+    LZMA_STREAM_END = 2         /* The LZMA stream ended unexpectedly */
 };
 
 /**
@@ -256,20 +256,20 @@ enum lzma_returncode {
  * Bzip2 return codes
  */
 enum bzip2_returncode {
-    BZIP2_OK               = 0, /* Function returned without error */
-    BZIP2_SEQUENCE_ERROR   = -1,
-    BZIP2_PARAM_ERROR      = -2,
-    BZIP2_MEM_ERROR        = -3,
-    BZIP2_DATA_ERROR       = -4,
+    BZIP2_OK = 0, /* Function returned without error */
+    BZIP2_SEQUENCE_ERROR = -1,
+    BZIP2_PARAM_ERROR = -2,
+    BZIP2_MEM_ERROR = -3,
+    BZIP2_DATA_ERROR = -4,
     BZIP2_DATA_ERROR_MAGIC = -5,
-    BZIP2_IO_ERROR         = -6,
-    BZIP2_UNEXPECTED_EOF   = -7,
-    BZIP2_OUTBUFF_FULL     = -8,
-    BZIP2_CONFIG_ERROR     = -9,
-    BZIP2_RUN_OK           = 1,
-    BZIP2_FLUSH_OK         = 2,
-    BZIP2_FINISH_OK        = 3,
-    BZIP2_STREAM_END       = 4
+    BZIP2_IO_ERROR = -6,
+    BZIP2_UNEXPECTED_EOF = -7,
+    BZIP2_OUTBUFF_FULL = -8,
+    BZIP2_CONFIG_ERROR = -9,
+    BZIP2_RUN_OK = 1,
+    BZIP2_FLUSH_OK = 2,
+    BZIP2_FINISH_OK = 3,
+    BZIP2_STREAM_END = 4
 };
 
 /**

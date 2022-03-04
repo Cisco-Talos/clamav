@@ -458,10 +458,10 @@ struct MP *mpool_create()
     struct MP mp, *mpool_p;
     size_t sz;
     memset(&mp, 0, sizeof(mp));
-    mp.psize       = cli_getpagesize();
-    sz             = align_to_pagesize(&mp, MIN_FRAGSIZE);
+    mp.psize = cli_getpagesize();
+    sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
     mp.u.mpm.usize = sizeof(struct MPMAP);
-    mp.u.mpm.size  = sz - sizeof(mp);
+    mp.u.mpm.size = sz - sizeof(mp);
     if (FRAGSBITS > 255) {
         cli_errmsg("At most 255 frags possible!\n");
         return NULL;
@@ -491,7 +491,7 @@ void mpool_destroy(struct MP *mp)
 
     spam("Destroying map @%p\n", mp);
     while ((mpm = mpm_next)) {
-        mpmsize  = mpm->size;
+        mpmsize = mpm->size;
         mpm_next = mpm->next;
 #ifdef CL_DEBUG
         memset(mpm, FREEPOISON, mpmsize);
@@ -515,7 +515,7 @@ void mpool_destroy(struct MP *mp)
 
 void mpool_flush(struct MP *mp)
 {
-    size_t used            = 0, mused;
+    size_t used = 0, mused;
     struct MPMAP *mpm_next = mp->u.mpm.next, *mpm;
 
 #ifdef EXIT_ON_FLUSH
@@ -524,7 +524,7 @@ void mpool_flush(struct MP *mp)
 
     while ((mpm = mpm_next)) {
         mpm_next = mpm->next;
-        mused    = align_to_pagesize(mp, mpm->usize);
+        mused = align_to_pagesize(mp, mpm->usize);
         if (mused < mpm->size) {
 #ifdef CL_DEBUG
             memset((char *)mpm + mused, FREEPOISON, mpm->size - mused);
@@ -572,7 +572,7 @@ int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
         sum_used += mpm->usize;
         sum_total += mpm->size;
     }
-    *used  = sum_used;
+    *used = sum_used;
     *total = sum_total;
     return 0;
 }
@@ -592,16 +592,16 @@ static void *allocate_aligned(struct MPMAP *mpm, size_t size, unsigned align, co
      * Since we are no longer allocating in multiple of 8, we must always
      * align the start of each allocation!
      *| end of previous allocation | padding | FRAG_OVERHEAD | ptr_aligned |*/
-    unsigned p         = mpm->usize + FRAG_OVERHEAD;
+    unsigned p = mpm->usize + FRAG_OVERHEAD;
     unsigned p_aligned = alignto(p, align);
-    struct FRAG *f     = (struct FRAG *)((char *)mpm + p_aligned - FRAG_OVERHEAD);
-    unsigned realneed  = p_aligned + size - mpm->usize;
+    struct FRAG *f = (struct FRAG *)((char *)mpm + p_aligned - FRAG_OVERHEAD);
+    unsigned realneed = p_aligned + size - mpm->usize;
     unsigned int sbits = to_bits(realneed);
-    size_t needed      = from_bits(sbits);
+    size_t needed = from_bits(sbits);
 #ifdef CL_DEBUG
     assert(p_aligned + size <= mpm->size);
 #endif
-    f->u.a.sbits   = sbits;
+    f->u.a.sbits = sbits;
     f->u.a.padding = p_aligned - p;
 
     mpm->usize += needed;
@@ -621,8 +621,8 @@ void *mpool_malloc(struct MP *mp, size_t size)
     size_t align = alignof(size);
     size_t i, needed = align_increase(size + FRAG_OVERHEAD, align);
     const unsigned int sbits = to_bits(needed);
-    struct FRAG *f           = NULL;
-    struct MPMAP *mpm        = &mp->u.mpm;
+    struct FRAG *f = NULL;
+    struct MPMAP *mpm = &mp->u.mpm;
 
     /*  check_all(mp); */
     if (!size || sbits == FRAGSBITS) {
@@ -633,14 +633,14 @@ void *mpool_malloc(struct MP *mp, size_t size)
     /* Case 1: We have a free'd frag */
     if ((f = mp->avail[sbits])) {
         struct FRAG *fold = f;
-        mp->avail[sbits]  = f->u.next.ptr;
+        mp->avail[sbits] = f->u.next.ptr;
         /* we always have enough space for this, align_increase ensured that */
 #ifdef _WIN64
         f = (struct FRAG *)(alignto((unsigned long long)f + FRAG_OVERHEAD, align) - FRAG_OVERHEAD);
 #else
         f = (struct FRAG *)(alignto((unsigned long)f + FRAG_OVERHEAD, align) - FRAG_OVERHEAD);
 #endif
-        f->u.a.sbits   = sbits;
+        f->u.a.sbits = sbits;
         f->u.a.padding = (char *)f - (char *)fold;
 #ifdef CL_DEBUG
         f->magic = MPOOLMAGIC;
@@ -680,9 +680,9 @@ void *mpool_malloc(struct MP *mp, size_t size)
 #ifdef CL_DEBUG
     memset(mpm, ALLOCPOISON, i);
 #endif
-    mpm->size      = i;
-    mpm->usize     = sizeof(*mpm);
-    mpm->next      = mp->u.mpm.next;
+    mpm->size = i;
+    mpm->usize = sizeof(*mpm);
+    mpm->next = mp->u.mpm.next;
     mp->u.mpm.next = mpm;
     return allocate_aligned(mpm, size, align, "new map");
 }
@@ -707,12 +707,12 @@ void mpool_free(struct MP *mp, void *ptr)
 
     spam("free @%p\n", f);
     sbits = f->u.a.sbits;
-    f     = allocbase_fromfrag(f);
+    f = allocbase_fromfrag(f);
 #ifdef CL_DEBUG
     memset(f, FREEPOISON, from_bits(sbits));
 #endif
 
-    f->u.next.ptr    = mp->avail[sbits];
+    f->u.next.ptr = mp->avail[sbits];
     mp->avail[sbits] = f;
 }
 
@@ -846,7 +846,7 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
     if (!strncmp(virname, "PUA.", 4)) {
         snprintf(buf, sizeof(buf), "Possibly-Unwanted-Application(www.clamav.net/support/pua).%s", virname + 4);
         buf[sizeof(buf) - 1] = '\0';
-        virname              = buf;
+        virname = buf;
     }
 #endif
     if (official)
@@ -906,7 +906,7 @@ void check_all(struct MP *mp)
     struct MPMAP *mpm = &mp->u.mpm;
     while (mpm) {
         volatile unsigned char *c = (unsigned char *)mpm;
-        size_t len                = mpm->size;
+        size_t len = mpm->size;
         spam("checking object %p - size %lu\n", mpm, (unsigned long)len);
         while (len--) {
             c[len];

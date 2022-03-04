@@ -71,8 +71,8 @@ static int conn_tcp(int port)
     ck_assert_msg(sd != -1, "Unable to create socket: %s\n", strerror(errno));
 
     memset(&server, 0, sizeof(server));
-    server.sin_family      = AF_INET;
-    server.sin_port        = htons(port);
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     rc = connect(sd, (struct sockaddr *)&server, (socklen_t)sizeof(server));
@@ -224,7 +224,7 @@ static struct basic_test {
 
 static void *recvpartial(int sd, size_t *len, int partial)
 {
-    char *buf  = NULL;
+    char *buf = NULL;
     size_t off = 0;
     int rc;
 
@@ -239,7 +239,7 @@ static void *recvpartial(int sd, size_t *len, int partial)
         ck_assert_msg(rc != -1, "recv() failed: %s\n", strerror(errno));
         off += rc;
     } while (rc && (!partial || !memchr(buf, '\0', off)));
-    *len      = off;
+    *len = off;
     buf[*len] = '\0';
     return buf;
 }
@@ -398,7 +398,7 @@ START_TEST(test_instream)
     char *recvdata;
     size_t len, expect_len;
     char buf[4096] = "nINSTREAM\n";
-    size_t off     = strlen(buf);
+    size_t off = strlen(buf);
     int rc;
 
     off = prepare_instream(buf, off, sizeof(buf));
@@ -432,28 +432,28 @@ static int sendmsg_fd(int sockd, const char *mesg, size_t msg_len, int fd, int s
 
     if (!singlemsg) {
         /* send FILDES\n and then a single character + ancillary data */
-        dummy[0]        = '\0';
+        dummy[0] = '\0';
         iov[0].iov_base = dummy;
-        iov[0].iov_len  = 1;
+        iov[0].iov_len = 1;
     } else {
         /* send single message with ancillary data */
         ck_assert_msg(msg_len < sizeof(dummy) - 1, "message too large");
         memcpy(dummy, mesg, msg_len);
-        dummy[msg_len]  = '\0';
+        dummy[msg_len] = '\0';
         iov[0].iov_base = dummy;
-        iov[0].iov_len  = msg_len + 1;
+        iov[0].iov_len = msg_len + 1;
     }
 
     memset(&msg, 0, sizeof(msg));
-    msg.msg_control    = fdbuf;
-    msg.msg_iov        = iov;
-    msg.msg_iovlen     = 1;
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
     msg.msg_controllen = CMSG_LEN(sizeof(int));
 
-    cmsg                    = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level        = SOL_SOCKET;
-    cmsg->cmsg_type         = SCM_RIGHTS;
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
 
     if (!singlemsg) {
@@ -479,7 +479,7 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
         close(fd);
 
     recvdata = (char *)recvfull(sockd, &len);
-    p        = strchr(recvdata, ':');
+    p = strchr(recvdata, ':');
 
     ck_assert_msg(!!p, "Reply doesn't contain ':' : %s\n", recvdata);
     *p++ = '\0';
@@ -516,34 +516,34 @@ static struct cmds {
 START_TEST(test_fildes)
 {
     char nreply[BUFSIZ], nsend[BUFSIZ];
-    int fd        = open(SCANFILE, O_RDONLY);
-    int closefd   = 0;
+    int fd = open(SCANFILE, O_RDONLY);
+    int closefd = 0;
     int singlemsg = 0;
     const struct cmds *cmd;
     size_t nreply_len, nsend_len;
 
     switch (_i & 3) {
         case 0:
-            closefd   = 0;
+            closefd = 0;
             singlemsg = 0;
             break;
         case 1:
-            closefd   = 1;
+            closefd = 1;
             singlemsg = 0;
             break;
         case 2:
-            closefd   = 0;
+            closefd = 0;
             singlemsg = 1;
             break;
         case 3:
-            closefd   = 1;
+            closefd = 1;
             singlemsg = 1;
             break;
     }
 
-    cmd        = &fildes_cmds[_i / 4];
+    cmd = &fildes_cmds[_i / 4];
     nreply_len = snprintf(nreply, sizeof(nreply), "%s%c", cmd->reply, cmd->term);
-    nsend_len  = snprintf(nsend, sizeof(nsend), "%s%c", cmd->cmd, cmd->term);
+    nsend_len = snprintf(nsend, sizeof(nsend), "%s%c", cmd->cmd, cmd->term);
 
     fd = open(cmd->file, O_RDONLY);
     ck_assert_msg(fd != -1, "Failed to open: %s\n", strerror(errno));
@@ -562,9 +562,9 @@ END_TEST
 START_TEST(test_fildes_many)
 {
     const char idsession[] = "zIDSESSION";
-    const char fildes[]    = "zFILDES";
-    const char end[]       = "zEND";
-    const char ping[]      = "zPING";
+    const char fildes[] = "zFILDES";
+    const char end[] = "zEND";
+    const char ping[] = "zPING";
 
     int dummyfd, i, killed = 0;
     conn_setup();
@@ -623,7 +623,7 @@ START_TEST(test_idsession_stress)
     char *data, *p;
     size_t len;
     const char idsession[] = "zIDSESSION";
-    const char version[]   = "zVERSION";
+    const char version[] = "zVERSION";
 
     conn_setup();
 
@@ -634,7 +634,7 @@ START_TEST(test_idsession_stress)
         ck_assert_msg(send(sockd, version, sizeof(version), 0) == sizeof(version),
                       "send failed: %s\n", strerror(errno));
         data = recvpartial(sockd, &len, 1);
-        p    = strchr(data, ':');
+        p = strchr(data, ':');
         ck_assert_msg(!!p, "wrong VERSION reply (%zu): %s\n", i, data);
         *p++ = '\0';
         ck_assert_msg(*p == ' ', "wrong VERSION reply (%zu): %s\n", i, p);
@@ -782,10 +782,10 @@ static void test_idsession_commands(int split, int instream)
             p += 4;
             memset(p, 0x5a, 16384);
             p += 16384;
-            *p++         = '\0';
-            *p++         = '\0';
-            *p++         = '\0';
-            *p++         = '\0';
+            *p++ = '\0';
+            *p++ = '\0';
+            *p++ = '\0';
+            *p++ = '\0';
             replies[j++] = "stream: OK";
         }
     }
@@ -801,7 +801,7 @@ static void test_idsession_commands(int split, int instream)
         ck_assert_msg(send(sockd, buf, p - buf, 0) == p - buf, "send() failed: %s\n", strerror(errno));
     }
     recvdata = (char *)recvfull(sockd, &len);
-    p        = recvdata;
+    p = recvdata;
     for (i = 0; i < sizeof(basic_tests) / sizeof(basic_tests[0]); i++) {
         const struct basic_test *test = &basic_tests[i];
         if (test->skiproot && isroot)
@@ -892,7 +892,7 @@ int main(void)
     }
 #endif
 
-    Suite *s    = test_clamd_suite();
+    Suite *s = test_clamd_suite();
     SRunner *sr = srunner_create(s);
     srunner_set_log(sr, OBJDIR PATHSEP "test-clamd.log");
     srunner_run_all(sr, CK_NORMAL);

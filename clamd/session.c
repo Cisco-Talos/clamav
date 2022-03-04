@@ -189,13 +189,13 @@ int conn_reply_errno(const client_conn_t *conn, const char *path,
  */
 int command(client_conn_t *conn, int *virus)
 {
-    int desc                        = conn->sd;
-    struct cl_engine *engine        = conn->engine;
+    int desc = conn->sd;
+    struct cl_engine *engine = conn->engine;
     struct cl_scan_options *options = conn->options;
-    const struct optstruct *opts    = conn->opts;
-    enum scan_type type             = TYPE_INIT;
+    const struct optstruct *opts = conn->opts;
+    enum scan_type type = TYPE_INIT;
     int maxdirrec;
-    int ret   = 0;
+    int ret = 0;
     int flags = CLI_FTW_STD;
 
     struct scan_cb_data scandata;
@@ -214,14 +214,14 @@ int command(client_conn_t *conn, int *virus)
 
     data.data = &scandata;
     memset(&scandata, 0, sizeof(scandata));
-    scandata.id            = conn->id;
-    scandata.group         = conn->group;
-    scandata.odesc         = desc;
-    scandata.conn          = conn;
-    scandata.options       = options;
-    scandata.engine        = engine;
-    scandata.opts          = opts;
-    scandata.thr_pool      = conn->thrpool;
+    scandata.id = conn->id;
+    scandata.group = conn->group;
+    scandata.odesc = desc;
+    scandata.conn = conn;
+    scandata.options = options;
+    scandata.engine = engine;
+    scandata.opts = opts;
+    scandata.thr_pool = conn->thrpool;
     scandata.toplevel_path = conn->filename;
 
     switch (conn->cmdtype) {
@@ -246,12 +246,12 @@ int command(client_conn_t *conn, int *virus)
 
             pthread_mutex_lock(&conn->thrpool->pool_mutex);
             multiscan = conn->thrpool->thr_multiscan;
-            max       = conn->thrpool->thr_max;
+            max = conn->thrpool->thr_max;
             if (multiscan + 1 < max)
                 conn->thrpool->thr_multiscan = multiscan + 1;
             else {
                 alive = conn->thrpool->thr_alive;
-                ret   = -1;
+                ret = -1;
             }
             pthread_mutex_unlock(&conn->thrpool->pool_mutex);
             if (ret) {
@@ -265,7 +265,7 @@ int command(client_conn_t *conn, int *virus)
             }
             flags &= ~CLI_FTW_NEED_STAT;
             thrmgr_setactivetask(NULL, "MULTISCAN");
-            type           = TYPE_MULTISCAN;
+            type = TYPE_MULTISCAN;
             scandata.group = group = thrmgr_group_new();
             if (!group) {
                 if (optget(opts, "ExitOnOOM")->enabled)
@@ -277,13 +277,13 @@ int command(client_conn_t *conn, int *virus)
         }
         case COMMAND_MULTISCANFILE:
             thrmgr_setactivetask(NULL, "MULTISCANFILE");
-            scandata.group    = NULL;
-            scandata.type     = TYPE_SCAN;
+            scandata.group = NULL;
+            scandata.type = TYPE_SCAN;
             scandata.thr_pool = NULL;
             /* TODO: check ret value */
-            ret            = scan_callback(NULL, conn->filename, conn->filename, visit_file, &data); /* callback freed it */
+            ret = scan_callback(NULL, conn->filename, conn->filename, visit_file, &data); /* callback freed it */
             conn->filename = NULL;
-            *virus         = scandata.infected;
+            *virus = scandata.infected;
             if (ret == CL_BREAK) {
                 thrmgr_group_terminate(conn->group);
                 return 1;
@@ -299,7 +299,7 @@ int command(client_conn_t *conn, int *virus)
                 ret = scanfd(conn, NULL, engine, options, opts, desc, 0);
                 if (ret == CL_VIRUS) {
                     *virus = 1;
-                    ret    = 0;
+                    ret = 0;
                 } else if (ret == CL_EMEM) {
                     if (optget(opts, "ExitOnOOM")->enabled)
                         ret = -1;
@@ -330,7 +330,7 @@ int command(client_conn_t *conn, int *virus)
             ret = scanfd(conn, NULL, engine, options, opts, desc, 1);
             if (ret == CL_VIRUS) {
                 *virus = 1;
-                ret    = 0;
+                ret = 0;
             } else if (ret == CL_EMEM) {
                 if (optget(opts, "ExitOnOOM")->enabled)
                     ret = -1;
@@ -365,7 +365,7 @@ int command(client_conn_t *conn, int *virus)
     }
 
     scandata.type = type;
-    maxdirrec     = optget(opts, "MaxDirectoryRecursion")->numarg;
+    maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
     if (optget(opts, "FollowDirectorySymlinks")->enabled)
         flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
     if (optget(opts, "FollowFileSymlinks")->enabled)
@@ -390,7 +390,7 @@ int command(client_conn_t *conn, int *virus)
     } else {
         error = scandata.errors;
         total = scandata.total;
-        ok    = total - error - scandata.infected;
+        ok = total - error - scandata.infected;
     }
 
     if (ok + error == total && (error != total)) {
@@ -422,7 +422,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
         return -1;
     }
     dup_conn->scanfd = -1;
-    bulk             = 1;
+    bulk = 1;
     switch (cmd) {
         case COMMAND_FILDES:
             if (conn->scanfd == -1) {
@@ -445,7 +445,7 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
             break;
         case COMMAND_INSTREAMSCAN:
             dup_conn->scanfd = conn->scanfd;
-            conn->scanfd     = -1;
+            conn->scanfd = -1;
             break;
         case COMMAND_STATS:
             /* not a scan command, don't queue to bulk */
@@ -479,7 +479,7 @@ static int print_ver(int desc, char term, const struct cl_engine *engine)
         char timestr[32];
         const char *tstr;
         time_t t;
-        t    = cl_engine_get_num(engine, CL_ENGINE_DB_TIME, NULL);
+        t = cl_engine_get_num(engine, CL_ENGINE_DB_TIME, NULL);
         tstr = cli_ctime(&t, timestr, sizeof(timestr));
         /* cut trailing \n */
         timestr[strlen(tstr) - 1] = '\0';
@@ -492,7 +492,7 @@ static void print_commands(int desc, char term, const struct cl_engine *engine)
 {
     unsigned i, n;
     const char *engine_ver = cl_retver();
-    const char *clamd_ver  = get_version();
+    const char *clamd_ver = get_version();
     if (strcmp(engine_ver, clamd_ver)) {
         mdprintf(desc, "ENGINE VERSION MISMATCH: %s != %s. ERROR%c",
                  engine_ver, clamd_ver, term);
@@ -516,8 +516,8 @@ static void print_commands(int desc, char term, const struct cl_engine *engine)
  */
 int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const char *argument)
 {
-    int desc                       = conn->sd;
-    char term                      = conn->term;
+    int desc = conn->sd;
+    char term = conn->term;
     const struct cl_engine *engine = conn->engine;
     /* execute commands that can be executed quickly on the recvloop thread,
      * these must:
@@ -592,7 +592,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
             if (rc != CL_SUCCESS)
                 return rc;
             conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
-            conn->mode  = MODE_STREAM;
+            conn->mode = MODE_STREAM;
             return 0;
         }
         case COMMAND_MULTISCAN:

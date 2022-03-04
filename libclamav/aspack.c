@@ -160,7 +160,7 @@ static uint8_t build_decrypt_array(struct ASPK *stream, uint8_t *array, uint8_t 
 
         if (counter >= 0x10) {
             uint32_t old = endoff;
-            endoff       = d3[i + 1] >> 0x10;
+            endoff = d3[i + 1] >> 0x10;
             if (endoff - old) {
                 if (!CLI_ISCONTAINED(stream->dict_helper[which].ends, 0x100, stream->dict_helper[which].ends + old, endoff - old)) return 0;
                 memset((stream->dict_helper[which].ends + old), i + 1, endoff - old);
@@ -195,7 +195,7 @@ static uint8_t getbits(struct ASPK *stream, uint32_t num, int *err)
         return 0;
     }
 
-    *err     = 0;
+    *err = 0;
     retvalue = ((stream->hash >> (8 - stream->bitpos)) & 0xffffff) >> (24 - num);
     stream->bitpos += num;
 
@@ -299,7 +299,7 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
         }
 
         useold = stream->init_array[backbytes];
-        gen    = stuff[backbytes + 0x38];
+        gen = stuff[backbytes + 0x38];
 
         if (!stream->dict_ok || gen < 3) {
             if (!readstream(stream)) return 0;
@@ -318,7 +318,7 @@ static int decrypt(struct ASPK *stream, uint8_t *stuff, uint32_t size, uint8_t *
             backbytes = hist[useold];
             if (useold != 0) {
                 hist[useold] = hist[0];
-                hist[0]      = backbytes;
+                hist[0] = backbytes;
             }
         } else {
             hist[2] = hist[1];
@@ -348,17 +348,17 @@ static int decomp_block(struct ASPK *stream, uint32_t size, uint8_t *stuff, uint
     return decrypt(stream, stuff, size, output);
 }
 
-#define INIT_DICT_HELPER(n, sz)                                    \
-    stream.dict_helper[n].starts = (uint32_t *)wrkbuf;             \
-    stream.dict_helper[n].ends   = &wrkbuf[sz * sizeof(uint32_t)]; \
-    stream.dict_helper[n].size   = sz;                             \
-    wrkbuf                       = &wrkbuf[sz * sizeof(uint32_t) + 0x100];
+#define INIT_DICT_HELPER(n, sz)                                  \
+    stream.dict_helper[n].starts = (uint32_t *)wrkbuf;           \
+    stream.dict_helper[n].ends = &wrkbuf[sz * sizeof(uint32_t)]; \
+    stream.dict_helper[n].size = sz;                             \
+    wrkbuf = &wrkbuf[sz * sizeof(uint32_t) + 0x100];
 
 int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections, uint16_t sectcount, uint32_t ep, uint32_t base, int f, aspack_version_t version)
 {
     struct ASPK stream;
     uint32_t i = 0, j = 0;
-    uint8_t *blocks    = NULL, *wrkbuf;
+    uint8_t *blocks = NULL, *wrkbuf;
     uint32_t block_rva = 1, block_size;
     struct cli_exe_section *outsects;
 
@@ -367,27 +367,27 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
     switch (version) {
         case ASPACK_VER_212:
             cli_dbgmsg("Aspack: Attempting to unpack Aspack 2.12.\n");
-            blocks_offset                 = ASPACK_BLOCKS_OFFSET_212;
+            blocks_offset = ASPACK_BLOCKS_OFFSET_212;
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_212;
-            comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_212;
-            wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_212;
-            oep_offset                    = ASPACK_OEP_OFFSET_212;
+            comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_212;
+            wrkbuf_offset = ASPACK_WRKBUF_OFFSET_212;
+            oep_offset = ASPACK_OEP_OFFSET_212;
             break;
         case ASPACK_VER_OTHER:
             cli_dbgmsg("Aspack: Attempting to unpack Aspack >2.12, <2.42.\n");
-            blocks_offset                 = ASPACK_BLOCKS_OFFSET_OTHER;
+            blocks_offset = ASPACK_BLOCKS_OFFSET_OTHER;
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_OTHER;
-            comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_OTHER;
-            wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_OTHER;
-            oep_offset                    = ASPACK_OEP_OFFSET_OTHER;
+            comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_OTHER;
+            wrkbuf_offset = ASPACK_WRKBUF_OFFSET_OTHER;
+            oep_offset = ASPACK_OEP_OFFSET_OTHER;
             break;
         case ASPACK_VER_242:
             cli_dbgmsg("Aspack: Attempting to unpack Aspack 2.42.\n");
-            blocks_offset                 = ASPACK_BLOCKS_OFFSET_242;
+            blocks_offset = ASPACK_BLOCKS_OFFSET_242;
             stream_init_multiplier_offset = ASPACK_STR_INIT_MLT_OFFSET_242;
-            comp_block_offset             = ASPACK_COMP_BLOCK_OFFSET_242;
-            wrkbuf_offset                 = ASPACK_WRKBUF_OFFSET_242;
-            oep_offset                    = ASPACK_OEP_OFFSET_242;
+            comp_block_offset = ASPACK_COMP_BLOCK_OFFSET_242;
+            wrkbuf_offset = ASPACK_WRKBUF_OFFSET_242;
+            oep_offset = ASPACK_OEP_OFFSET_242;
             break;
         default:
             cli_dbgmsg("Aspack: Unexpected/Unknown version number.\n");
@@ -430,7 +430,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
             break;
         }
         stream.input = wrkbuf;
-        stream.iend  = &wrkbuf[block_size + 0x10e];
+        stream.iend = &wrkbuf[block_size + 0x10e];
 
         memcpy(wrkbuf, image + block_rva, block_size);
 

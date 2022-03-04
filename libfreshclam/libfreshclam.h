@@ -63,7 +63,7 @@ typedef struct fc_config_ {
 } fc_config;
 
 typedef enum fc_error_tag {
-    FC_SUCCESS  = 0,
+    FC_SUCCESS = 0,
     FC_UPTODATE = 1,
     FC_EINIT,
     FC_EDIRECTORY,

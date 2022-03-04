@@ -73,7 +73,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
 #endif
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(host, port, &hints, &servinfo))
@@ -106,7 +106,7 @@ int connect_host(const char *host, const char *port, uint32_t timeout, int useAs
                 FD_SET(sockfd, &write_fds);
 
                 /* TODO: Make this timeout configurable */
-                tv.tv_sec  = timeout;
+                tv.tv_sec = timeout;
                 tv.tv_usec = 0;
                 if (select(sockfd + 1, &read_fds, &write_fds, NULL, &tv) <= 0) {
                     closesocket(sockfd);
@@ -279,7 +279,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
          * while it's being processed). Give a ten-second timeout so we don't have a major
          * impact on scanning.
          */
-        tv.tv_sec  = timeout;
+        tv.tv_sec = timeout;
         tv.tv_usec = 0;
         if ((n = select(sockfd + 1, &readfds, NULL, NULL, &tv)) <= 0)
             break;

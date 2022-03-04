@@ -171,10 +171,10 @@ int is_packed(const char *filename)
     int i = 0, c = 0;
     int badsection = 0;
     double entropy = 0.0;
-    sigs_t *sig    = NULL;
+    sigs_t *sig = NULL;
     uint16_t e_mz;
     uint32_t e_lfanew, e_magic;
-    uint32_t epoff      = 0;
+    uint32_t epoff = 0;
     unsigned char *seek = NULL, *s_start = NULL, *ep = NULL, *lpMapAddress = NULL;
     PIMAGE_FILE_HEADER pehdr;
     PIMAGE_OPTIONAL_HEADER32 opthdr;

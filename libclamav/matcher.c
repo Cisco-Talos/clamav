@@ -275,7 +275,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
     unsigned int i = 0, j = 0, viruses_found = 0;
     struct cli_ac_data mdata;
     struct cli_matcher *groot, *troot = NULL;
-    const char *virname            = NULL;
+    const char *virname = NULL;
     const struct cl_engine *engine = ctx->engine;
 
     if (!engine) {
@@ -367,7 +367,7 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, un
                 return CL_EMALFDB;
             }
             offdata[2] = atoi(pt + 1);
-            *pt        = 0;
+            *pt = 0;
         } else {
             offdata[2] = 0;
         }
@@ -440,7 +440,7 @@ cl_error_t cli_caloff(const char *offstr, const struct cli_target_info *info, un
                 return CL_EMALFDB;
             }
             *offset_min = offdata[1] = atoi(offcpy);
-            *offset_max              = *offset_min + offdata[2];
+            *offset_max = *offset_min + offdata[2];
         }
 
         if (offdata[0] != CLI_OFF_ANY && offdata[0] != CLI_OFF_ABSOLUTE &&
@@ -608,7 +608,7 @@ cl_error_t cli_check_fp(cli_ctx *ctx, const char *vname)
                        md5, (unsigned int)size, vname ? vname : "Name", name ? name : "n/a", type);
         }
 
-        have_sha1   = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
+        have_sha1 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA1) || cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA1, 1);
         have_sha256 = cli_hm_have_size(ctx->engine->hm_fp, CLI_HASH_SHA256, size) || cli_hm_have_wild(ctx->engine->hm_fp, CLI_HASH_SHA256);
         if (have_sha1 || have_sha256) {
             if ((ptr = fmap_need_off_once(map, 0, size))) {
@@ -743,7 +743,7 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     if ((size_t)grp1len > sizeof(group1) - 1 ||
         (size_t)grp2len > sizeof(group2) - 1)
         return -1;
-    oldvirname                     = ((cli_ctx *)ctx->ctx)->virname;
+    oldvirname = ((cli_ctx *)ctx->ctx)->virname;
     ((cli_ctx *)ctx->ctx)->virname = NULL;
     memcpy(group1, grp1, grp1len);
     memcpy(group2, grp2, grp2len);
@@ -758,11 +758,11 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
             info.res_addr = le32_to_host(ctx->hooks.pedata->dirs[2].VirtualAddress);
     } else
         info.res_addr = ctx->resaddr; /* from target_info */
-    info.sections  = (struct cli_exe_section *)ctx->sections;
+    info.sections = (struct cli_exe_section *)ctx->sections;
     info.nsections = ctx->hooks.pedata->nsections;
-    info.hdr_size  = ctx->hooks.pedata->hdr_size;
+    info.hdr_size = ctx->hooks.pedata->hdr_size;
     cli_dbgmsg("bytecode matchicon %s %s\n", group1, group2);
-    ret                            = matchicon(ctx->ctx, &info, group1[0] ? group1 : NULL,
+    ret = matchicon(ctx->ctx, &info, group1[0] ? group1 : NULL,
                     group2[0] ? group2 : NULL);
     ((cli_ctx *)ctx->ctx)->virname = oldvirname;
     return (int32_t)ret;
@@ -773,7 +773,7 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonl
     cl_error_t status = CL_CLEAN;
     int empty;
     fmap_t *new_map = NULL;
-    fmap_t *map     = ctx->fmap; /* Store off the parent fmap for easy reference */
+    fmap_t *map = ctx->fmap; /* Store off the parent fmap for easy reference */
 
     new_map = fmap_check_empty(desc, 0, 0, &empty, name);
     if (NULL == new_map) {
@@ -825,13 +825,13 @@ static int intermediates_eval(cli_ctx *ctx, struct cli_ac_lsig *ac_lsig)
 
 static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_ac_data *acdata, struct cli_target_info *target_info, const char *hash, uint32_t lsid)
 {
-    cl_error_t status           = CL_CLEAN;
-    unsigned evalcnt            = 0;
-    uint64_t evalids            = 0;
-    fmap_t *new_map             = NULL;
+    cl_error_t status = CL_CLEAN;
+    unsigned evalcnt = 0;
+    uint64_t evalids = 0;
+    fmap_t *new_map = NULL;
     struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsid];
-    char *exp                   = ac_lsig->u.logic;
-    char *exp_end               = exp + strlen(exp);
+    char *exp = ac_lsig->u.logic;
+    char *exp_end = exp + strlen(exp);
 
     status = cli_ac_chkmacro(root, acdata, lsid);
     if (status != CL_SUCCESS)
@@ -941,7 +941,7 @@ static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
     (void)hash;
 
     memset(&context, 0, sizeof(YR_SCAN_CONTEXT));
-    context.fmap      = ctx->fmap;
+    context.fmap = ctx->fmap;
     context.file_size = ctx->fmap->len;
     if (target_info != NULL) {
         if (target_info->status == 1)
@@ -992,7 +992,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
     cl_error_t ret = CL_CLEAN, type = CL_CLEAN;
     int compute_hash[CLI_HASH_AVAIL_TYPES];
     unsigned int i = 0, j = 0, bm_offmode = 0;
-    uint32_t maxpatlen, bytes, offset     = 0;
+    uint32_t maxpatlen, bytes, offset = 0;
     struct cli_ac_data gdata, tdata;
     struct cli_bm_off toff;
     struct cli_pcre_off gpoff, tpoff;
@@ -1171,7 +1171,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
     }
 
     hdb = ctx->engine->hm_hdb;
-    fp  = ctx->engine->hm_fp;
+    fp = ctx->engine->hm_fp;
 
     if (!ftonly && hdb) {
         if (!refhash) {
@@ -1216,7 +1216,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
 
         if (troot) {
             virname = NULL;
-            ret     = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, bm_offmode ? &toff : NULL, &tpoff, ctx);
+            ret = matcher_run(troot, buff, bytes, &virname, &tdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, bm_offmode ? &toff : NULL, &tpoff, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
@@ -1243,7 +1243,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
 
         if (!ftonly) {
             virname = NULL;
-            ret     = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, NULL, &gpoff, ctx);
+            ret = matcher_run(groot, buff, bytes, &virname, &gdata, offset, &info, ftype, ftoffset, acmode, PCRE_SCAN_FMAP, acres, ctx->fmap, NULL, &gpoff, ctx);
 
             if (virname) {
                 /* virname already appended by matcher_run */
@@ -1272,7 +1272,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             /* if (bytes <= (maxpatlen * (offset!=0))), it means the last window finished the file hashing *
              *   since the last window is responsible for adding intersection between windows (maxpatlen)  */
             if (hdb && (bytes > (maxpatlen * (offset != 0)))) {
-                const void *data  = buff + maxpatlen * (offset != 0);
+                const void *data = buff + maxpatlen * (offset != 0);
                 uint32_t data_len = bytes - maxpatlen * (offset != 0);
 
                 if (compute_hash[CLI_HASH_MD5])
@@ -1311,7 +1311,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
         virname = NULL;
         for (hashtype = CLI_HASH_MD5; hashtype < CLI_HASH_AVAIL_TYPES; hashtype++) {
             const char *virname_w = NULL;
-            int found             = 0;
+            int found = 0;
 
             /* If no hash, skip to next type */
             if (!compute_hash[hashtype])
@@ -1333,11 +1333,11 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
                         continue;
                     if (cli_hm_scan(digest[hashtype2], ctx->fmap->len, NULL, fp, hashtype2) == CL_VIRUS) {
                         found = 0;
-                        ret   = CL_CLEAN;
+                        ret = CL_CLEAN;
                         break;
                     } else if (cli_hm_scan_wild(digest[hashtype2], NULL, fp, hashtype2) == CL_VIRUS) {
                         found = 0;
-                        ret   = CL_CLEAN;
+                        ret = CL_CLEAN;
                         break;
                     }
                 }
@@ -1346,7 +1346,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             /* If matched size-based hash ... */
             if (found % 2) {
                 viruses_found = 1;
-                ret           = cli_append_virus(ctx, virname);
+                ret = cli_append_virus(ctx, virname);
                 if (ret != CL_CLEAN && !SCAN_ALLMATCHES)
                     break;
                 virname = NULL;
@@ -1354,7 +1354,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct 
             /* If matched size-agnostic hash ... */
             if (found > 1) {
                 viruses_found = 1;
-                ret           = cli_append_virus(ctx, virname_w);
+                ret = cli_append_virus(ctx, virname_w);
                 if (ret != CL_CLEAN && !SCAN_ALLMATCHES)
                     break;
             }
@@ -1409,7 +1409,7 @@ cl_error_t cli_matchmeta(cli_ctx *ctx, const char *fname, size_t fsizec, size_t 
 {
     const struct cli_cdb *cdb;
     unsigned int viruses_found = 0;
-    cl_error_t ret             = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
 
     cli_dbgmsg("CDBNAME:%s:%llu:%s:%llu:%llu:%d:%u:%u:%p\n",
                cli_ftname(cli_recursion_stack_get_type(ctx, -1)), (long long unsigned)fsizec, fname, (long long unsigned)fsizec, (long long unsigned)fsizer,

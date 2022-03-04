@@ -56,10 +56,10 @@ void cli_pcre_free(void *ptr, void *ext)
 cl_error_t cli_pcre_init_internal()
 {
 #if !USING_PCRE2
-    pcre_malloc       = cli_malloc;
-    pcre_free         = free;
+    pcre_malloc = cli_malloc;
+    pcre_free = free;
     pcre_stack_malloc = cli_malloc;
-    pcre_stack_free   = free;
+    pcre_stack_free = free;
 #endif
 
     return CL_SUCCESS;
@@ -370,12 +370,12 @@ static void named_substr_print(const struct cli_pcre_data *pd, const unsigned ch
         for (i = 0; i < namecount; i++) {
             int n = (tabptr[0] << 8) | tabptr[1];
 
-            start  = (const char *)buffer + ovector[2 * n];
+            start = (const char *)buffer + ovector[2 * n];
             length = ovector[2 * n + 1] - ovector[2 * n];
 
             trunc = 0;
             if (length > MATCH_MAXLEN) {
-                trunc  = 1;
+                trunc = 1;
                 length = MATCH_MAXLEN;
             }
 
@@ -426,7 +426,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
         if (rc > 0) {
             /* print out full-match and capture groups */
             for (i = 0; i < rc; ++i) {
-                start  = (const char *)buffer + ovector[2 * i];
+                start = (const char *)buffer + ovector[2 * i];
                 length = ovector[2 * i + 1] - ovector[2 * i];
 
 #ifdef USING_PCRE2
@@ -440,7 +440,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
 
                 trunc = 0;
                 if (length > MATCH_MAXLEN) {
-                    trunc  = 1;
+                    trunc = 1;
                     length = MATCH_MAXLEN;
                 }
 
@@ -470,7 +470,7 @@ void cli_pcre_report(const struct cli_pcre_data *pd, const unsigned char *buffer
 
 cl_error_t cli_pcre_results_reset(struct cli_pcre_results *results, const struct cli_pcre_data *pd)
 {
-    results->err      = CL_SUCCESS;
+    results->err = CL_SUCCESS;
     results->match[0] = results->match[1] = 0;
 #if USING_PCRE2
     if (results->match_data)

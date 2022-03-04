@@ -43,16 +43,16 @@ static inline void swapfunc(char *, char *, int, int);
 /*
  * Qsort routine from Bentley & McIlroy's "Engineering a Sort Function".
  */
-#define swapcode(TYPE, parmi, parmj, n)         \
-    {                                           \
-        long i            = (n) / sizeof(TYPE); \
-        register TYPE *pi = (TYPE *)(parmi);    \
-        register TYPE *pj = (TYPE *)(parmj);    \
-        do {                                    \
-            register TYPE t = *pi;              \
-            *pi++           = *pj;              \
-            *pj++           = t;                \
-        } while (--i > 0);                      \
+#define swapcode(TYPE, parmi, parmj, n)      \
+    {                                        \
+        long i = (n) / sizeof(TYPE);         \
+        register TYPE *pi = (TYPE *)(parmi); \
+        register TYPE *pj = (TYPE *)(parmj); \
+        do {                                 \
+            register TYPE t = *pi;           \
+            *pi++ = *pj;                     \
+            *pj++ = t;                       \
+        } while (--i > 0);                   \
     }
 
 #define SWAPINIT(a, es) swaptype = ((char *)a - (char *)0) % sizeof(long) || \
@@ -72,7 +72,7 @@ int n, swaptype;
 
 #define swap(a, b)                   \
     if (swaptype == 0) {             \
-        long t       = *(long *)(a); \
+        long t = *(long *)(a);       \
         *(long *)(a) = *(long *)(b); \
         *(long *)(b) = t;            \
     } else                           \
@@ -88,8 +88,7 @@ int n, swaptype;
 #define MED3_R(arg, a, b, c, d) (d ? (med3_r(arg, a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? (b) : (CMP1(a, c) < 0 ? (c) : (a))) : (CMP1(b, c) > 0 ? (b) : (CMP1(a, c) < 0 ? (a) : (c)))))
 
 static inline char *
-med3(a, b, c, cmp)
-char *a,
+    med3(a, b, c, cmp) char *a,
     *b, *c;
 int (*cmp)(const void *, const void *);
 {
@@ -126,7 +125,7 @@ loop:
         pl = a;
         pn = (char *)a + (n - 1) * es;
         if (n > 40) {
-            d  = (n / 8) * es;
+            d = (n / 8) * es;
             pl = MED3(pl, pl + d, pl + 2 * d, cmp);
             pm = MED3(pm - d, pm, pm + d, cmp);
             pn = MED3(pn - 2 * d, pn - d, pn, cmp);
@@ -170,7 +169,7 @@ loop:
     }
 
     pn = (char *)a + n * es;
-    r  = MIN(pa - (char *)a, pb - pa);
+    r = MIN(pa - (char *)a, pb - pa);
     vecswap(a, pb - r, r);
     r = MIN((size_t)(pd - pc), (size_t)(pn - pd - es));
     vecswap(pb, pn - r, r);
@@ -205,7 +204,7 @@ loop:
         pl = a;
         pn = (char *)a + (n - 1) * es;
         if (n > 40) {
-            d  = (n / 8) * es;
+            d = (n / 8) * es;
             pl = MED3_R(arg, pl, pl + d, pl + 2 * d, cmp);
             pm = MED3_R(arg, pm - d, pm, pm + d, cmp);
             pn = MED3_R(arg, pn - 2 * d, pn - d, pn, cmp);
@@ -249,7 +248,7 @@ loop:
     }
 
     pn = (char *)a + n * es;
-    r  = MIN(pa - (char *)a, pb - pa);
+    r = MIN(pa - (char *)a, pb - pa);
     vecswap(a, pb - r, r);
     r = MIN((size_t)(pd - pc), (size_t)(pn - pd - es));
     vecswap(pb, pn - r, r);

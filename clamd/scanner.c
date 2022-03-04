@@ -109,7 +109,7 @@ void hash_callback(int fd, unsigned long long size, const unsigned char *md5, co
 
 void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
 {
-    struct cb_context *c   = ctx;
+    struct cb_context *c = ctx;
     struct scan_cb_data *d = c->scandata;
     const char *fname;
 
@@ -139,7 +139,7 @@ void clamd_virus_found_cb(int fd, const char *virname, void *ctx)
 cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
-    const char *virname           = NULL;
+    const char *virname = NULL;
     int ret;
     int type = scandata->type;
     struct cb_context context;
@@ -228,14 +228,14 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
     if (type == TYPE_MULTISCAN) {
         client_conn_t *client_conn = (client_conn_t *)calloc(1, sizeof(struct client_conn_tag));
         if (client_conn) {
-            client_conn->scanfd   = -1;
-            client_conn->sd       = scandata->odesc;
+            client_conn->scanfd = -1;
+            client_conn->sd = scandata->odesc;
             client_conn->filename = filename;
-            client_conn->cmdtype  = COMMAND_MULTISCANFILE;
-            client_conn->term     = scandata->conn->term;
-            client_conn->options  = scandata->options;
-            client_conn->opts     = scandata->opts;
-            client_conn->group    = scandata->group;
+            client_conn->cmdtype = COMMAND_MULTISCANFILE;
+            client_conn->term = scandata->conn->term;
+            client_conn->options = scandata->options;
+            client_conn->opts = scandata->opts;
+            client_conn->group = scandata->group;
             if (cl_engine_addref(scandata->engine)) {
                 logg(LOGG_ERROR, "cl_engine_addref() failed\n");
                 free(filename);
@@ -265,9 +265,9 @@ cl_error_t scan_callback(STATBUF *sb, char *filename, const char *msg, enum cli_
 
     thrmgr_setactivetask(filename, NULL);
     context.filename = filename;
-    context.virsize  = 0;
+    context.virsize = 0;
     context.scandata = scandata;
-    ret              = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
+    ret = cl_scanfile_callback(filename, &virname, &scandata->scanned, scandata->engine, scandata->options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
@@ -379,15 +379,15 @@ cl_error_t scanfd(
     int odesc,
     int stream)
 {
-    cl_error_t ret      = -1;
-    int fd              = conn->scanfd;
+    cl_error_t ret = -1;
+    int fd = conn->scanfd;
     const char *virname = NULL;
     STATBUF statbuf;
     struct cb_context context;
     char fdstr[32];
     const char *reply_fdstr;
 
-    char *filepath     = NULL;
+    char *filepath = NULL;
     char *log_filename = fdstr;
 
     UNUSEDPARAM(odesc);
@@ -425,9 +425,9 @@ cl_error_t scanfd(
 
     thrmgr_setactivetask(fdstr, NULL);
     context.filename = fdstr;
-    context.virsize  = 0;
+    context.virsize = 0;
     context.scandata = NULL;
-    ret              = cl_scandesc_callback(fd, log_filename, &virname, scanned, engine, options, &context);
+    ret = cl_scandesc_callback(fd, log_filename, &virname, scanned, engine, options, &context);
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(conn->group)) {
@@ -473,9 +473,9 @@ int scanstream(
 {
     int ret, sockfd, acceptd;
     int tmpd, bread, retval, firsttimeout, timeout, btread;
-    unsigned int port       = 0, portscan, min_port, max_port;
+    unsigned int port = 0, portscan, min_port, max_port;
     unsigned long int quota = 0, maxsize = 0;
-    short bound         = 0;
+    short bound = 0;
     const char *virname = NULL;
     char buff[FILEBUFF];
     char peer_addr[32];
@@ -489,14 +489,14 @@ int scanstream(
     max_port = optget(opts, "StreamMaxPort")->numarg;
 
     /* search for a free port to bind to */
-    port  = cli_rndnum(max_port - min_port);
+    port = cli_rndnum(max_port - min_port);
     bound = 0;
     for (portscan = 0; portscan < 1000; portscan++) {
         port = (port - 1) % (max_port - min_port + 1);
 
         memset((char *)&server, 0, sizeof(server));
-        server.sin_family      = AF_INET;
-        server.sin_port        = htons(min_port + port);
+        server.sin_family = AF_INET;
+        server.sin_port = htons(min_port + port);
         server.sin_addr.s_addr = htonl(INADDR_ANY);
 
         if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -511,7 +511,7 @@ int scanstream(
     }
     port += min_port;
 
-    timeout      = optget(opts, "ReadTimeout")->numarg;
+    timeout = optget(opts, "ReadTimeout")->numarg;
     firsttimeout = optget(opts, "CommandReadTimeout")->numarg;
 
     if (!bound) {
@@ -605,9 +605,9 @@ int scanstream(
         lseek(tmpd, 0, SEEK_SET);
         thrmgr_setactivetask(peer_addr, NULL);
         context.filename = peer_addr;
-        context.virsize  = 0;
+        context.virsize = 0;
         context.scandata = NULL;
-        ret              = cl_scandesc_callback(tmpd, tmpname, &virname, scanned, engine, options, &context);
+        ret = cl_scandesc_callback(tmpd, tmpname, &virname, scanned, engine, options, &context);
         thrmgr_setactivetask(NULL, NULL);
     } else {
         ret = -1;

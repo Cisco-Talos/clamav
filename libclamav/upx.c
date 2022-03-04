@@ -210,7 +210,7 @@ static int pefromupx(const char *src, uint32_t ssize, char *dst, uint32_t *dsize
 
     for (upd = 0; upd < sectcnt; upd++) {
         uint32_t vsize = PESALIGN((uint32_t)cli_readint32(sections + 8), valign);
-        uint32_t urva  = PEALIGN((uint32_t)cli_readint32(sections + 12), valign);
+        uint32_t urva = PEALIGN((uint32_t)cli_readint32(sections + 12), valign);
 
         /* Within bounds ? */
         if (!CLI_ISCONTAINED(upx0, realstuffsz, urva, vsize)) {
@@ -592,14 +592,14 @@ int upx_inflatelzma(const char *src, uint32_t ssize, char *dst, uint32_t *dsize,
         return -1;
 
     *fake_lzmahdr = lc + 9 * (5 * pb + lp);
-    l.next_in     = fake_lzmahdr;
-    l.avail_in    = 5;
+    l.next_in = fake_lzmahdr;
+    l.avail_in = 5;
     if (cli_LzmaInit(&l, *dsize) != LZMA_RESULT_OK)
         return 0;
-    l.avail_in  = ssize;
+    l.avail_in = ssize;
     l.avail_out = *dsize;
-    l.next_in   = (unsigned char *)src + 2;
-    l.next_out  = (unsigned char *)dst;
+    l.next_in = (unsigned char *)src + 2;
+    l.next_out = (unsigned char *)dst;
 
     if (cli_LzmaDecode(&l) == LZMA_RESULT_DATA_ERROR) {
         /*     __asm__ __volatile__("int3"); */

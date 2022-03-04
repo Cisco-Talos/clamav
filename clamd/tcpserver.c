@@ -107,9 +107,9 @@ int tcpserver(int **lsockets, unsigned int *nlsockets, char *ipaddr, const struc
     snprintf(port, sizeof(port), "%lld", optget(opts, "TCPSocket")->numarg);
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags    = AI_PASSIVE;
+    hints.ai_flags = AI_PASSIVE;
 
 #ifdef AI_ADDRCONFIG
     hints.ai_flags |= AI_ADDRCONFIG;

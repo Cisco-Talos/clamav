@@ -193,7 +193,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
         else
             ptr = m_area->buffer + m_area->offset;
         start = ptr;
-        end   = ptr - m_area->offset + m_area->length;
+        end = ptr - m_area->offset + m_area->length;
 
         if ((start >= end) || !start) {
             free(chunk);
@@ -217,7 +217,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
                 memcpy(chunk, start, chunk_len);
             } else {
                 chunk_len = 0;
-                ptr       = start;
+                ptr = start;
             }
             if (m_area->map)
                 ptr = (unsigned char *)fmap_need_ptr_once(m_area->map, ptr, end - ptr);
@@ -265,7 +265,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
             /* NULL char found */
             /* save buffer limits */
             start = ptr;
-            end   = chunk + chunk_len;
+            end = chunk + chunk_len;
 
             /* start of NULL chars, we will copy non-NULL characters
              * to this position */
@@ -384,7 +384,7 @@ void html_tag_arg_add(tag_arguments_t *tags,
     if (value) {
         if (*value == '"') {
             tags->value[tags->count - 1] = (unsigned char *)cli_strdup(value + 1);
-            len                          = strlen((const char *)value + 1);
+            len = strlen((const char *)value + 1);
             if (len > 0) {
                 tags->value[tags->count - 1][len - 1] = '\0';
             }
@@ -421,7 +421,7 @@ abort:
         free(tags->contents);
     tags->contents = NULL;
     tags->tag = tags->value = NULL;
-    tags->count             = 0;
+    tags->count = 0;
     return;
 }
 
@@ -469,7 +469,7 @@ void html_tag_arg_free(tag_arguments_t *tags)
         free(tags->contents);
     tags->contents = NULL;
     tags->tag = tags->value = NULL;
-    tags->count             = 0;
+    tags->count = 0;
 }
 
 /**
@@ -518,14 +518,14 @@ static inline void html_tag_contents_done(tag_arguments_t *tags, int idx, struct
 {
     unsigned char *p;
     cont->contents[cont->pos++] = '\0';
-    p                           = cli_malloc(cont->pos);
+    p = cli_malloc(cont->pos);
     if (!p) {
         cli_errmsg("html_tag_contents_done: Unable to allocate memory for p\n");
         return;
     }
     memcpy(p, cont->contents, cont->pos);
     tags->contents[idx - 1] = p;
-    cont->pos               = 0;
+    cont->pos = 0;
 }
 
 struct screnc_state {
@@ -575,7 +575,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
                 }
             }
             s->sum += value;
-            *dst++       = value;
+            *dst++ = value;
             s->table_pos = (s->table_pos + 1) % 64;
         } else {
             *dst++ = *ptr++;
@@ -645,32 +645,32 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     int fd_tmp, tag_length = 0, tag_arg_length = 0, binary;
     int64_t retval = FALSE, escape = FALSE, value = 0, hex = FALSE, tag_val_length = 0;
     int look_for_screnc = FALSE, in_screnc = FALSE, in_script = FALSE, text_space_written = FALSE;
-    FILE *stream_in  = NULL;
+    FILE *stream_in = NULL;
     html_state state = HTML_NORM, next_state = HTML_BAD_STATE, saved_next_state = HTML_BAD_STATE;
     char filename[1024], tag[HTML_STR_LENGTH + 1], tag_arg[HTML_STR_LENGTH + 1];
     char tag_val[HTML_STR_LENGTH + 1], *tmp_file, *arg_value;
     unsigned char *line = NULL, *ptr, *ptr_screnc = NULL;
     tag_arguments_t tag_args;
-    quoted_state quoted  = NOT_QUOTED;
+    quoted_state quoted = NOT_QUOTED;
     unsigned long length = 0;
     struct screnc_state screnc_state;
     file_buff_t *file_buff_o2, *file_buff_text;
-    file_buff_t *file_tmp_o1           = NULL;
-    int in_ahref                       = 0;    /* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
+    file_buff_t *file_tmp_o1 = NULL;
+    int in_ahref = 0;                          /* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
     unsigned char *href_contents_begin = NULL; /*beginning of the next portion of <a> contents*/
-    unsigned char *ptrend              = NULL; /*end of <a> contents*/
-    unsigned char *in_form_action      = NULL; /* the action URL of the current <form> tag, if any*/
+    unsigned char *ptrend = NULL;              /*end of <a> contents*/
+    unsigned char *in_form_action = NULL;      /* the action URL of the current <form> tag, if any*/
 
     struct entity_conv conv;
     unsigned char entity_val[HTML_STR_LENGTH + 1];
     size_t entity_val_length = 0;
-    const int dconf_entconv  = dconf ? dconf->phishing & PHISHING_CONF_ENTCONV : 1;
-    const int dconf_js       = dirname && (dconf ? dconf->doc & DOC_CONF_JSNORM : 1); /* TODO */
+    const int dconf_entconv = dconf ? dconf->phishing & PHISHING_CONF_ENTCONV : 1;
+    const int dconf_js = dirname && (dconf ? dconf->doc & DOC_CONF_JSNORM : 1); /* TODO */
     /* dconf for phishing engine sets scanContents, so no need for a flag here */
     struct parser_state *js_state = NULL;
     const unsigned char *js_begin = NULL, *js_end = NULL;
     struct tag_contents contents;
-    uint32_t mbchar  = 0;
+    uint32_t mbchar = 0;
     uint32_t mbchar2 = 0;
 
     /*
@@ -683,7 +683,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
     memset(entity_val, 0, sizeof(entity_val));
 
     tag_args.scanContents = 0; /* do we need to store the contents of <a></a>?*/
-    contents.pos          = 0;
+    contents.pos = 0;
     if (!m_area) {
         if (fd < 0) {
             cli_dbgmsg("Invalid HTML fd\n");
@@ -701,9 +701,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         }
     }
 
-    tag_args.count    = 0;
-    tag_args.tag      = NULL;
-    tag_args.value    = NULL;
+    tag_args.count = 0;
+    tag_args.tag = NULL;
+    tag_args.value = NULL;
     tag_args.contents = NULL;
     if (dirname) {
         file_buff_o2 = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
@@ -742,10 +742,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
             file_buff_o2 = file_buff_text = NULL;
             goto abort;
         }
-        file_buff_o2->length   = 0;
+        file_buff_o2->length = 0;
         file_buff_text->length = 0;
     } else {
-        file_buff_o2   = NULL;
+        file_buff_o2 = NULL;
         file_buff_text = NULL;
     }
 
@@ -781,7 +781,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (isspace(*ptr)) {
                         ptr++;
                     } else {
-                        state      = next_state;
+                        state = next_state;
                         next_state = HTML_BAD_STATE;
                     }
                     break;
@@ -791,7 +791,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else {
                         if (!in_script)
                             html_output_c(file_buff_o2, ' ');
-                        state      = next_state;
+                        state = next_state;
                         next_state = HTML_BAD_STATE;
                     }
                     break;
@@ -822,8 +822,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             html_output_c(file_buff_o2, c2);
                             html_output_c(file_buff_text, c1);
                         }
-                        mbchar     = 0;
-                        state      = next_state;
+                        mbchar = 0;
+                        state = next_state;
                         next_state = HTML_NORM;
                     } else {
                         mbchar = (mbchar << 8) | *ptr;
@@ -844,7 +844,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             href_contents_begin = NULL; /*We just encountered another tag inside <a>, so skip it*/
                         }
                         ptr++;
-                        state      = HTML_SKIP_WS;
+                        state = HTML_SKIP_WS;
                         tag_length = 0;
                         next_state = HTML_TAG;
                     } else if (isspace(*ptr)) {
@@ -852,20 +852,20 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             html_output_c(file_buff_text, ' ');
                             text_space_written = TRUE;
                         }
-                        state      = HTML_TRIM_WS;
+                        state = HTML_TRIM_WS;
                         next_state = HTML_NORM;
                     } else if (*ptr == '&') {
                         if (!text_space_written && !in_script) {
                             html_output_c(file_buff_text, ' ');
                             text_space_written = TRUE;
                         }
-                        state      = HTML_CHAR_REF;
+                        state = HTML_CHAR_REF;
                         next_state = HTML_NORM;
                         ptr++;
                     } else if (*ptr >= 0x80) {
-                        state      = HTML_8BIT;
+                        state = HTML_8BIT;
                         next_state = HTML_NORM;
-                        mbchar     = *ptr;
+                        mbchar = *ptr;
                         ptr++;
                     } else {
                         unsigned char c = tolower(*ptr);
@@ -898,15 +898,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 file_buff_o2->length--;
                             }
                         }
-                        state      = HTML_COMMENT;
+                        state = HTML_COMMENT;
                         next_state = HTML_BAD_STATE;
                         ptr++;
                     } else if (*ptr == '>') {
                         html_output_c(file_buff_o2, '>');
                         ptr++;
                         tag[tag_length] = '\0';
-                        state           = HTML_SKIP_WS;
-                        next_state      = HTML_PROCESS_TAG;
+                        state = HTML_SKIP_WS;
+                        next_state = HTML_PROCESS_TAG;
                     } else if (!isspace(*ptr)) {
                         html_output_c(file_buff_o2, tolower(*ptr));
                         /* if we're inside a script we only care for </script>.*/
@@ -919,8 +919,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         ptr++;
                     } else {
                         tag[tag_length] = '\0';
-                        state           = HTML_SKIP_WS;
-                        tag_arg_length  = 0;
+                        state = HTML_SKIP_WS;
+                        tag_arg_length = 0;
                         /* if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized for in_script*/
                         next_state = !in_script ? HTML_TAG_ARG : HTML_PROCESS_TAG;
                     }
@@ -930,16 +930,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         html_output_c(file_buff_o2, '=');
                         tag_arg[tag_arg_length] = '\0';
                         ptr++;
-                        state          = HTML_SKIP_WS;
-                        escape         = FALSE;
-                        quoted         = NOT_QUOTED;
+                        state = HTML_SKIP_WS;
+                        escape = FALSE;
+                        quoted = NOT_QUOTED;
                         tag_val_length = 0;
-                        next_state     = HTML_TAG_ARG_VAL;
+                        next_state = HTML_TAG_ARG_VAL;
                     } else if (isspace(*ptr)) {
                         ptr++;
                         tag_arg[tag_arg_length] = '\0';
-                        state                   = HTML_SKIP_WS;
-                        next_state              = HTML_TAG_ARG_EQUAL;
+                        state = HTML_SKIP_WS;
+                        next_state = HTML_TAG_ARG_EQUAL;
                     } else if (*ptr == '>') {
                         html_output_c(file_buff_o2, '>');
                         if (tag_arg_length > 0) {
@@ -947,7 +947,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             html_tag_arg_add(&tag_args, tag_arg, NULL);
                         }
                         ptr++;
-                        state      = HTML_PROCESS_TAG;
+                        state = HTML_PROCESS_TAG;
                         next_state = HTML_BAD_STATE;
                     } else {
                         if (tag_arg_length == 0) {
@@ -965,19 +965,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (*ptr == '=') {
                         html_output_c(file_buff_o2, '=');
                         ptr++;
-                        state          = HTML_SKIP_WS;
-                        escape         = FALSE;
-                        quoted         = NOT_QUOTED;
+                        state = HTML_SKIP_WS;
+                        escape = FALSE;
+                        quoted = NOT_QUOTED;
                         tag_val_length = 0;
-                        next_state     = HTML_TAG_ARG_VAL;
+                        next_state = HTML_TAG_ARG_VAL;
                     } else {
                         if (tag_arg_length > 0) {
                             tag_arg[tag_arg_length] = '\0';
                             html_tag_arg_add(&tag_args, tag_arg, NULL);
                         }
                         tag_arg_length = 0;
-                        state          = HTML_TAG_ARG;
-                        next_state     = HTML_BAD_STATE;
+                        state = HTML_TAG_ARG;
+                        next_state = HTML_BAD_STATE;
                     }
                     break;
                 case HTML_TAG_ARG_VAL:
@@ -993,8 +993,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             html_output_c(file_buff_o2, '"');
                         }
                         tag_val_length = 0;
-                        state          = HTML_RFC2397_TYPE;
-                        next_state     = HTML_TAG_ARG;
+                        state = HTML_RFC2397_TYPE;
+                        next_state = HTML_TAG_ARG;
                     } else if ((tag_val_length == 6) && (strncmp(tag_val, "\"data:", 6) == 0)) {
                         /* RFC2397 inline data */
 
@@ -1008,10 +1008,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         }
 
                         tag_val_length = 0;
-                        state          = HTML_RFC2397_TYPE;
-                        next_state     = HTML_TAG_ARG;
+                        state = HTML_RFC2397_TYPE;
+                        next_state = HTML_TAG_ARG;
                     } else if (*ptr == '&') {
-                        state      = HTML_CHAR_REF;
+                        state = HTML_CHAR_REF;
                         next_state = HTML_TAG_ARG_VAL;
                         ptr++;
                     } else if (*ptr == '\'') {
@@ -1031,9 +1031,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 tag_val[tag_val_length] = '\0';
                                 html_tag_arg_add(&tag_args, tag_arg, tag_val);
                                 ptr++;
-                                state          = HTML_SKIP_WS;
+                                state = HTML_SKIP_WS;
                                 tag_arg_length = 0;
-                                next_state     = HTML_TAG_ARG;
+                                next_state = HTML_TAG_ARG;
                             } else {
                                 html_output_c(file_buff_o2, '"');
                                 if (tag_val_length < HTML_STR_LENGTH) {
@@ -1059,9 +1059,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 tag_val[tag_val_length] = '\0';
                                 html_tag_arg_add(&tag_args, tag_arg, tag_val);
                                 ptr++;
-                                state          = HTML_SKIP_WS;
+                                state = HTML_SKIP_WS;
                                 tag_arg_length = 0;
-                                next_state     = HTML_TAG_ARG;
+                                next_state = HTML_TAG_ARG;
                             } else {
                                 html_output_c(file_buff_o2, '"');
                                 if (tag_val_length < HTML_STR_LENGTH) {
@@ -1074,9 +1074,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (quoted == NOT_QUOTED) {
                             tag_val[tag_val_length] = '\0';
                             html_tag_arg_add(&tag_args, tag_arg, tag_val);
-                            state          = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             tag_arg_length = 0;
-                            next_state     = HTML_TAG_ARG;
+                            next_state = HTML_TAG_ARG;
                         } else {
                             html_output_c(file_buff_o2, *ptr);
                             if (tag_val_length < HTML_STR_LENGTH) {
@@ -1086,9 +1086,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                     tag_val[tag_val_length++] = '>';
                                 }
                             }
-                            state      = HTML_SKIP_WS;
-                            escape     = FALSE;
-                            quoted     = NOT_QUOTED;
+                            state = HTML_SKIP_WS;
+                            escape = FALSE;
+                            quoted = NOT_QUOTED;
                             next_state = HTML_TAG_ARG_VAL;
                             ptr++;
                         }
@@ -1148,7 +1148,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         html_output_c(file_buff_o2, c);
                     }
                     if (*ptr == '>') {
-                        state      = HTML_SKIP_WS;
+                        state = HTML_SKIP_WS;
                         next_state = HTML_NORM;
                     }
                     ptr++;
@@ -1156,11 +1156,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_PROCESS_TAG:
 
                     /* Default to no action for this tag */
-                    state      = HTML_SKIP_WS;
+                    state = HTML_SKIP_WS;
                     next_state = HTML_NORM;
                     if (tag[0] == '/') {
                         /* End tag */
-                        state      = HTML_SKIP_WS;
+                        state = HTML_SKIP_WS;
                         next_state = HTML_NORM;
                         if (strcmp(tag, "/script") == 0) {
                             in_script = FALSE;
@@ -1191,13 +1191,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         /* TODO: maybe we can output all tags only via html_output_tag */
                         if (arg_value && (strcasecmp((const char *)arg_value, "jscript.encode") == 0)) {
                             html_tag_arg_set(&tag_args, "language", "javascript");
-                            state      = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             next_state = HTML_JSDECODE;
                             /* we already output the old tag, output the new tag now */
                             html_output_tag(file_buff_o2, tag, &tag_args);
                         } else if (arg_value && (strcasecmp((const char *)arg_value, "vbscript.encode") == 0)) {
                             html_tag_arg_set(&tag_args, "language", "vbscript");
-                            state      = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             next_state = HTML_JSDECODE;
                             /* we already output the old tag, output the new tag now */
                             html_output_tag(file_buff_o2, tag, &tag_args);
@@ -1209,7 +1209,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 cli_dbgmsg("htmlnorm: Failed to initialize js parser\n");
                             }
                             js_begin = ptr;
-                            js_end   = NULL;
+                            js_end = NULL;
                         }
                     } else if (strcmp(tag, "%@") == 0) {
                         arg_value = html_tag_arg_value(&tag_args, "language");
@@ -1217,9 +1217,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                           strcasecmp((const char *)arg_value, "vbscript.encode") == 0)) {
 
                             saved_next_state = next_state;
-                            next_state       = state;
-                            look_for_screnc  = FALSE;
-                            state            = HTML_LOOKFOR_SCRENC;
+                            next_state = state;
+                            look_for_screnc = FALSE;
+                            state = HTML_LOOKFOR_SCRENC;
                         }
                     } else if (hrefs) {
                         if (in_ahref && !href_contents_begin)
@@ -1256,9 +1256,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                 }
                                 html_tag_arg_add(hrefs, "href", arg_value);
                                 if (hrefs->scanContents) {
-                                    in_ahref            = hrefs->count; /* index of this tag (counted from 1) */
-                                    href_contents_begin = ptr;          /* contents begin after <a ..> ends */
-                                    contents.pos        = 0;
+                                    in_ahref = hrefs->count;   /* index of this tag (counted from 1) */
+                                    href_contents_begin = ptr; /* contents begin after <a ..> ends */
+                                    contents.pos = 0;
                                 }
                             }
                         } else if (strcmp(tag, "form") == 0 && hrefs->scanContents) {
@@ -1354,7 +1354,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_CHAR_REF:
                     if (*ptr == '#') {
                         value = 0;
-                        hex   = FALSE;
+                        hex = FALSE;
                         state = HTML_CHAR_REF_DECODE;
                         ptr++;
                     } else {
@@ -1366,7 +1366,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             }
                             html_output_c(file_buff_o2, '&');
 
-                            state      = next_state;
+                            state = next_state;
                             next_state = HTML_BAD_STATE;
                         }
                     }
@@ -1376,7 +1376,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         size_t i;
                         const char *normalized;
                         entity_val[entity_val_length] = '\0';
-                        normalized                    = entity_norm(&conv, entity_val);
+                        normalized = entity_norm(&conv, entity_val);
                         if (normalized) {
                             for (i = 0; i < strlen(normalized); i++) {
                                 const unsigned char c = normalized[i] & 0xff;
@@ -1403,8 +1403,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             html_output_c(file_buff_o2, ';');
                         }
                         entity_val_length = 0;
-                        state             = next_state;
-                        next_state        = HTML_BAD_STATE;
+                        state = next_state;
+                        next_state = HTML_BAD_STATE;
                         ptr++;
                     } else if ((isalnum(*ptr) || *ptr == '_' || *ptr == ':' || (*ptr == '-')) && entity_val_length < HTML_STR_LENGTH) {
                         entity_val[entity_val_length++] = *ptr++;
@@ -1423,8 +1423,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             }
                         }
 
-                        state             = next_state;
-                        next_state        = HTML_BAD_STATE;
+                        state = next_state;
+                        next_state = HTML_BAD_STATE;
                         entity_val_length = 0;
                     }
                     break;
@@ -1449,7 +1449,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             }
                         } else
                             html_output_c(file_buff_o2, tolower(value & 0xff));
-                        state      = next_state;
+                        state = next_state;
                         next_state = HTML_BAD_STATE;
                         ptr++;
                     } else if (isdigit(*ptr) || (hex && isxdigit(*ptr))) {
@@ -1461,7 +1461,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                             value *= 10;
                         } else {
                             html_output_c(file_buff_o2, value);
-                            state      = next_state;
+                            state = next_state;
                             next_state = HTML_BAD_STATE;
                             ptr++;
                             break;
@@ -1474,7 +1474,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (value > INT64_MAX - increment) {
                             /* Addition would result in integer overflow. */
                             html_output_c(file_buff_o2, value);
-                            state      = next_state;
+                            state = next_state;
                             next_state = HTML_BAD_STATE;
                             ptr++;
                             break;
@@ -1483,19 +1483,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         ptr++;
                     } else {
                         html_output_c(file_buff_o2, value);
-                        state      = next_state;
+                        state = next_state;
                         next_state = HTML_BAD_STATE;
                     }
                     break;
                 case HTML_LOOKFOR_SCRENC:
                     look_for_screnc = TRUE;
-                    ptr_screnc      = (unsigned char *)strstr((char *)ptr, "#@~^");
+                    ptr_screnc = (unsigned char *)strstr((char *)ptr, "#@~^");
                     if (ptr_screnc) {
                         ptr_screnc[0] = '/';
                         ptr_screnc[1] = '/';
                         ptr_screnc += 4;
                     }
-                    state      = next_state;
+                    state = next_state;
                     next_state = saved_next_state;
                     break;
                 case HTML_JSDECODE:
@@ -1504,7 +1504,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         ptr[0] = '/';
                         ptr[1] = '/';
                         ptr += 4;
-                        state      = HTML_JSDECODE_LENGTH;
+                        state = HTML_JSDECODE_LENGTH;
                         next_state = HTML_BAD_STATE;
                     } else {
                         html_output_c(file_buff_o2, tolower(*ptr));
@@ -1513,7 +1513,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     break;
                 case HTML_JSDECODE_LENGTH:
                     if (strlen((const char *)ptr) < 8) {
-                        state      = HTML_NORM;
+                        state = HTML_NORM;
                         next_state = HTML_BAD_STATE;
                         break;
                     }
@@ -1526,8 +1526,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     screnc_state.length += base64_chars[ptr[3]] < 0 ? 0 : base64_chars[ptr[3]] << 16;
                     screnc_state.length += (base64_chars[ptr[4]] < 0 ? 0 : base64_chars[ptr[4]] << 2) << 24;
                     screnc_state.length += ((base64_chars[ptr[5]] >> 4) < 0 ? 0 : (base64_chars[ptr[5]] >> 4)) << 24;
-                    state      = HTML_JSDECODE_DECRYPT;
-                    in_screnc  = TRUE;
+                    state = HTML_JSDECODE_DECRYPT;
+                    in_screnc = TRUE;
                     next_state = HTML_BAD_STATE;
                     /* for JS normalizer */
                     ptr[7] = '\n';
@@ -1536,12 +1536,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                 case HTML_JSDECODE_DECRYPT:
                     screnc_decode(ptr, &screnc_state);
                     if (!screnc_state.length) {
-                        state      = HTML_NORM;
+                        state = HTML_NORM;
                         next_state = HTML_BAD_STATE;
-                        in_screnc  = FALSE;
+                        in_screnc = FALSE;
                         break;
                     } else {
-                        state      = HTML_NORM;
+                        state = HTML_NORM;
                         next_state = HTML_BAD_STATE;
                     }
                     break;
@@ -1550,9 +1550,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (!escape && (quoted == SINGLE_QUOTED)) {
                             /* Early end of data detected. Error */
                             ptr++;
-                            state          = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             tag_arg_length = 0;
-                            next_state     = HTML_TAG_ARG;
+                            next_state = HTML_TAG_ARG;
                         } else {
                             if (tag_val_length < HTML_STR_LENGTH) {
                                 tag_val[tag_val_length++] = '"';
@@ -1563,9 +1563,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         if (!escape && (quoted == DOUBLE_QUOTED)) {
                             /* Early end of data detected. Error */
                             ptr++;
-                            state          = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             tag_arg_length = 0;
-                            next_state     = HTML_TAG_ARG;
+                            next_state = HTML_TAG_ARG;
                         } else {
                             if (tag_val_length < HTML_STR_LENGTH) {
                                 tag_val[tag_val_length++] = '"';
@@ -1575,9 +1575,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else if (isspace(*ptr) || (*ptr == '>')) {
                         if (quoted == NOT_QUOTED) {
                             /* Early end of data detected. Error */
-                            state          = HTML_SKIP_WS;
+                            state = HTML_SKIP_WS;
                             tag_arg_length = 0;
-                            next_state     = HTML_TAG_ARG;
+                            next_state = HTML_TAG_ARG;
                         } else {
                             if (tag_val_length < HTML_STR_LENGTH) {
                                 if (isspace(*ptr)) {
@@ -1586,18 +1586,18 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                                     tag_val[tag_val_length++] = '>';
                                 }
                             }
-                            state      = HTML_SKIP_WS;
-                            escape     = FALSE;
-                            quoted     = NOT_QUOTED;
+                            state = HTML_SKIP_WS;
+                            escape = FALSE;
+                            quoted = NOT_QUOTED;
                             next_state = HTML_RFC2397_TYPE;
                             ptr++;
                         }
                     } else if (*ptr == ',') {
                         /* Beginning of data */
                         tag_val[tag_val_length] = '\0';
-                        state                   = HTML_RFC2397_INIT;
-                        escape                  = FALSE;
-                        next_state              = HTML_BAD_STATE;
+                        state = HTML_RFC2397_INIT;
+                        escape = FALSE;
+                        next_state = HTML_BAD_STATE;
                         ptr++;
 
                     } else {
@@ -1668,18 +1668,18 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     } else {
                         file_tmp_o1 = NULL;
                     }
-                    state  = HTML_RFC2397_DATA;
+                    state = HTML_RFC2397_DATA;
                     binary = TRUE;
                     break;
                 case HTML_RFC2397_DATA:
                     if (*ptr == '&') {
-                        state      = HTML_CHAR_REF;
+                        state = HTML_CHAR_REF;
                         next_state = HTML_RFC2397_DATA;
                         ptr++;
                     } else if (*ptr == '%') {
-                        length     = 0;
-                        value      = 0;
-                        state      = HTML_ESCAPE_CHAR;
+                        length = 0;
+                        value = 0;
+                        state = HTML_ESCAPE_CHAR;
                         next_state = HTML_RFC2397_ESC;
                         ptr++;
                     } else if (*ptr == '\'') {
@@ -1726,11 +1726,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                         free(file_tmp_o1);
                         file_tmp_o1 = NULL;
                     }
-                    state      = HTML_SKIP_WS;
-                    escape     = FALSE;
-                    quoted     = NOT_QUOTED;
+                    state = HTML_SKIP_WS;
+                    escape = FALSE;
+                    quoted = NOT_QUOTED;
                     next_state = HTML_TAG_ARG;
-                    binary     = FALSE;
+                    binary = FALSE;
                     break;
                 case HTML_RFC2397_ESC:
                     if (length == 2) {
@@ -1747,7 +1747,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
                     if (value < INT64_MAX / 16) {
                         value *= 16;
                     } else {
-                        state      = next_state;
+                        state = next_state;
                         next_state = HTML_BAD_STATE;
                         ptr++;
                         break;
@@ -1783,22 +1783,22 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         }
         if (look_for_screnc && ptr_screnc) {
             /* start found, and stuff before it already processed */
-            ptr        = ptr_screnc;
+            ptr = ptr_screnc;
             ptr_screnc = NULL;
-            state      = HTML_JSDECODE_LENGTH;
+            state = HTML_JSDECODE_LENGTH;
             next_state = HTML_BAD_STATE;
             continue;
         }
         free(line);
         ptr = line = cli_readchunk(stream_in, m_area, 8192);
         if (in_screnc) {
-            state      = HTML_JSDECODE_DECRYPT;
+            state = HTML_JSDECODE_DECRYPT;
             next_state = HTML_BAD_STATE;
         } else if (look_for_screnc && !ptr_screnc &&
                    state != HTML_LOOKFOR_SCRENC) {
             saved_next_state = next_state;
-            next_state       = state;
-            state            = HTML_LOOKFOR_SCRENC;
+            next_state = state;
+            state = HTML_LOOKFOR_SCRENC;
         }
         if (next_state == state) {
             /* safeguard against infloop */
@@ -1812,7 +1812,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
         size_t i;
         const char *normalized;
         entity_val[entity_val_length] = '\0';
-        normalized                    = entity_norm(&conv, entity_val);
+        normalized = entity_norm(&conv, entity_val);
         if (normalized) {
             for (i = 0; i < strlen(normalized); i++)
                 html_output_c(file_buff_o2, normalized[i] & 0xff);
@@ -1874,7 +1874,7 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
     m_area.buffer = in_buff;
     m_area.length = in_size;
     m_area.offset = 0;
-    m_area.map    = NULL;
+    m_area.map = NULL;
 
     return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
@@ -1886,8 +1886,8 @@ int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,
 
     m_area.length = map->len;
     m_area.offset = 0;
-    m_area.map    = map;
-    retval        = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
+    m_area.map = map;
+    retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
     return retval;
 }
 
@@ -1903,7 +1903,7 @@ int html_screnc_decode(fmap_t *map, const char *dirname)
     memset(&m_area, 0, sizeof(m_area));
     m_area.length = map->len;
     m_area.offset = 0;
-    m_area.map    = map;
+    m_area.map = map;
 
     snprintf((char *)filename, 1024, "%s" PATHSEP "screnc.html", dirname);
     ofd = open((const char *)filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, S_IWUSR | S_IRUSR);

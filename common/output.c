@@ -60,7 +60,7 @@
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
-pthread_mutex_t logg_mutex     = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -82,7 +82,7 @@ pthread_mutex_t mdprintf_mutex = PTHREAD_MUTEX_INITIALIZER;
 FILE *logg_fp = NULL;
 
 short int logg_verbose = 0, logg_nowarn = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1, logg_noflush = 0, logg_rotate = 0;
-off_t logg_size       = 0;
+off_t logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 short logg_syslog;
@@ -133,12 +133,12 @@ int mdprintf(int desc, const char *str, ...)
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
-        len  = sizeof(buffer);
+        len = sizeof(buffer);
         buff = buffer;
     } else {
         abuffer = malloc(len);
         if (!abuffer) {
-            len  = sizeof(buffer);
+            len = sizeof(buffer);
             buff = buffer;
         } else {
             buff = abuffer;
@@ -173,7 +173,7 @@ int mdprintf(int desc, const char *str, ...)
 #ifdef CL_THREAD_SAFE
             pthread_mutex_unlock(&mdprintf_mutex);
 #endif
-            tv.tv_sec  = 0;
+            tv.tv_sec = 0;
             tv.tv_usec = mprintf_send_timeout * 1000;
             do {
                 fd_set wfds;
@@ -221,7 +221,7 @@ static int rename_logg(STATBUF *sb)
     }
 
     rotate_file_len = strlen(logg_file) + strlen("-YYYY-MM-DD_HH:MM:SS.log");
-    rotate_file     = calloc(1, rotate_file_len + 1);
+    rotate_file = calloc(1, rotate_file_len + 1);
     if (!rotate_file) {
         if (logg_fp)
             fprintf(logg_fp, "Need to rotate log file due to size but ran out of memory.\n");
@@ -315,12 +315,12 @@ int logg(loglevel_t loglevel, const char *str, ...)
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
-        len  = sizeof(buffer);
+        len = sizeof(buffer);
         buff = buffer;
     } else {
         abuffer = malloc(len);
         if (!abuffer) {
-            len  = sizeof(buffer);
+            len = sizeof(buffer);
             buff = buffer;
         } else {
             buff = abuffer;
@@ -460,12 +460,12 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
 
     ARGLEN(args, str, len);
     if (len <= sizeof(buffer)) {
-        len  = sizeof(buffer);
+        len = sizeof(buffer);
         buff = buffer;
     } else {
         abuffer = malloc(len);
         if (!abuffer) {
-            len  = sizeof(buffer);
+            len = sizeof(buffer);
             buff = buffer;
         } else {
             buff = abuffer;
@@ -478,7 +478,7 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
 
 #ifdef _WIN32
     do {
-        int tmplen    = len + 1;
+        int tmplen = len + 1;
         wchar_t *tmpw = malloc(tmplen * sizeof(wchar_t));
         char *nubuff;
         if (!tmpw)
@@ -502,7 +502,7 @@ void mprintf(loglevel_t loglevel, const char *str, ...)
         if (len > sizeof(buffer))
             free(abuffer);
         abuffer = buff = nubuff;
-        len            = sizeof(buffer) + 1;
+        len = sizeof(buffer) + 1;
     } while (0);
 #endif
     if (loglevel == LOGG_ERROR) {

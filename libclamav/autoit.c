@@ -515,7 +515,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len)
         src += 2;
     } else {
         unsigned int cnt = 0;
-        j                = (len > 20) ? 20 : (len & ~1);
+        j = (len > 20) ? 20 : (len & ~1);
 
         for (i = 0; i < j; i += 2)
             cnt += (src[i] != 0 && src[i + 1] == 0);
@@ -551,7 +551,7 @@ static uint8_t MT_getnext(struct MT *MT)
         unsigned int i;
 
         MT->items = 624;
-        MT->next  = mt;
+        MT->next = mt;
 
         for (i = 0; i < 227; i++)
             mt[i] = ((((mt[i] ^ mt[i + 1]) & 0x7ffffffe) ^ mt[i]) >> 1) ^ ((0 - (mt[i + 1] & 1)) & 0x9908b0df) ^ mt[i + 397];
@@ -578,7 +578,7 @@ static void MT_decrypt(uint8_t *buf, unsigned int size, uint32_t seed)
     for (i = 1; i < 624; i++)
         mt[i] = i + 0x6c078965 * ((mt[i - 1] >> 30) ^ mt[i - 1]);
     MT.items = 1;
-    MT.next  = MT.mt;
+    MT.next = MT.mt;
 
     while (size--)
         *buf++ ^= MT_getnext(&MT);
@@ -696,7 +696,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
         if (!fmap_need_ptr_once(map, base, 13))
             return (det ? CL_VIRUS : CL_CLEAN);
-        comp      = *base;
+        comp = *base;
         UNP.csize = cli_readint32(base + 1) ^ 0x45aa;
         if ((int32_t)UNP.csize < 0) {
             cli_dbgmsg("autoit: bad file size - giving up\n");
@@ -756,11 +756,11 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             }
             cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-            UNP.cur_output  = 0;
-            UNP.cur_input   = 8;
+            UNP.cur_output = 0;
+            UNP.cur_input = 8;
             UNP.bitmap.full = 0;
-            UNP.bits_avail  = 0;
-            UNP.error       = 0;
+            UNP.bits_avail = 0;
+            UNP.error = 0;
 
             while (!UNP.error && UNP.cur_output < UNP.usize) {
                 if (getbits(&UNP, 1)) {
@@ -820,7 +820,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         } else {
             cli_dbgmsg("autoit: file is not compressed\n");
             UNP.outputbuf = UNP.inputbuf;
-            UNP.usize     = UNP.csize;
+            UNP.usize = UNP.csize;
         }
 
         if (UNP.usize < 4) {
@@ -923,7 +923,7 @@ static void LAME_srand(struct LAME *l, uint32_t seed)
 
     for (i = 0; i < 17; i++) {
         seed *= 0x53A9B4FB; /*1403630843*/
-        seed       = 1 - seed;
+        seed = 1 - seed;
         l->grp1[i] = seed;
     }
 
@@ -970,7 +970,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
     unsigned int files = 0;
     char tempfile[1024];
     const char prefixes[] = {'\0', '\0', '@', '$', '\0', '.', '"', '\0'};
-    const char *opers[]   = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=", "?", ":"};
+    const char *opers[] = {",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=", "?", ":"};
     struct UNP UNP;
     fmap_t *map = ctx->fmap;
 
@@ -1021,7 +1021,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                 return (det ? CL_VIRUS : CL_CLEAN);
             memcpy(b, base, s * 2);
             LAME_decrypt(b, s * 2, s + 0xf479);
-            b[s * 2]     = '\0';
+            b[s * 2] = '\0';
             b[s * 2 + 1] = '\0';
             u2a(b, s * 2);
             cli_dbgmsg("autoit: original filename '%s'\n", b);
@@ -1030,7 +1030,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
         if (!fmap_need_ptr_once(map, base, 13))
             return (det ? CL_VIRUS : CL_CLEAN);
-        comp      = *base;
+        comp = *base;
         UNP.csize = cli_readint32(base + 1) ^ 0x87bc;
         if ((int32_t)UNP.csize < 0) {
             cli_dbgmsg("autoit: bad file size - giving up\n");
@@ -1091,11 +1091,11 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             }
             cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-            UNP.cur_output  = 0;
-            UNP.cur_input   = 8;
+            UNP.cur_output = 0;
+            UNP.cur_input = 8;
             UNP.bitmap.full = 0;
-            UNP.bits_avail  = 0;
-            UNP.error       = 0;
+            UNP.bits_avail = 0;
+            UNP.error = 0;
 
             while (!UNP.error && UNP.cur_output < UNP.usize) {
                 if (!getbits(&UNP, 1)) {
@@ -1149,7 +1149,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
         } else {
             cli_dbgmsg("autoit: file is not compressed\n");
             UNP.outputbuf = UNP.inputbuf;
-            UNP.usize     = UNP.csize;
+            UNP.usize = UNP.csize;
         }
 
         if (UNP.usize < 4) {
@@ -1167,9 +1167,9 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                 return CL_EMEM;
             }
             UNP.cur_output = 0;
-            UNP.cur_input  = 4;
+            UNP.cur_input = 4;
             UNP.bits_avail = cli_readint32((char *)UNP.outputbuf);
-            UNP.error      = 0;
+            UNP.error = 0;
             cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
 
             while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
@@ -1339,7 +1339,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                             cli_dbgmsg("autoit: not enough space for size\n");
                             break;
                         }
-                        chars  = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+                        chars = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
                         dchars = chars * 2;
                         UNP.cur_input += 4;
 
@@ -1447,7 +1447,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
             free(UNP.outputbuf);
         } else {
-            buf            = UNP.outputbuf;
+            buf = UNP.outputbuf;
             UNP.cur_output = UNP.usize;
         }
 

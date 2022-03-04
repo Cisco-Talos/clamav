@@ -66,7 +66,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva);
 static int groupicon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva)
 {
     struct ICON_ENV *icon_env = ptr;
-    int ret                   = CL_CLEAN;
+    int ret = CL_CLEAN;
 
     UNUSEDPARAM(type);
     UNUSEDPARAM(lang);
@@ -110,26 +110,26 @@ static int icon_scan_cb(void *ptr, uint32_t type, uint32_t name, uint32_t lang, 
 int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     struct ICON_ENV icon_env;
-    fmap_t *map        = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     uint32_t err_total = 0;
 
-    icon_env.ctx    = ctx;
-    icon_env.gcnt   = 0;
-    icon_env.hcnt   = 0;
-    icon_env.icnt   = 0;
-    icon_env.lastg  = 0;
+    icon_env.ctx = ctx;
+    icon_env.gcnt = 0;
+    icon_env.hcnt = 0;
+    icon_env.icnt = 0;
+    icon_env.lastg = 0;
     icon_env.result = CL_CLEAN;
 
-    icon_env.set    = set;
+    icon_env.set = set;
     icon_env.peinfo = peinfo;
 
     icon_env.max_icons = ctx->engine->maxiconspe;
 
-    icon_env.err_oof   = 0;
+    icon_env.err_oof = 0;
     icon_env.err_bhoof = 0;
-    icon_env.err_bhts  = 0;
-    icon_env.err_tstl  = 0;
-    icon_env.err_insl  = 0;
+    icon_env.err_bhts = 0;
+    icon_env.err_tstl = 0;
+    icon_env.err_insl = 0;
 
     /* icon group scan callback --> groupicon_scan_cb() */
     findres(14, 0xffffffff, map, peinfo, groupicon_scan_cb, &icon_env);
@@ -167,11 +167,11 @@ int cli_scanicon(icon_groupset *set, cli_ctx *ctx, struct cli_exe_info *peinfo)
 int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 {
     /* import environment */
-    cli_ctx *ctx                = icon_env->ctx;
+    cli_ctx *ctx = icon_env->ctx;
     struct cli_exe_info *peinfo = icon_env->peinfo;
 
-    int err            = 0;
-    fmap_t *map        = ctx->fmap;
+    int err = 0;
+    fmap_t *map = ctx->fmap;
     const uint8_t *grp = fmap_need_off_once(map, cli_rawaddr(rva, peinfo->sections, peinfo->nsections, (unsigned int *)(&err), map->len, peinfo->hdr_size), 16);
 
     if (grp && !err) {
@@ -238,7 +238,7 @@ int cli_groupiconscan(struct ICON_ENV *icon_env, uint32_t rva)
 
 /* static const int gaussk[]={1,10,45,120,210,252,210,120,45,10,1}; */
 static const int gaussk[] = {1, 2, 1};
-static const int gkernsz  = (sizeof(gaussk) / sizeof(gaussk[0]));
+static const int gkernsz = (sizeof(gaussk) / sizeof(gaussk[0]));
 
 #ifndef USE_FLOATS
 // clang-format off
@@ -823,8 +823,8 @@ static unsigned int matchpoint(unsigned int side, unsigned int *x1, unsigned int
         best = 0;
         for (j = 0; j < 3; j++) {
             /* approximately measure the distance from the best matching reference - avoid N*N total war */
-            int diffx         = (int)x1[i] - (int)x2[j];
-            int diffy         = ((int)y1[i] - (int)y2[j]);
+            int diffx = (int)x1[i] - (int)x2[j];
+            int diffy = ((int)y1[i] - (int)y2[j]);
             unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
             if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > max / 5)
                 continue;
@@ -844,18 +844,18 @@ static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned 
     unsigned int x1[6], y1[6], avg1[6], x2[6], y2[6], avg2[6];
 
     for (i = 0; i < 3; i++) {
-        x1[i]   = x1a[i];
-        y1[i]   = y1a[i];
+        x1[i] = x1a[i];
+        y1[i] = y1a[i];
         avg1[i] = avg1a[i];
-        x2[i]   = x2a[i];
-        y2[i]   = y2a[i];
+        x2[i] = x2a[i];
+        y2[i] = y2a[i];
         avg2[i] = avg2a[i];
 
-        x1[i + 3]   = x1b[i];
-        y1[i + 3]   = y1b[i];
+        x1[i + 3] = x1b[i];
+        y1[i + 3] = y1b[i];
         avg1[i + 3] = avg1b[i];
-        x2[i + 3]   = x2b[i];
-        y2[i + 3]   = y2b[i];
+        x2[i + 3] = x2b[i];
+        y2[i + 3] = y2b[i];
         avg2[i + 3] = avg2b[i];
     }
 
@@ -863,8 +863,8 @@ static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned 
         best = 0;
         for (j = 0; j < 6; j++) {
             /* approximately measure the distance from the best matching reference - avoid N*N total war */
-            int diffx         = (int)x1[i] - (int)x2[j];
-            int diffy         = ((int)y1[i] - (int)y2[j]);
+            int diffx = (int)x1[i] - (int)x2[j];
+            int diffy = ((int)y1[i] - (int)y2[j]);
             unsigned int diff = sqrt(diffx * diffx + diffy * diffy);
             if (diff > ksize * 3 / 4 || (unsigned int)abs((int)avg1[i] - (int)avg2[j]) > 255 / 5)
                 continue;
@@ -881,12 +881,12 @@ static unsigned int matchbwpoint(unsigned int side, unsigned int *x1a, unsigned 
 static void hsv(unsigned int c, unsigned int *r, unsigned int *g, unsigned int *b, unsigned int *s, unsigned int *v, unsigned int *delta)
 {
     unsigned int min, max;
-    *r     = (c >> 16) & 0xff;
-    *g     = (c >> 8) & 0xff;
-    *b     = c & 0xff;
-    min    = MIN(*r, MIN(*g, *b));
-    max    = MAX(*r, MAX(*g, *b));
-    *v     = max;
+    *r = (c >> 16) & 0xff;
+    *g = (c >> 8) & 0xff;
+    *b = c & 0xff;
+    min = MIN(*r, MIN(*g, *b));
+    max = MAX(*r, MAX(*g, *b));
+    *v = max;
     *delta = max - min;
     if (!*delta)
         *s = 0;
@@ -933,7 +933,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                 }
             } else if (x) { /* Here we incrementally calculate rows and columns
                   code is split as gcc produces faster code this way */
-                colsum   = tmp[y * side + x - 1];
+                colsum = tmp[y * side + x - 1];
                 lightsum = tmp[side * side + y * side + x - 1];
                 for (yk = 0; yk < ksize; yk++) {
                     /* remove previous column */
@@ -954,7 +954,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                 }
             } else {
-                colsum   = tmp[(y - 1) * side];
+                colsum = tmp[(y - 1) * side];
                 lightsum = tmp[side * side + (y - 1) * side];
                 for (xk = 0; xk < ksize; xk++) {
                     /* remove previous row */
@@ -976,7 +976,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                 }
             }
-            tmp[y * side + x]               = colsum;
+            tmp[y * side + x] = colsum;
             tmp[side * side + y * side + x] = lightsum;
         }
     }
@@ -997,8 +997,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         res->color_avg[i] = colsum;
-                        res->color_x[i]   = x;
-                        res->color_y[i]   = y;
+                        res->color_x[i] = x;
+                        res->color_y[i] = y;
                     }
                 }
                 if (colsum < res->gray_avg[i]) {
@@ -1009,8 +1009,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         res->gray_avg[i] = colsum;
-                        res->gray_x[i]   = x;
-                        res->gray_y[i]   = y;
+                        res->gray_x[i] = x;
+                        res->gray_y[i] = y;
                     }
                 }
                 if (lightsum > res->bright_avg[i]) {
@@ -1021,8 +1021,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         res->bright_avg[i] = lightsum;
-                        res->bright_x[i]   = x;
-                        res->bright_y[i]   = y;
+                        res->bright_x[i] = x;
+                        res->bright_y[i] = y;
                     }
                 }
                 if (lightsum < res->dark_avg[i]) {
@@ -1033,8 +1033,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         res->dark_avg[i] = lightsum;
-                        res->dark_x[i]   = x;
-                        res->dark_y[i]   = y;
+                        res->dark_x[i] = x;
+                        res->dark_y[i] = y;
                     }
                 }
             }
@@ -1056,10 +1056,10 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
         res->ccount = res->ccount * 100 / side / side;
     } else {
         res->ccount = 0;
-        res->rsum   = 0;
-        res->gsum   = 0;
-        res->bsum   = 0;
-        bwonly      = 1;
+        res->rsum = 0;
+        res->gsum = 0;
+        res->bsum = 0;
+        bwonly = 1;
     }
 
     /* Edge detection - Sobel */
@@ -1106,7 +1106,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
             gy -= sobel[(y + 1) * side + (x + 0)] * 2;
             gy -= sobel[(y + 1) * side + (x + 1)];
 
-            sob               = (int)sqrt(gx * gx + gy * gy);
+            sob = (int)sqrt(gx * gx + gy * gy);
             tmp[y * side + x] = sob;
             if (sob > i)
                 i = sob;
@@ -1120,8 +1120,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
     if (i) {
         for (y = 1; y < side - 1; y++) {
             for (x = 1; x < side - 1; x++) {
-                unsigned int c          = tmp[y * side + x];
-                c                       = c * 255 / i;
+                unsigned int c = tmp[y * side + x];
+                c = c * 255 / i;
                 imagedata[y * side + x] = 0xff000000 | c | (c << 8) | (c << 16);
             }
         }
@@ -1129,11 +1129,11 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
     /* black borders */
     for (x = 0; x < side; x++) {
-        imagedata[x]                     = 0xff000000;
+        imagedata[x] = 0xff000000;
         imagedata[(side - 1) * side + x] = 0xff000000;
     }
     for (y = 0; y < side; y++) {
-        imagedata[y * side]            = 0xff000000;
+        imagedata[y * side] = 0xff000000;
         imagedata[y * side + side - 1] = 0xff000000;
     }
     makebmp("3-edge", tempd, side, side, imagedata);
@@ -1200,7 +1200,7 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
     /* calculate best and worst 3 (or 6) edged areas */
     for (i = 0; i < 3 * (bwonly + 1); i++) {
-        edge_avg[i]   = 0;
+        edge_avg[i] = 0;
         noedge_avg[i] = 0xffffffff;
         for (y = 0; y < side - ksize; y++) {
             for (x = 0; x < side - 1 - ksize; x++) {
@@ -1214,8 +1214,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         edge_avg[i] = sum;
-                        edge_x[i]   = x;
-                        edge_y[i]   = y;
+                        edge_x[i] = x;
+                        edge_y[i] = y;
                     }
                 }
                 if (sum < noedge_avg[i]) {
@@ -1226,8 +1226,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
                     }
                     if (j == i) {
                         noedge_avg[i] = sum;
-                        noedge_x[i]   = x;
-                        noedge_y[i]   = y;
+                        noedge_x[i] = x;
+                        noedge_y[i] = y;
                     }
                 }
             }
@@ -1238,21 +1238,21 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
     /* abs->avg */
     for (i = 0; i < 3; i++) {
-        res->edge_avg[i]   = edge_avg[i] / ksize / ksize;
-        res->edge_x[i]     = edge_x[i];
-        res->edge_y[i]     = edge_y[i];
+        res->edge_avg[i] = edge_avg[i] / ksize / ksize;
+        res->edge_x[i] = edge_x[i];
+        res->edge_y[i] = edge_y[i];
         res->noedge_avg[i] = noedge_avg[i] / ksize / ksize;
-        res->noedge_x[i]   = noedge_x[i];
-        res->noedge_y[i]   = noedge_y[i];
+        res->noedge_x[i] = noedge_x[i];
+        res->noedge_y[i] = noedge_y[i];
     }
     if (bwonly) {
         for (i = 0; i < 3; i++) {
             res->color_avg[i] = edge_avg[i + 3] / ksize / ksize;
-            res->color_x[i]   = edge_x[i + 3];
-            res->color_y[i]   = edge_y[i + 3];
-            res->gray_avg[i]  = noedge_avg[i + 3] / ksize / ksize;
-            res->gray_x[i]    = edge_x[i + 3];
-            res->gray_y[i]    = edge_y[i + 3];
+            res->color_x[i] = edge_x[i + 3];
+            res->color_y[i] = edge_y[i + 3];
+            res->gray_avg[i] = noedge_avg[i + 3] / ksize / ksize;
+            res->gray_x[i] = edge_x[i + 3];
+            res->gray_y[i] = edge_y[i + 3];
         }
     }
 
@@ -1334,8 +1334,8 @@ static int getmetrics(unsigned int side, unsigned int *imagedata, struct icomtr 
 
 static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 {
-    icon_groupset *set          = icon_env->set;
-    cli_ctx *ctx                = icon_env->ctx;
+    icon_groupset *set = icon_env->set;
+    cli_ctx *ctx = icon_env->ctx;
     struct cli_exe_info *peinfo = icon_env->peinfo;
 
     struct
@@ -1368,7 +1368,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 
     if (!ctx || !ctx->engine || !(matcher = ctx->engine->iconcheck))
         return CL_SUCCESS;
-    map   = ctx->fmap;
+    map = ctx->fmap;
     tempd = (cli_debug_flag && ctx->engine->keeptmp) ? (ctx->sub_tmpdir ? ctx->sub_tmpdir : cli_gettmpdir()) : NULL;
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
 
@@ -1379,7 +1379,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
         return CL_SUCCESS;
     }
 
-    rva   = cli_readint32(rawimage);
+    rva = cli_readint32(rawimage);
     icoff = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size);
     if (err || fmap_readn(map, &bmphdr, icoff, sizeof(bmphdr)) != sizeof(bmphdr)) {
         icon_env->err_bhoof++;
@@ -1396,9 +1396,9 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     /* seek to the end of v4/v5 header */
     icoff += READ32(bmphdr.sz);
 
-    width  = READ32(bmphdr.w);
+    width = READ32(bmphdr.w);
     height = READ32(bmphdr.h) / 2;
-    depth  = READ16(bmphdr.depth);
+    depth = READ16(bmphdr.depth);
     if (width > 256 || height > 256 || width < 16 || height < 16) {
         icon_env->err_tstl++;
         // cli_dbgmsg("parseicon: Image too small or too big (%ux%u)\n", width, height);
@@ -1448,7 +1448,7 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 
     /* compute line sizes */
     scanlinesz = 4 * (width * depth / 32) + 4 * (width * depth % 32 != 0);
-    andlinesz  = ((depth & 0x1f) != 0) * (4 * (width / 32) + 4 * (width % 32 != 0));
+    andlinesz = ((depth & 0x1f) != 0) * (4 * (width / 32) + 4 * (width % 32 != 0));
 
     /* read the raw image */
 
@@ -1471,10 +1471,10 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
             case 4:
             case 8: {
                 unsigned int have = 0;
-                unsigned char c   = 0; // will be set in first loop
+                unsigned char c = 0; // will be set in first loop
                 for (x = 0; x < width; x++) {
                     if (!have) {
-                        c    = rawimage[x_off++];
+                        c = rawimage[x_off++];
                         have = 8;
                     }
                     have -= depth;
@@ -1484,12 +1484,12 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
             }
             case 16: {
                 for (x = 0; x < width; x++) {
-                    unsigned int b                          = (rawimage[x_off] & 0x1f);
-                    unsigned int g                          = ((rawimage[x_off] >> 5) | ((rawimage[x_off + 1] & 0x3) << 3));
-                    unsigned int r                          = (rawimage[x_off + 1] & 0xfc);
-                    b                                       = (b << 3) | (b >> 2);
-                    g                                       = ((g << 3) | (g >> 2)) << 11;
-                    r                                       = ((r << 3) | (r >> 2)) << 17;
+                    unsigned int b = (rawimage[x_off] & 0x1f);
+                    unsigned int g = ((rawimage[x_off] >> 5) | ((rawimage[x_off + 1] & 0x3) << 3));
+                    unsigned int r = (rawimage[x_off + 1] & 0xfc);
+                    b = (b << 3) | (b >> 2);
+                    g = ((g << 3) | (g >> 2)) << 11;
+                    r = ((r << 3) | (r >> 2)) << 17;
                     imagedata[(height - 1 - y) * width + x] = r | g | b;
                     x_off += 2;
                 }
@@ -1497,14 +1497,14 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
             }
             case 24:
                 for (x = 0; x < width; x++) {
-                    unsigned int c                          = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16);
+                    unsigned int c = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16);
                     imagedata[(height - 1 - y) * width + x] = c;
                     x_off += 3;
                 }
                 break;
             case 32:
                 for (x = 0; x < width; x++) {
-                    unsigned int a                          = rawimage[x_off + 3] << 24;
+                    unsigned int a = rawimage[x_off + 3] << 24;
                     imagedata[(height - 1 - y) * width + x] = rawimage[x_off] | (rawimage[x_off + 1] << 8) | (rawimage[x_off + 2] << 16) | a;
                     special_32_is_32 |= a;
                     x_off += 4;
@@ -1537,11 +1537,11 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     if ((depth & 0x1f) || !special_32_is_32) {
         for (y = 0; y < height; y++) {
             unsigned int x_off = y * andlinesz;
-            unsigned int have  = 0;
-            unsigned char c    = 0; // will be set in first loop
+            unsigned int have = 0;
+            unsigned char c = 0; // will be set in first loop
             for (x = 0; x < width; x++) {
                 if (!have) {
-                    c    = rawimage[x_off++];
+                    c = rawimage[x_off++];
                     have = 8;
                 }
                 have--;
@@ -1555,14 +1555,14 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             unsigned int r, g, b, a;
-            unsigned int c           = imagedata[y * width + x];
-            a                        = c >> 24;
-            r                        = (c >> 16) & 0xff;
-            g                        = (c >> 8) & 0xff;
-            b                        = c & 0xff;
-            r                        = 0xff - a + a * r / 0xff;
-            g                        = 0xff - a + a * g / 0xff;
-            b                        = 0xff - a + a * b / 0xff;
+            unsigned int c = imagedata[y * width + x];
+            a = c >> 24;
+            r = (c >> 16) & 0xff;
+            g = (c >> 8) & 0xff;
+            b = c & 0xff;
+            r = 0xff - a + a * r / 0xff;
+            g = 0xff - a + a * g / 0xff;
+            b = 0xff - a + a * b / 0xff;
             imagedata[y * width + x] = 0xff000000 | (r << 16) | (g << 8) | b;
         }
     }
@@ -1576,8 +1576,8 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
                 for (y = 0; y < height; y += 2) {
                     for (x = 0; x < width; x += 2) {
                         unsigned int c1 = imagedata[y * width + x], c2 = imagedata[y * width + x + 1], c3 = imagedata[(y + 1) * width + x], c4 = imagedata[(y + 1) * width + x + 1];
-                        c1                                   = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
-                        c2                                   = (((c3 ^ c4) & 0xfefefefe) >> 1) + (c3 & c4);
+                        c1 = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
+                        c2 = (((c3 ^ c4) & 0xfefefefe) >> 1) + (c3 & c4);
                         imagedata[y / 2 * width / 2 + x / 2] = (((c1 ^ c2) & 0xfefefefe) >> 1) + (c1 & c2);
                     }
                 }
@@ -1612,8 +1612,8 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
                         newdata[y * newsize + x] = imagedata[oldy + (unsigned int)(x * scalex + 0.5f)];
                 }
                 free(imagedata);
-                height    = newsize;
-                width     = newsize;
+                height = newsize;
+                width = newsize;
                 imagedata = newdata;
             }
     }
@@ -1641,34 +1641,34 @@ static int parseicon(struct ICON_ENV *icon_env, uint32_t rva)
 
         if (!metrics.ccount && !matcher->icons[enginesize][x].ccount) {
             /* BW matching */
-            edge    = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
-            noedge  = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg);
+            edge = matchbwpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg);
+            noedge = matchbwpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg);
             bwmatch = 1;
         } else {
-            edge   = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, 255);
+            edge = matchpoint(width, metrics.edge_x, metrics.edge_y, metrics.edge_avg, matcher->icons[enginesize][x].edge_x, matcher->icons[enginesize][x].edge_y, matcher->icons[enginesize][x].edge_avg, 255);
             noedge = matchpoint(width, metrics.noedge_x, metrics.noedge_y, metrics.noedge_avg, matcher->icons[enginesize][x].noedge_x, matcher->icons[enginesize][x].noedge_y, matcher->icons[enginesize][x].noedge_avg, 255);
             if (metrics.ccount && matcher->icons[enginesize][x].ccount) {
                 /* color matching */
                 color = matchpoint(width, metrics.color_x, metrics.color_y, metrics.color_avg, matcher->icons[enginesize][x].color_x, matcher->icons[enginesize][x].color_y, matcher->icons[enginesize][x].color_avg, 4072);
-                gray  = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg, 4072);
+                gray = matchpoint(width, metrics.gray_x, metrics.gray_y, metrics.gray_avg, matcher->icons[enginesize][x].gray_x, matcher->icons[enginesize][x].gray_y, matcher->icons[enginesize][x].gray_avg, 4072);
             }
         }
 
         bright = matchpoint(width, metrics.bright_x, metrics.bright_y, metrics.bright_avg, matcher->icons[enginesize][x].bright_x, matcher->icons[enginesize][x].bright_y, matcher->icons[enginesize][x].bright_avg, 255);
-        dark   = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, matcher->icons[enginesize][x].dark_x, matcher->icons[enginesize][x].dark_y, matcher->icons[enginesize][x].dark_avg, 255);
+        dark = matchpoint(width, metrics.dark_x, metrics.dark_y, metrics.dark_avg, matcher->icons[enginesize][x].dark_x, matcher->icons[enginesize][x].dark_y, matcher->icons[enginesize][x].dark_avg, 255);
 
-        reds   = abs((int)metrics.rsum - (int)matcher->icons[enginesize][x].rsum) * 10;
-        reds   = (reds < 100) * (100 - reds);
+        reds = abs((int)metrics.rsum - (int)matcher->icons[enginesize][x].rsum) * 10;
+        reds = (reds < 100) * (100 - reds);
         greens = abs((int)metrics.gsum - (int)matcher->icons[enginesize][x].gsum) * 10;
         greens = (greens < 100) * (100 - greens);
-        blues  = abs((int)metrics.bsum - (int)matcher->icons[enginesize][x].bsum) * 10;
-        blues  = (blues < 100) * (100 - blues);
+        blues = abs((int)metrics.bsum - (int)matcher->icons[enginesize][x].bsum) * 10;
+        blues = (blues < 100) * (100 - blues);
         ccount = abs((int)metrics.ccount - (int)matcher->icons[enginesize][x].ccount) * 10;
         ccount = (ccount < 100) * (100 - ccount);
         colors = (reds + greens + blues + ccount) / 4;
 
         if (bwmatch) {
-            confidence    = (bright + dark + edge * 2 + noedge) / 6;
+            confidence = (bright + dark + edge * 2 + noedge) / 6;
             positivematch = 70;
         } else
             confidence = (color + (gray + bright + noedge) * 2 / 3 + dark + edge + colors) / 6;

@@ -178,7 +178,7 @@ void *onas_scan_queue_th(void *arg)
     logg(LOGG_DEBUG, "ClamScanQueue: initializing event queue consumer ... (%d) threads in thread pool\n", ctx->maxthreads);
     onas_init_event_queue();
     threadpool thpool = thpool_init(ctx->maxthreads);
-    g_thpool          = thpool;
+    g_thpool = thpool;
 
     /* loop w/ onas_consume_event until we die */
     pthread_cleanup_push(onas_scan_queue_exit, NULL);
@@ -209,8 +209,8 @@ static int onas_consume_event(threadpool thpool)
     }
 
     struct onas_event_queue_node *popped_node = g_onas_event_queue_head->next;
-    g_onas_event_queue_head->next             = g_onas_event_queue_head->next->next;
-    g_onas_event_queue_head->next->prev       = g_onas_event_queue_head;
+    g_onas_event_queue_head->next = g_onas_event_queue_head->next->next;
+    g_onas_event_queue_head->next->prev = g_onas_event_queue_head;
     g_onas_event_queue.size--;
 
     pthread_mutex_unlock(&onas_queue_lock);
@@ -228,10 +228,10 @@ cl_error_t onas_queue_event(struct onas_scan_event *event_data)
         return CL_EMEM;
 
     pthread_mutex_lock(&onas_queue_lock);
-    node->next                                                            = g_onas_event_queue_tail;
-    node->prev                                                            = g_onas_event_queue_tail->prev;
+    node->next = g_onas_event_queue_tail;
+    node->prev = g_onas_event_queue_tail->prev;
     ((struct onas_event_queue_node *)g_onas_event_queue_tail->prev)->next = node;
-    g_onas_event_queue_tail->prev                                         = node;
+    g_onas_event_queue_tail->prev = node;
 
     node->data = event_data;
 

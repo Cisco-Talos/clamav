@@ -182,12 +182,12 @@ ole2_list_size(ole2_list_t *list)
 int ole2_list_push(ole2_list_t *list, uint32_t val)
 {
     ole2_list_node_t *new_node = NULL;
-    int status                 = CL_EMEM;
+    int status = CL_EMEM;
 
     CLI_MALLOC(new_node, sizeof(ole2_list_node_t),
                cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
-    new_node->Val  = val;
+    new_node->Val = val;
     new_node->Next = list->Head;
 
     list->Head = new_node;
@@ -208,7 +208,7 @@ ole2_list_pop(ole2_list_t *list)
         cli_dbgmsg("OLE2: work list is empty and ole2_list_pop() called!\n");
         return -1;
     }
-    val  = list->Head->Val;
+    val = list->Head->Val;
     next = list->Head->Next;
 
     free(list->Head);
@@ -283,10 +283,10 @@ static char *
 get_property_name(char *name, int size)
 {
     const char *carray = "0123456789abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz._";
-    int csize          = size >> 1;
-    char *newname      = NULL;
-    char *cname        = NULL;
-    char *oname        = name;
+    int csize = size >> 1;
+    char *newname = NULL;
+    char *cname = NULL;
+    char *oname = name;
 
     if (csize <= 0) {
         return NULL;
@@ -306,7 +306,7 @@ get_property_name(char *name, int size)
         }
         lo = u % 64;
         u >>= 6;
-        hi       = u % 64;
+        hi = u % 64;
         *cname++ = carray[lo];
         if (csize != 1 || u != 64) {
             *cname++ = carray[hi];
@@ -462,7 +462,7 @@ ole2_get_next_xbat_block(ole2_header_t *hdr, int32_t current_block)
      * This reduces the number of entries in each block by 1.
      */
     xbat_block_index = (xbat_index - 109) / 127;
-    bat_blockno      = (xbat_index - 109) % 127;
+    bat_blockno = (xbat_index - 109) % 127;
 
     bat_index = current_block % 128;
 
@@ -507,7 +507,7 @@ ole2_get_next_sbat_block(ole2_header_t *hdr, int32_t current_block)
         return -1;
     }
     current_bat_block = hdr->sbat_start;
-    iter              = current_block / 128;
+    iter = current_block / 128;
     while (iter > 0) {
         current_bat_block = ole2_get_next_block_number(hdr, current_bat_block);
         iter--;
@@ -531,7 +531,7 @@ ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
         cli_dbgmsg("No root start block\n");
         return FALSE;
     }
-    block_count   = sbat_index / (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size));
+    block_count = sbat_index / (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size));
     current_block = hdr->sbat_root_start;
     while (block_count > 0) {
         current_block = ole2_get_next_block_number(hdr, current_block);
@@ -643,17 +643,17 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         }
         ole2_listmsg("reading prop block\n");
 
-        prop_block[idx].name_size       = ole2_endian_convert_16(prop_block[idx].name_size);
-        prop_block[idx].prev            = ole2_endian_convert_32(prop_block[idx].prev);
-        prop_block[idx].next            = ole2_endian_convert_32(prop_block[idx].next);
-        prop_block[idx].child           = ole2_endian_convert_32(prop_block[idx].child);
-        prop_block[idx].user_flags      = ole2_endian_convert_32(prop_block[idx].user_flags);
-        prop_block[idx].create_lowdate  = ole2_endian_convert_32(prop_block[idx].create_lowdate);
+        prop_block[idx].name_size = ole2_endian_convert_16(prop_block[idx].name_size);
+        prop_block[idx].prev = ole2_endian_convert_32(prop_block[idx].prev);
+        prop_block[idx].next = ole2_endian_convert_32(prop_block[idx].next);
+        prop_block[idx].child = ole2_endian_convert_32(prop_block[idx].child);
+        prop_block[idx].user_flags = ole2_endian_convert_32(prop_block[idx].user_flags);
+        prop_block[idx].create_lowdate = ole2_endian_convert_32(prop_block[idx].create_lowdate);
         prop_block[idx].create_highdate = ole2_endian_convert_32(prop_block[idx].create_highdate);
-        prop_block[idx].mod_lowdate     = ole2_endian_convert_32(prop_block[idx].mod_lowdate);
-        prop_block[idx].mod_highdate    = ole2_endian_convert_32(prop_block[idx].mod_highdate);
-        prop_block[idx].start_block     = ole2_endian_convert_32(prop_block[idx].start_block);
-        prop_block[idx].size            = ole2_endian_convert_32(prop_block[idx].size);
+        prop_block[idx].mod_lowdate = ole2_endian_convert_32(prop_block[idx].mod_lowdate);
+        prop_block[idx].mod_highdate = ole2_endian_convert_32(prop_block[idx].mod_highdate);
+        prop_block[idx].start_block = ole2_endian_convert_32(prop_block[idx].start_block);
+        prop_block[idx].size = ole2_endian_convert_32(prop_block[idx].size);
 
         ole2_listmsg("printing ole2 property\n");
         if (dir)
@@ -834,14 +834,14 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
 {
     cl_error_t ret = CL_BREAK;
     char newname[1024];
-    char *name            = NULL;
-    unsigned char *buff   = NULL;
+    char *name = NULL;
+    unsigned char *buff = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    int ofd              = -1;
-    char *hash           = NULL;
+    int ofd = -1;
+    char *hash = NULL;
     bitset_t *blk_bitset = NULL;
-    uint32_t cnt         = 0;
+    uint32_t cnt = 0;
 
     UNUSEDPARAM(ctx);
 
@@ -883,7 +883,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     }
 
     current_block = prop->start_block;
-    len           = prop->size;
+    len = prop->size;
 
     CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
@@ -1011,7 +1011,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
         switch (state->state) {
             case BIFF_PARSER_INITIAL:
                 state->opcode = buff[i];
-                state->state  = BIFF_PARSER_EXPECTING_2ND_TAG_BYTE;
+                state->state = BIFF_PARSER_EXPECTING_2ND_TAG_BYTE;
                 break;
             case BIFF_PARSER_EXPECTING_2ND_TAG_BYTE:
                 state->opcode |= buff[i] << 8;
@@ -1019,7 +1019,7 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
                 break;
             case BIFF_PARSER_EXPECTING_1ST_LENGTH_BYTE:
                 state->length = buff[i];
-                state->state  = BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE;
+                state->state = BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE;
                 break;
             case BIFF_PARSER_EXPECTING_2ND_LENGTH_BYTE:
                 state->length |= buff[i] << 8;
@@ -1137,11 +1137,11 @@ static cl_error_t scan_biff_for_xlm_macros_and_images(
  */
 static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t *prop, cli_ctx *ctx, bool *found_macro, bool *found_image)
 {
-    cl_error_t status     = CL_EPARSE;
-    unsigned char *buff   = NULL;
+    cl_error_t status = CL_EPARSE;
+    unsigned char *buff = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    bitset_t *blk_bitset           = NULL;
+    bitset_t *blk_bitset = NULL;
     struct biff_parser_state state = {0};
 
     if (prop->type != 2) {
@@ -1150,9 +1150,9 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     }
 
     memset(&state, 0, sizeof(state));
-    state.state   = BIFF_PARSER_INITIAL;
+    state.state = BIFF_PARSER_INITIAL;
     current_block = prop->start_block;
-    len           = prop->size;
+    len = prop->size;
 
     CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
@@ -1223,12 +1223,12 @@ done:
  */
 static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    cl_error_t status        = CL_EREAD;
-    char *name               = NULL;
+    cl_error_t status = CL_EREAD;
+    char *name = NULL;
     unsigned char *hwp_check = NULL;
-    int32_t offset           = 0;
+    int32_t offset = 0;
 #if HAVE_JSON
-    json_object *arrobj  = NULL;
+    json_object *arrobj = NULL;
     json_object *strmobj = NULL;
 
     name = cli_ole2_get_property_name2(prop->name, prop->name_size);
@@ -1319,7 +1319,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
                         memcpy(hwp_new, hwp_check + offset, sizeof(hwp5_header_t));
 
                         hwp_new->version = ole2_endian_convert_32(hwp_new->version);
-                        hwp_new->flags   = ole2_endian_convert_32(hwp_new->flags);
+                        hwp_new->flags = ole2_endian_convert_32(hwp_new->flags);
 
                         hdr->is_hwp = hwp_new;
                     }
@@ -1420,12 +1420,12 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
 
     /* initialize zlib inflation stream */
     memset(&zstrm, 0, sizeof(zstrm));
-    zstrm.zalloc    = Z_NULL;
-    zstrm.zfree     = Z_NULL;
-    zstrm.opaque    = Z_NULL;
-    zstrm.next_in   = inbuf;
-    zstrm.next_out  = outbuf;
-    zstrm.avail_in  = 0;
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.next_in = inbuf;
+    zstrm.next_out = outbuf;
+    zstrm.avail_in = 0;
     zstrm.avail_out = FILEBUFF;
 
     zret = inflateInit(&zstrm);
@@ -1454,7 +1454,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
             size_t bytes_read;
 
             zstrm.next_in = inbuf;
-            bytes_read    = fmap_readn(input, inbuf, off_in, FILEBUFF);
+            bytes_read = fmap_readn(input, inbuf, off_in, FILEBUFF);
             if (bytes_read == (size_t)-1) {
                 cli_errmsg("scan_mso_stream: Error reading MSO file\n");
                 ret = CL_EUNPACK;
@@ -1466,7 +1466,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
             zstrm.avail_in = bytes_read;
             off_in += bytes_read;
         }
-        zret  = inflate(&zstrm, Z_SYNC_FLUSH);
+        zret = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
             if (cli_checklimits("MSO", ctx, outsize + count, 0, 0) != CL_SUCCESS)
@@ -1478,7 +1478,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
             }
             outsize += count;
         }
-        zstrm.next_out  = outbuf;
+        zstrm.next_out = outbuf;
         zstrm.avail_out = FILEBUFF;
     } while (zret == Z_OK);
 
@@ -1521,14 +1521,14 @@ mso_end:
 
 static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
-    cl_error_t ret        = CL_BREAK;
-    char *tempfile        = NULL;
-    char *name            = NULL;
-    unsigned char *buff   = NULL;
+    cl_error_t ret = CL_BREAK;
+    char *tempfile = NULL;
+    char *name = NULL;
+    unsigned char *buff = NULL;
     int32_t current_block = 0;
     size_t len = 0, offset = 0;
-    int ofd              = -1;
-    int is_mso           = 0;
+    int ofd = -1;
+    int is_mso = 0;
     bitset_t *blk_bitset = NULL;
 
     UNUSEDPARAM(dir);
@@ -1552,7 +1552,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
     }
 
     current_block = prop->start_block;
-    len           = prop->size;
+    len = prop->size;
 
     if (cli_debug_flag) {
         if (!name) {
@@ -1811,9 +1811,9 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     if ((size_t)(ctx->fmap->len) < (size_t)(hdr_size)) {
         return CL_CLEAN;
     }
-    hdr.map      = ctx->fmap;
+    hdr.map = ctx->fmap;
     hdr.m_length = hdr.map->len;
-    phdr         = fmap_need_off_once(hdr.map, 0, hdr_size);
+    phdr = fmap_need_off_once(hdr.map, 0, hdr_size);
     if (phdr) {
         memcpy(&hdr, phdr, hdr_size);
     } else {
@@ -1821,18 +1821,18 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         goto done;
     }
 
-    hdr.minor_version         = ole2_endian_convert_16(hdr.minor_version);
-    hdr.dll_version           = ole2_endian_convert_16(hdr.dll_version);
-    hdr.byte_order            = ole2_endian_convert_16(hdr.byte_order);
-    hdr.log2_big_block_size   = ole2_endian_convert_16(hdr.log2_big_block_size);
+    hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
+    hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
+    hdr.byte_order = ole2_endian_convert_16(hdr.byte_order);
+    hdr.log2_big_block_size = ole2_endian_convert_16(hdr.log2_big_block_size);
     hdr.log2_small_block_size = ole2_endian_convert_32(hdr.log2_small_block_size);
-    hdr.bat_count             = ole2_endian_convert_32(hdr.bat_count);
-    hdr.prop_start            = ole2_endian_convert_32(hdr.prop_start);
-    hdr.sbat_cutoff           = ole2_endian_convert_32(hdr.sbat_cutoff);
-    hdr.sbat_start            = ole2_endian_convert_32(hdr.sbat_start);
-    hdr.sbat_block_count      = ole2_endian_convert_32(hdr.sbat_block_count);
-    hdr.xbat_start            = ole2_endian_convert_32(hdr.xbat_start);
-    hdr.xbat_count            = ole2_endian_convert_32(hdr.xbat_count);
+    hdr.bat_count = ole2_endian_convert_32(hdr.bat_count);
+    hdr.prop_start = ole2_endian_convert_32(hdr.prop_start);
+    hdr.sbat_cutoff = ole2_endian_convert_32(hdr.sbat_cutoff);
+    hdr.sbat_start = ole2_endian_convert_32(hdr.sbat_start);
+    hdr.sbat_block_count = ole2_endian_convert_32(hdr.sbat_block_count);
+    hdr.xbat_start = ole2_endian_convert_32(hdr.xbat_start);
+    hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
     hdr.sbat_root_start = -1;
 
@@ -1870,10 +1870,10 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
     cli_dbgmsg("Max block number: %lu\n", (unsigned long int)hdr.max_block_no);
 
     /* PASS 1 : Count files and check for VBA */
-    hdr.has_vba   = false;
-    hdr.has_xlm   = false;
+    hdr.has_vba = false;
+    hdr.has_xlm = false;
     hdr.has_image = false;
-    ret           = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+    ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
     cli_bitset_free(hdr.bitset);
     hdr.bitset = NULL;
     if (!file_count || !(hdr.bitset = cli_bitset_init())) {
@@ -1902,7 +1902,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         }
         file_count = 0;
         ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
-        ret    = CL_CLEAN;
+        ret = CL_CLEAN;
         *files = hdr.U;
         if (has_vba) {
             *has_vba = hdr.has_vba;
@@ -1917,7 +1917,7 @@ cl_error_t cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **fil
         cli_dbgmsg("OLE2: no VBA projects found\n");
         /* PASS 2/B : OTF scan */
         file_count = 0;
-        ret        = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+        ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
     }
 
 done:

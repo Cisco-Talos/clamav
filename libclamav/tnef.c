@@ -92,12 +92,12 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
     }
     pos += sizeof(uint16_t);
 
-    fb      = NULL;
-    ret     = CL_CLEAN; /* we don't know if it's clean or not :-) */
+    fb = NULL;
+    ret = CL_CLEAN; /* we don't know if it's clean or not :-) */
     alldone = 0;
 
     do {
-        uint8_t part  = 0;
+        uint8_t part = 0;
         uint16_t type = 0, tag = 0;
         int32_t length = 0;
 
@@ -112,7 +112,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                  * Assume truncation, not file I/O error
                  */
                 cli_warnmsg("cli_tnef: file truncated, returning CLEAN\n");
-                ret     = CL_CLEAN;
+                ret = CL_CLEAN;
                 alldone = 1;
                 break;
         }
@@ -136,7 +136,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 fb = fileblobCreate();
                 if (tnef_message(ctx->fmap, &pos, type, tag, length, fsize) != 0) {
                     cli_dbgmsg("TNEF: Error reading TNEF message\n");
-                    ret     = CL_EFORMAT;
+                    ret = CL_EFORMAT;
                     alldone = 1;
                 }
                 break;
@@ -144,7 +144,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                 cli_dbgmsg("TNEF - found attachment\n");
                 if (tnef_attachment(ctx->fmap, &pos, type, tag, length, dir, &fb, fsize) != 0) {
                     cli_dbgmsg("TNEF: Error reading TNEF attachment\n");
-                    ret     = CL_EFORMAT;
+                    ret = CL_EFORMAT;
                     alldone = 1;
                 }
                 break;
@@ -158,7 +158,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                  * email that's about to be deleted
                  */
                 if (cli_debug_flag) {
-                    int fout       = -1;
+                    int fout = -1;
                     char *filename = cli_gentemp(ctx->sub_tmpdir);
                     char buffer[BUFSIZ];
 
@@ -179,7 +179,7 @@ int cli_tnef(const char *dir, cli_ctx *ctx)
                     }
                     free(filename);
                 }
-                ret     = CL_EFORMAT;
+                ret = CL_EFORMAT;
                 alldone = 1;
                 break;
         }
@@ -383,8 +383,8 @@ tnef_header(fmap_t *map, off_t *pos, uint8_t *part, uint16_t *type, uint16_t *ta
     }
     (*pos) += sizeof(uint32_t);
 
-    i32   = host32(i32);
-    *tag  = (uint16_t)(i32 & 0xFFFF);
+    i32 = host32(i32);
+    *tag = (uint16_t)(i32 & 0xFFFF);
     *type = (uint16_t)((i32 & 0xFFFF0000) >> 16);
 
     if (fmap_readn(map, &i32, *pos, sizeof(uint32_t)) != sizeof(uint32_t))

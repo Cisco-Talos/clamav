@@ -41,8 +41,8 @@ static cl_error_t _x509_to_pem(X509 *cert,
 {
     cl_error_t ret = CL_EFORMAT;
 
-    BIO *out       = NULL;
-    long pem_len   = 0;
+    BIO *out = NULL;
+    long pem_len = 0;
     char *pem_data = NULL;
 
     if (cert == NULL || data == NULL || len == NULL) {
@@ -114,8 +114,8 @@ static cl_error_t _x509_to_pem_append(X509 *ca_cert,
     char *pem_data = NULL;
     char *tmp;
     int pem_data_len = 0;
-    cl_error_t ret   = CL_EOPEN;
-    int current_len  = 0;
+    cl_error_t ret = CL_EOPEN;
+    int current_len = 0;
 
     if (ca_cert == NULL || total_buf_len == NULL ||
         remaining_buf_len == NULL || *cert_data == NULL) {
@@ -137,20 +137,20 @@ static cl_error_t _x509_to_pem_append(X509 *ca_cert,
                                 "certificate\n");
 
             free(*cert_data);
-            *cert_data     = NULL;
+            *cert_data = NULL;
             *total_buf_len = 0;
 
             goto done;
         }
-        *cert_data         = tmp;
-        tmp                = NULL;
+        *cert_data = tmp;
+        tmp = NULL;
         *remaining_buf_len = 0;
     } else {
         *remaining_buf_len -= pem_data_len;
     }
 
     memcpy(&((*cert_data)[current_len]), pem_data, pem_data_len);
-    *total_buf_len               = current_len + pem_data_len;
+    *total_buf_len = current_len + pem_data_len;
     (*cert_data)[*total_buf_len] = '\0';
 
     ret = CL_SUCCESS;
@@ -188,7 +188,7 @@ void cert_store_free_cert_list_int(cert_list_t *cert_list)
 
         free(cert_list->certificates);
         cert_list->certificates = NULL;
-        cert_list->count        = 0L;
+        cert_list->count = 0L;
     }
 }
 
@@ -250,7 +250,7 @@ static cl_error_t x509_cert_name_cmp(X509 *cert_a, X509 *cert_b, int *cmp_out)
     BIO_get_mem_ptr(bio_out_b, &biomem_b);
 
     *cmp_out = strncmp(biomem_a->data, biomem_b->data, MIN(biomem_a->length, biomem_b->length));
-    status   = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
     if (NULL != bio_out_a)
@@ -298,7 +298,7 @@ cl_error_t x509_get_cert_name(X509 *cert, char **name)
     memcpy(cert_name, biomem->data, biomem->length);
     cert_name[biomem->length] = '\0';
 
-    *name  = cert_name;
+    *name = cert_name;
     status = CL_SUCCESS;
 
 done:
@@ -316,10 +316,10 @@ cl_error_t cert_store_export_pem(char **cert_data,
     const uint32_t STARTING_RAW_PEM_LENGTH = 350 * 1024;
     uint32_t i;
     cl_error_t ret = CL_EOPEN;
-    bool locked    = false;
+    bool locked = false;
     int pt_err;
 
-    size_t remaining_buf_len    = STARTING_RAW_PEM_LENGTH;
+    size_t remaining_buf_len = STARTING_RAW_PEM_LENGTH;
     bool add_additional_ca_cert = true;
 
     if ((cert_data == NULL) || (cert_data_len == NULL)) {
@@ -490,10 +490,10 @@ cl_error_t cert_store_set_trusted_int(X509 **trusted_certs, size_t trusted_cert_
         cert_store_free_cert_list_int(&_cert_store.trusted_certs);
 
         _cert_store.trusted_certs.certificates = tmp_trusted.certificates;
-        _cert_store.trusted_certs.count        = tmp_trusted.count;
+        _cert_store.trusted_certs.count = tmp_trusted.count;
 
         tmp_trusted.certificates = NULL;
-        tmp_trusted.count        = 0;
+        tmp_trusted.count = 0;
 
         ret = CL_SUCCESS;
     } while (0);
@@ -631,7 +631,7 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
         /* Adding the additional CA cert to the trustchain */
         if ((additional_ca_cert != NULL) &&
             (X509_STORE_add_cert(store, additional_ca_cert) != 1)) {
-            char *name        = NULL;
+            char *name = NULL;
             unsigned long err = ERR_get_error();
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
@@ -668,7 +668,7 @@ void cert_store_export_certs(X509_STORE *store, X509 *additional_ca_cert)
 
 CURLcode sslctx_function(CURL *curl, void *ssl_ctx, void *userptr)
 {
-    CURLcode status          = CURLE_BAD_FUNCTION_ARGUMENT;
+    CURLcode status = CURLE_BAD_FUNCTION_ARGUMENT;
     cert_store_t *cert_store = NULL;
 
     UNUSEDPARAM(curl);

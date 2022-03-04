@@ -92,7 +92,7 @@ static const struct key_entry *msxml_check_key(struct msxml_ictx *ictx, const xm
 
 static void msxml_error_handler(void *arg, const char *msg, xmlParserSeverities severity, xmlTextReaderLocatorPtr locator)
 {
-    int line     = xmlTextReaderLocatorLineNumber(locator);
+    int line = xmlTextReaderLocatorLineNumber(locator);
     xmlChar *URI = xmlTextReaderLocatorBaseURI(locator);
 
     UNUSEDPARAM(arg);
@@ -172,11 +172,11 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     int ret, virus = 0, state, node_type, endtag = 0, num_attribs = 0;
     cli_ctx *ctx = mxctx->ictx->ctx;
 #if HAVE_JSON
-    json_object *root     = mxctx->ictx->root;
-    json_object *parent   = (json_object *)jptr;
+    json_object *root = mxctx->ictx->root;
+    json_object *parent = (json_object *)jptr;
     json_object *thisjobj = NULL;
 #else
-    void *parent   = NULL;
+    void *parent = NULL;
     void *thisjobj = NULL;
 #endif
 
@@ -205,7 +205,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
     if (node_type == -1)
         return CL_EPARSE;
 
-    node_name  = xmlTextReaderConstLocalName(reader);
+    node_name = xmlTextReaderConstLocalName(reader);
     node_value = xmlTextReaderConstValue(reader);
 
     /* branch on node type */
@@ -297,7 +297,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                         cli_msxmlmsg("msxml_parse_element: retrieved json object [Attributes]\n");
 
                         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
-                            name  = xmlTextReaderConstLocalName(reader);
+                            name = xmlTextReaderConstLocalName(reader);
                             value = xmlTextReaderConstValue(reader);
 
                             cli_msxmlmsg("\t%s: %s\n", name, value);
@@ -315,7 +315,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     state = xmlTextReaderMoveToFirstAttribute(reader);
                     if (state == 1) {
                         /* read first attribute (current head) */
-                        attribs[num_attribs].key   = (const char *)xmlTextReaderConstLocalName(reader);
+                        attribs[num_attribs].key = (const char *)xmlTextReaderConstLocalName(reader);
                         attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
                         num_attribs++;
                     } else if (state == -1) {
@@ -328,7 +328,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                     cli_msxmlmsg("msxml_parse_element: adding attributes to scanning context\n");
 
                     while ((num_attribs < MAX_ATTRIBS) && (xmlTextReaderMoveToNextAttribute(reader) == 1)) {
-                        attribs[num_attribs].key   = (const char *)xmlTextReaderConstLocalName(reader);
+                        attribs[num_attribs].key = (const char *)xmlTextReaderConstLocalName(reader);
                         attribs[num_attribs].value = (const char *)xmlTextReaderConstValue(reader);
                         num_attribs++;
                     }
@@ -530,7 +530,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                         break;
 
                     default:
-                        node_name  = xmlTextReaderConstLocalName(reader);
+                        node_name = xmlTextReaderConstLocalName(reader);
                         node_value = xmlTextReaderConstValue(reader);
 
                         cli_dbgmsg("msxml_parse_element: unhandled xml secondary node %s [%d]: %s\n", node_name, node_type, node_value);
@@ -572,9 +572,9 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
         mxctx = &reserve;
     }
 
-    ictx.ctx      = ctx;
-    ictx.flags    = flags;
-    ictx.keys     = keys;
+    ictx.ctx = ctx;
+    ictx.flags = flags;
+    ictx.keys = keys;
     ictx.num_keys = num_keys;
 #if HAVE_JSON
     if (flags & MSXML_FLAG_JSON) {

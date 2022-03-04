@@ -443,7 +443,7 @@ void fileblobDestructiveDestroy(fileblob *fb)
         if (!fb->ctx || !fb->ctx->engine->keeptmp)
             cli_unlink(fb->fullname);
         free(fb->fullname);
-        fb->fp       = NULL;
+        fb->fp = NULL;
         fb->fullname = NULL;
     }
     if (fb->b.name) {
@@ -523,7 +523,7 @@ void fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
             free(fb->b.data);
             fb->b.data = NULL;
             fb->b.len = fb->b.size = 0;
-            fb->isNotEmpty         = 1;
+            fb->isNotEmpty = 1;
         }
     fb->fullname = cli_strdup(fullname);
 }
@@ -565,7 +565,7 @@ void fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
             free(fb->b.data);
             fb->b.data = NULL;
             fb->b.len = fb->b.size = 0;
-            fb->isNotEmpty         = 1;
+            fb->isNotEmpty = 1;
         }
     fb->fullname = fullname;
 }

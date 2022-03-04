@@ -63,7 +63,7 @@ typedef int bool;
 #define get_number(from, to, n)                                            \
     do {                                                                   \
         int __n = n;                                                       \
-        val     = 0;                                                       \
+        val = 0;                                                           \
         while (*rp == ' ')                                                 \
             ++rp;                                                          \
         if (*rp < '0' || *rp > '9')                                        \
@@ -194,8 +194,8 @@ day_of_the_week(struct tm *tm)
      the difference between this data in the one on TM and so determine
      the weekday.  */
     int corr_year = 1900 + tm->tm_year - (tm->tm_mon < 2);
-    int wday      = (-473 + (365 * (tm->tm_year - 70)) + (corr_year / 4) - ((corr_year / 4) / 25) + ((corr_year / 4) % 25 < 0) + (((corr_year / 4) / 25) / 4) + __mon_yday[0][tm->tm_mon] + tm->tm_mday - 1);
-    tm->tm_wday   = ((wday % 7) + 7) % 7;
+    int wday = (-473 + (365 * (tm->tm_year - 70)) + (corr_year / 4) - ((corr_year / 4) / 25) + ((corr_year / 4) % 25 < 0) + (((corr_year / 4) / 25) / 4) + __mon_yday[0][tm->tm_mon] + tm->tm_mday - 1);
+    tm->tm_wday = ((wday % 7) + 7) % 7;
 }
 
 /* Compute the day of the year.  */
@@ -238,14 +238,14 @@ LOCALE_PARAM_DECL
     struct era_entry *era;
 
     have_I = is_pm = 0;
-    century        = -1;
-    want_century   = 0;
-    want_era       = 0;
-    era            = NULL;
-    week_no        = 0;
+    century = -1;
+    want_century = 0;
+    want_era = 0;
+    era = NULL;
+    week_no = 0;
 
     have_wday = want_xday = have_yday = have_mon = have_mday = have_uweek = 0;
-    have_wweek                                                            = 0;
+    have_wweek = 0;
 
     while (*fmt != '\0') {
         /* A white space in the format string matches 0 more or white
@@ -307,7 +307,7 @@ LOCALE_PARAM_DECL
                     /* Does not match a weekday name.  */
                     return NULL;
                 tm->tm_wday = cnt;
-                have_wday   = 1;
+                have_wday = 1;
                 break;
             case 'b':
             case 'B':
@@ -339,7 +339,7 @@ LOCALE_PARAM_DECL
                     /* Does not match a month name.  */
                     return NULL;
                 tm->tm_mon = cnt;
-                want_xday  = 1;
+                want_xday = 1;
                 break;
             case 'c':
                 /* Match locale's date and time format.  */
@@ -367,7 +367,7 @@ LOCALE_PARAM_DECL
                 /* Match century number.  */
             match_century:
                 get_number(0, 99, 2);
-                century   = val;
+                century = val;
                 want_xday = 1;
                 break;
             case 'd':
@@ -375,8 +375,8 @@ LOCALE_PARAM_DECL
                 /* Match day of month.  */
                 get_number(1, 31, 2);
                 tm->tm_mday = val;
-                have_mday   = 1;
-                want_xday   = 1;
+                have_mday = 1;
+                want_xday = 1;
                 break;
             case 'F':
                 if (!recursive("%Y-%m-%d"))
@@ -412,7 +412,7 @@ LOCALE_PARAM_DECL
                 /* Match hour in 24-hour clock.  */
                 get_number(0, 23, 2);
                 tm->tm_hour = val;
-                have_I      = 0;
+                have_I = 0;
                 break;
             case 'l':
                 /* Match hour in 12-hour clock.  GNU extension.  */
@@ -420,20 +420,20 @@ LOCALE_PARAM_DECL
                 /* Match hour in 12-hour clock.  */
                 get_number(1, 12, 2);
                 tm->tm_hour = val % 12;
-                have_I      = 1;
+                have_I = 1;
                 break;
             case 'j':
                 /* Match day number of year.  */
                 get_number(1, 366, 3);
                 tm->tm_yday = val - 1;
-                have_yday   = 1;
+                have_yday = 1;
                 break;
             case 'm':
                 /* Match number of month.  */
                 get_number(1, 12, 2);
                 tm->tm_mon = val - 1;
-                have_mon   = 1;
-                want_xday  = 1;
+                have_mon = 1;
+                want_xday = 1;
                 break;
             case 'M':
                 /* Match minute.  */
@@ -543,7 +543,7 @@ LOCALE_PARAM_DECL
             case 'u':
                 get_number(1, 7, 1);
                 tm->tm_wday = val % 7;
-                have_wday   = 1;
+                have_wday = 1;
                 break;
             case 'g':
                 get_number(0, 99, 2);
@@ -560,12 +560,12 @@ LOCALE_PARAM_DECL
                 break;
             case 'U':
                 get_number(0, 53, 2);
-                week_no    = val;
+                week_no = val;
                 have_uweek = 1;
                 break;
             case 'W':
                 get_number(0, 53, 2);
-                week_no    = val;
+                week_no = val;
                 have_wweek = 1;
                 break;
             case 'V':
@@ -577,7 +577,7 @@ LOCALE_PARAM_DECL
                 /* Match number of weekday.  */
                 get_number(0, 6, 1);
                 tm->tm_wday = val;
-                have_wday   = 1;
+                have_wday = 1;
                 break;
             case 'y':
             match_year_in_century:
@@ -588,14 +588,14 @@ LOCALE_PARAM_DECL
                 tm->tm_year = val >= 69 ? val : val + 100;
                 /* Indicate that we want to use the century, if specified.  */
                 want_century = 1;
-                want_xday    = 1;
+                want_xday = 1;
                 break;
             case 'Y':
                 /* Match year including century number.  */
                 get_number(0, 9999, 4);
-                tm->tm_year  = val - 1900;
+                tm->tm_year = val - 1900;
                 want_century = 0;
-                want_xday    = 1;
+                want_xday = 1;
                 break;
             case 'Z':
                 /* XXX How to handle this?  */
@@ -614,7 +614,7 @@ LOCALE_PARAM_DECL
                     if (*rp != '+' && *rp != '-')
                         return NULL;
                     neg = *rp++ == '-';
-                    n   = 0;
+                    n = 0;
                     while (n < 4 && *rp >= '0' && *rp <= '9') {
                         val = val * 10 + *rp++ - '0';
                         ++n;
@@ -706,19 +706,19 @@ LOCALE_PARAM_DECL
                     case 'y':
                         if (*decided != raw) {
                             get_number(0, 9999, 4);
-                            tm->tm_year  = val;
-                            want_era     = 1;
-                            want_xday    = 1;
+                            tm->tm_year = val;
+                            want_era = 1;
+                            want_xday = 1;
                             want_century = 1;
 
                             if (era_cnt >= 0) {
                                 assert(*decided == loc);
 
-                                era        = _nl_select_era_entry(era_cnt HELPER_LOCALE_ARG);
+                                era = _nl_select_era_entry(era_cnt HELPER_LOCALE_ARG);
                                 bool match = false;
                                 if (era != NULL) {
                                     int delta = ((tm->tm_year - era->offset) * era->absolute_direction);
-                                    match     = (delta >= 0 && delta < (((int64_t)era->stop_date[0] - (int64_t)era->start_date[0]) * era->absolute_direction));
+                                    match = (delta >= 0 && delta < (((int64_t)era->stop_date[0] - (int64_t)era->start_date[0]) * era->absolute_direction));
                                 }
                                 if (!match)
                                     return NULL;
@@ -768,16 +768,16 @@ LOCALE_PARAM_DECL
                                     rp = rp_backup;
                             } else {
                                 *decided = loc;
-                                era_cnt  = -1;
+                                era_cnt = -1;
                                 break;
                             }
 
                             *decided = raw;
                         }
                         get_number(0, 9999, 4);
-                        tm->tm_year  = val - 1900;
+                        tm->tm_year = val - 1900;
                         want_century = 0;
-                        want_xday    = 1;
+                        want_xday = 1;
                         break;
                     case 'x':
                         if (*decided != raw) {
@@ -843,29 +843,29 @@ LOCALE_PARAM_DECL
                         /* Match day of month using alternate numeric symbols.  */
                         get_alt_number(1, 31, 2);
                         tm->tm_mday = val;
-                        have_mday   = 1;
-                        want_xday   = 1;
+                        have_mday = 1;
+                        want_xday = 1;
                         break;
                     case 'H':
                         /* Match hour in 24-hour clock using alternate numeric
                  symbols.  */
                         get_alt_number(0, 23, 2);
                         tm->tm_hour = val;
-                        have_I      = 0;
+                        have_I = 0;
                         break;
                     case 'I':
                         /* Match hour in 12-hour clock using alternate numeric
                  symbols.  */
                         get_alt_number(1, 12, 2);
                         tm->tm_hour = val % 12;
-                        have_I      = 1;
+                        have_I = 1;
                         break;
                     case 'm':
                         /* Match month using alternate numeric symbols.  */
                         get_alt_number(1, 12, 2);
                         tm->tm_mon = val - 1;
-                        have_mon   = 1;
-                        want_xday  = 1;
+                        have_mon = 1;
+                        want_xday = 1;
                         break;
                     case 'M':
                         /* Match minutes using alternate numeric symbols.  */
@@ -879,12 +879,12 @@ LOCALE_PARAM_DECL
                         break;
                     case 'U':
                         get_alt_number(0, 53, 2);
-                        week_no    = val;
+                        week_no = val;
                         have_uweek = 1;
                         break;
                     case 'W':
                         get_alt_number(0, 53, 2);
-                        week_no    = val;
+                        week_no = val;
                         have_wweek = 1;
                         break;
                     case 'V':
@@ -896,13 +896,13 @@ LOCALE_PARAM_DECL
                         /* Match number of weekday using alternate numeric symbols.  */
                         get_alt_number(0, 6, 1);
                         tm->tm_wday = val;
-                        have_wday   = 1;
+                        have_wday = 1;
                         break;
                     case 'y':
                         /* Match year within century using alternate numeric symbols.  */
                         get_alt_number(0, 99, 2);
                         tm->tm_year = val >= 69 ? val : val + 100;
-                        want_xday   = 1;
+                        want_xday = 1;
                         break;
                     default:
                         return NULL;
@@ -963,11 +963,11 @@ LOCALE_PARAM_DECL
     if ((have_uweek || have_wweek) && have_wday) {
         int save_wday = tm->tm_wday;
         int save_mday = tm->tm_mday;
-        int save_mon  = tm->tm_mon;
-        int w_offset  = have_uweek ? 0 : 1;
+        int save_mon = tm->tm_mon;
+        int w_offset = have_uweek ? 0 : 1;
 
         tm->tm_mday = 1;
-        tm->tm_mon  = 0;
+        tm->tm_mon = 0;
         day_of_the_week(tm);
         if (have_mday)
             tm->tm_mday = save_mday;

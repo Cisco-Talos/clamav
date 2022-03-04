@@ -59,21 +59,21 @@
 cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, const char *hexsig, const uint32_t *lsigid, unsigned int options)
 {
 
-    size_t len            = 0;
-    uint32_t i            = 0;
+    size_t len = 0;
+    uint32_t i = 0;
     const char *buf_start = NULL;
-    const char *buf_end   = NULL;
-    char *buf             = NULL;
+    const char *buf_end = NULL;
+    char *buf = NULL;
     const char *tokens[4];
-    size_t toks          = 0;
+    size_t toks = 0;
     int16_t ref_subsigid = -1;
     int64_t offset_param = 0;
-    int64_t ret          = CL_SUCCESS;
-    size_t byte_length   = 0;
-    int64_t comp_val     = 0;
-    char *comp_buf       = NULL;
-    char *comp_start     = NULL;
-    char *comp_end       = NULL;
+    int64_t ret = CL_SUCCESS;
+    size_t byte_length = 0;
+    int64_t comp_val = 0;
+    char *comp_buf = NULL;
+    char *comp_start = NULL;
+    char *comp_end = NULL;
 
     UNUSEDPARAM(options);
 
@@ -105,7 +105,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     /* first need to grab the subsig reference, we'll use this later to determine our offset */
     buf_start = hexsig;
-    buf_end   = hexsig;
+    buf_end = hexsig;
 
     ref_subsigid = strtol(buf_start, (char **)&buf_end, 10);
     if (buf_end && buf_end[0] != '(') {
@@ -153,7 +153,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 
     /* since null termination is super guaranteed thanks to strndup and cli_strokenize, we can use strtol to grab the
      * offset params. this has the added benefit of letting us parse hex values too */
-    buf_end   = NULL;
+    buf_end = NULL;
     buf_start = tokens[0];
     switch (buf_start[0]) {
         case '<':
@@ -290,7 +290,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     }
 
     /* parse out the byte length parameter */
-    buf_end     = NULL;
+    buf_end = NULL;
     byte_length = strtol(buf_start, (char **)&buf_end, 0);
     if (buf_end && buf_end + 1 != tokens[2]) {
         cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length parameter included invalid characters\n", tokens[0], tokens[1], tokens[2]);
@@ -324,14 +324,14 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
         return CL_EMEM;
     }
     /* use different buffer start and end markers so we can keep track of what we need to free later */
-    buf_start  = comp_buf;
+    buf_start = comp_buf;
     comp_start = strchr(comp_buf, ',');
-    comp_end   = strrchr(comp_buf, ',');
+    comp_end = strrchr(comp_buf, ',');
 
     /* check to see if we have exactly one comma, then set our count and tokenize our string apropriately */
     if (comp_start && comp_end) {
         if (comp_end == comp_start) {
-            comp_start[0]     = '\0';
+            comp_start[0] = '\0';
             bcomp->comp_count = 2;
 
         } else {
@@ -342,7 +342,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
             return CL_EPARSE;
         }
     } else {
-        comp_start        = comp_buf;
+        comp_start = comp_buf;
         bcomp->comp_count = 1;
     }
 
@@ -430,7 +430,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     }
 
     newmetatable[bcomp_count - 1] = bcomp;
-    root->bcomp_metatable         = newmetatable;
+    root->bcomp_metatable = newmetatable;
 
     root->bcomp_metas = bcomp_count;
 
@@ -452,11 +452,11 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
 cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, cli_ctx *ctx)
 {
     size_t i;
-    int val                = 0;
-    cl_error_t ret         = CL_SUCCESS;
+    int val = 0;
+    cl_error_t ret = CL_SUCCESS;
     cl_error_t bcomp_check = CL_SUCCESS;
     uint32_t lsigid, ref_subsigid;
-    uint32_t offset              = 0;
+    uint32_t offset = 0;
     struct cli_bcomp_meta *bcomp = NULL;
     struct cli_ac_result *newres = NULL;
 
@@ -470,8 +470,8 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
 
     for (i = 0; i < root->bcomp_metas; i++) {
 
-        bcomp        = root->bcomp_metatable[i];
-        lsigid       = bcomp->lsigid[1];
+        bcomp = root->bcomp_metatable[i];
+        lsigid = bcomp->lsigid[1];
         ref_subsigid = bcomp->ref_subsigid;
 
         /* check to see if we are being run in sigtool or not */
@@ -502,10 +502,10 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
                     ret = CL_EMEM;
                     break;
                 }
-                newres->virname    = "test";
+                newres->virname = "test";
                 newres->customdata = NULL;
-                newres->next       = *res;
-                *res               = newres;
+                newres->next = *res;
+                *res = newres;
             }
         }
 
@@ -545,19 +545,19 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
 cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_length, int offset, struct cli_bcomp_meta *bm)
 {
 
-    uint32_t byte_len         = 0;
-    uint32_t pad_len          = 0;
-    uint32_t norm_len         = 0;
-    uint32_t length           = 0;
-    uint32_t i                = 0;
-    cl_error_t ret            = CL_CLEAN;
-    uint16_t opt              = 0;
-    uint16_t opt_val          = 0;
-    int64_t value             = 0;
-    int64_t bin_value         = 0;
-    int16_t compare_check     = 0;
-    unsigned char *end_buf    = NULL;
-    unsigned char *buffer     = NULL; /* Used for BE, non-binary comparisons */
+    uint32_t byte_len = 0;
+    uint32_t pad_len = 0;
+    uint32_t norm_len = 0;
+    uint32_t length = 0;
+    uint32_t i = 0;
+    cl_error_t ret = CL_CLEAN;
+    uint16_t opt = 0;
+    uint16_t opt_val = 0;
+    int64_t value = 0;
+    int64_t bin_value = 0;
+    int16_t compare_check = 0;
+    unsigned char *end_buf = NULL;
+    unsigned char *buffer = NULL;     /* Used for BE, non-binary comparisons */
     unsigned char *tmp_buffer = NULL; /* Used for LE, non-binary comparisons */
 
     if (!f_buffer || !bm) {
@@ -567,8 +567,8 @@ cl_error_t cli_bcomp_compare_check(const unsigned char *f_buffer, size_t buffer_
     }
 
     byte_len = bm->byte_len;
-    length   = buffer_length;
-    opt      = bm->options;
+    length = buffer_length;
+    opt = bm->options;
 
     /* ensure we won't run off the end of the file buffer */
     if (!(offset + bm->offset + byte_len <= length)) {
@@ -871,10 +871,10 @@ uint16_t cli_bcomp_chk_hex(const unsigned char *buffer, uint16_t opt, uint32_t l
  */
 unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t byte_len, uint32_t *pad_len, uint16_t opt, uint16_t whitespace_only)
 {
-    uint32_t norm_len         = 0;
-    uint32_t pad              = 0;
-    uint32_t i                = 0;
-    uint16_t opt_val          = 0;
+    uint32_t norm_len = 0;
+    uint32_t pad = 0;
+    uint32_t i = 0;
+    uint16_t opt_val = 0;
     unsigned char *tmp_buffer = NULL;
 
     if (!buffer) {
@@ -893,7 +893,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
             }
         }
         /* keep in mind byte_len is a stack variable so this won't change byte_len in our calling functioning */
-        byte_len   = byte_len - pad;
+        byte_len = byte_len - pad;
         tmp_buffer = cli_calloc(byte_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for whitespace normalized temp buffer\n");
@@ -911,7 +911,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
     opt_val = opt & 0x000F;
     if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
         unsigned char *hex_buffer;
-        norm_len   = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
+        norm_len = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
         tmp_buffer = cli_calloc(norm_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for normalized temp buffer\n");

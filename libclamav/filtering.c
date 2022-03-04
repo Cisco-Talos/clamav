@@ -187,7 +187,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
 {
     uint16_t q = 0;
     uint8_t j, maxlen;
-    uint32_t best    = 0xffffffff;
+    uint32_t best = 0xffffffff;
     uint8_t best_pos = 0;
 
     UNUSEDPARAM(name);
@@ -232,7 +232,7 @@ int filter_add_static(struct filter *m, const unsigned char *pattern, unsigned l
         num -= (2 * MAXSOPATLEN - (k + 1 + j)) * (k - j) / 2;
 
         if (num < best) {
-            best     = num;
+            best = num;
             best_pos = j;
         }
     }
@@ -295,8 +295,8 @@ static inline unsigned char spec_ith_char(const struct char_spec *spec, unsigned
         unsigned c0end, c1end, cc0, cc1;             \
         c0end = spec0->negative ? 255 : c0;          \
         c1end = spec1->negative ? 255 : c1;          \
-        cc0   = spec0->negative ? 0 : c0;            \
-        cc1   = spec1->negative ? 0 : c1;            \
+        cc0 = spec0->negative ? 0 : c0;              \
+        cc1 = spec1->negative ? 0 : c1;              \
         for (; cc0 <= c0end; cc0++) {                \
             for (; cc1 <= c1end; cc1++) {            \
                 uint16_t a = cc0 | (cc1 << 8);       \
@@ -355,7 +355,7 @@ static inline void get_score(enum badness badness, unsigned i, const struct filt
             break;
     }
     if (base < 0) {
-        *score     = base;
+        *score = base;
         *score_end = base;
         return;
     }
@@ -370,7 +370,7 @@ static inline void get_score(enum badness badness, unsigned i, const struct filt
             SPEC_END_FOR;
         }
     }
-    *score     = base - num_introduced;
+    *score = base - num_introduced;
     *score_end = base - num_end_introduced;
     if (badness == avoid_first && i) {
         /* what is bad to begin with, is bad at end too */
@@ -410,8 +410,8 @@ static inline void add_choice(struct choice *choices, unsigned *cnt, unsigned i,
         choice = &choices[(*cnt)++];
     }
     choice->begin = i;
-    choice->len   = ie - i + 1;
-    choice->base  = badness;
+    choice->len = ie - i + 1;
+    choice->base = badness;
 }
 
 static inline int32_t spec_iter(const struct char_spec *spec)
@@ -432,15 +432,15 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     struct char_spec chars[MAXPATLEN];
     enum badness char_badness[MAXPATLEN];
     unsigned char patc[MAXPATLEN];
-    unsigned altcnt         = 0;
-    int32_t best_score      = -0x7fffffff;
-    unsigned best_score_i   = 0;
+    unsigned altcnt = 0;
+    int32_t best_score = -0x7fffffff;
+    unsigned best_score_i = 0;
     unsigned best_score_len = 0;
     struct char_spec *spec0 = NULL, *spec1 = NULL;
 
     struct choice choices[MAX_CHOICES];
     unsigned choices_cnt = 0;
-    unsigned prefix_len  = pat->prefix_length[0];
+    unsigned prefix_len = pat->prefix_length[0];
     unsigned speci;
 
     j = MIN(prefix_len + pat->length[0], MAXPATLEN);
@@ -469,32 +469,32 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     /* transform AC characters into our representation */
     for (speci = 0; i < j && !stop; speci++, i++) {
         struct char_spec *spec = &chars[speci];
-        const uint16_t p       = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
-        spec->alt              = NULL;
-        spec->negative         = 0;
+        const uint16_t p = i < prefix_len ? pat->prefix[i] : pat->pattern[i - prefix_len];
+        spec->alt = NULL;
+        spec->negative = 0;
         switch (p & CLI_MATCH_METADATA) {
             case CLI_MATCH_CHAR:
                 spec->start = spec->end = (uint8_t)p;
-                spec->step              = 1;
+                spec->step = 1;
                 break;
             case CLI_MATCH_NOCASE:
                 if ((uint8_t)p >= 'a' && (uint8_t)p <= 'z') {
                     spec->start = (uint8_t)p - ('a' - 'A');
-                    spec->end   = (uint8_t)p;
-                    spec->step  = ('a' - 'A');
+                    spec->end = (uint8_t)p;
+                    spec->step = ('a' - 'A');
                 } else if ((uint8_t)p >= 'A' && (uint8_t)p <= 'Z') {
                     spec->start = (uint8_t)p;
-                    spec->end   = (uint8_t)p + ('a' - 'A');
-                    spec->step  = ('a' - 'A');
+                    spec->end = (uint8_t)p + ('a' - 'A');
+                    spec->step = ('a' - 'A');
                 } else {
                     spec->start = spec->end = (uint8_t)p;
-                    spec->step              = 1;
+                    spec->step = 1;
                 }
                 break;
             case CLI_MATCH_IGNORE:
                 spec->start = 0x00;
-                spec->end   = 0xff;
-                spec->step  = 1;
+                spec->end = 0xff;
+                spec->step = 1;
                 break;
             case CLI_MATCH_SPECIAL:
                 assert(pat->special_table);
@@ -504,9 +504,9 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 switch (pat->special_table[altcnt++]->type) {
                     case 1: /* ALT_CHAR */
                         spec->start = 0;
-                        spec->end   = pat->special_table[altcnt - 1]->num - 1;
-                        spec->step  = 1;
-                        spec->alt   = pat->special_table[altcnt - 1];
+                        spec->end = pat->special_table[altcnt - 1]->num - 1;
+                        spec->step = 1;
+                        spec->alt = pat->special_table[altcnt - 1];
                         break;
                     default:
                         stop = 1;
@@ -516,13 +516,13 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 break;
             case CLI_MATCH_NIBBLE_HIGH:
                 spec->start = (p & 0xf0);
-                spec->end   = spec->start | 0x0f;
-                spec->step  = 1;
+                spec->end = spec->start | 0x0f;
+                spec->step = 1;
                 break;
             case CLI_MATCH_NIBBLE_LOW:
                 spec->start = (p & 0xf);
-                spec->end   = 0xf0 | spec->start;
-                spec->step  = 0x10;
+                spec->end = 0xf0 | spec->start;
+                spec->step = 0x10;
                 break;
             default:
                 cli_errmsg("filtering: unknown wildcard character: %d\n", p);
@@ -542,8 +542,8 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     for (i = 0; i < j - 1; i++) {
         int32_t num_iter;
         /* new qgrams added to the filter */
-        spec0    = &chars[i];
-        spec1    = &chars[i + 1];
+        spec0 = &chars[i];
+        spec1 = &chars[i + 1];
         num_iter = spec_iter(spec0) * spec_iter(spec1);
 
         if (num_iter >= 0x100) {
@@ -552,7 +552,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
             else
                 char_badness[i] = avoid_anywhere;
         } else {
-            int8_t binary     = 0;
+            int8_t binary = 0;
             enum badness scor = acceptable;
             for (k0 = spec0->start; k0 <= spec0->end; k0 += spec0->step) {
                 for (k1 = spec1->start; k1 <= spec1->end; k1 += spec1->step) {
@@ -590,7 +590,7 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
     for (i = 0; i < j - 1 && choices_cnt < MAX_CHOICES; i++) {
         enum badness base0 = like, base1 = like;
         unsigned kend = MIN(j - 1, (i + MAXSOPATLEN) & ~1), k;
-        int ki        = -0xff;
+        int ki = -0xff;
         /* add 2 scores: pattern with max length, one where we stop at
          * first negative, and one we stop at last positive, but never
          * include reject */
@@ -633,8 +633,8 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
         unsigned kend;
         unsigned k;
 
-        i     = choices[l].begin;
-        kend  = i + choices[l].len;
+        i = choices[l].begin;
+        kend = i + choices[l].len;
         score = 0;
 
         for (k = i; k < kend - 1; k++) {
@@ -655,9 +655,9 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
                 /* we may have negative scores, so truncating
                  * the pattern could actually get us a higher
                  * score */
-                best_score     = score + score_end;
+                best_score = score + score_end;
                 best_score_len = p + 2;
-                best_score_i   = i;
+                best_score_i = i;
                 assert(i + best_score_len <= j);
             }
         }
@@ -718,8 +718,8 @@ int filter_add_acpatt(struct filter *m, const struct cli_ac_patt *pat)
 __hot__ int filter_search_ext(const struct filter *m, const unsigned char *data, unsigned long len, struct filter_match_info *inf)
 {
     size_t j;
-    uint8_t state      = ~0;
-    const uint8_t *B   = m->B;
+    uint8_t state = ~0;
+    const uint8_t *B = m->B;
     const uint8_t *End = m->end;
 
     if (len < 2) return -1;
@@ -728,7 +728,7 @@ __hot__ int filter_search_ext(const struct filter *m, const unsigned char *data,
         uint8_t match_state_end;
         const uint16_t q0 = cli_readint16(&data[j]);
 
-        state           = (state << 1) | B[q0];
+        state = (state << 1) | B[q0];
         match_state_end = state | End[q0];
         if (match_state_end != 0xff) {
             inf->first_match = j;
@@ -746,8 +746,8 @@ __hot__ int filter_search_ext(const struct filter *m, const unsigned char *data,
 long filter_search(const struct filter *m, const unsigned char *data, unsigned long len)
 {
     size_t j;
-    uint8_t state      = ~0;
-    const uint8_t *B   = m->B;
+    uint8_t state = ~0;
+    const uint8_t *B = m->B;
     const uint8_t *End = m->end;
 
     /* we use 2-grams, must be higher than 1 */

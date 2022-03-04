@@ -57,10 +57,10 @@ typedef struct mac_token2_tag {
 
 cli_ctx *convenience_ctx(int fd)
 {
-    cl_error_t status        = CL_EMEM;
-    cli_ctx *ctx             = NULL;
+    cl_error_t status = CL_EMEM;
+    cli_ctx *ctx = NULL;
     struct cl_engine *engine = NULL;
-    cl_fmap_t *new_map       = NULL;
+    cl_fmap_t *new_map = NULL;
 
     /* build engine */
     engine = cl_engine_new();
@@ -105,7 +105,7 @@ cli_ctx *convenience_ctx(int fd)
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
     ctx->recursion_stack_size = ctx->engine->max_recursion_level;
-    ctx->recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
+    ctx->recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx->recursion_stack_size);
     if (!ctx->recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -937,7 +937,7 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
     uint16_t w_length, int_val;
     unsigned char *tmp_buff, *tmp_name, *line_start;
 
-    i          = 2;
+    i = 2;
     line_start = buff;
     while (i < len) {
         switch (buff[i]) {
@@ -1096,15 +1096,15 @@ static void wm_decode_macro(unsigned char *buff, uint32_t len, int hex_output)
 static int sigtool_scandir(const char *dirname, int hex_output)
 {
     int status = -1;
-    DIR *dd    = NULL;
+    DIR *dd = NULL;
     struct dirent *dent;
     STATBUF statbuf;
     const char *tmpdir;
-    char *fname    = NULL;
-    char *dir      = NULL;
+    char *fname = NULL;
+    char *dir = NULL;
     cl_error_t ret = CL_CLEAN;
-    int desc       = -1;
-    cli_ctx *ctx   = NULL;
+    int desc = -1;
+    cli_ctx *ctx = NULL;
     int has_vba = 0, has_xlm = 0;
 
     if ((dd = opendir(dirname)) != NULL) {
@@ -1130,7 +1130,7 @@ static int sigtool_scandir(const char *dirname, int hex_output)
                         } else {
                             if (S_ISREG(statbuf.st_mode)) {
                                 struct uniq *files = NULL;
-                                tmpdir             = cli_gettmpdir();
+                                tmpdir = cli_gettmpdir();
 
                                 /* generate the temporary directory */
                                 dir = cli_gentemp(tmpdir);
@@ -1253,7 +1253,7 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
                 close(fd);
 
                 if (data) {
-                    data           = (unsigned char *)realloc(data, data_len + 1);
+                    data = (unsigned char *)realloc(data, data_len + 1);
                     data[data_len] = '\0';
                     printf("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
                     free(data);
@@ -1313,9 +1313,9 @@ int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U)
 
         for (i = 0; i < vba_project->count; i++) {
             data_len = vba_project->length[i];
-            data     = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], (uint32_t)data_len, vba_project->key[i]);
+            data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], (uint32_t)data_len, vba_project->key[i]);
             if (data) {
-                data           = (unsigned char *)realloc(data, data_len + 1);
+                data = (unsigned char *)realloc(data, data_len + 1);
                 data[data_len] = '\0';
                 printf("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
                 free(data);

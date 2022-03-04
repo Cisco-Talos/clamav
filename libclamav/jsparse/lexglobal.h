@@ -121,10 +121,10 @@ typedef struct token {
 
 /* inline functions to access the structure to ensure type safety */
 
-#define TOKEN_SET(DST, VTYPE, VAL)        \
-    do {                                  \
-        (DST)->vtype     = vtype_##VTYPE; \
-        (DST)->val.VTYPE = (VAL);         \
+#define TOKEN_SET(DST, VTYPE, VAL)    \
+    do {                              \
+        (DST)->vtype = vtype_##VTYPE; \
+        (DST)->val.VTYPE = (VAL);     \
     } while (0);
 
 #define cstring_invalid NULL

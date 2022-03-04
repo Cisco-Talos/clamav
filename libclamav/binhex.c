@@ -50,7 +50,7 @@ static const uint8_t hqxtbl[] = {
 
 int cli_binhex(cli_ctx *ctx)
 {
-    fmap_t *map            = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     const uint8_t *encoded = NULL;
     uint8_t decoded[BUFSIZ], spare_bits = 0, last_byte = 0, this_byte = 0, offset = 0;
     size_t enc_done = 0, enc_todo = map->len;
@@ -234,11 +234,11 @@ int cli_binhex(cli_ctx *ctx)
                 spare_bits = b << 2;
                 continue;
             case 1: /* left-2l + middle-4h */
-                this_byte  = spare_bits | (b >> 4);
+                this_byte = spare_bits | (b >> 4);
                 spare_bits = b << 4;
                 break;
             case 2: /* middle-4l + right-2h */
-                this_byte  = spare_bits | (b >> 2);
+                this_byte = spare_bits | (b >> 2);
                 spare_bits = b << 6;
                 break;
             case 3: /* right-6l */
@@ -259,7 +259,7 @@ int cli_binhex(cli_ctx *ctx)
             continue;
         }
         decoded[dec_done++] = this_byte;
-        last_byte           = this_byte;
+        last_byte = this_byte;
     }
 
     close(datafd);

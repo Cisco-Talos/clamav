@@ -99,12 +99,12 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
 
     /* initialize zlib inflation stream */
     memset(&zstrm, 0, sizeof(zstrm));
-    zstrm.zalloc    = Z_NULL;
-    zstrm.zfree     = Z_NULL;
-    zstrm.opaque    = Z_NULL;
-    zstrm.next_in   = inbuf;
-    zstrm.next_out  = outbuf;
-    zstrm.avail_in  = 0;
+    zstrm.zalloc = Z_NULL;
+    zstrm.zfree = Z_NULL;
+    zstrm.opaque = Z_NULL;
+    zstrm.next_in = inbuf;
+    zstrm.next_out = outbuf;
+    zstrm.avail_in = 0;
     zstrm.avail_out = FILEBUFF;
 
     zret = inflateInit2(&zstrm, -15);
@@ -136,7 +136,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
             zstrm.avail_in = in;
             off_in += in;
         }
-        zret  = inflate(&zstrm, Z_SYNC_FLUSH);
+        zret = inflate(&zstrm, Z_SYNC_FLUSH);
         count = FILEBUFF - zstrm.avail_out;
         if (count) {
             if ((ret = cli_checklimits("HWP", ctx, outsize + count, 0, 0)) != CL_SUCCESS)
@@ -149,7 +149,7 @@ static cl_error_t decompress_and_callback(cli_ctx *ctx, fmap_t *input, size_t at
             }
             outsize += count;
         }
-        zstrm.next_out  = outbuf;
+        zstrm.next_out = outbuf;
         zstrm.avail_out = FILEBUFF;
     } while (zret == Z_OK && remain);
 
@@ -199,7 +199,7 @@ dc_end:
 static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *parent, cl_error_t *ret)
 {
     cl_error_t rc = CL_SUCCESS;
-    char *res     = NULL;
+    char *res = NULL;
 #if HANGUL_NUMERICAL && HAVE_ICONV
     char *p1, *p2, *inbuf = NULL, *outbuf = NULL;
     size_t inlen, outlen;
@@ -524,9 +524,9 @@ static inline cl_error_t parsehwp3_docinfo(cli_ctx *ctx, size_t offset, struct h
     memcpy(&(docinfo->di_compressed), hwp3_ptr + DI_COMPRESSED, sizeof(docinfo->di_compressed));
     memcpy(&(docinfo->di_infoblksize), hwp3_ptr + DI_INFOBLKSIZE, sizeof(docinfo->di_infoblksize));
 
-    docinfo->di_writeprot   = le32_to_host(docinfo->di_writeprot);
-    docinfo->di_externapp   = le16_to_host(docinfo->di_externapp);
-    docinfo->di_passwd      = le16_to_host(docinfo->di_passwd);
+    docinfo->di_writeprot = le32_to_host(docinfo->di_writeprot);
+    docinfo->di_externapp = le16_to_host(docinfo->di_externapp);
+    docinfo->di_passwd = le16_to_host(docinfo->di_passwd);
     docinfo->di_infoblksize = le16_to_host(docinfo->di_infoblksize);
 
     hwp3_debug("HWP3.x: di_writeprot:   %u\n", docinfo->di_writeprot);
@@ -626,7 +626,7 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
         if (iret == CL_VIRUS) {
             char *b64;
             size_t b64len = strlen(hwp3_docsummary_fields[i].name) + 8;
-            b64           = cli_calloc(1, b64len);
+            b64 = cli_calloc(1, b64len);
             if (!b64) {
                 cli_errmsg("HWP3.x: Failed to allocate memory for b64 boolean\n");
                 free(str);
@@ -746,7 +746,7 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
         hwp3_debug("HWP3.x: Detected end-of-paragraph list @ offset %zu\n", offset);
         hwp3_debug("HWP3.x: end recursion level: %u\n", level);
         (*roffset) = offset + HWP3_PARAINFO_SIZE_S;
-        (*last)    = 1;
+        (*last) = 1;
         return CL_SUCCESS;
     }
 
@@ -879,7 +879,7 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
-                    length     = le32_to_host(length);
+                    length = le32_to_host(length);
                     new_offset = offset + (8 + length);
                     if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%u, %d]: length value is too high, invalid. %u\n", level, p, length);
@@ -912,7 +912,7 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
-                    length     = le32_to_host(length);
+                    length = le32_to_host(length);
                     new_offset = offset + (8 + length);
                     if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%u, %d]: length value is too high, invalid. %u\n", level, p, length);
@@ -1103,7 +1103,7 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
 
                     hwp3_debug("HWP3.x: Paragraph[%u, %d]: drawing is %u additional bytes\n", level, p, size);
 
-                    size       = le32_to_host(size);
+                    size = le32_to_host(size);
                     new_offset = offset + (348 + size);
                     if ((new_offset <= offset) || (new_offset >= map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%u, %d]: image size value is too high, invalid. %u\n", level, p, size);
@@ -1456,7 +1456,7 @@ static inline cl_error_t parsehwp3_paragraph(cli_ctx *ctx, fmap_t *map, int p, u
                     if (fmap_readn(map, &length, offset + 2, sizeof(length)) != sizeof(length))
                         return CL_EREAD;
 
-                    length     = le32_to_host(length);
+                    length = le32_to_host(length);
                     new_offset = offset + (8 + length);
                     if ((new_offset <= offset) || (new_offset > map->len)) {
                         cli_errmsg("HWP3.x: Paragraph[%u, %d]: length value is too high, invalid. %u\n", level, p, length);
@@ -1780,7 +1780,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     } else {
         hwp3_debug("HWP3.x: Document Content Stream starts @ offset %zu\n", offset);
 
-        map  = ctx->fmap;
+        map = ctx->fmap;
         dmap = NULL;
     }
 
@@ -1858,7 +1858,7 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
     if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
         cl_error_t subret = ret;
-        size_t dlen       = offset - start;
+        size_t dlen = offset - start;
 
         ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL);
         // ret = cli_magic_scan_nested_fmap_type(map, 0, 0, ctx, CL_TYPE_ANY);
@@ -2133,7 +2133,7 @@ cl_error_t cli_scanhwpml(cli_ctx *ctx)
 
     memset(&mxctx, 0, sizeof(mxctx));
     mxctx.scan_cb = hwpml_binary_cb;
-    ret           = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, MSXML_FLAG_JSON, &mxctx);
+    ret = cli_msxml_parse_document(ctx, reader, hwpml_keys, num_hwpml_keys, MSXML_FLAG_JSON, &mxctx);
 
     xmlTextReaderClose(reader);
     xmlFreeTextReader(reader);

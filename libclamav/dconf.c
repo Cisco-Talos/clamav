@@ -367,7 +367,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
 {
     char buffer[FILEBUFF];
     unsigned int line = 0;
-    int ret           = 0;
+    int ret = 0;
     uint32_t val;
 
     UNUSEDPARAM(options);

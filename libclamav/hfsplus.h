@@ -33,27 +33,27 @@
 /* volume attributes that may affect reading */
 enum hfsVolAttributes {
     /* hfsVolumeHardwareLockBit       =  7, */
-    hfsVolumeUnmountedBit    = 8,
+    hfsVolumeUnmountedBit = 8,
     hfsVolumeSparedBlocksBit = 9,
     /* hfsVolumeNoCacheRequiredBit    = 10, */
     hfsBootVolumeInconsistentBit = 11,
-    hfsCatalogNodeIDsReusedBit   = 12,
-    hfsVolumeJournaledBit        = 13
+    hfsCatalogNodeIDsReusedBit = 12,
+    hfsVolumeJournaledBit = 13
     /* hfsVolumeSoftwareLockBit       = 15 */
 };
 
 /* reserved CatalogNodeID values */
 enum {
-    hfsRootParentID           = 1,
-    hfsRootFolderID           = 2,
-    hfsExtentsFileID          = 3,
-    hfsCatalogFileID          = 4,
-    hfsBadBlockFileID         = 5,
-    hfsAllocationFileID       = 6,
-    hfsStartupFileID          = 7,
-    hfsAttributesFileID       = 8,
-    hfsRepairCatalogFileID    = 14,
-    hfsBogusExtentFileID      = 15,
+    hfsRootParentID = 1,
+    hfsRootFolderID = 2,
+    hfsExtentsFileID = 3,
+    hfsCatalogFileID = 4,
+    hfsBadBlockFileID = 5,
+    hfsAllocationFileID = 6,
+    hfsStartupFileID = 7,
+    hfsAttributesFileID = 8,
+    hfsRepairCatalogFileID = 14,
+    hfsBogusExtentFileID = 15,
     hfsFirstUserCatalogNodeID = 16
 };
 

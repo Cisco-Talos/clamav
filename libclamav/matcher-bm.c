@@ -82,9 +82,9 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
         idx = HASH(pt[i], pt[i + 1], pt[i + 2]);
         if (!root->bm_suffix[idx]) {
             if (i) {
-                pattern->prefix        = pattern->pattern;
+                pattern->prefix = pattern->pattern;
                 pattern->prefix_length = i;
-                pattern->pattern       = &pattern->pattern[i];
+                pattern->pattern = &pattern->pattern[i];
                 pattern->length -= i;
                 pt = pattern->pattern;
             }
@@ -94,7 +94,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
 #endif
 
     for (i = 0; i <= BM_MIN_LENGTH - BM_BLOCK_SIZE; i++) {
-        idx                 = HASH(pt[i], pt[i + 1], pt[i + 2]);
+        idx = HASH(pt[i], pt[i + 1], pt[i + 2]);
         root->bm_shift[idx] = MIN(root->bm_shift[idx], BM_MIN_LENGTH - BM_BLOCK_SIZE - i);
     }
 
@@ -113,7 +113,7 @@ cl_error_t cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern,
         root->bm_suffix[idx] = pattern;
     } else {
         pattern->next = prev->next;
-        prev->next    = pattern;
+        prev->next = pattern;
     }
     pattern->pattern0 = pattern->pattern[0];
     root->bm_suffix[idx]->cnt++;
@@ -167,7 +167,7 @@ cl_error_t cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *dat
     }
 
     data->cnt = data->pos = 0;
-    data->offtab          = (uint32_t *)cli_malloc(root->bm_patterns * sizeof(uint32_t));
+    data->offtab = (uint32_t *)cli_malloc(root->bm_patterns * sizeof(uint32_t));
     if (!data->offtab) {
         cli_errmsg("cli_bm_initoff: Can't allocate memory for data->offtab\n");
         return CL_EMEM;
@@ -274,12 +274,12 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
         i += offdata->offtab[offdata->pos] - offset;
     }
     for (; i < length - BM_BLOCK_SIZE + 1;) {
-        idx   = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
+        idx = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
         shift = root->bm_shift[idx];
 
         if (shift == 0) {
             prefix = buffer[i - BM_MIN_LENGTH + BM_BLOCK_SIZE];
-            p      = root->bm_suffix[idx];
+            p = root->bm_suffix[idx];
             if (p && p->cnt == 1 && p->pattern0 != prefix) {
                 if (offdata) {
                     off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
@@ -307,7 +307,7 @@ cl_error_t cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const c
                     pchain = 1;
 
                 off = i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-                bp  = buffer + off;
+                bp = buffer + off;
 
                 if ((off + p->length > length) || (p->prefix_length > off)) {
                     p = p->next;

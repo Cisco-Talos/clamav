@@ -154,11 +154,11 @@ int cli_rebuildpe_align(char *buffer, struct cli_exe_section *sections, int sect
 
     datasize = PESALIGN(rawbase, 0x1000);
 
-    fakepe                      = (struct IMAGE_PE_HEADER *)(pefile + 0xd0);
-    fakepe->NumberOfSections    = EC16(sects + gotghost);
+    fakepe = (struct IMAGE_PE_HEADER *)(pefile + 0xd0);
+    fakepe->NumberOfSections = EC16(sects + gotghost);
     fakepe->AddressOfEntryPoint = EC32(ep);
-    fakepe->ImageBase           = EC32(base);
-    fakepe->SizeOfHeaders       = EC32(rawbase);
+    fakepe->ImageBase = EC32(base);
+    fakepe->SizeOfHeaders = EC32(rawbase);
     memset(pefile + 0x148, 0, 0x80);
     cli_writeint32(pefile + 0x148 + 0x10, ResRva);
     cli_writeint32(pefile + 0x148 + 0x14, ResSize);

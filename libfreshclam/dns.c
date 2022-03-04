@@ -87,7 +87,7 @@ dnsquery(const char *domain, int qtype, unsigned int *ttl)
     }
 
     answend = answer + len;
-    pt      = answer + sizeof(HEADER);
+    pt = answer + sizeof(HEADER);
 
     if ((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
         logg(LOGG_WARNING, "dn_expand failed\n");

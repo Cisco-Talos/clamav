@@ -132,7 +132,7 @@ int yr_parser_emit_pushes_for_strings(
     const char* identifier)
 {
     YR_COMPILER* compiler = yyget_extra(yyscanner);
-    YR_STRING* string     = compiler->current_rule_strings;
+    YR_STRING* string = compiler->current_rule_strings;
 
     const char* string_identifier;
     const char* target_identifier;
@@ -191,7 +191,7 @@ int yr_parser_check_types(
     char message[MAX_COMPILER_ERROR_EXTRA_INFO];
 
     const char* expected = function->arguments_fmt;
-    const char* actual   = actual_args_fmt;
+    const char* actual = actual_args_fmt;
 
     i = 0;
 
@@ -341,10 +341,10 @@ int _yr_parser_write_string(
         flags |= STRING_GFLAGS_LITERAL;
     }
 #else
-    literal_string    = str;
+    literal_string = str;
 #endif
 
-    (*string)->g_flags    = flags;
+    (*string)->g_flags = flags;
     (*string)->chained_to = NULL;
 
 #ifdef PROFILING_ENABLED
@@ -402,11 +402,11 @@ int _yr_parser_write_string(
                 EOL);
 
             if (result == ERROR_SUCCESS) {
-                new_match->backtrack               = 0;
-                new_match->string                  = *string;
-                new_match->forward_code            = re->root_node->forward_code;
-                new_match->backward_code           = NULL;
-                new_match->next                    = compiler->automaton->root->matches;
+                new_match->backtrack = 0;
+                new_match->string = *string;
+                new_match->forward_code = re->root_node->forward_code;
+                new_match->backward_code = NULL;
+                new_match->next = compiler->automaton->root->matches;
                 compiler->automaton->root->matches = new_match;
             }
         }
@@ -466,7 +466,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
     int re_flags = 0;
 
     YR_COMPILER* compiler = yyget_extra(yyscanner);
-    YR_STRING* string     = NULL;
+    YR_STRING* string = NULL;
 
 #if REAL_YARA
     int min_atom_length_aux;
@@ -728,10 +728,10 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
         rule->g_flags = flags | compiler->current_rule_flags;
 #if REAL_YARA
-        rule->tags    = tags;
+        rule->tags = tags;
         rule->strings = strings;
-        rule->metas   = metas;
-        rule->ns      = compiler->current_namespace;
+        rule->metas = metas;
+        rule->ns = compiler->current_namespace;
 
 #ifdef PROFILING_ENABLED
         rule->clock_ticks = 0;
@@ -758,7 +758,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 #if REAL_YARA
         compiler->current_rule_strings = NULL;
 #else
-    rule->cl_flags                 = compiler->current_rule_clflags;
+    rule->cl_flags = compiler->current_rule_clflags;
     compiler->current_rule_clflags = 0;
     // Write halt instruction at the end of code.
     yr_arena_write_data(
@@ -870,7 +870,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
             return NULL;
 
         meta->integer = integer;
-        meta->type    = type;
+        meta->type = type;
 
         return meta;
 #if 0 // meta w.i.p.

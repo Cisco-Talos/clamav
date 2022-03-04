@@ -58,10 +58,10 @@ int adc_decompressInit(adc_stream *strm)
         return ADC_MEM_ERROR;
     }
     strm->buffered = 0;
-    strm->state    = ADC_STATE_GETTYPE;
-    strm->length   = 0;
-    strm->offset   = 0;
-    strm->curr     = strm->buffer;
+    strm->state = ADC_STATE_GETTYPE;
+    strm->length = 0;
+    strm->offset = 0;
+    strm->curr = strm->buffer;
 
     return ADC_OK;
 }
@@ -115,15 +115,15 @@ int adc_decompress(adc_stream *strm)
                 strm->next_in++;
                 strm->avail_in--;
                 if (bData & 0x80) {
-                    strm->state  = ADC_STATE_RAWDATA;
+                    strm->state = ADC_STATE_RAWDATA;
                     strm->offset = 0;
                     strm->length = (bData & 0x7F) + 1;
                 } else if (bData & 0x40) {
-                    strm->state  = ADC_STATE_LONGOP2;
+                    strm->state = ADC_STATE_LONGOP2;
                     strm->offset = 0;
                     strm->length = (bData & 0x3F) + 4;
                 } else {
-                    strm->state  = ADC_STATE_SHORTOP;
+                    strm->state = ADC_STATE_SHORTOP;
                     strm->offset = (bData & 0x3) * 0x100;
                     strm->length = ((bData & 0x3C) >> 2) + 3;
                 }
@@ -137,7 +137,7 @@ int adc_decompress(adc_stream *strm)
                 strm->next_in++;
                 strm->avail_in--;
                 strm->offset = bData * 0x100;
-                strm->state  = ADC_STATE_LONGOP1;
+                strm->state = ADC_STATE_LONGOP1;
                 adc_dbgmsg("adc_decompress: LONGOP2 bData %x state %u offset %u length %u\n",
                            bData, strm->state, strm->offset, strm->length);
                 break;
@@ -278,9 +278,9 @@ int adc_decompressEnd(adc_stream *strm)
         free(strm->buffer);
     }
     strm->buffered = 0;
-    strm->state    = ADC_STATE_UNINIT;
-    strm->length   = 0;
-    strm->offset   = 0;
+    strm->state = ADC_STATE_UNINIT;
+    strm->length = 0;
+    strm->offset = 0;
 
     return ADC_OK;
 }

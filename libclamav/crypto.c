@@ -108,9 +108,9 @@ time_t timegm(struct tm *t)
         tl += 3600;
     }
 
-    tg           = gmtime(&tl);
+    tg = gmtime(&tl);
     tg->tm_isdst = 0;
-    tb           = mktime(tg);
+    tb = mktime(tg);
 
     if (tb == -1) {
         tg->tm_hour--;
@@ -494,7 +494,7 @@ int cl_verify_signature(EVP_PKEY *pkey, const char *alg, unsigned char *sig, uns
         if (!(newsig))
             return -1;
 
-        sig    = newsig;
+        sig = newsig;
         siglen = newsiglen;
     }
 
@@ -771,7 +771,7 @@ unsigned char *cl_sign_data(EVP_PKEY *pkey, const char *alg, unsigned char *hash
         }
 
         free(sig);
-        sig    = newsig;
+        sig = newsig;
         siglen = (unsigned int)strlen((const char *)newsig);
     }
 
@@ -838,7 +838,7 @@ X509 *cl_get_x509_from_mem(void *data, unsigned int len)
 int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
 {
     char **authorities = NULL, **t;
-    size_t nauths      = 0;
+    size_t nauths = 0;
     int res;
     DIR *dp;
     struct dirent *dirent;
@@ -866,7 +866,7 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
             return -1;
         }
 
-        authorities         = t;
+        authorities = t;
         authorities[nauths] = (char *)malloc(strlen(tsdir) + strlen(dirent->d_name) + 2);
         if (!authorities[nauths]) {
             if (nauths) {
@@ -897,7 +897,7 @@ int cl_validate_certificate_chain_ts_dir(char *tsdir, char *certpath)
         return -1;
     }
 
-    authorities         = t;
+    authorities = t;
     authorities[nauths] = NULL;
 
     res = cl_validate_certificate_chain(authorities, NULL, certpath);
@@ -914,8 +914,8 @@ int cl_validate_certificate_chain(char **authorities, char *crlpath, char *certp
 {
     X509_STORE *store = NULL;
     X509_STORE_CTX *store_ctx;
-    X509_LOOKUP *lookup      = NULL;
-    X509_CRL *crl            = NULL;
+    X509_LOOKUP *lookup = NULL;
+    X509_CRL *crl = NULL;
     X509_VERIFY_PARAM *param = NULL;
     X509 *cert;
     unsigned long i;

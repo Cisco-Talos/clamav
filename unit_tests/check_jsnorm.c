@@ -167,7 +167,7 @@ END_TEST
 
 START_TEST(test_init_parse_destroy)
 {
-    const char buf[]           = "function (p) { return \"anonymous\";}";
+    const char buf[] = "function (p) { return \"anonymous\";}";
     struct parser_state *state = cli_js_init();
     ck_assert_msg(!!state, "cli_js_init()");
     cli_js_process_buffer(state, buf, strlen(buf));
@@ -184,7 +184,7 @@ START_TEST(js_begin_end)
 
     for (p = strlen(buf); p < 8191; p++) {
         buf[p++] = 'a';
-        buf[p]   = ' ';
+        buf[p] = ' ';
     }
     strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
     ck_assert_msg(html_normalise_mem((unsigned char *)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
@@ -230,7 +230,7 @@ static void tokenizer_test(const char *in, const char *expected, int split)
 {
     char filename[1024];
     int fd;
-    ssize_t len  = strlen(expected);
+    ssize_t len = strlen(expected);
     size_t inlen = strlen(in);
 
     if (split) {
@@ -392,13 +392,13 @@ END_TEST
 
 START_TEST(js_buffer)
 {
-    const size_t len   = 512 * 1024;
-    const char s[]     = "x=\"";
-    const char e[]     = "\"";
+    const size_t len = 512 * 1024;
+    const char s[] = "x=\"";
+    const char e[] = "\"";
     const char s_exp[] = "<script>";
     const char e_exp[] = "</script>";
-    char *tst          = malloc(len);
-    char *exp          = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
+    char *tst = malloc(len);
+    char *exp = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
 
     ck_assert_msg(!!tst, "malloc");
     ck_assert_msg(!!exp, "malloc");

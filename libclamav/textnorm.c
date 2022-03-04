@@ -37,16 +37,16 @@ int text_normalize_init(struct text_norm_state *state, unsigned char *out, size_
     if (!state) {
         return CL_ENULLARG;
     }
-    state->out           = out;
-    state->out_len       = out_len;
-    state->out_pos       = 0;
+    state->out = out;
+    state->out_len = out_len;
+    state->out_pos = 0;
     state->space_written = 0;
     return CL_SUCCESS;
 }
 
 void text_normalize_reset(struct text_norm_state *state)
 {
-    state->out_pos       = 0;
+    state->out_pos = 0;
     state->space_written = 0;
 }
 
@@ -95,7 +95,7 @@ size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char 
 {
     size_t i;
     const unsigned char *out_end = state->out + state->out_len;
-    unsigned char *p             = state->out + state->out_pos;
+    unsigned char *p = state->out + state->out_pos;
 
     for (i = 0; i < buf_len && p < out_end; i++) {
         unsigned char c = buf[i];
@@ -115,7 +115,7 @@ size_t text_normalize_buffer(struct text_norm_state *state, const unsigned char 
                 /* fall through */
             case NORMALIZE_COPY:
                 state->space_written = 0;
-                *p++                 = c;
+                *p++ = c;
         }
     }
     state->out_pos = p - state->out;
@@ -134,12 +134,12 @@ size_t text_normalize_map(struct text_norm_state *state, fmap_t *map, size_t off
     size_t acc_total;
     size_t acc_len;
 
-    map_len  = map->len;
+    map_len = map->len;
     map_pgsz = map->pgsz;
     buff_len = state->out_len;
 
     acc_total = 0;
-    acc       = 0;
+    acc = 0;
 
     while (1) {
         /* Break out if we've reached the end of the map or our buffer. */

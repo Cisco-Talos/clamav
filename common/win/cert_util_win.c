@@ -39,15 +39,15 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     uint32_t numCertificatesFound = 0;
     DWORD lastError;
 
-    HCERTSTORE hStore              = NULL;
+    HCERTSTORE hStore = NULL;
     PCCERT_CONTEXT pWinCertContext = NULL;
-    X509 *x509                     = NULL;
+    X509 *x509 = NULL;
 
     cl_error_t ret = CL_EOPEN;
     int pt_err;
 
     cert_store_t *store = NULL;
-    bool locked         = false;
+    bool locked = false;
 
     hStore = CertOpenSystemStoreA(NULL, "ROOT");
     if (NULL == hStore) {
@@ -74,11 +74,11 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         goto done;
     }
 
-    store->system_certs.count        = 0;
+    store->system_certs.count = 0;
     store->system_certs.certificates = NULL;
 
     while (NULL != (pWinCertContext = CertEnumCertificatesInStore(hStore, pWinCertContext))) {
-        int addCertResult                 = 0;
+        int addCertResult = 0;
         const unsigned char *encoded_cert = pWinCertContext->pbCertEncoded;
 
         x509 = NULL;
@@ -99,9 +99,9 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         store->system_certs.certificates[store->system_certs.count++] = x509;
 
         if (mprintf_verbose) {
-            char *issuer     = NULL;
+            char *issuer = NULL;
             size_t issuerLen = 0;
-            issuerLen        = CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, NULL, 0);
+            issuerLen = CertGetNameStringA(pWinCertContext, CERT_NAME_FRIENDLY_DISPLAY_TYPE, CERT_NAME_ISSUER_FLAG, NULL, NULL, 0);
 
             issuer = malloc(issuerLen);
             if (NULL == issuer) {
@@ -149,7 +149,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
     }
 
     store->loaded = true;
-    ret           = CL_SUCCESS;
+    ret = CL_SUCCESS;
 
 done:
     if (locked) {

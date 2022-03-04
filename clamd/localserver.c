@@ -101,9 +101,9 @@ int localserver(const struct optstruct *opts)
 
     pos = NULL;
     if ((pos = strstr(server.sun_path, "/")) && (pos = strstr(((char *)pos + 1), "/"))) {
-        cnt     = 0;
+        cnt = 0;
         sockdir = NULL;
-        pos     = server.sun_path + strlen(server.sun_path);
+        pos = server.sun_path + strlen(server.sun_path);
         while (pos != server.sun_path) {
             if (*pos == '/') {
                 sockdir = CLI_STRNDUP(server.sun_path, strlen(server.sun_path) - cnt);

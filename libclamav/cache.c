@@ -86,11 +86,11 @@ static int cacheset_init(struct cache_set *cs, mpool_t *mempool)
 
     for (i = 1; i < NODES; i++) {
         cs->data[i - 1].next = &cs->data[i];
-        cs->data[i].prev     = &cs->data[i - 1];
+        cs->data[i].prev = &cs->data[i - 1];
     }
 
     cs->first = cs->data;
-    cs->last  = &cs->data[NODES - 1];
+    cs->last = &cs->data[NODES - 1];
 
     return 0;
 }
@@ -267,33 +267,33 @@ static int splay(int64_t *md5, size_t len, struct cache_set *cs)
         if (comp < 0) {
             if (!root->left) break;
             if (cmp(md5, len, root->left->digest, root->left->size) < 0) {
-                temp       = root->left;
+                temp = root->left;
                 root->left = temp->right;
                 if (temp->right) temp->right->up = root;
                 temp->right = root;
-                root->up    = temp;
-                root        = temp;
+                root->up = temp;
+                root = temp;
                 if (!root->left) break;
             }
             right->left = root;
-            root->up    = right;
-            right       = root;
-            root        = root->left;
+            root->up = right;
+            right = root;
+            root = root->left;
         } else if (comp > 0) {
             if (!root->right) break;
             if (cmp(md5, len, root->right->digest, root->right->size) > 0) {
-                temp        = root->right;
+                temp = root->right;
                 root->right = temp->left;
                 if (temp->left) temp->left->up = root;
                 temp->left = root;
-                root->up   = temp;
-                root       = temp;
+                root->up = temp;
+                root = temp;
                 if (!root->right) break;
             }
             left->right = root;
-            root->up    = left;
-            left        = root;
-            root        = root->right;
+            root->up = left;
+            left = root;
+            root = root->right;
         } else {
             found = 1;
             break;
@@ -330,11 +330,11 @@ static inline int cacheset_lookup(struct cache_set *cs, unsigned char *md5, size
                 o->next = q;
             else
                 cs->first = q;
-            q->prev        = o;
+            q->prev = o;
             cs->last->next = p;
-            p->prev        = cs->last;
-            p->next        = NULL;
-            cs->last       = p;
+            p->prev = cs->last;
+            p->next = NULL;
+            cs->last = p;
         }
 #ifdef PRINT_CHAINS
         printchain("after", cs);
@@ -402,10 +402,10 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
     if (cs->first == newnode)
         cs->first = newnode->next;
 
-    newnode->prev  = cs->last;
-    newnode->next  = NULL;
+    newnode->prev = cs->last;
+    newnode->next = NULL;
     cs->last->next = newnode;
-    cs->last       = newnode;
+    cs->last = newnode;
 
     ptree("2:\n");
     if (printtree(cs, cs->root, 0)) {
@@ -413,16 +413,16 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
     }
 
     if (!cs->root) {
-        newnode->left  = NULL;
+        newnode->left = NULL;
         newnode->right = NULL;
     } else {
         if (cmp(hash, size, cs->root->digest, cs->root->size) < 0) {
-            newnode->left  = cs->root->left;
+            newnode->left = cs->root->left;
             newnode->right = cs->root;
             cs->root->left = NULL;
         } else {
-            newnode->right  = cs->root->right;
-            newnode->left   = cs->root;
+            newnode->right = cs->root->right;
+            newnode->left = cs->root;
             cs->root->right = NULL;
         }
         if (newnode->left) newnode->left->up = newnode;
@@ -430,10 +430,10 @@ static inline const char *cacheset_add(struct cache_set *cs, unsigned char *md5,
     }
     newnode->digest[0] = hash[0];
     newnode->digest[1] = hash[1];
-    newnode->up        = NULL;
-    newnode->size      = size;
-    newnode->minrec    = recursion_level;
-    cs->root           = newnode;
+    newnode->up = NULL;
+    newnode->size = size;
+    newnode->minrec = recursion_level;
+    cs->root = newnode;
 
     ptree("3: %lld\n", hash[1]);
     if (printtree(cs, cs->root, 0)) {
@@ -470,7 +470,7 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
             cs->root->up = NULL;
     } else {
         /* new root will come from leftside tree */
-        cs->root     = targetnode->left;
+        cs->root = targetnode->left;
         cs->root->up = NULL;
         /* splay tree, expecting not found, bringing rightmost member to root */
         splay(hash, size, cs);
@@ -480,16 +480,16 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
             reattachnode = cs->root;
             while (reattachnode->right)
                 reattachnode = reattachnode->right; /* shouldn't happen, but safer in case of dupe */
-            reattachnode->right   = targetnode->right;
+            reattachnode->right = targetnode->right;
             targetnode->right->up = reattachnode;
         }
     }
-    targetnode->size      = (size_t)0;
+    targetnode->size = (size_t)0;
     targetnode->digest[0] = 0;
     targetnode->digest[1] = 0;
-    targetnode->up        = NULL;
-    targetnode->left      = NULL;
-    targetnode->right     = NULL;
+    targetnode->up = NULL;
+    targetnode->left = NULL;
+    targetnode->right = NULL;
 
     /* Tree is fixed, so now fix chain around targetnode */
     if (targetnode->prev)
@@ -594,7 +594,7 @@ void cli_cache_destroy(struct cl_engine *engine)
 static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
 {
     unsigned int key = getkey(md5);
-    int ret          = CL_VIRUS;
+    int ret = CL_VIRUS;
     struct CACHE *c;
 
     c = &cache[key];
@@ -618,7 +618,7 @@ static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache
 /* Adds an hash to the cache */
 void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
-    unsigned int key   = getkey(md5);
+    unsigned int key = getkey(md5);
     const char *errmsg = NULL;
     uint32_t level;
     struct CACHE *c;

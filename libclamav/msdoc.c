@@ -156,7 +156,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
             }
 
             outlen = sz2 - offset;
-            p2     = outbuf + offset;
+            p2 = outbuf + offset;
 
             /* conversion */
             nonrev = iconv(cd, &p1, &inlen, &p2, &outlen);
@@ -246,7 +246,7 @@ ole2_process_property(summary_ctx_t *sctx, unsigned char *databuf, uint32_t offs
 
             if (sctx->writecp) {
                 sctx->codepage = (uint16_t)dout;
-                ret            = cli_jsonint(sctx->summary, sctx->propname, sctx->codepage);
+                ret = cli_jsonint(sctx->summary, sctx->propname, sctx->codepage);
             } else
                 ret = cli_jsonint(sctx->summary, sctx->propname, dout);
             break;
@@ -561,7 +561,7 @@ static void ole2_translate_docsummary_propid(summary_ctx_t *sctx, uint32_t propi
 {
     switch (propid) {
         case DSPID_CODEPAGE:
-            sctx->writecp  = 1; /* must be set ONLY for codepage */
+            sctx->writecp = 1; /* must be set ONLY for codepage */
             sctx->propname = "CodePage";
             break;
         case DSPID_CATEGORY:
@@ -652,7 +652,7 @@ static void ole2_translate_summary_propid(summary_ctx_t *sctx, uint32_t propid)
 {
     switch (propid) {
         case SPID_CODEPAGE:
-            sctx->writecp  = 1; /* must be set ONLY for codepage */
+            sctx->writecp = 1; /* must be set ONLY for codepage */
             sctx->propname = "CodePage";
             break;
         case SPID_TITLE:
@@ -728,7 +728,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
 
     /* summary ctx propset-specific setup*/
     sctx->codepage = 0;
-    sctx->writecp  = 0;
+    sctx->writecp = 0;
     sctx->propname = NULL;
 
     /* examine property set metadata */
@@ -747,7 +747,7 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
     memcpy(&numprops, hdr + sizeof(sctx->pssize), sizeof(numprops));
     /* endian conversion */
     sctx->pssize = sum32_endian_convert(sctx->pssize);
-    numprops     = sum32_endian_convert(numprops);
+    numprops = sum32_endian_convert(numprops);
     cli_dbgmsg("ole2_summary_propset_json: pssize: %u, numprops: %u\n", sctx->pssize, numprops);
     if (numprops > PROPCNTLIMIT) {
         sctx->flags |= OLE2_SUMMARY_LIMIT_PROPS;
@@ -782,12 +782,12 @@ static int ole2_summary_propset_json(summary_ctx_t *sctx, off_t offset)
         memcpy(&propoff, ps + psoff, sizeof(propoff));
         psoff += sizeof(propoff);
         /* endian conversion */
-        propid  = sum32_endian_convert(propid);
+        propid = sum32_endian_convert(propid);
         propoff = sum32_endian_convert(propoff);
         cli_dbgmsg("ole2_summary_propset_json: propid: 0x%08x, propoff: %u\n", propid, propoff);
 
         sctx->propname = NULL;
-        sctx->writecp  = 0;
+        sctx->writecp = 0;
         switch (sctx->mode) {
             case 1:
                 ole2_translate_docsummary_propid(sctx, propid);
@@ -903,7 +903,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
 
     /* summary ctx setup */
     memset(&sctx, 0, sizeof(sctx));
-    sctx.ctx  = ctx;
+    sctx.ctx = ctx;
     sctx.mode = mode;
 
     if (FSTAT(fd, &statbuf) == -1) {
@@ -938,7 +938,7 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
     }
 
     sctx.codepage = 0;
-    sctx.writecp  = 0;
+    sctx.writecp = 0;
 
     /* acquire property stream metadata */
     if (sctx.maplen < sizeof(summary_stub_t)) {
@@ -960,8 +960,8 @@ int cli_ole2_summary_json(cli_ctx *ctx, int fd, int mode)
         sctx.flags |= OLE2_SUMMARY_ERROR_INVALID_ENTRY;
         return cli_ole2_summary_json_cleanup(&sctx, CL_EFORMAT);
     }
-    sumstub.version      = sum16_endian_convert(sumstub.version); /*unused*/
-    sumstub.system       = sum32_endian_convert(sumstub.system);  /*unused*/
+    sumstub.version = sum16_endian_convert(sumstub.version); /*unused*/
+    sumstub.system = sum32_endian_convert(sumstub.system);   /*unused*/
     sumstub.num_propsets = sum32_endian_convert(sumstub.num_propsets);
     if (sumstub.num_propsets != 1 && sumstub.num_propsets != 2) {
         cli_dbgmsg("ole2_summary_json: invalid number of property sets\n");

@@ -175,7 +175,7 @@
         }                                                 \
         free(tempfile);                                   \
         FREESEC;                                          \
-        found       = 0;                                  \
+        found = 0;                                        \
         upx_success = 1;                                  \
         break; /* FSG ONLY! - scan raw data after upx block */
 
@@ -340,7 +340,7 @@ uint32_t cli_rawaddr(uint32_t rva, const struct cli_exe_section *shp, uint16_t n
         return 0;
     }
 
-    ret  = (rva - shp[i].rva) + shp[i].raw;
+    ret = (rva - shp[i].rva) + shp[i].raw;
     *err = 0;
     return ret;
 }
@@ -381,7 +381,7 @@ void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_inf
     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
         return;
 
-    type_cnt   = (uint16_t)cli_readint16(resdir + 12);
+    type_cnt = (uint16_t)cli_readint16(resdir + 12);
     type_entry = resdir + 16;
     if (!(by_type >> 31)) {
         type_entry += type_cnt * 8;
@@ -391,14 +391,14 @@ void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_inf
     while (type_cnt--) {
         if (!fmap_need_ptr_once(map, type_entry, 8))
             return;
-        type      = cli_readint32(type_entry);
+        type = cli_readint32(type_entry);
         type_offs = cli_readint32(type_entry + 4);
         if (type == by_type && (type_offs >> 31)) {
             type_offs &= 0x7fffffff;
             if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
                 return;
 
-            name_cnt   = (uint16_t)cli_readint16(resdir + 12);
+            name_cnt = (uint16_t)cli_readint16(resdir + 12);
             name_entry = resdir + 16;
             if (by_name == 0xffffffff)
                 name_cnt += (uint16_t)cli_readint16(resdir + 14);
@@ -409,19 +409,19 @@ void findres(uint32_t by_type, uint32_t by_name, fmap_t *map, struct cli_exe_inf
             while (name_cnt--) {
                 if (!fmap_need_ptr_once(map, name_entry, 8))
                     return;
-                name      = cli_readint32(name_entry);
+                name = cli_readint32(name_entry);
                 name_offs = cli_readint32(name_entry + 4);
                 if ((by_name == 0xffffffff || name == by_name) && (name_offs >> 31)) {
                     name_offs &= 0x7fffffff;
                     if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, peinfo->sections, peinfo->nsections, &err, map->len, peinfo->hdr_size), 16)) || err)
                         return;
 
-                    lang_cnt   = (uint16_t)cli_readint16(resdir + 12) + (uint16_t)cli_readint16(resdir + 14);
+                    lang_cnt = (uint16_t)cli_readint16(resdir + 12) + (uint16_t)cli_readint16(resdir + 14);
                     lang_entry = resdir + 16;
                     while (lang_cnt--) {
                         if (!fmap_need_ptr_once(map, lang_entry, 8))
                             return;
-                        lang      = cli_readint32(lang_entry);
+                        lang = cli_readint32(lang_entry);
                         lang_offs = cli_readint32(lang_entry + 4);
                         if (!(lang_offs >> 31)) {
                             if (cb(opaque, type, name, lang, res_rva + lang_offs))
@@ -451,7 +451,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
     *maxres -= 1;
     if (err || !(resdir = fmap_need_off_once(map, rawaddr, 16)))
         return;
-    named   = (uint16_t)cli_readint16(resdir + 12);
+    named = (uint16_t)cli_readint16(resdir + 12);
     unnamed = (uint16_t)cli_readint16(resdir + 14);
 
     entries = /*named+*/ unnamed;
@@ -507,7 +507,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struc
         if (offs >> 31)
             cli_parseres_special(base, base + (offs & 0x7fffffff), map, peinfo, fsize, level + 1, type, maxres, stats);
         else {
-            offs    = cli_readint32(entry + 4);
+            offs = cli_readint32(entry + 4);
             rawaddr = cli_rawaddr(base + offs, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (!err && (resdir = fmap_need_off_once(map, rawaddr, 16))) {
                 uint32_t isz = cli_readint32(resdir + 4);
@@ -564,7 +564,7 @@ static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
     int foundsize[CLI_HASH_AVAIL_TYPES];
     int foundwild[CLI_HASH_AVAIL_TYPES];
     enum CLI_HASH_TYPE type;
-    int ret            = CL_CLEAN;
+    int ret = CL_CLEAN;
     unsigned char *md5 = NULL;
 
     /* pick hashtypes to generate */
@@ -2222,7 +2222,7 @@ static char *pe_ordinal(const char *dll, uint16_t ord)
 
 static int validate_impname(const char *name, uint32_t length, int dll)
 {
-    uint32_t i    = 0;
+    uint32_t i = 0;
     const char *c = name;
 
     if (!name || length == 0)
@@ -2247,7 +2247,7 @@ static int validate_impname(const char *name, uint32_t length, int dll)
 static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, struct pe_image_import_descriptor *image, const char *dllname, struct cli_exe_info *peinfo, int *first)
 {
     uint32_t thuoff = 0, offset;
-    fmap_t *map     = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     size_t dlllen = 0, fsize = map->len;
     unsigned int err = 0;
     int num_fns = 0, ret = CL_SUCCESS;
@@ -2423,7 +2423,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     enum CLI_HASH_TYPE type;
     int nimps = 0;
     unsigned int err;
-    int first          = 1;
+    int first = 1;
     bool needed_impoff = false;
 
     /* If the PE doesn't have an import table then skip it. This is an
@@ -2497,10 +2497,10 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
 
         /* Endian Conversion */
         image.u.OriginalFirstThunk = EC32(image.u.OriginalFirstThunk);
-        image.TimeDateStamp        = EC32(image.TimeDateStamp);
-        image.ForwarderChain       = EC32(image.ForwarderChain);
-        image.Name                 = EC32(image.Name);
-        image.FirstThunk           = EC32(image.FirstThunk);
+        image.TimeDateStamp = EC32(image.TimeDateStamp);
+        image.ForwarderChain = EC32(image.ForwarderChain);
+        image.Name = EC32(image.Name);
+        image.FirstThunk = EC32(image.FirstThunk);
 
         /* DLL name acquisition */
         offset = cli_rawaddr(image.Name, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
@@ -2772,8 +2772,8 @@ int cli_scanpe(cli_ctx *ctx)
     unsigned int i, j, found, upx_success = 0, err;
     unsigned int ssize = 0, dsize = 0, corrupted_cur;
     int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
-    const char *src                                                                        = NULL;
-    char *dest                                                                             = NULL;
+    const char *src = NULL;
+    char *dest = NULL;
     int ndesc, ret = CL_CLEAN, upack = 0;
     size_t fsize;
     struct cli_bc_ctx *bc_ctx;
@@ -2784,7 +2784,7 @@ int cli_scanpe(cli_ctx *ctx)
 #endif
     uint32_t viruses_found = 0;
 #if HAVE_JSON
-    int toval                   = 0;
+    int toval = 0;
     struct json_object *pe_json = NULL;
 #endif
 
@@ -2802,7 +2802,7 @@ int cli_scanpe(cli_ctx *ctx)
         pe_json = get_pe_property(ctx);
     }
 #endif
-    map   = ctx->fmap;
+    map = ctx->fmap;
     fsize = map->len;
 
     struct cli_exe_info _peinfo;
@@ -2921,8 +2921,8 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     pedata.nsections = peinfo->nsections;
-    pedata.ep        = peinfo->ep;
-    pedata.offset    = 0;
+    pedata.ep = peinfo->ep;
+    pedata.offset = 0;
     memcpy(&pedata.file_hdr, &(peinfo->file_hdr), sizeof(peinfo->file_hdr));
     // TODO no need to copy both of these for each binary
     memcpy(&pedata.opt32, &(peinfo->pe_opt.opt32), sizeof(peinfo->pe_opt.opt32));
@@ -2931,10 +2931,10 @@ int cli_scanpe(cli_ctx *ctx)
     // Gross
     memcpy(&pedata.opt32_dirs, &(peinfo->dirs), sizeof(peinfo->dirs));
     memcpy(&pedata.opt64_dirs, &(peinfo->dirs), sizeof(peinfo->dirs));
-    pedata.e_lfanew    = peinfo->e_lfanew;
-    pedata.overlays    = peinfo->overlay_start;
+    pedata.e_lfanew = peinfo->e_lfanew;
+    pedata.overlays = peinfo->overlay_start;
     pedata.overlays_sz = peinfo->overlay_size;
-    pedata.hdr_size    = peinfo->hdr_size;
+    pedata.hdr_size = peinfo->hdr_size;
 
     /* Bytecode BC_PE_ALL hook */
     bc_ctx = cli_bytecode_context_alloc();
@@ -3022,9 +3022,9 @@ int cli_scanpe(cli_ctx *ctx)
                KZSDDELTA,
                KZSLOOP,
                KZSTOP };
-        uint8_t kzs[]    = {KZSTRASH, KZSCDELTA, KZSPDELTA, KZSGETSIZE, KZSTRASH, KZSXORPRFX, KZSXOR, KZSTRASH, KZSDDELTA, KZSTRASH, KZSLOOP, KZSTOP};
+        uint8_t kzs[] = {KZSTRASH, KZSCDELTA, KZSPDELTA, KZSGETSIZE, KZSTRASH, KZSXORPRFX, KZSXOR, KZSTRASH, KZSDDELTA, KZSTRASH, KZSLOOP, KZSTOP};
         uint8_t *kzstate = kzs;
-        uint8_t *kzcode  = (uint8_t *)epbuff + 3;
+        uint8_t *kzcode = (uint8_t *)epbuff + 3;
         uint8_t kzdptr = 0xff, kzdsize = 0xff;
         int kzlen = 197, kzinitlen = 0xffff, kzxorlen = -1;
         cli_dbgmsg("cli_scanpe: in kriz\n");
@@ -3055,7 +3055,7 @@ int cli_scanpe(cli_ctx *ctx)
                         case 0xbf:
                             if (*kzstate == KZSGETSIZE && cli_readint32(kzcode) == 0x0fd2) {
                                 kzinitlen = kzlen - 5;
-                                kzdsize   = op - 0xb8;
+                                kzdsize = op - 0xb8;
                                 kzstate++;
                                 op = 4; /* fake the register to avoid breaking out */
 
@@ -3154,7 +3154,7 @@ int cli_scanpe(cli_ctx *ctx)
         rsize = peinfo->sections[peinfo->nsections - 1].rsz;
         if (rsize < peinfo->sections[peinfo->nsections - 1].ursz) {
             rsize = peinfo->sections[peinfo->nsections - 1].ursz;
-            dam   = 1;
+            dam = 1;
         }
 
         if (vsize >= 0x612c && rsize >= 0x612c && ((vsize & 0xff) == 0xec)) {
@@ -3243,9 +3243,9 @@ int cli_scanpe(cli_ctx *ctx)
                     break;
                 }
 
-                jold     = jumps[j];
+                jold = jumps[j];
                 jumps[j] = jump;
-                jump     = jold;
+                jump = jold;
             }
 
             jumps[j] = jump;
@@ -3287,8 +3287,8 @@ int cli_scanpe(cli_ctx *ctx)
     if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && peinfo->nsections > 1 && fsize > 64 * 1024 && fsize < 4 * 1024 * 1024) {
         if (peinfo->dirs[2].Size) {
             struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
-            unsigned int m            = 1000;
-            ret                       = CL_CLEAN;
+            unsigned int m = 1000;
+            ret = CL_CLEAN;
 
             if (!stats) {
                 cli_exe_info_destroy(peinfo);
@@ -3317,7 +3317,7 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     /* !!!!!!!!!!!!!!    PACKERS START HERE    !!!!!!!!!!!!!! */
-    corrupted_cur        = ctx->corrupted_input;
+    corrupted_cur = ctx->corrupted_input;
     ctx->corrupted_input = 2; /* caller will reset on return */
 
     /* UPX, FSG, MEW support */
@@ -3496,16 +3496,16 @@ int cli_scanpe(cli_ctx *ctx)
             if (upack) {
                 cli_dbgmsg("cli_scanpe: Upack: var set\n");
 
-                c     = peinfo->sections[2].vsz;
+                c = peinfo->sections[2].vsz;
                 ssize = peinfo->sections[0].ursz + peinfo->sections[0].uraw;
-                off   = peinfo->sections[0].rva;
-                vma   = EC32(peinfo->pe_opt.opt32.ImageBase) + peinfo->sections[0].rva;
+                off = peinfo->sections[0].rva;
+                vma = EC32(peinfo->pe_opt.opt32.ImageBase) + peinfo->sections[0].rva;
             } else {
                 cli_dbgmsg("cli_scanpe: Upack: var NOT set\n");
-                c     = peinfo->sections[1].rva;
+                c = peinfo->sections[1].rva;
                 ssize = peinfo->sections[1].uraw;
-                off   = 0;
-                vma   = peinfo->sections[1].rva - peinfo->sections[1].uraw;
+                off = 0;
+                vma = peinfo->sections[1].rva - peinfo->sections[1].uraw;
             }
 
             dsize = a + b + c;
@@ -3747,7 +3747,7 @@ int cli_scanpe(cli_ctx *ctx)
         const char *support;
         uint32_t newesi = cli_readint32(epbuff + 11) - EC32(peinfo->pe_opt.opt32.ImageBase);
         uint32_t newedi = cli_readint32(epbuff + 6) - EC32(peinfo->pe_opt.opt32.ImageBase);
-        uint32_t oldep  = peinfo->vep - peinfo->sections[i + 1].rva;
+        uint32_t oldep = peinfo->vep - peinfo->sections[i + 1].rva;
         struct cli_exe_section *sections;
 
         /* FSG support - v. 1.31 */
@@ -3830,7 +3830,7 @@ int cli_scanpe(cli_ctx *ctx)
             return CL_EMEM;
         }
 
-        gp    = 0xda + 6 * (epbuff[16] == '\xe8');
+        gp = 0xda + 6 * (epbuff[16] == '\xe8');
         oldep = peinfo->vep + gp + 6 + cli_readint32(src + gp + 2 + oldep);
         cli_dbgmsg("cli_scanpe: FSG: found old EP @%x\n", oldep);
 
@@ -4188,7 +4188,7 @@ int cli_scanpe(cli_ctx *ctx)
 
             do {
                 unsigned int yc_unp_num_viruses = ctx->num_viruses;
-                const char *yc_unp_virname      = NULL;
+                const char *yc_unp_virname = NULL;
 
                 if (ctx->virname)
                     yc_unp_virname = ctx->virname[0];
@@ -4564,12 +4564,12 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     ssize_t at;
     uint32_t is_dll = 0;
     uint32_t is_exe = 0;
-    int native      = 0;
+    int native = 0;
     size_t read;
 
     int ret = CLI_PEHEADER_RET_GENERIC_ERROR;
 #if HAVE_JSON
-    int toval                   = 0;
+    int toval = 0;
     struct json_object *pe_json = NULL;
     char jsonbuf[128];
 #endif
@@ -4802,7 +4802,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
         goto done;
     }
 
-    timestamp    = (time_t)EC32(file_hdr->TimeDateStamp);
+    timestamp = (time_t)EC32(file_hdr->TimeDateStamp);
     opt_hdr_size = EC16(file_hdr->SizeOfOptionalHeader);
 
     if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
@@ -4873,8 +4873,8 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
         opt64 = &(peinfo->pe_opt.opt64);
 
-        peinfo->vep       = EC32(opt64->AddressOfEntryPoint);
-        peinfo->hdr_size  = EC32(opt64->SizeOfHeaders);
+        peinfo->vep = EC32(opt64->AddressOfEntryPoint);
+        peinfo->hdr_size = EC32(opt64->SizeOfHeaders);
         peinfo->ndatadirs = EC32(opt64->NumberOfRvaAndSizes);
 
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
@@ -4928,9 +4928,9 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
     } else { /* PE */
         peinfo->is_pe32plus = 0;
-        peinfo->vep         = EC32(opt32->AddressOfEntryPoint);
-        peinfo->hdr_size    = EC32(opt32->SizeOfHeaders);
-        peinfo->ndatadirs   = EC32(opt32->NumberOfRvaAndSizes);
+        peinfo->vep = EC32(opt32->AddressOfEntryPoint);
+        peinfo->hdr_size = EC32(opt32->SizeOfHeaders);
+        peinfo->ndatadirs = EC32(opt32->NumberOfRvaAndSizes);
 
         if (opts & CLI_PEHEADER_OPT_DBG_PRINT_INFO) {
             cli_dbgmsg("File format: PE\n");
@@ -4991,7 +4991,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
             break;
         case 1:
             subsystem = "Native (svc)";
-            native    = 1;
+            native = 1;
             break;
         case 2:
             subsystem = "Win32 GUI";
@@ -5158,16 +5158,16 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     // TODO Why do we fix up these alignments?  This shouldn't be needed?
     for (i = 0, section_pe_idx = 0; i < peinfo->nsections; i++, section_pe_idx++) {
 
-        struct cli_exe_section *section          = &(peinfo->sections[i]);
+        struct cli_exe_section *section = &(peinfo->sections[i]);
         struct pe_image_section_hdr *section_hdr = &(section_hdrs[i]);
         char sname[9];
 
         // TODO I don't see any documentation that says VirtualAddress and VirtualSize must be aligned
-        section->rva  = PEALIGN(EC32(section_hdr->VirtualAddress), salign);
-        section->vsz  = PESALIGN(EC32(section_hdr->VirtualSize), salign);
-        section->raw  = PEALIGN(EC32(section_hdr->PointerToRawData), falign);
-        section->rsz  = PESALIGN(EC32(section_hdr->SizeOfRawData), falign);
-        section->chr  = EC32(section_hdr->Characteristics);
+        section->rva = PEALIGN(EC32(section_hdr->VirtualAddress), salign);
+        section->vsz = PESALIGN(EC32(section_hdr->VirtualSize), salign);
+        section->raw = PEALIGN(EC32(section_hdr->PointerToRawData), falign);
+        section->rsz = PESALIGN(EC32(section_hdr->SizeOfRawData), falign);
+        section->chr = EC32(section_hdr->Characteristics);
         section->urva = EC32(section_hdr->VirtualAddress); /* Just in case */
         section->uvsz = EC32(section_hdr->VirtualSize);
         section->uraw = EC32(section_hdr->PointerToRawData);
@@ -5198,7 +5198,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                     continue;
 
                 } else {
-                    section->rsz  = 0;
+                    section->rsz = 0;
                     section->ursz = 0;
                 }
             } else {
@@ -5305,7 +5305,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                 peinfo->min = section->rva;
 
             if (section->rva + section->rsz > peinfo->max) {
-                peinfo->max           = section->rva + section->rsz;
+                peinfo->max = section->rva + section->rsz;
                 peinfo->overlay_start = section->raw + section->rsz;
             }
 
@@ -5381,9 +5381,9 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
 
             baseptr = vptr - rva;
             /* parse resource */
-            rva    = cli_readint32(vptr);     /* ptr to version_info */
+            rva = cli_readint32(vptr);        /* ptr to version_info */
             res_sz = cli_readint32(vptr + 4); /* sizeof(resource) */
-            rva    = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
+            rva = cli_rawaddr(rva, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
             if (err)
                 continue;
             if (!(vptr = fmap_need_off_once(map, rva, res_sz)))
@@ -5438,9 +5438,9 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                     sfi_sz -= 6 + 0x1e;
 
                     while (sfi_sz > 6) { /* enum all stringtables - RESUMABLE */
-                        uint32_t st_sz           = cli_readint32(vptr) & 0xffff;
+                        uint32_t st_sz = cli_readint32(vptr) & 0xffff;
                         const uint8_t *next_vptr = vptr + st_sz;
-                        uint32_t next_sfi_sz     = sfi_sz - st_sz;
+                        uint32_t next_sfi_sz = sfi_sz - st_sz;
 
                         if (st_sz > sfi_sz || st_sz <= 24) {
                             /* - the content is larger than the container
@@ -5461,7 +5461,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                                 /* - the content is larger than the container
                                  * - there's no room for a minimal string
                                  * - there's no room for the value */
-                                st_sz  = 0;
+                                st_sz = 0;
                                 sfi_sz = 0;
                                 break; /* force a hard fail */
                             }
@@ -5521,7 +5521,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
                             vptr += s_sz;
                             st_sz -= s_sz;
                         } /* enum all strings - RESUMABLE */
-                        vptr   = next_vptr;
+                        vptr = next_vptr;
                         sfi_sz = next_sfi_sz * (sfi_sz != 0);
                     } /* enum all stringtables - RESUMABLE */
                     break;
@@ -5576,7 +5576,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     size_t at;
     unsigned int i, j, hlen;
     size_t fsize;
-    fmap_t *map   = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     void *hashctx = NULL;
     struct pe_certificate_hdr cert_hdr;
     struct cli_mapped_region *regions = NULL;
@@ -5608,7 +5608,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     }
 
     sec_dir_offset = EC32(peinfo->dirs[4].VirtualAddress);
-    sec_dir_size   = EC32(peinfo->dirs[4].Size);
+    sec_dir_size = EC32(peinfo->dirs[4].Size);
 
     // As an optimization, check the security DataDirectory here and if
     // it's less than 8-bytes (and we aren't relying on this code to compute
@@ -5636,7 +5636,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 #define add_chunk_to_hash_list(_offset, _size) \
     do {                                       \
         regions[nregions].offset = (_offset);  \
-        regions[nregions].size   = (_size);    \
+        regions[nregions].size = (_size);      \
         nregions++;                            \
     } while (0)
 
@@ -5644,7 +5644,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     ret = CL_EFORMAT;
 
     /* MZ to checksum */
-    at   = 0;
+    at = 0;
     hlen = peinfo->e_lfanew + sizeof(struct pe_image_file_hdr) + (peinfo->is_pe32plus ? offsetof(struct pe_image_optional_hdr64, CheckSum) : offsetof(struct pe_image_optional_hdr32, CheckSum));
     add_chunk_to_hash_list(0, hlen);
     at = hlen + 4;
@@ -5753,7 +5753,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
 
     for (i = 0; i < (sizeof(supported_hashes) / sizeof(supported_hashes[0])); i++) {
         const enum CLI_HASH_TYPE hashtype = supported_hashes[i].hashtype;
-        const char *hashctx_name          = supported_hashes[i].hashctx_name;
+        const char *hashctx_name = supported_hashes[i].hashctx_name;
 
         if (!cli_hm_have_size(ctx->engine->hm_fp, hashtype, 2)) {
             continue;
@@ -5868,17 +5868,17 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
     switch (type) {
         case 1:
             genhash[CLI_HASH_MD5] = 1;
-            hlen                  = hashlen[CLI_HASH_MD5];
+            hlen = hashlen[CLI_HASH_MD5];
             hash = hashset[CLI_HASH_MD5] = cli_calloc(hlen, sizeof(char));
             break;
         case 2:
             genhash[CLI_HASH_SHA1] = 1;
-            hlen                   = hashlen[CLI_HASH_SHA1];
+            hlen = hashlen[CLI_HASH_SHA1];
             hash = hashset[CLI_HASH_SHA1] = cli_calloc(hlen, sizeof(char));
             break;
         default:
             genhash[CLI_HASH_SHA256] = 1;
-            hlen                     = hashlen[CLI_HASH_SHA256];
+            hlen = hashlen[CLI_HASH_SHA256];
             hash = hashset[CLI_HASH_SHA256] = cli_calloc(hlen, sizeof(char));
             break;
     }
@@ -5891,7 +5891,7 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
 
     if (hashes) {
         hashes->nsections = peinfo->nsections;
-        hashes->sections  = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
+        hashes->sections = cli_calloc(peinfo->nsections, sizeof(struct cli_section_hash));
 
         if (!(hashes->sections)) {
             cli_exe_info_destroy(peinfo);

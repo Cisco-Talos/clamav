@@ -87,11 +87,11 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
     }
 
     new_mappos = cbdata->mappos + cbdata->winsize;
-    bytes      = MIN(cbdata->map->len - new_mappos, MSXML_READBUFF);
+    bytes = MIN(cbdata->map->len - new_mappos, MSXML_READBUFF);
     if (!bytes) {
-        cbdata->window  = NULL;
-        cbdata->winpos  = 0;
-        cbdata->mappos  = cbdata->map->len;
+        cbdata->window = NULL;
+        cbdata->winpos = 0;
+        cbdata->mappos = cbdata->map->len;
         cbdata->winsize = 0;
 
         cli_msxmlmsg("msxml_read_cb: fmap EOF\n");
@@ -104,9 +104,9 @@ static inline size_t msxml_read_cb_new_window(struct msxml_cbdata *cbdata)
         return -1;
     }
 
-    cbdata->window  = new_window;
-    cbdata->winpos  = 0;
-    cbdata->mappos  = new_mappos;
+    cbdata->window = new_window;
+    cbdata->winpos = 0;
+    cbdata->mappos = new_mappos;
     cbdata->winsize = bytes;
 
     cli_msxmlmsg("msxml_read_cb: acquired new window @ [%llu(+%llu)(max:%llu)]\n",
@@ -164,7 +164,7 @@ int msxml_read_cb(void *ctx, char *buffer, int buffer_len)
 #endif
 
         read_from = cbdata->window + cbdata->winpos;
-        state     = &(cbdata->state);
+        state = &(cbdata->state);
 
         while ((rbytes > 0) && (wbytes < len)) {
             switch (*state) {
@@ -230,7 +230,7 @@ cl_error_t cli_scanmsxml(cli_ctx *ctx)
 #if HAVE_LIBXML2
     struct msxml_cbdata cbdata;
     xmlTextReaderPtr reader = NULL;
-    cl_error_t ret          = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_scanmsxml()\n");
 

@@ -62,12 +62,12 @@ static inline void insert_cache(filelist_t **list, const char *filename,
     else {
         while (current->next)
             current = current->next;
-        prev       = current;
+        prev = current;
         prev->next = current = malloc(sizeof(filelist_t));
     }
 
-    current->next        = NULL;
-    current->res         = res;
+    current->next = NULL;
+    current->res = res;
     current->filename[0] = 0;
     strncat(current->filename, filename,
             MAX_PATH - 1 - strlen(current->filename));
@@ -83,7 +83,7 @@ static inline void free_cache(filelist_t **list)
         return;
 
     do {
-        prev    = current;
+        prev = current;
         current = prev->next;
         free(prev);
     } while (current);
@@ -130,8 +130,8 @@ int EnablePrivilege(LPCSTR PrivilegeName, DWORD yesno)
     if (!LookupPrivilegeValue(NULL, PrivilegeName, &luid))
         return 0;
 
-    tp.PrivilegeCount           = 1;
-    tp.Privileges[0].Luid       = luid;
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
     tp.Privileges[0].Attributes = yesno;
 
     AdjustTokenPrivileges(hToken, FALSE, &tp, 0, NULL, NULL);
@@ -143,8 +143,8 @@ int EnablePrivilege(LPCSTR PrivilegeName, DWORD yesno)
 static char *getaltpath(const wchar_t *filename)
 {
     WIN32_FIND_DATAW wfdw;
-    HANDLE hf                     = INVALID_HANDLE_VALUE;
-    wchar_t *part                 = _wcsdup(filename);
+    HANDLE hf = INVALID_HANDLE_VALUE;
+    wchar_t *part = _wcsdup(filename);
     wchar_t comprev[MAX_PATH + 1] = L"", compose[MAX_PATH + 1];
     wchar_t *rev = comprev, *slash = part, *c = NULL;
     size_t l, la;
@@ -169,7 +169,7 @@ static char *getaltpath(const wchar_t *filename)
             break;
         }
         FindClose(hf);
-        l  = wcslen(wfdw.cFileName);
+        l = wcslen(wfdw.cFileName);
         la = wcslen(wfdw.cAlternateFileName);
 
         if (la)
@@ -183,7 +183,7 @@ static char *getaltpath(const wchar_t *filename)
     } while ((slash = wcsrchr(part, L'\\')));
 
     rev = comprev;
-    c   = compose;
+    c = compose;
     for (i = wcslen(rev); i > 0; i--)
         *c++ = *(rev + i - 1);
     *c = 0;
@@ -300,7 +300,7 @@ int walkmodules_psapi(proc_callback callback, void *data, struct mem_info *info)
 
     memset(&ps, 0, sizeof(PROCESSENTRY32));
     memset(&me32, 0, sizeof(MODULEENTRY32));
-    ps.dwSize   = sizeof(PROCESSENTRY32);
+    ps.dwSize = sizeof(PROCESSENTRY32);
     me32.dwSize = sizeof(MODULEENTRY32);
 
     for (i = 0; i < nprocs; i++) {
@@ -340,10 +340,10 @@ int walkmodules_psapi(proc_callback callback, void *data, struct mem_info *info)
                                       sizeof(mi)))
                 continue;
 
-            me32.hModule       = mods[j];
+            me32.hModule = mods[j];
             me32.th32ProcessID = procs[i];
-            me32.modBaseAddr   = mi.lpBaseOfDll;
-            me32.modBaseSize   = mi.SizeOfImage;
+            me32.modBaseAddr = mi.lpBaseOfDll;
+            me32.modBaseSize = mi.SizeOfImage;
             if (callback(ps, me32, data, info))
                 break;
         }
@@ -481,7 +481,7 @@ int align_pe(unsigned char *buffer, size_t size)
         sechdr = (PIMAGE_SECTION_HEADER)seek;
         seek += sizeof(IMAGE_SECTION_HEADER);
         sechdr->PointerToRawData = sechdr->VirtualAddress;
-        sechdr->SizeOfRawData    = sechdr->Misc.VirtualSize;
+        sechdr->SizeOfRawData = sechdr->Misc.VirtualSize;
     }
     return 1;
 }
@@ -495,7 +495,7 @@ int dump_pe(const char *filename, PROCESSENTRY32 ProcStruct,
     DWORD bytesread = 0;
 #endif
     DWORD byteswrite = 0;
-    int ret          = -1;
+    int ret = -1;
     HANDLE hFile = INVALID_HANDLE_VALUE, hProc = NULL;
     unsigned char *buffer = NULL;
 
@@ -533,7 +533,7 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
 {
     int fd;
     int scantype;
-    int ret             = CL_CLEAN;
+    int ret = CL_CLEAN;
     const char *virname = NULL;
 
     logg(LOGG_DEBUG, "Scanning %s\n", filename);
@@ -577,10 +577,10 @@ int scanfile(const char *filename, scanmem_data *scan_data, struct mem_info *inf
 
 int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct mem_info *info)
 {
-    scanmem_data *scan_data     = data;
-    int rc                      = 0;
-    int isprocess               = 0;
-    char modulename[MAX_PATH]   = "";
+    scanmem_data *scan_data = data;
+    int rc = 0;
+    int isprocess = 0;
+    char modulename[MAX_PATH] = "";
     char expandmodule[MAX_PATH] = "";
 
     if (!scan_data)
@@ -608,7 +608,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
     }
 
     scan_data->res = lookup_cache(&scan_data->files, modulename);
-    isprocess      = !_stricmp(ProcStruct.szExeFile, modulename) ||
+    isprocess = !_stricmp(ProcStruct.szExeFile, modulename) ||
                 !_stricmp(ProcStruct.szExeFile, me32.szModule);
 
     if (scan_data->res == -1) {
@@ -626,7 +626,7 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
 
         if ((scan_data->res != CL_VIRUS) && is_packed(modulename)) {
             char *dumped = cli_gentemp(NULL);
-            int fd       = -1;
+            int fd = -1;
             if ((fd = dump_pe(dumped, ProcStruct, me32)) > 0) {
                 close(fd);
                 scan_data->res = scanfile(dumped, scan_data, info);
@@ -658,17 +658,17 @@ int scanmem_cb(PROCESSENTRY32 ProcStruct, MODULEENTRY32 me32, void *data, struct
 int scanmem(struct mem_info *info)
 {
     scanmem_data data;
-    data.files      = NULL;
+    data.files = NULL;
     data.printclean = 1;
-    data.kill       = 0;
-    data.unload     = 0;
-    data.exclude    = 0;
-    data.res        = CL_CLEAN;
-    data.processes  = 0;
-    data.modules    = 0;
+    data.kill = 0;
+    data.unload = 0;
+    data.exclude = 0;
+    data.res = CL_CLEAN;
+    data.processes = 0;
+    data.modules = 0;
 
     HMODULE psapi_ok = LoadLibrary("psapi.dll");
-    HMODULE k32_ok   = LoadLibrary("kernel32.dll");
+    HMODULE k32_ok = LoadLibrary("kernel32.dll");
 
     if (!(psapi_ok || k32_ok)) {
         logg(LOGG_INFO, " *** Memory Scanning is not supported on this OS ***\n\n");

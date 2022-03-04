@@ -230,16 +230,16 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
     if (hdr.magic == 0xfeedface) {
         conv = 0;
-        m64  = 0;
+        m64 = 0;
     } else if (hdr.magic == 0xcefaedfe) {
         conv = 1;
-        m64  = 0;
+        m64 = 0;
     } else if (hdr.magic == 0xfeedfacf) {
         conv = 0;
-        m64  = 1;
+        m64 = 1;
     } else if (hdr.magic == 0xcffaedfe) {
         conv = 1;
-        m64  = 1;
+        m64 = 1;
     } else {
         cli_dbgmsg("cli_scanmacho: Incorrect magic\n");
         return matcher ? -1 : CL_EFORMAT;
@@ -393,7 +393,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     sections[sect].rva = EC64(section64.addr, conv);
                     sections[sect].vsz = EC64(section64.size, conv);
                     sections[sect].raw = EC32(section64.offset, conv);
-                    section64.align    = 1 << EC32(section64.align, conv);
+                    section64.align = 1 << EC32(section64.align, conv);
                     sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
                     strncpy(name, section64.sectname, sizeof(name));
                     name[sizeof(name) - 1] = '\0';
@@ -412,7 +412,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                         free(sections);
                         RETURN_BROKEN;
                     }
-                    section.align      = 1 << EC32(section.align, conv);
+                    section.align = 1 << EC32(section.align, conv);
                     sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
                     strncpy(name, section.sectname, sizeof(name));
                     name[sizeof(name) - 1] = '\0';
@@ -501,9 +501,9 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 
     if (matcher) {
-        fileinfo->ep        = ep;
+        fileinfo->ep = ep;
         fileinfo->nsections = sect;
-        fileinfo->sections  = sections;
+        fileinfo->sections = sections;
         return 0;
     } else {
         free(sections);
@@ -521,7 +521,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
     struct macho_fat_header fat_header;
     struct macho_fat_arch fat_arch;
     unsigned int conv, i, matcher = 0;
-    int ret     = CL_CLEAN;
+    int ret = CL_CLEAN;
     fmap_t *map = ctx->fmap;
     ssize_t at;
 
@@ -556,7 +556,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
         }
         at += sizeof(fat_arch);
         fat_arch.offset = EC32(fat_arch.offset, conv);
-        fat_arch.size   = EC32(fat_arch.size, conv);
+        fat_arch.size = EC32(fat_arch.size, conv);
         cli_dbgmsg("UNIBIN: Binary %u of %u\n", i + 1, fat_header.nfats);
         cli_dbgmsg("UNIBIN: File offset: %u\n", fat_arch.offset);
         cli_dbgmsg("UNIBIN: File size: %u\n", fat_arch.size);

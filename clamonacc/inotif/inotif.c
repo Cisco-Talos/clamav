@@ -139,10 +139,10 @@ int onas_ddd_init(uint64_t nwatches, size_t ht_size)
 {
 
     const char *nwatch_file = "/proc/sys/fs/inotify/max_user_watches";
-    int nwfd                = 0;
-    int ret                 = 0;
+    int nwfd = 0;
+    int ret = 0;
     char nwatch_str[MAX_WATCH_LEN];
-    char *p  = NULL;
+    char *p = NULL;
     nwatches = 0;
 
     nwfd = open(nwatch_file, O_RDONLY);
@@ -170,7 +170,7 @@ static int onas_ddd_watch(const char *pathname, int fan_fd, uint64_t fan_mask, i
 {
     if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
 
-    int ret    = CL_SUCCESS;
+    int ret = CL_SUCCESS;
     size_t len = strlen(pathname);
 
     ret = onas_ddd_watch_hierarchy(pathname, len, in_fd, in_mask, ONAS_IN);
@@ -198,9 +198,9 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
 
     if (type == (ONAS_IN | ONAS_FAN)) return CL_EARG;
 
-    struct onas_hnode *hnode  = NULL;
+    struct onas_hnode *hnode = NULL;
     struct onas_element *elem = NULL;
-    int wd                    = 0;
+    int wd = 0;
 
     if (onas_ht_get(ddd_ht, pathname, len, &elem) != CL_SUCCESS) return CL_EARG;
 
@@ -217,7 +217,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
 
         /* Link the hash node to the watch descriptor lookup table */
         hnode->wd = wd;
-        wdlt[wd]  = hnode->pathname;
+        wdlt[wd] = hnode->pathname;
 
         hnode->watched |= ONAS_INWATCH;
     } else if (type & ONAS_FAN) {
@@ -233,7 +233,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
     while (curr->next != hnode->childtail) {
         curr = curr->next;
 
-        size_t size      = len + strlen(curr->dirname) + 2;
+        size_t size = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)cli_malloc(size);
         if (child_path == NULL)
             return CL_EMEM;
@@ -258,7 +258,7 @@ static int onas_ddd_unwatch(const char *pathname, int fan_fd, int in_fd)
 {
     if (!pathname || fan_fd <= 0 || in_fd <= 0) return CL_ENULLARG;
 
-    int ret    = CL_SUCCESS;
+    int ret = CL_SUCCESS;
     size_t len = strlen(pathname);
 
     ret = onas_ddd_unwatch_hierarchy(pathname, len, in_fd, ONAS_IN);
@@ -285,9 +285,9 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
 
     if (type == (ONAS_IN | ONAS_FAN)) return CL_EARG;
 
-    struct onas_hnode *hnode  = NULL;
+    struct onas_hnode *hnode = NULL;
     struct onas_element *elem = NULL;
-    int wd                    = 0;
+    int wd = 0;
 
     if (onas_ht_get(ddd_ht, pathname, len, &elem)) return CL_EARG;
 
@@ -300,7 +300,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
 
         /* Unlink the hash node from the watch descriptor lookup table */
         hnode->wd = 0;
-        wdlt[wd]  = NULL;
+        wdlt[wd] = NULL;
 
         hnode->watched = ONAS_STOPWATCH;
     } else if (type & ONAS_FAN) {
@@ -316,7 +316,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
     while (curr->next != hnode->childtail) {
         curr = curr->next;
 
-        size_t size      = len + strlen(curr->dirname) + 2;
+        size_t size = len + strlen(curr->dirname) + 2;
         char *child_path = (char *)cli_malloc(size);
         if (child_path == NULL)
             return CL_EMEM;
@@ -470,7 +470,7 @@ void *onas_ddd_th(void *arg)
     if ((pt = optget(ctx->opts, "watch-list"))->enabled) {
 
         num_indirs = 0;
-        err        = CL_SUCCESS;
+        err = CL_SUCCESS;
 
         include_list = onas_get_opt_list(pt->strarg, &num_indirs, &err);
         if (NULL == include_list) {
@@ -527,7 +527,7 @@ void *onas_ddd_th(void *arg)
     if ((pt = optget(ctx->opts, "exclude-list"))->enabled) {
 
         num_exdirs = 0;
-        err        = CL_SUCCESS;
+        err = CL_SUCCESS;
 
         exclude_list = onas_get_opt_list(pt->strarg, &num_exdirs, &err);
         if (NULL == exclude_list) {
@@ -561,7 +561,7 @@ void *onas_ddd_th(void *arg)
     /* Watch provided paths recursively */
     if ((pt = optget(ctx->clamdopts, "OnAccessIncludePath"))->enabled) {
         while (pt) {
-            errno        = 0;
+            errno = 0;
             size_t ptlen = strlen(pt->strarg);
             if (onas_ht_get(ddd_ht, pt->strarg, ptlen, NULL) == CL_SUCCESS) {
                 err = onas_ddd_watch(pt->strarg, ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
@@ -593,7 +593,7 @@ void *onas_ddd_th(void *arg)
     if (NULL != include_list) {
         idx = 0;
         while (NULL != include_list[idx]) {
-            errno          = 0;
+            errno = 0;
             uint64_t ptlen = strlen(include_list[idx]);
             if (onas_ht_get(ddd_ht, include_list[idx], ptlen, NULL) == CL_SUCCESS) {
                 err = onas_ddd_watch(include_list[idx], ctx->fan_fd, ctx->fan_mask, onas_in_fd, in_mask);
@@ -639,13 +639,13 @@ void *onas_ddd_th(void *arg)
             pthread_testcancel();
             /* Handle events. */
             int wd;
-            char *p           = buf;
-            const char *path  = NULL;
+            char *p = buf;
+            const char *path = NULL;
             const char *child = NULL;
             for (; p < buf + bread; p += sizeof(struct inotify_event) + event->len) {
 
                 event = (const struct inotify_event *)p;
-                wd    = event->wd;
+                wd = event->wd;
                 if (wd >= 0)
                     path = wdlt[wd];
                 else
@@ -664,8 +664,8 @@ void *onas_ddd_th(void *arg)
                 } else if (event->mask & IN_IGNORED) {
                     // Ignore for debugging purposes
                 } else {
-                    len              = strlen(path);
-                    size_t size      = strlen(child) + len + 2;
+                    len = strlen(path);
+                    size_t size = strlen(child) + len + 2;
                     char *child_path = (char *)cli_malloc(size);
                     if (child_path == NULL) {
                         logg(LOGG_DEBUG, "ClamInotif: could not allocate space for child path ... aborting\n");

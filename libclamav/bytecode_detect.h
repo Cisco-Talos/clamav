@@ -103,16 +103,16 @@ enum compiler_list {
 
 enum endian_list {
     endian_little = 0,
-    endian_big    = 1,
-    endian_ANY    = 0xf
+    endian_big = 1,
+    endian_ANY = 0xf
 };
 
 enum os_feature_bits {
-    feature_map_rwx           = 0,
-    feature_selinux           = 1,
+    feature_map_rwx = 0,
+    feature_selinux = 1,
     feature_selinux_enforcing = 2,
-    feature_pax               = 3,
-    feature_pax_mprotect      = 4
+    feature_pax = 3,
+    feature_pax_mprotect = 4
 };
 
 struct cli_environment {

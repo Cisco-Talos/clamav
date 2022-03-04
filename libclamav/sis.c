@@ -142,7 +142,7 @@ enum {
         if (sleft < 4) {                                                     \
             memcpy(buff, buff + smax - sleft, sleft);                        \
             size_t tmp = fmap_readn(map, buff + sleft, pos, BUFSIZ - sleft); \
-            smax       = tmp;                                                \
+            smax = tmp;                                                      \
             if (((size_t)-1) == tmp) {                                       \
                 cli_dbgmsg("SIS: Read failed during GETD2\n");               \
                 status = CL_CLEAN;                                           \
@@ -265,12 +265,12 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
     uint32_t sleft = 0, smax = 0;
     uint8_t compd, buff[BUFSIZ];
     size_t pos;
-    fmap_t *map             = ctx->fmap;
-    uint32_t *ptrs          = NULL;
-    void *decomp            = NULL;
-    int fd                  = -1;
+    fmap_t *map = ctx->fmap;
+    uint32_t *ptrs = NULL;
+    void *decomp = NULL;
+    int fd = -1;
     char *original_filepath = NULL;
-    char *install_filepath  = NULL;
+    char *install_filepath = NULL;
 
     if (fmap_readn(map, &sis, SIZEOF_HEADER_UUIDS, sizeof(sis)) != sizeof(sis)) {
         cli_dbgmsg("SIS: Unable to read header\n");
@@ -280,15 +280,15 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
      */
 
 #if WORDS_BIGENDIAN != 0
-    sis.langs  = EC16(sis.langs);
-    sis.files  = EC16(sis.files);
-    sis.deps   = EC16(sis.deps);
-    sis.flags  = EC16(sis.flags);
+    sis.langs = EC16(sis.langs);
+    sis.files = EC16(sis.files);
+    sis.deps = EC16(sis.deps);
+    sis.flags = EC16(sis.flags);
     sis.plangs = EC32(sis.plangs);
     sis.pfiles = EC32(sis.pfiles);
-    sis.pdeps  = EC32(sis.pdeps);
+    sis.pdeps = EC32(sis.pdeps);
     sis.pnames = EC32(sis.pnames);
-    sis.pcaps  = EC32(sis.pcaps);
+    sis.pcaps = EC32(sis.pcaps);
 #endif
 
     if (!sis.langs || sis.langs >= MAXLANG) {
@@ -436,7 +436,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                     status = CL_EMEM;
                     goto done;
                 }
-                lens  = &ptrs[fcount];
+                lens = &ptrs[fcount];
                 olens = &ptrs[fcount * 2];
                 for (j = 0; j < fcount; j++)
                     GETD2(lens[j]);
@@ -500,7 +500,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                             /*
                              * File not compressed, scan it as-is.
                              */
-                            olen    = lens[j];
+                            olen = lens[j];
                             decompp = comp;
                         }
                         snprintf(ofn, 1024, "%s" PATHSEP "sis%02d", tmpd, umped);
@@ -718,9 +718,9 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
     uint32_t field, optst[] = {T_CONTROLLERCHECKSUM, T_DATACHECKSUM, T_COMPRESSED};
     unsigned int i;
 
-    s->map   = ctx->fmap;
-    s->pos   = 0;
-    s->smax  = 0;
+    s->map = ctx->fmap;
+    s->pos = 0;
+    s->smax = 0;
     s->sleft = 0;
     s->level = 0;
 
@@ -826,7 +826,7 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                 else
                                     cli_dbgmsg("SIS: File successfully inflated\n");
                             } else { /* not compressed */
-                                dst    = src;
+                                dst = src;
                                 uusize = s->fsize[s->level];
                             }
                             if ((fd = open(tempf, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {

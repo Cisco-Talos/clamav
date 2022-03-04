@@ -160,11 +160,11 @@ static int hashpe(const char *filename, unsigned int class, int type)
     int status = -1;
     STATBUF sb;
     const char *fmptr;
-    struct cl_engine *engine       = NULL;
-    cli_ctx ctx                    = {0};
+    struct cl_engine *engine = NULL;
+    cli_ctx ctx = {0};
     struct cl_scan_options options = {0};
-    cl_fmap_t *new_map             = NULL;
-    int fd                         = -1;
+    cl_fmap_t *new_map = NULL;
+    int fd = -1;
     cl_error_t ret;
 
     /* Prepare file */
@@ -206,13 +206,13 @@ static int hashpe(const char *filename, unsigned int class, int type)
     }
 
     /* prepare context */
-    ctx.engine         = engine;
-    ctx.options        = &options;
+    ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
-    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+    ctx.dconf = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -357,7 +357,7 @@ static int asciinorm(const struct optstruct *opts)
     int fd, ofd;
 
     fname = optget(opts, "ascii-normalise")->strarg;
-    fd    = open(fname, O_RDONLY | O_BINARY);
+    fd = open(fname, O_RDONLY | O_BINARY);
 
     if (fd == -1) {
         mprintf(LOGG_ERROR, "asciinorm: Can't open file %s\n", fname);
@@ -616,7 +616,7 @@ static int build(const struct optstruct *opts)
     time_t timet;
     struct tm *brokent;
     struct cl_cvd *oldcvd;
-    char **dblist2          = NULL;
+    char **dblist2 = NULL;
     unsigned int dblist2cnt = 0;
     DIR *dd;
     struct dirent *dent;
@@ -1302,7 +1302,7 @@ static int listdb(const char *filename, const regex_t *regex)
             }
 
             start = buffer;
-            *pt   = 0;
+            *pt = 0;
 
             if ((pt = strstr(start, " (Clam)")))
                 *pt = 0;
@@ -1437,7 +1437,7 @@ static int listsigs(const struct optstruct *opts, int mode)
         if (S_ISDIR(sb.st_mode)) {
             if (!strcmp(name, DATADIR)) {
                 dbdir = freshdbdir();
-                ret   = listdir(localdbdir ? localdbdir : dbdir, NULL);
+                ret = listdir(localdbdir ? localdbdir : dbdir, NULL);
                 free(dbdir);
             } else {
                 ret = listdir(name, NULL);
@@ -1452,8 +1452,8 @@ static int listsigs(const struct optstruct *opts, int mode)
             return -1;
         }
         mprintf_stdout = 1;
-        dbdir          = freshdbdir();
-        ret            = listdir(localdbdir ? localdbdir : dbdir, &reg);
+        dbdir = freshdbdir();
+        ret = listdir(localdbdir ? localdbdir : dbdir, &reg);
         free(dbdir);
         cli_regfree(&reg);
     }
@@ -1472,10 +1472,10 @@ static int vbadump(const struct optstruct *opts)
 
     if (optget(opts, "vba-hex")->enabled) {
         hex_output = 1;
-        pt         = optget(opts, "vba-hex")->strarg;
+        pt = optget(opts, "vba-hex")->strarg;
     } else {
         hex_output = 0;
-        pt         = optget(opts, "vba")->strarg;
+        pt = optget(opts, "vba")->strarg;
     }
 
     if ((fd = open(pt, O_RDONLY | O_BINARY)) == -1) {
@@ -1728,7 +1728,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
                 } else {
                     tline = 0;
                     found = 0;
-                    opos  = ftell(old);
+                    opos = ftell(old);
                     while (fgets(tbuff, l1, old)) {
                         tline++;
                         cli_chomp(tbuff);
@@ -1962,12 +1962,12 @@ static void matchsig(char *sig, const char *offset, int fd)
 {
     struct cli_ac_result *acres = NULL, *res;
     STATBUF sb;
-    unsigned int matches           = 0;
-    struct cl_engine *engine       = NULL;
-    cli_ctx ctx                    = {0};
+    unsigned int matches = 0;
+    struct cl_engine *engine = NULL;
+    cli_ctx ctx = {0};
     struct cl_scan_options options = {0};
-    cl_fmap_t *new_map             = NULL;
-    struct cli_lsig_tdb tdb        = {0};
+    cl_fmap_t *new_map = NULL;
+    struct cli_lsig_tdb tdb = {0};
 
     mprintf(LOGG_INFO, "SUBSIG: %s\n", sig);
 
@@ -2002,13 +2002,13 @@ static void matchsig(char *sig, const char *offset, int fd)
         goto done;
     }
 
-    ctx.engine         = engine;
-    ctx.options        = &options;
+    ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
-    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+    ctx.dconf = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }
@@ -2044,7 +2044,7 @@ static void matchsig(char *sig, const char *offset, int fd)
 done:
     /* Cleanup */
     while (acres) {
-        res   = acres;
+        res = acres;
         acres = acres->next;
         free(res);
     }
@@ -2140,7 +2140,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
     char *buff;
 
     hexcpy = NULL;
-    buff   = NULL;
+    buff = NULL;
 
     hexcpy = strdup(hex);
     if (!hexcpy) {
@@ -2161,7 +2161,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
         start = hexcpy;
         do {
             negative = 0;
-            *pt++    = 0;
+            *pt++ = 0;
             if (!start) {
                 mprintf(LOGG_ERROR, "decodehexspecial: Unexpected EOL\n");
                 free(hexcpy);
@@ -2171,7 +2171,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
             if (pt >= hexcpy + 2) {
                 if (pt[-2] == '!') {
                     negative = 1;
-                    pt[-2]   = 0;
+                    pt[-2] = 0;
                 }
             }
             if (!(decoded = decodehexstr(start, &hlen))) {
@@ -2257,10 +2257,10 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
 
                 level = 0;
                 h = e = pt;
-                op    = '\0';
+                op = '\0';
                 while ((level >= 0) && (e = strpbrk(h, "()|"))) {
                     lop = op;
-                    op  = *e;
+                    op = *e;
 
                     *e++ = 0;
                     if (op != '(' && lop != ')' && !strlen(h)) {
@@ -2288,7 +2288,7 @@ static char *decodehexspecial(const char *hex, unsigned int *dlen)
                             if (e >= pt + 2) {
                                 if (e[-2] == '!') {
                                     negative = 1;
-                                    e[-2]    = 0;
+                                    e[-2] = 0;
                                 }
                             }
 
@@ -2455,12 +2455,12 @@ static int decodehex(const char *hexsig)
                 for (j = 0; j < strlen(start); j++) {
                     if (start[j] == '{' || start[j] == '[') {
                         asterisk = 0;
-                        pt       = start + j;
+                        pt = start + j;
                         break;
                     }
                     if (start[j] == '*') {
                         asterisk = 1;
-                        pt       = start + j;
+                        pt = start + j;
                         break;
                     }
                 }
@@ -2724,7 +2724,7 @@ static int decodecdb(char **tokens)
         } else {
 
             errno = 0;
-            sz    = (int)strtol(tokens[8], NULL, 16);
+            sz = (int)strtol(tokens[8], NULL, 16);
             if (!sz && errno) {
                 mprintf(LOGG_ERROR, "decodesig: Invalid cyclic redundancy check sum\n");
                 return -1;
@@ -3157,14 +3157,14 @@ static int makediff(const struct optstruct *opts)
 
 static int dumpcerts(const struct optstruct *opts)
 {
-    int status     = -1;
+    int status = -1;
     char *filename = NULL;
     STATBUF sb;
-    struct cl_engine *engine       = NULL;
-    cli_ctx ctx                    = {0};
+    struct cl_engine *engine = NULL;
+    cli_ctx ctx = {0};
     struct cl_scan_options options = {0};
-    int fd                         = -1;
-    cl_fmap_t *new_map             = NULL;
+    int fd = -1;
+    cl_fmap_t *new_map = NULL;
     cl_error_t ret;
 
     logg_file = NULL;
@@ -3217,13 +3217,13 @@ static int dumpcerts(const struct optstruct *opts)
     cl_debug();
 
     /* prepare context */
-    ctx.engine         = engine;
-    ctx.options        = &options;
+    ctx.engine = engine;
+    ctx.options = &options;
     ctx.options->parse = ~0;
-    ctx.dconf          = (struct cli_dconf *)engine->dconf;
+    ctx.dconf = (struct cli_dconf *)engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         goto done;
     }

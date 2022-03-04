@@ -682,7 +682,7 @@ void fix_paths(void)
     if (!(have_ddir | have_cdir) && GetModuleFileName(NULL, path, sizeof(path))) {
         char *dir;
         path[sizeof(path) - 1] = '\0';
-        dir                    = dirname(path);
+        dir = dirname(path);
         if (!have_ddir)
             snprintf(_DATADIR, sizeof(_DATADIR), "%s\\database", dir);
         if (!have_cdir) {
@@ -783,26 +783,26 @@ static int optadd(struct optstruct **opts, struct optstruct **opts_last, const c
         }
         newnode->enabled = 1;
     } else {
-        newnode->strarg  = NULL;
+        newnode->strarg = NULL;
         newnode->enabled = 0;
     }
     newnode->numarg = numarg;
     if (numarg && numarg != -1)
         newnode->enabled = 1;
-    newnode->nextarg  = NULL;
-    newnode->next     = NULL;
-    newnode->active   = 0;
-    newnode->flags    = flags;
-    newnode->idx      = idx;
+    newnode->nextarg = NULL;
+    newnode->next = NULL;
+    newnode->active = 0;
+    newnode->flags = flags;
+    newnode->idx = idx;
     newnode->filename = NULL;
 
     if (!*opts_last) {
         newnode->next = *opts;
-        *opts         = newnode;
-        *opts_last    = *opts;
+        *opts = newnode;
+        *opts_last = *opts;
     } else {
         (*opts_last)->next = newnode;
-        *opts_last         = newnode;
+        *opts_last = newnode;
     }
     return 0;
 }
@@ -842,7 +842,7 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
                 }
             }
             new->numarg = numarg;
-            h           = pt;
+            h = pt;
             while (h->nextarg)
                 h = h->nextarg;
             h->nextarg = new;
@@ -899,7 +899,7 @@ void optfree(struct optstruct *opts)
         free(opts->name);
         free(opts->cmd);
         free(opts->strarg);
-        h    = opts;
+        h = opts;
         opts = opts->next;
         free(h);
     }
@@ -956,7 +956,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                         longopts[lc].has_arg = 2;
                     else
                         longopts[lc].has_arg = 1;
-                    longopts[lc].flag  = NULL;
+                    longopts[lc].flag = NULL;
                     longopts[lc++].val = optentry->shortopt;
                 }
                 if (optentry->shortopt) {
@@ -988,9 +988,9 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
             optfree(opts);
             return NULL;
         }
-        shortopts[sc]        = 0;
-        longopts[lc].name    = NULL;
-        longopts[lc].flag    = NULL;
+        shortopts[sc] = 0;
+        longopts[lc].name = NULL;
+        longopts[lc].flag = NULL;
         longopts[lc].has_arg = longopts[lc].val = 0;
     }
 
@@ -1021,7 +1021,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 err = 1;
                 break;
             }
-            name  = buff;
+            name = buff;
             *pt++ = 0;
             for (i = 0; i < (int)strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++)
                 ;
@@ -1035,7 +1035,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
                 break;
             }
             pt[i] = 0;
-            arg   = pt;
+            arg = pt;
             if (*arg == '"') {
                 arg++;
                 pt++;
@@ -1057,7 +1057,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
         } else {
             opt_index = 0;
-            ret       = my_getopt_long(argc, argv, shortopts, longopts, &opt_index);
+            ret = my_getopt_long(argc, argv, shortopts, longopts, &opt_index);
             if (ret == -1)
                 break;
 
@@ -1315,7 +1315,7 @@ struct optstruct *optadditem(const char *name, const char *arg, int verbose, int
     char *buff;
     regex_t regex;
     long long numarg, lnumarg;
-    int regflags                       = REG_EXTENDED | REG_NOSUB;
+    int regflags = REG_EXTENDED | REG_NOSUB;
     const struct clam_option *optentry = NULL;
 
     if (oldopts)

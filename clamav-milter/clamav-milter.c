@@ -101,16 +101,16 @@ int main(int argc, char **argv)
     cl_initialize_crypto();
 
     memset(&descr, 0, sizeof(struct smfiDesc));
-    descr.xxfi_name    = "ClamAV";         /* filter name */
-    descr.xxfi_version = SMFI_VERSION;     /* milter version */
-    descr.xxfi_flags   = SMFIF_QUARANTINE; /* flags */
-    descr.xxfi_connect = clamfi_connect;   /* connection info filter */
-    descr.xxfi_envfrom = clamfi_envfrom;   /* envelope sender filter */
-    descr.xxfi_envrcpt = clamfi_envrcpt;   /* envelope recipient filter */
-    descr.xxfi_header  = clamfi_header;    /* header filter */
-    descr.xxfi_body    = clamfi_body;      /* body block */
-    descr.xxfi_eom     = clamfi_eom;       /* end of message */
-    descr.xxfi_abort   = clamfi_abort;     /* message aborted */
+    descr.xxfi_name = "ClamAV";          /* filter name */
+    descr.xxfi_version = SMFI_VERSION;   /* milter version */
+    descr.xxfi_flags = SMFIF_QUARANTINE; /* flags */
+    descr.xxfi_connect = clamfi_connect; /* connection info filter */
+    descr.xxfi_envfrom = clamfi_envfrom; /* envelope sender filter */
+    descr.xxfi_envrcpt = clamfi_envrcpt; /* envelope recipient filter */
+    descr.xxfi_header = clamfi_header;   /* header filter */
+    descr.xxfi_body = clamfi_body;       /* body block */
+    descr.xxfi_eom = clamfi_eom;         /* end of message */
+    descr.xxfi_abort = clamfi_abort;     /* message aborted */
 
     opts = optparse(NULL, argc, argv, 1, OPT_MILTER, 0, NULL);
     if (!opts) {
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
         optfree(opts);
         return 1;
     }
-    opt  = optget(opts, "FixStaleSocket");
+    opt = optget(opts, "FixStaleSocket");
     umsk = umask(0777); /* socket is created with 000 to avoid races */
     if (smfi_opensocket(opt->enabled) == MI_FAILURE) {
         logg(LOGG_ERROR, "Failed to create socket %s\n", my_socket);
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
             sock_name++;
 
         if (optget(opts, "MilterSocketGroup")->enabled) {
-            char *gname    = optget(opts, "MilterSocketGroup")->strarg, *end;
+            char *gname = optget(opts, "MilterSocketGroup")->strarg, *end;
             gid_t sock_gid = strtol(gname, &end, 10);
             if (*end) {
                 struct group *pgrp = getgrnam(gname);
@@ -298,9 +298,9 @@ int main(int argc, char **argv)
         }
     }
 
-    logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
-    logg_time    = optget(opts, "LogTime")->enabled;
-    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
+    logg_lock = !optget(opts, "LogFileUnlock")->enabled;
+    logg_time = optget(opts, "LogTime")->enabled;
+    logg_size = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
     if (logg_size)
         logg_rotate = optget(opts, "LogRotate")->enabled;
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
     if ((opt = optget(opts, "PidFile"))->enabled) {
         FILE *fd;
         mode_t old_umask = umask(0022);
-        int err          = 0;
+        int err = 0;
 
         if ((fd = fopen(opt->strarg, "w")) == NULL) {
             logg(LOGG_ERROR, "Can't save PID in file %s\n", opt->strarg);
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
              */
             if (0 == geteuid()) {
                 struct passwd *pw = getpwuid(0);
-                int ret           = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+                int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
                 if (ret) {
                     logg(LOGG_ERROR, "Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
                     err = 1;

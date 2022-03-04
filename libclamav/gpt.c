@@ -261,25 +261,25 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
 {
     struct gpt_partition_entry gpe;
     int ret = CL_CLEAN, detection = CL_CLEAN;
-    size_t maplen, part_size      = 0;
+    size_t maplen, part_size = 0;
     size_t pos = 0, part_off = 0;
     unsigned i = 0, j = 0;
     uint32_t max_prtns = 0;
 
     /* convert endian to host */
-    hdr.signature       = be64_to_host(hdr.signature);
-    hdr.revision        = be32_to_host(hdr.revision);
-    hdr.headerSize      = le32_to_host(hdr.headerSize);
-    hdr.headerCRC32     = le32_to_host(hdr.headerCRC32);
-    hdr.reserved        = le32_to_host(hdr.reserved);
-    hdr.currentLBA      = le64_to_host(hdr.currentLBA);
-    hdr.backupLBA       = le64_to_host(hdr.backupLBA);
-    hdr.firstUsableLBA  = le64_to_host(hdr.firstUsableLBA);
-    hdr.lastUsableLBA   = le64_to_host(hdr.lastUsableLBA);
-    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
+    hdr.signature = be64_to_host(hdr.signature);
+    hdr.revision = be32_to_host(hdr.revision);
+    hdr.headerSize = le32_to_host(hdr.headerSize);
+    hdr.headerCRC32 = le32_to_host(hdr.headerCRC32);
+    hdr.reserved = le32_to_host(hdr.reserved);
+    hdr.currentLBA = le64_to_host(hdr.currentLBA);
+    hdr.backupLBA = le64_to_host(hdr.backupLBA);
+    hdr.firstUsableLBA = le64_to_host(hdr.firstUsableLBA);
+    hdr.lastUsableLBA = le64_to_host(hdr.lastUsableLBA);
+    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
-    hdr.tableEntrySize  = le32_to_host(hdr.tableEntrySize);
-    hdr.tableCRC32      = le32_to_host(hdr.tableCRC32);
+    hdr.tableEntrySize = le32_to_host(hdr.tableEntrySize);
+    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);
 
     /* print header info for the debug */
     cli_dbgmsg("GPT Header:\n");
@@ -308,8 +308,8 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
         }
 
         /* convert the endian to host */
-        gpe.firstLBA   = le64_to_host(gpe.firstLBA);
-        gpe.lastLBA    = le64_to_host(gpe.lastLBA);
+        gpe.firstLBA = le64_to_host(gpe.firstLBA);
+        gpe.lastLBA = le64_to_host(gpe.lastLBA);
         gpe.attributes = le64_to_host(gpe.attributes);
         for (j = 0; j < 36; ++j) {
             gpe.name[i] = le16_to_host(gpe.name[i]);
@@ -342,9 +342,9 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
                        (long long unsigned)gpe.lastLBA, (long long unsigned)((gpe.lastLBA + 1) * sectorsize));
 
             /* send the partition to cli_magic_scan_nested_fmap_type */
-            part_off  = gpe.firstLBA * sectorsize;
+            part_off = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_magic_scan_nested_fmap_type(ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
             if (NULL != namestr) {
                 free(namestr);
             }
@@ -377,9 +377,9 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     maplen = ctx->fmap->len;
 
     /* checking header crc32 checksum */
-    crc32_ref       = le32_to_host(hdr.headerCRC32);
+    crc32_ref = le32_to_host(hdr.headerCRC32);
     hdr.headerCRC32 = 0; /* checksum is calculated with field = 0 */
-    crc32_calc      = crc32(0, (unsigned char *)&hdr, sizeof(hdr));
+    crc32_calc = crc32(0, (unsigned char *)&hdr, sizeof(hdr));
     if (crc32_calc != crc32_ref) {
         cli_dbgmsg("cli_scangpt: GPT header checksum mismatch\n");
         gpt_parsemsg("%x != %x\n", crc32_calc, crc32_ref);
@@ -387,24 +387,24 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     }
 
     /* convert endian to host to check partition table */
-    hdr.signature       = be64_to_host(hdr.signature);
-    hdr.revision        = be32_to_host(hdr.revision);
-    hdr.headerSize      = le32_to_host(hdr.headerSize);
-    hdr.headerCRC32     = crc32_ref;
-    hdr.reserved        = le32_to_host(hdr.reserved);
-    hdr.currentLBA      = le64_to_host(hdr.currentLBA);
-    hdr.backupLBA       = le64_to_host(hdr.backupLBA);
-    hdr.firstUsableLBA  = le64_to_host(hdr.firstUsableLBA);
-    hdr.lastUsableLBA   = le64_to_host(hdr.lastUsableLBA);
-    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
+    hdr.signature = be64_to_host(hdr.signature);
+    hdr.revision = be32_to_host(hdr.revision);
+    hdr.headerSize = le32_to_host(hdr.headerSize);
+    hdr.headerCRC32 = crc32_ref;
+    hdr.reserved = le32_to_host(hdr.reserved);
+    hdr.currentLBA = le64_to_host(hdr.currentLBA);
+    hdr.backupLBA = le64_to_host(hdr.backupLBA);
+    hdr.firstUsableLBA = le64_to_host(hdr.firstUsableLBA);
+    hdr.lastUsableLBA = le64_to_host(hdr.lastUsableLBA);
+    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
-    hdr.tableEntrySize  = le32_to_host(hdr.tableEntrySize);
-    hdr.tableCRC32      = le32_to_host(hdr.tableCRC32);
+    hdr.tableEntrySize = le32_to_host(hdr.tableEntrySize);
+    hdr.tableCRC32 = le32_to_host(hdr.tableCRC32);
 
     ptable_start = hdr.tableStartLBA * sectorsize;
-    ptable_len   = hdr.tableNumEntries * hdr.tableEntrySize;
+    ptable_len = hdr.tableNumEntries * hdr.tableEntrySize;
     tableLastLBA = (hdr.tableStartLBA + (ptable_len / sectorsize)) - 1;
-    lastLBA      = (maplen / sectorsize) - 1;
+    lastLBA = (maplen / sectorsize) - 1;
 
     /** HEADER CHECKS **/
     gpt_printSectors(ctx, sectorsize);
@@ -468,7 +468,7 @@ static int gpt_validate_header(cli_ctx *ctx, struct gpt_header hdr, size_t secto
     /** END HEADER CHECKS **/
 
     /* checking partition table crc32 checksum */
-    ptable     = (unsigned char *)fmap_need_off_once(ctx->fmap, ptable_start, ptable_len);
+    ptable = (unsigned char *)fmap_need_off_once(ctx->fmap, ptable_start, ptable_len);
     crc32_calc = crc32(0, ptable, ptable_len);
     if (crc32_calc != hdr.tableCRC32) {
         cli_dbgmsg("cli_scangpt: GPT partition table checksum mismatch\n");
@@ -483,12 +483,12 @@ static int gpt_check_mbr(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record pmbr;
     size_t pos = 0, mbr_base = 0;
-    int ret    = CL_CLEAN;
+    int ret = CL_CLEAN;
     unsigned i = 0;
 
     /* read the mbr */
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
-    pos      = (MBR_SECTOR * sectorsize) + mbr_base;
+    pos = (MBR_SECTOR * sectorsize) + mbr_base;
 
     if (fmap_readn(ctx->fmap, &pmbr, pos, sizeof(pmbr)) != sizeof(pmbr)) {
         cli_dbgmsg("cli_scangpt: Invalid primary MBR header\n");
@@ -555,8 +555,8 @@ static void gpt_printSectors(cli_ctx *ctx, size_t sectorsize)
         return;
     }
 
-    pptable_len   = phdr.tableNumEntries * phdr.tableEntrySize;
-    sptable_len   = shdr.tableNumEntries * shdr.tableEntrySize;
+    pptable_len = phdr.tableNumEntries * phdr.tableEntrySize;
+    sptable_len = shdr.tableNumEntries * shdr.tableEntrySize;
     ptableLastLBA = (phdr.tableStartLBA + (pptable_len / sectorsize)) - 1;
     stableLastLBA = (shdr.tableStartLBA + (sptable_len / sectorsize)) - 1;
 
@@ -589,12 +589,12 @@ static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_
     size_t pos;
     size_t maplen;
     uint32_t max_prtns = 0;
-    int virus_found    = 0;
+    int virus_found = 0;
 
     maplen = ctx->fmap->len;
 
     /* convert endian to host to check partition table */
-    hdr.tableStartLBA   = le64_to_host(hdr.tableStartLBA);
+    hdr.tableStartLBA = le64_to_host(hdr.tableStartLBA);
     hdr.tableNumEntries = le32_to_host(hdr.tableNumEntries);
 
     partition_intersection_list_init(&prtncheck);
@@ -617,7 +617,7 @@ static int gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr, size_
 
         /* convert the endian to host */
         gpe.firstLBA = le64_to_host(gpe.firstLBA);
-        gpe.lastLBA  = le64_to_host(gpe.lastLBA);
+        gpe.lastLBA = le64_to_host(gpe.lastLBA);
 
         if (gpe.firstLBA == 0) {
             /* empty partition, invalid */

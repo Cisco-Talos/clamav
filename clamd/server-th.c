@@ -81,21 +81,21 @@ struct reload_th_t {
  * Global variables
  */
 
-int progexit                 = 0;
-pthread_mutex_t exit_mutex   = PTHREAD_MUTEX_INITIALIZER;
-int reload                   = 0;
-time_t reloaded_time         = 0;
+int progexit = 0;
+pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
+int reload = 0;
+time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
-int sighup                   = 0;
+int sighup = 0;
 
 static pthread_mutex_t reload_stage_mutex = PTHREAD_MUTEX_INITIALIZER;
-static reload_stage_t reload_stage        = RELOAD_STAGE__IDLE; /* protected by reload_stage_mutex */
-struct cl_engine *g_newengine             = NULL;               /* protected by reload_stage_mutex */
+static reload_stage_t reload_stage = RELOAD_STAGE__IDLE; /* protected by reload_stage_mutex */
+struct cl_engine *g_newengine = NULL;                    /* protected by reload_stage_mutex */
 
 extern pthread_mutex_t logg_mutex;
 static struct cl_stat dbstat;
 
-void *event_wake_recv   = NULL;
+void *event_wake_recv = NULL;
 void *event_wake_accept = NULL;
 
 static void scanner_thread(void *arg)
@@ -165,7 +165,7 @@ void sighandler_th(int sig)
         case SIGINT:
         case SIGTERM:
             progexit = 1;
-            action   = 1;
+            action = 1;
             break;
 
 #ifdef SIGHUP
@@ -218,8 +218,8 @@ static void *reload_th(void *arg)
     cl_error_t status = CL_EMALFDB;
 
     struct reload_th_t *rldata = arg;
-    struct cl_engine *engine   = NULL;
-    unsigned int sigs          = 0;
+    struct cl_engine *engine = NULL;
+    unsigned int sigs = 0;
     int retval;
 
     if (NULL == rldata || NULL == rldata->dbdir || NULL == rldata->settings) {
@@ -278,7 +278,7 @@ done:
 
     pthread_mutex_lock(&reload_stage_mutex);
     reload_stage = RELOAD_STAGE__NEW_DB_AVAILABLE; /* New DB available */
-    g_newengine  = engine;
+    g_newengine = engine;
     pthread_mutex_unlock(&reload_stage_mutex);
 
 #ifdef _WIN32
@@ -476,7 +476,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
                 *len = pos - buf->buffer;
                 *pos = '\0';
             } else {
-                *len                  = buf->off;
+                *len = buf->off;
                 buf->buffer[buf->off] = '\0';
             }
             cli_chomp(buf->buffer);
@@ -516,11 +516,11 @@ static void *acceptloop_th(void *arg)
 {
     char buff[BUFFSIZE + 1];
     size_t i;
-    struct acceptdata *data  = (struct acceptdata *)arg;
-    struct fd_data *fds      = &data->fds;
+    struct acceptdata *data = (struct acceptdata *)arg;
+    struct fd_data *fds = &data->fds;
     struct fd_data *recv_fds = &data->recv_fds;
-    int max_queue            = data->max_queue;
-    int commandtimeout       = data->commandtimeout;
+    int max_queue = data->max_queue;
+    int commandtimeout = data->commandtimeout;
 
     pthread_mutex_lock(fds->buf_mutex);
     for (;;) {
@@ -695,10 +695,10 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
                 /* we need the extra byte from recvmsg */
                 conn->mode = MODE_WAITANCILL;
-                buf->mode  = MODE_WAITANCILL;
+                buf->mode = MODE_WAITANCILL;
                 /* put term back */
                 buf->buffer[pos + cmdlen] = term;
-                cmdlen                    = 0;
+                cmdlen = 0;
                 logg(LOGG_DEBUG_NV, "RECVTH: mode -> MODE_WAITANCILL\n");
                 break;
             }
@@ -707,7 +707,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
             logg(LOGG_DEBUG_NV, "RECVTH: FILDES command complete\n");
         }
         conn->term = term;
-        buf->term  = term;
+        buf->term = term;
 
         if ((rc = execute_or_dispatch_command(conn, cmdtype, argument)) < 0) {
             logg(LOGG_ERROR, "Command dispatch failed\n");
@@ -729,7 +729,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
                 /* if there are no more active jobs */
                 shutdown(conn->sd, 2);
                 closesocket(conn->sd);
-                buf->fd     = -1;
+                buf->fd = -1;
                 conn->group = NULL;
             } else if (conn->mode != MODE_STREAM) {
                 logg(LOGG_DEBUG_NV, "mode -> MODE_WAITREPLY\n");
@@ -769,7 +769,7 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
         if (conn->mode == MODE_STREAM) {
             /* TODO: this doesn't belong here */
             buf->dumpname = conn->filename;
-            buf->dumpfd   = conn->scanfd;
+            buf->dumpfd = conn->scanfd;
             logg(LOGG_DEBUG_NV, "Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
         }
         if (conn->mode != MODE_COMMAND) {
@@ -778,9 +778,9 @@ static const char *parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, s
         }
         conn->id++;
     }
-    *ppos      = pos;
-    buf->mode  = conn->mode;
-    buf->id    = conn->id;
+    *ppos = pos;
+    buf->mode = conn->mode;
+    buf->id = conn->id;
     buf->group = conn->group;
     buf->quota = conn->quota;
     if (conn->scanfd != -1 && conn->scanfd != buf->dumpfd) {
@@ -832,9 +832,9 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                 if (!buf->chunksize) {
                     /* chunksize 0 marks end of stream */
                     conn->scanfd = buf->dumpfd;
-                    conn->term   = buf->term;
-                    buf->dumpfd  = -1;
-                    buf->mode    = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+                    conn->term = buf->term;
+                    buf->dumpfd = -1;
+                    buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
                     if (buf->mode == MODE_WAITREPLY)
                         buf->fd = -1;
                     logg(LOGG_DEBUG_NV, "Chunks complete\n");
@@ -860,7 +860,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
                          (unsigned long)buf->chunksize, (unsigned long)buf->quota);
                     conn_reply_error(conn, "INSTREAM size limit exceeded.");
                     *error = 1;
-                    *ppos  = pos;
+                    *ppos = pos;
                     return -1;
                 } else {
                     buf->quota -= buf->chunksize;
@@ -888,7 +888,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
         pos += cmdlen;
         if (pos == buf->off) {
             buf->off = 0;
-            pos      = 0;
+            pos = 0;
             /* need more data, so return and wait for some */
             *ppos = pos;
             return -1;
@@ -914,10 +914,10 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     unsigned long long val;
     size_t i, j, rr_last = 0;
     pthread_t accept_th;
-    pthread_mutex_t fds_mutex     = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t fds_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t recvfds_mutex = PTHREAD_MUTEX_INITIALIZER;
-    struct acceptdata acceptdata  = ACCEPTDATA_INIT(&fds_mutex, &recvfds_mutex);
-    struct fd_data *fds           = &acceptdata.recv_fds;
+    struct acceptdata acceptdata = ACCEPTDATA_INIT(&fds_mutex, &recvfds_mutex);
+    struct fd_data *fds = &acceptdata.recv_fds;
     time_t start_time, current_time;
     unsigned int selfchk;
     threadpool_t *thr_pool;
@@ -1376,17 +1376,17 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
     }
 
     logg(LOGG_DEBUG, "Listening daemon: PID: %u\n", (unsigned int)getpid());
-    max_threads               = optget(opts, "MaxThreads")->numarg;
-    max_queue                 = optget(opts, "MaxQueue")->numarg;
+    max_threads = optget(opts, "MaxThreads")->numarg;
+    max_queue = optget(opts, "MaxQueue")->numarg;
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
-    readtimeout               = optget(opts, "ReadTimeout")->numarg;
+    readtimeout = optget(opts, "ReadTimeout")->numarg;
 
 #if !defined(_WIN32) && defined(RLIMIT_NOFILE)
     if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
         /* don't warn if default value is too high, silently fix it */
         unsigned maxrec;
         int max_max_queue;
-        unsigned warn             = optget(opts, "MaxQueue")->active;
+        unsigned warn = optget(opts, "MaxQueue")->active;
         const unsigned clamdfiles = 6;
 #ifdef C_SOLARIS
         int solaris_has_extended_stdio = 0;
@@ -1439,8 +1439,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         } /*  If 64bit or has extended stdio  */
 
 #endif
-        opt           = optget(opts, "MaxRecursion");
-        maxrec        = opt->numarg;
+        opt = optget(opts, "MaxRecursion");
+        maxrec = opt->numarg;
         max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
         if (max_queue < max_threads) {
             max_queue = max_threads;
@@ -1514,7 +1514,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
         }
 #ifdef _WIN32
     event_wake_accept = CreateEvent(NULL, TRUE, FALSE, NULL);
-    event_wake_recv   = CreateEvent(NULL, TRUE, FALSE, NULL);
+    event_wake_recv = CreateEvent(NULL, TRUE, FALSE, NULL);
 #else
     if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
         (pipe(acceptdata.syncpipe_wake_accept) == -1)) {
@@ -1574,8 +1574,8 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
 
         if (fds->nfds) i = (rr_last + 1) % fds->nfds;
         for (j = 0; j < fds->nfds && new_sd >= 0; j++, i = (i + 1) % fds->nfds) {
-            size_t pos         = 0;
-            int error          = 0;
+            size_t pos = 0;
+            int error = 0;
             struct fd_buf *buf = &fds->buf[i];
             if (!buf->got_newdata)
                 continue;
@@ -1621,19 +1621,19 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                 /* New data available to read on socket. */
 
                 memset(&conn, 0, sizeof(conn));
-                conn.scanfd   = buf->recvfd;
-                buf->recvfd   = -1;
-                conn.sd       = buf->fd;
-                conn.options  = &options;
-                conn.opts     = opts;
-                conn.thrpool  = thr_pool;
-                conn.engine   = engine;
-                conn.group    = buf->group;
-                conn.id       = buf->id;
-                conn.quota    = buf->quota;
+                conn.scanfd = buf->recvfd;
+                buf->recvfd = -1;
+                conn.sd = buf->fd;
+                conn.options = &options;
+                conn.opts = opts;
+                conn.thrpool = thr_pool;
+                conn.engine = engine;
+                conn.group = buf->group;
+                conn.id = buf->id;
+                conn.quota = buf->quota;
                 conn.filename = buf->dumpname;
-                conn.mode     = buf->mode;
-                conn.term     = buf->term;
+                conn.mode = buf->mode;
+                conn.term = buf->term;
 
                 /* Parse & dispatch command */
                 cmd = parse_dispatch_cmd(&conn, buf, &pos, &error, opts, readtimeout);
@@ -1761,7 +1761,7 @@ int recvloop(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigne
                         /* If concurrent database reload, we now need to free the old engine. */
                         cl_engine_free(engine);
                     }
-                    engine      = g_newengine;
+                    engine = g_newengine;
                     g_newengine = NULL;
                 } else {
                     logg(LOGG_WARNING, "Database reload failed, keeping the previous instance\n");

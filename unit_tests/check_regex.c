@@ -135,8 +135,8 @@ START_TEST(test_suffix)
     cl_error_t rc;
     regex_t *preg;
     const char *pattern = tests[_i][0];
-    size_t n            = 0;
-    const char **p      = tests[_i];
+    size_t n = 0;
+    const char **p = tests[_i];
 
     ck_assert_msg(!!pattern, "test pattern");
     preg = malloc(sizeof(*regex.preg));
@@ -291,7 +291,7 @@ START_TEST(regex_list_match_test)
     ck_assert_msg(is_regex_ok(&matcher), "is_regex_ok");
 
     realurl = cli_strdup(rtest->realurl);
-    rc      = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
+    rc = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
     ck_assert_msg(rc == rtest->result, "regex_list_match");
     /* regex_list_match is not supposed to modify realurl in this case */
     ck_assert_msg(!strcmp(realurl, rtest->realurl), "realurl altered");
@@ -331,7 +331,7 @@ static void psetup_impl(int load2)
         ck_assert_msg(!!f, "fopen daily.gdb");
 
         signo = 0;
-        rc    = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
+        rc = load_regex_matcher(engine, engine->domain_list_matcher, f, &signo, 0, 0, NULL, 1);
         ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
         fclose(f);
 
@@ -342,9 +342,9 @@ static void psetup_impl(int load2)
     rc = init_allow_list(engine);
     ck_assert_msg(rc == CL_SUCCESS, "init_allow_list");
 
-    f     = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
+    f = fdopen(open_testfile("input" PATHSEP "other_sigs" PATHSEP "daily.wdb", O_RDONLY | O_BINARY), "r");
     signo = 0;
-    rc    = load_regex_matcher(engine, engine->allow_list_matcher, f, &signo, 0, 1, NULL, 1);
+    rc = load_regex_matcher(engine, engine->allow_list_matcher, f, &signo, 0, 1, NULL, 1);
     ck_assert_msg(rc == CL_SUCCESS, "load_regex_matcher");
     fclose(f);
 
@@ -402,10 +402,10 @@ static void do_phishing_test(const struct rtest *rtest)
     ck_assert_msg(!!hrefs.contents, "cli_malloc");
     hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
     ck_assert_msg(!!hrefs.tag, "cli_malloc");
-    hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
+    hrefs.tag[0] = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
-    ctx.engine  = engine;
+    ctx.engine = engine;
     ctx.virname = &virname;
 
     rc = phishingScan(&ctx, &hrefs);
@@ -482,10 +482,10 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     ck_assert_msg(!!hrefs.contents, "cli_malloc");
     hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
     ck_assert_msg(!!hrefs.tag, "cli_malloc");
-    hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
+    hrefs.tag[0] = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
-    ctx.engine  = engine;
+    ctx.engine = engine;
     ctx.virname = &virname;
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
 
@@ -583,7 +583,7 @@ static struct uc {
 START_TEST(test_url_canon)
 {
     char urlbuff[1024 + 3];
-    char *host       = NULL;
+    char *host = NULL;
     const char *path = NULL;
     size_t host_len, path_len;
     struct uc *u = &uc[_i];
@@ -627,12 +627,12 @@ START_TEST(phishing_fake_test)
         struct rtest rtest;
         const char *pdb = strchr(buf, ':');
         ck_assert_msg(!!pdb, "missing : in pdb");
-        rtest.realurl    = pdb;
+        rtest.realurl = pdb;
         rtest.displayurl = pdb;
-        rtest.result     = RTR_CLEAN;
+        rtest.result = RTR_CLEAN;
         do_phishing_test(&rtest);
         rtest.realurl = "http://fake.example.com";
-        rtest.result  = 0;
+        rtest.result = 0;
         do_phishing_test(&rtest);
     }
     fclose(f);
@@ -648,12 +648,12 @@ START_TEST(phishing_fake_test_allscan)
         struct rtest rtest;
         const char *pdb = strchr(buf, ':');
         ck_assert_msg(!!pdb, "missing : in pdb");
-        rtest.realurl    = pdb;
+        rtest.realurl = pdb;
         rtest.displayurl = pdb;
-        rtest.result     = RTR_CLEAN;
+        rtest.result = RTR_CLEAN;
         do_phishing_test_allscan(&rtest);
         rtest.realurl = "http://fake.example.com";
-        rtest.result  = 0;
+        rtest.result = 0;
         do_phishing_test_allscan(&rtest);
     }
     fclose(f);

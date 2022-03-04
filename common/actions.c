@@ -145,14 +145,14 @@ static HANDLE win32_openat(
     LONG ntStatus;
     WCHAR *filenameW = NULL;
     UNICODE_STRING filenameU;
-    int cchNextDirectoryName        = 0;
-    IO_STATUS_BLOCK ioStatusBlock   = {0};
+    int cchNextDirectoryName = 0;
+    IO_STATUS_BLOCK ioStatusBlock = {0};
     OBJECT_ATTRIBUTES objAttributes = {0};
     FILE_ATTRIBUTE_TAG_INFO tagInfo = {0};
 
     /* Convert filename to a UNICODE_STRING, required by the native API NtCreateFile() */
     cchNextDirectoryName = MultiByteToWideChar(CP_UTF8, 0, filename, -1, NULL, 0);
-    filenameW            = malloc(cchNextDirectoryName * sizeof(WCHAR));
+    filenameW = malloc(cchNextDirectoryName * sizeof(WCHAR));
     if (NULL == filenameW) {
         logg(LOGG_INFO, "win32_openat: failed to allocate memory for next directory name UTF16LE string\n");
         goto done;
@@ -247,21 +247,21 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
     char *tokenized_directory = NULL;
 #ifndef _WIN32
     int current_handle = -1;
-    int next_handle    = -1;
+    int next_handle = -1;
 #else
     bool bNeedDeleteFileAccess = false;
 
-    HMODULE ntdll               = NULL;
-    PNTCF pNtCreateFile         = NULL;
+    HMODULE ntdll = NULL;
+    PNTCF pNtCreateFile = NULL;
     PRIUS pRtlInitUnicodeString = NULL;
 
     PHANDLE current_handle = NULL;
-    PHANDLE next_handle    = NULL;
+    PHANDLE next_handle = NULL;
 
     ACCESS_MASK desiredAccess = STANDARD_RIGHTS_READ | STANDARD_RIGHTS_WRITE | SYNCHRONIZE | FILE_READ_ATTRIBUTES | FILE_READ_EA;
-    ULONG fileAttributes      = FILE_ATTRIBUTE_DIRECTORY;
-    ULONG createOptions       = FILE_DIRECTORY_FILE | FILE_OPEN_REPARSE_POINT;
-    ULONG shareAccess         = FILE_SHARE_READ;
+    ULONG fileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+    ULONG createOptions = FILE_DIRECTORY_FILE | FILE_OPEN_REPARSE_POINT;
+    ULONG shareAccess = FILE_SHARE_READ;
 #endif
 
     if (NULL == directory || NULL == out_handle) {
@@ -333,40 +333,40 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
         }
         close(current_handle);
         current_handle = next_handle;
-        next_handle    = -1;
+        next_handle = -1;
 #else
         if (true != want_directory_handle) {
             if (i == tokens_count - 1) {
                 /* Change createfile options for our target file instead of an intermediate directory. */
-                desiredAccess  = FILE_GENERIC_READ | DELETE;
+                desiredAccess = FILE_GENERIC_READ | DELETE;
                 fileAttributes = FILE_ATTRIBUTE_NORMAL;
-                createOptions  = FILE_NON_DIRECTORY_FILE;
-                shareAccess    = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+                createOptions = FILE_NON_DIRECTORY_FILE;
+                shareAccess = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
             }
         }
         if (i == 0) {
             /* NtCreateFile requires the \???\ prefix on drive letters. Eg: \???\C:\ */
             size_t driveroot_len = strlen("\\??\\\\") + strlen(tokens[0]) + 1;
-            char *driveroot      = malloc(driveroot_len);
+            char *driveroot = malloc(driveroot_len);
             snprintf(driveroot, driveroot_len + 1, "\\??\\%s\\", tokens[0]);
             next_handle = win32_openat(current_handle,
-                                               driveroot,
-                                               pNtCreateFile,
-                                               pRtlInitUnicodeString,
-                                               desiredAccess,
-                                               fileAttributes,
-                                               createOptions,
-                                               shareAccess);
+                                       driveroot,
+                                       pNtCreateFile,
+                                       pRtlInitUnicodeString,
+                                       desiredAccess,
+                                       fileAttributes,
+                                       createOptions,
+                                       shareAccess);
             free(driveroot);
         } else {
             next_handle = win32_openat(current_handle,
-                                               tokens[i],
-                                               pNtCreateFile,
-                                               pRtlInitUnicodeString,
-                                               desiredAccess,
-                                               fileAttributes,
-                                               createOptions,
-                                               shareAccess);
+                                       tokens[i],
+                                       pNtCreateFile,
+                                       pRtlInitUnicodeString,
+                                       desiredAccess,
+                                       fileAttributes,
+                                       createOptions,
+                                       shareAccess);
         }
         if (NULL == next_handle) {
             logg(LOGG_INFO, "traverse_to: Failed open %s\n", tokens[i]);
@@ -374,12 +374,12 @@ static int traverse_to(const char *directory, bool want_directory_handle, HANDLE
         }
         CloseHandle(current_handle);
         current_handle = next_handle;
-        next_handle    = NULL;
+        next_handle = NULL;
 #endif
         logg(LOGG_DEBUG, "traverse_to: Handle opened for '%s' directory.\n", tokens[i]);
     }
 
-    status      = 0;
+    status = 0;
     *out_handle = current_handle;
 
 done:
@@ -416,13 +416,13 @@ static int traverse_rename(const char *source, const char *destination)
 #ifndef _WIN32
     cl_error_t ret;
     int source_directory_fd = -1;
-    char *source_basename   = NULL;
+    char *source_basename = NULL;
 #else
-    FILE_RENAME_INFO *fileInfo    = NULL;
-    HANDLE source_file_handle     = NULL;
+    FILE_RENAME_INFO *fileInfo = NULL;
+    HANDLE source_file_handle = NULL;
     HANDLE destination_dir_handle = NULL;
-    WCHAR *destFilepathW          = NULL;
-    int cchDestFilepath           = 0;
+    WCHAR *destFilepathW = NULL;
+    int cchDestFilepath = 0;
 #endif
 
     if (NULL == source || NULL == destination) {
@@ -460,7 +460,7 @@ static int traverse_rename(const char *source, const char *destination)
 #else
     /* Convert destination filepath to a PWCHAR */
     cchDestFilepath = MultiByteToWideChar(CP_UTF8, 0, destination, strlen(destination), NULL, 0);
-    destFilepathW   = calloc(cchDestFilepath * sizeof(WCHAR), 1);
+    destFilepathW = calloc(cchDestFilepath * sizeof(WCHAR), 1);
     if (NULL == destFilepathW) {
         logg(LOGG_INFO, "traverse_rename: failed to allocate memory for destination basename UTF16LE string\n");
         goto done;
@@ -477,7 +477,7 @@ static int traverse_rename(const char *source, const char *destination)
     }
 
     fileInfo->ReplaceIfExists = TRUE;
-    fileInfo->RootDirectory   = NULL;
+    fileInfo->RootDirectory = NULL;
     memcpy(fileInfo->FileName, destFilepathW, cchDestFilepath * sizeof(WCHAR));
     fileInfo->FileNameLength = cchDestFilepath;
     if (FALSE == SetFileInformationByHandle(
@@ -539,7 +539,7 @@ static int traverse_unlink(const char *target)
     int target_directory_fd = -1;
 #else
     FILE_DISPOSITION_INFO fileInfo = {0};
-    HANDLE target_file_handle      = NULL;
+    HANDLE target_file_handle = NULL;
 #endif
     char *target_basename = NULL;
 
@@ -610,10 +610,10 @@ done:
 
 static void action_move(const char *filename)
 {
-    char *nuname        = NULL;
+    char *nuname = NULL;
     char *real_filename = NULL;
-    int fd              = -1;
-    int copied          = 0;
+    int fd = -1;
+    int copied = 0;
 
     if (NULL == filename) {
         goto done;
@@ -709,7 +709,7 @@ int actsetup(const struct optstruct *opts)
         }
 #endif
         if (!isdir()) return 1;
-        action  = move ? action_move : action_copy;
+        action = move ? action_move : action_copy;
         targlen = strlen(actarget);
     } else if (optget(opts, "remove")->enabled)
         action = action_remove;

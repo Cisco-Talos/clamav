@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 {
     int fd, ret;
     unsigned long int size = 0;
-    unsigned int sigs      = 0;
+    unsigned int sigs = 0;
     long double mb;
     const char *virname;
     const char *filename;

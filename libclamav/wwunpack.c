@@ -189,12 +189,12 @@ cl_error_t wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_ex
                         if (bits) {
                             bits += 13;
                         } else {
-                            uint8_t cnt      = 4;
+                            uint8_t cnt = 4;
                             uint16_t shifted = 0x0d;
 
                             do {
                                 if (cnt == 7) {
-                                    cnt     = 0x0e;
+                                    cnt = 0x0e;
                                     shifted = 0;
                                     break;
                                 }

@@ -143,7 +143,7 @@ textCopy(const text *t_head)
             last = first = (text *)cli_malloc(sizeof(text));
         else {
             last->t_next = (text *)cli_malloc(sizeof(text));
-            last         = last->t_next;
+            last = last->t_next;
         }
 
         if (last == NULL) {
@@ -199,7 +199,7 @@ textAdd(text *t_head, const text *t)
 
     while (t) {
         t_head->t_next = (text *)cli_malloc(sizeof(text));
-        t_head         = t_head->t_next;
+        t_head = t_head->t_next;
 
         assert(t_head != NULL);
 
@@ -260,8 +260,8 @@ textMove(text *t_head, text *t)
         }
         t_head->t_line = t->t_line;
         t_head->t_next = t->t_next;
-        t->t_line      = NULL;
-        t->t_next      = NULL;
+        t->t_line = NULL;
+        t->t_next = NULL;
         return t_head;
     }
 
@@ -288,12 +288,12 @@ textMove(text *t_head, text *t)
 
     if (t->t_line) {
         t_head->t_line = t->t_line;
-        t->t_line      = NULL;
+        t->t_line = NULL;
     } else
         t_head->t_line = NULL;
 
     t_head->t_next = t->t_next;
-    t->t_next      = NULL;
+    t->t_next = NULL;
 
     return ret;
 }

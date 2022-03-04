@@ -182,7 +182,7 @@ static char* unrar_strndup(const char* s, size_t n)
         return NULL;
     }
 
-    len   = unrar_strnlen(s, n);
+    len = unrar_strnlen(s, n);
     alloc = (char*)malloc(len + 1);
 
     if (!alloc) {
@@ -197,8 +197,8 @@ static char* unrar_strndup(const char* s, size_t n)
 cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** comment, uint32_t* comment_size, uint8_t debug_flag)
 {
     struct RAROpenArchiveDataEx* archiveData = NULL;
-    HANDLE archiveHandle                     = NULL;
-    cl_unrar_error_t status                  = UNRAR_ERR;
+    HANDLE archiveHandle = NULL;
+    cl_unrar_error_t status = UNRAR_ERR;
 
     if (NULL == filename || NULL == hArchive || NULL == comment || NULL == comment_size) {
         unrar_dbgmsg("unrar_open: Invalid arguments.\n");
@@ -213,7 +213,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
         unrar_dbgmsg("unrar_open: Not enough memory to allocate main archive header data structure.\n");
         status = UNRAR_EMEM;
     }
-    archiveData->ArcName  = (char*)filename;
+    archiveData->ArcName = (char*)filename;
     archiveData->OpenMode = RAR_OM_EXTRACT;
     archiveData->OpFlags |= ROADOF_KEEPBROKEN;
     archiveData->CmtBuf = (char*)calloc(1, CMTBUFSIZE);
@@ -257,11 +257,11 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
 
     if (archiveData->CmtSize > 0) {
         *comment_size = MIN(archiveData->CmtSize, archiveData->CmtBufSize);
-        *comment      = unrar_strndup(archiveData->CmtBuf, *comment_size);
+        *comment = unrar_strndup(archiveData->CmtBuf, *comment_size);
         if (NULL == *comment) {
             unrar_dbgmsg("unrar_open: Error duplicating comment buffer.\n");
             *comment_size = 0;
-            status        = UNRAR_EMEM;
+            status = UNRAR_EMEM;
         }
     }
 
@@ -277,7 +277,7 @@ cl_unrar_error_t unrar_open(const char* filename, void** hArchive, char** commen
 
     unrar_dbgmsg("unrar_open: Opened archive: %s\n", filename);
     *hArchive = (void*)archiveHandle;
-    status    = UNRAR_OK;
+    status = UNRAR_OK;
 
 done:
 
@@ -321,11 +321,11 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
      * File header comments are not functional in unrar 5.6.5 and the struct member only exists for backwards compatibility.
      * The unrar user manual says to set headerData.CmtBuff = NULL, and headerData.CmtBufSize = 0.
      */
-    headerData.CmtBuf     = NULL;
+    headerData.CmtBuf = NULL;
     headerData.CmtBufSize = 0;
 
     headerData.RedirNameSize = 1024 * sizeof(wchar_t);
-    headerData.RedirName     = (wchar_t*)&RedirName;
+    headerData.RedirName = (wchar_t*)&RedirName;
     memset(headerData.RedirName, 0, headerData.RedirNameSize);
 
     read_header_ret = RARReadHeaderEx(hArchive, &headerData);
@@ -335,12 +335,12 @@ cl_unrar_error_t unrar_peek_file_header(void* hArchive, unrar_metadata_t* file_m
     }
 
     file_metadata->unpack_size = headerData.UnpSize + ((int64_t)headerData.UnpSizeHigh << 32);
-    file_metadata->pack_size   = headerData.PackSize + ((int64_t)headerData.PackSizeHigh << 32);
-    file_metadata->filename    = unrar_strndup(headerData.FileName, 1024);
-    file_metadata->crc         = headerData.FileCRC;
-    file_metadata->encrypted   = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
-    file_metadata->is_dir      = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
-    file_metadata->method      = headerData.Method;
+    file_metadata->pack_size = headerData.PackSize + ((int64_t)headerData.PackSizeHigh << 32);
+    file_metadata->filename = unrar_strndup(headerData.FileName, 1024);
+    file_metadata->crc = headerData.FileCRC;
+    file_metadata->encrypted = (headerData.Flags & RHDF_ENCRYPTED) ? 1 : 0;
+    file_metadata->is_dir = (headerData.Flags & RHDF_DIRECTORY) ? 1 : 0;
+    file_metadata->method = headerData.Method;
 
     unrar_dbgmsg("unrar_peek_file_header:   Name:          %s\n", headerData.FileName);
     unrar_dbgmsg("unrar_peek_file_header:   Directory?:    %u\n", file_metadata->is_dir);
@@ -372,7 +372,7 @@ done:
 cl_unrar_error_t unrar_extract_file(void* hArchive, const char* destPath, char* outputBuffer)
 {
     cl_unrar_error_t status = UNRAR_ERR;
-    int process_file_ret    = 0;
+    int process_file_ret = 0;
 
     if (NULL == hArchive || NULL == destPath) {
         unrar_dbgmsg("unrar_extract_file: Invalid arguments.\n");
@@ -408,7 +408,7 @@ done:
 cl_unrar_error_t unrar_skip_file(void* hArchive)
 {
     cl_unrar_error_t status = UNRAR_ERR;
-    int process_file_ret    = 0;
+    int process_file_ret = 0;
 
     if (NULL == hArchive) {
         unrar_dbgmsg("unrar_skip_file: Invalid arguments.\n");

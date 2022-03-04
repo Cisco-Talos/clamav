@@ -137,18 +137,18 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 
     /* Initialize mprintf options */
     if (fcConfig->msgFlags & FC_CONFIG_MSG_DEBUG) cl_debug();
-    mprintf_verbose  = (fcConfig->msgFlags & FC_CONFIG_MSG_VERBOSE) ? 1 : 0;
-    mprintf_quiet    = (fcConfig->msgFlags & FC_CONFIG_MSG_QUIET) ? 1 : 0;
-    mprintf_nowarn   = (fcConfig->msgFlags & FC_CONFIG_MSG_NOWARN) ? 1 : 0;
-    mprintf_stdout   = (fcConfig->msgFlags & FC_CONFIG_MSG_STDOUT) ? 1 : 0;
+    mprintf_verbose = (fcConfig->msgFlags & FC_CONFIG_MSG_VERBOSE) ? 1 : 0;
+    mprintf_quiet = (fcConfig->msgFlags & FC_CONFIG_MSG_QUIET) ? 1 : 0;
+    mprintf_nowarn = (fcConfig->msgFlags & FC_CONFIG_MSG_NOWARN) ? 1 : 0;
+    mprintf_stdout = (fcConfig->msgFlags & FC_CONFIG_MSG_STDOUT) ? 1 : 0;
     mprintf_progress = (fcConfig->msgFlags & FC_CONFIG_MSG_SHOWPROGRESS) ? 1 : 0;
 
     /* Initialize logger */
     logg_verbose = (fcConfig->logFlags & FC_CONFIG_LOG_VERBOSE) ? 1 : 0;
-    logg_nowarn  = (fcConfig->logFlags & FC_CONFIG_LOG_NOWARN) ? 1 : 0;
-    logg_time    = (fcConfig->logFlags & FC_CONFIG_LOG_TIME) ? 1 : 0;
-    logg_rotate  = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
-    logg_size    = fcConfig->maxLogSize;
+    logg_nowarn = (fcConfig->logFlags & FC_CONFIG_LOG_NOWARN) ? 1 : 0;
+    logg_time = (fcConfig->logFlags & FC_CONFIG_LOG_TIME) ? 1 : 0;
+    logg_rotate = (fcConfig->logFlags & FC_CONFIG_LOG_ROTATE) ? 1 : 0;
+    logg_size = fcConfig->maxLogSize;
     /* Set a log file if requested, and is not already set */
     if ((NULL == logg_file) && (NULL != fcConfig->logFile)) {
         logg_file = cli_strdup(fcConfig->logFile);
@@ -244,7 +244,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 
     g_tempDirectory = cli_strdup(fcConfig->tempDirectory);
 
-    g_maxAttempts    = fcConfig->maxAttempts;
+    g_maxAttempts = fcConfig->maxAttempts;
     g_connectTimeout = fcConfig->connectTimeout;
     g_requestTimeout = fcConfig->requestTimeout;
 
@@ -409,9 +409,9 @@ int version_string_compare(char *v1, size_t v1_len, char *v2, size_t v2_len)
 
 fc_error_t fc_test_database(const char *dbFilename, int bBytecodeEnabled)
 {
-    fc_error_t status        = FC_EARG;
+    fc_error_t status = FC_EARG;
     struct cl_engine *engine = NULL;
-    unsigned newsigs         = 0;
+    unsigned newsigs = 0;
     cl_error_t cl_ret;
 
     if ((NULL == dbFilename)) {
@@ -466,7 +466,7 @@ fc_error_t fc_dns_query_update_info(
     char **newVersion)
 {
     fc_error_t status = FC_EFAILEDGET;
-    char *dnsReply    = NULL;
+    char *dnsReply = NULL;
 
 #ifdef HAVE_RESOLV_H
     unsigned int ttl;
@@ -484,7 +484,7 @@ fc_error_t fc_dns_query_update_info(
     }
 
     *dnsUpdateInfo = NULL;
-    *newVersion    = NULL;
+    *newVersion = NULL;
 
 #ifdef HAVE_RESOLV_H
 
@@ -599,8 +599,8 @@ fc_error_t fc_update_database(
     fc_error_t status = FC_EARG;
 
     char *dbFilename = NULL;
-    int signo        = 0;
-    long attempt     = 1;
+    int signo = 0;
+    long attempt = 1;
     uint32_t i;
 
     if ((NULL == database) || (NULL == serverList) || (NULL == bUpdated)) {
@@ -750,7 +750,7 @@ fc_error_t fc_update_databases(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
     uint32_t i;
-    int bUpdated        = 0;
+    int bUpdated = 0;
     uint32_t numUpdated = 0;
 
     if ((NULL == databaseList) || (0 == nDatabases) || (NULL == serverList) || (NULL == nUpdated)) {
@@ -813,7 +813,7 @@ fc_error_t fc_update_databases(
     }
 
     *nUpdated = numUpdated;
-    status    = FC_SUCCESS;
+    status = FC_SUCCESS;
 
 done:
 
@@ -828,7 +828,7 @@ fc_error_t fc_download_url_database(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    long attempt     = 1;
+    long attempt = 1;
     char *dbFilename = NULL;
 
     if ((NULL == urlDatabase) || (NULL == bUpdated)) {
@@ -960,8 +960,8 @@ fc_error_t fc_download_url_databases(
     uint32_t *nUpdated)
 {
     fc_error_t ret;
-    fc_error_t status   = FC_EARG;
-    int bUpdated        = 0;
+    fc_error_t status = FC_EARG;
+    int bUpdated = 0;
     uint32_t numUpdated = 0;
     uint32_t i;
 
@@ -987,7 +987,7 @@ fc_error_t fc_download_url_databases(
     }
 
     *nUpdated = numUpdated;
-    status    = FC_SUCCESS;
+    status = FC_SUCCESS;
 
 done:
 

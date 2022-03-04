@@ -92,7 +92,7 @@ static cl_error_t serial_callback(STATBUF *sb, char *filename, const char *path,
 
     struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
-    const char *f       = filename;
+    const char *f = filename;
     char *real_filename = NULL;
 
     UNUSEDPARAM(sb);
@@ -178,11 +178,11 @@ int serial_client_scan(char *file, int scantype, int *infected, int *err, int ma
     int ftw;
 
     cdata.infected = 0;
-    cdata.files    = 0;
-    cdata.errors   = 0;
-    cdata.printok  = printinfected ^ 1;
+    cdata.files = 0;
+    cdata.errors = 0;
+    cdata.printok = printinfected ^ 1;
     cdata.scantype = scantype;
-    data.data      = &cdata;
+    data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data, ftw_chkpath);
     *infected += cdata.infected;
@@ -278,8 +278,8 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
     cl_error_t status = CL_EOPEN;
 
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
-    struct SCANID *cid             = NULL;
-    int res                        = CL_CLEAN;
+    struct SCANID *cid = NULL;
+    int res = CL_CLEAN;
 
     char *real_filename = NULL;
 
@@ -378,10 +378,10 @@ static cl_error_t parallel_callback(STATBUF *sb, char *filename, const char *pat
         goto done;
     }
 
-    cid->id   = ++c->lastid;
+    cid->id = ++c->lastid;
     cid->file = filename;
     cid->next = c->ids;
-    c->ids    = cid;
+    c->ids = cid;
 
     /* Give up ownership of the filename to the client parralel scan ID list */
     filename = NULL;
@@ -403,7 +403,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     struct client_parallel_data cdata;
     int ftw;
     const char zIDSESSION[] = "zIDSESSION";
-    const char zEND[]       = "zEND";
+    const char zEND[] = "zEND";
 
     if ((cdata.sockd = dconnect(clamdopts)) < 0)
         return 1;
@@ -414,13 +414,13 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *err, int 
     }
 
     cdata.infected = 0;
-    cdata.files    = 0;
-    cdata.errors   = 0;
+    cdata.files = 0;
+    cdata.errors = 0;
     cdata.scantype = scantype;
-    cdata.lastid   = 0;
-    cdata.ids      = NULL;
-    cdata.printok  = printinfected ^ 1;
-    data.data      = &cdata;
+    cdata.lastid = 0;
+    cdata.ids = NULL;
+    cdata.printok = printinfected ^ 1;
+    data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data, ftw_chkpath);
 

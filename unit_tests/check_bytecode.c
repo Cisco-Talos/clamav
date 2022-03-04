@@ -81,7 +81,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cctx.dconf = cctx.engine->dconf;
 
     cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-    cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+    cctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
     ck_assert_msg(!!cctx.recursion_stack, "cli_calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.
@@ -103,7 +103,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     }
 
     bcs.all_bcs = &bc;
-    bcs.count   = 1;
+    bcs.count = 1;
 
     rc = cli_bytecode_load(&bc, f, NULL, 1, 0);
     ck_assert_msg(rc == CL_SUCCESS, "cli_bytecode_load failed");
@@ -119,7 +119,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
         ck_assert_msg(bc.state == bc_jit, "preparing for JIT failed");
     }
 
-    ctx                   = cli_bytecode_context_alloc();
+    ctx = cli_bytecode_context_alloc();
     ctx->bytecode_timeout = fail == CL_ETIMEOUT ? 10 : 10000;
     ck_assert_msg(!!ctx, "cli_bytecode_context_alloc failed");
 
@@ -270,16 +270,16 @@ START_TEST(test_matchwithread_jit)
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
     cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
-    pedata.hdr_size  = 0x400;
+    pedata.hdr_size = 0x400;
     pedata.nsections = 1;
-    sect.rva         = 4096;
-    sect.vsz         = 4096;
-    sect.raw         = 0;
-    sect.rsz         = 512;
-    sect.urva        = 4096;
-    sect.uvsz        = 4096;
-    sect.uraw        = 1;
-    sect.ursz        = 512;
+    sect.rva = 4096;
+    sect.vsz = 4096;
+    sect.raw = 0;
+    sect.rsz = 512;
+    sect.urva = 4096;
+    sect.uvsz = 4096;
+    sect.uraw = 1;
+    sect.ursz = 512;
     runtest("input" PATHSEP "bytecode_sigs" PATHSEP "matchwithread.cbc", 0, 0, 0,
             "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe",
             &pedata, &sect, "ClamAV-Test-File-detected-via-bytecode", 0);
@@ -294,16 +294,16 @@ START_TEST(test_matchwithread_int)
     memset(&pedata, 0, sizeof(pedata));
     pedata.ep = 64;
     cli_writeint32(&pedata.opt32.ImageBase, 0x400000);
-    pedata.hdr_size  = 0x400;
+    pedata.hdr_size = 0x400;
     pedata.nsections = 1;
-    sect.rva         = 4096;
-    sect.vsz         = 4096;
-    sect.raw         = 0;
-    sect.rsz         = 512;
-    sect.urva        = 4096;
-    sect.uvsz        = 4096;
-    sect.uraw        = 1;
-    sect.ursz        = 512;
+    sect.rva = 4096;
+    sect.vsz = 4096;
+    sect.raw = 0;
+    sect.rsz = 512;
+    sect.urva = 4096;
+    sect.uvsz = 4096;
+    sect.uraw = 1;
+    sect.ursz = 512;
     runtest("input" PATHSEP "bytecode_sigs" PATHSEP "matchwithread.cbc", 0, 0, 1,
             "input" PATHSEP "clamav_hdb_scanfiles" PATHSEP "clam.exe",
             &pedata, &sect, "ClamAV-Test-File-detected-via-bytecode", 0);
@@ -539,7 +539,7 @@ START_TEST(test_load_bytecode_int)
 {
     struct cl_engine *engine;
     cl_init(CL_INIT_DEFAULT);
-    engine                  = cl_engine_new();
+    engine = cl_engine_new();
     engine->dconf->bytecode = BYTECODE_INTERPRETER;
     ck_assert_msg(!!engine, "failed to create engine\n");
 
@@ -592,7 +592,7 @@ END_TEST
 
 Suite *test_bytecode_suite(void)
 {
-    Suite *s            = suite_create("bytecode");
+    Suite *s = suite_create("bytecode");
     TCase *tc_cli_arith = tcase_create("arithmetic");
     suite_add_tcase(s, tc_cli_arith);
     tcase_set_timeout(tc_cli_arith, 20);

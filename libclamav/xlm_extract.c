@@ -3620,91 +3620,91 @@ char *TOKENS[] = {
 // clang-format on
 
 typedef enum ptg_expr {
-    ptgExp        = 0x01,
-    ptgTbl        = 0x02,
-    ptgAdd        = 0x03,
-    ptgSub        = 0x04,
-    ptgMul        = 0x05,
-    ptgDiv        = 0x06,
-    ptgPower      = 0x07,
-    ptgConcat     = 0x08,
-    ptgLt         = 0x09,
-    ptgLe         = 0x0A,
-    ptgEq         = 0x0B,
-    ptgGe         = 0x0C,
-    ptgGt         = 0x0D,
-    ptgNe         = 0x0E,
-    ptgIsect      = 0x0F,
-    ptgUnion      = 0x10,
-    ptgRange      = 0x11,
-    ptgUplus      = 0x12,
-    ptgUminus     = 0x13,
-    ptgPercent    = 0x14,
-    ptgParen      = 0x15,
-    ptgMissArg    = 0x16,
-    ptgStr        = 0x17,
-    ptgEscape1    = 0x18,
-    ptgAttr       = 0x19,
-    ptgErr        = 0x1C,
-    ptgBool       = 0x1D,
-    ptgInt        = 0x1E,
-    ptgNum        = 0x1F,
-    ptgArray      = 0x20,
-    ptgFunc       = 0x21,
-    ptgFuncVar    = 0x22,
-    ptgName       = 0x23,
-    ptgRef        = 0x24,
-    ptgArea       = 0x25,
-    ptgMemArea    = 0x26,
-    ptgMemErr     = 0x27,
-    ptgMemNoMem   = 0x28,
-    ptgMemFunc    = 0x29,
-    ptgRefErr     = 0x2A,
-    ptgAreaErr    = 0x2B,
-    ptgRefN       = 0x2C,
-    ptgAreaN      = 0x2D,
-    ptgNameX      = 0x39,
-    ptgRef3d      = 0x3A,
-    ptgArea3d     = 0x3B,
-    ptgRefErr3d   = 0x3C,
-    ptgAreaErr3d  = 0x3D,
-    ptgArrayV     = 0x40,
-    ptgFuncV      = 0x41,
-    ptgFuncVarV   = 0x42,
-    ptgNameV      = 0x43,
-    ptgRefV       = 0x44,
-    ptgAreaV      = 0x45,
-    ptgMemAreaV   = 0x46,
-    ptgMemErrV    = 0x47,
-    ptgMemNoMemV  = 0x48,
-    ptgMemFuncV   = 0x49,
-    ptgRefErrV    = 0x4A,
-    ptgAreaErrV   = 0x4B,
-    ptgRefNV      = 0x4C,
-    ptgAreaNV     = 0x4D,
-    ptgNameXV     = 0x59,
-    ptgRef3dV     = 0x5A,
-    ptgArea3dV    = 0x5B,
-    ptgRefErr3dV  = 0x5C,
+    ptgExp = 0x01,
+    ptgTbl = 0x02,
+    ptgAdd = 0x03,
+    ptgSub = 0x04,
+    ptgMul = 0x05,
+    ptgDiv = 0x06,
+    ptgPower = 0x07,
+    ptgConcat = 0x08,
+    ptgLt = 0x09,
+    ptgLe = 0x0A,
+    ptgEq = 0x0B,
+    ptgGe = 0x0C,
+    ptgGt = 0x0D,
+    ptgNe = 0x0E,
+    ptgIsect = 0x0F,
+    ptgUnion = 0x10,
+    ptgRange = 0x11,
+    ptgUplus = 0x12,
+    ptgUminus = 0x13,
+    ptgPercent = 0x14,
+    ptgParen = 0x15,
+    ptgMissArg = 0x16,
+    ptgStr = 0x17,
+    ptgEscape1 = 0x18,
+    ptgAttr = 0x19,
+    ptgErr = 0x1C,
+    ptgBool = 0x1D,
+    ptgInt = 0x1E,
+    ptgNum = 0x1F,
+    ptgArray = 0x20,
+    ptgFunc = 0x21,
+    ptgFuncVar = 0x22,
+    ptgName = 0x23,
+    ptgRef = 0x24,
+    ptgArea = 0x25,
+    ptgMemArea = 0x26,
+    ptgMemErr = 0x27,
+    ptgMemNoMem = 0x28,
+    ptgMemFunc = 0x29,
+    ptgRefErr = 0x2A,
+    ptgAreaErr = 0x2B,
+    ptgRefN = 0x2C,
+    ptgAreaN = 0x2D,
+    ptgNameX = 0x39,
+    ptgRef3d = 0x3A,
+    ptgArea3d = 0x3B,
+    ptgRefErr3d = 0x3C,
+    ptgAreaErr3d = 0x3D,
+    ptgArrayV = 0x40,
+    ptgFuncV = 0x41,
+    ptgFuncVarV = 0x42,
+    ptgNameV = 0x43,
+    ptgRefV = 0x44,
+    ptgAreaV = 0x45,
+    ptgMemAreaV = 0x46,
+    ptgMemErrV = 0x47,
+    ptgMemNoMemV = 0x48,
+    ptgMemFuncV = 0x49,
+    ptgRefErrV = 0x4A,
+    ptgAreaErrV = 0x4B,
+    ptgRefNV = 0x4C,
+    ptgAreaNV = 0x4D,
+    ptgNameXV = 0x59,
+    ptgRef3dV = 0x5A,
+    ptgArea3dV = 0x5B,
+    ptgRefErr3dV = 0x5C,
     ptgAreaErr3dV = 0x5D,
-    ptgArrayA     = 0x60,
-    ptgFuncA      = 0x61,
-    ptgFuncVarA   = 0x62,
-    ptgNameA      = 0x63,
-    ptgRefA       = 0x64,
-    ptgAreaA      = 0x65,
-    ptgMemAreaA   = 0x66,
-    ptgMemErrA    = 0x67,
-    ptgMemNoMemA  = 0x68,
-    ptgMemFuncA   = 0x69,
-    ptgRefErrA    = 0x6A,
-    ptgAreaErrA   = 0x6B,
-    ptgRefNA      = 0x6C,
-    ptgAreaNA     = 0x6D,
-    ptgNameXA     = 0x79,
-    ptgRef3dA     = 0x7A,
-    ptgArea3dA    = 0x7B,
-    ptgRefErr3dA  = 0x7C,
+    ptgArrayA = 0x60,
+    ptgFuncA = 0x61,
+    ptgFuncVarA = 0x62,
+    ptgNameA = 0x63,
+    ptgRefA = 0x64,
+    ptgAreaA = 0x65,
+    ptgMemAreaA = 0x66,
+    ptgMemErrA = 0x67,
+    ptgMemNoMemA = 0x68,
+    ptgMemFuncA = 0x69,
+    ptgRefErrA = 0x6A,
+    ptgAreaErrA = 0x6B,
+    ptgRefNA = 0x6C,
+    ptgAreaNA = 0x6D,
+    ptgNameXA = 0x79,
+    ptgRef3dA = 0x7A,
+    ptgArea3dA = 0x7B,
+    ptgRefErr3dA = 0x7C,
     ptgAreaErr3dA = 0x7D,
 
 } ptg_expr;
@@ -3767,15 +3767,15 @@ struct OfficeArtRecordHeader_Unpacked {
 } __attribute__((packed));
 
 typedef enum {
-    msoblip_ERROR    = 0x00, // Error reading the file.
-    msoblip_UNKNOWN  = 0x01, // Unknown BLIPtype.
-    msoblip_EMF      = 0x02, // EMF.
-    msoblip_WMF      = 0x03, // WMF.
-    msoblip_PICT     = 0x04, // Macintosh PICT.
-    msoblip_JPEG     = 0x05, // JPEG.
-    msoblip_PNG      = 0x06, // PNG.
-    msoblip_DIB      = 0x07, // DIB
-    msoblip_TIFF     = 0x11, // TIFF
+    msoblip_ERROR = 0x00,    // Error reading the file.
+    msoblip_UNKNOWN = 0x01,  // Unknown BLIPtype.
+    msoblip_EMF = 0x02,      // EMF.
+    msoblip_WMF = 0x03,      // WMF.
+    msoblip_PICT = 0x04,     // Macintosh PICT.
+    msoblip_JPEG = 0x05,     // JPEG.
+    msoblip_PNG = 0x06,      // PNG.
+    msoblip_DIB = 0x07,      // DIB
+    msoblip_TIFF = 0x11,     // TIFF
     msoblip_CMYKJPEG = 0x12, // JPEG in the YCCK or CMYK color space.
 } mso_blip_type;
 
@@ -3805,10 +3805,10 @@ read_office_art_record_header(const unsigned char *data, size_t data_len, struct
 
     recVerAndInstance = le16_to_host(rawHeader->recVerAndInstance);
 
-    unpacked_header->recVer      = recVerAndInstance & 0x000F;
+    unpacked_header->recVer = recVerAndInstance & 0x000F;
     unpacked_header->recInstance = (recVerAndInstance & 0xFFF0) >> 4;
-    unpacked_header->recType     = le16_to_host(rawHeader->recType);
-    unpacked_header->recLen      = le32_to_host(rawHeader->recLen);
+    unpacked_header->recType = le16_to_host(rawHeader->recType);
+    unpacked_header->recLen = le32_to_host(rawHeader->recLen);
 
     cli_dbgmsg("read_office_art_record_header: office art record:\n");
     cli_dbgmsg("read_office_art_record_header:   recVer       0x%x\n", unpacked_header->recVer);
@@ -3875,7 +3875,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                 }
 
                 if (data[data_pos + 2] == 1 && data_pos + 2 + 2 * data[data_pos + 1] <= data_size) {
-                    char *utf8       = NULL;
+                    char *utf8 = NULL;
                     size_t utf8_size = 0;
                     // TODO: Is this really times two here? Or is the string length in bytes?
                     size_t str_len = data[data_pos + 1] * 2;
@@ -3981,7 +3981,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                uint16_t func_id      = data[data_pos + 1] | (data[data_pos + 2] << 8);
+                uint16_t func_id = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 const char *func_name = get_function_name(func_id);
 
                 len = fprintf(out_file, " %s (0x%04x)", func_name == NULL ? "<unknown function>" : func_name, func_id);
@@ -4001,7 +4001,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                uint16_t func_id      = data[data_pos + 2] | (data[data_pos + 3] << 8);
+                uint16_t func_id = data[data_pos + 2] | (data[data_pos + 3] << 8);
                 const char *func_name = get_function_name(func_id);
 
                 len = fprintf(
@@ -4075,7 +4075,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     cli_dbgmsg("[cli_extract_xlm_macros_and_images:parse_formula] Malformed ptgExp record\n");
                     goto done;
                 }
-                uint16_t row    = data[data_pos + 1] | (data[data_pos + 2] << 8);
+                uint16_t row = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 uint16_t column = data[data_pos + 3] | (data[data_pos + 4] << 8);
 
                 len = fprintf(out_file, " R%uC%u", (unsigned)(row + 1), (unsigned)(column + 1));
@@ -4094,7 +4094,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                uint16_t row    = data[data_pos + 1] | (data[data_pos + 2] << 8);
+                uint16_t row = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 uint16_t column = data[data_pos + 3] | (data[data_pos + 4] << 8);
 
                 len = fprintf(
@@ -4117,9 +4117,9 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                uint16_t row1    = data[data_pos + 1] | (data[data_pos + 2] << 8);
+                uint16_t row1 = data[data_pos + 1] | (data[data_pos + 2] << 8);
                 uint16_t column1 = data[data_pos + 3] | (data[data_pos + 4] << 8);
-                uint16_t row2    = data[data_pos + 5] | (data[data_pos + 6] << 8);
+                uint16_t row2 = data[data_pos + 5] | (data[data_pos + 6] << 8);
                 uint16_t column2 = data[data_pos + 7] | (data[data_pos + 8] << 8);
 
                 len = fprintf(
@@ -4148,7 +4148,7 @@ static cl_error_t parse_formula(FILE *out_file, char data[], unsigned data_size)
                     goto done;
                 }
 
-                uint16_t row    = data[data_pos + 3] | (data[data_pos + 4] << 8);
+                uint16_t row = data[data_pos + 3] | (data[data_pos + 4] << 8);
                 uint16_t column = data[data_pos + 5] | (data[data_pos + 6] << 8);
 
                 len = fprintf(
@@ -4218,12 +4218,12 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
     bool virus_found = false;
 
     char *extracted_image_filepath = NULL;
-    int extracted_image_tempfd     = -1;
+    int extracted_image_tempfd = -1;
 
-    size_t blip_bytes_before_image      = 0; /* the number of bytes between the record header and the image */
+    size_t blip_bytes_before_image = 0; /* the number of bytes between the record header and the image */
     const unsigned char *start_of_image = NULL;
-    size_t size_of_image                = 0;
-    const char *extracted_image_type    = NULL;
+    size_t size_of_image = 0;
+    const char *extracted_image_type = NULL;
 
     if (0x0 != rh->recVer) {
         cli_dbgmsg("process_blip_store_container: Invalid recVer for Blip record header: %u\n", rh->recVer);
@@ -4328,7 +4328,7 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
 
     } else {
         start_of_image = index + sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image;
-        size_of_image  = MIN(rh->recLen, remaining - (sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image));
+        size_of_image = MIN(rh->recLen, remaining - (sizeof(struct OfficeArtRecordHeader_PackedLittleEndian) + blip_bytes_before_image));
 
         cli_dbgmsg("Scanning extracted image of size %zu\n", size_of_image);
 
@@ -4403,7 +4403,7 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
 
     struct OfficeArtRecordHeader_Unpacked rh;
     const unsigned char *index = blip_store_container;
-    size_t remaining           = blip_store_container_len;
+    size_t remaining = blip_store_container_len;
 
     while (0 < remaining) {
 
@@ -4440,7 +4440,7 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
                     struct OfficeArtRecordHeader_Unpacked embeddedBlip_rh;
                     const unsigned char *embeddedBlip;
                     size_t embeddedBlip_size;
-                    char *blip_file_name       = NULL;
+                    char *blip_file_name = NULL;
                     char blip_name_buffer[255] = {0};
 
                     if (FBSE_record_data->cbName > 0) {
@@ -4532,7 +4532,7 @@ cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggro
 
     struct OfficeArtRecordHeader_Unpacked rh;
     const unsigned char *index = drawinggroup;
-    size_t remaining           = drawinggroup_len;
+    size_t remaining = drawinggroup_len;
 
     if (NULL == drawinggroup || 0 == drawinggroup_len) {
         cli_dbgmsg("cli_extract_images_from_drawing_group: Invalid arguments\n");
@@ -4590,7 +4590,7 @@ cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggro
              * See section 2.2.20 OfficeArtBStoreContainer in:
              * https://interoperability.blob.core.windows.net/files/MS-ODRAW/%5bMS-ODRAW%5d.pdf */
             const unsigned char *start_of_blip_store_container = index + sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
-            size_t blip_store_container_len                    = remaining - sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
+            size_t blip_store_container_len = remaining - sizeof(struct OfficeArtRecordHeader_PackedLittleEndian);
 
             cli_dbgmsg("cli_extract_images_from_drawing_group: Found an OfficeArtBStoreContainerFileBlock (Blip store).\n");
             cli_dbgmsg("cli_extract_images_from_drawing_group:   size: %u bytes, contains: %u file block records\n",
@@ -4639,7 +4639,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     cl_error_t ret = CL_SUCCESS;
     const char *opcode_name;
     char *tempfile = NULL;
-    char *data     = NULL;
+    char *data = NULL;
     int len;
     size_t size_written;
     size_t size_read;
@@ -4650,7 +4650,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     const char FILE_HEADER[] = "-- BIFF content extracted and disassembled from CL_TYPE_MSXL .xls file because a XLM macro was found in the document\n";
 
     unsigned char *drawinggroup = NULL;
-    size_t drawinggroup_len     = 0;
+    size_t drawinggroup_len = 0;
 
     biff8_opcode previous_biff8_opcode = 0x0; // Initialize to 0x0, which isn't even in our enum.
                                               // This variable will allow the OPC_CONTINUE record
@@ -4658,7 +4658,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     snprintf(fullname, sizeof(fullname), "%s" PATHSEP "%s_%u", dir, hash, which);
     fullname[sizeof(fullname) - 1] = '\0';
-    in_fd                          = open(fullname, O_RDONLY | O_BINARY);
+    in_fd = open(fullname, O_RDONLY | O_BINARY);
 
     if (in_fd == -1) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to open input file\n");
@@ -4732,7 +4732,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 } formula_header;
 
                 if (biff_header.length >= 21) {
-                    formula_header.row    = data[0] | (data[1] << 8);
+                    formula_header.row = data[0] | (data[1] << 8);
                     formula_header.column = data[2] | (data[3] << 8);
                     formula_header.length = data[20] | (data[21] << 8);
 
@@ -4781,9 +4781,9 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
                         len = fprintf(out_file, " - built-in-name %u %s", (unsigned)code, name);
                     } else {
-                        int name_len  = data[3] | (data[4] << 8);
+                        int name_len = data[3] | (data[4] << 8);
                         size_t offset = data[14] != 0 ? 14 : 15;
-                        name_len      = min(name_len, (int)(biff_header.length - offset));
+                        name_len = min(name_len, (int)(biff_header.length - offset));
 
                         len = fprintf(out_file, " - %.*s", name_len, &data[offset]);
                     }
@@ -4808,7 +4808,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 if (NULL == drawinggroup) {
                     /* Found beginning of a drawing group */
                     drawinggroup_len = (size_t)biff_header.length;
-                    drawinggroup     = malloc(drawinggroup_len);
+                    drawinggroup = malloc(drawinggroup_len);
                     memcpy(drawinggroup, data, drawinggroup_len);
                     // cli_dbgmsg("Collected %zu drawing group bytes\n", drawinggroup_len);
 
@@ -4901,7 +4901,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                 // Page 17: Unicode Strings in BIFF8
                 if (biff_header.length >= 4) {
                     uint16_t string_length = data[0] | (data[1] << 8);
-                    uint8_t flags          = data[2];
+                    uint8_t flags = data[2];
 
                     if (flags & 0x4) {
                         cli_dbgmsg("[cli_extract_xlm_macros_and_images] East Asian extended strings not implemented\n");
@@ -4921,7 +4921,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                             break;
                         }
                     } else {
-                        char *utf8       = NULL;
+                        char *utf8 = NULL;
                         size_t utf8_size = 0;
 
                         len = fprintf(out_file, " - ");

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
     if (optget(opts, "verbose")->enabled) {
         mprintf_verbose = 1;
-        logg_verbose    = 1;
+        logg_verbose = 1;
     }
 
     if (optget(opts, "quiet")->enabled)
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 
         date_end = time(NULL);
         gettimeofday(&t2, NULL);
-        ds  = t2.tv_sec - t1.tv_sec;
+        ds = t2.tv_sec - t1.tv_sec;
         dms = t2.tv_usec - t1.tv_usec;
         ds -= (dms < 0) ? (1) : (0);
         dms += (dms < 0) ? (1000000) : (0);

@@ -138,9 +138,9 @@ static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
     {                                                                       \
         free_code = CODE_FIRST;                                             \
         free_entp = state->dec_codetab + CODE_FIRST;                        \
-        nbits     = BITS_MIN;                                               \
+        nbits = BITS_MIN;                                                   \
         nbitsmask = MAXCODE(BITS_MIN);                                      \
-        maxcodep  = state->dec_codetab + nbitsmask - 1;                     \
+        maxcodep = state->dec_codetab + nbitsmask - 1;                      \
         while (code == CODE_CLEAR) /* clears out consecutive CODE_CLEARs */ \
             GetNextCode(code);                                              \
         if (code < CODE_BASIC)                                              \
@@ -150,7 +150,7 @@ static void dict_print(code_t *codetab, uint16_t start, uint16_t maxcode);
         else if (code >= CODE_FIRST) {                                      \
             /* cannot reference unpopulated dictionary entries */           \
             strm->msg = "cannot reference unpopulated dictionary entries";  \
-            ret       = LZW_DATA_ERROR;                                     \
+            ret = LZW_DATA_ERROR;                                           \
         }                                                                   \
         oldcodep = state->dec_codetab + code;                               \
     }
@@ -167,7 +167,7 @@ int lzwInit(lzw_streamp strm)
     }
 
     /* general state setup */
-    state->nbits    = BITS_MIN;
+    state->nbits = BITS_MIN;
     state->nextdata = 0;
     state->nextbits = 0;
 
@@ -180,17 +180,17 @@ int lzwInit(lzw_streamp strm)
     }
 
     for (code = 0; code < CODE_BASIC; code++) {
-        state->dec_codetab[code].next      = NULL;
-        state->dec_codetab[code].length    = 1;
-        state->dec_codetab[code].value     = code;
+        state->dec_codetab[code].next = NULL;
+        state->dec_codetab[code].length = 1;
+        state->dec_codetab[code].value = code;
         state->dec_codetab[code].firstchar = code;
     }
 
-    state->dec_restart   = 0;
+    state->dec_restart = 0;
     state->dec_nbitsmask = MAXCODE(BITS_MIN);
     state->dec_free_entp = state->dec_codetab + CODE_FIRST;
-    state->dec_oldcodep  = &state->dec_codetab[CODE_CLEAR];
-    state->dec_maxcodep  = &state->dec_codetab[state->dec_nbitsmask - 1];
+    state->dec_oldcodep = &state->dec_codetab[CODE_CLEAR];
+    state->dec_maxcodep = &state->dec_codetab[state->dec_nbitsmask - 1];
 
     strm->state = state;
     return LZW_OK;
@@ -216,7 +216,7 @@ int lzwInflate(lzw_streamp strm)
         return LZW_STREAM_ERROR;
 
     /* load state */
-    to  = strm->next_out;
+    to = strm->next_out;
     out = left = strm->avail_out;
 
     from = strm->next_in;
@@ -225,16 +225,16 @@ int lzwInflate(lzw_streamp strm)
     flags = strm->flags;
     state = strm->state;
 
-    nbits     = state->nbits;
-    nextdata  = state->nextdata;
-    nextbits  = state->nextbits;
+    nbits = state->nbits;
+    nextdata = state->nextdata;
+    nextbits = state->nextbits;
     nbitsmask = state->dec_nbitsmask;
-    oldcodep  = state->dec_oldcodep;
+    oldcodep = state->dec_oldcodep;
     free_entp = state->dec_free_entp;
-    maxcodep  = state->dec_maxcodep;
+    maxcodep = state->dec_maxcodep;
 
-    echg      = flags & LZW_FLAG_EARLYCHG;
-    cext      = flags & LZW_FLAG_EXTNCODE;
+    echg = flags & LZW_FLAG_EARLYCHG;
+    cext = flags & LZW_FLAG_EXTNCODE;
     free_code = free_entp - &state->dec_codetab[0];
 
     if (oldcodep == &state->dec_codetab[CODE_EOI])
@@ -246,7 +246,7 @@ int lzwInflate(lzw_streamp strm)
     if (state->dec_restart) {
         long residue;
 
-        codep   = state->dec_codep;
+        codep = state->dec_codep;
         residue = codep->length - state->dec_restart;
         if (residue > left) {
             /*
@@ -311,7 +311,7 @@ int lzwInflate(lzw_streamp strm)
                         nbits = BITS_MAX;
                 }
                 nbitsmask = MAXCODE(nbits);
-                maxcodep  = state->dec_codetab + nbitsmask - 1;
+                maxcodep = state->dec_codetab + nbitsmask - 1;
             }
             /*
              * Add the new entry to the code table.
@@ -323,10 +323,10 @@ int lzwInflate(lzw_streamp strm)
                 ret = LZW_DICT_ERROR;
                 break;
             }
-            free_entp->next      = oldcodep;
+            free_entp->next = oldcodep;
             free_entp->firstchar = free_entp->next->firstchar;
-            free_entp->length    = free_entp->next->length + 1;
-            free_entp->value     = (codep < free_entp) ? codep->firstchar : free_entp->firstchar;
+            free_entp->length = free_entp->next->length + 1;
+            free_entp->value = (codep < free_entp) ? codep->firstchar : free_entp->firstchar;
             free_entp++;
             /* earlychange bit expansion */
             if (echg && free_entp > maxcodep) {
@@ -337,7 +337,7 @@ int lzwInflate(lzw_streamp strm)
                         nbits = BITS_MAX;
                 }
                 nbitsmask = MAXCODE(nbits);
-                maxcodep  = state->dec_codetab + nbitsmask - 1;
+                maxcodep = state->dec_codetab + nbitsmask - 1;
             }
             if (free_code++ > CODE_VALID)
                 flags |= LZW_FLAG_EXTNCODEUSE;
@@ -389,19 +389,19 @@ int lzwInflate(lzw_streamp strm)
 
 inf_end:
     /* restore state */
-    strm->next_out  = to;
+    strm->next_out = to;
     strm->avail_out = left;
-    strm->next_in   = from;
-    strm->avail_in  = have;
-    strm->flags     = flags;
+    strm->next_in = from;
+    strm->avail_in = have;
+    strm->flags = flags;
 
-    state->nbits         = (uint16_t)nbits;
-    state->nextdata      = nextdata;
-    state->nextbits      = nextbits;
+    state->nbits = (uint16_t)nbits;
+    state->nextdata = nextdata;
+    state->nextbits = nextbits;
     state->dec_nbitsmask = nbitsmask;
-    state->dec_oldcodep  = oldcodep;
+    state->dec_oldcodep = oldcodep;
     state->dec_free_entp = free_entp;
-    state->dec_maxcodep  = maxcodep;
+    state->dec_maxcodep = maxcodep;
 
     /* update state */
     in -= strm->avail_in;
@@ -411,7 +411,7 @@ inf_end:
 
     if ((in == 0 && out == 0) && ret == LZW_OK) {
         strm->msg = "no data was processed";
-        ret       = LZW_BUF_ERROR;
+        ret = LZW_BUF_ERROR;
     }
     return ret;
 }

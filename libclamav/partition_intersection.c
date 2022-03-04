@@ -76,8 +76,8 @@ int partition_intersection_list_check(partition_intersection_list_t* list, unsig
     }
 
     new_node->Start = start;
-    new_node->Size  = size;
-    new_node->Next  = list->Head;
+    new_node->Size = size;
+    new_node->Next = list->Head;
 
     list->Head = new_node;
     (list->Size)++;

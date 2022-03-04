@@ -96,9 +96,9 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
                 return CL_EMEM;
             }
 
-            htitem.key         = size;
+            htitem.key = size;
             htitem.data.as_ptr = szh;
-            i                  = cli_htu32_insert(ht, &htitem, root->mempool);
+            i = cli_htu32_insert(ht, &htitem, root->mempool);
             if (i) {
                 cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
                 MPOOL_FREE(root->mempool, szh);
@@ -200,15 +200,15 @@ void hm_flush(struct cli_matcher *root)
         return;
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-        struct cli_htu32 *ht                 = &root->hm.sizehashes[type];
+        struct cli_htu32 *ht = &root->hm.sizehashes[type];
         const struct cli_htu32_element *item = NULL;
-        szh                                  = NULL;
+        szh = NULL;
 
         if (!root->hm.sizehashes[type].capacity)
             continue;
 
         while ((item = cli_htu32_next(ht, item))) {
-            szh    = (struct cli_sz_hash *)item->data.as_ptr;
+            szh = (struct cli_sz_hash *)item->data.as_ptr;
             keylen = hashlen[type];
 
             if (szh->items > 1)
@@ -217,7 +217,7 @@ void hm_flush(struct cli_matcher *root)
     }
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-        szh    = &root->hwild.hashes[type];
+        szh = &root->hwild.hashes[type];
         keylen = hashlen[type];
 
         if (szh->items > 1)
@@ -255,7 +255,7 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
     r = szh->items - 1;
     while (l <= r) {
         size_t c = (l + r) / 2;
-        int res  = hm_cmp(digest, &szh->hash_array[keylen * c], keylen);
+        int res = hm_cmp(digest, &szh->hash_array[keylen * c], keylen);
 
         if (res < 0) {
             if (!c)
@@ -308,7 +308,7 @@ void hm_free(struct cli_matcher *root)
         return;
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
-        struct cli_htu32 *ht                 = &root->hm.sizehashes[type];
+        struct cli_htu32 *ht = &root->hm.sizehashes[type];
         const struct cli_htu32_element *item = NULL;
 
         if (!root->hm.sizehashes[type].capacity)

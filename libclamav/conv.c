@@ -138,7 +138,7 @@ char *cl_base64_encode(void *data, size_t len)
     }
     memcpy((void *)p, (void *)buf, elen);
     p[elen] = 0x00;
-    buf     = p;
+    buf = p;
 
     BIO_free_all(bio);
 
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 
     initialize_crypto();
 
-    plaintext     = (argv[1]) ? argv[1] : "Hello. This is dog";
+    plaintext = (argv[1]) ? argv[1] : "Hello. This is dog";
     sha_plaintext = sha256(plaintext, strlen(plaintext), NULL, NULL);
     if (!(sha_plaintext)) {
         fprintf(stderr, "Could not generate sha256 of plaintext\n");

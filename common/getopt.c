@@ -54,7 +54,7 @@ int getopt_reset(void)
 
 int my_getopt(int argc, char *argvc[], const char *opts)
 {
-    char **argv        = (char **)argvc;
+    char **argv = (char **)argvc;
     static int charind = 0;
     const char *s;
     char mode, colon_mode;
@@ -78,7 +78,7 @@ int my_getopt(int argc, char *argvc[], const char *opts)
                 charind++;
                 if ((*(++s) == ':') || ((optopt == 'W') && (*s == ';'))) {
                     if (argv[optind][charind]) {
-                        optarg  = &(argv[optind++][charind]);
+                        optarg = &(argv[optind++][charind]);
                         charind = 0;
                     } else if (*(++s) != ':') {
                         charind = 0;
@@ -122,15 +122,15 @@ int my_getopt(int argc, char *argvc[], const char *opts)
         if (mode == '+')
             opt = -1;
         else if (mode == '-') {
-            optarg  = argv[optind++];
+            optarg = argv[optind++];
             charind = 0;
-            opt     = 1;
+            opt = 1;
         } else {
             for (i = j = optind; i < argc; i++)
                 if ((argv[i][0] == '-') &&
                     (argv[i][1] != '\0')) {
                     optind = i;
-                    opt    = my_getopt(argc, argv, opts);
+                    opt = my_getopt(argc, argv, opts);
                     while (i > j) {
                         tmp = argv[--i];
                         for (k = i; k + 1 < optind; k++) argv[k] = argv[k + 1];
@@ -193,9 +193,9 @@ static int _getopt_internal(int argc, char *argv[], const char *shortopts,
             if ((argv[i][0] == '-') &&
                 (argv[i][1] != '\0')) {
                 optind = i;
-                opt    = _getopt_internal(argc, argv, shortopts,
-                                          longopts, longind,
-                                          long_only);
+                opt = _getopt_internal(argc, argv, shortopts,
+                                       longopts, longind,
+                                       long_only);
                 while (i > j) {
                     tmp = argv[--i];
                     for (k = i; k + 1 < optind; k++)

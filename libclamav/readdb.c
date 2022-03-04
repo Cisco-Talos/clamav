@@ -150,20 +150,20 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
     /* REGEX testing and sigopt handling */
     start = strchr(hexcpy, '/');
-    end   = strrchr(hexcpy, '/');
+    end = strrchr(hexcpy, '/');
 
     if (start != end) {
         /* FULLWORD regex sigopt handling */
         if (sigopts & ACPATT_OPTION_FULLWORD) {
             size_t ovrlen = strlen(hexcpy) + 21;
-            char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+            char *hexovr = cli_calloc(ovrlen, sizeof(char));
             if (!hexovr) {
                 free(hexcpy);
                 return CL_EMEM;
             }
 
             *start++ = '\0';
-            *end++   = '\0';
+            *end++ = '\0';
 
             snprintf(hexovr, ovrlen, "%s/([\\W_]|\\A)%s([\\W_]|\\Z)/%s", hexcpy, start, end);
 
@@ -173,7 +173,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         /* NOCASE sigopt is passed onto the regex-opt handler */
         if (sigopts & ACPATT_OPTION_NOCASE) {
             size_t ovrlen = strlen(hexcpy) + 2;
-            char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+            char *hexovr = cli_calloc(ovrlen, sizeof(char));
             if (!hexovr) {
                 free(hexcpy);
                 return CL_EMEM;
@@ -198,8 +198,8 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
     /* BCOMP sigopt handling */
     start = strchr(hexcpy, '#');
-    end   = strrchr(hexcpy, '#');
-    mid   = strchr(hexcpy, '(');
+    end = strrchr(hexcpy, '#');
+    mid = strchr(hexcpy, '(');
 
     if (start != end && mid && (*(++mid) == '#' || !strncmp(mid, ">>", 2) || !strncmp(mid, "<<", 2) || !strncmp(mid, "0#", 2))) {
         /* TODO byte compare currently does not have support for sigopts, pass through */
@@ -213,7 +213,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     if (sigopts & ACPATT_OPTION_FULLWORD) {
         char *rechar;
         size_t ovrlen = strlen(hexcpy) + 7;
-        char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+        char *hexovr = cli_calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
             return CL_EMEM;
@@ -244,7 +244,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
      */
     if (sigopts & ACPATT_OPTION_WIDE) {
         size_t ovrlen = 2 * strlen(hexcpy) + 1;
-        char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+        char *hexovr = cli_calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
             return CL_EMEM;
@@ -370,8 +370,8 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
          * pattern checked by the lsig code */
         patt->ch_mindist[0] = smin;
         patt->ch_maxdist[0] = smax;
-        patt->sigid         = tid;
-        patt->length[0]     = root->ac_mindepth;
+        patt->sigid = tid;
+        patt->length[0] = root->ac_mindepth;
 
         /* dummy */
         patt->pattern = MPOOL_CALLOC(root->mempool, patt->length[0], sizeof(*patt->pattern));
@@ -431,7 +431,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
         /* get delimiters-ed */
         start = strchr(hexcpy, '/');
-        end   = strrchr(hexcpy, '/');
+        end = strrchr(hexcpy, '/');
 
         /* get pcre-ed */
         if (start == end) {
@@ -449,12 +449,12 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
 
         /* get NULL-ed */
         *start = '\0';
-        *end   = '\0';
+        *end = '\0';
 
         /* get tokens-ed */
         trigger = hexcpy;
         pattern = start + 1;
-        cflags  = end + 1;
+        cflags = end + 1;
         if (*cflags == '\0') /* get compat-ed */
             cflags = NULL;
 
@@ -700,13 +700,13 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
                 for (j = 0; j < strlen(start); j++) {
                     if (start[j] == '{') {
                         asterisk = false;
-                        pt       = start + j;
+                        pt = start + j;
                         break;
                     }
 
                     if (start[j] == '*') {
                         asterisk = true;
-                        pt       = start + j;
+                        pt = start + j;
                         break;
                     }
                 }
@@ -943,14 +943,14 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
                 if (!bread)
                     return NULL;
                 dbio->readpt[bread] = 0;
-                dbio->bufpt         = dbio->buf;
+                dbio->bufpt = dbio->buf;
                 dbio->size -= bread;
                 dbio->bread += bread;
                 if (dbio->hashctx)
                     cl_update_hash(dbio->hashctx, dbio->readpt, bread);
             }
             if (dbio->chkonly && dbio->bufpt) {
-                dbio->bufpt    = NULL;
+                dbio->bufpt = NULL;
                 dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
                 continue;
             }
@@ -965,8 +965,8 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
                 if (nl < dbio->buf + dbio->bufsize) {
                     dbio->bufpt = ++nl;
                 } else {
-                    dbio->bufpt    = NULL;
-                    dbio->readpt   = dbio->buf;
+                    dbio->bufpt = NULL;
+                    dbio->readpt = dbio->buf;
                     dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
                 }
                 return buff;
@@ -978,10 +978,10 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
                     return NULL;
                 }
                 memmove(dbio->buf, dbio->bufpt, remain);
-                dbio->readpt   = dbio->buf + remain;
+                dbio->readpt = dbio->buf + remain;
                 dbio->readsize = dbio->bufsize - remain;
                 dbio->readsize = dbio->size < dbio->bufsize - remain ? dbio->size : dbio->bufsize - remain - 1;
-                dbio->bufpt    = NULL;
+                dbio->bufpt = NULL;
             }
         }
     } else { /* use gzgets/fgets */
@@ -1013,7 +1013,7 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 static char *cli_signorm(const char *signame)
 {
     char *new_signame = NULL;
-    size_t pad        = 0;
+    size_t pad = 0;
     size_t nsz;
 
     if (!signame)
@@ -1108,7 +1108,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 
     strncpy(cat, sig, pt - signame + 1);
     cat[pt - sig + 1] = 0;
-    pt                = strstr(pua_cats, cat);
+    pt = strstr(pua_cats, cat);
 
     if (options & CL_DB_PUA_INCLUDE)
         ret = pt ? 0 : 1;
@@ -1202,7 +1202,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
     const char *tokens[ICO_TOKENS + 1];
     char buffer[FILEBUFF], *buffer_cpy = NULL;
     uint8_t *hash;
-    int ret           = CL_SUCCESS;
+    int ret = CL_SUCCESS;
     unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
     struct icomtr *metric;
     struct icon_matcher *matcher;
@@ -1358,9 +1358,9 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
             break;
         }
 
-        metric->rsum   = (hash[0] << 4) | hash[1];
-        metric->gsum   = (hash[2] << 4) | hash[3];
-        metric->bsum   = (hash[4] << 4) | hash[5];
+        metric->rsum = (hash[0] << 4) | hash[1];
+        metric->gsum = (hash[2] << 4) | hash[3];
+        metric->bsum = (hash[4] << 4) | hash[5];
         metric->ccount = (hash[6] << 4) | hash[7];
         if (metric->rsum + metric->gsum + metric->bsum > 103 || metric->ccount > 100) {
             cli_errmsg("cli_loadidb: Malformed hash at line %u (bad spread data)\n", line);
@@ -1564,7 +1564,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         root = engine->root[target];
 
         offset = tokens[2];
-        sig    = tokens[3];
+        sig = tokens[3];
 
         if (CL_SUCCESS != (ret = cli_add_content_match_pattern(root, virname, sig, 0, 0, 0, offset, target, NULL, options))) {
             ret = CL_EMALFDB;
@@ -1686,7 +1686,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 }
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-                tdb->val     = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                tdb->val = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if (!tdb->val) {
                     tdb->cnt[CLI_TDB_UINT] = 0;
                     return -1;
@@ -1702,7 +1702,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                 }
 
                 off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-                tdb->val     = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+                tdb->val = (uint32_t *)MPOOL_REALLOC2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
                 if (!tdb->val) {
                     tdb->cnt[CLI_TDB_UINT] = 0;
                     return -1;
@@ -1758,7 +1758,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                     return -1;
                 }
 
-                tdb->range[cnt]     = atoi(pt);
+                tdb->range[cnt] = atoi(pt);
                 tdb->range[cnt + 1] = atoi(pt2);
                 break;
 
@@ -1781,7 +1781,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
                     return -1;
                 }
 
-                tdb->range[cnt]     = (uint32_t)v1;
+                tdb->range[cnt] = (uint32_t)v1;
                 tdb->range[cnt + 1] = (uint32_t)v2;
                 tdb->range[cnt + 2] = (uint32_t)v3;
                 break;
@@ -1956,7 +1956,7 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     }
 
     virname = tokens[0];
-    logic   = tokens[2];
+    logic = tokens[2];
 
     if (chkpua && cli_chkpua(virname, engine->pua_cats, options)) {
         cli_dbgmsg("cli_loadldb: Skipping PUA signature %s\n", virname);
@@ -2039,7 +2039,7 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
         goto done;
     }
 
-    lsig->type    = CLI_LSIG_NORMAL;
+    lsig->type = CLI_LSIG_NORMAL;
     lsig->u.logic = CLI_MPOOL_STRDUP(engine->mempool, logic);
     if (!lsig->u.logic) {
         cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
@@ -2058,10 +2058,10 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
 
     /* 0 marks no bc, we can't use a pointer to bc, since that is
      * realloced/moved during load */
-    lsig->bc_idx             = bc_idx;
+    lsig->bc_idx = bc_idx;
     newtable[root->ac_lsigs] = lsig;
-    root->ac_lsigtable       = newtable;
-    tdb.subsigs              = subsigs;
+    root->ac_lsigtable = newtable;
+    tdb.subsigs = subsigs;
 
     /* For logical subsignatures, only store the virname in the lsigtable entry. */
     lsig->virname = CLI_MPOOL_VIRNAME(engine->mempool, virname, options & CL_DB_OFFICIAL);
@@ -2183,7 +2183,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     int rc, skip = 0;
     struct cli_all_bc *bcs = &engine->bcs;
     struct cli_bc *bc;
-    unsigned sigs           = 0;
+    unsigned sigs = 0;
     unsigned security_trust = 0;
     unsigned i;
 
@@ -2275,8 +2275,8 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             bc->hook_lsig_id = ++engine->hook_lsig_ids;
         }
         if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
-            unsigned hook       = bc->kind - _BC_START_HOOKS;
-            unsigned cnt        = ++engine->hooks_cnt[hook];
+            unsigned hook = bc->kind - _BC_START_HOOKS;
+            unsigned cnt = ++engine->hooks_cnt[hook];
             engine->hooks[hook] = cli_realloc2(engine->hooks[hook],
                                                sizeof(*engine->hooks[0]) * cnt);
             if (!engine->hooks[hook]) {
@@ -2371,7 +2371,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
         }
 
         rtype = cli_ftcode(tokens[4]);
-        type  = cli_ftcode(tokens[5]);
+        type = cli_ftcode(tokens[5]);
         if (rtype == CL_TYPE_ERROR || type == CL_TYPE_ERROR) {
             ret = CL_EMALFDB;
             break;
@@ -2399,9 +2399,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
                 ret = CL_EMEM;
                 break;
             }
-            new->type   = type;
+            new->type = type;
             new->offset = atoi(tokens[1]);
-            new->magic  = (unsigned char *)CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]);
+            new->magic = (unsigned char *)CLI_MPOOL_HEX2STR(engine->mempool, tokens[2]);
             if (!new->magic) {
                 cli_errmsg("cli_loadftm: Can't decode the hex string\n");
                 ret = CL_EMALFDB;
@@ -2409,7 +2409,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
                 break;
             }
             new->length = (uint16_t)strlen(tokens[2]) / 2;
-            new->tname  = CLI_MPOOL_STRDUP(engine->mempool, tokens[3]);
+            new->tname = CLI_MPOOL_STRDUP(engine->mempool, tokens[3]);
             if (!new->tname) {
                 MPOOL_FREE(engine->mempool, new->magic);
                 MPOOL_FREE(engine->mempool, new);
@@ -2418,10 +2418,10 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
             }
             /* files => ftypes, partitions => ptypes */
             if (magictype == 4) {
-                new->next      = engine->ptypes;
+                new->next = engine->ptypes;
                 engine->ptypes = new;
             } else {
-                new->next      = engine->ftypes;
+                new->next = engine->ftypes;
                 engine->ftypes = new;
             }
         } else {
@@ -2480,12 +2480,12 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
         }
         len = strlen(buffer);
         if (!len) {
-            buffer[len]     = '\n';
+            buffer[len] = '\n';
             buffer[len + 1] = 0;
         } else {
             if (dbio->usebuf && buffer[len - 1] != '\n' && len + 1 < FILEBUFF) {
                 /* cli_dbgets in buffered mode strips \n */
-                buffer[len]     = '\n';
+                buffer[len] = '\n';
                 buffer[len + 1] = 0;
             }
         }
@@ -2550,7 +2550,7 @@ static int cli_loadinfo(FILE *fs, struct cl_engine *engine, unsigned int options
             break;
         }
         last->next = new;
-        last       = new;
+        last = new;
     }
 
     if (!(options & CL_DB_UNSIGNED) && !dsig) {
@@ -2606,7 +2606,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
             signame = buffer;
         } else if (tokens_count == 2) {
             signame = tokens[0];
-            hash    = tokens[1];
+            hash = tokens[1];
         } else { /* old mode */
             signame = tokens[2];
         }
@@ -2679,7 +2679,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     const char *tokens[MD5_TOKENS + 1];
     char buffer[FILEBUFF], *buffer_cpy = NULL;
     const char *pt, *virname;
-    int ret                 = CL_SUCCESS;
+    int ret = CL_SUCCESS;
     unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
     unsigned int req_fl = 0;
     struct cli_matcher *db;
@@ -2687,8 +2687,8 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
 
     if (mode == MD5_MDB) {
         size_field = 0;
-        md5_field  = 1;
-        db         = engine->hm_mdb;
+        md5_field = 1;
+        db = engine->hm_mdb;
     } else if (mode == MD5_HDB)
         db = engine->hm_hdb;
     else if (mode == MD5_IMP)
@@ -2958,7 +2958,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
         /* tokens[8] - not used */
 
-        new->next   = engine->cdb;
+        new->next = engine->cdb;
         engine->cdb = new;
         sigs++;
     }
@@ -3140,7 +3140,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
             }
         }
 
-        new->next   = engine->cdb;
+        new->next = engine->cdb;
         engine->cdb = new;
         sigs++;
     }
@@ -3170,7 +3170,7 @@ static cl_error_t set_sha1(const char *const token, uint8_t hashDest[SHA1_HASH_S
                            const char *const varname, uint32_t line)
 {
 
-    cl_error_t ret               = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     uint8_t hash[SHA1_HASH_SIZE] = {0};
 
     if ((2 * SHA1_HASH_SIZE) != strlen(token)) {
@@ -3202,8 +3202,8 @@ static int cli_loadcrt(FILE *fs, struct cl_engine *engine, struct cli_dbio *dbio
     char *tokens[CRT_TOKENS + 1];
     size_t line = 0, tokens_count;
     cli_crt ca;
-    int ret             = CL_SUCCESS;
-    char *pubkey        = NULL;
+    int ret = CL_SUCCESS;
+    char *pubkey = NULL;
     const uint8_t exp[] = "\x01\x00\x01";
 
     if (!(engine->dconf->pe & PE_CONF_CERTS)) {
@@ -3644,7 +3644,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     }
 
     newtable[ytable->tbl_cnt - 1] = new;
-    ytable->table                 = newtable;
+    ytable->table = newtable;
 
     if (CL_SUCCESS != (ret = ytable_add_attrib(ytable, NULL, "*", 0))) {
         cli_yaramsg("ytable_add_string: failed to add default offset\n");
@@ -3889,12 +3889,12 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                 }
 
                 newtable[root->ac_lsigs - 1] = tsig;
-                root->ac_lsigtable           = newtable;
+                root->ac_lsigtable = newtable;
             }
 
             /* attempt to insert hexsig */
             lsigid[1] = 0;
-            ret       = yara_hexstr_verify(string, substr, lsigid, engine, options);
+            ret = yara_hexstr_verify(string, substr, lsigid, engine, options);
             if (ret != CL_SUCCESS) {
                 str_error++;
                 free(substr);
@@ -3934,7 +3934,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
             /* TODO - extract the string length to handle NULL hex-escaped characters
              * For now, we'll just use the strlen we get which crudely finds the length
              */
-            size_t length  = string->length;
+            size_t length = string->length;
             size_t totsize = 2 * length + 1;
 
             if (length < CLI_DEFAULT_AC_MINDEPTH) {
@@ -4135,7 +4135,7 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     if (logic) {
         cli_yaramsg("normal lsig triggered yara: %s\n", logic);
 
-        lsig->type    = CLI_LSIG_NORMAL;
+        lsig->type = CLI_LSIG_NORMAL;
         lsig->u.logic = CLI_MPOOL_STRDUP(engine->mempool, logic);
         free(logic);
         if (!lsig->u.logic) {
@@ -4187,8 +4187,8 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
     }
 
     newtable[root->ac_lsigs - 1] = lsig;
-    root->ac_lsigtable           = newtable;
-    tdb.subsigs                  = ytable.tbl_cnt;
+    root->ac_lsigtable = newtable;
+    tdb.subsigs = ytable.tbl_cnt;
 
     /*** loading step - put things into the AC trie ***/
     for (i = 0; i < (size_t)ytable.tbl_cnt; ++i) {
@@ -4256,7 +4256,7 @@ cl_error_t cli_yara_init(struct cl_engine *engine)
         yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
         yr_arena_destroy(engine->yara_global->the_arena);
         engine->yara_global->rules_table = NULL;
-        engine->yara_global->the_arena   = NULL;
+        engine->yara_global->the_arena = NULL;
         free(engine->yara_global);
         engine->yara_global = NULL;
         engine->yara_global = NULL;
@@ -4268,8 +4268,8 @@ cl_error_t cli_yara_init(struct cl_engine *engine)
         yr_hash_table_destroy(engine->yara_global->rules_table, NULL);
         yr_arena_destroy(engine->yara_global->the_arena);
         engine->yara_global->objects_table = NULL;
-        engine->yara_global->rules_table   = NULL;
-        engine->yara_global->the_arena     = NULL;
+        engine->yara_global->rules_table = NULL;
+        engine->yara_global->the_arena = NULL;
         free(engine->yara_global);
         engine->yara_global = NULL;
         return CL_EMEM;
@@ -4333,12 +4333,12 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     if (rc != ERROR_SUCCESS)
         return CL_EMEM;
     compiler.loop_for_of_mem_offset = -1;
-    ns.name                         = "default";
-    compiler.current_namespace      = &ns;
-    compiler.the_arena              = engine->yara_global->the_arena;
-    compiler.rules_table            = engine->yara_global->rules_table;
-    compiler.objects_table          = engine->yara_global->objects_table;
-    compiler.allow_includes         = 1;
+    ns.name = "default";
+    compiler.current_namespace = &ns;
+    compiler.the_arena = engine->yara_global->the_arena;
+    compiler.rules_table = engine->yara_global->rules_table;
+    compiler.objects_table = engine->yara_global->objects_table;
+    compiler.allow_includes = 1;
     _yr_compiler_push_file_name(&compiler, filename);
 
     rc = yr_lex_parse_rules_file(fs, &compiler);
@@ -4362,7 +4362,7 @@ static int cli_loadyara(FILE *fs, struct cl_engine *engine, unsigned int *signo,
         if (compiler.last_result == ERROR_INSUFICIENT_MEMORY)
             return CL_EMEM;
         rule_errors = rc;
-        rc          = CL_SUCCESS;
+        rc = CL_SUCCESS;
 #endif
     }
 
@@ -4478,7 +4478,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             }
         } else {
             size_t attlen = strlen(tokens[1]) + 10;
-            attribs       = cli_calloc(attlen, sizeof(char));
+            attribs = cli_calloc(attlen, sizeof(char));
             if (!attribs) {
                 cli_errmsg("cli_loadpwdb: Can't allocate memory for attributes\n");
                 ret = CL_EMEM;
@@ -4562,7 +4562,7 @@ static int cli_loadpwdb(FILE *fs, struct cl_engine *engine, unsigned int options
             }
 
             /* add to the engine list, sorted by target type */
-            new->next                = engine->pwdbs[container];
+            new->next = engine->pwdbs[container];
             engine->pwdbs[container] = new;
         } else {
             cli_dbgmsg("cli_loadpwdb: Unsupported PWStorageType %u\n", pwstype);
@@ -4593,7 +4593,7 @@ cl_error_t cli_load(const char *filename, struct cl_engine *engine, unsigned int
 {
     cl_error_t ret = CL_SUCCESS;
 
-    FILE *fs        = NULL;
+    FILE *fs = NULL;
     uint8_t skipped = 0;
     const char *dbname;
     char buff[FILEBUFF];
@@ -4772,7 +4772,7 @@ cli_insertdbtoll(struct db_ll_entry **head, struct db_ll_entry *entry)
 {
     struct db_ll_entry *iter, *prev;
     if (NULL == *head) {
-        *head       = entry;
+        *head = entry;
         entry->next = NULL;
         return;
     }
@@ -4787,7 +4787,7 @@ cli_insertdbtoll(struct db_ll_entry **head, struct db_ll_entry *entry)
             return;
         }
     }
-    prev->next  = entry;
+    prev->next = entry;
     entry->next = NULL;
     return;
 }
@@ -4802,10 +4802,10 @@ cli_insertdbtoll(struct db_ll_entry **head, struct db_ll_entry *entry)
  */
 static size_t count_line_based_signatures(const char *filepath)
 {
-    FILE *fp              = NULL;
+    FILE *fp = NULL;
     int current_character = 0;
-    size_t sig_count      = 0;
-    bool in_sig           = false;
+    size_t sig_count = 0;
+    bool in_sig = false;
 
     fp = fopen(filepath, "r");
     if (fp == NULL) {
@@ -4852,7 +4852,7 @@ static size_t count_line_based_signatures(const char *filepath)
  */
 static size_t count_signatures(const char *filepath, struct cl_engine *engine, unsigned int options)
 {
-    size_t num_signatures            = 0;
+    size_t num_signatures = 0;
     struct cl_cvd *db_archive_header = NULL;
 
     if (cli_strbcasestr(filepath, ".cld") ||
@@ -4918,7 +4918,7 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
 
     DIR *dd = NULL;
     struct dirent *dent;
-    char *dbfile      = NULL;
+    char *dbfile = NULL;
     int ends_with_sep = 0;
     size_t dirname_len;
     struct cl_cvd *daily_cld = NULL;
@@ -5065,8 +5065,8 @@ static cl_error_t cli_loaddbdir(const char *dirname, struct cl_engine *engine, u
             goto done;
         }
 
-        entry->path          = dbfile;
-        dbfile               = NULL;
+        entry->path = dbfile;
+        dbfile = NULL;
         entry->load_priority = load_priority;
         cli_insertdbtoll(&head, entry);
     }
@@ -5236,7 +5236,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
 const char *cl_retdbdir(void)
 {
 #ifdef _WIN32
-    int have_ddir       = 0;
+    int have_ddir = 0;
     char path[MAX_PATH] = "";
     DWORD sizof;
     HKEY key;
@@ -5250,9 +5250,9 @@ const char *cl_retdbdir(void)
         RegCloseKey(key);
     }
     if (!(have_ddir) && GetModuleFileName(NULL, path, sizeof(path))) {
-        char *dir              = NULL;
+        char *dir = NULL;
         path[sizeof(path) - 1] = '\0';
-        dir                    = dirname(path);
+        dir = dirname(path);
         snprintf(DATABASE_DIRECTORY, sizeof(DATABASE_DIRECTORY), "%s\\database", dir);
     }
     DATABASE_DIRECTORY[sizeof(DATABASE_DIRECTORY) - 1] = '\0';
@@ -5270,10 +5270,10 @@ cl_error_t cl_statinidir(const char *dirname, struct cl_stat *dbstat)
     char *fname;
 
     if (dbstat) {
-        dbstat->entries   = 0;
-        dbstat->stattab   = NULL;
+        dbstat->entries = 0;
+        dbstat->stattab = NULL;
         dbstat->statdname = NULL;
-        dbstat->dir       = cli_strdup(dirname);
+        dbstat->dir = cli_strdup(dirname);
     } else {
         cli_errmsg("cl_statdbdir(): Null argument passed.\n");
         return CL_ENULLARG;
@@ -5458,7 +5458,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     unsigned int i, j;
     struct cli_matcher *root;
 
-    size_t tasks_to_do    = 0;
+    size_t tasks_to_do = 0;
     size_t tasks_complete = 0;
 
     if (!engine) {
@@ -5644,7 +5644,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
     while (engine->cdb) {
         struct cli_cdb *pt = engine->cdb;
-        engine->cdb        = pt->next;
+        engine->cdb = pt->next;
         if (pt->name.re_magic)
             cli_regfree(&pt->name);
         MPOOL_FREE(engine->mempool, pt->res2);
@@ -5655,7 +5655,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
 
     while (engine->dbinfo) {
         struct cli_dbinfo *pt = engine->dbinfo;
-        engine->dbinfo        = pt->next;
+        engine->dbinfo = pt->next;
         MPOOL_FREE(engine->mempool, pt->name);
         MPOOL_FREE(engine->mempool, pt->hash);
         if (pt->cvd)
@@ -5802,7 +5802,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     cl_error_t ret;
     struct cli_matcher *root;
 
-    size_t tasks_to_do    = 0;
+    size_t tasks_to_do = 0;
     size_t tasks_complete = 0;
 
     if (!engine) {
@@ -6080,7 +6080,7 @@ cl_error_t cl_countsigs(const char *path, unsigned int countoptions, unsigned in
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                     snprintf(fname, sizeof(fname), "%s" PATHSEP "%s", path, dent->d_name);
                     fname[sizeof(fname) - 1] = 0;
-                    ret                      = countsigs(fname, countoptions, sigs);
+                    ret = countsigs(fname, countoptions, sigs);
                     if (ret != CL_SUCCESS) {
                         closedir(dd);
                         return ret;

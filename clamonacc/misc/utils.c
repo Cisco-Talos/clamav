@@ -55,10 +55,10 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     struct passwd *pwd;
     char path[32];
     STATBUF sb;
-    const struct optstruct *opt       = NULL;
-    const struct optstruct *opt_root  = NULL;
+    const struct optstruct *opt = NULL;
+    const struct optstruct *opt_root = NULL;
     const struct optstruct *opt_uname = NULL;
-    int retry                         = 0;
+    int retry = 0;
 
     /* always ignore ourselves */
     if (pid == (int)getpid()) {
@@ -66,8 +66,8 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
     }
 
     /* look up options */
-    opt       = optget(opts, "OnAccessExcludeUID");
-    opt_root  = optget(opts, "OnAccessExcludeRootUID");
+    opt = optget(opts, "OnAccessExcludeUID");
+    opt_root = optget(opts, "OnAccessExcludeRootUID");
     opt_uname = optget(opts, "OnAccessExcludeUname");
 
     /* we can return immediately if no uid exclusions were requested */
@@ -89,7 +89,7 @@ int onas_fan_checkowner(int pid, const struct optstruct *opts)
         if (opt_uname->enabled) {
             while (opt_uname) {
                 errno = 0;
-                pwd   = getpwuid(sb.st_uid);
+                pwd = getpwuid(sb.st_uid);
                 if (NULL == pwd) {
                     if (errno) {
                         logg(LOGG_DEBUG, "ClamMisc: internal error (failed to exclude event) ... %s\n", strerror(errno));
@@ -153,9 +153,9 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
     FILE *opt_file = 0;
     STATBUF sb;
     char **opt_list = NULL;
-    char **rlc_ptr  = NULL;
-    uint64_t len    = 0;
-    int32_t ret     = 0;
+    char **rlc_ptr = NULL;
+    uint64_t len = 0;
+    int32_t ret = 0;
 
     *num_entries = 0;
 
@@ -166,7 +166,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
     }
     opt_list[*num_entries] = NULL;
 
-    errno    = 0;
+    errno = 0;
     opt_file = fopen(fname, "r");
 
     if (NULL == opt_file) {
@@ -179,7 +179,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
     while ((ret = getline(opt_list + *num_entries, &len, opt_file)) != -1) {
 
         opt_list[*num_entries][strlen(opt_list[*num_entries]) - 1] = '\0';
-        errno                                                      = 0;
+        errno = 0;
         if (0 != CLAMSTAT(opt_list[*num_entries], &sb)) {
             logg(LOGG_DEBUG, "ClamMisc: when parsing path list ... could not stat '%s' ... %s ... skipping\n", opt_list[*num_entries], strerror(errno));
             len = 0;
@@ -208,7 +208,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
         (*num_entries)++;
         rlc_ptr = cli_realloc(opt_list, sizeof(char *) * (*num_entries + 1));
         if (rlc_ptr) {
-            opt_list               = rlc_ptr;
+            opt_list = rlc_ptr;
             opt_list[*num_entries] = NULL;
         } else {
             *err = CL_EMEM;

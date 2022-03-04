@@ -58,7 +58,7 @@
 #include "inotif/inotif.h"
 #include "scan/onas_queue.h"
 
-pthread_t ddd_pid        = 0;
+pthread_t ddd_pid = 0;
 pthread_t scan_queue_pid = 0;
 
 static void onas_handle_signals();
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
     if (optget(opts, "verbose")->enabled) {
         mprintf_verbose = 1;
-        logg_verbose    = 1;
+        logg_verbose = 1;
     }
 
     /* And our config file options */
@@ -322,7 +322,7 @@ static int startup_checks(struct onas_context *ctx)
 #if defined(HAVE_SYS_FANOTIFY_H)
     char faerr[128];
 #endif
-    int ret        = 0;
+    int ret = 0;
     cl_error_t err = CL_SUCCESS;
 
     if (optget(ctx->opts, "help")->enabled) {
@@ -459,7 +459,7 @@ void onas_context_cleanup(struct onas_context *ctx)
     close(ctx->fan_fd);
     optfree((struct optstruct *)ctx->opts);
     optfree((struct optstruct *)ctx->clamdopts);
-    ctx->opts      = NULL;
+    ctx->opts = NULL;
     ctx->clamdopts = NULL;
     free(ctx);
 }

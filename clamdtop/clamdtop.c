@@ -134,9 +134,9 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
     } while (0)
 
 static struct global_stats global;
-static SCREEN *curses_scr  = NULL;
-static int curses_inited   = 0;
-static int maxystats       = 0;
+static SCREEN *curses_scr = NULL;
+static int curses_inited = 0;
+static int maxystats = 0;
 static int detail_selected = -1;
 
 static int detail_exists(void)
@@ -177,17 +177,17 @@ enum colors {
 #define DESCR_ATTR COLOR_PAIR(descr_color)
 #define ERROR_ATTR A_BOLD | COLOR_PAIR(error_color)
 
-static WINDOW *header_window     = NULL;
+static WINDOW *header_window = NULL;
 static WINDOW *stats_head_window = NULL;
-static WINDOW *stats_window      = NULL;
+static WINDOW *stats_window = NULL;
 static WINDOW *status_bar_window = NULL;
-static WINDOW *mem_window        = NULL;
+static WINDOW *mem_window = NULL;
 
 static const char *status_bar_keys[10];
 static unsigned maxy = 0, maxx = 0;
-static char *queue_header       = NULL;
+static char *queue_header = NULL;
 static char *multi_queue_header = NULL;
-static char *clamd_header       = NULL;
+static char *clamd_header = NULL;
 
 #define CMDHEAD " COMMAND       QUEUEDSINCE    FILE"
 #define CMDHEAD2 "NO COMMAND     QUEUEDSINCE    FILE"
@@ -222,7 +222,7 @@ static void resize(void)
     strncpy(clamd_header, SUMHEAD, maxx);
     queue_header[maxx] = '\0';
     clamd_header[maxx] = '\0';
-    p                  = queue_header + strlen(queue_header);
+    p = queue_header + strlen(queue_header);
     while (p < queue_header + maxx)
         *p++ = ' ';
     p = clamd_header + strlen(clamd_header);
@@ -235,7 +235,7 @@ static void resize(void)
         assert(multi_queue_header);
         strncpy(multi_queue_header, CMDHEAD2, maxx);
         multi_queue_header[maxx] = '\0';
-        p                        = multi_queue_header + strlen(multi_queue_header);
+        p = multi_queue_header + strlen(multi_queue_header);
         while (p < multi_queue_header + maxx)
             *p++ = ' ';
     }
@@ -271,10 +271,10 @@ static void init_windows(int num_clamd)
 
     rm_windows();
     /* non-overlapping windows */
-    header_window     = subwin(stdscr, 1, maxx, 0, 0);
+    header_window = subwin(stdscr, 1, maxx, 0, 0);
     stats_head_window = subwin(stdscr, num_clamd + 1, maxx, 1, 0);
-    maxystats         = maxy - num_clamd - 3;
-    stats_window      = subwin(stdscr, maxystats, maxx, num_clamd + 2, 0);
+    maxystats = maxy - num_clamd - 3;
+    stats_window = subwin(stdscr, maxystats, maxx, num_clamd + 2, 0);
     status_bar_window = subwin(stdscr, 1, maxx, maxy - 1, 0);
     /* memwindow overlaps, used only in details mode */
     mem_window = derwin(stats_window, 6, 41, 1, maxx - 41);
@@ -391,11 +391,11 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
                      unsigned max, int blink)
 {
     int y, x, z = 0;
-    unsigned len   = 39;
+    unsigned len = 39;
     unsigned start = 1;
     unsigned activ = max ? ((live - idle) * (len - start - 2) + (max / 2)) / max : 0;
-    unsigned dim   = max ? idle * (len - start - 2) / max : 0;
-    unsigned rem   = len - activ - dim - start - 2;
+    unsigned dim = max ? idle * (len - start - 2) / max : 0;
+    unsigned rem = len - activ - dim - start - 2;
 
     assert(activ + 2 < len && activ + dim + 2 < len && activ + dim + rem + 2 < len && "Invalid values");
     mvwaddch(win, i, start, '[' | A_BOLD);
@@ -424,10 +424,10 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 }
 
 /* --------------------- Error handling ---------------------*/
-static int normal_exit         = 0;
+static int normal_exit = 0;
 static const char *exit_reason = NULL;
-static const char *exit_func   = NULL;
-static unsigned exit_line      = 0;
+static const char *exit_func = NULL;
+static unsigned exit_line = 0;
 
 static void cleanup(void)
 {
@@ -529,14 +529,14 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
     va_start(ap, fmt);
     if (stats_head_window) {
         char *buf = malloc(maxx + 1);
-        char *nl  = NULL;
+        char *nl = NULL;
         OOM_CHECK(buf);
         memset(buf, ' ', maxx + 1);
         vsnprintf(buf, maxx + 1, fmt, ap);
         if ((nl = strrchr(buf, '\n')) != NULL)
             *nl = ' ';
         buf[strlen(buf)] = ' ';
-        buf[maxx]        = '\0';
+        buf[maxx] = '\0';
         wattron(stats_head_window, ERROR_ATTR);
         mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
         wattroff(stats_head_window, ERROR_ATTR);
@@ -550,7 +550,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 char *get_ip(const char *ip)
 {
     char *dupip = NULL;
-    char *p1    = NULL;
+    char *p1 = NULL;
     unsigned int i;
 
     /*
@@ -584,14 +584,14 @@ char *get_ip(const char *ip)
     }
 
     p1 = dupip;
-    i  = 0;
+    i = 0;
     while ((p1 = strchr(p1, ':'))) {
         i++;
         p1++;
     }
 
     if (i == 1) {
-        p1  = strchr(dupip, ':');
+        p1 = strchr(dupip, ':');
         *p1 = '\0';
     }
 
@@ -651,7 +651,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
     int s = -1;
     struct timeval tv;
     char *port = NULL;
-    char *pt   = NULL;
+    char *pt = NULL;
     char *host = pt;
     struct addrinfo hints, *res = NULL, *p;
     int err;
@@ -691,9 +691,9 @@ static int make_connection_real(const char *soname, conn_t *conn)
 #endif
 
     memset(&hints, 0x00, sizeof(struct addrinfo));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags    = AI_PASSIVE;
+    hints.ai_flags = AI_PASSIVE;
 
     host = get_ip(soname);
     if (!(host)) {
@@ -741,7 +741,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 end:
     conn->sd = s;
     gettimeofday(&conn->tv_conn, NULL);
-    tv.tv_sec  = 30;
+    tv.tv_sec = 30;
     tv.tv_usec = 0;
     setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
@@ -892,8 +892,8 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
 static void output_queue(size_t line, ssize_t max)
 {
     ssize_t i, j;
-    int tasks_truncd            = 0;
-    struct task *tasks          = global.tasks;
+    int tasks_truncd = 0;
+    struct task *tasks = global.tasks;
     struct task *filtered_tasks = calloc(global.n, sizeof(*filtered_tasks));
     OOM_CHECK(filtered_tasks);
     for (i = 0, j = 0; i < global.n; i++) {
@@ -926,7 +926,7 @@ static void output_queue(size_t line, ssize_t max)
                 cmd[cmde - filtered_tasks[i].line] = '\0';
             if (filstart) {
                 size_t oldline = ++line;
-                char *nl       = strrchr(++filstart, '\n');
+                char *nl = strrchr(++filstart, '\n');
                 if (nl != NULL)
                     *nl = '\0';
                 wattron(stats_window, A_BOLD);
@@ -972,7 +972,7 @@ static void parse_queue(conn_t *conn, char *buf, size_t len, unsigned idx)
         OOM_CHECK(global.tasks);
         global.tasks[global.n - 1].line = strdup(buf);
         OOM_CHECK(global.tasks[global.n - 1].line);
-        global.tasks[global.n - 1].tim      = tim;
+        global.tasks[global.n - 1].tim = tim;
         global.tasks[global.n - 1].clamd_no = idx + 1;
     } while (recv_line(conn, buf, len) && buf[0] == '\t' && strcmp("END\n", buf) != 0);
 }
@@ -1013,7 +1013,7 @@ static void output_memstats(struct stats *stats)
         totalmem = (stats->heapu + stats->mmapu + stats->pools_total) * 1000;
         if (totalmem > biggest_mem) {
             biggest_mem = totalmem;
-            blink       = 1;
+            blink = 1;
         }
         show_bar(mem_window, 4, totalmem,
                  (stats->mmapu + stats->releasable + stats->pools_total - stats->pools_used) * 1000,
@@ -1043,12 +1043,12 @@ static int output_stats(struct stats *stats, unsigned idx)
     char buf[128];
     char timbuf[14];
     int blink = 0;
-    size_t i  = 0;
+    size_t i = 0;
     char mem[6];
     WINDOW *win = stats_head_window;
-    int sel     = detail_is_selected(idx);
-    char *line  = malloc(maxx + 1);
-    int len     = 0;
+    int sel = detail_is_selected(idx);
+    char *line = malloc(maxx + 1);
+    int len = 0;
 
     OOM_CHECK(line);
 
@@ -1101,7 +1101,7 @@ static int output_stats(struct stats *stats, unsigned idx)
                        idx + 1, stats->conn_hr, stats->conn_min, stats->conn_sec,
                        stats->engine_version, stats->db_version, timbuf, stats->remote);
     }
-    line[maxx]         = '\0';
+    line[maxx] = '\0';
     line[strlen(line)] = ' ';
     if (sel) {
         wattron(win, COLOR_PAIR(selected_color));
@@ -1116,11 +1116,11 @@ static int output_stats(struct stats *stats, unsigned idx)
         wattroff(win, A_DIM | COLOR_PAIR(header_color));
     }
     win = stats_window;
-    i   = 0;
+    i = 0;
     if (sel && !stats->stats_unsupp) {
         memset(line, ' ', maxx + 1);
         snprintf(line, maxx + 1, "Details for Clamd version: %s", stats->version);
-        line[maxx]         = '\0';
+        line[maxx] = '\0';
         line[strlen(line)] = ' ';
         wattron(win, COLOR_PAIR(queue_header_color));
         mvwprintw(win, i++, 0, "%s", line);
@@ -1139,7 +1139,7 @@ static int output_stats(struct stats *stats, unsigned idx)
         blink = 0;
         if (stats->current_q > stats->biggest_queue) {
             stats->biggest_queue = stats->current_q;
-            blink                = 1;
+            blink = 1;
         }
         mvwprintw(win, i++, 0, "Queue:");
         snprintf(buf, sizeof(buf), "%6u items %6u max", stats->current_q, stats->biggest_queue);
@@ -1247,11 +1247,11 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
     conn_dt = tv.tv_sec + tv.tv_usec / 1e6;
 
     stats->live = stats->idle = stats->max = 0;
-    stats->conn_hr                         = conn_dt / 3600;
-    stats->conn_min                        = (conn_dt / 60) % 60;
-    stats->conn_sec                        = conn_dt % 60;
-    stats->current_q                       = 0;
-    buf[sizeof(buf) - 1]                   = 0x0;
+    stats->conn_hr = conn_dt / 3600;
+    stats->conn_min = (conn_dt / 60) % 60;
+    stats->conn_sec = conn_dt % 60;
+    stats->current_q = 0;
+    buf[sizeof(buf) - 1] = 0x0;
     while (recv_line(conn, buf, sizeof(buf) - 1) && strcmp("END\n", buf) != 0) {
         char *val = strchr(buf, ':');
 
@@ -1477,7 +1477,7 @@ static void free_global_stats(void)
     }
     free(global.tasks);
     global.tasks = NULL;
-    global.n     = 0;
+    global.n = 0;
 }
 
 static int help_line;

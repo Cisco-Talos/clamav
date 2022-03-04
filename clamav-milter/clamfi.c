@@ -63,7 +63,7 @@ static char *rejectfmt = NULL;
 int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
 char xvirushdr[255];
 char *viraction = NULL;
-int multircpt   = 1;
+int multircpt = 1;
 
 #define LOGINF_NONE 0
 #define LOGINF_BASIC 1
@@ -73,7 +73,7 @@ int multircpt   = 1;
 int loginfected;
 
 #define CLAMFIBUFSZ 1424
-static const char *HDR_UNAVAIL          = "UNKNOWN";
+static const char *HDR_UNAVAIL = "UNKNOWN";
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
 
 struct CLAMFI {
@@ -205,7 +205,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
             cf->bufsz = len;
         } else {
             uint32_t sendmetoo = htonl(len);
-            cf->sendme         = htonl(cf->bufsz);
+            cf->sendme = htonl(cf->bufsz);
             if ((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4) || nc_send(cf->main, bodyp, len))
                 sendfailed = 1;
             cf->bufsz = 0;
@@ -332,7 +332,7 @@ sfsistat clamfi_eom(SMFICTX *ctx)
         }
     } else {
         uint32_t sendmetoo = 0;
-        cf->sendme         = htonl(cf->bufsz);
+        cf->sendme = htonl(cf->bufsz);
         if ((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4)) {
             logg(LOGG_ERROR, "Failed to flush STREAM\n");
             nullify(ctx, cf, CF_NONE);
@@ -359,11 +359,11 @@ sfsistat clamfi_eom(SMFICTX *ctx)
     if (len > 5 && !strcmp(reply + len - 5, ": OK\n")) {
         if (addxvirus) add_x_header(ctx, "Clean", cf->scanned_count, cf->status_count);
         if (loginfected & LOGCLN_FULL) {
-            const char *id       = smfi_getsymval(ctx, "{i}");
-            const char *from     = smfi_getsymval(ctx, "{mail_addr}");
+            const char *id = smfi_getsymval(ctx, "{i}");
+            const char *from = smfi_getsymval(ctx, "{mail_addr}");
             const char *msg_subj = makesanehdr(cf->msg_subj);
             const char *msg_date = makesanehdr(cf->msg_date);
-            const char *msg_id   = makesanehdr(cf->msg_id);
+            const char *msg_id = makesanehdr(cf->msg_id);
             if (multircpt && cf->nrecipients) {
                 for (crcpt = 0; crcpt < cf->nrecipients; crcpt++)
                     logg(LOGG_INFO, "Clean message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s'\n", id, from, cf->recipients[crcpt], msg_subj, msg_id, msg_date);
@@ -388,10 +388,10 @@ sfsistat clamfi_eom(SMFICTX *ctx)
             char *vir;
 
             reply[len - 7] = '\0';
-            vir            = strrchr(reply, ' ');
+            vir = strrchr(reply, ' ');
             if (vir) {
                 unsigned int have_multi = (multircpt != 0 && cf->nrecipients);
-                unsigned int lst_rcpt   = (have_multi * (cf->nrecipients - 1)) + 1;
+                unsigned int lst_rcpt = (have_multi * (cf->nrecipients - 1)) + 1;
                 vir++;
 
                 if (rejectfmt)
@@ -407,15 +407,15 @@ sfsistat clamfi_eom(SMFICTX *ctx)
                 for (crcpt = 0; crcpt < lst_rcpt; crcpt++) {
                     if (loginfected || viraction) {
                         const char *from = smfi_getsymval(ctx, "{mail_addr}");
-                        const char *to   = have_multi ? cf->recipients[crcpt] : smfi_getsymval(ctx, "{rcpt_addr}");
+                        const char *to = have_multi ? cf->recipients[crcpt] : smfi_getsymval(ctx, "{rcpt_addr}");
 
                         if (!from) from = HDR_UNAVAIL;
                         if (!to) to = HDR_UNAVAIL;
                         if ((loginfected & LOGINF_FULL) || viraction) {
-                            const char *id       = smfi_getsymval(ctx, "{i}");
+                            const char *id = smfi_getsymval(ctx, "{i}");
                             const char *msg_subj = makesanehdr(cf->msg_subj);
                             const char *msg_date = makesanehdr(cf->msg_date);
-                            const char *msg_id   = makesanehdr(cf->msg_id);
+                            const char *msg_id = makesanehdr(cf->msg_id);
 
                             if (!id) id = HDR_UNAVAIL;
 
@@ -424,12 +424,12 @@ sfsistat clamfi_eom(SMFICTX *ctx)
 
                             if (viraction) {
                                 char er[256];
-                                char *e_id       = strdup(id);
-                                char *e_from     = strdup(from);
-                                char *e_to       = strdup(to);
+                                char *e_id = strdup(id);
+                                char *e_from = strdup(from);
+                                char *e_to = strdup(to);
                                 char *e_msg_subj = strdup(msg_subj);
                                 char *e_msg_date = strdup(msg_date);
-                                char *e_msg_id   = strdup(msg_id);
+                                char *e_msg_id = strdup(msg_id);
                                 pid_t pid;
 
                                 logg(LOGG_DEBUG, "VirusEvent: about to execute '%s' '%s' '%s' '%s' '%s' '%s' '%s' '%s'\n", viraction, vir, e_id, e_from, e_to, e_msg_subj, e_msg_id, e_msg_date);
@@ -724,16 +724,16 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv)
     cf->totsz = 0;
     cf->bufsz = 0;
     cf->main = cf->alt = -1;
-    cf->all_allowed    = 1;
-    cf->gotbody        = 0;
+    cf->all_allowed = 1;
+    cf->gotbody = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
     if (multircpt) {
-        cf->recipients  = NULL;
+        cf->recipients = NULL;
         cf->nrecipients = 0;
     }
     if (addxvirus == 1) {
         cf->scanned_count = 0;
-        cf->status_count  = 0;
+        cf->status_count = 0;
     }
     smfi_setpriv(ctx, (void *)cf);
 
@@ -760,7 +760,7 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv)
             return FailAction;
         }
         cf->recipients = new_rcpt;
-        rcpt_cnt       = cf->nrecipients++;
+        rcpt_cnt = cf->nrecipients++;
         if (!(cf->recipients[rcpt_cnt] = strdup(argv[0]))) {
             logg(LOGG_ERROR, "Failed to allocate space for new recipient\n");
             nullify(ctx, cf, CF_ANY);

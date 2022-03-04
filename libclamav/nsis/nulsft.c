@@ -131,10 +131,10 @@ static int nsis_decomp(struct nsis_st *n)
     int ret = CL_EFORMAT;
     switch (n->comp) {
         case COMP_BZIP2:
-            n->bz.avail_in  = n->nsis.avail_in;
-            n->bz.next_in   = n->nsis.next_in;
+            n->bz.avail_in = n->nsis.avail_in;
+            n->bz.next_in = n->nsis.next_in;
             n->bz.avail_out = n->nsis.avail_out;
-            n->bz.next_out  = n->nsis.next_out;
+            n->bz.next_out = n->nsis.next_out;
             switch (nsis_BZ2_bzDecompress(&n->bz)) {
                 case BZ_OK:
                     ret = CL_SUCCESS;
@@ -142,16 +142,16 @@ static int nsis_decomp(struct nsis_st *n)
                 case BZ_STREAM_END:
                     ret = CL_BREAK;
             }
-            n->nsis.avail_in  = n->bz.avail_in;
-            n->nsis.next_in   = n->bz.next_in;
+            n->nsis.avail_in = n->bz.avail_in;
+            n->nsis.next_in = n->bz.next_in;
             n->nsis.avail_out = n->bz.avail_out;
-            n->nsis.next_out  = n->bz.next_out;
+            n->nsis.next_out = n->bz.next_out;
             break;
         case COMP_LZMA:
-            n->lz.avail_in  = n->nsis.avail_in;
-            n->lz.next_in   = n->nsis.next_in;
+            n->lz.avail_in = n->nsis.avail_in;
+            n->lz.next_in = n->nsis.next_in;
             n->lz.avail_out = n->nsis.avail_out;
-            n->lz.next_out  = n->nsis.next_out;
+            n->lz.next_out = n->nsis.next_out;
             switch (cli_LzmaDecode(&n->lz)) {
                 case LZMA_RESULT_OK:
                     ret = CL_SUCCESS;
@@ -159,16 +159,16 @@ static int nsis_decomp(struct nsis_st *n)
                 case LZMA_STREAM_END:
                     ret = CL_BREAK;
             }
-            n->nsis.avail_in  = n->lz.avail_in;
-            n->nsis.next_in   = n->lz.next_in;
+            n->nsis.avail_in = n->lz.avail_in;
+            n->nsis.next_in = n->lz.next_in;
             n->nsis.avail_out = n->lz.avail_out;
-            n->nsis.next_out  = n->lz.next_out;
+            n->nsis.next_out = n->lz.next_out;
             break;
         case COMP_ZLIB:
-            n->z.avail_in  = n->nsis.avail_in;
-            n->z.next_in   = n->nsis.next_in;
+            n->z.avail_in = n->nsis.avail_in;
+            n->z.next_in = n->nsis.next_in;
             n->z.avail_out = n->nsis.avail_out;
-            n->z.next_out  = n->nsis.next_out;
+            n->z.next_out = n->nsis.next_out;
             /*  switch (inflate(&n->z, Z_NO_FLUSH)) { */
             switch (nsis_inflate(&n->z)) {
                 case Z_OK:
@@ -177,10 +177,10 @@ static int nsis_decomp(struct nsis_st *n)
                 case Z_STREAM_END:
                     ret = CL_BREAK;
             }
-            n->nsis.avail_in  = n->z.avail_in;
-            n->nsis.next_in   = n->z.next_in;
+            n->nsis.avail_in = n->z.avail_in;
+            n->nsis.next_in = n->z.next_in;
             n->nsis.avail_out = n->z.avail_out;
-            n->nsis.next_out  = n->z.next_out;
+            n->nsis.next_out = n->z.next_out;
             break;
     }
     return ret;
@@ -263,11 +263,11 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
                 return ret;
             }
 
-            n->nsis.avail_in  = size;
-            n->nsis.next_in   = (void *)ibuf;
-            n->nsis.next_out  = obuf;
+            n->nsis.avail_in = size;
+            n->nsis.next_in = (void *)ibuf;
+            n->nsis.next_out = obuf;
             n->nsis.avail_out = BUFSIZ;
-            loops             = 0;
+            loops = 0;
 
             while ((ret = nsis_decomp(n)) == CL_SUCCESS) {
                 if ((size = n->nsis.next_out - obuf) > 0) {
@@ -279,9 +279,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
                         nsis_shutdown(n);
                         return CL_EWRITE;
                     }
-                    n->nsis.next_out  = obuf;
+                    n->nsis.next_out = obuf;
                     n->nsis.avail_out = BUFSIZ;
-                    loops             = 0;
+                    loops = 0;
                     if ((ret = cli_checklimits("NSIS", ctx, size, 0, 0)) != CL_CLEAN) {
                         close(n->ofd);
                         nsis_shutdown(n);
@@ -334,7 +334,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
                            n->asz);
                 return CL_EREAD;
             }
-            n->nsis.next_in  = (void *)n->freeme;
+            n->nsis.next_in = (void *)n->freeme;
             n->nsis.avail_in = n->asz;
         }
 
@@ -342,9 +342,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
             cli_dbgmsg("NSIS: extraction complete\n");
             return CL_BREAK;
         }
-        n->nsis.next_out  = obuf;
+        n->nsis.next_out = obuf;
         n->nsis.avail_out = 4;
-        loops             = 0;
+        loops = 0;
 
         while ((ret = nsis_decomp(n)) == CL_SUCCESS) {
             if (n->nsis.next_out - obuf == 4) break;
@@ -372,9 +372,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
             return CL_SUCCESS;
         }
 
-        n->nsis.next_out  = obuf;
+        n->nsis.next_out = obuf;
         n->nsis.avail_out = MIN(BUFSIZ, size);
-        loops             = 0;
+        loops = 0;
 
         if ((n->ofd = open(n->ofn, O_RDWR | O_CREAT | O_TRUNC | O_BINARY, 0600)) == -1) {
             cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
@@ -393,8 +393,8 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx)
                     return CL_EWRITE;
                 }
                 size -= wsz;
-                loops             = 0;
-                n->nsis.next_out  = obuf;
+                loops = 0;
+                n->nsis.next_out = obuf;
                 n->nsis.avail_out = MIN(size, BUFSIZ);
             } else if (++loops > 20) {
                 cli_dbgmsg("NSIS: xs looping, breaking out"__AT__
@@ -452,8 +452,8 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx)
     if (!(buf = fmap_need_off_once(n->map, n->off, 0x1c)))
         return CL_EREAD;
 
-    n->hsz    = (uint32_t)cli_readint32(buf + 0x14);
-    n->asz    = (uint32_t)cli_readint32(buf + 0x18);
+    n->hsz = (uint32_t)cli_readint32(buf + 0x14);
+    n->asz = (uint32_t)cli_readint32(buf + 0x18);
     n->fullsz = n->map->len;
 
     cli_dbgmsg("NSIS: Header info - Flags=%x, Header size=%x, Archive size=%x\n", cli_readint32(buf), n->hsz, n->asz);

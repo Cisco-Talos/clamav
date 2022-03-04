@@ -79,7 +79,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
         return CL_EARG;
     }
 
-    onas_fan_fd      = (*ctx)->fan_fd;
+    onas_fan_fd = (*ctx)->fan_fd;
     (*ctx)->fan_mask = fan_mask;
 
     if (optget((*ctx)->clamdopts, "OnAccessPrevention")->enabled && !optget((*ctx)->clamdopts, "OnAccessMountPath")->enabled) {
@@ -151,7 +151,7 @@ cl_error_t onas_setup_fanotif(struct onas_context **ctx)
 
 int onas_fan_eloop(struct onas_context **ctx)
 {
-    int ret     = 0;
+    int ret = 0;
     int err_cnt = 0;
     short int scan;
     fd_set rfds;
@@ -210,7 +210,7 @@ int onas_fan_eloop(struct onas_context **ctx)
             if (fmd->fd >= 0) {
                 sprintf(proc_fd_fname, "/proc/self/fd/%d", fmd->fd);
                 errno = 0;
-                len   = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
+                len = readlink(proc_fd_fname, fname, sizeof(fname) - 1);
                 if (len == -1) {
                     close(fmd->fd);
                     logg(LOGG_ERROR, "ClamFanotif: internal error (readlink() failed), %d, %s\n", fmd->fd, strerror(errno));
@@ -286,7 +286,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                     if (fmd->mask & FAN_ALL_PERM_EVENTS) {
                         struct fanotify_response res;
 
-                        res.fd       = fmd->fd;
+                        res.fd = fmd->fd;
                         res.response = FAN_ALLOW;
 
                         if (-1 == write((*ctx)->fan_fd, &res, sizeof(res))) {

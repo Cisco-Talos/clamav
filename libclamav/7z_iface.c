@@ -71,7 +71,7 @@ static SRes FileInStream_fmap_Seek(void *pp, Int64 *pos, ESzSeek origin)
             break;
         case SZ_SEEK_END:
             p->s.curpos = p->file.fmap->len + *pos;
-            *pos        = p->s.curpos;
+            *pos = p->s.curpos;
             break;
         default:
             return 1;
@@ -87,16 +87,16 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     CSzArEx db;
     SRes res;
     UInt16 utf16buf[UTFBUFSZ], *utf16name = utf16buf;
-    int namelen            = UTFBUFSZ;
-    cl_error_t found       = CL_CLEAN;
+    int namelen = UTFBUFSZ;
+    cl_error_t found = CL_CLEAN;
     Int64 begin_of_archive = offset;
-    UInt32 viruses_found   = 0;
+    UInt32 viruses_found = 0;
 
     /* Replacement for
        FileInStream_CreateVTable(&archiveStream); */
-    archiveStream.s.Read    = FileInStream_fmap_Read;
-    archiveStream.s.Seek    = FileInStream_fmap_Seek;
-    archiveStream.s.curpos  = 0;
+    archiveStream.s.Read = FileInStream_fmap_Read;
+    archiveStream.s.Seek = FileInStream_fmap_Seek;
+    archiveStream.s.curpos = 0;
     archiveStream.file.fmap = ctx->fmap;
 
     LookToRead_CreateVTable(&lookStream, False);
@@ -114,14 +114,14 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
         found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
     } else if (res == SZ_OK) {
         UInt32 i, blockIndex = 0xFFFFFFFF;
-        Byte *outBuffer        = 0;
-        size_t outBufferSize   = 0;
+        Byte *outBuffer = 0;
+        size_t outBufferSize = 0;
         unsigned int encrypted = 0;
 
         for (i = 0; i < db.db.NumFiles; i++) {
-            size_t offset           = 0;
+            size_t offset = 0;
             size_t outSizeProcessed = 0;
-            const CSzFileItem *f    = db.db.Files + i;
+            const CSzFileItem *f = db.db.Files + i;
             char *name;
             char *tmp_name;
             size_t j;

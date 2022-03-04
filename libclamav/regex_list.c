@@ -154,8 +154,8 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     struct regex_list *regex;
     size_t real_len, display_len, buffer_len;
 
-    char *buffer  = NULL;
-    char *bufrev  = NULL;
+    char *buffer = NULL;
+    char *bufrev = NULL;
     cl_error_t rc = CL_SUCCESS;
     // int filter_search_rc = 0;
     int root;
@@ -172,9 +172,9 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     /* skip initial '.' inserted by get_host */
     if (real_url[0] == '.') real_url++;
     if (display_url[0] == '.') display_url++;
-    real_len    = strlen(real_url);
+    real_len = strlen(real_url);
     display_len = strlen(display_url);
-    buffer_len  = (hostOnly && !is_allow_list_lookup) ? real_len + 1 : real_len + display_len + 1 + 1;
+    buffer_len = (hostOnly && !is_allow_list_lookup) ? real_len + 1 : real_len + display_len + 1 + 1;
     if (buffer_len < 3) {
         /* too short, no match possible */
         return CL_SUCCESS;
@@ -197,7 +197,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         strncpy(buffer + real_len + 1, display_url, display_len);
     }
     buffer[buffer_len - 1] = '/';
-    buffer[buffer_len]     = 0;
+    buffer[buffer_len] = 0;
     cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
     if (CL_SUCCESS != (rc = cli_ac_initdata(&mdata, 0, 0, 0, CLI_DEFAULT_AC_TRACKLEN)))
@@ -246,13 +246,13 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
     free(bufrev);
     cli_ac_freedata(&mdata);
 
-    rc   = CL_SUCCESS;
+    rc = CL_SUCCESS;
     root = matcher->root_regex_idx;
     while (res || root) {
         struct cli_ac_result *q;
         if (!res) {
             regex = matcher->suffix_regexes[root].head;
-            root  = 0;
+            root = 0;
         } else {
             regex = res->customdata;
         }
@@ -269,7 +269,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
             regex = regex->nxt;
         }
         if (res) {
-            q   = res;
+            q = res;
             res = res->next;
             free(q);
         }
@@ -295,11 +295,11 @@ cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefilte
     memset(matcher, 0, sizeof(*matcher));
 
     matcher->list_inited = 1;
-    matcher->list_built  = 0;
+    matcher->list_built = 0;
     matcher->list_loaded = 0;
     cli_hashtab_init(&matcher->suffix_hash, 512);
 #ifdef USE_MPOOL
-    matcher->mempool          = mp;
+    matcher->mempool = mp;
     matcher->suffixes.mempool = mp;
     assert(mp && "mempool must be initialized");
 #endif
@@ -307,7 +307,7 @@ cl_error_t init_regex_list(struct regex_matcher *matcher, uint8_t dconf_prefilte
         return rc;
     }
 #ifdef USE_MPOOL
-    matcher->sha256_hashes.mempool  = mp;
+    matcher->sha256_hashes.mempool = mp;
     matcher->hostkey_prefix.mempool = mp;
 #endif
     if ((rc = cli_bm_init(&matcher->sha256_hashes))) {
@@ -345,7 +345,7 @@ static int functionality_level_check(char *line)
             if (!isdigit(ptmax[j]))
                 return CL_SUCCESS; /* see above */
         ptmax[-1] = '\0';
-        min       = atoi(ptmin);
+        min = atoi(ptmin);
         if (strlen(ptmax) == 0)
             max = INT_MAX;
         else
@@ -377,7 +377,7 @@ static int add_hash(struct regex_matcher *matcher, char *pattern, const char fl,
     pat->length = 32;
     if (is_prefix) {
         pat->length = 4;
-        bm          = &matcher->hostkey_prefix;
+        bm = &matcher->hostkey_prefix;
     } else {
         bm = &matcher->sha256_hashes;
     }
@@ -500,7 +500,7 @@ cl_error_t load_regex_matcher(struct cl_engine *engine, struct regex_matcher *ma
          * appended below.
          */
         if (pattern_len < (FILEBUFF - 3)) {
-            pattern[pattern_len]     = '/';
+            pattern[pattern_len] = '/';
             pattern[pattern_len + 1] = '\0';
         } else {
             cli_errmsg("Overlong regex line %d\n", line);
@@ -574,7 +574,7 @@ void regex_list_done(struct regex_matcher *matcher)
                 struct regex_list *r = matcher->suffix_regexes[i].head;
                 while (r) {
                     struct regex_list *q = r;
-                    r                    = r->nxt;
+                    r = r->nxt;
                     free(q->pattern);
                     free(q);
                 }
@@ -605,7 +605,7 @@ int is_regex_ok(struct regex_matcher *matcher)
 static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
 {
     struct cli_matcher *root = &matcher->suffixes;
-    struct cli_ac_patt *new  = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*new));
+    struct cli_ac_patt *new = MPOOL_CALLOC(matcher->mempool, 1, sizeof(*new));
     size_t i;
     int ret;
 
@@ -613,15 +613,15 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
         return CL_EMEM;
     assert(root && suffix);
 
-    new->rtype      = 0;
-    new->type       = 0;
-    new->sigid      = 0;
-    new->parts      = 0;
-    new->partno     = 0;
-    new->mindist    = 0;
-    new->maxdist    = 0;
+    new->rtype = 0;
+    new->type = 0;
+    new->sigid = 0;
+    new->parts = 0;
+    new->partno = 0;
+    new->mindist = 0;
+    new->maxdist = 0;
     new->offset_min = CLI_OFF_ANY;
-    new->length[0]  = (uint16_t)len;
+    new->length[0] = (uint16_t)len;
 
     new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
     if (new->length[0] > root->maxpatlen)
@@ -637,7 +637,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
         new->pattern[i] = suffix[i]; /*new->pattern is short int* */
 
     new->customdata = info;
-    new->virname    = NULL;
+    new->virname = NULL;
     if ((ret = cli_ac_addpatt(root, new))) {
         MPOOL_FREE(matcher->mempool, new->pattern);
         MPOOL_FREE(matcher->mempool, new);
@@ -663,7 +663,7 @@ static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
 static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
     struct regex_matcher *matcher = cbdata;
-    struct regex_list *regex      = cli_malloc(sizeof(*regex));
+    struct regex_list *regex = cli_malloc(sizeof(*regex));
     const struct cli_element *el;
     void *tmp_matcher; /*	save original address if OOM occurs */
 
@@ -673,9 +673,9 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         return CL_EMEM;
     }
     regex->pattern = iregex->pattern ? cli_strdup(iregex->pattern) : NULL;
-    regex->preg    = iregex->preg;
-    regex->nxt     = NULL;
-    el             = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
+    regex->preg = iregex->preg;
+    regex->nxt = NULL;
+    el = cli_hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
     /* TODO: what if suffixes are prefixes of eachother and only one will
      * match? */
     if (el) {
@@ -684,15 +684,15 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
-        size_t n    = matcher->suffix_cnt++;
-        el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
+        size_t n = matcher->suffix_cnt++;
+        el = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
         tmp_matcher = cli_realloc(matcher->suffix_regexes, (n + 1) * sizeof(*matcher->suffix_regexes));
         if (!tmp_matcher) {
             free(regex);
             return CL_EMEM;
         }
-        matcher->suffix_regexes         = tmp_matcher; /*  success, point at new memory location   */
+        matcher->suffix_regexes = tmp_matcher; /*  success, point at new memory location   */
         matcher->suffix_regexes[n].tail = regex;
         matcher->suffix_regexes[n].head = regex;
         if (suffix[0] == '/' && suffix[1] == '\0')
@@ -707,8 +707,8 @@ static size_t reverse_string(char *pattern)
     size_t len = strlen(pattern);
     size_t i;
     for (i = 0; i < (len / 2); i++) {
-        char aux             = pattern[i];
-        pattern[i]           = pattern[len - i - 1];
+        char aux = pattern[i];
+        pattern[i] = pattern[len - i - 1];
         pattern[len - i - 1] = aux;
     }
     return len;
@@ -737,11 +737,11 @@ static cl_error_t add_static_pattern(struct regex_matcher *matcher, char *patter
     struct regex_list regex;
     cl_error_t rc;
 
-    len           = reverse_string(pattern);
-    regex.nxt     = NULL;
+    len = reverse_string(pattern);
+    regex.nxt = NULL;
     regex.pattern = cli_strdup(pattern);
-    regex.preg    = NULL;
-    rc            = add_pattern_suffix(matcher, pattern, len, &regex);
+    regex.preg = NULL;
+    rc = add_pattern_suffix(matcher, pattern, len, &regex);
     free(regex.pattern);
     return rc;
 }
@@ -752,7 +752,7 @@ cl_error_t regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
     regex_t *preg;
     size_t len;
     /* we only match the host, so remove useless stuff */
-    const char remove_end[]  = "([/?].*)?/";
+    const char remove_end[] = "([/?].*)?/";
     const char remove_end2[] = "([/?].*)/";
 
     len = strlen(pattern);

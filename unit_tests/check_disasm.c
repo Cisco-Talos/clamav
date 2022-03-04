@@ -45,7 +45,7 @@
 
 START_TEST(test_disasm_basic)
 {
-    int fd               = -1;
+    int fd = -1;
     char *temp_file_path = NULL;
     cli_gentempfd_with_prefix(NULL, "disasm", &temp_file_path, &fd);
     int ref;

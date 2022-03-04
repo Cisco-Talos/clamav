@@ -114,9 +114,9 @@ void virusaction(const char *filename, const char *virname,
     if (!(opt = optget(opts, "VirusEvent"))->enabled)
         return;
 
-    path   = getenv("PATH");
+    path = getenv("PATH");
     env[0] = path ? strdup(path) : NULL;
-    j      = env[0] ? 1 : 0;
+    j = env[0] ? 1 : 0;
     /* Allocate env vars.. to be portable env vars should not be freed */
     buffer_file =
         (char *)malloc(strlen(VE_FILENAME) + strlen(filename) + 2);
@@ -198,7 +198,7 @@ int writen(int fd, void *buff, unsigned int count)
     unsigned int todo;
     unsigned char *current;
 
-    todo    = count;
+    todo = count;
     current = (unsigned char *)buff;
 
     do {
@@ -310,11 +310,11 @@ read_fd_data(struct fd_buf *buf)
             buf->recvfd = -1;
         }
         memset(&msg, 0, sizeof(msg));
-        iov[0].iov_base    = buf->buffer + buf->off;
-        iov[0].iov_len     = buf->bufsize - buf->off;
-        msg.msg_iov        = iov;
-        msg.msg_iovlen     = 1;
-        msg.msg_control    = b.buff;
+        iov[0].iov_base = buf->buffer + buf->off;
+        iov[0].iov_len = buf->bufsize - buf->off;
+        msg.msg_iov = iov;
+        msg.msg_iovlen = 1;
+        msg.msg_control = b.buff;
         msg.msg_controllen = sizeof(b.buff);
 
         n = recvmsg(buf->fd, &msg, 0);
@@ -364,17 +364,17 @@ read_fd_data(struct fd_buf *buf)
 static int
 buf_init(struct fd_buf *buf, int listen_only, int timeout)
 {
-    buf->off         = 0;
+    buf->off = 0;
     buf->got_newdata = 0;
-    buf->recvfd      = -1;
-    buf->mode        = MODE_COMMAND;
-    buf->id          = 0;
-    buf->dumpfd      = -1;
-    buf->chunksize   = 0;
-    buf->quota       = 0;
-    buf->dumpname    = NULL;
-    buf->group       = NULL;
-    buf->term        = '\0';
+    buf->recvfd = -1;
+    buf->mode = MODE_COMMAND;
+    buf->id = 0;
+    buf->dumpfd = -1;
+    buf->chunksize = 0;
+    buf->quota = 0;
+    buf->dumpname = NULL;
+    buf->group = NULL;
+    buf->term = '\0';
     if (!listen_only) {
         if (!buf->buffer) {
             buf->bufsize = PATH_MAX + 8;
@@ -389,7 +389,7 @@ buf_init(struct fd_buf *buf, int listen_only, int timeout)
         if (buf->buffer)
             free(buf->buffer);
         buf->bufsize = 0;
-        buf->buffer  = NULL;
+        buf->buffer = NULL;
     }
     if (timeout) {
         time(&buf->timeout_at);
@@ -424,8 +424,8 @@ int fds_add(struct fd_data *data, int fd, int listen_only, int timeout)
         logg(LOGG_ERROR, "add_fd: Memory allocation failed for fd_buf\n");
         return -1;
     }
-    data->buf               = buf;
-    data->nfds              = n;
+    data->buf = buf;
+    data->nfds = n;
     data->buf[n - 1].buffer = NULL;
     if (buf_init(&data->buf[n - 1], listen_only, timeout) < 0)
         return -1;
@@ -533,8 +533,8 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
         timeout *= 1000;
     }
     for (i = 0; i < data->nfds; i++) {
-        data->poll_data[i].fd      = data->buf[i].fd;
-        data->poll_data[i].events  = POLLIN;
+        data->poll_data[i].fd = data->buf[i].fd;
+        data->poll_data[i].events = POLLIN;
         data->poll_data[i].revents = 0;
     }
     do {
@@ -623,7 +623,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
                 if (fd >= 0)
                     FD_SET(fd, &rfds);
             }
-            tv.tv_sec  = timeout;
+            tv.tv_sec = timeout;
             tv.tv_usec = 0;
 
             fds_unlock(data);
@@ -659,7 +659,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
             if (retval < 0 && errno == EBADF) {
                 /* unlike poll(),  select() won't tell us which FD is bad, so
                  * we have to check them one by one. */
-                tv.tv_sec  = 0;
+                tv.tv_sec = 0;
                 tv.tv_usec = 0;
                 /* with tv == 0 it doesn't check for EBADF */
                 FD_ZERO(&rfds);
@@ -679,7 +679,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals,
                     }
                 }
                 retval = -1;
-                errno  = EINTR;
+                errno = EINTR;
                 continue;
             }
         } while (retval == -1 && !check_signals && errno == EINTR);
@@ -715,7 +715,7 @@ void fds_free(struct fd_data *data)
     if (data->poll_data)
         free(data->poll_data);
 #endif
-    data->buf  = NULL;
+    data->buf = NULL;
     data->nfds = 0;
     fds_unlock(data);
 }

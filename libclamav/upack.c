@@ -103,8 +103,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
         } else {
             if (!CLI_ISCONTAINED(dest, dsize, dest + ep + 7, 5) || dest[ep + 7] != '\xe9')
                 return -1;
-            loc_esi   = dest + cli_readint32(dest + ep + 8) + ep + 0xc;
-            alvalue   = loc_esi + 0x25;
+            loc_esi = dest + cli_readint32(dest + ep + 8) + ep + 0xc;
+            alvalue = loc_esi + 0x25;
             lngjmpoff = 10;
         }
 
@@ -191,8 +191,8 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
             for (j = 0; j < 0x27; j++, loc_esi += 4, loc_edi += 4)
                 cli_writeint32(loc_edi, cli_readint32(loc_esi));
         }
-        save3   = cli_readint32(loc_esi + 4);
-        paddr   = dest + ((uint32_t)cli_readint32(loc_edi - 4)) - vma;
+        save3 = cli_readint32(loc_esi + 4);
+        paddr = dest + ((uint32_t)cli_readint32(loc_edi - 4)) - vma;
         loc_ebx = loc_edi;
         cli_writeint32(loc_edi, 0xffffffff);
         loc_edi += 4;
@@ -211,7 +211,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
         pushed_esi = loc_edi;
         if (upack_version == UPACK_0297729) {
             end_edi = dest + cli_readint32(loc_esi + 0x64) - vma;
-            save3   = cli_readint32(loc_esi + 0x40);
+            save3 = cli_readint32(loc_esi + 0x40);
         } else {
             end_edi = dest + cli_readint32(loc_esi + 0x34) - vma;
         }
@@ -232,20 +232,20 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
             upack_version = UPACK_11_12;
 
         if (upack_version == UPACK_11_12) {
-            ep_jmp_offs          = 0x1a4;
+            ep_jmp_offs = 0x1a4;
             rep_stosd_count_offs = 0x1b;
-            context_bits_offs    = 0x41;
-            alvalue              = loc_esi + 0x184;
+            context_bits_offs = 0x41;
+            alvalue = loc_esi + 0x184;
         } else {
-            ep_jmp_offs          = 0x217;
+            ep_jmp_offs = 0x217;
             rep_stosd_count_offs = 0x3a;
-            context_bits_offs    = 0x5f;
-            alvalue              = loc_esi + 0x1c1;
+            context_bits_offs = 0x5f;
+            alvalue = loc_esi + 0x1c1;
         }
 
         if (!CLI_ISCONTAINED(dest, dsize, loc_esi, ep_jmp_offs + 4))
             return -1;
-        save1       = cli_readint32(loc_esi + ep_jmp_offs);
+        save1 = cli_readint32(loc_esi + ep_jmp_offs);
         original_ep = (loc_esi - dest) + ep_jmp_offs + 4;
         original_ep += (int32_t)save1;
         cli_dbgmsg("Upack: EP: %08x original %08x\n", ep, original_ep);
@@ -253,7 +253,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
         /* this are really ugly hacks,
          * rep_stosd_count_offs & context_bits_offs are < ep_jmp_offs,
          * so checked in CLI_ISCONTAINED above */
-        count   = (*(loc_esi + rep_stosd_count_offs)) & 0xff;
+        count = (*(loc_esi + rep_stosd_count_offs)) & 0xff;
         shlsize = (*(loc_esi + context_bits_offs)) & 0xff;
         shlsize = 8 - shlsize;
         if (shlsize < 2 || shlsize > 8) {
@@ -333,11 +333,11 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
                 return -1;
             for (j = 2; j < 6; j++)
                 cli_writeint32(loc_ebx + (j << 2), cli_readint32(loc_ebx + (j << 2)));
-            paddr      = dest + cli_readint32(loc_ebx - 4) - base;
-            save1      = loc_ecx;
+            paddr = dest + cli_readint32(loc_ebx - 4) - base;
+            save1 = loc_ecx;
             pushed_esi = loc_edi;
-            end_edi    = dest + cli_readint32(loc_esi + 0x24) - base;
-            vma        = cli_readint32(loc_ebx);
+            end_edi = dest + cli_readint32(loc_esi + 0x24) - base;
+            vma = cli_readint32(loc_ebx);
             cli_writeint32(loc_ebx, cli_readint32(loc_ebx + 4));
             cli_writeint32((loc_ebx + 4), vma);
             /* Upack 1.1/1.2 is something between 0.39 2-section and 0.39 3-section */
@@ -367,7 +367,7 @@ int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uin
             for (j = 0; (uint32_t)j < count; j++, loc_edi += 4)
                 cli_writeint32(loc_edi, 0x400);
 
-            loc_edi    = dest + cli_readint32(loc_esi) - base; /* read checked above */
+            loc_edi = dest + cli_readint32(loc_esi) - base; /* read checked above */
             pushed_esi = loc_edi;
             loc_esi += 4;
             loc_ecx = 0;
@@ -460,8 +460,8 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 
         if ((ret = lzma_upack_esi_00(&p, loc_edx, bs, bl))) {
             /* loc_483927 */
-            loc_al  = loc_eax & 0xff;
-            loc_al  = ((loc_al + 0xf9) > 0xff) ? (3 + 8) : 8;
+            loc_al = loc_eax & 0xff;
+            loc_al = ((loc_al + 0xf9) > 0xff) ? (3 + 8) : 8;
             loc_eax = (loc_eax & 0xffffff00) | (loc_al & 0xff);
             loc_ebp = state[2];
             loc_ecx = (loc_ecx & 0xffffff00) | 0x30;
@@ -475,17 +475,17 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                                 temp_ebp = loc_ebp; loc_ebp = cli_readint32(loc_ebx+0x10); cli_writeint32(loc_ebx+0x10, temp_ebp);
                                 */
                 temp_ebp = loc_ebp;
-                loc_ebp  = state[4];
+                loc_ebp = state[4];
                 state[4] = state[3];
                 state[3] = temp_ebp;
                 eax_copy = loc_eax;
-                loc_edx  = loc_ebx + 0xbc0;
+                loc_edx = loc_ebx + 0xbc0;
                 state[5] = loc_ebp;
                 if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == 0xffffffff)
                     return -1;
-                loc_ecx     = 3;
+                loc_ecx = 3;
                 jakas_kopia = temp;
-                loc_eax     = temp - 1;
+                loc_eax = temp - 1;
                 if (loc_eax >= loc_ecx)
                     loc_eax = loc_ecx;
                 loc_ecx = 0x40;
@@ -500,8 +500,8 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                     loc_eax >>= 1;
                     loc_eax--;
                     temp_ebp = loc_eax;
-                    loc_eax  = loc_ecx;
-                    loc_ecx  = temp_ebp;
+                    loc_eax = loc_ecx;
+                    loc_ecx = temp_ebp;
                     loc_ebp <<= (loc_ecx & 0xff);
                     loc_edx = loc_ebx + (loc_ebp << 2) + 0x178;
                     if ((loc_ecx & 0xff) > 5) {
@@ -541,12 +541,12 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                     loc_eax <<= (loc_ecx & 0xff);
                     loc_ebp8 = loc_edx;
                     temp_ebp = loc_ecx;
-                    loc_ecx  = loc_eax;
-                    loc_eax  = temp_ebp;
+                    loc_ecx = loc_eax;
+                    loc_eax = temp_ebp;
                     if (lzma_upack_esi_50(&p, 1, loc_ecx, &loc_edx, loc_ebp8, &loc_eax, bs, bl) == 0xffffffff)
                         return -1;
                     /* cdq, loc_edx = (loc_eax&0x80000000)?0xffffffff:0; */
-                    loc_ecx  = temp_ebp;
+                    loc_ecx = temp_ebp;
                     temp_ebp = CLI_SRS((int32_t)loc_eax, 31); /* thx, desp */
                     /* loc_483a00 */
                     do {
@@ -569,19 +569,19 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                     if ((ret = lzma_upack_esi_00(&p, loc_edx, bs, bl))) {
                         /* loc_48395e */
                         loc_edx += loc_ecx;
-                        ret      = lzma_upack_esi_00(&p, loc_edx, bs, bl);
+                        ret = lzma_upack_esi_00(&p, loc_edx, bs, bl);
                         temp_ebp = loc_ebp;
-                        loc_ebp  = state[4];
+                        loc_ebp = state[4];
                         state[4] = state[3];
                         state[3] = temp_ebp;
                         if (ret) {
                             temp_ebp = loc_ebp;
-                            loc_ebp  = state[5];
+                            loc_ebp = state[5];
                             state[5] = temp_ebp;
                         }
                     } else {
                         temp_ebp = loc_ebp;
-                        loc_ebp  = state[3];
+                        loc_ebp = state[3];
                         state[3] = temp_ebp;
                     }
                 } else {
@@ -607,7 +607,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                 }
                 /* loc_48396a */
                 eax_copy = loc_eax;
-                loc_edx  = loc_ebx + 0x778;
+                loc_edx = loc_ebx + 0x778;
                 if (lzma_upack_esi_54(&p, loc_eax, &loc_ecx, &loc_edx, &temp, bs, bl) == 0xffffffff)
                     return -1;
                 loc_eax = loc_ecx;
@@ -652,8 +652,8 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
                     loc_eax = (loc_eax & 0xffff00ff) | ((*loc_edi & loc_cl) ? 0x200 : 0x100);
 
                     loc_edx = loc_ebp8 + (loc_eax << 2);
-                    ret     = lzma_upack_esi_00(&p, loc_edx, bs, bl);
-                    loc_al  = loc_eax & 0xff;
+                    ret = lzma_upack_esi_00(&p, loc_edx, bs, bl);
+                    loc_al = loc_eax & 0xff;
                     loc_al += loc_al;
                     loc_al += ret;
                     loc_al &= 0xff;

@@ -186,8 +186,8 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         return 0;
     }
     maxcopy = (*inbytesleft > *outbytesleft ? *outbytesleft : *inbytesleft) & ~(iconv_struct->size - 1);
-    input   = (const uint8_t*)*inbuf;
-    output  = (uint8_t*)*outbuf;
+    input = (const uint8_t*)*inbuf;
+    output = (uint8_t*)*outbuf;
 
     /*,maxcopy is aligned to data size */
     /* output is always utf16be !*/
@@ -196,11 +196,11 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         case E_UCS4_1234: {
             for (i = 0; i < maxcopy; i += 4) {
                 if (!input[i + 2] && !input[i + 3]) {
-                    output[i / 2]     = input[i + 1]; /* is compiler smart enough to replace /2, with >>1 ? */
+                    output[i / 2] = input[i + 1]; /* is compiler smart enough to replace /2, with >>1 ? */
                     output[i / 2 + 1] = input[i];
                 } else {
                     cli_dbgmsg(MODULE_NAME "Warning: unicode character out of utf16 range!\n");
-                    output[i / 2]     = 0xff;
+                    output[i / 2] = 0xff;
                     output[i / 2 + 1] = 0xff;
                 }
             }
@@ -208,7 +208,7 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         }
         case E_UCS4_4321: {
             const uint16_t* in = (const uint16_t*)input; /*UCS4_4321, and UTF16_BE have same endianness, no need for byteswap here*/
-            uint16_t* out      = (uint16_t*)output;
+            uint16_t* out = (uint16_t*)output;
             for (i = 0; i < maxcopy / 2; i += 2) {
                 if (!in[i]) {
                     out[i / 2] = in[i + 1];
@@ -220,7 +220,7 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         }
         case E_UCS4_2143: {
             const uint16_t* in = (const uint16_t*)input;
-            uint16_t* out      = (uint16_t*)output;
+            uint16_t* out = (uint16_t*)output;
             for (i = 0; i < maxcopy / 2; i += 2) {
                 if (!in[i + 1])
                     out[i / 2] = in[i];
@@ -232,10 +232,10 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         case E_UCS4_3412: {
             for (i = 0; i < maxcopy; i += 4) {
                 if (!input[i] && !input[i + 1]) {
-                    output[i / 2]     = input[i + 3];
+                    output[i / 2] = input[i + 3];
                     output[i / 2 + 1] = input[i + 2];
                 } else {
-                    output[i / 2]     = 0xff;
+                    output[i / 2] = 0xff;
                     output[i / 2 + 1] = 0xff;
                 }
             }
@@ -244,7 +244,7 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         case E_UTF16:
         case E_UTF16_LE: {
             for (i = 0; i < maxcopy; i += 2) {
-                output[i]     = input[i + 1];
+                output[i] = input[i + 1];
                 output[i + 1] = input[i];
             }
             break;
@@ -256,7 +256,7 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
         case E_OTHER: {
             const size_t max_copy = *inbytesleft > (*outbytesleft / 2) ? (*outbytesleft / 2) : *inbytesleft;
             for (i = 0; i < max_copy; i++) {
-                output[i * 2]     = 0;
+                output[i * 2] = 0;
                 output[i * 2 + 1] = input[i];
             }
             *outbytesleft -= max_copy * 2;
@@ -268,7 +268,7 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
             return 0;
         }
         case E_UTF8: {
-            const size_t maxread  = *inbytesleft;
+            const size_t maxread = *inbytesleft;
             const size_t maxwrite = *outbytesleft;
             size_t j;
             for (i = 0, j = 0; i < maxread && j < maxwrite;) {
@@ -349,37 +349,37 @@ static int iconv(iconv_t iconv_struct, char** inbuf, size_t* inbytesleft,
 static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom_found, uint8_t* enc_width)
 {
     const char* encoding = NULL;
-    int has_bom          = 0;
-    uint8_t enc_bytes    = 1; /* default is UTF8, which has a minimum of 1 bytes */
+    int has_bom = 0;
+    uint8_t enc_bytes = 1; /* default is UTF8, which has a minimum of 1 bytes */
     /* undecided 32-bit encodings are treated as ucs4, and
      * 16 bit as utf16*/
     switch (bom[0]) {
         case 0x00:
             if (bom[1] == 0x00) {
                 if (bom[2] == 0xFE && bom[3] == 0xFF) {
-                    encoding  = UCS4_1234; /* UCS-4 big-endian*/
-                    has_bom   = 1;
+                    encoding = UCS4_1234; /* UCS-4 big-endian*/
+                    has_bom = 1;
                     enc_bytes = 4;
                 } else if (bom[2] == 0xFF && bom[3] == 0xFE) {
-                    encoding  = UCS4_2143; /* UCS-4 unusual order 2143 */
-                    has_bom   = 1;
+                    encoding = UCS4_2143; /* UCS-4 unusual order 2143 */
+                    has_bom = 1;
                     enc_bytes = 4;
                 } else if (bom[2] == 0x00 && bom[3] == 0x3C) {
                     /* undecided, treat as ucs4 */
-                    encoding  = UCS4_1234;
+                    encoding = UCS4_1234;
                     enc_bytes = 4;
                 } else if (bom[2] == 0x3C && bom[3] == 0x00) {
-                    encoding  = UCS4_2143;
+                    encoding = UCS4_2143;
                     enc_bytes = 4;
                 }
             } /* 0x00 0x00 */
             else if (bom[1] == 0x3C) {
                 if (bom[2] == 0x00) {
                     if (bom[3] == 0x00) {
-                        encoding  = UCS4_3412;
+                        encoding = UCS4_3412;
                         enc_bytes = 4;
                     } else if (bom[3] == 0x3F) {
-                        encoding  = UTF16_BE;
+                        encoding = UTF16_BE;
                         enc_bytes = 2;
                     }
                 } /*0x00 0x3C 0x00*/
@@ -388,12 +388,12 @@ static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom
         case 0xFF:
             if (bom[1] == 0xFE) {
                 if (bom[2] == 0x00 && bom[3] == 0x00) {
-                    encoding  = UCS4_4321;
+                    encoding = UCS4_4321;
                     enc_bytes = 4;
-                    has_bom   = 1;
+                    has_bom = 1;
                 } else {
-                    encoding  = UTF16_LE;
-                    has_bom   = 1;
+                    encoding = UTF16_LE;
+                    has_bom = 1;
                     enc_bytes = 2;
                 }
             } /*0xFF 0xFE*/
@@ -401,12 +401,12 @@ static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom
         case 0xFE:
             if (bom[1] == 0xFF) {
                 if (bom[2] == 0x00 && bom[3] == 0x00) {
-                    encoding  = UCS4_3412;
+                    encoding = UCS4_3412;
                     enc_bytes = 4;
-                    has_bom   = 1;
+                    has_bom = 1;
                 } else {
-                    encoding  = UTF16_BE;
-                    has_bom   = 1;
+                    encoding = UTF16_BE;
+                    has_bom = 1;
                     enc_bytes = 2;
                 }
             } /*0xFE 0xFF*/
@@ -414,29 +414,29 @@ static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom
         case 0xEF:
             if (bom[1] == 0xBB && bom[2] == 0xBF) {
                 encoding = UTF8;
-                has_bom  = 1;
+                has_bom = 1;
                 /*enc_bytes = 4;- default, maximum 4 bytes*/
             } /*0xEF 0xBB 0xBF*/
             break;
         case 0x3C:
             if (bom[1] == 0x00) {
                 if (bom[2] == 0x00 && bom[3] == 0x00) {
-                    encoding  = UCS4_4321;
+                    encoding = UCS4_4321;
                     enc_bytes = 4;
                 } else if (bom[2] == 0x3F && bom[3] == 0x00) {
-                    encoding  = UTF16_LE;
+                    encoding = UTF16_LE;
                     enc_bytes = 2;
                 }
             } /*0x3C 0x00*/
             else if (bom[1] == 0x3F && bom[2] == 0x78 && bom[3] == 0x6D) {
-                encoding  = NULL;
+                encoding = NULL;
                 enc_bytes = 1;
             } /*0x3C 3F 78 6D*/
             break;
         case 0x4C:
             if (bom[1] == 0x6F && bom[2] == 0xA7 && bom[3] == 0x94) {
                 cli_dbgmsg(MODULE_NAME "EBCDIC encoding is not supported in line mode\n");
-                encoding  = NULL;
+                encoding = NULL;
                 enc_bytes = 1;
             } /*4C 6F A7 94*/
             break;
@@ -598,7 +598,7 @@ static inline struct iconv_cache* cache_get_tls_instance(void)
 #else
 
 static struct iconv_cache* global_iconv_cache = NULL;
-static int iconv_global_inited                = 0;
+static int iconv_global_inited = 0;
 
 static void iconv_cache_cleanup_main(void)
 {
@@ -679,9 +679,9 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
     char tmp4[4];
     size_t inleft = in_m_area->length - in_m_area->offset;
     size_t rc, alignfix;
-    char* input    = (char*)in_m_area->buffer + in_m_area->offset;
+    char* input = (char*)in_m_area->buffer + in_m_area->offset;
     size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;
-    char* out      = (char*)out_m_area->buffer;
+    char* out = (char*)out_m_area->buffer;
 
     out_m_area->offset = 0;
     if (!inleft) {
@@ -696,8 +696,8 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
         /* EOF, and we have less than 4 bytes to convert */
         memset(tmp4, 0, 4);
         memcpy(tmp4, input, alignfix);
-        input    = tmp4;
-        inleft   = 4;
+        input = tmp4;
+        inleft = 4;
         alignfix = 0;
     }
 
@@ -777,14 +777,14 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
 {
     cl_error_t status = CL_BREAK;
 
-    char* out_utf8       = NULL;
+    char* out_utf8 = NULL;
     size_t out_utf8_size = 0;
 
 #if defined(HAVE_ICONV)
     iconv_t conv = (iconv_t)-1;
 #elif defined(WIN32)
     LPWSTR lpWideCharStr = NULL;
-    int cchWideChar      = 0;
+    int cchWideChar = 0;
 #endif
 
     if (NULL == in || in_size == 0 || NULL == out || NULL == out_size) {
@@ -793,7 +793,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
         goto done;
     }
 
-    *out      = NULL;
+    *out = NULL;
     *out_size = 0;
 
     switch (codepage) {
@@ -803,7 +803,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             int byte_count, sigbit_count;
 
             out_utf8_size = in_size;
-            out_utf8      = cli_calloc(1, out_utf8_size + 1);
+            out_utf8 = cli_calloc(1, out_utf8_size + 1);
             if (NULL == out_utf8) {
                 cli_errmsg("cli_codepage_to_utf8: Failure allocating buffer for utf8 filename.\n");
                 status = CL_EMEM;
@@ -861,7 +861,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     int i = 0;
 
                     uint16_t* pCodeUnits = (uint16_t*)in;
-                    cchWideChar          = (int)in_size / 2;
+                    cchWideChar = (int)in_size / 2;
 
                     lpWideCharStr = cli_malloc((cchWideChar) * sizeof(WCHAR)); /* No need for a null terminator here, we'll deal with the exact size */
                     if (NULL == lpWideCharStr) {
@@ -912,7 +912,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                         goto done;
                     }
 
-                    in      = (char*)lpWideCharStr;
+                    in = (char*)lpWideCharStr;
                     in_size = cchWideChar * sizeof(WCHAR);
                 }
             }
@@ -980,12 +980,12 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
             }
 
             for (attempt = 1; attempt <= 3; attempt++) {
-                char* inbuf         = in;
-                size_t inbufsize    = in_size;
-                size_t iconvRet     = -1;
+                char* inbuf = in;
+                size_t inbufsize = in_size;
+                size_t iconvRet = -1;
                 size_t outbytesleft = 0;
 
-                char* out_utf8_tmp   = NULL;
+                char* out_utf8_tmp = NULL;
                 char* out_utf8_index = NULL;
 
                 /* Charset to UTF-8 should never exceed in_size * 6;
@@ -1043,7 +1043,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
                     status = CL_EMEM;
                     goto done;
                 }
-                out_utf8      = out_utf8_tmp;
+                out_utf8 = out_utf8_tmp;
                 out_utf8_size = out_utf8_size - outbytesleft;
                 break;
             }
@@ -1059,7 +1059,7 @@ cl_error_t cli_codepage_to_utf8(char* in, size_t in_size, uint16_t codepage, cha
         }
     }
 
-    *out      = out_utf8;
+    *out = out_utf8;
     *out_size = out_utf8_size;
 
     status = CL_SUCCESS;
@@ -1149,21 +1149,21 @@ char* cli_utf16_to_utf8(const char* utf16, size_t length, encoding_t type)
         if (c < 0x80) {
             s2[j++] = c;
         } else if (c < 0x800) {
-            s2[j]     = 0xc0 | (c >> 6);
+            s2[j] = 0xc0 | (c >> 6);
             s2[j + 1] = 0x80 | (c & 0x3f);
             j += 2;
         } else if (c < 0xd800 || c >= 0xe000) {
-            s2[j]     = 0xe0 | (c >> 12);
+            s2[j] = 0xe0 | (c >> 12);
             s2[j + 1] = 0x80 | ((c >> 6) & 0x3f);
             s2[j + 2] = 0x80 | (c & 0x3f);
             j += 3;
         } else if (c < 0xdc00 && i + 3 < length) {
             uint16_t c2;
             /* UTF16 high+low surrogate */
-            c  = c - 0xd800 + 0x40;
+            c = c - 0xd800 + 0x40;
             c2 = i + 3 < length ? cli_readint16(&utf16[i + 2]) : 0;
             c2 -= 0xdc00;
-            s2[j]     = 0xf0 | (c >> 8);
+            s2[j] = 0xf0 | (c >> 8);
             s2[j + 1] = 0x80 | ((c >> 2) & 0x3f);
             s2[j + 2] = 0x80 | ((c & 3) << 4) | (c2 >> 6);
             s2[j + 3] = 0x80 | (c2 & 0x3f);

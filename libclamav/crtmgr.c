@@ -231,15 +231,15 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
     memcpy(i->issuer, x509->issuer, sizeof(i->issuer));
     memcpy(i->tbshash, x509->tbshash, sizeof(i->tbshash));
     i->ignore_serial = x509->ignore_serial;
-    i->not_before    = x509->not_before;
-    i->not_after     = x509->not_after;
-    i->hashtype      = x509->hashtype;
-    i->certSign      = x509->certSign;
-    i->codeSign      = x509->codeSign;
-    i->timeSign      = x509->timeSign;
-    i->isBlocked     = x509->isBlocked;
-    i->next          = m->crts;
-    i->prev          = NULL;
+    i->not_before = x509->not_before;
+    i->not_after = x509->not_after;
+    i->hashtype = x509->hashtype;
+    i->certSign = x509->certSign;
+    i->codeSign = x509->codeSign;
+    i->timeSign = x509->timeSign;
+    i->isBlocked = x509->isBlocked;
+    i->next = m->crts;
+    i->prev = NULL;
     if (m->crts)
         m->crts->prev = i;
     m->crts = i;
@@ -250,7 +250,7 @@ int crtmgr_add(crtmgr *m, cli_crt *x509)
 
 void crtmgr_init(crtmgr *m)
 {
-    m->crts  = NULL;
+    m->crts = NULL;
     m->items = 0;
 }
 
@@ -451,7 +451,7 @@ static int crtmgr_rsa_verify(cli_crt *x509, fp_int *sig, cli_crt_hashtype hashty
 cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
 {
     cli_crt *i = m->crts, *best = NULL;
-    int score             = 0;
+    int score = 0;
     unsigned int possible = 0;
 
     // Loop through each of the certificates in our trust store and see whether
@@ -476,7 +476,7 @@ cli_crt *crtmgr_verify_crt(crtmgr *m, cli_crt *x509)
             possible++;
             curscore = (x509->codeSign & i->codeSign) + (x509->timeSign & i->timeSign);
             if (curscore > score) {
-                best  = i;
+                best = i;
                 score = curscore;
             }
         }

@@ -37,7 +37,7 @@ int snprintf(char *str, size_t size, const char *format, ...)
 
     va_start(va, format);
     errno = 0;
-    len   = vsnprintf(str, size, format, va);
+    len = vsnprintf(str, size, format, va);
     if (len == -1 && errno == ERANGE)
         len = size;
     va_end(va);

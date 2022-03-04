@@ -168,7 +168,7 @@ void cli_ftfree(const struct cl_engine *engine)
     struct cli_ftype *ftypes = engine->ftypes, *pt;
 
     while (ftypes) {
-        pt     = ftypes;
+        pt = ftypes;
         ftypes = ftypes->next;
         MPOOL_FREE(engine->mempool, pt->magic);
         MPOOL_FREE(engine->mempool, pt->tname);
@@ -177,7 +177,7 @@ void cli_ftfree(const struct cl_engine *engine)
 
     ftypes = engine->ptypes;
     while (ftypes) {
-        pt     = ftypes;
+        pt = ftypes;
         ftypes = ftypes->next;
         MPOOL_FREE(engine->mempool, pt->magic);
         MPOOL_FREE(engine->mempool, pt->tname);
@@ -324,13 +324,13 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                     return CL_TYPE_POSIX_TAR;
             }
         } else if (ret == CL_TYPE_ZIP && bread > 2 * (SIZEOF_LOCAL_HEADER + 5)) {
-            const char lhdr_magic[4]    = {0x50, 0x4b, 0x03, 0x04};
-            const unsigned char *zbuff  = buff;
-            uint32_t zread              = bread;
-            uint64_t zoff               = bread;
+            const char lhdr_magic[4] = {0x50, 0x4b, 0x03, 0x04};
+            const unsigned char *zbuff = buff;
+            uint32_t zread = bread;
+            uint64_t zoff = bread;
             const unsigned char *znamep = buff;
-            int32_t zlen                = bread;
-            int lhc                     = 0;
+            int32_t zlen = bread;
+            int lhc = 0;
             int zi, i, likely_ooxml = 0;
             cli_file_t ret2;
 
@@ -380,7 +380,7 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
                         }
                         zoff += zread;
                         znamep = zbuff;
-                        zlen   = zread;
+                        zlen = zread;
                     } else {
                         break; /* end of data */
                     }
@@ -444,9 +444,9 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
 
                     memset(decodedbuff, 0, sizeof(decodedbuff));
 
-                    in_area.buffer  = (unsigned char *)buff;
-                    in_area.length  = bread;
-                    in_area.offset  = 0;
+                    in_area.buffer = (unsigned char *)buff;
+                    in_area.length = bread;
+                    in_area.offset = 0;
                     out_area.buffer = decodedbuff;
                     out_area.length = sizeof(decodedbuff);
                     out_area.offset = 0;

@@ -102,7 +102,7 @@ bool PointerTracking::runOnFunction(Function &F)
     TD = getAnalysisIfAvailable<DataLayout>();
 #else
     DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
-    TD                  = DLP ? &DLP->getDataLayout() : 0;
+    TD = DLP ? &DLP->getDataLayout() : 0;
 #endif
     SE = &getAnalysis<ScalarEvolution>();
     LI = &getAnalysis<LoopInfo>();
@@ -176,20 +176,20 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
     Value *V = P->stripPointerCasts();
     if (AllocaInst *AI = dyn_cast<AllocaInst>(V)) {
         Value *arraySize = AI->getArraySize();
-        Ty               = AI->getAllocatedType();
+        Ty = AI->getAllocatedType();
         // arraySize elements of type Ty.
         return SE->getSCEV(arraySize);
     }
 
 #if LLVM_VERSION < 32
     if (CallInst *CI = extractMallocCall(V)) {
-        Value *arraySize   = getMallocArraySize(CI, TD);
+        Value *arraySize = getMallocArraySize(CI, TD);
         constType *AllocTy = getMallocAllocatedType(CI);
 #else
     TargetLibraryInfo *TLI = new TargetLibraryInfo();
 
     if (CallInst *CI = extractMallocCall(V, TLI)) {
-        Value *arraySize   = getMallocArraySize(CI, TD, TLI);
+        Value *arraySize = getMallocArraySize(CI, TD, TLI);
         constType *AllocTy = getMallocAllocatedType(CI, TLI);
 #endif
         if (!AllocTy || !arraySize) return SE->getCouldNotCompute();
@@ -214,7 +214,7 @@ const SCEV *PointerTracking::computeAllocationCount(Value *P,
 
     if (CallInst *CI = dyn_cast<CallInst>(V)) {
         CallSite CS(CI);
-        Function *F   = dyn_cast<Function>(CS.getCalledValue()->stripPointerCasts());
+        Function *F = dyn_cast<Function>(CS.getCalledValue()->stripPointerCasts());
         const Loop *L = LI->getLoopFor(CI->getParent());
         if (F == callocFunc) {
             Ty = Type::getInt8Ty(P->getContext());
@@ -307,7 +307,7 @@ const SCEV *PointerTracking::computeAllocationCountForType(Value *P,
         return SE->getCouldNotCompute();
 
     uint64_t elementSize = TD->getTypeAllocSize(elementTy);
-    uint64_t wantSize    = TD->getTypeAllocSize(Ty);
+    uint64_t wantSize = TD->getTypeAllocSize(Ty);
     if (elementSize == wantSize)
         return Count;
     if (elementSize % wantSize) // fractional counts not possible
@@ -362,17 +362,17 @@ void PointerTracking::getPointerOffset(Value *Pointer, Value *&Base,
                                        const SCEV *&Offset) const
 {
     Pointer = Pointer->stripPointerCasts();
-    Base    = GetUnderlyingObject(Pointer, TD);
-    Limit   = getAllocationSizeInBytes(Base);
+    Base = GetUnderlyingObject(Pointer, TD);
+    Limit = getAllocationSizeInBytes(Base);
     if (isa<SCEVCouldNotCompute>(Limit)) {
-        Base   = 0;
+        Base = 0;
         Offset = Limit;
         return;
     }
 
     Offset = SE->getMinusSCEV(SE->getSCEV(Pointer), SE->getSCEV(Base));
     if (isa<SCEVCouldNotCompute>(Offset)) {
-        Base  = 0;
+        Base = 0;
         Limit = Offset;
     }
 }

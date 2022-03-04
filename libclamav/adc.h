@@ -51,14 +51,14 @@ typedef struct adc_stream adc_stream;
 #define ADC_STREAM_END 1
 
 enum adc_state {
-    ADC_STATE_UNINIT    = 0,
-    ADC_STATE_GETTYPE   = 1,
-    ADC_STATE_RAWDATA   = 2,
-    ADC_STATE_SHORTOP   = 3,
-    ADC_STATE_LONGOP2   = 4,
-    ADC_STATE_LONGOP1   = 5,
+    ADC_STATE_UNINIT = 0,
+    ADC_STATE_GETTYPE = 1,
+    ADC_STATE_RAWDATA = 2,
+    ADC_STATE_SHORTOP = 3,
+    ADC_STATE_LONGOP2 = 4,
+    ADC_STATE_LONGOP1 = 5,
     ADC_STATE_SHORTLOOK = 6,
-    ADC_STATE_LONGLOOK  = 7
+    ADC_STATE_LONGLOOK = 7
 };
 
 /* Compression phrases

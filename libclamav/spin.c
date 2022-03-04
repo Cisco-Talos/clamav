@@ -150,8 +150,8 @@ static uint32_t summit(char *src, int size)
             eax ^= ebx;
             CLI_ROR(eax, ebx & 0xff);
             swap = eax;
-            eax  = ebx;
-            ebx  = swap;
+            eax = ebx;
+            ebx = swap;
         }
         size--;
     }
@@ -224,7 +224,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
         return 1;
     }
 
-    curr  = ep + 0x26eb;
+    curr = ep + 0x26eb;
     key32 = cli_readint32(curr);
     if ((len = cli_readint32(curr + 5)) != 0x5a0) {
         free(spinned);
@@ -269,8 +269,8 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     for (j = 0; j < sectcnt; j++) {
 
         if (bitmap & 1) {
-            uint32_t size   = sections[j].rsz;
-            char *ptr       = src + sections[j].raw;
+            uint32_t size = sections[j].rsz;
+            char *ptr = src + sections[j].raw;
             uint32_t keydup = key32;
 
             if (!CLI_ISCONTAINED(src, ssize, ptr, size)) {
@@ -334,7 +334,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     }
     while (len) {
         int xcfailure = 0;
-        *emu          = exec86(*emu, len-- & 0xff, curr, &xcfailure); /* unlame POLY1 */
+        *emu = exec86(*emu, len-- & 0xff, curr, &xcfailure); /* unlame POLY1 */
         if (xcfailure) {
             cli_dbgmsg("spin: cannot exec poly1\n");
             return 1;
@@ -359,7 +359,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
 
             while (notthesamelen) {
                 int xcfailure = 0;
-                *emu          = exec86(*emu, notthesamelen-- & 0xff, curr, &xcfailure);
+                *emu = exec86(*emu, notthesamelen-- & 0xff, curr, &xcfailure);
                 if (xcfailure) {
                     cli_dbgmsg("spin: cannot exec section\n");
                     return 1;
@@ -474,7 +474,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     if ((ep = (char *)cli_malloc(blobsz)) != NULL) {
         struct cli_exe_section *rebhlp;
         if ((rebhlp = (struct cli_exe_section *)cli_malloc(sizeof(struct cli_exe_section) * (sectcnt))) != NULL) {
-            char *to   = ep;
+            char *to = ep;
             int retval = 0;
 
             for (j = 0; j < sectcnt; j++) {

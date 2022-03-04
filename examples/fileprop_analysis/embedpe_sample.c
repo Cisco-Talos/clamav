@@ -26,7 +26,7 @@ int entrypoint()
 
     /* acquire array of internal contained objects */
     objarr = json_get_object("ContainedObjects", 16, 0);
-    type   = json_get_type(objarr);
+    type = json_get_type(objarr);
     /* debug print uint (no '\n' or prepended message */
     debug_print_uint(type);
 

@@ -68,7 +68,7 @@
 #define GETBITS(v, n)                                                                     \
     {                                                                                     \
         getbits_n = n;                                                                    \
-        bits      = 0;                                                                    \
+        bits = 0;                                                                         \
         while (getbits_n > bitpos) {                                                      \
             getbits_n -= bitpos;                                                          \
             bits |= bitbuf << getbits_n;                                                  \
@@ -199,9 +199,9 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     offset += ret;
 
     memset(&lz, 0, sizeof(lz));
-    lz.next_in   = inbuff;
-    lz.next_out  = outbuff;
-    lz.avail_in  = ret;
+    lz.next_in = inbuff;
+    lz.next_out = outbuff;
+    lz.avail_in = ret;
     lz.avail_out = FILEBUFF;
 
     lret = cli_LzmaInit(&lz, hdr->filesize);
@@ -237,7 +237,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
             lz.avail_in = ret;
             offset += ret;
         }
-        lret  = cli_LzmaDecode(&lz);
+        lret = cli_LzmaDecode(&lz);
         count = FILEBUFF - lz.avail_out;
         if (count) {
             if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
@@ -255,7 +255,7 @@ static int scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
             }
             outsize += count;
         }
-        lz.next_out  = outbuff;
+        lz.next_out = outbuff;
         lz.avail_out = FILEBUFF;
     }
 
@@ -303,8 +303,8 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
 {
     z_stream stream;
     char inbuff[FILEBUFF], outbuff[FILEBUFF];
-    fmap_t *map    = ctx->fmap;
-    int offset     = 8, ret, zret, zend;
+    fmap_t *map = ctx->fmap;
+    int offset = 8, ret, zret, zend;
     size_t outsize = 8;
     size_t count;
     char *tmpname;
@@ -327,12 +327,12 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
         return CL_EWRITE;
     }
 
-    stream.avail_in  = 0;
-    stream.next_in   = (Bytef *)inbuff;
-    stream.next_out  = (Bytef *)outbuff;
-    stream.zalloc    = (alloc_func)NULL;
-    stream.zfree     = (free_func)NULL;
-    stream.opaque    = (voidpf)0;
+    stream.avail_in = 0;
+    stream.next_in = (Bytef *)inbuff;
+    stream.next_out = (Bytef *)outbuff;
+    stream.zalloc = (alloc_func)NULL;
+    stream.zfree = (free_func)NULL;
+    stream.opaque = (voidpf)0;
     stream.avail_out = FILEBUFF;
 
     zret = inflateInit(&stream);
@@ -350,7 +350,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     do {
         if (stream.avail_in == 0) {
             stream.next_in = (Bytef *)inbuff;
-            ret            = fmap_readn(map, inbuff, offset, FILEBUFF);
+            ret = fmap_readn(map, inbuff, offset, FILEBUFF);
             if (ret < 0) {
                 cli_errmsg("scancws: Error reading SWF file\n");
                 close(fd);
@@ -367,7 +367,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
             stream.avail_in = ret;
             offset += ret;
         }
-        zret  = inflate(&stream, Z_SYNC_FLUSH);
+        zret = inflate(&stream, Z_SYNC_FLUSH);
         count = FILEBUFF - stream.avail_out;
         if (count) {
             if (cli_checklimits("SWF", ctx, outsize + count, 0, 0) != CL_SUCCESS)
@@ -385,7 +385,7 @@ static int scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
             }
             outsize += count;
         }
-        stream.next_out  = (Bytef *)outbuff;
+        stream.next_out = (Bytef *)outbuff;
         stream.avail_out = FILEBUFF;
     } while (zret == Z_OK);
 

@@ -48,7 +48,7 @@ void set_tls_ca_bundle(CURL *curl)
 
 cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 {
-    cl_error_t ret      = CL_EOPEN;
+    cl_error_t ret = CL_EOPEN;
     cert_store_t *store = NULL;
     int pt_err;
 
@@ -72,7 +72,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
 
         /* System certs do not need to be added as they can be accessed directly
          * by the SSL library. */
-        store->system_certs.count        = 0;
+        store->system_certs.count = 0;
         store->system_certs.certificates = NULL;
 
         if (trusted_certs && trusted_cert_count > 0) {
@@ -87,7 +87,7 @@ cl_error_t cert_store_load(X509 **trusted_certs, size_t trusted_cert_count)
         }
 
         store->loaded = true;
-        ret           = 0;
+        ret = 0;
     } while (0);
 
     if (store) {

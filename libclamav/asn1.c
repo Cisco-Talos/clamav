@@ -250,7 +250,7 @@ static void *get_hash_ctx(cli_crt_hashtype hashtype)
 
 static int asn1_get_obj(fmap_t *map, const void *asn1data, unsigned int *asn1len, struct cli_asn1 *obj)
 {
-    unsigned int asn1_sz   = *asn1len;
+    unsigned int asn1_sz = *asn1len;
     unsigned int readbytes = MIN(6, asn1_sz), i;
     const uint8_t *data;
 
@@ -265,7 +265,7 @@ static int asn1_get_obj(fmap_t *map, const void *asn1data, unsigned int *asn1len
     }
 
     obj->type = data[0];
-    i         = data[1];
+    i = data[1];
     data += 2;
     if (i & 0x80) {
         if (i == 0x80) {
@@ -345,7 +345,7 @@ static int asn1_expect_algo(fmap_t *map, const void **asn1data, unsigned int *as
     int ret;
     if ((ret = asn1_expect_objtype(map, *asn1data, asn1len, &obj, ASN1_TYPE_SEQUENCE))) /* SEQUENCE */
         return ret;
-    avail     = obj.size;
+    avail = obj.size;
     *asn1data = obj.next;
 
     if ((ret = asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_OBJECT_ID, algo_size, algo))) /* ALGO */
@@ -383,7 +383,7 @@ static const oid_alternative_t *asn1_expect_algo_multi(fmap_t *map, const void *
         cli_dbgmsg("asn1_expect_algo_multi: expecting SEQUENCE at the start of the algo\n");
         return NULL;
     }
-    avail     = obj.size;
+    avail = obj.size;
     *asn1data = obj.next;
 
     if (asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_OBJECT_ID)) {
@@ -635,7 +635,7 @@ static int asn1_get_time(fmap_t *map, const void **asn1data, unsigned int *size,
         }
     }
 
-    *tm       = mktime(&t);
+    *tm = mktime(&t);
     *asn1data = obj.next;
     return 0;
 }
@@ -673,7 +673,7 @@ static int asn1_get_rsa_pubkey(fmap_t *map, const void **asn1data, unsigned int 
         return 1;
     }
 
-    avail       = obj.size - 1;
+    avail = obj.size - 1;
     obj.content = ((uint8_t *)obj.content) + 1;
     if (asn1_expect_objtype(map, obj.content, &avail, &obj, ASN1_TYPE_SEQUENCE)) /* SEQUENCE */
         return 1;
@@ -771,7 +771,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
         }
         if (0xa0 == obj.type) { /* [0] */
             avail = obj.size;
-            next  = obj.next;
+            next = obj.next;
             // TODO Should we support v2 certs?  Supposedly they are not widely used...
             if (asn1_expect_obj(map, &obj.content, &avail, ASN1_TYPE_INTEGER, 1, "\x02")) { /* version 3 only (indicated by '\x02')*/
                 cli_dbgmsg("asn1_get_x509: unexpected type or value for TBSCertificate version\n");
@@ -820,7 +820,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             cli_dbgmsg("asn1_get_x509: expected SEQUENCE when parsing cert issuer\n");
             break;
         }
-        issuer     = obj.content;
+        issuer = obj.content;
         issuersize = obj.size;
 
         if (asn1_expect_objtype(map, obj.next, &tbs.size, &obj, ASN1_TYPE_SEQUENCE)) { /* validity */
@@ -828,7 +828,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             break;
         }
         avail = obj.size;
-        next  = obj.content;
+        next = obj.content;
 
         if (asn1_get_time(map, &next, &avail, &x509.not_before)) { /* notBefore */
             cli_dbgmsg("asn1_get_x509: unable to extract the notBefore time\n");
@@ -880,7 +880,7 @@ static int asn1_get_x509(fmap_t *map, const void **asn1data, unsigned int *size,
             if (obj.type == 0xa3) {
                 struct cli_asn1 exts;
                 int have_key_usage = 0;
-                int have_ext_key   = 0;
+                int have_ext_key = 0;
                 if (asn1_expect_objtype(map, obj.content, &obj.size, &exts, ASN1_TYPE_SEQUENCE)) {
                     tbs.size = 1;
                     break;
@@ -1226,8 +1226,8 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             cli_dbgmsg("asn1_parse_countersignature: counterSignature authenticatedAttributes are too small\n");
             break;
         }
-        result    = 0;
-        dsize     = asn1.size;
+        result = 0;
+        dsize = asn1.size;
         deep.next = asn1.content;
         while (dsize) {
             int content;
@@ -1276,7 +1276,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
             deep.size = deeper.size;
             switch (content) {
                 case 0: { /* contentType = pkcs7-data */
-                    const void *backupPtr   = deeper.content;
+                    const void *backupPtr = deeper.content;
                     unsigned int backupSize = deep.size;
                     if (asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_pkcs7_data), OID_pkcs7_data)) {
                         cli_dbgmsg("asn1_parse_countersignature: contentType != pkcs7-data, checking for timestampToken instead\n");
@@ -1284,7 +1284,7 @@ static int asn1_parse_countersignature(fmap_t *map, const void **asn1data, unsig
                          * that also (despite the 2008 spec saying that this value
                          * must be pkcs7-data) */
                         deeper.content = backupPtr;
-                        deep.size      = backupSize;
+                        deep.size = backupSize;
                         if (asn1_expect_obj(map, &deeper.content, &deep.size, ASN1_TYPE_OBJECT_ID, lenof(OID_timestampToken), OID_timestampToken)) {
                             cli_dbgmsg("asn1_parse_countersignature: contentType != timestampToken\n");
                             deep.size = 1;
@@ -1522,7 +1522,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
          *    OCTET STRING(20 byte)
          */
 
-        *hashes      = deep.content;
+        *hashes = deep.content;
         *hashes_size = deep.size;
 
         // Now resume parsing SignedData - certificates
@@ -1848,9 +1848,9 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
             break;
         }
 
-        dsize     = asn1.size;
+        dsize = asn1.size;
         deep.next = asn1.content;
-        result    = 0;
+        result = 0;
         while (dsize) {
             struct cli_asn1 cobj;
             int content;
@@ -1986,7 +1986,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
             ret = CL_EVERIFY;
             break;
         }
-        message      = asn1.content;
+        message = asn1.content;
         message_size = asn1.size;
 
         cli_dbgmsg("asn1_parse_mscat: authenticatedAttributes successfully parsed and verified\n");
@@ -2026,9 +2026,9 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
 
         // Parse the unauthenticated attributes
 
-        dsize     = asn1.size;
+        dsize = asn1.size;
         deep.next = asn1.content;
-        result    = 0;
+        result = 0;
         while (dsize) {
             int content;
             if (asn1_expect_objtype(map, deep.next, &dsize, &deep, ASN1_TYPE_SEQUENCE)) {
@@ -2195,7 +2195,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
         return 1;
     /* [0] is next but we don't care as it's really descriptives stuff */
 
-    size   = c.size;
+    size = c.size;
     c.next = c.content;
     while (size) {
         struct cli_asn1 tag;

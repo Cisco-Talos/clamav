@@ -120,7 +120,7 @@ static cl_error_t ooxml_updatelimits(int fd, cli_ctx *ctx)
 
 static cl_error_t ooxml_parse_document(int fd, cli_ctx *ctx)
 {
-    cl_error_t ret          = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     cli_dbgmsg("in ooxml_parse_document\n");
@@ -193,7 +193,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
 
-    unsigned long sav_scansize    = ctx->scansize;
+    unsigned long sav_scansize = ctx->scansize;
     unsigned int sav_scannedfiles = ctx->scannedfiles;
 
     cli_dbgmsg("in ooxml_content_cb\n");
@@ -211,7 +211,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
                    "\n");
         cli_json_parse_error(ctx->wrkproperty, "OOXML_ERROR_XML_READER_FD");
 
-        ctx->scansize     = sav_scansize;
+        ctx->scansize = sav_scansize;
         ctx->scannedfiles = sav_scannedfiles;
         return CL_SUCCESS; // libxml2 failed!
     }
@@ -233,7 +233,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
         CT = PN = NULL;
         while (xmlTextReaderMoveToNextAttribute(reader) == 1) {
             localname = xmlTextReaderConstLocalName(reader);
-            value     = xmlTextReaderConstValue(reader);
+            value = xmlTextReaderConstValue(reader);
             if (localname == NULL || value == NULL) continue;
 
             if (!xmlStrcmp(localname, (const xmlChar *)"ContentType")) {
@@ -343,7 +343,7 @@ ooxml_content_exit:
     }
 
     /* restore the engine tracking limits; resets session limit tracking */
-    ctx->scansize     = sav_scansize;
+    ctx->scansize = sav_scansize;
     ctx->scannedfiles = sav_scannedfiles;
 
     xmlTextReaderClose(reader);
@@ -353,7 +353,7 @@ ooxml_content_exit:
 
 static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
 {
-    cl_error_t ret          = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     UNUSEDPARAM(filepath);
@@ -425,7 +425,7 @@ cli_file_t cli_ooxml_filetype(cli_ctx *ctx, fmap_t *map)
 cl_error_t cli_process_ooxml(cli_ctx *ctx, int type)
 {
 #if HAVE_LIBXML2 && HAVE_JSON
-    uint32_t loff  = 0;
+    uint32_t loff = 0;
     cl_error_t ret = CL_SUCCESS;
 
     cli_dbgmsg("in cli_process_ooxml\n");

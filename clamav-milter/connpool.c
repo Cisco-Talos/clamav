@@ -63,9 +63,9 @@
 #define _UNUSED_
 #endif
 
-struct CPOOL *cp               = NULL;
+struct CPOOL *cp = NULL;
 static pthread_cond_t mon_cond = PTHREAD_COND_INITIALIZER;
-static int quitting            = 1;
+static int quitting = 1;
 static pthread_t probe_th;
 
 static int cpool_addunix(char *path)
@@ -85,12 +85,12 @@ static int cpool_addunix(char *path)
     srv->sun_family = AF_UNIX;
     strncpy(srv->sun_path, path, sizeof(srv->sun_path));
     srv->sun_path[sizeof(srv->sun_path) - 1] = '\0';
-    cpe->type                                = 0;
-    cpe->dead                                = 1;
-    cpe->local                               = 1;
-    cpe->last_poll                           = 0;
-    cpe->server                              = (struct sockaddr *)srv;
-    cpe->socklen                             = sizeof(*srv);
+    cpe->type = 0;
+    cpe->dead = 1;
+    cpe->local = 1;
+    cpe->last_poll = 0;
+    cpe->server = (struct sockaddr *)srv;
+    cpe->socklen = sizeof(*srv);
     SETGAI(cpe, NULL);
     if (!cp->local_cpe) cp->local_cpe = cpe;
     logg(LOGG_DEBUG, "Local socket unix:%s added to the pool (slot %d)\n", srv->sun_path, cp->entries);
@@ -113,7 +113,7 @@ static int cpool_addtcp(char *addr, char *port)
     struct CP_ENTRY *cpe = (struct CP_ENTRY *)&cp->pool[cp->entries - 1];
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
     if (getaddrinfo(addr, port ? port : "3310", &hints, &res)) {
@@ -124,17 +124,17 @@ static int cpool_addtcp(char *addr, char *port)
     cpe->dead = 1;
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_flags    = AI_PASSIVE;
+    hints.ai_flags = AI_PASSIVE;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC;
     if (!getaddrinfo(addr, NULL, &hints, &res2)) {
         cpe->local = islocal(res2->ai_addr, res2->ai_addrlen);
         freeaddrinfo(res2);
     } else
         cpe->local = 0;
     cpe->last_poll = 0;
-    cpe->server    = res->ai_addr;
-    cpe->socklen   = res->ai_addrlen;
+    cpe->server = res->ai_addr;
+    cpe->socklen = res->ai_addrlen;
     SETGAI(cpe, res);
     logg(LOGG_DEBUG, "%s socket tcp:%s:%s added to the pool (slot %d)\n", cpe->local ? "Local" : "Remote", addr ? addr : "localhost", port ? port : "3310", cp->entries);
     return 0;
@@ -167,7 +167,7 @@ static void cpool_probe(void)
 {
     unsigned int i, dead = 0;
     struct CP_ENTRY *cpe = cp->pool;
-    time_t now           = time(NULL);
+    time_t now = time(NULL);
 
     for (i = 1; i <= cp->entries; i++) {
         if ((cpe->dead && (cpe->last_poll < now - 120 || !cp->alive)) || cpe->last_poll < now - 15 * 60 * 60) {
@@ -195,7 +195,7 @@ static void *cpool_mon(_UNUSED_ void *v)
         struct timespec t;
 
         cpool_probe();
-        t.tv_sec  = time(NULL) + 60;
+        t.tv_sec = time(NULL) + 60;
         t.tv_nsec = 0;
         pthread_cond_timedwait(&mon_cond, &conv, &t);
     }

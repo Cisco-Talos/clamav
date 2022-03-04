@@ -197,9 +197,9 @@ static cl_error_t fill_buf(arj_decode_t *decode_data, int n)
 
 static cl_error_t init_getbits(arj_decode_t *decode_data)
 {
-    decode_data->bit_buf     = 0;
+    decode_data->bit_buf = 0;
     decode_data->sub_bit_buf = 0;
-    decode_data->bit_count   = 0;
+    decode_data->bit_count = 0;
     return fill_buf(decode_data, 2 * CHAR_BIT);
 }
 
@@ -285,7 +285,7 @@ static cl_error_t make_table(arj_decode_t *decode_data, int nchar, unsigned char
     }
 
     avail = nchar;
-    mask  = 1 << (15 - tablebits);
+    mask = 1 << (15 - tablebits);
     for (ch = 0; (int)ch < nchar; ch++) {
         if ((len = bitlen[ch]) == 0) {
             continue;
@@ -295,7 +295,7 @@ static cl_error_t make_table(arj_decode_t *decode_data, int nchar, unsigned char
             decode_data->status = CL_EUNPACK;
             return CL_EUNPACK;
         }
-        k        = start[len];
+        k = start[len];
         nextcode = k + weight[len];
         if ((int)len <= tablebits) {
             if (nextcode > (unsigned int)tablesize) {
@@ -316,7 +316,7 @@ static cl_error_t make_table(arj_decode_t *decode_data, int nchar, unsigned char
                         return CL_EUNPACK;
                     }
                     decode_data->right[avail] = decode_data->left[avail] = 0;
-                    *p                                                   = avail++;
+                    *p = avail++;
                 }
                 if (*p >= (2 * NC - 1)) {
                     cli_dbgmsg("UNARJ: bounds exceeded\n");
@@ -555,10 +555,10 @@ static cl_error_t decode(arj_metadata_t *metadata)
     if (!decode_data.text) {
         return CL_EMEM;
     }
-    decode_data.map       = metadata->map;
-    decode_data.offset    = metadata->offset;
+    decode_data.map = metadata->map;
+    decode_data.offset = metadata->offset;
     decode_data.comp_size = metadata->comp_size;
-    ret                   = decode_start(&decode_data);
+    ret = decode_start(&decode_data);
     if (ret != CL_SUCCESS) {
         free(decode_data.text);
         metadata->offset = decode_data.offset;
@@ -659,7 +659,7 @@ static uint16_t decode_ptr(arj_decode_t *decode_data)
     uint16_t c, width, plus, pwr;
 
     plus = 0;
-    pwr  = 1 << STRTP;
+    pwr = 1 << STRTP;
     for (width = STRTP; width < STOPP; width++) {
         ARJ_GETBIT(decode_data, c);
         if (c == 0) {
@@ -680,7 +680,7 @@ static uint16_t decode_len(arj_decode_t *decode_data)
     uint16_t c, width, plus, pwr;
 
     plus = 0;
-    pwr  = 1 << STRTL;
+    pwr = 1 << STRTL;
     for (width = STRTL; width < STOPL; width++) {
         ARJ_GETBIT(decode_data, c);
         if (c == 0) {
@@ -710,17 +710,17 @@ static cl_error_t decode_f(arj_metadata_t *metadata)
     if (!decode_data.text) {
         return CL_EMEM;
     }
-    decode_data.map       = metadata->map;
-    decode_data.offset    = metadata->offset;
+    decode_data.map = metadata->map;
+    decode_data.offset = metadata->offset;
     decode_data.comp_size = metadata->comp_size;
-    ret                   = init_getbits(&decode_data);
+    ret = init_getbits(&decode_data);
     if (ret != CL_SUCCESS) {
         free(decode_data.text);
         metadata->offset = decode_data.offset;
         return ret;
     }
     decode_data.getlen = decode_data.getbuf = 0;
-    decode_data.status                      = CL_SUCCESS;
+    decode_data.status = CL_SUCCESS;
 
     while (count < metadata->orig_size) {
         chr = decode_len(&decode_data);
@@ -835,17 +835,17 @@ static int arj_read_main_header(arj_metadata_t *metadata)
     uint16_t header_size, count;
     arj_main_hdr_t main_hdr;
     const char *filename = NULL;
-    const char *comment  = NULL;
+    const char *comment = NULL;
     struct text_norm_state fnstate, comstate;
-    unsigned char *fnnorm  = NULL;
+    unsigned char *fnnorm = NULL;
     unsigned char *comnorm = NULL;
-    uint32_t ret           = TRUE;
+    uint32_t ret = TRUE;
 
     size_t filename_max_len = 0;
-    size_t filename_len     = 0;
-    size_t comment_max_len  = 0;
-    size_t comment_len      = 0;
-    size_t orig_offset      = metadata->offset;
+    size_t filename_len = 0;
+    size_t comment_max_len = 0;
+    size_t comment_len = 0;
+    size_t orig_offset = metadata->offset;
 
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return FALSE;
@@ -899,7 +899,7 @@ static int arj_read_main_header(arj_metadata_t *metadata)
         goto done;
     }
     if (filename_max_len > 0) {
-        fnnorm   = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
+        fnnorm = cli_calloc(sizeof(unsigned char), filename_max_len + 1);
         filename = fmap_need_offstr(metadata->map, metadata->offset, filename_max_len + 1);
         if (!filename || !fnnorm) {
             cli_dbgmsg("UNARJ: Unable to allocate memory for filename\n");
@@ -975,15 +975,15 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
     const char *filename, *comment;
     arj_file_hdr_t file_hdr;
     struct text_norm_state fnstate, comstate;
-    unsigned char *fnnorm  = NULL;
+    unsigned char *fnnorm = NULL;
     unsigned char *comnorm = NULL;
-    cl_error_t ret         = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
 
     size_t filename_max_len = 0;
-    size_t filename_len     = 0;
-    size_t comment_max_len  = 0;
-    size_t comment_len      = 0;
-    size_t orig_offset      = metadata->offset;
+    size_t filename_len = 0;
+    size_t comment_max_len = 0;
+    size_t comment_len = 0;
+    size_t orig_offset = metadata->offset;
 
     if (fmap_readn(metadata->map, &header_size, metadata->offset, 2) != 2)
         return CL_EFORMAT;
@@ -1103,7 +1103,7 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
             if (metadata->filename)
                 free(metadata->filename);
             metadata->filename = NULL;
-            ret                = CL_EFORMAT;
+            ret = CL_EFORMAT;
             goto done;
         }
         count = cli_readint16(countp);
@@ -1117,9 +1117,9 @@ static cl_error_t arj_read_file_header(arj_metadata_t *metadata)
     }
     metadata->comp_size = file_hdr.comp_size;
     metadata->orig_size = file_hdr.orig_size;
-    metadata->method    = file_hdr.method;
+    metadata->method = file_hdr.method;
     metadata->encrypted = ((file_hdr.flags & GARBLE_FLAG) != 0) ? TRUE : FALSE;
-    metadata->ofd       = -1;
+    metadata->ofd = -1;
     if (!metadata->filename) {
         ret = CL_EMEM;
         goto done;
@@ -1143,7 +1143,7 @@ cl_error_t cli_unarj_open(fmap_t *map, const char *dirname, arj_metadata_t *meta
 {
     UNUSEDPARAM(dirname);
     cli_dbgmsg("in cli_unarj_open\n");
-    metadata->map    = map;
+    metadata->map = map;
     metadata->offset = 0;
     if (!is_arj_archive(metadata)) {
         cli_dbgmsg("Not in ARJ format\n");

@@ -157,10 +157,10 @@ static int cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_hdr *fil
     }
 
     *do_convert = conv;
-    *is64       = format64;
+    *is64 = format64;
 
     /* Solve bit-size and conversion pronto */
-    file_hdr->hdr64.e_type    = EC16(file_hdr->hdr64.e_type, conv);
+    file_hdr->hdr64.e_type = EC16(file_hdr->hdr64.e_type, conv);
     file_hdr->hdr64.e_machine = EC16(file_hdr->hdr64.e_machine, conv);
     file_hdr->hdr64.e_version = EC32(file_hdr->hdr64.e_version, conv);
 
@@ -173,30 +173,30 @@ static int cli_elf_fileheader(cli_ctx *ctx, fmap_t *map, union elf_file_hdr *fil
         }
         /* Now endian convert, if needed */
         if (conv) {
-            file_hdr->hdr64.e_entry     = EC64(file_hdr->hdr64.e_entry, conv);
-            file_hdr->hdr64.e_phoff     = EC64(file_hdr->hdr64.e_phoff, conv);
-            file_hdr->hdr64.e_shoff     = EC64(file_hdr->hdr64.e_shoff, conv);
-            file_hdr->hdr64.e_flags     = EC32(file_hdr->hdr64.e_flags, conv);
-            file_hdr->hdr64.e_ehsize    = EC16(file_hdr->hdr64.e_ehsize, conv);
+            file_hdr->hdr64.e_entry = EC64(file_hdr->hdr64.e_entry, conv);
+            file_hdr->hdr64.e_phoff = EC64(file_hdr->hdr64.e_phoff, conv);
+            file_hdr->hdr64.e_shoff = EC64(file_hdr->hdr64.e_shoff, conv);
+            file_hdr->hdr64.e_flags = EC32(file_hdr->hdr64.e_flags, conv);
+            file_hdr->hdr64.e_ehsize = EC16(file_hdr->hdr64.e_ehsize, conv);
             file_hdr->hdr64.e_phentsize = EC16(file_hdr->hdr64.e_phentsize, conv);
-            file_hdr->hdr64.e_phnum     = EC16(file_hdr->hdr64.e_phnum, conv);
+            file_hdr->hdr64.e_phnum = EC16(file_hdr->hdr64.e_phnum, conv);
             file_hdr->hdr64.e_shentsize = EC16(file_hdr->hdr64.e_shentsize, conv);
-            file_hdr->hdr64.e_shnum     = EC16(file_hdr->hdr64.e_shnum, conv);
-            file_hdr->hdr64.e_shstrndx  = EC16(file_hdr->hdr64.e_shstrndx, conv);
+            file_hdr->hdr64.e_shnum = EC16(file_hdr->hdr64.e_shnum, conv);
+            file_hdr->hdr64.e_shstrndx = EC16(file_hdr->hdr64.e_shstrndx, conv);
         }
     } else {
         /* Convert 32-bit structure, if needed */
         if (conv) {
-            file_hdr->hdr32.hdr.e_entry     = EC32(file_hdr->hdr32.hdr.e_entry, conv);
-            file_hdr->hdr32.hdr.e_phoff     = EC32(file_hdr->hdr32.hdr.e_phoff, conv);
-            file_hdr->hdr32.hdr.e_shoff     = EC32(file_hdr->hdr32.hdr.e_shoff, conv);
-            file_hdr->hdr32.hdr.e_flags     = EC32(file_hdr->hdr32.hdr.e_flags, conv);
-            file_hdr->hdr32.hdr.e_ehsize    = EC16(file_hdr->hdr32.hdr.e_ehsize, conv);
+            file_hdr->hdr32.hdr.e_entry = EC32(file_hdr->hdr32.hdr.e_entry, conv);
+            file_hdr->hdr32.hdr.e_phoff = EC32(file_hdr->hdr32.hdr.e_phoff, conv);
+            file_hdr->hdr32.hdr.e_shoff = EC32(file_hdr->hdr32.hdr.e_shoff, conv);
+            file_hdr->hdr32.hdr.e_flags = EC32(file_hdr->hdr32.hdr.e_flags, conv);
+            file_hdr->hdr32.hdr.e_ehsize = EC16(file_hdr->hdr32.hdr.e_ehsize, conv);
             file_hdr->hdr32.hdr.e_phentsize = EC16(file_hdr->hdr32.hdr.e_phentsize, conv);
-            file_hdr->hdr32.hdr.e_phnum     = EC16(file_hdr->hdr32.hdr.e_phnum, conv);
+            file_hdr->hdr32.hdr.e_phnum = EC16(file_hdr->hdr32.hdr.e_phnum, conv);
             file_hdr->hdr32.hdr.e_shentsize = EC16(file_hdr->hdr32.hdr.e_shentsize, conv);
-            file_hdr->hdr32.hdr.e_shnum     = EC16(file_hdr->hdr32.hdr.e_shnum, conv);
-            file_hdr->hdr32.hdr.e_shstrndx  = EC16(file_hdr->hdr32.hdr.e_shstrndx, conv);
+            file_hdr->hdr32.hdr.e_shnum = EC16(file_hdr->hdr32.hdr.e_shnum, conv);
+            file_hdr->hdr32.hdr.e_shstrndx = EC16(file_hdr->hdr32.hdr.e_shstrndx, conv);
         }
         /* Wipe pad for safety */
         memset(file_hdr->hdr32.pad, 0, ELF_HDR_SIZEDIFF);
@@ -491,7 +491,7 @@ static int cli_elf_sh32(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
             cli_dbgmsg("ELF: Section offset: %u\n", EC32(section_hdr[i].sh_offset, conv));
             cli_dbgmsg("ELF: Section size: %u\n", EC32(section_hdr[i].sh_size, conv));
 
-            sh_type  = EC32(section_hdr[i].sh_type, conv);
+            sh_type = EC32(section_hdr[i].sh_type, conv);
             sh_flags = EC32(section_hdr[i].sh_flags, conv) & ELF_SHF_MASK;
             cli_elf_sectionlog(sh_type, sh_flags);
 
@@ -590,7 +590,7 @@ static int cli_elf_sh64(cli_ctx *ctx, fmap_t *map, struct cli_exe_info *elfinfo,
             cli_dbgmsg("ELF: Section offset: " STDu64 "\n", (uint64_t)EC64(section_hdr[i].sh_offset, conv));
             cli_dbgmsg("ELF: Section size: " STDu64 "\n", (uint64_t)EC64(section_hdr[i].sh_size, conv));
 
-            sh_type  = EC32(section_hdr[i].sh_type, conv);
+            sh_type = EC32(section_hdr[i].sh_type, conv);
             sh_flags = (uint32_t)(EC64(section_hdr[i].sh_flags, conv) & ELF_SHF_MASK);
             cli_elf_sectionlog(sh_type, sh_flags);
 

@@ -58,7 +58,7 @@ static unsigned char lzma_getbyte(struct CLI_LZMA *L, int *fail)
         return 0;
     }
     *fail = 0;
-    c     = L->next_in[0];
+    c = L->next_in[0];
     L->next_in++;
     L->avail_in--;
     return c;
@@ -124,10 +124,10 @@ int cli_LzmaDecode(struct CLI_LZMA *L)
     inbytes = L->avail_in;
     if (~L->usize && L->avail_out > L->usize) {
         outbytes = L->usize;
-        finish   = LZMA_FINISH_END;
+        finish = LZMA_FINISH_END;
     } else {
         outbytes = L->avail_out;
-        finish   = LZMA_FINISH_ANY;
+        finish = LZMA_FINISH_ANY;
     }
     res = LzmaDec_DecodeToBuf(&L->state, L->next_out, &outbytes, L->next_in, &inbytes, finish, &status);
     L->avail_in -= inbytes;

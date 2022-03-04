@@ -157,7 +157,7 @@ static struct iin_map_struct iin_map[] = {
 static const struct iin_map_struct *get_iin(char *digits, int cc_only)
 {
     uint32_t iin = atoi(digits);
-    int i        = 0;
+    int i = 0;
 
     while (iin_map[i].iin_start != 0) {
         if (iin < iin_map[i].iin_start)
@@ -174,11 +174,11 @@ static const struct iin_map_struct *get_iin(char *digits, int cc_only)
 
 int dlp_is_valid_cc(const unsigned char *buffer, size_t length, int cc_only)
 {
-    int mult      = 0;
-    int sum       = 0;
-    size_t i      = 0;
-    ssize_t j     = 0;
-    int val       = 0;
+    int mult = 0;
+    int sum = 0;
+    size_t i = 0;
+    ssize_t j = 0;
+    int val = 0;
     size_t digits = 0;
     char cc_digits[20];
     size_t pad_allowance = MAX_CC_BREAKS;
@@ -653,10 +653,10 @@ int us_micr_is_valid(const char *buffer, size_t length)
     /*  9 * (micr_digits[2] + micr_digits[5]) (the check digit is   */
     /*  computed by the sum above modulus 10                        */
 
-    sum1   = 7 * ((micr_digits[0] - '0') + (micr_digits[3] - '0') + (micr_digits[6] - '0'));
-    sum2   = 3 * ((micr_digits[1] - '0') + (micr_digits[4] - '0') + (micr_digits[7] - '0'));
-    sum3   = 9 * ((micr_digits[2] - '0') + (micr_digits[5] - '0'));
-    sum    = sum1 + sum2 + sum3;
+    sum1 = 7 * ((micr_digits[0] - '0') + (micr_digits[3] - '0') + (micr_digits[6] - '0'));
+    sum2 = 3 * ((micr_digits[1] - '0') + (micr_digits[4] - '0') + (micr_digits[7] - '0'));
+    sum3 = 9 * ((micr_digits[2] - '0') + (micr_digits[5] - '0'));
+    sum = sum1 + sum2 + sum3;
     result = sum % 10;
 
     if (result == (micr_digits[8] - '0'))

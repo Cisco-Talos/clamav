@@ -437,14 +437,14 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event)
     }
     setme[0] = CreateEvent(NULL, TRUE, FALSE, NULL);
     setme[1] = event;
-    items    = malloc(nfds * sizeof(struct w32polldata));
+    items = malloc(nfds * sizeof(struct w32polldata));
     if (items == NULL) { /* oops, malloc() failed */
         fprintf(stderr, "warning: malloc() for variable 'items' failed in function 'poll_with_event'...\n");
         return -1;
     }
     for (i = 0; i < nfds; i++) {
         items[i].polldata = &fds[i];
-        items[i].event    = CreateEvent(NULL, TRUE, FALSE, NULL);
+        items[i].event = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (items[i].event) {
             items[i].setme = setme[0];
             if (WSAEventSelect(fds[i].fd, items[i].event, FD_ACCEPT | FD_READ | FD_CLOSE)) {
@@ -464,7 +464,7 @@ int poll_with_event(struct pollfd *fds, int nfds, int timeout, HANDLE event)
                     WSAEventSelect(fds[i].fd, items[i].event, 0);
                     CloseHandle(items[i].event);
                     items[i].event = NULL;
-                    reallywait     = 0;
+                    reallywait = 0;
                 }
             }
         }

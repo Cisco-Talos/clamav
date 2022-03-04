@@ -74,7 +74,7 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
 int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
 {
     struct mbr_boot_record mbr;
-    size_t mbr_base   = 0;
+    size_t mbr_base = 0;
     size_t sectorsize = 512;
 
     if (len < sectorsize) {
@@ -237,7 +237,7 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
         } else {
             prtncount++;
 
-            partoff  = mbr.entries[i].firstLBA * sectorsize;
+            partoff = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
             ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
@@ -271,8 +271,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
     logiclba = 0;
-    extoff   = extlba * sectorsize;
-    extsize  = extlbasize * sectorsize;
+    extoff = extlba * sectorsize;
+    extsize = extlbasize * sectorsize;
     do {
         pos = extlba * sectorsize; /* start of extended partition */
 
@@ -374,7 +374,7 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                             return CL_EPARSE;
                     }
 
-                    partoff  = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
+                    partoff = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
                     partsize = ebr.entries[j].numLBA * sectorsize;
                     if (partoff + partsize > extoff + extsize) {
                         cli_dbgmsg("cli_scanebr: Invalid extended partition entry\n");
@@ -416,15 +416,15 @@ void mbr_convert_to_host(struct mbr_boot_record *record)
         entry = &record->entries[i];
 
         entry->firstLBA = le32_to_host(entry->firstLBA);
-        entry->numLBA   = le32_to_host(entry->numLBA);
+        entry->numLBA = le32_to_host(entry->numLBA);
     }
     record->signature = be16_to_host(record->signature);
 }
 
 static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
 {
-    unsigned i      = 0;
-    size_t partoff  = 0;
+    unsigned i = 0;
+    size_t partoff = 0;
     size_t partsize = 0;
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
@@ -435,7 +435,7 @@ static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t s
             return CL_EFORMAT;
         }
 
-        partoff  = record->entries[i].firstLBA * sectorsize;
+        partoff = record->entries[i].firstLBA * sectorsize;
         partsize = record->entries[i].numLBA * sectorsize;
         if (partoff + partsize > maplen) {
             cli_dbgmsg("cli_scanmbr: Invalid partition entry\n");
@@ -554,7 +554,7 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
     partition_intersection_list_init(&prtncheck);
 
     logiclba = 0;
-    i        = 0;
+    i = 0;
     do {
         pos = extlba * sectorsize; /* start of extended partition */
 

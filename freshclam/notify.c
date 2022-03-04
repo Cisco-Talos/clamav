@@ -91,9 +91,9 @@ int clamd_connect(const char *cfgfile, const char *option)
 #endif
         if ((opt = optget(opts, "TCPSocket"))->enabled) {
         memset(&hints, 0, sizeof(hints));
-        hints.ai_family   = AF_UNSPEC;
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags    = AI_PASSIVE;
+        hints.ai_flags = AI_PASSIVE;
 
         snprintf(port, sizeof(port), "%u", (unsigned int)opt->numarg);
         port[5] = 0;

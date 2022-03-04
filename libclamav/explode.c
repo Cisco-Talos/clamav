@@ -54,10 +54,10 @@ static void bs(uint8_t *k, uint8_t *v, unsigned int elements)
         stop = 1;
         for (; i < r; i++) {
             if (v[k[i]] > v[k[i + 1]]) {
-                tmp      = k[i];
-                k[i]     = k[i + 1];
+                tmp = k[i];
+                k[i] = k[i + 1];
                 k[i + 1] = tmp;
-                stop     = 0;
+                stop = 0;
             }
         }
         if (stop) break;
@@ -65,10 +65,10 @@ static void bs(uint8_t *k, uint8_t *v, unsigned int elements)
         i--;
         for (; i > l; i--) {
             if (v[k[i]] < v[k[i - 1]]) {
-                tmp      = k[i];
-                k[i]     = k[i - 1];
+                tmp = k[i];
+                k[i] = k[i - 1];
                 k[i - 1] = tmp;
-                stop     = 0;
+                stop = 0;
             }
         }
         l++;
@@ -93,7 +93,7 @@ static int unpack_tree(struct xplstate *X, uint32_t *tree, unsigned int expected
     do {
         uint8_t values, len;
         values = *cur++;
-        len    = (values & 15) + 1;
+        len = (values & 15) + 1;
         values = (values >> 4) + 1;
         if (values > i) return 1;
         i -= values;
@@ -133,19 +133,19 @@ int explode_init(struct xplstate *X, uint16_t flags)
     X->bits = X->cur = 0;
     if (flags & 2) {
         X->largewin = 1;
-        X->mask     = 0x1fff;
+        X->mask = 0x1fff;
     } else {
         X->largewin = 0;
-        X->mask     = 0xfff;
+        X->mask = 0xfff;
     }
     if (flags & 4) {
-        X->state    = GRABLITS;
+        X->state = GRABLITS;
         X->litcodes = 1;
-        X->minlen   = 3;
+        X->minlen = 3;
     } else {
-        X->state    = GRABLENS;
+        X->state = GRABLENS;
         X->litcodes = 0;
-        X->minlen   = 2;
+        X->minlen = 2;
     }
     X->got = 0;
     return EXPLODE_OK;
@@ -160,12 +160,12 @@ int explode_init(struct xplstate *X, uint16_t flags)
         if (!X->avail_in) return EXPLODE_EBUFF;    \
         if (X->avail_in >= 4) {                    \
             X->bitmap = cli_readint32(X->next_in); \
-            X->bits   = 31;                        \
+            X->bits = 31;                          \
             X->next_in += 4;                       \
             X->avail_in -= 4;                      \
         } else {                                   \
             X->bitmap = *X->next_in;               \
-            X->bits   = 7;                         \
+            X->bits = 7;                           \
             X->next_in++;                          \
             X->avail_in--;                         \
         }                                          \
@@ -249,7 +249,7 @@ int explode(struct xplstate *X)
                 if (val) {
                     if (X->litcodes) {
                         X->backsize = 0;
-                        X->state    = EXPLODE_LITCODES;
+                        X->state = EXPLODE_LITCODES;
                         for (X->got = 0; X->got <= 15; X->got++) {
                             case EXPLODE_LITCODES:
                                 GETBIT;
@@ -273,8 +273,8 @@ int explode(struct xplstate *X)
                     SETCASE(EXPLODE_BASEDIST);
                     GETBITS(6u + X->largewin);
                     X->backbytes = val;
-                    X->backsize  = 0;
-                    X->state     = EXPLODE_DECODEDISTS;
+                    X->backsize = 0;
+                    X->state = EXPLODE_DECODEDISTS;
                     for (X->got = 0; X->got <= 15; X->got++) {
                         case EXPLODE_DECODEDISTS:
                             GETBIT;
@@ -285,7 +285,7 @@ int explode(struct xplstate *X)
                     X->backbytes |= temp << (6 + X->largewin);
                     X->backbytes++;
                     X->backsize = 0;
-                    X->state    = EXPLODE_DECODELENS;
+                    X->state = EXPLODE_DECODELENS;
                     for (X->got = 0; X->got <= 15; X->got++) {
                         case EXPLODE_DECODELENS:
                             GETBIT;
@@ -300,7 +300,7 @@ int explode(struct xplstate *X)
                         temp = 63 + val;
                     }
                     X->backsize = temp + X->minlen;
-                    X->state    = EXPLODE_BACKCOPY;
+                    X->state = EXPLODE_BACKCOPY;
                     while (X->backsize--) {
                         case EXPLODE_BACKCOPY:
                             if (!X->avail_out) return EXPLODE_EBUFF;

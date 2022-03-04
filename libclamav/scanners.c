@@ -131,11 +131,11 @@
 cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
 {
     cl_error_t status = CL_CLEAN;
-    DIR *dd           = NULL;
+    DIR *dd = NULL;
     struct dirent *dent;
     STATBUF statbuf;
-    char *fname                      = NULL;
-    unsigned int viruses_found       = 0;
+    char *fname = NULL;
+    unsigned int viruses_found = 0;
     bool processing_normalized_files = ctx->next_layer_is_normalized;
 
     if ((dd = opendir(dir)) != NULL) {
@@ -234,22 +234,22 @@ static cl_error_t cli_unrar_scanmetadata(unrar_metadata_t *metadata, cli_ctx *ct
 
 static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
 {
-    cl_error_t status          = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     cl_unrar_error_t unrar_ret = UNRAR_ERR;
 
-    unsigned int file_count    = 0;
+    unsigned int file_count = 0;
     unsigned int viruses_found = 0;
 
     uint32_t nEncryptedFilesFound = 0;
-    uint32_t nTooLargeFilesFound  = 0;
+    uint32_t nTooLargeFilesFound = 0;
 
     void *hArchive = NULL;
 
-    char *comment         = NULL;
+    char *comment = NULL;
     uint32_t comment_size = 0;
 
     unrar_metadata_t metadata;
-    char *filename_base    = NULL;
+    char *filename_base = NULL;
     char *extract_fullpath = NULL;
     char *comment_fullpath = NULL;
 
@@ -579,10 +579,10 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
     cl_error_t status = CL_SUCCESS;
 
     const char *filepath = NULL;
-    int fd               = -1;
+    int fd = -1;
 
     char *tmpname = NULL;
-    int tmpfd     = -1;
+    int tmpfd = -1;
 
 #ifdef _WIN32
     if ((SCAN_UNPRIVILEGED) || (NULL == ctx->sub_filepath) || (0 != _access_s(ctx->sub_filepath, R_OK))) {
@@ -596,11 +596,11 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
             goto done;
         }
         filepath = tmpname;
-        fd       = tmpfd;
+        fd = tmpfd;
     } else {
         /* Use the original file and file descriptor. */
         filepath = ctx->sub_filepath;
-        fd       = fmap_fd(ctx->fmap);
+        fd = fmap_fd(ctx->fmap);
     }
 
     /* scan file */
@@ -617,7 +617,7 @@ static cl_error_t cli_scanrar(cli_ctx *ctx)
             goto done;
         }
         filepath = tmpname;
-        fd       = tmpfd;
+        fd = tmpfd;
 
         /* try to scan again */
         status = cli_scanrar_file(filepath, fd, ctx);
@@ -669,22 +669,22 @@ static cl_error_t cli_egg_scanmetadata(cl_egg_metadata *metadata, cli_ctx *ctx, 
 
 static cl_error_t cli_scanegg(cli_ctx *ctx)
 {
-    cl_error_t status  = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     cl_error_t egg_ret = CL_EPARSE;
 
-    unsigned int file_count    = 0;
+    unsigned int file_count = 0;
     unsigned int viruses_found = 0;
 
     uint32_t nEncryptedFilesFound = 0;
-    uint32_t nTooLargeFilesFound  = 0;
+    uint32_t nTooLargeFilesFound = 0;
 
     void *hArchive = NULL;
 
-    char **comments    = NULL;
+    char **comments = NULL;
     uint32_t nComments = 0;
 
     cl_egg_metadata metadata;
-    char *filename_base    = NULL;
+    char *filename_base = NULL;
     char *extract_fullpath = NULL;
     char *comment_fullpath = NULL;
 
@@ -724,9 +724,9 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
              * Drop the comment to a temp file, if requested
              */
             if (ctx->engine->keeptmp) {
-                int comment_fd   = -1;
+                int comment_fd = -1;
                 size_t prefixLen = strlen("comments_") + 5;
-                char *prefix     = (char *)malloc(prefixLen + 1);
+                char *prefix = (char *)malloc(prefixLen + 1);
 
                 snprintf(prefix, prefixLen, "comments_%u", i);
                 prefix[prefixLen] = '\0';
@@ -860,8 +860,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                 /*
                  * Extract the file...
                  */
-                char *extract_filename    = NULL;
-                char *extract_buffer      = NULL;
+                char *extract_filename = NULL;
+                char *extract_buffer = NULL;
                 size_t extract_buffer_len = 0;
 
                 cli_dbgmsg("EGG: Extracting file: %s\n", metadata.filename);
@@ -1061,7 +1061,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
     do {
 
         metadata.filename = NULL;
-        ret               = cli_unarj_prepare_file(dir, &metadata);
+        ret = cli_unarj_prepare_file(dir, &metadata);
         if (ret != CL_SUCCESS) {
             cli_dbgmsg("ARJ: cli_unarj_prepare_file Error: %s\n", cl_strerror(ret));
             break;
@@ -1074,7 +1074,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
                 return CL_VIRUS;
             }
             virus_found = 1;
-            ret         = CL_SUCCESS;
+            ret = CL_SUCCESS;
         }
 
         if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0)) != CL_CLEAN) {
@@ -1104,7 +1104,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
                     break;
                 }
                 virus_found = 1;
-                ret         = CL_SUCCESS;
+                ret = CL_SUCCESS;
             }
         }
         if (metadata.filename) {
@@ -1240,8 +1240,8 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
         do {
             int inf;
             z.avail_out = sizeof(buff);
-            z.next_out  = buff;
-            inf         = inflate(&z, Z_NO_FLUSH);
+            z.next_out = buff;
+            inf = inflate(&z, Z_NO_FLUSH);
             if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
                 if (sizeof(buff) == z.avail_out) {
                     cli_dbgmsg("GZip: Bad stream, nothing in output buffer.\n");
@@ -1426,9 +1426,9 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
         return CL_EMEM;
     }
     memset(&strm, 0x00, sizeof(struct CLI_XZ));
-    strm.next_out  = buf;
+    strm.next_out = buf;
     strm.avail_out = CLI_XZ_OBUF_SIZE;
-    rc             = cli_XzInit(&strm);
+    rc = cli_XzInit(&strm);
     if (rc != XZ_RESULT_OK) {
         cli_errmsg("cli_scanxz: DecompressInit failed: %i\n", rc);
         free(buf);
@@ -1446,7 +1446,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
     do {
         /* set up input buffer */
         if (!strm.avail_in) {
-            strm.next_in  = (void *)fmap_need_off_once_len(ctx->fmap, off, CLI_XZ_IBUF_SIZE, &avail);
+            strm.next_in = (void *)fmap_need_off_once_len(ctx->fmap, off, CLI_XZ_IBUF_SIZE, &avail);
             strm.avail_in = avail;
             off += avail;
             if (!strm.avail_in) {
@@ -1489,7 +1489,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
                             size);
                 break;
             }
-            strm.next_out  = buf;
+            strm.next_out = buf;
             strm.avail_out = CLI_XZ_OBUF_SIZE;
         }
     } while (XZ_STREAM_END != rc);
@@ -1547,7 +1547,7 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
 
 static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *ctx)
 {
-    cl_error_t ret            = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     struct cli_matcher *groot = ctx->engine->root[0];
     struct cli_matcher *troot = ctx->engine->root[2];
     struct cli_ac_data gmdata, tmdata;
@@ -1689,12 +1689,12 @@ cl_error_t find_file(const char *filename, const char *dir, char *result, size_t
  */
 static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, struct uniq *U, int *has_macros)
 {
-    cl_error_t ret   = CL_SUCCESS;
+    cl_error_t ret = CL_SUCCESS;
     uint32_t hashcnt = 0;
-    char *hash       = NULL;
+    char *hash = NULL;
     char path[PATH_MAX];
     char filename[PATH_MAX];
-    int tempfd        = -1;
+    int tempfd = -1;
     int viruses_found = 0;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "dir", 3, &hash, &hashcnt))) {
@@ -1858,7 +1858,7 @@ static cl_error_t cli_ole2_tempdir_scan_embedded_ole10(const char *dir, cli_ctx 
     cl_error_t ret;
     char ole10_filename[1024];
     char *hash;
-    uint32_t hashcnt           = 0;
+    uint32_t hashcnt = 0;
     unsigned int viruses_found = 0;
 
     /* Check directory for embedded OLE objects */
@@ -1906,7 +1906,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
     char *fullname, vbaname[1024];
     unsigned char *data;
     char *hash;
-    uint32_t hashcnt           = 0;
+    uint32_t hashcnt = 0;
     unsigned int viruses_found = 0;
 
     if (CL_SUCCESS != (ret = uniq_get(U, "_vba_project", 12, NULL, &hashcnt))) {
@@ -2107,12 +2107,12 @@ done:
 
 static cl_error_t cli_ole2_tempdir_scan_for_xlm_and_images(const char *dir, cli_ctx *ctx, struct uniq *U)
 {
-    cl_error_t ret             = CL_CLEAN;
-    char *hash                 = NULL;
-    uint32_t hashcnt           = 0;
+    cl_error_t ret = CL_CLEAN;
+    char *hash = NULL;
+    uint32_t hashcnt = 0;
     unsigned int viruses_found = 0;
-    char STR_WORKBOOK[]        = "workbook";
-    char STR_BOOK[]            = "book";
+    char STR_WORKBOOK[] = "workbook";
+    char STR_BOOK[] = "book";
 
     if (CL_SUCCESS != (ret = uniq_get(U, STR_WORKBOOK, sizeof(STR_WORKBOOK) - 1, &hash, &hashcnt))) {
         if (CL_SUCCESS != (ret = uniq_get(U, STR_BOOK, sizeof(STR_BOOK) - 1, &hash, &hashcnt))) {
@@ -2144,9 +2144,9 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     char *tempname, fullname[1024];
     cl_error_t ret = CL_CLEAN;
     int fd;
-    fmap_t *map                = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     unsigned int viruses_found = 0;
-    uint64_t curr_len          = map->len;
+    uint64_t curr_len = map->len;
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
@@ -2237,7 +2237,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     unsigned char *normalized = NULL;
     struct text_norm_state state;
     char *tmpname = NULL;
-    int ofd       = -1;
+    int ofd = -1;
     cl_error_t ret;
     struct cli_matcher *troot;
     uint32_t maxpatlen, offset = 0;
@@ -2248,7 +2248,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     struct cli_ac_data *mdata[2];
     cl_fmap_t *new_map = NULL;
     fmap_t *map;
-    size_t at                  = 0;
+    size_t at = 0;
     unsigned int viruses_found = 0;
     uint64_t curr_len;
     struct cli_target_info info;
@@ -2256,10 +2256,10 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     if (!ctx || !ctx->engine->root)
         return CL_ENULLARG;
 
-    map       = ctx->fmap;
-    curr_len  = map->len;
-    groot     = ctx->engine->root[0];
-    troot     = ctx->engine->root[7];
+    map = ctx->fmap;
+    curr_len = map->len;
+    groot = ctx->engine->root[0];
+    troot = ctx->engine->root[7];
     maxpatlen = troot ? troot->maxpatlen : 0;
 
     // Initialize info so it's safe to pass to destroy later
@@ -2358,7 +2358,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
 
         while (1) {
             size_t len = MIN(map->pgsz, map->len - at);
-            buff       = fmap_need_off_once(map, at, len);
+            buff = fmap_need_off_once(map, at, len);
             at += len;
             if (!buff || !len || state.out_pos + len > state.out_len) {
                 /* flush if error/EOF, or too little buffer space left */
@@ -2438,12 +2438,12 @@ done:
 static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
 {
     cl_error_t status = CL_ERROR;
-    char *tempname    = NULL;
-    char *decoded     = NULL;
+    char *tempname = NULL;
+    char *decoded = NULL;
     const char *buff;
     int fd = -1;
     int bytes;
-    size_t at       = 0;
+    size_t at = 0;
     fmap_t *new_map = NULL;
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
@@ -2535,9 +2535,9 @@ static cl_error_t cli_ole2_scan_tempdir(
     int has_image)
 {
     cl_error_t status = CL_CLEAN;
-    DIR *dd           = NULL;
+    DIR *dd = NULL;
     int viruses_found = 0;
-    int has_macros    = 0;
+    int has_macros = 0;
 
     struct dirent *dent;
     STATBUF statbuf;
@@ -2700,13 +2700,13 @@ done:
 
 static cl_error_t cli_scanole2(cli_ctx *ctx)
 {
-    char *dir          = NULL;
-    cl_error_t ret     = CL_CLEAN;
+    char *dir = NULL;
+    cl_error_t ret = CL_CLEAN;
     struct uniq *files = NULL;
-    int has_vba        = 0;
-    int has_xlm        = 0;
-    int has_image      = 0;
-    int viruses_found  = 0;
+    int has_vba = 0;
+    int has_xlm = 0;
+    int has_image = 0;
+    int viruses_found = 0;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
@@ -3018,10 +3018,10 @@ static cl_error_t cli_scanmail(cli_ctx *ctx)
 static cl_error_t cli_scan_structured(cli_ctx *ctx)
 {
     char buf[8192];
-    size_t result          = 0;
-    unsigned int cc_count  = 0;
+    size_t result = 0;
+    unsigned int cc_count = 0;
     unsigned int ssn_count = 0;
-    int done               = 0;
+    int done = 0;
     fmap_t *map;
     size_t pos = 0;
     int (*ccfunc)(const unsigned char *buffer, size_t length, int cc_only);
@@ -3162,9 +3162,9 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
         }
     }
 
-    corrupted_input      = ctx->corrupted_input;
+    corrupted_input = ctx->corrupted_input;
     ctx->corrupted_input = 1;
-    ret                  = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
     ctx->corrupted_input = corrupted_input;
     if (ret == CL_VIRUS) {
         cli_dbgmsg("cli_scanembpe: Infected with %s\n", cli_get_last_virus(ctx));
@@ -3228,18 +3228,18 @@ static void get_thread_times(uint64_t *kt, uint64_t *ut)
         *kt = *ut = 0;
         return;
     }
-    kl.LowPart  = k.dwLowDateTime;
+    kl.LowPart = k.dwLowDateTime;
     kl.HighPart = k.dwHighDateTime;
-    ul.LowPart  = u.dwLowDateTime;
+    ul.LowPart = u.dwLowDateTime;
     ul.HighPart = u.dwHighDateTime;
-    *kt         = kl.QuadPart / 10;
-    *ut         = ul.QuadPart / 10;
+    *kt = kl.QuadPart / 10;
+    *ut = ul.QuadPart / 10;
 #else
     struct tms tbuf;
     if (times(&tbuf) != ((clock_t)-1)) {
         clock_t tck = sysconf(_SC_CLK_TCK);
-        *kt         = ((uint64_t)1000000) * tbuf.tms_stime / tck;
-        *ut         = ((uint64_t)1000000) * tbuf.tms_utime / tck;
+        *kt = ((uint64_t)1000000) * tbuf.tms_stime / tck;
+        *ut = ((uint64_t)1000000) * tbuf.tms_utime / tck;
     } else {
         *kt = *ut = 0;
     }
@@ -3278,8 +3278,8 @@ static inline void perf_done(cli_ctx *ctx)
     if (!perf)
         return;
 
-    p     = timestr;
-    pend  = timestr + sizeof(timestr) - 1;
+    p = timestr;
+    pend = timestr + sizeof(timestr) - 1;
     *pend = 0;
 
     cli_event_time_stop(perf, PERFT_SCAN);
@@ -3891,7 +3891,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     /* Immediately free up peinfo allocated memory, prior to any recursion */
                                     cli_exe_info_destroy(&peinfo);
 
-                                    nret       = cli_scanembpe(ctx, 0);
+                                    nret = cli_scanembpe(ctx, 0);
                                     break_loop = 1; /* we can stop here and other
                                                      * embedded executables will
                                                      * be found recursively
@@ -3946,7 +3946,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 #if HAVE_JSON
             if (NULL != parent_property) {
                 ctx->wrkproperty = (struct json_object *)(parent_property);
-                parent_property  = NULL;
+                parent_property = NULL;
             }
 #endif
         }
@@ -3995,7 +3995,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
 #endif
 
     while (ftoffset) {
-        fpt      = ftoffset;
+        fpt = ftoffset;
         ftoffset = ftoffset->next;
         free(fpt);
     }
@@ -4068,10 +4068,10 @@ static cl_error_t dispatch_prescan_callback(clcb_pre_scan cb, cli_ctx *ctx, cons
 
 static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
 {
-    cl_error_t status       = CL_EPARSE;
-    const uint8_t *offset   = NULL;
+    cl_error_t status = CL_EPARSE;
+    const uint8_t *offset = NULL;
     image_fuzzy_hash_t hash = {0};
-    json_object *header     = NULL;
+    json_object *header = NULL;
 
     FFIError *fuzzy_hash_calc_error = NULL;
 
@@ -4122,9 +4122,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cl_error_t res;
     cl_error_t cb_retcode;
     cli_file_t dettype = 0;
-    uint8_t typercg    = 1;
+    uint8_t typercg = 1;
     size_t hashed_size;
-    unsigned char *hash             = NULL;
+    unsigned char *hash = NULL;
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
     int cache_clean = 0;
@@ -4191,7 +4191,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             }
         }
 
-        old_temp_path   = ctx->sub_tmpdir;
+        old_temp_path = ctx->sub_tmpdir;
         ctx->sub_tmpdir = new_temp_path;
 
         if (mkdir(ctx->sub_tmpdir, 0700)) {
@@ -4354,7 +4354,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
         goto early_ret;
     }
 
-    old_hook_lsig_matches  = ctx->hook_lsig_matches;
+    old_hook_lsig_matches = ctx->hook_lsig_matches;
     ctx->hook_lsig_matches = NULL;
 
     if (!((ctx->options->general & ~CL_SCAN_GENERAL_ALLMATCHES) || (ctx->options->parse) || (ctx->options->heuristic) || (ctx->options->mail) || (ctx->options->dev))) {
@@ -4849,8 +4849,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             perf_nested_start(ctx, PERFT_PE, PERFT_SCAN);
             if (SCAN_PARSE_PE && ctx->dconf->pe) {
                 unsigned int corrupted_input = ctx->corrupted_input;
-                ret                          = cli_scanpe(ctx);
-                ctx->corrupted_input         = corrupted_input;
+                ret = cli_scanpe(ctx);
+                ctx->corrupted_input = corrupted_input;
             }
             perf_nested_stop(ctx, PERFT_PE, PERFT_SCAN);
             break;
@@ -4993,14 +4993,14 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
 {
     STATBUF sb;
     cl_error_t status = CL_CLEAN;
-    fmap_t *new_map   = NULL;
+    fmap_t *new_map = NULL;
 
     if (!ctx) {
         return CL_EARG;
     }
 
     const char *parent_filepath = ctx->sub_filepath;
-    ctx->sub_filepath           = filepath;
+    ctx->sub_filepath = filepath;
 
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     if (ctx->sha_collect > 0)
@@ -5080,7 +5080,7 @@ cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, uns
 static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
 {
     cl_error_t status = CL_CLEAN;
-    fmap_t *new_map   = NULL;
+    fmap_t *new_map = NULL;
 
     cli_dbgmsg("magic_scan_nested_fmap_type: [0, +%zu), [%zu, +%zu)\n",
                map->len, offset, length);
@@ -5146,9 +5146,9 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
          * Write the offset + length section of the fmap to disk, and scan it.
          */
         const uint8_t *mapdata = NULL;
-        char *tempfile         = NULL;
-        int fd                 = -1;
-        size_t nread           = 0;
+        char *tempfile = NULL;
+        int fd = -1;
+        size_t nread = 0;
 
         /* Then check length */
         if (!length) {
@@ -5257,14 +5257,14 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         return CL_ENULLARG;
     }
 
-    ctx.engine  = engine;
+    ctx.engine = engine;
     ctx.virname = virname;
     ctx.scanned = scanned;
     ctx.options = malloc(sizeof(struct cl_scan_options));
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
     ctx.found_possibly_unwanted = 0;
 
-    ctx.dconf  = (struct cli_dconf *)engine->dconf;
+    ctx.dconf = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
 
     if (!(ctx.hook_lsig_matches = cli_bitset_init())) {
@@ -5273,7 +5273,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -5290,7 +5290,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     if (ctx.engine->maxscantime != 0) {
         if (gettimeofday(&ctx.time_limit, NULL) == 0) {
-            uint32_t secs  = ctx.engine->maxscantime / 1000;
+            uint32_t secs = ctx.engine->maxscantime / 1000;
             uint32_t usecs = (ctx.engine->maxscantime % 1000) * 1000;
             ctx.time_limit.tv_sec += secs;
             ctx.time_limit.tv_usec += usecs;
@@ -5332,7 +5332,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename))) {
         /* Include the basename in the temp directory */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
-        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             status = CL_EMEM;
@@ -5343,7 +5343,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     } else {
         /* Just use date */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
-        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix = cli_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             status = CL_EMEM;
@@ -5419,7 +5419,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
             cli_errmsg("scan_common: no memory for json serialization.\n");
             status = CL_EMEM;
         } else {
-            int ret                   = CL_SUCCESS;
+            int ret = CL_SUCCESS;
             struct cli_matcher *iroot = ctx.engine->root[13];
             cli_dbgmsg("%s\n", jstring);
 
@@ -5456,7 +5456,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
             /* keeptmp file processing for file properties json string */
             if (ctx.engine->keeptmp) {
-                int fd        = -1;
+                int fd = -1;
                 char *tmpname = NULL;
 
                 if ((ret = cli_newfilepathfd(ctx.sub_tmpdir, "metadata.json", &tmpname, &fd)) != CL_SUCCESS) {
@@ -5526,7 +5526,7 @@ done:
 cl_error_t cl_scandesc_callback(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
     cl_error_t status = CL_SUCCESS;
-    cl_fmap_t *map    = NULL;
+    cl_fmap_t *map = NULL;
     STATBUF sb;
     char *filename_base = NULL;
 
@@ -5614,7 +5614,7 @@ cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx)
 
 cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name)
 {
-    int fd         = -1;
+    int fd = -1;
     cl_error_t ret = CL_EOPEN;
 
     /* internal version of cl_scanfile with arec/mrec preserved */

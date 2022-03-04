@@ -318,7 +318,7 @@ static const struct tableinit {
 #ifdef CL_THREAD_SAFE
 static pthread_mutex_t tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-static table_t *rfc821  = NULL;
+static table_t *rfc821 = NULL;
 static table_t *subtype = NULL;
 
 int cli_mbox(const char *dir, cli_ctx *ctx)
@@ -352,7 +352,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
     message *body;
     char buffer[RFC2821LENGTH + 1];
     mbox_ctx mctx;
-    size_t at   = 0;
+    size_t at = 0;
     fmap_t *map = ctx->fmap;
 
     cli_dbgmsg("in mbox()\n");
@@ -378,13 +378,13 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 #endif
 
     retcode = CL_SUCCESS;
-    body    = NULL;
+    body = NULL;
 
-    mctx.dir          = dir;
-    mctx.rfc821Table  = rfc821;
+    mctx.dir = dir;
+    mctx.rfc821Table = rfc821;
     mctx.subtypeTable = subtype;
-    mctx.ctx          = ctx;
-    mctx.files        = 0;
+    mctx.ctx = ctx;
+    mctx.files = 0;
 #if HAVE_JSON
     mctx.wrkobj = ctx->wrkproperty;
 #endif
@@ -426,7 +426,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             return CL_EMEM;
 
         lastLineWasEmpty = false;
-        messagenumber    = 1;
+        messagenumber = 1;
         messageSetCTX(m, ctx);
 
         do {
@@ -438,7 +438,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                  * End of a message in the mail box
                  */
                 bool heuristicFound = false;
-                body                = parseEmailHeaders(m, rfc821, &heuristicFound);
+                body = parseEmailHeaders(m, rfc821, &heuristicFound);
                 if (body == NULL) {
                     messageReset(m);
                     messageSetCTX(m, ctx);
@@ -461,7 +461,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                         cli_dbgmsg("Message number %d is infected\n",
                                    messagenumber - 1);
                         retcode = CL_VIRUS;
-                        m       = NULL;
+                        m = NULL;
                         break;
                     }
                 }
@@ -492,13 +492,13 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             } else
                 /* at this point, the \n has been removed */
                 if (messageAddStr(m, buffer) < 0)
-                    break;
+                break;
         } while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1));
 
         if (retcode == CL_SUCCESS) {
             cli_dbgmsg("Extract attachments from email %d\n", messagenumber);
             bool heuristicFound = false;
-            body                = parseEmailHeaders(m, rfc821, &heuristicFound);
+            body = parseEmailHeaders(m, rfc821, &heuristicFound);
             if (heuristicFound) {
                 retcode = CL_VIRUS;
             }
@@ -529,7 +529,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         buffer[sizeof(buffer) - 1] = '\0';
 
         bool heuristicFound = false;
-        body                = parseEmailFile(map, &at, rfc821, buffer, dir, ctx, &heuristicFound);
+        body = parseEmailFile(map, &at, rfc821, buffer, dir, ctx, &heuristicFound);
         if (heuristicFound) {
             retcode = CL_VIRUS;
         }
@@ -585,7 +585,7 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 
     if ((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
         (*ctx->virname == NULL || SCAN_ALLMATCHES)) {
-        retcode                      = cli_append_virus(ctx, "Heuristics.Phishing.Email");
+        retcode = cli_append_virus(ctx, "Heuristics.Phishing.Email");
         ctx->found_possibly_unwanted = 0;
     }
 
@@ -616,7 +616,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
 
     if (strlen(buffer) > spaceLeft) {
         ReadStruct *next = NULL;
-        int part         = spaceLeft;
+        int part = spaceLeft;
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
@@ -641,9 +641,9 @@ getMallocedBufferFromList(const ReadStruct *head)
 {
 
     const ReadStruct *rs = head;
-    int bufferLen        = 1;
-    char *working        = NULL;
-    char *ret            = NULL;
+    int bufferLen = 1;
+    char *working = NULL;
+    char *ret = NULL;
 
     while (rs) {
         bufferLen += rs->bufferLen;
@@ -652,13 +652,13 @@ getMallocedBufferFromList(const ReadStruct *head)
 
     MALLOC(working, bufferLen);
 
-    rs        = head;
+    rs = head;
     bufferLen = 0;
     while (rs) {
         memcpy(&(working[bufferLen]), rs->buffer, rs->bufferLen);
         bufferLen += rs->bufferLen;
         working[bufferLen] = 0;
-        rs                 = rs->next;
+        rs = rs->next;
     }
 
     ret = working;
@@ -687,8 +687,8 @@ freeList(ReadStruct *head)
             freeList(head->next);    \
         }                            \
         head->bufferLen = 0;         \
-        head->next      = 0;         \
-        curr            = head;      \
+        head->next = 0;              \
+        curr = head;                 \
     } while (0)
 #endif /*FREELIST_REALLOC*/
 
@@ -699,7 +699,7 @@ static bool
 doContinueMultipleEmptyOptions(const char *const line, bool *lastWasOnlySemi)
 {
     if (line) {
-        size_t i   = 0;
+        size_t i = 0;
         int doCont = 1;
         for (; i < strlen(line); i++) {
             if (isblank(line[i])) {
@@ -815,18 +815,18 @@ haveTooManyMIMEArguments(size_t argCnt, cli_ctx *ctx, bool *heuristicFound)
 static message *
 parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *firstLine, const char *dir, cli_ctx *ctx, bool *heuristicFound)
 {
-    bool inHeader     = true;
-    bool bodyIsEmpty  = true;
+    bool inHeader = true;
+    bool bodyIsEmpty = true;
     bool lastWasBlank = false, lastBodyLineWasBlank = false;
     message *ret;
     bool anyHeadersFound = false;
-    int commandNumber    = -1;
-    char *boundary       = NULL;
+    int commandNumber = -1;
+    char *boundary = NULL;
     char buffer[RFC2821LENGTH + 1];
-    bool lastWasOnlySemi    = false;
-    int err                 = 1;
+    bool lastWasOnlySemi = false;
+    int err = 1;
     size_t totalHeaderBytes = 0;
-    size_t totalHeaderCnt   = 0;
+    size_t totalHeaderCnt = 0;
 
     size_t lineFoldCnt = 0;
 
@@ -900,7 +900,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                      * to make a best guess. Sigh.
                      */
                     if (head->bufferLen) {
-                        char *header     = getMallocedBufferFromList(head);
+                        char *header = getMallocedBufferFromList(head);
                         int needContinue = 0;
                         VERIFY_POINTER(header);
 
@@ -940,7 +940,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                     continue;
 
                 cli_dbgmsg("End of header information\n");
-                inHeader    = false;
+                inHeader = false;
                 bodyIsEmpty = true;
             } else {
                 char *ptr;
@@ -966,7 +966,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, out);
+                    ptr = rfc822comments(cmd, out);
                     commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
 
                     switch (commandNumber) {
@@ -1017,7 +1017,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
                  * line isn't indented by whitespace
                  */
                 {
-                    char *header     = getMallocedBufferFromList(head); /*This is the issue */
+                    char *header = getMallocedBufferFromList(head); /*This is the issue */
                     int needContinue = 0;
                     VERIFY_POINTER(header);
 
@@ -1131,16 +1131,16 @@ done:
 static message *
 parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
 {
-    bool inHeader    = true;
+    bool inHeader = true;
     bool bodyIsEmpty = true;
     text *t;
     message *ret;
-    bool anyHeadersFound  = false;
-    int commandNumber     = -1;
-    char *fullline        = NULL;
+    bool anyHeadersFound = false;
+    int commandNumber = -1;
+    char *fullline = NULL;
     size_t fulllinelength = 0;
-    bool lastWasOnlySemi  = false;
-    size_t lineFoldCnt    = 0;
+    bool lastWasOnlySemi = false;
+    size_t lineFoldCnt = 0;
     size_t totalHeaderCnt = 0;
 
     cli_dbgmsg("parseEmailHeaders\n");
@@ -1181,7 +1181,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     cli_dbgmsg("Nothing interesting in the header\n");
                     break;
                 }
-                inHeader    = false;
+                inHeader = false;
                 bodyIsEmpty = true;
             } else {
                 char *ptr;
@@ -1206,7 +1206,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                         continue;
                     }
 
-                    ptr           = rfc822comments(cmd, NULL);
+                    ptr = rfc822comments(cmd, NULL);
                     commandNumber = tableFind(rfc821, ptr ? ptr : cmd);
                     if (ptr)
                         free(ptr);
@@ -1222,7 +1222,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                                 anyHeadersFound = usefulHeader(commandNumber, cmd);
                             continue;
                     }
-                    fullline       = cli_strdup(line);
+                    fullline = cli_strdup(line);
                     fulllinelength = strlen(line) + 1;
                 } else if (line) {
                     fulllinelength += strlen(line) + 1;
@@ -1507,7 +1507,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     blob *input = NULL;
     htmlDocPtr htmlDoc;
     xmlTextReaderPtr reader;
-    int ret        = CL_SUCCESS;
+    int ret = CL_SUCCESS;
     mbox_status rc = OK;
 #if HAVE_JSON
     json_object *rhtml;
@@ -1569,7 +1569,7 @@ parseRootMHTML(mbox_ctx *mctx, message *m, text *t)
     memset(&mxctx, 0, sizeof(mxctx));
     /* no scanning callback set */
     mxctx.comment_cb = parseMHTMLComment;
-    ret              = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, MSXML_FLAG_JSON | MSXML_FLAG_WALK, &mxctx);
+    ret = cli_msxml_parse_document(ctx, reader, mhtml_keys, num_mhtml_keys, MSXML_FLAG_JSON | MSXML_FLAG_WALK, &mxctx);
     switch (ret) {
         case CL_SUCCESS:
         case CL_ETIMEOUT:
@@ -1628,12 +1628,12 @@ static mbox_status
 parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
 {
     mbox_status rc;
-    text *aText          = textIn;
+    text *aText = textIn;
     message *mainMessage = messageIn;
     fileblob *fb;
-    bool infected                  = false;
+    bool infected = false;
     const struct cl_engine *engine = mctx->ctx->engine;
-    const int doPhishingScan       = engine->dboptions & CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
+    const int doPhishingScan = engine->dboptions & CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 #if HAVE_JSON
     json_object *saveobj = mctx->wrkobj;
 #endif
@@ -1673,12 +1673,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
         const text *t_line;
         /*bool isAlternative;*/
         message *aMessage;
-        int multiparts     = 0;
+        int multiparts = 0;
         message **messages = NULL; /* parts of a multipart message */
 
         cli_dbgmsg("Parsing mail file\n");
 
-        mimeType    = messageGetMimeType(mainMessage);
+        mimeType = messageGetMimeType(mainMessage);
         mimeSubtype = messageGetMimeSubtype(mainMessage);
 #if HAVE_JSON
         if (mctx->wrkobj != NULL) {
@@ -1805,7 +1805,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         if (binhexBegin(mainMessage) == t_line) {
                             if (exportBinhexMessage(mctx, mainMessage)) {
                                 /* virus found */
-                                rc       = VIRUS;
+                                rc = VIRUS;
                                 infected = true;
                                 break;
                             }
@@ -1844,7 +1844,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                  * multipart message. Remember, each part may itself
                  * be a multipart message.
                  */
-                inhead     = 1;
+                inhead = 1;
                 inMimeHead = 0;
 
                 /*
@@ -2087,7 +2087,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 }
 
                                 datasz = strlen(fullline) + strlen(data) + 1;
-                                ptr    = cli_realloc(fullline, datasz);
+                                ptr = cli_realloc(fullline, datasz);
 
                                 if (ptr == NULL)
                                     break;
@@ -2144,7 +2144,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                         case APPLEDOUBLE:
                         case KNOWBOT:
                         case -1:
-                            old_rc      = rc;
+                            old_rc = rc;
                             mainMessage = do_multipart(mainMessage,
                                                        messages, multiparts,
                                                        &rc, mctx, messageIn,
@@ -2665,14 +2665,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
             fileblobAddData(fb, (const unsigned char *)"Received: by clamd (bounce)\n", 28);
             fileblobSetCTX(fb, mctx->ctx);
 
-            inheader    = true;
+            inheader = true;
             topofbounce = NULL;
             do {
                 l = t->t_line;
 
                 if (l == NULL) {
                     if (inheader) {
-                        inheader    = false;
+                        inheader = false;
                         topofbounce = t;
                     }
                 } else {
@@ -2936,7 +2936,7 @@ boundaryEnd(const char *line, const char *boundary)
 
     p = newline = strdup(line);
     if (!(newline)) {
-        p       = (char *)line;
+        p = (char *)line;
         newline = (char *)line;
     }
 
@@ -3041,7 +3041,7 @@ initialiseTables(table_t **rfc821Table, table_t **subtypeTable)
             if (tableInsert(*subtypeTable, tableinit->key, tableinit->value) < 0) {
                 tableDestroy(*rfc821Table);
                 tableDestroy(*subtypeTable);
-                *rfc821Table  = NULL;
+                *rfc821Table = NULL;
                 *subtypeTable = NULL;
                 return -1;
             }
@@ -3255,7 +3255,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 #ifdef CL_THREAD_SAFE
                                 s = strtok_r(NULL, ";", &strptr);
 #else
-                                s       = strtok(NULL, ";");
+                                s = strtok(NULL, ";");
 #endif
                                 if (s == NULL)
                                     break;
@@ -3263,7 +3263,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
                                     size_t len = strstrip(s) - 1;
                                     if (s[len] == '\"') {
                                         s[len] = '\0';
-                                        len    = strstrip(s);
+                                        len = strstrip(s);
                                     }
                                     if (len) {
                                         if (strchr(s, ' '))
@@ -3396,7 +3396,7 @@ rfc822comments(const char *in, char *out)
     }
 
     backslash = commentlevel = inquote = 0;
-    optr                               = out;
+    optr = out;
 
     cli_dbgmsg("rfc822comments: contains a comment\n");
 
@@ -3659,7 +3659,7 @@ rfc1341(mbox_ctx *mctx, message *m)
     total = (char *)messageFindArgument(m, "total");
     cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
     if (total) {
-        int t   = atoi(total);
+        int t = atoi(total);
         DIR *dd = NULL;
 
         free(total);
@@ -3876,7 +3876,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 
     hrefs->count = 0;
     hrefs->tag = hrefs->value = NULL;
-    hrefs->contents           = NULL;
+    hrefs->contents = NULL;
 
     cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
     mem = blobGetData(b);
@@ -3919,7 +3919,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 
     hrefs.count = 0;
     hrefs.tag = hrefs.value = NULL;
-    hrefs.contents          = NULL;
+    hrefs.contents = NULL;
 
     b = getHrefs(mainMessage, &hrefs);
     if (b) {
@@ -3931,7 +3931,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
                  *    the members directly
                  */
                 mainMessage->isInfected = true;
-                *rc                     = VIRUS;
+                *rc = VIRUS;
                 cli_dbgmsg("PH:Phishing found\n");
             }
         }
@@ -3959,7 +3959,7 @@ print_trace(int use_syslog)
 
     cli_errmsg("Segmentation fault, attempting to print backtrace\n");
 
-    size    = backtrace(array, 10);
+    size = backtrace(array, 10);
     strings = backtrace_symbols(array, size);
 
     cli_errmsg("Backtrace of pid %d:\n", pid);
@@ -4257,7 +4257,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 #ifndef SAVE_TO_DISC
     message *body;
 #endif
-    message *aMessage        = messages[i];
+    message *aMessage = messages[i];
     const int doPhishingScan = mctx->ctx->engine->dboptions & CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 #if HAVE_JSON
     json_object *thisobj = NULL, *saveobj = mctx->wrkobj;
@@ -4349,7 +4349,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
                 if (mainMessage && (mainMessage != messageIn))
                     messageDestroy(mainMessage);
                 mainMessage = NULL;
-                cptr        = messageGetMimeSubtype(aMessage);
+                cptr = messageGetMimeSubtype(aMessage);
                 cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
                 if ((tableFind(mctx->subtypeTable, cptr) == PLAIN) &&
                     (messageGetEncoding(aMessage) == NOENCODING)) {
@@ -4430,7 +4430,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
              * This can save a lot of memory
              */
             messageDestroy(messages[i]);
-            messages[i]  = NULL;
+            messages[i] = NULL;
 #if HAVE_JSON
             mctx->wrkobj = thisobj;
 #endif
@@ -4513,7 +4513,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 #if HAVE_JSON
         if (thisobj != NULL) {
             json_object *entry = NULL;
-            const char *dtype  = NULL;
+            const char *dtype = NULL;
 
             /* attempt to acquire container type */
             if (json_object_object_get_ex(mctx->ctx->wrkproperty, "ContainedObjects", &arrobj)) {

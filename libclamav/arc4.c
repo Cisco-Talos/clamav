@@ -42,9 +42,9 @@ bool arc4_init(struct arc4_state *a, const uint8_t *key, unsigned keylength)
         S[i] = i;
     for (i = 0, j = 0; i < 256; i++) {
         uint8_t tmp = S[i];
-        j           = j + S[i] + key[i % keylength];
-        S[i]        = S[j];
-        S[j]        = tmp;
+        j = j + S[i] + key[i % keylength];
+        S[i] = S[j];
+        S[j] = tmp;
     }
     a->i = a->j = 0;
     return true;

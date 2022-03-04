@@ -60,7 +60,7 @@
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {
-    unsigned char mydl  = *mydlptr;
+    unsigned char mydl = *mydlptr;
     unsigned char olddl = mydl;
 
     mydl *= 2;
@@ -68,7 +68,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
         if (*scur < buffer || *scur >= buffer + buffersize - 1)
             return -1;
         olddl = **scur;
-        mydl  = olddl * 2 + 1;
+        mydl = olddl * 2 + 1;
         *scur = *scur + 1;
     }
     *mydlptr = mydl;
@@ -77,12 +77,12 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
 
 int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli_exe_section *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
 {
-    char *adjbuf     = buf - minrva;
-    char *packed     = NULL;
+    char *adjbuf = buf - minrva;
+    char *packed = NULL;
     uint32_t thisrva = 0, bottom = 0, enc_ep = 0, irva = 0, workdone = 0, grown = 0x355, skew = 0x35;
     int j = 0, oob, mangled = 0, check4resources = 0;
     struct cli_exe_section *usects = NULL;
-    void *tmpsct                   = NULL;
+    void *tmpsct = NULL;
 
     /*
      * -] The real thing [-
@@ -99,8 +99,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
         packed = adjbuf + sections[sectcount - 1].rva + 0x1b8;
     if (version == 1) {
         packed = adjbuf + sections[sectcount - 1].rva + 0x178;
-        grown  = 0x323; /* My name is Harry potter */
-        skew   = 0x34;
+        grown = 0x323; /* My name is Harry potter */
+        skew = 0x34;
     }
 
     while (1) {
@@ -131,16 +131,16 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 
                     if (usects[t].rva <= usects[t + 1].rva)
                         continue;
-                    trva              = usects[t].rva;
-                    trsz              = usects[t].rsz;
-                    tvsz              = usects[t].vsz;
-                    usects[t].rva     = usects[t + 1].rva;
-                    usects[t].rsz     = usects[t + 1].rsz;
-                    usects[t].vsz     = usects[t + 1].vsz;
+                    trva = usects[t].rva;
+                    trsz = usects[t].rsz;
+                    tvsz = usects[t].vsz;
+                    usects[t].rva = usects[t + 1].rva;
+                    usects[t].rsz = usects[t + 1].rsz;
+                    usects[t].vsz = usects[t + 1].vsz;
                     usects[t + 1].rva = trva;
                     usects[t + 1].rsz = trsz;
                     usects[t + 1].vsz = tvsz;
-                    upd               = 1;
+                    upd = 1;
                 }
             }
 
@@ -196,7 +196,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                                 enc_ep--;
                             if (api < virtaddr)
                                 enc_ep--;
-                            tmpep  = (enc_ep & 0xfffffff8) >> 3 & 0x1fffffff;
+                            tmpep = (enc_ep & 0xfffffff8) >> 3 & 0x1fffffff;
                             enc_ep = (enc_ep & 7) << 29 | tmpep;
                         }
                     }
@@ -289,7 +289,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                 return 1;
             }
 
-            size    = cli_readint32(packed + 4); /* How many bytes to unpack */
+            size = cli_readint32(packed + 4);    /* How many bytes to unpack */
             thisrva = cli_readint32(packed + 8); /* RVA of the original section */
             packed += 0x10;
 
@@ -371,9 +371,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
             }
 
             size--;
-            *ddst++   = *ssrc++; /* eheh u C gurus gotta luv these monsters :P */
+            *ddst++ = *ssrc++; /* eheh u C gurus gotta luv these monsters :P */
             backbytes = 0;
-            oldback   = 0;
+            oldback = 0;
 
             /* No surprises here... NRV any1??? ;) */
             while (size > 0) {
@@ -430,7 +430,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                         addsize += 1 + (backbytes < (int)check2) + (backbytes < (int)check1);
                         oldback = backbytes;
                     } else {
-                        backsize  = backbytes + 1;
+                        backsize = backbytes + 1;
                         backbytes = oldback;
                     }
 
@@ -472,7 +472,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                         ddst++;
                     }
                     backbytes = 0;
-                    backsize  = 0;
+                    backsize = 0;
                 } /* else */
             }     /* while(ebx) */
 
@@ -489,7 +489,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                     CLI_ISCONTAINED(buf, bufsz, ddst - grown + 5 + 0x4f, 8) &&
                     cli_readint32(ddst - grown + 5 + 0x4f) == 0x645ec033 &&
                     cli_readint32(ddst - grown + 5 + 0x4f + 4) == 0x1b8b188b) {
-                    reloc       = 0;
+                    reloc = 0;
                     strippetite = 1;
                 }
                 if (!strippetite &&
@@ -497,7 +497,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                     CLI_ISCONTAINED(buf, bufsz, ddst - grown + 5 + 0x4f - skew, 8) &&
                     cli_readint32(ddst - grown + 5 + 0x4f - skew) == 0x645ec033 &&
                     cli_readint32(ddst - grown + 5 + 0x4f + 4 - skew) == 0x1b8b188b) {
-                    reloc       = skew; /* If the original exe had a .reloc were skewed */
+                    reloc = skew; /* If the original exe had a .reloc were skewed */
                     strippetite = 1;
                 }
 
@@ -510,8 +510,8 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 
                     cli_dbgmsg("Petite: Found petite code in sect%d(%x). Let's strip it.\n", j - 1, usects[j - 1].rva);
                     if (test1 == test2 && CLI_ISCONTAINED(buf, bufsz, ddst - grown + 0x0f - reloc, 0x1c0 - 0x0f + 4)) {
-                        irva    = cli_readint32(ddst - grown + 0x121 - reloc);
-                        enc_ep  = cli_readint32(ddst - grown + 0x0f - reloc) ^ test1;
+                        irva = cli_readint32(ddst - grown + 0x121 - reloc);
+                        enc_ep = cli_readint32(ddst - grown + 0x0f - reloc) ^ test1;
                         mangled = ((uint32_t)cli_readint32(ddst - grown + 0x1c0 - reloc) != 0x90909090); /* FIXME: Magic's too short??? */
                         cli_dbgmsg("Petite: Encrypted EP: %x | Array of imports: %x\n", enc_ep, irva);
                     }

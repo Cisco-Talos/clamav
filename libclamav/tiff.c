@@ -116,10 +116,10 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
             }
             offset += sizeof(entry);
 
-            entry.tag    = tiff16_to_host(big_endian, entry.tag);
-            entry.type   = tiff16_to_host(big_endian, entry.type);
+            entry.tag = tiff16_to_host(big_endian, entry.tag);
+            entry.type = tiff16_to_host(big_endian, entry.type);
             entry.numval = tiff32_to_host(big_endian, entry.numval);
-            entry.value  = tiff32_to_host(big_endian, entry.value);
+            entry.value = tiff32_to_host(big_endian, entry.value);
 
             // cli_dbgmsg("%02u: %u %u %u %u\n", i, entry.tag, entry.type, entry.numval, entry.value);
 

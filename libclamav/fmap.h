@@ -377,7 +377,7 @@ static inline const void *fmap_need_off_once_len(fmap_t *m, size_t at, size_t le
     }
     if (len > m->len - at)
         len = m->len - at;
-    p       = fmap_need_off_once(m, at, len);
+    p = fmap_need_off_once(m, at, len);
     *lenout = p ? len : 0;
     return p;
 }

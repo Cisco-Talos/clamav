@@ -167,7 +167,7 @@ static int cli_untgz(int fd, const char *destdir)
                 in_block = 1;
 
         } else { /* write or continue writing file contents */
-            nbytes   = size > TAR_BLOCKSIZE ? TAR_BLOCKSIZE : size;
+            nbytes = size > TAR_BLOCKSIZE ? TAR_BLOCKSIZE : size;
             nwritten = fwrite(block, 1, nbytes, outfile);
 
             if (nwritten != nbytes) {
@@ -258,13 +258,13 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
     }
 
     dbio->bufsize = CLI_DEFAULT_DBIO_BUFSIZE;
-    dbio->buf     = cli_malloc(dbio->bufsize);
+    dbio->buf = cli_malloc(dbio->bufsize);
     if (!dbio->buf) {
         cli_errmsg("cli_tgzload: Can't allocate memory for dbio->buf\n");
         cli_tgzload_cleanup(compr, dbio, fdd);
         return CL_EMALFDB;
     }
-    dbio->bufpt  = NULL;
+    dbio->bufpt = NULL;
     dbio->usebuf = 1;
     dbio->readpt = dbio->buf;
 
@@ -320,10 +320,10 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
             cli_tgzload_cleanup(compr, dbio, fdd);
             return CL_EMALFDB;
         }
-        dbio->size     = size;
+        dbio->size = size;
         dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
-        dbio->bufpt    = NULL;
-        dbio->readpt   = dbio->buf;
+        dbio->bufpt = NULL;
+        dbio->readpt = dbio->buf;
         if (!(dbio->hashctx)) {
             dbio->hashctx = cl_hash_init("sha256");
             if (!(dbio->hashctx)) {
@@ -674,7 +674,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
         cli_warnmsg("*******************************************************************\n");
     }
 
-    cfd          = fileno(fs);
+    cfd = fileno(fs);
     dbio.chkonly = 0;
     if (dbtype == 2)
         ret = cli_tgzload(cfd, engine, signo, options | CL_DB_UNSIGNED, &dbio, NULL);
@@ -703,7 +703,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
     ret = cli_tgzload(cfd, engine, signo, options, &dbio, dbinfo);
 
     while (engine->dbinfo) {
-        dbinfo         = engine->dbinfo;
+        dbinfo = engine->dbinfo;
         engine->dbinfo = dbinfo->next;
         MPOOL_FREE(engine->mempool, dbinfo->name);
         MPOOL_FREE(engine->mempool, dbinfo->hash);

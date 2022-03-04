@@ -68,7 +68,7 @@ int unfsg_200(const char *source, char *dest, int ssize, int dsize, uint32_t rva
 int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_exe_section *sections, int sectcount, uint32_t base, uint32_t ep, int file)
 {
     const char *tsrc = source;
-    char *tdst       = dest;
+    char *tdst = dest;
     int i, upd = 1, offs = 0, lastsz = dsize;
 
     for (i = 0; i <= sectcount; i++) {
@@ -91,16 +91,16 @@ int unfsg_133(const char *source, char *dest, int ssize, int dsize, struct cli_e
 
             if (sections[i].rva <= sections[i + 1].rva)
                 continue;
-            trva                = sections[i].rva;
-            traw                = sections[i].raw;
-            trsz                = sections[i].rsz;
-            sections[i].rva     = sections[i + 1].rva;
-            sections[i].rsz     = sections[i + 1].rsz;
-            sections[i].raw     = sections[i + 1].raw;
+            trva = sections[i].rva;
+            traw = sections[i].raw;
+            trsz = sections[i].rsz;
+            sections[i].rva = sections[i + 1].rva;
+            sections[i].rsz = sections[i + 1].rsz;
+            sections[i].raw = sections[i + 1].raw;
             sections[i + 1].rva = trva;
             sections[i + 1].raw = traw;
             sections[i + 1].rsz = trsz;
-            upd                 = 1;
+            upd = 1;
         }
     }
 

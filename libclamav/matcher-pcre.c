@@ -62,7 +62,7 @@
 #define MAX_PCRE_SIGEVENT_ID MAX_TRACKED_PCRE *PCRE_EVENTS_PER_SIG
 
 cli_events_t *p_sigevents = NULL;
-unsigned int p_sigid      = 0;
+unsigned int p_sigid = 0;
 
 static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
 {
@@ -100,7 +100,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
 
     /* register time event */
     pm->sigtime_id = p_sigid;
-    ret            = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_time, multiple_sum);
+    ret = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_time, multiple_sum);
     if (ret) {
         cli_errmsg("pcre_perf: cli_event_define() error for time event id %d\n", pm->sigtime_id);
         pm->sigtime_id = MAX_PCRE_SIGEVENT_ID + 1;
@@ -109,7 +109,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
 
     /* register match count */
     pm->sigmatch_id = p_sigid;
-    ret             = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_int, multiple_sum);
+    ret = cli_event_define(p_sigevents, p_sigid++, pm->statname, ev_int, multiple_sum);
     if (ret) {
         cli_errmsg("pcre_perf: cli_event_define() error for matches event id %d\n", pm->sigmatch_id);
         pm->sigmatch_id = MAX_PCRE_SIGEVENT_ID + 1;
@@ -158,8 +158,8 @@ void cli_pcre_perf_print()
             name_len = 0;
         if (name_len > max_name_len)
             max_name_len = name_len;
-        elem->name      = name ? name : "\"noname\"";
-        elem->usecs     = val.v_int;
+        elem->name = name ? name : "\"noname\"";
+        elem->usecs = val.v_int;
         elem->run_count = count;
         cli_event_get(p_sigevents, i * PCRE_EVENTS_PER_SIG + 1, &val, &count);
         elem->match_count = count;
@@ -369,7 +369,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
         pcre_perf_events_init(pm, virname);
 
     /* add pcre data to root after reallocation */
-    pcre_count   = root->pcre_metas + 1;
+    pcre_count = root->pcre_metas + 1;
     newmetatable = (struct cli_pcre_meta **)MPOOL_REALLOC(root->mempool, root->pcre_metatable,
                                                           pcre_count * sizeof(struct cli_pcre_meta *));
     if (!newmetatable) {
@@ -380,7 +380,7 @@ cl_error_t cli_pcre_addpatt(struct cli_matcher *root, const char *virname, const
     }
 
     newmetatable[pcre_count - 1] = pm;
-    root->pcre_metatable         = newmetatable;
+    root->pcre_metatable = newmetatable;
 
     root->pcre_metas = pcre_count;
 
@@ -392,7 +392,7 @@ cl_error_t cli_pcre_build(struct cli_matcher *root, long long unsigned match_lim
     unsigned int i;
     cl_error_t ret;
     struct cli_pcre_meta *pm = NULL;
-    int disable_all          = 0;
+    int disable_all = 0;
 
     if (dconf && !(dconf->pcre & PCRE_CONF_SUPPORT))
         disable_all = 1;
@@ -465,7 +465,7 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
     }
 
     if (!root || !root->pcre_metatable || !info || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT))) {
-        data->shift  = NULL;
+        data->shift = NULL;
         data->offset = NULL;
         return CL_SUCCESS;
     }
@@ -493,19 +493,19 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
         /* skip broken pcres, not getting executed anyways */
         if (pm->flags & CLI_PCRE_DISABLED) {
             data->offset[i] = CLI_OFF_NONE;
-            data->shift[i]  = 0;
+            data->shift[i] = 0;
             continue;
         }
 
         if (pm->offdata[0] == CLI_OFF_ANY) {
             data->offset[i] = CLI_OFF_ANY;
-            data->shift[i]  = 0;
+            data->shift[i] = 0;
         } else if (pm->offdata[0] == CLI_OFF_NONE) {
             data->offset[i] = CLI_OFF_NONE;
-            data->shift[i]  = 0;
+            data->shift[i] = 0;
         } else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
             data->offset[i] = pm->offdata[1];
-            data->shift[i]  = pm->offdata[2];
+            data->shift[i] = pm->offdata[2];
         } else {
             ret = cli_caloff(NULL, info, root->type, pm->offdata, &data->offset[i], &endoff);
             if (ret != CL_SUCCESS) {
@@ -518,7 +518,7 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
             /* TODO - CLI_OFF_VERSION is interpreted as CLI_OFF_ANY(?) */
             if (data->offset[i] == CLI_OFF_ANY) {
                 data->offset[i] = CLI_OFF_ANY;
-                data->shift[i]  = 0;
+                data->shift[i] = 0;
             } else {
                 data->shift[i] = endoff - (data->offset[i]);
             }
@@ -551,18 +551,18 @@ int cli_pcre_qoff(struct cli_pcre_meta *pm, uint32_t length, uint32_t *adjbuffer
         return CL_BREAK;
     } else if (pm->offdata[0] == CLI_OFF_ANY) {
         *adjbuffer = CLI_OFF_ANY;
-        *adjshift  = 0;
+        *adjshift = 0;
     } else if (pm->offdata[0] == CLI_OFF_ABSOLUTE) {
         *adjbuffer = pm->offdata[1];
-        *adjshift  = pm->offdata[2];
+        *adjshift = pm->offdata[2];
     } else if (pm->offdata[0] == CLI_OFF_EOF_MINUS) {
         *adjbuffer = length - pm->offdata[1];
-        *adjshift  = pm->offdata[2];
+        *adjshift = pm->offdata[2];
     } else {
         /* all relative offsets */
         /* TODO - check if relative offsets apply for normal hex substrs */
         *adjbuffer = 0;
-        *adjshift  = 0;
+        *adjshift = 0;
     }
 
     return CL_SUCCESS;
@@ -581,7 +581,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
     uint64_t evalids = 0;
     uint32_t global, encompass, rolling;
     int rc = 0, options = 0;
-    uint32_t offset       = 0;
+    uint32_t offset = 0;
     uint8_t viruses_found = 0;
 
     if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
@@ -619,10 +619,10 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
             /* fall-through to unconditional execution - sigtool-only */
         }
 
-        global    = (pm->flags & CLI_PCRE_GLOBAL);    /* globally search for all matches (within bounds) */
+        global = (pm->flags & CLI_PCRE_GLOBAL);       /* globally search for all matches (within bounds) */
         encompass = (pm->flags & CLI_PCRE_ENCOMPASS); /* encompass search to offset->offset+maxshift */
-        rolling   = (pm->flags & CLI_PCRE_ROLLING);   /* rolling search (unanchored) */
-        offset    = pd->search_offset;                /* this is usually 0 */
+        rolling = (pm->flags & CLI_PCRE_ROLLING);     /* rolling search (unanchored) */
+        offset = pd->search_offset;                   /* this is usually 0 */
 
         pm_dbgmsg("cli_pcre_scanbuf: triggered %s; running regex /%s/%s%s\n", pm->trigger, pd->expression,
                   global ? " (global)" : "", rolling ? " (rolling)" : "");
@@ -633,7 +633,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                 continue;
         } else {
             adjbuffer = data->offset[i];
-            adjshift  = data->shift[i];
+            adjshift = data->shift[i];
         }
 
         /* check for need to anchoring */
@@ -725,13 +725,13 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                             ret = CL_EMEM;
                             break;
                         }
-                        newres->virname    = "test";
+                        newres->virname = "test";
                         newres->customdata = NULL; /* get value? */
-                        newres->next       = *res;
-                        newres->offset     = adjbuffer + p_res.match[0];
-                        *res               = newres;
+                        newres->next = *res;
+                        newres->offset = adjbuffer + p_res.match[0];
+                        *res = newres;
                     } else {
-                        ret           = CL_CLEAN;
+                        ret = CL_CLEAN;
                         viruses_found = 1;
                         if (ctx)
                             ret = cli_append_virus(ctx, "test");
@@ -806,7 +806,7 @@ void cli_pcre_freetable(struct cli_matcher *root)
     /* free holding structures and set count to zero */
     MPOOL_FREE(root->mempool, root->pcre_metatable);
     root->pcre_metatable = NULL;
-    root->pcre_metas     = 0;
+    root->pcre_metas = 0;
 }
 
 #else
@@ -862,7 +862,7 @@ cl_error_t cli_pcre_recaloff(struct cli_matcher *root, struct cli_pcre_off *data
     UNUSEDPARAM(ctx);
     if (data) {
         data->offset = NULL;
-        data->shift  = NULL;
+        data->shift = NULL;
     }
     return CL_SUCCESS;
 }

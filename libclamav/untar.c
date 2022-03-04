@@ -80,7 +80,7 @@ getchecksum(const char *header)
 
     strncpy(ochecksum, header + TARCHECKSUMOFFSET, TARCHECKSUMLEN);
     ochecksum[TARCHECKSUMLEN] = '\0';
-    checksum                  = octal(ochecksum);
+    checksum = octal(ochecksum);
     return checksum;
 }
 
@@ -104,7 +104,7 @@ testchecksum(const char *header, int targetsum)
     }
 
     /* Build checksums. POSIX is unsigned; some legacy tars use signed. */
-    posix  = (unsigned char *)header;
+    posix = (unsigned char *)header;
     legacy = (signed char *)header;
     for (i = 0; i < BLOCKSIZE; i++) {
         if ((i >= TARCHECKSUMOFFSET) && (i < TARCHECKSUMOFFSET + TARCHECKSUMLEN)) {
@@ -126,16 +126,16 @@ testchecksum(const char *header, int targetsum)
 cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 {
     cl_error_t ret;
-    size_t size         = 0;
-    int size_int        = 0;
-    int fout            = -1;
-    int in_block        = 0;
+    size_t size = 0;
+    int size_int = 0;
+    int fout = -1;
+    int in_block = 0;
     int last_header_bad = 0;
-    int limitnear       = 0;
-    unsigned int files  = 0;
+    int limitnear = 0;
+    unsigned int files = 0;
     char fullname[PATH_MAX + 1];
     char name[101];
-    size_t pos      = 0;
+    size_t pos = 0;
     size_t currsize = 0;
     char zero[BLOCKSIZE];
     unsigned int num_viruses = 0;
@@ -266,7 +266,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             strncpy(osize, block + TARSIZEOFFSET, TARSIZELEN);
             osize[TARSIZELEN] = '\0';
-            size_int          = octal(osize);
+            size_int = octal(osize);
             if (size_int < 0) {
                 cli_dbgmsg("cli_untar: Invalid size in tar header\n");
                 skipEntry++;
@@ -312,7 +312,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             snprintf(fullname, sizeof(fullname) - 1, "%s" PATHSEP "tar%02u", dir, files);
             fullname[sizeof(fullname) - 1] = '\0';
-            fout                           = open(fullname, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
+            fout = open(fullname, O_RDWR | O_CREAT | O_EXCL | O_TRUNC | O_BINARY, 0600);
 
             if (fout < 0) {
                 char err[128];

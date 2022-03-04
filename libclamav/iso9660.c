@@ -64,7 +64,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while (len) {
-        const void *buf   = needblock(iso, block, 1);
+        const void *buf = needblock(iso, block, 1);
         unsigned int todo = MIN(len, iso->blocksz);
         if (!buf) {
             /* Block outside file */
@@ -103,10 +103,10 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len)
         if (len > (sizeof(iso->buf) - 2))
             len = sizeof(iso->buf) - 2;
         memcpy(iso->buf, src, len);
-        iso->buf[len]     = '\0';
+        iso->buf[len] = '\0';
         iso->buf[len + 1] = '\0';
-        utf8              = cli_utf16_to_utf8(iso->buf, len, E_UTF16_BE);
-        uutf8             = utf8 ? utf8 : "";
+        utf8 = cli_utf16_to_utf8(iso->buf, len, E_UTF16_BE);
+        uutf8 = utf8 ? utf8 : "";
         strncpy(iso->buf, uutf8, sizeof(iso->buf));
         iso->buf[sizeof(iso->buf) - 1] = '\0';
         free(utf8);
@@ -119,8 +119,8 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len)
 
 static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
 {
-    cli_ctx *ctx      = iso->ctx;
-    int ret           = CL_CLEAN;
+    cli_ctx *ctx = iso->ctx;
+    int ret = CL_CLEAN;
     int viruses_found = 0;
 
     if (len < 34) {
@@ -250,7 +250,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
         return CL_CLEAN; /* Likely not a cdrom image */
 
     iso.base_offset = offset - iso.sectsz * 16;
-    iso.joliet      = 0;
+    iso.joliet = 0;
 
     for (i = 16; i < 32; i++) { /* scan for a joliet secondary volume descriptor */
         next = fmap_need_off_once(ctx->fmap, iso.base_offset + i * iso.sectsz, 2048);
@@ -331,7 +331,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
     }
 
     iso.ctx = ctx;
-    i       = cli_hashset_init(&iso.dir_blocks, 1024, 80);
+    i = cli_hashset_init(&iso.dir_blocks, 1024, 80);
     if (i != CL_SUCCESS)
         return i;
     i = iso_parse_dir(&iso, cli_readint32(privol + 156 + 2) + privol[156 + 1], cli_readint32(privol + 156 + 10));

@@ -72,13 +72,13 @@ int sf_base64decode(uint8_t *inbuf, size_t inbuf_size, uint8_t *outbuf, size_t o
                                                     an extra 4 to take care of any rounding */
 
     base64data_ptr = base64data;
-    endofinbuf     = inbuf + inbuf_size;
+    endofinbuf = inbuf + inbuf_size;
 
     /* Strip non-base64 chars from inbuf and decode */
-    n              = 0;
+    n = 0;
     *bytes_written = 0;
-    cursor         = inbuf;
-    outbuf_ptr     = outbuf;
+    cursor = inbuf;
+    outbuf_ptr = outbuf;
     while ((cursor < endofinbuf) && (n < max_base64_chars)) {
         if (sf_decode64tab[*cursor] != 100) {
             *base64data_ptr++ = *cursor;

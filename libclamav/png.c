@@ -80,23 +80,23 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
     cl_error_t status = CL_ERROR;
 
     uint64_t chunk_data_length = 0;
-    char chunk_type[5]         = {'\0', '\0', '\0', '\0', '\0'};
+    char chunk_type[5] = {'\0', '\0', '\0', '\0', '\0'};
     uint32_t chunk_crc;
     uint32_t chunk_data_length_u32 = 0;
-    bool have_IEND                 = false;
-    bool have_PLTE                 = false;
+    bool have_IEND = false;
+    bool have_PLTE = false;
 
-    uint64_t width  = 0;
+    uint64_t width = 0;
     uint64_t height = 0;
 
     uint32_t sample_depth = 0, bit_depth = 0, interlace_method = 0;
     uint64_t num_palette_entries = 0;
-    uint32_t color_type          = 1;
-    uint32_t compression_method  = 0;
-    uint32_t filter_method       = 0;
-    uint8_t *ptr                 = NULL;
-    uint64_t offset              = 8;
-    fmap_t *map                  = NULL;
+    uint32_t color_type = 1;
+    uint32_t compression_method = 0;
+    uint32_t filter_method = 0;
+    uint8_t *ptr = NULL;
+    uint64_t offset = 8;
+    fmap_t *map = NULL;
 
     int err = Z_OK;
 
@@ -159,17 +159,17 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
                 cli_dbgmsg("PNG: invalid IHDR length: " STDu64 "\n", chunk_data_length);
                 break;
             } else {
-                width  = be32_to_host(*(uint32_t *)ptr);
+                width = be32_to_host(*(uint32_t *)ptr);
                 height = be32_to_host(*(uint32_t *)(ptr + 4));
                 if (width == 0 || height == 0 || width > (uint64_t)0x7fffffff || height > (uint64_t)0x7fffffff) {
                     cli_dbgmsg("PNG: invalid image dimensions: width = " STDu64 ", height = " STDu64 "\n", width, height);
                     break;
                 }
                 sample_depth = bit_depth = (uint32_t)ptr[8];
-                color_type               = (uint32_t)ptr[9];
-                compression_method       = (uint32_t)ptr[10];
-                filter_method            = (uint32_t)ptr[11];
-                interlace_method         = (uint32_t)ptr[12];
+                color_type = (uint32_t)ptr[9];
+                compression_method = (uint32_t)ptr[10];
+                filter_method = (uint32_t)ptr[11];
+                interlace_method = (uint32_t)ptr[12];
 
                 if (compression_method != 0) {
                     cli_dbgmsg("PNG: invalid compression method (%u)\n", compression_method);

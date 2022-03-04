@@ -31,7 +31,7 @@
 
 static int doubledl(const char **scur, uint8_t *mydlptr, const char *buffer, uint32_t buffersize)
 {
-    unsigned char mydl  = *mydlptr;
+    unsigned char mydl = *mydlptr;
     unsigned char olddl = mydl;
 
     mydl *= 2;
@@ -39,7 +39,7 @@ static int doubledl(const char **scur, uint8_t *mydlptr, const char *buffer, uin
         if (*scur < buffer || *scur >= buffer + buffersize - 1)
             return -1;
         olddl = **scur;
-        mydl  = olddl * 2 + 1;
+        mydl = olddl * 2 + 1;
         *scur = *scur + 1;
     }
     *mydlptr = mydl;
@@ -51,7 +51,7 @@ int cli_unfsg(const char *source, char *dest, int ssize, int dsize, const char *
     uint8_t mydl = 0x80;
     uint32_t backbytes, backsize, oldback = 0;
     const char *csrc = source;
-    char *cdst       = dest;
+    char *cdst = dest;
     int oob, lostbit = 1;
 
     if (ssize <= 0 || dsize <= 0) return -1;
@@ -92,7 +92,7 @@ int cli_unfsg(const char *source, char *dest, int ssize, int dsize, const char *
                     if (csrc >= source + ssize)
                         return -1;
                     backbytes = *(unsigned char *)csrc;
-                    backsize  = backsize * 2 + (backbytes & 1);
+                    backsize = backsize * 2 + (backbytes & 1);
                     backbytes = (backbytes & 0xff) >> 1;
                     csrc++;
                     if (!backbytes)
@@ -178,7 +178,7 @@ int unmew(const char *source, char *dest, int ssize, int dsize, const char **end
     uint8_t mydl = 0x80;
     uint32_t myeax_backbytes, myecx_backsize, oldback = 0;
     const char *csrc = source;
-    char *cdst       = dest;
+    char *cdst = dest;
     int oob, lostbit = 1;
 
     *cdst++ = *csrc++;
@@ -219,7 +219,7 @@ int unmew(const char *source, char *dest, int ssize, int dsize, const char **end
                     if (csrc >= source + ssize)
                         return -1;
                     myeax_backbytes = *(unsigned char *)csrc;
-                    myecx_backsize  = myecx_backsize * 2 + (myeax_backbytes & 1);
+                    myecx_backsize = myecx_backsize * 2 + (myeax_backbytes & 1);
                     myeax_backbytes = (myeax_backbytes & 0xff) >> 1;
                     csrc++;
                     if (!myeax_backbytes) {

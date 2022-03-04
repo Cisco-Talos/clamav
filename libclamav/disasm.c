@@ -1218,7 +1218,7 @@ static void spam_x86(struct DISASMED *s, char *hr)
                 hr += sprintf(hr, "%s %s ptr ", comma, dis_size[s->args[i].size]);
                 if (s->segment) hr += sprintf(hr, "%s:", x86regs[s->segment]);
                 *hr++ = '[';
-                *hr   = '\0';
+                *hr = '\0';
                 if (s->args[i].arg.marg.r1 != X86_REG_INVALID) {
                     switch (s->args[i].arg.marg.scale) {
                         case 1:
@@ -1243,18 +1243,18 @@ static void spam_x86(struct DISASMED *s, char *hr)
                         hr += sprintf(hr, "%s%x", gotstuff, s->args[i].arg.marg.disp);
                 }
                 *hr++ = ']';
-                *hr   = '\0';
+                *hr = '\0';
             }
         }
         comma[0] = ',';
     }
 }
 
-#define INVALIDATE                 \
-    {                              \
-        s->table_op = OP_INVALID;  \
-        s->state    = STATE_ERROR; \
-        goto disasm_failed;        \
+#define INVALIDATE                \
+    {                             \
+        s->table_op = OP_INVALID; \
+        s->state = STATE_ERROR;   \
+        goto disasm_failed;       \
     }
 #define GETBYTE(X)    \
     if (len--) {      \
@@ -1318,10 +1318,10 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                             reversed = 1;
                         case X87_R:
                             s->args[reversed ^ 1].access = ACCESS_REG;
-                            s->args[reversed ^ 1].reg    = X86_REG_ST0;
+                            s->args[reversed ^ 1].reg = X86_REG_ST0;
                         case X87_ONE:
                             s->args[reversed].access = ACCESS_REG;
-                            s->args[reversed].reg    = X86_REG_ST0 + (rm & 7);
+                            s->args[reversed].reg = X86_REG_ST0 + (rm & 7);
                             break;
                         case X87_NONE:
                             break;
@@ -1338,33 +1338,33 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                 rm &= 7;
 
                 if ((s->real_op = x87_mrm[table][rop].op) == OP_INVALID) INVALIDATE;
-                s->args[0].size   = x87_mrm[table][rop].size;
+                s->args[0].size = x87_mrm[table][rop].size;
                 s->args[0].access = ACCESS_MEM;
 
                 if (!s->adsize) {
                     if (rm == 4) {
                         GETBYTE(base);
                         scale = base >> 6;
-                        idx   = (base >> 3) & 7;
+                        idx = (base >> 3) & 7;
                         base &= 7;
 
                         s->args[0].arg.marg.scale = 1 << scale;
                         if ((s->args[0].arg.marg.r2 = mrm_regmap[SIZED][base]) == X86_REG_EBP && mod == 0) {
                             s->args[0].arg.marg.r2 = X86_REG_INVALID;
-                            mod                    = 2;
+                            mod = 2;
                         }
                         if ((s->args[0].arg.marg.r1 = mrm_regmap[SIZED][idx]) == X86_REG_ESP) {
-                            s->args[0].arg.marg.r1    = s->args[0].arg.marg.r2;
+                            s->args[0].arg.marg.r1 = s->args[0].arg.marg.r2;
                             s->args[0].arg.marg.scale = (s->args[0].arg.marg.r2 != X86_REG_INVALID);
-                            s->args[0].arg.marg.r2    = X86_REG_INVALID;
+                            s->args[0].arg.marg.r2 = X86_REG_INVALID;
                         }
                     } else {
                         if (mod == 0 && rm == 5) {
-                            mod                    = 2;
+                            mod = 2;
                             s->args[0].arg.marg.r1 = X86_REG_INVALID;
                         } else {
                             s->args[0].arg.marg.scale = 1;
-                            s->args[0].arg.marg.r1    = mrm_regmap[SIZED][rm];
+                            s->args[0].arg.marg.r1 = mrm_regmap[SIZED][rm];
                         }
                         s->args[0].arg.marg.r2 = X86_REG_INVALID;
                     }
@@ -1377,11 +1377,11 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                 } else {
                     if (mod == 0 && rm == 6) {
                         s->args[0].arg.marg.r1 = X86_REG_INVALID;
-                        mod                    = 2;
+                        mod = 2;
                     } else {
                         s->args[0].arg.marg.scale = 1;
-                        s->args[0].arg.marg.r1    = mrm_regmapw[rm].r1;
-                        s->args[0].arg.marg.r2    = mrm_regmapw[rm].r2;
+                        s->args[0].arg.marg.r1 = mrm_regmapw[rm].r1;
+                        s->args[0].arg.marg.r2 = mrm_regmapw[rm].r2;
                     }
                     for (i = 0; i < mod; i++) {
                         GETBYTE(b);
@@ -1414,8 +1414,8 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                     case ADDR_REG_EBX:
                         assert(x86ops[table][s->table_op].dsize <= SIZE_WD);
                         s->args[0].access = ACCESS_REG;
-                        s->args[0].reg    = regmap[GETSIZE(dsize)][x86ops[table][s->table_op].dmethod];
-                        s->state          = STATE_CHECKSTYPE;
+                        s->args[0].reg = regmap[GETSIZE(dsize)][x86ops[table][s->table_op].dmethod];
+                        s->state = STATE_CHECKSTYPE;
                         continue;
 
                     case ADDR_NOADDR:
@@ -1424,7 +1424,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                             s->real_op += (s->opsize != 0);
                         }
                         s->args[0].access = ACCESS_NOARG;
-                        s->state          = STATE_FINALIZE;
+                        s->state = STATE_FINALIZE;
                         continue;
 
                     case ADDR_RELJ:
@@ -1477,12 +1477,12 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         switch (x86ops[table][s->table_op].dmethod) {
                             case ADDR_MRM_GEN_RC:
                             case ADDR_MRM_GEN_CR:
-                                p   = mrm_cregmap;
+                                p = mrm_cregmap;
                                 mod = 3;
                                 break;
                             case ADDR_MRM_GEN_RD:
                             case ADDR_MRM_GEN_DR:
-                                p   = mrm_dregmap;
+                                p = mrm_dregmap;
                                 mod = 3;
                                 break;
                             case ADDR_MRM_GEN_SE:
@@ -1518,7 +1518,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         if (mod == 3) {
                             if (x86ops[table][s->table_op].dmethod == ADDR_MRM_GEN_GM || x86ops[table][s->table_op].dmethod == ADDR_MRM_EXTRA_1A_M) INVALIDATE;
                             s->args[reversed].access = ACCESS_REG;
-                            s->args[reversed].reg    = mrm_regmap[s->args[reversed].size][rm];
+                            s->args[reversed].reg = mrm_regmap[s->args[reversed].size][rm];
 
                             if (x86ops[table][s->table_op].dmethod == ADDR_MRM_EXTRA_1A) {
                                 uint8_t opcache = s->real_op;
@@ -1543,26 +1543,26 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                             if (rm == 4) {
                                 GETBYTE(base);
                                 scale = base >> 6;
-                                idx   = (base >> 3) & 7;
+                                idx = (base >> 3) & 7;
                                 base &= 7;
 
                                 s->args[reversed].arg.marg.scale = 1 << scale;
                                 if ((s->args[reversed].arg.marg.r2 = mrm_regmap[SIZED][base]) == X86_REG_EBP && mod == 0) {
                                     s->args[reversed].arg.marg.r2 = X86_REG_INVALID;
-                                    mod                           = 2;
+                                    mod = 2;
                                 }
                                 if ((s->args[reversed].arg.marg.r1 = mrm_regmap[SIZED][idx]) == X86_REG_ESP) {
-                                    s->args[reversed].arg.marg.r1    = s->args[reversed].arg.marg.r2;
+                                    s->args[reversed].arg.marg.r1 = s->args[reversed].arg.marg.r2;
                                     s->args[reversed].arg.marg.scale = (s->args[reversed].arg.marg.r2 != X86_REG_INVALID);
-                                    s->args[reversed].arg.marg.r2    = X86_REG_INVALID;
+                                    s->args[reversed].arg.marg.r2 = X86_REG_INVALID;
                                 }
                             } else {
                                 if (mod == 0 && rm == 5) {
-                                    mod                           = 2;
+                                    mod = 2;
                                     s->args[reversed].arg.marg.r1 = X86_REG_INVALID;
                                 } else {
                                     s->args[reversed].arg.marg.scale = 1;
-                                    s->args[reversed].arg.marg.r1    = mrm_regmap[SIZED][rm];
+                                    s->args[reversed].arg.marg.r1 = mrm_regmap[SIZED][rm];
                                 }
                                 s->args[reversed].arg.marg.r2 = X86_REG_INVALID;
                             }
@@ -1579,11 +1579,11 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         } else {
                             if (mod == 0 && rm == 6) {
                                 s->args[reversed].arg.marg.r1 = X86_REG_INVALID;
-                                mod                           = 2;
+                                mod = 2;
                             } else {
                                 s->args[reversed].arg.marg.scale = 1;
-                                s->args[reversed].arg.marg.r1    = mrm_regmapw[rm].r1;
-                                s->args[reversed].arg.marg.r2    = mrm_regmapw[rm].r2;
+                                s->args[reversed].arg.marg.r1 = mrm_regmapw[rm].r1;
+                                s->args[reversed].arg.marg.r2 = mrm_regmapw[rm].r2;
                             }
                             for (i = 0; i < mod; i++) {
                                 GETBYTE(b);
@@ -1644,7 +1644,7 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                         uint8_t sz;
                         s->args[s->cur].access = ACCESS_IMM;
                         assert((x86ops[table][s->table_op].ssize == SIZE_WD || x86ops[table][s->table_op].ssize == SIZE_BYTE) && s->opsize < 2);
-                        sz                   = sizemap[x86ops[table][s->table_op].ssize][s->opsize];
+                        sz = sizemap[x86ops[table][s->table_op].ssize][s->opsize];
                         s->args[s->cur].size = sz >> 1;
                         for (i = 0; i < sz; i++) {
                             GETBYTE(b);
@@ -1661,15 +1661,15 @@ static const uint8_t *disasm_x86(const uint8_t *command, unsigned int len, struc
                     case ADDR_REG_EDX:
                         assert(x86ops[table][s->table_op].ssize <= SIZE_WD);
                         s->args[s->cur].access = ACCESS_REG;
-                        s->args[s->cur].reg    = regmap[GETSIZE(ssize)][x86ops[table][s->table_op].smethod];
-                        s->state               = STATE_FINALIZE;
+                        s->args[s->cur].reg = regmap[GETSIZE(ssize)][x86ops[table][s->table_op].smethod];
+                        s->state = STATE_FINALIZE;
                         continue;
 
                     case ADDR_IMPLICIT:
                         s->args[s->cur].access = ACCESS_IMM;
-                        s->args[s->cur].size   = 1;
-                        s->args[s->cur].arg.q  = 1;
-                        s->state               = STATE_FINALIZE;
+                        s->args[s->cur].size = 1;
+                        s->args[s->cur].arg.q = 1;
+                        s->state = STATE_FINALIZE;
                         continue;
 
                     case ADDR_OFFSET: {
@@ -1726,8 +1726,8 @@ const uint8_t *cli_disasm_one(const uint8_t *buff, unsigned int len,
         cli_dbgmsg("%s\n", hr);
     }
     w->real_op = le16_to_host(s.real_op);
-    w->opsize  = s.opsize;
-    w->adsize  = s.adsize;
+    w->opsize = s.opsize;
+    w->adsize = s.adsize;
     w->segment = s.segment;
 
     for (i = 0; i < 3; i++) {
@@ -1753,9 +1753,9 @@ const uint8_t *cli_disasm_one(const uint8_t *buff, unsigned int len,
 
 int disasmbuf(const uint8_t *buff, unsigned int len, int fd)
 {
-    const uint8_t *next  = buff;
+    const uint8_t *next = buff;
     unsigned int counter = 0;
-    int gotsome          = 0;
+    int gotsome = 0;
     struct DISASM_RESULT w;
     memset(&w.extra[0], 0, sizeof(w.extra));
 

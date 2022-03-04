@@ -108,9 +108,9 @@ static int isremote(const struct optstruct *opts)
             ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
 
         memset(&hints, 0x00, sizeof(struct addrinfo));
-        hints.ai_family   = AF_UNSPEC;
+        hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags    = AI_PASSIVE;
+        hints.ai_flags = AI_PASSIVE;
 
         if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
             logg(LOGG_ERROR, "Can't lookup clamd hostname: %s\n", gai_strerror(res));
@@ -168,12 +168,12 @@ static int isremote(const struct optstruct *opts)
 int16_t ping_clamd(const struct optstruct *opts)
 {
 
-    uint64_t attempts           = 0;
-    uint64_t interval           = 0;
-    char *attempt_str           = NULL;
-    char *interval_str          = NULL;
-    char *errchk                = NULL;
-    uint64_t i                  = 0;
+    uint64_t attempts = 0;
+    uint64_t interval = 0;
+    char *attempt_str = NULL;
+    char *interval_str = NULL;
+    char *errchk = NULL;
+    uint64_t i = 0;
     const struct optstruct *opt = NULL;
     int64_t sockd;
     struct RCVLN rcv;
@@ -265,9 +265,9 @@ done:
     if (attempt_str) {
         free(attempt_str);
     }
-    attempt_str  = NULL;
+    attempt_str = NULL;
     interval_str = NULL;
-    errchk       = NULL;
+    errchk = NULL;
 
     return ret;
 }
@@ -311,7 +311,7 @@ static int client_scan(const char *file, int scantype, int *infected, int *err, 
 {
     int ret;
     char *real_path = NULL;
-    char *fullpath  = NULL;
+    char *fullpath = NULL;
 
     /* Convert relative path to fullpath */
     fullpath = makeabs(file);
@@ -407,16 +407,16 @@ int client(const struct optstruct *opts, int *infected, int *err)
     }
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
-    remote   = isremote(opts) | optget(opts, "stream")->enabled;
+    remote = isremote(opts) | optget(opts, "stream")->enabled;
 #ifdef HAVE_FD_PASSING
     if (!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
         scantype = FILDES;
-        session  = optget(opts, "multiscan")->enabled;
+        session = optget(opts, "multiscan")->enabled;
     } else
 #endif
         if (remote || scandash) {
         scantype = STREAM;
-        session  = optget(opts, "multiscan")->enabled;
+        session = optget(opts, "multiscan")->enabled;
     } else if (optget(opts, "multiscan")->enabled)
         scantype = MULTI;
     else if (optget(opts, "allmatch")->enabled)
@@ -424,7 +424,7 @@ int client(const struct optstruct *opts, int *infected, int *err)
     else
         scantype = CONT;
 
-    maxrec    = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
+    maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
     if (optget(clamdopts, "FollowDirectorySymlinks")->enabled)
         flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
@@ -469,13 +469,13 @@ int client(const struct optstruct *opts, int *infected, int *err)
 #ifdef _WIN32
     else if (optget(opts, "memory")->enabled) {
         struct mem_info minfo;
-        minfo.d      = 1;
-        minfo.opts   = opts;
+        minfo.d = 1;
+        minfo.opts = opts;
         minfo.ifiles = *infected;
         minfo.errors = errors;
-        int res      = scanmem(&minfo);
-        *infected    = minfo.ifiles;
-        *err         = minfo.errors;
+        int res = scanmem(&minfo);
+        *infected = minfo.ifiles;
+        *err = minfo.errors;
     }
 #endif
     else {

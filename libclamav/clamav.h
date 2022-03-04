@@ -78,7 +78,7 @@ extern "C" {
 /* return codes */
 typedef enum cl_error_t {
     /* libclamav specific */
-    CL_CLEAN   = 0,
+    CL_CLEAN = 0,
     CL_SUCCESS = 0,
     CL_VIRUS,
     CL_ENULLARG,
@@ -597,8 +597,8 @@ extern void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload ca
 enum cl_msg {
     /* leave room for more message levels in the future */
     CL_MSG_INFO_VERBOSE = 32, /* verbose */
-    CL_MSG_WARN         = 64, /* LibClamAV WARNING: */
-    CL_MSG_ERROR        = 128 /* LibClamAV ERROR: */
+    CL_MSG_WARN = 64,         /* LibClamAV WARNING: */
+    CL_MSG_ERROR = 128        /* LibClamAV ERROR: */
 };
 
 /**

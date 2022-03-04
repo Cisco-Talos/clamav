@@ -59,7 +59,7 @@
 #include "clamd_others.h"
 
 enum commands {
-    COMMAND_UNKNOWN  = 0,
+    COMMAND_UNKNOWN = 0,
     COMMAND_SHUTDOWN = 1,
     COMMAND_RELOAD,
     COMMAND_END,

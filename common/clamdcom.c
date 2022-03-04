@@ -74,7 +74,7 @@ void recvlninit(struct RCVLN *s, int sockd)
 {
     s->sockd = sockd;
     s->bol = s->cur = s->buf;
-    s->r            = 0;
+    s->r = 0;
 }
 
 /* Receives a full (terminated with \0) line from a socket
@@ -133,7 +133,7 @@ int recvln(struct RCVLN *s, char **rbol, char **reol)
                 s->bol = s->buf;
             }
             s->cur = &s->bol[s->r];
-            s->r   = 0;
+            s->r = 0;
         }
     }
 }
@@ -195,16 +195,16 @@ int send_fdpass(int sockd, const char *filename)
     }
 
     iov[0].iov_base = dummy;
-    iov[0].iov_len  = 1;
+    iov[0].iov_len = 1;
     memset(&msg, 0, sizeof(msg));
-    msg.msg_control         = fdbuf;
-    msg.msg_iov             = iov;
-    msg.msg_iovlen          = 1;
-    msg.msg_controllen      = CMSG_LEN(sizeof(int));
-    cmsg                    = CMSG_FIRSTHDR(&msg);
-    cmsg->cmsg_len          = CMSG_LEN(sizeof(int));
-    cmsg->cmsg_level        = SOL_SOCKET;
-    cmsg->cmsg_type         = SCM_RIGHTS;
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
     if (sendmsg(sockd, &msg, 0) == -1) {
         logg(LOGG_ERROR, "FD send failed: %s\n", strerror(errno));
@@ -297,7 +297,7 @@ int dconnect(struct optstruct *clamdopts)
                 ipaddr = (!strcmp(opt->strarg, "any") ? NULL : opt->strarg);
 
             memset(&hints, 0x00, sizeof(struct addrinfo));
-            hints.ai_family   = AF_UNSPEC;
+            hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
 
             if ((res = getaddrinfo(ipaddr, port, &hints, &info))) {
@@ -406,7 +406,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
             if (colon && colon[1] != ' ') {
                 char *br;
                 *colon = 0;
-                br     = strrchr(bol, '(');
+                br = strrchr(bol, '(');
                 if (br)
                     *br = 0;
                 colon = strrchr(bol, ':');
@@ -422,7 +422,7 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok, int *e
                 goto done;
             } else if (!memcmp(eol - 7, " FOUND", 6)) {
                 static char last_filename[PATH_MAX + 1] = {'\0'};
-                *(eol - 7)                              = 0;
+                *(eol - 7) = 0;
                 if (printok)
                     *printok = 0;
                 if (scantype != ALLMATCH) {

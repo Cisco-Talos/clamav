@@ -218,7 +218,7 @@ int yc_decrypt(cli_ctx *ctx, char *fbuf, unsigned int filesize, struct cli_exe_s
     uint32_t ycsect = sections[sectcount].raw + offset;
     unsigned int i;
     struct pe_image_file_hdr *pe = (struct pe_image_file_hdr *)(fbuf + peoffset);
-    char *sname                  = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
+    char *sname = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
     uint32_t max_emu;
     unsigned int ofilesize = filesize;
     /*

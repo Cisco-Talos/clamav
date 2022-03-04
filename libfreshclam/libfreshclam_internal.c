@@ -99,18 +99,18 @@
 fccb_download_complete g_cb_download_complete = NULL;
 
 /* Configuration options */
-char *g_localIP   = NULL;
+char *g_localIP = NULL;
 char *g_userAgent = NULL;
 
-char *g_proxyServer   = NULL;
-uint16_t g_proxyPort  = 0;
+char *g_proxyServer = NULL;
+uint16_t g_proxyPort = 0;
 char *g_proxyUsername = NULL;
 char *g_proxyPassword = NULL;
 
-char *g_tempDirectory     = NULL;
+char *g_tempDirectory = NULL;
 char *g_databaseDirectory = NULL;
 
-uint32_t g_maxAttempts    = 0;
+uint32_t g_maxAttempts = 0;
 uint32_t g_connectTimeout = 0;
 uint32_t g_requestTimeout = 0;
 
@@ -151,7 +151,7 @@ static void uuid_v4_gen(char *buffer)
 
     // Refer Section 4.2 of RFC-4122
     // https://tools.ietf.org/html/rfc4122#section-4.2
-    uuid.clk_seq_hi_res      = (uint8_t)((uuid.clk_seq_hi_res & 0x3F) | 0x80);
+    uuid.clk_seq_hi_res = (uint8_t)((uuid.clk_seq_hi_res & 0x3F) | 0x80);
     uuid.time_hi_and_version = (uint16_t)((uuid.time_hi_and_version & 0x0FFF) | 0x4000);
 
     snprintf(buffer, SIZEOF_UUID_V4, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
@@ -166,12 +166,12 @@ static void uuid_v4_gen(char *buffer)
 
 fc_error_t load_freshclam_dat(void)
 {
-    fc_error_t status        = FC_EINIT;
-    int handle               = -1;
-    ssize_t bread            = 0;
+    fc_error_t status = FC_EINIT;
+    int handle = -1;
+    ssize_t bread = 0;
     freshclam_dat_v1_t *mdat = NULL;
-    uint32_t version         = 0;
-    char magic[13]           = {0};
+    uint32_t version = 0;
+    char magic[13] = {0};
 
     /* Change directory to database directory */
     if (chdir(g_databaseDirectory)) {
@@ -256,7 +256,7 @@ fc_error_t load_freshclam_dat(void)
                 free(g_freshclamDat);
             }
             g_freshclamDat = mdat;
-            mdat           = NULL;
+            mdat = NULL;
             break;
         }
         default: {
@@ -301,7 +301,7 @@ done:
 fc_error_t save_freshclam_dat(void)
 {
     fc_error_t status = FC_EINIT;
-    int handle        = -1;
+    int handle = -1;
 
     if (NULL == g_freshclamDat) {
         logg(LOGG_ERROR, "Attempted to save freshclam.dat before initializing data struct!\n");
@@ -349,7 +349,7 @@ fc_error_t new_freshclam_dat(void)
         goto done;
     }
 
-    mdat->version     = 1;
+    mdat->version = 1;
     mdat->retry_after = 0;
     uuid_v4_gen(mdat->uuid);
 
@@ -436,11 +436,11 @@ static void printBytes(curl_off_t bytes, int bPad)
 {
     if (bytes >= (1024 * 1024)) {
         const char *format = bPad ? "%7.02fMiB" : "%.02fMiB";
-        double megabytes   = bytes / (double)(1024 * 1024);
+        double megabytes = bytes / (double)(1024 * 1024);
         fprintf(stdout, format, megabytes);
     } else if (bytes >= 1024) {
         const char *format = bPad ? "%7.02fKiB" : "%.02fKiB";
-        double kilobytes   = bytes / (double)(1024);
+        double kilobytes = bytes / (double)(1024);
         fprintf(stdout, format, kilobytes);
     } else {
         const char *format = bPad ? "%9" CURL_FORMAT_CURL_OFF_T "B" : "%" CURL_FORMAT_CURL_OFF_T "B";
@@ -457,13 +457,13 @@ static int xferinfo(void *prog,
                     curl_off_t TotalToUpload, curl_off_t NowUploaded)
 {
     struct xfer_progress *xferProg = (struct xfer_progress *)prog;
-    CURL *curl                     = xferProg->curl;
-    TIMETYPE curtime               = 0;
-    TIMETYPE remtime               = 0;
+    CURL *curl = xferProg->curl;
+    TIMETYPE curtime = 0;
+    TIMETYPE remtime = 0;
 
-    uint32_t i                = 0;
-    uint32_t totalNumDots     = 25;
-    uint32_t numDots          = 0;
+    uint32_t i = 0;
+    uint32_t totalNumDots = 25;
+    uint32_t numDots = 0;
     double fractiondownloaded = 0.0;
 
     UNUSEDPARAM(TotalToUpload);
@@ -474,7 +474,7 @@ static int xferinfo(void *prog,
     }
 
     fractiondownloaded = (double)NowDownloaded / (double)TotalToDownload;
-    numDots            = round(fractiondownloaded * totalNumDots);
+    numDots = round(fractiondownloaded * totalNumDots);
 
     curl_easy_getinfo(curl, TIMEOPT, &curtime);
 
@@ -731,7 +731,7 @@ static fc_error_t create_curl_handle(
 #endif
 
     *curlHandle = curl;
-    status      = FC_SUCCESS;
+    status = FC_SUCCESS;
 
 done:
 
@@ -751,7 +751,7 @@ struct MemoryStruct {
 
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    size_t real_size                  = size * nmemb;
+    size_t real_size = size * nmemb;
     struct MemoryStruct *receivedData = (struct MemoryStruct *)userp;
 
     if ((NULL == contents) || (NULL == userp)) {
@@ -779,9 +779,9 @@ struct FileStruct {
 
 static size_t WriteFileCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    size_t real_size                = size * nmemb;
+    size_t real_size = size * nmemb;
     struct FileStruct *receivedFile = (struct FileStruct *)userp;
-    size_t bytes_written            = 0;
+    size_t bytes_written = 0;
 
     if ((NULL == contents) || (NULL == userp)) {
         return 0;
@@ -821,8 +821,8 @@ static fc_error_t remote_cvdhead(
     fc_error_t status = FC_EARG;
 
     int bHttpServer = 0;
-    char *url       = NULL;
-    size_t urlLen   = 0;
+    char *url = NULL;
+    size_t urlLen = 0;
 
     char head[CVD_HEADER_SIZE + 1];
 
@@ -854,7 +854,7 @@ static fc_error_t remote_cvdhead(
      * Request CVD header.
      */
     urlLen = strlen(server) + strlen("/") + strlen(cvdfile);
-    url    = malloc(urlLen + 1);
+    url = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
     logg(LOGG_INFO, "Trying to retrieve CVD header from %s\n", url);
@@ -875,8 +875,8 @@ static fc_error_t remote_cvdhead(
 #endif
     {
         prog.lastRunTime = 0;
-        prog.curl        = curl;
-        prog.bComplete   = 0;
+        prog.curl = curl;
+        prog.bComplete = 0;
 
 #if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 32))
         /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
@@ -963,7 +963,7 @@ static fc_error_t remote_cvdhead(
     }
 
     receivedData.buffer = cli_malloc(1); /* will be grown as needed by the realloc above */
-    receivedData.size   = 0;             /* no data at this point */
+    receivedData.size = 0;               /* no data at this point */
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback)) {
@@ -1105,7 +1105,7 @@ static fc_error_t remote_cvdhead(
         logg(LOGG_INFO, "OK\n");
     }
 
-    *cvd   = cvdhead;
+    *cvd = cvdhead;
     status = FC_SUCCESS;
 
 done:
@@ -1172,8 +1172,8 @@ static fc_error_t downloadFile(
 #endif
     {
         prog.lastRunTime = 0;
-        prog.curl        = curl;
-        prog.bComplete   = 0;
+        prog.curl = curl;
+        prog.bComplete = 0;
 
 #if (LIBCURL_VERSION_MAJOR > 7) || ((LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR >= 32))
         /* xferinfo was introduced in 7.32.0, no earlier libcurl versions will
@@ -1406,10 +1406,10 @@ static fc_error_t getcvd(
     cl_error_t cl_ret;
     fc_error_t status = FC_EARG;
 
-    struct cl_cvd *cvd           = NULL;
+    struct cl_cvd *cvd = NULL;
     char *tmpfile_with_extension = NULL;
-    char *url                    = NULL;
-    size_t urlLen                = 0;
+    char *url = NULL;
+    size_t urlLen = 0;
 
     if ((NULL == cvdfile) || (NULL == tmpfile) || (NULL == server)) {
         logg(LOGG_ERROR, "getcvd: Invalid arguments.\n");
@@ -1417,7 +1417,7 @@ static fc_error_t getcvd(
     }
 
     urlLen = strlen(server) + strlen("/") + strlen(cvdfile);
-    url    = malloc(urlLen + 1);
+    url = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, cvdfile);
 
     ret = downloadFile(url, tmpfile, 1, logerr, ifModifiedSince);
@@ -1588,7 +1588,7 @@ static fc_error_t downloadPatch(
     char patch[DB_FILENAME_MAX];
     char olddir[PATH_MAX];
 
-    char *url     = NULL;
+    char *url = NULL;
     size_t urlLen = 0;
 
     int fd = -1;
@@ -1618,7 +1618,7 @@ static fc_error_t downloadPatch(
 
     snprintf(patch, sizeof(patch), "%s-%d.cdiff", database, version);
     urlLen = strlen(server) + strlen("/") + strlen(patch);
-    url    = malloc(urlLen + 1);
+    url = malloc(urlLen + 1);
     snprintf(url, urlLen + 1, "%s/%s", server, patch);
 
     if (FC_SUCCESS != (ret = downloadFile(url, tempname, 1, logerr, 0))) {
@@ -1728,9 +1728,9 @@ static fc_error_t buildcld(
     char *pt;
 
     struct dirent *dent = NULL;
-    DIR *dir            = NULL;
-    gzFile gzs          = NULL;
-    int fd              = -1;
+    DIR *dir = NULL;
+    gzFile gzs = NULL;
+    int fd = -1;
 
     if ((NULL == tmpdir) || (NULL == database) || (NULL == newfile)) {
         logg(LOGG_ERROR, "buildcld: Invalid arguments.\n");
@@ -1899,14 +1899,14 @@ static fc_error_t query_remote_database_version(
 #endif
 
     struct cl_cvd *remote = NULL;
-    int remote_is_cld     = 0;
+    int remote_is_cld = 0;
 
     if ((NULL == database) || (NULL == server) || (NULL == remoteVersion) || (NULL == remoteFilename)) {
         logg(LOGG_ERROR, "query_remote_database_version: Invalid args!\n");
         goto done;
     }
 
-    *remoteVersion  = 0;
+    *remoteVersion = 0;
     *remoteFilename = NULL;
 
     snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", database);
@@ -1918,7 +1918,7 @@ static fc_error_t query_remote_database_version(
         /*
          * Use Primary DNS Update Info record to find the version.
          */
-        int field              = 0;
+        int field = 0;
         char *verStrDnsPrimary = NULL;
 
         if (0 == (field = textrecordfield(database))) {
@@ -1946,7 +1946,7 @@ static fc_error_t query_remote_database_version(
             if (NULL == (extradnsreply = dnsquery(dnqueryDomain, T_TXT, NULL))) {
                 logg(LOGG_WARNING, "No timestamp in TXT record for %s\n", cvdfile);
             } else {
-                char *recordTimeStr  = NULL;
+                char *recordTimeStr = NULL;
                 char *verStrDnsExtra = NULL;
 
                 if (NULL == (recordTimeStr = cli_strtok(extradnsreply, DNS_EXTRADBINFO_RECORDTIME, ":"))) {
@@ -2069,11 +2069,11 @@ static fc_error_t check_for_new_database_version(
     fc_error_t ret;
     fc_error_t status = FC_EARG;
 
-    char *localname               = NULL;
+    char *localname = NULL;
     struct cl_cvd *local_database = NULL;
-    char *remotename              = NULL;
+    char *remotename = NULL;
 
-    uint32_t localver  = 0;
+    uint32_t localver = 0;
     uint32_t remotever = 0;
 
     if ((NULL == database) || (NULL == server) ||
@@ -2084,9 +2084,9 @@ static fc_error_t check_for_new_database_version(
         goto done;
     }
 
-    *localVersion   = 0;
-    *remoteVersion  = 0;
-    *localFilename  = NULL;
+    *localVersion = 0;
+    *remoteVersion = 0;
+    *localFilename = NULL;
     *remoteFilename = NULL;
     *localTimestamp = 0;
 
@@ -2098,7 +2098,7 @@ static fc_error_t check_for_new_database_version(
     } else {
         logg(LOGG_DEBUG, "check_for_new_database_version: Local copy of %s found: %s.\n", database, localname);
         *localTimestamp = local_database->stime;
-        localver        = local_database->version;
+        localver = local_database->version;
     }
 
     /*
@@ -2167,7 +2167,7 @@ static fc_error_t check_for_new_database_version(
         }
     }
     if (NULL != localname) {
-        *localVersion  = localver;
+        *localVersion = localver;
         *localFilename = cli_strdup(localname);
         if (NULL == *localFilename) {
             logg(LOGG_ERROR, "check_for_new_database_version: Failed to allocate memory for local filename.\n");
@@ -2211,13 +2211,13 @@ fc_error_t updatedb(
     struct cl_cvd *cvd = NULL;
 
     uint32_t localTimestamp = 0;
-    uint32_t localVersion   = 0;
-    uint32_t remoteVersion  = 0;
-    char *localFilename     = NULL;
-    char *remoteFilename    = NULL;
-    char *newLocalFilename  = NULL;
+    uint32_t localVersion = 0;
+    uint32_t remoteVersion = 0;
+    char *localFilename = NULL;
+    char *remoteFilename = NULL;
+    char *newLocalFilename = NULL;
 
-    char *tmpdir  = NULL;
+    char *tmpdir = NULL;
     char *tmpfile = NULL;
 
     unsigned int flevel;
@@ -2229,9 +2229,9 @@ fc_error_t updatedb(
         goto done;
     }
 
-    *signo      = 0;
+    *signo = 0;
     *dbFilename = NULL;
-    *bUpdated   = 0;
+    *bUpdated = 0;
 
     /*
      * Check if new version exists.
@@ -2292,7 +2292,7 @@ fc_error_t updatedb(
         /*
          * Attempt scripted/CDIFF incremental update.
          */
-        ret                         = FC_SUCCESS;
+        ret = FC_SUCCESS;
         uint32_t numPatchesReceived = 0;
 
         tmpdir = cli_gentemp(g_tempDirectory);
@@ -2393,7 +2393,7 @@ fc_error_t updatedb(
             }
 
             newLocalFilenameLen = strlen(database) + strlen(".cld");
-            newLocalFilename    = malloc(newLocalFilenameLen + 1);
+            newLocalFilename = malloc(newLocalFilenameLen + 1);
             snprintf(newLocalFilename, newLocalFilenameLen + 1, "%s.cld", database);
         }
     }
@@ -2403,7 +2403,7 @@ fc_error_t updatedb(
      * Test database before replacing original database with new database.
      */
     if (NULL != g_cb_download_complete) {
-        char *tmpfile_with_extension      = NULL;
+        char *tmpfile_with_extension = NULL;
         size_t tmpfile_with_extension_len = strlen(tmpfile) + 1 + strlen(newLocalFilename);
 
         /* Suffix tmpfile with real database name & extension so it can be loaded. */
@@ -2420,7 +2420,7 @@ fc_error_t updatedb(
             goto done;
         }
         free(tmpfile);
-        tmpfile                = tmpfile_with_extension;
+        tmpfile = tmpfile_with_extension;
         tmpfile_with_extension = NULL;
 
         /* Run callback to test it. */
@@ -2470,8 +2470,8 @@ fc_error_t updatedb(
         logg(LOGG_INFO, "DON'T PANIC! Read https://docs.clamav.net/manual/Installing.html\n");
     }
 
-    *signo      = cvd->sigs;
-    *bUpdated   = 1;
+    *signo = cvd->sigs;
+    *bUpdated = 1;
     *dbFilename = cli_strdup(newLocalFilename);
     if (NULL == *dbFilename) {
         logg(LOGG_ERROR, "updatedb: Failed to allocate memory for database filename.\n");
@@ -2525,7 +2525,7 @@ fc_error_t updatecustomdb(
     fc_error_t status = FC_EARG;
 
     unsigned int sigs = 0;
-    char *tmpfile     = NULL;
+    char *tmpfile = NULL;
     const char *databaseName;
     STATBUF statbuf;
     time_t dbtime = 0;
@@ -2535,9 +2535,9 @@ fc_error_t updatecustomdb(
         goto done;
     }
 
-    *signo      = 0;
+    *signo = 0;
     *dbFilename = NULL;
-    *bUpdated   = 0;
+    *bUpdated = 0;
 
     tmpfile = cli_gentemp(g_tempDirectory);
     if (!tmpfile) {
@@ -2570,7 +2570,7 @@ fc_error_t updatecustomdb(
             goto done;
         }
         remote_dbtime = statbuf.st_mtime;
-        dbtime        = (CLAMSTAT(databaseName, &statbuf) != -1) ? statbuf.st_mtime : 0;
+        dbtime = (CLAMSTAT(databaseName, &statbuf) != -1) ? statbuf.st_mtime : 0;
         if (dbtime > remote_dbtime) {
             logg(LOGG_INFO, "%s is up-to-date (version: custom database)\n", databaseName);
             goto up_to_date;
@@ -2613,7 +2613,7 @@ fc_error_t updatecustomdb(
      * Test database before replacing original database with new database.
      */
     if (NULL != g_cb_download_complete) {
-        char *tmpfile_with_extension      = NULL;
+        char *tmpfile_with_extension = NULL;
         size_t tmpfile_with_extension_len = strlen(tmpfile) + 1 + strlen(databaseName);
 
         /* Suffix tmpfile with real database name & extension so it can be loaded. */
@@ -2630,7 +2630,7 @@ fc_error_t updatecustomdb(
             goto done;
         }
         free(tmpfile);
-        tmpfile                = tmpfile_with_extension;
+        tmpfile = tmpfile_with_extension;
         tmpfile_with_extension = NULL;
 
         /* Run callback to test it. */
@@ -2688,7 +2688,7 @@ fc_error_t updatecustomdb(
     }
 
     logg(LOGG_INFO, "%s updated (version: custom database, sigs: %u)\n", databaseName, sigs);
-    *signo    = sigs;
+    *signo = sigs;
     *bUpdated = 1;
 
 up_to_date:

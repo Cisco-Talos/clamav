@@ -28,7 +28,7 @@
 #include <stdio.h>
 #ifdef CLI_PERF_LOGGING
 
-__thread last_flushed        = 0;
+__thread last_flushed = 0;
 __thread cli_perf_registered = 0;
 __thread uint64_t cli_perf_sum_tls[__LAST_SUMABLE];
 __thread uint64_t cli_perf_count_tls[__LAST_COUNTABLE][256];
@@ -97,7 +97,7 @@ static void cli_perf_print(void)
     unsigned k;
 
     uint64_t raw_scanned = cli_perf_sum[RAW_BYTES_SCANNED];
-    const double MEGA    = 1024 * 1024.0;
+    const double MEGA = 1024 * 1024.0;
 
     /* in multiscan mode multiple threads can output, so output a unique id
      * here*/

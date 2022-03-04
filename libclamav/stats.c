@@ -198,9 +198,9 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             if (!(sample))
                 goto end;
 
-            sample->next         = intel->samples;
+            sample->next = intel->samples;
             intel->samples->prev = sample;
-            intel->samples       = sample;
+            intel->samples = sample;
         }
 
         if ((sample->virus_name)) {
@@ -218,7 +218,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
 
             sample->virus_name = p;
         } else {
-            i                  = 0;
+            i = 0;
             sample->virus_name = calloc(1, sizeof(char **));
             if (!(sample->virus_name)) {
                 free(sample);
@@ -249,7 +249,7 @@ void clamav_stats_add_sample(const char *virname, const unsigned char *md5, size
             goto end;
         }
 
-        sample->virus_name        = p;
+        sample->virus_name = p;
         sample->virus_name[i + 1] = NULL;
 
         memcpy(sample->md5, md5, sizeof(sample->md5));
@@ -309,7 +309,7 @@ void clamav_stats_flush(struct cl_engine *engine, void *cbdata)
         free_sample(sample);
     }
 
-    intel->samples  = NULL;
+    intel->samples = NULL;
     intel->nsamples = 0;
     if (intel->hostid) {
         free(intel->hostid);
@@ -380,7 +380,7 @@ void clamav_stats_submit(struct cl_engine *engine, void *cbdata)
 
     /* Empty out the cached intelligence data so that other threads don't sit waiting to add data to the cache */
     memcpy(&myintel, intel, sizeof(cli_intel_t));
-    intel->samples  = NULL;
+    intel->samples = NULL;
     intel->nsamples = 0;
 
     json = export_stats_to_json(engine, &myintel);
@@ -698,5 +698,5 @@ void cl_engine_set_clcb_stats_get_hostid(struct cl_engine *engine, clcb_stats_ge
 void cl_engine_stats_enable(struct cl_engine *engine)
 {
     engine->cb_stats_add_sample = clamav_stats_add_sample;
-    engine->cb_stats_submit     = clamav_stats_submit;
+    engine->cb_stats_submit = clamav_stats_submit;
 }

@@ -50,7 +50,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
 {
     const uint32_t *record;
     uint32_t check, key;
-    fmap_t *map         = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     unsigned int blocks = map->len / (8 * 4);
 
     cli_dbgmsg("in cli_check_mydoom_log()\n");
@@ -67,7 +67,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
             return CL_CLEAN;
     }
 
-    key   = ~be32_to_host(record[0]);
+    key = ~be32_to_host(record[0]);
     check = (be32_to_host(record[1]) ^ key) +
             (be32_to_host(record[2]) ^ key) +
             (be32_to_host(record[3]) ^ key) +
@@ -78,7 +78,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     if ((~check) != key)
         return CL_CLEAN;
 
-    key   = ~be32_to_host(record[8]);
+    key = ~be32_to_host(record[8]);
     check = (be32_to_host(record[9]) ^ key) +
             (be32_to_host(record[10]) ^ key) +
             (be32_to_host(record[11]) ^ key) +
@@ -206,7 +206,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 {
     unsigned char stri[4096];
     size_t i, j = 0;
-    int bad       = 0;
+    int bad = 0;
     int lastalnum = 0;
     uint8_t ngrams[17576];
     uint16_t all = 0;
@@ -225,7 +225,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
             if (!lastalnum)
                 continue;
             lastalnum = 0;
-            c         = ' ';
+            c = ' ';
         } else {
             lastalnum = 1;
             if (isdigit(c))
@@ -261,7 +261,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
     cli_dbgmsg("cli_detect_swizz_str: %u, %u, %u\n", ngram_cnts[0], ngram_cnts[1], ngram_cnts[2]);
     /* normalize */
     for (i = 0; i < sizeof(ngram_cnts) / sizeof(ngram_cnts[0]); i++) {
-        uint32_t v    = ngram_cnts[i];
+        uint32_t v = ngram_cnts[i];
         ngram_cnts[i] = (v << 10) / all;
     }
     ret = swizz_j48(ngram_cnts) ? CL_VIRUS : CL_CLEAN;
@@ -322,7 +322,7 @@ int cli_detect_swizz(struct swizz_stats *stats)
         cli_dbgmsg("cli_detect_swizz: gn: ");
         for (i = 0; i < sizeof(gn) / sizeof(gn[0]); i++) {
             uint32_t v = gn[i];
-            gn[i]      = (v << 15) / all;
+            gn[i] = (v << 15) / all;
             if (cli_debug_flag)
                 fprintf(stderr, "%lu, ", (unsigned long)gn[i]);
         }

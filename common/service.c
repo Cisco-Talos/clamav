@@ -148,7 +148,7 @@ void svc_register(const char *name)
     DT->lpServiceName = (char *)name;
     svc_getcpvalue(name);
 
-    evStart          = CreateEvent(NULL, TRUE, FALSE, NULL);
+    evStart = CreateEvent(NULL, TRUE, FALSE, NULL);
     DispatcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)StartServiceCtrlDispatcherA, (LPVOID)DT, 0, &tid);
 }
 
@@ -204,13 +204,13 @@ BOOL WINAPI cw_stop_ctrl_handler(DWORD CtrlType)
 
 void WINAPI ServiceMain(DWORD dwArgc, LPSTR *lpszArgv)
 {
-    svc.dwServiceType             = SERVICE_WIN32;
-    svc.dwCurrentState            = SERVICE_START_PENDING;
-    svc.dwControlsAccepted        = 0;
-    svc.dwWin32ExitCode           = NO_ERROR;
+    svc.dwServiceType = SERVICE_WIN32;
+    svc.dwCurrentState = SERVICE_START_PENDING;
+    svc.dwControlsAccepted = 0;
+    svc.dwWin32ExitCode = NO_ERROR;
     svc.dwServiceSpecificExitCode = 0;
-    svc.dwCheckPoint              = 0;
-    svc.dwWaitHint                = 0;
+    svc.dwCheckPoint = 0;
+    svc.dwWaitHint = 0;
 
     if (!(svc_handle = RegisterServiceCtrlHandlerA(DT->lpServiceName, ServiceCtrlHandler))) {
         logg(LOGG_INFO, "[service] RegisterServiceCtrlHandler() failed with %d\n", GetLastError());

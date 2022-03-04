@@ -139,7 +139,7 @@ END_TEST
 
 START_TEST(test_normalize)
 {
-    const char *str      = "test\\0\\b\\t\\n\\v\\f\\r\\z\\x2a\\u1234test";
+    const char *str = "test\\0\\b\\t\\n\\v\\f\\r\\z\\x2a\\u1234test";
     const char *expected = "test\x1\b\t\n\v\f\rz\x2a\xe1\x88\xb4test";
     int rc;
 
@@ -191,7 +191,7 @@ START_TEST(test_base64)
     unsigned len;
     unsigned char buf[1024];
     const struct base64lines *test = &base64tests[_i];
-    message *m                     = messageCreate();
+    message *m = messageCreate();
     ck_assert_msg(!!m, "Unable to create message");
 
     ret = decodeLine(m, BASE64, test->line, buf, sizeof(buf));
@@ -202,7 +202,7 @@ START_TEST(test_base64)
     if (!ret2)
         ret2 = ret;
     *ret2 = '\0';
-    len   = ret2 - buf;
+    len = ret2 - buf;
     ck_assert_msg(len == test->len, "invalid base64 decoded length: %u expected %u (%s)\n",
                   len, test->len, buf);
     ck_assert_msg(!memcmp(buf, test->decoded, test->len),

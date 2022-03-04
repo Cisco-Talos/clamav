@@ -107,7 +107,7 @@ static int detect_SELinux(void)
     char line[128];
     int selinux = 0;
     int enforce = 0;
-    FILE *f     = fopen("/proc/filesystems", "r");
+    FILE *f = fopen("/proc/filesystems", "r");
     if (!f) {
         f = fopen("/selinux/enforce", "r");
         if (!f && errno == EACCES)
@@ -185,7 +185,7 @@ void cli_detect_environment(struct cli_environment *env)
 #if WORDS_BIGENDIAN == 0
     env->big_endian = 0;
 #else
-    env->big_endian  = 1;
+    env->big_endian = 1;
 #endif
     env->sizeof_ptr = sizeof(void *);
 
@@ -193,7 +193,7 @@ void cli_detect_environment(struct cli_environment *env)
     CHECK_ARCH(i386);
     else CHECK_ARCH(x86_64);
     else if (!strcmp(TARGET_ARCH_TYPE, "amd64")) env->arch = arch_x86_64;
-    else if (!strcmp(TARGET_ARCH_TYPE, "ppc")) env->arch   = arch_ppc32; /* llvm will fix ppc64 */
+    else if (!strcmp(TARGET_ARCH_TYPE, "ppc")) env->arch = arch_ppc32; /* llvm will fix ppc64 */
     else CHECK_ARCH(arm);
     else CHECK_ARCH(sparc);
     else CHECK_ARCH(sparc64);
@@ -248,18 +248,18 @@ void cli_detect_environment(struct cli_environment *env)
 
     /* check GNUC last, because some other compilers might define it */
 #ifdef __INTEL_COMPILER
-    env->compiler  = compiler_intel;
+    env->compiler = compiler_intel;
     env->c_version = __INTEL_COMPILER;
 #elif defined(_MSC_VER)
-    env->compiler  = compiler_msc;
+    env->compiler = compiler_msc;
     env->c_version = _MSC_VER;
 #elif defined(__SUNPRO_C)
-    env->compiler    = compiler_sun;
-    env->c_version   = __SUNPRO_C;
+    env->compiler = compiler_sun;
+    env->c_version = __SUNPRO_C;
 #elif defined(__GNUC__)
 
 #ifdef __clang__
-    env->compiler    = compiler_clang;
+    env->compiler = compiler_clang;
 #elif defined(__llvm__)
     env->compiler = compiler_llvm;
 #else
@@ -269,8 +269,8 @@ void cli_detect_environment(struct cli_environment *env)
         MAKE_VERSION(0, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
 #else
-    env->compiler    = compiler_other;
-    env->c_version   = 0;
+    env->compiler = compiler_other;
+    env->c_version = 0;
 #endif
     env->cpp_version = 0;
 
@@ -278,7 +278,7 @@ void cli_detect_environment(struct cli_environment *env)
 
     /* engine */
     env->functionality_level = cl_retflevel();
-    env->dconf_level         = CL_FLEVEL_DCONF;
+    env->dconf_level = CL_FLEVEL_DCONF;
 
     INIT_STRFIELD(env->engine_version, cl_retver());
 #ifdef HAVE_UNAME_SYSCALL

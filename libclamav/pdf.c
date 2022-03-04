@@ -230,7 +230,7 @@ static cl_error_t find_stream_bounds(
         return status;
     }
 
-    *stream      = NULL;
+    *stream = NULL;
     *stream_size = 0;
 
     /* Begin by finding the "stream" string that prefixes stream data. */
@@ -263,7 +263,7 @@ static cl_error_t find_stream_bounds(
              * -- we'll just count the rest of the provided buffer. */
             cli_dbgmsg("find_stream_bounds: Truncated stream found!\n");
             endstream_begin = start + size;
-            status          = CL_EFORMAT;
+            status = CL_EFORMAT;
         }
 
         /* Pass back end of the stream data, as offset from start. */
@@ -313,11 +313,11 @@ done:
  */
 int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, struct pdf_obj **obj_found)
 {
-    cl_error_t status   = CL_EPARSE;
+    cl_error_t status = CL_EPARSE;
     struct pdf_obj *obj = NULL;
     unsigned long objid = 0, objoff = 0;
-    long temp_long         = 0;
-    const char *index      = NULL;
+    long temp_long = 0;
+    const char *index = NULL;
     size_t bytes_remaining = 0;
 
     if (NULL == pdf || NULL == objstm) {
@@ -335,7 +335,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 
     *obj_found = NULL;
 
-    index           = objstm->streambuf + objstm->current_pair;
+    index = objstm->streambuf + objstm->current_pair;
     bytes_remaining = objstm->streambuf_len - objstm->current_pair;
 
     obj = calloc(sizeof(struct pdf_obj), 1);
@@ -366,7 +366,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
         index++;
         bytes_remaining--;
     }
-    index           = findNextNonWS(index, objstm->streambuf + objstm->first);
+    index = findNextNonWS(index, objstm->streambuf + objstm->first);
     bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
     if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
@@ -390,7 +390,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
 
     objstm->current = objstm->first + objoff;
 
-    obj->id    = (objid << 8) | (0 & 0xff);
+    obj->id = (objid << 8) | (0 & 0xff);
     obj->start = objstm->current;
     obj->flags = 0;
 
@@ -414,7 +414,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
          * To do so, we will need to parse the next obj pair.
          */
         /* objstm->current_pair points directly to the objid */
-        index           = objstm->streambuf + objstm->current_pair;
+        index = objstm->streambuf + objstm->current_pair;
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
         /* We don't actually care about the object id at this point, so reading the object id is commented out.
@@ -436,7 +436,7 @@ int pdf_findobj_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm, 
             index++;
             bytes_remaining--;
         }
-        index           = findNextNonWS(index, objstm->streambuf + objstm->first);
+        index = findNextNonWS(index, objstm->streambuf + objstm->first);
         bytes_remaining = objstm->streambuf + objstm->streambuf_len - index;
 
         if (CL_SUCCESS != cli_strntol_wrap(index, bytes_remaining, 0, 10, &temp_long)) {
@@ -563,7 +563,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
 
     memset(obj, 0, sizeof(*obj));
 
-    start     = pdf->map + pdf->offset;
+    start = pdf->map + pdf->offset;
     bytesleft = pdf->size - pdf->offset;
 
     /*
@@ -593,7 +593,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
 
         /* Found the beginning of the word */
         obj_begin = idx;
-        obj_end   = idx + 1 + strlen("obj");
+        obj_end = idx + 1 + strlen("obj");
 
         break;
     }
@@ -612,12 +612,12 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
         cli_dbgmsg("pdf_findobj: Failed to parse object genid (# objects found: %u)\n", pdf->nobjs);
         /* Failed to parse, probably not a real object.  Skip past the "obj" thing, and continue. */
         pdf->offset = obj_end - pdf->map;
-        status      = CL_EPARSE;
+        status = CL_EPARSE;
         goto done;
     } else if (temp_long < 0) {
         cli_dbgmsg("pdf_findobj: Encountered invalid negative obj genid (%ld).\n", temp_long);
         pdf->offset = obj_end - pdf->map;
-        status      = CL_EPARSE;
+        status = CL_EPARSE;
         goto done;
     }
     genid = (unsigned long)temp_long;
@@ -646,7 +646,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
                 cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
                 /* Skip past the "obj" thing, and continue. */
                 pdf->offset = obj_end - pdf->map;
-                status      = CL_EPARSE;
+                status = CL_EPARSE;
                 goto done;
             }
             /* Yup, Looks, like the file continues after %%EOF.
@@ -658,7 +658,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
             /* Probably not a real object.  Skip past the "obj" thing, and continue. */
             pdf->offset = obj_end - pdf->map;
-            status      = CL_EPARSE;
+            status = CL_EPARSE;
             goto done;
         }
         /* Try again, with offset slightly adjusted */
@@ -666,12 +666,12 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
             cli_dbgmsg("pdf_findobj: Failed to parse object objid (# objects found: %u)\n", pdf->nobjs);
             /* Still failed... Probably not a real object.  Skip past the "obj" thing, and continue. */
             pdf->offset = obj_end - pdf->map;
-            status      = CL_EPARSE;
+            status = CL_EPARSE;
             goto done;
         } else if (temp_long < 0) {
             cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
             pdf->offset = obj_end - pdf->map;
-            status      = CL_EPARSE;
+            status = CL_EPARSE;
             goto done;
         }
 
@@ -679,12 +679,12 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     } else if (temp_long < 0) {
         cli_dbgmsg("pdf_findobj: Encountered invalid negative objid (%ld).\n", temp_long);
         pdf->offset = obj_end - pdf->map;
-        status      = CL_EPARSE;
+        status = CL_EPARSE;
         goto done;
     }
     objid = (unsigned long)temp_long;
 
-    obj->id    = (objid << 8) | (genid & 0xff);
+    obj->id = (objid << 8) | (genid & 0xff);
     obj->start = obj_end - pdf->map; /* obj start begins just after the "obj" string */
     obj->flags = 0;
 
@@ -702,7 +702,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
          * Will position the pdf offset to the end of the PDF.
          * The next iteration of this function will find no more objects. */
         obj->flags |= 1 << OBJ_TRUNCATED;
-        obj->size   = (pdf->map + pdf->size) - obj_end;
+        obj->size = (pdf->map + pdf->size) - obj_end;
         pdf->offset = pdf->size;
 
         /* Truncated "object" found! */
@@ -712,7 +712,7 @@ cl_error_t pdf_findobj(struct pdf_struct *pdf)
     endobj_end = endobj_begin + strlen("endobj");
 
     /* Size of the object goes from "obj" <-> "endobject". */
-    obj->size   = endobj_begin - obj_end;
+    obj->size = endobj_begin - obj_end;
     pdf->offset = endobj_end - pdf->map;
 
     /*
@@ -910,10 +910,10 @@ struct pdf_obj *find_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t o
  */
 static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const char *dict_start, size_t dict_len)
 {
-    size_t length          = 0;
-    const char *obj_start  = dict_start;
+    size_t length = 0;
+    const char *obj_start = dict_start;
     size_t bytes_remaining = dict_len;
-    long temp_long         = 0;
+    long temp_long = 0;
     const char *index;
 
     if (bytes_remaining < 8) {
@@ -998,7 +998,7 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
              * was actually the objid.
              * We can look up the indirect object using this information.
              */
-            unsigned long objid            = length;
+            unsigned long objid = length;
             const char *indirect_obj_start = NULL;
 
             cli_dbgmsg("find_length: length is in indirect object %lu %lu\n", objid, genid);
@@ -1010,7 +1010,7 @@ static size_t find_length(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
             }
 
             indirect_obj_start = pdf->map + obj->start;
-            bytes_remaining    = pdf->size - obj->start;
+            bytes_remaining = pdf->size - obj->start;
 
             /* Ok so we found the indirect object, lets read the value. */
             index = pdf_nextobject(indirect_obj_start, bytes_remaining);
@@ -1066,7 +1066,7 @@ static int run_pdf_hooks(struct pdf_struct *pdf, enum pdf_phase phase, int fd, i
         if (!map) {
             cli_dbgmsg("run_pdf_hooks: can't mmap pdf extracted obj\n");
             map = ctx->fmap;
-            fd  = -1;
+            fd = -1;
         }
     }
 
@@ -1247,7 +1247,7 @@ char *decrypt_any(struct pdf_struct *pdf, uint32_t id, const char *in, size_t *l
     }
 
     memcpy(key, pdf->key, pdf->keylen);
-    q    = key + pdf->keylen;
+    q = key + pdf->keylen;
     *q++ = id >> 8;
     *q++ = id >> 16;
     *q++ = id >> 24;
@@ -1433,10 +1433,10 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 {
     cli_ctx *ctx = pdf->ctx;
     char fullname[PATH_MAX + 1];
-    int fout      = -1;
-    size_t sum    = 0;
+    int fout = -1;
+    size_t sum = 0;
     cl_error_t rc = CL_SUCCESS;
-    int dump      = 1;
+    int dump = 1;
 
     cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
@@ -1495,9 +1495,9 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         int dict_len = obj->stream - start; /* Dictionary should end where the stream begins */
 
         const char *pstr;
-        struct pdf_dict *dparams     = NULL;
+        struct pdf_dict *dparams = NULL;
         struct objstm_struct *objstm = NULL;
-        int xref                     = 0;
+        int xref = 0;
 
         /* Find and interpret the length dictionary value */
         length = find_length(pdf, obj, start, dict_len);
@@ -1518,7 +1518,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
              * off any newline/carriage returns from the end of the stream.
              */
             const char *q = start + obj->stream_size;
-            length        = obj->stream_size;
+            length = obj->stream_size;
             q--;
 
             if (length > 0) {
@@ -1595,9 +1595,9 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
          */
         dict_len = obj->stream - start;
         if (NULL != (pstr = pdf_getdict(start, &dict_len, "/Type/ObjStm"))) {
-            int32_t objstm_first  = -1;
+            int32_t objstm_first = -1;
             int32_t objstm_length = -1;
-            int32_t objstm_n      = -1;
+            int32_t objstm_n = -1;
 
             cli_dbgmsg("pdf_extract_obj: Found /Type/ObjStm\n");
 
@@ -1628,11 +1628,11 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 
                 memset(objstm, 0, sizeof(*objstm));
 
-                objstm->first        = (uint32_t)objstm_first;
-                objstm->current      = (uint32_t)objstm_first;
+                objstm->first = (uint32_t)objstm_first;
+                objstm->current = (uint32_t)objstm_first;
                 objstm->current_pair = 0;
-                objstm->length       = (uint32_t)objstm_length;
-                objstm->n            = (uint32_t)objstm_n;
+                objstm->length = (uint32_t)objstm_length;
+                objstm->n = (uint32_t)objstm_n;
 
                 cli_dbgmsg("pdf_extract_obj: ObjStm first obj at offset %d\n", objstm->first);
                 cli_dbgmsg("pdf_extract_obj: ObjStm length is %d bytes\n", objstm->length);
@@ -1712,7 +1712,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         }
 
         do {
-            char *js      = NULL;
+            char *js = NULL;
             size_t js_len = 0;
             const char *q3;
 
@@ -1730,7 +1730,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
             if (js) {
                 char *decrypted = NULL;
                 const char *out = js;
-                js_len          = strlen(js);
+                js_len = strlen(js);
                 if (pdf->flags & (1 << DECRYPTABLE_PDF)) {
                     cli_dbgmsg("pdf_extract_obj: encrypted string\n");
                     decrypted = decrypt_any(pdf, obj->id, js, &js_len, pdf->enc_method_string);
@@ -2062,7 +2062,7 @@ static void pdf_parse_encrypt(struct pdf_struct *pdf, const char *enc, int len)
     objid = (unsigned long)temp_long;
 
     objid = objid << 8;
-    q2    = pdf_nextobject(q, len);
+    q2 = pdf_nextobject(q, len);
     if (!q2 || !isdigit(*q2))
         return;
     len -= q2 - q;
@@ -2102,7 +2102,7 @@ static void pdf_parse_trailer(struct pdf_struct *pdf, const char *s, long length
 
         if (newID) {
             free(pdf->fileID);
-            pdf->fileID    = newID;
+            pdf->fileID = newID;
             pdf->fileIDlen = newIDlen;
         }
     }
@@ -2114,10 +2114,10 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
     char pdfname[64];
     const char *q2, *q3;
     const char *nextobj = NULL, *nextopen = NULL, *nextclose = NULL;
-    const char *q    = NULL;
+    const char *q = NULL;
     const char *dict = NULL, *enddict = NULL, *start = NULL;
     off_t dict_length = 0, full_dict_length = 0, bytesleft = 0;
-    size_t i         = 0;
+    size_t i = 0;
     unsigned filters = 0, blockopens = 0;
     enum objstate objstate = STATE_NONE;
 #if HAVE_JSON
@@ -2177,7 +2177,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             /* Stream found. Store this fact and the stream bounds. */
             cli_dbgmsg("pdf_parseobj: %u %u contains stream, size: %zu\n", obj->id >> 8, obj->id & 0xff, stream_size);
             obj->flags |= (1 << OBJ_STREAM);
-            obj->stream      = stream;
+            obj->stream = stream;
             obj->stream_size = stream_size;
         }
     }
@@ -2228,10 +2228,10 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
         q = nextobj;
     } while (!q3 || q3[1] != '<');
     dict = q3 + 2;
-    q    = dict;
+    q = dict;
     blockopens++;
     bytesleft = obj->size - (q - start);
-    enddict   = q + bytesleft - 1;
+    enddict = q + bytesleft - 1;
 
     /* find end of dictionary block */
     if (bytesleft < 0) {
@@ -2376,7 +2376,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
             long trailer_end, trailer;
 
             pdfobj_flag(pdf, obj, LINEARIZED_PDF);
-            objstate    = STATE_NONE;
+            objstate = STATE_NONE;
             trailer_end = pdf_readint(dict, full_dict_length, "/H");
             if ((trailer_end > 0) && ((size_t)trailer_end < pdf->size)) {
                 trailer = trailer_end - 1024;
@@ -2425,7 +2425,7 @@ void pdf_parseobj(struct pdf_struct *pdf, struct pdf_obj *obj)
                 }
 
                 q2_old = q2;
-                q2     = pdf_nextobject(q2, dict_remaining);
+                q2 = pdf_nextobject(q2, dict_remaining);
                 if (q2 && isdigit(*q2)) {
                     dict_remaining -= (off_t)(q2 - q2_old);
                     if (CL_SUCCESS != cli_strntol_wrap(q2, (size_t)dict_remaining, 0, 10, &temp_long)) {
@@ -2565,7 +2565,7 @@ static char *pdf_readstring(const char *q0, int len, const char *key, unsigned *
 
     if (*q == '(') {
         int paren = 1;
-        start     = ++q;
+        start = ++q;
         len--;
         for (; paren > 0 && len > 0; q++, len--) {
             switch (*q) {
@@ -2755,7 +2755,7 @@ static char *pdf_readval(const char *q, int len, const char *key)
 
 static int pdf_readint(const char *q0, int len, const char *key)
 {
-    long value    = 0;
+    long value = 0;
     const char *q = pdf_getdict(q0, &len, key);
 
     if (q == NULL) {
@@ -2879,7 +2879,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(pdf->keylen);
+                pdf->key = cli_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                     return;
@@ -2894,7 +2894,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
     } else if (R == 6) {
         unsigned char hash[32], validationkey[32];
 
-        size_t pwlen    = 0;
+        size_t pwlen = 0;
         char password[] = "";
 
         if (NULL == UE) {
@@ -2914,7 +2914,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
                 noisy_warnmsg("check_user_password: UE length is not 32: %zu\n", UE_len);
             } else {
                 pdf->keylen = 32;
-                pdf->key    = cli_malloc(pdf->keylen);
+                pdf->key = cli_malloc(pdf->keylen);
                 if (!pdf->key) {
                     cli_errmsg("check_user_password: Cannot allocate memory for pdf->key\n");
                     return;
@@ -2929,7 +2929,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
     } else if ((R >= 2) && (R <= 4)) {
         unsigned char *d;
         size_t sz = 68 + pdf->fileIDlen + (R >= 4 && !EM ? 4 : 0);
-        d         = calloc(1, sz);
+        d = calloc(1, sz);
 
         if (!(d))
             return;
@@ -2960,7 +2960,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
             length = 40;
 
         pdf->keylen = length / 8;
-        pdf->key    = cli_malloc(pdf->keylen);
+        pdf->key = cli_malloc(pdf->keylen);
         if (!pdf->key)
             return;
 
@@ -3045,7 +3045,7 @@ static void check_user_password(struct pdf_struct *pdf, int R, const char *O,
 enum enc_method parse_enc_method(const char *dict, unsigned len, const char *key, enum enc_method def)
 {
     const char *q;
-    char *CFM           = NULL;
+    char *CFM = NULL;
     enum enc_method ret = ENC_UNKNOWN;
 
     if (!key)
@@ -3106,8 +3106,8 @@ void pdf_handle_enc(struct pdf_struct *pdf)
     O = U = UE = StmF = StrF = EFF = NULL;
     do {
 
-        pdf->enc_method_string       = ENC_UNKNOWN;
-        pdf->enc_method_stream       = ENC_UNKNOWN;
+        pdf->enc_method_string = ENC_UNKNOWN;
+        pdf->enc_method_stream = ENC_UNKNOWN;
         pdf->enc_method_embeddedfile = ENC_UNKNOWN;
 
         q2 = cli_memstr(q, len, "/Standard", 9);
@@ -3158,16 +3158,16 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             oulen = 48;
 
         if (R == 2 || R == 3) {
-            pdf->enc_method_stream       = ENC_V2;
-            pdf->enc_method_string       = ENC_V2;
+            pdf->enc_method_stream = ENC_V2;
+            pdf->enc_method_string = ENC_V2;
             pdf->enc_method_embeddedfile = ENC_V2;
         } else if (R == 4 || R == 5 || R == 6) {
-            EM        = pdf_readbool(q, len, "/EncryptMetadata", 1);
-            StmF      = pdf_readval(q, len, "/StmF");
-            StrF      = pdf_readval(q, len, "/StrF");
-            EFF       = pdf_readval(q, len, "/EFF");
-            n         = len;
-            pdf->CF   = pdf_getdict(q, (int *)(&n), "/CF");
+            EM = pdf_readbool(q, len, "/EncryptMetadata", 1);
+            StmF = pdf_readval(q, len, "/StmF");
+            StrF = pdf_readval(q, len, "/StrF");
+            EFF = pdf_readval(q, len, "/EFF");
+            n = len;
+            pdf->CF = pdf_getdict(q, (int *)(&n), "/CF");
             pdf->CF_n = n;
 
             if (StmF)
@@ -3177,8 +3177,8 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             if (EFF)
                 cli_dbgmsg("pdf_handle_enc: EFF: %s\n", EFF);
 
-            pdf->enc_method_stream       = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
-            pdf->enc_method_string       = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
+            pdf->enc_method_stream = parse_enc_method(pdf->CF, n, StmF, ENC_IDENTITY);
+            pdf->enc_method_string = parse_enc_method(pdf->CF, n, StrF, ENC_IDENTITY);
             pdf->enc_method_embeddedfile = parse_enc_method(pdf->CF, n, EFF, pdf->enc_method_stream);
 
             free(StmF);
@@ -3190,8 +3190,8 @@ void pdf_handle_enc(struct pdf_struct *pdf)
             if (R == 4) {
                 length = 128;
             } else {
-                n      = 0;
-                UE     = pdf_readstring(q, len, "/UE", &n, NULL, 0);
+                n = 0;
+                UE = pdf_readstring(q, len, "/UE", &n, NULL, 0);
                 length = 256;
             }
         }
@@ -3269,11 +3269,11 @@ void pdf_handle_enc(struct pdf_struct *pdf)
  */
 cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm)
 {
-    cl_error_t status   = CL_EFORMAT;
-    cl_error_t retval   = CL_EPARSE;
-    int32_t alerts      = 0;
+    cl_error_t status = CL_EFORMAT;
+    cl_error_t retval = CL_EPARSE;
+    int32_t alerts = 0;
     uint32_t badobjects = 0;
-    size_t i            = 0;
+    size_t i = 0;
 
     struct pdf_obj *obj = NULL;
 
@@ -3352,11 +3352,11 @@ done:
  */
 cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
 {
-    cl_error_t status   = CL_SUCCESS;
-    int32_t rv          = 0;
-    unsigned int i      = 0;
+    cl_error_t status = CL_SUCCESS;
+    int32_t rv = 0;
+    unsigned int i = 0;
     uint32_t badobjects = 0;
-    cli_ctx *ctx        = NULL;
+    cli_ctx *ctx = NULL;
 
     if (NULL == pdf || NULL == alerts) {
         cli_errmsg("pdf_find_and_extract_objs: Invalid arguments.\n");
@@ -3471,8 +3471,8 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
     cl_error_t rc = CL_SUCCESS;
     struct pdf_struct pdf;
-    fmap_t *map   = ctx->fmap;
-    size_t size   = map->len - offset;
+    fmap_t *map = ctx->fmap;
+    size_t size = map->len - offset;
     off_t versize = size > 1032 ? 1032 : size;
     off_t map_off, bytesleft;
     unsigned long xref;
@@ -3487,8 +3487,8 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     cli_dbgmsg("in cli_pdf(%s)\n", dir);
     memset(&pdf, 0, sizeof(pdf));
-    pdf.ctx       = ctx;
-    pdf.dir       = dir;
+    pdf.ctx = ctx;
+    pdf.dir = dir;
     pdf.enc_objid = ~0u;
 
     pdfver = start = fmap_need_off_once(map, offset, versize);
@@ -3538,7 +3538,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 #if HAVE_JSON
         if (pdfobj) {
             begin = (char *)(pdfver + 5);
-            end   = begin + 2;
+            end = begin + 2;
             strtoul(end, &end, 10);
             p1 = cli_calloc((end - begin) + 2, 1);
             if (p1) {
@@ -3627,7 +3627,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
                 cli_dbgmsg("cli_pdf: Encountered invalid negative PDF trailer xref (%ld).\n", temp_long);
                 pdf.flags |= 1 << BAD_PDF_TRAILER;
             } else {
-                xref      = (unsigned long)temp_long;
+                xref = (unsigned long)temp_long;
                 bytesleft = map->len - offset - xref;
                 if (bytesleft > 4096)
                     bytesleft = 4096;
@@ -3643,7 +3643,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 
     size -= offset;
     pdf.size = size;
-    pdf.map  = fmap_need_off(map, offset, size);
+    pdf.map = fmap_need_off(map, offset, size);
     if (!pdf.map) {
         cli_errmsg("cli_pdf: mmap() failed (3)\n");
 
@@ -3670,7 +3670,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
      * This methodology adds objects from object streams.
      */
     objs_found = pdf.nobjs;
-    rc         = pdf_find_and_extract_objs(&pdf, &alerts);
+    rc = pdf_find_and_extract_objs(&pdf, &alerts);
 
     if (CL_EMEM == rc) {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs had an allocation failure\n");
@@ -3827,7 +3827,7 @@ pdf_nextobject(const char *ptr, size_t len)
                     return NULL;
 
                 len -= (size_t)(p - ptr);
-                ptr      = p;
+                ptr = p;
                 inobject = 0;
 
                 break;
@@ -4518,8 +4518,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.author->meta.obj, pdf->stats.author->data, pdf->stats.author->meta.length);
             if (out) {
                 free(pdf->stats.author->data);
-                pdf->stats.author->data         = out;
-                pdf->stats.author->meta.length  = strlen(out);
+                pdf->stats.author->data = out;
+                pdf->stats.author->meta.length = strlen(out);
                 pdf->stats.author->meta.success = 1;
             }
         }
@@ -4540,8 +4540,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.creator->meta.obj, pdf->stats.creator->data, pdf->stats.creator->meta.length);
             if (out) {
                 free(pdf->stats.creator->data);
-                pdf->stats.creator->data         = out;
-                pdf->stats.creator->meta.length  = strlen(out);
+                pdf->stats.creator->data = out;
+                pdf->stats.creator->meta.length = strlen(out);
                 pdf->stats.creator->meta.success = 1;
             }
         }
@@ -4562,8 +4562,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.producer->meta.obj, pdf->stats.producer->data, pdf->stats.producer->meta.length);
             if (out) {
                 free(pdf->stats.producer->data);
-                pdf->stats.producer->data         = out;
-                pdf->stats.producer->meta.length  = strlen(out);
+                pdf->stats.producer->data = out;
+                pdf->stats.producer->meta.length = strlen(out);
                 pdf->stats.producer->meta.success = 1;
             }
         }
@@ -4584,8 +4584,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.modificationdate->meta.obj, pdf->stats.modificationdate->data, pdf->stats.modificationdate->meta.length);
             if (out) {
                 free(pdf->stats.modificationdate->data);
-                pdf->stats.modificationdate->data         = out;
-                pdf->stats.modificationdate->meta.length  = strlen(out);
+                pdf->stats.modificationdate->data = out;
+                pdf->stats.modificationdate->meta.length = strlen(out);
                 pdf->stats.modificationdate->meta.success = 1;
             }
         }
@@ -4606,8 +4606,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.creationdate->meta.obj, pdf->stats.creationdate->data, pdf->stats.creationdate->meta.length);
             if (out) {
                 free(pdf->stats.creationdate->data);
-                pdf->stats.creationdate->data         = out;
-                pdf->stats.creationdate->meta.length  = strlen(out);
+                pdf->stats.creationdate->data = out;
+                pdf->stats.creationdate->meta.length = strlen(out);
                 pdf->stats.creationdate->meta.success = 1;
             }
         }
@@ -4628,8 +4628,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.title->meta.obj, pdf->stats.title->data, pdf->stats.title->meta.length);
             if (out) {
                 free(pdf->stats.title->data);
-                pdf->stats.title->data         = out;
-                pdf->stats.title->meta.length  = strlen(out);
+                pdf->stats.title->data = out;
+                pdf->stats.title->meta.length = strlen(out);
                 pdf->stats.title->meta.success = 1;
             }
         }
@@ -4650,8 +4650,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.subject->meta.obj, pdf->stats.subject->data, pdf->stats.subject->meta.length);
             if (out) {
                 free(pdf->stats.subject->data);
-                pdf->stats.subject->data         = out;
-                pdf->stats.subject->meta.length  = strlen(out);
+                pdf->stats.subject->data = out;
+                pdf->stats.subject->meta.length = strlen(out);
                 pdf->stats.subject->meta.success = 1;
             }
         }
@@ -4672,8 +4672,8 @@ static void pdf_export_json(struct pdf_struct *pdf)
             char *out = pdf_finalize_string(pdf, pdf->stats.keywords->meta.obj, pdf->stats.keywords->data, pdf->stats.keywords->meta.length);
             if (out) {
                 free(pdf->stats.keywords->data);
-                pdf->stats.keywords->data         = out;
-                pdf->stats.keywords->meta.length  = strlen(out);
+                pdf->stats.keywords->data = out;
+                pdf->stats.keywords->meta.length = strlen(out);
                 pdf->stats.keywords->meta.success = 1;
             }
         }

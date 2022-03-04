@@ -27,7 +27,7 @@
 
 #define CL_PHISH_BASE 100
 enum phish_status { CL_PHISH_NODECISION = 0,
-                    CL_PHISH_CLEAN      = CL_PHISH_BASE,
+                    CL_PHISH_CLEAN = CL_PHISH_BASE,
                     CL_PHISH_CLOAKED_UIU,
                     CL_PHISH_NUMERIC_IP,
                     CL_PHISH_HEX_URL,

@@ -79,11 +79,11 @@ __inline
     in_tld_set(const char *str, unsigned int len)
 {
     enum {
-        TOTAL_KEYWORDS  = 280,
+        TOTAL_KEYWORDS = 280,
         MIN_WORD_LENGTH = 2,
         MAX_WORD_LENGTH = 18,
-        MIN_HASH_VALUE  = 5,
-        MAX_HASH_VALUE  = 987
+        MIN_HASH_VALUE = 5,
+        MAX_HASH_VALUE = 987
     };
 
     static const unsigned char lengthtable[] =

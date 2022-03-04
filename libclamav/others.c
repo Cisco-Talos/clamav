@@ -88,7 +88,7 @@ cl_unrar_error_t (*cli_unrar_extract_file)(void *hArchive, const char *destPath,
 cl_unrar_error_t (*cli_unrar_skip_file)(void *hArchive);
 void (*cli_unrar_close)(void *hArchive);
 
-int have_rar             = 0;
+int have_rar = 0;
 static int is_rar_inited = 0;
 
 #define PASTE2(a, b) a #b
@@ -164,7 +164,7 @@ static void *load_module(const char *name, const char *featurename)
             char *tokenized_library_path = NULL;
 
             tokenized_library_path = strdup(ld_library_path);
-            tokens_count           = cli_strtokenize(tokenized_library_path, ':', MAX_LIBRARY_PATHS, tokens);
+            tokens_count = cli_strtokenize(tokenized_library_path, ':', MAX_LIBRARY_PATHS, tokens);
 
             for (token_index = 0; token_index < tokens_count; token_index++) {
                 cli_dbgmsg("searching for %s, LD_LIBRARY_PATH: %s\n", featurename, tokens[token_index]);
@@ -193,7 +193,7 @@ static void *load_module(const char *name, const char *featurename)
 
     if (NULL == rhandle) {
 #ifdef _WIN32
-        char *err     = NULL;
+        char *err = NULL;
         DWORD lasterr = GetLastError();
         if (0 < lasterr) {
             FormatMessageA(
@@ -240,9 +240,9 @@ static void *load_module(const char *name, const char *featurename)
 static void *get_module_function(HMODULE handle, const char *name)
 {
     void *procAddress = NULL;
-    procAddress       = GetProcAddress(handle, name);
+    procAddress = GetProcAddress(handle, name);
     if (NULL == procAddress) {
-        char *err     = NULL;
+        char *err = NULL;
         DWORD lasterr = GetLastError();
         if (0 < lasterr) {
             FormatMessageA(
@@ -298,11 +298,11 @@ static void rarload(void)
     if (have_rar) return;
 
 #ifdef UNRAR_LINKED
-    cli_unrar_open             = unrar_open;
+    cli_unrar_open = unrar_open;
     cli_unrar_peek_file_header = unrar_peek_file_header;
-    cli_unrar_extract_file     = unrar_extract_file;
-    cli_unrar_skip_file        = unrar_skip_file;
-    cli_unrar_close            = unrar_close;
+    cli_unrar_extract_file = unrar_extract_file;
+    cli_unrar_skip_file = unrar_skip_file;
+    cli_unrar_close = unrar_close;
 #else
     rhandle = load_module("libclamunrar_iface", "unrar");
     if (NULL == rhandle)
@@ -460,28 +460,28 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Setup default limits */
-    new->maxscantime         = CLI_DEFAULT_TIMELIMIT;
-    new->maxscansize         = CLI_DEFAULT_MAXSCANSIZE;
-    new->maxfilesize         = CLI_DEFAULT_MAXFILESIZE;
+    new->maxscantime = CLI_DEFAULT_TIMELIMIT;
+    new->maxscansize = CLI_DEFAULT_MAXSCANSIZE;
+    new->maxfilesize = CLI_DEFAULT_MAXFILESIZE;
     new->max_recursion_level = CLI_DEFAULT_MAXRECLEVEL;
-    new->maxfiles            = CLI_DEFAULT_MAXFILES;
-    new->min_cc_count        = CLI_DEFAULT_MIN_CC_COUNT;
-    new->min_ssn_count       = CLI_DEFAULT_MIN_SSN_COUNT;
+    new->maxfiles = CLI_DEFAULT_MAXFILES;
+    new->min_cc_count = CLI_DEFAULT_MIN_CC_COUNT;
+    new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
     /* Engine Max sizes */
-    new->maxembeddedpe      = CLI_DEFAULT_MAXEMBEDDEDPE;
-    new->maxhtmlnormalize   = CLI_DEFAULT_MAXHTMLNORMALIZE;
-    new->maxhtmlnotags      = CLI_DEFAULT_MAXHTMLNOTAGS;
+    new->maxembeddedpe = CLI_DEFAULT_MAXEMBEDDEDPE;
+    new->maxhtmlnormalize = CLI_DEFAULT_MAXHTMLNORMALIZE;
+    new->maxhtmlnotags = CLI_DEFAULT_MAXHTMLNOTAGS;
     new->maxscriptnormalize = CLI_DEFAULT_MAXSCRIPTNORMALIZE;
-    new->maxziptypercg      = CLI_DEFAULT_MAXZIPTYPERCG;
+    new->maxziptypercg = CLI_DEFAULT_MAXZIPTYPERCG;
 
     new->bytecode_security = CL_BYTECODE_TRUST_SIGNED;
     /* 5 seconds timeout */
     new->bytecode_timeout = 60000;
-    new->bytecode_mode    = CL_BYTECODE_MODE_AUTO;
-    new->refcount         = 1;
-    new->ac_only          = 0;
-    new->ac_mindepth      = CLI_DEFAULT_AC_MINDEPTH;
-    new->ac_maxdepth      = CLI_DEFAULT_AC_MAXDEPTH;
+    new->bytecode_mode = CL_BYTECODE_MODE_AUTO;
+    new->refcount = 1;
+    new->ac_only = 0;
+    new->ac_mindepth = CLI_DEFAULT_AC_MINDEPTH;
+    new->ac_maxdepth = CLI_DEFAULT_AC_MAXDEPTH;
 
 #ifdef USE_MPOOL
     if (!(new->mempool = mpool_create())) {
@@ -554,23 +554,23 @@ struct cl_engine *cl_engine_new(void)
             return NULL;
         }
 #endif
-        intel->engine     = new;
+        intel->engine = new;
         intel->maxsamples = STATS_MAX_SAMPLES;
-        intel->maxmem     = STATS_MAX_MEM;
-        intel->timeout    = 10;
-        new->stats_data   = intel;
+        intel->maxmem = STATS_MAX_MEM;
+        intel->timeout = 10;
+        new->stats_data = intel;
     } else {
         new->stats_data = NULL;
     }
 
-    new->cb_stats_add_sample      = NULL;
-    new->cb_stats_submit          = NULL;
-    new->cb_stats_flush           = clamav_stats_flush;
-    new->cb_stats_remove_sample   = clamav_stats_remove_sample;
+    new->cb_stats_add_sample = NULL;
+    new->cb_stats_submit = NULL;
+    new->cb_stats_flush = clamav_stats_flush;
+    new->cb_stats_remove_sample = clamav_stats_remove_sample;
     new->cb_stats_decrement_count = clamav_stats_decrement_count;
-    new->cb_stats_get_num         = clamav_stats_get_num;
-    new->cb_stats_get_size        = clamav_stats_get_size;
-    new->cb_stats_get_hostid      = clamav_stats_get_hostid;
+    new->cb_stats_get_num = clamav_stats_get_num;
+    new->cb_stats_get_size = clamav_stats_get_size;
+    new->cb_stats_get_hostid = clamav_stats_get_hostid;
 
     /* Setup raw disk image max settings */
     new->maxpartitions = CLI_DEFAULT_MAXPARTITIONS;
@@ -583,9 +583,9 @@ struct cl_engine *cl_engine_new(void)
 #if HAVE_PCRE
     cli_pcre_init();
 #endif
-    new->pcre_match_limit    = CLI_DEFAULT_PCRE_MATCH_LIMIT;
+    new->pcre_match_limit = CLI_DEFAULT_PCRE_MATCH_LIMIT;
     new->pcre_recmatch_limit = CLI_DEFAULT_PCRE_RECMATCH_LIMIT;
-    new->pcre_max_filesize   = CLI_DEFAULT_PCRE_MAX_FILESIZE;
+    new->pcre_max_filesize = CLI_DEFAULT_PCRE_MAX_FILESIZE;
 
 #ifdef HAVE_YARA
 
@@ -938,88 +938,88 @@ struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
         return NULL;
     }
 
-    settings->ac_only             = engine->ac_only;
-    settings->ac_mindepth         = engine->ac_mindepth;
-    settings->ac_maxdepth         = engine->ac_maxdepth;
-    settings->tmpdir              = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
-    settings->keeptmp             = engine->keeptmp;
-    settings->maxscantime         = engine->maxscantime;
-    settings->maxscansize         = engine->maxscansize;
-    settings->maxfilesize         = engine->maxfilesize;
+    settings->ac_only = engine->ac_only;
+    settings->ac_mindepth = engine->ac_mindepth;
+    settings->ac_maxdepth = engine->ac_maxdepth;
+    settings->tmpdir = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
+    settings->keeptmp = engine->keeptmp;
+    settings->maxscantime = engine->maxscantime;
+    settings->maxscansize = engine->maxscansize;
+    settings->maxfilesize = engine->maxfilesize;
     settings->max_recursion_level = engine->max_recursion_level;
-    settings->maxfiles            = engine->maxfiles;
-    settings->maxembeddedpe       = engine->maxembeddedpe;
-    settings->maxhtmlnormalize    = engine->maxhtmlnormalize;
-    settings->maxhtmlnotags       = engine->maxhtmlnotags;
-    settings->maxscriptnormalize  = engine->maxscriptnormalize;
-    settings->maxziptypercg       = engine->maxziptypercg;
-    settings->min_cc_count        = engine->min_cc_count;
-    settings->min_ssn_count       = engine->min_ssn_count;
-    settings->bytecode_security   = engine->bytecode_security;
-    settings->bytecode_timeout    = engine->bytecode_timeout;
-    settings->bytecode_mode       = engine->bytecode_mode;
-    settings->pua_cats            = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
+    settings->maxfiles = engine->maxfiles;
+    settings->maxembeddedpe = engine->maxembeddedpe;
+    settings->maxhtmlnormalize = engine->maxhtmlnormalize;
+    settings->maxhtmlnotags = engine->maxhtmlnotags;
+    settings->maxscriptnormalize = engine->maxscriptnormalize;
+    settings->maxziptypercg = engine->maxziptypercg;
+    settings->min_cc_count = engine->min_cc_count;
+    settings->min_ssn_count = engine->min_ssn_count;
+    settings->bytecode_security = engine->bytecode_security;
+    settings->bytecode_timeout = engine->bytecode_timeout;
+    settings->bytecode_mode = engine->bytecode_mode;
+    settings->pua_cats = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
 
-    settings->cb_pre_cache                   = engine->cb_pre_cache;
-    settings->cb_pre_scan                    = engine->cb_pre_scan;
-    settings->cb_post_scan                   = engine->cb_post_scan;
-    settings->cb_virus_found                 = engine->cb_virus_found;
-    settings->cb_sigload                     = engine->cb_sigload;
-    settings->cb_sigload_ctx                 = engine->cb_sigload_ctx;
-    settings->cb_sigload_progress            = engine->cb_sigload_progress;
-    settings->cb_sigload_progress_ctx        = engine->cb_sigload_progress_ctx;
-    settings->cb_engine_compile_progress     = engine->cb_engine_compile_progress;
+    settings->cb_pre_cache = engine->cb_pre_cache;
+    settings->cb_pre_scan = engine->cb_pre_scan;
+    settings->cb_post_scan = engine->cb_post_scan;
+    settings->cb_virus_found = engine->cb_virus_found;
+    settings->cb_sigload = engine->cb_sigload;
+    settings->cb_sigload_ctx = engine->cb_sigload_ctx;
+    settings->cb_sigload_progress = engine->cb_sigload_progress;
+    settings->cb_sigload_progress_ctx = engine->cb_sigload_progress_ctx;
+    settings->cb_engine_compile_progress = engine->cb_engine_compile_progress;
     settings->cb_engine_compile_progress_ctx = engine->cb_engine_compile_progress_ctx;
-    settings->cb_engine_free_progress        = engine->cb_engine_free_progress;
-    settings->cb_engine_free_progress_ctx    = engine->cb_engine_free_progress_ctx;
-    settings->cb_hash                        = engine->cb_hash;
-    settings->cb_meta                        = engine->cb_meta;
-    settings->cb_file_props                  = engine->cb_file_props;
-    settings->engine_options                 = engine->engine_options;
+    settings->cb_engine_free_progress = engine->cb_engine_free_progress;
+    settings->cb_engine_free_progress_ctx = engine->cb_engine_free_progress_ctx;
+    settings->cb_hash = engine->cb_hash;
+    settings->cb_meta = engine->cb_meta;
+    settings->cb_file_props = engine->cb_file_props;
+    settings->engine_options = engine->engine_options;
 
-    settings->cb_stats_add_sample      = engine->cb_stats_add_sample;
-    settings->cb_stats_remove_sample   = engine->cb_stats_remove_sample;
+    settings->cb_stats_add_sample = engine->cb_stats_add_sample;
+    settings->cb_stats_remove_sample = engine->cb_stats_remove_sample;
     settings->cb_stats_decrement_count = engine->cb_stats_decrement_count;
-    settings->cb_stats_submit          = engine->cb_stats_submit;
-    settings->cb_stats_flush           = engine->cb_stats_flush;
-    settings->cb_stats_get_num         = engine->cb_stats_get_num;
-    settings->cb_stats_get_size        = engine->cb_stats_get_size;
-    settings->cb_stats_get_hostid      = engine->cb_stats_get_hostid;
+    settings->cb_stats_submit = engine->cb_stats_submit;
+    settings->cb_stats_flush = engine->cb_stats_flush;
+    settings->cb_stats_get_num = engine->cb_stats_get_num;
+    settings->cb_stats_get_size = engine->cb_stats_get_size;
+    settings->cb_stats_get_hostid = engine->cb_stats_get_hostid;
 
     settings->maxpartitions = engine->maxpartitions;
 
     settings->maxiconspe = engine->maxiconspe;
     settings->maxrechwp3 = engine->maxrechwp3;
 
-    settings->pcre_match_limit    = engine->pcre_match_limit;
+    settings->pcre_match_limit = engine->pcre_match_limit;
     settings->pcre_recmatch_limit = engine->pcre_recmatch_limit;
-    settings->pcre_max_filesize   = engine->pcre_max_filesize;
+    settings->pcre_max_filesize = engine->pcre_max_filesize;
 
     return settings;
 }
 
 cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
 {
-    engine->ac_only             = settings->ac_only;
-    engine->ac_mindepth         = settings->ac_mindepth;
-    engine->ac_maxdepth         = settings->ac_maxdepth;
-    engine->keeptmp             = settings->keeptmp;
-    engine->maxscantime         = settings->maxscantime;
-    engine->maxscansize         = settings->maxscansize;
-    engine->maxfilesize         = settings->maxfilesize;
+    engine->ac_only = settings->ac_only;
+    engine->ac_mindepth = settings->ac_mindepth;
+    engine->ac_maxdepth = settings->ac_maxdepth;
+    engine->keeptmp = settings->keeptmp;
+    engine->maxscantime = settings->maxscantime;
+    engine->maxscansize = settings->maxscansize;
+    engine->maxfilesize = settings->maxfilesize;
     engine->max_recursion_level = settings->max_recursion_level;
-    engine->maxfiles            = settings->maxfiles;
-    engine->maxembeddedpe       = settings->maxembeddedpe;
-    engine->maxhtmlnormalize    = settings->maxhtmlnormalize;
-    engine->maxhtmlnotags       = settings->maxhtmlnotags;
-    engine->maxscriptnormalize  = settings->maxscriptnormalize;
-    engine->maxziptypercg       = settings->maxziptypercg;
-    engine->min_cc_count        = settings->min_cc_count;
-    engine->min_ssn_count       = settings->min_ssn_count;
-    engine->bytecode_security   = settings->bytecode_security;
-    engine->bytecode_timeout    = settings->bytecode_timeout;
-    engine->bytecode_mode       = settings->bytecode_mode;
-    engine->engine_options      = settings->engine_options;
+    engine->maxfiles = settings->maxfiles;
+    engine->maxembeddedpe = settings->maxembeddedpe;
+    engine->maxhtmlnormalize = settings->maxhtmlnormalize;
+    engine->maxhtmlnotags = settings->maxhtmlnotags;
+    engine->maxscriptnormalize = settings->maxscriptnormalize;
+    engine->maxziptypercg = settings->maxziptypercg;
+    engine->min_cc_count = settings->min_cc_count;
+    engine->min_ssn_count = settings->min_ssn_count;
+    engine->bytecode_security = settings->bytecode_security;
+    engine->bytecode_timeout = settings->bytecode_timeout;
+    engine->bytecode_mode = settings->bytecode_mode;
+    engine->engine_options = settings->engine_options;
 
     if (engine->tmpdir)
         MPOOL_FREE(engine->mempool, engine->tmpdir);
@@ -1041,39 +1041,39 @@ cl_error_t cl_engine_settings_apply(struct cl_engine *engine, const struct cl_se
         engine->pua_cats = NULL;
     }
 
-    engine->cb_pre_cache                   = settings->cb_pre_cache;
-    engine->cb_pre_scan                    = settings->cb_pre_scan;
-    engine->cb_post_scan                   = settings->cb_post_scan;
-    engine->cb_virus_found                 = settings->cb_virus_found;
-    engine->cb_sigload                     = settings->cb_sigload;
-    engine->cb_sigload_ctx                 = settings->cb_sigload_ctx;
-    engine->cb_sigload_progress            = settings->cb_sigload_progress;
-    engine->cb_sigload_progress_ctx        = settings->cb_sigload_progress_ctx;
-    engine->cb_engine_compile_progress     = settings->cb_engine_compile_progress;
+    engine->cb_pre_cache = settings->cb_pre_cache;
+    engine->cb_pre_scan = settings->cb_pre_scan;
+    engine->cb_post_scan = settings->cb_post_scan;
+    engine->cb_virus_found = settings->cb_virus_found;
+    engine->cb_sigload = settings->cb_sigload;
+    engine->cb_sigload_ctx = settings->cb_sigload_ctx;
+    engine->cb_sigload_progress = settings->cb_sigload_progress;
+    engine->cb_sigload_progress_ctx = settings->cb_sigload_progress_ctx;
+    engine->cb_engine_compile_progress = settings->cb_engine_compile_progress;
     engine->cb_engine_compile_progress_ctx = settings->cb_engine_compile_progress_ctx;
-    engine->cb_engine_free_progress        = settings->cb_engine_free_progress;
-    engine->cb_engine_free_progress_ctx    = settings->cb_engine_free_progress_ctx;
-    engine->cb_hash                        = settings->cb_hash;
-    engine->cb_meta                        = settings->cb_meta;
-    engine->cb_file_props                  = settings->cb_file_props;
+    engine->cb_engine_free_progress = settings->cb_engine_free_progress;
+    engine->cb_engine_free_progress_ctx = settings->cb_engine_free_progress_ctx;
+    engine->cb_hash = settings->cb_hash;
+    engine->cb_meta = settings->cb_meta;
+    engine->cb_file_props = settings->cb_file_props;
 
-    engine->cb_stats_add_sample      = settings->cb_stats_add_sample;
-    engine->cb_stats_remove_sample   = settings->cb_stats_remove_sample;
+    engine->cb_stats_add_sample = settings->cb_stats_add_sample;
+    engine->cb_stats_remove_sample = settings->cb_stats_remove_sample;
     engine->cb_stats_decrement_count = settings->cb_stats_decrement_count;
-    engine->cb_stats_submit          = settings->cb_stats_submit;
-    engine->cb_stats_flush           = settings->cb_stats_flush;
-    engine->cb_stats_get_num         = settings->cb_stats_get_num;
-    engine->cb_stats_get_size        = settings->cb_stats_get_size;
-    engine->cb_stats_get_hostid      = settings->cb_stats_get_hostid;
+    engine->cb_stats_submit = settings->cb_stats_submit;
+    engine->cb_stats_flush = settings->cb_stats_flush;
+    engine->cb_stats_get_num = settings->cb_stats_get_num;
+    engine->cb_stats_get_size = settings->cb_stats_get_size;
+    engine->cb_stats_get_hostid = settings->cb_stats_get_hostid;
 
     engine->maxpartitions = settings->maxpartitions;
 
     engine->maxiconspe = settings->maxiconspe;
     engine->maxrechwp3 = settings->maxrechwp3;
 
-    engine->pcre_match_limit    = settings->pcre_match_limit;
+    engine->pcre_match_limit = settings->pcre_match_limit;
     engine->pcre_recmatch_limit = settings->pcre_recmatch_limit;
-    engine->pcre_max_filesize   = settings->pcre_max_filesize;
+    engine->pcre_max_filesize = settings->pcre_max_filesize;
 
     return CL_SUCCESS;
 }
@@ -1193,10 +1193,10 @@ cl_error_t cli_checktimelimit(cli_ctx *ctx)
         if (gettimeofday(&now, NULL) == 0) {
             if (now.tv_sec > ctx->time_limit.tv_sec) {
                 ctx->abort_scan = true;
-                ret             = CL_ETIMEOUT;
+                ret = CL_ETIMEOUT;
             } else if (now.tv_sec == ctx->time_limit.tv_sec && now.tv_usec > ctx->time_limit.tv_usec) {
                 ctx->abort_scan = true;
-                ret             = CL_ETIMEOUT;
+                ret = CL_ETIMEOUT;
             }
         }
     }
@@ -1223,15 +1223,15 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 
     switch (type) {
         case 1:
-            alg  = "md5";
+            alg = "md5";
             size = 16;
             break;
         case 2:
-            alg  = "sha1";
+            alg = "sha1";
             size = 20;
             break;
         default:
-            alg  = "sha256";
+            alg = "sha256";
             size = 32;
             break;
     }
@@ -1386,7 +1386,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     cl_error_t status = CL_SUCCESS;
 
     recursion_level_t *current_container = NULL;
-    recursion_level_t *new_container     = NULL;
+    recursion_level_t *new_container = NULL;
 
     // Check the regular limits
     if (CL_SUCCESS != (status = cli_checklimits("cli_updatelimits", ctx, map->len, 0, 0))) {
@@ -1416,7 +1416,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     new_container->size = map->len;
 
     if (is_new_buffer) {
-        new_container->recursion_level_buffer      = current_container->recursion_level_buffer + 1;
+        new_container->recursion_level_buffer = current_container->recursion_level_buffer + 1;
         new_container->recursion_level_buffer_fmap = 0;
     } else {
         new_container->recursion_level_buffer_fmap = current_container->recursion_level_buffer_fmap + 1;
@@ -1427,7 +1427,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         // functions so that signatures that specify the container or intermediates need not account
         // for normalized layers "contained in" HTML / Javascript / etc.
         new_container->is_normalized_layer = true;
-        ctx->next_layer_is_normalized      = false;
+        ctx->next_layer_is_normalized = false;
     }
 
     ctx->fmap = new_container->fmap;
@@ -1748,7 +1748,7 @@ int cli_bitset_set(bitset_t *bs, unsigned long bit_offset)
     unsigned long char_offset;
 
     char_offset = bit_offset / BITS_PER_CHAR;
-    bit_offset  = bit_offset % BITS_PER_CHAR;
+    bit_offset = bit_offset % BITS_PER_CHAR;
 
     if (char_offset >= bs->length) {
         bs = bitset_realloc(bs, char_offset + 1);
@@ -1765,7 +1765,7 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
     unsigned long char_offset;
 
     char_offset = bit_offset / BITS_PER_CHAR;
-    bit_offset  = bit_offset % BITS_PER_CHAR;
+    bit_offset = bit_offset % BITS_PER_CHAR;
 
     if (char_offset >= bs->length) {
         return FALSE;
@@ -1795,25 +1795,25 @@ void cl_engine_set_clcb_virus_found(struct cl_engine *engine, clcb_virus_found c
 
 void cl_engine_set_clcb_sigload(struct cl_engine *engine, clcb_sigload callback, void *context)
 {
-    engine->cb_sigload     = callback;
+    engine->cb_sigload = callback;
     engine->cb_sigload_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_sigload_progress(struct cl_engine *engine, clcb_progress callback, void *context)
 {
-    engine->cb_sigload_progress     = callback;
+    engine->cb_sigload_progress = callback;
     engine->cb_sigload_progress_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_engine_compile_progress(struct cl_engine *engine, clcb_progress callback, void *context)
 {
-    engine->cb_engine_compile_progress     = callback;
+    engine->cb_engine_compile_progress = callback;
     engine->cb_engine_compile_progress_ctx = callback ? context : NULL;
 }
 
 void cl_engine_set_clcb_engine_free_progress(struct cl_engine *engine, clcb_progress callback, void *context)
 {
-    engine->cb_engine_free_progress     = callback;
+    engine->cb_engine_free_progress = callback;
     engine->cb_engine_free_progress_ctx = callback ? context : NULL;
 }
 
@@ -1839,7 +1839,7 @@ uint8_t cli_get_debug_flag()
 
 uint8_t cli_set_debug_flag(uint8_t debug_flag)
 {
-    uint8_t was    = cli_debug_flag;
+    uint8_t was = cli_debug_flag;
     cli_debug_flag = debug_flag;
 
     return was;

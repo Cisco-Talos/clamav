@@ -161,7 +161,7 @@ class PtrVerifier : public FunctionPass
         BoundsMap.clear();
         delInst.clear();
         AbrtBB = 0;
-        valid  = true;
+        valid = true;
 
 #if LLVM_VERSION < 35
         if (!rootNode) {
@@ -174,7 +174,7 @@ class PtrVerifier : public FunctionPass
             // In the future we may insert runtime checks for stack depth.
 #if LLVM_VERSION < 35
             for (scc_iterator<CallGraphNode *> SCCI = scc_begin(rootNode),
-                                               E    = scc_end(rootNode);
+                                               E = scc_end(rootNode);
                  SCCI != E; ++SCCI) {
 #else
             for (scc_iterator<CallGraph *> SCCI = scc_begin(CG); !SCCI.isAtEnd(); ++SCCI) {
@@ -209,7 +209,7 @@ class PtrVerifier : public FunctionPass
         TD = &getAnalysis<DataLayout>();
 #else
 DataLayoutPass *DLP = getAnalysisIfAvailable<DataLayoutPass>();
-TD                  = DLP ? &DLP->getDataLayout() : 0;
+TD = DLP ? &DLP->getDataLayout() : 0;
 #endif
         SE = &getAnalysis<ScalarEvolution>();
         PT = &getAnalysis<PointerTracking>();
@@ -235,7 +235,7 @@ TD                  = DLP ? &DLP->getDataLayout() : 0;
             if (isa<LoadInst>(II) || isa<StoreInst>(II) || isa<MemIntrinsic>(II))
                 insns.push_back(II);
             else if (CallInst *CI = dyn_cast<CallInst>(II)) {
-                Value *V    = CI->getCalledValue()->stripPointerCasts();
+                Value *V = CI->getCalledValue()->stripPointerCasts();
                 Function *F = dyn_cast<Function>(V);
                 if (!F) {
                     printLocation(CI, true);
@@ -267,8 +267,8 @@ TD                  = DLP ? &DLP->getDataLayout() : 0;
                     valid &= validateAccess(MTI->getSource(), MI->getLength(), MI);
                 }
             } else if (CallInst *CI = dyn_cast<CallInst>(II)) {
-                Value *V               = CI->getCalledValue()->stripPointerCasts();
-                Function *F            = cast<Function>(V);
+                Value *V = CI->getCalledValue()->stripPointerCasts();
+                Function *F = cast<Function>(V);
                 constFunctionType *FTy = F->getFunctionType();
                 CallSite CS(CI);
                 if (F->getName().equals("memcmp") && FTy->getNumParams() == 3) {
@@ -318,8 +318,8 @@ TD                  = DLP ? &DLP->getDataLayout() : 0;
             FunctionType *abrtTy = FunctionType::get(Type::getVoidTy(F.getContext()), args, false);
             Constant *func_abort = F.getParent()->getOrInsertFunction("abort", abrtTy);
 
-            BasicBlock *BB  = &F.getEntryBlock();
-            Instruction *I  = &*BB->begin();
+            BasicBlock *BB = &F.getEntryBlock();
+            Instruction *I = &*BB->begin();
             Instruction *UI = new UnreachableInst(F.getContext(), I);
             CallInst *AbrtC = CallInst::Create(func_abort, "", UI);
             AbrtC->setCallingConv(CallingConv::C);
@@ -420,7 +420,7 @@ const DataLayout *TD;
         }
         Value *P2 = GetUnderlyingObject(P, TD);
         if (P2 != P) {
-            Value *V            = getPointerBase(P2);
+            Value *V = getPointerBase(P2);
             return BaseMap[Ptr] = V;
         }
 
@@ -430,12 +430,12 @@ const DataLayout *TD;
             BasicBlock::iterator It = PN;
             ++It;
             PHINode *newPN = PHINode::Create(P8Ty, HINT(PN->getNumIncomingValues()) ".verif.base", &*It);
-            Changed        = true;
-            BaseMap[Ptr]   = newPN;
+            Changed = true;
+            BaseMap[Ptr] = newPN;
 
             for (unsigned i = 0; i < PN->getNumIncomingValues(); i++) {
                 Value *Inc = PN->getIncomingValue(i);
-                Value *V   = getPointerBase(Inc);
+                Value *V = getPointerBase(Inc);
                 newPN->addIncoming(V, PN->getIncomingBlock(i));
             }
             return newPN;
@@ -443,12 +443,12 @@ const DataLayout *TD;
         if (SelectInst *SI = dyn_cast<SelectInst>(Ptr)) {
             BasicBlock::iterator It = SI;
             ++It;
-            Value *TrueB  = getPointerBase(SI->getTrueValue());
+            Value *TrueB = getPointerBase(SI->getTrueValue());
             Value *FalseB = getPointerBase(SI->getFalseValue());
             if (TrueB && FalseB) {
-                SelectInst *NewSI   = SelectInst::Create(SI->getCondition(), TrueB,
-                                                         FalseB, ".select.base", &*It);
-                Changed             = true;
+                SelectInst *NewSI = SelectInst::Create(SI->getCondition(), TrueB,
+                                                       FalseB, ".select.base", &*It);
+                Changed = true;
                 return BaseMap[Ptr] = NewSI;
             }
         }
@@ -457,7 +457,7 @@ const DataLayout *TD;
                 Ptr = ConstantExpr::getPointerCast(C, P8Ty);
             else {
                 Instruction *I = getInsertPoint(Ptr);
-                Ptr            = new BitCastInst(Ptr, P8Ty, "", I);
+                Ptr = new BitCastInst(Ptr, P8Ty, "", I);
             }
         }
         return BaseMap[Ptr] = Ptr;
@@ -469,7 +469,7 @@ const DataLayout *TD;
 
         // check if accessed Idx is within function parameter list
         if (Idx < F->arg_size()) {
-            Function::arg_iterator It    = F->arg_begin();
+            Function::arg_iterator It = F->arg_begin();
             Function::arg_iterator ItEnd = F->arg_end();
             for (unsigned i = 0; i < Idx; ++i, ++It) {
                 // redundant check, should not be possible
@@ -508,7 +508,7 @@ const DataLayout *TD;
                 constType *Ty = cast<PointerType>(A->getType())->getElementType();
                 return ConstantInt::get(I64Ty, TD->getTypeAllocSize(Ty));
             } else if (Base->getType()->isPointerTy()) {
-                Function *F            = A->getParent();
+                Function *F = A->getParent();
                 const FunctionType *FT = F->getFunctionType();
 
                 bool checks = true;
@@ -546,7 +546,7 @@ const DataLayout *TD;
 #else
         if (Base->getType()->isPointerTy()) {
             if (Argument *A = dyn_cast<Argument>(Base)) {
-                Function *F            = A->getParent();
+                Function *F = A->getParent();
                 const FunctionType *FT = F->getFunctionType();
 
                 bool checks = true;
@@ -574,17 +574,17 @@ const DataLayout *TD;
         if (PHINode *PN = dyn_cast<PHINode>(Base)) {
             BasicBlock::iterator It = PN;
             ++It;
-            PHINode *newPN  = PHINode::Create(I64Ty, HINT(PN->getNumIncomingValues()) ".verif.bounds", &*It);
-            Changed         = true;
+            PHINode *newPN = PHINode::Create(I64Ty, HINT(PN->getNumIncomingValues()) ".verif.bounds", &*It);
+            Changed = true;
             BoundsMap[Base] = newPN;
 
             bool good = true;
             for (unsigned i = 0; i < PN->getNumIncomingValues(); i++) {
                 Value *Inc = PN->getIncomingValue(i);
-                Value *B   = getPointerBounds(Inc);
+                Value *B = getPointerBounds(Inc);
                 if (!B) {
                     good = false;
-                    B    = ConstantInt::get(newPN->getType(), 0);
+                    B = ConstantInt::get(newPN->getType(), 0);
                     DEBUG(dbgs() << "bounds not found while solving phi node: " << *Inc
                                  << "\n");
                 }
@@ -597,12 +597,12 @@ const DataLayout *TD;
         if (SelectInst *SI = dyn_cast<SelectInst>(Base)) {
             BasicBlock::iterator It = SI;
             ++It;
-            Value *TrueB  = getPointerBounds(SI->getTrueValue());
+            Value *TrueB = getPointerBounds(SI->getTrueValue());
             Value *FalseB = getPointerBounds(SI->getFalseValue());
             if (TrueB && FalseB) {
-                SelectInst *NewSI      = SelectInst::Create(SI->getCondition(), TrueB,
-                                                            FalseB, ".select.bounds", &*It);
-                Changed                = true;
+                SelectInst *NewSI = SelectInst::Create(SI->getCondition(), TrueB,
+                                                       FalseB, ".select.bounds", &*It);
+                Changed = true;
                 return BoundsMap[Base] = NewSI;
             }
         }
@@ -612,7 +612,7 @@ const DataLayout *TD;
         if (!V) {
             Base = Base->stripPointerCasts();
             if (CallInst *CI = dyn_cast<CallInst>(Base)) {
-                Function *F            = CI->getCalledFunction();
+                Function *F = CI->getCalledFunction();
                 constFunctionType *FTy = F->getFunctionType();
                 // last operand is always size for this API call kind
                 if (F->isDeclaration() && FTy->getNumParams() > 0) {
@@ -627,10 +627,10 @@ const DataLayout *TD;
             unsigned size = TD->getTypeAllocSize(Ty);
             if (size > 1) {
                 Constant *C = cast<Constant>(V);
-                C           = ConstantExpr::getMul(C,
-                                                   ConstantInt::get(Type::getInt32Ty(C->getContext()),
-                                                                    size));
-                V           = C;
+                C = ConstantExpr::getMul(C,
+                                         ConstantInt::get(Type::getInt32Ty(C->getContext()),
+                                                          size));
+                V = C;
             }
         }
         if (V->getType() != I64Ty) {
@@ -638,7 +638,7 @@ const DataLayout *TD;
                 V = ConstantExpr::getZExt(C, I64Ty);
             else {
                 Instruction *I = getInsertPoint(V);
-                V              = new ZExtInst(V, I64Ty, "", I);
+                V = new ZExtInst(V, I64Ty, "", I);
             }
         }
         return BoundsMap[Base] = V;
@@ -651,7 +651,7 @@ const DataLayout *TD;
             return Dbg;
         if (!MDDbgKind)
             return 0;
-        Approximate             = true;
+        Approximate = true;
         BasicBlock::iterator It = I;
         while (It != I->getParent()->begin()) {
             --It;
@@ -687,9 +687,9 @@ const DataLayout *TD;
             errs() << "Could not compute limit: " << *I << "\n";
             return false;
         }
-        BasicBlock *BB          = I->getParent();
+        BasicBlock *BB = I->getParent();
         BasicBlock::iterator It = I;
-        BasicBlock *newBB       = SplitBlock(BB, &*It, this);
+        BasicBlock *newBB = SplitBlock(BB, &*It, this);
         PHINode *PN;
         unsigned MDDbgKind = I->getContext().getMDKindID("dbg");
         // verifyFunction(*BB->getParent());
@@ -698,10 +698,10 @@ const DataLayout *TD;
             FunctionType *abrtTy = FunctionType::get(Type::getVoidTy(BB->getContext()), args, false);
             args.push_back(Type::getInt32Ty(BB->getContext()));
             FunctionType *rterrTy = FunctionType::get(Type::getInt32Ty(BB->getContext()), args, false);
-            Constant *func_abort  = BB->getParent()->getParent()->getOrInsertFunction("abort", abrtTy);
-            Constant *func_rterr  = BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error",
-                                                                                      rterrTy);
-            AbrtBB                = BasicBlock::Create(BB->getContext(), "rterr.trig", BB->getParent());
+            Constant *func_abort = BB->getParent()->getParent()->getOrInsertFunction("abort", abrtTy);
+            Constant *func_rterr = BB->getParent()->getParent()->getOrInsertFunction("bytecode_rt_error",
+                                                                                     rterrTy);
+            AbrtBB = BasicBlock::Create(BB->getContext(), "rterr.trig", BB->getParent());
 
             PN = PHINode::Create(Type::getInt32Ty(BB->getContext()), HINT(1) "",
                                  AbrtBB);
@@ -735,7 +735,7 @@ const DataLayout *TD;
         bool Approximate;
         if (MDNode *Dbg = getLocation(I, Approximate, MDDbgKind)) {
             DILocation Loc(Dbg);
-            locationid   = Loc.getLineNumber() << 8;
+            locationid = Loc.getLineNumber() << 8;
             unsigned col = Loc.getColumnNumber();
             if (col > 254)
                 col = 254;
@@ -747,8 +747,8 @@ const DataLayout *TD;
                                          locationid),
                         BB);
         TerminatorInst *TI = BB->getTerminator();
-        Value *IdxV        = expander->expandCodeFor(Idx, Limit->getType(), TI);
-        Value *LimitV      = expander->expandCodeFor(Limit, Limit->getType(), TI);
+        Value *IdxV = expander->expandCodeFor(Idx, Limit->getType(), TI);
+        Value *LimitV = expander->expandCodeFor(Limit, Limit->getType(), TI);
         if (isa<Instruction>(IdxV) &&
             !DT->dominates(cast<Instruction>(IdxV)->getParent(), I->getParent())) {
             printLocation(I, true);
@@ -887,13 +887,13 @@ const DataLayout *TD;
 
         constType *I64Ty =
             Type::getInt64Ty(Base->getContext());
-        const SCEV *SLen    = SE->getSCEV(Length);
+        const SCEV *SLen = SE->getSCEV(Length);
         const SCEV *OffsetP = SE->getMinusSCEV(SE->getSCEV(Pointer),
                                                SE->getSCEV(Base));
-        SLen                = SE->getNoopOrZeroExtend(SLen, I64Ty);
-        OffsetP             = SE->getNoopOrZeroExtend(OffsetP, I64Ty);
-        const SCEV *Limit   = SE->getSCEV(Bounds);
-        Limit               = SE->getNoopOrZeroExtend(Limit, I64Ty);
+        SLen = SE->getNoopOrZeroExtend(SLen, I64Ty);
+        OffsetP = SE->getNoopOrZeroExtend(OffsetP, I64Ty);
+        const SCEV *Limit = SE->getSCEV(Bounds);
+        Limit = SE->getNoopOrZeroExtend(Limit, I64Ty);
 
         DEBUG(dbgs() << "Checking access to " << *Pointer << " of length " << *Length << "\n");
         if (OffsetP == Limit) {
@@ -919,7 +919,7 @@ const DataLayout *TD;
         }
 
         bool valid = true;
-        SLen       = SE->getAddExpr(OffsetP, SLen);
+        SLen = SE->getAddExpr(OffsetP, SLen);
         // check that offset + slen <= limit;
         // umax(offset+slen, limit) == limit is a sufficient (but not necessary
         // condition)

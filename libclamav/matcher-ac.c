@@ -99,7 +99,7 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         cli_errmsg("cli_ac_addpatt: Can't allocate memory for list node\n");
         return CL_EMEM;
     }
-    new->me   = pattern;
+    new->me = pattern;
     new->node = pt;
 
     root->ac_lists++;
@@ -111,7 +111,7 @@ static inline int insert_list(struct cli_matcher *root, struct cli_ac_patt *patt
         return CL_EMEM;
     }
 
-    root->ac_listtable                     = newtable;
+    root->ac_listtable = newtable;
     root->ac_listtable[root->ac_lists - 1] = new;
     return CL_SUCCESS;
 }
@@ -249,14 +249,14 @@ static inline void link_node_lists(struct cli_ac_list **listtable, unsigned int 
             prev = listtable[i];
             if (i != nheads) {
                 /* Move heads towards the beginning of the table */
-                listtable[i]      = listtable[nheads];
+                listtable[i] = listtable[nheads];
                 listtable[nheads] = prev;
             }
             nheads++;
         } else {
             prev->next_same = listtable[i];
-            prev->next      = NULL;
-            prev            = listtable[i];
+            prev->next = NULL;
+            prev = listtable[i];
         }
     }
 
@@ -286,7 +286,7 @@ static void link_lists(struct cli_matcher *root)
             link_node_lists(&root->ac_listtable[i - grouplen], grouplen);
             if (i < root->ac_lists) {
                 grouplen = 0;
-                curnode  = root->ac_listtable[i]->node;
+                curnode = root->ac_listtable[i]->node;
             }
         }
     }
@@ -323,7 +323,7 @@ static inline struct cli_ac_node *add_new_node(struct cli_matcher *root, uint16_
         return NULL;
     }
 
-    root->ac_nodetable                     = newtable;
+    root->ac_nodetable = newtable;
     root->ac_nodetable[root->ac_nodes - 1] = new;
 
     return new;
@@ -403,7 +403,7 @@ cl_error_t cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
         return CL_EMEM;
     }
 
-    root->ac_pattable                        = newtable;
+    root->ac_pattable = newtable;
     root->ac_pattable[root->ac_patterns - 1] = pattern;
 
     pattern->depth = len;
@@ -431,7 +431,7 @@ static int bfs_enqueue(struct bfs_list **bfs, struct bfs_list **last, struct cli
 
     if (*last) {
         (*last)->next = new;
-        *last         = new;
+        *last = new;
     } else {
         *bfs = *last = new;
     }
@@ -448,7 +448,7 @@ static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs, struct bfs_list **
         return NULL;
     } else {
         *bfs = (*bfs)->next;
-        pt   = lpt->node;
+        pt = lpt->node;
 
         if (lpt == *last)
             *last = NULL;
@@ -524,7 +524,7 @@ static int ac_maketrans(struct cli_matcher *root)
                 while (IS_LEAF(failtarget) || !failtarget->trans[i])
                     failtarget = failtarget->fail;
 
-                failtarget     = failtarget->trans[i];
+                failtarget = failtarget->trans[i];
                 node->trans[i] = failtarget;
             } else if (IS_FINAL(child) && IS_LEAF(child)) {
                 struct cli_ac_list *list;
@@ -724,17 +724,17 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
             case '>':
             case '<':
             case '=':
-                mod    = expr[i];
+                mod = expr[i];
                 modoff = i;
                 break;
 
             default:
                 if (strchr("&|", expr[i])) {
                     if (!pth) {
-                        op    = expr[i];
+                        op = expr[i];
                         opoff = i;
                     } else if (pth == 1) {
-                        op1    = expr[i];
+                        op1 = expr[i];
                         op1off = i;
                     }
                 }
@@ -789,7 +789,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
             val = lsigcnt[id];
 
         if (mod) {
-            pt  = expr + modoff + 1;
+            pt = expr + modoff + 1;
             ret = sscanf(pt, "%u", &modval1);
             if (!ret || ret == EOF) {
                 cli_errmsg("chklexpr: Syntax error: Missing number after '%c'\n", mod);
@@ -834,7 +834,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
 
     if (!op) {
-        op    = op1;
+        op = op1;
         opoff = op1off;
         lstart++;
         rend = &expr[blkend];
@@ -1031,7 +1031,7 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
     uint16_t wc;
     uint32_t subbp;
     struct cli_ac_special *special = pattern->special_table[specialcnt];
-    struct cli_alt_node *alt       = NULL;
+    struct cli_alt_node *alt = NULL;
 
     match = special->negative;
 
@@ -1162,12 +1162,12 @@ static int ac_backward_match_branch(const unsigned char *buffer, uint32_t bp, ui
             bp--;
         }
 
-        *start    = bp;
+        *start = bp;
         filestart = fileoffset - offset + bp;
     } else {
         /* bp is set to buffer offset */
         *start = bp = offset;
-        filestart   = fileoffset;
+        filestart = fileoffset;
     }
 
     /* left-side special checks, bp = start */
@@ -1412,7 +1412,7 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsig_matches\n");
             return CL_EMEM;
         }
-        data->lsigsuboff_last  = (uint32_t **)cli_malloc(lsigs * sizeof(uint32_t *));
+        data->lsigsuboff_last = (uint32_t **)cli_malloc(lsigs * sizeof(uint32_t *));
         data->lsigsuboff_first = (uint32_t **)cli_malloc(lsigs * sizeof(uint32_t *));
         if (!data->lsigsuboff_last || !data->lsigsuboff_first) {
             free(data->lsig_matches);
@@ -1430,7 +1430,7 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigsuboff_(last|first)\n");
             return CL_EMEM;
         }
-        data->lsigsuboff_last[0]  = (uint32_t *)cli_calloc(lsigs * 64, sizeof(uint32_t));
+        data->lsigsuboff_last[0] = (uint32_t *)cli_calloc(lsigs * 64, sizeof(uint32_t));
         data->lsigsuboff_first[0] = (uint32_t *)cli_calloc(lsigs * 64, sizeof(uint32_t));
         if (!data->lsigsuboff_last[0] || !data->lsigsuboff_first[0]) {
             free(data->lsig_matches);
@@ -1451,14 +1451,14 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
             return CL_EMEM;
         }
         for (j = 0; j < 64; j++) {
-            data->lsigsuboff_last[0][j]  = CLI_OFF_NONE;
+            data->lsigsuboff_last[0][j] = CLI_OFF_NONE;
             data->lsigsuboff_first[0][j] = CLI_OFF_NONE;
         }
         for (i = 1; i < lsigs; i++) {
-            data->lsigsuboff_last[i]  = data->lsigsuboff_last[0] + 64 * i;
+            data->lsigsuboff_last[i] = data->lsigsuboff_last[0] + 64 * i;
             data->lsigsuboff_first[i] = data->lsigsuboff_first[0] + 64 * i;
             for (j = 0; j < 64; j++) {
-                data->lsigsuboff_last[i][j]  = CLI_OFF_NONE;
+                data->lsigsuboff_last[i][j] = CLI_OFF_NONE;
                 data->lsigsuboff_first[i][j] = CLI_OFF_NONE;
             }
         }
@@ -1511,7 +1511,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
         }
         free(data->offmatrix);
         data->offmatrix = NULL;
-        data->partsigs  = 0;
+        data->partsigs = 0;
     }
 
     if (data->lsigs) {
@@ -1566,7 +1566,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
         return CL_EMEM;
     }
 
-    tnode->type   = type;
+    tnode->type = type;
     tnode->offset = offset;
 
     tnode_last = *list;
@@ -1590,7 +1590,7 @@ void lsig_increment_subsig_match(struct cli_ac_data *mdata, uint32_t lsig_id, ui
 cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t lsig_id, uint32_t subsig_id, uint32_t realoff, int partial)
 {
     const struct cli_ac_lsig *ac_lsig = root->ac_lsigtable[lsig_id];
-    const struct cli_lsig_tdb *tdb    = &ac_lsig->tdb;
+    const struct cli_lsig_tdb *tdb = &ac_lsig->tdb;
 
     if (realoff != CLI_OFF_NONE) {
         if (mdata->lsigsuboff_first[lsig_id][subsig_id] == CLI_OFF_NONE) {
@@ -1679,9 +1679,9 @@ cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *
          */
         id = tdb->macro_ptids[subsig_id];
 
-        macropt        = root->ac_pattable[id];
-        smin           = macropt->ch_mindist[0];
-        smax           = macropt->ch_maxdist[0];
+        macropt = root->ac_pattable[id];
+        smin = macropt->ch_mindist[0];
+        smax = macropt->ch_maxdist[0];
         macro_group_id = macropt->sigid;
 
         /* start of last macro match */
@@ -1767,11 +1767,11 @@ cl_error_t cli_ac_scanbuff(
 
         if (UNLIKELY(IS_FINAL(current))) {
             struct cli_ac_list *faillist = current->fail->list;
-            pattN                        = current->list;
+            pattN = current->list;
             while (pattN) {
                 patt = pattN->me;
                 if (patt->partno > mdata->min_partno) {
-                    pattN    = faillist;
+                    pattN = faillist;
                     faillist = NULL;
                     continue;
                 }
@@ -1817,7 +1817,7 @@ cl_error_t cli_ac_scanbuff(
                             cli_dbgmsg("cli_ac_scanbuff: VI match for offset %x\n", realoff);
                         } else if (pt->offdata[0] == CLI_OFF_MACRO) {
                             mdata->macro_lastmatch[patt->offdata[1]] = realoff;
-                            ptN                                      = ptN->next_same;
+                            ptN = ptN->next_same;
                             continue;
                         } else if (pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
                             if (pt->offset_min == CLI_OFF_NONE) {
@@ -1866,7 +1866,7 @@ cl_error_t cli_ac_scanbuff(
                                 memset(mdata->offmatrix[pt->sigid - 1][0], (uint32_t)-1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 2) * sizeof(uint32_t));
                                 mdata->offmatrix[pt->sigid - 1][0][0] = 0;
                                 for (j = 1; j < pt->parts; j++) {
-                                    mdata->offmatrix[pt->sigid - 1][j]    = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 2);
+                                    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 2);
                                     mdata->offmatrix[pt->sigid - 1][j][0] = 0;
                                 }
                             }
@@ -1893,13 +1893,13 @@ cl_error_t cli_ac_scanbuff(
                             }
 
                             if (pt->partno == 2 && found > 1) {
-                                swp                 = offmatrix[0][1];
-                                offmatrix[0][1]     = offmatrix[0][found];
+                                swp = offmatrix[0][1];
+                                offmatrix[0][1] = offmatrix[0][found];
                                 offmatrix[0][found] = swp;
 
                                 if (pt->type != CL_TYPE_MSEXE) {
-                                    swp                             = offmatrix[pt->parts - 1][1];
-                                    offmatrix[pt->parts - 1][1]     = offmatrix[pt->parts - 1][found];
+                                    swp = offmatrix[pt->parts - 1][1];
+                                    offmatrix[pt->parts - 1][1] = offmatrix[pt->parts - 1][found];
                                     offmatrix[pt->parts - 1][found] = swp;
                                 }
                             }
@@ -1952,11 +1952,11 @@ cl_error_t cli_ac_scanbuff(
                                             cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", (unsigned long)sizeof(struct cli_ac_result));
                                             return CL_EMEM;
                                         }
-                                        newres->virname    = pt->virname;
+                                        newres->virname = pt->virname;
                                         newres->customdata = pt->customdata;
-                                        newres->next       = *res;
-                                        newres->offset     = (off_t)offmatrix[pt->parts - 1][1];
-                                        *res               = newres;
+                                        newres->next = *res;
+                                        newres->offset = (off_t)offmatrix[pt->parts - 1][1];
+                                        *res = newres;
 
                                         ptN = ptN->next_same;
                                         continue;
@@ -2009,11 +2009,11 @@ cl_error_t cli_ac_scanbuff(
                                         cli_errmsg("cli_ac_scanbuff: Can't allocate memory for newres %lu\n", (unsigned long)sizeof(struct cli_ac_result));
                                         return CL_EMEM;
                                     }
-                                    newres->virname    = pt->virname;
+                                    newres->virname = pt->virname;
                                     newres->customdata = pt->customdata;
-                                    newres->offset     = (off_t)realoff;
-                                    newres->next       = *res;
-                                    *res               = newres;
+                                    newres->offset = (off_t)realoff;
+                                    newres->next = *res;
+                                    *res = newres;
 
                                     ptN = ptN->next_same;
                                     continue;
@@ -2271,8 +2271,8 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
         return CL_EMALFDB;
     }
 
-    newnode->str    = s;
-    newnode->len    = (uint16_t)strlen(subexpr) / 2;
+    newnode->str = s;
+    newnode->len = (uint16_t)strlen(subexpr) / 2;
     newnode->unique = 1;
 
     /* setting nocase match */
@@ -2286,13 +2286,13 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
 
     /* search for uniqueness, TODO: directed acyclic word graph */
     prev = &((special->alt).v_str);
-    ins  = (special->alt).v_str;
+    ins = (special->alt).v_str;
     while (ins) {
         cmp = ac_uicmp(ins->str, ins->len, newnode->str, newnode->len, &wild);
         if (cmp == 0) {
             if (newnode->len != ins->len) { /* derivative */
                 newnode->unique = 0;
-                ins->unique     = 0;
+                ins->unique = 0;
             } else if (wild == 0) { /* duplicate */
                 MPOOL_FREE(root->mempool, newnode);
                 return CL_SUCCESS;
@@ -2300,10 +2300,10 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
         } /* TODO - possible sorting of altstr uniques and derivative groups? */
 
         prev = &(ins->next);
-        ins  = ins->next;
+        ins = ins->next;
     }
 
-    *prev         = newnode;
+    *prev = newnode;
     newnode->next = ins;
     if ((special->num == 0) || (newnode->len < special->len[0]))
         special->len[0] = newnode->len;
@@ -2321,7 +2321,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
     char *fp;
 
     ept = sexpr = hexpr;
-    fp          = subexpr + strlen(subexpr);
+    fp = subexpr + strlen(subexpr);
 
     numexpr = ac_analyze_expr(hexpr, NULL, NULL);
 
@@ -2348,7 +2348,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
         }
 
         *ept++ = term;
-        sexpr  = ept;
+        sexpr = ept;
 
         if (term == '|') {
             if (lvl == 0) {
@@ -2389,7 +2389,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 return ret;
 
             /* move ept to end of current alternate expression (recursive call already populates them) */
-            ept   = end;
+            ept = end;
             inner = 0;
             found = 0;
             while (!found && *ept != '\0') {
@@ -2411,7 +2411,7 @@ static int ac_special_altexpand(char *hexpr, char *subexpr, uint16_t maxlen, int
                 ept++;
 
             sexpr = ept;
-            *fp   = 0;
+            *fp = 0;
         } else if (term == '\0') {
             if ((ret = ac_addspecial_add_alt_node(subexpr, sigopts, special, root)) != CL_SUCCESS)
                 return ret;
@@ -2443,11 +2443,11 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
     num = ac_analyze_expr(hexprcpy, &fixed, &slen);
 
     if (!sigopts && fixed) {
-        special->num    = 0;
+        special->num = 0;
         special->len[0] = special->len[1] = slen / 2;
         /* single-bytes are len 2 in hex */
         if (slen == 2) {
-            special->type       = AC_SPECIAL_ALT_CHAR;
+            special->type = AC_SPECIAL_ALT_CHAR;
             (special->alt).byte = (unsigned char *)MPOOL_MALLOC(root->mempool, num);
             if (!((special->alt).byte)) {
                 cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
@@ -2455,7 +2455,7 @@ inline static int ac_special_altstr(const char *hexpr, uint8_t sigopts, struct c
                 return CL_EMEM;
             }
         } else {
-            special->type        = AC_SPECIAL_ALT_STR_FIXED;
+            special->type = AC_SPECIAL_ALT_STR_FIXED;
             (special->alt).f_str = (unsigned char **)MPOOL_MALLOC(root->mempool, num * sizeof(unsigned char *));
             if (!((special->alt).f_str)) {
                 cli_errmsg("cli_ac_special_altstr: Can't allocate newspecial->str\n");
@@ -2546,13 +2546,13 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if ((new = (struct cli_ac_patt *)MPOOL_CALLOC(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
         return CL_EMEM;
 
-    new->rtype      = rtype;
-    new->type       = type;
-    new->sigid      = sigid;
-    new->parts      = parts;
-    new->partno     = partno;
-    new->mindist    = mindist;
-    new->maxdist    = maxdist;
+    new->rtype = rtype;
+    new->type = type;
+    new->sigid = sigid;
+    new->parts = parts;
+    new->partno = partno;
+    new->mindist = mindist;
+    new->maxdist = maxdist;
     new->customdata = NULL;
     new->ch[0] |= CLI_MATCH_IGNORE;
     new->ch[1] |= CLI_MATCH_IGNORE;
@@ -2618,9 +2618,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 free(dec);
                 new->ch_mindist[i] = n1;
                 new->ch_maxdist[i] = n2;
-                hex                = pt2;
+                hex = pt2;
             } else if (strlen(pt2) == 2) {
-                i   = 1;
+                i = 1;
                 dec = cli_hex2ui(pt2);
                 if (!dec) {
                     error = CL_EMALFDB;
@@ -2690,7 +2690,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             if (pt >= hexcpy + 2) {
                 if (pt[-2] == '!') {
                     newspecial->negative = 1;
-                    pt[-2]               = 0;
+                    pt[-2] = 0;
                 }
             }
             cli_strlcat(hexnew, start, hexnewsz);
@@ -2779,7 +2779,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                 break;
             }
             newtable[new->special - 1] = newspecial;
-            new->special_table         = newtable;
+            new->special_table = newtable;
 
             if (!strcmp(pt, "B")) {
                 newspecial->type = AC_SPECIAL_BOUNDARY;
@@ -2886,7 +2886,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
                         break;
                     } else if (plen >= root->ac_mindepth && plen > nzplen) {
                         nzplen = plen;
-                        nzpos  = ppos;
+                        nzpos = ppos;
                     }
                 }
             }
@@ -2908,7 +2908,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        new->prefix           = new->pattern;
+        new->prefix = new->pattern;
         new->prefix_length[0] = ppos;
         for (i = 0, j = 0; i < new->prefix_length[0]; i++) {
             if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
@@ -2979,8 +2979,8 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         }
 
         root->ac_reloff[root->ac_reloff_num] = new;
-        new->offset_min                      = root->ac_reloff_num * 2;
-        new->offset_max                      = new->offset_min + 1;
+        new->offset_min = root->ac_reloff_num * 2;
+        new->offset_max = new->offset_min + 1;
         root->ac_reloff_num++;
     }
 

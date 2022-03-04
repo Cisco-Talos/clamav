@@ -93,7 +93,7 @@ cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **
         /* No match. Add new md5 to list */
         const char HEX[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-        m        = &U->md5s[U->items];
+        m = &U->md5s[U->items];
         m->count = 0;
 
         if (U->items && U->md5s[U->idx[*digest]].md5[0] == *digest)
@@ -104,9 +104,9 @@ cl_error_t uniq_add(struct uniq *U, const char *item, uint32_t item_len, char **
         U->idx[*digest] = U->items;
 
         for (i = 0; i < 16; i++) {
-            m->name[i * 2]     = HEX[digest[i] >> 4 & 0xf];
+            m->name[i * 2] = HEX[digest[i] >> 4 & 0xf];
             m->name[i * 2 + 1] = HEX[digest[i] & 0xf];
-            m->md5[i]          = digest[i];
+            m->md5[i] = digest[i];
         }
         m->name[32] = '\0';
 
@@ -137,7 +137,7 @@ cl_error_t uniq_get(struct uniq *U, const char *item, uint32_t item_len, char **
     cl_error_t status = CL_EARG;
     uint8_t digest[16];
     struct UNIQMD5 *m = NULL;
-    uint32_t idx      = 0;
+    uint32_t idx = 0;
 
     if (!U || !count) {
         /* Invalid args */
@@ -159,7 +159,7 @@ cl_error_t uniq_get(struct uniq *U, const char *item, uint32_t item_len, char **
 
     /* Get the md5s array index for the bucket list head. */
     idx = U->idx[*digest];
-    m   = &U->md5s[idx];
+    m = &U->md5s[idx];
 
     if (m->md5[0] != *digest) {
         /*

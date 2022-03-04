@@ -58,8 +58,8 @@ static const xmlChar *openioc_read(xmlTextReaderPtr reader)
 static int openioc_is_context_hash(xmlTextReaderPtr reader)
 {
     xmlChar *document = xmlTextReaderGetAttribute(reader, (const xmlChar *)"document");
-    xmlChar *search   = xmlTextReaderGetAttribute(reader, (const xmlChar *)"search");
-    int rc            = 0;
+    xmlChar *search = xmlTextReaderGetAttribute(reader, (const xmlChar *)"search");
+    int rc = 0;
 
     if ((document != NULL && search != NULL) &&
         !xmlStrcmp(document, (const xmlChar *)"FileItem") &&
@@ -107,7 +107,7 @@ static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash **
             }
             elem->hash = xmlStrdup(xmlval);
             elem->next = *elems;
-            *elems     = elem;
+            *elems = elem;
         } else {
             cli_dbgmsg("openioc_parse: xmlTextReaderConstValue() returns NULL for Content md5 value.\n");
         }
@@ -120,7 +120,7 @@ static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash **
 static int openioc_parse_indicatoritem(xmlTextReaderPtr reader, struct openioc_hash **elems)
 {
     const xmlChar *name;
-    int rc           = CL_SUCCESS;
+    int rc = CL_SUCCESS;
     int context_hash = 0;
 
     while (1) {
@@ -246,9 +246,9 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
         char *hash, *vp;
         int i, hashlen;
 
-        elem  = elems;
+        elem = elems;
         elems = elems->next;
-        hash  = (char *)(elem->hash);
+        hash = (char *)(elem->hash);
         while (isspace(*hash))
             hash++;
         hashlen = strlen(hash);
@@ -293,14 +293,14 @@ int openioc_parse(const char *fname, int fd, struct cl_engine *engine, unsigned 
             }
         }
         *vp++ = '.';
-        sp    = hash;
+        sp = hash;
         for (i = 0; i < hashlen; i++, sp++) {
             if (isxdigit(*sp)) {
                 *vp++ = *sp;
             }
         }
 
-        vp        = virusname;
+        vp = virusname;
         virusname = CLI_MPOOL_VIRNAME(engine->mempool, virusname, options & CL_DB_OFFICIAL);
         if (!(virusname)) {
             cli_dbgmsg("openioc_parse: MPOOL_MALLOC for virname memory failed.\n");

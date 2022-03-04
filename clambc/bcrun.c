@@ -119,7 +119,7 @@ static void tracehook(struct cli_bc_ctx *ctx, unsigned event)
     }
     dbg_state.file = ctx->file;
     dbg_state.line = ctx->line;
-    dbg_state.col  = ctx->col;
+    dbg_state.col = ctx->col;
 }
 
 static void tracehook_op(struct cli_bc_ctx *ctx, const char *op)
@@ -177,7 +177,7 @@ static void print_src(const char *file)
         }
         if (i == nread - 1 && nread != 1)
             fseek(f, -1, SEEK_CUR);
-        i     = 0;
+        i = 0;
         nread = fread(buf, 1, sizeof(buf), f);
     } while (nread > 0);
     fclose(f);
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
     }
 
     bcs.all_bcs = bc;
-    bcs.count   = 1;
+    bcs.count = 1;
 
     if ((opt = optget(opts, "statistics"))->enabled) {
         while (opt) {
@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
     } else {
         cli_ctx cctx;
         struct cl_engine *engine = cl_engine_new();
-        fmap_t *map              = NULL;
+        fmap_t *map = NULL;
         memset(&cctx, 0, sizeof(cctx));
 
         if (!engine) {
@@ -393,11 +393,11 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Out of memory\n");
             exit(3);
         }
-        ctx->ctx    = &cctx;
+        ctx->ctx = &cctx;
         cctx.engine = engine;
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-        cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+        cctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
         if (!cctx.recursion_stack) {
             fprintf(stderr, "Out of memory\n");
             exit(3);
@@ -411,11 +411,11 @@ int main(int argc, char *argv[])
         cctx.fmap = cctx.recursion_stack[cctx.recursion_level].fmap;
 
         memset(&dbg_state, 0, sizeof(dbg_state));
-        dbg_state.file     = "<libclamav>";
-        dbg_state.line     = 0;
-        dbg_state.col      = 0;
+        dbg_state.file = "<libclamav>";
+        dbg_state.line = 0;
+        dbg_state.col = 0;
         dbg_state.showline = !optget(opts, "no-trace-showsource")->enabled;
-        tracelevel         = optget(opts, "trace")->numarg;
+        tracelevel = optget(opts, "trace")->numarg;
         cli_bytecode_context_set_trace(ctx, tracelevel,
                                        tracehook,
                                        tracehook_op,
@@ -460,9 +460,9 @@ int main(int argc, char *argv[])
             }
         }
         /* for testing */
-        ctx->hooks.match_counts  = deadbeefcounts;
+        ctx->hooks.match_counts = deadbeefcounts;
         ctx->hooks.match_offsets = deadbeefcounts;
-        rc                       = cli_bytecode_run(&bcs, bc, ctx);
+        rc = cli_bytecode_run(&bcs, bc, ctx);
         if (rc != CL_SUCCESS) {
             fprintf(stderr, "Unable to run bytecode: %s\n", cl_strerror(rc));
         } else {

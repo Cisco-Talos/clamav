@@ -69,8 +69,8 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* convert driver description map big-endian to host */
-    ddm.signature  = be16_to_host(ddm.signature);
-    ddm.blockSize  = be16_to_host(ddm.blockSize);
+    ddm.signature = be16_to_host(ddm.signature);
+    ddm.blockSize = be16_to_host(ddm.blockSize);
     ddm.blockCount = be32_to_host(ddm.blockCount);
 
     /* check DDM signature */
@@ -113,10 +113,10 @@ int cli_scanapm(cli_ctx *ctx)
     }
 
     /* convert partition table big endian to host */
-    aptable.signature     = be16_to_host(aptable.signature);
+    aptable.signature = be16_to_host(aptable.signature);
     aptable.numPartitions = be32_to_host(aptable.numPartitions);
-    aptable.pBlockStart   = be32_to_host(aptable.pBlockStart);
-    aptable.pBlockCount   = be32_to_host(aptable.pBlockCount);
+    aptable.pBlockStart = be32_to_host(aptable.pBlockStart);
+    aptable.pBlockCount = be32_to_host(aptable.pBlockCount);
 
     /* check the partition entry signature */
     if (aptable.signature != APM_SIGNATURE) {
@@ -171,11 +171,11 @@ int cli_scanapm(cli_ctx *ctx)
         }
 
         /* convert partition entry big endian to host */
-        apentry.signature     = be16_to_host(apentry.signature);
-        apentry.reserved      = be16_to_host(apentry.reserved);
+        apentry.signature = be16_to_host(apentry.signature);
+        apentry.reserved = be16_to_host(apentry.reserved);
         apentry.numPartitions = be32_to_host(apentry.numPartitions);
-        apentry.pBlockStart   = be32_to_host(apentry.pBlockStart);
-        apentry.pBlockCount   = be32_to_host(apentry.pBlockCount);
+        apentry.pBlockStart = be32_to_host(apentry.pBlockStart);
+        apentry.pBlockCount = be32_to_host(apentry.pBlockCount);
 
         /* check the partition entry signature */
         if (aptable.signature != APM_SIGNATURE) {
@@ -192,7 +192,7 @@ int cli_scanapm(cli_ctx *ctx)
             continue;
         }
 
-        partoff  = apentry.pBlockStart * sectorsize;
+        partoff = apentry.pBlockStart * sectorsize;
         partsize = apentry.pBlockCount * sectorsize;
         /* re-calculate if old_school and aligned [512 * 4 => 2048] */
         if (old_school && ((i % 4) == 0)) {
@@ -247,7 +247,7 @@ static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *a
     int ret = CL_CLEAN, tmp = CL_CLEAN;
     size_t pos;
     uint32_t max_prtns = 0;
-    int virus_found    = 0;
+    int virus_found = 0;
 
     partition_intersection_list_init(&prtncheck);
 

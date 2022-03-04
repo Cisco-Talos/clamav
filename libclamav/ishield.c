@@ -223,7 +223,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
         }
         off += sizeof(fb);
         fb.fname[sizeof(fb.fname) - 1] = '\0';
-        csize                          = le64_to_host(fb.csize);
+        csize = le64_to_host(fb.csize);
         if (!CLI_ISCONTAINED_0_TO(map->len, off, csize)) {
             cli_dbgmsg("ishield-msi: next stream is out of file, giving up\n");
             return CL_CLEAN;
@@ -271,7 +271,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
             off += z.avail_in;
             for (i = 0; i < z.avail_in; i++, lameidx++) {
                 uint8_t c = buf2[i];
-                c         = (c >> 4) | (c << 4);
+                c = (c >> 4) | (c << 4);
                 c ^= key[(lameidx & 0x3ff) % keylen];
                 buf2[i] = c;
             }
@@ -280,8 +280,8 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
             do {
                 int inf;
                 z.avail_out = sizeof(obuf);
-                z.next_out  = obuf;
-                inf         = inflate(&z, 0);
+                z.next_out = obuf;
+                inf = inflate(&z, 0);
                 if (inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
                     cli_dbgmsg("ishield-msi: bad stream\n");
                     csize = 0;
@@ -289,7 +289,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off)
                     break;
                 }
                 if (cli_writen(ofd, obuf, sizeof(obuf) - z.avail_out) == (size_t)-1) {
-                    ret   = CL_EWRITE;
+                    ret = CL_EWRITE;
                     csize = 0;
                     break;
                 }
@@ -360,11 +360,11 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
     char *eostr;
     int ret = CL_CLEAN;
     long fsize;
-    off_t coff           = off;
+    off_t coff = off;
     struct IS_CABSTUFF c = {NULL, -1, 0, 0};
-    fmap_t *map          = ctx->fmap;
-    unsigned fc          = 0;
-    int virus_found      = 0;
+    fmap_t *map = ctx->fmap;
+    unsigned fc = 0;
+    int virus_found = 0;
 
     while (ret == CL_CLEAN) {
         fname = fmap_need_offstr(map, coff, 2048);
@@ -397,7 +397,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
                 ret = CL_VIRUS;
                 break;
             }
-            ret         = CL_CLEAN;
+            ret = CL_CLEAN;
             virus_found = 1;
         }
         sz -= (data - fname) + fsize;
@@ -407,7 +407,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
             if (!strcasecmp(fname + 4, "1.hdr")) {
                 if (c.hdr == -1) {
                     cli_dbgmsg("ishield: added data1.hdr to array\n");
-                    c.hdr   = coff;
+                    c.hdr = coff;
                     c.hdrsz = fsize;
                     coff += fsize;
                     continue;
@@ -427,8 +427,8 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
                     }
                     cli_dbgmsg("ishield: added data%lu.cab to array\n", cabno);
                     c.cabs[i].cabno = cabno;
-                    c.cabs[i].off   = coff;
-                    c.cabs[i].sz    = fsize;
+                    c.cabs[i].off = coff;
+                    c.cabs[i].sz = fsize;
                     coff += fsize;
                     continue;
                 }
@@ -533,9 +533,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
         cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
         return CL_CLEAN;
     }
-    hdr         = (char *)h1;
+    hdr = (char *)h1;
     h1_data_off = le32_to_host(h1->data_off);
-    objs        = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
+    objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
     if (!objs) {
         cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
         return CL_CLEAN;
@@ -584,14 +584,14 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
     /* dir = &hdr[*(uint32_t *)(&hdr[h1_data_off + objs_dirs_off + 4 * file->dir_id]) + h1_data_off + objs_dirs_off] */
 
     objs_files_cnt = le32_to_host(objs->files_cnt);
-    off            = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
+    off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
     fmap_unneed_ptr(map, objs, sizeof(*objs));
     for (i = 0; i < objs_files_cnt; i++) {
         struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_off(map, c->hdr + off, sizeof(*file));
 
         if (file) {
             const char *emptyname = "", *dir_name = emptyname, *file_name = emptyname;
-            uint32_t dir_rel  = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id);   /* rel off of dir entry from array of rel ptrs */
+            uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id);    /* rel off of dir entry from array of rel ptrs */
             uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
             uint64_t file_stream_off, file_size, file_csize;
             uint16_t cabno;
@@ -607,9 +607,9 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                 file_name = &hdr[file_rel];
 
             file_stream_off = le64_to_host(file->stream_off);
-            file_size       = le64_to_host(file->size);
-            file_csize      = le64_to_host(file->csize);
-            cabno           = le16_to_host(file->datafile_id);
+            file_size = le64_to_host(file->size);
+            file_csize = le64_to_host(file->csize);
+            cabno = le16_to_host(file->datafile_id);
 
             switch (le16_to_host(file->flags)) {
                 case 0:
@@ -660,7 +660,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c)
                                 cli_dbgmsg("is_parse_hdr: data%u.cab not available\n", cabno);
                             }
                             if (cabret == CL_BREAK) {
-                                ret    = CL_CLEAN;
+                                ret = CL_CLEAN;
                                 cabret = CL_CLEAN;
                             }
                             if (cabret != CL_CLEAN) {
@@ -700,7 +700,7 @@ static void md5str(uint8_t *sum)
         lo += '0' + (lo > 9) * '\'';
         hi += '0' + (hi > 9) * '\'';
         sum[i * 2 + 1] = lo;
-        sum[i * 2]     = hi;
+        sum[i * 2] = hi;
     }
     sum[32] = '\0';
 }
@@ -715,8 +715,8 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
     int ofd, ret = CL_CLEAN;
     z_stream z;
     uint64_t outsz = 0;
-    int success    = 0;
-    fmap_t *map    = ctx->fmap;
+    int success = 0;
+    fmap_t *map = ctx->fmap;
 
     if (!(outbuf = cli_malloc(IS_CABBUFSZ))) {
         cli_errmsg("is_extract_cab: Unable to allocate memory for outbuf\n");
@@ -764,13 +764,13 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
         off += chunksz;
         memset(&z, 0, sizeof(z));
         inflateInit2(&z, -MAX_WBITS);
-        z.next_in  = (uint8_t *)inbuf;
+        z.next_in = (uint8_t *)inbuf;
         z.avail_in = chunksz;
         while (1) {
             int zret;
-            z.next_out  = outbuf;
+            z.next_out = outbuf;
             z.avail_out = IS_CABBUFSZ;
-            zret        = inflate(&z, 0);
+            zret = inflate(&z, 0);
             if (zret == Z_OK || zret == Z_STREAM_END || zret == Z_BUF_ERROR) {
                 unsigned int umpd = IS_CABBUFSZ - z.avail_out;
                 if (cli_writen(ofd, outbuf, umpd) != umpd)
@@ -783,7 +783,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
                 if (ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
                     cli_dbgmsg("ishield_extract_cab: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, (unsigned long int)ctx->engine->maxfilesize);
                     success = 1;
-                    outsz   = size;
+                    outsz = size;
                     break;
                 }
                 continue;

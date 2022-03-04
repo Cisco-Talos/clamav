@@ -120,7 +120,7 @@ static const unsigned char operand_counts[] = {
     0, 1, 1, 1, 2, 1};
 
 enum bc_global {
-    _FIRST_GLOBAL       = 0x8000,
+    _FIRST_GLOBAL = 0x8000,
     GLOBAL_MATCH_COUNTS = 0x8000,
     GLOBAL_KIND,
     GLOBAL_VIRUSNAMES,

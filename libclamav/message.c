@@ -293,8 +293,8 @@ int messageSetMimeType(message *mess, const char *type)
 
                     if (s > highestSimil) {
                         highestSimil = s;
-                        closest      = m->string;
-                        t            = m->type;
+                        closest = m->string;
+                        t = m->type;
                     }
                 }
                 if (highestSimil >= 50) {
@@ -613,7 +613,7 @@ void messageAddArguments(message *m, const char *s)
                 *ptr = '\0';
 
             datasz = strlen(kcopy) + strlen(data) + 2;
-            field  = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
+            field = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
             if (field) {
                 cli_strlcat(field, "=", datasz);
                 cli_strlcat(field, data, datasz);
@@ -636,7 +636,7 @@ void messageAddArguments(message *m, const char *s)
             while ((*string != '\0') && !isspace(*string))
                 string++;
 
-            len   = (size_t)string - (size_t)key + 1;
+            len = (size_t)string - (size_t)key + 1;
             field = cli_malloc(len);
 
             if (field) {
@@ -721,7 +721,7 @@ messageFindArgument(const message *m, const char *variable)
                  */
                 if ((p = strchr(ret, '"')) != NULL) {
                     ret[strlen(ret) - 1] = '\0';
-                    *p                   = '\0';
+                    *p = '\0';
                 }
                 return ret;
             }
@@ -815,7 +815,7 @@ void messageSetEncoding(message *m, const char *enctype)
      */
     i = 0;
     while ((type = cli_strtok(enctype, i++, " \t")) != NULL) {
-        int highestSimil    = 0;
+        int highestSimil = 0;
         const char *closest = NULL;
 
         for (e = encoding_map; e->string; e++) {
@@ -861,13 +861,13 @@ void messageSetEncoding(message *m, const char *enctype)
                 if (et == NULL)
                     break;
 
-                m->encodingTypes                        = et;
+                m->encodingTypes = et;
                 m->encodingTypes[m->numberOfEncTypes++] = e->type;
 
                 cli_dbgmsg("Encoding type %d is \"%s\"\n", m->numberOfEncTypes, type);
                 break;
             } else if (sim > highestSimil) {
-                closest      = e->string;
+                closest = e->string;
                 highestSimil = sim;
             }
         }
@@ -923,7 +923,7 @@ int messageAddLine(message *m, line_t *line)
         m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
     else {
         m->body_last->t_next = (text *)cli_malloc(sizeof(text));
-        m->body_last         = m->body_last->t_next;
+        m->body_last = m->body_last->t_next;
     }
 
     if (m->body_last == NULL) {
@@ -1085,7 +1085,7 @@ int messageMoveText(message *m, text *t, message *old_message)
                 }
             }
 
-            m->body_last            = old_message->body_last;
+            m->body_last = old_message->body_last;
             old_message->body_first = old_message->body_last = NULL;
 
             /* Do any pointers need to be reset? */
@@ -1096,7 +1096,7 @@ int messageMoveText(message *m, text *t, message *old_message)
                 return 0;
 
             m->body_last = m->body_first;
-            rc           = 0;
+            rc = 0;
         } else {
             m->body_last = m->body_first = textMove(NULL, t);
             if (m->body_first == NULL)
@@ -1107,7 +1107,7 @@ int messageMoveText(message *m, text *t, message *old_message)
     } else {
         m->body_last = textMove(m->body_last, t);
         if (m->body_last == NULL) {
-            rc           = -1;
+            rc = -1;
             m->body_last = m->body_first;
         } else
             rc = 0;
@@ -1130,8 +1130,8 @@ static void
 messageIsEncoding(message *m)
 {
     static const char encoding[] = "Content-Transfer-Encoding";
-    static const char binhex[]   = "(This file must be converted with BinHex 4.0)";
-    const char *line             = lineGetData(m->body_last->t_line);
+    static const char binhex[] = "(This file must be converted with BinHex 4.0)";
+    const char *line = lineGetData(m->body_last->t_line);
 
     /*if(m->ctx == NULL)
         cli_dbgmsg("messageIsEncoding, ctx == NULL\n");*/
@@ -1275,7 +1275,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
              * TODO: handle multipart yEnc encoded files
              */
             t_line = yEncBegin(m);
-            f      = lineGetData(t_line->t_line);
+            f = lineGetData(t_line->t_line);
 
             if ((filename = strstr(f, " name=")) != NULL) {
                 filename = cli_strdup(&filename[6]);
@@ -1291,7 +1291,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
                 free((char *)filename);
                 filename = NULL;
             }
-            t_line  = t_line->t_next;
+            t_line = t_line->t_next;
             enctype = YENCODE;
             m->yenc = NULL;
         } else {
@@ -1381,8 +1381,8 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
                     break;
                 }
             } else {
-                bigbuf   = NULL;
-                data     = smallbuf;
+                bigbuf = NULL;
+                data = smallbuf;
                 datasize = sizeof(smallbuf);
             }
 
@@ -1553,7 +1553,7 @@ messageToText(message *m)
                 first = last = cli_malloc(sizeof(text));
             else {
                 last->t_next = cli_malloc(sizeof(text));
-                last         = last->t_next;
+                last = last->t_next;
             }
 
             if (last == NULL) {
@@ -1593,7 +1593,7 @@ messageToText(message *m)
                         first = last = cli_malloc(sizeof(text));
                     else if (last) {
                         last->t_next = cli_malloc(sizeof(text));
-                        last         = last->t_next;
+                        last = last->t_next;
                     }
 
                     if (last == NULL) {
@@ -1668,7 +1668,7 @@ messageToText(message *m)
                 first = last = cli_malloc(sizeof(text));
             else if (last) {
                 last->t_next = cli_malloc(sizeof(text));
-                last         = last->t_next;
+                last = last->t_next;
             }
 
             if (last == NULL)
@@ -1706,7 +1706,7 @@ messageToText(message *m)
                     first = last = cli_malloc(sizeof(text));
                 else if (last) {
                     last->t_next = cli_malloc(sizeof(text));
-                    last         = last->t_next;
+                    last = last->t_next;
                 }
 
                 if (last != NULL)
@@ -2028,7 +2028,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             cb2 = m->base64_2;
             /* FALLTHROUGH */
         case 1:
-            cb1    = m->base64_1;
+            cb1 = m->base64_1;
             isFast = false;
             break;
         default:
@@ -2053,7 +2053,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
              * that, b3 and b4 rely on in but b1/b2 don't
              */
             *out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-            b4     = (*decoder)(*in++);
+            b4 = (*decoder)(*in++);
             *out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
             *out++ = (b3 << 6) | (b4 & 0x3F);
         }
@@ -2069,7 +2069,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                    isalnum(cb3) ? cb3 : '@');
 
         m->base64chars--;
-        b1     = cb1;
+        b1 = cb1;
         nbytes = 1;
 
         if (m->base64chars) {
@@ -2079,7 +2079,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
             if (m->base64chars) {
                 nbytes = 2;
                 m->base64chars--;
-                b3     = cb3;
+                b3 = cb3;
                 nbytes = 3;
             } else if (b2)
                 nbytes = 2;
@@ -2118,7 +2118,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                 b1 = (*decoder)(*in++);
 
             if (*in == '\0') {
-                b2     = '\0';
+                b2 = '\0';
                 nbytes = 1;
             } else {
                 if (m->base64chars) {
@@ -2128,7 +2128,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                     b2 = (*decoder)(*in++);
 
                 if (*in == '\0') {
-                    b3     = '\0';
+                    b3 = '\0';
                     nbytes = 2;
                 } else {
                     if (m->base64chars) {
@@ -2138,10 +2138,10 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                         b3 = (*decoder)(*in++);
 
                     if (*in == '\0') {
-                        b4     = '\0';
+                        b4 = '\0';
                         nbytes = 3;
                     } else {
-                        b4     = (*decoder)(*in++);
+                        b4 = (*decoder)(*in++);
                         nbytes = 4;
                     }
                 }
@@ -2160,7 +2160,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
                     m->base64_2 = b2;
                     /* fall-through */
                 case 1:
-                    m->base64_1    = b1;
+                    m->base64_1 = b1;
                     m->base64chars = nbytes;
                     break;
                 default:
@@ -2381,7 +2381,7 @@ rfc2231(const char *in)
          */
         field = CONTENTS;
     else {
-        ptr   = strstr(in, "*=");
+        ptr = strstr(in, "*=");
         field = LANGUAGE;
     }
 
@@ -2498,7 +2498,7 @@ static unsigned int compare(char *ls1, char **rs1, char *ls2, char **rs2);
 static int
 simil(const char *str1, const char *str2)
 {
-    LINK1 top          = NULL;
+    LINK1 top = NULL;
     unsigned int score = 0;
     size_t common, total;
     size_t len1, len2;
@@ -2570,8 +2570,8 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
     char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
     char *cs1, *cs2, *start1, *end1, *end2;
 
-    end1   = ls1 + strlen(ls1);
-    end2   = ls2 + strlen(ls2);
+    end1 = ls1 + strlen(ls1);
+    end2 = ls2 + strlen(ls2);
     start1 = ls1;
 
     for (;;) {
@@ -2582,9 +2582,9 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
             while (s1 < end1 && s2 < end2) {
                 if (tolower(*s1) == tolower(*s2)) {
                     some_similarity = true;
-                    cs1             = s1;
-                    cs2             = s2;
-                    common          = 0;
+                    cs1 = s1;
+                    cs2 = s2;
+                    common = 0;
                     do
                         if (s1 == end1 || s2 == end2)
                             break;
@@ -2597,11 +2597,11 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
 
                     if (common > maxchars) {
                         unsigned int diff = common - maxchars;
-                        maxchars          = common;
-                        maxs1             = cs1;
-                        maxs2             = cs2;
-                        maxe1             = s1;
-                        maxe2             = s2;
+                        maxchars = common;
+                        maxs1 = cs1;
+                        maxs2 = cs2;
+                        maxe1 = s1;
+                        maxe2 = s2;
                         end1 -= diff;
                         end2 -= diff;
                     } else
@@ -2616,8 +2616,8 @@ compare(char *ls1, char **rs1, char *ls2, char **rs2)
     if (some_similarity) {
         *maxs1 = '\0';
         *maxs2 = '\0';
-        *rs1   = maxe1;
-        *rs2   = maxe2;
+        *rs1 = maxe1;
+        *rs2 = maxe2;
     }
     return maxchars;
 }
@@ -2634,7 +2634,7 @@ push(LINK1 *top, const char *string)
         return OUT_OF_MEMORY;
     }
     element->next = *top;
-    *top          = element;
+    *top = element;
 
     return SUCCESS;
 }

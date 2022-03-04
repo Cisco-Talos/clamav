@@ -53,14 +53,14 @@ cli_events_t *cli_events_new(unsigned max_event)
     struct cli_events *ev = cli_calloc(1, sizeof(*ev));
     if (!ev)
         return NULL;
-    ev->max    = max_event;
+    ev->max = max_event;
     ev->events = cli_calloc(max_event, sizeof(*ev->events));
     if (!ev->events) {
         free(ev);
         return NULL;
     }
-    ev->errors.name     = "errors";
-    ev->errors.type     = ev_string;
+    ev->errors.name = "errors";
+    ev->errors.type = ev_string;
     ev->errors.multiple = multiple_chain;
     return ev;
 }
@@ -107,9 +107,9 @@ int cli_event_define(cli_events_t *ctx, unsigned id,
         return -1;
     }
     /* default was ev_none */
-    ev->type     = type;
-    ev->name     = name;
-    ev->type     = type;
+    ev->type = type;
+    ev->name = name;
+    ev->type = type;
     ev->multiple = multiple;
     if (type == ev_data_fast)
         ev->u.v_int = CRC_INIT_VAL;
@@ -137,7 +137,7 @@ static inline void ev_chain(cli_events_t *ctx, struct cli_event *ev, union ev_va
         cli_event_error_oom(ctx, siz);
         return;
     }
-    ev->u.v_chain            = chain;
+    ev->u.v_chain = chain;
     ev->u.v_chain[ev->count] = *val;
     ev->count++;
 }
@@ -198,7 +198,7 @@ void cli_event_time_start(cli_events_t *ctx, unsigned id)
 void cli_event_time_nested_start(cli_events_t *ctx, unsigned id, unsigned nestedid)
 {
     struct timeval tv;
-    struct cli_event *ev       = get_event(ctx, id);
+    struct cli_event *ev = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
     if (!ev || !evnested)
         return;
@@ -229,7 +229,7 @@ void cli_event_time_stop(cli_events_t *ctx, unsigned id)
 void cli_event_time_nested_stop(cli_events_t *ctx, unsigned id, unsigned nestedid)
 {
     struct timeval tv;
-    struct cli_event *ev       = get_event(ctx, id);
+    struct cli_event *ev = get_event(ctx, id);
     struct cli_event *evnested = get_event(ctx, nestedid);
     if (!ev || !evnested)
         return;

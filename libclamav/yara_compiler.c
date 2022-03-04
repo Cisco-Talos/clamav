@@ -50,21 +50,21 @@ int yr_compiler_create(
     if (new_compiler == NULL)
         return ERROR_INSUFICIENT_MEMORY;
 
-    new_compiler->errors                 = 0;
-    new_compiler->callback               = NULL;
-    new_compiler->last_error             = ERROR_SUCCESS;
-    new_compiler->last_error_line        = 0;
-    new_compiler->error_line             = 0;
-    new_compiler->last_result            = ERROR_SUCCESS;
-    new_compiler->file_stack_ptr         = 0;
-    new_compiler->file_name_stack_ptr    = 0;
-    new_compiler->current_rule_flags     = 0;
-    new_compiler->allow_includes         = 1;
-    new_compiler->loop_depth             = 0;
+    new_compiler->errors = 0;
+    new_compiler->callback = NULL;
+    new_compiler->last_error = ERROR_SUCCESS;
+    new_compiler->last_error_line = 0;
+    new_compiler->error_line = 0;
+    new_compiler->last_result = ERROR_SUCCESS;
+    new_compiler->file_stack_ptr = 0;
+    new_compiler->file_name_stack_ptr = 0;
+    new_compiler->current_rule_flags = 0;
+    new_compiler->allow_includes = 1;
+    new_compiler->loop_depth = 0;
     new_compiler->loop_for_of_mem_offset = -1;
-    new_compiler->compiled_rules_arena   = NULL;
-    new_compiler->namespaces_count       = 0;
-    new_compiler->current_rule_strings   = NULL;
+    new_compiler->compiled_rules_arena = NULL;
+    new_compiler->namespaces_count = 0;
+    new_compiler->current_rule_strings = NULL;
 
     result = yr_hash_table_create(10007, &new_compiler->rules_table);
 
@@ -259,7 +259,7 @@ int _yr_compiler_set_namespace(
     int i;
     int found;
 
-    ns    = yr_arena_base_address(compiler->namespaces_arena);
+    ns = yr_arena_base_address(compiler->namespaces_arena);
     found = FALSE;
 
     for (i = 0; i < compiler->namespaces_count; i++) {
@@ -420,64 +420,64 @@ int _yr_compiler_compile_rules(
 
     if (result == ERROR_SUCCESS) {
         compiler->automaton_arena = NULL;
-        result                    = yr_arena_append(
-                               arena,
-                               compiler->code_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->code_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->code_arena = NULL;
-        result               = yr_arena_append(
-                          arena,
-                          compiler->re_code_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->re_code_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->re_code_arena = NULL;
-        result                  = yr_arena_append(
-                             arena,
-                             compiler->rules_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->rules_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->rules_arena = NULL;
-        result                = yr_arena_append(
-                           arena,
-                           compiler->strings_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->strings_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->strings_arena = NULL;
-        result                  = yr_arena_append(
-                             arena,
-                             compiler->externals_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->externals_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->externals_arena = NULL;
-        result                    = yr_arena_append(
-                               arena,
-                               compiler->namespaces_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->namespaces_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->namespaces_arena = NULL;
-        result                     = yr_arena_append(
-                                arena,
-                                compiler->metas_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->metas_arena);
     }
 
     if (result == ERROR_SUCCESS) {
         compiler->metas_arena = NULL;
-        result                = yr_arena_append(
-                           arena,
-                           compiler->sz_arena);
+        result = yr_arena_append(
+            arena,
+            compiler->sz_arena);
     }
 
     if (result == ERROR_SUCCESS) {
-        compiler->sz_arena             = NULL;
+        compiler->sz_arena = NULL;
         compiler->compiled_rules_arena = arena;
-        result                         = yr_arena_coalesce(arena);
+        result = yr_arena_coalesce(arena);
     }
 
     return result;
@@ -508,10 +508,10 @@ int yr_compiler_get_rules(
         yara_rules->arena);
 
     yara_rules->externals_list_head = rules_file_header->externals_list_head;
-    yara_rules->rules_list_head     = rules_file_header->rules_list_head;
-    yara_rules->automaton           = rules_file_header->automaton;
-    yara_rules->code_start          = rules_file_header->code_start;
-    yara_rules->tidx_mask           = 0;
+    yara_rules->rules_list_head = rules_file_header->rules_list_head;
+    yara_rules->automaton = rules_file_header->automaton;
+    yara_rules->code_start = rules_file_header->code_start;
+    yara_rules->tidx_mask = 0;
 
 #if _WIN32
     yara_rules->mutex = CreateMutex(NULL, FALSE, NULL);
@@ -549,10 +549,10 @@ int yr_compiler_define_integer_variable(
         offsetof(YR_EXTERNAL_VARIABLE, string),
         EOL));
 
-    external->type       = EXTERNAL_VARIABLE_TYPE_INTEGER;
+    external->type = EXTERNAL_VARIABLE_TYPE_INTEGER;
     external->identifier = id;
-    external->integer    = value;
-    external->string     = NULL;
+    external->integer = value;
+    external->string = NULL;
 
     FAIL_ON_COMPILER_ERROR(yr_object_from_external_variable(
         external,
@@ -586,7 +586,7 @@ int yr_compiler_define_string_variable(
     YR_OBJECT* object;
     YR_EXTERNAL_VARIABLE* external;
 
-    char* id  = NULL;
+    char* id = NULL;
     char* val = NULL;
 
     compiler->last_result = ERROR_SUCCESS;
@@ -609,10 +609,10 @@ int yr_compiler_define_string_variable(
         offsetof(YR_EXTERNAL_VARIABLE, string),
         EOL));
 
-    external->type       = EXTERNAL_VARIABLE_TYPE_STRING;
+    external->type = EXTERNAL_VARIABLE_TYPE_STRING;
     external->identifier = id;
-    external->integer    = 0;
-    external->string     = val;
+    external->integer = 0;
+    external->string = val;
 
     FAIL_ON_COMPILER_ERROR(yr_object_from_external_variable(
         external,

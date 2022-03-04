@@ -190,7 +190,7 @@ uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res,
     }
     /* 32 should be longest instr we support decoding.
      * When we'll support mmx/sse instructions this should be updated! */
-    n   = MIN(32, ctx->fmap->len - ctx->off);
+    n = MIN(32, ctx->fmap->len - ctx->off);
     buf = fmap_need_off_once(ctx->fmap, ctx->off, n);
     if (buf)
         next = cli_disasm_one(buf, n, res, 0);
@@ -255,10 +255,10 @@ void cli_bytecode_context_set_trace(struct cli_bc_ctx *ctx, unsigned level,
                                     bc_dbg_callback_trace_val trace_val,
                                     bc_dbg_callback_trace_ptr trace_ptr)
 {
-    ctx->trace       = trace;
-    ctx->trace_op    = trace_op;
-    ctx->trace_val   = trace_val;
-    ctx->trace_ptr   = trace_ptr;
+    ctx->trace = trace;
+    ctx->trace_op = trace_op;
+    ctx->trace_val = trace_val;
+    ctx->trace_ptr = trace_ptr;
     ctx->trace_level = level;
 }
 
@@ -267,7 +267,7 @@ uint32_t cli_bcapi_trace_scope(struct cli_bc_ctx *ctx, const uint8_t *scope, uin
     if (LIKELY(!ctx->trace_level))
         return 0;
     if (ctx->scope != (const char *)scope) {
-        ctx->scope   = (const char *)scope ? (const char *)scope : "?";
+        ctx->scope = (const char *)scope ? (const char *)scope : "?";
         ctx->scopeid = scopeid;
         ctx->trace_level |= 0x80; /* temporarily increase level to print params */
     } else if ((ctx->trace_level >= trace_scope) && ctx->scopeid != scopeid) {
@@ -291,7 +291,7 @@ uint32_t cli_bcapi_trace_source(struct cli_bc_ctx *ctx, const uint8_t *file, uin
     if (LIKELY(ctx->trace_level < trace_line))
         return 0;
     if (ctx->file != (const char *)file || ctx->line != line) {
-        ctx->col  = 0;
+        ctx->col = 0;
         ctx->file = (const char *)file ? (const char *)file : "??";
         ctx->line = line;
     }
@@ -355,10 +355,10 @@ uint32_t cli_bcapi_trace_ptr(struct cli_bc_ctx *ctx, const uint8_t *ptr, uint32_
 uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
 {
     uint32_t ret;
-    unsigned err                      = 0;
+    unsigned err = 0;
     const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
-    ret                               = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
-                                                    ctx->file_size, pe->hdr_size);
+    ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
+                      ctx->file_size, pe->hdr_size);
     if (err) {
         cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
         return PE_INVALID_RVA;
@@ -379,7 +379,7 @@ static inline const char *cli_memmem(const char *haystack, unsigned hlen,
         return memchr(haystack, c, hlen);
 
     while (hlen >= nlen) {
-        p        = haystack;
+        p = haystack;
         haystack = memchr(haystack, c, hlen - nlen + 1);
         if (!haystack)
             return NULL;
@@ -406,7 +406,7 @@ int32_t cli_bcapi_file_find(struct cli_bc_ctx *ctx, const uint8_t *data, uint32_
 int32_t cli_bcapi_file_find_limit(struct cli_bc_ctx *ctx, const uint8_t *data, uint32_t len, int32_t limit)
 {
     char buf[4096];
-    fmap_t *map  = ctx->fmap;
+    fmap_t *map = ctx->fmap;
     uint32_t off = ctx->off;
     size_t n;
     size_t limit_sz;
@@ -551,7 +551,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
         res = cli_magic_scan_desc_type(ctx->outfd, ctx->tempfile, cctx, ctx->containertype, NULL);
         if (res == CL_VIRUS) {
             ctx->virname = cli_get_last_virus(cctx);
-            ctx->found   = 1;
+            ctx->found = 1;
         }
     }
     if ((cctx && cctx->engine->keeptmp) ||
@@ -562,7 +562,7 @@ int32_t cli_bcapi_extract_new(struct cli_bc_ctx *ctx, int32_t id)
             cli_unlink(ctx->tempfile);
         free(ctx->tempfile);
         ctx->tempfile = NULL;
-        ctx->outfd    = 0;
+        ctx->outfd = 0;
     }
     cli_dbgmsg("bytecode: extracting new file with id %u\n", id);
     return res;
@@ -597,15 +597,15 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 
 int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx)
 {
-    unsigned n            = ctx->nhashsets + 1;
+    unsigned n = ctx->nhashsets + 1;
     struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets) * n);
     if (!s) {
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->hashsets  = s;
+    ctx->hashsets = s;
     ctx->nhashsets = n;
-    s              = &s[n - 1];
+    s = &s[n - 1];
     cli_hashset_init(s, 16, 80);
     return n - 1;
 }
@@ -683,12 +683,12 @@ int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
         free(data);
         return -1;
     }
-    ctx->buffers  = b;
+    ctx->buffers = b;
     ctx->nbuffers = n;
-    b             = &b[n - 1];
+    b = &b[n - 1];
 
-    b->data         = data;
-    b->size         = size;
+    b->data = data;
+    b->size = size;
     b->write_cursor = b->read_cursor = 0;
     return n - 1;
 }
@@ -705,14 +705,14 @@ int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx, uint32_t at)
     if (!b) {
         return -1;
     }
-    ctx->buffers  = b;
+    ctx->buffers = b;
     ctx->nbuffers = n;
-    b             = &b[n - 1];
+    b = &b[n - 1];
 
     /* NULL data means read from file at pos read_cursor */
-    b->data         = NULL;
-    b->size         = 0;
-    b->read_cursor  = at;
+    b->data = NULL;
+    b->size = 0;
+    b->read_cursor = at;
     b->write_cursor = 0;
     return n - 1;
 }
@@ -832,12 +832,12 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
     if (!b) {
         return -1;
     }
-    ctx->inflates  = b;
+    ctx->inflates = b;
     ctx->ninflates = n;
-    b              = &b[n - 1];
+    b = &b[n - 1];
 
-    b->from     = from;
-    b->to       = to;
+    b->from = from;
+    b->to = to;
     b->needSync = 0;
     memset(&b->stream, 0, sizeof(stream));
     ret = inflateInit2(&b->stream, windowBits);
@@ -963,17 +963,17 @@ int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
     if (!b) {
         return -1;
     }
-    ctx->lzmas  = b;
+    ctx->lzmas = b;
     ctx->nlzmas = n;
-    b           = &b[n - 1];
+    b = &b[n - 1];
 
     b->from = from;
-    b->to   = to;
+    b->to = to;
     memset(&b->stream, 0, sizeof(b->stream));
 
     b->stream.avail_in = avail_in_orig;
-    b->stream.next_in  = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
-                                                                b->stream.avail_in);
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
 
     if ((ret = cli_LzmaInit(&b->stream, 0)) != LZMA_RESULT_OK) {
         cli_dbgmsg("bytecode api: LzmaInit: Failed to initialize LZMA decompressor: %d!\n", ret);
@@ -1050,12 +1050,12 @@ int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
     if (!b) {
         return -1;
     }
-    ctx->bzip2s  = b;
+    ctx->bzip2s = b;
     ctx->nbzip2s = n;
-    b            = &b[n - 1];
+    b = &b[n - 1];
 
     b->from = from;
-    b->to   = to;
+    b->to = to;
     memset(&b->stream, 0, sizeof(b->stream));
     ret = BZ2_bzDecompressInit(&b->stream, 0, 0);
     switch (ret) {
@@ -1147,7 +1147,7 @@ int32_t cli_bcapi_bzip2_done(struct cli_bc_ctx *ctx, int32_t id)
 int32_t cli_bcapi_bytecode_rt_error(struct cli_bc_ctx *ctx, int32_t id)
 {
     int32_t line = id >> 8;
-    int32_t col  = id & 0xff;
+    int32_t col = id & 0xff;
     UNUSEDPARAM(ctx);
     cli_warnmsg("Bytecode runtime error at line %u, col %u\n", line, col);
     return 0;
@@ -1170,13 +1170,13 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
         cli_js_destroy(state);
         return -1;
     }
-    ctx->jsnorms  = b;
+    ctx->jsnorms = b;
     ctx->njsnorms = n;
-    b             = &b[n - 1];
-    b->from       = from;
-    b->state      = state;
+    b = &b[n - 1];
+    b->from = from;
+    b->state = state;
     if (!ctx->jsnormdir) {
-        cli_ctx *cctx  = (cli_ctx *)ctx->ctx;
+        cli_ctx *cctx = (cli_ctx *)ctx->ctx;
         ctx->jsnormdir = cli_gentemp_with_prefix(cctx ? cctx->engine->tmpdir : NULL, "normalized-js");
         if (ctx->jsnormdir) {
             if (mkdir(ctx->jsnormdir, 0700)) {
@@ -1200,13 +1200,13 @@ int32_t cli_bcapi_jsnorm_process(struct cli_bc_ctx *ctx, int32_t id)
 {
     unsigned avail;
     const unsigned char *in;
-    cli_ctx *cctx       = ctx->ctx;
+    cli_ctx *cctx = ctx->ctx;
     struct bc_jsnorm *b = get_jsnorm(ctx, id);
     if (!b || b->from == -1 || !b->state)
         return -1;
 
     avail = cli_bcapi_buffer_pipe_read_avail(ctx, b->from);
-    in    = cli_bcapi_buffer_pipe_read_get(ctx, b->from, avail);
+    in = cli_bcapi_buffer_pipe_read_get(ctx, b->from, avail);
     if (!avail || !in)
         return -1;
     if (cctx && cli_checklimits("bytecode js api", cctx, ctx->jsnormwritten + avail, 0, 0))
@@ -1319,7 +1319,7 @@ int32_t cli_bcapi_hex2ui(struct cli_bc_ctx *ctx, uint32_t ah, uint32_t bh)
 
 int32_t cli_bcapi_atoi(struct cli_bc_ctx *ctx, const uint8_t *str, int32_t len)
 {
-    int32_t number     = 0;
+    int32_t number = 0;
     const uint8_t *end = str + len;
     UNUSEDPARAM(ctx);
 
@@ -1366,7 +1366,7 @@ uint32_t cli_bcapi_entropy_buffer(struct cli_bc_ctx *ctx, uint8_t *s, int32_t le
     uint32_t probTable[256];
     unsigned int i;
     double entropy = 0;
-    double log2    = log(2);
+    double log2 = log(2);
 
     UNUSEDPARAM(ctx);
 
@@ -1396,9 +1396,9 @@ int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t value
     s = cli_realloc(ctx->maps, sizeof(*ctx->maps) * n);
     if (!s)
         return -1;
-    ctx->maps  = s;
+    ctx->maps = s;
     ctx->nmaps = n;
-    s          = &s[n - 1];
+    s = &s[n - 1];
     cli_map_init(s, keysize, valuesize, 16);
     return n - 1;
 }
@@ -1494,7 +1494,7 @@ uint32_t cli_bcapi_engine_dconf_level(struct cli_bc_ctx *ctx)
 
 uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
 {
-    cli_ctx *cctx    = (cli_ctx *)ctx->ctx;
+    cli_ctx *cctx = (cli_ctx *)ctx->ctx;
     uint32_t options = CL_SCAN_RAW;
 
     if (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)
@@ -1564,8 +1564,8 @@ uint32_t cli_bcapi_engine_scan_options(struct cli_bc_ctx *ctx)
 
 uint32_t cli_bcapi_engine_scan_options_ex(struct cli_bc_ctx *ctx, const uint8_t *option_name, uint32_t name_len)
 {
-    uint32_t i          = 0;
-    uint32_t result     = 0;
+    uint32_t i = 0;
+    uint32_t result = 0;
     char *option_name_l = NULL;
 
     if (ctx == NULL || option_name == NULL || name_len == 0) {
@@ -1853,12 +1853,12 @@ int cli_bytecode_context_setpdf(struct cli_bc_ctx *ctx, unsigned phase,
                                 struct pdf_obj **objs, uint32_t *pdf_flags,
                                 uint32_t pdfsize, uint32_t pdfstartoff)
 {
-    ctx->pdf_nobjs    = nobjs;
-    ctx->pdf_objs     = objs;
-    ctx->pdf_flags    = pdf_flags;
-    ctx->pdf_size     = pdfsize;
+    ctx->pdf_nobjs = nobjs;
+    ctx->pdf_objs = objs;
+    ctx->pdf_flags = pdf_flags;
+    ctx->pdf_size = pdfsize;
     ctx->pdf_startoff = pdfstartoff;
-    ctx->pdf_phase    = phase;
+    ctx->pdf_phase = phase;
     return 0;
 }
 
@@ -2005,9 +2005,9 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs  = (void **)j;
+    ctx->jsonobjs = (void **)j;
     ctx->njsonobjs = n;
-    j[n - 1]       = cctx->properties;
+    j[n - 1] = cctx->properties;
 
     return 0;
 #else
@@ -2044,7 +2044,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, in
         return -1;
     }
 
-    n    = ctx->njsonobjs + 1;
+    n = ctx->njsonobjs + 1;
     jobj = jobjs[objid];
     if (!jobj) /* shouldn't be possible */
         return -1;
@@ -2065,9 +2065,9 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, in
         cli_event_error_oom(EV, 0);
         return -1;
     }
-    ctx->jsonobjs  = (void **)j;
+    ctx->jsonobjs = (void **)j;
     ctx->njsonobjs = n;
-    j[n - 1]       = jobj;
+    j[n - 1] = jobj;
 
     cli_dbgmsg("bytecode api[json_get_object]: assigned %s => ID %d\n", namep, n - 1);
     free(namep);
@@ -2188,9 +2188,9 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
             cli_event_error_oom(EV, 0);
             return -1;
         }
-        ctx->jsonobjs  = (void **)j;
+        ctx->jsonobjs = (void **)j;
         ctx->njsonobjs = n;
-        j[n - 1]       = jobj;
+        j[n - 1] = jobj;
 
         cli_dbgmsg("bytecode api[json_array_get_idx]: assigned array @ %d => ID %d\n", idx, n - 1);
         return n - 1;
@@ -2232,7 +2232,7 @@ int32_t cli_bcapi_json_get_string_length(struct cli_bc_ctx *ctx, int32_t objid)
 
     // len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
-    len  = strlen(jstr);
+    len = strlen(jstr);
 
     return len;
 #else
@@ -2269,7 +2269,7 @@ int32_t cli_bcapi_json_get_string(struct cli_bc_ctx *ctx, int8_t *str, int32_t s
 
     // len = json_object_get_string_len(jobj); /* not in JSON <0.10 */
     jstr = json_object_get_string(jobj);
-    len  = strlen(jstr);
+    len = strlen(jstr);
 
     if (len + 1 > str_len) {
         /* limit on str-len */

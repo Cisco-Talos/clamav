@@ -148,7 +148,7 @@ static int printconf(const char *name)
         if (cpt->name && (cpt->owner & tool) && !(cpt->owner & OPT_DEPRECATED) && !(cpt->flags & 4)) {
             strncpy(buffer, cpt->description, sizeof(buffer) - 1);
             buffer[sizeof(buffer) - 1] = 0;
-            tokens_count               = cli_strtokenize(buffer, '\n', 128, tokens);
+            tokens_count = cli_strtokenize(buffer, '\n', 128, tokens);
             printf("\n");
             for (j = 0; j < tokens_count; j++)
                 printf("# %s\n", tokens[j]);
@@ -190,7 +190,7 @@ static int printconf(const char *name)
             if (cpt->suggested && strchr(cpt->suggested, '\n')) {
                 strncpy(buffer, cpt->suggested, sizeof(buffer) - 1);
                 buffer[sizeof(buffer) - 1] = 0;
-                tokens_count               = cli_strtokenize(buffer, '\n', 128, tokens);
+                tokens_count = cli_strtokenize(buffer, '\n', 128, tokens);
                 for (j = 0; j < tokens_count; j++)
                     printf("#%s %s\n", cpt->name, tokens[j]);
             } else {
@@ -403,9 +403,9 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    dbdir[0]       = 0;
+    dbdir[0] = 0;
     clamd_dbdir[0] = 0;
-    dir            = optget(opts, "config-dir")->strarg;
+    dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for (i = 0; cfgfile[i].name; i++) {
         snprintf(path, sizeof(path), "%s" PATHSEP "%s", dir, cfgfile[i].name);

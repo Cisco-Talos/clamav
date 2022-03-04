@@ -40,7 +40,7 @@ int is_tar(const unsigned char *buf, unsigned int nbytes)
     recsum = from_oct(8, header->header.chksum);
 
     sum = 0;
-    p   = header->charptr;
+    p = header->charptr;
     for (i = sizeof(union record); --i >= 0;) {
         /*
          * We can't use unsigned char here because of old compilers,

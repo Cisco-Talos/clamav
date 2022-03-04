@@ -59,7 +59,7 @@ cl_error_t onas_set_sock_only_once(struct onas_context *ctx)
             onas_sock.sock.sun_family = AF_UNIX;
             strncpy(onas_sock.sock.sun_path, opt->strarg, sizeof(onas_sock.sock.sun_path));
             onas_sock.sock.sun_path[sizeof(onas_sock.sock.sun_path) - 1] = '\0';
-            onas_sock.written                                            = 1;
+            onas_sock.written = 1;
             return CL_SUCCESS;
         }
     }

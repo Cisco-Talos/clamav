@@ -170,13 +170,13 @@ static void setup(void)
     ctx.options = &options;
 
     ctx.virname = &virname;
-    ctx.engine  = cl_engine_new();
+    ctx.engine = cl_engine_new();
     ck_assert_msg(!!ctx.engine, "cl_engine_new() failed");
 
     ctx.dconf = ctx.engine->dconf;
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     ck_assert_msg(!!ctx.recursion_stack, "cli_calloc() for recursion_stack failed");
 
     // ctx was memset, so recursion_level starts at 0.

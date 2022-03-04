@@ -41,7 +41,7 @@ struct WHLST {
 };
 
 struct WHLST *wfrom = NULL;
-struct WHLST *wto   = NULL;
+struct WHLST *wto = NULL;
 
 int skipauth = 0;
 regex_t authreg;
@@ -76,7 +76,7 @@ int allow_list_init(const char *fname)
 
     while (fgets(buf, sizeof(buf), f) != NULL) {
         struct WHLST **addto = &wto;
-        char *ptr            = buf;
+        char *ptr = buf;
         int len;
 
         if (*buf == '#' || *buf == ':' || *buf == '!')
@@ -100,7 +100,7 @@ int allow_list_init(const char *fname)
             fclose(f);
             return 1;
         }
-        w->next  = (*addto);
+        w->next = (*addto);
         (*addto) = w;
         if (cli_regcomp(&w->preg, ptr, REG_ICASE | REG_NOSUB)) {
             logg(LOGG_ERROR, "Failed to compile regex '%s' in allow list file\n", ptr);
@@ -136,7 +136,7 @@ int smtpauth_init(const char *r)
 
     if (!strncmp(r, "file:", 5)) {
         char buf[2048];
-        FILE *f    = fopen(r + 5, "r");
+        FILE *f = fopen(r + 5, "r");
         int rxsize = 0, rxavail = 0, rxused = 0;
 
         if (!f) {
@@ -156,7 +156,7 @@ int smtpauth_init(const char *r)
             }
             if (len <= 0) continue;
             if (len * 3 + 1 > rxavail) {
-                ptr   = regex;
+                ptr = regex;
                 regex = realloc(regex, rxsize + 2048);
                 if (!regex) {
                     logg(LOGG_ERROR, "Cannot allocate memory for SkipAuthenticated file\n");
@@ -179,7 +179,7 @@ int smtpauth_init(const char *r)
                     rxused++;
                     rxavail--;
                 } else {
-                    regex[rxused]     = '[';
+                    regex[rxused] = '[';
                     regex[rxused + 1] = *ptr;
                     regex[rxused + 2] = ']';
                     rxused += 3;
@@ -196,9 +196,9 @@ int smtpauth_init(const char *r)
             return 1;
         }
         regex[rxused - 1] = ')';
-        regex[rxused]     = '$';
+        regex[rxused] = '$';
         regex[rxused + 1] = '\0';
-        r                 = regex;
+        r = regex;
         fclose(f);
     }
 

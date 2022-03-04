@@ -82,9 +82,9 @@ static struct node *make_node(enum node_type type, struct node *left, struct nod
         cli_errmsg("make_node: Unable to allocate memory for new node\n");
         return NULL;
     }
-    n->type             = type;
-    n->parent           = NULL;
-    n->u.children.left  = left;
+    n->type = type;
+    n->parent = NULL;
+    n->u.children.left = left;
     n->u.children.right = right;
     if (left)
         left->parent = n;
@@ -105,7 +105,7 @@ static struct node *dup_node(struct node *p)
         cli_errmsg("dup_node: Unable to allocate memory for duplicate node\n");
         return NULL;
     }
-    d->type   = p->type;
+    d->type = p->type;
     d->parent = NULL;
     switch (p->type) {
         case leaf:
@@ -121,9 +121,9 @@ static struct node *dup_node(struct node *p)
             memcpy(d->u.leaf_class_bitmap, p->u.leaf_class_bitmap, 32);
             break;
         default:
-            node_left           = dup_node(p->u.children.left);
-            node_right          = dup_node(p->u.children.right);
-            d->u.children.left  = node_left;
+            node_left = dup_node(p->u.children.left);
+            node_right = dup_node(p->u.children.right);
+            d->u.children.left = node_left;
             d->u.children.right = node_right;
             if (node_left)
                 node_left->parent = d;
@@ -141,8 +141,8 @@ static struct node *make_charclass(uint8_t *bitmap)
         cli_errmsg("make_charclass: Unable to allocate memory for character class\n");
         return NULL;
     }
-    v->type                = leaf_class;
-    v->parent              = NULL;
+    v->type = leaf_class;
+    v->parent = NULL;
     v->u.leaf_class_bitmap = bitmap;
     return v;
 }
@@ -152,8 +152,8 @@ static struct node *make_leaf(char c)
     struct node *v = cli_malloc(sizeof(*v));
     if (!v)
         return NULL;
-    v->type        = leaf;
-    v->parent      = NULL;
+    v->type = leaf;
+    v->parent = NULL;
     v->u.leaf_char = c;
     return v;
 }
@@ -183,8 +183,8 @@ static void destroy_tree(struct node *n)
 static uint8_t *parse_char_class(const char *pat, size_t *pos)
 {
     unsigned char range_start = 0;
-    int hasprev               = 0;
-    uint8_t *bitmap           = cli_malloc(32);
+    int hasprev = 0;
+    uint8_t *bitmap = cli_malloc(32);
     if (!bitmap) {
         cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n");
         return NULL;
@@ -249,7 +249,7 @@ static struct node *parse_regex(const char *p, size_t *last)
             case '|':
                 ++*last;
                 right = parse_regex(p, last);
-                v     = make_node(alternate, v, right);
+                v = make_node(alternate, v, right);
                 if (!v)
                     return NULL;
                 break;
@@ -312,7 +312,7 @@ static struct node *parse_regex(const char *p, size_t *last)
                 ++*last;
             default:
                 right = make_leaf(p[*last]);
-                v     = make_node(concat, v, right);
+                v = make_node(concat, v, right);
                 if (!v)
                     return NULL;
                 ++*last;
@@ -436,10 +436,10 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     assert(pattern);
 
     regex.preg = preg;
-    rc         = cli_regcomp(regex.preg, pattern, REG_EXTENDED);
+    rc = cli_regcomp(regex.preg, pattern, REG_EXTENDED);
     if (rc) {
         size_t buflen = cli_regerror(rc, regex.preg, NULL, 0);
-        char *errbuf  = cli_malloc(buflen);
+        char *errbuf = cli_malloc(buflen);
         if (errbuf) {
             cli_regerror(rc, regex.preg, errbuf, buflen);
             cli_errmsg(MODULE "Error compiling regular expression %s: %s\n", pattern, errbuf);
@@ -449,7 +449,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         }
         return rc;
     }
-    regex.nxt     = NULL;
+    regex.nxt = NULL;
     regex.pattern = cli_strdup(pattern);
 
     n = parse_regex(pattern, &last);

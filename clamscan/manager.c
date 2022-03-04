@@ -174,7 +174,7 @@ static int print_chain(struct metachain *c, char *str, size_t len)
         na += n;
     }
 
-    str[na]      = '\0';
+    str[na] = '\0';
     str[len - 1] = '\0';
 
     return i == c->nchains - 1 ? 0 : 1;
@@ -183,7 +183,7 @@ static int print_chain(struct metachain *c, char *str, size_t len)
 static cl_error_t post(int fd, int result, const char *virname, void *context)
 {
     struct clamscan_cb_data *d = context;
-    struct metachain *c        = NULL;
+    struct metachain *c = NULL;
     char str[128];
 
     UNUSEDPARAM(fd);
@@ -229,9 +229,9 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
         return CL_CLEAN;
     d = (struct clamscan_cb_data *)context;
 
-    c    = d->chain;
+    c = d->chain;
     type = (strncmp(container_type, "CL_TYPE_", 8) == 0 ? container_type + 8 : container_type);
-    n    = strlen(type) + strlen(filename) + 2;
+    n = strlen(type) + strlen(filename) + 2;
 
     if (!c)
         return CL_CLEAN;
@@ -255,7 +255,7 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
             return CL_CLEAN;
         }
 
-        c->chains  = chains;
+        c->chains = chains;
         c->nchains = n;
         c->lastadd = c->level;
     } else {
@@ -265,7 +265,7 @@ static cl_error_t meta(const char *container_type, unsigned long fsize_container
 
     if (c->nchains > 0) {
         c->chains[c->nchains - 1] = chain;
-        toolong                   = print_chain(c, prev, sizeof(prev));
+        toolong = print_chain(c, prev, sizeof(prev));
         logg(LOGG_DEBUG, "Scanning %s%s!%s\n", prev, toolong ? "..." : "", chain);
     } else {
         free(chain);
@@ -406,7 +406,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         goto done;
     }
 
-    data.chain    = &chain;
+    data.chain = &chain;
     data.filename = filename;
     if ((ret = cl_scandesc_callback(fd, filename, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
         if (optget(opts, "archive-verbose")->enabled) {
@@ -497,7 +497,7 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
     if (depth > (unsigned int)optget(opts, "max-dir-recursion")->numarg)
         return;
 
-    dirlnk  = optget(opts, "follow-dir-symlinks")->numarg;
+    dirlnk = optget(opts, "follow-dir-symlinks")->numarg;
     filelnk = optget(opts, "follow-file-symlinks")->numarg;
 
     if ((dd = opendir(dirname)) != NULL) {
@@ -567,9 +567,9 @@ static void scandirs(const char *dirname, struct cl_engine *engine, const struct
 static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *options)
 {
     int ret;
-    unsigned int fsize  = 0;
+    unsigned int fsize = 0;
     const char *virname = NULL;
-    const char *tmpdir  = NULL;
+    const char *tmpdir = NULL;
     char *file, buff[FILEBUFF];
     size_t bread;
     FILE *fs;
@@ -614,7 +614,7 @@ static int scanstdin(const struct cl_engine *engine, struct cl_scan_options *opt
     info.rblocks += fsize / CL_COUNT_PRECISION;
 
     data.filename = "stdin";
-    data.chain    = NULL;
+    data.chain = NULL;
     if ((ret = cl_scanfile_callback(file, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
         info.ifiles++;
 
@@ -668,11 +668,11 @@ static void print_num_sigs(size_t sigs, int bPad)
 {
     if (sigs >= (1000 * 1000)) {
         const char *format = bPad ? "%7.02fM" : "%.02fM";
-        double megasigs    = sigs / (double)(1000 * 1000);
+        double megasigs = sigs / (double)(1000 * 1000);
         fprintf(stdout, format, megasigs);
     } else if (sigs >= 1000) {
         const char *format = bPad ? "%7.02fK" : "%.02fK";
-        double kilosigs    = sigs / (double)(1000);
+        double kilosigs = sigs / (double)(1000);
         fprintf(stdout, format, kilosigs);
     } else {
         const char *format = bPad ? "%8zu" : "%zu";
@@ -694,9 +694,9 @@ static cl_error_t sigload_callback(size_t total_items, size_t now_completed, voi
 
     struct sigload_progress *sigloadProgress = (struct sigload_progress *)context;
 
-    uint32_t i             = 0;
-    uint32_t totalNumDots  = 25;
-    uint32_t numDots       = 0;
+    uint32_t i = 0;
+    uint32_t totalNumDots = 25;
+    uint32_t numDots = 0;
     double fraction_loaded = 0.0;
 
     if ((total_items <= 0) || (sigloadProgress->bComplete)) {
@@ -704,7 +704,7 @@ static cl_error_t sigload_callback(size_t total_items, size_t now_completed, voi
     }
 
     fraction_loaded = (double)now_completed / (double)total_items;
-    numDots         = round(fraction_loaded * totalNumDots);
+    numDots = round(fraction_loaded * totalNumDots);
 
     if (0 == sigloadProgress->startTime) {
         sigloadProgress->startTime = time(0);
@@ -778,9 +778,9 @@ static cl_error_t engine_compile_callback(size_t total_items, size_t now_complet
 
     struct engine_compile_progress *engineCompileProgress = (struct engine_compile_progress *)context;
 
-    uint32_t i               = 0;
-    uint32_t totalNumDots    = 25;
-    uint32_t numDots         = 0;
+    uint32_t i = 0;
+    uint32_t totalNumDots = 25;
+    uint32_t numDots = 0;
     double fraction_compiled = 0.0;
 
     if ((total_items <= 0) || (engineCompileProgress->bComplete)) {
@@ -788,7 +788,7 @@ static cl_error_t engine_compile_callback(size_t total_items, size_t now_complet
     }
 
     fraction_compiled = (double)now_completed / (double)total_items;
-    numDots           = round(fraction_compiled * totalNumDots);
+    numDots = round(fraction_compiled * totalNumDots);
 
     if (0 == engineCompileProgress->startTime) {
         engineCompileProgress->startTime = time(0);
@@ -862,9 +862,9 @@ static cl_error_t engine_free_callback(size_t total_items, size_t now_completed,
 
     struct engine_free_progress *engineFreeProgress = (struct engine_free_progress *)context;
 
-    uint32_t i            = 0;
+    uint32_t i = 0;
     uint32_t totalNumDots = 10;
-    uint32_t numDots      = 0;
+    uint32_t numDots = 0;
     double fraction_freed = 0.0;
 
     if ((total_items <= 0) || (engineFreeProgress->bComplete)) {
@@ -872,7 +872,7 @@ static cl_error_t engine_free_callback(size_t total_items, size_t now_completed,
     }
 
     fraction_freed = (double)now_completed / (double)total_items;
-    numDots        = round(fraction_freed * totalNumDots);
+    numDots = round(fraction_freed * totalNumDots);
 
     if (0 == engineFreeProgress->startTime) {
         engineFreeProgress->startTime = time(0);
@@ -935,7 +935,7 @@ int scanmanager(const struct optstruct *opts)
 #else
     struct rlimit rlim;
 #endif
-    struct sigload_progress sigload_progress_ctx               = {0};
+    struct sigload_progress sigload_progress_ctx = {0};
     struct engine_compile_progress engine_compile_progress_ctx = {0};
 #ifdef ENABLE_ENGINE_FREE_PROGRESSBAR
     struct engine_free_progress engine_free_progress_ctx = {0};
@@ -1029,7 +1029,7 @@ int scanmanager(const struct optstruct *opts)
 
                 opt = opt->nextarg;
             }
-            pua_cats[i]     = '.';
+            pua_cats[i] = '.';
             pua_cats[i + 1] = 0;
         }
 
@@ -1058,7 +1058,7 @@ int scanmanager(const struct optstruct *opts)
                 opt = opt->nextarg;
             }
 
-            pua_cats[i]     = '.';
+            pua_cats[i] = '.';
             pua_cats[i + 1] = 0;
         }
 
@@ -1512,86 +1512,86 @@ int scanmanager(const struct optstruct *opts)
 #ifdef _WIN32
     /* scan only memory */
     if (optget(opts, "memory")->enabled && (!opts->filename && !optget(opts, "file-list")->enabled)) {
-        minfo.d       = 0;
-        minfo.files   = info.files;
-        minfo.ifiles  = info.ifiles;
-        minfo.blocks  = info.blocks;
-        minfo.engine  = engine;
-        minfo.opts    = opts;
+        minfo.d = 0;
+        minfo.files = info.files;
+        minfo.ifiles = info.ifiles;
+        minfo.blocks = info.blocks;
+        minfo.engine = engine;
+        minfo.opts = opts;
         minfo.options = &options;
-        ret           = scanmem(&minfo);
+        ret = scanmem(&minfo);
     } else
 #endif
         /* check filetype */
         if (!opts->filename && !optget(opts, "file-list")->enabled) {
-            /* we need full path for some reasons (eg. archive handling) */
-            if (!getcwd(cwd, sizeof(cwd))) {
-                logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
-                ret = 2;
-            } else {
-                CLAMSTAT(cwd, &sb);
-                scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
-            }
-
-        } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-            ret = scanstdin(engine, &options);
+        /* we need full path for some reasons (eg. archive handling) */
+        if (!getcwd(cwd, sizeof(cwd))) {
+            logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
+            ret = 2;
         } else {
-            if (opts->filename && optget(opts, "file-list")->enabled)
-                logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+            CLAMSTAT(cwd, &sb);
+            scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
+        }
+
+    } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
+        ret = scanstdin(engine, &options);
+    } else {
+        if (opts->filename && optget(opts, "file-list")->enabled)
+            logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
 
 #ifdef _WIN32
-            /* scan first memory if requested */
-            if (optget(opts, "memory")->enabled) {
-                minfo.d       = 0;
-                minfo.files   = info.files;
-                minfo.ifiles  = info.ifiles;
-                minfo.blocks  = info.blocks;
-                minfo.engine  = engine;
-                minfo.opts    = opts;
-                minfo.options = &options;
-                ret           = scanmem(&minfo);
-            }
+        /* scan first memory if requested */
+        if (optget(opts, "memory")->enabled) {
+            minfo.d = 0;
+            minfo.files = info.files;
+            minfo.ifiles = info.ifiles;
+            minfo.blocks = info.blocks;
+            minfo.engine = engine;
+            minfo.opts = opts;
+            minfo.options = &options;
+            ret = scanmem(&minfo);
+        }
 #endif
-            while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
-                if (LSTAT(file, &sb) == -1) {
-                    perror(file);
-                    logg(LOGG_WARNING, "%s: Can't access file\n", file);
-                    ret = 2;
-                } else {
-                    for (i = strlen(file) - 1; i > 0; i--) {
-                        if (file[i] == *PATHSEP)
-                            file[i] = 0;
-                        else
-                            break;
-                    }
-
-                    if (S_ISLNK(sb.st_mode)) {
-                        if (dirlnk == 0 && filelnk == 0) {
-                            if (!printinfected)
-                                logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                        } else if (CLAMSTAT(file, &sb) != -1) {
-                            if (S_ISREG(sb.st_mode) && filelnk) {
-                                scanfile(file, engine, opts, &options);
-                            } else if (S_ISDIR(sb.st_mode) && dirlnk) {
-                                scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                            } else {
-                                if (!printinfected)
-                                    logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                            }
-                        }
-                    } else if (S_ISREG(sb.st_mode)) {
-                        scanfile(file, engine, opts, &options);
-                    } else if (S_ISDIR(sb.st_mode)) {
-                        scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                    } else {
-                        logg(LOGG_WARNING, "%s: Not supported file type\n", file);
-                        ret = 2;
-                    }
+        while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
+            if (LSTAT(file, &sb) == -1) {
+                perror(file);
+                logg(LOGG_WARNING, "%s: Can't access file\n", file);
+                ret = 2;
+            } else {
+                for (i = strlen(file) - 1; i > 0; i--) {
+                    if (file[i] == *PATHSEP)
+                        file[i] = 0;
+                    else
+                        break;
                 }
 
-                free(file);
+                if (S_ISLNK(sb.st_mode)) {
+                    if (dirlnk == 0 && filelnk == 0) {
+                        if (!printinfected)
+                            logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                    } else if (CLAMSTAT(file, &sb) != -1) {
+                        if (S_ISREG(sb.st_mode) && filelnk) {
+                            scanfile(file, engine, opts, &options);
+                        } else if (S_ISDIR(sb.st_mode) && dirlnk) {
+                            scandirs(file, engine, opts, &options, 1, sb.st_dev);
+                        } else {
+                            if (!printinfected)
+                                logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                        }
+                    }
+                } else if (S_ISREG(sb.st_mode)) {
+                    scanfile(file, engine, opts, &options);
+                } else if (S_ISDIR(sb.st_mode)) {
+                    scandirs(file, engine, opts, &options, 1, sb.st_dev);
+                } else {
+                    logg(LOGG_WARNING, "%s: Not supported file type\n", file);
+                    ret = 2;
+                }
             }
+
+            free(file);
         }
+    }
 
     if ((opt = optget(opts, "statistics"))->enabled) {
         while (opt) {
@@ -1615,7 +1615,7 @@ done:
 
 #ifdef _WIN32
     if (optget(opts, "memory")->enabled) {
-        info.files  = minfo.files;
+        info.files = minfo.files;
         info.ifiles = minfo.ifiles;
         info.blocks = minfo.blocks;
     }

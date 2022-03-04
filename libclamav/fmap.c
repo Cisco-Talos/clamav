@@ -213,11 +213,11 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
         CloseHandle(mh);
         return NULL;
     }
-    m->handle       = (void *)(size_t)fd;
+    m->handle = (void *)(size_t)fd;
     m->handle_is_fd = 1; /* This is probably(?) needed so `fmap_fd()` can return the file descriptor. */
-    m->fh           = fh;
-    m->mh           = mh;
-    m->unmap        = unmap_win32;
+    m->fh = fh;
+    m->mh = mh;
+    m->unmap = unmap_win32;
 
     if (NULL != name) {
         m->name = cli_strdup(name);
@@ -235,7 +235,7 @@ fmap_t *fmap_check_empty(int fd, off_t offset, size_t len, int *empty, const cha
 
 fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char *name)
 {
-    cl_error_t status        = CL_ERROR;
+    cl_error_t status = CL_ERROR;
     cl_fmap_t *duplicate_map = NULL;
 
     if (NULL == map) {
@@ -353,7 +353,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     uint64_t pages;
     size_t mapsz, bitmap_size;
     cl_fmap_t *m = NULL;
-    int pgsz     = cli_getpagesize();
+    int pgsz = cli_getpagesize();
 
     if ((off_t)offset < 0 || offset != fmap_align_to(offset, pgsz)) {
         cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
@@ -371,7 +371,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     pages = fmap_align_items(len, pgsz);
 
     bitmap_size = pages * sizeof(uint64_t);
-    mapsz       = pages * pgsz;
+    mapsz = pages * pgsz;
 
     m = cli_calloc(1, sizeof(fmap_t));
     if (!m) {
@@ -412,24 +412,24 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
         cli_warnmsg("fmap: map allocation failed\n");
         goto done;
     }
-    m->handle          = handle;
-    m->pread_cb        = pread_cb;
-    m->aging           = use_aging;
-    m->offset          = offset;
-    m->nested_offset   = 0;
-    m->len             = len; /* m->nested_offset + m->len = m->real_len */
-    m->real_len        = len;
-    m->pages           = pages;
-    m->pgsz            = pgsz;
-    m->paged           = 0;
+    m->handle = handle;
+    m->pread_cb = pread_cb;
+    m->aging = use_aging;
+    m->offset = offset;
+    m->nested_offset = 0;
+    m->len = len; /* m->nested_offset + m->len = m->real_len */
+    m->real_len = len;
+    m->pages = pages;
+    m->pgsz = pgsz;
+    m->paged = 0;
     m->dont_cache_flag = 0;
-    m->unmap           = unmap_handle;
-    m->need            = handle_need;
-    m->need_offstr     = handle_need_offstr;
-    m->gets            = handle_gets;
-    m->unneed_off      = handle_unneed_off;
-    m->handle_is_fd    = 1;
-    m->have_maphash    = false;
+    m->unmap = unmap_handle;
+    m->need = handle_need;
+    m->need_offstr = handle_need_offstr;
+    m->gets = handle_gets;
+    m->unneed_off = handle_unneed_off;
+    m->handle_is_fd = 1;
+    m->have_maphash = false;
 
     status = CL_SUCCESS;
 
@@ -473,7 +473,7 @@ static void fmap_aging(fmap_t *m)
             }
         }
         if (avail) { /* at least one page is paged and not locked */
-            char *lastpage  = NULL;
+            char *lastpage = NULL;
             char *firstpage = NULL;
             for (i = 0; i < avail; i++) {
                 char *pptr = (char *)m->data + freeme[i] * m->pgsz;
@@ -487,7 +487,7 @@ static void fmap_aging(fmap_t *m)
                 }
                 if (!lastpage) {
                     firstpage = pptr;
-                    lastpage  = pptr + m->pgsz;
+                    lastpage = pptr + m->pgsz;
                     continue;
                 }
                 fmap_lock;
@@ -495,7 +495,7 @@ static void fmap_aging(fmap_t *m)
                     cli_dbgmsg("fmap_aging: kernel hates you\n");
                 fmap_unlock;
                 firstpage = pptr;
-                lastpage  = pptr + m->pgsz;
+                lastpage = pptr + m->pgsz;
             }
             if (lastpage) {
                 fmap_lock;
@@ -514,7 +514,7 @@ static void fmap_aging(fmap_t *m)
 static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_t lock_count)
 {
     size_t readsz = 0, eintr_off;
-    char *pptr    = NULL, errtxt[256];
+    char *pptr = NULL, errtxt[256];
     uint64_t sbitmap;
     uint64_t i, page = first_page, force_read = 0;
 
@@ -596,7 +596,7 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
             while (readsz) {
                 ssize_t got;
                 uint64_t target_offset = eintr_off + m->offset + (first_page * m->pgsz);
-                got                    = m->pread_cb(m->handle, pptr, readsz, target_offset);
+                got = m->pread_cb(m->handle, pptr, readsz, target_offset);
 
                 if (got < 0 && errno == EINTR)
                     continue;
@@ -617,16 +617,16 @@ static int fmap_readpage(fmap_t *m, uint64_t first_page, uint64_t count, uint64_
                 return 1;
             }
 
-            pptr       = NULL;
+            pptr = NULL;
             force_read = 0;
-            readsz     = 0;
+            readsz = 0;
             continue;
         }
 
         /* page is not already paged */
         if (!pptr) {
             /* set a new start for pending reads if we don't have one */
-            pptr       = (char *)m->data + page * m->pgsz;
+            pptr = (char *)m->data + page * m->pgsz;
             first_page = page;
         }
         if ((page == m->pages - 1) && (m->real_len % m->pgsz))
@@ -657,7 +657,7 @@ static const void *handle_need(fmap_t *m, size_t at, size_t len, int lock)
     fmap_aging(m);
 
     first_page = fmap_which_page(m, at);
-    last_page  = fmap_which_page(m, at + len - 1);
+    last_page = fmap_which_page(m, at + len - 1);
     lock_count = (lock != 0) * (last_page - first_page + 1);
 #ifdef READAHED_PAGES
     last_page += READAHED_PAGES;
@@ -706,7 +706,7 @@ static void handle_unneed_off(fmap_t *m, size_t at, size_t len)
     }
 
     first_page = fmap_which_page(m, at);
-    last_page  = fmap_which_page(m, at + len - 1);
+    last_page = fmap_which_page(m, at + len - 1);
 
     for (i = first_page; i <= last_page; i++) {
         fmap_unneed_page(m, i);
@@ -753,7 +753,7 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
     fmap_aging(m);
 
     first_page = fmap_which_page(m, at);
-    last_page  = fmap_which_page(m, at + len_hint - 1);
+    last_page = fmap_which_page(m, at + len_hint - 1);
 
     for (i = first_page; i <= last_page; i++) {
         char *thispage = (char *)m->data + i * m->pgsz;
@@ -782,9 +782,9 @@ static const void *handle_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
     uint64_t i, first_page, last_page;
-    char *src     = (char *)m->data + m->nested_offset + *at;
-    char *endptr  = NULL;
-    size_t len    = MIN(max_len - 1, m->len - *at);
+    char *src = (char *)m->data + m->nested_offset + *at;
+    char *endptr = NULL;
+    size_t len = MIN(max_len - 1, m->len - *at);
     size_t fullen = len;
 
     if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
@@ -793,7 +793,7 @@ static const void *handle_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
     fmap_aging(m);
 
     first_page = fmap_which_page(m, m->nested_offset + *at);
-    last_page  = fmap_which_page(m, m->nested_offset + *at + len - 1);
+    last_page = fmap_which_page(m, m->nested_offset + *at + len - 1);
 
     for (i = first_page; i <= last_page; i++) {
         char *thispage = (char *)m->data + i * m->pgsz;
@@ -839,22 +839,22 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
 {
     cl_error_t status = CL_ERROR;
 
-    int pgsz     = cli_getpagesize();
+    int pgsz = cli_getpagesize();
     cl_fmap_t *m = cli_calloc(1, sizeof(*m));
     if (!m) {
         cli_warnmsg("fmap: map allocation failed\n");
         goto done;
     }
-    m->data        = start;
-    m->len         = len;
-    m->real_len    = len;
-    m->pgsz        = pgsz;
-    m->pages       = fmap_align_items(len, pgsz);
-    m->unmap       = unmap_malloc;
-    m->need        = mem_need;
+    m->data = start;
+    m->len = len;
+    m->real_len = len;
+    m->pgsz = pgsz;
+    m->pages = fmap_align_items(len, pgsz);
+    m->unmap = unmap_malloc;
+    m->need = mem_need;
     m->need_offstr = mem_need_offstr;
-    m->gets        = mem_gets;
-    m->unneed_off  = mem_unneed_off;
+    m->gets = mem_gets;
+    m->unneed_off = mem_unneed_off;
 
     if (NULL != name) {
         /* Copy the name, if one is given */
@@ -927,9 +927,9 @@ static const void *mem_need_offstr(fmap_t *m, size_t at, size_t len_hint)
 
 static const void *mem_gets(fmap_t *m, char *dst, size_t *at, size_t max_len)
 {
-    char *src    = (char *)m->data + m->nested_offset + *at;
+    char *src = (char *)m->data + m->nested_offset + *at;
     char *endptr = NULL;
-    size_t len   = MIN(max_len - 1, m->len - *at);
+    size_t len = MIN(max_len - 1, m->len - *at);
 
     if (!len || !CLI_ISCONTAINED_0_TO(m->len, *at, len))
         return NULL;
@@ -973,10 +973,10 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
     cl_error_t ret = CL_EARG;
 
     char *filebase = NULL;
-    char *prefix   = NULL;
+    char *prefix = NULL;
 
     char *tmpname = NULL;
-    int tmpfd     = -1;
+    int tmpfd = -1;
 
     size_t pos = 0, len = 0, bytes_remaining = 0, write_size = 0;
 
@@ -985,8 +985,8 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
         return ret;
     }
 
-    pos             = start_offset;
-    end_offset      = MIN(end_offset, map->real_len);
+    pos = start_offset;
+    end_offset = MIN(end_offset, map->real_len);
     bytes_remaining = end_offset - start_offset;
 
     /* Create a filename prefix that includes the original filename, if available */
@@ -997,7 +997,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
             /* If we're only dumping a portion of the file, inlcude the offsets in the prefix,...
              * e.g. tmp filename will become something like:  filebase.500-1200.<randhex> */
             size_t prefix_len = strlen(filebase) + 1 + SIZE_T_CHARLEN + 1 + SIZE_T_CHARLEN + 1;
-            prefix            = malloc(prefix_len);
+            prefix = malloc(prefix_len);
             if (NULL == prefix) {
                 cli_errmsg("fmap_dump_to_file: Failed to allocate memory for tempfile prefix.\n");
                 free(filebase);
@@ -1009,7 +1009,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
             filebase = NULL;
         } else {
             /* Else if we're dumping the whole thing, use the filebase as the prefix */
-            prefix   = filebase;
+            prefix = filebase;
             filebase = NULL;
         }
     }
@@ -1032,7 +1032,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 
     do {
         const char *b;
-        len        = 0;
+        len = 0;
         write_size = MIN(BUFSIZ, bytes_remaining);
 
         b = fmap_need_off_once_len(map, pos, write_size, &len);
@@ -1058,7 +1058,7 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
     }
 
     *outname = tmpname;
-    *outfd   = tmpfd;
+    *outfd = tmpfd;
     return CL_SUCCESS;
 }
 

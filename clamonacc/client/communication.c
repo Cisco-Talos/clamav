@@ -57,7 +57,7 @@ static int onas_socket_wait(curl_socket_t sockfd, int32_t b_recv, uint64_t timeo
     fd_set infd, outfd, errfd;
     int ret;
 
-    tv.tv_sec  = timeout_ms / 1000;
+    tv.tv_sec = timeout_ms / 1000;
     tv.tv_usec = (timeout_ms % 1000) * 1000;
 
     FD_ZERO(&infd);
@@ -93,7 +93,7 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
     /* Use deprecated CURLINFO_LASTSOCKET option */
     long long_sockfd;
     curlcode = curl_easy_getinfo(curl, CURLINFO_LASTSOCKET, &long_sockfd);
-    sockfd   = (curl_socket_t)long_sockfd;
+    sockfd = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != curlcode) {
@@ -137,11 +137,11 @@ int onas_sendln(CURL *curl, const void *line, size_t len, int64_t timeout)
 /* Inits a RECVLN struct before it can be used in recvln() - see below */
 void onas_recvlninit(struct onas_rcvln *rcv_data, CURL *curl, int sockd)
 {
-    rcv_data->curl     = curl;
+    rcv_data->curl = curl;
     rcv_data->curlcode = CURLE_OK;
     rcv_data->lnstart = rcv_data->curr = rcv_data->buf;
-    rcv_data->retlen                   = 0;
-    rcv_data->sockd                    = sockd;
+    rcv_data->retlen = 0;
+    rcv_data->sockd = sockd;
 }
 
 /* Receives a full (terminated with \0) line from a socket
@@ -166,7 +166,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
     /* Use deprecated CURLINFO_LASTSOCKET option */
     long long_sockfd;
     rcv_data->curlcode = curl_easy_getinfo(rcv_data->curl, CURLINFO_LASTSOCKET, &long_sockfd);
-    sockfd             = (curl_socket_t)long_sockfd;
+    sockfd = (curl_socket_t)long_sockfd;
 #endif
 
     if (CURLE_OK != rcv_data->curlcode) {
@@ -241,7 +241,7 @@ int onas_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, int
                 rcv_data->lnstart = rcv_data->buf;
             }
 
-            rcv_data->curr   = &rcv_data->lnstart[rcv_data->retlen];
+            rcv_data->curr = &rcv_data->lnstart[rcv_data->retlen];
             rcv_data->retlen = 0;
         }
     }
@@ -304,7 +304,7 @@ int onas_fd_recvln(struct onas_rcvln *rcv_data, char **ret_bol, char **ret_eol, 
                 memmove(rcv_data->buf, rcv_data->lnstart, rcv_data->retlen);
                 rcv_data->lnstart = rcv_data->buf;
             }
-            rcv_data->curr   = &rcv_data->lnstart[rcv_data->retlen];
+            rcv_data->curr = &rcv_data->lnstart[rcv_data->retlen];
             rcv_data->retlen = 0;
         }
     }

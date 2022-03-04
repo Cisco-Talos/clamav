@@ -64,7 +64,7 @@
 
 #define MSGBUFSIZ 8192
 
-static bool rand_seeded            = false;
+static bool rand_seeded = false;
 static unsigned char name_salt[16] = {16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253};
 
 #ifdef CL_THREAD_SAFE
@@ -119,7 +119,7 @@ void cli_logg_unsetup(void)
 }
 #endif
 
-uint8_t cli_debug_flag              = 0;
+uint8_t cli_debug_flag = 0;
 uint8_t cli_always_gen_section_hash = 0;
 
 static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
@@ -332,7 +332,7 @@ const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
     if (ret) {
         strncpy(buf, ret, bufsize - 1);
         buf[bufsize - 1] = '\0';
-        ret              = buf;
+        ret = buf;
     }
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_ctime_mutex);
@@ -362,7 +362,7 @@ size_t cli_readn(int fd, void *buff, size_t count)
     size_t todo;
     unsigned char *current;
 
-    todo    = count;
+    todo = count;
     current = (unsigned char *)buff;
 
     do {
@@ -411,7 +411,7 @@ size_t cli_writen(int fd, const void *buff, size_t count)
         return (size_t)-1;
     }
 
-    todo    = count;
+    todo = count;
     current = (const unsigned char *)buff;
 
     do {
@@ -513,7 +513,7 @@ static int ftw_compare(const void *a, const void *b)
 {
     const struct dirent_data *da = a;
     const struct dirent_data *db = b;
-    long diff                    = da->is_dir - db->is_dir;
+    long diff = da->is_dir - db->is_dir;
     if (!diff) {
         diff = da->ino - db->ino;
     }
@@ -557,7 +557,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
                 } else {
                     /* It was not a symlink, stat() not needed */
                     need_stat = 0;
-                    stated    = 1;
+                    stated = 1;
                 }
             }
             if (*ft == ft_link && !(flags & FOLLOW_SYMLINK_MASK)) {
@@ -662,10 +662,10 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
 {
     cl_error_t status = CL_EMEM;
     STATBUF statbuf;
-    enum filetype ft               = ft_unknown;
-    struct dirent_data entry       = {0};
-    int stated                     = 0;
-    char *filename_for_callback    = NULL;
+    enum filetype ft = ft_unknown;
+    struct dirent_data entry = {0};
+    int stated = 0;
+    char *filename_for_callback = NULL;
     char *filename_for_handleentry = NULL;
 
     if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
@@ -699,7 +699,7 @@ cl_error_t cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, str
     }
 
     entry.statbuf = stated ? &statbuf : NULL;
-    entry.is_dir  = ft == ft_directory;
+    entry.is_dir = ft == ft_directory;
 
     /*
      * handle_entry() doesn't call the callback for directories, so we'll call it now first.
@@ -768,7 +768,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
     if ((dd = opendir(dirname)) != NULL) {
         struct dirent *dent;
         errno = 0;
-        ret   = CL_SUCCESS;
+        ret = CL_SUCCESS;
         while ((dent = readdir(dd))) {
             int stated = 0;
             enum filetype ft;
@@ -861,10 +861,10 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
                 break;
             } else {
                 struct dirent_data *entry = &entries[entries_cnt - 1];
-                entry->filename           = fname;
-                entry->statbuf            = statbufp;
-                entry->is_dir             = ft == ft_directory;
-                entry->dirname            = entry->is_dir ? fname : NULL;
+                entry->filename = fname;
+                entry->statbuf = statbufp;
+                entry->is_dir = ft == ft_directory;
+                entry->dirname = entry->is_dir ? fname : NULL;
 #ifdef _XOPEN_UNIX
                 entry->ino = dent->d_ino;
 #else
@@ -880,7 +880,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             cli_qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
             for (i = 0; i < entries_cnt; i++) {
                 struct dirent_data *entry = &entries[i];
-                ret                       = handle_entry(entry, flags, maxdepth - 1, callback, data, pathchk);
+                ret = handle_entry(entry, flags, maxdepth - 1, callback, data, pathchk);
                 if (entry->is_dir)
                     free(entry->filename);
                 if (entry->statbuf)
@@ -959,9 +959,9 @@ unsigned int cli_rndnum(unsigned int max)
 
 char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sanitized_filebase)
 {
-    uint32_t depth           = 0;
-    size_t index             = 0;
-    size_t sanitized_index   = 0;
+    uint32_t depth = 0;
+    size_t index = 0;
+    size_t sanitized_index = 0;
     char *sanitized_filepath = NULL;
 
     if ((NULL == filepath) || (0 == filepath_len) || (PATH_MAX < filepath_len)) {
@@ -1108,9 +1108,9 @@ done:
 #define SHORT_HASH_LENGTH 10
 char *cli_genfname(const char *prefix)
 {
-    char *sanitized_prefix      = NULL;
+    char *sanitized_prefix = NULL;
     char *sanitized_prefix_base = NULL;
-    char *fname                 = NULL;
+    char *fname = NULL;
     unsigned char salt[16 + 32];
     char *tmp;
     int i;
@@ -1185,7 +1185,7 @@ char *cli_newfilepath(const char *dir, const char *fname)
         return NULL;
     }
 
-    len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
+    len = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
     fullpath = (char *)cli_calloc(len, sizeof(char));
     if (NULL == fullpath) {
         cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
@@ -1240,7 +1240,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
         return NULL;
     }
 
-    len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
+    len = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
     fullpath = (char *)cli_calloc(len, sizeof(char));
     if (!fullpath) {
         free(fname);
@@ -1312,12 +1312,12 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 #ifdef _WIN32
 cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
 {
-    cl_error_t status               = CL_EARG;
-    char *evaluated_filepath        = NULL;
-    DWORD dwRet                     = 0;
+    cl_error_t status = CL_EARG;
+    char *evaluated_filepath = NULL;
+    DWORD dwRet = 0;
     WCHAR *long_evaluated_filepathW = NULL;
-    char *long_evaluated_filepathA  = NULL;
-    size_t evaluated_filepath_len   = 0;
+    char *long_evaluated_filepathA = NULL;
+    size_t evaluated_filepath_len = 0;
     cl_error_t conv_result;
 
     if (NULL == filepath) {
@@ -1373,7 +1373,7 @@ cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
     }
 
     cli_dbgmsg("cli_get_filepath_from_handle: File path for handle %p is: %s\n", (void *)hFile, evaluated_filepath);
-    status    = CL_SUCCESS;
+    status = CL_SUCCESS;
     *filepath = evaluated_filepath;
 
 done:
@@ -1386,7 +1386,7 @@ done:
 
 cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 {
-    cl_error_t status        = CL_EARG;
+    cl_error_t status = CL_EARG;
     char *evaluated_filepath = NULL;
 
 #ifdef __linux__
@@ -1469,7 +1469,7 @@ cl_error_t cli_get_filepath_from_filedesc(int desc, char **filepath)
 #endif
 
     cli_dbgmsg("cli_get_filepath_from_filedesc: File path for fd [%d] is: %s\n", desc, evaluated_filepath);
-    status    = CL_SUCCESS;
+    status = CL_SUCCESS;
     *filepath = evaluated_filepath;
 
 done:
@@ -1479,7 +1479,7 @@ done:
 cl_error_t cli_realpath(const char *file_name, char **real_filename)
 {
     char *real_file_path = NULL;
-    cl_error_t status    = CL_EARG;
+    cl_error_t status = CL_EARG;
 #ifdef _WIN32
     HANDLE hFile = INVALID_HANDLE_VALUE;
 #elif C_DARWIN

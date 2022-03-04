@@ -97,13 +97,13 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 
 #ifndef _WIN32
     if ((opt = optget((*ctx)->clamdopts, "LocalSocket"))->enabled) {
-        opt             = optget((*ctx)->clamdopts, "LocalSocket");
+        opt = optget((*ctx)->clamdopts, "LocalSocket");
         (*ctx)->portnum = 0;
-        ret             = 0;
+        ret = 0;
     } else {
-        opt             = optget((*ctx)->clamdopts, "TCPAddr");
+        opt = optget((*ctx)->clamdopts, "TCPAddr");
         (*ctx)->portnum = optget((*ctx)->clamdopts, "TCPSocket")->numarg;
-        ret             = 1;
+        ret = 1;
     }
 #else
     if (!(opt = optget((*ctx)->clamdopts, "TCPSocket"))->enabled) {
@@ -165,18 +165,18 @@ int onas_check_remote(struct onas_context **ctx, cl_error_t *err)
 int16_t onas_ping_clamd(struct onas_context **ctx)
 {
 
-    uint64_t attempts           = 0;
-    uint64_t interval           = 0;
-    char *attempt_str           = NULL;
-    char *interval_str          = NULL;
-    char *errchk                = NULL;
-    uint64_t i                  = 0;
+    uint64_t attempts = 0;
+    uint64_t interval = 0;
+    char *attempt_str = NULL;
+    char *interval_str = NULL;
+    char *errchk = NULL;
+    uint64_t i = 0;
     const struct optstruct *opt = NULL;
-    CURL *curl                  = NULL;
+    CURL *curl = NULL;
     CURLcode curlcode;
     cl_error_t err = CL_SUCCESS;
-    int b_remote   = 0;
-    uint16_t ret   = 0;
+    int b_remote = 0;
+    uint16_t ret = 0;
     int64_t timeout;
     const char zPING[] = "zPING";
 
@@ -290,9 +290,9 @@ done:
         free(attempt_str);
     }
 
-    attempt_str  = NULL;
+    attempt_str = NULL;
     interval_str = NULL;
-    errchk       = NULL;
+    errchk = NULL;
 
     return ret;
 }
@@ -434,7 +434,7 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         return CL_EARG;
     }
 
-    (*ctx)->timeout        = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
+    (*ctx)->timeout = optget((*ctx)->clamdopts, "OnAccessCurlTimeout")->numarg;
     (*ctx)->retry_attempts = optget((*ctx)->clamdopts, "OnAccessRetryAttempts")->numarg;
     (*ctx)->retry_attempts ? ((*ctx)->retry_on_error = 1) : ((*ctx)->retry_on_error = 0);
     optget((*ctx)->clamdopts, "OnAccessDenyOnError")->enabled ? ((*ctx)->deny_on_error = 1) : ((*ctx)->deny_on_error = 0);
@@ -452,13 +452,13 @@ cl_error_t onas_setup_client(struct onas_context **ctx)
         }
         logg(LOGG_DEBUG, "ClamClient: client setup to scan via fd passing\n");
         (*ctx)->scantype = FILDES;
-        (*ctx)->session  = optget(opts, "multiscan")->enabled;
+        (*ctx)->session = optget(opts, "multiscan")->enabled;
     } else
 #endif
         if (remote) {
         logg(LOGG_DEBUG, "ClamClient: client setup to scan via streaming\n");
         (*ctx)->scantype = STREAM;
-        (*ctx)->session  = optget(opts, "multiscan")->enabled;
+        (*ctx)->session = optget(opts, "multiscan")->enabled;
     } else if (optget(opts, "multiscan")->enabled) {
         logg(LOGG_DEBUG, "ClamClient: client setup to scan in multiscan mode\n");
         (*ctx)->scantype = MULTI;
@@ -549,9 +549,9 @@ int onas_get_clamd_version(struct onas_context **ctx)
  */
 int onas_client_scan(const char *tcpaddr, int64_t portnum, int32_t scantype, uint64_t maxstream, const char *fname, int fd, int64_t timeout, STATBUF sb, int *infected, int *err, cl_error_t *ret_code)
 {
-    CURL *curl        = NULL;
+    CURL *curl = NULL;
     CURLcode curlcode = CURLE_OK;
-    int errors        = 0;
+    int errors = 0;
     int ret;
     static bool disconnected = false;
 

@@ -260,7 +260,7 @@ static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, size_t *off)
     uint8_t nlength, id[2];
     uint32_t size;
     size_t offset = *off;
-    fmap_t *map   = ctx->fmap;
+    fmap_t *map = ctx->fmap;
 
     if (!(buf = fmap_need_off_once(map, offset, 4 + 2 + 1))) {
         cli_dbgmsg("read bim failed\n");
@@ -275,7 +275,7 @@ static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, size_t *off)
     id[1] = (uint8_t)buf[5];
     cli_dbgmsg("ID: 0x%.2x%.2x\n", id[0], id[1]);
     nlength = buf[6];
-    ntmp    = nlength + ((((uint16_t)nlength) + 1) & 0x01);
+    ntmp = nlength + ((((uint16_t)nlength) + 1) & 0x01);
     offset += 4 + 2 + 1 + ntmp;
 
     if (fmap_readn(map, &size, offset, 4) != 4) {
@@ -318,10 +318,10 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
     uint16_t len_u16;
     unsigned int offset = 0, i, len, segment = 0;
     bool found_comment = false;
-    bool found_app     = false;
+    bool found_app = false;
 
-    uint32_t num_JFIF  = 0;
-    uint32_t num_Exif  = 0;
+    uint32_t num_JFIF = 0;
+    uint32_t num_Exif = 0;
     uint32_t num_SPIFF = 0;
 
     cli_dbgmsg("in cli_parsejpeg()\n");
@@ -583,7 +583,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                     cli_dbgmsg("Found Photoshop segment\n");
                     do {
                         old_offset = photoshop_data_offset;
-                        status     = jpeg_check_photoshop_8bim(ctx, &photoshop_data_offset);
+                        status = jpeg_check_photoshop_8bim(ctx, &photoshop_data_offset);
                         if (photoshop_data_offset <= old_offset)
                             break;
                     } while (status == CL_CLEAN);

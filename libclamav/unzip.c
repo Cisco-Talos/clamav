@@ -116,7 +116,7 @@ static cl_error_t unz(
     char obuf[BUFSIZ];
     char *tempfile = NULL;
     int out_file, ret = CL_CLEAN;
-    int res        = 1;
+    int res = 1;
     size_t written = 0;
 
     if (tmpd) {
@@ -179,30 +179,30 @@ static cl_error_t unz(
             unsigned int *avail_out;
 
             if (method == ALG_DEFLATE64) {
-                unz_init  = (unz_init_)inflate64Init2;
-                unz_unz   = (unz_unz_)inflate64;
-                unz_end   = (unz_end_)inflate64End;
-                next_in   = (void *)&strm.strm64.next_in;
-                next_out  = (void *)&strm.strm64.next_out;
-                avail_in  = &strm.strm64.avail_in;
+                unz_init = (unz_init_)inflate64Init2;
+                unz_unz = (unz_unz_)inflate64;
+                unz_end = (unz_end_)inflate64End;
+                next_in = (void *)&strm.strm64.next_in;
+                next_out = (void *)&strm.strm64.next_out;
+                avail_in = &strm.strm64.avail_in;
                 avail_out = &strm.strm64.avail_out;
-                wbits     = MAX_WBITS64;
+                wbits = MAX_WBITS64;
             } else {
-                unz_init  = (unz_init_)wrap_inflateinit2;
-                unz_unz   = (unz_unz_)inflate;
-                unz_end   = (unz_end_)inflateEnd;
-                next_in   = (void *)&strm.strm.next_in;
-                next_out  = (void *)&strm.strm.next_out;
-                avail_in  = &strm.strm.avail_in;
+                unz_init = (unz_init_)wrap_inflateinit2;
+                unz_unz = (unz_unz_)inflate;
+                unz_end = (unz_end_)inflateEnd;
+                next_in = (void *)&strm.strm.next_in;
+                next_out = (void *)&strm.strm.next_out;
+                avail_in = &strm.strm.avail_in;
                 avail_out = &strm.strm.avail_out;
-                wbits     = MAX_WBITS;
+                wbits = MAX_WBITS;
             }
 
             memset(&strm, 0, sizeof(strm));
 
-            *next_in   = (void *)src;
-            *next_out  = obuf;
-            *avail_in  = csize;
+            *next_in = (void *)src;
+            *next_out = obuf;
+            *avail_in = csize;
             *avail_out = sizeof(obuf);
             if (unz_init(&strm, -wbits) != Z_OK) {
                 cli_dbgmsg("cli_unzip: zinit failed\n");
@@ -224,7 +224,7 @@ static cl_error_t unz(
                         res = 100;
                         break;
                     }
-                    *next_out  = obuf;
+                    *next_out = obuf;
                     *avail_out = sizeof(obuf);
                     continue;
                 }
@@ -245,9 +245,9 @@ static cl_error_t unz(
         case ALG_BZIP2: {
             bz_stream strm;
             memset(&strm, 0, sizeof(strm));
-            strm.next_in   = (char *)src;
-            strm.next_out  = obuf;
-            strm.avail_in  = csize;
+            strm.next_in = (char *)src;
+            strm.next_out = obuf;
+            strm.avail_in = csize;
             strm.avail_out = sizeof(obuf);
             if (BZ2_bzDecompressInit(&strm, 0, 0) != BZ_OK) {
                 cli_dbgmsg("cli_unzip: bzinit failed\n");
@@ -267,7 +267,7 @@ static cl_error_t unz(
                         res = 100;
                         break;
                     }
-                    strm.next_out  = obuf;
+                    strm.next_out = obuf;
                     strm.avail_out = sizeof(obuf);
                     if (res == BZ_OK) continue; /* after returning BZ_STREAM_END once, decompress returns an error */
                 }
@@ -281,9 +281,9 @@ static cl_error_t unz(
 
         case ALG_IMPLODE: {
             struct xplstate strm;
-            strm.next_in   = (void *)src;
-            strm.next_out  = (uint8_t *)obuf;
-            strm.avail_in  = csize;
+            strm.next_in = (void *)src;
+            strm.next_out = (uint8_t *)obuf;
+            strm.avail_in = csize;
             strm.avail_out = sizeof(obuf);
             if (explode_init(&strm, flags) != EXPLODE_OK) {
                 cli_dbgmsg("cli_unzip: explode_init() failed\n");
@@ -303,7 +303,7 @@ static cl_error_t unz(
                         res = 100;
                         break;
                     }
-                    strm.next_out  = (uint8_t *)obuf;
+                    strm.next_out = (uint8_t *)obuf;
                     strm.avail_out = sizeof(obuf);
                     continue;
                 }
@@ -614,7 +614,7 @@ static unsigned int parse_local_file_header(
     char name[256];
     char *original_filename = NULL;
     uint32_t csize, usize;
-    int virus_found                          = 0;
+    int virus_found = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
@@ -732,12 +732,12 @@ static unsigned int parse_local_file_header(
                 record->original_filename = NULL;
             }
             record->local_header_offset = loff;
-            record->local_header_size   = zip - local_header;
-            record->compressed_size     = csize;
-            record->uncompressed_size   = usize;
-            record->method              = LOCAL_HEADER_method;
-            record->flags               = LOCAL_HEADER_flags;
-            record->encrypted           = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
+            record->local_header_size = zip - local_header;
+            record->compressed_size = csize;
+            record->uncompressed_size = usize;
+            record->method = LOCAL_HEADER_method;
+            record->flags = LOCAL_HEADER_flags;
+            record->encrypted = (LOCAL_HEADER_flags & F_ENCR) ? 1 : 0;
 
             *ret = CL_SUCCESS;
         }
@@ -810,9 +810,9 @@ parse_central_directory_file_header(
     struct zip_record *record)
 {
     char name[256];
-    int last                      = 0;
+    int last = 0;
     const uint8_t *central_header = NULL;
-    int virus_found               = 0;
+    int virus_found = 0;
 
     *ret = CL_EPARSE;
 
@@ -839,7 +839,7 @@ parse_central_directory_file_header(
     name[0] = '\0';
     if (!last) {
         unsigned int size = (CENTRAL_HEADER_flen >= sizeof(name)) ? sizeof(name) - 1 : CENTRAL_HEADER_flen;
-        const char *src   = fmap_need_off_once(map, coff, size);
+        const char *src = fmap_need_off_once(map, coff, size);
         if (src) {
             memcpy(name, src, size);
             name[size] = '\0';
@@ -899,7 +899,7 @@ parse_central_directory_file_header(
                 if (!strncmp(requests->names[i], name, len)) {
                     requests->match = 1;
                     requests->found = i;
-                    requests->loff  = CENTRAL_HEADER_off;
+                    requests->loff = CENTRAL_HEADER_off;
                 }
             }
         }
@@ -972,25 +972,25 @@ cl_error_t index_the_central_directory(
     size_t *num_records)
 {
     cl_error_t status = CL_CLEAN;
-    cl_error_t ret    = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
 
     size_t num_record_blocks = 0;
-    size_t index             = 0;
+    size_t index = 0;
 
     struct zip_record *zip_catalogue = NULL;
-    size_t records_count             = 0;
-    struct zip_record *curr_record   = NULL;
-    struct zip_record *prev_record   = NULL;
-    uint32_t num_overlapping_files   = 0;
-    int virus_found                  = 0;
-    bool exceeded_max_files          = false;
+    size_t records_count = 0;
+    struct zip_record *curr_record = NULL;
+    struct zip_record *prev_record = NULL;
+    uint32_t num_overlapping_files = 0;
+    int virus_found = 0;
+    bool exceeded_max_files = false;
 
     if (NULL == catalogue || NULL == num_records) {
         cli_errmsg("index_the_central_directory: Invalid NULL arguments\n");
         goto done;
     }
 
-    *catalogue   = NULL;
+    *catalogue = NULL;
     *num_records = 0;
 
     zip_catalogue = (struct zip_record *)cli_malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
@@ -1069,7 +1069,7 @@ cl_error_t index_the_central_directory(
                 status = CL_EMEM;
                 goto done;
             }
-            zip_catalogue     = zip_catalogue_new;
+            zip_catalogue = zip_catalogue_new;
             zip_catalogue_new = NULL;
 
             num_record_blocks++;
@@ -1141,9 +1141,9 @@ cl_error_t index_the_central_directory(
         }
     }
 
-    *catalogue   = zip_catalogue;
+    *catalogue = zip_catalogue;
     *num_records = records_count;
-    status       = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
 
@@ -1175,14 +1175,14 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     cl_error_t ret = CL_CLEAN;
     uint32_t fsize, lhoff = 0, coff = 0;
     fmap_t *map = ctx->fmap;
-    char *tmpd  = NULL;
+    char *tmpd = NULL;
     const char *ptr;
     int virus_found = 0;
 #if HAVE_JSON
     int toval = 0;
 #endif
     struct zip_record *zip_catalogue = NULL;
-    size_t records_count             = 0;
+    size_t records_count = 0;
     size_t i;
 
     cli_dbgmsg("in cli_unzip\n");
@@ -1300,7 +1300,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
 #endif
             if (ret != CL_CLEAN) {
                 if (ret == CL_VIRUS && SCAN_ALLMATCHES) {
-                    ret         = CL_CLEAN;
+                    ret = CL_CLEAN;
                     virus_found = 1;
                 } else {
                     break;
@@ -1333,7 +1333,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             file_count++;
             lhoff += coff;
             if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                ret         = CL_CLEAN;
+                ret = CL_CLEAN;
                 virus_found = 1;
             }
             if (ctx->engine->maxfiles && num_files_unzipped >= ctx->engine->maxfiles) {
@@ -1435,7 +1435,7 @@ cl_error_t unzip_search_add(struct zip_requests *requests, const char *name, siz
 
     cli_dbgmsg("unzip_search_add: adding %s (len %llu)\n", name, (long long unsigned)nlen);
 
-    requests->names[requests->namecnt]    = name;
+    requests->names[requests->namecnt] = name;
     requests->namelens[requests->namecnt] = nlen;
     requests->namecnt++;
 
@@ -1445,7 +1445,7 @@ cl_error_t unzip_search_add(struct zip_requests *requests, const char *name, siz
 cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests)
 {
     unsigned int file_count = 0;
-    fmap_t *zmap            = map;
+    fmap_t *zmap = map;
     size_t fsize;
     uint32_t coff = 0;
     const char *ptr;

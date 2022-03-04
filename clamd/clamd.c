@@ -143,8 +143,8 @@ int main(int argc, char **argv)
     const char *dbdir, *cfgfile;
     char *pua_cats = NULL, *pt;
     int ret, tcpsock = 0, localsock = 0, min_port, max_port;
-    unsigned int sigs      = 0;
-    int *lsockets          = NULL;
+    unsigned int sigs = 0;
+    int *lsockets = NULL;
     unsigned int nlsockets = 0;
     unsigned int dboptions = 0;
     unsigned int i;
@@ -154,8 +154,8 @@ int main(int argc, char **argv)
 #ifdef C_LINUX
     STATBUF sb;
 #endif
-    pid_t mainpid         = 0;
-    mode_t old_umask      = 0;
+    pid_t mainpid = 0;
+    mode_t old_umask = 0;
     const char *user_name = NULL;
 
     if (check_flevel())
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 
     /* parse the config file */
     cfgfile = optget(opts, "config-file")->strarg;
-    pt      = strdup(cfgfile);
+    pt = strdup(cfgfile);
     if (pt == NULL) {
         fprintf(stderr, "ERROR: Unable to allocate memory for config file\n");
         return 1;
@@ -235,10 +235,10 @@ int main(int argc, char **argv)
     }
 
     /* initialize logger */
-    logg_lock    = !optget(opts, "LogFileUnlock")->enabled;
-    logg_time    = optget(opts, "LogTime")->enabled;
-    logok        = optget(opts, "LogClean")->enabled;
-    logg_size    = optget(opts, "LogFileMaxSize")->numarg;
+    logg_lock = !optget(opts, "LogFileUnlock")->enabled;
+    logg_time = optget(opts, "LogTime")->enabled;
+    logok = optget(opts, "LogClean")->enabled;
+    logg_size = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
     if (logg_size)
         logg_rotate = optget(opts, "LogRotate")->enabled;
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
          */
         if (0 == geteuid()) {
             struct passwd *pw = getpwuid(0);
-            int ret           = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
+            int ret = lchown(opt->strarg, pw->pw_uid, pw->pw_gid);
             if (ret) {
                 logg(LOGG_ERROR, "Can't change ownership of PID file %s '%s'\n", opt->strarg, strerror(errno));
                 exit(2);
@@ -493,14 +493,14 @@ int main(int argc, char **argv)
                     sprintf(pua_cats + i, ".%s", opt->strarg);
                     i += strlen(opt->strarg) + 1;
                     pua_cats[i] = 0;
-                    opt         = opt->nextarg;
+                    opt = opt->nextarg;
                 }
 
                 if (ret)
                     break;
 
                 logg(LOGG_INFO_NF, "\n");
-                pua_cats[i]     = '.';
+                pua_cats[i] = '.';
                 pua_cats[i + 1] = 0;
             }
 
@@ -527,14 +527,14 @@ int main(int argc, char **argv)
                     sprintf(pua_cats + i, ".%s", opt->strarg);
                     i += strlen(opt->strarg) + 1;
                     pua_cats[i] = 0;
-                    opt         = opt->nextarg;
+                    opt = opt->nextarg;
                 }
 
                 if (ret)
                     break;
 
                 logg(LOGG_INFO_NF, "\n");
-                pua_cats[i]     = '.';
+                pua_cats[i] = '.';
                 pua_cats[i + 1] = 0;
             }
 
@@ -701,7 +701,7 @@ int main(int argc, char **argv)
                     char *ipaddr = (!strcmp(opt->strarg, "all") ? NULL : opt->strarg);
 
                     if (tcpserver(&lsockets, &nlsockets, ipaddr, opts) == -1) {
-                        ret      = 1;
+                        ret = 1;
                         breakout = 1;
                         break;
                     }
@@ -738,7 +738,7 @@ int main(int argc, char **argv)
             umask(umsk); /* restore umask */
 
             if (optget(opts, "LocalSocketGroup")->enabled) {
-                char *gname    = optget(opts, "LocalSocketGroup")->strarg, *end;
+                char *gname = optget(opts, "LocalSocketGroup")->strarg, *end;
                 gid_t sock_gid = strtol(gname, &end, 10);
 
                 if (*end) {

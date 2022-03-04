@@ -86,7 +86,7 @@ wchar_t *uncpath(const char *path)
         return NULL;
     }
 
-    len        = wcslen(dest);
+    len = wcslen(dest);
     strip_from = &dest[3];
     /* append a backslash to naked drives and get rid of . and .. */
     if (!wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
@@ -100,11 +100,11 @@ wchar_t *uncpath(const char *path)
         wchar_t *copy_from, *copy_to;
         if (!stripme[2] || stripme[2] == L'\\') {
             copy_from = &stripme[2];
-            copy_to   = stripme;
+            copy_to = stripme;
         } else if (stripme[2] == L'.' && (!stripme[3] || stripme[3] == L'\\')) {
-            *stripme  = L'\0';
+            *stripme = L'\0';
             copy_from = &stripme[3];
-            copy_to   = wcsrchr(strip_from, L'\\');
+            copy_to = wcsrchr(strip_from, L'\\');
             if (!copy_to)
                 copy_to = stripme;
         } else {
@@ -185,25 +185,25 @@ int w32_stat(const char *path, struct stat *buf)
         errno = ENOENT;
         return -1;
     }
-    buf->st_dev   = 1;
-    buf->st_rdev  = 1;
-    buf->st_uid   = 0;
-    buf->st_gid   = 0;
-    buf->st_ino   = 1;
+    buf->st_dev = 1;
+    buf->st_rdev = 1;
+    buf->st_uid = 0;
+    buf->st_gid = 0;
+    buf->st_ino = 1;
     buf->st_atime = FileTimeToUnixTime(attrs.ftLastAccessTime);
     buf->st_ctime = FileTimeToUnixTime(attrs.ftCreationTime);
     buf->st_mtime = FileTimeToUnixTime(attrs.ftLastWriteTime);
-    buf->st_mode  = (attrs.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? S_IRUSR : S_IRWXU;
+    buf->st_mode = (attrs.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? S_IRUSR : S_IRWXU;
     buf->st_mode |= (attrs.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? _S_IFDIR : _S_IFREG;
     buf->st_nlink = 1;
-    buf->st_size  = ((uint64_t)attrs.nFileSizeHigh << (sizeof(attrs.nFileSizeLow) * 8)) | attrs.nFileSizeLow;
+    buf->st_size = ((uint64_t)attrs.nFileSizeHigh << (sizeof(attrs.nFileSizeLow) * 8)) | attrs.nFileSizeLow;
     return 0;
 }
 
 int w32_access(const char *pathname, int mode)
 {
     int ret;
-    HANDLE hFile          = INVALID_HANDLE_VALUE;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
     DWORD dwDesiredAccess = GENERIC_READ;
 
     if (W_OK & mode) {

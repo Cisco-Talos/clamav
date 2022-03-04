@@ -102,9 +102,9 @@ size_t header_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     int len = size * nmemb;
     char *sp, *ep, *mem;
-    header_data *hd        = (header_data *)userdata;
+    header_data *hd = (header_data *)userdata;
     const char *set_cookie = "Set-Cookie:";
-    int clen               = strlen(set_cookie);
+    int clen = strlen(set_cookie);
 
     if (len > clen) {
         if (strncmp(ptr, set_cookie, clen))
@@ -146,7 +146,7 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
         }
         memcpy(str + wd->len, ptr, len);
         str[wd->len + len] = '\0';
-        wd->str            = str;
+        wd->str = str;
         wd->len += len;
     }
     return len;
@@ -162,7 +162,7 @@ size_t write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
 const char *presigned_get_string(json_object *ps_json_obj, char *key)
 {
     json_object *json_obj = NULL;
-    const char *json_str  = NULL;
+    const char *json_str = NULL;
 
     if (json_object_object_get_ex(ps_json_obj, key, &json_obj)) {
         json_str = json_object_get_string(json_obj);
@@ -187,19 +187,19 @@ int main(int argc, char *argv[])
     char *name = NULL, *email = NULL, *filename = NULL;
     int setURL = 0, fromStream = 0;
     const char *json_str;
-    write_data wd            = {0, NULL};
-    header_data hd_malware   = {0, NULL};
+    write_data wd = {0, NULL};
+    header_data hd_malware = {0, NULL};
     header_data hd_presigned = {0, NULL};
     json_object *ps_json_obj = NULL;
-    bool malware             = false;
-    int len                  = 0;
-    char *submissionID       = NULL;
-    char *fpvname            = NULL;
+    bool malware = false;
+    int len = 0;
+    char *submissionID = NULL;
+    char *fpvname = NULL;
     char *sp, *ep;
 
     char *authenticity_token_header = NULL;
-    char *authenticity_token        = NULL;
-    char *session_cookie            = NULL;
+    char *authenticity_token = NULL;
+    char *session_cookie = NULL;
 
     char *url_for_auth_token;
     char *url_for_presigned_cookie;
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
             case 'n':
                 if (setURL)
                     usage(argv[0]);
-                malware  = true;
+                malware = true;
                 filename = optarg;
                 break;
             case 'V':
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
         logg(LOGG_ERROR, "clamav.net/presigned response missing session ID cookie.\nWill try without the cookie.\n");
         // goto done; // Note: unclear if the session cookie is required. Can't hurt to try w/out it?
     } else {
-        len            = strlen(hd_malware.session) + 3;
+        len = strlen(hd_malware.session) + 3;
         session_cookie = malloc(len);
         if (session_cookie == NULL) {
             logg(LOGG_ERROR, "No memory for GET presigned cookies\n");
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
     }
 
     /* Include an X-CSRF-Token header using the authenticity token retrieved with the presigned GET request */
-    len                       = strlen(authenticity_token) + strlen("X-CSRF-Token: ") + 1;
+    len = strlen(authenticity_token) + strlen("X-CSRF-Token: ") + 1;
     authenticity_token_header = malloc(len);
     if (authenticity_token_header == NULL) {
         logg(LOGG_ERROR, "No memory for GET presigned X-CSRF-Token\n");
@@ -670,7 +670,7 @@ char *read_stream(void)
 
     while (!feof(stdin)) {
         nwritten = 0;
-        nread    = fread(buf, 1, sizeof(buf), stdin);
+        nread = fread(buf, 1, sizeof(buf), stdin);
         if (nread == 0) {
             fclose(fp);
             remove(filename);

@@ -86,7 +86,7 @@ static void splitpath(char *path, char **dir, char **base)
     char *startpath, *endpath;
     int len;
     if (!path || !(len = strlen(path))) {
-        *dir  = ".";
+        *dir = ".";
         *base = "";
         return;
     }
@@ -97,7 +97,7 @@ static void splitpath(char *path, char **dir, char **base)
         endpath--;
     }
     if (endpath < path) {
-        *dir  = "";
+        *dir = "";
         *base = "";
         return;
     }
@@ -109,7 +109,7 @@ static void splitpath(char *path, char **dir, char **base)
             startpath = strchr(path + 2, '\\');
 
         if (!startpath) {
-            *dir  = path;
+            *dir = path;
             *base = "";
             return;
         }
@@ -120,16 +120,16 @@ static void splitpath(char *path, char **dir, char **base)
     if (!endpath) {
         if (startpath == path) {
             if (!strcmp(path, ".") || !strcmp(path, "..") || (len >= 2 && ((*path >= 'a' && *path <= 'z') || (*path >= 'A' && *path <= 'Z')) && path[1] == ':')) {
-                *dir  = path;
+                *dir = path;
                 *base = "";
                 return;
             }
-            *dir  = ".";
+            *dir = ".";
             *base = path;
             return;
         }
-        *base     = startpath;
-        endpath   = startpath - 1;
+        *base = startpath;
+        endpath = startpath - 1;
         startpath = path;
     } else {
         *base = endpath + 1;

@@ -118,8 +118,8 @@ static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, str
                               unsigned *bb_inst)
 {
     CHECK_GT(func->numBB, bbid);
-    *bb      = &func->BB[bbid];
-    *inst    = (*bb)->insts;
+    *bb = &func->BB[bbid];
+    *inst = (*bb)->insts;
     *bb_inst = 0;
     return 0;
 }
@@ -151,7 +151,7 @@ static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)
 
     /* last_size is stored after data */
     /* align bytes to pointer size */
-    bytes         = (bytes + sizeof(uint16_t) + sizeof(align_t)) & ~(sizeof(align_t) - 1);
+    bytes = (bytes + sizeof(uint16_t) + sizeof(align_t)) & ~(sizeof(align_t) - 1);
     last_size_off = bytes - 2;
 
     if (chunk && (chunk->used + bytes <= STACK_CHUNKSIZE)) {
@@ -159,7 +159,7 @@ static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)
         void *ret;
 
         *(uint16_t *)&chunk->u.data[chunk->used + last_size_off] = stack->last_size;
-        stack->last_size                                         = bytes / sizeof(align_t);
+        stack->last_size = bytes / sizeof(align_t);
 
         ret = chunk->u.data + chunk->used;
         chunk->used += bytes;
@@ -178,10 +178,10 @@ static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)
     }
 
     *(uint16_t *)&chunk->u.data[last_size_off] = stack->last_size;
-    stack->last_size                           = bytes / sizeof(align_t);
+    stack->last_size = bytes / sizeof(align_t);
 
-    chunk->used  = bytes;
-    chunk->prev  = stack->chunk;
+    chunk->used = bytes;
+    chunk->prev = stack->chunk;
     stack->chunk = chunk;
     return chunk->u.data;
 }
@@ -243,10 +243,10 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
     struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values) * func->numBytes);
     if (!entry)
         return NULL;
-    entry->prev    = prev;
-    entry->func    = func_old;
-    entry->ret     = ret;
-    entry->bb      = bb;
+    entry->prev = prev;
+    entry->func = func_old;
+    entry->ret = ret;
+    entry->bb = bb;
     entry->bb_inst = bb_inst;
     /* we allocated room for values right after stack_entry! */
     entry->values = values = (char *)&entry[1];
@@ -263,11 +263,11 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
                                                    unsigned *bb_inst)
 {
     void *data;
-    *func       = stack_entry->func;
-    *ret        = stack_entry->ret;
-    *bb         = stack_entry->bb;
-    *bb_inst    = stack_entry->bb_inst;
-    data        = stack_entry;
+    *func = stack_entry->func;
+    *ret = stack_entry->ret;
+    *bb = stack_entry->bb;
+    *bb_inst = stack_entry->bb_inst;
+    data = stack_entry;
     stack_entry = stack_entry->prev;
     cli_stack_free(stack, data);
     return stack_entry;
@@ -522,7 +522,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
         stack_depth--;                                                            \
         stack_entry = pop_stack(&stack, stack_entry, &func, &ret, &bb,            \
                                 &bb_inst);                                        \
-        values      = stack_entry ? stack_entry->values : ctx->values;            \
+        values = stack_entry ? stack_entry->values : ctx->values;                 \
         CHECK_GT(func->numBytes, ret);                                            \
         W0(ret, tmp);                                                             \
         if (!bb) {                                                                \
@@ -530,7 +530,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
             continue;                                                             \
         }                                                                         \
         stackid = ptr_register_stack(&ptrinfos, values, 0, func->numBytes) >> 32; \
-        inst    = &bb->insts[bb_inst];                                            \
+        inst = &bb->insts[bb_inst];                                               \
         break;                                                                    \
     }
 
@@ -567,16 +567,16 @@ static inline int64_t ptr_register_stack(struct ptr_infos *infos,
                                          char *values,
                                          uint32_t off, uint32_t size)
 {
-    unsigned n              = infos->nstacks + 1;
+    unsigned n = infos->nstacks + 1;
     struct ptr_info *sinfos = cli_realloc(infos->stack_infos,
                                           sizeof(*sinfos) * n);
     if (!sinfos)
         return 0;
     infos->stack_infos = sinfos;
-    infos->nstacks     = n;
-    sinfos             = &sinfos[n - 1];
-    sinfos->base       = (uint8_t *)values + off;
-    sinfos->size       = size;
+    infos->nstacks = n;
+    sinfos = &sinfos[n - 1];
+    sinfos->base = (uint8_t *)values + off;
+    sinfos->size = size;
     return ptr_compose(-n, 0);
 }
 
@@ -590,7 +590,7 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
             return 0;
         memset(sinfos + infos->nglobs, 0, (n - infos->nglobs) * sizeof(*sinfos));
         infos->glob_infos = sinfos;
-        infos->nglobs     = n;
+        infos->nglobs = n;
     }
     sinfos = &infos->glob_infos[n - 1];
     if (!values)
@@ -614,7 +614,7 @@ static inline void *ptr_torealptr(const struct ptr_infos *infos, int64_t ptr,
                                   uint32_t read_size)
 {
     struct ptr_info *info;
-    int32_t ptrid   = ptr >> 32;
+    int32_t ptrid = ptr >> 32;
     uint32_t ptroff = (uint32_t)ptr;
     TRACE_PTR(ptr, read_size);
     if (UNLIKELY(!ptrid)) {
@@ -693,8 +693,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     struct cli_bc_func *func2;
     struct stack stack;
     struct stack_entry *stack_entry = NULL;
-    struct cli_bc_bb *bb            = NULL;
-    char *values                    = ctx->values;
+    struct cli_bc_bb *bb = NULL;
+    char *values = ctx->values;
     char *old_values;
     struct ptr_infos ptrinfos;
     struct timeval tv0, tv1, timeout;
@@ -706,11 +706,11 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
         void *apiptr;
         uint32_t size;
         const struct cli_apiglobal *g = &cli_globals[i];
-        void **apiglobal              = (void **)(((char *)ctx) + g->offset);
+        void **apiglobal = (void **)(((char *)ctx) + g->offset);
         if (!apiglobal)
             continue;
         apiptr = *apiglobal;
-        size   = globaltypesize(g->type);
+        size = globaltypesize(g->type);
         ptr_register_glob_fixedid(&ptrinfos, apiptr, size, g->globalid - _FIRST_GLOBAL + 1);
     }
     ptr_register_glob_fixedid(&ptrinfos, bc->globalBytes, bc->numGlobalBytes,
@@ -718,7 +718,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
     gettimeofday(&tv0, NULL);
     timeout.tv_usec = tv0.tv_usec + ctx->bytecode_timeout * 1000;
-    timeout.tv_sec  = tv0.tv_sec + timeout.tv_usec / 1000000;
+    timeout.tv_sec = tv0.tv_sec + timeout.tv_usec / 1000000;
     timeout.tv_usec %= 1000000;
 
     do {
@@ -902,7 +902,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                             int32_t a;
                             void *resp;
                             READ32(a, inst->u.ops.ops[0]);
-                            resp  = cli_apicalls3[api->idx](ctx, a);
+                            resp = cli_apicalls3[api->idx](ctx, a);
                             res64 = ptr_register_glob(&ptrinfos, resp, a);
                             WRITE64(inst->dest, res64);
                             break;
@@ -930,7 +930,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                             void *resp;
                             READ32(arg1, inst->u.ops.ops[0]);
                             READ32(arg2, inst->u.ops.ops[1]);
-                            resp  = cli_apicalls6[api->idx](ctx, arg1, arg2);
+                            resp = cli_apicalls6[api->idx](ctx, arg1, arg2);
                             res64 = ptr_register_glob(&ptrinfos, resp, arg2);
                             WRITE64(inst->dest, res64);
                             break;
@@ -980,7 +980,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                 CHECK_FUNCID(inst->u.ops.funcid);
                 func2 = &bc->funcs[inst->u.ops.funcid];
                 CHECK_EQ(func2->numArgs, inst->u.ops.numOps);
-                old_values  = values;
+                old_values = values;
                 stack_entry = allocate_stack(&stack, stack_entry, func2, func, inst->dest,
                                              bb, bb_inst);
                 if (!stack_entry) {
@@ -1034,7 +1034,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
                         }
                     }
                 }
-                func    = func2;
+                func = func2;
                 stackid = ptr_register_stack(&ptrinfos, values, 0, func->numBytes) >> 32;
                 CHECK_GT(func->numBB, 0);
                 stop = jump(func, 0, &bb, &inst, &bb_inst);

@@ -109,9 +109,9 @@ struct device *get_device_entry(struct device *devices, size_t *ndevices, const 
 #if HAVE_GETIFADDRS
 struct device *get_devices(void)
 {
-    struct ifaddrs *addrs  = NULL, *addr;
+    struct ifaddrs *addrs = NULL, *addr;
     struct device *devices = NULL;
-    size_t ndevices        = 0, i, j;
+    size_t ndevices = 0, i, j;
     void *p;
     uint8_t *mac;
     int sock;
@@ -213,7 +213,7 @@ struct device *get_devices(void)
     if (!(p))
         goto err;
 
-    devices                = p;
+    devices = p;
     devices[ndevices].name = NULL;
     memset(devices[ndevices].mac, 0x00, sizeof(devices[ndevices].mac));
 
