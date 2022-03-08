@@ -445,10 +445,17 @@ if(BZIP2_FOUND)
     set(HAVE_BZLIB_H 1)
 endif()
 
+# Disable CMAKE_FIND_PACKAGE_PREFER_CONFIG, temporarily, because
+# we don't presently support the using libxml2's Config.cmake
+set(PACKAGE_PREFER_CONFIG_BAK ${CMAKE_FIND_PACKAGE_PREFER_CONFIG})
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
+
 find_package(LibXml2 REQUIRED)
 if(LibXml2_FOUND)
     set(HAVE_LIBXML2 1)
 endif()
+# Restore the requested CMAKE_FIND_PACKAGE_PREFER_CONFIG setting
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${PACKAGE_PREFER_CONFIG_BAK})
 
 find_package(PCRE2 REQUIRED)
 if(PCRE2_FOUND)
