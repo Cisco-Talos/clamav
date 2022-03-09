@@ -45,7 +45,7 @@
 /** Max # of bytes to show for archive inspection preview */
 #define MAX_PREVIEW 10
 
-cl_error_t scan_callback(
+cl_error_t inspection_callback(
     int fd,
     const char *type,
     const char **ancestors, // array of null-terminated strings, array size == recursion_level
@@ -86,6 +86,19 @@ cl_error_t scan_callback(
     printf("\n\n");
 
     return CL_CLEAN; /* keep scanning */
+}
+
+cl_error_t post_callback(
+    int fd,
+    int result,
+    const char *virname,
+    void *context) // Could be used to retrieve / store contextual information for app
+{
+    printf("result:             %d\n", result);
+    printf("virname:            %s\n", virname);
+    printf("\n\n");
+
+    return CL_CLEAN; // respect the original result
 }
 
 /*
@@ -199,10 +212,17 @@ int main(int argc, char **argv)
     options.general |= CL_SCAN_GENERAL_ALLMATCHES;       /* run in all-match mode, so it keeps looking for alerts after the first one */
     options.general |= CL_SCAN_GENERAL_COLLECT_METADATA; /* collect metadata may enable collecting additional filenames (like in zip) */
 
+    options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_ARCHIVE;
+    options.heuristic |= CL_SCAN_HEURISTIC_ENCRYPTED_DOC;
+
     /*
      * Set our callbacks for inspecting embedded files during the scan.
      */
-    cl_engine_set_clcb_file_inspection(engine, &scan_callback);
+    cl_engine_set_clcb_file_inspection(engine, &inspection_callback);
+    /*
+     * Set our callbacks for inspecting embedded files during the scan.
+     */
+    cl_engine_set_clcb_post_scan(engine, &post_callback);
 
     printf("Testing file inspection on FD %d - %s\n", target_fd, filename);
 
