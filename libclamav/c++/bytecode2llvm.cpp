@@ -393,21 +393,6 @@ static void *noUnknownFunctions(const std::string &name)
 class NotifyListener : public JITEventListener
 {
   public:
-#if LLVM_VERSION < 36
-    virtual void NotifyFunctionEmitted(const Function &F,
-                                       void *Code, size_t Size,
-                                       const EmittedFunctionDetails &Details)
-    {
-        if (!cli_debug_flag)
-            return;
-        cli_dbgmsg("[Bytecode JIT]: emitted function %s of %ld bytes at %p\n",
-#if LLVM_VERSION < 31
-                   F.getNameStr().c_str(), (long)Size, Code);
-#else
-                   F.getName().str().c_str(), (long)Size, Code);
-#endif
-    }
-#else
     // MCJIT doesn't emit single functions, but instead whole objects.
     virtual void NotifyObjectEmitted(const object::ObjectFile &Obj,
                                      const RuntimeDyld::LoadedObjectInfo &L)
@@ -418,7 +403,6 @@ class NotifyListener : public JITEventListener
                    Obj.getFileFormatName().str().c_str(),
                    Obj.getFileName().str().c_str(), Obj.getData().size());
     }
-#endif
 };
 
 class TimerWrapper
