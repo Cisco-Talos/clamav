@@ -115,7 +115,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     rc = cli_bytecode_prepare2(engine, &bcs, BYTECODE_ENGINE_MASK);
     ck_assert_msg(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
-    if (have_clamjit() && !nojit && nojit != -1 && !testmode) {
+    if (have_clamjit() && !nojit && !testmode) {
         ck_assert_msg(bc.state == bc_jit, "preparing for JIT failed");
     }
 
