@@ -1419,7 +1419,7 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
     cli_writen(fout, s.out, s.out_pos);
 
     lseek(fout, 0, SEEK_SET);
-    rc = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
+    rc = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL, LAYER_ATTRIBUTES_NONE);
     close(fout);
 
     if (!pdf->ctx->engine->keeptmp || (s.out_pos == 0))
@@ -1814,7 +1814,7 @@ done:
 
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
-        rc2 = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
+        rc2 = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL, LAYER_ATTRIBUTES_NONE);
         if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
             rc = rc2;
 

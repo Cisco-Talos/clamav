@@ -303,7 +303,8 @@ static cl_error_t jpeg_check_photoshop_8bim(cli_ctx *ctx, size_t *off)
     offset += 4 + 28;
 
     /* Scan the thumbnail JPEG */
-    retval = cli_magic_scan_nested_fmap_type(map, offset, 0, ctx, CL_TYPE_JPEG, "photoshop-thumbnail");
+    retval = cli_magic_scan_nested_fmap_type(map, offset, 0, ctx, CL_TYPE_JPEG,
+                                             "photoshop-thumbnail", LAYER_ATTRIBUTES_NONE);
 
     return retval;
 }

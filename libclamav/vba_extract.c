@@ -1723,7 +1723,7 @@ int cli_scan_ole10(int fd, cli_ctx *ctx)
     cli_dbgmsg("cli_decode_ole_object: decoding to %s\n", fullname);
     ole_copy_file_data(fd, ofd, object_size);
     lseek(ofd, 0, SEEK_SET);
-    ret = cli_magic_scan_desc(ofd, fullname, ctx, NULL);
+    ret = cli_magic_scan_desc(ofd, fullname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     close(ofd);
     if (ctx && !ctx->engine->keeptmp)
         if (cli_unlink(fullname))

@@ -119,7 +119,7 @@ pub type clcb_pre_cache = ::std::option::Option<
 #[doc = ""]
 #[doc = " @param fd                  Current file descriptor which is about to be scanned."]
 #[doc = " @param type                Current file type detected via magic - i.e. NOT on the fly - (e.g. \"CL_TYPE_MSEXE\")."]
-#[doc = " @param ancestors           A list of ancestors filenames, delimited by \" > \". Unnamed files are given the name \"(no name)\"."]
+#[doc = " @param ancestors           An array of ancestors filenames of size `recursion_level`. filenames may be NULL."]
 #[doc = " @param parent_file_size    Parent file size."]
 #[doc = " @param file_name           Current file name, or NULL if the file does not have a name or ClamAV failed to record the name."]
 #[doc = " @param file_size           Current file size."]
@@ -801,7 +801,6 @@ pub struct cli_ctx_tag {
     pub recursion_stack_size: u32,
     pub recursion_level: u32,
     pub fmap: *mut fmap_t,
-    pub next_layer_attributes: u32,
     pub handlertype_hash: [::std::os::raw::c_uchar; 16usize],
     pub dconf: *mut cli_dconf,
     pub hook_lsig_matches: *mut bitset_t,

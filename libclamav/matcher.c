@@ -769,7 +769,8 @@ int32_t cli_bcapi_matchicon(struct cli_bc_ctx *ctx, const uint8_t *grp1, int32_t
     return (int32_t)ret;
 }
 
-cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, struct cli_ac_result **acres, const char *name)
+cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset,
+                         unsigned int acmode, struct cli_ac_result **acres, const char *name, uint32_t attributes)
 {
     cl_error_t status = CL_CLEAN;
     int empty;
@@ -785,7 +786,7 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonl
         goto done;
     }
 
-    status = cli_recursion_stack_push(ctx, new_map, ftype, true); /* Perform scan with child fmap */
+    status = cli_recursion_stack_push(ctx, new_map, ftype, true, attributes); /* Perform scan with child fmap */
     if (CL_SUCCESS != status) {
         cli_dbgmsg("cli_scan_desc: Failed to scan fmap.\n");
         goto done;
@@ -803,8 +804,6 @@ done:
     if (NULL != new_map) {
         funmap(new_map);
     }
-    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
-    ctx->next_layer_attributes = 0;
 
     return status;
 }
@@ -879,7 +878,7 @@ static cl_error_t lsig_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
 
                 memcpy(ctx->handlertype_hash, hash, 16);
 
-                status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true); /* Perform scan with child fmap */
+                status = cli_recursion_stack_push(ctx, new_map, ac_lsig->tdb.handlertype[0], true, LAYER_ATTRIBUTES_NONE); /* Perform scan with child fmap */
                 if (CL_SUCCESS != status) {
                     cli_dbgmsg("Failed to re-scan fmap as a new type.\n");
                     goto done;

@@ -1381,7 +1381,7 @@ const char *cli_get_last_virus_str(const cli_ctx *ctx)
     return "";
 }
 
-cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer)
+cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer, uint32_t attributes)
 {
     cl_error_t status = CL_SUCCESS;
 
@@ -1428,7 +1428,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     // Normalized layers should be ignored when using the get_type() and get_intermediate_type()
     // functions so that signatures that specify the container or intermediates need not account
     // for normalized layers "contained in" HTML / Javascript / etc.
-    new_container->attributes = ctx->next_layer_attributes;
+    new_container->attributes = attributes;
 
     // If the current layer is marked "decrypted", all child-layers are also marked "decrypted".
     if (current_container->attributes & LAYER_ATTRIBUTES_DECRYPTED) {
@@ -1438,8 +1438,6 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
     ctx->fmap = new_container->fmap;
 
 done:
-    // Clear the next-layer attributes so we don't accidentally apply them to all subsequent layers.
-    ctx->next_layer_attributes = 0;
 
     return status;
 }

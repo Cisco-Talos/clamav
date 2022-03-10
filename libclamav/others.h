@@ -209,9 +209,6 @@ typedef struct cli_ctx_tag {
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
     uint32_t recursion_level;           /* Index into recursion_stack; current fmap recursion level from start of scan. */
     fmap_t *fmap;                       /* Pointer to current fmap in recursion_stack, varies with recursion depth. For convenience. */
-    uint32_t next_layer_attributes;     /* Indicate attributes that should apply to the next layer created.
-                                         * Notably for LAYER_ATTRIBUTES_NORMALIZED: Indicate that the next fmap pushed to the stack is
-                                         * normalized and should be ignored when checking container/intermediate types */
     unsigned char handlertype_hash[16];
     struct cli_dconf *dconf;
     bitset_t *hook_lsig_matches;
@@ -748,9 +745,10 @@ void cli_virus_found_cb(cli_ctx *ctx);
  * @param map           The fmap for the new layer.
  * @param type          The file type. May be CL_TYPE_ANY if unknown. Can change it later with cli_recursion_stack_change_type().
  * @param is_new_buffer true if the fmap represents a new buffer/file, and not some window into an existing fmap.
+ * @param attributes    Layer attributes for the thing to be scanned.
  * @return cl_error_t   CL_SUCCESS if successful, else CL_EMAXREC if exceeding the max recursion depth.
  */
-cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer);
+cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t type, bool is_new_buffer, uint32_t attributes);
 
 /**
  * @brief Pop off a layer of our scan recursion stack.

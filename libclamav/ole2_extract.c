@@ -1503,7 +1503,7 @@ static cl_error_t scan_mso_stream(int fd, cli_ctx *ctx)
     }
 
     /* scanning inflated stream */
-    ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
     /* clean-up */
 mso_end:
@@ -1666,7 +1666,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         ret = scan_mso_stream(ofd, ctx);
     } else {
         /* Normal File Scan */
-        ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL);
+        ret = cli_magic_scan_desc(ofd, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     }
 
     ret = ret == CL_VIRUS ? CL_VIRUS : CL_SUCCESS;

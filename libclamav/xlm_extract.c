@@ -4350,10 +4350,11 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
                 goto done;
             }
 
-            ret = cli_magic_scan_desc_type(extracted_image_tempfd, extracted_image_filepath, ctx, CL_TYPE_ANY, NULL);
+            ret = cli_magic_scan_desc_type(extracted_image_tempfd, extracted_image_filepath, ctx, CL_TYPE_ANY,
+                                           NULL, LAYER_ATTRIBUTES_NONE);
         } else {
             /* Scan the buffer */
-            ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, NULL);
+            ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, NULL, LAYER_ATTRIBUTES_NONE);
         }
         if (ret == CL_VIRUS) {
             if (!SCAN_ALLMATCHES) {
@@ -4976,7 +4977,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
         goto done;
     }
 
-    if (cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
+    if (CL_VIRUS == cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR,
+                                  NULL, NULL, LAYER_ATTRIBUTES_NONE)) {
         status = CL_VIRUS;
         goto done;
     }

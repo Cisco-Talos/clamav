@@ -173,7 +173,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
 
             if (fout >= 0) {
                 lseek(fout, 0, SEEK_SET);
-                ret = cli_magic_scan_desc(fout, fullname, ctx, name);
+                ret = cli_magic_scan_desc(fout, fullname, ctx, name, LAYER_ATTRIBUTES_NONE);
                 close(fout);
                 if (!ctx->engine->keeptmp)
                     if (cli_unlink(fullname)) return CL_EUNLINK;
@@ -369,7 +369,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
     }
     if (fout >= 0) {
         lseek(fout, 0, SEEK_SET);
-        ret = cli_magic_scan_desc(fout, fullname, ctx, name);
+        ret = cli_magic_scan_desc(fout, fullname, ctx, name, LAYER_ATTRIBUTES_NONE);
         close(fout);
         if (!ctx->engine->keeptmp)
             if (cli_unlink(fullname)) return CL_EUNLINK;

@@ -569,7 +569,8 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
             RETURN_BROKEN;
         }
 
-        ret = cli_magic_scan_nested_fmap_type(map, fat_arch.offset, fat_arch.size, ctx, CL_TYPE_ANY, NULL);
+        ret = cli_magic_scan_nested_fmap_type(map, fat_arch.offset, fat_arch.size, ctx,
+                                              CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
         if (ret == CL_VIRUS)
             break;
     }
@@ -608,7 +609,7 @@ int cli_unpackmacho(cli_ctx *ctx)
                     cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable\n");
                 lseek(ndesc, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning rebuilt Mach-O file *****\n");
-                if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {
+                if (CL_VIRUS == cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)) {
                     close(ndesc);
                     CLI_TMPUNLK();
                     free(tempfile);

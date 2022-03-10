@@ -184,7 +184,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     }
 
     /* MBR is valid, examine bootstrap code */
-    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
+    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx,
+                                          CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     if (ret != CL_CLEAN) {
         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
             detection = CL_VIRUS;
@@ -240,7 +241,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             partoff  = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
-            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx,
+                                                  CL_TYPE_PART_ANY, NULL, LAYER_ATTRIBUTES_NONE);
             if (ret != CL_CLEAN) {
                 if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                     detection = CL_VIRUS;
@@ -381,7 +383,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                         return CL_EFORMAT;
                     }
 
-                    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+                    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx,
+                                                          CL_TYPE_PART_ANY, NULL, LAYER_ATTRIBUTES_NONE);
                     if (ret != CL_CLEAN) {
                         if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
                             detection = CL_VIRUS;

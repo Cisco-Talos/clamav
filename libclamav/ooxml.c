@@ -146,12 +146,13 @@ static cl_error_t ooxml_parse_document(int fd, cli_ctx *ctx)
     return ret;
 }
 
-static cl_error_t ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
+static cl_error_t ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
     cl_error_t ret;
 
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
+    UNUSEDPARAM(attributes);
 
     cli_dbgmsg("in ooxml_core_cb\n");
     ret = ooxml_parse_document(fd, ctx);
@@ -163,12 +164,13 @@ static cl_error_t ooxml_core_cb(int fd, const char *filepath, cli_ctx *ctx, cons
     return ret;
 }
 
-static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
+static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
     cl_error_t ret;
 
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
+    UNUSEDPARAM(attributes);
 
     cli_dbgmsg("in ooxml_extn_cb\n");
     ret = ooxml_parse_document(fd, ctx);
@@ -180,7 +182,7 @@ static cl_error_t ooxml_extn_cb(int fd, const char *filepath, cli_ctx *ctx, cons
     return ret;
 }
 
-static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
+static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
     cl_error_t ret = CL_SUCCESS;
     int tmp, toval = 0, state;
@@ -192,6 +194,7 @@ static cl_error_t ooxml_content_cb(int fd, const char *filepath, cli_ctx *ctx, c
 
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
+    UNUSEDPARAM(attributes);
 
     unsigned long sav_scansize    = ctx->scansize;
     unsigned int sav_scannedfiles = ctx->scannedfiles;
@@ -351,13 +354,14 @@ ooxml_content_exit:
     return ret;
 }
 
-static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name)
+static cl_error_t ooxml_hwp_cb(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
     cl_error_t ret          = CL_SUCCESS;
     xmlTextReaderPtr reader = NULL;
 
     UNUSEDPARAM(filepath);
     UNUSEDPARAM(name);
+    UNUSEDPARAM(attributes);
 
     cli_dbgmsg("in ooxml_hwp_cb\n");
 

@@ -28,7 +28,8 @@
 
 #include "others.h"
 
-typedef cl_error_t (*zip_cb)(int fd, const char *filepath, cli_ctx *ctx, const char *name);
+// Callback is the same as cli_magic_scan_desc
+typedef cl_error_t (*zip_cb)(int fd, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes);
 #define zip_scan_cb cli_magic_scan_desc
 
 #define MAX_ZIP_REQUESTS 10

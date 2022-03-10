@@ -122,7 +122,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scan_desc(datafd, dname, ctx, NULL);
+                    ret = cli_magic_scan_desc(datafd, dname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
                     if (ret == CL_VIRUS) break;
                 }
                 if (dec_done)
@@ -168,7 +168,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scan_desc(resfd, rname, ctx, NULL);
+                    ret = cli_magic_scan_desc(resfd, rname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
                     break;
                 }
             }
@@ -180,7 +180,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scan_desc(datafd, dname, ctx, NULL);
+                    ret = cli_magic_scan_desc(datafd, dname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
                 } else if (write_phase == IN_RES) {
                     cli_dbgmsg("cli_binhex: scanning partially extracted resource fork\n");
                     if (lseek(resfd, 0, SEEK_SET) == -1) {
@@ -188,7 +188,7 @@ int cli_binhex(cli_ctx *ctx)
                         ret = CL_ESEEK;
                         break;
                     }
-                    ret = cli_magic_scan_desc(resfd, rname, ctx, NULL);
+                    ret = cli_magic_scan_desc(resfd, rname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
                 }
                 break;
             }
