@@ -33,7 +33,6 @@
 
 #include "ClamBCModule.h"
 #include "ClamBCDiagnostics.h"
-#include "llvm30_compat.h"
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/BitVector.h"
@@ -441,7 +440,7 @@ class LLVMTypeMapper
     std::vector<Type *> TypeMap;
     LLVMContext &Context;
     unsigned numTypes;
-    constType *getStatic(uint16_t ty)
+    Type *getStatic(uint16_t ty)
     {
         if (!ty)
             return Type::getVoidTy(Context);
@@ -465,7 +464,7 @@ class LLVMTypeMapper
     TimerWrapper irgenTimer;
 
     LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
-                   unsigned count, constType *Hidden = 0)
+                   unsigned count, Type *Hidden = 0)
         : Context(Context), numTypes(count),
           pmTimer("Function passes"), irgenTimer("IR generation")
     {
@@ -479,24 +478,23 @@ class LLVMTypeMapper
         for (unsigned i = 0; i < count; i++) {
             const struct cli_bc_type *type = &types[i];
 
-            constType *Ty = buildType(type, types, Hidden, 0);
-            TypeMap[i]    = Ty;
+            Type *Ty   = buildType(type, types, Hidden, 0);
+            TypeMap[i] = Ty;
         }
     }
 
-    constType *buildType(const struct cli_bc_type *type, const struct cli_bc_type *types, constType *Hidden,
-                         int recursive)
+    Type *buildType(const struct cli_bc_type *type, const struct cli_bc_type *types, Type *Hidden, int recursive)
     {
-        std::vector<constType *> Elts;
+        std::vector<Type *> Elts;
         unsigned n = type->kind == DArrayType ? 1 : type->numElements;
         for (unsigned j = 0; j < n; j++) {
             Elts.push_back(get(type->containedTypes[j], types, Hidden));
         }
-        constType *Ty;
+        Type *Ty;
         switch (type->kind) {
             case DFunctionType: {
                 assert(Elts.size() > 0 && "Function with no return type?");
-                constType *RetTy = Elts[0];
+                Type *RetTy = Elts[0];
                 if (Hidden)
                     Elts[0] = Hidden;
                 else
@@ -523,7 +521,7 @@ class LLVMTypeMapper
         return Ty;
     }
 
-    constType *get(uint16_t ty, const struct cli_bc_type *types, constType *Hidden)
+    Type *get(uint16_t ty, const struct cli_bc_type *types, Type *Hidden)
     {
         ty &= 0x7fff;
         if (ty < 69)
@@ -680,7 +678,7 @@ class RuntimeLimits : public FunctionPass
             return false;
         }
 
-        std::vector<constType *> args;
+        std::vector<Type *> args;
         FunctionType *abrtTy = FunctionType::get(
             Type::getVoidTy(F.getContext()), args, false);
 
@@ -836,7 +834,7 @@ class LLVMCodegen
 
     std::vector<Value *> globals;
     DenseMap<unsigned, unsigned> GVoffsetMap;
-    DenseMap<unsigned, constType *> GVtypeMap;
+    DenseMap<unsigned, Type *> GVtypeMap;
     Value **Values;
     unsigned numLocals;
     unsigned numArgs;
@@ -844,7 +842,7 @@ class LLVMCodegen
 
     struct CommonFunctions *CF;
 
-    Value *getOperand(const struct cli_bc_func *func, constType *Ty, operand_t operand)
+    Value *getOperand(const struct cli_bc_func *func, Type *Ty, operand_t operand)
     {
         unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
         if (operand < func->numValues)
@@ -857,7 +855,7 @@ class LLVMCodegen
         return convertOperand(func, map[w], operand);
     }
 
-    Value *convertOperand(const struct cli_bc_func *func, constType *Ty, operand_t operand)
+    Value *convertOperand(const struct cli_bc_func *func, Type *Ty, operand_t operand)
     {
         unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
         if (operand < func->numArgs)
@@ -932,7 +930,7 @@ class LLVMCodegen
         assert((operand < func->numConstants) && "Constant out of range");
         uint64_t *c = &func->constants[operand];
         uint64_t v;
-        constType *Ty;
+        Type *Ty;
         switch (w) {
             case 0:
             case 1:
@@ -977,14 +975,14 @@ class LLVMCodegen
         Builder.SetInsertPoint(OkBB);
     }
 
-    constType *mapType(uint16_t typeID)
+    Type *mapType(uint16_t typeID)
     {
         return TypeMap->get(typeID & 0x7fffffff, NULL, NULL);
     }
 
-    Constant *buildConstant(constType *Ty, uint64_t *components, unsigned &c)
+    Constant *buildConstant(Type *Ty, uint64_t *components, unsigned &c)
     {
-        if (constPointerType *PTy = dyn_cast<PointerType>(Ty)) {
+        if (PointerType *PTy = dyn_cast<PointerType>(Ty)) {
             Value *idxs[1] = {
                 ConstantInt::get(Type::getInt64Ty(Context), components[c++])};
             unsigned idx = components[c++];
@@ -1002,7 +1000,7 @@ class LLVMCodegen
         if (isa<IntegerType>(Ty)) {
             return ConstantInt::get(Ty, components[c++]);
         }
-        if (constArrayType *ATy = dyn_cast<ArrayType>(Ty)) {
+        if (ArrayType *ATy = dyn_cast<ArrayType>(Ty)) {
             std::vector<Constant *> elements;
             elements.reserve(ATy->getNumElements());
             for (unsigned i = 0; i < ATy->getNumElements(); i++) {
@@ -1010,7 +1008,7 @@ class LLVMCodegen
             }
             return ConstantArray::get(ATy, elements);
         }
-        if (constStructType *STy = dyn_cast<StructType>(Ty)) {
+        if (StructType *STy = dyn_cast<StructType>(Ty)) {
             std::vector<Constant *> elements;
             elements.reserve(STy->getNumElements());
             for (unsigned i = 0; i < STy->getNumElements(); i++) {
@@ -1041,16 +1039,16 @@ class LLVMCodegen
         numArgs   = 0;
     }
 
-    Value *createGEP(Value *Base, constType *ETy, ARRAYREFPARAM(Value *, InputIterator Start, InputIterator End, ARef))
+    Value *createGEP(Value *Base, Type *ETy, ArrayRef<Value *> ARef)
     {
-        return Builder.CreateGEP(Base, ARRAYREFP(Start, End, ARef));
+        return Builder.CreateGEP(Base, ARef);
     }
 
-    bool createGEP(unsigned dest, Value *Base, ARRAYREFPARAM(Value *, InputIterator Start, InputIterator End, ARef))
+    bool createGEP(unsigned dest, Value *Base, ArrayRef<Value *> ARef)
     {
         assert(((dest >= numArgs) && (dest < numLocals + numArgs)) && "Instruction destination out of range");
-        constType *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
-        Value *V       = createGEP(Base, ETy, ARRAYREFP(Start, End, ARef));
+        Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
+        Value *V  = createGEP(Base, ETy, ARef);
         if (!V) {
             if (cli_debug_flag) {
                 cli_dbgmsg("[Bytecode JIT] @%d\n", dest);
@@ -1090,7 +1088,7 @@ class LLVMCodegen
             }
             Vals[j] = V;
         }
-        MDNode *N = MDNode::get(Context, ARRAYREF(Metadata *, Vals, node->numelements));
+        MDNode *N = MDNode::get(Context, ArrayRef<Metadata *>(Vals, node->numelements));
         delete[] Vals;
         mdnodes[i] = N;
         return N;
@@ -1150,20 +1148,20 @@ class LLVMCodegen
 
         for (unsigned i = 0; i < cli_apicall_maxglobal - _FIRST_GLOBAL; i++) {
             unsigned id   = cli_globals[i].globalid;
-            constType *Ty = apiMap.get(cli_globals[i].type, NULL, NULL);
+            Type *Ty      = apiMap.get(cli_globals[i].type, NULL, NULL);
             GVtypeMap[id] = Ty;
         }
 
         // The hidden ctx param to all functions
-        unsigned maxh        = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
-        constType *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(Context), maxh));
+        unsigned maxh   = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
+        Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(Context), maxh));
 
         globals.reserve(bc->num_globals);
         BitVector FakeGVs;
         FakeGVs.resize(bc->num_globals);
         globals.push_back(0);
         for (unsigned i = 1; i < bc->num_globals; i++) {
-            constType *Ty = mapType(bc->globaltys[i]);
+            Type *Ty = mapType(bc->globaltys[i]);
 
             // TODO: validate number of components against type_components
             unsigned c = 0;
@@ -1186,12 +1184,12 @@ class LLVMCodegen
         for (unsigned j = 0; j < bc->num_func; j++) {
             // Create LLVM IR Function
             const struct cli_bc_func *func = &bc->funcs[j];
-            std::vector<constType *> argTypes;
+            std::vector<Type *> argTypes;
             argTypes.push_back(HiddenCtx);
             for (unsigned a = 0; a < func->numArgs; a++) {
                 argTypes.push_back(mapType(func->types[a]));
             }
-            constType *RetTy  = mapType(func->returnType);
+            Type *RetTy       = mapType(func->returnType);
             FunctionType *FTy = FunctionType::get(RetTy, argTypes,
                                                   false);
             Functions[j]      = Function::Create(FTy, Function::InternalLinkage,
@@ -1200,7 +1198,7 @@ class LLVMCodegen
             Functions[j]->setCallingConv(CallingConv::Fast);
             Functions[j]->setLinkage(GlobalValue::InternalLinkage);
         }
-        constType *I32Ty = Type::getInt32Ty(Context);
+        Type *I32Ty = Type::getInt32Ty(Context);
         for (unsigned j = 0; j < bc->num_func; j++) {
             PrettyStackTraceString CrashInfo("Generate LLVM IR");
             const struct cli_bc_func *func = &bc->funcs[j];
@@ -1248,18 +1246,18 @@ class LLVMCodegen
                     Value *Idxs[2] = {
                         ConstantInt::get(Type::getInt32Ty(Context), 0),
                         Idx};
-                    Value *GEP       = Builder.CreateInBoundsGEP(Ctx, ARRAYREF(Value *, Idxs, Idxs + 2));
-                    constType *Ty    = GVtypeMap[g];
+                    Value *GEP       = Builder.CreateInBoundsGEP(Ctx, ArrayRef<Value *>(Idxs, Idxs + 2));
+                    Type *Ty         = GVtypeMap[g];
                     Ty               = PointerType::getUnqual(PointerType::getUnqual(Ty));
                     Value *Cast      = Builder.CreateBitCast(GEP, Ty);
                     Value *SpecialGV = Builder.CreateLoad(Cast);
-                    constType *IP8Ty = Type::getInt8Ty(Context);
+                    Type *IP8Ty      = Type::getInt8Ty(Context);
                     IP8Ty            = PointerType::getUnqual(IP8Ty);
                     SpecialGV        = Builder.CreateBitCast(SpecialGV, IP8Ty);
                     SpecialGV->setName("g" + Twine(g - _FIRST_GLOBAL) + "_");
                     Value *C[] = {
                         ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])};
-                    globals[i] = createGEP(SpecialGV, 0, ARRAYREF(Value *, C, C + 1));
+                    globals[i] = createGEP(SpecialGV, 0, ArrayRef<Value *>(C, C + 1));
                     if (!globals[i]) {
                         if (cli_debug_flag) {
                             std::string str;
@@ -1394,20 +1392,20 @@ class LLVMCodegen
                             Store(inst->dest, Builder.CreateXor(Op0, Op1));
                             break;
                         case OP_BC_TRUNC: {
-                            Value *Src    = convertOperand(func, inst, inst->u.cast.source);
-                            constType *Ty = mapType(func->types[inst->dest]);
+                            Value *Src = convertOperand(func, inst, inst->u.cast.source);
+                            Type *Ty   = mapType(func->types[inst->dest]);
                             Store(inst->dest, Builder.CreateTrunc(Src, Ty));
                             break;
                         }
                         case OP_BC_ZEXT: {
-                            Value *Src    = convertOperand(func, inst, inst->u.cast.source);
-                            constType *Ty = mapType(func->types[inst->dest]);
+                            Value *Src = convertOperand(func, inst, inst->u.cast.source);
+                            Type *Ty   = mapType(func->types[inst->dest]);
                             Store(inst->dest, Builder.CreateZExt(Src, Ty));
                             break;
                         }
                         case OP_BC_SEXT: {
-                            Value *Src    = convertOperand(func, inst, inst->u.cast.source);
-                            constType *Ty = mapType(func->types[inst->dest]);
+                            Value *Src = convertOperand(func, inst, inst->u.cast.source);
+                            Type *Ty   = mapType(func->types[inst->dest]);
                             Store(inst->dest, Builder.CreateSExt(Src, Ty));
                             break;
                         }
@@ -1470,11 +1468,11 @@ class LLVMCodegen
                             Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
                             break;
                         case OP_BC_COPY: {
-                            Value *Dest           = Values[inst->u.binop[1]];
-                            constPointerType *PTy = cast<PointerType>(Dest->getType());
-                            Op0                   = convertOperand(func, PTy->getElementType(), inst->u.binop[0]);
-                            PTy                   = PointerType::getUnqual(Op0->getType());
-                            Dest                  = Builder.CreateBitCast(Dest, PTy);
+                            Value *Dest      = Values[inst->u.binop[1]];
+                            PointerType *PTy = cast<PointerType>(Dest->getType());
+                            Op0              = convertOperand(func, PTy->getElementType(), inst->u.binop[0]);
+                            PTy              = PointerType::getUnqual(Op0->getType());
+                            Dest             = Builder.CreateBitCast(Dest, PTy);
                             Builder.CreateStore(Op0, Dest);
                             break;
                         }
@@ -1486,7 +1484,7 @@ class LLVMCodegen
                                 operand_t op = inst->u.ops.ops[a];
                                 args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a + 1), op));
                             }
-                            CallInst *CI = Builder.CreateCall(DestF, ARRAYREF(Value *, args.begin(), args.end()));
+                            CallInst *CI = Builder.CreateCall(DestF, ArrayRef<Value *>(args.begin(), args.end()));
                             CI->setCallingConv(CallingConv::Fast);
                             CI->setDoesNotThrow();
                             if (CI->getType()->getTypeID() != Type::VoidTyID)
@@ -1507,18 +1505,18 @@ class LLVMCodegen
                                     operand_t op = inst->u.ops.ops[a];
                                     args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a + 1), op));
                                 }
-                                CallInst *CI = Builder.CreateCall(DestF, ARRAYREFVECTOR(Value *, args));
+                                CallInst *CI = Builder.CreateCall(DestF, ArrayRef<Value *>(args));
                                 CI->setDoesNotThrow();
                                 Store(inst->dest, CI);
                             }
                             break;
                         }
                         case OP_BC_GEP1: {
-                            constType *SrcTy = mapType(inst->u.three[0]);
-                            Value *V         = convertOperand(func, SrcTy, inst->u.three[1]);
-                            Value *Op        = convertOperand(func, I32Ty, inst->u.three[2]);
-                            Op               = GEPOperand(Op);
-                            if (!createGEP(inst->dest, V, ARRAYREF(Value *, &Op, &Op + 1))) {
+                            Type *SrcTy = mapType(inst->u.three[0]);
+                            Value *V    = convertOperand(func, SrcTy, inst->u.three[1]);
+                            Value *Op   = convertOperand(func, I32Ty, inst->u.three[2]);
+                            Op          = GEPOperand(Op);
+                            if (!createGEP(inst->dest, V, ArrayRef<Value *>(&Op, &Op + 1))) {
                                 cli_warnmsg("[%s]: OP_BC_GEP1 createGEP failed\n", MODULE);
                                 broken = true;
                             }
@@ -1526,12 +1524,12 @@ class LLVMCodegen
                         }
                         case OP_BC_GEPZ: {
                             Value *Ops[2];
-                            Ops[0]           = ConstantInt::get(Type::getInt32Ty(Context), 0);
-                            constType *SrcTy = mapType(inst->u.three[0]);
-                            Value *V         = convertOperand(func, SrcTy, inst->u.three[1]);
-                            Ops[1]           = convertOperand(func, I32Ty, inst->u.three[2]);
-                            Ops[1]           = GEPOperand(Ops[1]);
-                            if (!createGEP(inst->dest, V, ARRAYREF(Value *, Ops, Ops + 2))) {
+                            Ops[0]      = ConstantInt::get(Type::getInt32Ty(Context), 0);
+                            Type *SrcTy = mapType(inst->u.three[0]);
+                            Value *V    = convertOperand(func, SrcTy, inst->u.three[1]);
+                            Ops[1]      = convertOperand(func, I32Ty, inst->u.three[2]);
+                            Ops[1]      = GEPOperand(Ops[1]);
+                            if (!createGEP(inst->dest, V, ArrayRef<Value *>(Ops, Ops + 2))) {
                                 cli_warnmsg("[%s]: OP_BC_GEPZ createGEP failed\n", MODULE);
                                 broken = true;
                             }
@@ -1540,23 +1538,23 @@ class LLVMCodegen
                         case OP_BC_GEPN: {
                             std::vector<Value *> Idxs;
                             assert(inst->u.ops.numOps > 2);
-                            constType *SrcTy = mapType(inst->u.ops.ops[0]);
-                            Value *V         = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
+                            Type *SrcTy = mapType(inst->u.ops.ops[0]);
+                            Value *V    = convertOperand(func, SrcTy, inst->u.ops.ops[1]);
                             for (unsigned a = 2; a < inst->u.ops.numOps; a++) {
                                 Value *Op = convertOperand(func, I32Ty, inst->u.ops.ops[a]);
                                 Op        = GEPOperand(Op);
                                 Idxs.push_back(Op);
                             }
-                            if (!createGEP(inst->dest, V, ARRAYREFVECTOR(Value *, Idxs))) {
+                            if (!createGEP(inst->dest, V, ArrayRef<Value *>(Idxs))) {
                                 cli_warnmsg("[%s]: OP_BC_GEPN createGEP failed\n", MODULE);
                                 broken = true;
                             }
                             break;
                         }
                         case OP_BC_STORE: {
-                            Value *Dest     = convertOperand(func, inst, inst->u.binop[1]);
-                            Value *V        = convertOperand(func, inst, inst->u.binop[0]);
-                            constType *VPTy = PointerType::getUnqual(V->getType());
+                            Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
+                            Value *V    = convertOperand(func, inst, inst->u.binop[0]);
+                            Type *VPTy  = PointerType::getUnqual(V->getType());
                             if (VPTy != Dest->getType())
                                 Dest = Builder.CreateBitCast(Dest, VPTy);
                             Builder.CreateStore(V, Dest);
@@ -1736,7 +1734,7 @@ class LLVMCodegen
             AddStackProtect(F);
         }
         delete TypeMap;
-        std::vector<constType *> args;
+        std::vector<Type *> args;
         args.clear();
         args.push_back(HiddenCtx);
         FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
@@ -1767,7 +1765,7 @@ class LLVMCodegen
             Args.push_back(pArg);
         }
 
-        CallInst *CI = CallInst::Create(Functions[0], ARRAYREFVECTOR(Value *, Args), "", BB);
+        CallInst *CI = CallInst::Create(Functions[0], ArrayRef<Value *>(Args), "", BB);
         CI->setCallingConv(CallingConv::Fast);
         ReturnInst::Create(Context, CI, BB);
 
@@ -1828,7 +1826,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     EE->InstallLazyFunctionCreator(noUnknownFunctions);
     EE->getPointerToFunction(CF->FHandler);
 
-    std::vector<constType *> args;
+    std::vector<Type *> args;
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(Type::getInt8Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
@@ -2189,14 +2187,14 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                 addFPasses(OurFPMUnsigned, false, M);
 
                 // TODO: create a wrapper that calls pthread_getspecific
-                unsigned maxh        = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
-                constType *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
+                unsigned maxh   = cli_globals[0].offset + sizeof(struct cli_bc_hooks);
+                Type *HiddenCtx = PointerType::getUnqual(ArrayType::get(Type::getInt8Ty(bcs->engine->Context), maxh));
 
                 LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes, HiddenCtx);
                 Function **apiFuncs = new Function *[cli_apicall_maxapi];
                 for (unsigned i = 0; i < cli_apicall_maxapi; i++) {
                     const struct cli_apicall *api = &cli_apicalls[i];
-                    constFunctionType *FTy        = cast<FunctionType>(apiMap.get(69 + api->type, NULL, NULL));
+                    FunctionType *FTy             = cast<FunctionType>(apiMap.get(69 + api->type, NULL, NULL));
                     Function *F                   = Function::Create(FTy, Function::ExternalLinkage,
                                                                      api->name, M);
                     void *dest;
