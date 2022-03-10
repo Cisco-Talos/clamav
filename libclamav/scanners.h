@@ -31,34 +31,38 @@
  *
  * This API allows you to specify the file type in advance if you know it.
  *
- * @param desc      File descriptor
- * @param filepath  (optional) Full file path.
- * @param ctx       Scanning context structure.
- * @param type      CL_TYPE of data to be scanned.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
+ * @param desc          File descriptor
+ * @param filepath      (optional) Full file path.
+ * @param ctx           Scanning context structure.
+ * @param type          CL_TYPE of data to be scanned.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
  * @return cl_error_t
  */
-cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type, const char *name);
+cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type,
+                                    const char *name, uint32_t attributes);
 
 /**
  * @brief Scan a tempfile / sub-file of _any_ type, passing in the fd, filepath (if available), and the scanning context.
  *
- * @param desc      File descriptor
- * @param filepath  (optional) Full file path.
- * @param ctx       Scanning context structure.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return int      CL_SUCCESS, or an error code.
+ * @param desc          File descriptor
+ * @param filepath      (optional) Full file path.
+ * @param ctx           Scanning context structure.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
+ * @return int          CL_SUCCESS, or an error code.
  */
-cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, const char *name);
+cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx,
+                               const char *name, uint32_t attributes);
 
 /**
  * @brief Perform a magic scan on the current ctx.
  *
  * Calls to cli_magic_scan() should be wrapped with a cli_recursion_stack_push/pop, except in scan_common()
  *
- * @param ctx       Scanning context structure.
- * @param type      CL_TYPE of data to be scanned.
- * @return int      CL_SUCCESS, or an error code.
+ * @param ctx           Scanning context structure.
+ * @param type          CL_TYPE of data to be scanned.
+ * @return int          CL_SUCCESS, or an error code.
  */
 cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type);
 
@@ -71,28 +75,32 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type);
  * or if force-to-disk IS enabled, it will write the file to a temp file and then
  * will scan with cli_magic_scan_desc_type().
  *
- * @param map       File map.
- * @param offset    Offset into file map.
- * @param length    Length from offset.
- * @param ctx       Scanning context structure.
- * @param type      CL_TYPE of data to be scanned.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return int      CL_SUCCESS, or an error code.
+ * @param map           File map.
+ * @param offset        Offset into file map.
+ * @param length        Length from offset.
+ * @param ctx           Scanning context structure.
+ * @param type          CL_TYPE of data to be scanned.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
+ * @return int          CL_SUCCESS, or an error code.
  */
-cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name);
+cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
+                                           cli_file_t type, const char *name, uint32_t attributes);
 
 /**
  * @brief   Convenience wrapper for cli_magic_scan_nested_fmap_type().
  *
  * Creates an fmap and calls cli_magic_scan_nested_fmap_type() for you, with type CL_TYPE_ANY.
  *
- * @param buffer    Pointer to the buffer to be scanned.
- * @param length    Size in bytes of the buffer being scanned.
- * @param ctx       Scanning context structure.
- * @param name      (optional) Original name of the file (to set fmap name metadata)
- * @return int      CL_SUCCESS, or an error code.
+ * @param buffer        Pointer to the buffer to be scanned.
+ * @param length        Size in bytes of the buffer being scanned.
+ * @param ctx           Scanning context structure.
+ * @param name          (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
+ * @return int          CL_SUCCESS, or an error code.
  */
-cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name);
+cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx,
+                               const char *name, uint32_t attributes);
 
 cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx);
 
@@ -104,9 +112,11 @@ cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx);
  * @param filename      Filepath of the file to be scanned.
  * @param ctx           Scanning context structure.
  * @param original_name (optional) Original name of the file (to set fmap name metadata)
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
  * @return cl_error_t
  */
-cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name);
+cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx,
+                               const char *original_name, uint32_t attributes);
 
 /**
  * @brief   Internal function to recursively scan a directory.
@@ -115,9 +125,10 @@ cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *o
  *
  * @param dirname       Filepath of the directory to be scanned.
  * @param ctx           Scanning context structure.
+ * @param attributes    Layer attributes of the file being scanned (is it normalized, decrypted, etc)
  * @return cl_error_t
  */
-cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx);
+cl_error_t cli_magic_scan_dir(const char *dirname, cli_ctx *ctx, uint32_t attributes);
 
 /**
  * @brief Mark all scan recursion fmap layers as non-cacheable.

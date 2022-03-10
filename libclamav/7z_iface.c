@@ -191,7 +191,7 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                 cli_dbgmsg("cli_7unz: Saving to %s\n", tmp_name);
                 if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
                     found = CL_EWRITE;
-                else if ((found = cli_magic_scan_desc(fd, tmp_name, ctx, name)) == CL_VIRUS)
+                else if (CL_VIRUS == (found = cli_magic_scan_desc(fd, tmp_name, ctx, name, LAYER_ATTRIBUTES_NONE)))
                     viruses_found++;
                 close(fd);
                 if (!ctx->engine->keeptmp && cli_unlink(tmp_name))

@@ -308,7 +308,7 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             }
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
-            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL);
+            rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL, LAYER_ATTRIBUTES_NONE);
             if (rc == CL_VIRUS && SCAN_ALLMATCHES)
                 rc = CL_SUCCESS;
 
@@ -517,7 +517,7 @@ int cli_scanxar(cli_ctx *ctx)
 
     /* scan the xml */
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
-    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL);
+    rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     if (rc != CL_SUCCESS) {
         if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
             goto exit_toc;
@@ -846,7 +846,7 @@ int cli_scanxar(cli_ctx *ctx)
                 }
             }
 
-            rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
+            rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
                 if (rc == CL_VIRUS) {
                     cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));

@@ -433,7 +433,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
         *filename = tmpname;
     } else {
         if (ret == CL_CLEAN) {
-            ret = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename);
+            ret = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename, LAYER_ATTRIBUTES_NONE);
         }
 
         if (!ctx->engine->keeptmp) {
@@ -1319,7 +1319,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             cli_dbgmsg("hfsplus_walk_catalog: Extracted to %s\n", tmpname);
 
                             /* if successful so far, scan the output */
-                            ret = cli_magic_scan_desc(ofd, tmpname, ctx, name_utf8);
+                            ret = cli_magic_scan_desc(ofd, tmpname, ctx, name_utf8, LAYER_ATTRIBUTES_NONE);
 
                             if (ret == CL_VIRUS) {
                                 has_alerts = 1;

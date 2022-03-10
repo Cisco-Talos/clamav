@@ -546,9 +546,9 @@ int cli_scannulsft(cli_ctx *ctx, off_t offset)
                 return CL_ESEEK;
             }
             if (nsist.fno == 1)
-                ret = cli_scan_desc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, NULL); /// TODO: Extract file names
+                ret = cli_scan_desc(nsist.ofd, ctx, 0, 0, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
             else
-                ret = cli_magic_scan_desc(nsist.ofd, nsist.ofn, ctx, NULL); /// TODO: Extract file names
+                ret = cli_magic_scan_desc(nsist.ofd, nsist.ofn, ctx, NULL, LAYER_ATTRIBUTES_NONE); /// TODO: Extract file names
             close(nsist.ofd);
             if (!ctx->engine->keeptmp)
                 if (cli_unlink(nsist.ofn)) ret = CL_EUNLINK;

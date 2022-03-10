@@ -288,7 +288,7 @@ static cl_error_t scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, (long long unsigned)outsize);
     }
 
-    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
     close(fd);
     if (!(ctx->engine->keeptmp)) {
@@ -424,7 +424,7 @@ static cl_error_t scancws(cli_ctx *ctx, struct swf_file_hdr *hdr)
                    hdr->filesize, outsize);
     }
 
-    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
     close(fd);
     if (!ctx->engine->keeptmp) {

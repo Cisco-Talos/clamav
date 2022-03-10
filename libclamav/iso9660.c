@@ -82,7 +82,7 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
     }
 
     if (!len)
-        ret = cli_magic_scan_desc(fd, tmpf, iso->ctx, iso->buf);
+        ret = cli_magic_scan_desc(fd, tmpf, iso->ctx, iso->buf, LAYER_ATTRIBUTES_NONE);
 
     close(fd);
     if (!iso->ctx->engine->keeptmp) {

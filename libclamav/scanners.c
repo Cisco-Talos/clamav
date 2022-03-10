@@ -128,15 +128,14 @@
 #include <fcntl.h>
 #include <string.h>
 
-cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
+cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx, uint32_t attributes)
 {
     cl_error_t status = CL_CLEAN;
     DIR *dd           = NULL;
     struct dirent *dent;
     STATBUF statbuf;
-    char *fname                    = NULL;
-    unsigned int viruses_found     = 0;
-    uint32_t next_layer_attributes = ctx->next_layer_attributes;
+    char *fname                = NULL;
+    unsigned int viruses_found = 0;
 
     if ((dd = opendir(dir)) != NULL) {
         while ((dent = readdir(dd))) {
@@ -155,7 +154,7 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
                     /* stat the file */
                     if (LSTAT(fname, &statbuf) != -1) {
                         if (S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-                            if (cli_magic_scan_dir(fname, ctx) == CL_VIRUS) {
+                            if (cli_magic_scan_dir(fname, ctx, attributes) == CL_VIRUS) {
                                 if (SCAN_ALLMATCHES) {
                                     viruses_found++;
                                     continue;
@@ -166,10 +165,7 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx)
                             }
                         } else {
                             if (S_ISREG(statbuf.st_mode)) {
-                                // restore next-layer attributes, so it applies to all normalized/etc. files in this dir scan.
-                                ctx->next_layer_attributes = next_layer_attributes;
-
-                                if (CL_VIRUS == cli_magic_scan_file(fname, ctx, dent->d_name)) {
+                                if (CL_VIRUS == cli_magic_scan_file(fname, ctx, dent->d_name, attributes)) {
                                     if (SCAN_ALLMATCHES) {
                                         viruses_found++;
                                         continue;
@@ -310,7 +306,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
         }
 
         /* Scan the comment */
-        status = cli_magic_scan_buff(comment, comment_size, ctx, NULL);
+        status = cli_magic_scan_buff(comment, comment_size, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
         if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
             status = CL_CLEAN;
@@ -466,7 +462,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                      * ... scan the extracted file.
                      */
                     cli_dbgmsg("RAR: Extraction complete.  Scanning now...\n");
-                    status = cli_magic_scan_file(extract_fullpath, ctx, filename_base);
+                    status = cli_magic_scan_file(extract_fullpath, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
                     if (status == CL_EOPEN) {
                         cli_dbgmsg("RAR: File not found, Extraction failed!\n");
                         status = CL_CLEAN;
@@ -756,7 +752,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             /*
              * Scan the comment.
              */
-            status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, NULL);
+            status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
             if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
@@ -926,7 +922,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                      * Scan the extracted file...
                      */
                     cli_dbgmsg("EGG: Extraction complete.  Scanning now...\n");
-                    status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx, filename_base);
+                    status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
                     if (status == CL_VIRUS) {
                         cli_dbgmsg("EGG: infected with %s\n", cli_get_last_virus(ctx));
                         status = CL_VIRUS;
@@ -1092,7 +1088,7 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
             if (lseek(metadata.ofd, 0, SEEK_SET) == -1) {
                 cli_dbgmsg("ARJ: call to lseek() failed\n");
             }
-            status = cli_magic_scan_desc(metadata.ofd, NULL, ctx, metadata.filename);
+            status = cli_magic_scan_desc(metadata.ofd, NULL, ctx, metadata.filename, LAYER_ATTRIBUTES_NONE);
             close(metadata.ofd);
             if (status == CL_VIRUS) {
                 cli_dbgmsg("ARJ: infected with %s\n", cli_get_last_virus(ctx));
@@ -1179,7 +1175,7 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
 
     gzclose(gz);
 
-    if ((ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
         cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
@@ -1281,7 +1277,7 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
 
     inflateEnd(&z);
 
-    if ((ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
         cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
@@ -1387,7 +1383,7 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
 
     BZ2_bzDecompressEnd(&strm);
 
-    if ((ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
         cli_dbgmsg("Bzip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
@@ -1496,7 +1492,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
     } while (XZ_STREAM_END != rc);
 
     /* scan decompressed file */
-    if ((ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL)) == CL_VIRUS) {
+    if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
         cli_dbgmsg("cli_scanxz: Infected with %s\n", cli_get_last_virus(ctx));
     }
 
@@ -1536,7 +1532,7 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
     }
 
     cli_dbgmsg("MSEXPAND: Decompressed into %s\n", tmpname);
-    ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL);
+    ret = cli_magic_scan_desc(ofd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     close(ofd);
     if (!ctx->engine->keeptmp)
         if (cli_unlink(tmpname))
@@ -1588,10 +1584,7 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
             goto done;
         }
 
-        // This flag ingested by cli_recursion_stack_push().
-        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-        ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSOLE2, true); /* Perform exp_eval with child fmap */
+        ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSOLE2, true, LAYER_ATTRIBUTES_NONE); /* Perform exp_eval with child fmap */
         if (CL_SUCCESS != ret) {
             cli_dbgmsg("Failed to scan fmap.\n");
             goto done;
@@ -1754,7 +1747,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 goto done;
             }
 
-            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL, LAYER_ATTRIBUTES_NONE);
 
             close(tempfd);
             tempfd = -1;
@@ -2006,7 +1999,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba(const char *dir, cli_ctx *ctx, struc
                 continue;
             }
             if ((fullname = cli_ppt_vba_read(fd, ctx))) {
-                ret = cli_magic_scan_dir(fullname, ctx);
+                ret = cli_magic_scan_dir(fullname, ctx, LAYER_ATTRIBUTES_NONE);
 
                 if (!ctx->engine->keeptmp)
                     cli_rmdirs(fullname);
@@ -2173,11 +2166,10 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     snprintf(fullname, 1024, "%s" PATHSEP "nocomment.html", tempname);
     fd = open(fullname, O_RDONLY | O_BINARY);
     if (fd >= 0) {
-        // This flag ingested by cli_recursion_stack_push().
-        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-        if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+        if (CL_VIRUS == (ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR,
+                                             NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED))) {
             viruses_found++;
+        }
 
         close(fd);
     }
@@ -2193,11 +2185,10 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "notags.html", tempname);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                // This flag ingested by cli_recursion_stack_push().
-                ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+                if (CL_VIRUS == (ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR,
+                                                     NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED))) {
                     viruses_found++;
+                }
 
                 close(fd);
             }
@@ -2208,18 +2199,16 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         snprintf(fullname, 1024, "%s" PATHSEP "javascript", tempname);
         fd = open(fullname, O_RDONLY | O_BINARY);
         if (fd >= 0) {
-            // This flag ingested by cli_recursion_stack_push().
-            ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-            if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+            if (CL_VIRUS == (ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR,
+                                                 NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED))) {
                 viruses_found++;
+            }
 
             if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
-                // This flag ingested by cli_recursion_stack_push().
-                ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+                if (CL_VIRUS == (ret = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR,
+                                                     NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED))) {
                     viruses_found++;
+                }
             }
             close(fd);
         }
@@ -2227,11 +2216,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
 
     if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
         snprintf(fullname, 1024, "%s" PATHSEP "rfc2397", tempname);
-
-        // This flag ingested by cli_recursion_stack_push() or cleared when cli_magic_scan_dir() is done.
-        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-        ret = cli_magic_scan_dir(fullname, ctx);
+        ret = cli_magic_scan_dir(fullname, ctx, LAYER_ATTRIBUTES_NORMALIZED);
         if (CL_EOPEN == ret) {
             /* If the directory doesn't exist, that's fine */
             ret = CL_CLEAN;
@@ -2346,10 +2331,8 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
             goto done;
         }
 
-        // This flag ingested by cli_recursion_stack_push().
-        ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-        ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_TEXT_ASCII, true); /* Perform cli_scan_fmap with child fmap */
+        /* Perform cli_scan_fmap with child fmap */
+        ret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_TEXT_ASCII, true, LAYER_ATTRIBUTES_NORMALIZED);
         if (CL_SUCCESS != ret) {
             cli_dbgmsg("Failed to scan fmap.\n");
             goto done;
@@ -2504,11 +2487,8 @@ static cl_error_t cli_scanhtml_utf16(cli_ctx *ctx)
         goto done;
     }
 
-    // s/normalized/transcoded, practically the same thing.
-    // This flag ingested by cli_recursion_stack_push().
-    ctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-    status = cli_recursion_stack_push(ctx, new_map, CL_TYPE_HTML, true); /* Perform exp_eval with child fmap */
+    /* Perform exp_eval with child fmap */
+    status = cli_recursion_stack_push(ctx, new_map, CL_TYPE_HTML, true, LAYER_ATTRIBUTES_NORMALIZED);
     if (CL_SUCCESS != status) {
         cli_dbgmsg("Failed to scan fmap.\n");
         goto done;
@@ -2636,7 +2616,7 @@ static cl_error_t cli_ole2_scan_tempdir(
     }
 
     if (has_xlm || has_vba) {
-        status = cli_magic_scan_dir(dir, ctx);
+        status = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
         if (CL_VIRUS == status) {
             viruses_found++;
             if (!SCAN_ALLMATCHES) {
@@ -2837,7 +2817,7 @@ static cl_error_t cli_scanscrenc(cli_ctx *ctx)
     }
 
     if (html_screnc_decode(ctx->fmap, tempname))
-        ret = cli_magic_scan_dir(tempname, ctx);
+        ret = cli_magic_scan_dir(tempname, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
         cli_rmdirs(tempname);
@@ -2902,7 +2882,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
 
     cli_dbgmsg("CryptFF: Scanning decrypted data\n");
 
-    if ((ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL)) == CL_VIRUS)
+    if (CL_VIRUS == (ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)))
         cli_dbgmsg("CryptFF: Infected with %s\n", cli_get_last_virus(ctx));
 
     close(ndesc);
@@ -2956,7 +2936,7 @@ static cl_error_t cli_scantnef(cli_ctx *ctx)
     ret = cli_tnef(dir, ctx);
 
     if (ret == CL_CLEAN)
-        ret = cli_magic_scan_dir(dir, ctx);
+        ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
         cli_rmdirs(dir);
@@ -2982,7 +2962,7 @@ static cl_error_t cli_scanuuencoded(cli_ctx *ctx)
     ret = cli_uuencode(dir, ctx->fmap);
 
     if (ret == CL_CLEAN)
-        ret = cli_magic_scan_dir(dir, ctx);
+        ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
         cli_rmdirs(dir);
@@ -3023,7 +3003,7 @@ static cl_error_t cli_scanmail(cli_ctx *ctx)
         }
     }
 
-    ret = cli_magic_scan_dir(dir, ctx);
+    ret = cli_magic_scan_dir(dir, ctx, LAYER_ATTRIBUTES_NONE);
 
     if (!ctx->engine->keeptmp)
         cli_rmdirs(dir);
@@ -3183,7 +3163,7 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
 
     corrupted_input      = ctx->corrupted_input;
     ctx->corrupted_input = 1;
-    ret                  = cli_magic_scan_desc(fd, tmpname, ctx, NULL);
+    ret                  = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     ctx->corrupted_input = corrupted_input;
     if (ret == CL_VIRUS) {
         cli_dbgmsg("cli_scanembpe: Infected with %s\n", cli_get_last_virus(ctx));
@@ -3650,7 +3630,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_RAR, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_RAR, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3673,7 +3654,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_EGG, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_EGG, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3696,7 +3678,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ZIP, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ZIP, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3719,7 +3702,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSCAB, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSCAB, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3742,7 +3726,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ARJ, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ARJ, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3765,7 +3750,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_7Z, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_7Z, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3788,7 +3774,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_NULSFT, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_NULSFT, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3811,7 +3798,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_AUTOIT, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_AUTOIT, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3834,7 +3822,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ISHIELD_MSI, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_ISHIELD_MSI, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3857,7 +3846,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_PDF, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_PDF, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -3885,7 +3875,8 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
                                     break;
                                 }
 
-                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSEXE, false); /* Perform scan with child fmap */
+                                /* Perform scan with child fmap */
+                                nret = cli_recursion_stack_push(ctx, new_map, CL_TYPE_MSEXE, false, LAYER_ATTRIBUTES_NONE);
                                 if (CL_SUCCESS != nret) {
                                     ret = nret;
                                     cli_dbgmsg("scanraw: Failed to add map to recursion stack to scan embedded file.\n");
@@ -5130,7 +5121,8 @@ early_ret:
     return ret;
 }
 
-cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type, const char *name)
+cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx, cli_file_t type,
+                                    const char *name, uint32_t attributes)
 {
     STATBUF sb;
     cl_error_t status = CL_CLEAN;
@@ -5175,7 +5167,7 @@ cl_error_t cli_magic_scan_desc_type(int desc, const char *filepath, cli_ctx *ctx
         goto done;
     }
 
-    status = cli_recursion_stack_push(ctx, new_map, type, true); /* Perform scan with child fmap */
+    status = cli_recursion_stack_push(ctx, new_map, type, true, attributes); /* Perform scan with child fmap */
     if (CL_SUCCESS != status) {
         cli_dbgmsg("Failed to scan fmap.\n");
         goto done;
@@ -5192,15 +5184,12 @@ done:
 
     ctx->sub_filepath = parent_filepath;
 
-    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
-    ctx->next_layer_attributes = 0;
-
     return status;
 }
 
-cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, const char *name)
+cl_error_t cli_magic_scan_desc(int desc, const char *filepath, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
-    return cli_magic_scan_desc_type(desc, filepath, ctx, CL_TYPE_ANY, name);
+    return cli_magic_scan_desc_type(desc, filepath, ctx, CL_TYPE_ANY, name, attributes);
 }
 
 cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions)
@@ -5221,7 +5210,8 @@ cl_error_t cl_scandesc(int desc, const char *filename, const char **virname, uns
  * @param name      (optional) Original name of the file (to set fmap name metadata)
  * @return int      CL_SUCCESS, or an error code.
  */
-static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
+                                              cli_file_t type, const char *name, uint32_t attributes)
 {
     cl_error_t status = CL_CLEAN;
     fmap_t *new_map   = NULL;
@@ -5254,7 +5244,7 @@ static cl_error_t magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, siz
         goto done;
     }
 
-    status = cli_recursion_stack_push(ctx, new_map, type, false); /* Perform scan with child fmap */
+    status = cli_recursion_stack_push(ctx, new_map, type, false, attributes); /* Perform scan with child fmap */
     if (CL_SUCCESS != status) {
         cli_dbgmsg("magic_scan_nested_fmap_type: Failed to add map to recursion stack for magic scan.\n");
         goto done;
@@ -5273,7 +5263,8 @@ done:
 }
 
 /* For map scans that may be forced to disk */
-cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx, cli_file_t type, const char *name)
+cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t length, cli_ctx *ctx,
+                                           cli_file_t type, const char *name, uint32_t attributes)
 {
     cl_error_t ret = CL_CLEAN;
 
@@ -5331,7 +5322,7 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
         }
 
         /* scan the temp file */
-        ret = cli_magic_scan_desc_type(fd, tempfile, ctx, type, name);
+        ret = cli_magic_scan_desc_type(fd, tempfile, ctx, type, name, attributes);
 
         /* remove the temp file, if needed */
         if (fd >= 0) {
@@ -5350,12 +5341,12 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
          *
          * Just use nested map by scanning given fmap at offset + length.
          */
-        ret = magic_scan_nested_fmap_type(map, offset, length, ctx, type, name);
+        ret = magic_scan_nested_fmap_type(map, offset, length, ctx, type, name, attributes);
     }
     return ret;
 }
 
-cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name)
+cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name, uint32_t attributes)
 {
     cl_error_t ret;
     fmap_t *map = NULL;
@@ -5365,7 +5356,7 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
         return CL_EMAP;
     }
 
-    ret = cli_magic_scan_nested_fmap_type(map, 0, length, ctx, CL_TYPE_ANY, name);
+    ret = cli_magic_scan_nested_fmap_type(map, 0, length, ctx, CL_TYPE_ANY, name, attributes);
 
     funmap(map);
 
@@ -5587,7 +5578,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
                                            )) {
                     cli_dbgmsg("scan_common: running deprecated preclass bytecodes for target type 13\n");
                     ctx.options->general &= ~CL_SCAN_GENERAL_COLLECT_METADATA;
-                    status = cli_magic_scan_buff(jstring, strlen(jstring), &ctx, NULL);
+                    status = cli_magic_scan_buff(jstring, strlen(jstring), &ctx, NULL, LAYER_ATTRIBUTES_NONE);
                 }
             }
 
@@ -5761,7 +5752,7 @@ cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name)
+cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name, uint32_t attributes)
 {
     int fd         = -1;
     cl_error_t ret = CL_EOPEN;
@@ -5772,14 +5763,12 @@ cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *o
         goto done;
     }
 
-    ret = cli_magic_scan_desc(fd, filename, ctx, original_name);
+    ret = cli_magic_scan_desc(fd, filename, ctx, original_name, attributes);
 
 done:
     if (fd >= 0) {
         close(fd);
     }
-    // Clear the next-layer attributes so we don't accidentally apply them to subsequent layers.
-    ctx->next_layer_attributes = 0;
 
     return ret;
 }

@@ -165,18 +165,14 @@ static int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "javascript", ctx->jsnormdir);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                // This flag ingested by cli_recursion_stack_push().
-                cctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR,
+                                    NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
                     else {
-                        // This flag ingested by cli_recursion_stack_push().
-                        cctx->next_layer_attributes |= LAYER_ATTRIBUTES_NORMALIZED;
-
-                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR,
+                                            NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
                     }
                 }
                 close(fd);
@@ -2912,7 +2908,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
                 lseek(fd, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning unpacked file ******\n");
 
-                ret = cli_magic_scan_desc(fd, tempfile, cctx, NULL);
+                ret = cli_magic_scan_desc(fd, tempfile, cctx, NULL, LAYER_ATTRIBUTES_NONE);
 
                 if (!cctx->engine->keeptmp)
                     if (ftruncate(fd, 0) == -1)

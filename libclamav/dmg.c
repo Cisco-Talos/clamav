@@ -179,7 +179,8 @@ int cli_scandmg(cli_ctx *ctx)
     }
 
     /* scan XML with cli_magic_scan_nested_fmap_type */
-    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, (size_t)hdr.xmlOffset, (size_t)hdr.xmlLength, ctx, CL_TYPE_ANY, NULL);
+    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, (size_t)hdr.xmlOffset, (size_t)hdr.xmlLength,
+                                          ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     if (ret != CL_CLEAN) {
         cli_dbgmsg("cli_scandmg: retcode from scanning TOC xml: %s\n", cl_strerror(ret));
         if (!ctx->engine->keeptmp)
@@ -1083,7 +1084,7 @@ static int dmg_handle_mish(cli_ctx *ctx, unsigned int mishblocknum, char *dir,
     /* If okay so far, scan rebuilt partition */
     if (ret == CL_CLEAN) {
         /* Have to keep partition typing separate */
-        ret = cli_magic_scan_desc_type(ofd, outfile, ctx, CL_TYPE_PART_ANY, NULL);
+        ret = cli_magic_scan_desc_type(ofd, outfile, ctx, CL_TYPE_PART_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     }
 
     close(ofd);

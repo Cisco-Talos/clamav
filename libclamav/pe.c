@@ -191,44 +191,44 @@
         free(tempfile);                                    \
         break;
 
-#define CLI_UNPRESULTS_(NAME, FSGSTUFF, EXPR, GOOD, FREEME)                                   \
-    switch (EXPR) {                                                                           \
-        case GOOD: /* Unpacked and rebuilt */                                                 \
-            if (ctx->engine->keeptmp)                                                         \
-                cli_dbgmsg(NAME ": Unpacked and rebuilt executable saved in %s\n", tempfile); \
-            else                                                                              \
-                cli_dbgmsg(NAME ": Unpacked and rebuilt executable\n");                       \
-            cli_multifree FREEME;                                                             \
-            cli_exe_info_destroy(peinfo);                                                     \
-            lseek(ndesc, 0, SEEK_SET);                                                        \
-            cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                             \
-            SHA_OFF;                                                                          \
-            if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {                \
-                close(ndesc);                                                                 \
-                SHA_RESET;                                                                    \
-                CLI_TMPUNLK();                                                                \
-                free(tempfile);                                                               \
-                return CL_VIRUS;                                                              \
-            }                                                                                 \
-            SHA_RESET;                                                                        \
-            close(ndesc);                                                                     \
-            CLI_TMPUNLK();                                                                    \
-            free(tempfile);                                                                   \
-            return CL_CLEAN;                                                                  \
-                                                                                              \
-            FSGSTUFF;                                                                         \
-                                                                                              \
-        default:                                                                              \
-            cli_dbgmsg(NAME ": Unpacking failed\n");                                          \
-            close(ndesc);                                                                     \
-            if (cli_unlink(tempfile)) {                                                       \
-                cli_exe_info_destroy(peinfo);                                                 \
-                free(tempfile);                                                               \
-                cli_multifree FREEME;                                                         \
-                return CL_EUNLINK;                                                            \
-            }                                                                                 \
-            cli_multifree FREEME;                                                             \
-            free(tempfile);                                                                   \
+#define CLI_UNPRESULTS_(NAME, FSGSTUFF, EXPR, GOOD, FREEME)                                           \
+    switch (EXPR) {                                                                                   \
+        case GOOD: /* Unpacked and rebuilt */                                                         \
+            if (ctx->engine->keeptmp)                                                                 \
+                cli_dbgmsg(NAME ": Unpacked and rebuilt executable saved in %s\n", tempfile);         \
+            else                                                                                      \
+                cli_dbgmsg(NAME ": Unpacked and rebuilt executable\n");                               \
+            cli_multifree FREEME;                                                                     \
+            cli_exe_info_destroy(peinfo);                                                             \
+            lseek(ndesc, 0, SEEK_SET);                                                                \
+            cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                                     \
+            SHA_OFF;                                                                                  \
+            if (CL_VIRUS == cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)) { \
+                close(ndesc);                                                                         \
+                SHA_RESET;                                                                            \
+                CLI_TMPUNLK();                                                                        \
+                free(tempfile);                                                                       \
+                return CL_VIRUS;                                                                      \
+            }                                                                                         \
+            SHA_RESET;                                                                                \
+            close(ndesc);                                                                             \
+            CLI_TMPUNLK();                                                                            \
+            free(tempfile);                                                                           \
+            return CL_CLEAN;                                                                          \
+                                                                                                      \
+            FSGSTUFF;                                                                                 \
+                                                                                                      \
+        default:                                                                                      \
+            cli_dbgmsg(NAME ": Unpacking failed\n");                                                  \
+            close(ndesc);                                                                             \
+            if (cli_unlink(tempfile)) {                                                               \
+                cli_exe_info_destroy(peinfo);                                                         \
+                free(tempfile);                                                                       \
+                cli_multifree FREEME;                                                                 \
+                return CL_EUNLINK;                                                                    \
+            }                                                                                         \
+            cli_multifree FREEME;                                                                     \
+            free(tempfile);                                                                           \
     }
 
 #define CLI_UNPRESULTS(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, (void)0, EXPR, GOOD, FREEME)
@@ -4026,7 +4026,7 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if ((ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL)) == CL_VIRUS) {
+        if ((ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)) == CL_VIRUS) {
             close(ndesc);
             SHA_RESET;
             CLI_TMPUNLK();

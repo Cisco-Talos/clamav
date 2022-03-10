@@ -115,7 +115,8 @@ static cl_error_t unz(
     cli_ctx *ctx,
     char *tmpd,
     zip_cb zcb,
-    const char *original_filename)
+    const char *original_filename,
+    bool decrypted)
 {
     char obuf[BUFSIZ] = {0};
     char *tempfile    = NULL;
@@ -146,7 +147,8 @@ static cl_error_t unz(
             if (csize < usize) {
                 unsigned int fake = *num_files_unzipped + 1;
                 cli_dbgmsg("cli_unzip: attempting to inflate stored file with inconsistent size\n");
-                if ((ret = unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx, tmpd, zcb, original_filename)) == CL_CLEAN) {
+                if (CL_CLEAN == (ret = unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx,
+                                           tmpd, zcb, original_filename, decrypted))) {
                     (*num_files_unzipped)++;
                     res = fake - (*num_files_unzipped);
                 } else
@@ -154,7 +156,8 @@ static cl_error_t unz(
             }
             if (res == 1) {
                 if (ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
-                    cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int)ctx->engine->maxfilesize);
+                    cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n",
+                               (long unsigned int)ctx->engine->maxfilesize);
                     csize = ctx->engine->maxfilesize;
                 }
                 if (cli_writen(out_file, src, csize) != csize)
@@ -354,7 +357,7 @@ static cl_error_t unz(
             close(out_file);
             return CL_ESEEK;
         }
-        ret = zcb(out_file, tempfile, ctx, original_filename);
+        ret = zcb(out_file, tempfile, ctx, original_filename, decrypted);
         close(out_file);
         if (!ctx->engine->keeptmp)
             if (cli_unlink(tempfile)) ret = CL_EUNLINK;
@@ -541,9 +544,6 @@ static inline cl_error_t zdecrypt(
 
             cli_dbgmsg("cli_unzip: decrypt - decrypted %zu bytes to %s\n", total, tempfile);
 
-            /* The next call to push a layer onto the recursion stack will collect this "was decrypted" status. */
-            ctx->next_layer_attributes |= LAYER_ATTRIBUTES_DECRYPTED;
-
             /* decrypt data to new fmap -> buffer */
             if (!(dcypt_map = fmap(out_file, 0, total, NULL))) {
                 cli_warnmsg("cli_unzip: decrypt - failed to create fmap on decrypted file %s\n", tempfile);
@@ -559,7 +559,8 @@ static inline cl_error_t zdecrypt(
             }
 
             /* call unz on decrypted output */
-            ret = unz(dcypt_zip, csize - SIZEOF_ENCRYPTION_HEADER, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb, original_filename);
+            ret = unz(dcypt_zip, csize - SIZEOF_ENCRYPTION_HEADER, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags,
+                      num_files_unzipped, ctx, tmpd, zcb, original_filename, true);
 
             /* clean-up and return */
             funmap(dcypt_map);
@@ -731,7 +732,8 @@ static unsigned int parse_local_file_header(
                     *ret = zdecrypt(zip, csize, usize, local_header, num_files_unzipped, ctx, tmpd, zcb, original_filename);
             } else {
                 if (fmap_need_ptr_once(map, zip, csize))
-                    *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped, ctx, tmpd, zcb, original_filename);
+                    *ret = unz(zip, csize, usize, LOCAL_HEADER_method, LOCAL_HEADER_flags, num_files_unzipped,
+                               ctx, tmpd, zcb, original_filename, false);
             }
         } else {
             if ((NULL == original_filename) ||
@@ -1287,7 +1289,8 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                         ctx,
                         tmpd,
                         zip_scan_cb,
-                        zip_catalogue[i].original_filename);
+                        zip_catalogue[i].original_filename,
+                        false);
             }
 
             file_count++;

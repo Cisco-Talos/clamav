@@ -857,7 +857,7 @@ static int ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scan_desc(i, tempfile, ctx, NULL) == CL_VIRUS) {
+        if (CL_VIRUS == cli_magic_scan_desc(i, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)
@@ -1474,7 +1474,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             close(i);
             return CL_ESEEK;
         }
-        if (cli_magic_scan_desc(i, tempfile, ctx, NULL) == CL_VIRUS) {
+        if (CL_VIRUS == cli_magic_scan_desc(i, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)) {
             if (!SCAN_ALLMATCHES) {
                 close(i);
                 if (!ctx->engine->keeptmp)

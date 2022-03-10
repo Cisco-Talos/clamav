@@ -344,7 +344,9 @@ static int gpt_scan_partitions(cli_ctx *ctx, struct gpt_header hdr, size_t secto
             /* send the partition to cli_magic_scan_nested_fmap_type */
             part_off  = gpe.firstLBA * sectorsize;
             part_size = (gpe.lastLBA - gpe.firstLBA + 1) * sectorsize;
-            ret       = cli_magic_scan_nested_fmap_type(ctx->fmap, part_off, part_size, ctx, CL_TYPE_PART_ANY, namestr);
+
+            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, part_off, part_size, ctx,
+                                                  CL_TYPE_PART_ANY, namestr, LAYER_ATTRIBUTES_NONE);
             if (NULL != namestr) {
                 free(namestr);
             }
