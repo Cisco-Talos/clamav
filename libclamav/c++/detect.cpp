@@ -151,7 +151,7 @@ void cli_detect_env_jit(struct cli_environment *env)
             CASE_OS(Minix, os_unknown);
     }
 
-    //mmap RWX
+    // mmap RWX
     std::error_code ec;
     sys::MemoryBlock memoryBlock = sys::Memory::allocateMappedMemory(4096, nullptr, sys::Memory::MF_READ | sys::Memory::MF_WRITE | sys::Memory::MF_EXEC, ec);
     if (ec) {

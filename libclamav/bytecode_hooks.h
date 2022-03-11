@@ -30,10 +30,10 @@
 #define BYTECODE_HOOKS_H
 
 struct cli_bc_hooks {
-	 const uint32_t* match_offsets;
-	 const uint16_t* kind;
-	 const uint32_t* match_counts;
-	 const uint32_t* filesize;
-	 const struct cli_pe_hook_data* pedata;
+    const uint32_t* match_offsets;
+    const uint16_t* kind;
+    const uint32_t* match_counts;
+    const uint32_t* filesize;
+    const struct cli_pe_hook_data* pedata;
 };
 #endif

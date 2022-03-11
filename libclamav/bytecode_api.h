@@ -92,8 +92,8 @@ enum BytecodeKind {
 enum FunctionalityLevels {
     FUNC_LEVEL_096     = 51, /**< LibClamAV release 0.96.0: bytecode engine released */
     FUNC_LEVEL_096_dev = 52,
-    FUNC_LEVEL_096_1   = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros
-                              * requires this minimum functionality level */
+    FUNC_LEVEL_096_1   = 53, /**< LibClamAV release 0.96.1: logical signature use of VI/macros requires this minimum functionality level */
+
     FUNC_LEVEL_096_1_dev = 54,
     FUNC_LEVEL_096_2     = 54, /**< LibClamAV release 0.96.2: PDF Hooks require this minimum level */
     FUNC_LEVEL_096_2_dev = 55,

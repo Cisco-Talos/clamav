@@ -1175,9 +1175,10 @@ class LLVMCodegen
                 }
             }
             Constant *C = buildConstant(Ty, bc->globals[i], c);
-            GV          = new GlobalVariable(*M, Ty, true,
-                                             GlobalValue::InternalLinkage,
-                                             C, "glob" + Twine(i));
+
+            GV = new GlobalVariable(*M, Ty, true,
+                                    GlobalValue::InternalLinkage,
+                                    C, "glob" + Twine(i));
             globals.push_back(GV);
         }
         Function **Functions = new Function *[bc->num_func];
@@ -1190,10 +1191,8 @@ class LLVMCodegen
                 argTypes.push_back(mapType(func->types[a]));
             }
             Type *RetTy       = mapType(func->returnType);
-            FunctionType *FTy = FunctionType::get(RetTy, argTypes,
-                                                  false);
-            Functions[j]      = Function::Create(FTy, Function::InternalLinkage,
-                                                 BytecodeID + "f" + Twine(j), M);
+            FunctionType *FTy = FunctionType::get(RetTy, argTypes, false);
+            Functions[j]      = Function::Create(FTy, Function::InternalLinkage, BytecodeID + "f" + Twine(j), M);
             Functions[j]->setDoesNotThrow();
             Functions[j]->setCallingConv(CallingConv::Fast);
             Functions[j]->setLinkage(GlobalValue::InternalLinkage);
@@ -1240,10 +1239,8 @@ class LLVMCodegen
                         continue;
                     unsigned g      = bc->globals[i][1];
                     unsigned offset = GVoffsetMap[g];
-
-                    Constant *Idx  = ConstantInt::get(Type::getInt32Ty(Context),
-                                                      offset);
-                    Value *Idxs[2] = {
+                    Constant *Idx   = ConstantInt::get(Type::getInt32Ty(Context), offset);
+                    Value *Idxs[2]  = {
                         ConstantInt::get(Type::getInt32Ty(Context), 0),
                         Idx};
                     Value *GEP       = Builder.CreateInBoundsGEP(Ctx, ArrayRef<Value *>(Idxs, Idxs + 2));
@@ -1815,10 +1812,8 @@ static void addNoCapture(Function *pFunc)
 static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, Module *M)
 {
     LLVMContext &Context = M->getContext();
-    FunctionType *FTy    = FunctionType::get(Type::getVoidTy(Context),
-                                             false);
-    CF->FHandler         = Function::Create(FTy, Function::ExternalLinkage,
-                                            "clamjit.fail", M);
+    FunctionType *FTy    = FunctionType::get(Type::getVoidTy(Context), false);
+    CF->FHandler         = Function::Create(FTy, Function::ExternalLinkage, "clamjit.fail", M);
     CF->FHandler->setDoesNotReturn();
     CF->FHandler->setDoesNotThrow();
     CF->FHandler->addFnAttr(Attribute::NoInline);
@@ -1832,11 +1827,8 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt1Ty(Context));
-    FunctionType *FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
-                                               args, false);
-    CF->FMemset            = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
-                                              "llvm.memset.p0i8.i32",
-                                              M);
+    FunctionType *FuncTy_3 = FunctionType::get(Type::getVoidTy(Context), args, false);
+    CF->FMemset            = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage, "llvm.memset.p0i8.i32", M);
     CF->FMemset->setDoesNotThrow();
     addNoCapture(CF->FMemset);
 
@@ -1846,44 +1838,35 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt32Ty(Context));
     args.push_back(Type::getInt1Ty(Context));
-    FunctionType *FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
-                                               args, false);
-    CF->FMemmove           = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-                                              "llvm.memmove.p0i8.i32",
-                                              M);
+    FunctionType *FuncTy_4 = FunctionType::get(Type::getVoidTy(Context), args, false);
+    CF->FMemmove           = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage, "llvm.memmove.p0i8.i32", M);
     CF->FMemmove->setDoesNotThrow();
     addNoCapture(CF->FMemmove);
 
-    CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
-                                   "llvm.memcpy.p0i8.p0i8.i32",
-                                   M);
+    CF->FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage, "llvm.memcpy.p0i8.p0i8.i32", M);
     CF->FMemcpy->setDoesNotThrow();
     addNoCapture(CF->FMemcpy);
 
     args.clear();
     args.push_back(Type::getInt16Ty(Context));
     FunctionType *FuncTy_5 = FunctionType::get(Type::getInt16Ty(Context), args, false);
-    CF->FBSwap16           = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i16", M);
+    CF->FBSwap16           = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "llvm.bswap.i16", M);
     CF->FBSwap16->setDoesNotThrow();
 
     args.clear();
     args.push_back(Type::getInt32Ty(Context));
     FunctionType *FuncTy_6 = FunctionType::get(Type::getInt32Ty(Context), args, false);
-    CF->FBSwap32           = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i32", M);
+    CF->FBSwap32           = Function::Create(FuncTy_6, GlobalValue::ExternalLinkage, "llvm.bswap.i32", M);
     CF->FBSwap32->setDoesNotThrow();
 
     args.clear();
     args.push_back(Type::getInt64Ty(Context));
     FunctionType *FuncTy_7 = FunctionType::get(Type::getInt64Ty(Context), args, false);
-    CF->FBSwap64           = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage,
-                                              "llvm.bswap.i64", M);
+    CF->FBSwap64           = Function::Create(FuncTy_7, GlobalValue::ExternalLinkage, "llvm.bswap.i64", M);
     CF->FBSwap64->setDoesNotThrow();
 
     FunctionType *DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
-    CF->FRealmemset       = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
-                                             "memset", M);
+    CF->FRealmemset       = Function::Create(DummyTy, GlobalValue::ExternalLinkage, "memset", M);
     sys::DynamicLibrary::AddSymbol(CF->FRealmemset->getName(), (void *)(intptr_t)memset);
     EE->getPointerToFunction(CF->FRealmemset);
     CF->FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
@@ -1899,8 +1882,7 @@ static void addFunctionProtos(struct CommonFunctions *CF, ExecutionEngine *EE, M
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
     args.push_back(EE->getDataLayout().getIntPtrType(Context));
-    FuncTy_5        = FunctionType::get(Type::getInt32Ty(Context),
-                                        args, false);
+    FuncTy_5        = FunctionType::get(Type::getInt32Ty(Context), args, false);
     CF->FRealmemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
     sys::DynamicLibrary::AddSymbol(CF->FRealmemcmp->getName(), (void *)(intptr_t)memcmp);
     EE->getPointerToFunction(CF->FRealmemcmp);
@@ -1962,8 +1944,7 @@ static void *bytecode_watchdog(void *arg)
         item = watchdog_head;
         while (item == watchdog_head) {
             item->in_use = 1;
-            ret          = pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex,
-                                                  &item->abstimeout);
+            ret          = pthread_cond_timedwait(&watchdog_cond, &watchdog_mutex, &item->abstimeout);
             if (ret == ETIMEDOUT)
                 break;
             if (ret) {
@@ -2195,8 +2176,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                 for (unsigned i = 0; i < cli_apicall_maxapi; i++) {
                     const struct cli_apicall *api = &cli_apicalls[i];
                     FunctionType *FTy             = cast<FunctionType>(apiMap.get(69 + api->type, NULL, NULL));
-                    Function *F                   = Function::Create(FTy, Function::ExternalLinkage,
-                                                                     api->name, M);
+                    Function *F                   = Function::Create(FTy, Function::ExternalLinkage, api->name, M);
                     void *dest;
                     switch (api->kind) {
                         case 0:
@@ -2243,8 +2223,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                 }
 
                 // stack protector
-                FunctionType *FTy     = FunctionType::get(Type::getVoidTy(M->getContext()),
-                                                          false);
+                FunctionType *FTy     = FunctionType::get(Type::getVoidTy(M->getContext()), false);
                 GlobalVariable *Guard = new GlobalVariable(*M, PointerType::getUnqual(Type::getInt8Ty(M->getContext())),
                                                            true, GlobalValue::ExternalLinkage, 0, "__stack_chk_guard");
                 unsigned plus         = 0;
@@ -2254,8 +2233,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
                 sys::DynamicLibrary::AddSymbol(Guard->getName(), (void *)(&bcs->engine->guard.b[plus]));
                 setGuard(bcs->engine->guard.b);
                 bcs->engine->guard.b[plus + sizeof(void *) - 1] = 0x00;
-                Function *SFail                                 = Function::Create(FTy, Function::ExternalLinkage,
-                                                                                   "__stack_chk_fail", M);
+                Function *SFail                                 = Function::Create(FTy, Function::ExternalLinkage, "__stack_chk_fail", M);
                 sys::DynamicLibrary::AddSymbol(SFail->getName(), (void *)(intptr_t)jit_ssp_handler);
                 EE->getPointerToFunction(SFail);
 

@@ -920,19 +920,128 @@ static cl_error_t engine_free_callback(size_t total_items, size_t now_completed,
 }
 #endif
 
+#ifdef _WIN32
+static int scan_memory(struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options)
+{
+    int ret = 0;
+    struct mem_info minfo;
+
+    minfo.d       = 0;
+    minfo.files   = info.files;
+    minfo.ifiles  = info.ifiles;
+    minfo.blocks  = info.blocks;
+    minfo.engine  = engine;
+    minfo.opts    = opts;
+    minfo.options = options;
+    ret           = scanmem(&minfo);
+
+    info.files  = minfo.files;
+    info.ifiles = minfo.ifiles;
+    info.blocks = minfo.blocks;
+
+    return ret;
+}
+#endif
+
+/**
+ * @brief Scan the files from the --file-list option, or scan the files listed as individual arguments.
+ *
+ * If the user uses both --file-list <LISTFILE> AND one or more files, then clam will only
+ * scan the files listed in the LISTFILE and emit a warning about not scanning the other file parameters.
+ *
+ * @param opts
+ * @param options
+ * @return int
+ */
+static int scan_files(struct cl_engine *engine, const struct optstruct *opts, struct cl_scan_options *options,
+                      unsigned int dirlnk, unsigned int filelnk)
+{
+    int ret = 0;
+    const char *filename;
+    char *file;
+    STATBUF sb;
+
+    if (optget(opts, "file-list")->enabled && opts->filename) {
+        logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+    }
+
+#ifdef _WIN32
+    /* scan first memory if requested */
+    if (optget(opts, "memory")->enabled) {
+        ret = scan_memory(engine, opts, options);
+    }
+#endif
+
+    while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
+        if (!strcmp(file, "-")) {
+            /* scan data from stdin */
+            ret = scanstdin(engine, options);
+        } else if (LSTAT(file, &sb) == -1) {
+            /* Can't access the file */
+            perror(file);
+            logg(LOGG_WARNING, "%s: Can't access file\n", file);
+            ret = 2;
+        } else {
+            /* Can access the file. Now have to identify what type of file it is */
+            int i;
+            for (i = strlen(file) - 1; i > 0; i--) {
+                if (file[i] == *PATHSEP) {
+                    file[i] = 0;
+                } else {
+                    break;
+                }
+            }
+
+            if (S_ISLNK(sb.st_mode)) {
+                /* found a link */
+                if (dirlnk == 0 && filelnk == 0) {
+                    /* don't follow links */
+                    if (!printinfected) {
+                        logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                    }
+                } else if (CLAMSTAT(file, &sb) != -1) {
+                    /* maybe follow links */
+                    if (S_ISREG(sb.st_mode) && filelnk) {
+                        /* follow file links */
+                        scanfile(file, engine, opts, options);
+                    } else if (S_ISDIR(sb.st_mode) && dirlnk) {
+                        /* follow directory links */
+                        scandirs(file, engine, opts, options, 1, sb.st_dev);
+                    } else {
+                        if (!printinfected) {
+                            logg(LOGG_INFO, "%s: Symbolic link\n", file);
+                        }
+                    }
+                }
+            } else if (S_ISREG(sb.st_mode)) {
+                /* Found a file, scan it. */
+                scanfile(file, engine, opts, options);
+            } else if (S_ISDIR(sb.st_mode)) {
+                /* Found a directory, scan it. */
+                scandirs(file, engine, opts, options, 1, sb.st_dev);
+            } else {
+                logg(LOGG_WARNING, "%s: Not supported file type\n", file);
+                ret = 2;
+            }
+        }
+
+        free(file);
+    }
+
+    return ret;
+}
+
 int scanmanager(const struct optstruct *opts)
 {
-    int ret = 0, i;
+    int ret = 0;
+    int i;
     struct cl_scan_options options;
     unsigned int dboptions = 0, dirlnk = 1, filelnk = 1;
     struct cl_engine *engine = NULL;
     STATBUF sb;
-    char *file, cwd[1024], *pua_cats = NULL;
-    const char *filename;
+    char *pua_cats = NULL;
     const struct optstruct *opt;
-#ifdef _WIN32
-    struct mem_info minfo;
-#else
+#ifndef _WIN32
     struct rlimit rlim;
 #endif
     struct sigload_progress sigload_progress_ctx               = {0};
@@ -1505,93 +1614,37 @@ int scanmanager(const struct optstruct *opts)
 
 #ifdef C_LINUX
     procdev = (dev_t)0;
-    if (CLAMSTAT("/proc", &sb) != -1 && !sb.st_size)
+    if (CLAMSTAT("/proc", &sb) != -1 && !sb.st_size) {
         procdev = sb.st_dev;
+    }
 #endif
+
+    if (optget(opts, "file-list")->enabled || opts->filename) {
+        /* scan the files listed in the --file-list, or it that's not specified, then
+         * scan the list of file arguments (including data from stdin, if `-` specified) */
+        ret = scan_files(engine, opts, &options, dirlnk, filelnk);
 
 #ifdef _WIN32
-    /* scan only memory */
-    if (optget(opts, "memory")->enabled && (!opts->filename && !optget(opts, "file-list")->enabled)) {
-        minfo.d       = 0;
-        minfo.files   = info.files;
-        minfo.ifiles  = info.ifiles;
-        minfo.blocks  = info.blocks;
-        minfo.engine  = engine;
-        minfo.opts    = opts;
-        minfo.options = &options;
-        ret           = scanmem(&minfo);
-    } else
-#endif
-        /* check filetype */
-        if (!opts->filename && !optget(opts, "file-list")->enabled) {
-            /* we need full path for some reasons (eg. archive handling) */
-            if (!getcwd(cwd, sizeof(cwd))) {
-                logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
-                ret = 2;
-            } else {
-                CLAMSTAT(cwd, &sb);
-                scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
-            }
+    } else if (optget(opts, "memory")->enabled) {
+        /* scan only memory */
+        ret = scan_memory(engine, opts, &options);
 
-        } else if (opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
-            ret = scanstdin(engine, &options);
+#endif
+    } else {
+        /* No list of files provided to scan, and no request to scan memory,
+         * so just scan the current directory. */
+        char cwd[1024];
+
+        /* Get the current workinng directory.
+         * we need full path for some reasons (eg. archive handling) */
+        if (!getcwd(cwd, sizeof(cwd))) {
+            logg(LOGG_ERROR, "Can't get absolute pathname of current working directory\n");
+            ret = 2;
         } else {
-            if (opts->filename && optget(opts, "file-list")->enabled)
-                logg(LOGG_WARNING, "Only scanning files from --file-list (files passed at cmdline are ignored)\n");
-
-#ifdef _WIN32
-            /* scan first memory if requested */
-            if (optget(opts, "memory")->enabled) {
-                minfo.d       = 0;
-                minfo.files   = info.files;
-                minfo.ifiles  = info.ifiles;
-                minfo.blocks  = info.blocks;
-                minfo.engine  = engine;
-                minfo.opts    = opts;
-                minfo.options = &options;
-                ret           = scanmem(&minfo);
-            }
-#endif
-            while ((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
-                if (LSTAT(file, &sb) == -1) {
-                    perror(file);
-                    logg(LOGG_WARNING, "%s: Can't access file\n", file);
-                    ret = 2;
-                } else {
-                    for (i = strlen(file) - 1; i > 0; i--) {
-                        if (file[i] == *PATHSEP)
-                            file[i] = 0;
-                        else
-                            break;
-                    }
-
-                    if (S_ISLNK(sb.st_mode)) {
-                        if (dirlnk == 0 && filelnk == 0) {
-                            if (!printinfected)
-                                logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                        } else if (CLAMSTAT(file, &sb) != -1) {
-                            if (S_ISREG(sb.st_mode) && filelnk) {
-                                scanfile(file, engine, opts, &options);
-                            } else if (S_ISDIR(sb.st_mode) && dirlnk) {
-                                scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                            } else {
-                                if (!printinfected)
-                                    logg(LOGG_INFO, "%s: Symbolic link\n", file);
-                            }
-                        }
-                    } else if (S_ISREG(sb.st_mode)) {
-                        scanfile(file, engine, opts, &options);
-                    } else if (S_ISDIR(sb.st_mode)) {
-                        scandirs(file, engine, opts, &options, 1, sb.st_dev);
-                    } else {
-                        logg(LOGG_WARNING, "%s: Not supported file type\n", file);
-                        ret = 2;
-                    }
-                }
-
-                free(file);
-            }
+            CLAMSTAT(cwd, &sb);
+            scandirs(cwd, engine, opts, &options, 1, sb.st_dev);
         }
+    }
 
     if ((opt = optget(opts, "statistics"))->enabled) {
         while (opt) {
@@ -1612,14 +1665,6 @@ int scanmanager(const struct optstruct *opts)
 done:
     /* free the engine */
     cl_engine_free(engine);
-
-#ifdef _WIN32
-    if (optget(opts, "memory")->enabled) {
-        info.files  = minfo.files;
-        info.ifiles = minfo.ifiles;
-        info.blocks = minfo.blocks;
-    }
-#endif
 
     /* overwrite return code - infection takes priority */
     if (info.ifiles)

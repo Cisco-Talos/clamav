@@ -422,8 +422,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         int messagenumber;
         message *m = messageCreate(); /*Create an empty email */
 
-        if (m == NULL)
+        if (m == NULL) {
             return CL_EMEM;
+        }
 
         lastLineWasEmpty = false;
         messagenumber    = 1;
@@ -478,21 +479,26 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                 messageSetCTX(m, ctx);
 
                 cli_dbgmsg("Finished processing message\n");
-            } else
+            } else {
                 lastLineWasEmpty = (bool)(buffer[0] == '\0');
+            }
 
             if (isuuencodebegin(buffer)) {
                 /*
                  * Fast track visa to uudecode.
                  * TODO: binhex, yenc
                  */
-                if (uudecodeFile(m, buffer, dir, map, &at) < 0)
-                    if (messageAddStr(m, buffer) < 0)
+                if (uudecodeFile(m, buffer, dir, map, &at) < 0) {
+                    if (messageAddStr(m, buffer) < 0) {
                         break;
-            } else
+                    }
+                }
+            } else {
                 /* at this point, the \n has been removed */
-                if (messageAddStr(m, buffer) < 0)
+                if (messageAddStr(m, buffer) < 0) {
                     break;
+                }
+            }
         } while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1));
 
         if (retcode == CL_SUCCESS) {
@@ -503,8 +509,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
                 retcode = CL_VIRUS;
             }
         }
-        if (m)
+        if (m) {
             messageDestroy(m);
+        }
     } else {
         /*
          * It's a single message, parse the headers then the body
@@ -515,16 +522,18 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
              * blank line
              */
             while (fmap_gets(map, buffer, &at, sizeof(buffer) - 1) &&
-                   (strchr("\r\n", buffer[0]) == NULL))
+                   (strchr("\r\n", buffer[0]) == NULL)) {
                 ;
+            }
         /* getline_from_mbox could be using unlocked_stdio(3),
          * so lock file here */
         /*
          * Ignore any blank lines at the top of the message
          */
         while (strchr("\r\n", buffer[0]) &&
-               (getline_from_mbox(buffer, sizeof(buffer) - 1, map, &at) != NULL))
+               (getline_from_mbox(buffer, sizeof(buffer) - 1, map, &at) != NULL)) {
             ;
+        }
 
         buffer[sizeof(buffer) - 1] = '\0';
 
@@ -575,8 +584,9 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
             }
         }
 
-        if (body->isTruncated && retcode == CL_SUCCESS)
+        if (body->isTruncated && retcode == CL_SUCCESS) {
             retcode = CL_EMEM;
+        }
         /*
          * Tidy up and quit
          */
@@ -585,7 +595,8 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
 
     if ((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
         (*ctx->virname == NULL || SCAN_ALLMATCHES)) {
-        retcode                      = cli_append_virus(ctx, "Heuristics.Phishing.Email");
+        retcode = cli_append_virus(ctx, "Heuristics.Phishing.Email");
+
         ctx->found_possibly_unwanted = 0;
     }
 
