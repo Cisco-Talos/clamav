@@ -193,9 +193,10 @@ static int _getopt_internal(int argc, char *argv[], const char *shortopts,
             if ((argv[i][0] == '-') &&
                 (argv[i][1] != '\0')) {
                 optind = i;
-                opt    = _getopt_internal(argc, argv, shortopts,
-                                          longopts, longind,
-                                          long_only);
+
+                opt = _getopt_internal(argc, argv, shortopts,
+                                       longopts, longind,
+                                       long_only);
                 while (i > j) {
                     tmp = argv[--i];
                     for (k = i; k + 1 < optind; k++)

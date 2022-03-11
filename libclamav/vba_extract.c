@@ -2231,10 +2231,8 @@ cli_wm_readdir(int fd)
     vba_project = create_vba_project(macro_info.count, "", NULL);
 
     if (vba_project) {
-        vba_project->length = (uint32_t *)cli_malloc(sizeof(uint32_t) *
-                                                     macro_info.count);
-        vba_project->key    = (unsigned char *)cli_malloc(sizeof(unsigned char) *
-                                                          macro_info.count);
+        vba_project->length = (uint32_t *)cli_malloc(sizeof(uint32_t) * macro_info.count);
+        vba_project->key    = (unsigned char *)cli_malloc(sizeof(unsigned char) * macro_info.count);
         if ((vba_project->length != NULL) &&
             (vba_project->key != NULL)) {
             int i;

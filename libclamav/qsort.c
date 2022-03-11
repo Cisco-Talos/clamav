@@ -36,6 +36,7 @@
 #include "platform.h"
 #include "others.h"
 
+// clang-format off
 static inline char *med3(char *, char *, char *, int (*)(const void *, const void *));
 static inline char *med3_r(void *, char *, char *, char *, int (*)(const void *, const void *, const void *));
 static inline void swapfunc(char *, char *, int, int);
@@ -88,9 +89,7 @@ int n, swaptype;
 #define MED3_R(arg, a, b, c, d) (d ? (med3_r(arg, a, b, c, d)) : (CMP1(a, b) < 0 ? (CMP1(b, c) < 0 ? (b) : (CMP1(a, c) < 0 ? (c) : (a))) : (CMP1(b, c) > 0 ? (b) : (CMP1(a, c) < 0 ? (a) : (c)))))
 
 static inline char *
-med3(a, b, c, cmp)
-char *a,
-    *b, *c;
+    med3(a, b, c, cmp) char *a, *b, *c;
 int (*cmp)(const void *, const void *);
 {
     return CMP(a, b) < 0 ? (CMP(b, c) < 0 ? b : (CMP(a, c) < 0 ? c : a))
@@ -263,3 +262,4 @@ loop:
     }
     /*		cli_qsort_r(pn - r, r / es, es, cmp);*/
 }
+// clang-format on

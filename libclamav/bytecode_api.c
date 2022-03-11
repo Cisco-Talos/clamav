@@ -357,8 +357,9 @@ uint32_t cli_bcapi_pe_rawaddr(struct cli_bc_ctx *ctx, uint32_t rva)
     uint32_t ret;
     unsigned err                      = 0;
     const struct cli_pe_hook_data *pe = ctx->hooks.pedata;
-    ret                               = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
-                                                    ctx->file_size, pe->hdr_size);
+
+    ret = cli_rawaddr(rva, ctx->sections, pe->nsections, &err,
+                      ctx->file_size, pe->hdr_size);
     if (err) {
         cli_dbgmsg("bcapi_pe_rawaddr invalid rva: %u\n", rva);
         return PE_INVALID_RVA;
@@ -972,8 +973,9 @@ int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
     memset(&b->stream, 0, sizeof(b->stream));
 
     b->stream.avail_in = avail_in_orig;
-    b->stream.next_in  = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
-                                                                b->stream.avail_in);
+
+    b->stream.next_in = (void *)cli_bcapi_buffer_pipe_read_get(ctx, b->from,
+                                                               b->stream.avail_in);
 
     if ((ret = cli_LzmaInit(&b->stream, 0)) != LZMA_RESULT_OK) {
         cli_dbgmsg("bytecode api: LzmaInit: Failed to initialize LZMA decompressor: %d!\n", ret);
