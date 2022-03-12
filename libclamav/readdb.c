@@ -581,6 +581,106 @@ done:
     return status;
 }
 
+static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char *virname, char *hexsig, uint8_t subsig_opts,
+                                           const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+{
+    cl_error_t status = CL_EPARSE;
+    cl_error_t ret;
+    char *hexcpy = NULL;
+
+    char *start = NULL, *end = NULL;
+
+    if (strchr(hexsig, '/')) {
+        /*
+         * Looks like a pcre subsignature.
+         * expected format => ^offset:trigger/regex/[cflags]$
+         */
+        const char *trigger, *pattern, *cflags;
+        int subtokens_count;
+        char *subtokens[SUB_TOKENS + 1];
+        const char *sig;
+
+        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
+        if (!subtokens_count) {
+            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        if ((subtokens_count % 2) == 0)
+            offset = subtokens[0];
+
+        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
+
+        /* get copied */
+        hexcpy = cli_strdup(sig);
+        if (!hexcpy) {
+            status = CL_EMEM;
+            goto done;
+        }
+
+        /* get delimiters-ed */
+        start = strchr(hexcpy, '/');
+        end   = strrchr(hexcpy, '/');
+
+        /* get pcre-ed */
+        if (start == end) {
+            cli_errmsg("PCRE subsig mismatched '/' delimiter\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        /* get checked */
+        if (hexsig[0] == '/') {
+            cli_errmsg("PCRE subsig must contain logical trigger\n");
+            status = CL_EMALFDB;
+            goto done;
+        }
+
+        /* get NULL-ed */
+        *start = '\0';
+        *end   = '\0';
+
+        /* get tokens-ed */
+        trigger = hexcpy;
+        pattern = start + 1;
+        cflags  = end + 1;
+        if (*cflags == '\0') /* get compat-ed */
+            cflags = NULL;
+
+        /* normal trigger, get added */
+        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+        if (CL_SUCCESS != ret) {
+            cli_errmsg("Problem adding PCRE subsignature.\n");
+            status = ret;
+            goto done;
+        }
+
+    } else {
+        /*
+         * Looks like an AC/BM content match subsignature.
+         */
+        if (subsig_opts) {
+            ret = cli_sigopts_handler(root, virname, hexsig, subsig_opts, 0, 0, offset, target, lsigid, options);
+        } else {
+            ret = cli_add_content_match_pattern(root, virname, hexsig, 0, 0, 0, offset, target, lsigid, options);
+        }
+
+        if (CL_SUCCESS != ret) {
+            status = ret;
+            goto done;
+        }
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    FREE(hexcpy);
+
+    return status;
+}
+
 #define PCRE_TOKENS 4
 /**
  * @brief Load body-based content patterns that will be matched with AC or BM matchers
@@ -4200,7 +4300,9 @@ static int load_oneyara(YR_RULE *rule, int chkpua, struct cl_engine *engine, uns
                     (ytable.table[i]->sigopts & ACPATT_OPTION_WIDE) ? "w" : "",
                     (ytable.table[i]->sigopts & ACPATT_OPTION_ASCII) ? "a" : "");
 
-        if (CL_SUCCESS != (ret = cli_sigopts_handler(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts, 0, 0, ytable.table[i]->offset, target, lsigid, options))) {
+        ret = readdb_parse_yara_string(root, newident, ytable.table[i]->hexstr, ytable.table[i]->sigopts,
+                                       ytable.table[i]->offset, target, lsigid, options);
+        if (CL_SUCCESS != ret) {
             root->ac_lsigs--;
             FREE_TDB(tdb);
             ytable_delete(&ytable);
