@@ -31,6 +31,19 @@
 
 int cli_versig(const char *md5, const char *dsig);
 int cli_versig2(const unsigned char *sha256, const char *dsig_str, const char *n_str, const char *e_str);
-const char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode);
+
+/**
+ * @brief Connect to a signing server, send the data to be signed, and return the digital signature.
+ *
+ * Caller is responsible for freeing the returned dsig.
+ *
+ * @param host
+ * @param user
+ * @param data
+ * @param datalen
+ * @param mode
+ * @return char*
+ */
+char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode);
 
 #endif

@@ -114,7 +114,7 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, fp_int e
     return plain;
 }
 
-const char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
+char *cli_getdsig(const char *host, const char *user, const unsigned char *data, unsigned int datalen, unsigned short mode)
 {
     char buff[512], cmd[128], pass[31], *pt;
     struct sockaddr_in server;

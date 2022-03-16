@@ -699,7 +699,7 @@ static int build(const struct optstruct *opts)
     STATBUF foo;
     unsigned char buffer[FILEBUFF];
     char *tarfile, header[513], smbuff[32], builder[33], *pt, olddb[512];
-    char patch[32], broken[32], dbname[32], dbfile[32];
+    char patch[50], broken[57], dbname[32], dbfile[36];
     const char *newcvd, *localdbdir = NULL;
     struct cl_engine *engine;
     FILE *cvd, *fh;
@@ -2445,7 +2445,7 @@ static int decodehex(const char *hexsig)
 {
     char *pt, *hexcpy, *start, *n, *decoded, *wild;
     int asterisk = 0;
-    unsigned int i, j, hexlen, dlen, parts = 0, bw;
+    unsigned int i, j, hexlen, dlen, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
 
     hexlen = strlen(hexsig);
@@ -2573,7 +2573,7 @@ static int decodehex(const char *hexsig)
                 free(hexcpy);
                 return -1;
             }
-            bw = write(1, decoded, dlen);
+            (void)write(1, decoded, dlen);
             free(decoded);
 
             if (i == parts)
@@ -2654,7 +2654,7 @@ static int decodehex(const char *hexsig)
                 free(pt);
                 return -1;
             }
-            bw = write(1, decoded, dlen);
+            (void)write(1, decoded, dlen);
             free(decoded);
             if (i < parts)
                 mprintf(LOGG_INFO, "{WILDCARD_ANY_STRING}");
@@ -2666,7 +2666,7 @@ static int decodehex(const char *hexsig)
             mprintf(LOGG_ERROR, "Decoding failed\n");
             return -1;
         }
-        bw = write(1, decoded, dlen);
+        (void)write(1, decoded, dlen);
         free(decoded);
     }
 
@@ -3148,7 +3148,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 
 static int makediff(const struct optstruct *opts)
 {
-    char *odir, *ndir, name[32], broken[32], dbname[32];
+    char *odir, *ndir, name[32], broken[39], dbname[32];
     struct cl_cvd *cvd;
     unsigned int oldver, newver;
     int ret;
