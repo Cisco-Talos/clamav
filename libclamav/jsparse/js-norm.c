@@ -69,10 +69,8 @@ typedef struct scanner {
     enum tokenizer_state last_state;
 } * yyscan_t;
 
-typedef int YY_BUFFER_STATE;
-
 static int yylex(YYSTYPE *lvalp, yyscan_t);
-static YY_BUFFER_STATE yy_scan_bytes(const char *, size_t, yyscan_t scanner);
+static void yy_scan_bytes(const char *, size_t, yyscan_t scanner);
 static const char *yyget_text(yyscan_t scanner);
 static int yyget_leng(yyscan_t scanner);
 static int yylex_init(yyscan_t *ptr_yy_globals);
@@ -471,22 +469,44 @@ static void scope_free_all(struct scope *p)
 }
 
 size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
-static int match_parameters(const yystype *tokens, const char **param_names, size_t count)
+
+static int match_parameters(const yystype *tokens, size_t num_tokens, const char **param_names, size_t num_param_names)
 {
-    size_t i, j = 0;
-    if (tokens[0].type != TOK_PAR_OPEN)
+    size_t token_idx = 1;
+    size_t names_idx = 0;
+
+    if (tokens[0].type != TOK_PAR_OPEN) {
         return -1;
-    i = 1;
-    while (count--) {
-        const char *token_val = TOKEN_GET(&tokens[i], cstring);
-        if (tokens[i].type != TOK_IDENTIFIER_NAME ||
-            !token_val ||
-            strcmp(token_val, param_names[j++]))
+    }
+    if (token_idx >= num_tokens) {
+        return -1;
+    }
+
+    while (names_idx < num_param_names) {
+        num_param_names--;
+
+        const char *token_val = TOKEN_GET(&tokens[token_idx], cstring);
+        if (token_val == NULL) {
             return -1;
-        ++i;
-        if ((count && tokens[i].type != TOK_COMMA) || (!count && tokens[i].type != TOK_PAR_CLOSE))
+        }
+
+        if ((token_idx >= num_tokens) ||
+            (tokens[token_idx].type != TOK_IDENTIFIER_NAME)) {
             return -1;
-        ++i;
+        }
+        token_idx++;
+
+        if ((0 != strcmp(token_val, param_names[names_idx]))) {
+            return -1;
+        }
+        names_idx++;
+
+        if ((token_idx >= num_tokens) ||
+            (num_param_names > 0 && tokens[token_idx].type != TOK_COMMA) ||
+            (num_param_names == 0 && tokens[token_idx].type != TOK_PAR_CLOSE)) {
+            return -1;
+        }
+        token_idx++;
     }
     return 0;
 }
@@ -690,12 +710,15 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
     if (first && last) {
         res->pos_begin = first - tokens;
         res->pos_end   = last - tokens + 1;
-        if (tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
+        if (res->pos_end + 2 < cnt &&
+            tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
             tokens[res->pos_end + 1].type == TOK_BRACKET_CLOSE &&
-            tokens[res->pos_end + 2].type == TOK_PAR_CLOSE)
+            tokens[res->pos_end + 2].type == TOK_PAR_CLOSE) {
             res->pos_end += 3; /* {}) */
-        else
-            res->pos_end++; /* ) */
+        } else if (res->pos_end < cnt) {
+            /* ) */
+            res->pos_end++;
+        }
     }
 }
 
@@ -824,7 +847,8 @@ static void run_decoders(struct parser_state *state)
                 name    = cstring;
                 ++i;
             }
-            if (match_parameters(&tokens->data[i], de_packer_3, sizeof(de_packer_3) / sizeof(de_packer_3[0])) != -1 || match_parameters(&tokens->data[i], de_packer_2, sizeof(de_packer_2) / sizeof(de_packer_2[0])) != -1) {
+            if (-1 != match_parameters(&tokens->data[i], tokens->cnt, de_packer_3, sizeof(de_packer_3) / sizeof(de_packer_3[0])) ||
+                -1 != match_parameters(&tokens->data[i], tokens->cnt, de_packer_2, sizeof(de_packer_2) / sizeof(de_packer_2[0]))) {
                 /* find function decl. end */
                 handle_de(tokens->data, i, tokens->cnt, name, &res);
             }
@@ -986,9 +1010,8 @@ void cli_js_destroy(struct parser_state *state)
 void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n)
 {
     struct scope *current = state->current;
-    YYSTYPE val;
+    YYSTYPE val           = {0};
     int yv;
-    YY_BUFFER_STATE yyb;
 
     if (!state->global) {
         /* this state has either not been initialized,
@@ -996,9 +1019,11 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
         cli_warnmsg(MODULE "invalid state\n");
         return;
     }
-    yyb = yy_scan_bytes(buf, n, state->scanner);
-    memset(&val, 0, sizeof(val));
+
+    yy_scan_bytes(buf, n, state->scanner);
+
     val.vtype = vtype_undefined;
+
     /* on EOF yylex will return 0 */
     while ((yv = yylex(&val, state->scanner)) != 0) {
         const char *text;
@@ -1702,14 +1727,14 @@ static int yylex_destroy(yyscan_t scanner)
     return 0;
 }
 
-static int yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
+static void yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
 {
     scanner->in         = p;
     scanner->insize     = len;
     scanner->pos        = 0;
     scanner->lastpos    = -1;
     scanner->last_state = Dummy;
-    return 0;
+    return;
 }
 
 static const char *yyget_text(yyscan_t scanner)
