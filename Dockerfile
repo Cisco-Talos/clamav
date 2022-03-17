@@ -57,7 +57,7 @@ RUN apk add --no-cache \
         -e "s|.*\(PidFile\) .*|\1 /run/lock/clamd.pid|" \
         -e "s|.*\(LocalSocket\) .*|\1 /run/clamav/clamd.sock|" \
         -e "s|.*\(TCPSocket\) .*|\1 3310|" \
-        -e "s|.*\(TCPAddr\) .*|\1 0.0.0.0|" \
+        -e "s|.*\(TCPAddr\) .*|#\1 0.0.0.0|" \
         -e "s|.*\(User\) .*|\1 clamav|" \
         -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/clamd.log|" \
         -e "s|^\#\(LogTime\).*|\1 yes|" \
