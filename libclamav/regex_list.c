@@ -684,17 +684,19 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
-        size_t n    = matcher->suffix_cnt++;
+        size_t n    = matcher->suffix_cnt;
         el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
         tmp_matcher = cli_realloc(matcher->suffix_regexes, (n + 1) * sizeof(*matcher->suffix_regexes));
         if (!tmp_matcher) {
+            FREE(regex->pattern);
             free(regex);
             return CL_EMEM;
         }
         matcher->suffix_regexes         = tmp_matcher; /*  success, point at new memory location   */
         matcher->suffix_regexes[n].tail = regex;
         matcher->suffix_regexes[n].head = regex;
+        matcher->suffix_cnt++;
         if (suffix[0] == '/' && suffix[1] == '\0')
             matcher->root_regex_idx = n;
         add_newsuffix(matcher, regex, suffix, suffix_len);
