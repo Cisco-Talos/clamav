@@ -431,3 +431,39 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.err, expected=expected_stderr)
         self.verify_output(output.out, unexpected=unexpected_stdout)
+
+    def test_clamscan_12_yara_regex(self):
+        self.step_name('Test yara signature - detect TAR file magic in a range')
+
+        db = TC.path_tmp / 'regex.yara'
+        db.write_text(
+            r'''
+rule regex
+{
+    meta:
+        author      = "Micah"
+        date        = "2022/03/12"
+        description = "Just a test"
+    strings:
+        $a = "/+eat/"                 /* <-- not a regex */
+        $b = /\$protein+=\([a-z]+\)/  /* <-- is a regex */
+    condition:
+        all of them
+}
+            '''
+        )
+        testfile = TC.path_tmp / 'regex.sample'
+        testfile.write_text('var $protein=(slugs); /+eat/ $protein')
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=db, testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'regex.sample: YARA.regex.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)
