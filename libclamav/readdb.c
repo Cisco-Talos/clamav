@@ -644,10 +644,6 @@ static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char 
          * Looks like a pcre subsignature.
          */
         ret = readdb_load_regex_subsignature(root, virname, hexsig, offset, lsigid, options);
-        if (CL_SUCCESS != ret) {
-            status = ret;
-            goto done;
-        }
 
     } else {
         /*
@@ -658,11 +654,11 @@ static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char 
         } else {
             ret = cli_add_content_match_pattern(root, virname, hexsig, 0, 0, 0, offset, target, lsigid, options);
         }
+    }
 
-        if (CL_SUCCESS != ret) {
-            status = ret;
-            goto done;
-        }
+    if (CL_SUCCESS != ret) {
+        status = ret;
+        goto done;
     }
 
     status = CL_SUCCESS;
