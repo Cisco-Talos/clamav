@@ -312,7 +312,100 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
     return ret;
 }
 
-#define SUB_TOKENS 4
+/**
+ * @brief Parse a regex term: a logical subsignature or yara regex string
+ *
+ * expected format => ^offset:trigger/regex/[cflags]$
+ *
+ * @param root      The matcher root (engine structure containing loaded signature patterns for matching)
+ * @param virname   Name of signature that this regex subsig came from.
+ * @param hexsig    The string containing the regex
+ * @param offset    The string offset where the pattern starts
+ * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
+ * @param options   Database options.  See CL_DB_* macros in clamav.h.
+ * @return cl_error_t
+ */
+static cl_error_t readdb_load_regex_subsignature(struct cli_matcher *root, const char *virname, char *hexsig,
+                                                 const char *offset, const uint32_t *lsigid, unsigned int options)
+{
+    cl_error_t status = CL_EPARSE;
+    cl_error_t ret;
+    char *hexcpy = NULL;
+    char *start  = NULL;
+    char *end    = NULL;
+
+    const char *trigger, *pattern, *cflags;
+    int subtokens_count;
+// The maximum number of `:` delimited fields in a regex subsignature.
+#define MAX_REGEX_SUB_TOKENS 4
+    char *subtokens[MAX_REGEX_SUB_TOKENS + 1];
+    const char *sig;
+
+    subtokens_count = cli_ldbtokenize(hexsig, ':', MAX_REGEX_SUB_TOKENS + 1, (const char **)subtokens, 0);
+    if (!subtokens_count) {
+        cli_errmsg("Invalid or unsupported ldb subsignature format\n");
+        status = CL_EMALFDB;
+        goto done;
+    }
+
+    if ((subtokens_count % 2) == 0)
+        offset = subtokens[0];
+
+    sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
+
+    /* get copied */
+    hexcpy = cli_strdup(sig);
+    if (!hexcpy) {
+        status = CL_EMEM;
+        goto done;
+    }
+
+    /* get delimiters-ed */
+    start = strchr(hexcpy, '/');
+    end   = strrchr(hexcpy, '/');
+
+    /* get pcre-ed */
+    if (start == end) {
+        cli_errmsg("PCRE subsig mismatched '/' delimiter\n");
+        status = CL_EMALFDB;
+        goto done;
+    }
+
+    /* get checked */
+    if (hexsig[0] == '/') {
+        cli_errmsg("PCRE subsig must contain logical trigger\n");
+        status = CL_EMALFDB;
+        goto done;
+    }
+
+    /* get NULL-ed */
+    *start = '\0';
+    *end   = '\0';
+
+    /* get tokens-ed */
+    trigger = hexcpy;
+    pattern = start + 1;
+    cflags  = end + 1;
+    if (*cflags == '\0') /* get compat-ed */
+        cflags = NULL;
+
+    /* normal trigger, get added */
+    ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+    if (CL_SUCCESS != ret) {
+        cli_errmsg("Problem adding PCRE subsignature.\n");
+        status = ret;
+        goto done;
+    }
+
+    status = CL_SUCCESS;
+
+done:
+
+    FREE(hexcpy);
+
+    return status;
+}
+
 cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *virname, char *hexsig,
                                          const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options,
                                          int current_subsig_index, int num_subsigs, struct cli_lsig_tdb *tdb)
@@ -403,65 +496,9 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
     } else if (strchr(hexsig, '/')) {
         /*
          * Looks like a pcre subsignature.
-         * expected format => ^offset:trigger/regex/[cflags]$
          */
-        const char *trigger, *pattern, *cflags;
-        int subtokens_count;
-        char *subtokens[SUB_TOKENS + 1];
-        const char *sig;
-
-        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
-        if (!subtokens_count) {
-            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        if ((subtokens_count % 2) == 0)
-            offset = subtokens[0];
-
-        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
-
-        /* get copied */
-        hexcpy = cli_strdup(sig);
-        if (!hexcpy) {
-            status = CL_EMEM;
-            goto done;
-        }
-
-        /* get delimiters-ed */
-        start = strchr(hexcpy, '/');
-        end   = strrchr(hexcpy, '/');
-
-        /* get pcre-ed */
-        if (start == end) {
-            cli_errmsg("PCRE subsig mismatched '/' delimiter\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        /* get checked */
-        if (hexsig[0] == '/') {
-            cli_errmsg("PCRE subsig must contain logical trigger\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        /* get NULL-ed */
-        *start = '\0';
-        *end   = '\0';
-
-        /* get tokens-ed */
-        trigger = hexcpy;
-        pattern = start + 1;
-        cflags  = end + 1;
-        if (*cflags == '\0') /* get compat-ed */
-            cflags = NULL;
-
-        /* normal trigger, get added */
-        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+        ret = readdb_load_regex_subsignature(root, virname, hexsig, offset, lsigid, options);
         if (CL_SUCCESS != ret) {
-            cli_errmsg("Problem adding PCRE subsignature.\n");
             status = ret;
             goto done;
         }
@@ -514,9 +551,11 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
         uint8_t subsig_opts = 0;
         int subtokens_count;
         const char *sig;
-        char *subtokens[SUB_TOKENS + 1];
+// The maximum number of `:` delimited fields in a regex subsignature.
+#define MAX_CONTENTMATCH_SUB_TOKENS 4
+        char *subtokens[MAX_CONTENTMATCH_SUB_TOKENS + 1];
 
-        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
+        subtokens_count = cli_ldbtokenize(hexsig, ':', MAX_CONTENTMATCH_SUB_TOKENS + 1, (const char **)subtokens, 0);
         if (!subtokens_count) {
             cli_errmsg("Invalid or unsupported ldb subsignature format\n");
             status = CL_EMALFDB;
@@ -581,77 +620,31 @@ done:
     return status;
 }
 
+/**
+ * @brief Parse a yara string (subsignature equivalent in yara lingo).
+ *
+ * @param root      The matcher root (engine structure containing loaded signature patterns for matching)
+ * @param virname   Name of signature that this regex subsig came from.
+ * @param hexsig    The string containing the regex
+ * @param subsig_opts Content match pattern options. See ACPATT_* macros in matcher-ac.h.
+ * @param offset    The string offset where the pattern starts
+ * @param target    The clamav target type.
+ * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
+ * @param options   Database options.  See CL_DB_* macros in clamav.h.
+ * @return cl_error_t
+ */
 static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char *virname, char *hexsig, uint8_t subsig_opts,
                                            const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
     cl_error_t status = CL_EPARSE;
     cl_error_t ret;
-    char *hexcpy = NULL;
-
-    char *start = NULL, *end = NULL;
 
     if (strchr(hexsig, '/')) {
         /*
          * Looks like a pcre subsignature.
-         * expected format => ^offset:trigger/regex/[cflags]$
          */
-        const char *trigger, *pattern, *cflags;
-        int subtokens_count;
-        char *subtokens[SUB_TOKENS + 1];
-        const char *sig;
-
-        subtokens_count = cli_ldbtokenize(hexsig, ':', SUB_TOKENS + 1, (const char **)subtokens, 0);
-        if (!subtokens_count) {
-            cli_errmsg("Invalid or unsupported ldb subsignature format\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        if ((subtokens_count % 2) == 0)
-            offset = subtokens[0];
-
-        sig = (subtokens_count % 2) ? subtokens[0] : subtokens[1];
-
-        /* get copied */
-        hexcpy = cli_strdup(sig);
-        if (!hexcpy) {
-            status = CL_EMEM;
-            goto done;
-        }
-
-        /* get delimiters-ed */
-        start = strchr(hexcpy, '/');
-        end   = strrchr(hexcpy, '/');
-
-        /* get pcre-ed */
-        if (start == end) {
-            cli_errmsg("PCRE subsig mismatched '/' delimiter\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        /* get checked */
-        if (hexsig[0] == '/') {
-            cli_errmsg("PCRE subsig must contain logical trigger\n");
-            status = CL_EMALFDB;
-            goto done;
-        }
-
-        /* get NULL-ed */
-        *start = '\0';
-        *end   = '\0';
-
-        /* get tokens-ed */
-        trigger = hexcpy;
-        pattern = start + 1;
-        cflags  = end + 1;
-        if (*cflags == '\0') /* get compat-ed */
-            cflags = NULL;
-
-        /* normal trigger, get added */
-        ret = cli_pcre_addpatt(root, virname, trigger, pattern, cflags, offset, lsigid, options);
+        ret = readdb_load_regex_subsignature(root, virname, hexsig, offset, lsigid, options);
         if (CL_SUCCESS != ret) {
-            cli_errmsg("Problem adding PCRE subsignature.\n");
             status = ret;
             goto done;
         }
@@ -676,8 +669,6 @@ static cl_error_t readdb_parse_yara_string(struct cli_matcher *root, const char 
 
 done:
 
-    FREE(hexcpy);
-
     return status;
 }
 
@@ -687,16 +678,16 @@ done:
  *
  * May be used when loading db, ndb, ldb subsignatures, ftm, and even patterns crafted from yara rules.
  *
- * @param root
- * @param virname
- * @param hexsig
- * @param sigopts
+ * @param root      The matcher root (engine structure containing loaded signature patterns for matching)
+ * @param virname   Name of signature that this regex subsig came from.
+ * @param hexsig    The string containing the regex
+ * @param sigopts   Content match pattern options. See ACPATT_* macros in matcher-ac.h.
  * @param rtype
  * @param type
- * @param offset
- * @param target
- * @param lsigid
- * @param options
+ * @param offset    The string offset where the pattern starts
+ * @param target    The clamav target type.
+ * @param lsigid    An array of 2 uint32_t numbers: lsig_id and subsig_id. May be NULL for testing.
+ * @param options   Database options.  See CL_DB_* macros in clamav.h.
  * @return cl_error_t
  */
 cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *virname, const char *hexsig,
