@@ -339,12 +339,14 @@ static int fuzzy_img_file(char *filename)
     ssize_t bytes_read;
 
     if ((target_fd = open(filename, O_RDONLY)) == -1) {
-        mprintf(LOGG_ERROR, "%s: Can't open file\n", basename(filename));
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: Can't open file: %s\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
         goto done;
     }
 
     if (FSTAT(target_fd, &st)) {
-        mprintf(LOGG_ERROR, "%s: fstat() failed.\n", basename(filename));
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: fstat() failed: %s\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
         goto done;
     }
 
@@ -354,8 +356,13 @@ static int fuzzy_img_file(char *filename)
     }
 
     bytes_read = read(target_fd, mem, (size_t)st.st_size);
-    if (bytes_read != (ssize_t)st.st_size) {
-        mprintf(LOGG_ERROR, "%s: Failed to read file.\n", basename(filename));
+    if (bytes_read == -1) {
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: Failed to read file.\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
+        goto done;
+    }
+    if (bytes_read < (ssize_t)st.st_size) {
+        mprintf(LOGG_ERROR, "%s: Read fewer bytes than expected. The file may have been modified while attempting to process it.\n", basename(filename));
         goto done;
     }
 
