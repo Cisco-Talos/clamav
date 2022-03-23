@@ -2668,7 +2668,7 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 
         hexnewsz = strlen(hexsig) + 1;
         if (!(hexnew = (char *)cli_calloc(1, hexnewsz))) {
-            free(new);
+            MPOOL_FREE(root->mempool, new);
             free(hexcpy);
             return CL_EMEM;
         }
