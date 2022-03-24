@@ -326,6 +326,104 @@ static int hashsig(const struct optstruct *opts, unsigned int class, int type)
     return 0;
 }
 
+static int fuzzy_img_file(char *filename)
+{
+    int status = -1;
+
+    int target_fd                   = -1;
+    FFIError *fuzzy_hash_calc_error = NULL;
+    uint8_t *mem                    = NULL;
+
+    image_fuzzy_hash_t hash = {0};
+    STATBUF st;
+    ssize_t bytes_read;
+
+    if ((target_fd = open(filename, O_RDONLY)) == -1) {
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: Can't open file: %s\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
+        goto done;
+    }
+
+    if (FSTAT(target_fd, &st)) {
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: fstat() failed: %s\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
+        goto done;
+    }
+
+    if (NULL == (mem = malloc((size_t)st.st_size))) {
+        mprintf(LOGG_ERROR, "%s: Malloc failed, buffer size: %zu\n", basename(filename), (size_t)st.st_size);
+        goto done;
+    }
+
+    bytes_read = read(target_fd, mem, (size_t)st.st_size);
+    if (bytes_read == -1) {
+        char err[128];
+        mprintf(LOGG_ERROR, "%s: Failed to read file.\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
+        goto done;
+    }
+    if (bytes_read < (ssize_t)st.st_size) {
+        mprintf(LOGG_ERROR, "%s: Read fewer bytes than expected. The file may have been modified while attempting to process it.\n", basename(filename));
+        goto done;
+    }
+
+    if (!fuzzy_hash_calculate_image(mem, (size_t)st.st_size, hash.hash, 8, &fuzzy_hash_calc_error)) {
+        mprintf(LOGG_ERROR, "%s: Failed to calculate image fuzzy hash: %s\n",
+                basename(filename),
+                ffierror_fmt(fuzzy_hash_calc_error));
+        goto done;
+    }
+
+    char hashstr[17];
+    snprintf(hashstr, 17, "%02x%02x%02x%02x%02x%02x%02x%02x",
+             hash.hash[0], hash.hash[1], hash.hash[2], hash.hash[3],
+             hash.hash[4], hash.hash[5], hash.hash[6], hash.hash[7]);
+    mprintf(LOGG_INFO, "%s: %s\n", basename(filename), hashstr);
+
+    status = 0;
+
+done:
+
+    if (NULL != mem) {
+        free(mem);
+    }
+
+    if (NULL != fuzzy_hash_calc_error) {
+        ffierror_free(fuzzy_hash_calc_error);
+    }
+
+    if (target_fd != -1) {
+        close(target_fd);
+    }
+
+    return status;
+}
+
+static int fuzzy_img(const struct optstruct *opts)
+{
+    int status = 0;
+    int ret;
+
+    size_t i;
+
+    if (!opts->filename) {
+        mprintf(LOGG_ERROR, "You must provide one or more files to generate a hash.");
+        status = -1;
+        goto done;
+    }
+
+    for (i = 0; opts->filename[i]; i++) {
+        ret = fuzzy_img_file(opts->filename[i]);
+        if (ret != 0) {
+            // report failure if any of the files fail
+            status = -1;
+        }
+    }
+
+done:
+
+    return status;
+}
+
 static int htmlnorm(const struct optstruct *opts)
 {
     int fd;
@@ -608,7 +706,7 @@ static int build(const struct optstruct *opts)
     STATBUF foo;
     unsigned char buffer[FILEBUFF];
     char *tarfile, header[513], smbuff[32], builder[33], *pt, olddb[512];
-    char patch[32], broken[32], dbname[32], dbfile[32];
+    char patch[50], broken[57], dbname[32], dbfile[36];
     const char *newcvd, *localdbdir = NULL;
     struct cl_engine *engine;
     FILE *cvd, *fh;
@@ -2354,7 +2452,7 @@ static int decodehex(const char *hexsig)
 {
     char *pt, *hexcpy, *start, *n, *decoded, *wild;
     int asterisk = 0;
-    unsigned int i, j, hexlen, dlen, parts = 0, bw;
+    unsigned int i, j, hexlen, dlen, parts = 0;
     int mindist = 0, maxdist = 0, error = 0;
 
     hexlen = strlen(hexsig);
@@ -2482,7 +2580,7 @@ static int decodehex(const char *hexsig)
                 free(hexcpy);
                 return -1;
             }
-            bw = write(1, decoded, dlen);
+            (void)write(1, decoded, dlen);
             free(decoded);
 
             if (i == parts)
@@ -2563,7 +2661,7 @@ static int decodehex(const char *hexsig)
                 free(pt);
                 return -1;
             }
-            bw = write(1, decoded, dlen);
+            (void)write(1, decoded, dlen);
             free(decoded);
             if (i < parts)
                 mprintf(LOGG_INFO, "{WILDCARD_ANY_STRING}");
@@ -2575,7 +2673,7 @@ static int decodehex(const char *hexsig)
             mprintf(LOGG_ERROR, "Decoding failed\n");
             return -1;
         }
-        bw = write(1, decoded, dlen);
+        (void)write(1, decoded, dlen);
         free(decoded);
     }
 
@@ -3057,7 +3155,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 
 static int makediff(const struct optstruct *opts)
 {
-    char *odir, *ndir, name[32], broken[32], dbname[32];
+    char *odir, *ndir, name[32], broken[39], dbname[32];
     struct cl_cvd *cvd;
     unsigned int oldver, newver;
     int ret;
@@ -3300,6 +3398,7 @@ static void help(void)
     mprintf(LOGG_INFO, "                                           or SHA256 sigs for FILES\n");
     mprintf(LOGG_INFO, "    --mdb [FILES]                          Generate .mdb (section hash) sigs\n");
     mprintf(LOGG_INFO, "    --imp [FILES]                          Generate .imp (import table hash) sigs\n");
+    mprintf(LOGG_INFO, "    --fuzzy-img FILE(S)                    Generate image fuzzy hash for each file\n");
     mprintf(LOGG_INFO, "    --html-normalise=FILE                  Create normalised parts of HTML file\n");
     mprintf(LOGG_INFO, "    --ascii-normalise=FILE                 Create normalised text file from ascii source\n");
     mprintf(LOGG_INFO, "    --utf16-decode=FILE                    Decode UTF16 encoded files\n");
@@ -3397,6 +3496,8 @@ int main(int argc, char **argv)
         ret = hashsig(opts, 1, 1);
     else if (optget(opts, "imp")->enabled)
         ret = hashsig(opts, 2, 1);
+    else if (optget(opts, "fuzzy-img")->enabled)
+        ret = fuzzy_img(opts);
     else if (optget(opts, "html-normalise")->enabled)
         ret = htmlnorm(opts);
     else if (optget(opts, "ascii-normalise")->enabled)

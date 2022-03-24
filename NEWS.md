@@ -69,6 +69,10 @@ ClamAV 0.105.0 includes the following improvements and changes.
 
   To generate the image fuzzy hash you can run this command:
   ```
+  sigtool --fuzzy-img FILE(S)
+  ```
+  Or you may generate it through `clamscan` like this:
+  ```
   clamscan --gen-json --debug /path/to/file
   ```
   The hash will appear in the JSON above the "SCAN SUMMARY" under the object
