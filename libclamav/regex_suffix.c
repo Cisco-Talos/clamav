@@ -445,7 +445,6 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         char *errbuf  = cli_malloc(buflen);
         if (errbuf) {
             cli_regerror(rc, regex.preg, errbuf, buflen);
-            //aragusa: leaks here, too.
             cli_errmsg(MODULE "Error compiling regular expression %s: %s\n", pattern, errbuf);
             free(errbuf);
         } else {
