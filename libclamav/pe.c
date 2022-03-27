@@ -2419,7 +2419,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     size_t left, fsize = map->len;
     uint32_t impoff, offset;
     const char *buffer;
-    void *hashctx[CLI_HASH_AVAIL_TYPES];
+    void *hashctx[CLI_HASH_AVAIL_TYPES] = {0};
     enum CLI_HASH_TYPE type;
     int nimps = 0;
     unsigned int err;
@@ -2430,7 +2430,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
      * uncommon case but can happen. */
     if (peinfo->dirs[1].VirtualAddress == 0 || peinfo->dirs[1].Size == 0) {
         cli_dbgmsg("scan_pe: import table data dir does not exist (skipping .imp scanning)\n");
-        status = CL_SUCCESS;
+        status = CL_BREAK;
         goto done;
     }
 
@@ -2438,7 +2438,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     impoff = cli_rawaddr(peinfo->dirs[1].VirtualAddress, peinfo->sections, peinfo->nsections, &err, fsize, peinfo->hdr_size);
     if (err || impoff + peinfo->dirs[1].Size > fsize) {
         cli_dbgmsg("scan_pe: invalid rva for import table data\n");
-        status = CL_SUCCESS;
+        status = CL_BREAK;
         goto done;
     }
 
@@ -2455,7 +2455,6 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
      * would have failed if the size exceeds the end of the fmap. */
     left = peinfo->dirs[1].Size;
 
-    memset(hashctx, 0, sizeof(hashctx));
     if (genhash[CLI_HASH_MD5]) {
         hashctx[CLI_HASH_MD5] = cl_hash_init("md5");
         if (hashctx[CLI_HASH_MD5] == NULL) {
@@ -2544,6 +2543,11 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
         }
     }
 
+    for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        cl_finish_hash(hashctx[type], digest[type]);
+        hashctx[type] = NULL;
+    }
+
     status = CL_SUCCESS;
 
 done:
@@ -2551,8 +2555,11 @@ done:
         fmap_unneed_off(map, impoff, peinfo->dirs[1].Size);
     }
 
-    for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
-        cl_finish_hash(hashctx[type], digest[type]);
+    for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
+        if (NULL != hashctx[type]) {
+            cl_hash_destroy(hashctx[type]);
+        }
+    }
 
     return status;
 }
@@ -2602,8 +2609,12 @@ static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     /* Generate hashes */
     ret = hash_imptbl(ctx, hashset, &impsz, genhash, peinfo);
     if (ret != CL_SUCCESS) {
-        for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
+        for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
             free(hashset[type]);
+        }
+        if (ret == CL_BREAK) {
+            ret = CL_SUCCESS;
+        }
         return ret;
     }
 
