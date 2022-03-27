@@ -51,59 +51,11 @@ class ClamAVState
         cl_set_clcb_msg(clamav_message_callback);
 
         cl_init(CL_INIT_DEFAULT);
-
-        dboptions =
-            CL_DB_PHISHING | CL_DB_PHISHING_URLS |
-            CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
-
-#if defined(CLAMAV_FUZZ_CDB)
-        tmp_db_name = "dbload_tmp_fuzz.cdb";
-#elif defined(CLAMAV_FUZZ_CFG)
-        tmp_db_name = "dbload_tmp_fuzz.cfg";
-#elif defined(CLAMAV_FUZZ_CRB)
-        tmp_db_name = "dbload_tmp_fuzz.crb";
-#elif defined(CLAMAV_FUZZ_FP)
-        tmp_db_name = "dbload_tmp_fuzz.fp";
-#elif defined(CLAMAV_FUZZ_FTM)
-        tmp_db_name = "dbload_tmp_fuzz.ftm";
-#elif defined(CLAMAV_FUZZ_HDB)
-        tmp_db_name = "dbload_tmp_fuzz.hdb";
-#elif defined(CLAMAV_FUZZ_HSB)
-        tmp_db_name = "dbload_tmp_fuzz.hsb";
-#elif defined(CLAMAV_FUZZ_IDB)
-        tmp_db_name = "dbload_tmp_fuzz.idb";
-#elif defined(CLAMAV_FUZZ_IGN)
-        tmp_db_name = "dbload_tmp_fuzz.ign";
-#elif defined(CLAMAV_FUZZ_IGN2)
-        tmp_db_name = "dbload_tmp_fuzz.ign2";
-#elif defined(CLAMAV_FUZZ_LDB)
-        tmp_db_name = "dbload_tmp_fuzz.ldb";
-#elif defined(CLAMAV_FUZZ_MDB)
-        tmp_db_name = "dbload_tmp_fuzz.mdb";
-#elif defined(CLAMAV_FUZZ_MSB)
-        tmp_db_name = "dbload_tmp_fuzz.msb";
-#elif defined(CLAMAV_FUZZ_NDB)
-        tmp_db_name = "dbload_tmp_fuzz.ndb";
-#elif defined(CLAMAV_FUZZ_PDB)
-        tmp_db_name = "dbload_tmp_fuzz.pdb";
-#elif defined(CLAMAV_FUZZ_WDB)
-        tmp_db_name = "dbload_tmp_fuzz.wdb";
-#elif defined(CLAMAV_FUZZ_YARA)
-        tmp_db_name = "dbload_tmp_fuzz.yara";
-#else
-        tmp_db_name = "dbload_tmp_fuzz";
-#endif
     }
 
     ~ClamAVState()
     {
-        if (NULL != tmp_db_name) {
-            unlink(tmp_db_name);
-        }
     }
-
-    const char* tmp_db_name;
-    unsigned int dboptions;
 };
 
 // Global with static initializer to setup an engine so we don't need to do
@@ -113,11 +65,57 @@ ClamAVState kClamAVState;
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     cl_error_t ret;
+    char tmp_file_name[200]  = {0};
     unsigned int sigs        = 0;
     FILE* fuzzdb             = NULL;
     struct cl_engine* engine = NULL;
+    unsigned int dboptions;
 
-    fuzzdb = fopen(kClamAVState.tmp_db_name, "w");
+    __pid_t pid = getpid();
+
+    dboptions =
+        CL_DB_PHISHING | CL_DB_PHISHING_URLS |
+        CL_DB_BYTECODE | CL_DB_PUA | CL_DB_ENHANCED;
+
+#if defined(CLAMAV_FUZZ_CDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.cdb", pid);
+#elif defined(CLAMAV_FUZZ_CFG)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.cfg", pid);
+#elif defined(CLAMAV_FUZZ_CRB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.crb", pid);
+#elif defined(CLAMAV_FUZZ_FP)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.fp", pid);
+#elif defined(CLAMAV_FUZZ_FTM)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.ftm", pid);
+#elif defined(CLAMAV_FUZZ_HDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.hdb", pid);
+#elif defined(CLAMAV_FUZZ_HSB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.hsb", pid);
+#elif defined(CLAMAV_FUZZ_IDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.idb", pid);
+#elif defined(CLAMAV_FUZZ_IGN)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.ign", pid);
+#elif defined(CLAMAV_FUZZ_IGN2)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.ign2", pid);
+#elif defined(CLAMAV_FUZZ_LDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.ldb", pid);
+#elif defined(CLAMAV_FUZZ_MDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.mdb", pid);
+#elif defined(CLAMAV_FUZZ_MSB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.msb", pid);
+#elif defined(CLAMAV_FUZZ_NDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.ndb", pid);
+#elif defined(CLAMAV_FUZZ_PDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.pdb", pid);
+#elif defined(CLAMAV_FUZZ_WDB)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.wdb", pid);
+#elif defined(CLAMAV_FUZZ_YARA)
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d.yara", pid);
+#else
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.dbload.%d", pid);
+#endif
+
+    fuzzdb = fopen(tmp_file_name, "w");
     fwrite(data, size, 1, fuzzdb);
     fclose(fuzzdb);
 
@@ -125,11 +123,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     engine = cl_engine_new();
 
     /* load the fuzzer-generated sig db */
-    if (CL_SUCCESS != (ret = cl_load(
-                           kClamAVState.tmp_db_name,
-                           engine,
-                           &sigs,
-                           kClamAVState.dboptions))) {
+    if (CL_SUCCESS != (ret = cl_load(tmp_file_name,
+                                     engine,
+                                     &sigs,
+                                     dboptions))) {
         printf("cl_load: %s\n", cl_strerror(ret));
         goto done;
     }
@@ -146,6 +143,8 @@ done:
     if (NULL != engine) {
         cl_engine_free(engine);
     }
+
+    unlink(tmp_file_name);
 
     return 0;
 }

@@ -58,37 +58,26 @@ class ClamAVState
         memset(&scanopts, 0, sizeof(struct cl_scan_options));
 
 #if defined(CLAMAV_FUZZ_ARCHIVE)
-        tmp_file_name = "tmp.scanfile.archive";
         scanopts.parse |= CL_SCAN_PARSE_ARCHIVE;
 #elif defined(CLAMAV_FUZZ_MAIL)
-        tmp_file_name = "tmp.scanfile.eml";
         scanopts.parse |= CL_SCAN_PARSE_MAIL;
 #elif defined(CLAMAV_FUZZ_OLE2)
-        tmp_file_name = "tmp.scanfile.ole2";
         scanopts.parse |= CL_SCAN_PARSE_OLE2;
 #elif defined(CLAMAV_FUZZ_PDF)
-        tmp_file_name = "tmp.scanfile.pdf";
         scanopts.parse |= CL_SCAN_PARSE_PDF;
 #elif defined(CLAMAV_FUZZ_HTML)
-        tmp_file_name = "tmp.scanfile.html";
         scanopts.parse |= CL_SCAN_PARSE_HTML;
 #elif defined(CLAMAV_FUZZ_PE)
-        tmp_file_name = "tmp.scanfile.pe";
         scanopts.parse |= CL_SCAN_PARSE_PE;
 #elif defined(CLAMAV_FUZZ_ELF)
-        tmp_file_name = "tmp.scanfile.elf";
         scanopts.parse |= CL_SCAN_PARSE_ELF;
 #elif defined(CLAMAV_FUZZ_SWF)
-        tmp_file_name = "tmp.scanfile.swf";
         scanopts.parse |= CL_SCAN_PARSE_SWF;
 #elif defined(CLAMAV_FUZZ_XMLDOCS)
-        tmp_file_name = "tmp.scanfile.docx";
         scanopts.parse |= CL_SCAN_PARSE_XMLDOCS;
 #elif defined(CLAMAV_FUZZ_HWP3)
-        tmp_file_name = "tmp.scanfile.hwp";
         scanopts.parse |= CL_SCAN_PARSE_HWP3;
 #else
-        tmp_file_name = "tmp.scanfile";
         scanopts.parse |= ~(0);
 #endif
         scanopts.general |= CL_SCAN_GENERAL_HEURISTICS;
@@ -100,14 +89,9 @@ class ClamAVState
     ~ClamAVState()
     {
         cl_engine_free(engine);
-
-        if (NULL != tmp_file_name) {
-            unlink(tmp_file_name);
-        }
     }
 
     struct cl_engine* engine;
-    const char* tmp_file_name;
     struct cl_scan_options scanopts;
 };
 
@@ -117,9 +101,14 @@ ClamAVState kClamAVState;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    FILE* fuzzfile = NULL;
+    FILE* fuzzfile          = NULL;
+    char tmp_file_name[200] = {0};
 
-    fuzzfile = fopen(kClamAVState.tmp_file_name, "w");
+    __pid_t pid = getpid();
+
+    snprintf(tmp_file_name, sizeof(tmp_file_name), "tmp.scanfile.%d", pid);
+
+    fuzzfile = fopen(tmp_file_name, "w");
     fwrite(data, size, 1, fuzzfile);
     fclose(fuzzfile);
 
@@ -127,11 +116,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     unsigned long scanned  = 0;
 
     cl_scanfile(
-        kClamAVState.tmp_file_name,
+        tmp_file_name,
         &virus_name,
         &scanned,
         kClamAVState.engine,
         &kClamAVState.scanopts);
+
+    unlink(tmp_file_name);
 
     return 0;
 }

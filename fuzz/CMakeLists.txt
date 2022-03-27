@@ -43,7 +43,7 @@ target_sources(clamav_scanfile_fuzzer
 target_link_libraries(clamav_scanfile_fuzzer ClamAV::libclamav)
 set_target_properties(clamav_scanfile_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 
-foreach(TARGET in ${SCAN_TARGETS})
+foreach(TARGET ${SCAN_TARGETS})
     add_executable(clamav_scanmap_${TARGET}_fuzzer)
     target_sources(clamav_scanmap_${TARGET}_fuzzer
         PRIVATE clamav_scanmap_fuzzer.cpp)
@@ -59,7 +59,7 @@ foreach(TARGET in ${SCAN_TARGETS})
     set_target_properties(clamav_scanfile_${TARGET}_fuzzer PROPERTIES LINK_FLAGS "-fsanitize=fuzzer")
 endforeach()
 
-foreach(TARGET in ${DBLOAD_TARGETS})
+foreach(TARGET ${DBLOAD_TARGETS})
     add_executable(clamav_dbload_${TARGET}_fuzzer)
     target_sources(clamav_dbload_${TARGET}_fuzzer
         PRIVATE clamav_dbload_fuzzer.cpp)
