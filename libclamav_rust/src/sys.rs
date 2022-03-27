@@ -1311,13 +1311,23 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
+    #[doc = " @brief Connect to a signing server, send the data to be signed, and return the digital signature."]
+    #[doc = ""]
+    #[doc = " Caller is responsible for freeing the returned dsig."]
+    #[doc = ""]
+    #[doc = " @param host"]
+    #[doc = " @param user"]
+    #[doc = " @param data"]
+    #[doc = " @param datalen"]
+    #[doc = " @param mode"]
+    #[doc = " @return char*"]
     pub fn cli_getdsig(
         host: *const ::std::os::raw::c_char,
         user: *const ::std::os::raw::c_char,
         data: *const ::std::os::raw::c_uchar,
         datalen: ::std::os::raw::c_uint,
         mode: ::std::os::raw::c_ushort,
-    ) -> *const ::std::os::raw::c_char;
+    ) -> *mut ::std::os::raw::c_char;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
