@@ -4121,9 +4121,9 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     cl_error_t ret = CL_CLEAN;
     cl_error_t res;
     cl_error_t cb_retcode;
-    cli_file_t dettype = 0;
-    uint8_t typercg    = 1;
-    size_t hashed_size;
+    cli_file_t dettype              = 0;
+    uint8_t typercg                 = 1;
+    size_t hashed_size              = 0;
     unsigned char *hash             = NULL;
     bitset_t *old_hook_lsig_matches = NULL;
     const char *filetype;
