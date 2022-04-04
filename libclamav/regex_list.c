@@ -720,11 +720,12 @@ static cl_error_t add_newsuffix(struct regex_matcher *matcher, struct regex_list
     if ((ret = cli_ac_addpatt(root, new))) {
         MPOOL_FREE(matcher->mempool, new->pattern);
         MPOOL_FREE(matcher->mempool, new);
-
         goto done;
     }
 
     if (filter_add_static(&matcher->filter, (const unsigned char *)suffix, len, "regex") < 0) {
+        MPOOL_FREE(matcher->mempool, new->pattern);
+        MPOOL_FREE(matcher->mempool, new);
         cli_errmsg("add_newsuffix: Unable to add filter\n");
         ret = CL_ERROR;
         goto done;
@@ -797,7 +798,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         list_add_tail(&matcher->suffix_regexes[(size_t)el->data], regex);
     } else {
         /* new suffix */
-        size_t n    = matcher->suffix_cnt++;
+        size_t n    = matcher->suffix_cnt;
         el          = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
         tmp_matcher = matcher->suffix_regexes; /*  save the current value before cli_realloc()	*/
         CLI_REALLOC(matcher->suffix_regexes, 
@@ -813,10 +814,11 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         ret = add_newsuffix(matcher, regex, suffix, suffix_len);
 
         if (CL_SUCCESS != ret) {
-            matcher->suffix_cnt--;
             cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
             /*shrink the size back to what it was.*/
-            CLI_REALLOC(matcher->suffix_regexes, (matcher->suffix_cnt) * sizeof(*matcher->suffix_regexes) );
+            CLI_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes) );
+        } else {
+            matcher->suffix_cnt++;
         }
     }
 
