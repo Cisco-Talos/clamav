@@ -180,6 +180,10 @@ ClamAV 0.105.0 includes the following improvements and changes.
   - Set the default time zone to `Etc/UTC`. The `--env` parameter can be used to
     customize the time zone by setting `TZ` environment variable.
     Patch courtesy of Olliver Schinagl.
+  - Fixed an issue where ClamD would listen only for IPv4 connections in 
+    environments where IPv6 is preferred. ClamD will now listen to all
+    addresses available (IPv4 and IPv6). This is the default behavior of ClamD.
+    Patch courtesy of Andre Breiler.
 
 - Added support for detecting the curses library dependency even when the
   associated pkg-config file is not present. This resolves a build issue on some
@@ -192,6 +196,7 @@ ClamAV 0.105.0 includes the following improvements and changes.
 The ClamAV team thanks the following individuals for their code submissions:
 - Ahmon Dancy
 - Alexander Sulfrian
+- Andre Breiler
 - Carlos Velasco
 - Bernd Kuhls
 - David Korczynski
