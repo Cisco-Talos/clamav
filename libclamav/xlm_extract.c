@@ -4441,7 +4441,7 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
                     const unsigned char *embeddedBlip;
                     size_t embeddedBlip_size;
                     char *blip_file_name       = NULL;
-                    char blip_name_buffer[255] = {0};
+                    char blip_name_buffer[256] = {0};
 
                     if (FBSE_record_data->cbName > 0) {
                         memcpy(blip_name_buffer,
