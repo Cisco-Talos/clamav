@@ -641,10 +641,36 @@ static void ac_free_special(struct cli_ac_patt *p)
     MPOOL_FREE(mempool, p->special_table);
 }
 
+/*
+ * This is a test to see if we have already seen this pointer.  If we have, we
+ * have already freed it, so don't do it again (double-free)
+ */
+static int need_to_free_trans(struct cli_matcher *root, const size_t idx)
+{
+    size_t j;
+    size_t min = idx;
+    if (root->ac_nodes < idx) {
+        /*Should never happen, but check just to be safe.*/
+        min = root->ac_nodes;
+    }
+
+    for (j = 0; j < min; j++) {
+        if (NULL == root->ac_nodetable[j]) {
+            continue;
+        }
+
+        if (root->ac_nodetable[idx]->trans == root->ac_nodetable[j]->trans) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 void cli_ac_free(struct cli_matcher *root)
 {
-    uint32_t i;
-    struct cli_ac_patt *patt;
+    uint32_t i               = 0;
+    struct cli_ac_patt *patt = NULL;
 
     for (i = 0; i < root->ac_patterns; i++) {
         patt = root->ac_pattable[i];
@@ -655,45 +681,55 @@ void cli_ac_free(struct cli_matcher *root)
                TODO: never store the virname in the ac pattern and only store it per-signature, not per-pattern. */
             MPOOL_FREE(root->mempool, patt->virname);
         }
-        if (patt->special)
+        if (patt->special) {
             mpool_ac_free_special(root->mempool, patt);
+        }
         MPOOL_FREE(root->mempool, patt);
     }
 
-    if (root->ac_pattable)
+    if (root->ac_pattable) {
         MPOOL_FREE(root->mempool, root->ac_pattable);
+    }
 
-    if (root->ac_reloff)
+    if (root->ac_reloff) {
         MPOOL_FREE(root->mempool, root->ac_reloff);
+    }
 
     /* Freeing trans nodes must be done before freeing table nodes! */
     for (i = 0; i < root->ac_nodes; i++) {
         if (!IS_LEAF(root->ac_nodetable[i]) &&
-            root->ac_nodetable[i]->fail &&
-            root->ac_nodetable[i]->trans != root->ac_nodetable[i]->fail->trans) {
-            MPOOL_FREE(root->mempool, root->ac_nodetable[i]->trans);
+            root->ac_root->trans != root->ac_nodetable[i]->trans) {
+
+            if (need_to_free_trans(root, i)) {
+                MPOOL_FREE(root->mempool, root->ac_nodetable[i]->trans);
+            }
         }
     }
 
-    for (i = 0; i < root->ac_lists; i++)
+    for (i = 0; i < root->ac_lists; i++) {
         MPOOL_FREE(root->mempool, root->ac_listtable[i]);
+    }
 
-    if (root->ac_listtable)
+    if (root->ac_listtable) {
         MPOOL_FREE(root->mempool, root->ac_listtable);
+    }
 
-    for (i = 0; i < root->ac_nodes; i++)
+    for (i = 0; i < root->ac_nodes; i++) {
         MPOOL_FREE(root->mempool, root->ac_nodetable[i]);
+    }
 
-    if (root->ac_nodetable)
+    if (root->ac_nodetable) {
         MPOOL_FREE(root->mempool, root->ac_nodetable);
+    }
 
     if (root->ac_root) {
         MPOOL_FREE(root->mempool, root->ac_root->trans);
         MPOOL_FREE(root->mempool, root->ac_root);
     }
 
-    if (root->filter)
+    if (root->filter) {
         MPOOL_FREE(root->mempool, root->filter);
+    }
 }
 
 /*
