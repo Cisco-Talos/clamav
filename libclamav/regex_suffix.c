@@ -170,13 +170,13 @@ static void destroy_tree(struct node *n)
             break;
         case leaf_class:
             if (n->u.leaf_class_bitmap != dot_bitmap)
-                free(n->u.leaf_class_bitmap);
+                FREE(n->u.leaf_class_bitmap);
             break;
         case root:
         case leaf:
             break;
     }
-    free(n);
+    FREE(n);
 }
 
 static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
@@ -252,8 +252,10 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 ++*last;
                 right = parse_regex(p, last);
                 v     = make_node(alternate, v, right);
-                if (!v)
+                if (!v) {
+                    destroy_tree (right);
                     return NULL;
+                }
                 break;
             case '*':
             case '?':
@@ -265,25 +267,31 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
             case '+':
                 /* (x)* */
                 tmp = make_node(optional, v, NULL);
-                if (!tmp)
+                if (!tmp) {
+                    destroy_tree(v);
                     return NULL;
+                }
                 /* (x) */
                 right = dup_node(v);
                 if (!right) {
-                    free(tmp);
+                    destroy_tree(tmp);
                     return NULL;
                 }
                 /* (x)*(x) => (x)+ */
                 v = make_node(concat, tmp, right);
-                if (!v)
+                if (!v) {
+                    destroy_tree(right);
                     return NULL;
+                }
                 ++*last;
                 break;
             case '(':
                 ++*last;
                 right = parse_regex(p, last);
-                if (!right)
+                if (!right) {
+                    destroy_tree(v);
                     return NULL;
+                }
                 ++*last;
                 v = make_node(concat, v, right);
                 break;
@@ -291,8 +299,10 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 return v;
             case '.':
                 right = make_charclass(dot_bitmap);
-                if (!right)
+                if (!right) {
+                    destroy_tree(v);
                     return NULL;
+                }
                 v = make_node(concat, v, right);
                 if (!v)
                     return NULL;
@@ -301,11 +311,15 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
             case '[':
                 ++*last;
                 right = make_charclass(parse_char_class(p, last));
-                if (!right)
+                if (!right) {
+                    destroy_tree(v);
                     return NULL;
+                }
                 v = make_node(concat, v, right);
-                if (!v)
+                if (!v) {
+                    destroy_tree(right);
                     return NULL;
+                }
                 ++*last;
                 break;
             case '\\':
@@ -315,8 +329,10 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
             default:
                 right = make_leaf(p[*last]);
                 v     = make_node(concat, v, right);
-                if (!v)
+                if (!v) {
+                    destroy_tree(right);
                     return NULL;
+                }
                 ++*last;
                 break;
         }
