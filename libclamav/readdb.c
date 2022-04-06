@@ -5754,27 +5754,33 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     TASK_COMPLETE();
 
     if (engine->dconf) {
-        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-            if (engine->bcs.all_bcs) {
-                for (i = 0; i < engine->bcs.count; i++) {
-                    cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+        if (engine->bcs.all_bcs) {
+            for (i = 0; i < engine->bcs.count; i++) {
+                cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+                if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
                     TASK_COMPLETE();
                 }
             }
+        }
 
-            cli_bytecode_done(&engine->bcs);
-            TASK_COMPLETE();
-
-            free(engine->bcs.all_bcs);
-
-            for (i = 0; i < _BC_LAST_HOOK - _BC_START_HOOKS; i++) {
-                free(engine->hooks[i]);
-            }
+        cli_bytecode_done(&engine->bcs);
+        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
             TASK_COMPLETE();
         }
 
+        if (engine->bcs.all_bcs) {
+            free(engine->bcs.all_bcs);
+        }
+
+        for (i = 0; i < _BC_LAST_HOOK - _BC_START_HOOKS; i++) {
+            free(engine->hooks[i]);
+        }
+        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+            TASK_COMPLETE();
+        }
+
+        phishing_done(engine);
         if (engine->dconf->phishing & PHISHING_CONF_ENGINE) {
-            phishing_done(engine);
             TASK_COMPLETE();
         }
 
