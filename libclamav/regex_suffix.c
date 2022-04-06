@@ -183,11 +183,11 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
 {
     unsigned char range_start = 0;
     int hasprev               = 0;
-    uint8_t *bitmap           = cli_malloc(32);
-    if (!bitmap) {
-        cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n");
-        return NULL;
-    }
+    uint8_t *bitmap           = NULL;
+
+    CLI_MALLOC(bitmap, 32,
+               cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
+
     if (pat[*pos] == '^') {
         memset(bitmap, 0xFF, 32); /*match chars not in brackets*/
         ++*pos;
@@ -200,14 +200,15 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
             unsigned char range_end;
             unsigned int c;
             if (0 == range_start) {
+                FREE(bitmap);
                 cli_errmsg("parse_char_class: range_start not initialized");
-                return NULL;
+                goto done;
             }
             ++*pos;
             if (pat[*pos] == '[')
                 if (pat[*pos + 1] == '.') {
                     /* collating sequence not handled */
-                    free(bitmap);
+                    FREE(bitmap);
                     /* we are parsing the regex for a
                      * filter, be conservative and
                      * tell the filter that anything could
@@ -225,7 +226,7 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
             hasprev = 0;
         } else if (pat[*pos] == '[' && pat[*pos] == ':') {
             /* char class */
-            free(bitmap);
+            FREE(bitmap);
             while (pat[*pos] != ']') ++*pos;
             ++*pos;
             while (pat[*pos] != ']') ++*pos;
@@ -237,6 +238,8 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
             hasprev = 1;
         }
     } while (pat[*pos] != ']');
+
+done:
     return bitmap;
 }
 
@@ -253,7 +256,7 @@ static struct node *parse_regex(const uint8_t *p, size_t *last)
                 right = parse_regex(p, last);
                 v     = make_node(alternate, v, right);
                 if (!v) {
-                    destroy_tree (right);
+                    destroy_tree(right);
                     return NULL;
                 }
                 break;
@@ -451,7 +454,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     size_t last             = 0;
     int rc;
 
-    if (NULL == pattern){
+    if (NULL == pattern) {
         cli_errmsg("cli_regex2suffix: pattern can't be NULL");
         rc = REG_INVARG;
         goto done;
@@ -471,10 +474,10 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         }
         return rc;
     }
-    regex.nxt     = NULL;
+    regex.nxt = NULL;
     CLI_STRDUP(pattern, regex.pattern,
-            cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern");
-            rc = REG_ESPACE);
+               cli_errmsg("cli_regex2suffix: unable to strdup regex.pattern");
+               rc = REG_ESPACE);
 
     n = parse_regex(pattern, &last);
     if (!n) {
