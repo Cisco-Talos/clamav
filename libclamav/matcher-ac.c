@@ -2294,6 +2294,7 @@ inline static int ac_addspecial_add_alt_node(const char *subexpr, uint8_t sigopt
                 newnode->unique = 0;
                 ins->unique     = 0;
             } else if (wild == 0) { /* duplicate */
+                MPOOL_FREE(root->mempool, newnode->str);
                 MPOOL_FREE(root->mempool, newnode);
                 return CL_SUCCESS;
             }
