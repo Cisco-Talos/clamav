@@ -700,10 +700,10 @@ static void *thrmgr_worker(void *arg)
             exit(-2);
         }
         if (job_data) {
-            threadpool->handler(job_data);
-        } else if (must_exit) {
-            break;
-        }
+            if (must_exit) {
+                break;
+            }                
+        } 
     }
     if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
         /* Fatal error */
