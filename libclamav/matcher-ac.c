@@ -2955,14 +2955,18 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     if (ret != CL_SUCCESS) {
         MPOOL_FREE(root->mempool, new->prefix ? new->prefix : new->pattern);
         mpool_ac_free_special(root->mempool, new);
-        MPOOL_FREE(root->mempool, new->virname);
+        if (virname_copy) {
+            MPOOL_FREE(root->mempool, virname_copy);
+        }
         MPOOL_FREE(root->mempool, new);
         return ret;
     }
 
     if ((ret = cli_ac_addpatt(root, new))) {
         MPOOL_FREE(root->mempool, new->prefix ? new->prefix : new->pattern);
-        MPOOL_FREE(root->mempool, new->virname);
+        if (virname_copy) {
+            MPOOL_FREE(root->mempool, virname_copy);
+        }
         mpool_ac_free_special(root->mempool, new);
         MPOOL_FREE(root->mempool, new);
         return ret;
