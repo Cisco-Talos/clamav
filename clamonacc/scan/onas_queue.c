@@ -158,7 +158,6 @@ void *onas_scan_queue_th(void *arg)
     /* not a ton of use for context right now, but perhaps in the future we can pass in more options */
     struct onas_context *ctx = (struct onas_context *)arg;
     sigset_t sigset;
-    int ret;
 
     /* ignore all signals except SIGUSR2 */
     sigfillset(&sigset);

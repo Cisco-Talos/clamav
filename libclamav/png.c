@@ -98,8 +98,6 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
     uint64_t offset              = 8;
     fmap_t *map                  = NULL;
 
-    int err = Z_OK;
-
     cli_dbgmsg("in cli_parsepng()\n");
 
     if (NULL == ctx) {
