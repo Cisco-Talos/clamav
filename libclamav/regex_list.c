@@ -763,6 +763,8 @@ cl_error_t regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
             len -= sizeof(remove_end) - 1;
             pattern[len++] = '/';
         }
+    }
+    if (len > sizeof(remove_end2)) {
         if (strncmp(&pattern[len - sizeof(remove_end2) + 1], remove_end2, sizeof(remove_end2) - 1) == 0) {
             len -= sizeof(remove_end2) - 1;
             pattern[len++] = '/';
