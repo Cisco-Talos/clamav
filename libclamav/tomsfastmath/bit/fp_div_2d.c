@@ -52,7 +52,19 @@ void fp_div_2d(fp_int *a, int b, fp_int *c, fp_int *d)
     shift = DIGIT_BIT - D;
 
     /* alias */
-    tmpc = c->dp + (c->used - 1);
+    /*tmpc = c->dp + (c->used - 1);
+    *
+    * The original line is above.  I am leaving it in, since this is a library
+    * function.  This line causes a runtime error using clang's
+    * UndefinedBehaviorSanitizer for a specific case where 'c->used' is 0, and
+    * splitting it into multiple statements resolves the issue.
+    */
+    tmpc = c->dp;
+    if (c->used){
+        tmpc += (c->used - 1);
+    } else {
+        tmpc--;
+    }
 
     /* carry */
     r = 0;
