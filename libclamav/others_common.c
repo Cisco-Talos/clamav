@@ -1481,7 +1481,10 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
     char *real_file_path = NULL;
     cl_error_t status    = CL_EARG;
 #ifdef _WIN32
-    HANDLE hFile = INVALID_HANDLE_VALUE;
+    HANDLE hFile   = INVALID_HANDLE_VALUE;
+    wchar_t *wpath = NULL;
+    WIN32_FILE_ATTRIBUTE_DATA attrs;
+
 #elif C_DARWIN
     int fd = -1;
 #endif
@@ -1495,7 +1498,13 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
 
 #ifdef _WIN32
 
-    hFile = CreateFileA(file_name,                  // file to open
+    wpath = uncpath(file_name);
+    if (!wpath) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    hFile = CreateFileW(wpath,                      // file to open
                         GENERIC_READ,               // open for reading
                         FILE_SHARE_READ,            // share for reading
                         NULL,                       // default security
@@ -1552,6 +1561,9 @@ done:
 #ifdef _WIN32
     if (hFile != INVALID_HANDLE_VALUE) {
         CloseHandle(hFile);
+    }
+    if (NULL != wpath) {
+        free(wpath);
     }
 #elif C_DARWIN
     if (fd != -1) {
