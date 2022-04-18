@@ -1349,7 +1349,7 @@ cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
 
     if (0 == wcsncmp(L"\\\\?\\UNC", long_evaluated_filepathW, wcslen(L"\\\\?\\UNC"))) {
         conv_result = cli_codepage_to_utf8(
-            long_evaluated_filepathW,
+            (char *)long_evaluated_filepathW,
             (wcslen(long_evaluated_filepathW)) * sizeof(WCHAR),
             CODEPAGE_UTF16_LE,
             &evaluated_filepath,
@@ -1361,7 +1361,7 @@ cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
         }
     } else {
         conv_result = cli_codepage_to_utf8(
-            long_evaluated_filepathW + wcslen(L"\\\\?\\"),
+            (char *)long_evaluated_filepathW + wcslen(L"\\\\?\\") * sizeof(WCHAR),
             (wcslen(long_evaluated_filepathW) - wcslen(L"\\\\?\\")) * sizeof(WCHAR),
             CODEPAGE_UTF16_LE,
             &evaluated_filepath,
