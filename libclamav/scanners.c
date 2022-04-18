@@ -362,8 +362,8 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
             file_count += 1;
 
             /*
-            * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
-            */
+             * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
+             */
             status = cli_unrar_scanmetadata(&metadata, ctx, file_count);
             if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
@@ -388,7 +388,7 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                 }
             } else if (cli_checklimits("RAR", ctx, metadata.unpack_size, 0, 0)) {
                 /* File size exceeds maxfilesize, must skip extraction.
-                * Although we may be able to scan the metadata */
+                 * Although we may be able to scan the metadata */
                 nTooLargeFilesFound += 1;
 
                 cli_dbgmsg("RAR: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
@@ -719,8 +719,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
         uint32_t i;
         for (i = 0; i < nComments; i++) {
             /*
-            * Drop the comment to a temp file, if requested
-            */
+             * Drop the comment to a temp file, if requested
+             */
             if (ctx->engine->keeptmp) {
                 int comment_fd   = -1;
                 size_t prefixLen = strlen("comments_") + 5;
@@ -751,8 +751,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             }
 
             /*
-            * Scan the comment.
-            */
+             * Scan the comment.
+             */
             status = cli_magic_scan_buff(comments[i], strlen(comments[i]), ctx, NULL);
 
             if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
@@ -809,8 +809,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
             file_count += 1;
 
             /*
-            * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
-            */
+             * Scan the metadata for the file in question since the content was clean, or we're running in all-match.
+             */
             status = cli_egg_scanmetadata(&metadata, ctx, file_count);
             if ((status == CL_VIRUS) && SCAN_ALLMATCHES) {
                 status = CL_CLEAN;
@@ -834,7 +834,7 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                 }
             } else if (cli_checklimits("EGG", ctx, metadata.unpack_size, 0, 0)) {
                 /* File size exceeds maxfilesize, must skip extraction.
-                * Although we may be able to scan the metadata */
+                 * Although we may be able to scan the metadata */
                 nTooLargeFilesFound += 1;
 
                 cli_dbgmsg("EGG: Next file is too large (%" PRIu64 " bytes); it would exceed max scansize.  Skipping to next file.\n", metadata.unpack_size);
@@ -856,8 +856,8 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                 }
             } else {
                 /*
-                * Extract the file...
-                */
+                 * Extract the file...
+                 */
                 char *extract_filename    = NULL;
                 char *extract_buffer      = NULL;
                 size_t extract_buffer_len = 0;
@@ -1465,16 +1465,16 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
             ret = CL_EFORMAT;
             goto xz_exit;
         }
-        //cli_dbgmsg("cli_scanxz: xz decompressed %li of %li available bytes\n",
-        //           avail - strm.avail_in, avail);
+        // cli_dbgmsg("cli_scanxz: xz decompressed %li of %li available bytes\n",
+        //            avail - strm.avail_in, avail);
 
         /* write decompress buffer */
         if (!strm.avail_out || rc == XZ_STREAM_END) {
             size_t towrite = CLI_XZ_OBUF_SIZE - strm.avail_out;
             size += towrite;
 
-            //cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
-            //           towrite, size);
+            // cli_dbgmsg("Writing %li bytes to XZ decompress temp file(%li byte total)\n",
+            //            towrite, size);
 
             if (cli_writen(fd, buf, towrite) != towrite) {
                 cli_errmsg("cli_scanxz: Can't write to file.\n");
@@ -1701,19 +1701,19 @@ static cl_error_t cli_vba_scandir_new(const char *dirname, cli_ctx *ctx, struct 
     }
 
     while (hashcnt) {
-        //Find the directory containing the extracted dir file. This is complicated
-        //because ClamAV doesn't use the file names from the OLE file, but temporary names,
-        //and we have neither the complete path of the dir file in the OLE container,
-        //nor the mapping of the temporary directory names to their OLE names.
+        // Find the directory containing the extracted dir file. This is complicated
+        // because ClamAV doesn't use the file names from the OLE file, but temporary names,
+        // and we have neither the complete path of the dir file in the OLE container,
+        // nor the mapping of the temporary directory names to their OLE names.
         snprintf(filename, sizeof(filename), "%s_%u", hash, hashcnt);
         filename[sizeof(filename) - 1] = '\0';
 
         if (CL_SUCCESS == find_file(filename, dirname, path, sizeof(path))) {
             cli_dbgmsg("cli_vba_scandir_new: Found dir file: %s\n", path);
             if ((ret = cli_vba_readdir_new(ctx, path, U, hash, hashcnt, &tempfd, has_macros)) != CL_SUCCESS) {
-                //FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
-                //       OLE2 archive, we don't know if we have the right file. The only thing we can do is
-                //       iterate all of them until one succeeds.
+                // FIXME: Since we only know the stream name of the OLE2 stream, but not its path inside the
+                //        OLE2 archive, we don't know if we have the right file. The only thing we can do is
+                //        iterate all of them until one succeeds.
                 cli_dbgmsg("cli_vba_scandir_new: Failed to read dir from %s, trying others (error: %s (%d))\n", path, cl_strerror(ret), (int)ret);
                 ret = CL_SUCCESS;
                 hashcnt--;
@@ -2600,6 +2600,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
     if (has_xlm && files) {
         ret = cli_xlm_scandir(dir, ctx, files);
         if (CL_VIRUS == ret) {
+            viruses_found++;
             if (!SCAN_ALLMATCHES) {
                 goto done;
             }
@@ -2608,6 +2609,7 @@ static cl_error_t cli_scanole2(cli_ctx *ctx)
 
     if ((has_xlm || has_vba) && files) {
         if (CL_VIRUS == cli_magic_scan_dir(dir, ctx)) {
+            viruses_found++;
             if (!SCAN_ALLMATCHES) {
                 goto done;
             }
