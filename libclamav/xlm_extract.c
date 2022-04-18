@@ -4633,10 +4633,11 @@ done:
 
 cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char *hash, uint32_t which)
 {
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
     char fullname[PATH_MAX];
     int in_fd = -1, out_fd = -1;
     FILE *out_file = NULL;
-    cl_error_t ret = CL_SUCCESS;
     const char *opcode_name;
     char *tempfile = NULL;
     char *data     = NULL;
@@ -4670,6 +4671,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     if ((ret = cli_gentempfd_with_prefix(ctx->sub_tmpdir, "xlm_macros", &tempfile, &out_fd)) != CL_SUCCESS) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to open output file descriptor\n");
+        status = ret;
         goto done;
     }
 
@@ -4681,13 +4683,13 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
 
     if ((data = malloc(BIFF8_MAX_RECORD_LENGTH)) == NULL) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to allocate memory for BIFF data\n");
-        ret = CL_EMEM;
+        status = CL_EMEM;
         goto done;
     }
 
     if (cli_writen(out_fd, FILE_HEADER, sizeof(FILE_HEADER) - 1) != sizeof(FILE_HEADER) - 1) {
         cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to write header\n");
-        ret = CL_EWRITE;
+        status = CL_EWRITE;
         goto done;
     }
 
@@ -4706,20 +4708,20 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
         len = fprintf(out_file, "%04x %6d   %s", biff_header.opcode, biff_header.length, opcode_name == NULL ? "<unknown>" : opcode_name);
         if (len < 0) {
             cli_dbgmsg("[cli_extract_xlm_macros_and_images] Error formatting opcode message\n");
-            ret = CL_EFORMAT;
+            status = CL_EFORMAT;
             goto done;
         }
         len = 0;
 
         if (biff_header.length > BIFF8_MAX_RECORD_LENGTH) {
             cli_dbgmsg("[cli_extract_xlm_macros_and_images] Record size exceeds maximum allowed\n");
-            ret = CL_EFORMAT;
+            status = CL_EFORMAT;
             goto done;
         }
 
         if (cli_readn(in_fd, data, biff_header.length) != biff_header.length) {
             cli_dbgmsg("[cli_extract_xlm_macros_and_images] Failed to read BIFF record data\n");
-            ret = CL_EREAD;
+            status = CL_EREAD;
             goto done;
         }
 
@@ -4819,7 +4821,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                     tmp = realloc(drawinggroup, drawinggroup_len);
                     if (NULL == tmp) {
                         cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
-                        ret = CL_EMEM;
+                        status = CL_EMEM;
                         goto done;
                     }
                     drawinggroup = tmp;
@@ -4837,7 +4839,7 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
                     tmp = realloc(drawinggroup, drawinggroup_len);
                     if (NULL == tmp) {
                         cli_dbgmsg("Failed to allocate %zu bytes for extracted image\n", drawinggroup_len);
-                        ret = CL_EMEM;
+                        status = CL_EMEM;
                         goto done;
                     }
                     drawinggroup = tmp;
@@ -4984,19 +4986,19 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
     /* Scan the extracted content */
     if (lseek(out_fd, 0, SEEK_SET) != 0) {
         cli_dbgmsg("cli_extract_xlm_macros_and_images: Failed to seek to beginning of temporary file\n");
-        ret = CL_ESEEK;
+        status = CL_ESEEK;
         goto done;
     }
 
     if (cli_scan_desc(out_fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL) == CL_VIRUS) {
-        ret = CL_VIRUS;
+        status = CL_VIRUS;
         goto done;
     }
 
     /* If a read failed, return with an error. */
     if (size_read == (size_t)-1) {
         cli_dbgmsg("cli_extract_xlm_macros_and_images: Read error occured when trying to read BIFF header. Truncated or malformed XLM macro file?\n");
-        ret = CL_EREAD;
+        status = CL_EREAD;
         goto done;
     }
 
@@ -5005,10 +5007,14 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
          * A drawing group was extracted, now we need to find all the images inside.
          * If we fail to extract images, that's fine.
          */
-        (void)cli_extract_images_from_drawing_group(drawinggroup, drawinggroup_len, ctx);
+        ret = cli_extract_images_from_drawing_group(drawinggroup, drawinggroup_len, ctx);
+        if (ret == CL_VIRUS) {
+            status = CL_VIRUS;
+            goto done;
+        }
     }
 
-    ret = CL_SUCCESS;
+    status = CL_SUCCESS;
 
 done:
     if (NULL != drawinggroup) {
@@ -5038,5 +5044,5 @@ done:
         tempfile = NULL;
     }
 
-    return ret;
+    return status;
 }
