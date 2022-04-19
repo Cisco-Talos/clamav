@@ -3510,9 +3510,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (!tmp) {
         cli_dbgmsg("cli_pdf: no PDF- header found\n");
         noisy_warnmsg("cli_pdf: no PDF- header found\n");
-#if HAVE_JSON
-        pdf_export_json(&pdf);
-#endif
+
         rc = CL_SUCCESS;
         goto done;
     }
@@ -3722,11 +3720,12 @@ done:
         rc = CL_EFORMAT;
     }
 
+err:
+
 #if HAVE_JSON
     pdf_export_json(&pdf);
 #endif
 
-err:
     if (pdf.objstms) {
         for (i = 0; i < pdf.nobjstms; i++) {
             if (pdf.objstms[i]) {
@@ -4491,6 +4490,71 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 #endif
 
 #if HAVE_JSON
+static void pdf_free_stats(struct pdf_struct *pdf) {
+
+    if (!pdf) {
+        return;
+    }
+
+    if ((pdf->stats.author)) {
+        if (pdf->stats.author->data)
+            free(pdf->stats.author->data);
+        free(pdf->stats.author);
+        pdf->stats.author = NULL;
+    }
+
+    if (pdf->stats.creator) {
+        if (pdf->stats.creator->data)
+            free(pdf->stats.creator->data);
+        free(pdf->stats.creator);
+        pdf->stats.creator = NULL;
+    }
+
+    if (pdf->stats.producer) {
+        if (pdf->stats.producer->data)
+            free(pdf->stats.producer->data);
+        free(pdf->stats.producer);
+        pdf->stats.producer = NULL;
+    }
+
+    if (pdf->stats.modificationdate) {
+        if (pdf->stats.modificationdate->data)
+            free(pdf->stats.modificationdate->data);
+        free(pdf->stats.modificationdate);
+        pdf->stats.modificationdate = NULL;
+    }
+
+    if (pdf->stats.creationdate) {
+        if (pdf->stats.creationdate->data)
+            free(pdf->stats.creationdate->data);
+        free(pdf->stats.creationdate);
+        pdf->stats.creationdate = NULL;
+    }
+
+    if (pdf->stats.title) {
+        if (pdf->stats.title->data)
+            free(pdf->stats.title->data);
+        free(pdf->stats.title);
+        pdf->stats.title = NULL;
+    }
+
+    if (pdf->stats.subject) {
+        if (pdf->stats.subject->data)
+            free(pdf->stats.subject->data);
+        free(pdf->stats.subject);
+        pdf->stats.subject = NULL;
+    }
+
+    if (pdf->stats.keywords) {
+        if (pdf->stats.keywords->data)
+            free(pdf->stats.keywords->data);
+        free(pdf->stats.keywords);
+        pdf->stats.keywords = NULL;
+    }
+}
+#endif
+
+#if HAVE_JSON
 static void pdf_export_json(struct pdf_struct *pdf)
 {
     cli_ctx *ctx = pdf->ctx;
@@ -4768,60 +4832,6 @@ static void pdf_export_json(struct pdf_struct *pdf)
     }
 
 cleanup:
-    if ((pdf->stats.author)) {
-        if (pdf->stats.author->data)
-            free(pdf->stats.author->data);
-        free(pdf->stats.author);
-        pdf->stats.author = NULL;
-    }
-
-    if (pdf->stats.creator) {
-        if (pdf->stats.creator->data)
-            free(pdf->stats.creator->data);
-        free(pdf->stats.creator);
-        pdf->stats.creator = NULL;
-    }
-
-    if (pdf->stats.producer) {
-        if (pdf->stats.producer->data)
-            free(pdf->stats.producer->data);
-        free(pdf->stats.producer);
-        pdf->stats.producer = NULL;
-    }
-
-    if (pdf->stats.modificationdate) {
-        if (pdf->stats.modificationdate->data)
-            free(pdf->stats.modificationdate->data);
-        free(pdf->stats.modificationdate);
-        pdf->stats.modificationdate = NULL;
-    }
-
-    if (pdf->stats.creationdate) {
-        if (pdf->stats.creationdate->data)
-            free(pdf->stats.creationdate->data);
-        free(pdf->stats.creationdate);
-        pdf->stats.creationdate = NULL;
-    }
-
-    if (pdf->stats.title) {
-        if (pdf->stats.title->data)
-            free(pdf->stats.title->data);
-        free(pdf->stats.title);
-        pdf->stats.title = NULL;
-    }
-
-    if (pdf->stats.subject) {
-        if (pdf->stats.subject->data)
-            free(pdf->stats.subject->data);
-        free(pdf->stats.subject);
-        pdf->stats.subject = NULL;
-    }
-
-    if (pdf->stats.keywords) {
-        if (pdf->stats.keywords->data)
-            free(pdf->stats.keywords->data);
-        free(pdf->stats.keywords);
-        pdf->stats.keywords = NULL;
-    }
+    pdf_free_stats(pdf);
 }
 #endif
