@@ -697,7 +697,7 @@ static void *allocbase_fromfrag(struct FRAG *f)
 
 void mpool_free(struct MP *mp, void *ptr)
 {
-    struct FRAG *f = NULL;
+    struct FRAG *f     = NULL;
     unsigned int sbits = 0;
     if (!ptr) return;
     f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
@@ -731,8 +731,8 @@ void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size)
 void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
 {
     struct FRAG *f = NULL;
-    size_t csize = 0;
-    void *new_ptr = NULL;
+    size_t csize   = 0;
+    void *new_ptr  = NULL;
     if (!ptr) return mpool_malloc(mp, size);
     f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
 
