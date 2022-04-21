@@ -425,7 +425,7 @@ extern cl_error_t cl_engine_settings_free(struct cl_settings *settings);
 /**
  * @brief Prepare the scanning engine.
  *
- * Called this after all required databases have been loaded and settings have
+ * Call this after all required databases have been loaded and settings have
  * been applied.
  *
  * @param engine        A scan engine.
