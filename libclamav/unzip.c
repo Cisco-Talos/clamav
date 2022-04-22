@@ -62,6 +62,10 @@
 #define ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED       (0x08074b50)
 // clang-format on
 
+// Non-malicious zips in enterprise critical JAR-ZIPs have been observed with a 1-byte overlap.
+// The goal with overlap detection is to alert on non-recursive zip bombs, so this tiny overlap isn't a concern.
+// We'll allow a 2-byte overlap so we don't alert on such zips.
+#define ZIP_RECORD_OVERLAP_FUDGE_FACTOR 2
 #define ZIP_MAX_NUM_OVERLAPPING_FILES 5
 
 #define ZIP_CRC32(r, c, b, l) \
@@ -1108,8 +1112,8 @@ cl_error_t index_the_central_directory(
                 goto done;
             }
 
-            if (((curr_record->local_header_offset >= prev_record->local_header_offset) && (curr_record->local_header_offset < prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size)) ||
-                ((prev_record->local_header_offset >= curr_record->local_header_offset) && (prev_record->local_header_offset < curr_record->local_header_offset + curr_record->local_header_size + curr_record->compressed_size))) {
+            if (((curr_record->local_header_offset >= prev_record->local_header_offset) && (curr_record->local_header_offset + ZIP_RECORD_OVERLAP_FUDGE_FACTOR < prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size)) ||
+                ((prev_record->local_header_offset >= curr_record->local_header_offset) && (prev_record->local_header_offset + ZIP_RECORD_OVERLAP_FUDGE_FACTOR < curr_record->local_header_offset + curr_record->local_header_size + curr_record->compressed_size))) {
                 /* Overlapping file detected */
                 num_overlapping_files++;
 
