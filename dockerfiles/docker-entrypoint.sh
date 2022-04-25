@@ -50,9 +50,9 @@ else
 		          --stdout \
 		          --user="clamav" \
 			  &
+		sleep "${CLAMD_STARTUP_DELAY:-60}"
 	fi
 
-	sleep "${CLAMD_STARTUP_DELAY:-60}"
 
 	if [ "${CLAMAV_NO_CLAMD:-false}" != "true" ]; then
 		echo "Starting ClamAV"
