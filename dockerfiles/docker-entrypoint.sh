@@ -41,6 +41,19 @@ else
 		freshclam --foreground --stdout
 	fi
 
+	if [ "${CLAMAV_NO_FRESHCLAMD:-false}" != "true" ]; then
+		echo "Starting Freshclamd"
+		freshclam \
+		          --checks="${FRESHCLAM_CHECKS:-1}" \
+		          --daemon \
+		          --foreground \
+		          --stdout \
+		          --user="clamav" \
+			  &
+	fi
+
+	sleep "${CLAMD_STARTUP_DELAY:-60}"
+
 	if [ "${CLAMAV_NO_CLAMD:-false}" != "true" ]; then
 		echo "Starting ClamAV"
 		if [ -S "/run/clamav/clamd.sock" ]; then
@@ -58,17 +71,6 @@ else
 			_timeout="$((_timeout + 1))"
 		done
 		echo "socket found, clamd started."
-	fi
-
-	if [ "${CLAMAV_NO_FRESHCLAMD:-false}" != "true" ]; then
-		echo "Starting Freshclamd"
-		freshclam \
-		          --checks="${FRESHCLAM_CHECKS:-1}" \
-		          --daemon \
-		          --foreground \
-		          --stdout \
-		          --user="clamav" \
-			  &
 	fi
 
 	if [ "${CLAMAV_NO_MILTERD:-true}" != "true" ]; then
