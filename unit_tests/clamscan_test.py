@@ -326,7 +326,7 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
-    def test_clamscan_11_image_fuzzy_hash_sigs(self):
+    def test_clamscan_12_image_fuzzy_hash_sigs(self):
         self.step_name('Test that each type of hash sig is detected in all-match mode')
 
         os.mkdir(str(TC.path_db / 'image-fuzzy-hash-test-sigs'))
@@ -432,7 +432,7 @@ class TC(testcase.TestCase):
         self.verify_output(output.err, expected=expected_stderr)
         self.verify_output(output.out, unexpected=unexpected_stdout)
 
-    def test_clamscan_12_yara_regex(self):
+    def test_clamscan_13_yara_regex(self):
         self.step_name('Test yara signature - detect TAR file magic in a range')
 
         db = TC.path_tmp / 'regex.yara'
@@ -467,3 +467,36 @@ rule regex
             'Infected files: 1',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_14_xls_jpeg_detection(self):
+        self.step_name('Test that clamav can successfully alert on jpeg image extracted from XLS documents')
+        # Note: we aren't testing PNG because the attached PNG is not properly fuzzy-hashed by clamav, yet.
+
+        os.mkdir(str(TC.path_db / 'xls-jpeg-detection-sigs'))
+
+        (TC.path_db / 'image-fuzzy-hash-test-sigs' / 'good.ldb').write_text(
+            "logo.png.good;Engine:150-255,Target:0;0;fuzzy_img#ea0f85d0de719887#0\n"
+        )
+
+        testfiles = TC.path_source / 'unit_tests' / 'input' / 'other_scanfiles' / 'has_png_and_jpeg.xls'
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --gen-json --debug --allmatch'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_db / 'image-fuzzy-hash-test-sigs' / 'good.ldb',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # no virus, no failures
+
+        expected_stderr = [
+            'Recognized PNG file',
+            'Recognized JPEG file',
+            '"FileMD5":"41e64a9ddb49690f0b6fbbd71362b1b3"',
+            '"FileMD5":"5341e0efde53a50c416b2352263e7693"',
+        ]
+        self.verify_output(output.err, expected=expected_stderr)
+
+        expected_stdout = [
+            'has_png_and_jpeg.xls: logo.png.good.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_stdout)
