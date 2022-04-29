@@ -20,6 +20,7 @@
 #include "fmap.h"
 #include "scanners.h"
 #include "others.h"
+#include "clamav_rust.h"
 
 enum mspack_type {
     FILETYPE_DUNNO,
@@ -290,7 +291,7 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
         buff[strlen(buff)]     = '\n';
         buff[strlen(buff) + 1] = '\0';
 
-        cli_eprintf(buff);
+        clrs_eprint(buff);
     }
 }
 
