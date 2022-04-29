@@ -145,7 +145,6 @@ void cl_set_clcb_msg(clcb_msg callback)
     strncpy(buff, x, len);                                \
     va_start(args, str);                                  \
     vsnprintf(buff + len, sizeof(buff) - len, str, args); \
-    buff[sizeof(buff) - 1] = '\0';                        \
     va_end(args)
 
 void cli_warnmsg(const char *str, ...)
@@ -191,15 +190,15 @@ void cli_dbgmsg_no_inline(const char *str, ...)
 
 size_t cli_eprintf(const char *str, ...)
 {
+    size_t bytes_written = 0;
     va_list args;
     char buff[MSGBUFSIZ];
     va_start(args, str);
-    vsnprintf(buff, sizeof(buff), str, args);
-    buff[sizeof(buff) - 1] = '\0';
+    bytes_written = vsnprintf(buff, sizeof(buff), str, args);
     va_end(args);
     clrs_eprint(buff);
 
-    return strlen(buff);
+    return bytes_written;
 }
 
 int cli_matchregex(const char *str, const char *regex)
