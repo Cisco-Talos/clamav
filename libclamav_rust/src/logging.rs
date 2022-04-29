@@ -85,8 +85,15 @@ mod tests {
     }
 }
 
+/// API exported for C code to log to standard error using Rust.
+/// This would be be an alternative to fputs, and reliably prints
+/// non-ASCII UTF8 characters on Windows, where fputs does not.
 #[no_mangle]
 pub extern "C" fn clrs_eprint(c_buf: *const c_char) -> () {
+    if c_buf.is_null() {
+        return;
+    }
+
     let msg = unsafe { CStr::from_ptr(c_buf) }.to_string_lossy();
     eprint!("{}", msg);
 }

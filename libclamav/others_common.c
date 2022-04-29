@@ -185,8 +185,21 @@ void cli_dbgmsg_no_inline(const char *str, ...)
 {
     if (UNLIKELY(cli_get_debug_flag())) {
         MSGCODE(buff, len, "LibClamAV debug: ");
-        fputs(buff, stderr);
+        clrs_eprint(buff);
     }
+}
+
+size_t cli_eprintf(const char *str, ...)
+{
+    va_list args;
+    char buff[MSGBUFSIZ];
+    va_start(args, str);
+    vsnprintf(buff, sizeof(buff), str, args);
+    buff[sizeof(buff) - 1] = '\0';
+    va_end(args);
+    clrs_eprint(buff);
+
+    return strlen(buff);
 }
 
 int cli_matchregex(const char *str, const char *regex)

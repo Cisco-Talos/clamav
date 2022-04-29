@@ -290,7 +290,7 @@ static void mspack_fmap_message(struct mspack_file *file, const char *fmt, ...)
         buff[strlen(buff)]     = '\n';
         buff[strlen(buff) + 1] = '\0';
 
-        fputs(buff, stderr);
+        cli_eprintf(buff);
     }
 }
 
