@@ -61,6 +61,7 @@
 #include "matcher-ac.h"
 #include "str.h"
 #include "entconv.h"
+#include "clamav_rust.h"
 
 #define MSGBUFSIZ 8192
 
@@ -122,15 +123,15 @@ void cli_logg_unsetup(void)
 uint8_t cli_debug_flag              = 0;
 uint8_t cli_always_gen_section_hash = 0;
 
-static void fputs_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
+static void clrs_eprint_callback(enum cl_msg severity, const char *fullmsg, const char *msg, void *context)
 {
     UNUSEDPARAM(severity);
     UNUSEDPARAM(msg);
     UNUSEDPARAM(context);
-    fputs(fullmsg, stderr);
+    clrs_eprint(fullmsg);
 }
 
-static clcb_msg msg_callback = fputs_callback;
+static clcb_msg msg_callback = clrs_eprint_callback;
 
 void cl_set_clcb_msg(clcb_msg callback)
 {
@@ -144,7 +145,6 @@ void cl_set_clcb_msg(clcb_msg callback)
     strncpy(buff, x, len);                                \
     va_start(args, str);                                  \
     vsnprintf(buff + len, sizeof(buff) - len, str, args); \
-    buff[sizeof(buff) - 1] = '\0';                        \
     va_end(args)
 
 void cli_warnmsg(const char *str, ...)
@@ -176,7 +176,7 @@ inline void cli_dbgmsg(const char *str, ...)
 {
     if (UNLIKELY(cli_get_debug_flag())) {
         MSGCODE(buff, len, "LibClamAV debug: ");
-        fputs(buff, stderr);
+        clrs_eprint(buff);
     }
 }
 
@@ -184,8 +184,21 @@ void cli_dbgmsg_no_inline(const char *str, ...)
 {
     if (UNLIKELY(cli_get_debug_flag())) {
         MSGCODE(buff, len, "LibClamAV debug: ");
-        fputs(buff, stderr);
+        clrs_eprint(buff);
     }
+}
+
+size_t cli_eprintf(const char *str, ...)
+{
+    size_t bytes_written = 0;
+    va_list args;
+    char buff[MSGBUFSIZ];
+    va_start(args, str);
+    bytes_written = vsnprintf(buff, sizeof(buff), str, args);
+    va_end(args);
+    clrs_eprint(buff);
+
+    return bytes_written;
 }
 
 int cli_matchregex(const char *str, const char *regex)
@@ -1348,7 +1361,7 @@ cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
 
     if (0 == wcsncmp(L"\\\\?\\UNC", long_evaluated_filepathW, wcslen(L"\\\\?\\UNC"))) {
         conv_result = cli_codepage_to_utf8(
-            long_evaluated_filepathW,
+            (char *)long_evaluated_filepathW,
             (wcslen(long_evaluated_filepathW)) * sizeof(WCHAR),
             CODEPAGE_UTF16_LE,
             &evaluated_filepath,
@@ -1360,7 +1373,7 @@ cl_error_t cli_get_filepath_from_handle(HANDLE hFile, char **filepath)
         }
     } else {
         conv_result = cli_codepage_to_utf8(
-            long_evaluated_filepathW + wcslen(L"\\\\?\\"),
+            (char *)long_evaluated_filepathW + wcslen(L"\\\\?\\") * sizeof(WCHAR),
             (wcslen(long_evaluated_filepathW) - wcslen(L"\\\\?\\")) * sizeof(WCHAR),
             CODEPAGE_UTF16_LE,
             &evaluated_filepath,
@@ -1481,7 +1494,10 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
     char *real_file_path = NULL;
     cl_error_t status    = CL_EARG;
 #ifdef _WIN32
-    HANDLE hFile = INVALID_HANDLE_VALUE;
+    HANDLE hFile   = INVALID_HANDLE_VALUE;
+    wchar_t *wpath = NULL;
+    WIN32_FILE_ATTRIBUTE_DATA attrs;
+
 #elif C_DARWIN
     int fd = -1;
 #endif
@@ -1495,7 +1511,13 @@ cl_error_t cli_realpath(const char *file_name, char **real_filename)
 
 #ifdef _WIN32
 
-    hFile = CreateFileA(file_name,                  // file to open
+    wpath = uncpath(file_name);
+    if (!wpath) {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    hFile = CreateFileW(wpath,                      // file to open
                         GENERIC_READ,               // open for reading
                         FILE_SHARE_READ,            // share for reading
                         NULL,                       // default security
@@ -1552,6 +1574,9 @@ done:
 #ifdef _WIN32
     if (hFile != INVALID_HANDLE_VALUE) {
         CloseHandle(hFile);
+    }
+    if (NULL != wpath) {
+        free(wpath);
     }
 #elif C_DARWIN
     if (fd != -1) {

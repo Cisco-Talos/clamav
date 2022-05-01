@@ -865,6 +865,12 @@ void cli_dbgmsg_no_inline(const char *str, ...) __attribute__((format(printf, 1,
 void cli_dbgmsg_no_inline(const char *str, ...);
 #endif
 
+#ifdef __GNUC__
+size_t cli_eprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
+size_t cli_eprintf(const char *str, ...);
+#endif
+
 #ifdef HAVE_CLI_GETPAGESIZE
 #undef HAVE_CLI_GETPAGESIZE
 #endif

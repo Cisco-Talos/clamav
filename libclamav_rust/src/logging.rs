@@ -20,7 +20,10 @@
  *  MA 02110-1301, USA.
  */
 
-use std::ffi::CString;
+use std::{
+    ffi::{CStr, CString},
+    os::raw::c_char,
+};
 
 use log::{set_max_level, Level, LevelFilter, Metadata, Record};
 
@@ -80,4 +83,17 @@ mod tests {
         warn!("my old");
         error!("friend.");
     }
+}
+
+/// API exported for C code to log to standard error using Rust.
+/// This would be be an alternative to fputs, and reliably prints
+/// non-ASCII UTF8 characters on Windows, where fputs does not.
+#[no_mangle]
+pub extern "C" fn clrs_eprint(c_buf: *const c_char) -> () {
+    if c_buf.is_null() {
+        return;
+    }
+
+    let msg = unsafe { CStr::from_ptr(c_buf) }.to_string_lossy();
+    eprint!("{}", msg);
 }

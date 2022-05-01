@@ -27,6 +27,7 @@ include = [
   "frs_error::FFIError",
   "frs_error::ffierror_fmt",
   "frs_error::ffierror_free",
+  "logging::clrs_eprint",
 ]
 
 # prefix = "CAPI_"
