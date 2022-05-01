@@ -161,6 +161,46 @@ ClamAV 0.105.0 includes the following improvements and changes.
 
 ### Bug fixes
 
+The CVE's fixes below are also addressed in versions 0.104.3 and 0.103.6.
+
+- [CVE-2022-20803](CVE-2022-20803): Fixed a possible double-free vulnerability
+  in the OLE2 file parser.
+  Issue affects versions 0.104.0 through 0.104.2.
+  Issue identified by OSS-Fuzz.
+
+- [CVE-2022-20770](CVE-2022-20770): Fixed a possible infinite loop vulnerability
+  in the CHM file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20796](CVE-2022-20796): Fixed a possible NULL-pointer dereference
+  crash in the scan verdict cache check.
+  Issue affects versions 0.103.4, 0.103.5, 0.104.1, and 0.104.2.
+  Thank you to Alexander Patrakov and Antoine Gatineau for reporting this issue.
+
+- [CVE-2022-20771](CVE-2022-20771): Fixed a possible infinite loop vulnerability
+  in the TIFF file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  The issue only occurs if the "--alert-broken-media" ClamScan option is
+  enabled. For ClamD, the affected option is "AlertBrokenMedia yes", and for
+  libclamav it is the "CL_SCAN_HEURISTIC_BROKEN_MEDIA" scan option.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20785](CVE-2022-20785): Fixed a possible memory leak in the
+  HTML file parser / Javascript normalizer.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20792](CVE-2022-20792): Fixed a possible multi-byte heap buffer
+  overflow write vulnerability in the signature database load module.
+  The fix was to update the vendored regex library to the latest version.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
 - ClamOnAcc: Fixed a number of assorted stability issues and added niceties for
   debugging ClamOnAcc. Patches courtesy of Frank Fegert.
 
@@ -171,6 +211,8 @@ ClamAV 0.105.0 includes the following improvements and changes.
   containing images if the `--alert-macros` (`AlertOLE2Macros`) option was
   enabled.
 
+- Fixed an issue causing signature alerts for images in XLS files to be lost.
+
 - Fixed an issue preventing multiple matches when scanning in all-match mode.
 
 - Docker:
@@ -180,23 +222,29 @@ ClamAV 0.105.0 includes the following improvements and changes.
   - Set the default time zone to `Etc/UTC`. The `--env` parameter can be used to
     customize the time zone by setting `TZ` environment variable.
     Patch courtesy of Olliver Schinagl.
-  - Fixed an issue where ClamD would listen only for IPv4 connections in 
+  - Fixed an issue where ClamD would listen only for IPv4 connections in
     environments where IPv6 is preferred. ClamD will now listen to all
     addresses available (IPv4 and IPv6). This is the default behavior of ClamD.
     Patch courtesy of Andre Breiler.
+
+- Enable support for ncursesw, the wide-character / unicode version of ncurses.
 
 - Added support for detecting the curses library dependency even when the
   associated pkg-config file is not present. This resolves a build issue on some
   BSD distributions. Patch courtesy of Stuart Henderson.
 
+- Windows: Fix utf8 filepath issues affecting both scanning and log messages.
+
 - Assorted bug fixes and improvements.
 
 ### Acknowledgements
 
-The ClamAV team thanks the following individuals for their code submissions:
+Special thanks to the following people for code contributions and bug reports:
 - Ahmon Dancy
+- Alexander Patrakov
 - Alexander Sulfrian
 - Andre Breiler
+- Antoine Gatineau
 - Carlos Velasco
 - Bernd Kuhls
 - David Korczynski
@@ -208,8 +256,10 @@ The ClamAV team thanks the following individuals for their code submissions:
 - John Humlick
 - Jordan Ernst
 - JunWei Song
+- Michał Dardas
 - mko-x
 - Olliver Schinagl
+- Răzvan Cojocaru
 - Sammy Chu
 - Sergey Valentey
 - Simon Arlott
