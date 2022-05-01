@@ -7,8 +7,80 @@ differ slightly from third-party binary packages.
 
 ClamAV 0.104.3 is a critical patch release with the following fixes:
 
+- [CVE-2022-20803](CVE-2022-20803): Fixed a possible double-free vulnerability
+  in the OLE2 file parser.
+  Issue affects versions 0.104.0 through 0.104.2.
+  Issue identified by OSS-Fuzz.
 
-Special thanks to the following for code contributions and bug reports:
+- [CVE-2022-20770](CVE-2022-20770): Fixed a possible infinite loop vulnerability
+  in the CHM file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20796](CVE-2022-20796): Fixed a possible NULL-pointer dereference
+  crash in the scan verdict cache check.
+  Issue affects versions 0.103.4, 0.103.5, 0.104.1, and 0.104.2.
+  Thank you to Alexander Patrakov and Antoine Gatineau for reporting this issue.
+
+- [CVE-2022-20771](CVE-2022-20771): Fixed a possible infinite loop vulnerability
+  in the TIFF file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  The issue only occurs if the "--alert-broken-media" ClamScan option is
+  enabled. For ClamD, the affected option is "AlertBrokenMedia yes", and for
+  libclamav it is the "CL_SCAN_HEURISTIC_BROKEN_MEDIA" scan option.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20785](CVE-2022-20785): Fixed a possible memory leak in the
+  HTML file parser / Javascript normalizer.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20792](CVE-2022-20792): Fixed a possible multi-byte heap buffer
+  overflow write vulnerability in the signature database load module.
+  The fix was to update the vendored regex library to the latest version.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- ClamOnAcc: Fixed a number of assorted stability issues and added niceties for
+  debugging ClamOnAcc. Patches courtesy of Frank Fegert.
+
+- Enable support for ncursesw, the wide-character / unicode version of ncurses.
+
+- Added support for detecting the curses library dependency even when the
+  associated pkg-config file is not present. This resolves a build issue on some
+  BSD distributions. Patch courtesy of Stuart Henderson.
+
+- Docker:
+  - Fixed an issue exposing the health check port. Patch courtesy of Sammy Chu.
+  - Fixed an issue with health check failure false positives during container
+    startup. Patch courtesy of Olliver Schinagl.
+  - Set the default time zone to `Etc/UTC`. The `--env` parameter can be used to
+    customize the time zone by setting `TZ` environment variable.
+    Patch courtesy of Olliver Schinagl.
+
+- Fixed an issue causing XLM macro false positives when scanning XLS documents
+  containing images if the `--alert-macros` (`AlertOLE2Macros`) option was
+  enabled.
+
+- Fixed an issue causing signature alerts for images in XLS files to be lost.
+
+- Fixed an issue causing byte-compare subsignatures to cause an alert when they
+  match even if other conditions of the given logical signatures were not met.
+
+- Assorted bug fixes and improvements.
+
+Special thanks to the following people for code contributions and bug reports:
+- Alexander Patrakov
+- Antoine Gatineau
+- Frank Fegert
+- Michał Dardas
+- Olliver Schinagl
+- Sammy Chu
+- Stuart Henderson
 
 ## 0.104.2
 
