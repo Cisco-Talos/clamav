@@ -7,8 +7,57 @@ Note: This file refers to the source tarball. Things described here may differ
 
 ClamAV 0.103.6 is a critical patch release with the following fixes:
 
+- [CVE-2022-20770](CVE-2022-20770): Fixed a possible infinite loop vulnerability
+  in the CHM file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
 
-Special thanks to the following for code contributions and bug reports:
+- [CVE-2022-20796](CVE-2022-20796): Fixed a possible NULL-pointer dereference
+  crash in the scan verdict cache check.
+  Issue affects versions 0.103.4, 0.103.5, 0.104.1, and 0.104.2.
+  Thank you to Alexander Patrakov and Antoine Gatineau for reporting this issue.
+
+- [CVE-2022-20771](CVE-2022-20771): Fixed a possible infinite loop vulnerability
+  in the TIFF file parser.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  The issue only occurs if the "--alert-broken-media" ClamScan option is
+  enabled. For ClamD, the affected option is "AlertBrokenMedia yes", and for
+  libclamav it is the "CL_SCAN_HEURISTIC_BROKEN_MEDIA" scan option.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20785](CVE-2022-20785): Fixed a possible memory leak in the
+  HTML file parser / Javascript normalizer.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- [CVE-2022-20792](CVE-2022-20792): Fixed a possible multi-byte heap buffer
+  overflow write vulnerability in the signature database load module.
+  The fix was to update the vendored regex library to the latest version.
+  Issue affects versions 0.104.0 through 0.104.2 and LTS version 0.103.5 and
+  prior versions.
+  Thank you to Michał Dardas for reporting this issue.
+
+- ClamOnAcc: Fixed a number of assorted stability issues and added niceties for
+  debugging ClamOnAcc. Patches courtesy of Frank Fegert.
+
+- Fixed an issue causing byte-compare subsignatures to cause an alert when they
+  match even if other conditions of the given logical signatures were not met.
+
+- Fix memleak when using multiple byte-compare subsignatures.
+  This fix was backported from 0.104.0.
+  Thank you to Andrea De Pasquale for contributing the fix.
+
+- Assorted bug fixes and improvements.
+
+Special thanks to the following people for code contributions and bug reports:
+- Alexander Patrakov
+- Andrea De Pasquale
+- Antoine Gatineau
+- Frank Fegert
+- Michał Dardas
 
 ## 0.103.5
 
