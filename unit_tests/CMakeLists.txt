@@ -169,7 +169,8 @@ ADD_CUSTOM_COMMAND(TARGET check_clamav POST_BUILD
 # Paths to pass to our tests via environment variables
 #
 if(LLVM_FOUND)
-    list(JOIN LLVM_LIBRARIES "," LLVM_LIBS)
+    string(REPLACE "-l" "" LLVM_LIBRARIES_TRIMMED "${LLVM_LIBRARIES}")
+    list(JOIN LLVM_LIBRARIES_TRIMMED "," LLVM_LIBS)
     list(JOIN LLVM_LIBRARY_DIRS "," LLVM_DIRS)
 endif()
 
