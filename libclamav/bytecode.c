@@ -102,6 +102,22 @@ static void context_safe(struct cli_bc_ctx *ctx)
         ctx->hooks.pedata = &nopedata;
 }
 
+void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
+{
+    cli_bytecode_context_clear(ctx);
+    free(ctx);
+}
+
+int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
+{
+    int fd;
+    *tempfilename = ctx->tempfile;
+    fd            = ctx->outfd;
+    ctx->tempfile = NULL;
+    ctx->outfd    = 0;
+    return fd;
+}
+
 /**
  * @brief Reset bytecode state, so you can run another bytecode with same ctx.
  *
@@ -109,7 +125,7 @@ static void context_safe(struct cli_bc_ctx *ctx)
  *
  * @param ctx
  */
-static void bytecode_context_reset(struct cli_bc_ctx *ctx)
+static int bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     unsigned i;
 
@@ -253,14 +269,13 @@ static inline void bytecode_context_initialize(struct cli_bc_ctx *ctx)
 
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
-    struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
+    struct cli_bc_ctx *ctx = calloc(1, sizeof(*ctx));
     if (!ctx) {
         cli_errmsg("Failed to allocate bytecode context\n");
         return NULL;
     }
 
     bytecode_context_initialize(ctx);
-    bytecode_context_reset(ctx);
 
     return ctx;
 }
@@ -825,7 +840,7 @@ static cl_error_t parseTypes(struct cli_bc *bc, unsigned char *buffer)
                     ty->kind        = DPointerType;
                     ty->numElements = 1;
                 }
-                ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes));
+                ty->containedTypes = malloc(sizeof(*ty->containedTypes));
                 if (!ty->containedTypes) {
                     cli_errmsg("Out of memory allocating containedType\n");
                     return CL_EMALFDB;
@@ -2418,17 +2433,17 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
 
     bc->trusted     = 1;
     bc->num_globals = 1;
-    bc->globals     = cli_calloc(1, sizeof(*bc->globals));
+    bc->globals     = calloc(1, sizeof(*bc->globals));
     if (!bc->globals) {
         cli_errmsg("Failed to allocate memory for globals\n");
         return CL_EMEM;
     }
-    bc->globals[0] = cli_calloc(1, sizeof(*bc->globals[0]));
+    bc->globals[0] = calloc(1, sizeof(*bc->globals[0]));
     if (!bc->globals[0]) {
         cli_errmsg("Failed to allocate memory for globals\n");
         return CL_EMEM;
     }
-    bc->globaltys = cli_calloc(1, sizeof(*bc->globaltys));
+    bc->globaltys = calloc(1, sizeof(*bc->globaltys));
     if (!bc->globaltys) {
         cli_errmsg("Failed to allocate memory for globaltypes\n");
         return CL_EMEM;
@@ -2439,7 +2454,7 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
     bc->kind         = 0;
     bc->num_types    = 5;
     bc->num_func     = 1;
-    bc->funcs        = cli_calloc(1, sizeof(*bc->funcs));
+    bc->funcs        = calloc(1, sizeof(*bc->funcs));
     if (!bc->funcs) {
         cli_errmsg("Failed to allocate memory for func\n");
         return CL_EMEM;
@@ -2451,25 +2466,25 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
     func->numConstants = 1;
     func->numBB        = 1;
     func->returnType   = 32;
-    func->types        = cli_calloc(1, sizeof(*func->types));
+    func->types        = calloc(1, sizeof(*func->types));
     if (!func->types) {
         cli_errmsg("Failed to allocate memory for types\n");
         return CL_EMEM;
     }
     func->types[0] = 32;
-    func->BB       = cli_calloc(1, sizeof(*func->BB));
+    func->BB       = calloc(1, sizeof(*func->BB));
     if (!func->BB) {
         cli_errmsg("Failed to allocate memory for BB\n");
         return CL_EMEM;
     }
-    func->allinsts = cli_calloc(2, sizeof(*func->allinsts));
+    func->allinsts = calloc(2, sizeof(*func->allinsts));
     if (!func->allinsts) {
         cli_errmsg("Failed to allocate memory for insts\n");
         return CL_EMEM;
     }
     func->BB->numInsts = 2;
     func->BB->insts    = func->allinsts;
-    func->constants    = cli_calloc(1, sizeof(*func->constants));
+    func->constants    = calloc(1, sizeof(*func->constants));
     if (!func->constants) {
         cli_errmsg("Failed to allocate memory for constants\n");
         return CL_EMEM;
@@ -2480,7 +2495,7 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
     inst->opcode        = OP_BC_CALL_API;
     inst->u.ops.numOps  = 1;
     inst->u.ops.opsizes = NULL;
-    inst->u.ops.ops     = cli_calloc(1, sizeof(*inst->u.ops.ops));
+    inst->u.ops.ops     = calloc(1, sizeof(*inst->u.ops.ops));
     if (!inst->u.ops.ops) {
         cli_errmsg("Failed to allocate memory for instructions\n");
         return CL_EMEM;

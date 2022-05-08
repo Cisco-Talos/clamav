@@ -572,9 +572,9 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
         foundsize[type] = cli_hm_have_size(mdb_sect, type, exe_section->rsz);
         foundwild[type] = cli_hm_have_wild(mdb_sect, type);
         if (foundsize[type] || foundwild[type]) {
-            hashset[type] = cli_malloc(hashlen[type]);
+            hashset[type] = malloc(hashlen[type]);
             if (!hashset[type]) {
-                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
+                cli_errmsg("scan_pe_mdb: malloc failed!\n");
                 for (; type > 0;)
                     free(hashset[--type]);
                 return CL_EMEM;
@@ -602,9 +602,9 @@ static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
                 goto end;
             }
 
-            md5 = cli_malloc(16);
+            md5 = malloc(16);
             if (!(md5)) {
-                cli_errmsg("scan_pe_mdb: cli_malloc failed!\n");
+                cli_errmsg("scan_pe_mdb: malloc failed!\n");
                 ret = CL_EMEM;
                 goto end;
             }
@@ -2588,9 +2588,9 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         genhash[type] = cli_hm_have_any(imp, type);
         if (genhash[type]) {
-            hashset[type] = cli_malloc(hashlen[type]);
+            hashset[type] = malloc(hashlen[type]);
             if (!hashset[type]) {
-                cli_errmsg("scan_pe: cli_malloc failed!\n");
+                cli_errmsg("scan_pe: malloc failed!\n");
                 for (; type > 0;)
                     free(hashset[--type]);
                 return CL_EMEM;
@@ -2607,9 +2607,9 @@ static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     if (cli_debug_flag && !genhash[CLI_HASH_MD5]) {
 #endif
         genhash[CLI_HASH_MD5] = 1;
-        hashset[CLI_HASH_MD5] = cli_calloc(hashlen[CLI_HASH_MD5], sizeof(char));
+        hashset[CLI_HASH_MD5] = calloc(hashlen[CLI_HASH_MD5], sizeof(char));
         if (!hashset[CLI_HASH_MD5]) {
-            cli_errmsg("scan_pe: cli_malloc failed!\n");
+            cli_errmsg("scan_pe: calloc failed!\n");
             for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++)
                 free(hashset[type]);
             return CL_EMEM;
@@ -3267,7 +3267,7 @@ int cli_scanpe(cli_ctx *ctx)
     /* Trojan.Swizzor.Gen */
     if (SCAN_HEURISTICS && (DCONF & PE_CONF_SWIZZOR) && peinfo->nsections > 1 && fsize > 64 * 1024 && fsize < 4 * 1024 * 1024) {
         if (peinfo->dirs[2].Size) {
-            struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
+            struct swizz_stats *stats = calloc(1, sizeof(*stats));
             unsigned int m            = 1000;
             ret                       = CL_CLEAN;
 
@@ -5606,7 +5606,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // We'll build a list of the regions that need to be hashed and pass it to
     // asn1_check_mscat to do hash verification there (the hash algorithm is
     // specified in the PKCS7 structure).  We need to hash up to 4 regions
-    regions = (struct cli_mapped_region *)cli_calloc(4, sizeof(struct cli_mapped_region));
+    regions = (struct cli_mapped_region *)calloc(4, sizeof(struct cli_mapped_region));
     if (!regions) {
         ret = CL_EMEM;
         goto finish;
@@ -5864,7 +5864,7 @@ cl_error_t cli_genhash_pe(cli_ctx *ctx, unsigned int class, int type, stats_sect
     }
 
     if (!hash) {
-        cli_errmsg("cli_genhash_pe: cli_malloc failed!\n");
+        cli_errmsg("cli_genhash_pe: cli_calloc failed!\n");
         cli_exe_info_destroy(peinfo);
         return CL_EMEM;
     }

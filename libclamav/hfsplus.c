@@ -149,7 +149,7 @@ static cl_error_t hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **heade
         return CL_EMAP;
     }
 
-    volHeader = cli_malloc(sizeof(hfsPlusVolumeHeader));
+    volHeader = malloc(sizeof(hfsPlusVolumeHeader));
     if (!volHeader) {
         cli_errmsg("hfsplus_volumeheader: header malloc failed\n");
         return CL_EMEM;

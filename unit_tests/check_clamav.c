@@ -79,7 +79,7 @@ START_TEST(test_cl_build)
     // ck_assert_msg(engine, "cl_build calloc");
     // ck_assert_msg(CL_ENULLARG == cl_build(engine), "cl_build(engine) with null ->root");
 
-    // engine->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+    // engine->root = calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
 }
 END_TEST
 

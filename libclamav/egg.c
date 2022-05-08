@@ -517,7 +517,7 @@ static cl_error_t egg_parse_encrypt_header(const uint8_t* index, size_t size, eg
         goto done;
     }
 
-    encrypt = (egg_encrypt*)cli_calloc(1, sizeof(egg_encrypt));
+    encrypt = (egg_encrypt*)calloc(1, sizeof(egg_encrypt));
     if (NULL == encrypt) {
         cli_errmsg("egg_parse_encrypt_header: Failed to allocate memory for egg_encrypt.\n");
         status = CL_EMEM;
@@ -687,7 +687,7 @@ static cl_error_t egg_parse_block_headers(egg_handle* handle, egg_block** block)
         goto done;
     }
 
-    eggBlock = (egg_block*)cli_calloc(1, sizeof(egg_block));
+    eggBlock = (egg_block*)calloc(1, sizeof(egg_block));
     if (NULL == eggBlock) {
         cli_errmsg("egg_parse_block_headers: Failed to allocate memory for egg_block.\n");
         status = CL_EMEM;
@@ -1369,7 +1369,7 @@ static cl_error_t egg_parse_file_headers(egg_handle* handle, egg_file** file)
         goto done;
     }
 
-    eggFile = (egg_file*)cli_calloc(1, sizeof(egg_file));
+    eggFile = (egg_file*)calloc(1, sizeof(egg_file));
     if (NULL == eggFile) {
         cli_errmsg("egg_parse_file_headers: Failed to allocate memory for egg_file.\n");
         status = CL_EMEM;
@@ -1603,7 +1603,7 @@ cl_error_t cli_egg_open(fmap_t* map, void** hArchive, char*** comments, uint32_t
     *comments  = NULL;
     *nComments = 0;
 
-    handle = (egg_handle*)cli_calloc(1, sizeof(egg_handle));
+    handle = (egg_handle*)calloc(1, sizeof(egg_handle));
     if (NULL == handle) {
         cli_errmsg("cli_egg_open: Failed to allocate memory for egg_handle.\n");
         status = CL_EMEM;
@@ -1936,7 +1936,7 @@ cl_error_t cli_egg_deflate_decompress(char* compressed, size_t compressed_size, 
     *decompressed      = NULL;
     *decompressed_size = 0;
 
-    if (!(decoded = (uint8_t*)cli_calloc(BUFSIZ, sizeof(uint8_t)))) {
+    if (!(decoded = (uint8_t*)calloc(BUFSIZ, sizeof(uint8_t)))) {
         cli_errmsg("cli_egg_deflate_decompress: cannot allocate memory for decompressed output\n");
         status = CL_EMEM;
         goto done;
@@ -2060,7 +2060,7 @@ cl_error_t cli_egg_bzip2_decompress(char* compressed, size_t compressed_size, ch
     *decompressed      = NULL;
     *decompressed_size = 0;
 
-    if (!(decoded = (char*)cli_calloc(BUFSIZ, sizeof(Bytef)))) {
+    if (!(decoded = (char*)calloc(BUFSIZ, sizeof(Bytef)))) {
         cli_errmsg("cli_egg_bzip2_decompress: cannot allocate memory for decompressed output\n");
         status = CL_EMEM;
         goto done;
@@ -2175,7 +2175,7 @@ cl_error_t cli_egg_lzma_decompress(char* compressed, size_t compressed_size, cha
     *decompressed      = NULL;
     *decompressed_size = 0;
 
-    if (!(decoded = (uint8_t*)cli_calloc(BUFSIZ, sizeof(char)))) {
+    if (!(decoded = (uint8_t*)calloc(BUFSIZ, sizeof(char)))) {
         cli_errmsg("cli_egg_lzma_decompress: cannot allocate memory for decompressed output\n");
         status = CL_EMEM;
         goto done;

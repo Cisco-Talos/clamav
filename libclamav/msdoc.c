@@ -72,7 +72,7 @@ ole2_convert_utf(summary_ctx_t *sctx, char *begin, size_t sz, const char *encodi
 
     if (sz == 0) {
         cli_dbgmsg("ole2_convert_utf: converting empty string\n");
-        return cli_calloc(1, 1); // Just send back an empty NULL-terminated string.
+        return calloc(1, 1); // Just send back an empty NULL-terminated string.
     }
 
     /* applies in the both case */

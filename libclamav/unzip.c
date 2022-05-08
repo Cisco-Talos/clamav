@@ -998,7 +998,7 @@ cl_error_t index_the_central_directory(
     *catalogue   = NULL;
     *num_records = 0;
 
-    zip_catalogue = (struct zip_record *)cli_malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
+    zip_catalogue = (struct zip_record *)malloc(sizeof(struct zip_record) * ZIP_RECORDS_CHECK_BLOCKSIZE);
     if (NULL == zip_catalogue) {
         status = CL_EMEM;
         goto done;

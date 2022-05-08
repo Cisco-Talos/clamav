@@ -117,7 +117,7 @@ struct parser_state {
 static struct scope *scope_new(struct parser_state *state)
 {
     struct scope *parent = state->current;
-    struct scope *s      = cli_calloc(1, sizeof(*s));
+    struct scope *s      = calloc(1, sizeof(*s));
     if (!s)
         return NULL;
     if (cli_hashtab_init(&s->id_map, 10) < 0) {
@@ -1209,7 +1209,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 
 struct parser_state *cli_js_init(void)
 {
-    struct parser_state *state = cli_calloc(1, sizeof(*state));
+    struct parser_state *state = calloc(1, sizeof(*state));
     if (!state)
         return NULL;
     if (!scope_new(state)) {
@@ -1720,7 +1720,7 @@ static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 
 static int yylex_init(yyscan_t *scanner)
 {
-    *scanner = cli_calloc(1, sizeof(**scanner));
+    *scanner = calloc(1, sizeof(**scanner));
     return *scanner ? 0 : -1;
 }
 

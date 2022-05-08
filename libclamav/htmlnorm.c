@@ -720,7 +720,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
     tag_args.value    = NULL;
     tag_args.contents = NULL;
     if (dirname) {
-        file_buff_o2 = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
+        file_buff_o2 = (file_buff_t *)malloc(sizeof(file_buff_t));
         if (!file_buff_o2) {
             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_buff_o2\n");
             file_buff_o2 = file_buff_text = NULL;
@@ -737,7 +737,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
             goto done;
         }
 
-        file_buff_text = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
+        file_buff_text = (file_buff_t *)malloc(sizeof(file_buff_t));
         if (!file_buff_text) {
             close(file_buff_o2->fd);
             free(file_buff_o2);
@@ -1671,7 +1671,7 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             free(file_tmp_o1);
                         }
 
-                        file_tmp_o1 = (file_buff_t *)cli_malloc(sizeof(file_buff_t));
+                        file_tmp_o1 = (file_buff_t *)malloc(sizeof(file_buff_t));
                         if (!file_tmp_o1) {
                             cli_errmsg("cli_html_normalise: Unable to allocate memory for file_tmp_o1\n");
                             goto done;

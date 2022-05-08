@@ -291,7 +291,7 @@ static void onas_handle_signals(void)
 
 struct onas_context *onas_init_context(void)
 {
-    struct onas_context *ctx = (struct onas_context *)cli_malloc(sizeof(struct onas_context));
+    struct onas_context *ctx = (struct onas_context *)malloc(sizeof(struct onas_context));
     if (NULL == ctx) {
         return NULL;
     }

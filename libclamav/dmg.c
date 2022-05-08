@@ -279,7 +279,7 @@ int cli_scandmg(cli_ctx *ctx)
                     continue;
                 }
                 /* Have encoded mish block */
-                mish_set = cli_malloc(sizeof(struct dmg_mish_with_stripes));
+                mish_set = malloc(sizeof(struct dmg_mish_with_stripes));
                 if (mish_set == NULL) {
                     ret = CL_EMEM;
                     xmlFree(textValue);

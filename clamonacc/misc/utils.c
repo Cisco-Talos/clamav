@@ -159,7 +159,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
 
     *num_entries = 0;
 
-    opt_list = cli_malloc(sizeof(char *));
+    opt_list = malloc(sizeof(char *));
     if (NULL == opt_list) {
         *err = CL_EMEM;
         return NULL;

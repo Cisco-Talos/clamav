@@ -1354,7 +1354,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
     size_t avail;
     unsigned char *buf;
 
-    buf = cli_malloc(CLI_XZ_OBUF_SIZE);
+    buf = malloc(CLI_XZ_OBUF_SIZE);
     if (buf == NULL) {
         cli_errmsg("cli_scanxz: nomemory for decompress buffer.\n");
         return CL_EMEM;
@@ -2772,7 +2772,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
     /* Skip the CryptFF file header */
     pos = 0x10;
 
-    if ((dest = (unsigned char *)cli_malloc(FILEBUFF)) == NULL) {
+    if ((dest = (unsigned char *)malloc(FILEBUFF)) == NULL) {
         cli_dbgmsg("CryptFF: Can't allocate memory\n");
         return CL_EMEM;
     }

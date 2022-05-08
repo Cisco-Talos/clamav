@@ -140,7 +140,7 @@ static const unsigned char base64Table[256] = {
 message *
 messageCreate(void)
 {
-    message *m = (message *)cli_calloc(1, sizeof(message));
+    message *m = (message *)calloc(1, sizeof(message));
 
     if (m)
         m->mimeType = NOMIME;
@@ -920,9 +920,9 @@ int messageAddLine(message *m, line_t *line)
     }
 
     if (m->body_first == NULL)
-        m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
+        m->body_last = m->body_first = (text *)malloc(sizeof(text));
     else {
-        m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+        m->body_last->t_next = (text *)malloc(sizeof(text));
         m->body_last         = m->body_last->t_next;
     }
 
@@ -982,7 +982,7 @@ int messageAddStr(message *m, const char *data)
     }
 
     if (m->body_first == NULL)
-        m->body_last = m->body_first = (text *)cli_malloc(sizeof(text));
+        m->body_last = m->body_first = (text *)malloc(sizeof(text));
     else {
         if (m->body_last == NULL) {
             cli_errmsg("Internal email parser error: message 'body_last' pointer should not be NULL if 'body_first' is set.\n");
@@ -997,10 +997,10 @@ int messageAddStr(message *m, const char *data)
                     /* don't save two blank lines in succession */
                     return 1;
 
-            m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+            m->body_last->t_next = (text *)malloc(sizeof(text));
             if (m->body_last->t_next == NULL) {
                 messageDedup(m);
-                m->body_last->t_next = (text *)cli_malloc(sizeof(text));
+                m->body_last->t_next = (text *)malloc(sizeof(text));
                 if (m->body_last->t_next == NULL) {
                     cli_errmsg("messageAddStr: out of memory\n");
                     return -1;
@@ -1550,9 +1550,9 @@ messageToText(message *m)
          */
         for (t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
             if (first == NULL)
-                first = last = cli_malloc(sizeof(text));
+                first = last = malloc(sizeof(text));
             else {
-                last->t_next = cli_malloc(sizeof(text));
+                last->t_next = malloc(sizeof(text));
                 last         = last->t_next;
             }
 
@@ -1590,9 +1590,9 @@ messageToText(message *m)
                  */
                 for (t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
                     if (first == NULL)
-                        first = last = cli_malloc(sizeof(text));
+                        first = last = malloc(sizeof(text));
                     else if (last) {
-                        last->t_next = cli_malloc(sizeof(text));
+                        last->t_next = malloc(sizeof(text));
                         last         = last->t_next;
                     }
 
@@ -1665,9 +1665,9 @@ messageToText(message *m)
             }
 
             if (first == NULL)
-                first = last = cli_malloc(sizeof(text));
+                first = last = malloc(sizeof(text));
             else if (last) {
-                last->t_next = cli_malloc(sizeof(text));
+                last->t_next = malloc(sizeof(text));
                 last         = last->t_next;
             }
 
@@ -1703,9 +1703,9 @@ messageToText(message *m)
             memset(data, '\0', sizeof(data));
             if (decode(m, NULL, data, base64, false) && data[0]) {
                 if (first == NULL)
-                    first = last = cli_malloc(sizeof(text));
+                    first = last = malloc(sizeof(text));
                 else if (last) {
-                    last->t_next = cli_malloc(sizeof(text));
+                    last->t_next = malloc(sizeof(text));
                     last         = last->t_next;
                 }
 
@@ -2627,7 +2627,7 @@ push(LINK1 *top, const char *string)
 {
     LINK1 element;
 
-    if ((element = (LINK1)cli_malloc(sizeof(ELEMENT1))) == NULL)
+    if ((element = (LINK1)malloc(sizeof(ELEMENT1))) == NULL)
         return OUT_OF_MEMORY;
     if ((element->d1 = cli_strdup(string)) == NULL) {
         free(element);

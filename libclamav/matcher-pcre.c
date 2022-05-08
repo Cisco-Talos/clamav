@@ -90,7 +90,7 @@ static void pcre_perf_events_init(struct cli_pcre_meta *pm, const char *virname)
     }
 
     /* set the name */
-    pm->statname = (char *)cli_calloc(1, namelen);
+    pm->statname = (char *)calloc(1, namelen);
     if (!pm->statname) {
         return;
     }
@@ -719,7 +719,7 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                 } else {
                     /* for raw match data - sigtool only */
                     if (res) {
-                        newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                        newres = (struct cli_ac_result *)calloc(1, sizeof(struct cli_ac_result));
                         if (!newres) {
                             cli_errmsg("cli_pcre_scanbuff: Can't allocate memory for new result\n");
                             ret = CL_EMEM;

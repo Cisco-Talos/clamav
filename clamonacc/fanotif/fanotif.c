@@ -234,7 +234,7 @@ int onas_fan_eloop(struct onas_context **ctx)
                 if (scan) {
                     struct onas_scan_event *event_data;
 
-                    event_data = cli_calloc(1, sizeof(struct onas_scan_event));
+                    event_data = calloc(1, sizeof(struct onas_scan_event));
                     if (NULL == event_data) {
                         close(fmd->fd);
                         logg(LOGG_ERROR, "ClamFanotif: could not allocate memory for event data struct\n");
@@ -247,7 +247,7 @@ int onas_fan_eloop(struct onas_context **ctx)
 
                     /* fanotify specific stuffs */
                     event_data->bool_opts |= ONAS_SCTH_B_FANOTIFY;
-                    event_data->fmd = cli_malloc(sizeof(struct fanotify_event_metadata));
+                    event_data->fmd = malloc(sizeof(struct fanotify_event_metadata));
                     if (NULL == event_data->fmd) {
                         close(fmd->fd);
                         free(event_data);

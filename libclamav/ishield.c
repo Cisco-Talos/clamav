@@ -746,7 +746,7 @@ static cl_error_t is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint
     int success    = 0;
     fmap_t *map    = ctx->fmap;
 
-    if (!(outbuf = cli_malloc(IS_CABBUFSZ))) {
+    if (!(outbuf = malloc(IS_CABBUFSZ))) {
         cli_errmsg("is_extract_cab: Unable to allocate memory for outbuf\n");
         return CL_EMEM;
     }

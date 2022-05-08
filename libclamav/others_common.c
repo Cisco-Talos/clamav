@@ -476,7 +476,7 @@ int cli_filecopy(const char *src, const char *dest)
         return -1;
     }
 
-    if (!(buffer = cli_malloc(FILEBUFF))) {
+    if (!(buffer = malloc(FILEBUFF))) {
         close(s);
         close(d);
         return -1;
@@ -856,7 +856,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             }
 
             if (stated && (flags & CLI_FTW_NEED_STAT)) {
-                statbufp = cli_malloc(sizeof(*statbufp));
+                statbufp = malloc(sizeof(*statbufp));
                 if (!statbufp) {
                     ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
                     free(fname);
