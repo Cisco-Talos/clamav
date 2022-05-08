@@ -453,7 +453,7 @@ struct cl_engine *cl_engine_new(void)
     struct cl_engine *new;
     cli_intel_t *intel;
 
-    new = (struct cl_engine *)cli_calloc(1, sizeof(struct cl_engine));
+    new = (struct cl_engine *)calloc(1, sizeof(struct cl_engine));
     if (!new) {
         cli_errmsg("cl_engine_new: Can't allocate memory for cl_engine\n");
         return NULL;
@@ -1814,7 +1814,7 @@ bitset_t *cli_bitset_init(void)
 {
     bitset_t *bs;
 
-    bs = cli_malloc(sizeof(bitset_t));
+    bs = malloc(sizeof(bitset_t));
     if (!bs) {
         cli_errmsg("cli_bitset_init: Unable to allocate memory for bs %llu\n", (long long unsigned)sizeof(bitset_t));
         return NULL;

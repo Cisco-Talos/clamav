@@ -229,7 +229,7 @@ bool crtmgr_add(crtmgr *m, cli_crt *x509)
         }
     }
 
-    i = cli_malloc(sizeof(*i));
+    i = malloc(sizeof(*i));
     if (i == NULL) {
         goto done;
     }

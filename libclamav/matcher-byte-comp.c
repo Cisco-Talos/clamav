@@ -496,7 +496,7 @@ cl_error_t cli_bcomp_scanbuf(const unsigned char *buffer, size_t buffer_length, 
         } else {
             /* mdata isn't populated in sigtool so run the raw matcher stuffs */
             if (res) {
-                newres = (struct cli_ac_result *)cli_calloc(1, sizeof(struct cli_ac_result));
+                newres = (struct cli_ac_result *)calloc(1, sizeof(struct cli_ac_result));
                 if (!newres) {
                     cli_errmsg("cli_bcomp_scanbuf: can't allocate memory for new result\n");
                     ret = CL_EMEM;

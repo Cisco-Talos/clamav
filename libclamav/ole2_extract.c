@@ -196,8 +196,8 @@ int ole2_list_push(ole2_list_t *list, uint32_t val)
     ole2_list_node_t *new_node = NULL;
     int status                 = CL_EMEM;
 
-    CLI_MALLOC(new_node, sizeof(ole2_list_node_t),
-               cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
+    MALLOC(new_node, sizeof(ole2_list_node_t),
+           cli_dbgmsg("OLE2: could not allocate new node for worklist!\n"));
 
     new_node->Val  = val;
     new_node->Next = list->Head;
@@ -1316,7 +1316,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
 #if HAVE_JSON
                         cli_jsonstr(ctx->wrkproperty, "FileType", "CL_TYPE_HWP5");
 #endif
-                        CLI_CALLOC(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
+                        CALLOC(hwp_new, 1, sizeof(hwp5_header_t), status = CL_EMEM);
 
                         /*
                          * Copy the header information into our header struct.

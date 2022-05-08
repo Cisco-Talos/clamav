@@ -66,9 +66,9 @@ int mpool_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 
 typedef void mpool_t;
 
-#define MPOOL_MALLOC(a, b) cli_malloc(b)
+#define MPOOL_MALLOC(a, b) malloc(b)
 #define MPOOL_FREE(a, b) free(b)
-#define MPOOL_CALLOC(a, b, c) cli_calloc(b, c)
+#define MPOOL_CALLOC(a, b, c) calloc(b, c)
 #define MPOOL_REALLOC(a, b, c) cli_realloc(b, c)
 #define MPOOL_REALLOC2(a, b, c) cli_realloc2(b, c)
 #define CLI_MPOOL_HEX2STR(mpool, src) cli_hex2str(src)

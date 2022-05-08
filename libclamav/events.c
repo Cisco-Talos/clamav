@@ -50,7 +50,7 @@ struct cli_events {
 
 cli_events_t *cli_events_new(unsigned max_event)
 {
-    struct cli_events *ev = cli_calloc(1, sizeof(*ev));
+    struct cli_events *ev = calloc(1, sizeof(*ev));
     if (!ev)
         return NULL;
     ev->max    = max_event;

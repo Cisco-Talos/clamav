@@ -494,7 +494,7 @@ static int bfs_enqueue(struct bfs_list **bfs, struct bfs_list **last, struct cli
 {
     struct bfs_list *new;
 
-    new = (struct bfs_list *)cli_malloc(sizeof(struct bfs_list));
+    new = (struct bfs_list *)malloc(sizeof(struct bfs_list));
     if (!new) {
         cli_errmsg("bfs_enqueue: Can't allocate memory for bfs_list\n");
         return CL_EMEM;
@@ -1637,7 +1637,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
         return CL_SUCCESS;
     }
 
-    if (!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
+    if (!(tnode = calloc(1, sizeof(struct cli_matched_type)))) {
         cli_errmsg("cli_ac_addtype: Can't allocate memory for new type node\n");
         return CL_EMEM;
     }
@@ -1714,7 +1714,7 @@ cl_error_t lsig_sub_matched(const struct cli_matcher *root, struct cli_ac_data *
             }
             ss_matches = ls_matches->matches[subsig_id];
             if (ss_matches == NULL) { /*  allocate cli_subsig_matches */
-                ss_matches = ls_matches->matches[subsig_id] = cli_malloc(sizeof(struct cli_subsig_matches));
+                ss_matches = ls_matches->matches[subsig_id] = malloc(sizeof(struct cli_subsig_matches));
                 if (ss_matches == NULL) {
                     cli_errmsg("lsig_sub_matched: cli_malloc failed for cli_subsig_matches struct\n");
                     return CL_EMEM;

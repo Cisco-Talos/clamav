@@ -399,7 +399,7 @@ int unaspack(uint8_t *image, unsigned int size, struct cli_exe_section *sections
 
     blocks = image + ep + blocks_offset;
 
-    if (!(wrkbuf = cli_calloc(0x1800, sizeof(uint8_t)))) {
+    if (!(wrkbuf = calloc(0x1800, sizeof(uint8_t)))) {
         cli_dbgmsg("Aspack: Unable to allocate dictionary\n");
         return 0;
     }

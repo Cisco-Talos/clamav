@@ -397,13 +397,13 @@ static void do_phishing_test(const struct rtest *rtest)
     ck_assert_msg(!!realurl, "cli_strdup");
 
     hrefs.count = 1;
-    hrefs.value = cli_malloc(sizeof(*hrefs.value));
-    ck_assert_msg(!!hrefs.value, "cli_malloc");
+    hrefs.value = malloc(sizeof(*hrefs.value));
+    ck_assert_msg(!!hrefs.value, "malloc");
     hrefs.value[0] = (unsigned char *)realurl;
-    hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
-    ck_assert_msg(!!hrefs.contents, "cli_malloc");
-    hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
-    ck_assert_msg(!!hrefs.tag, "cli_malloc");
+    hrefs.contents = malloc(sizeof(*hrefs.contents));
+    ck_assert_msg(!!hrefs.contents, "malloc");
+    hrefs.tag = malloc(sizeof(*hrefs.tag));
+    ck_assert_msg(!!hrefs.tag, "malloc");
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
@@ -484,13 +484,13 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     ck_assert_msg(!!realurl, "cli_strdup");
 
     hrefs.count = 1;
-    hrefs.value = cli_malloc(sizeof(*hrefs.value));
-    ck_assert_msg(!!hrefs.value, "cli_malloc");
+    hrefs.value = malloc(sizeof(*hrefs.value));
+    ck_assert_msg(!!hrefs.value, "malloc");
     hrefs.value[0] = (unsigned char *)realurl;
-    hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
-    ck_assert_msg(!!hrefs.contents, "cli_malloc");
-    hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
-    ck_assert_msg(!!hrefs.tag, "cli_malloc");
+    hrefs.contents = malloc(sizeof(*hrefs.contents));
+    ck_assert_msg(!!hrefs.contents, "malloc");
+    hrefs.tag = malloc(sizeof(*hrefs.tag));
+    ck_assert_msg(!!hrefs.tag, "malloc");
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 

@@ -157,7 +157,7 @@ static iconv_t iconv_open(const char* tocode, const char* fromcode)
 {
     UNUSEDPARAM(tocode);
 
-    iconv_t iconv = cli_malloc(sizeof(*iconv));
+    iconv_t iconv = malloc(sizeof(*iconv));
     if (!iconv)
         return NULL;
 
@@ -584,7 +584,7 @@ static inline struct iconv_cache* cache_get_tls_instance(void)
 {
     struct iconv_cache* cache = pthread_getspecific(iconv_pool_tls_key);
     if (!cache) {
-        cache = cli_calloc(1, sizeof(*cache));
+        cache = calloc(1, sizeof(*cache));
         if (!cache) {
             cli_dbgmsg(MODULE_NAME "!Out of memory allocating TLS iconv instance\n");
             return NULL;
@@ -608,7 +608,7 @@ static void iconv_cache_cleanup_main(void)
 static inline void init_iconv_pool_ifneeded()
 {
     if (!iconv_global_inited) {
-        global_iconv_cache = cli_calloc(1, sizeof(*global_iconv_cache));
+        global_iconv_cache = calloc(1, sizeof(*global_iconv_cache));
         if (global_iconv_cache) {
             iconv_cache_init(global_iconv_cache);
             atexit(iconv_cache_cleanup_main);

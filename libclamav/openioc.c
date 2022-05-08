@@ -100,7 +100,7 @@ static int openioc_parse_content(xmlTextReaderPtr reader, struct openioc_hash **
     if (xmlTextReaderRead(reader) == 1 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
         xmlval = xmlTextReaderConstValue(reader);
         if (xmlval) {
-            elem = cli_calloc(1, sizeof(struct openioc_hash));
+            elem = calloc(1, sizeof(struct openioc_hash));
             if (NULL == elem) {
                 cli_dbgmsg("openioc_parse: calloc fails for openioc_hash.\n");
                 return CL_EMEM;

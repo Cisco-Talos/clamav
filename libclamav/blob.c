@@ -65,13 +65,13 @@ blob *
 blobCreate(void)
 {
 #ifdef CL_DEBUG
-    blob *b = (blob *)cli_calloc(1, sizeof(blob));
+    blob *b = (blob *)calloc(1, sizeof(blob));
     if (b)
         b->magic = BLOBCLASS;
     cli_dbgmsg("blobCreate\n");
     return b;
 #else
-    return (blob *)cli_calloc(1, sizeof(blob));
+    return (blob *)calloc(1, sizeof(blob));
 #endif
 }
 
@@ -404,13 +404,13 @@ fileblob *
 fileblobCreate(void)
 {
 #ifdef CL_DEBUG
-    fileblob *fb = (fileblob *)cli_calloc(1, sizeof(fileblob));
+    fileblob *fb = (fileblob *)calloc(1, sizeof(fileblob));
     if (fb)
         fb->b.magic = BLOBCLASS;
     cli_dbgmsg("blobCreate\n");
     return fb;
 #else
-    return (fileblob *)cli_calloc(1, sizeof(fileblob));
+    return (fileblob *)calloc(1, sizeof(fileblob));
 #endif
 }
 

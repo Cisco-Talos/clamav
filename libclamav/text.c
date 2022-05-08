@@ -140,9 +140,9 @@ textCopy(const text *t_head)
 
     while (t_head) {
         if (first == NULL)
-            last = first = (text *)cli_malloc(sizeof(text));
+            last = first = (text *)malloc(sizeof(text));
         else {
-            last->t_next = (text *)cli_malloc(sizeof(text));
+            last->t_next = (text *)malloc(sizeof(text));
             last         = last->t_next;
         }
 
@@ -198,7 +198,7 @@ textAdd(text *t_head, const text *t)
     cli_dbgmsg("textAdd: count = %d\n", count);
 
     while (t) {
-        t_head->t_next = (text *)cli_malloc(sizeof(text));
+        t_head->t_next = (text *)malloc(sizeof(text));
         t_head         = t_head->t_next;
 
         assert(t_head != NULL);
@@ -253,7 +253,7 @@ textMove(text *t_head, text *t)
             cli_errmsg("textMove fails sanity check\n");
             return NULL;
         }
-        t_head = (text *)cli_malloc(sizeof(text));
+        t_head = (text *)malloc(sizeof(text));
         if (t_head == NULL) {
             cli_errmsg("textMove: Unable to allocate memory for head\n");
             return NULL;
@@ -277,7 +277,7 @@ textMove(text *t_head, text *t)
      * Move the first line manually so that the caller is left clean but
      * empty, the rest is moved by a simple pointer reassignment
      */
-    t_head->t_next = (text *)cli_malloc(sizeof(text));
+    t_head->t_next = (text *)malloc(sizeof(text));
     if (t_head->t_next == NULL) {
         cli_errmsg("textMove: Unable to allocate memory for head->next\n");
         return NULL;

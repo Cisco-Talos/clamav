@@ -69,7 +69,7 @@ int windowBits;
     struct inflate_state FAR *state;
 
     if (strm == Z_NULL) return Z_STREAM_ERROR;
-    state = (struct inflate_state FAR *)cli_calloc(1, sizeof(struct inflate_state));
+    state = (struct inflate_state FAR *)calloc(1, sizeof(struct inflate_state));
     if (state == Z_NULL) return Z_MEM_ERROR;
     Tracev((stderr, "inflate: allocated\n"));
     strm->state = (struct internal_state FAR *)state;

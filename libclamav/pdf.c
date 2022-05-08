@@ -4351,7 +4351,7 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.author = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.author = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.author))
             return;
 
@@ -4381,7 +4381,7 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.creator = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.creator = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creator))
             return;
 
@@ -4411,7 +4411,7 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.modificationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.modificationdate = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.modificationdate))
             return;
 
@@ -4441,7 +4441,7 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.creationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.creationdate = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creationdate))
             return;
 
@@ -4471,7 +4471,7 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.producer = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.producer = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.producer))
             return;
 
@@ -4501,7 +4501,7 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.title = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.title = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.title))
             return;
 
@@ -4531,7 +4531,7 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.keywords = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.keywords = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.keywords))
             return;
 
@@ -4561,7 +4561,7 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         const char *objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                                              : (const char *)(obj->start + pdf->map);
 
-        pdf->stats.subject = cli_calloc(1, sizeof(struct pdf_stats_entry));
+        pdf->stats.subject = calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.subject))
             return;
 

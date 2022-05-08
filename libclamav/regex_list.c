@@ -774,9 +774,9 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         goto done;
     }
 
-    CLI_MALLOC(regex, sizeof(*regex),
-               cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
-               ret = CL_EMEM);
+    MALLOC(regex, sizeof(*regex),
+           cli_errmsg("add_pattern_suffix: Unable to allocate memory for regex\n");
+           ret = CL_EMEM);
 
     if (NULL == iregex->pattern) {
         regex->pattern = NULL;

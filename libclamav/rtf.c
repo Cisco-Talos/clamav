@@ -218,7 +218,7 @@ static int load_actions(table_t* t)
 
 static int rtf_object_begin(struct rtf_state* state, cli_ctx* ctx, const char* tmpdir)
 {
-    struct rtf_object_data* data = cli_malloc(sizeof(*data));
+    struct rtf_object_data* data = malloc(sizeof(*data));
     if (!data) {
         cli_errmsg("rtf_object_begin: Unable to allocate memory for object data\n");
         return CL_EMEM;
@@ -331,7 +331,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                     data->bread = 0;
                     if (data->desc_len > 64) {
                         cli_dbgmsg("Description length too big (%lu), showing only 64 bytes of it\n", (unsigned long int)data->desc_len);
-                        data->desc_name = cli_malloc(65);
+                        data->desc_name = malloc(65);
                     } else
                         data->desc_name = cli_malloc(data->desc_len + 1);
                     if (!data->desc_name) {

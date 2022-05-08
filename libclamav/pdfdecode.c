@@ -135,7 +135,7 @@ size_t pdf_decodestream(
         pdf_print_dict(params, 0);
 #endif
 
-    token = cli_malloc(sizeof(struct pdf_token));
+    token = malloc(sizeof(struct pdf_token));
     if (!token) {
         *status = CL_EMEM;
         goto done;
@@ -511,7 +511,7 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
 
     capacity = INFLATE_CHUNK_SIZE;
 
-    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
+    if (!(decoded = (uint8_t *)malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
@@ -648,7 +648,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
 
     capacity = INFLATE_CHUNK_SIZE;
 
-    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
+    if (!(decoded = (uint8_t *)malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
@@ -930,7 +930,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
 
     capacity = INFLATE_CHUNK_SIZE;
 
-    if (!(decoded = (uint8_t *)cli_malloc(capacity))) {
+    if (!(decoded = (uint8_t *)malloc(capacity))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }

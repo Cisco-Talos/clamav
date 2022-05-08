@@ -407,7 +407,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
         return NULL;
     }
 
-    if (!(cvd = (struct cl_cvd *)cli_malloc(sizeof(struct cl_cvd)))) {
+    if (!(cvd = (struct cl_cvd *)malloc(sizeof(struct cl_cvd)))) {
         cli_errmsg("cl_cvdparse: Can't allocate memory for cvd\n");
         return NULL;
     }

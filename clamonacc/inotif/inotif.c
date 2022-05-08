@@ -814,7 +814,7 @@ static void onas_ddd_handle_extra_scanning(struct onas_context *ctx, const char 
 
     struct onas_scan_event *event_data;
 
-    event_data = (struct onas_scan_event *)cli_calloc(1, sizeof(struct onas_scan_event));
+    event_data = (struct onas_scan_event *)calloc(1, sizeof(struct onas_scan_event));
     if (NULL == event_data) {
         logg(LOGG_ERROR, "ClamInotif: could not allocate memory for event data struct\n");
     }

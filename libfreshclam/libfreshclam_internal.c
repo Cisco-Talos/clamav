@@ -969,8 +969,8 @@ static fc_error_t remote_cvdhead(
         logg(LOGG_ERROR, "remote_cvdhead: Failed to set CURLOPT_RANGE CVD_HEADER_SIZE for curl session.\n");
     }
 
-    receivedData.buffer = cli_malloc(1); /* will be grown as needed by the realloc above */
-    receivedData.size   = 0;             /* no data at this point */
+    receivedData.buffer = malloc(1); /* will be grown as needed by the realloc above */
+    receivedData.size   = 0;         /* no data at this point */
 
     /* Send all data to this function  */
     if (CURLE_OK != curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback)) {

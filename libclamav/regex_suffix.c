@@ -76,7 +76,7 @@ static struct node *make_node(enum node_type type, struct node *left, struct nod
         if (right == NULL)
             return left;
     }
-    n = cli_malloc(sizeof(*n));
+    n = malloc(sizeof(*n));
     if (!n) {
         cli_errmsg("make_node: Unable to allocate memory for new node\n");
         return NULL;
@@ -99,7 +99,7 @@ static struct node *dup_node(struct node *p)
 
     if (!p)
         return NULL;
-    d = cli_malloc(sizeof(*d));
+    d = malloc(sizeof(*d));
     if (!d) {
         cli_errmsg("dup_node: Unable to allocate memory for duplicate node\n");
         return NULL;
@@ -111,7 +111,7 @@ static struct node *dup_node(struct node *p)
             d->u.leaf_char = p->u.leaf_char;
             break;
         case leaf_class:
-            d->u.leaf_class_bitmap = cli_malloc(32);
+            d->u.leaf_class_bitmap = malloc(32);
             if (!d->u.leaf_class_bitmap) {
                 cli_errmsg("make_node: Unable to allocate memory for leaf class\n");
                 free(d);
@@ -140,7 +140,7 @@ static struct node *make_charclass(uint8_t *bitmap)
         return NULL;
     }
 
-    v = cli_malloc(sizeof(*v));
+    v = malloc(sizeof(*v));
     if (!v) {
         cli_errmsg("make_charclass: Unable to allocate memory for character class\n");
         return NULL;
@@ -153,7 +153,7 @@ static struct node *make_charclass(uint8_t *bitmap)
 
 static struct node *make_leaf(char c)
 {
-    struct node *v = cli_malloc(sizeof(*v));
+    struct node *v = malloc(sizeof(*v));
     if (!v)
         return NULL;
     v->type        = leaf;
@@ -207,8 +207,8 @@ static uint8_t *parse_char_class(const uint8_t *pat, size_t patSize, size_t *pos
     int hasprev               = 0;
     uint8_t *bitmap           = NULL;
 
-    CLI_MALLOC(bitmap, 32,
-               cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
+    MALLOC(bitmap, 32,
+           cli_errmsg("parse_char_class: Unable to allocate memory for bitmap\n"));
 
     if (pat[*pos] == '^') {
         memset(bitmap, 0xFF, 32); /*match chars not in brackets*/

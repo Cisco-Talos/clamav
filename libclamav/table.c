@@ -41,7 +41,7 @@
 struct table *
 tableCreate(void)
 {
-    return (struct table *)cli_calloc(1, sizeof(struct table));
+    return (struct table *)calloc(1, sizeof(struct table));
 }
 
 void tableDestroy(table_t *table)
@@ -78,7 +78,7 @@ int tableInsert(table_t *table, const char *key, int value)
     assert(value != -1); /* that would confuse us */
 
     if (table->tableHead == NULL)
-        table->tableLast = table->tableHead = (tableEntry *)cli_malloc(sizeof(tableEntry));
+        table->tableLast = table->tableHead = (tableEntry *)malloc(sizeof(tableEntry));
     else {
         /*
          * Re-use deleted items
@@ -100,7 +100,7 @@ int tableInsert(table_t *table, const char *key, int value)
         }
 
         table->tableLast = table->tableLast->next =
-            (tableEntry *)cli_malloc(sizeof(tableEntry));
+            (tableEntry *)malloc(sizeof(tableEntry));
     }
 
     if (table->tableLast == NULL) {

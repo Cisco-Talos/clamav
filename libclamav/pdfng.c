@@ -802,7 +802,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     if (end[0] != '>' || end[1] != '>')
         return NULL;
 
-    res = cli_calloc(1, sizeof(struct pdf_dict));
+    res = calloc(1, sizeof(struct pdf_dict));
     if (!(res))
         return NULL;
 
@@ -959,7 +959,7 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
         }
 
         if (!(res->nodes)) {
-            res->nodes = res->tail = node = cli_calloc(1, sizeof(struct pdf_dict_node));
+            res->nodes = res->tail = node = calloc(1, sizeof(struct pdf_dict_node));
             if (!(node)) {
                 free(key);
                 if (dict)
@@ -1078,7 +1078,7 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     if (*end != ']')
         return NULL;
 
-    res = cli_calloc(1, sizeof(struct pdf_array));
+    res = calloc(1, sizeof(struct pdf_array));
     if (!(res))
         return NULL;
 

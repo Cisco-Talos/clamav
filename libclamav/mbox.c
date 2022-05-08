@@ -624,7 +624,7 @@ appendReadStruct(ReadStruct *rs, const char *const buffer)
         strncpy(&(rs->buffer[rs->bufferLen]), buffer, part);
         rs->bufferLen += part;
 
-        CLI_CALLOC(next, 1, sizeof(ReadStruct));
+        CALLOC(next, 1, sizeof(ReadStruct));
 
         rs->next = next;
         strcpy(next->buffer, &(buffer[part]));
@@ -654,7 +654,7 @@ getMallocedBufferFromList(const ReadStruct *head)
         rs = rs->next;
     }
 
-    MALLOC(working, bufferLen);
+    CLI_MALLOC(working, bufferLen);
 
     rs        = head;
     bufferLen = 0;
@@ -844,7 +844,7 @@ parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *first
     if (ret == NULL)
         return NULL;
 
-    CLI_CALLOC(head, 1, sizeof(ReadStruct));
+    CALLOC(head, 1, sizeof(ReadStruct));
     curr = head;
 
     strncpy(buffer, firstLine, sizeof(buffer) - 1);

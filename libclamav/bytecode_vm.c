@@ -171,7 +171,7 @@ static always_inline void *cli_stack_alloc(struct stack *stack, unsigned bytes)
         return NULL;
     }
     /* not enough room here, allocate new chunk */
-    chunk = cli_malloc(sizeof(*stack->chunk));
+    chunk = malloc(sizeof(*stack->chunk));
     if (!chunk) {
         cli_warnmsg("cli_stack_alloc: Unable to allocate memory for stack-chunk: bytes: %zu!\n", sizeof(*stack->chunk));
         return NULL;

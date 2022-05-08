@@ -2425,7 +2425,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 {
     vba_project_t *ret;
 
-    ret = (vba_project_t *)cli_calloc(1, sizeof(struct vba_project_tag));
+    ret = (vba_project_t *)calloc(1, sizeof(struct vba_project_tag));
 
     if (ret == NULL) {
         cli_errmsg("create_vba_project: Unable to allocate memory for vba project structure\n");

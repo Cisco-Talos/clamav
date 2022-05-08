@@ -243,7 +243,7 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         goto done;
     }
 
-    duplicate_map = cli_malloc(sizeof(cl_fmap_t));
+    duplicate_map = malloc(sizeof(cl_fmap_t));
     if (!duplicate_map) {
         cli_warnmsg("fmap_duplicate: map allocation failed\n");
         goto done;
@@ -375,7 +375,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     bitmap_size = pages * sizeof(uint64_t);
     mapsz       = pages * pgsz;
 
-    m = cli_calloc(1, sizeof(fmap_t));
+    m = calloc(1, sizeof(fmap_t));
     if (!m) {
         cli_warnmsg("fmap: map header allocation failed\n");
         goto done;
@@ -844,7 +844,7 @@ fmap_t *fmap_open_memory(const void *start, size_t len, const char *name)
     cl_error_t status = CL_ERROR;
 
     int pgsz     = cli_getpagesize();
-    cl_fmap_t *m = cli_calloc(1, sizeof(*m));
+    cl_fmap_t *m = calloc(1, sizeof(*m));
     if (!m) {
         cli_warnmsg("fmap: map allocation failed\n");
         goto done;

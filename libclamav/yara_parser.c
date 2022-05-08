@@ -874,7 +874,7 @@ YR_STRING* yr_parser_reduce_string_declaration(
 
         return meta;
 #if 0 // meta w.i.p.
-  meta = cli_calloc(1, sizeof(YR_META));
+  meta = calloc(1, sizeof(YR_META));
   if (meta == NULL) {
       cli_errmsg("yara_parser: no mem for YR_META.\n");
       compiler->last_result = CL_EMEM;

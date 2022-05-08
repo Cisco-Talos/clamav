@@ -898,7 +898,7 @@ int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t ba
         }
         loc_ds = PESALIGN(loc_ds, 0x1000);
 
-        section = cli_calloc(1, sizeof(struct cli_exe_section));
+        section = calloc(1, sizeof(struct cli_exe_section));
         if (!section) {
             cli_dbgmsg("MEW: Out of memory\n");
             return -1;

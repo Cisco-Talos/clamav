@@ -160,7 +160,7 @@ int lzwInit(lzw_streamp strm)
     struct lzw_internal_state *state;
     hcode_t code;
 
-    state = cli_malloc(sizeof(struct lzw_internal_state));
+    state = malloc(sizeof(struct lzw_internal_state));
     if (state == NULL) {
         strm->msg = "failed to allocate state";
         return LZW_MEM_ERROR;

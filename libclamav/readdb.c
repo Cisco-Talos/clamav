@@ -1256,7 +1256,7 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
     root = engine->root[0];
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loaddb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -1331,7 +1331,7 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
         return CL_EMEM;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadidb: Can't allocate memory for buffer_cpy\n");
             MPOOL_FREE(engine->mempool, matcher);
             return CL_EMEM;
@@ -1607,7 +1607,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadndb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -2254,7 +2254,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
         return ret;
 
     if (engine->ignored) {
-        if (!(buffer_cpy = cli_malloc(sizeof(buffer)))) {
+        if (!(buffer_cpy = malloc(sizeof(buffer)))) {
             cli_errmsg("cli_loadldb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -2837,7 +2837,7 @@ static int cli_loadhash(FILE *fs, struct cl_engine *engine, unsigned int *signo,
     }
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadhash: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -2965,7 +2965,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
     UNUSEDPARAM(dbname);
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadmd: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -3119,7 +3119,7 @@ static int cli_loadcdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     struct cli_cdb *new;
 
     if (engine->ignored)
-        if (!(buffer_cpy = cli_malloc(FILEBUFF))) {
+        if (!(buffer_cpy = malloc(FILEBUFF))) {
             cli_errmsg("cli_loadcdb: Can't allocate memory for buffer_cpy\n");
             return CL_EMEM;
         }
@@ -3741,7 +3741,7 @@ static int ytable_add_string(struct cli_ytable *ytable, const char *hexsig)
     if (!ytable || !hexsig)
         return CL_ENULLARG;
 
-    new = cli_calloc(1, sizeof(struct cli_ytable_entry));
+    new = calloc(1, sizeof(struct cli_ytable_entry));
     if (!new) {
         cli_yaramsg("ytable_add_string: out of memory for new ytable entry\n");
         return CL_EMEM;
@@ -4354,7 +4354,7 @@ struct _yara_global {
 cl_error_t cli_yara_init(struct cl_engine *engine)
 {
     /* Initialize YARA */
-    engine->yara_global = cli_calloc(1, sizeof(struct _yara_global));
+    engine->yara_global = calloc(1, sizeof(struct _yara_global));
     if (NULL == engine->yara_global) {
         cli_errmsg("cli_yara_init: failed to create YARA global\n");
         return CL_EMEM;
