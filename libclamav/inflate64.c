@@ -181,7 +181,7 @@ unsigned out;
 
     /* if it hasn't been done already, allocate space for the window */
     if (state->window == Z_NULL) {
-        state->window = (unsigned char FAR *)cli_calloc(1U << state->wbits, sizeof(unsigned char));
+        state->window = (unsigned char FAR *)cli_max_calloc(1U << state->wbits, sizeof(unsigned char));
         if (state->window == Z_NULL) return 1;
     }
 

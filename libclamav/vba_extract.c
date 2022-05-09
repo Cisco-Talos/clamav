@@ -109,7 +109,7 @@ get_unicode_name(const char *name, int size, int big_endian)
     if ((name == NULL) || (*name == '\0') || (size <= 0))
         return NULL;
 
-    newname = (char *)cli_malloc(size * 7 + 1);
+    newname = (char *)cli_max_malloc(size * 7 + 1);
     if (newname == NULL) {
         cli_errmsg("get_unicode_name: Unable to allocate memory for newname\n");
         return NULL;
@@ -150,7 +150,7 @@ get_unicode_name(const char *name, int size, int big_endian)
     *ret = '\0';
 
     /* Saves a lot of memory */
-    ret = cli_realloc(newname, (ret - newname) + 1);
+    ret = cli_max_realloc(newname, (ret - newname) + 1);
     return ret ? ret : newname;
 }
 
@@ -211,7 +211,7 @@ vba_read_project_strings(int fd, int big_endian)
         }
         /* ensure buffer is large enough */
         if (length > buflen) {
-            unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
+            unsigned char *newbuf = (unsigned char *)cli_max_realloc(buf, length);
             if (newbuf == NULL) {
                 ret = 0;
                 break;
@@ -1539,7 +1539,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
             break;
         }
         if (length > buflen) {
-            unsigned char *newbuf = (unsigned char *)cli_realloc(buf, length);
+            unsigned char *newbuf = (unsigned char *)cli_max_realloc(buf, length);
             if (newbuf == NULL)
                 break;
             buflen = length;
@@ -2034,7 +2034,7 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
         return TRUE;
 
     msize = count * sizeof(struct macro);
-    m     = cli_malloc(msize);
+    m     = cli_max_malloc(msize);
     if (m == NULL) {
         cli_errmsg("word_read_macro_entry: Unable to allocate memory for 'm'\n");
         return FALSE;
@@ -2069,7 +2069,7 @@ word_read_macro_info(int fd, macro_info_t *macro_info)
     cli_dbgmsg("macro count: %d\n", macro_info->count);
     if (macro_info->count == 0)
         return NULL;
-    macro_info->entries = (macro_entry_t *)cli_malloc(sizeof(macro_entry_t) * macro_info->count);
+    macro_info->entries = (macro_entry_t *)cli_max_malloc(sizeof(macro_entry_t) * macro_info->count);
     if (macro_info->entries == NULL) {
         macro_info->count = 0;
         cli_errmsg("word_read_macro_info: Unable to allocate memory for macro_info->entries\n");
@@ -2290,8 +2290,8 @@ cli_wm_readdir(int fd)
     vba_project = create_vba_project(macro_info.count, "", NULL);
 
     if (vba_project) {
-        vba_project->length = (uint32_t *)cli_malloc(sizeof(uint32_t) * macro_info.count);
-        vba_project->key    = (unsigned char *)cli_malloc(sizeof(unsigned char) * macro_info.count);
+        vba_project->length = (uint32_t *)cli_max_malloc(sizeof(uint32_t) * macro_info.count);
+        vba_project->key    = (unsigned char *)cli_max_malloc(sizeof(unsigned char) * macro_info.count);
         if ((vba_project->length != NULL) &&
             (vba_project->key != NULL)) {
             int i;
@@ -2333,7 +2333,7 @@ cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
     if (fd < 0)
         return NULL;
 
-    buff = (unsigned char *)cli_malloc(len);
+    buff = (unsigned char *)cli_max_malloc(len);
     if (buff == NULL) {
         cli_errmsg("cli_wm_decrypt_macro: Unable to allocate memory for buff\n");
         return NULL;
@@ -2432,10 +2432,10 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
         return NULL;
     }
 
-    ret->name   = (char **)cli_malloc(sizeof(char *) * record_count);
-    ret->colls  = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
+    ret->name   = (char **)cli_max_malloc(sizeof(char *) * record_count);
+    ret->colls  = (uint32_t *)cli_max_malloc(sizeof(uint32_t) * record_count);
     ret->dir    = cli_strdup(dir);
-    ret->offset = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
+    ret->offset = (uint32_t *)cli_max_malloc(sizeof(uint32_t) * record_count);
 
     if ((ret->colls == NULL) || (ret->name == NULL) || (ret->dir == NULL) || (ret->offset == NULL)) {
         cli_free_vba_project(ret);

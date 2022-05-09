@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
         cctx.evidence = evidence_new();
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
-        cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
+        cctx.recursion_stack      = cli_max_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
         if (!cctx.recursion_stack) {
             fprintf(stderr, "Out of memory\n");
             exit(3);

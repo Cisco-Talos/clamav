@@ -227,7 +227,7 @@ fc_error_t fc_initialize(fc_config *fcConfig)
 #else
     if (fcConfig->databaseDirectory[strlen(fcConfig->databaseDirectory) - 1] != '/') {
 #endif
-        g_databaseDirectory = cli_malloc(strlen(fcConfig->databaseDirectory) + strlen(PATHSEP) + 1);
+        g_databaseDirectory = cli_max_malloc(strlen(fcConfig->databaseDirectory) + strlen(PATHSEP) + 1);
         snprintf(
             g_databaseDirectory,
             strlen(fcConfig->databaseDirectory) + strlen(PATHSEP) + 1,

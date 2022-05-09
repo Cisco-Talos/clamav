@@ -102,22 +102,6 @@ static void context_safe(struct cli_bc_ctx *ctx)
         ctx->hooks.pedata = &nopedata;
 }
 
-void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
-{
-    cli_bytecode_context_clear(ctx);
-    free(ctx);
-}
-
-int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilename)
-{
-    int fd;
-    *tempfilename = ctx->tempfile;
-    fd            = ctx->outfd;
-    ctx->tempfile = NULL;
-    ctx->outfd    = 0;
-    return fd;
-}
-
 /**
  * @brief Reset bytecode state, so you can run another bytecode with same ctx.
  *
@@ -125,7 +109,7 @@ int cli_bytecode_context_getresult_file(struct cli_bc_ctx *ctx, char **tempfilen
  *
  * @param ctx
  */
-static int bytecode_context_reset(struct cli_bc_ctx *ctx)
+static void bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     unsigned i;
 
@@ -356,12 +340,12 @@ cl_error_t cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct c
     ctx->numParams   = func->numArgs;
     ctx->funcid      = funcid;
     if (func->numArgs) {
-        ctx->operands = cli_malloc(sizeof(*ctx->operands) * func->numArgs);
+        ctx->operands = cli_max_malloc(sizeof(*ctx->operands) * func->numArgs);
         if (!ctx->operands) {
             cli_errmsg("bytecode: error allocating memory for parameters\n");
             return CL_EMEM;
         }
-        ctx->opsizes = cli_malloc(sizeof(*ctx->opsizes) * func->numArgs);
+        ctx->opsizes = cli_max_malloc(sizeof(*ctx->opsizes) * func->numArgs);
         if (!ctx->opsizes) {
             cli_errmsg("bytecode: error allocating memory for opsizes\n");
             return CL_EMEM;
@@ -375,7 +359,7 @@ cl_error_t cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct c
     }
     s += 8; /* return value */
     ctx->bytes  = s;
-    ctx->values = cli_malloc(s);
+    ctx->values = cli_max_malloc(s);
     if (!ctx->values) {
         cli_errmsg("bytecode: error allocating memory for parameters\n");
         return CL_EMEM;
@@ -523,7 +507,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
         uint16_t ty;
         p[*off] |= 0x20;
         /* TODO: unique constants */
-        func->constants = cli_realloc2(func->constants, (func->numConstants + 1) * sizeof(*func->constants));
+        func->constants = cli_max_realloc2(func->constants, (func->numConstants + 1) * sizeof(*func->constants));
         if (!func->constants) {
             *ok = false;
             return MAX_OP;
@@ -581,7 +565,7 @@ static inline char *readData(const unsigned char *p, unsigned *off, unsigned len
         *ok = false;
         return 0;
     }
-    dat = cli_malloc(l);
+    dat = cli_max_malloc(l);
     if (!dat) {
         cli_errmsg("Cannot allocate memory for data\n");
         *ok = false;
@@ -695,12 +679,12 @@ static cl_error_t parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned
         return CL_EMALFDB;
     }
 
-    bc->funcs = cli_calloc(bc->num_func, sizeof(*bc->funcs));
+    bc->funcs = cli_max_calloc(bc->num_func, sizeof(*bc->funcs));
     if (!bc->funcs) {
         cli_errmsg("Out of memory allocating %u functions\n", bc->num_func);
         return CL_EMEM;
     }
-    bc->types = cli_calloc(bc->num_types, sizeof(*bc->types));
+    bc->types = cli_max_calloc(bc->num_types, sizeof(*bc->types));
     if (!bc->types) {
         cli_errmsg("Out of memory allocating %u types\n", bc->num_types);
         return CL_EMEM;
@@ -753,7 +737,7 @@ static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
         *ok = false;
         return;
     }
-    ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes) * ty->numElements);
+    ty->containedTypes = cli_max_malloc(sizeof(*ty->containedTypes) * ty->numElements);
     if (!ty->containedTypes) {
         cli_errmsg("Out of memory allocating %u types\n", ty->numElements);
         *ok = false;
@@ -942,7 +926,7 @@ static cl_error_t parseApis(struct cli_bc *bc, unsigned char *buffer)
         cli_errmsg("Out of memory allocating apis bitset\n");
         return CL_EMEM;
     }
-    apity2ty = cli_calloc(cli_apicall_maxtypes, sizeof(*cli_apicall_types));
+    apity2ty = cli_max_calloc(cli_apicall_maxtypes, sizeof(*cli_apicall_types));
     if (!apity2ty) {
         cli_errmsg("Out of memory allocating apity2ty\n");
         return CL_EMEM;
@@ -1057,12 +1041,12 @@ static cl_error_t parseGlobals(struct cli_bc *bc, unsigned char *buffer)
         return CL_BREAK;
     }
     numglobals  = readNumber(buffer, &offset, len, &ok);
-    bc->globals = cli_calloc(numglobals, sizeof(*bc->globals));
+    bc->globals = cli_max_calloc(numglobals, sizeof(*bc->globals));
     if (!bc->globals) {
         cli_errmsg("bytecode: OOM allocating memory for %u globals\n", numglobals);
         return CL_EMEM;
     }
-    bc->globaltys = cli_calloc(numglobals, sizeof(*bc->globaltys));
+    bc->globaltys = cli_max_calloc(numglobals, sizeof(*bc->globaltys));
     if (!bc->globaltys) {
         cli_errmsg("bytecode: OOM allocating memory for %u global types\n", numglobals);
         return CL_EMEM;
@@ -1076,7 +1060,7 @@ static cl_error_t parseGlobals(struct cli_bc *bc, unsigned char *buffer)
         comp             = type_components(bc, bc->globaltys[i], &ok);
         if (!ok)
             return CL_EMALFDB;
-        bc->globals[i] = cli_malloc(sizeof(*bc->globals[0]) * comp);
+        bc->globals[i] = cli_max_malloc(sizeof(*bc->globals[0]) * comp);
         if (!bc->globals[i])
             return CL_EMEM;
         readConstant(bc, i, comp, buffer, &offset, len, &ok);
@@ -1105,7 +1089,7 @@ static cl_error_t parseMD(struct cli_bc *bc, unsigned char *buffer)
     }
     b = bc->dbgnode_cnt;
     bc->dbgnode_cnt += numMD;
-    bc->dbgnodes = cli_realloc(bc->dbgnodes, bc->dbgnode_cnt * sizeof(*bc->dbgnodes));
+    bc->dbgnodes = cli_max_realloc(bc->dbgnodes, bc->dbgnode_cnt * sizeof(*bc->dbgnodes));
     if (!bc->dbgnodes)
         return CL_EMEM;
     for (i = 0; i < numMD; i++) {
@@ -1117,7 +1101,7 @@ static cl_error_t parseMD(struct cli_bc *bc, unsigned char *buffer)
             return CL_EMALFDB;
         }
         bc->dbgnodes[b + i].numelements = el;
-        bc->dbgnodes[b + i].elements = elts = cli_calloc(el, sizeof(*elts));
+        bc->dbgnodes[b + i].elements = elts = cli_max_calloc(el, sizeof(*elts));
         if (!elts)
             return CL_EMEM;
         for (j = 0; j < el; j++) {
@@ -1177,7 +1161,7 @@ static cl_error_t parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned c
     if (!all_locals) {
         func->types = NULL;
     } else {
-        func->types = cli_calloc(all_locals, sizeof(*func->types));
+        func->types = cli_max_calloc(all_locals, sizeof(*func->types));
         if (!func->types) {
             cli_errmsg("Out of memory allocating function arguments\n");
             return CL_EMEM;
@@ -1205,7 +1189,7 @@ static cl_error_t parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned c
     func->numValues    = func->numArgs + func->numLocals;
     func->insn_idx     = 0;
     func->numConstants = 0;
-    func->allinsts     = cli_calloc(func->numInsts, sizeof(*func->allinsts));
+    func->allinsts     = cli_max_calloc(func->numInsts, sizeof(*func->allinsts));
     if (!func->allinsts) {
         cli_errmsg("Out of memory allocating instructions\n");
         return CL_EMEM;
@@ -1215,7 +1199,7 @@ static cl_error_t parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned c
         cli_errmsg("Invalid basic block count\n");
         return CL_EMALFDB;
     }
-    func->BB = cli_calloc(func->numBB, sizeof(*func->BB));
+    func->BB = cli_max_calloc(func->numBB, sizeof(*func->BB));
     if (!func->BB) {
         cli_errmsg("Out of memory allocating basic blocks\n");
         return CL_EMEM;
@@ -1319,7 +1303,7 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
                     if (!numOp) {
                         inst.u.ops.ops = NULL;
                     } else {
-                        inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+                        inst.u.ops.ops = cli_max_calloc(numOp, sizeof(*inst.u.ops.ops));
                         if (!inst.u.ops.ops) {
                             cli_errmsg("Out of memory allocating operands\n");
                             return CL_EMEM;
@@ -1364,7 +1348,7 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
                 if (ok) {
                     inst.u.ops.numOps  = numOp + 2;
                     inst.u.ops.opsizes = NULL;
-                    inst.u.ops.ops     = cli_calloc(numOp + 2, sizeof(*inst.u.ops.ops));
+                    inst.u.ops.ops     = cli_max_calloc(numOp + 2, sizeof(*inst.u.ops.ops));
                     if (!inst.u.ops.ops) {
                         cli_errmsg("Out of memory allocating operands\n");
                         return CL_EMEM;
@@ -1484,7 +1468,7 @@ static cl_error_t parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigne
             cli_errmsg("invalid number of dbg nodes, expected: %u, got: %u\n", bcfunc->numInsts, num);
             return CL_EMALFDB;
         }
-        bcfunc->dbgnodes = cli_malloc(num * sizeof(*bcfunc->dbgnodes));
+        bcfunc->dbgnodes = cli_max_malloc(num * sizeof(*bcfunc->dbgnodes));
         if (!bcfunc->dbgnodes) {
             cli_errmsg("Unable to allocate memory for dbg nodes: %u\n", num * (uint32_t)sizeof(*bcfunc->dbgnodes));
             return CL_EMEM;
@@ -1675,7 +1659,7 @@ cl_error_t cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio, 
         cli_errmsg("Error at bytecode line %u\n", row);
         return rc;
     }
-    buffer = cli_malloc(linelength);
+    buffer = cli_max_malloc(linelength);
     if (!buffer) {
         cli_errmsg("Out of memory allocating line of length %u\n", linelength);
         return CL_EMEM;
@@ -2151,7 +2135,7 @@ static cl_error_t cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     unsigned bcglobalid = cli_apicall_maxglobal - _FIRST_GLOBAL + 2;
     cl_error_t ret      = CL_SUCCESS;
     bc->numGlobalBytes  = 0;
-    gmap                = cli_malloc(bc->num_globals * sizeof(*gmap));
+    gmap                = cli_max_malloc(bc->num_globals * sizeof(*gmap));
     if (!gmap) {
         cli_errmsg("interpreter: Unable to allocate memory for global map: %zu\n", bc->num_globals * sizeof(*gmap));
         return CL_EMEM;
@@ -2165,7 +2149,7 @@ static cl_error_t cli_bytecode_prepare_interpreter(struct cli_bc *bc)
         bc->numGlobalBytes += typesize(bc, ty);
     }
     if (bc->numGlobalBytes) {
-        bc->globalBytes = cli_calloc(1, bc->numGlobalBytes);
+        bc->globalBytes = cli_max_calloc(1, bc->numGlobalBytes);
         if (!bc->globalBytes) {
             cli_errmsg("interpreter: Unable to allocate memory for globalBytes: %u\n", bc->numGlobalBytes);
             free(gmap);
@@ -2231,7 +2215,7 @@ static cl_error_t cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     for (i = 0; i < bc->num_func && ret == CL_SUCCESS; i++) {
         struct cli_bc_func *bcfunc = &bc->funcs[i];
         unsigned totValues         = bcfunc->numValues + bcfunc->numConstants + bc->num_globals;
-        unsigned *map              = cli_malloc(sizeof(*map) * (size_t)totValues);
+        unsigned *map              = cli_max_malloc(sizeof(*map) * (size_t)totValues);
         if (!map) {
             cli_errmsg("interpreter: Unable to allocate memory for map: %zu\n", sizeof(*map) * (size_t)totValues);
             free(gmap);
@@ -2327,7 +2311,7 @@ static cl_error_t cli_bytecode_prepare_interpreter(struct cli_bc *bc)
                     if (ret != CL_SUCCESS)
                         break;
                     if (inst->u.ops.numOps > 0) {
-                        inst->u.ops.opsizes = cli_malloc(sizeof(*inst->u.ops.opsizes) * inst->u.ops.numOps);
+                        inst->u.ops.opsizes = cli_max_malloc(sizeof(*inst->u.ops.opsizes) * inst->u.ops.numOps);
                         if (!inst->u.ops.opsizes) {
                             cli_errmsg("Out of memory when allocating operand sizes\n");
                             ret = CL_EMEM;
@@ -2423,7 +2407,7 @@ static cl_error_t add_selfcheck(struct cli_all_bc *bcs)
     struct cli_bc_inst *inst;
     struct cli_bc *bc;
 
-    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
+    bcs->all_bcs = cli_max_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs) * (bcs->count + 1));
     if (!bcs->all_bcs) {
         cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
         return CL_EMEM;
@@ -2624,7 +2608,7 @@ static cl_error_t run_builtin_or_loaded(struct cli_all_bc *bcs, uint8_t kind, co
     if (!bc) {
         /* no loaded bytecode found, load the builtin one! */
         struct cli_dbio dbio;
-        bc = cli_calloc(1, sizeof(*bc));
+        bc = cli_max_calloc(1, sizeof(*bc));
         if (!bc) {
             cli_errmsg("Out of memory allocating bytecode\n");
             return CL_EMEM;

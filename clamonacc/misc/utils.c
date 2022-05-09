@@ -206,7 +206,7 @@ char **onas_get_opt_list(const char *fname, int *num_entries, cl_error_t *err)
         }
 
         (*num_entries)++;
-        rlc_ptr = cli_realloc(opt_list, sizeof(char *) * (*num_entries + 1));
+        rlc_ptr = cli_max_realloc(opt_list, sizeof(char *) * (*num_entries + 1));
         if (rlc_ptr) {
             opt_list               = rlc_ptr;
             opt_list[*num_entries] = NULL;

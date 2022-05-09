@@ -539,7 +539,7 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Set up default stats/intel gathering callbacks */
-    intel = cli_calloc(1, sizeof(cli_intel_t));
+    intel = cli_max_calloc(1, sizeof(cli_intel_t));
     if ((intel)) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&(intel->mutex), NULL)) {
@@ -1279,7 +1279,7 @@ char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type)
 
     cl_finish_hash(ctx, digest);
 
-    if (!(hashstr = (char *)cli_calloc(size * 2 + 1, sizeof(char))))
+    if (!(hashstr = (char *)cli_max_calloc(size * 2 + 1, sizeof(char))))
         return NULL;
 
     pt = hashstr;
@@ -1696,7 +1696,7 @@ int cli_rmdirs(const char *name)
         if (strcmp(dent->d_name, "..") == 0)
             continue;
 
-        path = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
+        path = cli_max_malloc(strlen(name) + strlen(dent->d_name) + 2);
 
         if (path == NULL) {
             cli_errmsg("cli_rmdirs: Unable to allocate memory for path %u\n", strlen(name) + strlen(dent->d_name) + 2);
@@ -1742,7 +1742,7 @@ int cli_rmdirs(const char *dirname)
             while ((dent = readdir(dd))) {
                 if (dent->d_ino) {
                     if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-                        path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+                        path = cli_max_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
                         if (!path) {
                             cli_errmsg("cli_rmdirs: Unable to allocate memory for path %llu\n", (long long unsigned)(strlen(dirname) + strlen(dent->d_name) + 2));
                             closedir(dd);
@@ -1820,7 +1820,7 @@ bitset_t *cli_bitset_init(void)
         return NULL;
     }
     bs->length = BITSET_DEFAULT_SIZE;
-    bs->bitset = cli_calloc(BITSET_DEFAULT_SIZE, 1);
+    bs->bitset = cli_max_calloc(BITSET_DEFAULT_SIZE, 1);
     if (!bs->bitset) {
         cli_errmsg("cli_bitset_init: Unable to allocate memory for bs->bitset %u\n", BITSET_DEFAULT_SIZE);
         free(bs);
@@ -1846,7 +1846,7 @@ static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
     unsigned char *new_bitset;
 
     new_length = nearest_power(min_size);
-    new_bitset = (unsigned char *)cli_realloc(bs->bitset, new_length);
+    new_bitset = (unsigned char *)cli_max_realloc(bs->bitset, new_length);
     if (!new_bitset) {
         return NULL;
     }

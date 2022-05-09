@@ -190,7 +190,7 @@ static char *getsistring(fmap_t *map, uint32_t ptr, uint32_t len)
 
     if (!len) return NULL;
     if (len > 400) len = 400;
-    name = cli_malloc(len + 1);
+    name = cli_max_malloc(len + 1);
     if (!name) {
         cli_dbgmsg("SIS: OOM\n");
         return NULL;
@@ -303,7 +303,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
         goto done;
     }
     pos += sis.langs * sizeof(uint16_t);
-    if (!(alangs = cli_malloc(sis.langs * sizeof(char *)))) {
+    if (!(alangs = cli_max_malloc(sis.langs * sizeof(char *)))) {
         cli_dbgmsg("SIS: OOM\n");
         goto done;
     }
@@ -431,7 +431,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                     FREE(install_filepath);
                 }
 
-                if (!(ptrs = cli_malloc(fcount * sizeof(uint32_t) * 3))) {
+                if (!(ptrs = cli_max_malloc(fcount * sizeof(uint32_t) * 3))) {
                     cli_dbgmsg("\tOOM\n");
                     status = CL_EMEM;
                     goto done;
@@ -486,7 +486,7 @@ static cl_error_t real_scansis(cli_ctx *ctx, const char *tmpd)
                                 continue;
                             }
 
-                            if (!(decomp = cli_malloc(olen))) {
+                            if (!(decomp = cli_max_malloc(olen))) {
                                 cli_dbgmsg("\tOOM\n");
                                 goto done;
                             }
@@ -790,7 +790,7 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                             s->sleft = s->smax = 0;
 
                             if (cli_checklimits("sis", ctx, ALIGN4(s->fsize[s->level]), 0, 0) != CL_CLEAN) break;
-                            if (!(src = cli_malloc(ALIGN4(s->fsize[s->level])))) break;
+                            if (!(src = cli_max_malloc(ALIGN4(s->fsize[s->level])))) break;
 
                             len = ALIGN4(s->fsize[s->level]);
                             if ((uint32_t)fmap_readn(s->map, src, s->pos, len) != len) {
@@ -811,7 +811,7 @@ static cl_error_t real_scansis9x(cli_ctx *ctx, const char *tmpd)
                                     break;
                                 }
 
-                                if (!(dst = cli_malloc(uusize))) {
+                                if (!(dst = cli_max_malloc(uusize))) {
                                     cli_dbgmsg("SIS: OOM\n");
                                     free(src);
                                     break;

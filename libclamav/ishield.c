@@ -432,7 +432,7 @@ cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz)
                 }
                 if (i == c.cabcnt) {
                     c.cabcnt++;
-                    if (!(c.cabs = cli_realloc2(c.cabs, sizeof(struct CABARRAY) * c.cabcnt))) {
+                    if (!(c.cabs = cli_max_realloc2(c.cabs, sizeof(struct CABARRAY) * c.cabcnt))) {
                         ret = CL_EMEM;
                         break;
                     }

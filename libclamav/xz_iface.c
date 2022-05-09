@@ -40,7 +40,7 @@ void *__xz_wrap_alloc(void *unused, size_t size)
                    (unsigned long int)size);
         return NULL;
     }
-    return cli_malloc(size);
+    return cli_max_malloc(size);
 }
 void __xz_wrap_free(void *unused, void *freeme)
 {

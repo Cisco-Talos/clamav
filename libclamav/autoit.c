@@ -741,7 +741,7 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             continue;
         }
 
-        if (!(UNP.inputbuf = cli_malloc(UNP.csize))) {
+        if (!(UNP.inputbuf = cli_max_malloc(UNP.csize))) {
             status = CL_EMEM;
             goto done;
         }
@@ -780,7 +780,7 @@ static cl_error_t ea05(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                 continue;
             }
 
-            if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+            if (!(UNP.outputbuf = cli_max_malloc(UNP.usize))) {
                 status = CL_EMEM;
                 goto done;
             }
@@ -1144,7 +1144,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
 
         files++;
 
-        if (!(UNP.inputbuf = cli_malloc(UNP.csize))) {
+        if (!(UNP.inputbuf = cli_max_malloc(UNP.csize))) {
             return CL_EMEM;
         }
 
@@ -1177,7 +1177,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                 continue;
             }
 
-            if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+            if (!(UNP.outputbuf = cli_max_malloc(UNP.usize))) {
                 free(UNP.inputbuf);
                 return CL_EMEM;
             }
@@ -1256,7 +1256,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
             /* From here on, we'll reuse csize to be the size of the
              * output buffer */
             UNP.csize = UNP.usize;
-            if (!(buf = cli_malloc(UNP.csize))) {
+            if (!(buf = cli_max_malloc(UNP.csize))) {
                 free(UNP.outputbuf);
                 return CL_EMEM;
             }
@@ -1294,7 +1294,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + keyword_len + 2 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1333,7 +1333,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + function_len + 2 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1360,7 +1360,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + 12 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1384,7 +1384,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + 20 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1410,7 +1410,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + 40 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1467,7 +1467,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + chars + 3 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += chars + 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1526,7 +1526,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + 4 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }
@@ -1547,7 +1547,7 @@ static int ea06(cli_ctx *ctx, const uint8_t *base, char *tmpd)
                         if (UNP.cur_output + 1 >= UNP.csize) {
                             uint8_t *newout;
                             UNP.csize += 512;
-                            if (!(newout = cli_realloc(buf, UNP.csize))) {
+                            if (!(newout = cli_max_realloc(buf, UNP.csize))) {
                                 UNP.error = 1;
                                 break;
                             }

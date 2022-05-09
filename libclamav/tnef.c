@@ -246,7 +246,7 @@ tnef_message(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t lengt
         case attMSGCLASS:
             if (length <= 0)
                 return -1;
-            string = cli_malloc(length + 1);
+            string = cli_max_malloc(length + 1);
             if (string == NULL) {
                 cli_errmsg("tnef_message: Unable to allocate memory for string\n");
                 return -1;
@@ -296,7 +296,7 @@ tnef_attachment(fmap_t *map, off_t *pos, uint16_t type, uint16_t tag, int32_t le
         case attATTACHTITLE:
             if (length <= 0)
                 return -1;
-            string = cli_malloc(length + 1);
+            string = cli_max_malloc(length + 1);
             if (string == NULL) {
                 cli_errmsg("tnef_attachment: Unable to allocate memory for string\n");
                 return -1;

@@ -42,7 +42,7 @@
 void *cli_pcre_malloc(size_t size, void *ext)
 {
     UNUSEDPARAM(ext);
-    return cli_malloc(size);
+    return cli_max_malloc(size);
 }
 
 void cli_pcre_free(void *ptr, void *ext)
@@ -56,9 +56,9 @@ void cli_pcre_free(void *ptr, void *ext)
 cl_error_t cli_pcre_init_internal()
 {
 #if !USING_PCRE2
-    pcre_malloc       = cli_malloc;
+    pcre_malloc       = cli_max_malloc;
     pcre_free         = free;
-    pcre_stack_malloc = cli_malloc;
+    pcre_stack_malloc = cli_max_malloc;
     pcre_stack_free   = free;
 #endif
 

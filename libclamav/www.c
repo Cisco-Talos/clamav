@@ -173,7 +173,7 @@ char *encode_data(const char *postdata)
     if (bufsz == 0)
         return NULL;
 
-    buf = cli_calloc(1, bufsz + 1);
+    buf = cli_max_calloc(1, bufsz + 1);
     if (!(buf))
         return NULL;
 
@@ -231,7 +231,7 @@ void submit_post(const char *host, const char *port, const char *method, const c
         bufsz += strlen(encoded);
     }
 
-    buf = cli_calloc(1, bufsz);
+    buf = cli_max_calloc(1, bufsz);
     if (!(buf)) {
         if ((encoded))
             free(encoded);

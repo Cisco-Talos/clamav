@@ -490,7 +490,7 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     rc         = cli_regcomp(regex.preg, pattern, REG_EXTENDED);
     if (rc) {
         size_t buflen = cli_regerror(rc, regex.preg, NULL, 0);
-        char *errbuf  = cli_malloc(buflen);
+        char *errbuf  = cli_max_malloc(buflen);
         if (errbuf) {
             cli_regerror(rc, regex.preg, errbuf, buflen);
             cli_errmsg(MODULE "Error compiling regular expression %s: %s\n", pattern, errbuf);

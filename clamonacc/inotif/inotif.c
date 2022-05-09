@@ -105,7 +105,7 @@ static int onas_ddd_init_wdlt(uint64_t nwatches)
 
     if (nwatches <= 0) return CL_EARG;
 
-    wdlt = (char **)cli_calloc(nwatches << 1, sizeof(char *));
+    wdlt = (char **)cli_max_calloc(nwatches << 1, sizeof(char *));
     if (!wdlt) return CL_EMEM;
 
     wdlt_len = nwatches << 1;
@@ -121,7 +121,7 @@ static int onas_ddd_grow_wdlt(void)
 
     char **ptr = NULL;
 
-    ptr = (char **)cli_realloc(wdlt, wdlt_len << 1);
+    ptr = (char **)cli_max_realloc(wdlt, wdlt_len << 1);
     if (ptr) {
         wdlt = ptr;
         memset(&ptr[wdlt_len], 0, sizeof(char *) * (wdlt_len - 1));
@@ -243,7 +243,7 @@ static int onas_ddd_watch_hierarchy(const char *pathname, size_t len, int fd, ui
         curr = curr->next;
 
         size_t size      = len + strlen(curr->dirname) + 2;
-        char *child_path = (char *)cli_malloc(size);
+        char *child_path = (char *)cli_max_malloc(size);
         if (child_path == NULL) {
             logg(LOGG_ERROR, "ClamInotif: out of memory when adding child for %s\n", hnode->pathname);
             return CL_EMEM;
@@ -330,7 +330,7 @@ static int onas_ddd_unwatch_hierarchy(const char *pathname, size_t len, int fd, 
         curr = curr->next;
 
         size_t size      = len + strlen(curr->dirname) + 2;
-        char *child_path = (char *)cli_malloc(size);
+        char *child_path = (char *)cli_max_malloc(size);
         if (child_path == NULL)
             return CL_EMEM;
         if (hnode->pathname[len - 1] == '/')
@@ -679,7 +679,7 @@ void *onas_ddd_th(void *arg)
                 } else {
                     len              = strlen(path);
                     size_t size      = strlen(child) + len + 2;
-                    char *child_path = (char *)cli_malloc(size);
+                    char *child_path = (char *)cli_max_malloc(size);
                     if (child_path == NULL) {
                         logg(LOGG_DEBUG, "ClamInotif: could not allocate space for child path ... aborting\n");
                         return NULL;

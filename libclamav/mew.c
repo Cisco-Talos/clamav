@@ -845,7 +845,7 @@ int unmew11(char *src, uint32_t off, uint32_t ssize, uint32_t dsize, uint32_t ba
                 return -1;
             }
 
-            if (!(newsect = cli_realloc(section, (i + 2) * sizeof(struct cli_exe_section)))) {
+            if (!(newsect = cli_max_realloc(section, (i + 2) * sizeof(struct cli_exe_section)))) {
                 cli_dbgmsg("MEW: Out of memory\n");
                 free(section);
                 return -1;

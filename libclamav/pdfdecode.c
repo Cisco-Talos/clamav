@@ -147,7 +147,7 @@ size_t pdf_decodestream(
 
     token->success = 0;
 
-    token->content = cli_malloc(streamlen);
+    token->content = cli_max_malloc(streamlen);
     if (!token->content) {
         *status = CL_EMEM;
         goto done;
@@ -406,7 +406,7 @@ static cl_error_t filter_ascii85decode(struct pdf_struct *pdf, struct pdf_obj *o
     uint64_t sum = 0;
 
     /* 5:4 decoding ratio, with 1:4 expansion sequences => (4*length)+1 */
-    if (!(dptr = decoded = (uint8_t *)cli_malloc((4 * remaining) + 1))) {
+    if (!(dptr = decoded = (uint8_t *)cli_max_malloc((4 * remaining) + 1))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
@@ -531,7 +531,7 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 if ((rc = cli_checklimits("pdf", pdf->ctx, capacity + INFLATE_CHUNK_SIZE, 0, 0)) != CL_SUCCESS)
                     break;
 
-                if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
+                if (!(temp = cli_max_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
                     break;
@@ -557,7 +557,7 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
                     break;
                 }
 
-                if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
+                if (!(temp = cli_max_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                     cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                     rc = CL_EMEM;
                     break;
@@ -581,7 +581,7 @@ static cl_error_t filter_rldecode(struct pdf_struct *pdf, struct pdf_obj *obj, s
         if (declen == 0) {
             cli_dbgmsg("cli_pdf: empty stream after inflation completed.\n");
             rc = CL_BREAK;
-        } else if (!(temp = cli_realloc(decoded, declen))) {
+        } else if (!(temp = cli_max_realloc(decoded, declen))) {
             /* Shrink output buffer to final the decoded data length to minimize RAM usage */
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;
@@ -704,7 +704,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
                 break;
             }
 
-            if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
+            if (!(temp = cli_max_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                 cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                 rc = CL_EMEM;
                 break;
@@ -763,7 +763,7 @@ static cl_error_t filter_flatedecode(struct pdf_struct *pdf, struct pdf_obj *obj
         if (declen == 0) {
             cli_dbgmsg("cli_pdf: empty stream after inflation completed.\n");
             rc = CL_BREAK;
-        } else if (!(temp = cli_realloc(decoded, declen))) {
+        } else if (!(temp = cli_max_realloc(decoded, declen))) {
             /* Shrink output buffer to final the decoded data length to minimize RAM usage */
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;
@@ -795,7 +795,7 @@ static cl_error_t filter_asciihexdecode(struct pdf_struct *pdf, struct pdf_obj *
     uint32_t i, j;
     cl_error_t rc = CL_SUCCESS;
 
-    if (!(decoded = (uint8_t *)cli_calloc(length / 2 + 1, sizeof(uint8_t)))) {
+    if (!(decoded = (uint8_t *)cli_max_calloc(length / 2 + 1, sizeof(uint8_t)))) {
         cli_errmsg("cli_pdf: cannot allocate memory for decoded output\n");
         return CL_EMEM;
     }
@@ -988,7 +988,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
                 break;
             }
 
-            if (!(temp = cli_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
+            if (!(temp = cli_max_realloc(decoded, capacity + INFLATE_CHUNK_SIZE))) {
                 cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
                 rc = CL_EMEM;
                 break;
@@ -1048,7 +1048,7 @@ static cl_error_t filter_lzwdecode(struct pdf_struct *pdf, struct pdf_obj *obj, 
         if (declen == 0) {
             cli_dbgmsg("cli_pdf: empty stream after inflation completed.\n");
             rc = CL_BREAK;
-        } else if (!(temp = cli_realloc(decoded, declen))) {
+        } else if (!(temp = cli_max_realloc(decoded, declen))) {
             /* Shrink output buffer to final the decoded data length to minimize RAM usage */
             cli_errmsg("cli_pdf: cannot reallocate memory for decoded output\n");
             rc = CL_EMEM;

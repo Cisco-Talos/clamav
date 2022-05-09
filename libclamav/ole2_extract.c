@@ -256,7 +256,7 @@ cli_ole2_get_property_name2(const char *name, int size)
     if ((name[0] == 0 && name[1] == 0) || size <= 0 || size > 128) {
         return NULL;
     }
-    CLI_MALLOC(newname, size * 7,
+    CLI_MAX_MALLOC(newname, size * 7,
                cli_errmsg("OLE2 [cli_ole2_get_property_name2]: Unable to allocate memory for newname: %u\n", size * 7));
 
     j = 0;
@@ -304,7 +304,7 @@ get_property_name(char *name, int size)
         return NULL;
     }
 
-    CLI_MALLOC(newname, size,
+    CLI_MAX_MALLOC(newname, size,
                cli_errmsg("OLE2 [get_property_name]: Unable to allocate memory for newname %u\n", size));
     cname = newname;
 
@@ -778,7 +778,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                         }
                     }
 #endif
-                    dirname = (char *)cli_malloc(strlen(dir) + 8);
+                    dirname = (char *)cli_max_malloc(strlen(dir) + 8);
                     if (!dirname) {
                         ole2_listmsg("OLE2: malloc failed for dirname\n");
                         ole2_list_delete(&node_list);
@@ -888,7 +888,7 @@ static cl_error_t handler_writefile(ole2_header_t *hdr, property_t *prop, const 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
+    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [handler_writefile]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
                ret = CL_EMEM);
 
@@ -1157,7 +1157,7 @@ static cl_error_t scan_for_xlm_macros_and_images(ole2_header_t *hdr, property_t 
     current_block = prop->start_block;
     len           = prop->size;
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size,
+    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size,
                cli_errmsg("OLE2 [scan_for_xlm_macros_and_images]: Unable to allocate memory for buff: %u\n", 1 << hdr->log2_big_block_size);
                status = CL_EMEM);
 
@@ -1282,7 +1282,7 @@ static cl_error_t handler_enum(ole2_header_t *hdr, property_t *prop, const char 
         }
         if (name) {
             if (!strcmp(name, "fileheader")) {
-                CLI_CALLOC(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
+                CLI_MAX_CALLOC(hwp_check, 1, 1 << hdr->log2_big_block_size, status = CL_EMEM);
 
                 /* reading safety checks; do-while used for breaks */
                 do {
@@ -1567,7 +1567,7 @@ static cl_error_t handler_otf(ole2_header_t *hdr, property_t *prop, const char *
         cli_dbgmsg("OLE2 [handler_otf]: Dumping '%s' to '%s'\n", name, tempfile);
     }
 
-    CLI_MALLOC(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
+    CLI_MAX_MALLOC(buff, 1 << hdr->log2_big_block_size, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {
@@ -1746,7 +1746,7 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
         goto done;
     }
 
-    CLI_MALLOC(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC(rk, RKLENGTH(key->key_length_bits) * sizeof(uint64_t), ret = CL_EMEM);
 
     print_ole2_property(prop);
 
@@ -1774,8 +1774,8 @@ static cl_error_t handler_otf_encrypted(ole2_header_t *hdr, property_t *prop, co
     }
 
     uint32_t blockSize = 1 << hdr->log2_big_block_size;
-    CLI_MALLOC(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
-    CLI_MALLOC(decryptDst, blockSize, ret = CL_EMEM);
+    CLI_MAX_MALLOC(buff, blockSize + sizeof(uint64_t), ret = CL_EMEM);
+    CLI_MAX_MALLOC(decryptDst, blockSize, ret = CL_EMEM);
 
     blk_bitset = cli_bitset_init();
     if (!blk_bitset) {

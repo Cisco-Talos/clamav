@@ -206,14 +206,14 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
     iconv_t cd;
 
     do {
-        p1 = inbuf = cli_calloc(1, sz + 1);
+        p1 = inbuf = cli_max_calloc(1, sz + 1);
         if (!inbuf) {
             cli_errmsg("%s: Failed to allocate memory for encoding conversion buffer\n", parent);
             rc = CL_EMEM;
             break;
         }
         memcpy(inbuf, begin, sz);
-        p2 = outbuf = cli_calloc(1, sz + 1);
+        p2 = outbuf = cli_max_calloc(1, sz + 1);
         if (!outbuf) {
             cli_errmsg("%s: Failed to allocate memory for encoding conversion buffer\n", parent);
             rc = CL_EMEM;
@@ -254,7 +254,7 @@ static char *convert_hstr_to_utf8(const char *begin, size_t sz, const char *pare
     if (!res && (rc == CL_SUCCESS)) {
         char *tmpbuf;
 
-        tmpbuf = cli_calloc(1, sz + 1);
+        tmpbuf = cli_max_calloc(1, sz + 1);
         if (tmpbuf) {
             memcpy(tmpbuf, begin, sz);
 
@@ -626,7 +626,7 @@ static inline cl_error_t parsehwp3_docsummary(cli_ctx *ctx, size_t offset)
         if (iret == CL_VIRUS) {
             char *b64;
             size_t b64len = strlen(hwp3_docsummary_fields[i].name) + 8;
-            b64           = cli_calloc(1, b64len);
+            b64           = cli_max_calloc(1, b64len);
             if (!b64) {
                 cli_errmsg("HWP3.x: Failed to allocate memory for b64 boolean\n");
                 free(str);

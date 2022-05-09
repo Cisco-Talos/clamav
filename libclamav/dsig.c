@@ -139,7 +139,7 @@ static unsigned char *cli_decodesig(const char *sig, unsigned int plen, BIGNUM *
                    bn_bytes, plen);
         goto done;
     }
-    plain = cli_calloc(plen, sizeof(unsigned char));
+    plain = cli_max_calloc(plen, sizeof(unsigned char));
     if (!plain) {
         cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
         goto done;
