@@ -141,7 +141,7 @@ cl_error_t cli_magic_scan_dir(const char *dir, cli_ctx *ctx, uint32_t attributes
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                     /* build the full name */
-                    fname = cli_malloc(strlen(dir) + strlen(dent->d_name) + 2);
+                    fname = malloc(strlen(dir) + strlen(dent->d_name) + 2);
                     if (!fname) {
                         cli_dbgmsg("cli_magic_scan_dir: Unable to allocate memory for filename\n");
                         status = CL_EMEM;
@@ -2256,7 +2256,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         goto done;
     }
 
-    if (!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
+    if (!(normalized = cli_max_malloc(SCANBUFF + maxpatlen))) {
         cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
         ret = CL_EMEM;
         goto done;
@@ -2584,7 +2584,7 @@ static cl_error_t cli_ole2_scan_tempdir(
             if (dent->d_ino) {
                 if (strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
                     /* build the full name */
-                    subdirectory = cli_malloc(strlen(dir) + strlen(dent->d_name) + 2);
+                    subdirectory = malloc(strlen(dir) + strlen(dent->d_name) + 2);
                     if (!subdirectory) {
                         cli_dbgmsg("cli_ole2_tempdir_scan_vba: Unable to allocate memory for subdirectory path\n");
                         status = CL_EMEM;
@@ -4014,7 +4014,7 @@ static cl_error_t dispatch_file_inspection_callback(clcb_file_inspection cb, cli
     fmap = ctx->recursion_stack[fmap_index].fmap;
     fd   = fmap_fd(fmap);
 
-    CLI_CALLOC(ancestors, ctx->recursion_level + 1, sizeof(char *), status = CL_EMEM);
+    CLI_MAX_CALLOC(ancestors, ctx->recursion_level + 1, sizeof(char *), status = CL_EMEM);
 
     file_name   = fmap->name;
     file_buffer = fmap_need_off_once_len(fmap, 0, fmap->len, &file_size);
@@ -5421,7 +5421,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 
     ctx.recursion_stack_size = ctx.engine->max_recursion_level;
-    ctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
+    ctx.recursion_stack      = cli_max_calloc(sizeof(recursion_level_t), ctx.recursion_stack_size);
     if (!ctx.recursion_stack) {
         status = CL_EMEM;
         goto done;
@@ -5480,7 +5480,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         (CL_SUCCESS == cli_basename(ctx.target_filepath, strlen(ctx.target_filepath), &target_basename))) {
         /* Include the basename in the temp directory */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-") + strlen(target_basename);
-        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             status = CL_EMEM;
@@ -5491,7 +5491,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     } else {
         /* Just use date */
         new_temp_prefix_len = strlen("YYYYMMDD_HHMMSS-scantemp");
-        new_temp_prefix     = cli_calloc(1, new_temp_prefix_len + 1);
+        new_temp_prefix     = cli_max_calloc(1, new_temp_prefix_len + 1);
         if (!new_temp_prefix) {
             cli_errmsg("scan_common: Failed to allocate memory for temp directory name.\n");
             status = CL_EMEM;

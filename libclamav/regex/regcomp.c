@@ -165,7 +165,7 @@ cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 		len = strlen((char *)pattern);
 
 	/* do the mallocs early so failure handling is easy */
-	g = (struct re_guts *)cli_malloc(sizeof(struct re_guts) +
+	g = (struct re_guts *)cli_max_malloc(sizeof(struct re_guts) +
 						(NC-1)*sizeof(unsigned char));
 	if (g == NULL)
 		return(REG_ESPACE);
@@ -190,7 +190,7 @@ cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 		return(REG_ESPACE);
 	}
 
-	p->strip = (sop *)cli_calloc(p->ssize, sizeof(sop));
+	p->strip = (sop *)cli_max_calloc(p->ssize, sizeof(sop));
 	p->slen = 0;
 	if (p->strip == NULL) {
 		free(g);
@@ -1047,12 +1047,12 @@ allocset(struct parse *p)
 		assert(nc % CHAR_BIT == 0);
 		nbytes = nc / CHAR_BIT *css;
 
-		ptr = (cset *)cli_realloc((char*)p->g->sets, nc * sizeof(cset));
+		ptr = (cset *)cli_max_realloc((char*)p->g->sets, nc * sizeof(cset));
 		if (ptr == NULL)
 			goto nomem;
 		p->g->sets = ptr;
 
-		ptr = (uch *)cli_realloc((char*)p->g->setbits, nbytes);
+		ptr = (uch *)cli_max_realloc((char*)p->g->setbits, nbytes);
 		if (ptr == NULL)
 			goto nomem;
 		nbytes = (nc / CHAR_BIT) * css;
@@ -1279,7 +1279,7 @@ enlarge(struct parse *p, sopno size)
 	if (p->ssize >= size)
 		return 1;
 
-	sp = (sop *)cli_realloc(p->strip, size * sizeof(sop));
+	sp = (sop *)cli_max_realloc(p->strip, size * sizeof(sop));
 	if (sp == NULL) {
 		SETERROR(REG_ESPACE);
 		return 0;
@@ -1296,7 +1296,7 @@ static void
 stripsnug(struct parse *p, struct re_guts *g)
 {
 	g->nstates = p->slen;
-	g->strip = (sop *)cli_realloc((char *)p->strip, p->slen * sizeof(sop));
+	g->strip = (sop *)cli_max_realloc((char *)p->strip, p->slen * sizeof(sop));
 	if (g->strip == NULL) {
 		SETERROR(REG_ESPACE);
 		g->strip = p->strip;
@@ -1374,7 +1374,7 @@ findmust(struct parse *p, struct re_guts *g)
 	}
 
 	/* turn it into a character string */
-	g->must = cli_malloc((size_t)g->mlen + 1);
+	g->must = cli_max_malloc((size_t)g->mlen + 1);
 	if (g->must == NULL) {		/* argh; just forget it */
 		g->mlen = 0;
 		return;

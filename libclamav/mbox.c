@@ -654,7 +654,7 @@ getMallocedBufferFromList(const ReadStruct *head)
         rs = rs->next;
     }
 
-    CLI_MALLOC(working, bufferLen);
+    CLI_MAX_MALLOC(working, bufferLen);
 
     rs        = head;
     bufferLen = 0;
@@ -1230,7 +1230,7 @@ parseEmailHeaders(message *m, const table_t *rfc821, bool *heuristicFound)
                     fulllinelength = strlen(line) + 1;
                 } else if (line) {
                     fulllinelength += strlen(line) + 1;
-                    ptr = cli_realloc(fullline, fulllinelength);
+                    ptr = cli_max_realloc(fullline, fulllinelength);
                     if (ptr == NULL)
                         continue;
                     fullline = ptr;
@@ -1875,7 +1875,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                     message **m;
                     mbox_status old_rc;
 
-                    m = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
+                    m = cli_max_realloc(messages, ((multiparts + 1) * sizeof(message *)));
                     if (m == NULL)
                         break;
                     messages = m;
@@ -2091,7 +2091,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
                                 }
 
                                 datasz = strlen(fullline) + strlen(data) + 1;
-                                ptr    = cli_realloc(fullline, datasz);
+                                ptr    = cli_max_realloc(fullline, datasz);
 
                                 if (ptr == NULL)
                                     break;
@@ -3199,7 +3199,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             else {
                 int i;
 
-                buf = cli_malloc(strlen(ptr) + 1);
+                buf = cli_max_malloc(strlen(ptr) + 1);
                 if (buf == NULL) {
                     cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
                     if (copy)
@@ -3312,7 +3312,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
             messageSetEncoding(m, ptr);
             break;
         case CONTENT_DISPOSITION:
-            buf = cli_malloc(strlen(ptr) + 1);
+            buf = cli_max_malloc(strlen(ptr) + 1);
             if (buf == NULL) {
                 cli_errmsg("parseMimeHeader: Unable to allocate memory for buf %llu\n", (long long unsigned)(strlen(ptr) + 1));
                 if (copy)
@@ -3392,7 +3392,7 @@ rfc822comments(const char *in, char *out)
     }
 
     if (out == NULL) {
-        out = cli_malloc(strlen(in) + 1);
+        out = cli_max_malloc(strlen(in) + 1);
         if (out == NULL) {
             cli_errmsg("rfc822comments: Unable to allocate memory for out %llu\n", (long long unsigned)(strlen(in) + 1));
             return NULL;
@@ -3460,7 +3460,7 @@ rfc2047(const char *in)
         return cli_strdup(in);
 
     cli_dbgmsg("rfc2047 '%s'\n", in);
-    out = cli_malloc(strlen(in) + 1);
+    out = cli_max_malloc(strlen(in) + 1);
 
     if (out == NULL) {
         cli_errmsg("rfc2047: Unable to allocate memory for out %llu\n", (long long unsigned)(strlen(in) + 1));
@@ -3631,7 +3631,7 @@ rfc1341(mbox_ctx *mctx, message *m)
 
     oldfilename = messageGetFilename(m);
 
-    arg = cli_malloc(10 + strlen(id) + strlen(number));
+    arg = cli_max_malloc(10 + strlen(id) + strlen(number));
     if (arg) {
         sprintf(arg, "filename=%s%s", id, number);
         messageAddArgument(m, arg);

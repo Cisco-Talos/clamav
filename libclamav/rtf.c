@@ -167,7 +167,7 @@ static int push_state(struct stack* stack, struct rtf_state* state)
         /* grow stack */
         struct rtf_state* states;
         stack->stack_size += 128;
-        states = cli_realloc(stack->states, stack->stack_size * sizeof(*stack->states));
+        states = cli_max_realloc(stack->states, stack->stack_size * sizeof(*stack->states));
         if (!states) {
             // Realloc failed. Note that stack->states has not been freed and must still be cleaned up by the caller.
             return CL_EMEM;
@@ -333,7 +333,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
                         cli_dbgmsg("Description length too big (%lu), showing only 64 bytes of it\n", (unsigned long int)data->desc_len);
                         data->desc_name = malloc(65);
                     } else
-                        data->desc_name = cli_malloc(data->desc_len + 1);
+                        data->desc_name = cli_max_malloc(data->desc_len + 1);
                     if (!data->desc_name) {
                         cli_errmsg("rtf_object_process: Unable to allocate memory for data->desc_name\n");
                         return CL_EMEM;
@@ -525,7 +525,7 @@ int cli_scanrtf(cli_ctx* ctx)
     stack.stack_size = 16;
     stack.elements   = 0;
     stack.warned     = 0;
-    stack.states     = cli_malloc(stack.stack_size * sizeof(*stack.states));
+    stack.states     = cli_max_malloc(stack.stack_size * sizeof(*stack.states));
 
     if (!stack.states) {
         cli_errmsg("ScanRTF: Unable to allocate memory for stack states\n");

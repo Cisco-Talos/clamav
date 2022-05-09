@@ -216,12 +216,12 @@ int cli_matchregex(const char *str, const char *regex)
 
     return 0;
 }
-void *cli_malloc(size_t size)
+void *cli_max_malloc(size_t size)
 {
     void *alloc;
 
-    if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_malloc(): File or section is too large to scan (%zu bytes). \
+    if (0 == size || size > CLI_MAX_ALLOCATION) {
+        cli_warnmsg("cli_max_malloc(): File or section is too large to scan (%zu bytes). \
                      For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
@@ -231,18 +231,19 @@ void *cli_malloc(size_t size)
 
     if (!alloc) {
         perror("malloc_problem");
-        cli_errmsg("cli_malloc(): Can't allocate memory (%zu bytes).\n", size);
+        cli_errmsg("cli_max_malloc(): Can't allocate memory (%zu bytes).\n", size);
         return NULL;
-    } else
+    } else {
         return alloc;
+    }
 }
 
-void *cli_calloc(size_t nmemb, size_t size)
+void *cli_max_calloc(size_t nmemb, size_t size)
 {
     void *alloc;
 
-    if (!nmemb || !size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION || (nmemb * size > CLI_MAX_ALLOCATION)) {
-        cli_warnmsg("cli_calloc2(): File or section is too large to scan (%zu bytes). \
+    if (!nmemb || 0 == size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION || (nmemb * size > CLI_MAX_ALLOCATION)) {
+        cli_warnmsg("cli_max_calloc(): File or section is too large to scan (%zu bytes). \
                      For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
                     size, CLI_MAX_ALLOCATION);
         return NULL;
@@ -252,20 +253,19 @@ void *cli_calloc(size_t nmemb, size_t size)
 
     if (!alloc) {
         perror("calloc_problem");
-        cli_errmsg("cli_calloc(): Can't allocate memory (%zu bytes).\n", (nmemb * size));
+        cli_errmsg("cli_max_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)(nmemb * size));
         return NULL;
-    } else
+    } else {
         return alloc;
+    }
 }
 
-void *cli_realloc(void *ptr, size_t size)
+void *cli_safer_realloc(void *ptr, size_t size)
 {
     void *alloc;
 
-    if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_realloc(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
-                    size, CLI_MAX_ALLOCATION);
+    if (0 == size) {
+        cli_errmsg("cli_max_realloc(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         return NULL;
     }
 
@@ -273,20 +273,19 @@ void *cli_realloc(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_realloc(): Can't re-allocate memory to %zu bytes.\n", size);
+        cli_errmsg("cli_max_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
         return NULL;
-    } else
+    } else {
         return alloc;
+    }
 }
 
-void *cli_realloc2(void *ptr, size_t size)
+void *cli_safer_realloc2(void *ptr, size_t size)
 {
     void *alloc;
 
-    if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_warnmsg("cli_realloc2(): File or section is too large to scan (%zu bytes). \
-                     For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
-                    size, CLI_MAX_ALLOCATION);
+    if (0 == size) {
+        cli_errmsg("cli_max_realloc2(): Attempt to allocate 0 bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
         return NULL;
     }
 
@@ -294,12 +293,67 @@ void *cli_realloc2(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_realloc2(): Can't re-allocate memory to %zu bytes.\n", size);
-        if (ptr)
+        cli_errmsg("cli_max_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
+
+        // free the original pointer
+        if (ptr) {
             free(ptr);
+        }
+
         return NULL;
-    } else
+    } else {
         return alloc;
+    }
+}
+
+void *cli_max_realloc(void *ptr, size_t size)
+{
+    void *alloc;
+
+    if (0 == size || size > CLI_MAX_ALLOCATION) {
+        cli_warnmsg("cli_max_realloc(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
+                    size, CLI_MAX_ALLOCATION);
+        return NULL;
+    }
+
+    alloc = realloc(ptr, size);
+
+    if (!alloc) {
+        perror("realloc_problem");
+        cli_errmsg("cli_max_realloc(): Can't re-allocate memory to %zu bytes.\n", size);
+        return NULL;
+    } else {
+        return alloc;
+    }
+}
+
+void *cli_max_realloc2(void *ptr, size_t size)
+{
+    void *alloc;
+
+    if (0 == size || size > CLI_MAX_ALLOCATION) {
+        cli_warnmsg("cli_max_realloc2(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %d bytes\n",
+                    size, CLI_MAX_ALLOCATION);
+        return NULL;
+    }
+
+    alloc = realloc(ptr, size);
+
+    if (!alloc) {
+        perror("realloc_problem");
+        cli_errmsg("cli_max_realloc2(): Can't re-allocate memory to %zu bytes.\n", size);
+
+        // free the original pointer
+        if (ptr) {
+            free(ptr);
+        }
+
+        return NULL;
+    } else {
+        return alloc;
+    }
 }
 
 char *cli_strdup(const char *s)
@@ -826,7 +880,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
 #else
             ft = ft_unknown;
 #endif
-            fname = (char *)cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+            fname = (char *)cli_max_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
             if (!fname) {
                 ret = callback(NULL, NULL, dirname, error_mem, data);
                 if (ret != CL_SUCCESS)
@@ -873,7 +927,7 @@ static cl_error_t cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_
             }
 
             entries_cnt++;
-            entries = cli_realloc(entries, entries_cnt * sizeof(*entries));
+            entries = cli_max_realloc(entries, entries_cnt * sizeof(*entries));
             if (!entries) {
                 ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
                 free(fname);
@@ -954,7 +1008,7 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
     if (dig)
         memcpy(dig, digest, 16);
 
-    if (!(md5str = (char *)cli_calloc(32 + 1, sizeof(char))))
+    if (!(md5str = (char *)cli_max_calloc(32 + 1, sizeof(char))))
         return NULL;
 
     pt = md5str;
@@ -993,7 +1047,7 @@ char *cli_sanitize_filepath(const char *filepath, size_t filepath_len, char **sa
         *sanitized_filebase = NULL;
     }
 
-    sanitized_filepath = cli_calloc(filepath_len + 1, sizeof(unsigned char));
+    sanitized_filepath = cli_max_calloc(filepath_len + 1, sizeof(unsigned char));
     if (NULL == sanitized_filepath) {
         cli_dbgmsg("cli_sanitize_filepath: out of memory\n");
         goto done;
@@ -1146,7 +1200,7 @@ char *cli_genfname(const char *prefix)
         len = strlen("clamav-") + 48 + strlen(".tmp") + 1; /* clamav-{48}.tmp\0 */
     }
 
-    fname = (char *)cli_calloc(len, sizeof(char));
+    fname = (char *)cli_max_calloc(len, sizeof(char));
     if (!fname) {
         cli_dbgmsg("cli_genfname: no memory left for fname\n");
         if (NULL != sanitized_prefix) {
@@ -1207,7 +1261,7 @@ char *cli_newfilepath(const char *dir, const char *fname)
     }
 
     len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
-    fullpath = (char *)cli_calloc(len, sizeof(char));
+    fullpath = (char *)cli_max_calloc(len, sizeof(char));
     if (NULL == fullpath) {
         cli_dbgmsg("cli_newfilepath('%s'): out of memory\n", mdir);
         return NULL;
@@ -1262,7 +1316,7 @@ char *cli_gentemp_with_prefix(const char *dir, const char *prefix)
     }
 
     len      = strlen(mdir) + strlen(PATHSEP) + strlen(fname) + 1; /* mdir/fname\0 */
-    fullpath = (char *)cli_calloc(len, sizeof(char));
+    fullpath = (char *)cli_max_calloc(len, sizeof(char));
     if (!fullpath) {
         free(fname);
         cli_dbgmsg("cli_gentemp_with_prefix('%s'): out of memory\n", mdir);

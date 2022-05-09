@@ -200,7 +200,7 @@ cl_error_t regex_list_match(struct regex_matcher *matcher, char *real_url, const
         /* too short, no match possible */
         return CL_SUCCESS;
     }
-    buffer = cli_malloc(buffer_len + 1);
+    buffer = cli_max_malloc(buffer_len + 1);
     if (!buffer) {
         cli_errmsg("regex_list_match: Unable to allocate memory for buffer\n");
         return CL_EMEM;
@@ -802,10 +802,10 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         /* new suffix */
         size_t n = matcher->suffix_cnt;
         el       = cli_hashtab_insert(&matcher->suffix_hash, suffix, suffix_len, (cli_element_data)n);
-        CLI_REALLOC(matcher->suffix_regexes,
-                    (n + 1) * sizeof(*matcher->suffix_regexes),
-                    cli_errmsg("add_pattern_suffix: Unable to reallocate memory for matcher->suffix_regexes\n");
-                    ret = CL_EMEM);
+        CLI_MAX_REALLOC(matcher->suffix_regexes,
+                        (n + 1) * sizeof(*matcher->suffix_regexes),
+                        cli_errmsg("add_pattern_suffix: Unable to reallocate memory for matcher->suffix_regexes\n");
+                        ret = CL_EMEM);
         matcher->suffix_regexes[n].tail = regex;
         matcher->suffix_regexes[n].head = regex;
         if (suffix[0] == '/' && suffix[1] == '\0') {
@@ -817,7 +817,7 @@ static cl_error_t add_pattern_suffix(void *cbdata, const char *suffix, size_t su
         if (CL_SUCCESS != ret) {
             cli_hashtab_delete(&matcher->suffix_hash, suffix, suffix_len);
             /*shrink the size back to what it was.*/
-            CLI_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
+            CLI_MAX_REALLOC(matcher->suffix_regexes, n * sizeof(*matcher->suffix_regexes));
         } else {
             matcher->suffix_cnt++;
         }

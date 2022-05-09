@@ -938,13 +938,32 @@ static inline int cli_getpagesize(void)
 #endif /* HAVE_SYSCONF_SC_PAGESIZE */
 #endif /* _WIN32 */
 
-void *cli_malloc(size_t nmemb);
-void *cli_calloc(size_t nmemb, size_t size);
+/**
+ * @brief Wrapper around malloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_MAX_MALLOC() with `goto done;` error handling instead.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_max_malloc(size_t nmemb);
+
+/**
+ * @brief Wrapper around Calloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * Please use CLI_MAX_CALLOC() with `goto done;` error handling instead.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_max_calloc(size_t nmemb, size_t size);
 
 /**
  * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
  *
- * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ * Please use CLI_MAX_REALLOC() with `goto done;` error handling instead.
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
@@ -952,23 +971,52 @@ void *cli_calloc(size_t nmemb, size_t size);
  * @param size
  * @return void*
  */
-void *cli_realloc(void *ptr, size_t size);
+void *cli_max_realloc(void *ptr, size_t size);
 
 /**
  * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
  *
- * Please use CLI_REALLOC() with `goto done;` error handling instead.
+ * Please use CLI_MAX_REALLOC() with `goto done;` error handling instead.
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
- * WARNING: This differs from cli_realloc() in that it will free the ptr if the allocation fails.
+ * WARNING: This differs from cli_max_realloc() in that it will free the ptr if the allocation fails.
  * If you're using `goto done;` error handling, this may result in a double-free!!
  *
  * @param ptr
  * @param size
  * @return void*
  */
-void *cli_realloc2(void *ptr, size_t size);
+void *cli_max_realloc2(void *ptr, size_t size);
+
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * Please use CLI_MAX_REALLOC() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_safer_realloc(void *ptr, size_t size);
+
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * Please use CLI_SAFER_REALLOC() with `goto done;` error handling instead.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * WARNING: This differs from cli_safer_realloc() in that it will free the ptr if the allocation fails.
+ * If you're using `goto done;` error handling, this may result in a double-free!!
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+void *cli_safer_realloc2(void *ptr, size_t size);
 
 char *cli_strdup(const char *s);
 int cli_rmdirs(const char *dirname);
@@ -1292,10 +1340,10 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
     } while (0)
 #endif
 
-#ifndef CLI_MALLOC
-#define CLI_MALLOC(var, size, ...) \
+#ifndef CLI_MAX_MALLOC
+#define CLI_MAX_MALLOC(var, size, ...) \
     do {                           \
-        var = cli_malloc(size);    \
+        var = cli_max_malloc(size);    \
         if (NULL == var) {         \
             do {                   \
                 __VA_ARGS__;       \
@@ -1318,10 +1366,10 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
     } while (0)
 #endif
 
-#ifndef CLI_CALLOC
-#define CLI_CALLOC(var, nmemb, size, ...) \
+#ifndef CLI_MAX_CALLOC
+#define CLI_MAX_CALLOC(var, nmemb, size, ...) \
     do {                                  \
-        (var) = cli_calloc(nmemb, size);  \
+        (var) = cli_max_calloc(nmemb, size);  \
         if (NULL == var) {                \
             do {                          \
                 __VA_ARGS__;              \
@@ -1348,23 +1396,48 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
  *
  * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
  *
- * NOTE: cli_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
+ * NOTE: cli_max_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
  *
  * @param ptr
  * @param size
  * @return void*
  */
-#ifndef CLI_REALLOC
-#define CLI_REALLOC(ptr, size, ...)          \
-    do {                                     \
-        void *vTmp = cli_realloc(ptr, size); \
-        if (NULL == vTmp) {                  \
-            do {                             \
-                __VA_ARGS__;                 \
-            } while (0);                     \
-            goto done;                       \
-        }                                    \
-        ptr = vTmp;                          \
+#ifndef CLI_MAX_REALLOC
+#define CLI_MAX_REALLOC(ptr, size, ...)          \
+    do {                                         \
+        void *vTmp = cli_max_realloc(ptr, size); \
+        if (NULL == vTmp) {                      \
+            do {                                 \
+                __VA_ARGS__;                     \
+            } while (0);                         \
+            goto done;                           \
+        }                                        \
+        ptr = vTmp;                              \
+    } while (0)
+#endif
+
+/**
+ * @brief Wrapper around realloc that, unlike some variants of realloc, will not free the ptr if size==0.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * NOTE: cli_safer_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+#ifndef CLI_SAFER_REALLOC
+#define CLI_SAFER_REALLOC(ptr, size, ...)          \
+    do {                                         \
+        void *vTmp = cli_safer_realloc(ptr, size); \
+        if (NULL == vTmp) {                      \
+            do {                                 \
+                __VA_ARGS__;                     \
+            } while (0);                         \
+            goto done;                           \
+        }                                        \
+        ptr = vTmp;                              \
     } while (0)
 #endif
 

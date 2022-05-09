@@ -182,7 +182,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
     unsigned char *chunk, *start, *ptr, *end;
     unsigned int chunk_len, count;
 
-    chunk = (unsigned char *)cli_malloc(max_len);
+    chunk = (unsigned char *)cli_max_malloc(max_len);
     if (!chunk) {
         cli_errmsg("readchunk: Unable to allocate memory for chunk\n");
         return NULL;
@@ -371,18 +371,18 @@ void html_tag_arg_add(tag_arguments_t *tags,
 {
     int len, i;
     tags->count++;
-    tags->tag = (unsigned char **)cli_realloc2(tags->tag,
+    tags->tag = (unsigned char **)cli_max_realloc2(tags->tag,
                                                tags->count * sizeof(char *));
     if (!tags->tag) {
         goto done;
     }
-    tags->value = (unsigned char **)cli_realloc2(tags->value,
+    tags->value = (unsigned char **)cli_max_realloc2(tags->value,
                                                  tags->count * sizeof(char *));
     if (!tags->value) {
         goto done;
     }
     if (tags->scanContents) {
-        tags->contents = (unsigned char **)cli_realloc2(tags->contents,
+        tags->contents = (unsigned char **)cli_max_realloc2(tags->contents,
                                                         tags->count * sizeof(*tags->contents));
         if (!tags->contents) {
             goto done;
@@ -527,7 +527,7 @@ static inline void html_tag_contents_done(tag_arguments_t *tags, int idx, struct
 {
     unsigned char *p;
     cont->contents[cont->pos++] = '\0';
-    p                           = cli_malloc(cont->pos);
+    p                           = cli_max_malloc(cont->pos);
     if (!p) {
         cli_errmsg("html_tag_contents_done: Unable to allocate memory for p\n");
         return;
@@ -1201,9 +1201,9 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
                             chunk_size = style_end - style_begin;
 
                             if (style_buff == NULL) {
-                                CLI_MALLOC(style_buff, chunk_size + 1);
+                                CLI_MAX_MALLOC(style_buff, chunk_size + 1);
                             } else {
-                                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+                                CLI_MAX_REALLOC(style_buff, style_buff_size + chunk_size + 1);
                             }
 
                             memcpy(style_buff + style_buff_size, style_begin, chunk_size);
@@ -1837,9 +1837,9 @@ static bool cli_html_normalise(cli_ctx *ctx, int fd, m_area_t *m_area, const cha
             size_t chunk_size = ptr - style_begin;
 
             if (style_buff == NULL) {
-                CLI_MALLOC(style_buff, chunk_size + 1);
+                CLI_MAX_MALLOC(style_buff, chunk_size + 1);
             } else {
-                CLI_REALLOC(style_buff, style_buff_size + chunk_size + 1);
+                CLI_MAX_REALLOC(style_buff, style_buff_size + chunk_size + 1);
             }
 
             memcpy(style_buff + style_buff_size, style_begin, chunk_size);

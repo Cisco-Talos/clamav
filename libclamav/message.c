@@ -430,7 +430,7 @@ void messageAddArgument(message *m, const char *arg)
         char **q;
 
         m->numberOfArguments++;
-        q = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+        q = (char **)cli_max_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
         if (q == NULL) {
             m->numberOfArguments--;
             return;
@@ -613,7 +613,7 @@ void messageAddArguments(message *m, const char *s)
                 *ptr = '\0';
 
             datasz = strlen(kcopy) + strlen(data) + 2;
-            field  = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
+            field  = cli_max_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
             if (field) {
                 cli_strlcat(field, "=", datasz);
                 cli_strlcat(field, data, datasz);
@@ -637,7 +637,7 @@ void messageAddArguments(message *m, const char *s)
                 string++;
 
             len   = (size_t)string - (size_t)key + 1;
-            field = cli_malloc(len);
+            field = cli_max_malloc(len);
 
             if (field) {
                 memcpy(field, key, len - 1);
@@ -857,7 +857,7 @@ void messageSetEncoding(message *m, const char *enctype)
                     break;
                 }
 
-                et = (encoding_type *)cli_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
+                et = (encoding_type *)cli_max_realloc(m->encodingTypes, (m->numberOfEncTypes + 1) * sizeof(encoding_type));
                 if (et == NULL)
                     break;
 
@@ -1375,7 +1375,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
             datasize = (line) ? strlen(line) + 2 : 0;
 
             if (datasize >= sizeof(smallbuf)) {
-                data = bigbuf = (unsigned char *)cli_malloc(datasize);
+                data = bigbuf = (unsigned char *)cli_max_malloc(datasize);
                 if (NULL == data) {
                     cli_dbgmsg("Failed to allocate data buffer of size %zu\n", datasize);
                     break;
@@ -2338,7 +2338,7 @@ rfc2231(const char *in)
         char *p;
 
         /* Don't handle continuations, decode what we can */
-        p = ret = cli_malloc(strlen(in) + 16);
+        p = ret = cli_max_malloc(strlen(in) + 16);
         if (ret == NULL) {
             cli_errmsg("rfc2331: out of memory, unable to proceed\n");
             return NULL;
@@ -2394,7 +2394,7 @@ rfc2231(const char *in)
 
     cli_dbgmsg("rfc2231 '%s'\n", in);
 
-    ret = cli_malloc(strlen(in) + 1);
+    ret = cli_max_malloc(strlen(in) + 1);
 
     if (ret == NULL) {
         cli_errmsg("rfc2331: out of memory for ret\n");

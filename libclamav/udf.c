@@ -633,9 +633,9 @@ static cl_error_t initPointerList(PointerList *pl)
     uint32_t capacity = POINTER_LIST_INCREMENT;
 
     freePointerList(pl);
-    CLI_CALLOC(pl->idxs, capacity, sizeof(uint8_t *),
-               cli_errmsg("initPointerList: Can't allocate memory\n");
-               ret = CL_EMEM);
+    CALLOC(pl->idxs, capacity, sizeof(uint8_t *),
+           cli_errmsg("initPointerList: Can't allocate memory\n");
+           ret = CL_EMEM);
 
     pl->capacity = capacity;
 done:
@@ -648,9 +648,9 @@ static cl_error_t insertPointer(PointerList *pl, const uint8_t *pointer)
 
     if (pl->cnt == (pl->capacity - 1)) {
         uint32_t newCapacity = pl->capacity + POINTER_LIST_INCREMENT;
-        CLI_REALLOC(pl->idxs, newCapacity * sizeof(uint8_t *),
-                    cli_errmsg("insertPointer: Can't allocate memory\n");
-                    ret = CL_EMEM);
+        CLI_SAFER_REALLOC(pl->idxs, newCapacity * sizeof(uint8_t *),
+                          cli_errmsg("insertPointer: Can't allocate memory\n");
+                          ret = CL_EMEM);
 
         pl->capacity = newCapacity;
     }

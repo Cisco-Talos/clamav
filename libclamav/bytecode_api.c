@@ -474,7 +474,7 @@ uint8_t *cli_bcapi_malloc(struct cli_bc_ctx *ctx, uint32_t size)
 #else
     /* TODO: implement using a list of pointers we allocated! */
     cli_errmsg("cli_bcapi_malloc not implemented for systems without mmap yet!\n");
-    v = cli_malloc(size);
+    v = cli_max_malloc(size);
 #endif
     if (!v)
         cli_event_error_oom(EV, size);
@@ -600,7 +600,7 @@ int32_t cli_bcapi_read_number(struct cli_bc_ctx *ctx, uint32_t radix)
 int32_t cli_bcapi_hashset_new(struct cli_bc_ctx *ctx)
 {
     unsigned n            = ctx->nhashsets + 1;
-    struct cli_hashset *s = cli_realloc(ctx->hashsets, sizeof(*ctx->hashsets) * n);
+    struct cli_hashset *s = cli_max_realloc(ctx->hashsets, sizeof(*ctx->hashsets) * n);
     if (!s) {
         cli_event_error_oom(EV, 0);
         return -1;
@@ -663,7 +663,7 @@ int32_t cli_bcapi_hashset_done(struct cli_bc_ctx *ctx, int32_t id)
             free(ctx->hashsets);
             ctx->hashsets = NULL;
         } else {
-            s = cli_realloc(ctx->hashsets, ctx->nhashsets * sizeof(*s));
+            s = cli_max_realloc(ctx->hashsets, ctx->nhashsets * sizeof(*s));
             if (s)
                 ctx->hashsets = s;
         }
@@ -677,10 +677,10 @@ int32_t cli_bcapi_buffer_pipe_new(struct cli_bc_ctx *ctx, uint32_t size)
     struct bc_buffer *b;
     unsigned n = ctx->nbuffers + 1;
 
-    data = cli_calloc(1, size);
+    data = cli_max_calloc(1, size);
     if (!data)
         return -1;
-    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
+    b = cli_max_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
     if (!b) {
         free(data);
         return -1;
@@ -703,7 +703,7 @@ int32_t cli_bcapi_buffer_pipe_new_fromfile(struct cli_bc_ctx *ctx, uint32_t at)
     if (at >= ctx->file_size)
         return -1;
 
-    b = cli_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
+    b = cli_max_realloc(ctx->buffers, sizeof(*ctx->buffers) * n);
     if (!b) {
         return -1;
     }
@@ -830,7 +830,7 @@ int32_t cli_bcapi_inflate_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to,
         cli_dbgmsg("bytecode api: inflate_init: invalid buffers!\n");
         return -1;
     }
-    b = cli_realloc(ctx->inflates, sizeof(*ctx->inflates) * n);
+    b = cli_max_realloc(ctx->inflates, sizeof(*ctx->inflates) * n);
     if (!b) {
         return -1;
     }
@@ -961,7 +961,7 @@ int32_t cli_bcapi_lzma_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
         return -1;
     }
 
-    b = cli_realloc(ctx->lzmas, sizeof(*ctx->lzmas) * n);
+    b = cli_max_realloc(ctx->lzmas, sizeof(*ctx->lzmas) * n);
     if (!b) {
         return -1;
     }
@@ -1049,7 +1049,7 @@ int32_t cli_bcapi_bzip2_init(struct cli_bc_ctx *ctx, int32_t from, int32_t to)
         cli_dbgmsg("bytecode api: bzip2_init: invalid buffers!\n");
         return -1;
     }
-    b = cli_realloc(ctx->bzip2s, sizeof(*ctx->bzip2s) * n);
+    b = cli_max_realloc(ctx->bzip2s, sizeof(*ctx->bzip2s) * n);
     if (!b) {
         return -1;
     }
@@ -1168,7 +1168,7 @@ int32_t cli_bcapi_jsnorm_init(struct cli_bc_ctx *ctx, int32_t from)
     state = cli_js_init();
     if (!state)
         return -1;
-    b = cli_realloc(ctx->jsnorms, sizeof(*ctx->jsnorms) * n);
+    b = cli_max_realloc(ctx->jsnorms, sizeof(*ctx->jsnorms) * n);
     if (!b) {
         cli_js_destroy(state);
         return -1;
@@ -1396,7 +1396,7 @@ int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t value
     struct cli_map *s;
     if (!keysize)
         return -1;
-    s = cli_realloc(ctx->maps, sizeof(*ctx->maps) * n);
+    s = cli_max_realloc(ctx->maps, sizeof(*ctx->maps) * n);
     if (!s)
         return -1;
     ctx->maps  = s;
@@ -1523,7 +1523,7 @@ int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx, int32_t id)
             free(ctx->maps);
             ctx->maps = NULL;
         } else {
-            s = cli_realloc(ctx->maps, ctx->nmaps * (sizeof(*s)));
+            s = cli_max_realloc(ctx->maps, ctx->nmaps * (sizeof(*s)));
             if (s)
                 ctx->maps = s;
         }
@@ -2037,7 +2037,7 @@ static int32_t cli_bcapi_json_objs_init(struct cli_bc_ctx *ctx)
     json_object **j, **jobjs = (json_object **)(ctx->jsonobjs);
     cli_ctx *cctx = (cli_ctx *)ctx->ctx;
 
-    j = cli_realloc(jobjs, sizeof(json_object *) * n);
+    j = cli_max_realloc(jobjs, sizeof(json_object *) * n);
     if (!j) { /* memory allocation failure */
         cli_event_error_oom(EV, 0);
         return -1;
@@ -2085,7 +2085,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, in
     jobj = jobjs[objid];
     if (!jobj) /* shouldn't be possible */
         return -1;
-    namep = (char *)cli_malloc(sizeof(char) * (name_len + 1));
+    namep = (char *)cli_max_malloc(sizeof(char) * (name_len + 1));
     if (!namep)
         return -1;
     strncpy(namep, (char *)name, name_len);
@@ -2096,7 +2096,7 @@ int32_t cli_bcapi_json_get_object(struct cli_bc_ctx *ctx, const int8_t *name, in
         return 0;
     }
 
-    j = cli_realloc(jobjs, sizeof(json_object *) * n);
+    j = cli_max_realloc(jobjs, sizeof(json_object *) * n);
     if (!j) { /* memory allocation failure */
         free(namep);
         cli_event_error_oom(EV, 0);
@@ -2220,7 +2220,7 @@ int32_t cli_bcapi_json_get_array_idx(struct cli_bc_ctx *ctx, int32_t idx, int32_
             return 0;
         }
 
-        j = cli_realloc(jobjs, sizeof(json_object *) * n);
+        j = cli_max_realloc(jobjs, sizeof(json_object *) * n);
         if (!j) { /* memory allocation failure */
             cli_event_error_oom(EV, 0);
             return -1;

@@ -134,7 +134,7 @@ uint16_t *cli_hex2ui(const char *hex)
         return NULL;
     }
 
-    str = cli_calloc((len / 2) + 1, sizeof(uint16_t));
+    str = cli_max_calloc((len / 2) + 1, sizeof(uint16_t));
     if (!str)
         return NULL;
 
@@ -158,7 +158,7 @@ char *cli_hex2str(const char *hex)
         return NULL;
     }
 
-    str = cli_calloc((len / 2) + 1, sizeof(char));
+    str = cli_max_calloc((len / 2) + 1, sizeof(char));
     if (!str)
         return NULL;
 
@@ -224,9 +224,9 @@ int cli_xtoi(const char *hex)
     if (len % 2 == 0)
         return cli_hex2num(hex);
 
-    hexbuf = cli_calloc(len + 2, sizeof(char));
+    hexbuf = cli_max_calloc(len + 2, sizeof(char));
     if (hexbuf == NULL) {
-        cli_errmsg("cli_xtoi(): cli_malloc fails.\n");
+        cli_errmsg("cli_xtoi(): cli_max_malloc fails.\n");
         return -1;
     }
 
@@ -244,7 +244,7 @@ char *cli_str2hex(const char *string, unsigned int len)
                   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     unsigned int i, j;
 
-    if ((hexstr = (char *)cli_calloc(2 * len + 1, sizeof(char))) == NULL)
+    if ((hexstr = (char *)cli_max_calloc(2 * len + 1, sizeof(char))) == NULL)
         return NULL;
 
     for (i = 0, j = 0; i < len; i++, j += 2) {
@@ -332,7 +332,7 @@ char *cli_strtok(const char *line, int fieldno, const char *delim)
     if (i == j) {
         return NULL;
     }
-    buffer = cli_malloc(j - i + 1);
+    buffer = cli_max_malloc(j - i + 1);
     if (!buffer) {
         cli_errmsg("cli_strtok: Unable to allocate memory for buffer\n");
         return NULL;
@@ -940,7 +940,7 @@ char *cli_unescape(const char *str)
     const size_t len = strlen(str);
     /* unescaped string is at most as long as original,
      * it will usually be shorter */
-    R = cli_malloc(len + 1);
+    R = cli_max_malloc(len + 1);
     if (!R) {
         cli_errmsg("cli_unescape: Unable to allocate memory for string\n");
         return NULL;
@@ -974,7 +974,7 @@ char *cli_unescape(const char *str)
         R[i++] = c;
     }
     R[i++] = '\0';
-    R      = cli_realloc2(R, i);
+    R      = cli_max_realloc2(R, i);
     return R;
 }
 

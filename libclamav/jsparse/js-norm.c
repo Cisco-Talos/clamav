@@ -287,7 +287,7 @@ static cl_error_t tokens_ensure_capacity(struct tokens *tokens, size_t cap)
         yystype *data;
         cap += 1024;
         /* Keep old data if OOM */
-        data = cli_realloc(tokens->data, cap * sizeof(*tokens->data));
+        data = cli_max_realloc(tokens->data, cap * sizeof(*tokens->data));
         if (!data)
             return CL_EMEM;
         tokens->data     = data;
@@ -516,7 +516,7 @@ static const char *de_packer_2[] = {"p", "a", "c", "k", "e", "d"};
 
 static inline char *textbuffer_done(yyscan_t scanner)
 {
-    char *str = cli_realloc(scanner->buf.data, scanner->buf.pos);
+    char *str = cli_max_realloc(scanner->buf.data, scanner->buf.pos);
     if (!str) {
         str = scanner->buf.data;
     }
@@ -1181,7 +1181,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
                         /* delete TOK_PLUS */
                         free_token(&state->tokens.data[--state->tokens.cnt]);
 
-                        str = cli_realloc(str, str_len + leng + 1);
+                        str = cli_max_realloc(str, str_len + leng + 1);
                         if (!str)
                             break;
                         strncpy(str + str_len, text, leng);
@@ -1553,7 +1553,7 @@ static const enum char_class id_ctype[256] = {
 static void textbuf_clean(struct text_buffer *buf)
 {
     if (buf->capacity > BUF_KEEP_SIZE) {
-        char *data = cli_realloc(buf->data, BUF_KEEP_SIZE);
+        char *data = cli_max_realloc(buf->data, BUF_KEEP_SIZE);
         if (data)
             buf->data = data;
         buf->capacity = BUF_KEEP_SIZE;

@@ -42,7 +42,7 @@ struct uniq *uniq_init(uint32_t count)
     U = calloc(1, sizeof(*U));
     if (!U) return NULL;
 
-    U->md5s = cli_malloc(count * sizeof(*U->md5s));
+    U->md5s = cli_max_malloc(count * sizeof(*U->md5s));
     if (!U->md5s) {
         uniq_free(U);
         return NULL;

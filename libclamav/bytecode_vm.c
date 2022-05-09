@@ -596,7 +596,7 @@ static inline int64_t ptr_register_stack(struct ptr_infos *infos,
                                          uint32_t off, uint32_t size)
 {
     unsigned n              = infos->nstacks + 1;
-    struct ptr_info *sinfos = cli_realloc(infos->stack_infos,
+    struct ptr_info *sinfos = cli_max_realloc(infos->stack_infos,
                                           sizeof(*sinfos) * n);
     if (!sinfos)
         return 0;
@@ -613,7 +613,7 @@ static inline int64_t ptr_register_glob_fixedid(struct ptr_infos *infos,
 {
     struct ptr_info *sinfos;
     if (n > infos->nglobs) {
-        sinfos = cli_realloc(infos->glob_infos, sizeof(*sinfos) * n);
+        sinfos = cli_max_realloc(infos->glob_infos, sizeof(*sinfos) * n);
         if (!sinfos)
             return 0;
         memset(sinfos + infos->nglobs, 0, (n - infos->nglobs) * sizeof(*sinfos));

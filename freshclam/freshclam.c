@@ -535,7 +535,7 @@ static fc_error_t string_list_add(const char *item, char ***stringList, uint32_t
     }
 
     nItems  = *nListItems + 1;
-    newList = (char **)cli_realloc(*stringList, nItems * sizeof(char *));
+    newList = (char **)cli_max_realloc(*stringList, nItems * sizeof(char *));
     if (newList == NULL) {
         mprintf(LOGG_ERROR, "string_list_add: Failed to allocate memory for optional database list entry.\n");
         status = FC_EMEM;
@@ -1142,7 +1142,7 @@ fc_error_t select_from_official_databases(
         goto done;
     }
 
-    selectedDatabases = cli_calloc(nStandardDatabases + nOptionalDatabases, sizeof(char *));
+    selectedDatabases = cli_max_calloc(nStandardDatabases + nOptionalDatabases, sizeof(char *));
 
     /*
      * Select desired standard databases.
@@ -1261,7 +1261,7 @@ fc_error_t select_specific_databases(
     *databaseList = NULL;
     *nDatabases   = 0;
 
-    selectedDatabases = cli_calloc(nSpecificDatabases, sizeof(char *));
+    selectedDatabases = cli_max_calloc(nSpecificDatabases, sizeof(char *));
 
     /*
      * Get lists of available databases.

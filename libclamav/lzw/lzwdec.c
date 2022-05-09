@@ -172,7 +172,7 @@ int lzwInit(lzw_streamp strm)
     state->nextbits = 0;
 
     /* dictionary setup */
-    state->dec_codetab = cli_calloc(CSIZE, sizeof(code_t));
+    state->dec_codetab = cli_max_calloc(CSIZE, sizeof(code_t));
     if (state->dec_codetab == NULL) {
         free(state);
         strm->msg = "failed to allocate code table";
@@ -431,7 +431,7 @@ static void code_print(code_t *code)
     uint8_t *string;
     int i = 0;
 
-    string = cli_calloc(code->length + 1, sizeof(uint8_t));
+    string = cli_max_calloc(code->length + 1, sizeof(uint8_t));
     if (!string)
         return;
 

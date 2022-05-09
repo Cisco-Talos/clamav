@@ -381,7 +381,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
         goto done;
     }
 
-    m->bitmap = cli_calloc(1, bitmap_size);
+    m->bitmap = cli_max_calloc(1, bitmap_size);
     if (!m->bitmap) {
         cli_warnmsg("fmap: map header allocation failed\n");
         goto done;
@@ -408,7 +408,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     }
 #endif /* ANONYMOUS_MAP */
     if (!use_aging) {
-        m->data = (fmap_t *)cli_malloc(mapsz);
+        m->data = (fmap_t *)cli_max_malloc(mapsz);
     }
     if (!m->data) {
         cli_warnmsg("fmap: map allocation failed\n");

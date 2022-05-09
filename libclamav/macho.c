@@ -375,7 +375,7 @@ cl_error_t cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
                     cli_dbgmsg("MACHO: ------------------\n");
                 continue;
             }
-            sections = (struct cli_exe_section *)cli_realloc2(sections, (sect + nsects) * sizeof(struct cli_exe_section));
+            sections = (struct cli_exe_section *)cli_max_realloc2(sections, (sect + nsects) * sizeof(struct cli_exe_section));
             if (!sections) {
                 cli_errmsg("cli_scanmacho: Can't allocate memory for 'sections'\n");
                 return CL_EMEM;

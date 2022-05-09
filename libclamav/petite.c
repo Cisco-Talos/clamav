@@ -299,7 +299,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
                 return 1;
             }
             /* Alloc 1 more struct */
-            if (!(tmpsct = cli_realloc(usects, sizeof(struct cli_exe_section) * (j + 1)))) {
+            if (!(tmpsct = cli_max_realloc(usects, sizeof(struct cli_exe_section) * (j + 1)))) {
                 if (usects)
                     free(usects);
                 return 1;

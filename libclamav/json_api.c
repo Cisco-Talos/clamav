@@ -487,7 +487,7 @@ cl_error_t cli_jsonstr_nojson(const char* key, const char* s)
 
 cl_error_t cli_jsonstrlen_nojson(const char* key, const char* s, int len)
 {
-    char* sp = cli_malloc(len + 1);
+    char* sp = cli_max_malloc(len + 1);
     if (NULL == sp) {
         cli_errmsg("json: no memory for json strlen object.\n");
         return CL_EMEM;

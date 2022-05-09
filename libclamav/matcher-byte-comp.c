@@ -894,7 +894,7 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
         }
         /* keep in mind byte_len is a stack variable so this won't change byte_len in our calling functioning */
         byte_len   = byte_len - pad;
-        tmp_buffer = cli_calloc(byte_len + 1, sizeof(char));
+        tmp_buffer = cli_max_calloc(byte_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for whitespace normalized temp buffer\n");
             return NULL;
@@ -912,13 +912,13 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
     if (opt_val & CLI_BCOMP_HEX || opt_val & CLI_BCOMP_AUTO) {
         unsigned char *hex_buffer;
         norm_len   = (byte_len % 2) == 0 ? byte_len : byte_len + 1;
-        tmp_buffer = cli_calloc(norm_len + 1, sizeof(char));
+        tmp_buffer = cli_max_calloc(norm_len + 1, sizeof(char));
         if (NULL == tmp_buffer) {
             cli_errmsg("cli_bcomp_compare_check: unable to allocate memory for normalized temp buffer\n");
             return NULL;
         }
 
-        hex_buffer = cli_calloc(norm_len + 1, sizeof(char));
+        hex_buffer = cli_max_calloc(norm_len + 1, sizeof(char));
         if (NULL == hex_buffer) {
             free(tmp_buffer);
             cli_errmsg("cli_bcomp_compare_check: unable to reallocate memory for hex buffer\n");
