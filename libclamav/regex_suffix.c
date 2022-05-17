@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -180,7 +179,7 @@ static void destroy_tree(struct node *n)
     free(n);
 }
 
-static uint8_t *parse_char_class(const char *pat, size_t *pos)
+static uint8_t *parse_char_class(const uint8_t *pat, size_t *pos)
 {
     unsigned char range_start = 0;
     int hasprev               = 0;
@@ -200,7 +199,10 @@ static uint8_t *parse_char_class(const char *pat, size_t *pos)
             /* it is a range*/
             unsigned char range_end;
             unsigned int c;
-            assert(range_start);
+            if (0 == range_start) {
+                cli_errmsg("parse_char_class: range_start not initialized");
+                return NULL;
+            }
             ++*pos;
             if (pat[*pos] == '[')
                 if (pat[*pos + 1] == '.') {
@@ -238,7 +240,7 @@ static uint8_t *parse_char_class(const char *pat, size_t *pos)
     return bitmap;
 }
 
-static struct node *parse_regex(const char *p, size_t *last)
+static struct node *parse_regex(const uint8_t *p, size_t *last)
 {
     struct node *v = NULL;
     struct node *right;
@@ -426,14 +428,15 @@ static cl_error_t build_suffixtree_descend(struct node *n, struct text_buffer *b
 
 cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata)
 {
-    struct regex_list regex;
-    struct text_buffer buf;
-    struct node root_node;
-    struct node *n;
-    size_t last = 0;
+    struct regex_list regex = {0};
+    struct text_buffer buf  = {0};
+    struct node root_node   = {0};
+    struct node *n          = NULL;
+    size_t last             = 0;
     int rc;
 
-    assert(pattern);
+    VERIFY_POINTER(pattern, cli_errmsg("cli_regex2suffix: pattern must be initialized"); rc = CL_ENULLARG);
+    VERIFY_POINTER(preg, cli_errmsg("cli_regex2suffix: preg must be initialized"); rc = CL_ENULLARG);
 
     regex.preg = preg;
     rc         = cli_regcomp(regex.preg, pattern, REG_EXTENDED);
@@ -449,10 +452,10 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
         }
         return rc;
     }
-    regex.nxt     = NULL;
-    regex.pattern = cli_strdup(pattern);
+    regex.nxt = NULL;
+    CLI_STRDUP(pattern, regex.pattern, cli_errmsg("cli_regex2suffix: Unable to duplicate pattern"); rc = CL_EMEM);
 
-    n = parse_regex(pattern, &last);
+    n = parse_regex(((const uint8_t *)pattern), &last);
     if (!n)
         return REG_ESPACE;
     memset(&buf, 0, sizeof(buf));
@@ -460,8 +463,11 @@ cl_error_t cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback 
     n->parent = &root_node;
 
     rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
-    free(regex.pattern);
-    free(buf.data);
+
+done:
+
+    FREE(regex.pattern);
+    FREE(buf.data);
     destroy_tree(n);
     return rc;
 }

@@ -113,8 +113,8 @@ static cl_error_t unz(
     zip_cb zcb,
     const char *original_filename)
 {
-    char obuf[BUFSIZ];
-    char *tempfile = NULL;
+    char obuf[BUFSIZ] = {0};
+    char *tempfile    = NULL;
     int out_file, ret = CL_CLEAN;
     int res        = 1;
     size_t written = 0;

@@ -219,7 +219,7 @@ static const struct rtest {
     {NULL,
      "http://key.com", "go to key.com", RTR_CLEAN},
     {":.+\\.paypal\\.(com|de|fr|it)([/?].*)?:.+\\.ebay\\.(at|be|ca|ch|co\\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\\.(au|cn|hk|my|sg))?)([/?].*)?/",
-     "http://www.paypal.com", "pics.ebay.com", RTR_ALLOWED},
+     "http://www.paypal.com", "pics.ebay.com", RTR_INVALID_REGEX},
     {NULL, "http://somefakeurl.example.com", "someotherdomain-key.com", RTR_CLEAN},
     {NULL, "http://somefakeurl.example.com", "someotherdomain.key.com", RTR_PHISH},
     {NULL, "http://malware-test.example.com/something", "test", RTR_BLOCKED},

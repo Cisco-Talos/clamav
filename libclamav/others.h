@@ -1227,6 +1227,19 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
     } while (0)
 #endif
 
+#ifndef CLI_STRDUP
+#define CLI_STRDUP(buf, var, ...) \
+    do {                          \
+        var = cli_strdup(buf);    \
+        if (NULL == var) {        \
+            do {                  \
+                __VA_ARGS__;      \
+            } while (0);          \
+            goto done;            \
+        }                         \
+    } while (0)
+#endif
+
 #ifndef FREE
 #define FREE(var)          \
     do {                   \
@@ -1323,6 +1336,31 @@ uint8_t cli_set_debug_flag(uint8_t debug_flag);
             goto done;                       \
         }                                    \
         var = vTmp;                          \
+    } while (0)
+#endif
+
+/**
+ * @brief Wrapper around realloc that limits how much may be allocated to CLI_MAX_ALLOCATION.
+ *
+ * IMPORTANT: This differs from realloc() in that if size==0, it will NOT free the ptr.
+ *
+ * NOTE: cli_realloc() will NOT free ptr if size==0. It is safe to free ptr after `done:`.
+ *
+ * @param ptr
+ * @param size
+ * @return void*
+ */
+#ifndef CLI_REALLOC
+#define CLI_REALLOC(ptr, size, ...)          \
+    do {                                     \
+        void *vTmp = cli_realloc(ptr, size); \
+        if (NULL == vTmp) {                  \
+            do {                             \
+                __VA_ARGS__;                 \
+            } while (0);                     \
+            goto done;                       \
+        }                                    \
+        ptr = vTmp;                          \
     } while (0)
 #endif
 
