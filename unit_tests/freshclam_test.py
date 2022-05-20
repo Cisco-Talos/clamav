@@ -40,8 +40,7 @@ class TC(testcase.TestCase):
         TC.freshclam_pid = Path(TC.path_tmp, 'freshclam-test.pid')
         TC.freshclam_config = Path(TC.path_tmp, 'freshclam-test.conf')
 
-        TC.mock_mirror_port = 8001 # Chosen instead of 8000 because CVD-Update tool serves on 8000 by default.
-                                   # TODO: Ideally we'd find an open port to use for these tests instead of crossing our fingers.
+        TC.mock_mirror_port = None
         TC.mock_mirror = None
 
     @classmethod
@@ -208,7 +207,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_02)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -248,7 +247,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 429 (too-many-requests)')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_04,TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_04, TC.mock_mirror_port))
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -301,7 +300,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -361,7 +360,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -419,7 +418,7 @@ class TC(testcase.TestCase):
         #shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  # <-- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -505,7 +504,7 @@ class TC(testcase.TestCase):
         # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -592,7 +591,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(handler, TC.mock_mirror_port))
+        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -685,18 +684,23 @@ class TC(testcase.TestCase):
         # verify stderr
         self.verify_output(output.err, unexpected=unexpected_results)
 
-def mock_database_mirror(handler, port=8001):
+def mock_database_mirror(*handler):
     '''
     Process entry point for our HTTP Server to mock a database mirror.
     '''
-    try:
-        server = HTTPServer(('', port), handler)
-        print("Web server is running on port {}".format(port))
-        server.serve_forever()
+    server = HTTPServer(('', 0), handler)
+    port = server.server_port
 
-    except KeyboardInterrupt:
-        print("^C entered, stopping web server...")
-        server.socket.close()
+    def server_process():
+        try:
+            print("Web server is running on port {}".format(port))
+            server.serve_forever()
+
+        except KeyboardInterrupt:
+            print("^C entered, stopping web server...")
+            server.socket.close()
+
+    return (port, Process(target=server_process))
 
 class WebServerHandler_02(BaseHTTPRequestHandler):
     '''
