@@ -89,4 +89,8 @@ fc_error_t updatecustomdb(
     char **dbFilename,
     int *bUpdated);
 
+
+#define DNS_WARNING_THRESHOLD_HOURS 12
+#define DNS_WARNING_THRESHOLD_SECONDS (DNS_WARNING_THRESHOLD_HOURS * 60 * 60)
+
 #endif // __LIBFRESHCLAM_INTERNAL_H
