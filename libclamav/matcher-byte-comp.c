@@ -988,15 +988,14 @@ unsigned char *cli_bcomp_normalize_buffer(const unsigned char *buffer, uint32_t 
 void cli_bcomp_freemeta(struct cli_matcher *root, struct cli_bcomp_meta *bm)
 {
 
-    int i = 0;
+    uint32_t i = 0;
 
     if (!root || !bm) {
         return;
     }
 
-    /* can never have more than 2 */
     if (bm->comps) {
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < bm->comp_count; i++) {
             if (bm->comps[i]) {
                 MPOOL_FREE(root->mempool, bm->comps[i]);
                 bm->comps[i] = NULL;
