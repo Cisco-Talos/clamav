@@ -243,7 +243,8 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
      * TODO - consider handling in cli_ac_addpatt? (two pattern possibility)
      */
     if (sigopts & ACPATT_OPTION_WIDE) {
-        size_t ovrlen = 2 * strlen(hexcpy) + 1;
+        size_t hexcpylen = strlen(hexcpy);
+        size_t ovrlen = 2 * hexcpylen + 1;
         char *hexovr  = cli_calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
@@ -251,7 +252,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
         }
 
         /* clamav-specific wildcards need to be handled here! */
-        for (i = 0; i < strlen(hexcpy); ++i) {
+        for (i = 0; i < hexcpylen; ++i) {
             size_t len = strlen(hexovr);
 
             if (hexcpy[i] == '*' || hexcpy[i] == '|' || hexcpy[i] == ')') {
@@ -265,7 +266,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
 
                 hexovr[len] = '}';
             } else if (hexcpy[i] == '{') {
-                while (i < strlen(hexcpy) && hexcpy[i] != '}')
+                while (i < hexcpylen && hexcpy[i] != '}')
                     hexovr[len++] = hexcpy[i++];
 
                 hexovr[len] = '}';
@@ -276,7 +277,11 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
                 /* copies '(' */
                 hexovr[len] = hexcpy[i];
 
-                if (hexcpy[i + 1] == 'B' || hexcpy[i + 1] == 'L' || hexcpy[i + 1] == 'W') {
+                if (i+2 >= hexcpylen) {
+                    free(hexcpy);
+                    free(hexovr);
+                    return CL_EMALFDB;
+                } else if (hexcpy[i + 1] == 'B' || hexcpy[i + 1] == 'L' || hexcpy[i + 1] == 'W') {
                     ++len;
                     ++i;
                     hexovr[len++] = hexcpy[i++];
