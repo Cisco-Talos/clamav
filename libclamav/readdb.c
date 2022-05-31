@@ -5615,18 +5615,12 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     tasks_to_do += 7; // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
 
     if (engine->dconf) {
-        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-            if (engine->bcs.all_bcs) {
-                tasks_to_do += engine->bcs.count;
-            }
-            tasks_to_do += 1; // bytecode done
-            tasks_to_do += 1; // bytecode hooks
+        if (engine->bcs.all_bcs) {
+            tasks_to_do += engine->bcs.count;
         }
-
-        if (engine->dconf->phishing & PHISHING_CONF_ENGINE) {
-            tasks_to_do += 1; // phishing cleanup
-        }
-
+        tasks_to_do += 1; // bytecode done
+        tasks_to_do += 1; // bytecode hooks
+        tasks_to_do += 1; // phishing cleanup
         tasks_to_do += 1; // dconf mempool
     }
     tasks_to_do += 7; // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
@@ -5759,29 +5753,27 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     TASK_COMPLETE();
 
     if (engine->dconf) {
-        if (engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
-            if (engine->bcs.all_bcs) {
-                for (i = 0; i < engine->bcs.count; i++) {
-                    cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
-                    TASK_COMPLETE();
-                }
+        if (engine->bcs.all_bcs) {
+            for (i = 0; i < engine->bcs.count; i++) {
+                cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+                TASK_COMPLETE();
             }
+        }
 
-            cli_bytecode_done(&engine->bcs);
-            TASK_COMPLETE();
+        cli_bytecode_done(&engine->bcs);
+        TASK_COMPLETE();
 
+        if (engine->bcs.all_bcs) {
             free(engine->bcs.all_bcs);
-
-            for (i = 0; i < _BC_LAST_HOOK - _BC_START_HOOKS; i++) {
-                free(engine->hooks[i]);
-            }
-            TASK_COMPLETE();
         }
 
-        if (engine->dconf->phishing & PHISHING_CONF_ENGINE) {
-            phishing_done(engine);
-            TASK_COMPLETE();
+        for (i = 0; i < _BC_LAST_HOOK - _BC_START_HOOKS; i++) {
+            free(engine->hooks[i]);
         }
+        TASK_COMPLETE();
+
+        phishing_done(engine);
+        TASK_COMPLETE();
 
         MPOOL_FREE(engine->mempool, engine->dconf);
         TASK_COMPLETE();
