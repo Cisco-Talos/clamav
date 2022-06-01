@@ -1291,13 +1291,13 @@ static cl_error_t cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *s
 #define ICO_TOKENS 4
 static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
-    const char *tokens[ICO_TOKENS + 1];
-    char buffer[FILEBUFF], *buffer_cpy = NULL;
-    uint8_t *hash;
+    const char *tokens[ICO_TOKENS + 1] = {0};
+    char buffer[FILEBUFF] = {0}, *buffer_cpy = NULL;
+    uint8_t *hash = NULL;
     int ret           = CL_SUCCESS;
     unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
-    struct icomtr *metric;
-    struct icon_matcher *matcher;
+    struct icomtr *metric = NULL;
+    struct icon_matcher *matcher = NULL;
 
     if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1)))
         return CL_EMEM;
@@ -1506,11 +1506,12 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 
     if (!line) {
         cli_errmsg("cli_loadidb: Empty database file\n");
-        return CL_EMALFDB;
+        ret = CL_EMALFDB;
     }
 
     if (ret) {
         cli_errmsg("cli_loadidb: Problem parsing database at line %u\n", line);
+        MPOOL_FREE(engine->mempool, matcher);
         return ret;
     }
 
