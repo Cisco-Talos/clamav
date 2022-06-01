@@ -132,10 +132,23 @@ static int patt_cmp_fn(const struct cli_ac_patt *a, const struct cli_ac_patt *b)
     RETURN_RES_IF_NE(a->ch[1], b->ch[1]);
     RETURN_RES_IF_NE(a->boundary, b->boundary);
 
-    res = memcmp(a->pattern, b->pattern, a->length[0] * sizeof(uint16_t));
-    if (res) return res;
-    res = memcmp(a->prefix, b->prefix, a->prefix_length[0] * sizeof(uint16_t));
-    if (res) return res;
+    /*
+     * If the first two arguments to memcmp are NULL, clangs
+     * UndefinedBehaviorSanitizer will complain.  It is legal if the length
+     * is zero, so don't call memcmp if the length is zero.
+     */
+    if (a->length[0] > 0) {
+        res = memcmp(a->pattern, b->pattern, a->length[0] * sizeof(uint16_t));
+        if (res) {
+            return res;
+        }
+    }
+    if (a->prefix_length[0] > 0) {
+        res = memcmp(a->prefix, b->prefix, a->prefix_length[0] * sizeof(uint16_t));
+        if (res) {
+            return res;
+        }
+    }
 
     RETURN_RES_IF_NE(a->special, b->special);
     if (!a->special && !b->special)

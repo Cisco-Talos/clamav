@@ -697,9 +697,10 @@ static void *allocbase_fromfrag(struct FRAG *f)
 
 void mpool_free(struct MP *mp, void *ptr)
 {
-    struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
-    unsigned int sbits;
+    struct FRAG *f     = NULL;
+    unsigned int sbits = 0;
     if (!ptr) return;
+    f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
 
 #ifdef CL_DEBUG
     assert(f->magic == MPOOLMAGIC && "Attempt to mpool_free a pointer we did not allocate!");
@@ -729,10 +730,11 @@ void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size)
 
 void *mpool_realloc(struct MP *mp, void *ptr, size_t size)
 {
-    struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
-    size_t csize;
-    void *new_ptr;
+    struct FRAG *f = NULL;
+    size_t csize   = 0;
+    void *new_ptr  = NULL;
     if (!ptr) return mpool_malloc(mp, size);
+    f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
 
     if (!size || !(csize = from_bits(f->u.a.sbits))) {
         cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long)size);

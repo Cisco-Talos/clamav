@@ -484,7 +484,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx)
             pos += 4;
             buf += 4;
         }
-        if ((pos += 4 + nextsz) > n->asz) {
+        if ((pos += (4 + ((uint32_t)nextsz))) > n->asz) {
             n->solid = 1;
             break;
         }
