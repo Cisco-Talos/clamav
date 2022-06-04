@@ -769,6 +769,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
                     return -1;
                 }
                 pth--;
+                /* fall-through */
 
             case '>':
             case '<':
@@ -1102,9 +1103,9 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     break;
                 subbp = bp;
             } else {
-                if (bp < (special->len[0] - 1))
+                if (bp < (uint32_t)(special->len[0] - 1))
                     break;
-                subbp = bp - (special->len[0] - 1);
+                subbp = bp - (uint32_t)(special->len[0] - 1);
             }
 
             match *= special->len[0];
@@ -1128,11 +1129,11 @@ inline static int ac_findmatch_special(const unsigned char *buffer, uint32_t off
                     }
                     subbp = bp;
                 } else {
-                    if (bp < (alt->len - 1)) {
+                    if (bp < (uint32_t)(alt->len - 1)) {
                         alt = alt->next;
                         continue;
                     }
-                    subbp = bp - (alt->len - 1);
+                    subbp = bp - (uint32_t)(alt->len - 1);
                 }
 
                 /* note that generic alternates CANNOT be negated */
@@ -1894,7 +1895,7 @@ cl_error_t cli_ac_scanbuff(
                                 continue;
                             }
 
-                            if (pt->partno + 1 > mdata->min_partno)
+                            if ((uint32_t)(pt->partno + 1) > mdata->min_partno)
                                 mdata->min_partno = pt->partno + 1;
 
                             /* sparsely populated matrix, so allocate and initialize if NULL */
@@ -2872,6 +2873,17 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     }
 
     new->length[0] = (uint16_t)strlen(hex ? hex : hexsig) / 2;
+    if (new->length[0] < root->ac_mindepth) {
+        cli_errmsg("cli_ac_addsig: Subpattern in signature is shorter than the minimum depth of the AC trie. (%u < %u)\n", new->length[0], root->ac_mindepth);
+        if (new->special)
+            mpool_ac_free_special(root->mempool, new);
+
+        MPOOL_FREE(root->mempool, new->pattern);
+        MPOOL_FREE(root->mempool, new);
+        free(hex);
+        return CL_EMALFDB;
+    }
+
     for (i = 0, j = 0; i < new->length[0]; i++) {
         if ((new->pattern[i] & CLI_MATCH_METADATA) == CLI_MATCH_SPECIAL) {
             new->length[1] += new->special_table[j]->len[0];
@@ -2914,8 +2926,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             break;
         }
 
-        if (zprefix && new->pattern[i])
+        if (zprefix && 0 != new->pattern[i]) {
             zprefix = 0;
+        }
     }
 
     if (wprefix || zprefix) {
@@ -2924,28 +2937,36 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             for (j = i; j < i + root->ac_maxdepth && j < new->length[0]; j++) {
                 if (new->pattern[j] & CLI_MATCH_WILDCARD) {
                     break;
-                } else {
-                    if (j - i + 1 >= plen) {
-                        plen = j - i + 1;
-                        ppos = i;
-                    }
                 }
 
-                if (new->pattern[ppos] || new->pattern[ppos + 1]) {
+                if (j - i + 1 >= plen) {
+                    plen = j - i + 1;
+                    ppos = i;
+                }
+
+                if ((0 != new->pattern[ppos]) ||
+                    ((new->length[0] > ppos + 1) && (0 != new->pattern[ppos + 1]))) {
+
                     if (plen >= root->ac_maxdepth) {
                         break;
-                    } else if (plen >= root->ac_mindepth && plen > nzplen) {
+                    }
+
+                    if (plen >= root->ac_mindepth && plen > nzplen) {
                         nzplen = plen;
                         nzpos  = ppos;
                     }
                 }
             }
 
-            if (plen >= root->ac_maxdepth && (new->pattern[ppos] || new->pattern[ppos + 1]))
+            if (plen >= root->ac_maxdepth && (0 != new->pattern[ppos] || 0 != new->pattern[ppos + 1])) {
                 break;
+            }
         }
 
-        if (!new->pattern[ppos] && !new->pattern[ppos + 1] && nzplen) {
+        if ((0 != nzplen) &&
+            (new->length[0] > ppos + 1) &&
+            (0 == new->pattern[ppos]) &&
+            (0 == new->pattern[ppos + 1])) {
             plen = nzplen;
             ppos = nzpos;
         }
@@ -2980,8 +3001,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         new->length[2] -= new->prefix_length[2];
     }
 
-    if (new->length[2] + new->prefix_length[2] > root->maxpatlen)
+    if (new->length[2] + new->prefix_length[2] > root->maxpatlen) {
         root->maxpatlen = new->length[2] + new->prefix_length[2];
+    }
 
     if (0 == new->lsigid[0]) {
         /* For logical signatures, we already recorded the virname in the lsig table entry.
