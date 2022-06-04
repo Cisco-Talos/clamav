@@ -2862,6 +2862,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         }
     }
 
+    /*
+     * Convert the hex string pattern to a uint16_t* pattern (flags + byte) patterns.
+     */
     new->pattern = CLI_MPOOL_HEX2UI(root->mempool, hex ? hex : hexsig);
     if (new->pattern == NULL) {
         if (new->special)
@@ -2920,6 +2923,15 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
         /* TODO: should this affect maxpatlen? */
     }
 
+    /*
+     * Check beginning bytes of the pattern up to the max-depth of the AC trie to see if:
+     *  a. it contains a wildcard, or
+     *  b. the bytes are all zeroes.
+     *
+     * If it does, we can try to shift the start of the pattern the right, have those beginning
+     * bytes be a "prefix" which gets backwards-matched after the AC match.
+     * This happens in the call to ac_backward_match_branch() in ac_forward_match_branch()
+     */
     for (i = 0; i < root->ac_maxdepth && i < new->length[0]; i++) {
         if (new->pattern[i] & CLI_MATCH_WILDCARD) {
             wprefix = 1;
@@ -2932,26 +2944,44 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     }
 
     if (wprefix || zprefix) {
+        /*
+         * This pattern has a wildcard in the first few bytes or starts with some zeroes.
+         * We'll try to shift the start of the pattern right a bit to find a static subpattern to use for the bytes that go in the A-C trie.
+         */
+
+        // If needed, we can shift the start of the pattern that goes in the A-C Trie right up to the pattern length minus min-depth bytes
+        // The original starting bytes will become a "prefix" that gets backward-matched.
         pend = new->length[0] - root->ac_mindepth + 1;
+
+        // Search for static bytes to start the pattern in the A-C trie that starts within original min-depth, and of a length up to max-depth.
         for (i = 0; i < pend; i++) {
             for (j = i; j < i + root->ac_maxdepth && j < new->length[0]; j++) {
                 if (new->pattern[j] & CLI_MATCH_WILDCARD) {
+                    // Found a wildcard. Shift the pattern start right a byte, relegating this byte to the "prefix"
                     break;
                 }
 
+                // This byte is a contender for the start of the pattern.
+                // Record the start + length of the shifted prefix.
                 if (j - i + 1 >= plen) {
                     plen = j - i + 1;
                     ppos = i;
                 }
 
+                // Check if the starting bytes at this offset are both non-zero.  If they are, then that's even better.
                 if ((0 != new->pattern[ppos]) ||
                     ((new->length[0] > ppos + 1) && (0 != new->pattern[ppos + 1]))) {
+                    // At least one of the first two bytes is non-zero which would be better than starting with two zeroes.
 
                     if (plen >= root->ac_maxdepth) {
+                        // But... we hit max-depth, so nevermind. Let's stop searching.
                         break;
                     }
 
+                    // Save off the position and length so we can roll back to it later, if needed.
                     if (plen >= root->ac_mindepth && plen > nzplen) {
+                        // We've found a longer sequence of non-zero bytes we could use for the AC pattern starting position.
+                        // Store off the length and position of this starting position with the non-zero bytes, in case we want to roll back to it.
                         nzplen = plen;
                         nzpos  = ppos;
                     }
@@ -2967,6 +2997,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             (new->length[0] > ppos + 1) &&
             (0 == new->pattern[ppos]) &&
             (0 == new->pattern[ppos + 1])) {
+            // The latest shifted position starts with two zeroes.
+            // We found a valid static pattern earlier that doesn't start with two zeroes.
+            // Let's roll back a little bit to use that instead.
             plen = nzplen;
             ppos = nzpos;
         }
@@ -2979,7 +3012,9 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             return CL_EMALFDB;
         }
 
-        new->prefix           = new->pattern;
+        // Store those intial bytes as the pattern "prefix" (the stuff before what goes in the AC Trie)
+        new->prefix = new->pattern;
+        // The "prefix" length is the number of bytes before the starting position of the pattern that goes in the AC Trie.
         new->prefix_length[0] = ppos;
         for (i = 0, j = 0; i < new->prefix_length[0]; i++) {
             if ((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
@@ -2995,13 +3030,16 @@ cl_error_t cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
             }
         }
 
+        // Update the pattern to start at the shifted position with the static bytes.
         new->pattern = &new->prefix[ppos];
+        // And update the pattern length to remove the prefix bytes.
         new->length[0] -= new->prefix_length[0];
         new->length[1] -= new->prefix_length[1];
         new->length[2] -= new->prefix_length[2];
     }
 
     if (new->length[2] + new->prefix_length[2] > root->maxpatlen) {
+        // This is the longest pattern we've stored. Update our max-pattern-length record
         root->maxpatlen = new->length[2] + new->prefix_length[2];
     }
 
