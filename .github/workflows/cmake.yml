@@ -21,7 +21,7 @@ env:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
       - uses: actions/checkout@v1
@@ -39,7 +39,7 @@ jobs:
       # Restore from cache the previously built ports. If cache-miss, download, build vcpkg ports.
       - name: Restore vcpkg ports from cache or install vcpkg
         # Download and build vcpkg, without installing any port. If content is cached already, it is a no-op.
-        uses: lukka/run-vcpkg@v5
+        uses: lukka/run-vcpkg@v7.4
         id: runvcpkg
         with:
           vcpkgArguments: "curl[openssl] json-c libxml2 pcre2 check pthreads zlib pdcurses bzip2"
