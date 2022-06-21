@@ -200,7 +200,8 @@ static inline cl_error_t matcher_run(const struct cli_matcher *root,
         case CL_TYPE_JPEG:
         case CL_TYPE_PNG:
         case CL_TYPE_GRAPHICS: {
-            if (!fuzzy_hash_check(root->fuzzy_hashmap, mdata, ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash)) {
+            if (ctx->recursion_stack[ctx->recursion_level].calculated_image_fuzzy_hash &&
+                !fuzzy_hash_check(root->fuzzy_hashmap, mdata, ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash)) {
                 cli_errmsg("Unexpected error when checking for fuzzy hash matches.\n");
                 return CL_ERROR;
             }
