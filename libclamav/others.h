@@ -187,6 +187,7 @@ typedef struct recursion_level_tag {
     uint32_t recursion_level_buffer_fmap; /* Which fmap layer in this buffer. */
     bool is_normalized_layer;             /* Indicates that the layer should be skipped when checking container and intermediate types. */
     image_fuzzy_hash_t image_fuzzy_hash;  /* Used for image/graphics files to store a fuzzy hash. */
+    bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
 } recursion_level_t;
 
 /* internal clamav context */

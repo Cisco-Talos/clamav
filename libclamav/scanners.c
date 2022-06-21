@@ -4105,7 +4105,8 @@ static cl_error_t calculate_fuzzy_image_hash(cli_ctx *ctx, cli_file_t type)
         (void)cli_jsonstr(header, "Hash", hashstr);
     }
 
-    ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash = hash;
+    ctx->recursion_stack[ctx->recursion_level].image_fuzzy_hash            = hash;
+    ctx->recursion_stack[ctx->recursion_level].calculated_image_fuzzy_hash = true;
 
     status = CL_SUCCESS;
 
@@ -4652,47 +4653,76 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
              * Note: JPEG 2000 is a very different format from JPEG, JPEG/JFIF, JPEG/Exif, JPEG/SPIFF (1994, 1997)
              * JPEG 2000 is not handled by cli_scanjpeg or cli_parsejpeg.
              */
-            ret = calculate_fuzzy_image_hash(ctx, type);
+
+            // It's okay if it fails to calculate the fuzzy hash.
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
         }
 
         case CL_TYPE_GIF: {
-            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF)) {
+                ret = cli_parsegif(ctx);
+            }
+
             if (CL_SUCCESS != ret) {
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
                 break;
             }
 
-            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_GIF))
-                ret = cli_parsegif(ctx);
+            // It's okay if it fails to calculate the fuzzy hash.
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
         }
 
         case CL_TYPE_PNG: {
-            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG)) {
+                ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+            }
+
             if (CL_SUCCESS != ret) {
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
                 break;
             }
 
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_PNG))
-                ret = cli_parsepng(ctx); /* PNG parser detects a couple CVE's as well as Broken.Media */
+            // It's okay if it fails to calculate the fuzzy hash.
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
         }
 
         case CL_TYPE_JPEG: {
-            ret = calculate_fuzzy_image_hash(ctx, type);
+            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG)) {
+                ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
+            }
+
             if (CL_SUCCESS != ret) {
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
                 break;
             }
 
-            if (SCAN_HEURISTICS && (DCONF_OTHER & OTHER_CONF_JPEG))
-                ret = cli_parsejpeg(ctx); /* JPG parser detects MS04-028 exploits as well as Broken.Media */
+            // It's okay if it fails to calculate the fuzzy hash.
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
         }
 
-        case CL_TYPE_TIFF:
-            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS)
+        case CL_TYPE_TIFF: {
+            if (SCAN_HEURISTICS && SCAN_HEURISTIC_BROKEN_MEDIA && (DCONF_OTHER & OTHER_CONF_TIFF) && ret != CL_VIRUS) {
                 ret = cli_parsetiff(ctx);
+            }
+
+            if (CL_SUCCESS != ret) {
+                // do not calculate the fuzzy image hash if parsing failed, or a heuristic alert occured.
+                break;
+            }
+
+            // It's okay if it fails to calculate the fuzzy hash.
+            (void)calculate_fuzzy_image_hash(ctx, type);
+
             break;
+        }
 
         case CL_TYPE_CRYPTFF:
             if (DCONF_OTHER & OTHER_CONF_CRYPTFF)
