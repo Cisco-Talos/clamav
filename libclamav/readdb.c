@@ -244,8 +244,8 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
      */
     if (sigopts & ACPATT_OPTION_WIDE) {
         size_t hexcpylen = strlen(hexcpy);
-        size_t ovrlen = 2 * hexcpylen + 1;
-        char *hexovr  = cli_calloc(ovrlen, sizeof(char));
+        size_t ovrlen    = 2 * hexcpylen + 1;
+        char *hexovr     = cli_calloc(ovrlen, sizeof(char));
         if (!hexovr) {
             free(hexcpy);
             return CL_EMEM;
@@ -277,7 +277,7 @@ cl_error_t cli_sigopts_handler(struct cli_matcher *root, const char *virname, co
                 /* copies '(' */
                 hexovr[len] = hexcpy[i];
 
-                if (i+2 >= hexcpylen) {
+                if (i + 2 >= hexcpylen) {
                     free(hexcpy);
                     free(hexovr);
                     return CL_EMALFDB;
@@ -1293,10 +1293,10 @@ static cl_error_t cli_loadidb(FILE *fs, struct cl_engine *engine, unsigned int *
 {
     const char *tokens[ICO_TOKENS + 1] = {0};
     char buffer[FILEBUFF] = {0}, *buffer_cpy = NULL;
-    uint8_t *hash = NULL;
+    uint8_t *hash     = NULL;
     int ret           = CL_SUCCESS;
     unsigned int line = 0, sigs = 0, tokens_count, i, size, enginesize;
-    struct icomtr *metric = NULL;
+    struct icomtr *metric        = NULL;
     struct icon_matcher *matcher = NULL;
 
     if (!(matcher = (struct icon_matcher *)MPOOL_CALLOC(engine->mempool, sizeof(*matcher), 1)))
@@ -2116,7 +2116,11 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     /* Initialize Target Description Block (TDB) */
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname))) {
-        cli_errmsg("cli_loadldb: Failed to initialize target description block\n");
+        if (CL_BREAK == ret) {
+            status = CL_SUCCESS;
+        } else {
+            cli_errmsg("cli_loadldb: Failed to initialize target description block\n");
+        }
         status = ret;
         goto done;
     }
