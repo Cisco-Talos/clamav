@@ -292,7 +292,7 @@ cl_error_t cli_bcomp_addpatt(struct cli_matcher *root, const char *virname, cons
     /* parse out the byte length parameter */
     buf_end     = NULL;
     byte_length = strtol(buf_start, (char **)&buf_end, 0);
-    if (buf_end && buf_end + 1 != tokens[2]) {
+    if ((buf_end && buf_end + 1 != tokens[2]) || (0 == byte_length)) {
         cli_errmsg("cli_bcomp_addpatt: while parsing (%s#%s#%s), byte length parameter included invalid characters\n", tokens[0], tokens[1], tokens[2]);
         free(buf);
         cli_bcomp_freemeta(root, bcomp);
