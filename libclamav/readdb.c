@@ -2110,7 +2110,11 @@ static cl_error_t load_oneldb(char *buffer, int chkpua, struct cl_engine *engine
     /* Initialize Target Description Block (TDB) */
     memset(&tdb, 0, sizeof(tdb));
     if (CL_SUCCESS != (ret = init_tdb(&tdb, engine, tokens[1], virname))) {
-        cli_errmsg("cli_loadldb: Failed to initialize target description block\n");
+        if (CL_BREAK == ret) {
+            status = CL_SUCCESS;
+        } else {
+            cli_errmsg("cli_loadldb: Failed to initialize target description block\n");
+        }
         status = ret;
         goto done;
     }
