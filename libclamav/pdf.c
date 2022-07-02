@@ -1439,6 +1439,11 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
 
     cli_dbgmsg("pdf_extract_obj: obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
+    if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
+        cli_dbgmsg("pdf_extract_obj: Recursion limit reached.\n");
+        return CL_SUCCESS;
+    }
+
     if (obj->objstm) {
         cli_dbgmsg("pdf_extract_obj: extracting obj found in objstm.\n");
         if (obj->objstm->streambuf == NULL) {
@@ -1582,10 +1587,13 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
                 dict_len--;
             }
 
-            if (dict_len > 4)
+            if (dict_len > 4) {
+                pdf->parse_recursion_depth++;
                 dparams = pdf_parse_dict(pdf, obj, obj->size, (char *)pstr, NULL);
-            else
+                pdf->parse_recursion_depth--;
+            } else {
                 cli_dbgmsg("pdf_extract_obj: failed to locate DecodeParms dictionary start\n");
+            }
         }
 
         /*
@@ -3418,7 +3426,9 @@ static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
                 goto done;
             }
 
+            pdf->parse_recursion_depth++;
             status = pdf_extract_obj(pdf, obj, PDF_EXTRACT_OBJ_SCAN);
+            pdf->parse_recursion_depth--;
             switch (status) {
                 case CL_EFORMAT:
                     /* Don't halt on one bad object */
@@ -4109,7 +4119,10 @@ static void Author_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
         pdf->stats.author = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.author))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.author->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Author", NULL, &(pdf->stats.author->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4134,7 +4147,10 @@ static void Creator_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->stats.creator = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creator))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.creator->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Creator", NULL, &(pdf->stats.creator->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4159,7 +4175,10 @@ static void ModificationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, str
         pdf->stats.modificationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.modificationdate))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.modificationdate->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/ModDate", NULL, &(pdf->stats.modificationdate->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4184,7 +4203,10 @@ static void CreationDate_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct 
         pdf->stats.creationdate = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.creationdate))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.creationdate->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/CreationDate", NULL, &(pdf->stats.creationdate->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4209,7 +4231,10 @@ static void Producer_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->stats.producer = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.producer))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.producer->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Producer", NULL, &(pdf->stats.producer->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4234,7 +4259,10 @@ static void Title_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
         pdf->stats.title = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.title))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.title->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Title", NULL, &(pdf->stats.title->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4259,7 +4287,10 @@ static void Keywords_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfn
         pdf->stats.keywords = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.keywords))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.keywords->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Keywords", NULL, &(pdf->stats.keywords->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4284,7 +4315,10 @@ static void Subject_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfna
         pdf->stats.subject = cli_calloc(1, sizeof(struct pdf_stats_entry));
         if (!(pdf->stats.subject))
             return;
+
+        pdf->parse_recursion_depth++;
         pdf->stats.subject->data = pdf_parse_string(pdf, obj, objstart, obj->size, "/Subject", NULL, &(pdf->stats.subject->meta));
+        pdf->parse_recursion_depth--;
     }
 }
 #endif
@@ -4360,7 +4394,10 @@ static void Pages_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfname
 
     begin += 5;
 
+    pdf->parse_recursion_depth++;
     array = pdf_parse_array(pdf, obj, obj->size, (char *)begin, NULL);
+    pdf->parse_recursion_depth--;
+
     if (!(array)) {
         cli_jsonbool(pdfobj, "IncorrectPagesCount", 1);
         return;
