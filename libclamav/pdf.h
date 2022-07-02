@@ -24,6 +24,8 @@
 #include "others.h"
 #define PDF_FILTERLIST_MAX 64
 
+#define PDF_OBJECT_RECURSION_LIMIT 25
+
 struct objstm_struct {
     uint32_t first;        // offset of first obj
     uint32_t current;      // offset of current obj
@@ -167,6 +169,7 @@ struct pdf_struct {
     struct pdf_stats stats;
     struct objstm_struct **objstms;
     uint32_t nobjstms;
+    uint32_t parse_recursion_depth;
 };
 
 #define OBJ_FLAG_PDFNAME_NONE 0x0
@@ -191,6 +194,7 @@ char *pdf_finalize_string(struct pdf_struct *pdf, struct pdf_obj *obj, const cha
 char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *objstart, size_t objsize, const char *str, char **endchar, struct pdf_stats_metadata *meta);
 struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar);
 struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, size_t objsize, char *begin, char **endchar);
+
 int is_object_reference(char *begin, char **endchar, uint32_t *id);
 void pdf_free_dict(struct pdf_dict *dict);
 void pdf_free_array(struct pdf_array *array);

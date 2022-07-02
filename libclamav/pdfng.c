@@ -382,6 +382,11 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
     char *res = NULL;
     uint32_t objid;
 
+    if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
+        cli_dbgmsg("pdf_parse_string: Recursion limit reached.\n");
+        return NULL;
+    }
+
     if (obj->objstm) {
         if (objsize > (size_t)(obj->objstm->streambuf_len - (objstart - obj->objstm->streambuf))) {
             /* Possible attempt to exploit bb11980 */
@@ -439,6 +444,7 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
 
     p2 = (char *)(q + objsize);
     if (is_object_reference(p1, &p2, &objid)) {
+        cl_error_t ret;
         struct pdf_obj *newobj;
         char *begin, *p3;
         STATBUF sb;
@@ -464,8 +470,12 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
         objflags = newobj->flags;
         newobj->flags |= (1 << OBJ_FORCEDUMP);
 
-        if (pdf_extract_obj(pdf, newobj, PDF_EXTRACT_OBJ_NONE) != CL_SUCCESS)
+        pdf->parse_recursion_depth++;
+        ret = pdf_extract_obj(pdf, newobj, PDF_EXTRACT_OBJ_NONE);
+        pdf->parse_recursion_depth--;
+        if (ret != CL_SUCCESS) {
             return NULL;
+        }
 
         newobj->flags = objflags;
 
@@ -517,7 +527,9 @@ char *pdf_parse_string(struct pdf_struct *pdf, struct pdf_obj *obj, const char *
             switch (*p3) {
                 case '(':
                 case '<':
+                    pdf->parse_recursion_depth++;
                     res = pdf_parse_string(pdf, obj, p3, objsize2, NULL, NULL, meta);
+                    pdf->parse_recursion_depth--;
                     break;
                 default:
                     res = pdf_finalize_string(pdf, obj, begin, objsize2);
@@ -663,6 +675,11 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
     /* Sanity checking */
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
+
+    if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
+        cli_dbgmsg("pdf_parse_dict: Recursion limit reached\n");
+        return NULL;
+    }
 
     objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                              : (const char *)(obj->start + pdf->map);
@@ -810,23 +827,31 @@ struct pdf_dict *pdf_parse_dict(struct pdf_struct *pdf, struct pdf_obj *obj, siz
 
         switch (begin[0]) {
             case '(':
-                val   = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
+                pdf->parse_recursion_depth++;
+                val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
+                pdf->parse_recursion_depth--;
                 begin = p1 + 2;
                 break;
             case '[':
-                arr   = pdf_parse_array(pdf, obj, end - objstart, begin, &p1);
+                pdf->parse_recursion_depth++;
+                arr = pdf_parse_array(pdf, obj, end - objstart, begin, &p1);
+                pdf->parse_recursion_depth--;
                 begin = p1 + 1;
                 break;
             case '<':
                 if ((size_t)(begin - objstart) < objsize - 2) {
                     if (begin[1] == '<') {
-                        dict  = pdf_parse_dict(pdf, obj, end - objstart, begin, &p1);
+                        pdf->parse_recursion_depth++;
+                        dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &p1);
+                        pdf->parse_recursion_depth--;
                         begin = p1 + 2;
                         break;
                     }
                 }
 
-                val   = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
+                pdf->parse_recursion_depth++;
+                val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &p1, NULL);
+                pdf->parse_recursion_depth--;
                 begin = p1 + 2;
                 break;
             default:
@@ -933,6 +958,11 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
     if (!(pdf) || !(obj) || !(begin))
         return NULL;
 
+    if (PDF_OBJECT_RECURSION_LIMIT < pdf->parse_recursion_depth) {
+        cli_dbgmsg("pdf_parse_array: Recursion limit reached\n");
+        return NULL;
+    }
+
     objstart = (obj->objstm) ? (const char *)(obj->start + obj->objstm->streambuf)
                              : (const char *)(obj->start + pdf->map);
 
@@ -1002,7 +1032,9 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
         switch (begin[0]) {
             case '<':
                 if ((size_t)(begin - objstart) < objsize - 2 && begin[1] == '<') {
+                    pdf->parse_recursion_depth++;
                     dict = pdf_parse_dict(pdf, obj, end - objstart, begin, &begin);
+                    pdf->parse_recursion_depth--;
                     begin += 2;
                     break;
                 }
@@ -1010,12 +1042,15 @@ struct pdf_array *pdf_parse_array(struct pdf_struct *pdf, struct pdf_obj *obj, s
                 /* Not a dictionary. Intentionally fall through. */
                 /* fall-through */
             case '(':
+                pdf->parse_recursion_depth++;
                 val = pdf_parse_string(pdf, obj, begin, end - objstart, NULL, &begin, NULL);
+                pdf->parse_recursion_depth--;
                 begin += 2;
                 break;
             case '[':
-                /* XXX We should have a recursion counter here */
+                pdf->parse_recursion_depth++;
                 arr = pdf_parse_array(pdf, obj, end - objstart, begin, &begin);
+                pdf->parse_recursion_depth--;
                 begin += 1;
                 break;
             default:
