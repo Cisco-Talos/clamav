@@ -662,5 +662,5 @@ TCPAddr localhost
 
 # Set bytecode timeout in milliseconds.
 #
-# Default: 5000
+# Default: 10000
 # BytecodeTimeout 1000
