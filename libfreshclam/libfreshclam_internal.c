@@ -1958,8 +1958,8 @@ static fc_error_t query_remote_database_version(
                     recordTime = atoi(recordTimeStr);
                     free(recordTimeStr);
                     time(&currentTime);
-                    if ((int)currentTime - recordTime > 10800) {
-                        logg(LOGG_WARNING, "DNS record is older than 3 hours.\n");
+                    if ((int)currentTime - recordTime > DNS_WARNING_THRESHOLD_SECONDS) {
+                        logg(LOGG_WARNING, "DNS record is older than %d hours.\n", DNS_WARNING_THRESHOLD_HOURS);
                     } else if (NULL != (verStrDnsExtra = cli_strtok(extradnsreply, 0, ":"))) {
                         if (!cli_isnumber(verStrDnsExtra)) {
                             logg(LOGG_WARNING, "Broken database version in TXT record for %s\n", cvdfile);

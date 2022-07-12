@@ -513,8 +513,8 @@ fc_error_t fc_dns_query_update_info(
     reply_token = NULL;
 
     time(&currentTime);
-    if ((int)currentTime - recordTime > 10800) {
-        logg(LOGG_WARNING, "DNS record is older than 3 hours.\n");
+    if ((int)currentTime - recordTime > DNS_WARNING_THRESHOLD_SECONDS) {
+        logg(LOGG_WARNING, "DNS record is older than %d hours.\n", DNS_WARNING_THRESHOLD_HOURS);
         goto done;
     }
 
