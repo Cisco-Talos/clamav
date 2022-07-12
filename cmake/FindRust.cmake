@@ -162,7 +162,7 @@ function(add_rust_library)
     list(JOIN MY_CARGO_ARGS " " MY_CARGO_ARGS_STRING)
 
     # Build the library and generate the c-binding
-    if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+    if ("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
         add_custom_command(
             OUTPUT "${OUTPUT}"
             COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=\"${RUSTFLAGS}\"" ${cargo_EXECUTABLE} ARGS ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
@@ -209,7 +209,7 @@ function(add_rust_test)
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     set(MY_CARGO_ARGS "test")
-    if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$") #  Don't specify the target for universal, we'll do that manually for each build.
+    if (NOT "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$") #  Don't specify the target for universal, we'll do that manually for each build.
         list(APPEND MY_CARGO_ARGS "--target" ${RUST_COMPILER_TARGET})
     endif()
 
@@ -278,7 +278,7 @@ if(NOT RUST_COMPILER_TARGET)
         else()
             set(RUST_COMPILER_TARGET "i686-pc-windows-msvc")
         endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin AND "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^arm64;x86_64$")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin AND "${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64;x86_64|x86_64;arm64)$")
         # Special case for Darwin because we may want to build universal binaries.
         set(RUST_COMPILER_TARGET "universal-apple-darwin")
     else()
