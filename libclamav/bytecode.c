@@ -680,13 +680,14 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer, unsigned *linel
 
 static int parseLSig(struct cli_bc *bc, char *buffer)
 {
-    const char *prefix;
-    char *vnames, *vend = strchr(buffer, ';');
+    // const char *prefix;
+    // char *vnames;
+    char *vend = strchr(buffer, ';');
     if (vend) {
         bc->lsig = cli_strdup(buffer);
         *vend++  = '\0';
-        prefix   = buffer;
-        vnames   = strchr(vend, '{');
+        // prefix   = buffer;
+        // vnames   = strchr(vend, '{');
     } else {
         /* Not a logical signature, but we still have a virusname */
         bc->hook_name = cli_strdup(buffer);
@@ -2788,9 +2789,16 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     struct cli_bc_ctx ctx;
     const struct cli_bc *bc = &bcs->all_bcs[bc_idx - 1];
     struct cli_pe_hook_data pehookdata;
+    const char* bc_name = NULL;
 
     if (bc_idx == 0)
         return CL_ENULLARG;
+
+    if (NULL != bc->lsig) {
+        bc_name = bc->lsig;
+    } else if (NULL != bc->hook_name) {
+        bc_name = bc->hook_name;
+    }
 
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
@@ -2821,10 +2829,10 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         return CL_SUCCESS;
     }
 
-    cli_dbgmsg("Running bytecode for logical signature match\n");
+    cli_dbgmsg("Running bytecode '%s' (id: %u) for logical signature match.\n", bc_name, bc->id);
     ret = cli_bytecode_run(bcs, bc, &ctx);
     if (ret != CL_SUCCESS) {
-        cli_warnmsg("Bytecode %u failed to run: %s\n", bc->id, cl_strerror(ret));
+        cli_warnmsg("Bytecode '%s' (id: %u) failed to run: %s\n", bc_name, bc->id, cl_strerror(ret));
         cli_bytecode_context_clear(&ctx);
         return CL_SUCCESS;
     }
@@ -2844,7 +2852,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         }
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
-    cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
+    cli_dbgmsg("Bytecode '%s' (id: %u) returned code: %u\n", bc_name, bc->id, ret);
     cli_bytecode_context_clear(&ctx);
     return CL_SUCCESS;
 }
