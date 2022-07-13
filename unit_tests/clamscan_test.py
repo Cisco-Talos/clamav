@@ -326,6 +326,87 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
+    def test_clamscan_11_allmatch_regression_imphash_nosize(self):
+        self.step_name('Test an import hash with wildcard size when all-match mode is disabled.')
+
+        db_dir = TC.path_db / 'allmatch-regression-test-sigs'
+
+        os.mkdir(str(db_dir))
+
+        (db_dir / 'clam.imp').write_text(
+            "98c88d882f01a3f6ac1e5f7dfd761624:*:Test.Import.Hash.NoSize\n"
+        )
+
+        testfiles = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=db_dir / 'clam.imp',
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.Import.Hash.NoSize.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_11_allmatch_regression_cbc_and_ndb(self):
+        self.step_name('Test that bytecode rules will run after content match alerts in all-match mode.')
+
+        # Source for ClamAV-Unit-Test_Signature.cbc
+        # ```c
+        # VIRUSNAME_PREFIX("BC.Clamav-Unit-Test-Signature")
+        # VIRUSNAMES("")
+        # TARGET(0)
+
+        # FUNCTIONALITY_LEVEL_MIN(FUNC_LEVEL_096_4)
+
+        # SIGNATURES_DECL_BEGIN
+        # DECLARE_SIGNATURE(test_string)
+        # SIGNATURES_DECL_END
+
+        # SIGNATURES_DEF_BEGIN
+        # /* matches "CLAMAV-TEST-STRING-NOT-EICAR" */
+        # DEFINE_SIGNATURE(test_string, "0:434c414d41562d544553542d535452494e472d4e4f542d4549434152")
+        # SIGNATURES_DEF_END
+
+        # bool logical_trigger()
+        # {
+        #     return matches(Signatures.test_string);
+        # }
+
+        # int entrypoint(void)
+        # {
+        #     foundVirus("");
+        #     return 0;
+        # }
+        # ```
+
+        testfile = TC.path_tmp / 'CLAMAV-TEST-STRING-NOT-EICAR'
+
+        (testfile).write_text(
+            "CLAMAV-TEST-STRING-NOT-EICAR"
+        )
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {cbc_db} -d {ndb_db} --bytecode-unsigned --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            cbc_db=TC.path_source / 'unit_tests' / 'input' / 'bytecode_sigs' / 'Clamav-Unit-Test-Signature.cbc',
+            ndb_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'BC.Clamav-Unit-Test-Signature FOUND', # <-- ".UNOFFICIAL" is not added for bytecode signatures
+            'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
     def test_clamscan_12_image_fuzzy_hash_sigs(self):
         self.step_name('Test that each type of hash sig is detected in all-match mode')
 
