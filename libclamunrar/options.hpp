@@ -116,9 +116,11 @@ class RAROptions
     RAR_CHARSET ErrlogCharset;
     RAR_CHARSET RedirectCharset;
 
-    wchar ArcPath[NM];
+    wchar ArcPath[NM]; // For -ap<path>.
+    wchar ExclArcPath[NM]; // For -ep4<path> switch.
     SecPassword Password;
     bool EncryptHeaders;
+    bool SkipEncrypted;
     
     bool ManualPassword; // Password entered manually during operation, might need to clean for next archive.
 
@@ -195,7 +197,11 @@ class RAROptions
     EXTTIME_MODE xctime;
     EXTTIME_MODE xatime;
     bool PreserveAtime;
-    wchar CompressStdin[NM];
+
+    // Read data from stdin and store in archive under a name specified here
+    // when archiving. Read an archive from stdin if any non-empty string
+    // is specified here when extracting.
+    wchar UseStdin[NM];
 
     uint Threads; // We use it to init hash even if RAR_SMP is not defined.
 
