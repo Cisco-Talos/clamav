@@ -13,16 +13,16 @@ int stricomp(const char *s1,const char *s2);
 int strnicomp(const char *s1,const char *s2,size_t n);
 wchar* RemoveEOL(wchar *Str);
 wchar* RemoveLF(wchar *Str);
-unsigned char loctolower(unsigned char ch);
-unsigned char loctoupper(unsigned char ch);
 
 void strncpyz(char *dest, const char *src, size_t maxlen);
 void wcsncpyz(wchar *dest, const wchar *src, size_t maxlen);
 void strncatz(char* dest, const char* src, size_t maxlen);
 void wcsncatz(wchar* dest, const wchar* src, size_t maxlen);
 
-unsigned char etoupper(unsigned char ch);
-wchar etoupperw(wchar ch);
+#if defined(SFX_MODULE)
+unsigned char etoupper(unsigned char c);
+#endif
+wchar etoupperw(wchar c);
 
 bool IsDigit(int ch);
 bool IsSpace(int ch);

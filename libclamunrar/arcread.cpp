@@ -558,6 +558,13 @@ size_t Archive::ReadHeader50()
     return 0;
 #else
 
+    if (Cmd->SkipEncrypted)
+    {
+      uiMsg(UIMSG_SKIPENCARC,FileName);
+      FailedHeaderDecryption=true; // Suppress error messages and quit quietly.
+      return 0;
+    }
+
     byte HeadersInitV[SIZE_INITV];
     if (Read(HeadersInitV,SIZE_INITV)!=SIZE_INITV)
     {
@@ -876,7 +883,12 @@ size_t Archive::ReadHeader50()
         // code to shell extension, which is not done now.
         if (!FileBlock && hd->CmpName(SUBHEAD_TYPE_RR) && hd->SubData.Size()>0)
         {
-          RecoveryPercent=hd->SubData[0];
+          // It is stored as a single byte up to RAR 6.02 and as vint since
+          // 6.10, where we extended the maximum RR size from 99% to 1000%.
+          RawRead RawPercent;
+          RawPercent.Read(&hd->SubData[0],hd->SubData.Size());
+          RecoveryPercent=(int)RawPercent.GetV();
+
           RSBlockHeader Header;
           GetRRInfo(this,&Header);
           RecoverySize=Header.RecSectionSize*Header.RecCount;

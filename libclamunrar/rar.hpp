@@ -16,6 +16,7 @@
 #include "errhnd.hpp"
 #include "secpassword.hpp"
 #include "array.hpp"
+#include "strlist.hpp"
 #include "timefn.hpp"
 #include "sha1.hpp"
 #include "sha256.hpp"
@@ -28,7 +29,6 @@
 #include "headers.hpp"
 #include "pathfn.hpp"
 #include "strfn.hpp"
-#include "strlist.hpp"
 #ifdef _WIN_ALL
 #include "isnt.hpp"
 #endif
