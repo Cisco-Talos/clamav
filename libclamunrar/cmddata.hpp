@@ -50,7 +50,7 @@ class CommandData:public RAROptions
     bool GetArcName(wchar *Name,int MaxSize);
     bool CheckWinSize();
 
-    int GetRecoverySize(const wchar *Str,int DefSize);
+    int GetRecoverySize(const wchar *CmdStr,const wchar *Value,int DefSize);
 
 #ifndef SFX_MODULE
     void ReportWrongSwitches(RARFORMAT Format);
