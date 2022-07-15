@@ -4490,7 +4490,8 @@ static void Colors_cb(struct pdf_struct *pdf, struct pdf_obj *obj, struct pdfnam
 #endif
 
 #if HAVE_JSON
-static void pdf_free_stats(struct pdf_struct *pdf) {
+static void pdf_free_stats(struct pdf_struct *pdf)
+{
 
     if (!pdf) {
         return;
