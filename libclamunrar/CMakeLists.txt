@@ -32,7 +32,6 @@ set( UNRAR_SOURCES
     global.cpp
     hash.cpp
     headers.cpp
-    isnt.cpp
     list.cpp
     match.cpp
     options.cpp
@@ -62,6 +61,9 @@ set( UNRAR_SOURCES
     unpack.cpp
     volume.cpp
 )
+if(WIN32)
+    list(APPEND UNRAR_SOURCES isnt.cpp)
+endif()
 
 if(ENABLE_SHARED_LIB)
     # The unrar shared library.
