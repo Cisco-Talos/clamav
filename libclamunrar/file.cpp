@@ -7,6 +7,7 @@ File::File()
   NewFile=false;
   LastWrite=false;
   HandleType=FILE_HANDLENORMAL;
+  LineInput=false;
   SkipClose=false;
   ErrorType=FILE_SUCCESS;
   OpenShared=false;
@@ -14,11 +15,11 @@ File::File()
   AllowExceptions=true;
   PreserveAtime=false;
 #ifdef _WIN_ALL
-  NoSequentialRead=false;
   CreateMode=FMF_UNDEFINED;
 #endif
   ReadErrorMode=FREM_ASK;
   TruncatedAfterReadError=false;
+  CurFilePos=0;
 }
 
 
@@ -58,7 +59,7 @@ bool File::Open(const wchar *Name,uint Mode)
   uint ShareMode=(Mode & FMF_OPENEXCLUSIVE) ? 0 : FILE_SHARE_READ;
   if (OpenShared)
     ShareMode|=FILE_SHARE_WRITE;
-  uint Flags=NoSequentialRead ? 0:FILE_FLAG_SEQUENTIAL_SCAN;
+  uint Flags=FILE_FLAG_SEQUENTIAL_SCAN;
   FindData FD;
   if (PreserveAtime)
     Access|=FILE_WRITE_ATTRIBUTES; // Needed to preserve atime.
@@ -379,10 +380,11 @@ int File::Read(void *Data,size_t Size)
 
   if (ReadErrorMode==FREM_IGNORE)
     FilePos=Tell();
-  int ReadSize;
+  int TotalRead=0;
   while (true)
   {
-    ReadSize=DirectRead(Data,Size);
+    int ReadSize=DirectRead(Data,Size);
+
     if (ReadSize==-1)
     {
       ErrorType=FILE_READERROR;
@@ -396,6 +398,8 @@ int File::Read(void *Data,size_t Size)
             size_t SizeToRead=Min(Size-I,512);
             int ReadCode=DirectRead(Data,SizeToRead);
             ReadSize+=(ReadCode==-1) ? 512:ReadCode;
+            if (ReadSize!=-1)
+              TotalRead+=ReadSize;
           }
         }
         else
@@ -415,9 +419,28 @@ int File::Read(void *Data,size_t Size)
           ErrHandler.ReadError(FileName);
         }
     }
+    TotalRead+=ReadSize; // If ReadSize is -1, TotalRead is also set to -1 here.
+
+    if (HandleType==FILE_HANDLESTD && !LineInput && ReadSize>0 && (uint)ReadSize<Size)
+    {
+      // Unlike regular files, for pipe we can read only as much as was
+      // written at the other end of pipe. We had seen data coming in small
+      // ~80 byte chunks when piping from 'type arc.rar'. Extraction code
+      // would fail if we read an incomplete archive header from stdin.
+      // So here we ensure that requested size is completely read.
+      // But we return the available data immediately in "line input" mode,
+      // when processing user's input in console prompts. Otherwise apps
+      // piping user responses to multiple Ask() prompts can hang if no more
+      // data is available yet and pipe isn't closed.
+      Data=(byte*)Data+ReadSize;
+      Size-=ReadSize;
+      continue;
+    }
     break;
   }
-  return ReadSize; // It can return -1 only if AllowExceptions is disabled.
+  if (TotalRead>0) // Can be -1 for error and AllowExceptions disabled.
+    CurFilePos+=TotalRead;
+  return TotalRead; // It can return -1 only if AllowExceptions is disabled.
 }
 
 
@@ -499,6 +522,30 @@ bool File::RawSeek(int64 Offset,int Method)
 {
   if (hFile==FILE_BAD_HANDLE)
     return true;
+  if (!IsSeekable())
+  {
+    if (Method==SEEK_CUR)
+    {
+      Offset+=CurFilePos;
+      Method=SEEK_SET;
+    }
+    if (Method==SEEK_SET && Offset>=CurFilePos) // Reading for seek forward.
+    {
+      uint64 SkipSize=Offset-CurFilePos;
+      while (SkipSize>0)
+      {
+        byte Buf[4096];
+        int ReadSize=Read(Buf,(size_t)Min(SkipSize,ASIZE(Buf)));
+        if (ReadSize<=0)
+          return false;
+        SkipSize-=ReadSize;
+      }
+      CurFilePos=Offset;
+      return true;
+    }
+
+    return false; // Backward or end of file seek on unseekable file.
+  }
   if (Offset<0 && Method!=SEEK_SET)
   {
     Offset=(Method==SEEK_CUR ? Tell():FileLength())+Offset;
@@ -533,6 +580,8 @@ int64 File::Tell()
       ErrHandler.SeekError(FileName);
     else
       return -1;
+  if (!IsSeekable())
+    return CurFilePos;
 #ifdef _WIN_ALL
   LONG HighDist=0;
   uint LowDist=SetFilePointer(hFile,0,&HighDist,FILE_CURRENT);
