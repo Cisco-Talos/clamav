@@ -601,59 +601,6 @@ char* SupportDBCS::charnext(const char *s)
   // to break string processing loops.
   return (char *)(IsLeadByte[(byte)*s] && s[1]!=0 ? s+2:s+1);
 }
-
-
-size_t SupportDBCS::strlend(const char *s)
-{
-  size_t Length=0;
-  while (*s!=0)
-  {
-    if (IsLeadByte[(byte)*s])
-      s+=2;
-    else
-      s++;
-    Length++;
-  }
-  return(Length);
-}
-
-
-char* SupportDBCS::strchrd(const char *s, int c)
-{
-  while (*s!=0)
-    if (IsLeadByte[(byte)*s])
-      s+=2;
-    else
-      if (*s==c)
-        return((char *)s);
-      else
-        s++;
-  return(NULL);
-}
-
-
-void SupportDBCS::copychrd(char *dest,const char *src)
-{
-  dest[0]=src[0];
-  if (IsLeadByte[(byte)src[0]])
-    dest[1]=src[1];
-}
-
-
-char* SupportDBCS::strrchrd(const char *s, int c)
-{
-  const char *found=NULL;
-  while (*s!=0)
-    if (IsLeadByte[(byte)*s])
-      s+=2;
-    else
-    {
-      if (*s==c)
-        found=s;
-      s++;
-    }
-  return((char *)found);
-}
 #endif
 
 
