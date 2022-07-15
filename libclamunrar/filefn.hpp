@@ -41,6 +41,7 @@ bool DelDir(const wchar *Name);
 
 #if defined(_WIN_ALL) && !defined(SFX_MODULE)
 bool SetFileCompression(const wchar *Name,bool State);
+void ResetFileCache(const wchar *Name);
 #endif
 
 

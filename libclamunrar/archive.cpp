@@ -231,7 +231,7 @@ bool Archive::IsArchive(bool EnableBroken)
   // first file header to set "comment" flag when reading service header.
   // Unless we are in silent mode, we need to know about presence of comment
   // immediately after IsArchive call.
-  if (HeadersLeft && (!SilentOpen || !Encrypted))
+  if (HeadersLeft && (!SilentOpen || !Encrypted) && IsSeekable())
   {
     int64 SavePos=Tell();
     int64 SaveCurBlockPos=CurBlockPos,SaveNextBlockPos=NextBlockPos;
