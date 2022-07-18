@@ -62,6 +62,10 @@
 #define ZIP_MAGIC_FILE_BEGIN_SPLIT_OR_SPANNED       (0x08074b50)
 // clang-format on
 
+// Non-malicious zips in enterprise critical JAR-ZIPs have been observed with a 1-byte overlap.
+// The goal with overlap detection is to alert on non-recursive zip bombs, so this tiny overlap isn't a concern.
+// We'll allow a 2-byte overlap so we don't alert on such zips.
+#define ZIP_RECORD_OVERLAP_FUDGE_FACTOR 2
 #define ZIP_MAX_NUM_OVERLAPPING_FILES 5
 
 #define ZIP_CRC32(r, c, b, l) \
@@ -1100,16 +1104,24 @@ cl_error_t index_the_central_directory(
             prev_record = &(zip_catalogue[index - 1]);
             curr_record = &(zip_catalogue[index]);
 
+            uint32_t prev_record_size = prev_record->local_header_size + prev_record->compressed_size;
+            uint32_t curr_record_size = curr_record->local_header_size + curr_record->compressed_size;
+            uint32_t prev_record_end;
+            uint32_t curr_record_end;
+
             /* Check for integer overflow in 32bit size & offset values */
-            if ((UINT32_MAX - (prev_record->local_header_size + prev_record->compressed_size) < prev_record->local_header_offset) ||
-                (UINT32_MAX - (curr_record->local_header_size + curr_record->compressed_size) < curr_record->local_header_offset)) {
+            if ((UINT32_MAX - prev_record_size < prev_record->local_header_offset) ||
+                (UINT32_MAX - curr_record_size < curr_record->local_header_offset)) {
                 cli_dbgmsg("cli_unzip: Integer overflow detected; invalid data sizes in zip file headers.\n");
                 status = CL_EFORMAT;
                 goto done;
             }
 
-            if (((curr_record->local_header_offset >= prev_record->local_header_offset) && (curr_record->local_header_offset < prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size)) ||
-                ((prev_record->local_header_offset >= curr_record->local_header_offset) && (prev_record->local_header_offset < curr_record->local_header_offset + curr_record->local_header_size + curr_record->compressed_size))) {
+            prev_record_end = prev_record->local_header_offset + prev_record_size;
+            curr_record_end = curr_record->local_header_offset + curr_record_size;
+
+            if (((curr_record->local_header_offset >= prev_record->local_header_offset) && (curr_record->local_header_offset + ZIP_RECORD_OVERLAP_FUDGE_FACTOR < prev_record_end)) ||
+                ((prev_record->local_header_offset >= curr_record->local_header_offset) && (prev_record->local_header_offset + ZIP_RECORD_OVERLAP_FUDGE_FACTOR < curr_record_end))) {
                 /* Overlapping file detected */
                 num_overlapping_files++;
 
@@ -1119,7 +1131,7 @@ cl_error_t index_the_central_directory(
                     cli_dbgmsg("cli_unzip: Ignoring duplicate file entry @ 0x%x.\n", curr_record->local_header_offset);
                 } else {
                     cli_dbgmsg("cli_unzip: Overlapping files detected.\n");
-                    cli_dbgmsg("    previous file end:  %u\n", prev_record->local_header_offset + prev_record->local_header_size + prev_record->compressed_size);
+                    cli_dbgmsg("    previous file end:  %u\n", prev_record_end);
                     cli_dbgmsg("    current file start: %u\n", curr_record->local_header_offset);
 
                     if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
