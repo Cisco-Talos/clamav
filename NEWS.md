@@ -3,6 +3,10 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 0.104.4
+
+ClamAV 0.104.4 is a critical patch release with the following fixes:
+
 ## 0.104.3
 
 ClamAV 0.104.3 is a critical patch release with the following fixes:
