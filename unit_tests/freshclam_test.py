@@ -40,7 +40,6 @@ class TC(testcase.TestCase):
         TC.freshclam_pid = Path(TC.path_tmp, 'freshclam-test.pid')
         TC.freshclam_config = Path(TC.path_tmp, 'freshclam-test.conf')
 
-        TC.mock_mirror_port = None
         TC.mock_mirror = None
 
     @classmethod
@@ -83,7 +82,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=8000,
         ))
 
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} -V'.format(
@@ -128,7 +127,7 @@ class TC(testcase.TestCase):
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
             file_db=TC.path_www / "clamav.hdb",
-            port=TC.mock_mirror_port,
+            port=8000,
             user=getpass.getuser(),
         ))
 
@@ -152,7 +151,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 403 (forbidden)')
 
         # Start our mock database mirror.
-        TC.mock_mirror = Process(target=mock_database_mirror, args=(WebServerHandler_02,))
+        (mock_mirror_port, TC.mock_mirror) = mock_database_mirror(WebServerHandler_02)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -170,7 +169,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
@@ -207,7 +206,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 403 (forbidden) and daemonized')
 
         # Start our mock database mirror.
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_02)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_02)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -225,7 +224,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily --daemon -F'.format(
@@ -247,7 +246,7 @@ class TC(testcase.TestCase):
         self.step_name('Verify correct behavior when receiving 429 (too-many-requests)')
 
         # Start our mock database mirror.
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_04, TC.mock_mirror_port))
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(WebServerHandler_04)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -265,7 +264,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=daily'.format(
@@ -300,7 +299,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -318,7 +317,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
@@ -360,7 +359,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -380,7 +379,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=path_db_unc,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
@@ -418,7 +417,7 @@ class TC(testcase.TestCase):
         #shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  # <-- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -436,7 +435,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
@@ -504,7 +503,7 @@ class TC(testcase.TestCase):
         # shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))  <--- don't give them the last CDIFF
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -522,7 +521,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
         command = '{valgrind} {valgrind_args} {freshclam} --config-file={freshclam_config} --update-db=test'.format(
@@ -591,7 +590,7 @@ class TC(testcase.TestCase):
         shutil.copy(str(TC.path_source / 'unit_tests' / 'input' / 'freshclam_testfiles' /'test-6.cdiff'), str(TC.path_www))
 
         handler = partial(WebServerHandler_WWW, TC.path_www)
-        TC.mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler, TC.mock_mirror_port)
+        mock_mirror_port, TC.mock_mirror = mock_database_mirror(handler)
         TC.mock_mirror.start()
 
         if TC.freshclam_config.exists():
@@ -609,7 +608,7 @@ class TC(testcase.TestCase):
         '''.format(
             freshclam_pid=TC.freshclam_pid,
             path_db=TC.path_db,
-            port=TC.mock_mirror_port,
+            port=mock_mirror_port,
             user=getpass.getuser(),
         ))
 
@@ -684,11 +683,11 @@ class TC(testcase.TestCase):
         # verify stderr
         self.verify_output(output.err, unexpected=unexpected_results)
 
-def mock_database_mirror(*handler):
+def mock_database_mirror(handler):
     '''
     Process entry point for our HTTP Server to mock a database mirror.
     '''
-    server = HTTPServer(('', 0), handler)
+    server = HTTPServer(('', 0), handler, bind_and_activate=True)
     port = server.server_port
 
     def server_process():
