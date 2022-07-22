@@ -23,8 +23,8 @@
 // allocation. Must be equal or larger than MAX_ANALYZE_SIZE.
 #define MAX_FILTER_BLOCK_SIZE 0x400000
 
-// Write data in 4 MB or smaller blocks. Must not exceed PACK_MAX_WRITE,
-// so we keep a number of buffered filters in unpacker reasonable.
+// Write data in 4 MB or smaller blocks. Must not exceed PACK_MAX_READ,
+// so we keep the number of buffered filters in unpacker reasonable.
 #define UNPACK_MAX_WRITE      0x400000
 
 // Decode compressed bit fields to alphabet numbers.

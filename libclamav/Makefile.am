@@ -57,7 +57,6 @@ libclamunrar_la_SOURCES = \
 	../libclamunrar/global.cpp \
 	../libclamunrar/hash.cpp \
 	../libclamunrar/headers.cpp \
-	../libclamunrar/isnt.cpp \
 	../libclamunrar/list.cpp \
 	../libclamunrar/match.cpp \
 	../libclamunrar/options.cpp \

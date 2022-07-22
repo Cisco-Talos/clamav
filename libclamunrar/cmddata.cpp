@@ -56,7 +56,6 @@ void CommandData::ParseCommandLine(bool Preprocess,int argc, char *argv[])
   // In Windows we may prefer to implement our own command line parser
   // to avoid replacing \" by " in standard parser. Such replacing corrupts
   // destination paths like "dest path\" in extraction commands.
-  // Also our own parser is Unicode compatible.
   const wchar *CmdLine=GetCommandLine();
 
   wchar *Par;
@@ -109,6 +108,11 @@ void CommandData::ParseArg(wchar *Arg)
       // 'S' can contain SFX name, which case is important in Unix.
       if (*Command!='I' && *Command!='S')
         wcsupper(Command);
+      if (*Command=='P') // Enforce -idq for print command.
+      {
+        MsgStream=MSG_ERRONLY;
+        SetConsoleMsgStream(MSG_ERRONLY);
+      }
     }
     else
       if (*ArcName==0)
@@ -288,7 +292,10 @@ void CommandData::ProcessSwitch(const wchar *Switch)
             AppendArcNameToPath=APPENDARCNAME_DESTPATH;
           else
             if (Switch[2]=='1')
-              AppendArcNameToPath=APPENDARCNAME_OWNDIR;
+              AppendArcNameToPath=APPENDARCNAME_OWNSUBDIR;
+            else
+              if (Switch[2]=='2')
+                AppendArcNameToPath=APPENDARCNAME_OWNDIR;
           break;
 #ifndef SFX_MODULE
         case 'G':
@@ -371,6 +378,9 @@ void CommandData::ProcessSwitch(const wchar *Switch)
             case '3':
               ExclPath=EXCL_ABSPATH;
               break;
+            case '4':
+              wcsncpyz(ExclArcPath,Switch+3,ASIZE(ExclArcPath));
+              break;
           }
           break;
         default:
@@ -397,6 +407,8 @@ void CommandData::ProcessSwitch(const wchar *Switch)
           EncryptHeaders=true;
           if (Switch[2]!=0)
           {
+            if (wcslen(Switch+2)>=MAXPASSWORD)
+              uiMsg(UIERROR_TRUNCPSW,MAXPASSWORD-1);
             Password.Set(Switch+2);
             cleandata((void *)Switch,wcslen(Switch)*sizeof(Switch[0]));
           }
@@ -436,9 +448,9 @@ void CommandData::ProcessSwitch(const wchar *Switch)
         wcsncpyz(EmailTo,Switch[4]!=0 ? Switch+4:L"@",ASIZE(EmailTo));
         break;
       }
-      if (wcsicomp(Switch+1,L"M")==0)
+      if (wcsicomp(Switch+1,L"M")==0) // For compatibility with pre-WinRAR 6.0 -im syntax. Replaced with -idv.
       {
-        MoreInfo=true;
+        VerboseOutput=true;
         break;
       }
       if (wcsicomp(Switch+1,L"NUL")==0)
@@ -464,6 +476,12 @@ void CommandData::ProcessSwitch(const wchar *Switch)
               break;
             case 'P':
               DisablePercentage=true;
+              break;
+            case 'N':
+              DisableNames=true;
+              break;
+            case 'V':
+              VerboseOutput=true;
               break;
           }
         break;
@@ -539,7 +557,6 @@ void CommandData::ProcessSwitch(const wchar *Switch)
                   case 'D': Type=FILTER_DELTA;       break;
                   case 'A': Type=FILTER_AUDIO;       break;
                   case 'C': Type=FILTER_RGB;         break;
-                  case 'I': Type=FILTER_ITANIUM;     break;
                   case 'R': Type=FILTER_ARM;         break;
                 }
                 if (*Str=='+' || *Str=='-')
@@ -553,6 +570,10 @@ void CommandData::ProcessSwitch(const wchar *Switch)
         case 'M':
           break;
         case 'D':
+          break;
+        case 'E':
+          if (toupperw(Switch[2])=='S' && Switch[3]==0)
+            SkipEncrypted=true;
           break;
         case 'S':
           {
@@ -641,6 +662,10 @@ void CommandData::ProcessSwitch(const wchar *Switch)
             AllowIncompatNames=true;
           break;
 #endif
+        case 'P':
+          wcsncpyz(ExtrPath,Switch+2,ASIZE(ExtrPath));
+          AddEndSlash(ExtrPath,ASIZE(ExtrPath));
+          break;
         case 'R':
           Overwrite=OVERWRITE_AUTORENAME;
           break;
@@ -665,6 +690,8 @@ void CommandData::ProcessSwitch(const wchar *Switch)
       }
       else
       {
+        if (wcslen(Switch+1)>=MAXPASSWORD)
+          uiMsg(UIERROR_TRUNCPSW,MAXPASSWORD-1);
         Password.Set(Switch+1);
         cleandata((void *)Switch,wcslen(Switch)*sizeof(Switch[0]));
       }
@@ -744,6 +771,10 @@ void CommandData::ProcessSwitch(const wchar *Switch)
             break;
           case 'D':
             Solid|=SOLID_VOLUME_DEPENDENT;
+            break;
+          case 'I':
+            ProhibitConsoleInput();
+            wcsncpyz(UseStdin,Switch[2] ? Switch+2:L"stdin",ASIZE(UseStdin));
             break;
           case 'L':
             if (IsDigit(Switch[2]))
@@ -928,7 +959,7 @@ void CommandData::ProcessCommand()
       wcsncpyz(ArcName,Name,ASIZE(ArcName));
   }
 
-  if (wcschr(L"AFUMD",*Command)==NULL)
+  if (wcschr(L"AFUMD",*Command)==NULL && *UseStdin==0)
   {
     if (GenerateArcName)
     {

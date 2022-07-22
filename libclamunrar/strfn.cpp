@@ -121,48 +121,26 @@ wchar* RemoveLF(wchar *Str)
 }
 
 
-unsigned char loctolower(unsigned char ch)
-{
-#if defined(_WIN_ALL)
-  // Convert to LPARAM first to avoid a warning in 64 bit mode.
-  // Convert to uintptr_t to avoid Clang/win error: cast to 'char *' from smaller integer type 'unsigned char' [-Werror,-Wint-to-pointer-cast]
-  return (int)(LPARAM)CharLowerA((LPSTR)(uintptr_t)ch);
-#else
-  return tolower(ch);
-#endif
-}
-
-
-unsigned char loctoupper(unsigned char ch)
-{
-#if defined(_WIN_ALL)
-  // Convert to LPARAM first to avoid a warning in 64 bit mode.
-  // Convert to uintptr_t to avoid Clang/win error: cast to 'char *' from smaller integer type 'unsigned char' [-Werror,-Wint-to-pointer-cast]
-  return (int)(LPARAM)CharUpperA((LPSTR)(uintptr_t)ch);
-#else
-  return toupper(ch);
-#endif
-}
-
-
-// toupper with English only results if English input is provided.
-// It avoids Turkish (small i) -> (big I with dot) conversion problem.
-// We do not define 'ch' as 'int' to avoid necessity to cast all
+#if defined(SFX_MODULE)
+// char version of etoupperw. Used in console SFX module only.
+// Fast toupper for English only input and output. Additionally to speed,
+// it also avoids Turkish small i to big I with dot conversion problem.
+// We do not define 'c' as 'int' to avoid necessity to cast all
 // signed chars passed to this function to unsigned char.
-unsigned char etoupper(unsigned char ch)
+unsigned char etoupper(unsigned char c)
 {
-  if (ch=='i')
-    return 'I';
-  return toupper(ch);
+  return c>='a' && c<='z' ? c-'a'+'A' : c;
 }
+#endif
 
 
-// Unicode version of etoupper.
-wchar etoupperw(wchar ch)
+// Fast toupper for English only input and output. Additionally to speed,
+// it also avoids Turkish small i to big I with dot conversion problem.
+// We do not define 'c' as 'int' to avoid necessity to cast all
+// signed wchars passed to this function to unsigned char.
+wchar etoupperw(wchar c)
 {
-  if (ch=='i')
-    return 'I';
-  return toupperw(ch);
+  return c>='a' && c<='z' ? c-'a'+'A' : c;
 }
 
 
