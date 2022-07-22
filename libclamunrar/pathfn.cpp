@@ -5,7 +5,7 @@ wchar* PointToName(const wchar *Path)
   for (int I=(int)wcslen(Path)-1;I>=0;I--)
     if (IsPathDiv(Path[I]))
       return (wchar*)&Path[I+1];
-  return (wchar*)((*Path && IsDriveDiv(Path[1])) ? Path+2:Path);
+  return (wchar*)((*Path!=0 && IsDriveDiv(Path[1])) ? Path+2:Path);
 }
 
 
@@ -184,7 +184,9 @@ void MakeName(const wchar *Path,const wchar *Name,wchar *Pathname,size_t MaxSize
   // the temporary buffer instead of constructing the name in 'Pathname'.
   wchar OutName[NM];
   wcsncpyz(OutName,Path,ASIZE(OutName));
-  AddEndSlash(OutName,ASIZE(OutName));
+  // Do not add slash to d:, we want to allow relative paths like d:filename.
+  if (!IsDriveLetter(Path) || Path[2]!=0)
+    AddEndSlash(OutName,ASIZE(OutName));
   wcsncatz(OutName,Name,ASIZE(OutName));
   wcsncpyz(Pathname,OutName,MaxSize);
 }
@@ -317,6 +319,9 @@ void GetConfigName(const wchar *Name,wchar *FullName,size_t MaxSize,bool CheckEx
 // of file name if numeric part is missing.
 wchar* GetVolNumPart(const wchar *ArcName)
 {
+  // We do not want to increment any characters in path component.
+  ArcName=PointToName(ArcName);
+
   if (*ArcName==0)
     return (wchar *)ArcName;
 
@@ -340,7 +345,7 @@ wchar* GetVolNumPart(const wchar *ArcName)
     {
       // Validate the first numeric part only if it has a dot somewhere 
       // before it.
-      wchar *Dot=wcschr(PointToName(ArcName),'.');
+      const wchar *Dot=wcschr(ArcName,'.');
       if (Dot!=NULL && Dot<NumPtr)
         ChPtr=NumPtr;
       break;
@@ -655,7 +660,7 @@ wchar* VolNameToFirstName(const wchar *VolName,wchar *FirstName,size_t MaxSize,b
   }
   if (!FileExist(FirstName))
   {
-    // If the first volume, which name we just generated, is not exist,
+    // If the first volume, which name we just generated, does not exist,
     // check if volume with same name and any other extension is available.
     // It can help in case of *.exe or *.sfx first volume.
     wchar Mask[NM];
@@ -692,7 +697,8 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
   wchar Mask[MAX_GENERATE_MASK];
   wcsncpyz(Mask,*GenerateMask!=0 ? GenerateMask:L"yyyymmddhhmmss",ASIZE(Mask));
 
-  bool QuoteMode=false,Hours=false;
+  bool QuoteMode=false;
+  uint MAsMinutes=0; // By default we treat 'M' as months.
   for (uint I=0;Mask[I]!=0;I++)
   {
     if (Mask[I]=='{' || Mask[I]=='}')
@@ -704,13 +710,16 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
       continue;
     int CurChar=toupperw(Mask[I]);
     if (CurChar=='H')
-      Hours=true;
+      MAsMinutes=2; // Treat next two 'M' after 'H' as minutes.
+    if (CurChar=='D' || CurChar=='Y')
+      MAsMinutes=0; // Treat 'M' in HHDDMMYY and HHYYMMDD as month.
 
-    if (Hours && CurChar=='M')
+    if (MAsMinutes>0 && CurChar=='M')
     {
       // Replace minutes with 'I'. We use 'M' both for months and minutes,
-      // so we treat as minutes only those 'M' which are found after hours.
+      // so we treat as minutes only those 'M', which are found after hours.
       Mask[I]='I';
+      MAsMinutes--;
     }
     if (CurChar=='N')
     {
@@ -774,7 +783,9 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
 
   const wchar *MaskChars=L"YMDHISWAEN";
 
+  // How many times every modifier character was encountered in the mask.
   int CField[sizeof(Field)/sizeof(Field[0])];
+
   memset(CField,0,sizeof(CField));
   QuoteMode=false;
   for (uint I=0;Mask[I]!=0;I++)
@@ -816,13 +827,22 @@ static void GenArcName(wchar *ArcName,size_t MaxSize,const wchar *GenerateMask,u
     {
       size_t FieldPos=ChPtr-MaskChars;
       int CharPos=(int)strlen(Field[FieldPos])-CField[FieldPos]--;
-      if (FieldPos==1 && toupperw(Mask[I+1])=='M' && toupperw(Mask[I+2])=='M')
+
+      // CField[FieldPos] shall have exactly 3 "MMM" symbols, so we do not
+      // repeat the month name in case "MMMMMMMM" mask. But since we
+      // decremented CField[FieldPos] above, we compared it with 2.
+      if (FieldPos==1 && CField[FieldPos]==2 &&
+          toupperw(Mask[I+1])=='M' && toupperw(Mask[I+2])=='M')
       {
         wcsncpyz(DateText+J,GetMonthName(rlt.Month-1),ASIZE(DateText)-J);
         J=wcslen(DateText);
         I+=2;
         continue;
       }
+      // If CharPos is negative, we have more modifier characters than
+      // matching time data. We prefer to issue a modifier character
+      // instead of repeating time data from beginning, so user can notice
+      // excessive modifiers added by mistake.
       if (CharPos<0)
         DateText[J]=Mask[I];
       else
@@ -985,9 +1005,9 @@ void ConvertToPrecomposed(wchar *Name,size_t NameSize)
 }
 
 
-// Remove trailing spaces and dots in file name and in dir names in path.
-void MakeNameCompatible(wchar *Name)
+void MakeNameCompatible(wchar *Name,size_t MaxSize)
 {
+  // Remove trailing spaces and dots in file name and in dir names in path.
   int Src=0,Dest=0;
   while (true)
   {
@@ -1005,5 +1025,47 @@ void MakeNameCompatible(wchar *Name)
     Src++;
     Dest++;
   }
+
+  // Rename reserved device names, such as aux.txt to _aux.txt.
+  // We check them in path components too, where they are also prohibited.
+  for (uint I=0;Name[I]!=0;I++)
+    if (I==0 || I>0 && IsPathDiv(Name[I-1]))
+    {
+      static const wchar *Devices[]={L"CON",L"PRN",L"AUX",L"NUL",L"COM#",L"LPT#"};
+      wchar *s=Name+I;
+      bool MatchFound=false;
+      for (uint J=0;J<ASIZE(Devices);J++)
+        for (uint K=0;;K++)
+          if (Devices[J][K]=='#')
+          {
+            if (!IsDigit(s[K]))
+              break;
+          }
+          else
+            if (Devices[J][K]==0)
+            {
+              // Names like aux.txt are accessible without \\?\ prefix
+              // since Windows 11. Pure aux is still prohibited.
+              MatchFound=s[K]==0 || s[K]=='.' && !IsWindows11OrGreater() || IsPathDiv(s[K]);
+              break;
+            }
+            else
+              if (Devices[J][K]!=toupperw(s[K]))
+                break;
+      if (MatchFound)
+      {
+        wchar OrigName[NM];
+        wcsncpyz(OrigName,Name,ASIZE(OrigName));
+        if (MaxSize>I+1) // I+1, because we do not move the trailing 0.
+          memmove(s+1,s,(MaxSize-I-1)*sizeof(*s));
+        *s='_';
+#ifndef SFX_MODULE
+        uiMsg(UIMSG_CORRECTINGNAME,nullptr);
+        uiMsg(UIERROR_RENAMING,nullptr,OrigName,Name);
+#endif
+      }
+    }
 }
 #endif
+
+

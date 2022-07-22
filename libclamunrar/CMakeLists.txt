@@ -34,7 +34,6 @@ target_sources( unrar_obj
 	    "global.cpp"
 	    "hash.cpp"
 	    "headers.cpp"
-	    "isnt.cpp"
 	    "list.cpp"
 	    "match.cpp"
 	    "options.cpp"

@@ -123,7 +123,7 @@ UNRAR_OBJ=filestr.o recvol.o rs.o scantree.o qopen.o
 LIB_OBJ=filestr.o scantree.o dll.o qopen.o
 
 OBJECTS=rar.o strlist.o strfn.o pathfn.o smallfn.o global.o file.o filefn.o filcreat.o \
-	archive.o arcread.o unicode.o system.o isnt.o crypt.o crc.o rawread.o encname.o \
+	archive.o arcread.o unicode.o system.o crypt.o crc.o rawread.o encname.o \
 	resource.o match.o timefn.o rdwrfn.o consio.o options.o errhnd.o rarvm.o secpassword.o \
 	rijndael.o getbits.o sha1.o sha256.o blake2s.o hash.o extinfo.o extract.o volume.o \
   list.o find.o unpack.o headers.o threadpool.o rs16.o cmddata.o ui.o
@@ -138,7 +138,9 @@ install:	install-unrar
 uninstall:	uninstall-unrar
 
 clean:
-	@rm -f *.o *.bak *~
+	@rm -f *.bak *~
+	@rm -f $(OBJECTS) $(UNRAR_OBJ) $(LIB_OBJ)
+	@rm -f unrar libunrar.*
 
 unrar:	clean $(OBJECTS) $(UNRAR_OBJ)
 	@rm -f unrar
@@ -154,8 +156,7 @@ sfx:	clean $(OBJECTS)
 lib:	WHAT=RARDLL
 lib:	CXXFLAGS+=$(LIBFLAGS)
 lib:	clean $(OBJECTS) $(LIB_OBJ)
-	@rm -f libunrar.so
-	@rm -f libunrar.a
+	@rm -f libunrar.*
 	$(LINK) -shared -o libunrar.so $(LDFLAGS) $(OBJECTS) $(LIB_OBJ)
 	$(AR) rcs libunrar.a $(OBJECTS) $(LIB_OBJ)
 
