@@ -558,3 +558,61 @@ rule regex
             'v1rusv1rus.7z.zip: 7z_zip_intermediates_bad.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_stdout, unexpected=unexpected_stdout)
+
+    def test_clamscan_17_pcre_slash_colon(self):
+        self.step_name('Test LDB and Yara regex rules with / and : in the string work')
+        # This is a regression test for a bug where :'s in a PCRE regex would act
+        # as delimiters if there was also a / in the regex before the :
+
+        testfile = TC.path_tmp / 'regex-slash-colon.sample'
+        testfile.write_text('hello blee/blah: bleh')
+
+        # First test with LDB PCRE rule
+        #
+        yara_db = TC.path_tmp / 'regex-slash-colon.ldb'
+        yara_db.write_text(
+            r'regex;Engine:81-255,Target:0;1;68656c6c6f20;0/hello blee/blah: bleh/'
+        )
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=yara_db, testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'regex-slash-colon.sample: regex.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+        # Second test with YARA regex rule
+        #
+        yara_db = TC.path_tmp / 'regex-slash-colon.yara'
+        yara_db.write_text(
+            r'''
+rule regex
+{
+    meta:
+        author      = "Micah"
+        date        = "2022/07/25"
+        description = "Just a test"
+    strings:
+        $b = /hello blee\/blah: bleh/
+    condition:
+        all of them
+}
+            '''
+        )
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan, path_db=yara_db, testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus found
+
+        expected_results = [
+            'regex-slash-colon.sample: YARA.regex.UNOFFICIAL FOUND',
+            'Infected files: 1',
+        ]
+        self.verify_output(output.out, expected=expected_results)
