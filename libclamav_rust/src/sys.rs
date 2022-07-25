@@ -743,6 +743,7 @@ pub struct recursion_level_tag {
     pub recursion_level_buffer_fmap: u32,
     pub is_normalized_layer: bool,
     pub image_fuzzy_hash: image_fuzzy_hash_t,
+    pub calculated_image_fuzzy_hash: bool,
 }
 pub type recursion_level_t = recursion_level_tag;
 #[repr(C)]
