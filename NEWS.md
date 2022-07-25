@@ -7,6 +7,21 @@ differ slightly from third-party binary packages.
 
 ClamAV 0.105.1 is a critical patch release with the following fixes:
 
+- Upgrade the vendored UnRAR library to version 6.1.7.
+
+- Fix issue building macOS universal binaries in some configurations.
+
+- Silence error message when the logical signature maximum functionality level
+  is lower than the current functionality level.
+
+- Fix scan error when scanning files containing malformed images that cannot be
+  loaded to calculate an image fuzzy hash.
+
+- Fix logical signature "Intermediates" feature.
+
+- Relax constraints on slightly malformed zip archives that contain overlapping
+  file entries.
+
 ## 0.105.0
 
 ClamAV 0.105.0 includes the following improvements and changes.
