@@ -7,6 +7,13 @@ differ slightly from third-party binary packages.
 
 ClamAV 0.104.4 is a critical patch release with the following fixes:
 
+- Upgrade the vendored UnRAR library to version 6.1.7.
+
+- Fix logical signature "Intermediates" feature.
+
+- Relax constraints on slightly malformed zip archives that contain overlapping
+  file entries.
+
 ## 0.104.3
 
 ClamAV 0.104.3 is a critical patch release with the following fixes:
