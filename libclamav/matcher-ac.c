@@ -1968,12 +1968,13 @@ cl_error_t cli_ac_scanbuff(
                                     if (pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype))
                                         return CL_TYPE_IGNORED;
 
-                                    if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
+                                    if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) &&
+                                        (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype)) {
+
                                         cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
                                         type = pt->type;
-                                        if (ftoffset &&
-                                            (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) &&
-                                            (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
+                                        if ((ftoffset != NULL) &&
+                                            ((*ftoffset == NULL) || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
                                             /* FIXME: the first offset in the array is most likely the correct one but
                                              * it may happen it is not
                                              */
@@ -2031,14 +2032,16 @@ cl_error_t cli_ac_scanbuff(
 
                         } else { /* old type signature */
                             if (pt->type) {
-                                if (pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype))
+                                if (pt->type == CL_TYPE_IGNORED && (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype))
                                     return CL_TYPE_IGNORED;
 
-                                if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
+                                if ((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) &&
+                                    (pt->rtype == CL_TYPE_ANY || ftype == pt->rtype)) {
 
                                     cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
                                     type = pt->type;
-                                    if (ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type == CL_TYPE_MBR || type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
+                                    if ((ftoffset != NULL) &&
+                                        ((*ftoffset == NULL) || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && (type == CL_TYPE_MBR || type >= CL_TYPE_SFX || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE))) {
 
                                         if (ac_addtype(ftoffset, type, realoff, ctx))
                                             return CL_EMEM;
