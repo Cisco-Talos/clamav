@@ -433,8 +433,8 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
-    def test_clamscan_11_allmatch_clam_exe_plus_not_eicar_zipsfx(self):
-        self.step_name('Test that clam will detect a string in text file, plus identify, extract, and alert on concatenated clam.zip containing clam.exe with a hash sig.')
+    def test_clamscan_11_allmatch_clam_exe_imphash_plus_not_eicar_zipsfx(self):
+        self.step_name('Test that clam will detect a string in text file, plus identify, extract, and alert on concatenated clam.zip containing clam.exe with an imp-hash sig.')
 
         # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
         (TC.path_tmp / 'clam.imp').write_text(
@@ -463,6 +463,41 @@ class TC(testcase.TestCase):
 
         expected_results = [
             'Test.Import.Hash.UNOFFICIAL FOUND',
+            'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
+        ]
+        self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_11_allmatch_clam_exe_pattern_plus_not_eicar_zipsfx(self):
+        self.step_name('Test that clam will detect a string in text file, plus identify, extract, and alert on concatenated clam.zip containing clam.exe with a pattern-match sig.')
+        # This tests a regression where clam will fail to extract the embedded zip file if the pattern-match sig matches before the embedded file type sig.
+
+        # We can't use the hash sig for this clam.exe program because the hash goes out the window when we concatenate on the zip.
+        (TC.path_tmp / 'clam.ndb').write_text(
+            "Test.Pattern.Match:0:*:4b45524e454c33322e444c4c00004578\n"
+        )
+
+        # Build a file that is the clam.exe program with a zip concatinated on that contains the not_eicar test string file.
+        clam_exe = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+
+        not_eicar_zip = TC.path_tmp / 'not-eicar.zip'
+        with ZipFile(str(not_eicar_zip), 'w', ZIP_DEFLATED) as zf:
+            zf.writestr('not-eicar.txt', b"CLAMAV-TEST-STRING-NOT-EICAR")
+
+        testfile = TC.path_tmp / 'clam.exe.not_eicar.zipsfx'
+        testfile.write_bytes(clam_exe.read_bytes() + not_eicar_zip.read_bytes())
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {clam_exe_db} -d {not_eicar_db} --allmatch {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            clam_exe_db=TC.path_tmp / 'clam.ndb',
+            not_eicar_db=TC.path_source / 'unit_tests' / 'input' / 'other_sigs' / 'Clamav-Unit-Test-Signature.ndb',
+            testfiles=testfile,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        expected_results = [
+            'Test.Pattern.Match.UNOFFICIAL FOUND',
             'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
