@@ -5340,7 +5340,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     ctx.engine  = engine;
     ctx.scanned = scanned;
-    ctx.options = malloc(sizeof(struct cl_scan_options));
+    MALLOC(ctx.options, sizeof(struct cl_scan_options), status = CL_EMEM);
+
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
 
     ctx.evidence = evidence_new();
