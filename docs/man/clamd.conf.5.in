@@ -312,7 +312,7 @@ Default: TrustSigned
 \fBBytecodeTimeout NUMBER\fR
 Set bytecode timeout in milliseconds.
 .br
-Default: 5000
+Default: 10000
 .TP
 \fBBytecodeUnsigned BOOL\fR
 Allow loading bytecode from outside digitally signed .c[lv]d files.
