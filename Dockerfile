@@ -54,8 +54,8 @@ RUN apk add --no-cache \
        "/clamav/usr/lib/pkgconfig/" \
     && \
     sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(PidFile\) .*|\1 /run/lock/clamd.pid|" \
-        -e "s|.*\(LocalSocket\) .*|\1 /run/clamav/clamd.sock|" \
+        -e "s|.*\(PidFile\) .*|\1 /tmp/clamd.pid|" \
+        -e "s|.*\(LocalSocket\) .*|\1 /tmp/clamd.sock|" \
         -e "s|.*\(TCPSocket\) .*|\1 3310|" \
         -e "s|.*\(TCPAddr\) .*|#\1 0.0.0.0|" \
         -e "s|.*\(User\) .*|\1 clamav|" \
@@ -63,19 +63,19 @@ RUN apk add --no-cache \
         -e "s|^\#\(LogTime\).*|\1 yes|" \
         "/clamav/etc/clamav/clamd.conf.sample" > "/clamav/etc/clamav/clamd.conf" && \
     sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(PidFile\) .*|\1 /run/lock/freshclam.pid|" \
+        -e "s|.*\(PidFile\) .*|\1 /tmp/freshclam.pid|" \
         -e "s|.*\(DatabaseOwner\) .*|\1 clamav|" \
         -e "s|^\#\(UpdateLogFile\) .*|\1 /var/log/clamav/freshclam.log|" \
         -e "s|^\#\(NotifyClamd\).*|\1 /etc/clamav/clamd.conf|" \
         -e "s|^\#\(ScriptedUpdates\).*|\1 yes|" \
         "/clamav/etc/clamav/freshclam.conf.sample" > "/clamav/etc/clamav/freshclam.conf" && \
     sed -e "s|^\(Example\)|\# \1|" \
-        -e "s|.*\(PidFile\) .*|\1 /run/lock/clamav-milter.pid|" \
+        -e "s|.*\(PidFile\) .*|\1 /tmp/clamav-milter.pid|" \
         -e "s|.*\(MilterSocket\) .*|\1 inet:7357|" \
         -e "s|.*\(User\) .*|\1 clamav|" \
         -e "s|^\#\(LogFile\) .*|\1 /var/log/clamav/milter.log|" \
         -e "s|^\#\(LogTime\).*|\1 yes|" \
-        -e "s|.*\(\ClamdSocket\) .*|\1 unix:/run/clamav/clamd.sock|" \
+        -e "s|.*\(\ClamdSocket\) .*|\1 unix:/tmp/clamd.sock|" \
         "/clamav/etc/clamav/clamav-milter.conf.sample" > "/clamav/etc/clamav/clamav-milter.conf" || \
     exit 1 && \
     ctest -V
@@ -105,8 +105,9 @@ RUN apk add --no-cache \
         zlib \
     && \
     addgroup -S "clamav" && \
-    adduser -D -G "clamav" -h "/var/lib/clamav" -s "/bin/false" -S "clamav" && \
-    install -d -m 755 -g "clamav" -o "clamav" "/var/log/clamav"
+    adduser -D -G "clamav" -h "/var/lib/clamav" -s "/bin/false" -u 100 -S "clamav" && \
+    install -d -m 755 -g "clamav" -o "clamav" "/var/log/clamav" && \
+    chown -R clamav:clamav /var/lib/clamav
 
 COPY --from=builder "/clamav" "/"
 COPY "./dockerfiles/clamdcheck.sh" "/usr/local/bin/"
@@ -115,3 +116,5 @@ COPY "./dockerfiles/docker-entrypoint.sh" "/init"
 HEALTHCHECK --start-period=6m CMD "clamdcheck.sh"
 
 ENTRYPOINT [ "/init" ]
+
+USER clamav

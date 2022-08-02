@@ -10,13 +10,6 @@
 
 set -eu
 
-if [ ! -d "/run/clamav" ]; then
-	install -d -g "clamav" -m 775 -o "clamav" "/run/clamav"
-fi
-
-# Assign ownership to the database directory, just in case it is a mounted volume
-chown -R clamav:clamav /var/lib/clamav
-
 # run command if it is not starting with a "-" and is an executable in PATH
 if [ "${#}" -gt 0 ] && \
    [ "${1#-}" = "${1}" ] && \
@@ -31,10 +24,6 @@ else
 	fi
 	# else default to running clamav's servers
 
-	# Help tiny-init a little
-	mkdir -p "/run/lock"
-	ln -f -s "/run/lock" "/var/lock"
-
 	# Ensure we have some virus data, otherwise clamd refuses to start
 	if [ ! -f "/var/lib/clamav/main.cvd" ]; then
 		echo "Updating initial database"
@@ -43,11 +32,11 @@ else
 
 	if [ "${CLAMAV_NO_CLAMD:-false}" != "true" ]; then
 		echo "Starting ClamAV"
-		if [ -S "/run/clamav/clamd.sock" ]; then
-			unlink "/run/clamav/clamd.sock"
+		if [ -S "/tmp/clamd.sock" ]; then
+			unlink "/tmp/clamd.sock"
 		fi
 		clamd --foreground &
-		while [ ! -S "/run/clamav/clamd.sock" ]; do
+		while [ ! -S "/tmp/clamd.sock" ]; do
 			if [ "${_timeout:=0}" -gt "${CLAMD_STARTUP_TIMEOUT:=1800}" ]; then
 				echo
 				echo "Failed to start clamd"
