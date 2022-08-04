@@ -35,6 +35,7 @@
 #include "matcher-pcre.h"
 #include "others.h"
 #include "default.h"
+#include "clamav_rust.h"
 
 #include "checks.h"
 
@@ -169,8 +170,9 @@ static void setup(void)
     memset(&options, 0, sizeof(struct cl_scan_options));
     ctx.options = &options;
 
-    ctx.virname = &virname;
-    ctx.engine  = cl_engine_new();
+    ctx.evidence = evidence_new();
+
+    ctx.engine = cl_engine_new();
     ck_assert_msg(!!ctx.engine, "cl_engine_new() failed");
 
     ctx.dconf = ctx.engine->dconf;
@@ -197,6 +199,7 @@ static void teardown(void)
 {
     cl_engine_free((struct cl_engine *)ctx.engine);
     free(ctx.recursion_stack);
+    evidence_free(ctx.evidence);
 }
 
 START_TEST(test_ac_scanbuff)
@@ -277,10 +280,17 @@ START_TEST(test_ac_scanbuff_allscan)
         ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
 
         ret = cli_scan_buff((const unsigned char *)ac_testdata[i].data, strlen(ac_testdata[i].data), 0, &ctx, 0, NULL);
-        ck_assert_msg(ret == CL_VIRUS, "cli_scan_buff() failed for %s", ac_testdata[i].virname);
+        ck_assert_msg(ret == CL_SUCCESS, "cli_scan_buff() failed for %s", ac_testdata[i].virname);
+
+        // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
+        // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
+        // we need to count the number of alerts manually to determine the verdict.
+        ck_assert_msg(0 < evidence_num_alerts(ctx.evidence), "cli_scan_buff() failed for %s", ac_testdata[i].virname);
         ck_assert_msg(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
-        if (ctx.num_viruses)
-            ctx.num_viruses = 0;
+        if (evidence_num_alerts(ctx.evidence) > 0) {
+            evidence_free(ctx.evidence);
+            ctx.evidence = evidence_new();
+        }
     }
 
     cli_ac_freedata(&mdata);
@@ -360,15 +370,28 @@ START_TEST(test_ac_scanbuff_allscan_ex)
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for (i = 0; ac_sigopts_testdata[i].data; i++) {
+        cl_error_t verdict = CL_CLEAN;
+
         ret = cli_ac_scanbuff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, &virname, NULL, NULL, root, &mdata, 0, 0, NULL, AC_SCAN_VIR, NULL);
         ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
         if (ac_sigopts_testdata[i].expected_result == CL_VIRUS)
             ck_assert_msg(!strncmp(virname, ac_sigopts_testdata[i].virname, strlen(ac_sigopts_testdata[i].virname)), "[ac_ex] Dataset %u matched with %s", i, virname);
 
         ret = cli_scan_buff((const unsigned char *)ac_sigopts_testdata[i].data, ac_sigopts_testdata[i].dlength, 0, &ctx, 0, NULL);
-        ck_assert_msg(ret == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
-        if (ctx.num_viruses)
-            ctx.num_viruses = 0;
+        ck_assert_msg(ret == CL_SUCCESS, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, ret, ac_sigopts_testdata[i].expected_result);
+
+        // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
+        // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
+        // we need to count the number of alerts manually to determine the verdict.
+        if (0 < evidence_num_alerts(ctx.evidence)) {
+            verdict = CL_VIRUS;
+        }
+
+        ck_assert_msg(verdict == ac_sigopts_testdata[i].expected_result, "[ac_ex] cli_ac_scanbuff() failed for %s (%d != %d)", ac_sigopts_testdata[i].virname, verdict, ac_sigopts_testdata[i].expected_result);
+        if (evidence_num_alerts(ctx.evidence) > 0) {
+            evidence_free(ctx.evidence);
+            ctx.evidence = evidence_new();
+        }
     }
 
     cli_ac_freedata(&mdata);
@@ -530,16 +553,28 @@ START_TEST(test_pcre_scanbuff_allscan)
 
     ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES; /* enable all-match */
     for (i = 0; pcre_testdata[i].data; i++) {
+        cl_error_t verdict = CL_CLEAN;
+
         ret = cli_pcre_scanbuf((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), &virname, NULL, root, NULL, NULL, NULL);
         ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_pcre_scanbuff() failed for %s (%d != %d)", pcre_testdata[i].virname, ret, pcre_testdata[i].expected_result);
 
         // we cannot check if the virname matches because we didn't load a whole logical signature, and virnames are stored in the lsig structure, now.
 
         ret = cli_scan_buff((const unsigned char *)pcre_testdata[i].data, strlen(pcre_testdata[i].data), 0, &ctx, 0, NULL);
-        ck_assert_msg(ret == pcre_testdata[i].expected_result, "[pcre] cli_scan_buff() failed for %s", pcre_testdata[i].virname);
+
+        // cli_scan_buff() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
+        // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
+        // we need to count the number of alerts manually to determine the verdict.
+        if (0 < evidence_num_alerts(ctx.evidence)) {
+            verdict = CL_VIRUS;
+        }
+
+        ck_assert_msg(verdict == pcre_testdata[i].expected_result, "[pcre] cli_scan_buff() failed for %s", pcre_testdata[i].virname);
         /* num_virus field add to test case struct */
-        if (ctx.num_viruses)
-            ctx.num_viruses = 0;
+        if (evidence_num_alerts(ctx.evidence) > 0) {
+            evidence_free(ctx.evidence);
+            ctx.evidence = evidence_new();
+        }
     }
 
     cli_ac_freedata(&mdata);

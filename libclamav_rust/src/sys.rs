@@ -403,7 +403,7 @@ pub struct cl_fmap {
     pub pgsz: u64,
     pub paged: u64,
     pub aging: u16,
-    pub dont_cache_flag: u16,
+    pub dont_cache_flag: bool,
     #[doc = " indicates if we should not cache scan results for this fmap. Used if limits exceeded"]
     pub handle_is_fd: u16,
     #[doc = " non-zero if map->handle is an fd."]
@@ -745,24 +745,20 @@ pub struct recursion_level_tag {
     pub image_fuzzy_hash: image_fuzzy_hash_t,
 }
 pub type recursion_level_t = recursion_level_tag;
+pub type evidence_t = *mut ::std::os::raw::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct cli_ctx_tag {
-    #[doc = "< (optional) The filepath of the original scan target."]
     pub target_filepath: *mut ::std::os::raw::c_char,
-    #[doc = "< (optional) The filepath of the current file being parsed. May be a temp file."]
     pub sub_filepath: *const ::std::os::raw::c_char,
-    #[doc = "< The directory to store tmp files at this recursion depth."]
     pub sub_tmpdir: *mut ::std::os::raw::c_char,
-    pub virname: *mut *const ::std::os::raw::c_char,
-    pub num_viruses: ::std::os::raw::c_uint,
+    pub evidence: evidence_t,
     pub scanned: *mut ::std::os::raw::c_ulong,
     pub root: *const cli_matcher,
     pub engine: *const cl_engine,
     pub scansize: u64,
     pub options: *mut cl_scan_options,
     pub scannedfiles: ::std::os::raw::c_uint,
-    pub found_possibly_unwanted: ::std::os::raw::c_uint,
     pub corrupted_input: ::std::os::raw::c_uint,
     pub recursion_stack: *mut recursion_level_t,
     pub recursion_stack_size: u32,

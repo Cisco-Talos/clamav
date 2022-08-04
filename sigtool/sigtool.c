@@ -54,12 +54,12 @@
 #include "others.h"
 #include "pe.h"
 #include "entconv.h"
+#include "clamav_rust.h"
 
 // common
 #include "output.h"
 #include "optparser.h"
 #include "misc.h"
-#include "clamav_rust.h"
 #include "tar.h"
 
 #include "vba.h"
@@ -207,6 +207,9 @@ static int hashpe(const char *filename, unsigned int class, int type)
 
     /* prepare context */
     ctx.engine         = engine;
+
+    ctx.evidence = evidence_new();
+
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -272,6 +275,9 @@ done:
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
+    }
+    if (NULL != ctx.evidence) {
+        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -358,7 +364,7 @@ static int fuzzy_img_file(char *filename)
     bytes_read = read(target_fd, mem, (size_t)st.st_size);
     if (bytes_read == -1) {
         char err[128];
-        mprintf(LOGG_ERROR, "%s: Failed to read file.\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
+        mprintf(LOGG_ERROR, "%s: Failed to read file: %s\n", basename(filename), cli_strerror(errno, err, sizeof(err)));
         goto done;
     }
     if (bytes_read < (ssize_t)st.st_size) {
@@ -2101,6 +2107,9 @@ static void matchsig(char *sig, const char *offset, int fd)
     }
 
     ctx.engine         = engine;
+
+    ctx.evidence = evidence_new();
+
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -2151,6 +2160,9 @@ done:
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
+    }
+    if (NULL != ctx.evidence) {
+        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);
@@ -3316,6 +3328,9 @@ static int dumpcerts(const struct optstruct *opts)
 
     /* prepare context */
     ctx.engine         = engine;
+
+    ctx.evidence = evidence_new();
+
     ctx.options        = &options;
     ctx.options->parse = ~0;
     ctx.dconf          = (struct cli_dconf *)engine->dconf;
@@ -3364,6 +3379,9 @@ done:
     }
     if (NULL != ctx.recursion_stack) {
         free(ctx.recursion_stack);
+    }
+    if (NULL != ctx.evidence) {
+        evidence_free(ctx.evidence);
     }
     if (NULL != engine) {
         cl_engine_free(engine);

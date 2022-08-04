@@ -40,6 +40,7 @@
 #include "dconf.h"
 #include "bytecode_priv.h"
 #include "pe.h"
+#include "clamav_rust.h"
 
 #include "checks.h"
 
@@ -72,11 +73,12 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cctx.options = &options;
 
     cctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
-    cctx.virname = &virname;
     cctx.engine = engine = cl_engine_new();
     ck_assert_msg(!!cctx.engine, "cannot create engine");
     rc = cl_engine_compile(engine);
     ck_assert_msg(!rc, "cannot compile engine");
+
+    cctx.evidence = evidence_new();
 
     cctx.dconf = cctx.engine->dconf;
 
@@ -160,6 +162,7 @@ static void runtest(const char *file, uint64_t expected, int fail, int nojit,
     cli_bytecode_done(&bcs);
     free(cctx.recursion_stack);
     cl_engine_free(engine);
+    evidence_free(cctx.evidence);
     if (fdin >= 0)
         close(fdin);
 }

@@ -593,13 +593,6 @@ cli_parse_mbox(const char *dir, cli_ctx *ctx)
         messageDestroy(body);
     }
 
-    if ((retcode == CL_CLEAN) && ctx->found_possibly_unwanted &&
-        (*ctx->virname == NULL || SCAN_ALLMATCHES)) {
-        retcode = cli_append_virus(ctx, "Heuristics.Phishing.Email");
-
-        ctx->found_possibly_unwanted = 0;
-    }
-
     cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
     return retcode;

@@ -25,11 +25,47 @@
 #include "clamav.h"
 #include "others.h"
 
-void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx);
-/* Removes a hash from the cache */
-void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine);
-cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx);
-int cli_cache_init(struct cl_engine *engine);
-void cli_cache_destroy(struct cl_engine *engine);
+/**
+ * @brief Add a hash to the cache of clean files.
+ *
+ * @param md5   The file to add.
+ * @param size  The size of the file.
+ * @param ctx   The scanning context.
+ */
+void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx);
+
+/**
+ * @brief Removes a hash from the clean cache
+ *
+ * @param md5   The file to remove.
+ * @param size  The size of the file.
+ * @param ctx   The scanning context.
+ */
+void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine);
+
+/**
+ * @brief Hashes a file onto the provided buffer and looks it up the clean cache.
+ *
+ * @param hash Hash to check
+ * @param ctx
+ * @return CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error.
+   @return CL_EREAD if unrecoverable.
+ */
+cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx);
+
+/**
+ * @brief Allocates the trees for the clean cache.
+ *
+ * @param engine
+ * @return int
+ */
+int clean_cache_init(struct cl_engine *engine);
+
+/**
+ * @brief Frees the clean cache
+ *
+ * @param engine
+ */
+void clean_cache_destroy(struct cl_engine *engine);
 
 #endif
