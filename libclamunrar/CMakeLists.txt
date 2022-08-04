@@ -99,6 +99,7 @@ if(ENABLE_SHARED_LIB)
 
     if(WIN32)
         install(TARGETS clamunrar DESTINATION . COMPONENT libraries)
+        install(FILES $<TARGET_PDB_FILE:clamunrar> DESTINATION . OPTIONAL COMPONENT libraries)
     else()
         install(TARGETS clamunrar DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
     endif()

@@ -42,6 +42,7 @@ target_link_libraries( clamscan
         ClamAV::common )
 if(WIN32)
     install(TARGETS clamscan DESTINATION . COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:clamscan> DESTINATION . OPTIONAL COMPONENT programs)
 else()
     install(TARGETS clamscan DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

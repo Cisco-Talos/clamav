@@ -40,6 +40,7 @@ target_link_libraries( sigtool
         ClamAV::common )
 if(WIN32)
     install(TARGETS sigtool DESTINATION . COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:sigtool> DESTINATION . OPTIONAL COMPONENT programs)
 else()
     install(TARGETS sigtool DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()

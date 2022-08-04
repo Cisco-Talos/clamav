@@ -41,6 +41,7 @@ target_link_libraries(freshclam-bin
         ClamAV::common )
 if(WIN32)
     install(TARGETS freshclam-bin DESTINATION . COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:freshclam-bin> DESTINATION . OPTIONAL COMPONENT programs)
 else()
     install(TARGETS freshclam-bin DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT programs)
 endif()
