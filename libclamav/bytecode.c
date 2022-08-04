@@ -2789,7 +2789,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
     struct cli_bc_ctx ctx;
     const struct cli_bc *bc = &bcs->all_bcs[bc_idx - 1];
     struct cli_pe_hook_data pehookdata;
-    const char* bc_name = NULL;
+    const char *bc_name = NULL;
 
     if (bc_idx == 0)
         return CL_ENULLARG;
@@ -2837,19 +2837,17 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         return CL_SUCCESS;
     }
     if (ctx.virname) {
-        if (cctx->num_viruses == 0) {
-            int rc;
-            cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
-            if (!strncmp(ctx.virname, "BC.Heuristics", 13))
-                rc = cli_append_possibly_unwanted(cctx, ctx.virname);
-            else
-                rc = cli_append_virus(cctx, ctx.virname);
-            cli_bytecode_context_clear(&ctx);
-            return rc;
+        int rc;
+        cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
+
+        if (!strncmp(ctx.virname, "BC.Heuristics", 13)) {
+            rc = cli_append_potentially_unwanted(cctx, ctx.virname);
         } else {
-            cli_bytecode_context_clear(&ctx);
-            return CL_VIRUS;
+            rc = cli_append_virus(cctx, ctx.virname);
         }
+
+        cli_bytecode_context_clear(&ctx);
+        return rc;
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
     cli_dbgmsg("Bytecode '%s' (id: %u) returned code: %u\n", bc_name, bc->id, ret);

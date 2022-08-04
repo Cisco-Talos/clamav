@@ -114,7 +114,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
         if (chunk_data_length > (uint64_t)0x7fffffff) {
             cli_dbgmsg("PNG: invalid chunk length (too large): 0x" STDx64 "\n", chunk_data_length);
             if (SCAN_HEURISTIC_BROKEN_MEDIA) {
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.PNG.InvalidChunkLength");
+                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.PNG.InvalidChunkLength");
                 status = CL_EPARSE;
             }
             goto scan_overlay;
@@ -123,7 +123,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
         if (fmap_readn(map, chunk_type, offset, PNG_CHUNK_TYPE_SIZE) != PNG_CHUNK_TYPE_SIZE) {
             cli_dbgmsg("PNG: EOF while reading chunk type\n");
             if (SCAN_HEURISTIC_BROKEN_MEDIA) {
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunkType");
+                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunkType");
                 status = CL_EPARSE;
             }
             goto scan_overlay;
@@ -141,7 +141,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
             if (NULL == ptr) {
                 cli_warnmsg("PNG: Unexpected early end-of-file.\n");
                 if (SCAN_HEURISTIC_BROKEN_MEDIA) {
-                    cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunk");
+                    cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunk");
                     status = CL_EPARSE;
                 }
                 goto scan_overlay;
@@ -272,7 +272,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
         if (fmap_readn(map, &chunk_crc, offset, PNG_CHUNK_CRC_SIZE) != PNG_CHUNK_CRC_SIZE) {
             cli_dbgmsg("PNG: EOF while reading chunk crc\n");
             if (SCAN_HEURISTIC_BROKEN_MEDIA) {
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunkCRC");
+                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.PNG.EOFReadingChunkCRC");
                 status = CL_EPARSE;
             }
             goto scan_overlay;
@@ -295,7 +295,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
 scan_overlay:
     if (status == CL_EPARSE) {
-        /* We added with cli_append_possibly_unwanted so it will alert at the end if nothing else matches. */
+        /* We added with cli_append_potentially_unwanted so it will alert at the end if nothing else matches. */
         status = CL_CLEAN;
     }
 

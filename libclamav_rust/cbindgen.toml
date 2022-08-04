@@ -28,6 +28,14 @@ include = [
   "frs_error::ffierror_fmt",
   "frs_error::ffierror_free",
   "logging::clrs_eprint",
+  "evidence::evidence_new",
+  "evidence::evidence_free",
+  "evidence::evidence_render_verdict",
+  "evidence::evidence_get_last_alert",
+  "evidence::evidence_num_alerts",
+  "evidence::evidence_num_indicators_type",
+  "evidence::evidence_add_indicator",
+  "evidence::IndicatorType",
 ]
 
 # prefix = "CAPI_"
@@ -48,3 +56,6 @@ all_features = false
 crates = []
 default_features = true
 features = []
+
+[enum]
+prefix_with_name = true

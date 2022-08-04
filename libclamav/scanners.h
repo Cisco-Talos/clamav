@@ -94,8 +94,6 @@ cl_error_t cli_magic_scan_nested_fmap_type(cl_fmap_t *map, size_t offset, size_t
  */
 cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, const char *name);
 
-cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx);
-
 /**
  * @brief   Internal-use version of cl_scanfile.
  *

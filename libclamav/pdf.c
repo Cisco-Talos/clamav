@@ -3695,7 +3695,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         if (!rc && SCAN_HEURISTICS && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
                 /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-                cli_append_possibly_unwanted(ctx, "Heuristics.PDF.ObfuscatedNameObject");
+                cli_append_potentially_unwanted(ctx, "Heuristics.PDF.ObfuscatedNameObject");
             }
         }
 #if 0

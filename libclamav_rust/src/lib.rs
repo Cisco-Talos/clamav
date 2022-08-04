@@ -24,6 +24,7 @@
 pub mod sys;
 
 pub mod cdiff;
+pub mod evidence;
 pub mod ffi_util;
 pub mod fuzzy_hash;
 pub mod logging;
