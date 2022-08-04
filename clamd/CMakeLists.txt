@@ -54,6 +54,7 @@ target_link_libraries( clamd
         ClamAV::common )
 if(WIN32)
     install(TARGETS clamd DESTINATION . COMPONENT programs)
+    install(FILES $<TARGET_PDB_FILE:clamd> DESTINATION . OPTIONAL COMPONENT programs)
 else()
     install(TARGETS clamd DESTINATION ${CMAKE_INSTALL_SBINDIR} COMPONENT programs)
 endif()

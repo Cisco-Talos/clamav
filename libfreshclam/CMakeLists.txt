@@ -64,6 +64,7 @@ if(ENABLE_SHARED_LIB)
         VERSION ${LIBFRESHCLAM_VERSION} SOVERSION ${LIBFRESHCLAM_SOVERSION})
     if(WIN32)
         install(TARGETS freshclam DESTINATION . COMPONENT libraries)
+        install(FILES $<TARGET_PDB_FILE:freshclam> DESTINATION . OPTIONAL COMPONENT libraries)
         # Also install shared library (DLL) dependencies
         install(CODE [[
             file(GET_RUNTIME_DEPENDENCIES
