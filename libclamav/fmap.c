@@ -422,7 +422,7 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->pages           = pages;
     m->pgsz            = pgsz;
     m->paged           = 0;
-    m->dont_cache_flag = 0;
+    m->dont_cache_flag = false;
     m->unmap           = unmap_handle;
     m->need            = handle_need;
     m->need_offstr     = handle_need_offstr;

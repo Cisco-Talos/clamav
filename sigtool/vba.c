@@ -38,6 +38,7 @@
 #include "vba_extract.h"
 #include "ole2_extract.h"
 #include "readdb.h"
+#include "clamav_rust.h"
 
 // common
 #include "output.h"
@@ -101,6 +102,8 @@ cli_ctx *convenience_ctx(int fd)
     }
 
     ctx->engine = (const struct cl_engine *)engine;
+
+    ctx->evidence = evidence_new();
 
     ctx->dconf = (struct cli_dconf *)engine->dconf;
 
@@ -180,6 +183,10 @@ void destroy_ctx(cli_ctx *ctx)
         if (NULL != ctx->options) {
             free(ctx->options);
             ctx->options = NULL;
+        }
+
+        if (NULL != ctx->evidence) {
+            evidence_free(ctx->evidence);
         }
 
         free(ctx);

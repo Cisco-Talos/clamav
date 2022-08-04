@@ -78,7 +78,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
     /* acquire offset of first IFD */
     if (fmap_readn(map, &offset, offset, 4) != 4) {
         cli_dbgmsg("cli_parsetiff: Failed to acquire offset of first IFD, file appears to be truncated.\n");
-        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingFirstIFDOffset");
+        cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingFirstIFDOffset");
         status = CL_EPARSE;
         goto done;
     }
@@ -89,7 +89,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
 
     if (!offset) {
         cli_errmsg("cli_parsetiff: Invalid offset for first IFD\n");
-        cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.InvalidIFDOffset");
+        cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.InvalidIFDOffset");
         status = CL_EPARSE;
         goto done;
     }
@@ -99,7 +99,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         /* acquire number of directory entries in current IFD */
         if (fmap_readn(map, &num_entries, offset, 2) != 2) {
             cli_dbgmsg("cli_parsetiff: Failed to acquire number of directory entries in current IFD, file appears to be truncated.\n");
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingNumIFDDirectoryEntries");
+            cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingNumIFDDirectoryEntries");
             status = CL_EPARSE;
             goto done;
         }
@@ -112,7 +112,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         for (i = 0; i < num_entries; i++) {
             if (fmap_readn(map, &entry, offset, sizeof(entry)) != sizeof(entry)) {
                 cli_dbgmsg("cli_parsetiff: Failed to read next IFD entry, file appears to be truncated.\n");
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingIFDEntry");
+                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingIFDEntry");
                 status = CL_EPARSE;
                 goto done;
             }
@@ -188,7 +188,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
         /* acquire next IFD location, gets 0 if last IFD */
         if (fmap_readn(map, &offset, offset, sizeof(offset)) != sizeof(offset)) {
             cli_dbgmsg("cli_parsetiff: Failed to aquire next IFD location, file appears to be truncated.\n");
-            cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingChunkCRC");
+            cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.EOFReadingChunkCRC");
             status = CL_EPARSE;
             goto done;
         }
@@ -198,7 +198,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
             /*If the offsets are not in order, that is suspicious.*/
             if (last_offset >= offset) {
                 cli_dbgmsg("cli_parsetiff: Next offset is before current offset, file appears to be malformed.\n");
-                cli_append_possibly_unwanted(ctx, "Heuristics.Broken.Media.TIFF.OutOfOrderIFDOffset");
+                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.TIFF.OutOfOrderIFDOffset");
                 status = CL_EPARSE;
                 goto done;
             }
@@ -211,7 +211,7 @@ cl_error_t cli_parsetiff(cli_ctx *ctx)
 
 done:
     if (status == CL_EPARSE) {
-        /* We added with cli_append_possibly_unwanted so it will alert at the end if nothing else matches. */
+        /* We added with cli_append_potentially_unwanted so it will alert at the end if nothing else matches. */
         status = CL_CLEAN;
     }
 

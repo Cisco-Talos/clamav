@@ -33,6 +33,8 @@
 #include "cache.h"
 #include "fmap.h"
 
+#include "clamav_rust.h"
+
 /* The number of root trees and the chooser function
    Each tree is protected by a mutex against concurrent access */
 /* #define TREES 1 */
@@ -71,6 +73,13 @@ struct cache_set { /* a tree */
     struct node *root;
     struct node *first;
     struct node *last;
+};
+
+struct CACHE {
+    struct cache_set cacheset;
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_t mutex;
+#endif
 };
 
 /* Allocates all the nodes and sets up the replacement chain */
@@ -519,40 +528,62 @@ static inline void cacheset_remove(struct cache_set *cs, unsigned char *md5, siz
     printchain("remove (after)", cs);
 }
 
-/* COMMON STUFF --------------------------------------------------------------------- */
+/* Looks up an hash in the proper tree */
+static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
+{
+    unsigned int key = 0;
+    int ret          = CL_VIRUS;
+    struct CACHE *c;
 
-struct CACHE {
-    struct cache_set cacheset;
+    if (!md5) {
+        cli_dbgmsg("cache_lookup: No hash available. Nothing to look up.\n");
+        return ret;
+    }
+
+    key = getkey(md5);
+
+    c = &cache[key];
+
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_t mutex;
+    if (pthread_mutex_lock(&c->mutex)) {
+        cli_errmsg("cache_lookup_hash: cache_lookup_hash: mutex lock fail\n");
+        return ret;
+    }
 #endif
-};
 
-/* Allocates the trees for the engine cache */
-int cli_cache_init(struct cl_engine *engine)
+    ret = (cacheset_lookup(&c->cacheset, md5, len, recursion_level)) ? CL_CLEAN : CL_VIRUS;
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&c->mutex);
+#endif
+
+    return ret;
+}
+
+int clean_cache_init(struct cl_engine *engine)
 {
     struct CACHE *cache;
     unsigned int i, j;
 
     if (!engine) {
-        cli_errmsg("cli_cache_init: mpool malloc fail\n");
+        cli_errmsg("clean_cache_init: mpool malloc fail\n");
         return 1;
     }
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("cli_cache_init: Caching disabled.\n");
+        cli_dbgmsg("clean_cache_init: Caching disabled.\n");
         return 0;
     }
 
     if (!(cache = MPOOL_MALLOC(engine->mempool, sizeof(struct CACHE) * TREES))) {
-        cli_errmsg("cli_cache_init: mpool malloc fail\n");
+        cli_errmsg("clean_cache_init: mpool malloc fail\n");
         return 1;
     }
 
     for (i = 0; i < TREES; i++) {
 #ifdef CL_THREAD_SAFE
         if (pthread_mutex_init(&cache[i].mutex, NULL)) {
-            cli_errmsg("cli_cache_init: mutex init fail\n");
+            cli_errmsg("clean_cache_init: mutex init fail\n");
             for (j = 0; j < i; j++) cacheset_destroy(&cache[j].cacheset, engine->mempool);
             for (j = 0; j < i; j++) pthread_mutex_destroy(&cache[j].mutex);
             MPOOL_FREE(engine->mempool, cache);
@@ -572,8 +603,7 @@ int cli_cache_init(struct cl_engine *engine)
     return 0;
 }
 
-/* Frees the engine cache */
-void cli_cache_destroy(struct cl_engine *engine)
+void clean_cache_destroy(struct cl_engine *engine)
 {
     struct CACHE *cache;
     unsigned int i;
@@ -594,40 +624,7 @@ void cli_cache_destroy(struct cl_engine *engine)
     MPOOL_FREE(engine->mempool, cache);
 }
 
-/* Looks up an hash in the proper tree */
-static int cache_lookup_hash(unsigned char *md5, size_t len, struct CACHE *cache, uint32_t recursion_level)
-{
-    unsigned int key = 0;
-    int ret          = CL_VIRUS;
-    struct CACHE *c;
-
-    if (!md5) {
-        cli_dbgmsg("cache_lookup: No hash available. Nothing to look up.\n");
-        return ret;
-    }
-
-    key = getkey(md5);
-
-    c = &cache[key];
-#ifdef CL_THREAD_SAFE
-    if (pthread_mutex_lock(&c->mutex)) {
-        cli_errmsg("cache_lookup_hash: cache_lookup_hash: mutex lock fail\n");
-        return ret;
-    }
-#endif
-
-    /* cli_warnmsg("cache_lookup_hash: key is %u\n", key); */
-
-    ret = (cacheset_lookup(&c->cacheset, md5, len, recursion_level)) ? CL_CLEAN : CL_VIRUS;
-#ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&c->mutex);
-    // if(ret == CL_CLEAN) cli_warnmsg("cached\n");
-#endif
-    return ret;
-}
-
-/* Adds an hash to the cache */
-void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
+void clean_cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
     const char *errmsg = NULL;
 
@@ -639,32 +636,46 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
         return;
 
     if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("cache_add: Caching disabled. Not adding sample to cache.\n");
+        cli_dbgmsg("clean_cache_add: Caching disabled. Not adding sample to cache.\n");
         return;
     }
 
     if (!md5) {
-        cli_dbgmsg("cache_add: No hash available. Nothing to add to cache.\n");
+        cli_dbgmsg("clean_cache_add: No hash available. Nothing to add to cache.\n");
         return;
     }
 
-    key   = getkey(md5);
-    level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
-    if (ctx->found_possibly_unwanted && (level || 0 == ctx->recursion_level))
-        return;
-    if (SCAN_ALLMATCHES && (ctx->num_viruses > 0)) {
-        cli_dbgmsg("cache_add: alert found within same topfile, skipping cache\n");
+    if (SCAN_COLLECT_METADATA) {
+        // Don't cache when using the "collect metadata" feature.
+        // We don't cache the JSON, so we can't reproduce it when the cache is positive.
+        cli_dbgmsg("clean_cache_add: collect metadata feature enabled, skipping cache\n");
         return;
     }
-    c = &ctx->engine->cache[key];
+
+    if (ctx->fmap && ctx->fmap->dont_cache_flag == true) {
+        cli_dbgmsg("clean_cache_add: caching disabled for this layer, skipping cache\n");
+        return;
+    }
+
+    if (0 < evidence_num_alerts(ctx->evidence)) {
+        // TODO: The dont cache flag should take care of preventing caching of files with embedded files that alert.
+        //       Consider removing this check to allow caching of other actually clean files found within archives.
+        //       It would be a (very) minor optimization.
+        cli_dbgmsg("clean_cache_add: alert found within same topfile, skipping cache\n");
+        return;
+    }
+
+    level = (ctx->fmap && ctx->fmap->dont_cache_flag) ? ctx->recursion_level : 0;
+
+    key = getkey(md5);
+    c   = &ctx->engine->cache[key];
+
 #ifdef CL_THREAD_SAFE
     if (pthread_mutex_lock(&c->mutex)) {
         cli_errmsg("cli_add: mutex lock fail\n");
         return;
     }
 #endif
-
-    /* cli_warnmsg("cache_add: key is %u\n", key); */
 
     errmsg = cacheset_add(&c->cacheset, md5, size, level);
 
@@ -674,12 +685,13 @@ void cache_add(unsigned char *md5, size_t size, cli_ctx *ctx)
     if (errmsg != NULL) {
         cli_errmsg("%s\n", errmsg);
     }
-    cli_dbgmsg("cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
+
+    cli_dbgmsg("clean_cache_add: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x (level %u)\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], level);
+
     return;
 }
 
-/* Removes a hash from the cache */
-void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine)
+void clean_cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engine)
 {
     unsigned int key = 0;
     struct CACHE *c;
@@ -688,12 +700,12 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
         return;
 
     if (engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("cache_remove: Caching disabled.\n");
+        cli_dbgmsg("clean_cache_remove: Caching disabled.\n");
         return;
     }
 
     if (!md5) {
-        cli_dbgmsg("cache_remove: No hash available. Nothing to remove from cache.\n");
+        cli_dbgmsg("clean_cache_remove: No hash available. Nothing to remove from cache.\n");
         return;
     }
 
@@ -712,28 +724,30 @@ void cache_remove(unsigned char *md5, size_t size, const struct cl_engine *engin
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&c->mutex);
 #endif
-    cli_dbgmsg("cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
+    cli_dbgmsg("clean_cache_remove: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
     return;
 }
 
-/* Hashes a file onto the provided buffer and looks it up the cache.
-   Returns CL_VIRUS if found, CL_CLEAN if not FIXME or a recoverable error,
-   and returns CL_EREAD if unrecoverable */
-cl_error_t cache_check(unsigned char *hash, cli_ctx *ctx)
+cl_error_t clean_cache_check(unsigned char *md5, size_t size, cli_ctx *ctx)
 {
-    fmap_t *map;
     int ret;
 
     if (!ctx || !ctx->engine || !ctx->engine->cache)
         return CL_VIRUS;
 
-    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
-        cli_dbgmsg("cache_check: Caching disabled. Returning CL_VIRUS.\n");
+    if (SCAN_COLLECT_METADATA) {
+        // Don't cache when using the "collect metadata" feature.
+        // We don't cache the JSON, so we can't reproduce it when the cache is positive.
+        cli_dbgmsg("clean_cache_check: collect metadata feature enabled, skipping cache\n");
         return CL_VIRUS;
     }
 
-    map = ctx->fmap;
-    ret = cache_lookup_hash(hash, map->len, ctx->engine->cache, ctx->recursion_level);
-    cli_dbgmsg("cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15], (ret == CL_VIRUS) ? "negative" : "positive");
+    if (ctx->engine->engine_options & ENGINE_OPTIONS_DISABLE_CACHE) {
+        cli_dbgmsg("clean_cache_check: Caching disabled. Returning CL_VIRUS.\n");
+        return CL_VIRUS;
+    }
+
+    ret = cache_lookup_hash(md5, size, ctx->engine->cache, ctx->recursion_level);
+    cli_dbgmsg("clean_cache_check: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x is %s\n", md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15], (ret == CL_VIRUS) ? "negative" : "positive");
     return ret;
 }

@@ -132,7 +132,7 @@ pub extern "C" fn fuzzy_hash_free_hashmap(fuzzy_hashmap: sys::fuzzyhashmap_t) {
     }
 }
 
-/// C interface for fuzzy_hash_check().
+/// C interface for FuzzyHashMap::check().
 /// Handles all the unsafe ffi stuff.
 ///
 /// # Safety
@@ -162,7 +162,7 @@ pub unsafe extern "C" fn _fuzzy_hash_check(
     true
 }
 
-/// C interface for fuzzy_hash_load_subsignature().
+/// C interface for FuzzyHashMap::load_subsignature().
 /// Handles all the unsafe ffi stuff.
 ///
 /// # Safety

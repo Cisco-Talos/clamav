@@ -5304,7 +5304,7 @@ cl_error_t cl_load(const char *path, struct cl_engine *engine, unsigned int *sig
         cli_dbgmsg("Bytecode engine disabled\n");
     }
 
-    if (!engine->cache && cli_cache_init(engine))
+    if (!engine->cache && clean_cache_init(engine))
         return CL_EMEM;
 
     engine->dboptions |= dboptions;
@@ -5842,7 +5842,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
     TASK_COMPLETE();
 
     if (engine->cache) {
-        cli_cache_destroy(engine);
+        clean_cache_destroy(engine);
     }
     TASK_COMPLETE();
 

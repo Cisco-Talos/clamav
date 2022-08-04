@@ -88,6 +88,8 @@
 
 #include "json_api.h"
 
+#include "clamav_rust.h"
+
 #define DCONF ctx->dconf->pe
 
 #define PE_IMAGE_DOS_SIGNATURE 0x5a4d     /* MZ */
@@ -4206,20 +4208,15 @@ int cli_scanpe(cli_ctx *ctx)
 #endif
 
             do {
-                unsigned int yc_unp_num_viruses = ctx->num_viruses;
-                const char *yc_unp_virname      = NULL;
-
-                if (ctx->virname)
-                    yc_unp_virname = ctx->virname[0];
+                size_t num_alerts = evidence_num_alerts(ctx->evidence);
 
                 cli_dbgmsg("%d,%d,%d,%d\n", peinfo->nsections - 1, peinfo->e_lfanew, ecx, offset);
                 CLI_UNPTEMP("cli_scanpe: yC", (spinned, 0));
                 CLI_UNPRESULTS("cli_scanpe: yC", (yc_decrypt(ctx, spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc, ecx, offset)), 0, (spinned, 0));
 
-                if (SCAN_ALLMATCHES && yc_unp_num_viruses != ctx->num_viruses) {
-                    cli_exe_info_destroy(peinfo);
-                    return CL_VIRUS;
-                } else if (ctx->virname && yc_unp_virname != ctx->virname[0]) {
+                if (SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
+                    // In ALLMATCH-mode, CLI_UNPRESULTS() will not return CL_VIRUS when something is found.
+                    // We apparently want to return CL_VIRUS here if CLI_UNPRESULTS() found something (preserving previous behavior).
                     cli_exe_info_destroy(peinfo);
                     return CL_VIRUS;
                 }
