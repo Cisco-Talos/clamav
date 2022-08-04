@@ -43,6 +43,8 @@
 #include "phish_domaincheck_db.h"
 #include "phish_allow_list.h"
 
+#include "clamav_rust.h"
+
 #include "checks.h"
 
 static size_t cb_called = 0;
@@ -405,8 +407,8 @@ static void do_phishing_test(const struct rtest *rtest)
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
-    ctx.engine  = engine;
-    ctx.virname = &virname;
+    ctx.engine   = engine;
+    ctx.evidence = evidence_new();
 
     rc = phishingScan(&ctx, &hrefs);
 
@@ -414,30 +416,34 @@ static void do_phishing_test(const struct rtest *rtest)
     ck_assert_msg(rc == CL_CLEAN, "phishingScan");
     switch (rtest->result) {
         case RTR_PHISH:
-            ck_assert_msg(ctx.found_possibly_unwanted,
+            ck_assert_msg(evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_ALLOWED:
-            ck_assert_msg(!ctx.found_possibly_unwanted,
+            ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
-            ck_assert_msg(!ctx.found_possibly_unwanted,
+            ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_BLOCKED:
             if (!loaded_2)
-                ck_assert_msg(!ctx.found_possibly_unwanted,
+                ck_assert_msg(!evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
             else {
-                ck_assert_msg(ctx.found_possibly_unwanted,
+                const char *viruname = NULL;
+
+                ck_assert_msg(evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted),
                               "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
-                if (*ctx.virname) {
+
+                virname = cli_get_last_virus_str(&ctx);
+                if (NULL != virname) {
                     char *phishingFound = NULL;
                     char *detectionName = NULL;
                     if (strstr(rtest->realurl, "malware-test")) {
@@ -447,8 +453,8 @@ static void do_phishing_test(const struct rtest *rtest)
                         detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
                     }
                     ck_assert_msg(detectionName != NULL, "\n\t Block list test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
-                    phishingFound = strstr((const char *)*ctx.virname, detectionName);
-                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
+                    phishingFound = strstr((const char *)virname, detectionName);
+                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, virname);
                 }
             }
             break;
@@ -456,6 +462,8 @@ static void do_phishing_test(const struct rtest *rtest)
             /* don't worry about it, this was tested in regex_list_match_test() */
             break;
     }
+
+    evidence_free(ctx.evidence);
 }
 
 static void do_phishing_test_allscan(const struct rtest *rtest)
@@ -465,6 +473,7 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     const char *virname = NULL;
     tag_arguments_t hrefs;
     cl_error_t rc;
+    cl_error_t verdict = CL_CLEAN;
     struct cl_scan_options options;
 
     memset(&ctx, 0, sizeof(ctx));
@@ -485,50 +494,63 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
     hrefs.tag[0]      = (unsigned char *)cli_strdup("href");
     hrefs.contents[0] = (unsigned char *)cli_strdup(rtest->displayurl);
 
-    ctx.engine  = engine;
-    ctx.virname = &virname;
-    ctx.options->general |= CL_SCAN_GENERAL_ALLMATCHES;
+    ctx.engine   = engine;
+    ctx.evidence = evidence_new();
 
     rc = phishingScan(&ctx, &hrefs);
+    ck_assert_msg(rc == CL_SUCCESS || rc == CL_VIRUS, "phishingScan failed with error code: %s (%u)",
+                  cl_strerror(rc),
+                  rc);
 
-    html_tag_arg_free(&hrefs);
+    // phishingScan() doesn't check the number of alerts. When using CL_SCAN_GENERAL_ALLMATCHES
+    // or if using `CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE` and `cli_append_potentially_unwanted()`
+    // we need to count the number of alerts manually to determine the verdict.
+    if (0 < evidence_num_alerts(ctx.evidence)) {
+        verdict = CL_VIRUS;
+    }
+
     if (rtest->result == RTR_PHISH || (loaded_2 != 0 && rtest->result == RTR_BLOCKED)) {
-        ck_assert_msg(rc == CL_VIRUS, "phishingScan returned \"%s\", expected \"%s\". \n\trealURL: %s \n\tdisplayURL: %s",
-                      cl_strerror(rc),
+        ck_assert_msg(verdict == CL_VIRUS, "phishingScan returned \"%s\", expected \"%s\". \n\trealURL: %s \n\tdisplayURL: %s",
+                      cl_strerror(verdict),
                       cl_strerror(CL_VIRUS),
                       rtest->realurl, rtest->displayurl);
     } else {
-        ck_assert_msg(rc == CL_CLEAN, "phishingScan returned \"%s\", expected \"%s\". \n\trealURL: %s \n\tdisplayURL: %s",
-                      cl_strerror(rc),
+        ck_assert_msg(verdict == CL_CLEAN, "phishingScan returned \"%s\", expected \"%s\". \n\trealURL: %s \n\tdisplayURL: %s",
+                      cl_strerror(verdict),
                       cl_strerror(CL_CLEAN),
                       rtest->realurl, rtest->displayurl);
     }
+
     switch (rtest->result) {
         case RTR_PHISH:
-            ck_assert_msg(ctx.num_viruses,
+            ck_assert_msg(evidence_num_alerts(ctx.evidence),
                           "this should be phishing, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_ALLOWED:
-            ck_assert_msg(!ctx.num_viruses,
+            ck_assert_msg(!evidence_num_alerts(ctx.evidence),
                           "this should be allowed, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_CLEAN:
-            ck_assert_msg(!ctx.num_viruses,
+            ck_assert_msg(!evidence_num_alerts(ctx.evidence),
                           "this should be clean, realURL: %s, displayURL: %s",
                           rtest->realurl, rtest->displayurl);
             break;
         case RTR_BLOCKED:
-            if (!loaded_2)
-                ck_assert_msg(!ctx.num_viruses,
+            if (!loaded_2) {
+                ck_assert_msg(!evidence_num_alerts(ctx.evidence),
                               "this should be clean, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
-            else {
-                ck_assert_msg(ctx.num_viruses,
+            } else {
+                const char *viruname = NULL;
+
+                ck_assert_msg(evidence_num_alerts(ctx.evidence),
                               "this should be blocked, realURL: %s, displayURL: %s",
                               rtest->realurl, rtest->displayurl);
-                if (*ctx.virname) {
+
+                virname = cli_get_last_virus_str(&ctx);
+                if (NULL != virname) {
                     char *phishingFound = NULL;
                     char *detectionName = NULL;
                     if (strstr(rtest->realurl, "malware-test")) {
@@ -538,8 +560,8 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
                         detectionName = "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
                     }
                     ck_assert_msg(detectionName != NULL, "\n\t Block list test case error - malware-test or phishing-test not found in: %s\n", rtest->realurl);
-                    phishingFound = strstr((const char *)*ctx.virname, detectionName);
-                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, *ctx.virname);
+                    phishingFound = strstr(virname, detectionName);
+                    ck_assert_msg(phishingFound != NULL, "\n\t should be: %s,\n\t but is:    %s\n", detectionName, virname);
                 }
             }
             break;
@@ -547,6 +569,10 @@ static void do_phishing_test_allscan(const struct rtest *rtest)
             /* don't worry about it, this was tested in regex_list_match_test() */
             break;
     }
+
+    html_tag_arg_free(&hrefs);
+
+    evidence_free(ctx.evidence);
 }
 
 START_TEST(phishingScan_test)

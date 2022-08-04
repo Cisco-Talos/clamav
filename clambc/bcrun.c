@@ -34,6 +34,7 @@
 #include "others.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
+#include "clamav_rust.h"
 
 // common
 #include "optparser.h"
@@ -395,6 +396,7 @@ int main(int argc, char *argv[])
         }
         ctx->ctx    = &cctx;
         cctx.engine = engine;
+        cctx.evidence = evidence_new();
 
         cctx.recursion_stack_size = cctx.engine->max_recursion_level;
         cctx.recursion_stack      = cli_calloc(sizeof(recursion_level_t), cctx.recursion_stack_size);
@@ -478,6 +480,7 @@ int main(int argc, char *argv[])
             funmap(map);
         cl_engine_free(engine);
         free(cctx.recursion_stack);
+        evidence_free(cctx.evidence);
     }
     cli_bytecode_destroy(bc);
     cli_bytecode_done(&bcs);

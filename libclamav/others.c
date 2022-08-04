@@ -727,7 +727,7 @@ cl_error_t cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field fiel
             } else {
                 engine->engine_options &= ~(ENGINE_OPTIONS_DISABLE_CACHE);
                 if (!(engine->cache))
-                    cli_cache_init(engine);
+                    clean_cache_init(engine);
             }
             break;
         case CL_ENGINE_DISABLE_PE_STATS:
@@ -1096,7 +1096,7 @@ void cli_append_virus_if_heur_exceedsmax(cli_ctx *ctx, char *vname)
                                     // TODO: consider changing this from a bool to a threshold so we could at least see more than 1 limits exceeded
 
         if (SCAN_HEURISTIC_EXCEEDS_MAX) {
-            cli_append_possibly_unwanted(ctx, vname);
+            cli_append_potentially_unwanted(ctx, vname);
             cli_dbgmsg("%s: scanning may be incomplete and additional analysis needed for this file.\n", vname);
         }
 
@@ -1304,45 +1304,63 @@ int cli_unlink(const char *pathname)
     return 0;
 }
 
-void cli_virus_found_cb(cli_ctx *ctx)
+void cli_virus_found_cb(cli_ctx *ctx, const char *virname)
 {
-    if (ctx->engine->cb_virus_found)
-        ctx->engine->cb_virus_found(fmap_fd(ctx->fmap), (const char *)*ctx->virname, ctx->cb_ctx);
+    if (ctx->engine->cb_virus_found) {
+        ctx->engine->cb_virus_found(
+            fmap_fd(ctx->fmap),
+            virname,
+            ctx->cb_ctx);
+    }
 }
 
-cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname)
+/**
+ * @brief Add an indicator to the scan evidence.
+ *
+ * @param ctx
+ * @param virname Name of the indicator
+ * @param type Type of the indicator
+ * @return Returns CL_SUCCESS if added and IS in ALLMATCH mode, or if was PUA and not in HEURISTIC-PRECEDENCE-mode.
+ * @return Returns CL_VIRUS if added and NOT in ALLMATCH mode, or if was PUA and not in ALLMATCH but IS in HEURISTIC-PRECEDENCE-mode.
+ * @return Returns some other error code like CL_ERROR or CL_EMEM if something went wrong.
+ */
+static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType type)
 {
-    if (SCAN_ALLMATCHES) {
-        return cli_append_virus(ctx, virname);
-    } else if (SCAN_HEURISTIC_PRECEDENCE) {
-        return cli_append_virus(ctx, virname);
-    } else if (ctx->num_viruses == 0 && ctx->virname != NULL && *ctx->virname == NULL) {
-        ctx->found_possibly_unwanted = 1;
-        ctx->num_viruses++;
-        *ctx->virname = virname;
-    }
-    return CL_CLEAN;
-}
+    cl_error_t status             = CL_ERROR;
+    FFIError *add_indicator_error = NULL;
+    bool add_successful;
 
-cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
-{
-    if (ctx->virname == NULL) {
-        return CL_CLEAN;
+    char *location = NULL;
+
+    if (ctx->evidence == NULL) {
+        // evidence storage not initialized, cannot continue.
+        status = CL_SUCCESS;
+        goto done;
     }
+
     if ((ctx->fmap != NULL) &&
         (ctx->recursion_stack != NULL) &&
         (CL_VIRUS != cli_check_fp(ctx, virname))) {
-        return CL_CLEAN;
-    }
-    if (!SCAN_ALLMATCHES && ctx->num_viruses != 0) {
-        if (SCAN_HEURISTIC_PRECEDENCE) {
-            return CL_CLEAN;
-        }
+        // FP signature found for one of the layers. Ignore indicator.
+        status = CL_SUCCESS;
+        goto done;
     }
 
-    ctx->num_viruses++;
-    *ctx->virname = virname;
-    cli_virus_found_cb(ctx);
+    add_successful = evidence_add_indicator(
+        ctx->evidence,
+        virname,
+        type,
+        &add_indicator_error);
+    if (!add_successful) {
+        cli_errmsg("Failed to add indicator to scan evidence: %s\n", ffierror_fmt(add_indicator_error));
+        status = CL_ERROR;
+        goto done;
+    }
+
+    if (type == IndicatorType_Strong) {
+        // Run that virus callback which in clamscan says "<signature name> FOUND"
+        cli_virus_found_cb(ctx, virname);
+    }
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA && ctx->wrkproperty) {
@@ -1351,33 +1369,80 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
             arrobj = json_object_new_array();
             if (NULL == arrobj) {
                 cli_errmsg("cli_append_virus: no memory for json virus array\n");
-                return CL_EMEM;
+                status = CL_EMEM;
+                goto done;
             }
             json_object_object_add(ctx->wrkproperty, "Viruses", arrobj);
         }
         virobj = json_object_new_string(virname);
         if (NULL == virobj) {
             cli_errmsg("cli_append_virus: no memory for json virus name object\n");
-            return CL_EMEM;
+            status = CL_EMEM;
+            goto done;
         }
         json_object_array_add(arrobj, virobj);
     }
 #endif
-    return CL_VIRUS;
+
+    if (SCAN_ALLMATCHES) {
+        // Never break.
+        status = CL_SUCCESS;
+    } else {
+        // Usually break.
+        switch (type) {
+            case IndicatorType_Strong: {
+                status = CL_VIRUS;
+                break;
+            }
+            case IndicatorType_PotentiallyUnwanted: {
+                status = CL_SUCCESS;
+                break;
+            }
+            default: {
+                status = CL_SUCCESS;
+            }
+        }
+    }
+
+done:
+    if (NULL != location) {
+        free(location);
+    }
+
+    return status;
+}
+
+cl_error_t cli_append_potentially_unwanted(cli_ctx *ctx, const char *virname)
+{
+    if (SCAN_HEURISTIC_PRECEDENCE) {
+        return append_virus(ctx, virname, IndicatorType_Strong);
+    } else {
+        return append_virus(ctx, virname, IndicatorType_PotentiallyUnwanted);
+    }
+}
+
+cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
+{
+    return append_virus(ctx, virname, IndicatorType_Strong);
 }
 
 const char *cli_get_last_virus(const cli_ctx *ctx)
 {
-    if (!ctx || !ctx->virname || !(*ctx->virname))
+    if (!ctx || !ctx->evidence) {
         return NULL;
-    return *ctx->virname;
+    }
+
+    return evidence_get_last_alert(ctx->evidence);
 }
 
 const char *cli_get_last_virus_str(const cli_ctx *ctx)
 {
     const char *ret;
-    if ((ret = cli_get_last_virus(ctx)))
+
+    if (NULL != (ret = cli_get_last_virus(ctx))) {
         return ret;
+    }
+
     return "";
 }
 

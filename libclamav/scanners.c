@@ -54,7 +54,6 @@
 #include <zlib.h>
 
 #include "clamav_rust.h"
-
 #include "clamav.h"
 #include "others.h"
 #include "dconf.h"
@@ -4030,7 +4029,7 @@ void emax_reached(cli_ctx *ctx)
         fmap_t *map = ctx->recursion_stack[stack_index].fmap;
 
         if (NULL != map) {
-            map->dont_cache_flag = 1;
+            map->dont_cache_flag = true;
         }
 
         stack_index -= 1;
@@ -4428,10 +4427,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     perf_start(ctx, PERFT_CACHE);
 
-    if (!(SCAN_COLLECT_METADATA))
-        res = cache_check(hash, ctx);
-    else
-        res = CL_VIRUS;
+    res = clean_cache_check(hash, hashed_size, ctx);
 
 #if HAVE_JSON
     if (SCAN_COLLECT_METADATA /* ctx.options->general & CL_SCAN_GENERAL_COLLECT_METADATA && ctx->wrkproperty != NULL */) {
@@ -5055,31 +5051,33 @@ done:
     ctx->wrkproperty = (struct json_object *)(parent_property);
 #endif
 
-    if (ret == CL_CLEAN && ctx->found_possibly_unwanted) {
+    if ((ret == CL_SUCCESS) &&
+        (evidence_num_alerts(ctx->evidence) > 0)) {
         cb_retcode = CL_VIRUS;
     } else {
-        if (ret == CL_CLEAN && ctx->num_viruses != 0)
-            cb_retcode = CL_VIRUS;
-        else
-            cb_retcode = ret;
+        cb_retcode = ret;
     }
 
     cli_dbgmsg("cli_magic_scan_desc: returning %d %s\n", ret, __AT__);
     if (ctx->engine->cb_post_scan) {
+        cl_error_t callbacK_ret;
         const char *virusname = NULL;
-        perf_start(ctx, PERFT_POSTCB);
+
         if (cb_retcode == CL_VIRUS)
             virusname = cli_get_last_virus(ctx);
-        switch (ctx->engine->cb_post_scan(fmap_fd(ctx->fmap), cb_retcode, virusname, ctx->cb_ctx)) {
+
+        perf_start(ctx, PERFT_POSTCB);
+        callbacK_ret = ctx->engine->cb_post_scan(fmap_fd(ctx->fmap), cb_retcode, virusname, ctx->cb_ctx);
+        perf_stop(ctx, PERFT_POSTCB);
+
+        switch (callbacK_ret) {
             case CL_BREAK:
                 cli_dbgmsg("cli_magic_scan_desc: file allowed by post_scan callback\n");
-                perf_stop(ctx, PERFT_POSTCB);
                 ret = CL_CLEAN;
                 break;
             case CL_VIRUS:
                 cli_dbgmsg("cli_magic_scan_desc: file blocked by post_scan callback\n");
                 cli_append_virus(ctx, "Detected.By.Callback");
-                perf_stop(ctx, PERFT_POSTCB);
                 if (ret != CL_VIRUS) {
                     ret = cli_check_fp(ctx, NULL);
                 }
@@ -5089,12 +5087,11 @@ done:
             default:
                 cli_warnmsg("cli_magic_scan_desc: ignoring bad return code from post_scan callback\n");
         }
-        perf_stop(ctx, PERFT_POSTCB);
     }
 
-    if (cb_retcode == CL_CLEAN && cache_clean && !ctx->fmap->dont_cache_flag && !SCAN_COLLECT_METADATA) {
+    if (cb_retcode == CL_CLEAN && cache_clean) {
         perf_start(ctx, PERFT_CACHE);
-        cache_add(hash, hashed_size, ctx);
+        clean_cache_add(hash, hashed_size, ctx);
         perf_stop(ctx, PERFT_CACHE);
     }
 
@@ -5378,6 +5375,8 @@ cl_error_t cli_magic_scan_buff(const void *buffer, size_t length, cli_ctx *ctx, 
 static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, struct cl_scan_options *scanoptions, void *context)
 {
     cl_error_t status;
+    cl_error_t verdict = CL_CLEAN;
+
     cli_ctx ctx = {0};
 
     char *target_basename = NULL;
@@ -5392,12 +5391,14 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         return CL_ENULLARG;
     }
 
+    *virname = NULL;
+
     ctx.engine  = engine;
-    ctx.virname = virname;
     ctx.scanned = scanned;
     ctx.options = malloc(sizeof(struct cl_scan_options));
     memcpy(ctx.options, scanoptions, sizeof(struct cl_scan_options));
-    ctx.found_possibly_unwanted = 0;
+
+    ctx.evidence = evidence_new();
 
     ctx.dconf  = (struct cli_dconf *)engine->dconf;
     ctx.cb_ctx = context;
@@ -5523,8 +5524,21 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
 
     status = cli_magic_scan(&ctx, CL_TYPE_ANY);
 
-    if (status == CL_CLEAN && ctx.found_possibly_unwanted) {
-        cli_virus_found_cb(&ctx);
+    // Set the output pointer to the "latest" alert signature name.
+    *virname = cli_get_last_virus_str(&ctx);
+
+    if (0 < evidence_num_alerts(ctx.evidence)) {
+        verdict = CL_VIRUS;
+    }
+
+    if (!(ctx.options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) &&
+        (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) &&
+        (0 != evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted))) {
+        // "Heuristic precedence" mode not enabled, and the only alerts so far have been PUA.
+        // But Heuristic-signatures / PUA sigs were recorded but never reported...
+        // ... Now is the time to report them!
+        // TODO: Report more than one if in ALLMATCH mode. For now, just reporting the "latest".
+        cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
     }
 
 #if HAVE_JSON
@@ -5612,13 +5626,10 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
     }
 #endif // HAVE_JSON
 
-    if (status == CL_CLEAN) {
-        if ((ctx.found_possibly_unwanted) ||
-            ((ctx.num_viruses != 0) &&
-             ((ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) ||
-              (ctx.options->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX)))) {
-            status = CL_VIRUS;
-        }
+    if (verdict != CL_CLEAN) {
+        // Reporting "VIRUS" is more important than reporting and error,
+        // because... unfortunately we can only do one with the current API.
+        status = verdict;
     }
 
     cli_logg_unsetup();
@@ -5653,6 +5664,10 @@ done:
 
     if (NULL != ctx.options) {
         free(ctx.options);
+    }
+
+    if (NULL != ctx.evidence) {
+        evidence_free(ctx.evidence);
     }
 
     return status;
@@ -5728,28 +5743,6 @@ cl_error_t cl_scanmap_callback(cl_fmap_t *map, const char *filename, const char 
     }
 
     return scan_common(map, filename, virname, scanned, engine, scanoptions, context);
-}
-
-cl_error_t cli_found_possibly_unwanted(cli_ctx *ctx)
-{
-    if (cli_get_last_virus(ctx)) {
-        cli_dbgmsg("found Possibly Unwanted: %s\n", cli_get_last_virus(ctx));
-        if (SCAN_HEURISTIC_PRECEDENCE) {
-            /* we found a heuristic match, don't scan further,
-             * but consider it a virus. */
-            cli_dbgmsg("cli_found_possibly_unwanted: CL_VIRUS\n");
-            return CL_VIRUS;
-        }
-        /* heuristic scan isn't taking precedence, keep scanning.
-         * If this is part of an archive, and
-         * we find a real malware we report that instead of the
-         * heuristic match */
-        ctx->found_possibly_unwanted = 1;
-    } else {
-        cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
-    }
-    emax_reached(ctx);
-    return CL_CLEAN;
 }
 
 cl_error_t cli_magic_scan_file(const char *filename, cli_ctx *ctx, const char *original_name, uint32_t attributes)

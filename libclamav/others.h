@@ -190,20 +190,20 @@ typedef struct recursion_level_tag {
     bool calculated_image_fuzzy_hash;     /* Used for image/graphics files to store a fuzzy hash. */
 } recursion_level_t;
 
+typedef void *evidence_t;
+
 /* internal clamav context */
 typedef struct cli_ctx_tag {
-    char *target_filepath;    /**< (optional) The filepath of the original scan target. */
-    const char *sub_filepath; /**< (optional) The filepath of the current file being parsed. May be a temp file. */
-    char *sub_tmpdir;         /**< The directory to store tmp files at this recursion depth. */
-    const char **virname;
-    unsigned int num_viruses;
+    char *target_filepath;    /* (optional) The filepath of the original scan target. */
+    const char *sub_filepath; /* (optional) The filepath of the current file being parsed. May be a temp file. */
+    char *sub_tmpdir;         /* The directory to store tmp files at this recursion depth. */
+    evidence_t evidence;      /* Stores the evidence for this scan to alert (alerting indicators). */
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     uint64_t scansize;
     struct cl_scan_options *options;
     unsigned int scannedfiles;
-    unsigned int found_possibly_unwanted;
     unsigned int corrupted_input;
     recursion_level_t *recursion_stack; /* Array of recursion levels used as a stack. */
     uint32_t recursion_stack_size;      /* stack size must == engine->max_recursion_level */
@@ -730,11 +730,11 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname);
  * @param virname   The alert name.
  * @return cl_error_t CL_VIRUS if scan should be halted due to an alert, CL_CLEAN if scan should continue.
  */
-cl_error_t cli_append_possibly_unwanted(cli_ctx *ctx, const char *virname);
+cl_error_t cli_append_potentially_unwanted(cli_ctx *ctx, const char *virname);
 
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
-void cli_virus_found_cb(cli_ctx *ctx);
+void cli_virus_found_cb(cli_ctx *ctx, const char *virname);
 
 /**
  * @brief Push a new fmap onto our scan recursion stack.

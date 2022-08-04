@@ -732,9 +732,6 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
         goto done;
     }
 
-    if (!ctx->found_possibly_unwanted && !SCAN_ALLMATCHES)
-        *ctx->virname = NULL;
-
     for (i = 0; i < hrefs->count; i++) {
         struct url_check urls;
         enum phish_status phishing_verdict;
@@ -776,29 +773,29 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
             case CL_PHISH_CLEAN:
                 continue;
             case CL_PHISH_NUMERIC_IP:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.NumericIP");
                 break;
             case CL_PHISH_CLOAKED_NULL:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Null"); /*fakesite%01%00@fake.example.com*/
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Null"); /*fakesite%01%00@fake.example.com*/
                 break;
             case CL_PHISH_SSL_SPOOF:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.SSL-Spoof");
                 break;
             case CL_PHISH_CLOAKED_UIU:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Username"); /*http://banksite@fake.example.com*/
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.Cloaked.Username"); /*http://banksite@fake.example.com*/
                 break;
             case CL_PHISH_HASH0:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-malware_safebrowsing.clamav.net");
                 break;
             case CL_PHISH_HASH1:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.URL.Blocked");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.URL.Blocked");
                 break;
             case CL_PHISH_HASH2:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Safebrowsing.Suspected-phishing_safebrowsing.clamav.net");
                 break;
             case CL_PHISH_NOMATCH:
             default:
-                status = cli_append_possibly_unwanted(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
                 break;
         }
         if (CL_CLEAN != status && !SCAN_ALLMATCHES) {
