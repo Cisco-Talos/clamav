@@ -1,4 +1,4 @@
-#!/sbin/tini /bin/sh
+#!/usr/bin/env sh
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 # Copyright (C) 2021 Olliver Schinagl <oliver@schinagl.nl>
@@ -15,6 +15,7 @@ if [ ! -d "/run/clamav" ]; then
 fi
 
 # Assign ownership to the database directory, just in case it is a mounted volume
+mkdir -p /var/lib/clamav
 chown -R clamav:clamav /var/lib/clamav
 
 # run command if it is not starting with a "-" and is an executable in PATH

@@ -3,40 +3,44 @@
 # Copyright (C) 2020 Olliver Schinagl <oliver@schinagl.nl>
 # Copyright (C) 2021-2022 Cisco Systems, Inc. and/or its affiliates. All rights reserved.
 
-# hadolint ignore=DL3007  latest is the latest stable for alpine
-FROM index.docker.io/library/alpine:latest AS builder
+FROM index.docker.io/library/rust:1.62.1-bullseye AS builder
 
 WORKDIR /src
 
 COPY . /src/
 
-# hadolint ignore=DL3008  We want the latest stable versions
-RUN apk add --no-cache \
-        bsd-compat-headers \
-        bzip2-dev \
-        check-dev \
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt update && apt install -y \
         cmake \
-        curl-dev \
-        file \
-        fts-dev \
-        g++ \
+        bison \
+        flex \
+        gcc \
         git \
-        json-c-dev \
-        libmilter-dev \
-        libtool \
-        libxml2-dev \
-        linux-headers \
         make \
-        ncurses-dev \
-        openssl-dev \
-        pcre2-dev \
-        py3-pytest \
-        zlib-dev \
-        rust \
-        cargo \
+        man-db \
+        net-tools \
+        pkg-config \
+        python3 \
+        python3-pip \
+        python3-pytest \
+        check \
+        libbz2-dev \
+        libcurl4-openssl-dev \
+        libjson-c-dev \
+        libmilter-dev \
+        libncurses5-dev \
+        libpcre2-dev \
+        libssl-dev \
+        libxml2-dev \
+        zlib1g-dev \
     && \
-    mkdir -p "./build" && cd "./build" && \
+    rm -rf /var/cache/apt/archives \
+    && \
+    mkdir -p "./build" && cd "./build" \
+    && \
     cmake .. \
+          -DCARGO_HOME="/src/build" \
           -DCMAKE_BUILD_TYPE="Release" \
           -DCMAKE_INSTALL_PREFIX="/usr" \
           -DCMAKE_INSTALL_LIBDIR="/usr/lib" \
@@ -47,8 +51,10 @@ RUN apk add --no-cache \
           -DENABLE_JSON_SHARED=ON \
           -DENABLE_MAN_PAGES=OFF \
           -DENABLE_MILTER=ON \
-          -DENABLE_STATIC_LIB=OFF && \
-    make DESTDIR="/clamav" -j$(($(nproc) - 1)) install && \
+          -DENABLE_STATIC_LIB=OFF \
+    && \
+    make DESTDIR="/clamav" -j$(($(nproc) - 1)) install \
+    && \
     rm -r \
        "/clamav/usr/include" \
        "/clamav/usr/lib/pkgconfig/" \
@@ -77,38 +83,39 @@ RUN apk add --no-cache \
         -e "s|^\#\(LogTime\).*|\1 yes|" \
         -e "s|.*\(\ClamdSocket\) .*|\1 unix:/run/clamav/clamd.sock|" \
         "/clamav/etc/clamav/clamav-milter.conf.sample" > "/clamav/etc/clamav/clamav-milter.conf" || \
-    exit 1 && \
+    exit 1 \
+    && \
     ctest -V
 
-FROM index.docker.io/library/alpine:latest
+FROM index.docker.io/library/debian:11-slim
 
 LABEL maintainer="ClamAV bugs <clamav-bugs@external.cisco.com>"
 
 EXPOSE 3310
 EXPOSE 7357
 
+ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ Etc/UTC
 
-RUN apk add --no-cache \
-        fts \
-        json-c \
-        libbz2 \
-        libcurl \
-        libltdl \
-        libmilter \
-        libstdc++ \
+RUN apt-get update && apt-get install -y \
+        libbz2-1.0 \
+        libcurl4 \
+        libssl1.1 \
+        libjson-c5 \
+        libmilter1.0.1 \
+        libncurses5 \
+        libpcre2-8-0 \
         libxml2 \
-        ncurses-libs \
-        pcre2 \
-        tini \
+        zlib1g \
         tzdata \
-        zlib \
     && \
-    addgroup -S "clamav" && \
-    adduser -D -G "clamav" -h "/var/lib/clamav" -s "/bin/false" -S "clamav" && \
+    rm -rf /var/cache/apt/archives && \
+    groupadd "clamav" && \
+    useradd -g clamav -s /bin/false --home-dir /var/lib/clamav -c "Clam Antivirus" clamav && \
     install -d -m 755 -g "clamav" -o "clamav" "/var/log/clamav"
 
 COPY --from=builder "/clamav" "/"
+
 COPY "./dockerfiles/clamdcheck.sh" "/usr/local/bin/"
 COPY "./dockerfiles/docker-entrypoint.sh" "/init"
 

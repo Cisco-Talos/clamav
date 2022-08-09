@@ -8,6 +8,7 @@ set -eu
 
 DEF_CLAMAV_DOCKER_IMAGE="clamav/clamav"
 DEF_DOCKER_REGISTRY="registry.hub.docker.com"
+DOCKER_BUILDKIT_IMAGE="multiarch/qemu-user-static"
 
 
 usage()
@@ -72,6 +73,12 @@ docker_tags_get()
 	done
 }
 
+config_docker_buildx()
+{
+	docker buildx install
+	docker buildx create --use --name=builder --driver docker-container --driver-opt image=${DOCKER_BUILDKIT_IMAGE} || true
+}
+
 clamav_db_update()
 {
 	if [ -z "${clamav_docker_tags:-}" ]; then
@@ -83,8 +90,7 @@ clamav_db_update()
 		{
 			echo "FROM ${docker_registry}/${clamav_docker_image}:${_tag}"
 			echo "RUN freshclam --foreground --stdout && rm /var/lib/clamav/freshclam.dat || rm /var/lib/clamav/mirrors.dat || true"
-		} | docker image build --pull --rm --tag "${docker_registry}/${clamav_docker_image}:${_tag%%_base}" -
-		docker image push "${docker_registry}/${clamav_docker_image}:${_tag%%_base}"
+		} | docker buildx build --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64 --pull --push --rm --tag "${docker_registry}/${clamav_docker_image}:${_tag%%_base}" -
 	done
 }
 
@@ -132,6 +138,7 @@ main()
 	docker_registry="${docker_registry:-${DOCKER_REGISTRY:-${DEF_DOCKER_REGISTRY}}}"
 
 	init
+	config_docker_buildx
 
 	docker_tags_get
 	clamav_db_update
