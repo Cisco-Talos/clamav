@@ -1124,6 +1124,8 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
     if (CL_ETIMEOUT == (ret = cli_checktimelimit(ctx))) {
         /* Abort the scan ... */
         ret = CL_ETIMEOUT;
+        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanTime");
+        ctx->abort_scan = true;
     }
 
     /* Enforce global scan-size limit */
