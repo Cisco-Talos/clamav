@@ -28,8 +28,6 @@
 #include "clamav-types.h"
 #include "others.h"
 
-#define PRTN_INTXN_DETECTION "heuristic.partitionintersection"
-
 struct partition_intersection_node;
 typedef struct partition_intersection_node {
     off_t Start;
@@ -42,8 +40,8 @@ typedef struct partition_intersection_list {
     size_t Size; /* for debug */
 } partition_intersection_list_t;
 
-int partition_intersection_list_init(partition_intersection_list_t *list);
-int partition_intersection_list_check(partition_intersection_list_t *list, unsigned *pitxn, off_t start, size_t size);
-int partition_intersection_list_free(partition_intersection_list_t *list);
+cl_error_t partition_intersection_list_init(partition_intersection_list_t *list);
+cl_error_t partition_intersection_list_check(partition_intersection_list_t *list, unsigned *pitxn, off_t start, size_t size);
+cl_error_t partition_intersection_list_free(partition_intersection_list_t *list);
 
 #endif

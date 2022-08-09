@@ -25,7 +25,7 @@
 #include "clamav-config.h"
 #endif
 
-#include "clamav-types.h"
+#include "clamav.h"
 #include "others.h"
 
 #define APM_FALLBACK_SECTOR_SIZE 512
@@ -112,6 +112,6 @@ struct apm_partition_info {
 #pragma pack
 #endif
 
-int cli_scanapm(cli_ctx *ctx);
+cl_error_t cli_scanapm(cli_ctx *ctx);
 
 #endif
