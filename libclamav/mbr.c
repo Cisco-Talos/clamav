@@ -41,10 +41,6 @@
 //#define DEBUG_MBR_PARSE
 //#define DEBUG_EBR_PARSE
 
-#ifndef PRTN_INTXN_DETECTION
-#define PRTN_INTXN_DETECTION "heuristic.mbrprtnintersect"
-#endif
-
 #ifdef DEBUG_MBR_PARSE
 #define mbr_parsemsg(...) cli_dbgmsg(__VA_ARGS__)
 #else
@@ -64,14 +60,14 @@ enum MBR_STATE {
     SEEN_EMPTY
 };
 
-static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba,
-                           size_t extlbasize, size_t sectorsize);
-static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
-static int mbr_check_ebr(struct mbr_boot_record *record);
-static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
-static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize);
+static cl_error_t mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba,
+                                  size_t extlbasize, size_t sectorsize);
+static cl_error_t mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize);
+static cl_error_t mbr_check_ebr(struct mbr_boot_record *record);
+static cl_error_t mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize);
+static cl_error_t mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize);
 
-int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
+cl_error_t cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
 {
     struct mbr_boot_record mbr;
     size_t mbr_base   = 0;
@@ -91,7 +87,7 @@ int cli_mbr_check(const unsigned char *buff, size_t len, size_t maplen)
     return mbr_check_mbr(&mbr, maplen, sectorsize);
 }
 
-int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
+cl_error_t cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
 {
     struct mbr_boot_record mbr;
     size_t pos = 0, mbr_base = 0;
@@ -135,11 +131,11 @@ int cli_mbr_check2(cli_ctx *ctx, size_t sectorsize)
 }
 
 /* sets sectorsize to default value if specified to be 0 */
-int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
+cl_error_t cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 {
+    cl_error_t status = CL_SUCCESS;
     struct mbr_boot_record mbr;
     enum MBR_STATE state = SEEN_NOTHING;
-    int ret = CL_CLEAN, detection = CL_CLEAN;
     size_t pos = 0, mbr_base = 0, partoff = 0;
     unsigned i = 0, prtncount = 0;
     size_t maplen, partsize;
@@ -148,7 +144,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scanmbr: Invalid context\n");
-        return CL_ENULLARG;
+        status = CL_ENULLARG;
+        goto done;
     }
 
     /* sector size calculation, actual value is OS dependent */
@@ -162,7 +159,8 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     if ((maplen % sectorsize) != 0) {
         cli_dbgmsg("cli_scanmbr: File sized %lu is not a multiple of sector size %lu\n",
                    (unsigned long)maplen, (unsigned long)sectorsize);
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* sector 0 (first sector) is the master boot record */
@@ -171,35 +169,33 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
     /* read the master boot record */
     if (fmap_readn(ctx->fmap, &mbr, pos, sizeof(mbr)) != sizeof(mbr)) {
         cli_dbgmsg("cli_scanmbr: Invalid master boot record\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* convert the little endian to host, include the internal  */
     mbr_convert_to_host(&mbr);
 
     /* MBR checks */
-    ret = mbr_check_mbr(&mbr, maplen, sectorsize);
-    if (ret != CL_CLEAN) {
-        return ret;
+    status = mbr_check_mbr(&mbr, maplen, sectorsize);
+    if (status != CL_SUCCESS) {
+        status = status;
+        goto done;
     }
 
     /* MBR is valid, examine bootstrap code */
-    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
-    if (ret != CL_CLEAN) {
-        if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-            detection = CL_VIRUS;
-        else
-            return ret;
+    status = cli_magic_scan_nested_fmap_type(ctx->fmap, 0, sectorsize, ctx, CL_TYPE_ANY, NULL);
+    if (status != CL_SUCCESS) {
+        status = status;
+        goto done;
     }
 
     /* check that the partition table has no intersections - HEURISTICS */
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = mbr_primary_partition_intersection(ctx, mbr, sectorsize);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
+        status = mbr_primary_partition_intersection(ctx, mbr, sectorsize);
+        if (status != CL_SUCCESS) {
+            status = status;
+            goto done;
         }
     }
 
@@ -226,13 +222,11 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             }
             state = SEEN_EXTENDED; /* used only to detect multiple extended partitions */
 
-            ret = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA,
-                                  mbr.entries[i].numLBA, sectorsize);
-            if (ret != CL_CLEAN) {
-                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                    detection = CL_VIRUS;
-                else
-                    return ret;
+            status = mbr_scanextprtn(ctx, &prtncount, mbr.entries[i].firstLBA,
+                                     mbr.entries[i].numLBA, sectorsize);
+            if (status != CL_SUCCESS) {
+                status = status;
+                goto done;
             }
         } else {
             prtncount++;
@@ -240,12 +234,10 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
             partoff  = mbr.entries[i].firstLBA * sectorsize;
             partsize = mbr.entries[i].numLBA * sectorsize;
             mbr_parsemsg("cli_magic_scan_nested_fmap_type: [%u, +%u)\n", partoff, partsize);
-            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
-            if (ret != CL_CLEAN) {
-                if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                    detection = CL_VIRUS;
-                else
-                    return ret;
+            status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+            if (status != CL_SUCCESS) {
+                status = status;
+                goto done;
             }
         }
     }
@@ -254,14 +246,16 @@ int cli_scanmbr(cli_ctx *ctx, size_t sectorsize)
         cli_dbgmsg("cli_scanmbr: maximum partitions reached\n");
     }
 
-    return detection;
+done:
+
+    return status;
 }
 
-static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t extlbasize, size_t sectorsize)
+static cl_error_t mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t extlbasize, size_t sectorsize)
 {
+    cl_error_t status = CL_CLEAN;
     struct mbr_boot_record ebr;
     enum MBR_STATE state = SEEN_NOTHING;
-    int ret = CL_CLEAN, detection = CL_CLEAN;
     size_t pos = 0, mbr_base = 0, logiclba = 0, extoff = 0, partoff = 0;
     size_t partsize, extsize;
     unsigned i = 0, j = 0;
@@ -280,16 +274,18 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
         pos += (logiclba * sectorsize) + mbr_base;
         if (fmap_readn(ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
             cli_dbgmsg("cli_scanebr: Invalid extended boot record\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* convert the little endian to host */
         mbr_convert_to_host(&ebr);
 
         /* EBR checks */
-        ret = mbr_check_ebr(&ebr);
-        if (ret != CL_CLEAN) {
-            return ret;
+        status = mbr_check_ebr(&ebr);
+        if (status != CL_SUCCESS) {
+            status = status;
+            goto done;
         }
 
         /* update state */
@@ -327,7 +323,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                             break;
                         default:
                             cli_warnmsg("cli_scanebr: undefined state for EBR parsing\n");
-                            return CL_EPARSE;
+                            status = CL_EPARSE;
+                            goto done;
                     }
                 } else if (ebr.entries[j].type == MBR_EXTENDED) {
                     switch (state) {
@@ -343,10 +340,12 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                         case SEEN_EXTENDED:
                             cli_warnmsg("cli_scanebr: detected a logical boot record "
                                         "with multiple extended partition records\n");
-                            return CL_EFORMAT;
+                            status = CL_EFORMAT;
+                            goto done;
                         default:
                             cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
-                            return CL_EPARSE;
+                            status = CL_EPARSE;
+                            goto done;
                     }
 
                     logiclba = ebr.entries[j].firstLBA;
@@ -371,22 +370,22 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                             break;
                         default:
                             cli_dbgmsg("cli_scanebr: undefined state for EBR parsing\n");
-                            return CL_EPARSE;
+                            status = CL_EPARSE;
+                            goto done;
                     }
 
                     partoff  = (extlba + logiclba + ebr.entries[j].firstLBA) * sectorsize;
                     partsize = ebr.entries[j].numLBA * sectorsize;
                     if (partoff + partsize > extoff + extsize) {
                         cli_dbgmsg("cli_scanebr: Invalid extended partition entry\n");
-                        return CL_EFORMAT;
+                        status = CL_EFORMAT;
+                        goto done;
                     }
 
-                    ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
-                    if (ret != CL_CLEAN) {
-                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                            detection = CL_VIRUS;
-                        else
-                            return ret;
+                    status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, NULL);
+                    if (status != CL_SUCCESS) {
+                        status = status;
+                        goto done;
                     }
                 }
             } else {
@@ -396,7 +395,8 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
                                "entry at index %u\n",
                                j);
                     /* should we attempt to use these entries? */
-                    return CL_EFORMAT;
+                    status = CL_EFORMAT;
+                    goto done;
                 }
             }
         }
@@ -404,7 +404,9 @@ static int mbr_scanextprtn(cli_ctx *ctx, unsigned *prtncount, size_t extlba, siz
 
     cli_dbgmsg("cli_scanmbr: examined %u logical partitions\n", i);
 
-    return detection;
+done:
+
+    return status;
 }
 
 void mbr_convert_to_host(struct mbr_boot_record *record)
@@ -421,71 +423,84 @@ void mbr_convert_to_host(struct mbr_boot_record *record)
     record->signature = be16_to_host(record->signature);
 }
 
-static int mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
+static cl_error_t mbr_check_mbr(struct mbr_boot_record *record, size_t maplen, size_t sectorsize)
 {
-    unsigned i      = 0;
-    size_t partoff  = 0;
-    size_t partsize = 0;
+    cl_error_t status = CL_SUCCESS;
+    unsigned i        = 0;
+    size_t partoff    = 0;
+    size_t partsize   = 0;
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES; ++i) {
         /* check status */
         if ((record->entries[i].status != MBR_STATUS_INACTIVE) &&
             (record->entries[i].status != MBR_STATUS_ACTIVE)) {
             cli_dbgmsg("cli_scanmbr: Invalid boot record status\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         partoff  = record->entries[i].firstLBA * sectorsize;
         partsize = record->entries[i].numLBA * sectorsize;
         if (partoff + partsize > maplen) {
             cli_dbgmsg("cli_scanmbr: Invalid partition entry\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
     }
 
     /* check the signature */
     if (record->signature != MBR_SIGNATURE) {
         cli_dbgmsg("cli_scanmbr: Invalid boot record signature\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* check the maplen */
     if ((maplen / sectorsize) < 2) {
         cli_dbgmsg("cli_scanmbr: bootstrap code or file is too small to hold disk image\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
-    return CL_CLEAN;
+done:
+
+    return status;
 }
 
-static int mbr_check_ebr(struct mbr_boot_record *record)
+static cl_error_t mbr_check_ebr(struct mbr_boot_record *record)
 {
-    unsigned i = 0;
+    cl_error_t status = CL_SUCCESS;
+    unsigned i        = 0;
 
     for (i = 0; i < MBR_MAX_PARTITION_ENTRIES - 2; ++i) {
         /* check status */
         if ((record->entries[i].status != MBR_STATUS_INACTIVE) &&
             (record->entries[i].status != MBR_STATUS_ACTIVE)) {
             cli_dbgmsg("cli_scanmbr: Invalid boot record status\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
     }
 
     /* check the signature */
     if (record->signature != MBR_SIGNATURE) {
         cli_dbgmsg("cli_scanmbr: Invalid boot record signature\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
-    return CL_CLEAN;
+done:
+
+    return status;
 }
 
 /* this includes the overall bounds of extended partitions */
-static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize)
+static cl_error_t mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_record mbr, size_t sectorsize)
 {
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret;
     partition_intersection_list_t prtncheck;
     unsigned i = 0, pitxn = 0, prtncount = 0;
-    int ret = CL_CLEAN, tmp = CL_CLEAN;
 
     partition_intersection_list_init(&prtncheck);
 
@@ -494,39 +509,30 @@ static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_reco
             /* empty partition entry */
             prtncount++;
         } else {
-            tmp = partition_intersection_list_check(&prtncheck, &pitxn, mbr.entries[i].firstLBA,
+            ret = partition_intersection_list_check(&prtncheck, &pitxn, mbr.entries[i].firstLBA,
                                                     mbr.entries[i].numLBA);
-            if (tmp != CL_CLEAN) {
-                if (tmp == CL_VIRUS) {
+            if (ret != CL_CLEAN) {
+                if (ret == CL_VIRUS) {
                     cli_dbgmsg("cli_scanmbr: detected intersection with partitions "
                                "[%u, %u]\n",
                                pitxn, i);
-                    ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                    if (SCAN_ALLMATCHES || ret == CL_CLEAN)
-                        tmp = 0;
-                    else
-                        goto leave;
+                    status = cli_append_virus(ctx, "Heuristics.MBRPartitionnIntersect");
+                    if (status != CL_SUCCESS) {
+                        goto done;
+                    }
                 } else {
-                    ret = tmp;
-                    goto leave;
+                    status = ret;
+                    goto done;
                 }
             }
 
             if (mbr.entries[i].type == MBR_EXTENDED) {
                 /* check the logical partitions */
-                tmp = mbr_extended_partition_intersection(ctx, &prtncount,
+                ret = mbr_extended_partition_intersection(ctx, &prtncount,
                                                           mbr.entries[i].firstLBA, sectorsize);
-                if (tmp != CL_CLEAN) {
-                    if (SCAN_ALLMATCHES && (tmp == CL_VIRUS)) {
-                        ret = tmp;
-                        tmp = 0;
-                    } else if (tmp == CL_VIRUS) {
-                        partition_intersection_list_free(&prtncheck);
-                        return CL_VIRUS;
-                    } else {
-                        partition_intersection_list_free(&prtncheck);
-                        return tmp;
-                    }
+                if (ret != CL_SUCCESS) {
+                    status = ret;
+                    goto done;
                 }
             } else {
                 prtncount++;
@@ -534,20 +540,21 @@ static int mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_boot_reco
         }
     }
 
-leave:
+done:
     partition_intersection_list_free(&prtncheck);
-    return ret;
+    return status;
 }
 
 /* checks internal logical partitions */
-static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize)
+static cl_error_t mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount, size_t extlba, size_t sectorsize)
 {
+    cl_error_t status = CL_CLEAN;
+    cl_error_t ret;
     struct mbr_boot_record ebr;
     partition_intersection_list_t prtncheck;
     unsigned i, pitxn;
-    int ret = CL_CLEAN, tmp = CL_CLEAN, mbr_base = 0;
+    int mbr_base = 0;
     size_t pos = 0, logiclba = 0;
-    int virus_found = 0;
 
     mbr_base = sectorsize - sizeof(struct mbr_boot_record);
 
@@ -563,7 +570,8 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
         if (fmap_readn(ctx->fmap, &ebr, pos, sizeof(ebr)) != sizeof(ebr)) {
             cli_dbgmsg("cli_scanebr: Invalid extended boot record\n");
             partition_intersection_list_free(&prtncheck);
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* convert the little endian to host */
@@ -573,22 +581,19 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
         (*prtncount)++;
 
         /* assume that logical record is first and extended is second */
-        tmp = partition_intersection_list_check(&prtncheck, &pitxn, logiclba, ebr.entries[0].numLBA);
-        if (tmp != CL_CLEAN) {
-            if (tmp == CL_VIRUS) {
+        ret = partition_intersection_list_check(&prtncheck, &pitxn, logiclba, ebr.entries[0].numLBA);
+        if (ret != CL_CLEAN) {
+            if (ret == CL_VIRUS) {
                 cli_dbgmsg("cli_scanebr: detected intersection with partitions "
                            "[%u, %u]\n",
                            pitxn, i);
-                ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                if (ret == CL_VIRUS)
-                    virus_found = 1;
-                if (SCAN_ALLMATCHES || ret == CL_CLEAN)
-                    tmp = 0;
-                else
-                    goto leave;
+                status = cli_append_virus(ctx, "Heuristics.MBRPartitionnIntersect");
+                if (status == CL_VIRUS) {
+                    goto done;
+                }
             } else {
-                ret = tmp;
-                goto leave;
+                status = ret;
+                goto done;
             }
         }
 
@@ -603,9 +608,8 @@ static int mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *prtncount
         ++i;
     } while (logiclba != 0 && (*prtncount) < ctx->engine->maxpartitions);
 
-leave:
+done:
     partition_intersection_list_free(&prtncheck);
-    if (virus_found)
-        return CL_VIRUS;
-    return ret;
+
+    return status;
 }

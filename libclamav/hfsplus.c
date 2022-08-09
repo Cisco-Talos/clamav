@@ -47,14 +47,14 @@ static void nodedescriptor_print(const char *, hfsNodeDescriptor *);
 static void forkdata_to_host(hfsPlusForkData *);
 static void forkdata_print(const char *, hfsPlusForkData *);
 
-static int hfsplus_volumeheader(cli_ctx *, hfsPlusVolumeHeader **);
-static int hfsplus_readheader(cli_ctx *, hfsPlusVolumeHeader *, hfsNodeDescriptor *,
-                              hfsHeaderRecord *, int, const char *);
+static cl_error_t hfsplus_volumeheader(cli_ctx *, hfsPlusVolumeHeader **);
+static cl_error_t hfsplus_readheader(cli_ctx *, hfsPlusVolumeHeader *, hfsNodeDescriptor *,
+                                     hfsHeaderRecord *, int, const char *);
 static cl_error_t hfsplus_scanfile(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
                                    hfsPlusForkData *, const char *, char **, char *);
-static int hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
-static int hfsplus_fetch_node(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
-                              hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *);
+static cl_error_t hfsplus_validate_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *);
+static cl_error_t hfsplus_fetch_node(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
+                                     hfsHeaderRecord *, hfsPlusForkData *, uint32_t, uint8_t *);
 static cl_error_t hfsplus_walk_catalog(cli_ctx *, hfsPlusVolumeHeader *, hfsHeaderRecord *,
                                        hfsHeaderRecord *, hfsHeaderRecord *, const char *);
 
@@ -128,7 +128,7 @@ static void forkdata_print(const char *pfx, hfsPlusForkData *fork)
 }
 
 /* Read and convert the HFS+ volume header */
-static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
+static cl_error_t hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
 {
     hfsPlusVolumeHeader *volHeader;
     const uint8_t *mPtr;
@@ -209,8 +209,8 @@ static int hfsplus_volumeheader(cli_ctx *ctx, hfsPlusVolumeHeader **header)
 }
 
 /* Read and convert the header node */
-static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsNodeDescriptor *nodeDesc,
-                              hfsHeaderRecord *headerRec, int headerType, const char *name)
+static cl_error_t hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsNodeDescriptor *nodeDesc,
+                                     hfsHeaderRecord *headerRec, int headerType, const char *name)
 {
     const uint8_t *mPtr = NULL;
     off_t offset;
@@ -317,11 +317,11 @@ static int hfsplus_readheader(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsN
 static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *extHeader,
                                    hfsPlusForkData *fork, const char *dirname, char **filename, char *orig_filename)
 {
+    cl_error_t status = CL_SUCCESS;
     hfsPlusExtentDescriptor *currExt;
     const uint8_t *mPtr = NULL;
     char *tmpname       = NULL;
     int ofd;
-    cl_error_t ret = CL_CLEAN;
     uint64_t targetSize;
     uint32_t outputBlocks = 0;
     uint8_t ext;
@@ -331,7 +331,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
     /* bad record checks */
     if (!fork || (fork->logicalSize == 0) || (fork->totalBlocks == 0)) {
         cli_dbgmsg("hfsplus_scanfile: Empty file.\n");
-        return CL_CLEAN;
+        goto done;
     }
 
     /* check limits */
@@ -339,19 +339,20 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
 #if SIZEOF_LONG < 8
     if (targetSize > ULONG_MAX) {
         cli_dbgmsg("hfsplus_scanfile: File too large for limit check.\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 #endif
-    ret = cli_checklimits("hfsplus_scanfile", ctx, (unsigned long)targetSize, 0, 0);
-    if (ret != CL_CLEAN) {
-        return ret;
+    status = cli_checklimits("hfsplus_scanfile", ctx, (unsigned long)targetSize, 0, 0);
+    if (status != CL_SUCCESS) {
+        goto done;
     }
 
     /* open file */
-    ret = cli_gentempfd(dirname, &tmpname, &ofd);
-    if (ret != CL_CLEAN) {
+    status = cli_gentempfd(dirname, &tmpname, &ofd);
+    if (status != CL_SUCCESS) {
         cli_dbgmsg("hfsplus_scanfile: Cannot generate temporary file.\n");
-        return ret;
+        goto done;
     }
     cli_dbgmsg("hfsplus_scanfile: Extracting to %s\n", tmpname);
 
@@ -367,6 +368,7 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
             cli_dbgmsg("hfsplus_scanfile: output all blocks, remaining size " STDu64 "\n", targetSize);
             break;
         }
+
         /* Prepare extent */
         if (ext < 8) {
             currExt = &(fork->extents[ext]);
@@ -374,85 +376,107 @@ static cl_error_t hfsplus_scanfile(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader,
         } else {
             cli_dbgmsg("hfsplus_scanfile: need next extent from ExtentOverflow\n");
             /* Not implemented yet */
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
+
         /* have extent, so validate and get block range */
         if ((currExt->startBlock == 0) || (currExt->blockCount == 0)) {
             cli_dbgmsg("hfsplus_scanfile: next extent empty, done\n");
             break;
         }
+
         if ((currExt->startBlock & 0x10000000) && (currExt->blockCount & 0x10000000)) {
             cli_dbgmsg("hfsplus_scanfile: next extent illegal!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
+
         currBlock = currExt->startBlock;
         endBlock  = currExt->startBlock + currExt->blockCount - 1;
         if ((currBlock > volHeader->totalBlocks) || (endBlock > volHeader->totalBlocks) || (currExt->blockCount > volHeader->totalBlocks)) {
             cli_dbgmsg("hfsplus_scanfile: bad extent!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
+
         /* Write the blocks, walking the map */
         while (currBlock <= endBlock) {
             size_t to_write = MIN(targetSize, volHeader->blockSize);
             size_t written;
             off_t offset = currBlock * volHeader->blockSize;
+
             /* move map to next block */
             mPtr = fmap_need_off_once(ctx->fmap, offset, volHeader->blockSize);
             if (!mPtr) {
                 cli_errmsg("hfsplus_scanfile: map error\n");
-                ret = CL_EMAP;
-                break;
+                status = CL_EMAP;
+                goto done;
             }
+
             written = cli_writen(ofd, mPtr, to_write);
             if (written != to_write) {
                 cli_errmsg("hfsplus_scanfile: write error\n");
-                ret = CL_EWRITE;
-                break;
+                status = CL_EWRITE;
+                goto done;
             }
+
             targetSize -= to_write;
             outputSize += to_write;
             currBlock++;
+
             if (targetSize == 0) {
                 cli_dbgmsg("hfsplus_scanfile: all data written\n");
                 break;
             }
+
             if (outputBlocks >= fork->totalBlocks) {
                 cli_dbgmsg("hfsplus_scanfile: output all blocks, remaining size " STDu64 "\n", targetSize);
                 break;
             }
         }
+
         /* Finished the extent, move to next */
         ext++;
-    } while (ret == CL_CLEAN);
+    } while (status == CL_SUCCESS);
 
-    /* if successful so far, scan the output */
+    /* Now that we're done, ...
+     *  A) if filename output param is provided, just pass back the filename.
+     *  B) otherwise scan the file.
+     */
     if (filename) {
         *filename = tmpname;
+
     } else {
-        if (ret == CL_CLEAN) {
-            ret = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename);
+        status = cli_magic_scan_desc(ofd, tmpname, ctx, orig_filename);
+        if (status != CL_SUCCESS) {
+            goto done;
         }
 
-        if (!ctx->engine->keeptmp) {
-            if (cli_unlink(tmpname)) {
-                ret = CL_EUNLINK;
-            }
-        }
-        free(tmpname);
+        /* TODO: Scan overlay if outputBlocks >= fork->totalBlocks ? */
     }
+
+done:
 
     if (ofd >= 0) {
         close(ofd);
     }
+    if ((NULL == filename) ||     // output param not provided, which means we should clean up the temp file,
+        (status != CL_SUCCESS)) { // or we failed, so we should clean up the temp file.
 
-    return ret;
+        if (tmpname) {
+            if (!ctx->engine->keeptmp) {
+                (void)cli_unlink(tmpname);
+            }
+            free(tmpname);
+        }
+    }
+
+    return status;
 }
 
 /* Calculate true node limit for catalogFile */
-static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader)
+static cl_error_t hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader)
 {
     hfsPlusForkData *catFork;
 
@@ -476,14 +500,14 @@ static int hfsplus_validate_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader
 }
 
 /* Check if an attribute is present in the attribute map */
-static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *attrHeader, uint32_t expectedCnid, const uint8_t name[], uint32_t nameLen, int *found, uint8_t record[], unsigned *recordSize)
+static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *attrHeader, uint32_t expectedCnid, const uint8_t name[], uint32_t nameLen, int *found, uint8_t record[], size_t *recordSize)
 {
+    cl_error_t status = CL_SUCCESS;
     uint16_t nodeSize, recordNum, topOfOffsets;
     uint16_t recordStart, nextDist, nextStart;
     uint8_t *nodeBuf = NULL;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
-    cl_error_t ret = CL_SUCCESS;
-    int foundAttr  = 0;
+    bool foundAttr = false;
 
     if (found) {
         *found = 0;
@@ -503,12 +527,13 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
         cli_dbgmsg("hfsplus_check_attribute: failed to acquire node buffer, "
                    "size " STDu32 "\n",
                    nodeSize);
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
     /* Walk catalog leaf nodes, and scan contents of each */
     /* Because we want to scan them all, the index nodes add no value */
-    while (ret == CL_CLEAN && !foundAttr) {
+    while (status == CL_SUCCESS && !foundAttr) {
         hfsNodeDescriptor nodeDesc;
 
         if (thisNode == 0) {
@@ -521,10 +546,10 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
         }
 
         /* fetch node into buffer */
-        ret = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf);
-        if (ret != CL_CLEAN) {
+        status = hfsplus_fetch_node(ctx, volHeader, attrHeader, NULL, &(volHeader->attributesFile), thisNode, nodeBuf);
+        if (status != CL_SUCCESS) {
             cli_dbgmsg("hfsplus_check_attribute: node fetch failed.\n");
-            break;
+            goto done;
         }
         memcpy(&nodeDesc, nodeBuf, 14);
 
@@ -533,13 +558,13 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
         nodedescriptor_print("leaf attribute node", &nodeDesc);
         if ((nodeDesc.kind != HFS_NODEKIND_LEAF) || (nodeDesc.height != 1)) {
             cli_dbgmsg("hfsplus_check_attribute: invalid leaf node!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
         if ((nodeSize / 4) < nodeDesc.numRecords) {
             cli_dbgmsg("hfsplus_check_attribute: too many leaf records for one node!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* Walk this node's records and scan */
@@ -557,15 +582,15 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
             /* Check record location */
             if ((nextStart > topOfOffsets - 1) || (nextStart < recordStart)) {
                 cli_dbgmsg("hfsplus_check_attribute: bad record location %x for %u!\n", nextStart, recordNum);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
             recordStart = nextStart;
             if (recordStart + sizeof(attrKey) >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_check_attribute: Not enough data for an attribute key at location %x for %u!\n",
                            nextStart, recordNum);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
 
             memcpy(&attrKey, &nodeBuf[recordStart], sizeof(attrKey));
@@ -581,14 +606,14 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
             if (recordStart + attrKey.keyLength + 4 >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_check_attribute: key too long for location %x for %u!\n",
                            nextStart, recordNum);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
 
             if (recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_check_attribute: Attribute name is longer than expected: %u\n", attrKey.nameLength);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
 
             if (attrKey.cnid == expectedCnid && attrKey.nameLength * 2 == nameLen && memcmp(&nodeBuf[recordStart + 14], name, nameLen) == 0) {
@@ -601,37 +626,39 @@ static cl_error_t hfsplus_check_attribute(cli_ctx *ctx, hfsPlusVolumeHeader *vol
                     continue;
                 }
 
-                if (found) {
-                    *found = 1;
-                }
-
                 if (attrRec.attributeSize > *recordSize) {
-                    ret = CL_EMAXSIZE;
-                    break;
+                    status = CL_EFORMAT;
+                    goto done;
                 }
 
                 memcpy(record, &(nodeBuf[recordStart + sizeof(hfsPlusAttributeKey) + attrKey.nameLength * 2 + sizeof(attrRec)]), attrRec.attributeSize);
                 *recordSize = attrRec.attributeSize;
 
-                ret       = CL_SUCCESS;
-                foundAttr = 1;
+                if (found) {
+                    *found = 1;
+                }
+
+                foundAttr = true;
                 break;
             }
         }
     }
 
+done:
+
     if (nodeBuf != NULL) {
         free(nodeBuf);
         nodeBuf = NULL;
     }
-    return ret;
+
+    return status;
 }
 
 /* Fetch a node's contents into the buffer */
-static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
-                              hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff)
+static cl_error_t hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
+                                     hfsHeaderRecord *extHeader, hfsPlusForkData *catFork, uint32_t node, uint8_t *buff)
 {
-    int foundBlock = 0;
+    bool foundBlock = false;
     uint64_t catalogOffset;
     uint32_t startBlock, startOffset;
     uint32_t endBlock, endSize;
@@ -666,7 +693,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
 
     for (curBlock = startBlock; curBlock <= endBlock; ++curBlock) {
 
-        foundBlock  = 0;
+        foundBlock  = false;
         searchBlock = curBlock;
         /* Find which extent has that block */
         for (extentNum = 0; extentNum < 8; extentNum++) {
@@ -686,7 +713,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
             if (searchBlock < currExt->blockCount) {
                 cli_dbgmsg("hfsplus_fetch_node: found block in extent " STDu32 "\n", extentNum);
                 realFileBlock = currExt->startBlock + searchBlock;
-                foundBlock    = 1;
+                foundBlock    = true;
                 break;
             } else {
                 cli_dbgmsg("hfsplus_fetch_node: not in extent " STDu32 "\n", extentNum);
@@ -694,7 +721,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
             }
         }
 
-        if (foundBlock == 0) {
+        if (foundBlock == false) {
             cli_dbgmsg("hfsplus_fetch_node: not in first 8 extents\n");
             cli_dbgmsg("hfsplus_fetch_node: finding this node requires extent overflow support\n");
             return CL_EFORMAT;
@@ -726,6 +753,7 @@ static int hfsplus_fetch_node(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsH
 
 static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
 {
+    cl_error_t status = CL_SUCCESS;
     hfsPlusResourceHeader resourceHeader;
     hfsPlusResourceMap resourceMap;
     hfsPlusResourceType resourceType;
@@ -735,16 +763,15 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     int curInstanceIdx  = 0;
     size_t dataOffset;
     uint32_t dataLength;
-    cl_error_t ret = CL_SUCCESS;
 
     if (!size) {
-        ret = CL_ENULLARG;
+        status = CL_ENULLARG;
         goto done;
     }
 
     if (cli_readn(fd, &resourceHeader, sizeof(resourceHeader)) != sizeof(resourceHeader)) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to read resource header from temporary file\n");
-        ret = CL_EREAD;
+        status = CL_EREAD;
         goto done;
     }
 
@@ -757,13 +784,13 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
 
     if (lseek(fd, resourceHeader.mapOffset, SEEK_SET) != resourceHeader.mapOffset) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to map in temporary file\n");
-        ret = CL_ESEEK;
+        status = CL_ESEEK;
         goto done;
     }
 
     if (cli_readn(fd, &resourceMap, sizeof(resourceMap)) != sizeof(resourceMap)) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to read resource map from temporary file\n");
-        ret = CL_EREAD;
+        status = CL_EREAD;
         goto done;
     }
 
@@ -775,7 +802,7 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
     for (i = 0; i < resourceMap.typeCount + 1; ++i) {
         if (cli_readn(fd, &resourceType, sizeof(resourceType)) != sizeof(resourceType)) {
             cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to read resource type from temporary file\n");
-            ret = CL_EREAD;
+            status = CL_EREAD;
             goto done;
         }
         resourceType.instanceCount       = be16_to_host(resourceType.instanceCount);
@@ -784,7 +811,7 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
         if (memcmp(resourceType.type, "cmpf", 4) == 0) {
             if (cmpfInstanceIdx != -1) {
                 cli_dbgmsg("hfsplus_seek_to_cmpf_resource: There are several cmpf resource types in the file\n");
-                ret = CL_EFORMAT;
+                status = CL_EFORMAT;
                 goto done;
             }
 
@@ -797,19 +824,19 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
 
     if (cmpfInstanceIdx < 0) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Didn't find cmpf resource type\n");
-        ret = CL_EFORMAT;
+        status = CL_EFORMAT;
         goto done;
     }
 
     if (lseek(fd, cmpfInstanceIdx * sizeof(hfsPlusReferenceEntry), SEEK_CUR) < 0) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to instance index\n");
-        ret = CL_ESEEK;
+        status = CL_ESEEK;
         goto done;
     }
 
     if (cli_readn(fd, &entry, sizeof(entry)) != sizeof(entry)) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to read resource entry from temporary file\n");
-        ret = CL_EREAD;
+        status = CL_EREAD;
         goto done;
     }
 
@@ -817,45 +844,60 @@ static cl_error_t hfsplus_seek_to_cmpf_resource(int fd, size_t *size)
 
     if (lseek(fd, resourceHeader.dataOffset + dataOffset, SEEK_SET) < 0) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to seek to data offset\n");
-        ret = CL_ESEEK;
+        status = CL_ESEEK;
         goto done;
     }
 
     if (cli_readn(fd, &dataLength, sizeof(dataLength)) != sizeof(dataLength)) {
         cli_dbgmsg("hfsplus_seek_to_cmpf_resource: Failed to read data length from temporary file\n");
-        ret = CL_EREAD;
+        status = CL_EREAD;
         goto done;
     }
 
     *size = be32_to_host(dataLength);
+
 done:
-    return ret;
+    return status;
 }
 
-static int hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResourceBlockTable **table)
+/**
+ * @brief Read the table from the provided file.
+ *
+ * The caller is responsible for freeing the table.
+ *
+ * @param fd                File descriptor of the file to read from.
+ * @param [out] numBlocks   Number of blocks in the table, as determined from reading the file.
+ * @param [out] table       Will be allocated and populated with table data.
+ * @return cl_error_t  CL_SUCCESS on success, CL_E* on failure.
+ */
+static cl_error_t hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResourceBlockTable **table)
 {
+    cl_error_t status = CL_SUCCESS;
     uint32_t i;
 
     if (!table || !numBlocks) {
-        return CL_ENULLARG;
+        status = CL_ENULLARG;
+        goto done;
     }
 
     if (cli_readn(fd, numBlocks, sizeof(*numBlocks)) != sizeof(*numBlocks)) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to read block count\n");
-        return CL_EREAD;
+        status = CL_EREAD;
+        goto done;
     }
 
     *numBlocks = le32_to_host(*numBlocks); // Let's do a little little endian just for fun, shall we?
     *table     = cli_malloc(sizeof(hfsPlusResourceBlockTable) * *numBlocks);
     if (!*table) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to allocate memory for block table\n");
-        return CL_EMEM;
+        status = CL_EMEM;
+        goto done;
     }
 
     if (cli_readn(fd, *table, *numBlocks * sizeof(hfsPlusResourceBlockTable)) != *numBlocks * sizeof(hfsPlusResourceBlockTable)) {
         cli_dbgmsg("hfsplus_read_block_table: Failed to read table\n");
-        free(*table);
-        return CL_EREAD;
+        status = CL_EREAD;
+        goto done;
     }
 
     for (i = 0; i < *numBlocks; ++i) {
@@ -863,15 +905,21 @@ static int hfsplus_read_block_table(int fd, uint32_t *numBlocks, hfsPlusResource
         (*table)[i].length = le32_to_host((*table)[i].length);
     }
 
-    return CL_SUCCESS;
+done:
+    if (CL_SUCCESS != status) {
+        if (NULL != table) {
+            free(*table);
+            *table = NULL;
+        }
+    }
+    return status;
 }
 
 /* Given the catalog and other details, scan all the volume contents */
 static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHeader, hfsHeaderRecord *catHeader,
                                        hfsHeaderRecord *extHeader, hfsHeaderRecord *attrHeader, const char *dirname)
 {
-    cl_error_t ret          = CL_SUCCESS;
-    unsigned int has_alerts = 0;
+    cl_error_t status = CL_SUCCESS;
     uint32_t thisNode, nodeLimit, nodesScanned = 0;
     uint16_t nodeSize, recordNum, topOfOffsets;
     uint16_t recordStart, nextDist, nextStart;
@@ -879,9 +927,14 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
     const uint8_t COMPRESSED_ATTR[] = {0, 'c', 0, 'o', 0, 'm', 0, '.', 0, 'a', 0, 'p', 0, 'p', 0, 'l', 0, 'e', 0, '.', 0, 'd', 0, 'e', 0, 'c', 0, 'm', 0, 'p', 0, 'f', 0, 's'};
     char *tmpname                   = NULL;
     uint8_t *uncompressed           = NULL;
+    char *resourceFile              = NULL;
+    int ifd                         = -1;
     int ofd                         = -1;
     char *name_utf8                 = NULL;
     size_t name_utf8_size           = 0;
+    bool extracted_file             = false;
+
+    hfsPlusResourceBlockTable *table = NULL;
 
     nodeLimit = MIN(catHeader->totalNodes, HFSPLUS_NODE_LIMIT);
     thisNode  = catHeader->firstLeafNode;
@@ -898,23 +951,23 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
     /* Walk catalog leaf nodes, and scan contents of each */
     /* Because we want to scan them all, the index nodes add no value */
-    while (ret == CL_SUCCESS) {
+    while (status == CL_SUCCESS) {
         hfsNodeDescriptor nodeDesc;
 
         if (thisNode == 0) {
             cli_dbgmsg("hfsplus_walk_catalog: reached end of leaf nodes.\n");
-            break;
+            goto done;
         }
         if (nodesScanned++ > nodeLimit) {
             cli_dbgmsg("hfsplus_walk_catalog: node scan limit reached.\n");
-            break;
+            goto done;
         }
 
         /* fetch node into buffer */
-        ret = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf);
-        if (ret != CL_SUCCESS) {
+        status = hfsplus_fetch_node(ctx, volHeader, catHeader, extHeader, &(volHeader->catalogFile), thisNode, nodeBuf);
+        if (status != CL_SUCCESS) {
             cli_dbgmsg("hfsplus_walk_catalog: node fetch failed.\n");
-            break;
+            goto done;
         }
         memcpy(&nodeDesc, nodeBuf, 14);
 
@@ -923,13 +976,13 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
         nodedescriptor_print("leaf node", &nodeDesc);
         if ((nodeDesc.kind != HFS_NODEKIND_LEAF) || (nodeDesc.height != 1)) {
             cli_dbgmsg("hfsplus_walk_catalog: invalid leaf node!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
         if ((nodeSize / 4) < nodeDesc.numRecords) {
             cli_dbgmsg("hfsplus_walk_catalog: too many leaf records for one node!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* Walk this node's records and scan */
@@ -948,8 +1001,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             /* Check record location */
             if ((nextStart > topOfOffsets - 1) || (nextStart < recordStart)) {
                 cli_dbgmsg("hfsplus_walk_catalog: bad record location %x for %u!\n", nextStart, recordNum);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
             recordStart = nextStart;
             /* Get record key length */
@@ -959,8 +1012,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             if (recordStart + keylen + 4 >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_walk_catalog: key too long for location %x for %u!\n",
                            nextStart, recordNum);
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
             /* Collect filename  */
             if (keylen >= 6) {
@@ -993,8 +1046,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             /* Check file record location */
             if (recordStart + keylen + 2 + sizeof(hfsPlusCatalogFile) >= topOfOffsets) {
                 cli_dbgmsg("hfsplus_walk_catalog: not enough bytes for file record!\n");
-                ret = CL_EFORMAT;
-                break;
+                status = CL_EFORMAT;
+                goto done;
             }
             memcpy(&fileRec, &(nodeBuf[recordStart + keylen + 2]), sizeof(hfsPlusCatalogFile));
 
@@ -1004,7 +1057,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
             if ((fileRec.permissions.fileMode & HFS_MODE_TYPEMASK) == HFS_MODE_FILE) {
                 int compressed = 0;
                 uint8_t attribute[8192];
-                unsigned attributeSize = sizeof(attribute);
+                size_t attributeSize = sizeof(attribute);
 
                 /* Convert forks and scan */
                 forkdata_to_host(&(fileRec.dataFork));
@@ -1022,8 +1075,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                     if (attributeSize < sizeof(header)) {
                         cli_warnmsg("hfsplus_walk_catalog: Error: Compression attribute size is less than the compression header\n");
-                        ret = CL_EFORMAT;
-                        break;
+                        status = CL_EFORMAT;
+                        goto done;
                     }
 
                     memcpy(&header, attribute, sizeof(header));
@@ -1038,15 +1091,15 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                     if (header.magic != DECMPFS_HEADER_MAGIC) {
                         cli_dbgmsg("hfsplus_walk_catalog: Unexpected magic value for compression header: 0x%08x\n", header.magic);
-                        ret = CL_EFORMAT;
-                        break;
+                        status = CL_EFORMAT;
+                        goto done;
                     }
 
                     /* open file */
-                    ret = cli_gentempfd(dirname, &tmpname, &ofd);
-                    if (ret != CL_SUCCESS) {
+                    status = cli_gentempfd(dirname, &tmpname, &ofd);
+                    if (status != CL_SUCCESS) {
                         cli_dbgmsg("hfsplus_walk_catalog: Cannot generate temporary file.\n");
-                        break;
+                        goto done;
                     }
 
                     cli_dbgmsg("Found compressed file type %u size %" PRIu64 "\n", header.compressionType, header.fileSize);
@@ -1055,16 +1108,15 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             size_t written;
                             if (attributeSize < sizeof(header) + 1) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Unexpected end of stream, no compression flag\n");
-                                ret = CL_EFORMAT;
-                                break;
+                                status = CL_EFORMAT;
+                                goto done;
                             }
 
                             if ((attribute[sizeof(header)] & 0x0f) == 0x0f) { // Data is stored uncompressed
                                 if (attributeSize - sizeof(header) - 1 != header.fileSize) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Expected file size different from size of data available\n");
-                                    free(tmpname);
-                                    ret = CL_EFORMAT;
-                                    break;
+                                    status = CL_EFORMAT;
+                                    goto done;
                                 }
 
                                 written = cli_writen(ofd, &attribute[sizeof(header) + 1], header.fileSize);
@@ -1074,15 +1126,15 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                 if (header.fileSize > 65536) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Uncompressed file seems too big, something is probably wrong\n");
-                                    ret = CL_EFORMAT;
-                                    break;
+                                    status = CL_EFORMAT;
+                                    goto done;
                                 }
 
                                 uncompressed = malloc(header.fileSize);
                                 if (!uncompressed) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to allocate memory for the uncompressed file contents\n");
-                                    ret = CL_EMEM;
-                                    break;
+                                    status = CL_EMEM;
+                                    goto done;
                                 }
 
                                 stream.zalloc    = Z_NULL;
@@ -1106,37 +1158,37 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                             cli_dbgmsg("hfsplus_walk_catalog: inflateinit2: zlib stream error!\n");
                                             break;
                                         default:
-                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2: unknown error %d\n", ret);
+                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2: unknown error %d\n", z_ret);
                                             break;
                                     }
 
-                                    ret = CL_EFORMAT;
-                                    break;
+                                    status = CL_EFORMAT;
+                                    goto done;
                                 }
 
                                 z_ret = inflate(&stream, Z_NO_FLUSH);
                                 if (z_ret != Z_OK && z_ret != Z_STREAM_END) {
-                                    cli_dbgmsg("hfsplus_walk_catalog: inflateSync failed to extract compressed stream (%d)\n", ret);
-                                    ret = CL_EFORMAT;
-                                    break;
+                                    cli_dbgmsg("hfsplus_walk_catalog: inflateSync failed to extract compressed stream (%d)\n", z_ret);
+                                    status = CL_EFORMAT;
+                                    goto done;
                                 }
 
                                 z_ret = inflateEnd(&stream);
                                 if (z_ret == Z_STREAM_ERROR) {
-                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", ret);
+                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
                                 }
 
                                 written = cli_writen(ofd, uncompressed, header.fileSize);
+
                                 free(uncompressed);
                                 uncompressed = NULL;
                             }
                             if (written != header.fileSize) {
                                 cli_errmsg("hfsplus_walk_catalog: write error\n");
-                                ret = CL_EWRITE;
-                                break;
+                                status = CL_EWRITE;
+                                goto done;
                             }
 
-                            ret = CL_SUCCESS;
                             break;
                         }
                         case HFSPLUS_COMPRESSION_RESOURCE: {
@@ -1146,9 +1198,7 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             // Ideally we should check that there is only one
                             // resource, that its type is correct, and that its
                             // name is cmpf.
-                            char *resourceFile = NULL;
-                            int ifd            = -1;
-                            size_t written     = 0;
+                            size_t written = 0;
 
                             // 4096 is an approximative value, there should be
                             // at least 16 (resource header) + 30 (map header) +
@@ -1156,44 +1206,42 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                             // attribute)
                             if (fileRec.resourceFork.logicalSize < 4096) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Error: Expected more data in the compressed resource fork\n");
-                                ret = CL_EFORMAT;
-                                break;
+                                status = CL_EFORMAT;
+                                goto done;
                             }
 
-                            if ((ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname, &resourceFile, name_utf8)) != CL_SUCCESS) {
+                            if ((status = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname, &resourceFile, name_utf8)) != CL_SUCCESS) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Error while extracting the resource fork\n");
-                                if (resourceFile) {
-                                    free(resourceFile);
-                                }
-                                break;
+                                goto done;
                             }
 
                             if (NULL == resourceFile) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Error: hfsplus_scanfile returned no resource file\n");
-                                ret = CL_EFORMAT;
-                                break;
+                                status = CL_EFORMAT;
+                                goto done;
                             }
 
-                            if ((ifd = safe_open(resourceFile, O_RDONLY | O_BINARY)) == -1) {
+                            if (-1 == (ifd = safe_open(resourceFile, O_RDONLY | O_BINARY))) {
                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to open temporary file %s\n", resourceFile);
-                                ret = CL_EOPEN;
+                                status = CL_EOPEN;
+                                goto done;
                             } else {
                                 size_t resourceLen;
-                                if ((ret = hfsplus_seek_to_cmpf_resource(ifd, &resourceLen)) != CL_SUCCESS) {
+                                if (CL_SUCCESS != (status = hfsplus_seek_to_cmpf_resource(ifd, &resourceLen))) {
                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to find cmpf resource in resource fork\n");
                                 } else {
-                                    hfsPlusResourceBlockTable *table = NULL;
                                     uint32_t numBlocks;
                                     uint32_t dataOffset = lseek(ifd, 0, SEEK_CUR);
 
-                                    if ((ret = hfsplus_read_block_table(ifd, &numBlocks, &table)) != CL_SUCCESS) {
+                                    if (CL_SUCCESS != (status = hfsplus_read_block_table(ifd, &numBlocks, &table))) {
                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to read block table\n");
                                     } else {
                                         uint8_t block[4096];
                                         uint8_t uncompressed[4096];
                                         unsigned curBlock;
 
-                                        for (curBlock = 0; ret == CL_SUCCESS && curBlock < numBlocks; ++curBlock) {
+                                        for (curBlock = 0; status == CL_SUCCESS && curBlock < numBlocks; ++curBlock) {
+                                            int z_ret;
                                             off_t blockOffset = dataOffset + table[curBlock].offset;
                                             size_t curOffset;
                                             size_t readLen;
@@ -1205,8 +1253,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                             if (lseek(ifd, blockOffset, SEEK_SET) != blockOffset) {
                                                 cli_dbgmsg("hfsplus_walk_catalog: Failed to seek to beginning of block\n");
-                                                ret = CL_ESEEK;
-                                                break;
+                                                status = CL_ESEEK;
+                                                goto done;
                                             }
 
                                             for (curOffset = 0; curOffset < table[curBlock].length;) {
@@ -1217,8 +1265,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                                                 if (cli_readn(ifd, block, readLen) != readLen) {
                                                     cli_dbgmsg("hfsplus_walk_catalog: Failed to read block from temporary file\n");
-                                                    ret = CL_EREAD;
-                                                    break;
+                                                    status = CL_EREAD;
+                                                    goto done;
                                                 }
 
                                                 if (streamBeginning) {
@@ -1234,10 +1282,10 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                         stream.avail_out = sizeof(uncompressed);
                                                         stream.next_out  = uncompressed;
 
-                                                        if ((ret = inflateInit2(&stream, 15)) != Z_OK) {
-                                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2 failed (%d)\n", ret);
-                                                            ret = CL_EFORMAT;
-                                                            break;
+                                                        if (Z_OK != (z_ret = inflateInit2(&stream, 15))) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: inflateInit2 failed (%d)\n", z_ret);
+                                                            status = CL_EFORMAT;
+                                                            goto done;
                                                         }
                                                     }
                                                 }
@@ -1249,42 +1297,43 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                                                     stream.next_out  = uncompressed;
 
                                                     while (stream.avail_in > 0) {
-                                                        ret = inflate(&stream, Z_NO_FLUSH);
-                                                        if (ret != Z_OK && ret != Z_STREAM_END) {
-                                                            cli_dbgmsg("hfsplus_walk_catalog: Failed to extract (%d)\n", ret);
-                                                            ret = CL_EFORMAT;
-                                                            break;
+                                                        z_ret = inflate(&stream, Z_NO_FLUSH);
+                                                        if (z_ret != Z_OK && z_ret != Z_STREAM_END) {
+                                                            cli_dbgmsg("hfsplus_walk_catalog: Failed to extract (%d)\n", z_ret);
+                                                            status = CL_EFORMAT;
+                                                            goto done;
                                                         }
-                                                        ret = CL_SUCCESS;
+
                                                         if (cli_writen(ofd, &uncompressed, sizeof(uncompressed) - stream.avail_out) != sizeof(uncompressed) - stream.avail_out) {
                                                             cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
-                                                            ret = CL_EWRITE;
-                                                            break;
+                                                            status = CL_EWRITE;
+                                                            goto done;
                                                         }
                                                         written += sizeof(uncompressed) - stream.avail_out;
                                                         stream.avail_out = sizeof(uncompressed);
                                                         stream.next_out  = uncompressed;
+
+                                                        extracted_file = true;
                                                     }
                                                 } else {
                                                     if (cli_writen(ofd, &block[streamBeginning ? 1 : 0], readLen - (streamBeginning ? 1 : 0)) != readLen - (streamBeginning ? 1 : 0)) {
                                                         cli_dbgmsg("hfsplus_walk_catalog: Failed to write to temporary file\n");
-                                                        ret = CL_EWRITE;
-                                                        break;
+                                                        status = CL_EWRITE;
+                                                        goto done;
                                                     }
                                                     written += readLen - (streamBeginning ? 1 : 0);
+
+                                                    extracted_file = true;
                                                 }
 
                                                 curOffset += readLen;
                                                 streamBeginning = 0;
                                             }
 
-                                            if (ret == CL_SUCCESS) {
-                                                if ((ret = inflateEnd(&stream)) != Z_OK) {
-                                                    cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", ret);
-                                                    ret = CL_EFORMAT;
-                                                } else {
-                                                    ret = CL_SUCCESS;
-                                                }
+                                            if (Z_OK != (z_ret = inflateEnd(&stream))) {
+                                                cli_dbgmsg("hfsplus_walk_catalog: inflateEnd failed (%d)\n", z_ret);
+                                                status = CL_EFORMAT;
+                                                goto done;
                                             }
                                         }
 
@@ -1300,7 +1349,8 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
 
                             if (!ctx->engine->keeptmp) {
                                 if (cli_unlink(resourceFile)) {
-                                    ret = CL_EUNLINK;
+                                    status = CL_EUNLINK;
+                                    goto done;
                                 }
                             }
                             free(resourceFile);
@@ -1315,73 +1365,48 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                     }
 
                     if (tmpname) {
-                        if (ret == CL_SUCCESS) {
+                        if (extracted_file) {
                             cli_dbgmsg("hfsplus_walk_catalog: Extracted to %s\n", tmpname);
 
-                            /* if successful so far, scan the output */
-                            ret = cli_magic_scan_desc(ofd, tmpname, ctx, name_utf8);
-
-                            if (ret == CL_VIRUS) {
-                                has_alerts = 1;
-                                if (SCAN_ALLMATCHES) {
-                                    /* Continue scanning in SCAN_ALLMATCHES mode */
-                                    cli_dbgmsg("hfsplus_walk_catalog: Compressed file alert, continuing");
-                                    ret = CL_SUCCESS;
-                                }
+                            /* Scan the extracted file */
+                            status = cli_magic_scan_desc(ofd, tmpname, ctx, name_utf8);
+                            if (status != CL_SUCCESS) {
+                                goto done;
                             }
                         }
 
                         if (!ctx->engine->keeptmp) {
                             if (cli_unlink(tmpname)) {
-                                ret = CL_EUNLINK;
+                                status = CL_EUNLINK;
+                                goto done;
                             }
                         }
 
                         free(tmpname);
                         tmpname = NULL;
                     }
+
                     if (ofd >= 0) {
                         close(ofd);
                         ofd = -1;
                     }
-
-                    if (ret != CL_SUCCESS) {
-                        break;
-                    }
                 }
 
+                /* Scan data fork */
                 if (fileRec.dataFork.logicalSize) {
-                    ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.dataFork), dirname, NULL, name_utf8);
-                }
-                /* Check return code */
-                if (ret == CL_VIRUS) {
-                    has_alerts = 1;
-                    if (SCAN_ALLMATCHES) {
-                        /* Continue scanning in SCAN_ALLMATCHES mode */
-                        cli_dbgmsg("hfsplus_walk_catalog: data fork alert, continuing");
-                        ret = CL_CLEAN;
+                    status = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.dataFork), dirname, NULL, name_utf8);
+                    if (status != CL_SUCCESS) {
+                        cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d\n", status);
+                        goto done;
                     }
-                }
-                if (ret != CL_SUCCESS) {
-                    cli_dbgmsg("hfsplus_walk_catalog: data fork retcode %d\n", ret);
-                    break;
                 }
                 /* Scan resource fork */
                 if (fileRec.resourceFork.logicalSize) {
-                    ret = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname, NULL, name_utf8);
-                }
-                /* Check return code */
-                if (ret == CL_VIRUS) {
-                    has_alerts = 1;
-                    if (SCAN_ALLMATCHES) {
-                        /* Continue scanning in SCAN_ALLMATCHES mode */
-                        cli_dbgmsg("hfsplus_walk_catalog: resource fork alert, continuing");
-                        ret = CL_CLEAN;
+                    status = hfsplus_scanfile(ctx, volHeader, extHeader, &(fileRec.resourceFork), dirname, NULL, name_utf8);
+                    if (status != CL_SUCCESS) {
+                        cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", status);
+                        goto done;
                     }
-                }
-                if (ret != CL_SUCCESS) {
-                    cli_dbgmsg("hfsplus_walk_catalog: resource fork retcode %d", ret);
-                    break;
                 }
             } else {
                 cli_dbgmsg("hfsplus_walk_catalog: record mode %o is not File\n", fileRec.permissions.fileMode);
@@ -1392,38 +1417,65 @@ static cl_error_t hfsplus_walk_catalog(cli_ctx *ctx, hfsPlusVolumeHeader *volHea
                 name_utf8 = NULL;
             }
         }
-        /* if return code, exit loop, message already logged */
-        if (ret != CL_SUCCESS) {
-            break;
-        }
 
         /* After that, proceed to next node */
         if (thisNode == nodeDesc.fLink) {
-            /* Future heuristic */
+            /* TODO: Add heuristic alert? */
             cli_warnmsg("hfsplus_walk_catalog: simple cycle detected!\n");
-            ret = CL_EFORMAT;
-            break;
+            status = CL_EFORMAT;
+            goto done;
         } else {
             thisNode = nodeDesc.fLink;
         }
     }
 
-    free(nodeBuf);
+done:
+    if (table) {
+        free(table);
+        table = NULL;
+    }
+    if (-1 != ifd) {
+        close(ifd);
+    }
+    if (-1 != ofd) {
+        close(ofd);
+    }
+    if (NULL != resourceFile) {
+        if (!ctx->engine->keeptmp) {
+            (void)cli_unlink(resourceFile);
+        }
+        free(resourceFile);
+    }
+    if (NULL != tmpname) {
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(tmpname)) {
+                status = CL_EUNLINK;
+                goto done;
+            }
+        }
+
+        free(tmpname);
+    }
+    if (NULL != nodeBuf) {
+        free(nodeBuf);
+    }
     if (NULL != name_utf8) {
         free(name_utf8);
     }
-
-    if (has_alerts) {
-        ret = CL_VIRUS;
+    if (NULL != name_utf8) {
+        free(name_utf8);
+        name_utf8 = NULL;
     }
-    return ret;
+
+    return status;
 }
 
 /* Base scan function for scanning HFS+ or HFSX partitions */
 cl_error_t cli_scanhfsplus(cli_ctx *ctx)
 {
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
     char *targetdir                = NULL;
-    cl_error_t ret                 = CL_SUCCESS;
     hfsPlusVolumeHeader *volHeader = NULL;
     hfsNodeDescriptor catFileDesc;
     hfsHeaderRecord catFileHeader;
@@ -1435,14 +1487,15 @@ cl_error_t cli_scanhfsplus(cli_ctx *ctx)
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scanhfsplus: Invalid context\n");
-        return CL_ENULLARG;
+        status = CL_ENULLARG;
+        goto done;
     }
 
     cli_dbgmsg("cli_scanhfsplus: scanning partition content\n");
     /* first, read volume header contents */
-    ret = hfsplus_volumeheader(ctx, &volHeader);
-    if (ret != CL_SUCCESS) {
-        goto freeHeader;
+    status = hfsplus_volumeheader(ctx, &volHeader);
+    if (status != CL_SUCCESS) {
+        goto done;
     }
 
     /*
@@ -1456,14 +1509,14 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
  */
 
     /* Get root node (header node) of extent overflow file */
-    ret = hfsplus_readheader(ctx, volHeader, &extentFileDesc, &extentFileHeader, HFS_FILETREE_EXTENTS, "extentFile");
-    if (ret != CL_SUCCESS) {
-        goto freeHeader;
+    status = hfsplus_readheader(ctx, volHeader, &extentFileDesc, &extentFileHeader, HFS_FILETREE_EXTENTS, "extentFile");
+    if (status != CL_SUCCESS) {
+        goto done;
     }
     /* Get root node (header node) of catalog file */
-    ret = hfsplus_readheader(ctx, volHeader, &catFileDesc, &catFileHeader, HFS_FILETREE_CATALOG, "catalogFile");
-    if (ret != CL_SUCCESS) {
-        goto freeHeader;
+    status = hfsplus_readheader(ctx, volHeader, &catFileDesc, &catFileHeader, HFS_FILETREE_CATALOG, "catalogFile");
+    if (status != CL_SUCCESS) {
+        goto done;
     }
 
     /* Get root node (header node) of attributes file */
@@ -1472,48 +1525,50 @@ cli_dbgmsg("sizeof(hfsNodeDescriptor) is %lu\n", sizeof(hfsNodeDescriptor));
         hasAttributesFileHeader = 1;
     } else {
         hasAttributesFileHeader = 0;
-        ret                     = CL_SUCCESS;
     }
 
     /* Create temp folder for contents */
     if (!(targetdir = cli_gentemp_with_prefix(ctx->sub_tmpdir, "hfsplus-tmp"))) {
         cli_errmsg("cli_scanhfsplus: cli_gentemp failed\n");
-        ret = CL_ETMPDIR;
-        goto freeHeader;
+        status = CL_ETMPDIR;
+        goto done;
     }
     if (mkdir(targetdir, 0700)) {
         cli_errmsg("cli_scanhfsplus: Cannot create temporary directory %s\n", targetdir);
-        ret = CL_ETMPDIR;
-        goto freeDirname;
+        status = CL_ETMPDIR;
+        goto done;
     }
     cli_dbgmsg("cli_scanhfsplus: Extracting into %s\n", targetdir);
 
     /* Can build and scan catalog file if we want ***
     ret = hfsplus_scanfile(ctx, volHeader, &extentFileHeader, &(volHeader->catalogFile), targetdir);
      */
-    if (ret == CL_SUCCESS) {
-        ret = hfsplus_validate_catalog(ctx, volHeader, &catFileHeader);
-        if (ret == CL_SUCCESS) {
-            cli_dbgmsg("cli_scanhfsplus: validation successful\n");
-        } else {
-            cli_dbgmsg("cli_scanhfsplus: validation returned %d : %s\n", ret, cl_strerror(ret));
-        }
+
+    status = hfsplus_validate_catalog(ctx, volHeader, &catFileHeader);
+    if (status == CL_SUCCESS) {
+        cli_dbgmsg("cli_scanhfsplus: validation successful\n");
+    } else {
+        cli_dbgmsg("cli_scanhfsplus: validation returned %d : %s\n", status, cl_strerror(status));
+        goto done;
     }
 
     /* Walk through catalog to identify files to scan */
-    if (ret == CL_SUCCESS) {
-        ret = hfsplus_walk_catalog(ctx, volHeader, &catFileHeader, &extentFileHeader, hasAttributesFileHeader ? &attributesFileHeader : NULL, targetdir);
-        cli_dbgmsg("cli_scanhfsplus: walk catalog finished\n");
+    status = hfsplus_walk_catalog(ctx, volHeader, &catFileHeader, &extentFileHeader, hasAttributesFileHeader ? &attributesFileHeader : NULL, targetdir);
+    if (status != CL_SUCCESS) {
+        goto done;
     }
 
-    /* Clean up extracted content, if needed */
-    if (!ctx->engine->keeptmp) {
-        cli_rmdirs(targetdir);
+done:
+    if (NULL != targetdir) {
+        /* Clean up extracted content, if needed */
+        if (!ctx->engine->keeptmp) {
+            (void)cli_rmdirs(targetdir);
+        }
+        free(targetdir);
+    }
+    if (NULL != volHeader) {
+        free(volHeader);
     }
 
-freeDirname:
-    free(targetdir);
-freeHeader:
-    free(volHeader);
-    return ret;
+    return status;
 }

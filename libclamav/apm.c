@@ -45,13 +45,14 @@
 #define apm_parsemsg(...) ;
 #endif
 
-static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school);
+static cl_error_t apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, bool old_school);
 
-int cli_scanapm(cli_ctx *ctx)
+cl_error_t cli_scanapm(cli_ctx *ctx)
 {
+    cl_error_t status = CL_SUCCESS;
     struct apm_driver_desc_map ddm;
     struct apm_partition_info aptable, apentry;
-    int ret = CL_CLEAN, detection = CL_CLEAN, old_school = 0;
+    bool old_school = false;
     size_t sectorsize, maplen, partsize;
     size_t pos = 0, partoff = 0;
     unsigned i;
@@ -59,13 +60,15 @@ int cli_scanapm(cli_ctx *ctx)
 
     if (!ctx || !ctx->fmap) {
         cli_errmsg("cli_scanapm: Invalid context\n");
-        return CL_ENULLARG;
+        status = CL_ENULLARG;
+        goto done;
     }
 
     /* read driver description map at sector 0  */
     if (fmap_readn(ctx->fmap, &ddm, pos, sizeof(ddm)) != sizeof(ddm)) {
         cli_dbgmsg("cli_scanapm: Invalid Apple driver description map\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* convert driver description map big-endian to host */
@@ -76,7 +79,8 @@ int cli_scanapm(cli_ctx *ctx)
     /* check DDM signature */
     if (ddm.signature != DDM_SIGNATURE) {
         cli_dbgmsg("cli_scanapm: Apple driver description map signature mismatch\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* sector size is determined by the ddm */
@@ -87,20 +91,22 @@ int cli_scanapm(cli_ctx *ctx)
     if ((ddm.blockSize * ddm.blockCount) != maplen) {
         cli_dbgmsg("cli_scanapm: File described %u size does not match %lu actual size\n",
                    (ddm.blockSize * ddm.blockCount), (unsigned long)maplen);
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* check for old-school partition map */
     if (sectorsize == 2048) {
         if (fmap_readn(ctx->fmap, &aptable, APM_FALLBACK_SECTOR_SIZE, sizeof(aptable)) != sizeof(aptable)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         aptable.signature = be16_to_host(aptable.signature);
         if (aptable.signature == APM_SIGNATURE) {
             sectorsize = APM_FALLBACK_SECTOR_SIZE;
-            old_school = 1;
+            old_school = true;
         }
     }
 
@@ -109,7 +115,8 @@ int cli_scanapm(cli_ctx *ctx)
 
     if (fmap_readn(ctx->fmap, &aptable, pos, sizeof(aptable)) != sizeof(aptable)) {
         cli_dbgmsg("cli_scanapm: Invalid Apple partition table\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* convert partition table big endian to host */
@@ -121,7 +128,8 @@ int cli_scanapm(cli_ctx *ctx)
     /* check the partition entry signature */
     if (aptable.signature != APM_SIGNATURE) {
         cli_dbgmsg("cli_scanapm: Apple partition table signature mismatch\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* check if partition table partition */
@@ -129,17 +137,15 @@ int cli_scanapm(cli_ctx *ctx)
         strncmp((char *)aptable.type, "Apple_partition_map", 32) &&
         strncmp((char *)aptable.type, "Apple_patition_map", 32)) {
         cli_dbgmsg("cli_scanapm: Initial Apple Partition Map partition is not detected\n");
-        return CL_EFORMAT;
+        status = CL_EFORMAT;
+        goto done;
     }
 
     /* check that the partition table fits in the space specified - HEURISTICS */
     if (SCAN_HEURISTIC_PARTITION_INTXN && (ctx->dconf->other & OTHER_CONF_PRTNINTXN)) {
-        ret = apm_partition_intersection(ctx, &aptable, sectorsize, old_school);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
+        status = apm_partition_intersection(ctx, &aptable, sectorsize, old_school);
+        if (status != CL_SUCCESS) {
+            goto done;
         }
     }
 
@@ -167,7 +173,8 @@ int cli_scanapm(cli_ctx *ctx)
         pos = i * sectorsize;
         if (fmap_readn(ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* convert partition entry big endian to host */
@@ -180,7 +187,8 @@ int cli_scanapm(cli_ctx *ctx)
         /* check the partition entry signature */
         if (aptable.signature != APM_SIGNATURE) {
             cli_dbgmsg("cli_scanapm: Apple partition entry signature mismatch\n");
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* check if a out-of-order partition map */
@@ -223,12 +231,9 @@ int cli_scanapm(cli_ctx *ctx)
                    apentry.pBlockStart, apentry.pBlockCount, partoff, partsize);
 
         /* send the partition to cli_magic_scan_nested_fmap_type */
-        ret = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
-        if (ret != CL_CLEAN) {
-            if (SCAN_ALLMATCHES && (ret == CL_VIRUS))
-                detection = CL_VIRUS;
-            else
-                return ret;
+        status = cli_magic_scan_nested_fmap_type(ctx->fmap, partoff, partsize, ctx, CL_TYPE_PART_ANY, (const char *)apentry.name);
+        if (status != CL_SUCCESS) {
+            goto done;
         }
     }
 
@@ -236,18 +241,20 @@ int cli_scanapm(cli_ctx *ctx)
         cli_dbgmsg("cli_scanapm: max partitions reached\n");
     }
 
-    return detection;
+done:
+
+    return status;
 }
 
-static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, int old_school)
+static cl_error_t apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *aptable, size_t sectorsize, bool old_school)
 {
+    cl_error_t status = CL_SUCCESS;
+    cl_error_t ret;
     partition_intersection_list_t prtncheck;
     struct apm_partition_info apentry;
     unsigned i, pitxn;
-    int ret = CL_CLEAN, tmp = CL_CLEAN;
     size_t pos;
     uint32_t max_prtns = 0;
-    int virus_found    = 0;
 
     partition_intersection_list_init(&prtncheck);
 
@@ -264,7 +271,8 @@ static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *a
         if (fmap_readn(ctx->fmap, &apentry, pos, sizeof(apentry)) != sizeof(apentry)) {
             cli_dbgmsg("cli_scanapm: Invalid Apple partition entry\n");
             partition_intersection_list_free(&prtncheck);
-            return CL_EFORMAT;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         /* convert necessary info big endian to host */
@@ -283,33 +291,31 @@ static int apm_partition_intersection(cli_ctx *ctx, struct apm_partition_info *a
             }
         }
 
-        tmp = partition_intersection_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
-        if (tmp != CL_CLEAN) {
-            if (tmp == CL_VIRUS) {
+        ret = partition_intersection_list_check(&prtncheck, &pitxn, apentry.pBlockStart, apentry.pBlockCount);
+        if (ret != CL_CLEAN) {
+            if (ret == CL_VIRUS) {
                 apm_parsemsg("Name: %s\n", (char *)aptable.name);
                 apm_parsemsg("Type: %s\n", (char *)aptable.type);
 
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n",
                            pitxn, i);
-                ret = cli_append_virus(ctx, PRTN_INTXN_DETECTION);
-                if (ret == CL_VIRUS)
-                    virus_found = 1;
-                if (SCAN_ALLMATCHES || ret == CL_CLEAN)
-                    tmp = 0;
-                else
-                    goto leave;
+                status = cli_append_virus(ctx, "Heuristics.APMPartitionIntersection");
+                if (status != CL_SUCCESS) {
+                    goto done;
+                }
             } else {
-                ret = tmp;
-                goto leave;
+                status = ret;
+                goto done;
             }
         }
+
+        /* increment the offsets to next partition entry */
         pos += sectorsize;
     }
 
-leave:
+done:
     partition_intersection_list_free(&prtncheck);
-    if (virus_found)
-        return CL_VIRUS;
-    return ret;
+
+    return status;
 }
