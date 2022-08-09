@@ -90,7 +90,6 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     int namelen            = UTFBUFSZ;
     cl_error_t found       = CL_CLEAN;
     Int64 begin_of_archive = offset;
-    UInt32 viruses_found   = 0;
 
     /* Replacement for
        FileInStream_CreateVTable(&archiveStream); */
@@ -127,12 +126,14 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
             size_t j;
             int newnamelen, fd;
 
+            // abort if we would exceed max files or max scan time.
             if ((found = cli_checklimits("7unz", ctx, 0, 0, 0)))
                 break;
 
             if (f->IsDir)
                 continue;
 
+            // skip this file if we would exceed max file size or max scan size. (we already checked for the max files and max scan time)
             if (cli_checklimits("7unz", ctx, f->Size, 0, 0))
                 continue;
 
@@ -164,21 +165,15 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                 encrypted = 1;
                 if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
                     cli_dbgmsg("cli_7unz: Encrypted files found in archive.\n");
-                    found = cli_append_virus(ctx, "Heuristics.Encrypted.7Zip");
-                    if (found != CL_CLEAN) {
-                        if (found == CL_VIRUS) {
-                            if (SCAN_ALLMATCHES)
-                                viruses_found++;
-                        } else
-                            break;
+                    found = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.7Zip");
+                    if (found != CL_SUCCESS) {
+                        break;
                     }
                 }
             }
-            if (cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
+            if (CL_VIRUS == cli_matchmeta(ctx, name, 0, f->Size, encrypted, i, f->CrcDefined ? f->Crc : 0, NULL)) {
                 found = CL_VIRUS;
-                viruses_found++;
-                if (!SCAN_ALLMATCHES)
-                    break;
+                break;
             }
             if (res != SZ_OK)
                 cli_dbgmsg("cli_unz: extraction failed with %d\n", res);
@@ -189,18 +184,19 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
                     break;
 
                 cli_dbgmsg("cli_7unz: Saving to %s\n", tmp_name);
-                if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed)
+                if (cli_writen(fd, outBuffer + offset, outSizeProcessed) != outSizeProcessed) {
                     found = CL_EWRITE;
-                else if ((found = cli_magic_scan_desc(fd, tmp_name, ctx, name)) == CL_VIRUS)
-                    viruses_found++;
+                }
+
+                found = cli_magic_scan_desc(fd, tmp_name, ctx, name);
+
                 close(fd);
                 if (!ctx->engine->keeptmp && cli_unlink(tmp_name))
                     found = CL_EUNLINK;
 
                 free(tmp_name);
-                if (found != CL_CLEAN)
-                    if (!(SCAN_ALLMATCHES && found == CL_VIRUS))
-                        break;
+                if (found != CL_SUCCESS)
+                    break;
             }
         }
         IAlloc_Free(&allocImp, outBuffer);
@@ -222,7 +218,5 @@ int cli_7unz(cli_ctx *ctx, size_t offset)
     else
         cli_dbgmsg("cli_7unz: error %d\n", res);
 
-    if (SCAN_ALLMATCHES && viruses_found)
-        return CL_VIRUS;
     return found;
 }
