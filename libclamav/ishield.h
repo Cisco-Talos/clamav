@@ -24,7 +24,7 @@
 
 #include "others.h"
 
-int cli_scanishield_msi(cli_ctx *ctx, off_t off);
-int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz);
+cl_error_t cli_scanishield_msi(cli_ctx *ctx, off_t off);
+cl_error_t cli_scanishield(cli_ctx *ctx, off_t off, size_t sz);
 
 #endif
