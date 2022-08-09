@@ -26,22 +26,22 @@
 #include "others.h"
 #include "partition_intersection.h"
 
-static int partition_intersection_list_is_empty(partition_intersection_list_t* list)
+static bool partition_intersection_list_is_empty(partition_intersection_list_t* list)
 {
     return (list->Head == NULL);
 }
 
-int partition_intersection_list_init(partition_intersection_list_t* list)
+cl_error_t partition_intersection_list_init(partition_intersection_list_t* list)
 {
     list->Head = NULL;
     list->Size = 0;
     return CL_SUCCESS;
 }
 
-int partition_intersection_list_check(partition_intersection_list_t* list, unsigned* pitxn, off_t start, size_t size)
+cl_error_t partition_intersection_list_check(partition_intersection_list_t* list, unsigned* pitxn, off_t start, size_t size)
 {
     partition_intersection_node_t *new_node, *check_node;
-    int ret = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
 
     *pitxn = list->Size;
 
@@ -84,7 +84,7 @@ int partition_intersection_list_check(partition_intersection_list_t* list, unsig
     return ret;
 }
 
-int partition_intersection_list_free(partition_intersection_list_t* list)
+cl_error_t partition_intersection_list_free(partition_intersection_list_t* list)
 {
     partition_intersection_node_t* next = NULL;
 
