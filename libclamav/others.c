@@ -1287,17 +1287,17 @@ int cli_unlink(const char *pathname)
          * even if the user has permissions to delete the file. */
         if (-1 == _chmod(pathname, _S_IWRITE)) {
             char err[128];
-            cli_warnmsg("cli_unlink: _chmod failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+            cli_warnmsg("cli_unlink: _chmod failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
             return 1;
         } else if (unlink(pathname) == -1) {
             char err[128];
-            cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+            cli_warnmsg("cli_unlink: unlink failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
             return 1;
         }
         return 0;
 #else
         char err[128];
-        cli_warnmsg("cli_unlink: unlink failure - %s\n", cli_strerror(errno, err, sizeof(err)));
+        cli_warnmsg("cli_unlink: unlink failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
         return 1;
 #endif
     }

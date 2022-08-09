@@ -23,5 +23,5 @@
 #define __AUTOIT_H
 
 #include "others.h"
-int cli_scanautoit(cli_ctx *ctx, off_t offset);
+cl_error_t cli_scanautoit(cli_ctx *ctx, off_t offset);
 #endif
