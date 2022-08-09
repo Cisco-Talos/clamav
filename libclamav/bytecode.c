@@ -1854,7 +1854,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
         cli_event_string(interp_ev, BCEV_VIRUSNAME, ctx->virname);
 
         /* need to be called here to catch any extracted but not yet scanned files */
-        if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
+        if (ctx->outfd && (ret != CL_VIRUS))
             cli_bcapi_extract_new(ctx, -1);
     }
     if (bc->state == bc_jit || test_mode) {
@@ -1873,7 +1873,7 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
         cli_event_string(jit_ev, BCEV_VIRUSNAME, ctx->virname);
 
         /* need to be called here to catch any extracted but not yet scanned files */
-        if (ctx->outfd && (ret != CL_VIRUS || cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES))
+        if (ctx->outfd && (ret != CL_VIRUS))
             cli_bcapi_extract_new(ctx, -1);
     }
     cli_event_time_stop(g_sigevents, bc->sigtime_id);
@@ -2837,7 +2837,7 @@ int cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         return CL_SUCCESS;
     }
     if (ctx.virname) {
-        int rc;
+        cl_error_t rc;
         cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
 
         if (!strncmp(ctx.virname, "BC.Heuristics", 13)) {
@@ -2860,7 +2860,7 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
 {
     const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
     unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
-    int ret;
+    cl_error_t ret;
     unsigned executed = 0, breakflag = 0, errorflag = 0;
 
     if (!cctx)
@@ -2889,8 +2889,13 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
         }
         if (ctx->virname) {
             cli_dbgmsg("Bytecode runhook found virus: %s\n", ctx->virname);
-            cli_append_virus(cctx, ctx->virname);
-            if (!(cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES)) {
+
+            if (!strncmp(ctx->virname, "BC.Heuristics", 13)) {
+                ret = cli_append_potentially_unwanted(cctx, ctx->virname);
+            } else {
+                ret = cli_append_virus(cctx, ctx->virname);
+            }
+            if (ret == CL_VIRUS) {
                 cli_bytecode_context_clear(ctx);
                 return CL_VIRUS;
             }
@@ -2906,38 +2911,42 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
         }
         if (!ret) {
             char *tempfile;
+
             int fd = cli_bytecode_context_getresult_file(ctx, &tempfile);
             if (fd && fd != -1) {
-                if (cctx->engine->keeptmp)
+                if (cctx->engine->keeptmp) {
                     cli_dbgmsg("Bytecode %u unpacked file saved in %s\n",
                                bc->id, tempfile);
-                else
+                } else {
                     cli_dbgmsg("Bytecode %u unpacked file\n", bc->id);
+                }
+
                 lseek(fd, 0, SEEK_SET);
                 cli_dbgmsg("***** Scanning unpacked file ******\n");
 
                 ret = cli_magic_scan_desc(fd, tempfile, cctx, NULL);
 
-                if (!cctx->engine->keeptmp)
-                    if (ftruncate(fd, 0) == -1)
+                if (!cctx->engine->keeptmp) {
+                    if (ftruncate(fd, 0) == -1) {
                         cli_dbgmsg("ftruncate failed on %d\n", fd);
+                    }
+                }
+
                 close(fd);
+
                 if (!cctx->engine->keeptmp) {
                     if (tempfile && cli_unlink(tempfile))
                         ret = CL_EUNLINK;
                 }
+
                 free(tempfile);
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS) {
-                        cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
-                        if (cctx->options->general & CL_SCAN_GENERAL_ALLMATCHES) {
-                            cli_bytecode_context_reset(ctx);
-                            continue;
-                        }
-                        cli_bytecode_context_clear(ctx);
-                        return ret;
-                    }
+
+                if (ret == CL_VIRUS) {
+                    cli_dbgmsg("Scanning unpacked file by bytecode %u found a virus\n", bc->id);
+                    cli_bytecode_context_clear(ctx);
+                    return ret;
                 }
+
                 cli_bytecode_context_reset(ctx);
                 continue;
             }
@@ -2948,8 +2957,10 @@ int cli_bytecode_runhook(cli_ctx *cctx, const struct cl_engine *engine, struct c
         cli_dbgmsg("Bytecode: executed %u bytecodes for this hook\n", executed);
     else
         cli_dbgmsg("Bytecode: no logical signature matched, no bytecode executed\n");
+
     if (errorflag && cctx->engine->bytecode_mode == CL_BYTECODE_MODE_TEST)
         return CL_EBYTECODE_TESTFAIL;
+
     return breakflag ? CL_BREAK : CL_CLEAN;
 }
 
