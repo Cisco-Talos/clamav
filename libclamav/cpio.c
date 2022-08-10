@@ -95,24 +95,24 @@ static void sanitname(char *name)
     }
 }
 
-int cli_scancpio_old(cli_ctx *ctx)
+cl_error_t cli_scancpio_old(cli_ctx *ctx)
 {
+    cl_error_t status = CL_SUCCESS;
     struct cpio_hdr_old hdr_old;
     char *fmap_name = NULL;
     char name[513];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize;
-    int ret         = CL_CLEAN, conv;
-    size_t pos      = 0;
-    int virus_found = 0;
+    int conv;
+    size_t pos = 0;
 
     memset(name, 0, sizeof(name));
 
     while (fmap_readn(ctx->fmap, &hdr_old, pos, sizeof(hdr_old)) == sizeof(hdr_old)) {
         pos += sizeof(hdr_old);
         if (!hdr_old.magic && trailer) {
-            ret = CL_SUCCESS;
-            goto leave;
+            status = CL_SUCCESS;
+            goto done;
         }
 
         if (hdr_old.magic == 070707) {
@@ -121,8 +121,8 @@ int cli_scancpio_old(cli_ctx *ctx)
             conv = 1;
         } else {
             cli_dbgmsg("cli_scancpio_old: Invalid magic number\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         cli_dbgmsg("CPIO: -- File %u --\n", ++file);
@@ -132,21 +132,25 @@ int cli_scancpio_old(cli_ctx *ctx)
             namesize     = MIN(sizeof(name), hdr_namesize);
             if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
-                return CL_EFORMAT;
+                status = CL_EFORMAT;
+                goto done;
             }
             pos += namesize;
             name[namesize - 1] = 0;
             sanitname(name);
             cli_dbgmsg("CPIO: Name: %s\n", name);
-            if (!strcmp(name, "TRAILER!!!"))
+            if (!strcmp(name, "TRAILER!!!")) {
                 trailer = 1;
+            }
 
             if (namesize < hdr_namesize) {
-                if (hdr_namesize % 2)
+                if (hdr_namesize % 2) {
                     hdr_namesize++;
+                }
                 pos += hdr_namesize - namesize;
-            } else if (hdr_namesize % 2)
+            } else if (hdr_namesize % 2) {
                 pos++;
+            }
 
             fmap_name = name;
         }
@@ -155,60 +159,53 @@ int cli_scancpio_old(cli_ctx *ctx)
         if (!filesize)
             continue;
 
-        if (cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALLMATCHES)
-                return CL_VIRUS;
-            virus_found = 1;
+        status = cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL);
+        if (status != CL_SUCCESS) {
+            goto done;
         }
 
         if ((EC16(hdr_old.mode, conv) & 0170000) != 0100000) {
             cli_dbgmsg("CPIO: Not a regular file, skipping\n");
         } else {
-            ret = cli_checklimits("cli_scancpio_old", ctx, filesize, 0, 0);
-            if (ret == CL_EMAXFILES) {
-                goto leave;
-            } else if (ret == CL_SUCCESS) {
-                ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, fmap_name);
-                if (ret == CL_VIRUS) {
-                    if (!SCAN_ALLMATCHES)
-                        return ret;
-                    virus_found = 1;
-                }
+            status = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, fmap_name);
+            if (status != CL_SUCCESS) {
+                goto done;
             }
         }
-        if (filesize % 2)
+        if (filesize % 2) {
             filesize++;
+        }
 
         pos += filesize;
     }
 
-leave:
-    if (virus_found != 0)
-        return CL_VIRUS;
-    return ret;
+done:
+
+    return status;
 }
 
-int cli_scancpio_odc(cli_ctx *ctx)
+cl_error_t cli_scancpio_odc(cli_ctx *ctx)
 {
+    cl_error_t status = CL_SUCCESS;
     struct cpio_hdr_odc hdr_odc;
     char name[513] = {0}, buff[12] = {0};
     unsigned int file = 0, trailer = 0;
     uint32_t filesize = 0, namesize = 0, hdr_namesize = 0;
-    int ret         = CL_CLEAN;
-    size_t pos      = 0;
-    int virus_found = 0;
+    size_t pos = 0;
 
     memset(&hdr_odc, 0, sizeof(hdr_odc));
 
     while (fmap_readn(ctx->fmap, &hdr_odc, pos, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
         pos += sizeof(hdr_odc);
-        if (!hdr_odc.magic[0] && trailer)
-            goto leave;
+        if (!hdr_odc.magic[0] && trailer) {
+            status = CL_SUCCESS;
+            goto done;
+        }
 
         if (strncmp(hdr_odc.magic, "070707", 6)) {
             cli_dbgmsg("cli_scancpio_odc: Invalid magic string\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         cli_dbgmsg("CPIO: -- File %u --\n", ++file);
@@ -217,86 +214,81 @@ int cli_scancpio_odc(cli_ctx *ctx)
         buff[6] = 0;
         if (sscanf(buff, "%o", &hdr_namesize) != 1) {
             cli_dbgmsg("cli_scancpio_odc: Can't convert name size\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
             if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
-                ret = CL_EFORMAT;
-                goto leave;
+                status = CL_EFORMAT;
+                goto done;
             }
             pos += namesize;
             name[namesize - 1] = 0;
             sanitname(name);
             cli_dbgmsg("CPIO: Name: %s\n", name);
-            if (!strcmp(name, "TRAILER!!!"))
+            if (!strcmp(name, "TRAILER!!!")) {
                 trailer = 1;
+            }
 
-            if (namesize < hdr_namesize)
+            if (namesize < hdr_namesize) {
                 pos += hdr_namesize - namesize;
+            }
         }
 
         strncpy(buff, hdr_odc.filesize, 11);
         buff[11] = 0;
         if (sscanf(buff, "%o", &filesize) != 1) {
             cli_dbgmsg("cli_scancpio_odc: Can't convert file size\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
         cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
-        if (!filesize)
+        if (!filesize) {
             continue;
-
-        if (cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALLMATCHES)
-                return CL_VIRUS;
-            virus_found = 1;
         }
 
-        ret = cli_checklimits("cli_scancpio_odc", ctx, filesize, 0, 0);
-        if (ret == CL_EMAXFILES) {
-            goto leave;
-        } else if (ret == CL_SUCCESS) {
-            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
-            if (ret == CL_VIRUS) {
-                if (!SCAN_ALLMATCHES)
-                    return ret;
-                virus_found = 1;
-            }
+        status = cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL);
+        if (status == CL_VIRUS) {
+            goto done;
+        }
+
+        status = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
+        if (status != CL_SUCCESS) {
+            goto done;
         }
 
         pos += filesize;
     }
 
-leave:
-    if (virus_found != 0)
-        return CL_VIRUS;
-    return ret;
+done:
+
+    return status;
 }
 
-int cli_scancpio_newc(cli_ctx *ctx, int crc)
+cl_error_t cli_scancpio_newc(cli_ctx *ctx, int crc)
 {
+    cl_error_t status = CL_SUCCESS;
     struct cpio_hdr_newc hdr_newc;
     char name[513], buff[9];
     unsigned int file = 0, trailer = 0;
     uint32_t filesize, namesize, hdr_namesize, pad;
-    int ret         = CL_CLEAN;
-    size_t pos      = 0;
-    int virus_found = 0;
+    size_t pos = 0;
 
     memset(name, 0, 513);
 
     while (fmap_readn(ctx->fmap, &hdr_newc, pos, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
         pos += sizeof(hdr_newc);
-        if (!hdr_newc.magic[0] && trailer)
-            goto leave;
+        if (!hdr_newc.magic[0] && trailer) {
+            status = CL_SUCCESS;
+            goto done;
+        }
 
         if ((!crc && strncmp(hdr_newc.magic, "070701", 6)) || (crc && strncmp(hdr_newc.magic, "070702", 6))) {
             cli_dbgmsg("cli_scancpio_newc: Invalid magic string\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
 
         cli_dbgmsg("CPIO: -- File %u --\n", ++file);
@@ -305,69 +297,65 @@ int cli_scancpio_newc(cli_ctx *ctx, int crc)
         buff[8] = 0;
         if (sscanf(buff, "%x", &hdr_namesize) != 1) {
             cli_dbgmsg("cli_scancpio_newc: Can't convert name size\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
         if (hdr_namesize) {
             namesize = MIN(sizeof(name), hdr_namesize);
             if (fmap_readn(ctx->fmap, &name, pos, namesize) != namesize) {
                 cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
-                ret = CL_EFORMAT;
-                goto leave;
+                status = CL_EFORMAT;
+                goto done;
             }
             pos += namesize;
             name[namesize - 1] = 0;
             sanitname(name);
             cli_dbgmsg("CPIO: Name: %s\n", name);
-            if (!strcmp(name, "TRAILER!!!"))
+            if (!strcmp(name, "TRAILER!!!")) {
                 trailer = 1;
+            }
 
             pad = (4 - (sizeof(hdr_newc) + hdr_namesize) % 4) % 4;
             if (namesize < hdr_namesize) {
-                if (pad)
+                if (pad) {
                     hdr_namesize += pad;
+                }
                 pos += hdr_namesize - namesize;
-            } else if (pad)
+            } else if (pad) {
                 pos += pad;
+            }
         }
 
         strncpy(buff, hdr_newc.filesize, 8);
         buff[8] = 0;
         if (sscanf(buff, "%x", &filesize) != 1) {
             cli_dbgmsg("cli_scancpio_newc: Can't convert file size\n");
-            ret = CL_EFORMAT;
-            goto leave;
+            status = CL_EFORMAT;
+            goto done;
         }
         cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
-        if (!filesize)
+        if (!filesize) {
             continue;
-
-        if (cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL) == CL_VIRUS) {
-            if (!SCAN_ALLMATCHES)
-                return CL_VIRUS;
-            virus_found = 1;
         }
 
-        ret = cli_checklimits("cli_scancpio_newc", ctx, filesize, 0, 0);
-        if (ret == CL_EMAXFILES) {
-            goto leave;
-        } else if (ret == CL_SUCCESS) {
-            ret = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
-            if (ret == CL_VIRUS) {
-                if (!SCAN_ALLMATCHES)
-                    return ret;
-                virus_found = 1;
-            }
+        status = cli_matchmeta(ctx, name, filesize, filesize, 0, file, 0, NULL);
+        if (status == CL_VIRUS) {
+            goto done;
         }
 
-        if ((pad = filesize % 4))
+        status = cli_magic_scan_nested_fmap_type(ctx->fmap, pos, filesize, ctx, CL_TYPE_ANY, name);
+        if (status != CL_SUCCESS) {
+            goto done;
+        }
+
+        if ((pad = filesize % 4)) {
             filesize += (4 - pad);
+        }
 
         pos += filesize;
     }
 
-leave:
-    if (virus_found != 0)
-        return CL_VIRUS;
-    return ret;
+done:
+
+    return status;
 }
