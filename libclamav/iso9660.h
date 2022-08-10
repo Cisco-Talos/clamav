@@ -24,6 +24,6 @@
 
 #include "others.h"
 
-int cli_scaniso(cli_ctx *ctx, size_t offset);
+cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset);
 
 #endif
