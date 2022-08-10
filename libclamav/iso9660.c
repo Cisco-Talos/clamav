@@ -54,13 +54,15 @@ static const void *needblock(const iso9660_t *iso, unsigned int block, int temp)
     return fmap_need_off(ctx->fmap, iso->base_offset + loff, iso->blocksz);
 }
 
-static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len)
+static cl_error_t iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int len)
 {
     char *tmpf;
-    int fd, ret = CL_SUCCESS;
+    int fd         = -1;
+    cl_error_t ret = CL_SUCCESS;
 
-    if (cli_gentempfd(iso->ctx->sub_tmpdir, &tmpf, &fd) != CL_SUCCESS)
+    if (cli_gentempfd(iso->ctx->sub_tmpdir, &tmpf, &fd) != CL_SUCCESS) {
         return CL_ETMPFILE;
+    }
 
     cli_dbgmsg("iso_scan_file: dumping to %s\n", tmpf);
     while (len) {
@@ -81,8 +83,9 @@ static int iso_scan_file(const iso9660_t *iso, unsigned int block, unsigned int 
         block++;
     }
 
-    if (!len)
+    if (!len) {
         ret = cli_magic_scan_desc(fd, tmpf, iso->ctx, iso->buf);
+    }
 
     close(fd);
     if (!iso->ctx->engine->keeptmp) {
@@ -117,18 +120,17 @@ static char *iso_string(iso9660_t *iso, const void *src, unsigned int len)
     return iso->buf;
 }
 
-static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
+static cl_error_t iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
 {
-    cli_ctx *ctx      = iso->ctx;
-    int ret           = CL_CLEAN;
-    int viruses_found = 0;
+    cli_ctx *ctx   = iso->ctx;
+    cl_error_t ret = CL_SUCCESS;
 
     if (len < 34) {
         cli_dbgmsg("iso_parse_dir: Directory too small, skipping\n");
-        return CL_CLEAN;
+        return CL_SUCCESS;
     }
 
-    for (; len && ret == CL_CLEAN; block++, len -= MIN(len, iso->blocksz)) {
+    for (; len && ret == CL_SUCCESS; block++, len -= MIN(len, iso->blocksz)) {
         const uint8_t *dir, *dir_orig;
         unsigned int dirsz;
 
@@ -137,15 +139,18 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
             return CL_BREAK;
         }
 
-        if (cli_hashset_contains(&iso->dir_blocks, block))
+        if (cli_hashset_contains(&iso->dir_blocks, block)) {
             continue;
+        }
 
-        if ((ret = cli_hashset_addkey(&iso->dir_blocks, block)) != CL_CLEAN)
+        if (CL_SUCCESS != (ret = cli_hashset_addkey(&iso->dir_blocks, block))) {
             return ret;
+        }
 
         dir = dir_orig = needblock(iso, block, 0);
-        if (!dir)
-            return CL_CLEAN;
+        if (!dir) {
+            return CL_SUCCESS;
+        }
 
         for (dirsz = MIN(iso->blocksz, len);;) {
             unsigned int entrysz = *dir, fileoff, filesz;
@@ -187,11 +192,8 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
 
             cli_dbgmsg("iso_parse_dir: %s '%s': off %x - size %x - flags %x - unit size %x - gap size %x - volume %u\n", (dir[25] & 2) ? "Directory" : "File", iso->buf, fileoff, filesz, dir[25], dir[26], dir[27], cli_readint32(&dir[28]) & 0xffff);
             ret = cli_matchmeta(ctx, iso->buf, filesz, filesz, 0, 0, 0, NULL);
-            if (ret == CL_VIRUS) {
-                viruses_found = 1;
-                if (!SCAN_ALLMATCHES)
-                    break;
-                ret = CL_CLEAN;
+            if (ret != CL_SUCCESS) {
+                break;
             }
 
             if (dir[26] || dir[27])
@@ -201,16 +203,14 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
                 if (dir[25] & 2) {
                     ret = iso_parse_dir(iso, fileoff, filesz);
                 } else {
-                    if (cli_checklimits("ISO9660", ctx, filesz, 0, 0) != CL_SUCCESS)
+                    if (CL_SUCCESS != cli_checklimits("ISO9660", ctx, filesz, 0, 0)) {
                         cli_dbgmsg("iso_parse_dir: Skipping overlimit file\n");
-                    else
+                    } else {
                         ret = iso_scan_file(iso, fileoff, filesz);
+                    }
                 }
-                if (ret == CL_VIRUS) {
-                    viruses_found = 1;
-                    if (!SCAN_ALLMATCHES)
-                        break;
-                    ret = CL_CLEAN;
+                if (ret != CL_SUCCESS) {
+                    break;
                 }
             }
             dirsz -= entrysz;
@@ -219,35 +219,34 @@ static int iso_parse_dir(iso9660_t *iso, unsigned int block, unsigned int len)
 
         fmap_unneed_ptr(ctx->fmap, dir_orig, iso->blocksz);
     }
-    if (viruses_found == 1)
-        return CL_VIRUS;
+
     return ret;
 }
 
-int cli_scaniso(cli_ctx *ctx, size_t offset)
+cl_error_t cli_scaniso(cli_ctx *ctx, size_t offset)
 {
     const uint8_t *privol, *next;
     iso9660_t iso;
     int i;
 
     if (offset < 32768)
-        return CL_CLEAN; /* Need 16 sectors at least 2048 bytes long */
+        return CL_SUCCESS; /* Need 16 sectors at least 2048 bytes long */
 
     privol = fmap_need_off(ctx->fmap, offset, 2448 + 6);
     if (!privol)
-        return CL_CLEAN;
+        return CL_SUCCESS;
 
     next = (uint8_t *)cli_memstr((char *)privol + 2049, 2448 + 6 - 2049, "CD001", 5);
     if (!next)
-        return CL_CLEAN; /* Find next volume descriptor */
+        return CL_SUCCESS; /* Find next volume descriptor */
 
     iso.sectsz = (next - privol) - 1;
     if (iso.sectsz * 16 > offset)
-        return CL_CLEAN; /* Need room for 16 system sectors */
+        return CL_SUCCESS; /* Need room for 16 system sectors */
 
     iso.blocksz = cli_readint32(privol + 128) & 0xffff;
     if (iso.blocksz != 512 && iso.blocksz != 1024 && iso.blocksz != 2048)
-        return CL_CLEAN; /* Likely not a cdrom image */
+        return CL_SUCCESS; /* Likely not a cdrom image */
 
     iso.base_offset = offset - iso.sectsz * 16;
     iso.joliet      = 0;
@@ -327,7 +326,7 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
 
     if (privol[156 + 26] || privol[156 + 27]) {
         cli_dbgmsg("cli_scaniso: Interleaved root directory is not supported\n");
-        return CL_CLEAN;
+        return CL_SUCCESS;
     }
 
     iso.ctx = ctx;
@@ -337,6 +336,6 @@ int cli_scaniso(cli_ctx *ctx, size_t offset)
     i = iso_parse_dir(&iso, cli_readint32(privol + 156 + 2) + privol[156 + 1], cli_readint32(privol + 156 + 10));
     cli_hashset_destroy(&iso.dir_blocks);
     if (i == CL_BREAK)
-        return CL_CLEAN;
+        return CL_SUCCESS;
     return i;
 }
