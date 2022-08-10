@@ -1620,7 +1620,7 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                         cli_dbgmsg("asn1_parse_mscat: Found Authenticode certificate blocked by %s\n", crt->name ? crt->name : "(unnamed CRB rule)");
                         if (NULL != ctx) {
                             ret = cli_append_virus(ctx, crt->name ? crt->name : "(unnamed CRB rule)");
-                            if ((ret == CL_VIRUS) && !SCAN_ALLMATCHES) {
+                            if (ret == CL_VIRUS) {
                                 crtmgr_free(&newcerts);
                                 goto finish;
                             }
@@ -1664,10 +1664,6 @@ static cl_error_t asn1_parse_mscat(struct cl_engine *engine, fmap_t *map, size_t
                     break;
                 }
 
-                /* In the SCAN_ALLMATCHES case, we'd get here with
-                 * ret == CL_VIRUS if a match occurred but we wanted
-                 * to keep looping to look for other matches.  In that
-                 * case, bail here. */
                 if (CL_VIRUS == ret) {
                     crtmgr_free(&newcerts);
                     break;
