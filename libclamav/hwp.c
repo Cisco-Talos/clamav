@@ -1861,15 +1861,10 @@ static cl_error_t hwp3_cb(void *cbdata, int fd, const char *filepath, cli_ctx *c
     while (!last && ((ret = parsehwp3_infoblk_1(ctx, map, &offset, &last)) == CL_SUCCESS)) continue;
 
     /* scan the uncompressed stream - both compressed and uncompressed cases [ALLMATCH] */
-    if ((ret == CL_SUCCESS) || ((SCAN_ALLMATCHES) && (ret == CL_VIRUS))) {
-        cl_error_t subret = ret;
-        size_t dlen       = offset - start;
+    if (ret == CL_SUCCESS) {
+        size_t dlen = offset - start;
 
-        ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx,
-                                              CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
-
-        if (ret == CL_SUCCESS)
-            ret = subret;
+        ret = cli_magic_scan_nested_fmap_type(map, start, dlen, ctx, CL_TYPE_ANY, NULL, LAYER_ATTRIBUTES_NONE);
     }
 
     if (dmap)
