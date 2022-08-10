@@ -43,6 +43,7 @@
 #include <unistd.h>
 #endif
 
+#include "clamav.h"
 #include "others.h"
 #include "mbox.h"
 #include "matcher.h"
@@ -597,7 +598,6 @@ int fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
                 fb->bytes_scanned += (unsigned long)len;
 
                 if ((len > 5) && cli_updatelimits(ctx, len) == CL_CLEAN && (cli_scan_buff(data, (unsigned int)len, 0, ctx->virname, ctx->engine, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS)) {
-                    cli_dbgmsg("fileblobAddData: found %s\n", cli_get_last_virus_str(ctx->virname));
                     fb->isInfected = 1;
                 }
             }
@@ -632,12 +632,10 @@ void fileblobSetCTX(fileblob *fb, cli_ctx *ctx)
  *	CL_CLEAN means unknown
  *	CL_VIRUS means infected
  */
-int fileblobScan(const fileblob *fb)
+cl_error_t fileblobScan(const fileblob *fb)
 {
-    int rc;
-    cli_ctx *ctx = fb->ctx;
+    cl_error_t rc;
     STATBUF sb;
-    int virus_found = 0;
 
     if (fb->isInfected)
         return CL_VIRUS;
@@ -655,18 +653,17 @@ int fileblobScan(const fileblob *fb)
     fflush(fb->fp);
     lseek(fb->fd, 0, SEEK_SET);
     FSTAT(fb->fd, &sb);
-    if (cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL) == CL_VIRUS) {
-        if (!SCAN_ALLMATCHES)
-            return CL_VIRUS;
-        virus_found = 1;
+
+    rc = cli_matchmeta(fb->ctx, fb->b.name, sb.st_size, sb.st_size, 0, 0, 0, NULL);
+    if (rc != CL_SUCCESS) {
+        return rc;
     }
 
     rc = cli_magic_scan_desc(fb->fd, fb->fullname, fb->ctx, fb->b.name);
-    if (rc == CL_VIRUS || virus_found != 0) {
-        cli_dbgmsg("%s is infected\n", fb->fullname);
-        return CL_VIRUS;
+    if (rc != CL_SUCCESS) {
+        return rc;
     }
-    cli_dbgmsg("%s is clean\n", fb->fullname);
+
     return CL_BREAK;
 }
 
@@ -688,8 +685,9 @@ void sanitiseName(char *name)
 {
     char c;
     while ((c = *name)) {
-        if (c != '.' && c != '_' && (c > 'z' || c < '0' || (c > '9' && c < 'A') || (c > 'Z' && c < 'a')))
+        if (c != '.' && c != '_' && (c > 'z' || c < '0' || (c > '9' && c < 'A') || (c > 'Z' && c < 'a'))) {
             *name = '_';
+        }
         name++;
     }
 }
