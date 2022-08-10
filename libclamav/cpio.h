@@ -22,10 +22,11 @@
 #ifndef __CPIO_H
 #define __CPIO_H
 
+#include "clamav.h"
 #include "others.h"
 
-int cli_scancpio_old(cli_ctx *ctx);
-int cli_scancpio_odc(cli_ctx *ctx);
-int cli_scancpio_newc(cli_ctx *ctx, int crc);
+cl_error_t cli_scancpio_old(cli_ctx *ctx);
+cl_error_t cli_scancpio_odc(cli_ctx *ctx);
+cl_error_t cli_scancpio_newc(cli_ctx *ctx, int crc);
 
 #endif
