@@ -172,7 +172,7 @@ static inline void PROFILE_REPORT(const struct cli_hashtable *s)
 #define PROFILE_REPORT(s)
 #endif
 
-int cli_hashtab_init(struct cli_hashtable *s, size_t capacity)
+cl_error_t cli_hashtab_init(struct cli_hashtable *s, size_t capacity)
 {
     if (!s)
         return CL_ENULLARG;
@@ -181,15 +181,16 @@ int cli_hashtab_init(struct cli_hashtable *s, size_t capacity)
 
     capacity  = nearest_power(capacity);
     s->htable = cli_calloc(capacity, sizeof(*s->htable));
-    if (!s->htable)
+    if (!s->htable) {
         return CL_EMEM;
+    }
     s->capacity = capacity;
     s->used     = 0;
     s->maxfill  = 8 * capacity / 10;
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
+cl_error_t cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
 {
     if (!s)
         return CL_ENULLARG;
@@ -198,12 +199,13 @@ int cli_htu32_init(struct cli_htu32 *s, size_t capacity, mpool_t *mempool)
 
     capacity  = nearest_power(capacity);
     s->htable = MPOOL_CALLOC(mempool, capacity, sizeof(*s->htable));
-    if (!s->htable)
+    if (!s->htable) {
         return CL_EMEM;
+    }
     s->capacity = capacity;
     s->used     = 0;
     s->maxfill  = 8 * capacity / 10;
-    return 0;
+    return CL_SUCCESS;
 }
 
 static inline uint32_t hash32shift(uint32_t key)
@@ -296,7 +298,6 @@ const struct cli_htu32_element *cli_htu32_find(const struct cli_htu32 *s, uint32
     return NULL; /* not found */
 }
 
-/* linear enumeration - start with current = NULL, returns next item if present or NULL if not */
 const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const struct cli_htu32_element *current)
 {
     size_t ncur;
@@ -320,7 +321,7 @@ const struct cli_htu32_element *cli_htu32_next(const struct cli_htu32 *s, const 
     return NULL;
 }
 
-static int cli_hashtab_grow(struct cli_hashtable *s)
+static cl_error_t cli_hashtab_grow(struct cli_hashtable *s)
 {
     const size_t new_capacity = nearest_power(s->capacity + 1);
     struct cli_element *htable;
@@ -377,7 +378,7 @@ static int cli_hashtab_grow(struct cli_hashtable *s)
 #define cli_htu32_grow(A, B) cli_htu32_grow(A)
 #endif
 
-static int cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
+static cl_error_t cli_htu32_grow(struct cli_htu32 *s, mpool_t *mempool)
 {
     const size_t new_capacity        = nearest_power(s->capacity + 1);
     struct cli_htu32_element *htable = MPOOL_CALLOC(mempool, new_capacity, sizeof(*s->htable));
@@ -482,13 +483,13 @@ const struct cli_element *cli_hashtab_insert(struct cli_hashtable *s, const char
     return NULL;
 }
 
-int cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element *item, mpool_t *mempool)
+cl_error_t cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element *item, mpool_t *mempool)
 {
+    cl_error_t ret;
     struct cli_htu32_element *element;
     struct cli_htu32_element *deleted_element = NULL;
     size_t tries                              = 1;
     size_t idx;
-    int ret;
 
     if (!s)
         return CL_ENULLARG;
@@ -513,14 +514,14 @@ int cli_htu32_insert(struct cli_htu32 *s, const struct cli_htu32_element *item, 
                 }
                 *element = *item;
                 s->used++;
-                return 0;
+                return CL_SUCCESS;
             } else if (element->key == DELETED_HTU32_KEY) {
                 deleted_element = element;
                 element->key    = 0;
             } else if (item->key == element->key) {
                 PROFILE_DATA_UPDATE(s, tries);
                 element->data = item->data; /* key found, update */
-                return 0;
+                return CL_SUCCESS;
             } else {
                 idx     = (idx + tries++) % s->capacity;
                 element = &s->htable[idx];
@@ -592,7 +593,7 @@ size_t cli_htu32_numitems(struct cli_htu32 *s)
     return s->capacity;
 }
 
-int cli_hashtab_store(const struct cli_hashtable *s, FILE *out)
+cl_error_t cli_hashtab_store(const struct cli_hashtable *s, FILE *out)
 {
     size_t i;
     for (i = 0; i < s->capacity; i++) {
@@ -604,7 +605,7 @@ int cli_hashtab_store(const struct cli_hashtable *s, FILE *out)
     return CL_SUCCESS;
 }
 
-int cli_hashtab_generate_c(const struct cli_hashtable *s, const char *name)
+cl_error_t cli_hashtab_generate_c(const struct cli_hashtable *s, const char *name)
 {
     size_t i;
     printf("/* TODO: include GPL headers */\n");
@@ -625,10 +626,10 @@ int cli_hashtab_generate_c(const struct cli_hashtable *s, const char *name)
     printf("\n};\n");
 
     PROFILE_REPORT(s);
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_hashtab_load(FILE *in, struct cli_hashtable *s)
+cl_error_t cli_hashtab_load(FILE *in, struct cli_hashtable *s)
 {
     char line[1024];
     while (fgets(line, sizeof(line), in)) {
@@ -640,9 +641,7 @@ int cli_hashtab_load(FILE *in, struct cli_hashtable *s)
     return CL_SUCCESS;
 }
 
-/* Initialize hashset. @initial_capacity is rounded to nearest power of 2.
- * Load factor is between 50 and 99. When capacity*load_factor/100 is reached, the hashset is growed */
-int cli_hashset_init(struct cli_hashset *hs, size_t initial_capacity, uint8_t load_factor)
+cl_error_t cli_hashset_init(struct cli_hashset *hs, size_t initial_capacity, uint8_t load_factor)
 {
     if (load_factor < 50 || load_factor > 99) {
         cli_dbgmsg(MODULE_NAME "Invalid load factor: %u, using default of 80%%\n", load_factor);
@@ -665,10 +664,10 @@ int cli_hashset_init(struct cli_hashset *hs, size_t initial_capacity, uint8_t lo
         cli_errmsg("hashtab.c: Unable to allocate memory for hs->bitmap\n");
         return CL_EMEM;
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_hashset_init_pool(struct cli_hashset *hs, size_t initial_capacity, uint8_t load_factor, mpool_t *mempool)
+cl_error_t cli_hashset_init_pool(struct cli_hashset *hs, size_t initial_capacity, uint8_t load_factor, mpool_t *mempool)
 {
     if (load_factor < 50 || load_factor > 99) {
         cli_dbgmsg(MODULE_NAME "Invalid load factor: %u, using default of 80%%\n", load_factor);
@@ -691,7 +690,7 @@ int cli_hashset_init_pool(struct cli_hashset *hs, size_t initial_capacity, uint8
         cli_errmsg("hashtab.c: Unable to allocate/initialize memory for hs->keys\n");
         return CL_EMEM;
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 void cli_hashset_destroy(struct cli_hashset *hs)
@@ -746,23 +745,25 @@ static void cli_hashset_addkey_internal(struct cli_hashset *hs, const uint32_t k
     }
 }
 
-static int cli_hashset_grow(struct cli_hashset *hs)
+static cl_error_t cli_hashset_grow(struct cli_hashset *hs)
 {
     struct cli_hashset new_hs;
     size_t i;
-    int rc;
+    cl_error_t rc;
 
     /* in-place growing is not possible, since the new keys
      * will hash to different locations. */
     cli_dbgmsg(MODULE_NAME "Growing hashset, used: %u, capacity: %u\n", hs->count, hs->capacity);
     /* create a bigger hashset */
 
-    if (hs->mempool)
+    if (hs->mempool) {
         rc = cli_hashset_init_pool(&new_hs, hs->capacity << 1, hs->limit * 100 / hs->capacity, hs->mempool);
-    else
+    } else {
         rc = cli_hashset_init(&new_hs, hs->capacity << 1, hs->limit * 100 / hs->capacity);
-    if (rc != 0)
+    }
+    if (rc != CL_SUCCESS) {
         return rc;
+    }
     /* and copy keys */
     for (i = 0; i < hs->capacity; i++) {
         if (BITMAP_CONTAINS(hs->bitmap, i)) {
@@ -773,39 +774,39 @@ static int cli_hashset_grow(struct cli_hashset *hs)
     cli_hashset_destroy(hs);
     /* replace old hashset with new one */
     *hs = new_hs;
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_hashset_addkey(struct cli_hashset *hs, const uint32_t key)
+cl_error_t cli_hashset_addkey(struct cli_hashset *hs, const uint32_t key)
 {
     /* check that we didn't reach the load factor.
      * Even if we don't know yet whether we'd add this key */
     if (hs->count + 1 > hs->limit) {
-        int rc = cli_hashset_grow(hs);
-        if (rc) {
+        cl_error_t rc = cli_hashset_grow(hs);
+        if (rc != CL_SUCCESS) {
             return rc;
         }
     }
     cli_hashset_addkey_internal(hs, key);
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_hashset_removekey(struct cli_hashset *hs, const uint32_t key)
+cl_error_t cli_hashset_removekey(struct cli_hashset *hs, const uint32_t key)
 {
     const size_t idx = cli_hashset_search(hs, key);
     if (BITMAP_CONTAINS(hs->bitmap, idx)) {
         BITMAP_REMOVE(hs->bitmap, idx);
         hs->keys[idx] = 0;
         hs->count--;
-        return 0;
+        return CL_SUCCESS;
     }
-    return -1;
+    return CL_ERROR;
 }
 
-int cli_hashset_contains(const struct cli_hashset *hs, const uint32_t key)
+bool cli_hashset_contains(const struct cli_hashset *hs, const uint32_t key)
 {
     const size_t idx = cli_hashset_search(hs, key);
-    return BITMAP_CONTAINS(hs->bitmap, idx);
+    return BITMAP_CONTAINS(hs->bitmap, idx) != 0;
 }
 
 ssize_t cli_hashset_toarray(const struct cli_hashset *hs, uint32_t **array)
@@ -814,12 +815,13 @@ ssize_t cli_hashset_toarray(const struct cli_hashset *hs, uint32_t **array)
     uint32_t *arr;
 
     if (!array) {
-        return CL_ENULLARG;
+        return -1;
     }
+
     *array = arr = cli_malloc(hs->count * sizeof(*arr));
     if (!arr) {
         cli_errmsg("hashtab.c: Unable to allocate memory for array\n");
-        return CL_EMEM;
+        return -1;
     }
 
     for (i = 0, j = 0; i < hs->capacity && j < hs->count; i++) {
@@ -835,71 +837,103 @@ void cli_hashset_init_noalloc(struct cli_hashset *hs)
     memset(hs, 0, sizeof(*hs));
 }
 
-int cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key)
+bool cli_hashset_contains_maybe_noalloc(const struct cli_hashset *hs, const uint32_t key)
 {
-    if (!hs->keys)
-        return 0;
+    if (!hs->keys) {
+        return false;
+    }
+
     return cli_hashset_contains(hs, key);
 }
 
-int cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
-                 int32_t capacity)
+cl_error_t cli_map_init(struct cli_map *m, int32_t keysize, int32_t valuesize,
+                        int32_t capacity)
 {
-    if (keysize <= 0 || valuesize < 0 || capacity <= 0)
-        return -CL_EARG;
+    cl_error_t ret;
+
+    if (keysize <= 0 || valuesize < 0 || capacity <= 0) {
+        return CL_EARG;
+    }
+
     memset(m, 0, sizeof(*m));
-    cli_hashtab_init(&m->htab, 16);
+
+    ret = cli_hashtab_init(&m->htab, 16);
+    if (CL_SUCCESS != ret) {
+        return ret;
+    }
+
     m->keysize     = keysize;
     m->valuesize   = valuesize;
     m->last_insert = -1;
     m->last_find   = -1;
-    return 0;
+
+    return CL_SUCCESS;
 }
 
-int cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
+cl_error_t cli_map_addkey(struct cli_map *m, const void *key, int32_t keysize)
 {
     uint32_t n;
     struct cli_element *el;
-    if (m->keysize != keysize)
-        return -CL_EARG;
+
+    if (m->keysize != keysize) {
+        return CL_EARG;
+    }
+
     el = cli_hashtab_find(&m->htab, key, keysize);
     if (el) {
+        // already exists
         m->last_insert = (int32_t)el->data;
-        return 0;
+        return CL_ECREAT;
     }
     n = m->nvalues + 1;
     if (m->valuesize) {
         void *v;
+
         v = cli_realloc(m->u.sized_values, n * m->valuesize);
-        if (!v)
-            return -CL_EMEM;
+        if (!v) {
+            return CL_EMEM;
+        }
+
         m->u.sized_values = v;
         memset((char *)m->u.sized_values + (n - 1) * m->valuesize, 0, m->valuesize);
     } else {
         struct cli_map_value *v;
+
         v = cli_realloc(m->u.unsized_values, n * sizeof(*m->u.unsized_values));
-        if (!v)
-            return -CL_EMEM;
+        if (!v) {
+            return CL_EMEM;
+        }
+
         m->u.unsized_values = v;
         memset(&m->u.unsized_values[n - 1], 0, sizeof(*m->u.unsized_values));
     }
     m->nvalues = n;
-    if (!cli_hashtab_insert(&m->htab, key, keysize, (const cli_element_data)(n - 1)))
-        return -CL_EMEM;
+    if (!cli_hashtab_insert(&m->htab, key, keysize, (const cli_element_data)(n - 1))) {
+        return CL_EMEM;
+    }
+
     m->last_insert = n - 1;
-    return 1;
+    return CL_SUCCESS;
 }
 
-int cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize)
+cl_error_t cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize)
 {
     struct cli_element *el;
-    if (m->keysize != keysize)
-        return -CL_EARG;
+
+    if (m->keysize != keysize) {
+        return CL_EARG;
+    }
+
     el = cli_hashtab_find(&m->htab, key, keysize);
-    if (!el)
-        return 0;
-    if ((int32_t)el->data >= (int32_t)m->nvalues || (int32_t)el->data < 0)
-        return -CL_EARG;
+    if (!el) {
+        // not found, can't remove
+        return CL_EUNLINK;
+    }
+
+    if ((int32_t)el->data >= (int32_t)m->nvalues || (int32_t)el->data < 0) {
+        return CL_EARG;
+    }
+
     if (!m->valuesize) {
         struct cli_map_value *v = &m->u.unsized_values[(int32_t)el->data];
         free(v->value);
@@ -909,72 +943,99 @@ int cli_map_removekey(struct cli_map *m, const void *key, int32_t keysize)
         char *v = (char *)m->u.sized_values + (int32_t)el->data * m->valuesize;
         memset(v, 0, m->valuesize);
     }
+
     cli_hashtab_delete(&m->htab, key, keysize);
-    return 1;
+
+    return CL_SUCCESS;
 }
 
-int cli_map_setvalue(struct cli_map *m, const void *value, int32_t valuesize)
+cl_error_t cli_map_setvalue(struct cli_map *m, const void *value, int32_t valuesize)
 {
-    if ((m->valuesize && m->valuesize != valuesize) || (uint32_t)(m->last_insert) >= m->nvalues || m->last_insert < 0)
-        return -CL_EARG;
+    if ((m->valuesize && m->valuesize != valuesize) || (uint32_t)(m->last_insert) >= m->nvalues || m->last_insert < 0) {
+        return CL_EARG;
+    }
+
     if (m->valuesize) {
         memcpy((char *)m->u.sized_values + m->last_insert * m->valuesize,
                value, valuesize);
     } else {
         struct cli_map_value *v = &m->u.unsized_values[m->last_insert];
-        if (v->value)
+
+        if (v->value) {
             free(v->value);
+        }
+
         v->value = cli_malloc(valuesize);
         if (!v->value) {
             cli_errmsg("hashtab.c: Unable to allocate  memory for v->value\n");
-            return -CL_EMEM;
+            return CL_EMEM;
         }
+
         memcpy(v->value, value, valuesize);
         v->valuesize = valuesize;
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
-int cli_map_find(struct cli_map *m, const void *key, int32_t keysize)
+cl_error_t cli_map_find(struct cli_map *m, const void *key, int32_t keysize)
 {
     struct cli_element *el;
-    if (m->keysize != keysize)
-        return -CL_EARG;
+    if (m->keysize != keysize) {
+        return CL_EARG;
+    }
+
     el = cli_hashtab_find(&m->htab, key, keysize);
-    if (!el)
-        return 0;
+    if (!el) {
+        // not found
+        return CL_EACCES;
+    }
+
     m->last_find = (int32_t)el->data;
-    return 1;
+
+    return CL_SUCCESS;
 }
 
 int cli_map_getvalue_size(struct cli_map *m)
 {
-    if (m->valuesize)
+    if (m->valuesize) {
         return m->valuesize;
-    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues)
-        return -CL_EARG;
+    }
+
+    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues) {
+        return -1;
+    }
+
     return m->u.unsized_values[m->last_find].valuesize;
 }
 
 void *cli_map_getvalue(struct cli_map *m)
 {
-    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues)
+    if (m->last_find < 0 || (uint32_t)(m->last_find) >= m->nvalues) {
         return NULL;
-    if (m->valuesize)
+    }
+
+    if (m->valuesize) {
         return (char *)m->u.sized_values + m->last_find * m->valuesize;
+    }
+
     return m->u.unsized_values[m->last_find].value;
 }
 
 void cli_map_delete(struct cli_map *m)
 {
     cli_hashtab_free(&m->htab);
+
     if (!m->valuesize) {
         unsigned i;
-        for (i = 0; i < m->nvalues; i++)
+
+        for (i = 0; i < m->nvalues; i++) {
             free(m->u.unsized_values[i].value);
+        }
+
         free(m->u.unsized_values);
     } else {
         free(m->u.sized_values);
     }
+
     memset(m, 0, sizeof(*m));
 }

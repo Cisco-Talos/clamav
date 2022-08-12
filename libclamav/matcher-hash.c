@@ -83,7 +83,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
         /* size non-zero, find sz_hash element in size-driven hashtable  */
         ht = &root->hm.sizehashes[type];
         if (!root->hm.sizehashes[type].capacity) {
-            i = cli_htu32_init(ht, 64, root->mempool);
+            i = CLI_HTU32_INIT(ht, 64, root->mempool);
             if (i) return i;
         }
 
@@ -98,7 +98,7 @@ int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_
 
             htitem.key         = size;
             htitem.data.as_ptr = szh;
-            i                  = cli_htu32_insert(ht, &htitem, root->mempool);
+            i                  = CLI_HTU32_INSERT(ht, &htitem, root->mempool);
             if (i) {
                 cli_errmsg("hm_addhash_bin: failed to add item to hashtab");
                 MPOOL_FREE(root->mempool, szh);
@@ -323,7 +323,7 @@ void hm_free(struct cli_matcher *root)
             MPOOL_FREE(root->mempool, szh->virusnames);
             MPOOL_FREE(root->mempool, szh);
         }
-        cli_htu32_free(ht, root->mempool);
+        CLI_HTU32_FREE(ht, root->mempool);
     }
 
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {

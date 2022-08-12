@@ -1860,7 +1860,7 @@ cl_error_t cli_ac_scanbuff(
 
                         realoff = offset + matchstart;
                         if (pt->offdata[0] == CLI_OFF_VERSION) {
-                            if (!cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
+                            if (false == cli_hashset_contains_maybe_noalloc(mdata->vinfo, realoff)) {
                                 ptN = ptN->next_same;
                                 continue;
                             }
