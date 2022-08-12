@@ -626,7 +626,7 @@ int32_t cli_bcapi_hashset_add(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
         return -1;
-    return cli_hashset_addkey(s, key);
+    return cli_hashset_addkey(s, key) == CL_SUCCESS ? 0 : -1;
 }
 
 int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
@@ -634,7 +634,7 @@ int32_t cli_bcapi_hashset_remove(struct cli_bc_ctx *ctx, int32_t id, uint32_t ke
     struct cli_hashset *s = get_hashset(ctx, id);
     if (!s)
         return -1;
-    return cli_hashset_removekey(s, key);
+    return cli_hashset_removekey(s, key) == CL_SUCCESS ? 0 : -1;
 }
 
 int32_t cli_bcapi_hashset_contains(struct cli_bc_ctx *ctx, int32_t id, uint32_t key)
@@ -1402,7 +1402,7 @@ int32_t cli_bcapi_map_new(struct cli_bc_ctx *ctx, int32_t keysize, int32_t value
     ctx->maps  = s;
     ctx->nmaps = n;
     s          = &s[n - 1];
-    cli_map_init(s, keysize, valuesize, 16);
+    (void)cli_map_init(s, keysize, valuesize, 16);
     return n - 1;
 }
 
@@ -1415,10 +1415,26 @@ static struct cli_map *get_hashtab(struct cli_bc_ctx *ctx, int32_t id)
 
 int32_t cli_bcapi_map_addkey(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
+    cl_error_t ret;
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
         return -1;
-    return cli_map_addkey(s, key, keysize);
+
+    ret = cli_map_addkey(s, key, keysize);
+    switch (ret) {
+        case CL_SUCCESS: {
+            // key didn't exist and was added
+            return 1;
+        }
+        case CL_ECREAT: {
+            // already added
+            return 0;
+        }
+        default: {
+            // error occurred
+            return -1;
+        }
+    }
 }
 
 int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t *value, int32_t valuesize, int32_t id)
@@ -1426,23 +1442,55 @@ int32_t cli_bcapi_map_setvalue(struct cli_bc_ctx *ctx, const uint8_t *value, int
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
         return -1;
-    return cli_map_setvalue(s, value, valuesize);
+    return cli_map_setvalue(s, value, valuesize) == CL_SUCCESS ? 0 : -1;
 }
 
 int32_t cli_bcapi_map_remove(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
+    cl_error_t ret;
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
         return -1;
-    return cli_map_removekey(s, key, keysize);
+
+    ret = cli_map_removekey(s, key, keysize);
+    switch (ret) {
+        case CL_SUCCESS: {
+            // found and removed
+            return 1;
+        }
+        case CL_EUNLINK: {
+            // not found
+            return 0;
+        }
+        default: {
+            // error occurred
+            return -1;
+        }
+    }
 }
 
 int32_t cli_bcapi_map_find(struct cli_bc_ctx *ctx, const uint8_t *key, int32_t keysize, int32_t id)
 {
+    cl_error_t ret;
     struct cli_map *s = get_hashtab(ctx, id);
     if (!s)
         return -1;
-    return cli_map_find(s, key, keysize);
+
+    ret = cli_map_find(s, key, keysize);
+    switch (ret) {
+        case CL_SUCCESS: {
+            // found
+            return 1;
+        }
+        case CL_EACCES: {
+            // not found
+            return 0;
+        }
+        default: {
+            // error occurred
+            return -1;
+        }
+    }
 }
 
 int32_t cli_bcapi_map_getvaluesize(struct cli_bc_ctx *ctx, int32_t id)
@@ -1460,7 +1508,7 @@ uint8_t *cli_bcapi_map_getvalue(struct cli_bc_ctx *ctx, int32_t id, int32_t valu
         return NULL;
     if (cli_map_getvalue_size(s) != valuesize)
         return NULL;
-    return cli_map_getvalue(s);
+    return (uint8_t *)cli_map_getvalue(s);
 }
 
 int32_t cli_bcapi_map_done(struct cli_bc_ctx *ctx, int32_t id)
