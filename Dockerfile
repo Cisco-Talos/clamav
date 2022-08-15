@@ -117,4 +117,4 @@ HEALTHCHECK --start-period=6m CMD "clamdcheck.sh"
 
 ENTRYPOINT [ "/init" ]
 
-USER clamav
+USER 100
