@@ -29,6 +29,7 @@ set(DISABLE_MPOOL
 set(BYTECODE_RUNTIME
     "interpreter" CACHE STRING
     "Bytecode Runtime, may be: 'llvm', 'interpreter', 'none'.")
+set_property(CACHE BYTECODE_RUNTIME PROPERTY STRINGS llvm interpreter none)
 
 option(OPTIMIZE
     "Allow compiler optimizations.  Set to OFF to disable (i.e. to set -O0)."
