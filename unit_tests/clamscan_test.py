@@ -59,6 +59,37 @@ class TC(testcase.TestCase):
             "rule yara_in_range {strings: $tar_magic = { 75 73 74 61 72 } condition: $tar_magic in (200..300)}\n"
         )
 
+        # Signatures for detecting clam.exe
+        TC.path_clam_exe_sigs = TC.path_db / 'clam-exe-test-sigs'
+
+        os.mkdir(str(TC.path_clam_exe_sigs))
+
+        (TC.path_clam_exe_sigs / 'clam.ndb').write_text(
+            "Test.NDB:0:*:4b45524e454c33322e444c4c00004578\n"
+        )
+        (TC.path_clam_exe_sigs / 'clam.ldb').write_text(
+            "Test.LDB;Engine:52-255,Target:1;0;4B45524E454C33322E444C4C00004578697450726F63657373005553455233322E444C4C00434C414D657373616765426F7841\n"
+        )
+        (TC.path_clam_exe_sigs / 'clam.hdb').write_text(
+            "aa15bcf478d165efd2065190eb473bcb:544:Test.MD5.Hash:73\n"
+            "aa15bcf478d165efd2065190eb473bcb:*:Test.MD5.Hash.NoSize:73\n"
+        )
+        (TC.path_clam_exe_sigs / 'clam.hsb').write_text(
+            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:544:Test.Sha256.Hash:73\n"
+            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:*:Test.Sha256.Hash.NoSize:73\n"
+            "62dd70f5e7530e0239901ac186f1f9ae39292561:544:Test.Sha1.Hash:73\n"
+            "62dd70f5e7530e0239901ac186f1f9ae39292561:*:Test.Sha1.NoSize:73\n"
+        )
+        (TC.path_clam_exe_sigs / 'clam.imp').write_text(
+            "98c88d882f01a3f6ac1e5f7dfd761624:39:Test.Import.Hash\n"
+            "98c88d882f01a3f6ac1e5f7dfd761624:*:Test.Import.Hash.NoSize\n"
+        )
+        (TC.path_clam_exe_sigs / 'clam.mdb').write_text(
+            "512:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash:73\n"
+            "*:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash.NoSize:73\n"
+        )
+
+
     @classmethod
     def tearDownClass(cls):
         super(TC, cls).tearDownClass()
@@ -278,35 +309,14 @@ class TC(testcase.TestCase):
         ]
         self.verify_output(output.out, expected=expected_results)
 
-    def test_clamscan_11_allmatch_hash_sigs(self):
-        self.step_name('Test that each type of hash sig is detected in all-match mode')
-
-        os.mkdir(str(TC.path_db / 'allmatch-test-sigs'))
-
-        (TC.path_db / 'allmatch-test-sigs' / 'clam.hdb').write_text(
-            "aa15bcf478d165efd2065190eb473bcb:544:Test.MD5.Hash:73\n"
-            "aa15bcf478d165efd2065190eb473bcb:*:Test.MD5.Hash.NoSize:73\n"
-        )
-        (TC.path_db / 'allmatch-test-sigs' / 'clam.hsb').write_text(
-            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:544:Test.Sha256.Hash:73\n"
-            "71e7b604d18aefd839e51a39c88df8383bb4c071dc31f87f00a2b5df580d4495:*:Test.Sha256.Hash.NoSize:73\n"
-            "62dd70f5e7530e0239901ac186f1f9ae39292561:544:Test.Sha1.Hash:73\n"
-            "62dd70f5e7530e0239901ac186f1f9ae39292561:*:Test.Sha1.NoSize:73\n"
-        )
-        (TC.path_db / 'allmatch-test-sigs' / 'clam.imp').write_text(
-            "98c88d882f01a3f6ac1e5f7dfd761624:39:Test.Import.Hash\n"
-            "98c88d882f01a3f6ac1e5f7dfd761624:*:Test.Import.Hash.NoSize\n"
-        )
-        (TC.path_db / 'allmatch-test-sigs' / 'clam.mdb').write_text(
-            "512:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash:73\n"
-            "*:23db1dd3f77fae25610b6a32701313ae:Test.PESection.Hash.NoSize:73\n"
-        )
+    def test_clamscan_11_allmatch_many_sigs(self):
+        self.step_name('Test that each type of sig alerts in all-match mode')
 
         testfiles = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
 
         command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles} --allmatch'.format(
             valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
-            path_db=TC.path_db / 'allmatch-test-sigs',
+            path_db=TC.path_clam_exe_sigs,
             testfiles=testfiles,
         )
         output = self.execute_command(command)
@@ -314,6 +324,8 @@ class TC(testcase.TestCase):
         assert output.ec == 1  # virus
 
         expected_results = [
+            'Test.LDB.UNOFFICIAL FOUND',
+            'Test.NDB.UNOFFICIAL FOUND',
             'Test.MD5.Hash.UNOFFICIAL FOUND',
             'Test.MD5.Hash.NoSize.UNOFFICIAL FOUND',
             'Test.Sha1.Hash.UNOFFICIAL FOUND',
@@ -326,6 +338,22 @@ class TC(testcase.TestCase):
             'Test.Import.Hash.NoSize.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_clamscan_11_no_allmatch_many_sigs(self):
+        self.step_name('Test that only one sig alerts when not using all-match mode')
+
+        testfiles = TC.path_build / 'unit_tests' / 'input' / 'clamav_hdb_scanfiles' / 'clam.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} -d {path_db} {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            path_db=TC.path_clam_exe_sigs,
+            testfiles=testfiles,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1  # virus
+
+        assert output.out.count('FOUND') == 1 # only finds one of these (order not guaranteeds afaik, so don't care which)
 
     def test_clamscan_11_allmatch_regression_imphash_nosize(self):
         self.step_name('Test an import hash with wildcard size when all-match mode is disabled.')
