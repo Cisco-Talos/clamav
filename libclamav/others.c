@@ -1357,7 +1357,7 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
         goto done;
     }
 
-    if (type == IndicatorType_Strong || (type == IndicatorType_PotentiallyUnwanted && SCAN_HEURISTIC_PRECEDENCE)) {
+    if (type == IndicatorType_Strong) {
         // Run that virus callback which in clamscan says "<signature name> FOUND"
         cli_virus_found_cb(ctx, virname);
     }
@@ -1395,11 +1395,7 @@ static cl_error_t append_virus(cli_ctx *ctx, const char *virname, IndicatorType 
                 break;
             }
             case IndicatorType_PotentiallyUnwanted: {
-                if (SCAN_HEURISTIC_PRECEDENCE) {
-                    status = CL_VIRUS;
-                } else {
-                    status = CL_SUCCESS;
-                }
+                status = CL_SUCCESS;
                 break;
             }
             default: {
@@ -1418,7 +1414,11 @@ done:
 
 cl_error_t cli_append_potentially_unwanted(cli_ctx *ctx, const char *virname)
 {
-    return append_virus(ctx, virname, IndicatorType_PotentiallyUnwanted);
+    if (SCAN_HEURISTIC_PRECEDENCE) {
+        return append_virus(ctx, virname, IndicatorType_Strong);
+    } else {
+        return append_virus(ctx, virname, IndicatorType_PotentiallyUnwanted);
+    }
 }
 
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
