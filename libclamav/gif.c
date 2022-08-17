@@ -163,6 +163,7 @@ struct gif_image_descriptor {
 cl_error_t cli_parsegif(cli_ctx *ctx)
 {
     cl_error_t status = CL_SUCCESS;
+    bool parse_error  = false;
 
     fmap_t *map   = NULL;
     size_t offset = 0;
@@ -210,8 +211,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
      */
     if (fmap_readn(map, &screen_desc, offset, sizeof(screen_desc)) != sizeof(screen_desc)) {
         cli_errmsg("GIF: Can't read logical screen description, file truncated?\n");
-        cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedScreenDescriptor");
-        status = CL_EPARSE;
+        status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedScreenDescriptor");
+        parse_error = true;
         goto scan_overlay;
     }
     offset += sizeof(screen_desc);
@@ -226,8 +227,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
         if (offset + (size_t)global_color_table_size > map->len) {
             cli_errmsg("GIF: EOF in the middle of the global color table, file truncated?\n");
-            cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedGlobalColorTable");
-            status = CL_EPARSE;
+            status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedGlobalColorTable");
+            parse_error = true;
             goto scan_overlay;
         }
         offset += global_color_table_size;
@@ -248,9 +249,9 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
                 cli_dbgmsg("GIF: Missing GIF trailer, slightly (but acceptably) malformed.\n");
             } else {
                 cli_errmsg("GIF: Can't read block label, EOF before image data. File truncated?\n");
-                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.MissingImageData");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.MissingImageData");
             }
-            status = CL_EPARSE;
+            parse_error = true;
             goto scan_overlay;
         }
         offset += sizeof(block_label);
@@ -270,8 +271,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
                 if (fmap_readn(map, &extension_label, offset, sizeof(extension_label)) != sizeof(extension_label)) {
                     cli_errmsg("GIF: Failed to read the extension block label, file truncated?\n");
-                    cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtension");
-                    status = CL_EPARSE;
+                    status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtension");
+                    parse_error = true;
                     goto scan_overlay;
                 }
                 offset += sizeof(extension_label);
@@ -304,8 +305,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
                         uint8_t extension_block_size = 0;
                         if (fmap_readn(map, &extension_block_size, offset, sizeof(extension_block_size)) != sizeof(extension_block_size)) {
                             cli_errmsg("GIF: EOF while attempting to read the block size for an extension, file truncated?\n");
-                            cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtension");
-                            status = CL_EPARSE;
+                            status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtension");
+                            parse_error = true;
                             goto scan_overlay;
                         } else {
                             offset += sizeof(extension_block_size);
@@ -319,8 +320,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
                         if (offset + (size_t)extension_block_size > map->len) {
                             cli_errmsg("GIF: EOF in the middle of a graphic control extension sub-block, file truncated?\n");
-                            cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtensionSubBlock");
-                            status = CL_EPARSE;
+                            status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedExtensionSubBlock");
+                            parse_error = true;
                             goto scan_overlay;
                         }
                         offset += extension_block_size;
@@ -335,8 +336,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
                 cli_dbgmsg("GIF: Found an image descriptor.\n");
                 if (fmap_readn(map, &image_desc, offset, sizeof(image_desc)) != sizeof(image_desc)) {
                     cli_errmsg("GIF: Can't read image descriptor, file truncated?\n");
-                    cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDescriptor");
-                    status = CL_EPARSE;
+                    status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDescriptor");
+                    parse_error = true;
                     goto scan_overlay;
                 } else {
                     offset += sizeof(image_desc);
@@ -368,8 +369,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
                     uint8_t image_data_block_size = 0;
                     if (fmap_readn(map, &image_data_block_size, offset, sizeof(image_data_block_size)) != sizeof(image_data_block_size)) {
                         cli_errmsg("GIF: EOF while attempting to read the block size for an image data block, file truncated?\n");
-                        cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDataBlock");
-                        status = CL_EPARSE;
+                        status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDataBlock");
+                        parse_error = true;
                         goto scan_overlay;
                     } else {
                         offset += sizeof(image_data_block_size);
@@ -383,8 +384,8 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
 
                     if (offset + (size_t)image_data_block_size > map->len) {
                         cli_errmsg("GIF: EOF in the middle of an image data sub-block, file truncated?\n");
-                        cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDataBlock");
-                        status = CL_EPARSE;
+                        status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.TruncatedImageDataBlock");
+                        parse_error = true;
                         goto scan_overlay;
                     }
                     offset += image_data_block_size;
@@ -395,29 +396,29 @@ cl_error_t cli_parsegif(cli_ctx *ctx)
             default: {
                 // An unknown code: break.
                 cli_errmsg("GIF: Found an unfamiliar block label: 0x%x\n", block_label);
-                cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.UnknownBlockLabel");
-                status = CL_EPARSE;
+                status      = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Media.GIF.UnknownBlockLabel");
+                parse_error = true;
                 goto scan_overlay;
             }
         }
     }
 
 scan_overlay:
-    if (status == CL_EPARSE) {
-        /* We added with cli_append_potentially_unwanted so it will alert at the end if nothing else matches. */
-        status = CL_CLEAN;
 
-        // Some recovery (I saw some "GIF89a;" or things like this)
-        if (offset == (strlen("GIF89a") + sizeof(screen_desc) + 1)) {
-            offset = strlen("GIF89a");
+    if (CL_SUCCESS == status) {
+        if (parse_error) {
+            // Some recovery (I saw some "GIF89a;" or things like this)
+            if (offset == (strlen("GIF89a") + sizeof(screen_desc) + 1)) {
+                offset = strlen("GIF89a");
+            }
         }
-    }
 
-    // Is there an overlay?
-    if (offset < map->len) {
-        cli_dbgmsg("GIF: Found extra data after the end of the GIF data stream: %zu bytes, we'll scan it!\n", map->len - offset);
-        cl_error_t nested_scan_result = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
-        status                        = nested_scan_result != CL_SUCCESS ? nested_scan_result : status;
+        // Is there an overlay?
+        if (offset < map->len) {
+            cli_dbgmsg("GIF: Found extra data after the end of the GIF data stream: %zu bytes, we'll scan it!\n", map->len - offset);
+            cl_error_t nested_scan_result = cli_magic_scan_nested_fmap_type(map, offset, map->len - offset, ctx, CL_TYPE_ANY, NULL);
+            status                        = nested_scan_result != CL_SUCCESS ? nested_scan_result : status;
+        }
     }
 
 done:
