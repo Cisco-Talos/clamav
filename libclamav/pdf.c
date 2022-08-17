@@ -1431,7 +1431,6 @@ static int pdf_scan_contents(int fd, struct pdf_struct *pdf)
 
 cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t flags)
 {
-    cli_ctx *ctx = pdf->ctx;
     char fullname[PATH_MAX + 1];
     int fout      = -1;
     size_t sum    = 0;
@@ -1694,7 +1693,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
         if (dparams)
             pdf_free_dict(dparams);
 
-        if ((rc == CL_VIRUS) && !SCAN_ALLMATCHES) {
+        if (rc == CL_VIRUS) {
             sum = 0; /* prevents post-filter scan */
             goto done;
         }
@@ -1818,7 +1817,7 @@ done:
         if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
             rc = rc2;
 
-        if ((rc == CL_CLEAN) || ((rc == CL_VIRUS) && SCAN_ALLMATCHES)) {
+        if ((rc == CL_CLEAN) || (rc == CL_VIRUS)) {
             unsigned int dumpid = 0;
             for (dumpid = 0; dumpid < pdf->nobjs; dumpid++) {
                 if (pdf->objs[dumpid] == obj)
@@ -1829,7 +1828,7 @@ done:
                 rc = rc2;
         }
 
-        if (((rc == CL_CLEAN) || ((rc == CL_VIRUS) && SCAN_ALLMATCHES)) && (obj->flags & (1 << OBJ_CONTENTS))) {
+        if (((rc == CL_CLEAN) || (rc == CL_VIRUS)) && (obj->flags & (1 << OBJ_CONTENTS))) {
             lseek(fout, 0, SEEK_SET);
             cli_dbgmsg("pdf_extract_obj: dumping contents %u %u\n", obj->id >> 8, obj->id & 0xff);
 
@@ -3271,7 +3270,6 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
 {
     cl_error_t status   = CL_EFORMAT;
     cl_error_t retval   = CL_EPARSE;
-    int32_t alerts      = 0;
     uint32_t badobjects = 0;
     size_t i            = 0;
 
@@ -3328,10 +3326,7 @@ cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objs
         pdf_parseobj(pdf, obj);
     }
 
-    if (alerts) {
-        status = CL_VIRUS;
-        goto done;
-    } else if (badobjects) {
+    if (badobjects) {
         status = CL_EFORMAT;
         goto done;
     }
@@ -3346,11 +3341,10 @@ done:
  * @brief Search pdf buffer for objects.  Parse each and then extract each.
  *
  * @param pdf               Pdf struct that keeps track of all information found in the PDF.
- * @param[in,out] alerts    The number of alerts, relevant in ALLMATCH mode.
  *
  * @return cl_error_t       Error code.
  */
-cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
+static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
 {
     cl_error_t status   = CL_SUCCESS;
     int32_t rv          = 0;
@@ -3358,7 +3352,7 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
     uint32_t badobjects = 0;
     cli_ctx *ctx        = NULL;
 
-    if (NULL == pdf || NULL == alerts) {
+    if (NULL == pdf) {
         cli_errmsg("pdf_find_and_extract_objs: Invalid arguments.\n");
         status = CL_EARG;
         goto done;
@@ -3401,52 +3395,39 @@ cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts)
          * This doesn't trigger for PDFs that are encrypted but don't need
          * a password to decrypt */
         status = cli_append_virus(pdf->ctx, "Heuristics.Encrypted.PDF");
-        if (status == CL_VIRUS) {
-            *alerts += 1;
-            if (SCAN_ALLMATCHES)
-                status = CL_CLEAN;
-        }
     }
 
     if (CL_SUCCESS == status) {
         status = run_pdf_hooks(pdf, PDF_PHASE_PARSED, -1, -1);
         cli_dbgmsg("pdf_find_and_extract_objs: (parsed hooks) returned %d\n", status);
-        if (status == CL_VIRUS) {
-            *alerts += 1;
-            if (SCAN_ALLMATCHES) {
-                status = CL_CLEAN;
-            }
-        }
     }
 
-    /* extract PDF objs */
-    for (i = 0; !status && i < pdf->nobjs; i++) {
-        struct pdf_obj *obj = pdf->objs[i];
+    if (CL_SUCCESS == status) {
+        /* extract PDF objs */
+        for (i = 0; !status && i < pdf->nobjs; i++) {
+            struct pdf_obj *obj = pdf->objs[i];
 
-        if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
-            cli_errmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while extracting objects.\n");
+            if (cli_checktimelimit(pdf->ctx) != CL_SUCCESS) {
+                cli_errmsg("pdf_find_and_extract_objs: Timeout reached in the PDF parser while extracting objects.\n");
 
-            status = CL_ETIMEOUT;
-            goto done;
-        }
+                status = CL_ETIMEOUT;
+                goto done;
+            }
 
-        status = pdf_extract_obj(pdf, obj, PDF_EXTRACT_OBJ_SCAN);
-        switch (status) {
-            case CL_EFORMAT:
-                /* Don't halt on one bad object */
-                cli_dbgmsg("pdf_find_and_extract_objs: Format error when extracting object, skipping to the next object.\n");
-                badobjects++;
-                pdf->stats.ninvalidobjs++;
-                status = CL_CLEAN;
-                break;
-            case CL_VIRUS:
-                *alerts += 1;
-                if (SCAN_ALLMATCHES) {
+            status = pdf_extract_obj(pdf, obj, PDF_EXTRACT_OBJ_SCAN);
+            switch (status) {
+                case CL_EFORMAT:
+                    /* Don't halt on one bad object */
+                    cli_dbgmsg("pdf_find_and_extract_objs: Format error when extracting object, skipping to the next object.\n");
+                    badobjects++;
+                    pdf->stats.ninvalidobjs++;
                     status = CL_CLEAN;
-                }
-                break;
-            default:
-                break;
+                    break;
+                case CL_VIRUS:
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -3478,7 +3459,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     unsigned long xref;
     long temp_long;
     const char *pdfver, *tmp, *start, *eofmap, *q, *eof;
-    unsigned i, alerts = 0;
+    unsigned i;
     unsigned int objs_found = 0;
 #if HAVE_JSON
     json_object *pdfobj = NULL;
@@ -3652,11 +3633,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     pdf.startoff = offset;
 
     rc = run_pdf_hooks(&pdf, PDF_PHASE_PRE, -1, -1);
-    if ((rc == CL_VIRUS) && SCAN_ALLMATCHES) {
-        cli_dbgmsg("cli_pdf: (pre hooks) returned %d\n", rc);
-        alerts++;
-        rc = CL_CLEAN;
-    } else if (rc) {
+    if (CL_SUCCESS != rc) {
         cli_dbgmsg("cli_pdf: (pre hooks) returning %d\n", rc);
 
         rc = rc == CL_BREAK ? CL_CLEAN : rc;
@@ -3668,7 +3645,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
      * This methodology adds objects from object streams.
      */
     objs_found = pdf.nobjs;
-    rc         = pdf_find_and_extract_objs(&pdf, &alerts);
+    rc         = pdf_find_and_extract_objs(&pdf);
 
     if (CL_EMEM == rc) {
         cli_dbgmsg("cli_pdf: pdf_find_and_extract_objs had an allocation failure\n");
@@ -3682,20 +3659,14 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     if (pdf.flags & (1 << ENCRYPTED_PDF))
         pdf.flags &= ~((1 << BAD_FLATESTART) | (1 << BAD_STREAMSTART) | (1 << BAD_ASCIIDECODE));
 
-    if (pdf.flags && !rc) {
+    if (pdf.flags && CL_SUCCESS == rc) {
         cli_dbgmsg("cli_pdf: flags 0x%02x\n", pdf.flags);
         rc = run_pdf_hooks(&pdf, PDF_PHASE_END, -1, -1);
-        if (rc == CL_VIRUS) {
-            alerts++;
-            if (SCAN_ALLMATCHES) {
-                rc = CL_CLEAN;
-            }
-        }
 
-        if (!rc && SCAN_HEURISTICS && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
+        if (CL_SUCCESS == rc && SCAN_HEURISTICS && (ctx->dconf->other & OTHER_CONF_PDFNAMEOBJ)) {
             if (pdf.flags & (1 << ESCAPED_COMMON_PDFNAME)) {
                 /* for example /Fl#61te#44#65#63#6f#64#65 instead of /FlateDecode */
-                cli_append_potentially_unwanted(ctx, "Heuristics.PDF.ObfuscatedNameObject");
+                rc = cli_append_potentially_unwanted(ctx, "Heuristics.PDF.ObfuscatedNameObject");
             }
         }
 #if 0
@@ -3704,7 +3675,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
         pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
     if (pdf.flags & (1 << MANY_FILTERS))
         pdf.flags &= ~ (1 << BAD_ASCIIDECODE);
-    if (!rc && (pdf.flags &
+    if (CL_SUCCESS == rc && (pdf.flags &
         ((1 << BAD_PDF_TOOMANYOBJS) | (1 << BAD_STREAM_FILTERS) |
          (1<<BAD_FLATE) | (1<<BAD_ASCIIDECODE)|
              (1<<UNTERMINATED_OBJ_DICT) | (1<<UNKNOWN_FILTER)))) {
@@ -3714,9 +3685,7 @@ cl_error_t cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
     }
 
 done:
-    if (alerts) {
-        rc = CL_VIRUS;
-    } else if (!rc && pdf.stats.ninvalidobjs > 0) {
+    if (CL_SUCCESS == rc && pdf.stats.ninvalidobjs > 0) {
         rc = CL_EFORMAT;
     }
 

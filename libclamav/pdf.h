@@ -197,7 +197,6 @@ void pdf_free_array(struct pdf_array *array);
 void pdf_print_dict(struct pdf_dict *dict, unsigned long depth);
 void pdf_print_array(struct pdf_array *array, unsigned long depth);
 
-cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf, uint32_t *alerts);
 cl_error_t pdf_find_and_parse_objs_in_objstm(struct pdf_struct *pdf, struct objstm_struct *objstm);
 
 #endif
