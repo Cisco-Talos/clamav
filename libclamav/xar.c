@@ -309,8 +309,6 @@ static int xar_scan_subdocuments(xmlTextReaderPtr reader, cli_ctx *ctx)
             subdoc_len = xmlStrlen(subdoc);
             cli_dbgmsg("cli_scanxar: in-memory scan of xml subdocument, len %i.\n", subdoc_len);
             rc = cli_magic_scan_buff(subdoc, subdoc_len, ctx, NULL);
-            if (rc == CL_VIRUS && SCAN_ALLMATCHES)
-                rc = CL_SUCCESS;
 
             /* make a file to leave if --leave-temps in effect */
             if (ctx->engine->keeptmp) {
@@ -519,8 +517,7 @@ int cli_scanxar(cli_ctx *ctx)
     cli_dbgmsg("cli_scanxar: scanning xar TOC xml in memory.\n");
     rc = cli_magic_scan_buff(toc, hdr.toc_length_decompressed, ctx, NULL);
     if (rc != CL_SUCCESS) {
-        if (rc != CL_VIRUS || !SCAN_ALLMATCHES)
-            goto exit_toc;
+        goto exit_toc;
     }
 
     /* make a file to leave if --leave-temps in effect */
@@ -848,14 +845,7 @@ int cli_scanxar(cli_ctx *ctx)
 
             rc = cli_magic_scan_desc(fd, tmpname, ctx, NULL); /// TODO: collect file names in xar_get_toc_data_values()
             if (rc != CL_SUCCESS) {
-                if (rc == CL_VIRUS) {
-                    cli_dbgmsg("cli_scanxar: Infected with %s\n", cli_get_last_virus(ctx));
-                    if (!SCAN_ALLMATCHES)
-                        goto exit_tmpfile;
-                } else if (rc != CL_BREAK) {
-                    cli_dbgmsg("cli_scanxar: cli_magic_scan_desc error %i\n", rc);
-                    goto exit_tmpfile;
-                }
+                goto exit_tmpfile;
             }
         }
 
