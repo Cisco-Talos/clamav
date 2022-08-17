@@ -892,6 +892,7 @@ else()
     extract_valid_cxx_flags(WARNCXXFLAGS
         -Wall
         -Wformat-security
+        -Wno-comment                      # Disabled because LLVM's CFG.h has a warning about a multiline comment because of ascii-art of a graph with a `\` in it.
     )
 endif()
 
