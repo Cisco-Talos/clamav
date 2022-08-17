@@ -685,7 +685,7 @@ static struct {
     {(void *)cli_bcapi_get_pe_section, sizeof(struct cli_exe_section)},
 };
 
-int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
+cl_error_t cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     size_t i;
     uint32_t j;

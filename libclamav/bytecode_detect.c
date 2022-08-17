@@ -41,7 +41,7 @@
 #define CHECK_ARCH(a) \
     if (!strcmp(TARGET_ARCH_TYPE, #a)) env->arch = arch_##a
 
-extern int have_clamjit();
+extern bool have_clamjit();
 
 static void cli_print_environment(struct cli_environment *env)
 {

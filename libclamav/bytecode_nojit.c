@@ -29,7 +29,7 @@
 #include "clamav.h"
 #include "others.h"
 
-int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
+cl_error_t cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
     unsigned i;
     for (i = 0; i < bcs->count; i++) {
@@ -45,7 +45,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
     return CL_EBYTECODE;
 }
 
-int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, const struct cli_bc_func *func)
+cl_error_t cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, const struct cli_bc_func *func)
 {
     UNUSEDPARAM(bcs);
     UNUSEDPARAM(ctx);
@@ -53,14 +53,14 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, con
     return CL_EBYTECODE;
 }
 
-int cli_bytecode_init_jit(struct cli_all_bc *allbc, unsigned dconfmask)
+cl_error_t cli_bytecode_init_jit(struct cli_all_bc *allbc, unsigned dconfmask)
 {
     UNUSEDPARAM(allbc);
     UNUSEDPARAM(dconfmask);
     return CL_SUCCESS;
 }
 
-int cli_bytecode_done_jit(struct cli_all_bc *allbc, int partial)
+cl_error_t cli_bytecode_done_jit(struct cli_all_bc *allbc, int partial)
 {
     UNUSEDPARAM(allbc);
     UNUSEDPARAM(partial);
@@ -74,9 +74,9 @@ void cli_bytecode_debug(int argc, char **argv)
     UNUSEDPARAM(argv);
 }
 
-int bytecode_init(void)
+cl_error_t bytecode_init(void)
 {
-    return 0;
+    return CL_SUCCESS;
 }
 
 void cli_bytecode_debug_printsrc(const struct cli_bc_ctx *ctx)
@@ -88,9 +88,9 @@ void cli_bytecode_printversion(void)
 {
     printf("LLVM is not compiled or not linked\n");
 }
-int have_clamjit()
+bool have_clamjit()
 {
-    return 0;
+    return false;
 }
 
 void cli_printcxxver()
