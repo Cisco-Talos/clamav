@@ -493,7 +493,7 @@ cl_error_t readdb_parse_ldb_subsignature(struct cli_matcher *root, const char *v
             goto done;
         }
 
-        if ((ret = cli_ac_addpatt(root, patt))) {
+        if (CL_SUCCESS != (ret = cli_ac_addpatt(root, patt))) {
             MPOOL_FREE(root->mempool, patt->pattern);
             free(patt);
             status = ret;
@@ -820,7 +820,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
                 *pt++ = 0;
             }
 
-            if ((ret = cli_ac_addsig(root, virname, start, sigopts, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
+            if (CL_SUCCESS != (ret = cli_ac_addsig(root, virname, start, sigopts, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
                 cli_errmsg("cli_add_content_match_pattern: Problem adding signature (1).\n");
                 error = 1;
                 break;
@@ -921,7 +921,7 @@ cl_error_t cli_add_content_match_pattern(struct cli_matcher *root, const char *v
                 return CL_EMALFDB;
             }
 
-            if ((ret = cli_ac_addsig(root, virname, pt, sigopts, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
+            if (CL_SUCCESS != (ret = cli_ac_addsig(root, virname, pt, sigopts, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
                 cli_errmsg("cli_add_content_match_pattern: Problem adding signature (2).\n");
                 free(pt);
                 return ret;
@@ -6062,7 +6062,7 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
     MPOOL_FLUSH(engine->mempool);
 
     /* Compile bytecode */
-    if ((ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode))) {
+    if (CL_SUCCESS != (ret = cli_bytecode_prepare2(engine, &engine->bcs, engine->dconf->bytecode))) {
         cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
         return ret;
     }
