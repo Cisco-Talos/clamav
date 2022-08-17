@@ -472,7 +472,6 @@ static cl_error_t cli_scanrar_file(const char *filepath, int desc, cli_ctx *ctx)
                                 cli_dbgmsg("RAR: Failed to unlink the extracted file: %s\n", extract_fullpath);
 
                         if (status == CL_VIRUS) {
-                            cli_dbgmsg("RAR: infected with %s\n", cli_get_last_virus(ctx));
                             status = CL_VIRUS;
                             viruses_found++;
                         }
@@ -923,7 +922,6 @@ static cl_error_t cli_scanegg(cli_ctx *ctx)
                     cli_dbgmsg("EGG: Extraction complete.  Scanning now...\n");
                     status = cli_magic_scan_buff(extract_buffer, extract_buffer_len, ctx, filename_base, LAYER_ATTRIBUTES_NONE);
                     if (status == CL_VIRUS) {
-                        cli_dbgmsg("EGG: infected with %s\n", cli_get_last_virus(ctx));
                         status = CL_VIRUS;
                         viruses_found++;
                     }
@@ -1090,7 +1088,6 @@ static cl_error_t cli_scanarj(cli_ctx *ctx)
             status = cli_magic_scan_desc(metadata.ofd, NULL, ctx, metadata.filename, LAYER_ATTRIBUTES_NONE);
             close(metadata.ofd);
             if (status == CL_VIRUS) {
-                cli_dbgmsg("ARJ: infected with %s\n", cli_get_last_virus(ctx));
                 if (!SCAN_ALLMATCHES) {
                     ret = CL_VIRUS;
                     if (metadata.filename) {
@@ -1175,7 +1172,6 @@ static cl_error_t cli_scangzip_with_zib_from_the_80s(cli_ctx *ctx, unsigned char
     gzclose(gz);
 
     if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
-        cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
@@ -1277,7 +1273,6 @@ static cl_error_t cli_scangzip(cli_ctx *ctx)
     inflateEnd(&z);
 
     if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
-        cli_dbgmsg("GZip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
@@ -1383,7 +1378,6 @@ static cl_error_t cli_scanbzip(cli_ctx *ctx)
     BZ2_bzDecompressEnd(&strm);
 
     if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
-        cli_dbgmsg("Bzip: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
@@ -1491,16 +1485,16 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
     } while (XZ_STREAM_END != rc);
 
     /* scan decompressed file */
-    if (CL_VIRUS == (ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE))) {
-        cli_dbgmsg("cli_scanxz: Infected with %s\n", cli_get_last_virus(ctx));
-    }
+    ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
 xz_exit:
     cli_XzShutdown(&strm);
     close(fd);
-    if (!ctx->engine->keeptmp)
-        if (cli_unlink(tmpname) && ret == CL_CLEAN)
+    if (!ctx->engine->keeptmp) {
+        if (cli_unlink(tmpname) && ret == CL_CLEAN) {
             ret = CL_EUNLINK;
+        }
+    }
     free(tmpname);
     free(buf);
     return ret;
@@ -2881,8 +2875,7 @@ static cl_error_t cli_scancryptff(cli_ctx *ctx)
 
     cli_dbgmsg("CryptFF: Scanning decrypted data\n");
 
-    if (CL_VIRUS == (ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE)))
-        cli_dbgmsg("CryptFF: Infected with %s\n", cli_get_last_virus(ctx));
+    ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
     close(ndesc);
 
@@ -3165,7 +3158,6 @@ static cl_error_t cli_scanembpe(cli_ctx *ctx, off_t offset)
     ret                  = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
     ctx->corrupted_input = corrupted_input;
     if (ret == CL_VIRUS) {
-        cli_dbgmsg("cli_scanembpe: Infected with %s\n", cli_get_last_virus(ctx));
         close(fd);
         if (!ctx->engine->keeptmp) {
             if (cli_unlink(tmpname)) {
@@ -4009,9 +4001,6 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
         free(fpt);
     }
 
-    if (ret == CL_VIRUS)
-        cli_dbgmsg("%s found\n", cli_get_last_virus(ctx));
-
     return ret;
 }
 
@@ -4470,9 +4459,8 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             goto done;
         }
 
-        if (CL_VIRUS == (ret = cli_scan_fmap(ctx, CL_TYPE_ANY, 0, NULL, AC_SCAN_VIR, NULL, hash)))
-            cli_dbgmsg("cli_magic_scan: %s found in descriptor %d\n", cli_get_last_virus(ctx), fmap_fd(ctx->fmap));
-
+        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, 0, NULL, AC_SCAN_VIR, NULL, hash);
+        // It doesn't matter what was returned, always go to the end after this. Raw mode! No parsing files!
         goto done;
     }
 
@@ -5391,6 +5379,8 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         return CL_ENULLARG;
     }
 
+    size_t num_potentially_unwanted_indicators = 0;
+
     *virname = NULL;
 
     ctx.engine  = engine;
@@ -5531,14 +5521,46 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
         verdict = CL_VIRUS;
     }
 
-    if (!(ctx.options->general & CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE) &&
-        (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) &&
-        (0 != evidence_num_indicators_type(ctx.evidence, IndicatorType_PotentiallyUnwanted))) {
-        // "Heuristic precedence" mode not enabled, and the only alerts so far have been PUA.
-        // But Heuristic-signatures / PUA sigs were recorded but never reported...
-        // ... Now is the time to report them!
-        // TODO: Report more than one if in ALLMATCH mode. For now, just reporting the "latest".
-        cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
+    num_potentially_unwanted_indicators = evidence_num_indicators_type(
+        ctx.evidence,
+        IndicatorType_PotentiallyUnwanted);
+    if (0 != num_potentially_unwanted_indicators) {
+        // We have "potentially unwanted" indicators that would not have been reported yet.
+        // We may wish to report them now, ... depending ....
+
+        if (ctx.options->general & CL_SCAN_GENERAL_ALLMATCHES) {
+            // We're in allmatch mode, so report all "potentially unwanted" matches now.
+
+            size_t i;
+
+            for (i = 0; i < num_potentially_unwanted_indicators; i++) {
+                const char *pua_alert = evidence_get_indicator(
+                    ctx.evidence,
+                    IndicatorType_PotentiallyUnwanted,
+                    i);
+
+                if (NULL != pua_alert) {
+                    // We don't know exactly which layer the alert happened at.
+                    // There's a decent chance it wasn't at this layer, and in that case we wouldn't
+                    // even have access to that file anymore (it's gone!). So we'll pass back -1 for the
+                    // file descriptor rather than using `cli_virus_found_cb() which would pass back
+                    // The top level file descriptor.
+                    if (ctx.engine->cb_virus_found) {
+                        ctx.engine->cb_virus_found(
+                            -1,
+                            pua_alert,
+                            ctx.cb_ctx);
+                    }
+                }
+            }
+
+        } else {
+            // Not allmatch mode. Only want to report one thing...
+            if (0 == evidence_num_indicators_type(ctx.evidence, IndicatorType_Strong)) {
+                // And it looks like we haven't reported anything else, so report the last "potentially unwanted" one.
+                cli_virus_found_cb(&ctx, cli_get_last_virus(&ctx));
+            }
+        }
     }
 
 #if HAVE_JSON
