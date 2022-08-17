@@ -124,6 +124,43 @@ pub unsafe extern "C" fn _evidence_get_last_alert(evidence: sys::evidence_t) -> 
     }
 }
 
+/// C interface to get a string name for one of the alerts.
+/// Will first check for one from the strong indicators, then pua.
+///
+/// # Safety
+///
+/// Returns a string that is either static, or allocated when reading the database.
+/// So the lifetime of the string is good at least until you reload or unload the databases.
+///
+/// No parameters may be NULL
+#[export_name = "evidence_get_indicator"]
+pub unsafe extern "C" fn _evidence_get_indicator(
+    evidence: sys::evidence_t,
+    indicator_type: IndicatorType,
+    index: usize,
+) -> *const c_char {
+    let evidence = ManuallyDrop::new(Box::from_raw(evidence as *mut Evidence));
+
+    match indicator_type {
+        IndicatorType::Strong => {
+            if let Some(meta) = evidence.strong.values().nth(index) {
+                return meta.last().unwrap().static_virname as *const c_char;
+            } else {
+                // no alert at that index. return NULL
+                return std::ptr::null();
+            }
+        }
+        IndicatorType::PotentiallyUnwanted => {
+            if let Some(meta) = evidence.pua.values().nth(index) {
+                return meta.last().unwrap().static_virname as *const c_char;
+            } else {
+                // no alert at that index. return NULL
+                return std::ptr::null();
+            }
+        }
+    }
+}
+
 /// C interface to check number of alerting indicators in evidence.
 ///
 /// # Safety
