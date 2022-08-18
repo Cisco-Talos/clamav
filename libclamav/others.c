@@ -1279,7 +1279,7 @@ char *cli_hashfile(const char *filename, int type)
 /* Function: unlink
         unlink() with error checking
 */
-int cli_unlink(const char *pathname)
+cl_error_t cli_unlink(const char *pathname)
 {
     if (unlink(pathname) == -1) {
 #ifdef _WIN32
@@ -1288,20 +1288,20 @@ int cli_unlink(const char *pathname)
         if (-1 == _chmod(pathname, _S_IWRITE)) {
             char err[128];
             cli_warnmsg("cli_unlink: _chmod failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
-            return 1;
+            return CL_EUNLINK;
         } else if (unlink(pathname) == -1) {
             char err[128];
             cli_warnmsg("cli_unlink: unlink failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
-            return 1;
+            return CL_EUNLINK;
         }
-        return 0;
+        return CL_SUCCESS;
 #else
         char err[128];
         cli_warnmsg("cli_unlink: unlink failure for %s - %s\n", pathname, cli_strerror(errno, err, sizeof(err)));
-        return 1;
+        return CL_EUNLINK;
 #endif
     }
-    return 0;
+    return CL_SUCCESS;
 }
 
 void cli_virus_found_cb(cli_ctx *ctx, const char *virname)
