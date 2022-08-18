@@ -954,7 +954,15 @@ char *cli_strdup(const char *s);
 int cli_rmdirs(const char *dirname);
 char *cli_hashstream(FILE *fs, unsigned char *digcpy, int type);
 char *cli_hashfile(const char *filename, int type);
-int cli_unlink(const char *pathname);
+
+/**
+ * @brief unlink() with error checking
+ *
+ * @param pathname the file path to unlink
+ * @return cl_error_t CL_SUCCESS if successful, CL_EUNLINK if unlink() failed
+ */
+cl_error_t cli_unlink(const char *pathname);
+
 size_t cli_readn(int fd, void *buff, size_t count);
 size_t cli_writen(int fd, const void *buff, size_t count);
 const char *cli_gettmpdir(void);

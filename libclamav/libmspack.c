@@ -341,26 +341,30 @@ static struct mspack_system mspack_sys_fmap_ops = {
     .copy    = mspack_fmap_copy,
 };
 
-int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
+cl_error_t cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 {
-    struct mscab_decompressor *cab_d;
-    struct mscabd_cabinet *cab_h;
-    struct mscabd_file *cab_f;
-    int ret = 0;
+    cl_error_t ret                   = CL_SUCCESS;
+    struct mscab_decompressor *cab_d = NULL;
+    struct mscabd_cabinet *cab_h     = NULL;
+    struct mscabd_file *cab_f        = NULL;
     int files;
-    int virus_num                  = 0;
     struct mspack_name mspack_fmap = {
         .fmap = ctx->fmap,
         .org  = sfx_offset,
     };
     struct mspack_system_ex ops_ex;
+
+    char *tmp_fname      = NULL;
+    bool tempfile_exists = false;
+
     memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
     ops_ex.ops = mspack_sys_fmap_ops;
 
     cab_d = mspack_create_cab_decompressor(&ops_ex.ops);
     if (!cab_d) {
         cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-        return CL_EUNPACK;
+        ret = CL_EUNPACK;
+        goto done;
     }
 
     cab_d->set_param(cab_d, MSCABD_PARAM_FIXMSZIP, 1);
@@ -369,31 +373,26 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
 #endif
 
     cab_h = cab_d->open(cab_d, (char *)&mspack_fmap);
-    if (!cab_h) {
-        ret = CL_EFORMAT;
+    if (NULL == cab_h) {
         cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-        goto out_dest;
+        ret = CL_EFORMAT;
+        goto done;
     }
+
     files = 0;
     for (cab_f = cab_h->files; cab_f; cab_f = cab_f->next) {
         uint64_t max_size;
-        char *tmp_fname = NULL;
 
         ret = cli_matchmeta(ctx, cab_f->filename, 0, cab_f->length, 0,
                             files, 0, NULL);
-        if (ret) {
-            if (ret == CL_VIRUS) {
-                virus_num++;
-                if (!SCAN_ALLMATCHES)
-                    break;
-            }
-            goto out_close;
+        if (CL_SUCCESS != ret) {
+            goto done;
         }
 
         if (ctx->engine->maxscansize) {
             if (ctx->scansize >= ctx->engine->maxscansize) {
                 ret = CL_CLEAN;
-                break;
+                goto done;
             }
         }
 
@@ -422,94 +421,107 @@ int cli_scanmscab(cli_ctx *ctx, off_t sfx_offset)
         tmp_fname = cli_gentemp(ctx->sub_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
-            break;
+            goto done;
         }
 
         ops_ex.max_size = max_size;
+
         /* scan */
         ret = cab_d->extract(cab_d, cab_f, tmp_fname);
-        if (ret)
+        if (ret) {
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
+        }
+        tempfile_exists = true; // probably
 
         ret = cli_magic_scan_file(tmp_fname, ctx, cab_f->filename);
         if (CL_EOPEN == ret) {
-            ret = CL_CLEAN;
-        } else if (CL_VIRUS == ret) {
-            virus_num++;
+            // okay so the file didn't actually get extracted. That's okay, we'll move on.
+            tempfile_exists = false;
+            ret             = CL_SUCCESS;
+        } else if (CL_SUCCESS != ret) {
+            goto done;
         }
 
-        if (!ctx->engine->keeptmp) {
-            if (!access(tmp_fname, R_OK) && cli_unlink(tmp_fname)) {
-                free(tmp_fname);
+        if (!ctx->engine->keeptmp && tempfile_exists) {
+            if (cli_unlink(tmp_fname)) {
                 ret = CL_EUNLINK;
-                break;
+                goto done;
             }
         }
+
         free(tmp_fname);
+        tmp_fname = NULL;
+
         files++;
-        if (ret == CL_VIRUS && SCAN_ALLMATCHES)
-            continue;
-        if (ret)
-            break;
     }
 
-out_close:
-    cab_d->close(cab_d, cab_h);
-out_dest:
-    mspack_destroy_cab_decompressor(cab_d);
-    if (virus_num)
-        return CL_VIRUS;
+done:
+
+    if (NULL != tmp_fname) {
+        if (!ctx->engine->keeptmp && tempfile_exists) {
+            (void)cli_unlink(tmp_fname);
+        }
+
+        free(tmp_fname);
+    }
+
+    if (NULL != cab_d) {
+        if (NULL != cab_h) {
+            cab_d->close(cab_d, cab_h);
+        }
+        mspack_destroy_cab_decompressor(cab_d);
+    }
+
     return ret;
 }
 
-int cli_scanmschm(cli_ctx *ctx)
+cl_error_t cli_scanmschm(cli_ctx *ctx)
 {
-    struct mschm_decompressor *mschm_d;
-    struct mschmd_header *mschm_h;
-    struct mschmd_file *mschm_f;
-    int ret = CL_CLEAN; // Default CLEAN in case CHM contains no files.
+    cl_error_t ret                     = CL_SUCCESS;
+    struct mschm_decompressor *mschm_d = NULL;
+    struct mschmd_header *mschm_h      = NULL;
+    struct mschmd_file *mschm_f        = NULL;
     int files;
-    int virus_num                  = 0;
     struct mspack_name mspack_fmap = {
         .fmap = ctx->fmap,
     };
     struct mspack_system_ex ops_ex;
+
+    char *tmp_fname      = NULL;
+    bool tempfile_exists = false;
+
     memset(&ops_ex, 0, sizeof(struct mspack_system_ex));
     ops_ex.ops = mspack_sys_fmap_ops;
 
     mschm_d = mspack_create_chm_decompressor(&ops_ex.ops);
     if (!mschm_d) {
         cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-        return CL_EUNPACK;
+        ret = CL_EUNPACK;
+        goto done;
     }
 
     mschm_h = mschm_d->open(mschm_d, (char *)&mspack_fmap);
     if (!mschm_h) {
-        ret = CL_EFORMAT;
         cli_dbgmsg("%s() failed at %d\n", __func__, __LINE__);
-        goto out_dest;
+        ret = CL_EFORMAT;
+        goto done;
     }
+
     files = 0;
     for (mschm_f = mschm_h->files; mschm_f; mschm_f = mschm_f->next) {
         uint64_t max_size;
-        char *tmp_fname;
 
         ret = cli_matchmeta(ctx, mschm_f->filename, 0, mschm_f->length,
                             0, files, 0, NULL);
-        if (ret) {
-            if (ret == CL_VIRUS) {
-                virus_num++;
-                if (!SCAN_ALLMATCHES)
-                    break;
-            }
-            goto out_close;
+        if (CL_SUCCESS != ret) {
+            goto done;
         }
 
         if (ctx->engine->maxscansize) {
             if (ctx->scansize >= ctx->engine->maxscansize) {
                 ret = CL_CLEAN;
-                break;
+                goto done;
             }
         }
 
@@ -535,47 +547,60 @@ int cli_scanmschm(cli_ctx *ctx)
             }
         }
 
-        ops_ex.max_size = max_size;
-
         tmp_fname = cli_gentemp(ctx->sub_tmpdir);
         if (!tmp_fname) {
             ret = CL_EMEM;
             break;
         }
 
+        ops_ex.max_size = max_size;
+
         /* scan */
         ret = mschm_d->extract(mschm_d, mschm_f, tmp_fname);
-        if (ret)
+        if (ret) {
             /* Failed to extract. Try to scan what is there */
             cli_dbgmsg("%s() failed to extract %d\n", __func__, ret);
+        }
+        tempfile_exists = true; // probably
 
         ret = cli_magic_scan_file(tmp_fname, ctx, mschm_f->filename);
         if (CL_EOPEN == ret) {
-            ret = CL_CLEAN;
-        } else if (CL_VIRUS == ret) {
-            virus_num++;
+            // okay so the file didn't actually get extracted. That's okay, we'll move on.
+            tempfile_exists = false;
+            ret             = CL_SUCCESS;
+        } else if (CL_SUCCESS != ret) {
+            goto done;
         }
 
-        if (!ctx->engine->keeptmp) {
-            if (!access(tmp_fname, R_OK) && cli_unlink(tmp_fname)) {
-                free(tmp_fname);
+        if (!ctx->engine->keeptmp && tempfile_exists) {
+            if (cli_unlink(tmp_fname)) {
                 ret = CL_EUNLINK;
-                break;
+                goto done;
             }
         }
+
         free(tmp_fname);
+        tmp_fname = NULL;
+
         files++;
-        if (ret == CL_VIRUS && SCAN_ALLMATCHES)
-            continue;
-        if (ret)
-            break;
     }
 
-out_close:
-    mschm_d->close(mschm_d, mschm_h);
-out_dest:
-    mspack_destroy_chm_decompressor(mschm_d);
-    if (virus_num)
-        return CL_VIRUS;
+done:
+
+    if (NULL != tmp_fname) {
+        if (!ctx->engine->keeptmp && tempfile_exists) {
+            (void)cli_unlink(tmp_fname);
+        }
+
+        free(tmp_fname);
+    }
+
+    if (NULL != mschm_d) {
+        if (NULL != mschm_h) {
+            mschm_d->close(mschm_d, mschm_h);
+        }
+        mspack_destroy_chm_decompressor(mschm_d);
+    }
+
     return ret;
 }
