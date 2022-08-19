@@ -166,13 +166,13 @@ static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             snprintf(fullname, 1024, "%s" PATHSEP "javascript", ctx->jsnormdir);
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
-                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR,
+                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR,
                                     NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
                     else {
-                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR,
+                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR,
                                             NULL, NULL, LAYER_ATTRIBUTES_NORMALIZED);
                     }
                 }

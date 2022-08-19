@@ -564,7 +564,7 @@ static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
     const char *virname = NULL;
     int foundsize[CLI_HASH_AVAIL_TYPES];
     int foundwild[CLI_HASH_AVAIL_TYPES];
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
     int ret            = CL_CLEAN;
     unsigned char *md5 = NULL;
 
@@ -2253,7 +2253,7 @@ static inline int hash_impfns(cli_ctx *ctx, void **hashctx, uint32_t *impsz, str
     unsigned int err = 0;
     int num_fns = 0, ret = CL_SUCCESS;
     const char *buffer;
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
 #if HAVE_JSON
     json_object *imptbl = NULL;
 #else
@@ -2421,7 +2421,7 @@ static cl_error_t hash_imptbl(cli_ctx *ctx, unsigned char **digest, uint32_t *im
     uint32_t impoff, offset;
     const char *buffer;
     void *hashctx[CLI_HASH_AVAIL_TYPES] = {0};
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
     int nimps = 0;
     unsigned int err;
     int first          = 1;
@@ -2572,7 +2572,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     const char *virname = NULL;
     int genhash[CLI_HASH_AVAIL_TYPES];
     uint32_t impsz = 0;
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
     int ret = CL_CLEAN;
 
     /* pick hashtypes to generate */
@@ -2917,7 +2917,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     /* CLI_UNPTEMP("cli_scanpe: DISASM",(peinfo->sections,0)); */
     /* if(disasmbuf((unsigned char*)epbuff, epsize, ndesc)) */
-    /*  ret = cli_scan_desc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR); */
+    /*  ret = cli_scan_desc(ndesc, ctx, CL_TYPE_PE_DISASM, true, NULL, AC_SCAN_VIR); */
     /* close(ndesc); */
     /* if(ret == CL_VIRUS) { */
     /*  cli_exe_info_destroy(peinfo); */
@@ -5758,7 +5758,7 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     // At this point we should compute the SHA1 authenticode hash to see
     // whether we've had any hashes added from external catalog files
     static const struct supported_hashes {
-        const enum CLI_HASH_TYPE hashtype;
+        const cli_hash_type_t hashtype;
         const char *hashctx_name;
     } supported_hashes[] = {
         {CLI_HASH_SHA1, "sha1"},
@@ -5766,8 +5766,8 @@ cl_error_t cli_check_auth_header(cli_ctx *ctx, struct cli_exe_info *peinfo)
     };
 
     for (i = 0; i < (sizeof(supported_hashes) / sizeof(supported_hashes[0])); i++) {
-        const enum CLI_HASH_TYPE hashtype = supported_hashes[i].hashtype;
-        const char *hashctx_name          = supported_hashes[i].hashctx_name;
+        const cli_hash_type_t hashtype = supported_hashes[i].hashtype;
+        const char *hashctx_name       = supported_hashes[i].hashctx_name;
 
         if (!cli_hm_have_size(ctx->engine->hm_fp, hashtype, 2)) {
             continue;

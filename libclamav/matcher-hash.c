@@ -28,7 +28,7 @@
 
 int hm_addhash_str(struct cli_matcher *root, const char *strhash, uint32_t size, const char *virusname)
 {
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
     char binhash[CLI_HASHLEN_MAX];
     int hlen;
 
@@ -71,7 +71,7 @@ const unsigned int hashlen[] = {
     CLI_HASHLEN_SHA1,
     CLI_HASHLEN_SHA256};
 
-int hm_addhash_bin(struct cli_matcher *root, const void *binhash, enum CLI_HASH_TYPE type, uint32_t size, const char *virusname)
+int hm_addhash_bin(struct cli_matcher *root, const void *binhash, cli_hash_type_t type, uint32_t size, const char *virusname)
 {
     const unsigned int hlen = hashlen[type];
     const struct cli_htu32_element *item;
@@ -192,7 +192,7 @@ static void hm_sort(struct cli_sz_hash *szh, size_t l, size_t r, unsigned int ke
 /* flush both size-specific and agnostic hash sets */
 void hm_flush(struct cli_matcher *root)
 {
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
     unsigned int keylen;
     struct cli_sz_hash *szh;
 
@@ -225,23 +225,22 @@ void hm_flush(struct cli_matcher *root)
     }
 }
 
-int cli_hm_have_size(const struct cli_matcher *root, enum CLI_HASH_TYPE type, uint32_t size)
+int cli_hm_have_size(const struct cli_matcher *root, cli_hash_type_t type, uint32_t size)
 {
     return (size && size != 0xffffffff && root && root->hm.sizehashes[type].capacity && cli_htu32_find(&root->hm.sizehashes[type], size));
 }
 
-int cli_hm_have_wild(const struct cli_matcher *root, enum CLI_HASH_TYPE type)
+int cli_hm_have_wild(const struct cli_matcher *root, cli_hash_type_t type)
 {
     return (root && root->hwild.hashes[type].items);
 }
 
-int cli_hm_have_any(const struct cli_matcher *root, enum CLI_HASH_TYPE type)
+int cli_hm_have_any(const struct cli_matcher *root, cli_hash_type_t type)
 {
     return (root && (root->hwild.hashes[type].items || root->hm.sizehashes[type].capacity));
 }
 
-/* cli_hm_scan will scan only size-specific hashes, if any */
-static int hm_scan(const unsigned char *digest, const char **virname, const struct cli_sz_hash *szh, enum CLI_HASH_TYPE type)
+static int hm_scan(const unsigned char *digest, const char **virname, const struct cli_sz_hash *szh, cli_hash_type_t type)
 {
     unsigned int keylen;
     size_t l, r;
@@ -273,7 +272,7 @@ static int hm_scan(const unsigned char *digest, const char **virname, const stru
 }
 
 /* cli_hm_scan will scan only size-specific hashes, if any */
-int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type)
+int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
 {
     const struct cli_htu32_element *item;
     struct cli_sz_hash *szh;
@@ -291,7 +290,7 @@ int cli_hm_scan(const unsigned char *digest, uint32_t size, const char **virname
 }
 
 /* cli_hm_scan_wild will scan only size-agnostic hashes, if any */
-int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, enum CLI_HASH_TYPE type)
+int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const struct cli_matcher *root, cli_hash_type_t type)
 {
     if (!digest || !root || !root->hwild.hashes[type].items)
         return CL_CLEAN;
@@ -302,7 +301,7 @@ int cli_hm_scan_wild(const unsigned char *digest, const char **virname, const st
 /* free both size-specific and agnostic hash sets */
 void hm_free(struct cli_matcher *root)
 {
-    enum CLI_HASH_TYPE type;
+    cli_hash_type_t type;
 
     if (!root)
         return;
