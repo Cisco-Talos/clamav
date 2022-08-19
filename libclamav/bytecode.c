@@ -2844,11 +2844,7 @@ cl_error_t cli_bytecode_runlsig(cli_ctx *cctx, struct cli_target_info *tinfo,
         cl_error_t rc;
         cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
 
-        if (!strncmp(ctx.virname, "BC.Heuristics", 13)) {
-            rc = cli_append_potentially_unwanted(cctx, ctx.virname);
-        } else {
-            rc = cli_append_virus(cctx, ctx.virname);
-        }
+        rc = cli_append_virus(cctx, ctx.virname);
 
         cli_bytecode_context_clear(&ctx);
         return rc;

@@ -555,7 +555,7 @@ done:
     if ((CL_VIRUS != status) && ((CL_EUNPACK == status) || (nEncryptedFilesFound > 0))) {
         /* If user requests enabled the Heuristic for encrypted archives... */
         if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
-            if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Encrypted.RAR")) {
+            if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.RAR")) {
                 status = CL_VIRUS;
             }
         }
@@ -1006,7 +1006,7 @@ done:
     if ((CL_VIRUS != status) && ((CL_EUNPACK == status) || (nEncryptedFilesFound > 0))) {
         /* If user requests enabled the Heuristic for encrypted archives... */
         if (SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
-            if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Encrypted.EGG")) {
+            if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.EGG")) {
                 status = CL_VIRUS;
             }
         }
@@ -1453,7 +1453,7 @@ static cl_error_t cli_scanxz(cli_ctx *ctx)
         rc = cli_XzDecode(&strm);
         if (XZ_RESULT_OK != rc && XZ_STREAM_END != rc) {
             if (rc == XZ_DIC_HEURISTIC) {
-                ret = cli_append_virus(ctx, "Heuristics.XZ.DicSizeLimit");
+                ret = cli_append_potentially_unwanted(ctx, "Heuristics.XZ.DicSizeLimit");
                 goto xz_exit;
             }
             cli_errmsg("cli_scanxz: decompress error: %d\n", rc);
@@ -1727,7 +1727,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
             }
 #endif
             if (SCAN_HEURISTIC_MACROS && *has_macros) {
-                ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
+                ret = cli_append_potentially_unwanted(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
                 if (ret == CL_VIRUS) {
                     viruses_found++;
                     if (!SCAN_ALLMATCHES) {
@@ -2087,7 +2087,7 @@ done:
 #endif
 
     if (SCAN_HEURISTIC_MACROS && *has_macros) {
-        ret = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
+        ret = cli_append_potentially_unwanted(ctx, "Heuristics.OLE2.ContainsMacros.VBA");
         if (ret == CL_VIRUS)
             viruses_found++;
     }
@@ -2583,7 +2583,7 @@ static cl_error_t cli_ole2_scan_tempdir(
 
     if (has_xlm) {
         if (SCAN_HEURISTIC_MACROS) {
-            status = cli_append_virus(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
+            status = cli_append_potentially_unwanted(ctx, "Heuristics.OLE2.ContainsMacros.XLM");
             if (status == CL_VIRUS) {
                 viruses_found++;
                 if (!SCAN_ALLMATCHES) {
@@ -2825,7 +2825,7 @@ static cl_error_t cli_scanriff(cli_ctx *ctx)
     cl_error_t ret = CL_CLEAN;
 
     if (cli_check_riff_exploit(ctx) == 2)
-        ret = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS05-002");
+        ret = cli_append_potentially_unwanted(ctx, "Heuristics.Exploit.W32.MS05-002");
 
     return ret;
 }
@@ -3070,7 +3070,7 @@ static cl_error_t cli_scan_structured(cli_ctx *ctx)
 
     if (cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
         cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
-        if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Structured.CreditCardNumber")) {
+        if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Structured.CreditCardNumber")) {
             if (SCAN_ALLMATCHES) {
                 viruses_found++;
             } else {
@@ -3081,7 +3081,7 @@ static cl_error_t cli_scan_structured(cli_ctx *ctx)
 
     if (ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
         cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
-        if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Structured.SSN")) {
+        if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Structured.SSN")) {
             if (SCAN_ALLMATCHES) {
                 viruses_found++;
             } else {
@@ -5413,7 +5413,7 @@ static cl_error_t scan_common(cl_fmap_t *map, const char *filepath, const char *
      * bound to behave badly with large files. */
     if (map->len > INT_MAX - 2) {
         if (scanoptions->heuristic & CL_SCAN_HEURISTIC_EXCEEDS_MAX) {
-            status = cli_append_virus(&ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
+            status = cli_append_potentially_unwanted(&ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
         } else {
             status = CL_CLEAN;
         }

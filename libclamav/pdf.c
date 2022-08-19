@@ -3394,7 +3394,7 @@ static cl_error_t pdf_find_and_extract_objs(struct pdf_struct *pdf)
         /* It is encrypted, and a password/key needs to be supplied to decrypt.
          * This doesn't trigger for PDFs that are encrypted but don't need
          * a password to decrypt */
-        status = cli_append_virus(pdf->ctx, "Heuristics.Encrypted.PDF");
+        status = cli_append_potentially_unwanted(pdf->ctx, "Heuristics.Encrypted.PDF");
     }
 
     if (CL_SUCCESS == status) {

@@ -387,7 +387,7 @@ cl_error_t cli_parsejpeg(cli_ctx *ctx)
                 if (buff[0] == 0x00) {
                     if ((buff[1] == 0x00) || (buff[1] == 0x01)) {
                         /* Found exploit */
-                        status = cli_append_virus(ctx, "Heuristics.Exploit.W32.MS04-028");
+                        status = cli_append_potentially_unwanted(ctx, "Heuristics.Exploit.W32.MS04-028");
                         goto done;
                     }
                 }

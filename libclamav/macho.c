@@ -168,13 +168,13 @@ struct macho_fat_arch {
     uint32_t align;
 };
 
-#define RETURN_BROKEN                                                          \
-    if (matcher)                                                               \
-        return -1;                                                             \
-    if (SCAN_HEURISTIC_BROKEN) {                                               \
-        if (CL_VIRUS == cli_append_virus(ctx, "Heuristics.Broken.Executable")) \
-            return CL_VIRUS;                                                   \
-    }                                                                          \
+#define RETURN_BROKEN                                                                         \
+    if (matcher)                                                                              \
+        return -1;                                                                            \
+    if (SCAN_HEURISTIC_BROKEN) {                                                              \
+        if (CL_VIRUS == cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable")) \
+            return CL_VIRUS;                                                                  \
+    }                                                                                         \
     return CL_EFORMAT
 
 static uint32_t cli_rawaddr(uint32_t vaddr, struct cli_exe_section *sects, uint16_t nsects, unsigned int *err)

@@ -681,7 +681,7 @@ static unsigned int parse_local_file_header(
     if (detect_encrypted && (LOCAL_HEADER_flags & F_ENCR) && SCAN_HEURISTIC_ENCRYPTED_ARCHIVE) {
         cl_error_t fp_check;
         cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-        fp_check = cli_append_virus(ctx, "Heuristics.Encrypted.Zip");
+        fp_check = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.Zip");
         if ((fp_check == CL_VIRUS && !SCAN_ALLMATCHES) || fp_check != CL_CLEAN) {
             *ret = fp_check;
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
@@ -1049,7 +1049,7 @@ cl_error_t index_the_central_directory(
         /* stop checking file entries if we'll exceed maxfiles */
         if (ctx->engine->maxfiles && records_count >= ctx->engine->maxfiles) {
             cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
-            cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+            cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
             exceeded_max_files = true; // Set a bool so we can return the correct status code later.
                                        // We still need to scan the files we found while reviewing the file records up to this limit.
             break;
@@ -1136,7 +1136,7 @@ cl_error_t index_the_central_directory(
 
                     if (ZIP_MAX_NUM_OVERLAPPING_FILES < num_overlapping_files) {
                         if (SCAN_HEURISTICS) {
-                            status = cli_append_virus(ctx, "Heuristics.Zip.OverlappingFiles");
+                            status = cli_append_potentially_unwanted(ctx, "Heuristics.Zip.OverlappingFiles");
                         } else {
                             status = CL_EFORMAT;
                         }
@@ -1296,7 +1296,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 //   so we will also check and update the limits for the actual number of scanned
                 //   files inside cli_magic_scan()
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
-                cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+                cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 ret = CL_EMAXFILES;
             }
 
@@ -1355,7 +1355,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 //   so we will also check and update the limits for the actual number of scanned
                 //   files inside cli_magic_scan()
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
-                cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+                cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 ret = CL_EMAXFILES;
             }
 #if HAVE_JSON
@@ -1516,7 +1516,7 @@ cl_error_t unzip_search(cli_ctx *ctx, fmap_t *map, struct zip_requests *requests
                 // Note: this check piggybacks on the MaxFiles setting, but is not actually
                 //   scanning these files or incrementing the ctx->scannedfiles count
                 cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
-                cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+                cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
                 ret = CL_EMAXFILES;
             }
 #if HAVE_JSON

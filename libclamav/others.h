@@ -732,6 +732,18 @@ cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname);
  */
 cl_error_t cli_append_potentially_unwanted(cli_ctx *ctx, const char *virname);
 
+/**
+ * @brief If the SCAN_HEURISTIC_EXCEEDS_MAX option is enabled, append a "potentially unwanted" indicator.
+ *
+ * There is no return value because the caller should select the appropriate "CL_EMAX*" error code regardless
+ * of whether or not an FP sig is found, or allmatch is enabled, or whatever.
+ * That is, the scan must not continue because of an FP sig.
+ *
+ * @param ctx       The scan context.
+ * @param virname   The name of the potentially unwanted indicator.
+ */
+void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *virname);
+
 const char *cli_get_last_virus(const cli_ctx *ctx);
 const char *cli_get_last_virus_str(const cli_ctx *ctx);
 void cli_virus_found_cb(cli_ctx *ctx, const char *virname);
@@ -1063,8 +1075,8 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char *cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
-void cli_append_virus_if_heur_exceedsmax(cli_ctx *, char *);
-cl_error_t cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
+
+cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3);
 
 /**
  * @brief Call before scanning a file to determine if we should scan it, skip it, or abort the entire scanning process.

@@ -516,7 +516,7 @@ static cl_error_t mbr_primary_partition_intersection(cli_ctx *ctx, struct mbr_bo
                     cli_dbgmsg("cli_scanmbr: detected intersection with partitions "
                                "[%u, %u]\n",
                                pitxn, i);
-                    status = cli_append_virus(ctx, "Heuristics.MBRPartitionnIntersect");
+                    status = cli_append_potentially_unwanted(ctx, "Heuristics.MBRPartitionnIntersect");
                     if (status != CL_SUCCESS) {
                         goto done;
                     }
@@ -587,7 +587,7 @@ static cl_error_t mbr_extended_partition_intersection(cli_ctx *ctx, unsigned *pr
                 cli_dbgmsg("cli_scanebr: detected intersection with partitions "
                            "[%u, %u]\n",
                            pitxn, i);
-                status = cli_append_virus(ctx, "Heuristics.MBRPartitionnIntersect");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.MBRPartitionnIntersect");
                 if (status == CL_VIRUS) {
                     goto done;
                 }

@@ -89,7 +89,7 @@ int cli_check_mydoom_log(cli_ctx *ctx)
     if ((~check) != key)
         return CL_CLEAN;
 
-    return cli_append_virus(ctx, "Heuristics.Worm.Mydoom.M.log");
+    return cli_append_potentially_unwanted(ctx, "Heuristics.Worm.Mydoom.M.log");
 }
 
 static uint32_t riff_endian_convert_32(uint32_t value, int big_endian)

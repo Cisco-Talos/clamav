@@ -260,7 +260,7 @@ cl_error_t cli_parsepng(cli_ctx *ctx)
 
             if (color_type == 3) {
                 if ((chunk_data_length > 256 || chunk_data_length > num_palette_entries) && !have_PLTE) {
-                    status = cli_append_virus(ctx, "Heuristics.PNG.CVE-2004-0597");
+                    status = cli_append_potentially_unwanted(ctx, "Heuristics.PNG.CVE-2004-0597");
                     goto done; // always, even if allmatch mode means status comes back 'success' instead of 'virus'.
                 }
             }
