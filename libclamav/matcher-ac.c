@@ -1523,7 +1523,7 @@ cl_error_t cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t
 
 cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, const struct cli_target_info *info)
 {
-    int ret;
+    cl_error_t ret;
     unsigned int i;
     struct cli_ac_patt *patt;
 
@@ -1534,7 +1534,7 @@ cl_error_t cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *dat
         patt = root->ac_reloff[i];
         if (!info) {
             data->offset[patt->offset_min] = CLI_OFF_NONE;
-        } else if ((ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
+        } else if (CL_SUCCESS != (ret = cli_caloff(NULL, info, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
             cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
             return ret;
         } else if ((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length[1] > info->fsize)) {

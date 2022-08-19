@@ -206,7 +206,7 @@ static int hashpe(const char *filename, unsigned int class, int type)
     }
 
     /* prepare context */
-    ctx.engine         = engine;
+    ctx.engine = engine;
 
     ctx.evidence = evidence_new();
 
@@ -2106,7 +2106,7 @@ static void matchsig(char *sig, const char *offset, int fd)
         goto done;
     }
 
-    ctx.engine         = engine;
+    ctx.engine = engine;
 
     ctx.evidence = evidence_new();
 
@@ -2127,7 +2127,7 @@ static void matchsig(char *sig, const char *offset, int fd)
 
     ctx.fmap = ctx.recursion_stack[ctx.recursion_level].fmap;
 
-    (void)cli_scan_fmap(&ctx, 0, 0, NULL, AC_SCAN_VIR, &acres, NULL);
+    (void)cli_scan_fmap(&ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, &acres, NULL);
 
     res = acres;
     while (res) {
@@ -3327,7 +3327,7 @@ static int dumpcerts(const struct optstruct *opts)
     cl_debug();
 
     /* prepare context */
-    ctx.engine         = engine;
+    ctx.engine = engine;
 
     ctx.evidence = evidence_new();
 

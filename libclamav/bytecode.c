@@ -168,14 +168,14 @@ static cl_error_t cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
             if (fd >= 0) {
                 cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
 
-                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                ret = cli_scan_desc(fd, cctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL);
                 if (ret == CL_CLEAN) {
                     if (lseek(fd, 0, SEEK_SET) == -1)
                         cli_dbgmsg("cli_bytecode: call to lseek() has failed\n");
                     else {
                         cctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
 
-                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                        ret = cli_scan_desc(fd, cctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, NULL);
                     }
                 }
                 close(fd);

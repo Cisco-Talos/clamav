@@ -1540,9 +1540,9 @@ static cl_error_t cli_scanszdd(cli_ctx *ctx)
 
 static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *ctx)
 {
-    cl_error_t ret            = CL_SUCCESS;
-    struct cli_matcher *groot = ctx->engine->root[0];
-    struct cli_matcher *troot = ctx->engine->root[2];
+    cl_error_t ret                      = CL_SUCCESS;
+    struct cli_matcher *generic_ac_root = ctx->engine->root[0];
+    struct cli_matcher *target_ac_root  = ctx->engine->root[2];
     struct cli_ac_data gmdata, tmdata;
     bool gmdata_initialized = false;
     bool tmdata_initialized = false;
@@ -1551,12 +1551,12 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
 
     cl_fmap_t *new_map = NULL;
 
-    if ((ret = cli_ac_initdata(&tmdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata(&tmdata, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
         goto done;
     }
     tmdata_initialized = true;
 
-    if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata(&gmdata, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
         goto done;
     }
     gmdata_initialized = true;
@@ -1588,13 +1588,13 @@ static cl_error_t vba_scandata(const unsigned char *data, size_t len, cli_ctx *c
             goto done;
         }
 
-        ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL);
+        ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL, NULL);
         if (ret == CL_VIRUS) {
             viruses_found++;
         }
 
         if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
-            ret = cli_exp_eval(ctx, groot, &gmdata, NULL, NULL);
+            ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL, NULL);
         }
 
         (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
@@ -1745,7 +1745,7 @@ static cl_error_t cli_ole2_tempdir_scan_vba_new(const char *dir, cli_ctx *ctx, s
                 goto done;
             }
 
-            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+            ret = cli_scan_desc(tempfd, ctx, CL_TYPE_SCRIPT, false, NULL, AC_SCAN_VIR, NULL, NULL);
 
             close(tempfd);
             tempfd = -1;
@@ -2165,7 +2165,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
     fd = open(fullname, O_RDONLY | O_BINARY);
     if (fd >= 0) {
         ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
-        if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+        if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
             viruses_found++;
         close(fd);
     }
@@ -2182,7 +2182,7 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
             fd = open(fullname, O_RDONLY | O_BINARY);
             if (fd >= 0) {
                 ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
-                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                     viruses_found++;
                 close(fd);
             }
@@ -2194,11 +2194,11 @@ static cl_error_t cli_scanhtml(cli_ctx *ctx)
         fd = open(fullname, O_RDONLY | O_BINARY);
         if (fd >= 0) {
             ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
-            if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+            if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_HTML, false, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                 viruses_found++;
             if (ret == CL_CLEAN || (ret == CL_VIRUS && SCAN_ALLMATCHES)) {
                 ctx->next_layer_is_normalized = true; // This flag ingested by cli_recursion_stack_push().
-                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
+                if ((ret = cli_scan_desc(fd, ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, NULL)) == CL_VIRUS)
                     viruses_found++;
             }
             close(fd);
@@ -2232,9 +2232,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     char *tmpname = NULL;
     int ofd       = -1;
     cl_error_t ret;
-    struct cli_matcher *troot;
+    struct cli_matcher *target_ac_root;
     uint32_t maxpatlen, offset = 0;
-    struct cli_matcher *groot;
+    struct cli_matcher *generic_ac_root;
     struct cli_ac_data gmdata, tmdata;
     int gmdata_initialized = 0;
     int tmdata_initialized = 0;
@@ -2249,11 +2249,11 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     if (!ctx || !ctx->engine->root)
         return CL_ENULLARG;
 
-    map       = ctx->fmap;
-    curr_len  = map->len;
-    groot     = ctx->engine->root[0];
-    troot     = ctx->engine->root[7];
-    maxpatlen = troot ? troot->maxpatlen : 0;
+    map             = ctx->fmap;
+    curr_len        = map->len;
+    generic_ac_root = ctx->engine->root[0];
+    target_ac_root  = ctx->engine->root[7];
+    maxpatlen       = target_ac_root ? target_ac_root->maxpatlen : 0;
 
     // Initialize info so it's safe to pass to destroy later
     cli_targetinfo_init(&info);
@@ -2274,12 +2274,12 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     }
     text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 
-    if ((ret = cli_ac_initdata(&tmdata, troot ? troot->ac_partsigs : 0, troot ? troot->ac_lsigs : 0, troot ? troot->ac_reloff_num : 0, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata(&tmdata, target_ac_root ? target_ac_root->ac_partsigs : 0, target_ac_root ? target_ac_root->ac_lsigs : 0, target_ac_root ? target_ac_root->ac_reloff_num : 0, CLI_DEFAULT_AC_TRACKLEN))) {
         goto done;
     }
     tmdata_initialized = 1;
 
-    if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
+    if ((ret = cli_ac_initdata(&gmdata, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN))) {
         goto done;
     }
     gmdata_initialized = 1;
@@ -2287,7 +2287,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     /* dump to disk only if explicitly asked to
      * or if necessary to check relative offsets,
      * otherwise we can process just in-memory */
-    if (ctx->engine->keeptmp || (troot && (troot->ac_reloff_num > 0 || troot->linked_bcs))) {
+    if (ctx->engine->keeptmp || (target_ac_root && (target_ac_root->ac_reloff_num > 0 || target_ac_root->linked_bcs))) {
         if ((ret = cli_gentempfd(ctx->sub_tmpdir, &tmpname, &ofd))) {
             cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
             goto done;
@@ -2299,8 +2299,8 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     mdata[0] = &tmdata;
     mdata[1] = &gmdata;
 
-    /* If there's a relative offset in troot or triggered bytecodes, normalize to file.*/
-    if (troot && (troot->ac_reloff_num > 0 || troot->linked_bcs)) {
+    /* If there's a relative offset in target_ac_root or triggered bytecodes, normalize to file.*/
+    if (target_ac_root && (target_ac_root->ac_reloff_num > 0 || target_ac_root->linked_bcs)) {
         size_t map_off = 0;
         while (map_off < map->len) {
             size_t written;
@@ -2332,7 +2332,7 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         }
 
         /* scan map */
-        ret = cli_scan_fmap(ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+        ret = cli_scan_fmap(ctx, CL_TYPE_TEXT_ASCII, false, NULL, AC_SCAN_VIR, NULL, NULL);
         if (ret == CL_VIRUS) {
             viruses_found++;
         }
@@ -2342,9 +2342,9 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
         /* Since the above is moderately costly all in all,
          * do the old stuff if there's no relative offsets. */
 
-        if (troot) {
+        if (target_ac_root) {
             cli_targetinfo(&info, 7, ctx);
-            ret = cli_ac_caloff(troot, &tmdata, &info);
+            ret = cli_ac_caloff(target_ac_root, &tmdata, &info);
             if (ret)
                 goto done;
         }
@@ -2388,10 +2388,10 @@ static cl_error_t cli_scanscript(cli_ctx *ctx)
     }
 
     if (ret != CL_VIRUS || SCAN_ALLMATCHES) {
-        if ((ret = cli_exp_eval(ctx, troot, &tmdata, NULL, NULL)) == CL_VIRUS)
+        if ((ret = cli_exp_eval(ctx, target_ac_root, &tmdata, NULL, NULL)) == CL_VIRUS)
             viruses_found++;
         if (ret != CL_VIRUS || SCAN_ALLMATCHES)
-            if ((ret = cli_exp_eval(ctx, groot, &gmdata, NULL, NULL)) == CL_VIRUS)
+            if ((ret = cli_exp_eval(ctx, generic_ac_root, &gmdata, NULL, NULL)) == CL_VIRUS)
                 viruses_found++;
     }
 
@@ -3393,7 +3393,7 @@ static cl_error_t scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_fi
     }
 
     perf_start(ctx, PERFT_RAW);
-    ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, 0, &ftoffset, acmode, NULL, refhash);
+    ret = cli_scan_fmap(ctx, type == CL_TYPE_TEXT_ASCII ? CL_TYPE_ANY : type, false, &ftoffset, acmode, NULL, refhash);
     perf_stop(ctx, PERFT_RAW);
 
     // I think this (CL_TYPENO business) causes embedded file extraction to stop when a
@@ -4303,7 +4303,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
     /*
      * Get the maphash
      */
-    if (CL_SUCCESS != fmap_get_MD5(ctx->fmap, &hash)) {
+    if (CL_SUCCESS != fmap_get_hash(ctx->fmap, &hash, CLI_HASH_MD5)) {
         cli_dbgmsg("cli_magic_scan: Failed to get a hash for the current fmap.\n");
         goto done;
     }
@@ -4360,7 +4360,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             goto done;
         }
 
-        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, 0, NULL, AC_SCAN_VIR, NULL, hash);
+        ret = cli_scan_fmap(ctx, CL_TYPE_ANY, false, NULL, AC_SCAN_VIR, NULL, hash);
         // It doesn't matter what was returned, always go to the end after this. Raw mode! No parsing files!
         goto done;
     }
@@ -4855,7 +4855,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             if ((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML && (ret != CL_VIRUS || SCAN_ALLMATCHES) && SCAN_PARSE_HTML)
                 ret = cli_scanscript(ctx);
             if (SCAN_PARSE_MAIL && (DCONF_MAIL & MAIL_CONF_MBOX) && ret != CL_VIRUS && (cli_recursion_stack_get_type(ctx, -1) == CL_TYPE_MAIL || dettype == CL_TYPE_MAIL)) {
-                ret = cli_scan_fmap(ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+                ret = cli_scan_fmap(ctx, CL_TYPE_MAIL, false, NULL, AC_SCAN_VIR, NULL, NULL);
             }
             perf_nested_stop(ctx, PERFT_SCRIPT, PERFT_SCAN);
             break;
@@ -4883,7 +4883,7 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
             perf_nested_stop(ctx, PERFT_MACHO, PERFT_SCAN);
             break;
         case CL_TYPE_BINARY_DATA:
-            ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, 0, NULL, AC_SCAN_VIR, NULL, NULL);
+            ret = cli_scan_fmap(ctx, CL_TYPE_OTHER, false, NULL, AC_SCAN_VIR, NULL, NULL);
             break;
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
             if (SCAN_PARSE_PDF && (DCONF_DOC & DOC_CONF_PDF))
