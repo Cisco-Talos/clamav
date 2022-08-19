@@ -300,7 +300,7 @@ static cl_error_t apm_partition_intersection(cli_ctx *ctx, struct apm_partition_
                 cli_dbgmsg("cli_scanapm: detected intersection with partitions "
                            "[%u, %u]\n",
                            pitxn, i);
-                status = cli_append_virus(ctx, "Heuristics.APMPartitionIntersection");
+                status = cli_append_potentially_unwanted(ctx, "Heuristics.APMPartitionIntersection");
                 if (status != CL_SUCCESS) {
                     goto done;
                 }
