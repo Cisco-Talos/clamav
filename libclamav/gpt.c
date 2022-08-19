@@ -645,7 +645,7 @@ static cl_error_t gpt_partition_intersection(cli_ctx *ctx, struct gpt_header hdr
                     cli_dbgmsg("cli_scangpt: detected intersection with partitions "
                                "[%u, %u]\n",
                                pitxn, i);
-                    status = cli_append_virus(ctx, "Heuristics.GPTPartitionIntersection");
+                    status = cli_append_potentially_unwanted(ctx, "Heuristics.GPTPartitionIntersection");
                     if (status != CL_SUCCESS) {
                         goto done;
                     }

@@ -2845,7 +2845,7 @@ int cli_scanpe(cli_ctx *ctx)
     if (CLI_PEHEADER_RET_BROKEN_PE == ret) {
         if (DETECT_BROKEN_PE) {
             // TODO Handle allmatch
-            ret = cli_append_virus(ctx, "Heuristics.Broken.Executable");
+            ret = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable");
             cli_exe_info_destroy(peinfo);
             return ret;
         }
@@ -3011,7 +3011,7 @@ int cli_scanpe(cli_ctx *ctx)
         if (pt) {
             pt += 15;
             if ((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
-                ret = cli_append_virus(ctx, "Heuristics.W32.Parite.B");
+                ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Parite.B");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
                         if (!SCAN_ALLMATCHES) {
@@ -3147,7 +3147,7 @@ int cli_scanpe(cli_ctx *ctx)
                     break;
                 case KZSLOOP:
                     if (op == kzdsize + 0x48 && *kzcode == 0x75 && kzlen - (int8_t)kzcode[1] - 3 <= kzinitlen && kzlen - (int8_t)kzcode[1] >= kzxorlen) {
-                        ret = cli_append_virus(ctx, "Heuristics.W32.Kriz");
+                        ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Kriz");
                         if (ret != CL_CLEAN) {
                             if (ret == CL_VIRUS) {
                                 if (!SCAN_ALLMATCHES) {
@@ -3184,7 +3184,7 @@ int cli_scanpe(cli_ctx *ctx)
 
             if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
                 if (cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
-                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
+                    ret = cli_append_potentially_unwanted(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
                             if (!SCAN_ALLMATCHES) {
@@ -3205,7 +3205,7 @@ int cli_scanpe(cli_ctx *ctx)
 
             if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
                 if (cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
-                    ret = cli_append_virus(ctx, dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
+                    ret = cli_append_potentially_unwanted(ctx, dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
                             if (!SCAN_ALLMATCHES) {
@@ -3282,7 +3282,7 @@ int cli_scanpe(cli_ctx *ctx)
                 continue;
 
             if ((jump = cli_readint32(code)) == 0x60ec8b55 || (code[4] == 0x0ec && ((jump == 0x83ec8b55 && code[6] == 0x60) || (jump == 0x81ec8b55 && !code[7] && !code[8])))) {
-                ret = cli_append_virus(ctx, "Heuristics.W32.Polipos.A");
+                ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Polipos.A");
                 if (ret != CL_CLEAN) {
                     if (ret == CL_VIRUS) {
                         if (!SCAN_ALLMATCHES) {
@@ -3317,7 +3317,7 @@ int cli_scanpe(cli_ctx *ctx)
             } else {
                 cli_parseres_special(EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].VirtualAddress), map, peinfo, fsize, 0, 0, &m, stats);
                 if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
-                    ret = cli_append_virus(ctx, "Heuristics.Trojan.Swizzor.Gen");
+                    ret = cli_append_potentially_unwanted(ctx, "Heuristics.Trojan.Swizzor.Gen");
                     if (ret != CL_CLEAN) {
                         if (ret == CL_VIRUS) {
                             if (!SCAN_ALLMATCHES) {

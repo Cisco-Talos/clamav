@@ -1089,7 +1089,7 @@ cl_error_t cl_engine_settings_free(struct cl_settings *settings)
     return CL_SUCCESS;
 }
 
-void cli_append_virus_if_heur_exceedsmax(cli_ctx *ctx, char *vname)
+void cli_append_potentially_unwanted_if_heur_exceedsmax(cli_ctx *ctx, char *vname)
 {
     if (!ctx->limit_exceeded) {
         ctx->limit_exceeded = true; // guard against adding an alert (or metadata) a million times for non-fatal exceeds-max conditions
@@ -1133,7 +1133,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
             /* Skip this file */
             cli_dbgmsg("%s: scansize exceeded (initial: %lu, consumed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxscansize, (unsigned long int)ctx->scansize, needed);
             ret = CL_EMAXSIZE;
-            cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
+            cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanSize");
         }
     }
 
@@ -1142,7 +1142,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
         /* Skip this file */
         cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, (unsigned long int)ctx->engine->maxfilesize, needed);
         ret = CL_EMAXSIZE;
-        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
+        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFileSize");
     }
 
     /* Enforce limit on number of embedded files */
@@ -1150,7 +1150,7 @@ cl_error_t cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, u
         /* Abort the scan ... */
         cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
         ret = CL_EMAXFILES;
-        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
+        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxFiles");
         ctx->abort_scan = true;
     }
 
@@ -1202,7 +1202,7 @@ cl_error_t cli_checktimelimit(cli_ctx *ctx)
     }
 
     if (CL_ETIMEOUT == ret) {
-        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanTime");
+        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxScanTime");
     }
 
 done:
@@ -1423,7 +1423,13 @@ cl_error_t cli_append_potentially_unwanted(cli_ctx *ctx, const char *virname)
 
 cl_error_t cli_append_virus(cli_ctx *ctx, const char *virname)
 {
-    return append_virus(ctx, virname, IndicatorType_Strong);
+    if ((strncmp(virname, "PUA.", 4) == 0) ||
+        (strncmp(virname, "Heuristics.", 11) == 0) ||
+        (strncmp(virname, "BC.Heuristics.", 14) == 0)) {
+        return cli_append_potentially_unwanted(ctx, virname);
+    } else {
+        return append_virus(ctx, virname, IndicatorType_Strong);
+    }
 }
 
 const char *cli_get_last_virus(const cli_ctx *ctx)
@@ -1465,7 +1471,7 @@ cl_error_t cli_recursion_stack_push(cli_ctx *ctx, cl_fmap_t *map, cli_file_t typ
         cli_dbgmsg("cli_recursion_stack_push: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion_level, ctx->engine->max_recursion_level);
         cli_dbgmsg("cli_recursion_stack_push: Some content was skipped. The scan result will not be cached.\n");
         emax_reached(ctx); // Disable caching for all recursion layers.
-        cli_append_virus_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
+        cli_append_potentially_unwanted_if_heur_exceedsmax(ctx, "Heuristics.Limits.Exceeded.MaxRecursion");
         status = CL_EMAXREC;
         goto done;
     }
