@@ -277,7 +277,8 @@ cli_file_t cli_determine_fmap_type(fmap_t *map, const struct cl_engine *engine, 
     unsigned char buffer[MAGIC_BUFFER_SIZE];
     const unsigned char *buff;
     unsigned char *decoded;
-    int bread, sret;
+    int bread;
+    cli_file_t sret;
     cli_file_t ret = CL_TYPE_BINARY_DATA;
     struct cli_matcher *root;
     struct cli_ac_data mdata;
