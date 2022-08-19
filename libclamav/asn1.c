@@ -2209,7 +2209,7 @@ int asn1_load_mscat(fmap_t *map, struct cl_engine *engine)
             struct cli_asn1 tagval1, tagval2, tagval3;
             int hashed_obj_type;
             cli_crt_hashtype hashtype;
-            enum CLI_HASH_TYPE hm_hashtype;
+            cli_hash_type_t hm_hashtype;
             unsigned int hashsize;
 
             if (asn1_expect_objtype(map, tag.content, &tag.size, &tagval1, ASN1_TYPE_SEQUENCE))

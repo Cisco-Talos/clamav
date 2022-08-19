@@ -285,9 +285,11 @@ fmap_t *fmap_duplicate(cl_fmap_t *map, size_t offset, size_t length, const char 
         }
 
         /* This also means the hash will be different.
-         * Clear the have_maphash flag.
+         * Clear the have_<hash> flags.
          * It will be calculated when next it is needed. */
-        duplicate_map->have_maphash = false;
+        duplicate_map->have_md5    = false;
+        duplicate_map->have_sha1   = false;
+        duplicate_map->have_sha256 = false;
     }
 
     if (NULL != name) {
@@ -429,7 +431,9 @@ extern cl_fmap_t *cl_fmap_open_handle(void *handle, size_t offset, size_t len,
     m->gets            = handle_gets;
     m->unneed_off      = handle_unneed_off;
     m->handle_is_fd    = 1;
-    m->have_maphash    = false;
+    m->have_md5        = false;
+    m->have_sha1       = false;
+    m->have_sha256     = false;
 
     status = CL_SUCCESS;
 
@@ -1082,7 +1086,45 @@ extern void cl_fmap_close(cl_fmap_t *map)
     funmap(map);
 }
 
-cl_error_t fmap_get_MD5(fmap_t *map, unsigned char **hash)
+cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type)
+{
+    cl_error_t status = CL_SUCCESS;
+
+    if (NULL == map) {
+        cli_errmsg("fmap_set_hash: Attempted to set hash for NULL fmap\n");
+        status = CL_EARG;
+        goto done;
+    }
+    if (NULL == hash) {
+        cli_errmsg("fmap_set_hash: Attempted to set hash to NULL\n");
+        status = CL_EARG;
+        goto done;
+    }
+
+    switch (type) {
+        case CLI_HASH_MD5:
+            memcpy(map->md5, hash, CLI_HASHLEN_MD5);
+            map->have_md5 = true;
+            break;
+        case CLI_HASH_SHA1:
+            memcpy(map->sha1, hash, CLI_HASHLEN_SHA1);
+            map->have_sha1 = true;
+            break;
+        case CLI_HASH_SHA256:
+            memcpy(map->sha256, hash, CLI_HASHLEN_SHA256);
+            map->have_sha256 = true;
+            break;
+        default:
+            cli_errmsg("fmap_set_hash: Unsupported hash type %u\n", type);
+            status = CL_EARG;
+            goto done;
+    }
+
+done:
+    return status;
+}
+
+cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type)
 {
     cl_error_t status = CL_ERROR;
     size_t todo, at = 0;
@@ -1090,41 +1132,109 @@ cl_error_t fmap_get_MD5(fmap_t *map, unsigned char **hash)
 
     todo = map->len;
 
-    if (!map->have_maphash) {
-        /* Need to calculate the hash */
-        hashctx = cl_hash_init("md5");
-        if (!(hashctx)) {
-            cli_errmsg("fmap_get_MD5: error initializing new md5 hash!\n");
+    switch (type) {
+        case CLI_HASH_MD5:
+            if (map->have_md5) {
+                goto complete;
+            }
+            break;
+        case CLI_HASH_SHA1:
+            if (map->have_md5) {
+                goto complete;
+            }
+            break;
+        case CLI_HASH_SHA256:
+            if (map->have_md5) {
+                goto complete;
+            }
+            break;
+        default:
+            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
+            status = CL_EARG;
+            goto done;
+    }
+
+    /*
+     * Need to calculate the hash.
+     */
+
+    switch (type) {
+        case CLI_HASH_MD5:
+            hashctx = cl_hash_init("md5");
+            break;
+        case CLI_HASH_SHA1:
+            hashctx = cl_hash_init("sha1");
+            break;
+        case CLI_HASH_SHA256:
+            hashctx = cl_hash_init("sha256");
+            break;
+        default:
+            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
+            status = CL_EARG;
+            goto done;
+    }
+    if (!(hashctx)) {
+        cli_errmsg("fmap_get_hash: error initializing new md5 hash!\n");
+        goto done;
+    }
+
+    while (todo) {
+        const void *buf;
+        size_t readme = todo < 1024 * 1024 * 10 ? todo : 1024 * 1024 * 10;
+
+        if (!(buf = fmap_need_off_once(map, at, readme))) {
+            cli_errmsg("fmap_get_hash: error reading while generating hash!\n");
+            status = CL_EREAD;
             goto done;
         }
 
-        while (todo) {
-            const void *buf;
-            size_t readme = todo < 1024 * 1024 * 10 ? todo : 1024 * 1024 * 10;
+        todo -= readme;
+        at += readme;
 
-            if (!(buf = fmap_need_off_once(map, at, readme))) {
-                cli_errmsg("fmap_get_MD5: error reading while generating hash!\n");
-                status = CL_EREAD;
-                goto done;
-            }
-
-            todo -= readme;
-            at += readme;
-
-            if (cl_update_hash(hashctx, (void *)buf, readme)) {
-                cli_errmsg("fmap_get_MD5: error calculating hash!\n");
-                status = CL_EREAD;
-                goto done;
-            }
+        if (cl_update_hash(hashctx, (void *)buf, readme)) {
+            cli_errmsg("fmap_get_hash: error calculating hash!\n");
+            status = CL_EREAD;
+            goto done;
         }
-
-        cl_finish_hash(hashctx, map->maphash);
-        hashctx = NULL;
-
-        map->have_maphash = true;
     }
 
-    *hash = map->maphash;
+    switch (type) {
+        case CLI_HASH_MD5:
+            cl_finish_hash(hashctx, map->md5);
+            map->have_md5 = true;
+            break;
+        case CLI_HASH_SHA1:
+            cl_finish_hash(hashctx, map->sha1);
+            map->have_sha1 = true;
+            break;
+        case CLI_HASH_SHA256:
+            cl_finish_hash(hashctx, map->sha256);
+            map->have_sha256 = true;
+            break;
+        default:
+            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
+            status = CL_EARG;
+            goto done;
+    }
+    hashctx = NULL;
+
+complete:
+
+    switch (type) {
+        case CLI_HASH_MD5:
+            *hash = map->md5;
+            break;
+        case CLI_HASH_SHA1:
+            *hash = map->sha1;
+            break;
+        case CLI_HASH_SHA256:
+            *hash = map->sha256;
+            break;
+        default:
+            cli_errmsg("fmap_get_hash: Unsupported hash type %u\n", type);
+            status = CL_EARG;
+            goto done;
+    }
 
     status = CL_SUCCESS;
 

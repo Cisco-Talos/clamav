@@ -319,7 +319,7 @@ set(LIBCLAMAV_SOURCES
     matcher-ac.c        matcher-ac.h
     matcher-bm.c        matcher-bm.h
     matcher-byte-comp.c matcher-byte-comp.h
-    matcher-hash.c      matcher-hash.h
+    matcher-hash.c      matcher-hash.h      matcher-hash-types.h
     matcher-pcre.c      matcher-pcre.h
     matcher.c           matcher.h
     regex_pcre.c        regex_pcre.h

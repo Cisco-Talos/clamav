@@ -37,6 +37,8 @@
 
 #include "clamav.h"
 
+#include "matcher-hash-types.h"
+
 struct cl_fmap;
 typedef cl_fmap_t fmap_t;
 
@@ -84,8 +86,12 @@ struct cl_fmap {
     HANDLE fh;
     HANDLE mh;
 #endif
-    bool have_maphash;
-    unsigned char maphash[16];
+    bool have_md5;
+    unsigned char md5[CLI_HASHLEN_MD5];
+    bool have_sha1;
+    unsigned char sha1[CLI_HASHLEN_SHA1];
+    bool have_sha256;
+    unsigned char sha256[CLI_HASHLEN_SHA256];
     uint64_t *bitmap;
     char *name;
 };
@@ -426,14 +432,25 @@ cl_error_t fmap_dump_to_file(fmap_t *map, const char *filepath, const char *tmpd
 int fmap_fd(fmap_t *m);
 
 /**
- * @brief   Get a pointer to the fmap hash.
+ * @brief Get a pointer to the fmap hash.
  *
  * Will calculate the hash if not already previously calculated.
  *
  * @param map       The map in question.
  * @param[out] hash A pointer to the hash.
+ * @param type      The type of hash to calculate.
  * @return cl_error_t CL_SUCCESS if was able to get the hash, else some error.
  */
-cl_error_t fmap_get_MD5(fmap_t *map, unsigned char **hash);
+cl_error_t fmap_get_hash(fmap_t *map, unsigned char **hash, cli_hash_type_t type);
+
+/**
+ * @brief Set the hash for the fmap that was previously calculated.
+ *
+ * @param map       The map in question.
+ * @param hash      The hash to set.
+ * @param type      The type of hash to calculate.
+ * @return cl_error_t CL_SUCCESS if was able to set the hash, else some error.
+ */
+cl_error_t fmap_set_hash(fmap_t *map, unsigned char *hash, cli_hash_type_t type);
 
 #endif
