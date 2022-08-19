@@ -246,18 +246,31 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
 /**
  * @brief Non-magic scan matching using a file buffer for input.  Older API
  *
- * This function is lower-level, requiring a call to `cli_exp_eval()` after the
- * match to evaluate logical signatures and yara rules.
- *
+ * This function is lower-level than the *magic_scan* functions from scanners.
  * This function does not perform file type magic identification and does not use
  * the file format scanners.
+ *
+ * Unlike the similar functions `cli_scan_desc()` and `cli_scan_fmap()` (below),
+ * this function:
+ *
+ * - REQUIRES a call to `cli_exp_eval()` after the match to evaluate logical
+ *   signatures and yara rules.
+ *
+ * - Does NOT support filetype_only mode.
+ *
+ * - Does NOT perform hash-based matching.
+ *
+ * - Does NOT support AC, BM, or PCRE relative-offset signature matching.
+ *
+ * - DOES support passing in externally initialized AC matcher data
  *
  * @param buffer            The buffer to be matched.
  * @param length            The length of the buffer or amount of bytets to match.
  * @param offset            Offset into the buffer from which to start matching.
  * @param ctx               The scanning context.
  * @param ftype             If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
- * @param[in,out] acdata    A list of pattern maching data structs to contain match results, one for each pattern matching trie.
+ * @param[in,out] acdata    (optional) A list of pattern maching data structs to contain match results, one for generic signatures and one for target-specific signatures.
+ *                          If not provided, the matcher results are lost, outside of this function's return value.
  * @return cl_error_t
  */
 cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
@@ -265,16 +278,22 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
 /**
  * @brief Non-magic scan matching using a file descriptor for input.
  *
+ * This function is lower-level than the *magic_scan* functions from scanners.
  * This function does not perform file type magic identification and does not use
  * the file format scanners.
  *
- * This function uses the newer cli_scan_fmap() scanning API.
+ * This function does signature matching for generic signatures, target-specific
+ * signatures, and file type recognition signatures to detect embedded files or
+ * to correct the current file type.
+ *
+ * This function is just a wrapper for `cli_scan_fmap()` that converts the file
+ * to an fmap and scans it.
  *
  * @param desc          File descriptor to be used for input
  * @param ctx           The scanning context.
  * @param ftype         If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
  * @param filetype_only Boolean indicating if the scan is for file-type detection only.
- * @param[out] ftoffset A list of file type signature matches with their corresponding offsets.
+ * @param[out] ftoffset (optional) A list of file type signature matches with their corresponding offsets. If provided, will output the file type signature matches.
  * @param acmode        Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
  * @param[out] acres    A list of cli_ac_result AC pattern matching results.
  * @param name          (optional) Original name of the file (to set fmap name metadata)
@@ -285,12 +304,20 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
 /**
  * @brief Non-magic scan matching of the current fmap in the scan context.  Newer API.
  *
+ * This function is lower-level than the *magic_scan* functions from scanners.
+ * This function does not perform file type magic identification and does not use
+ * the file format scanners.
+ *
+ * This function does signature matching for generic signatures, target-specific
+ * signatures, and file type recognition signatures to detect embedded files or
+ * to correct the current file type.
+ *
  * This API will invoke cli_exp_eval() for you.
  *
  * @param ctx           The scanning context.
  * @param ftype         If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
  * @param filetype_only Boolean indicating if the scan is for file-type detection only.
- * @param[out] ftoffset A list of file type signature matches with their corresponding offsets.
+ * @param[out] ftoffset (optional) A list of file type signature matches with their corresponding offsets. If provided, will output the file type signature matches.
  * @param acmode        Use AC_SCAN_VIR and AC_SCAN_FT to set scanning modes.
  * @param[out] acres    A list of cli_ac_result AC pattern matching results.
  * @param refhash       MD5 hash of the current file, used to save time creating hashes and to limit scan recursion for the HandlerType logical signature FTM feature.

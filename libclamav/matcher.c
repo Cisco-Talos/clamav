@@ -265,7 +265,7 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
 {
     cl_error_t ret = CL_CLEAN;
     unsigned int i = 0, j = 0;
-    struct cli_ac_data mdata;
+    struct cli_ac_data matcher_data;
     struct cli_matcher *generic_ac_root, *target_ac_root = NULL;
     const char *virname            = NULL;
     const struct cl_engine *engine = ctx->engine;
@@ -277,12 +277,15 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
 
     generic_ac_root = engine->root[0]; /* generic signatures */
 
-    if (ftype) {
+    if (ftype != CL_TYPE_ANY) {
+        // Identify the target type, to find the matcher root for that target.
+
         for (i = 1; i < CLI_MTARGETS; i++) {
             for (j = 0; j < cli_mtargets[i].target_count; ++j) {
                 if (cli_mtargets[i].target[j] == ftype) {
+                    // Identified the target type, now get the matcher root for that target.
                     target_ac_root = ctx->engine->root[i];
-                    break;
+                    break; // Break out of inner loop
                 }
             }
             if (target_ac_root) break;
@@ -290,29 +293,49 @@ cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t 
     }
 
     if (target_ac_root) {
+        /* If a target-specific specific signature root was found for the given file type, match with it. */
 
-        if (!acdata && (ret = cli_ac_initdata(&mdata, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
-            return ret;
+        if (!acdata) {
+            // no ac matcher data was provided, so we need to initialize our own.
+            ret = cli_ac_initdata(&matcher_data, target_ac_root->ac_partsigs, target_ac_root->ac_lsigs, target_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+            if (CL_SUCCESS != ret) {
+                return ret;
+            }
+        }
 
-        ret = matcher_run(target_ac_root, buffer, length, &virname, acdata ? (acdata[0]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
+        ret = matcher_run(target_ac_root, buffer, length, &virname,
+                          acdata ? (acdata[0]) : (&matcher_data),
+                          offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
 
-        if (!acdata)
-            cli_ac_freedata(&mdata);
+        if (!acdata) {
+            // no longer need our AC local matcher data (if using)
+            cli_ac_freedata(&matcher_data);
+        }
 
         if (ret == CL_EMEM || ret == CL_VIRUS) {
             return ret;
         }
+
+        // reset virname back to NULL for matching with the generic AC root.
+        virname = NULL;
     }
 
-    virname = NULL;
+    if (!acdata) {
+        // no ac matcher data was provided, so we need to initialize our own.
+        ret = cli_ac_initdata(&matcher_data, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN);
+        if (CL_SUCCESS != ret) {
+            return ret;
+        }
+    }
 
-    if (!acdata && (ret = cli_ac_initdata(&mdata, generic_ac_root->ac_partsigs, generic_ac_root->ac_lsigs, generic_ac_root->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
-        return ret;
+    ret = matcher_run(generic_ac_root, buffer, length, &virname,
+                      acdata ? (acdata[1]) : (&matcher_data),
+                      offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
 
-    ret = matcher_run(generic_ac_root, buffer, length, &virname, acdata ? (acdata[1]) : (&mdata), offset, NULL, ftype, NULL, AC_SCAN_VIR, PCRE_SCAN_BUFF, NULL, ctx->fmap, NULL, NULL, ctx);
-
-    if (!acdata)
-        cli_ac_freedata(&mdata);
+    if (!acdata) {
+        // no longer need our AC local matcher data (if using)
+        cli_ac_freedata(&matcher_data);
+    }
 
     return ret;
 }
@@ -1264,7 +1287,7 @@ cl_error_t cli_scan_fmap(cli_ctx *ctx, cli_file_t ftype, bool filetype_only, str
     }
 
     if (!filetype_only && hdb) {
-        /* We're not just doing file typing, we're checking for viruses.
+        /* We're not just doing file typing, we're scanning for malware.
            So we need to check the hash sigs, if there are any. */
 
         cli_hash_type_t hashtype;
