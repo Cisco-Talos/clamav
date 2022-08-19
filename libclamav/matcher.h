@@ -256,7 +256,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
  * - REQUIRES a call to `cli_exp_eval()` after the match to evaluate logical
  *   signatures and yara rules.
  *
- * - Does NOT support filetype_only mode.
+ * - Does NOT support filetype detection.
  *
  * - Does NOT perform hash-based matching.
  *
@@ -271,6 +271,7 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] = {
  * @param ftype             If specified, may limit signature matching trie by target type corresponding with the specified CL_TYPE
  * @param[in,out] acdata    (optional) A list of pattern maching data structs to contain match results, one for generic signatures and one for target-specific signatures.
  *                          If not provided, the matcher results are lost, outside of this function's return value.
+ *                          Required if you want to evaluate logical expressions afterwards.
  * @return cl_error_t
  */
 cl_error_t cli_scan_buff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);

@@ -4199,7 +4199,17 @@ cl_error_t cli_magic_scan(cli_ctx *ctx, cli_file_t type)
      */
     perf_start(ctx, PERFT_FT);
     if ((type == CL_TYPE_ANY) || type == CL_TYPE_PART_ANY) {
-        type = cli_determine_fmap_type(ctx->fmap, ctx->engine, type);
+        cli_file_t detected_type;
+        detected_type = cli_determine_fmap_type(ctx->fmap, ctx->engine, type);
+        if ((detected_type != CL_TYPE_ZIPSFX) &&
+            (detected_type != CL_TYPE_ARJSFX) &&
+            (detected_type != CL_TYPE_RARSFX) &&
+            (detected_type != CL_TYPE_EGGSFX) &&
+            (detected_type != CL_TYPE_CABSFX) &&
+            (detected_type != CL_TYPE_7ZSFX)) {
+            /* Omit SFX archive types selected.  We'll detect these in scanraw() */
+            type = detected_type;
+        }
     }
     perf_stop(ctx, PERFT_FT);
     if (type == CL_TYPE_ERROR) {
