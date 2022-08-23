@@ -111,7 +111,6 @@ size_t pdf_decodestream(
 {
     struct pdf_token *token = NULL;
     size_t bytes_scanned    = 0;
-    cli_ctx *ctx            = NULL;
 
     if (!status) {
         /* invalid args, and no way to pass back the status code */
@@ -123,8 +122,6 @@ size_t pdf_decodestream(
         *status = CL_EARG;
         goto done;
     }
-
-    ctx = pdf->ctx;
 
     if (!stream || !streamlen || fout < 0) {
         cli_dbgmsg("pdf_decodestream: no filters or stream on obj %u %u\n", obj->id >> 8, obj->id & 0xff);
@@ -156,14 +153,14 @@ size_t pdf_decodestream(
         *status = CL_EMEM;
         goto done;
     }
+
     memcpy(token->content, stream, streamlen);
     token->length = streamlen;
 
     cli_dbgmsg("pdf_decodestream: detected %lu applied filters\n", (long unsigned)(obj->numfilters));
 
     bytes_scanned = pdf_decodestream_internal(pdf, obj, params, token, fout, status, objstm);
-
-    if ((CL_VIRUS == *status) && !SCAN_ALLMATCHES) {
+    if (CL_VIRUS == *status) {
         goto done;
     }
 
@@ -224,10 +221,8 @@ static size_t pdf_decodestream_internal(
     struct pdf_struct *pdf, struct pdf_obj *obj, struct pdf_dict *params,
     struct pdf_token *token, int fout, cl_error_t *status, struct objstm_struct *objstm)
 {
-    cl_error_t vir       = CL_CLEAN;
     cl_error_t retval    = CL_SUCCESS;
     size_t bytes_scanned = 0;
-    cli_ctx *ctx         = NULL;
     const char *filter   = NULL;
     uint32_t i;
 
@@ -242,7 +237,6 @@ static size_t pdf_decodestream_internal(
         goto done;
     }
 
-    ctx     = pdf->ctx;
     *status = CL_SUCCESS;
 
     /*
@@ -323,29 +317,25 @@ static size_t pdf_decodestream_internal(
         }
 
         if (retval != CL_SUCCESS) {
-            if (retval == CL_VIRUS && SCAN_ALLMATCHES) {
-                vir = CL_VIRUS;
-            } else {
-                const char *reason;
+            const char *reason;
 
-                switch (retval) {
-                    case CL_VIRUS:
-                        *status = CL_VIRUS;
-                        reason  = "detection";
-                        break;
-                    case CL_BREAK:
-                        *status = CL_SUCCESS;
-                        reason  = "decoding break";
-                        break;
-                    default:
-                        *status = CL_EPARSE;
-                        reason  = "decoding error";
-                        break;
-                }
-
-                cli_dbgmsg("pdf_decodestream_internal: stopping after %d (of %u) filters (reason: %s)\n", i, obj->numfilters, reason);
-                break;
+            switch (retval) {
+                case CL_VIRUS:
+                    *status = CL_VIRUS;
+                    reason  = "detection";
+                    break;
+                case CL_BREAK:
+                    *status = CL_SUCCESS;
+                    reason  = "decoding break";
+                    break;
+                default:
+                    *status = CL_EPARSE;
+                    reason  = "decoding error";
+                    break;
             }
+
+            cli_dbgmsg("pdf_decodestream_internal: stopping after %d (of %u) filters (reason: %s)\n", i, obj->numfilters, reason);
+            break;
         }
         token->success++;
 
@@ -376,7 +366,7 @@ static size_t pdf_decodestream_internal(
     }
 
     if ((NULL != objstm) &&
-        ((CL_SUCCESS == *status) || ((CL_VIRUS == *status) && SCAN_ALLMATCHES))) {
+        (CL_SUCCESS == *status)) {
         unsigned int objs_found = pdf->nobjs;
 
         /*
@@ -405,9 +395,6 @@ static size_t pdf_decodestream_internal(
     }
 
 done:
-
-    if (vir == CL_VIRUS)
-        *status = CL_VIRUS;
 
     return bytes_scanned;
 }
