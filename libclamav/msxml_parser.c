@@ -163,13 +163,14 @@ static int msxml_parse_value(json_object *wrkptr, const char *arrname, const xml
 #endif /* HAVE_JSON */
 
 #define MAX_ATTRIBS 20
-static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
+static cl_error_t msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader, int rlvl, void *jptr)
 {
     const xmlChar *element_name = NULL;
     const xmlChar *node_name = NULL, *node_value = NULL;
     const struct key_entry *keyinfo;
     struct attrib_entry attribs[MAX_ATTRIBS];
-    int ret, virus = 0, state, node_type, endtag = 0, num_attribs = 0;
+    cl_error_t ret;
+    int state, node_type, endtag = 0, num_attribs = 0;
     cli_ctx *ctx = mxctx->ictx->ctx;
 #if HAVE_JSON
     json_object *root     = mxctx->ictx->root;
@@ -188,7 +189,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
 #if HAVE_JSON
         if (track_json(mxctx)) {
-            int tmp = cli_json_parse_error(root, "MSXML_RECURSIVE_LIMIT");
+            cl_error_t tmp = cli_json_parse_error(root, "MSXML_RECURSIVE_LIMIT");
             if (tmp != CL_SUCCESS)
                 return tmp;
         }
@@ -219,7 +220,7 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 cli_dbgmsg("msxml_parse_element: element tag node nameless\n");
 #if HAVE_JSON
                 if (track_json(mxctx)) {
-                    int tmp = cli_json_parse_error(root, "MSXML_NAMELESS_ELEMENT");
+                    cl_error_t tmp = cli_json_parse_error(root, "MSXML_NAMELESS_ELEMENT");
                     if (tmp != CL_SUCCESS)
                         return tmp;
                 }
@@ -369,10 +370,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                 switch (node_type) {
                     case XML_READER_TYPE_ELEMENT:
                         ret = msxml_parse_element(mxctx, reader, rlvl + 1, thisjobj ? thisjobj : parent);
-                        if (ret != CL_SUCCESS || (!SCAN_ALLMATCHES && ret == CL_VIRUS)) {
+                        if (ret != CL_SUCCESS) {
                             return ret;
-                        } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                            virus = 1;
                         }
                         break;
 
@@ -417,13 +416,12 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 
                             ret = mxctx->scan_cb(of, tempfile, ctx, num_attribs, attribs, mxctx->scan_data);
                             close(of);
-                            if (!(ctx->engine->keeptmp))
+                            if (!(ctx->engine->keeptmp)) {
                                 cli_unlink(tempfile);
+                            }
                             free(tempfile);
-                            if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
+                            if (ret != CL_SUCCESS) {
                                 return ret;
-                            } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                                virus = 1;
                             }
                         }
 
@@ -467,10 +465,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
                             if (!(ctx->engine->keeptmp))
                                 cli_unlink(tempfile);
                             free(tempfile);
-                            if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
+                            if (ret != CL_SUCCESS) {
                                 return ret;
-                            } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                                virus = 1;
                             }
                         }
 
@@ -491,10 +487,8 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
 #else
                             ret = mxctx->comment_cb((const char *)node_value, ctx, NULL, mxctx->comment_data);
 #endif
-                            if (ret != CL_SUCCESS && (ret != CL_VIRUS || (!SCAN_ALLMATCHES && ret == CL_VIRUS))) {
+                            if (ret != CL_SUCCESS) {
                                 return ret;
-                            } else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                                virus = 1;
                             }
                         }
 
@@ -549,23 +543,25 @@ static int msxml_parse_element(struct msxml_ctx *mxctx, xmlTextReaderPtr reader,
             break;
         case XML_READER_TYPE_END_ELEMENT:
             cli_msxmlmsg("msxml_parse_element: END ELEMENT %s [%d]: %s\n", node_name, node_type, node_value);
-            return (virus ? CL_VIRUS : CL_SUCCESS);
+            return CL_SUCCESS;
         default:
             cli_dbgmsg("msxml_parse_element: unhandled xml primary node %s [%d]: %s\n", node_name, node_type, node_value);
     }
 
-    return (virus ? CL_VIRUS : CL_SUCCESS);
+    return CL_SUCCESS;
 }
 
 /* reader initialization and closing handled by caller */
-int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, struct msxml_ctx *mxctx)
+cl_error_t cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct key_entry *keys, const size_t num_keys, uint32_t flags, struct msxml_ctx *mxctx)
 {
     struct msxml_ctx reserve;
     struct msxml_ictx ictx;
-    int state, virus = 0, ret = CL_SUCCESS;
+    int state;
+    cl_error_t ret = CL_SUCCESS;
 
-    if (!ctx)
+    if (!ctx) {
         return CL_ENULLARG;
+    }
 
     if (!mxctx) {
         memset(&reserve, 0, sizeof(reserve));
@@ -604,27 +600,25 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
 #else
         ret = msxml_parse_element(mxctx, reader, 0, NULL);
 #endif
-        if (ret == CL_SUCCESS)
-            ;
-        else if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-            /* non-allmatch simply propagates it down to return through ret */
-            virus = 1;
-        } else if (ret == CL_VIRUS || ret == CL_ETIMEOUT || ret == CL_BREAK) {
-            cli_dbgmsg("cli_msxml_parse_document: encountered halt event in parsing xml document\n");
-            break;
-        } else {
-            cli_warnmsg("cli_msxml_parse_document: encountered issue in parsing xml document\n");
-            break;
+        if (ret != CL_SUCCESS) {
+            if (ret == CL_VIRUS || ret == CL_ETIMEOUT || ret == CL_BREAK) {
+                cli_dbgmsg("cli_msxml_parse_document: encountered halt event in parsing xml document\n");
+                break;
+            } else {
+                cli_warnmsg("cli_msxml_parse_document: encountered issue in parsing xml document\n");
+                break;
+            }
         }
     }
 
-    if (state == -1)
+    if (state == -1) {
         ret = CL_EPARSE;
+    }
 
 #if HAVE_JSON
     /* Parse General Error Handler */
     if (ictx.flags & MSXML_FLAG_JSON) {
-        int tmp = CL_SUCCESS;
+        cl_error_t tmp = CL_SUCCESS;
 
         switch (ret) {
             case CL_SUCCESS:
@@ -650,8 +644,9 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
                 break;
         }
 
-        if (tmp)
+        if (tmp) {
             return tmp;
+        }
     }
 #endif
 
@@ -665,7 +660,7 @@ int cli_msxml_parse_document(cli_ctx *ctx, xmlTextReaderPtr reader, const struct
         ret = CL_SUCCESS;
     }
 
-    return (virus ? CL_VIRUS : ret);
+    return ret;
 }
 
 #endif /* HAVE_LIBXML2 */
