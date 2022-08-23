@@ -4,6 +4,7 @@
 Run clamscan tests.
 """
 
+import unittest
 import sys
 
 sys.path.append('../unit_tests')
@@ -82,3 +83,42 @@ class TC(testcase.TestCase):
             expected_num_infected = 4
         expected_results.append('Infected files: {}'.format(expected_num_infected))
         self.verify_output(output.out, expected=expected_results)
+
+    @unittest.expectedFailure
+    def test_pe_cert_trust(self):
+        self.step_name('Test that clam can trust an EXE based on an authenticode certificate check.')
+
+        # TODO: This feature was added in 0.105, but was also broken during that release cycle when we upgraded TomsFastMath.
+        #       So instead of trusting the certificate, prints this out and the certificate is not trusted so the matches may still happen:
+        #           LibClamAV Warning: crtmgr_rsa_verify: verification failed: fp_exptmod failed with 1
+        #       We need to fix this, and then update this test.
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+        test_exe = test_path / 'test.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {alerting_dbs} \
+             -d {weak_dbs} \
+             -d {broken_dbs} \
+             -d {trust_dbs} \
+             --allmatch --bytecode-unsigned {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            alerting_dbs=test_path / 'alert-sigs',
+            weak_dbs=test_path / 'weak-sigs',
+            broken_dbs=test_path / 'broken-sigs',
+            trust_dbs=test_path / 'trust-sigs',
+            testfiles=test_exe,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 0
+
+        expected_results = ['OK']
+
+        # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
+        # We need only to trim off the extension and say "FOUND" for the alerting sigs.
+        # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
+        #       I think this is a minor bug. So if we change that, we'll need to update this test.
+        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)

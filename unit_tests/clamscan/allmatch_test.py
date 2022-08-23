@@ -273,3 +273,43 @@ class TC(testcase.TestCase):
             'NDB.Clamav-Unit-Test-Signature.UNOFFICIAL FOUND',
         ]
         self.verify_output(output.out, expected=expected_results)
+
+    def test_pe_allmatch(self):
+        self.step_name('Test that clam will detect a string in test.exe with a wide variety of signatures written or generated for the file.')
+
+        # The sig set and test.exe for test set was written by one of our threat researchers to test the allmatch option.
+        # Overall, it's much more thorough than previous tests, but some of the tests are duplicates of the previous tests.
+
+        # TODO: The section signatures are not working as written, hence the "broken_dbs" directory.
+        #       There is a known issue with relative offset signatures when using the Boyer-Moore matcher. The sigs work if using the Aho-Corasick matcher.
+        #       When we fix section signatures, we can move them to the alerting sigs directory and update this test.
+
+        test_path = TC.path_source / 'unit_tests' / 'input' / 'pe_allmatch'
+        test_exe = test_path / 'test.exe'
+
+        command = '{valgrind} {valgrind_args} {clamscan} \
+             -d {alerting_dbs} \
+             -d {weak_dbs} \
+             -d {broken_dbs} \
+             --allmatch --bytecode-unsigned {testfiles}'.format(
+            valgrind=TC.valgrind, valgrind_args=TC.valgrind_args, clamscan=TC.clamscan,
+            alerting_dbs=test_path / 'alert-sigs',
+            weak_dbs=test_path / 'weak-sigs',
+            broken_dbs=test_path / 'broken-sigs',
+            testfiles=test_exe,
+        )
+        output = self.execute_command(command)
+
+        assert output.ec == 1
+
+        # The alert sig files are all given the signature name, so we can verify that the correct sigs were found.
+        # We need only to trim off the extension and say "FOUND" for the alerting sigs.
+        # Note: Some of these have ".UNOFFICIAL" in the name because not all of them have that ".UNOFFICIAL" suffix when reported.
+        #       I think this is a minor bug. So if we change that, we'll need to update this test.
+        expected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'alert-sigs').iterdir()]
+
+        # The broken sig files are all given the signature name, so we can verify that the correct sigs were found.
+        # TODO: When we fix section signatures, we can move them to the alerting sigs directory and get rid of this line.
+        unexpected_results = ['{sig} FOUND'.format(sig=f.stem) for f in (test_path / 'broken-sigs').iterdir()]
+
+        self.verify_output(output.out, expected=expected_results, unexpected=unexpected_results)
