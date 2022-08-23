@@ -441,8 +441,12 @@ pub struct cl_fmap {
     >,
     pub unneed_off:
         ::std::option::Option<unsafe extern "C" fn(arg1: *mut fmap_t, at: size_t, len: size_t)>,
-    pub have_maphash: bool,
-    pub maphash: [::std::os::raw::c_uchar; 16usize],
+    pub have_md5: bool,
+    pub md5: [::std::os::raw::c_uchar; 16usize],
+    pub have_sha1: bool,
+    pub sha1: [::std::os::raw::c_uchar; 20usize],
+    pub have_sha256: bool,
+    pub sha256: [::std::os::raw::c_uchar; 32usize],
     pub bitmap: *mut u64,
     pub name: *mut ::std::os::raw::c_char,
 }
