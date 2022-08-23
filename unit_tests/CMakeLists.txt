@@ -354,11 +354,11 @@ add_rust_test(NAME libclamav_rust
 set_property(TEST libclamav_rust PROPERTY ENVIRONMENT ${ENVIRONMENT})
 
 if(ENABLE_APP)
-    add_test(NAME clamscan COMMAND ${PythonTest_COMMAND};clamscan_test.py
+    add_test(NAME clamscan COMMAND ${PythonTest_COMMAND};clamscan
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     set_property(TEST clamscan PROPERTY ENVIRONMENT ${ENVIRONMENT})
     if(Valgrind_FOUND)
-        add_test(NAME clamscan_valgrind COMMAND ${PythonTest_COMMAND};clamscan_test.py
+        add_test(NAME clamscan_valgrind COMMAND ${PythonTest_COMMAND};clamscan
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
         set_property(TEST clamscan_valgrind PROPERTY ENVIRONMENT ${ENVIRONMENT} VALGRIND=${Valgrind_EXECUTABLE})
     endif()
