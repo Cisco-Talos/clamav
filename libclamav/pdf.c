@@ -1647,7 +1647,7 @@ cl_error_t pdf_extract_obj(struct pdf_struct *pdf, struct pdf_obj *obj, uint32_t
              *   make a best effort to keep parsing...
              *   Unless we were unable to allocate memory.*/
             if (CL_EMEM == rc) {
-                goto err;
+                goto really_done;
             }
             if (CL_EPARSE == rc) {
                 rc = CL_SUCCESS;
@@ -1814,8 +1814,10 @@ done:
         /* TODO: invoke bytecode on this pdf obj with metainformation associated */
         lseek(fout, 0, SEEK_SET);
         rc2 = cli_magic_scan_desc(fout, fullname, pdf->ctx, NULL);
-        if (rc2 == CL_VIRUS || rc == CL_SUCCESS)
+        if (rc2 != CL_SUCCESS) {
             rc = rc2;
+            goto really_done;
+        }
 
         if ((rc == CL_CLEAN) || (rc == CL_VIRUS)) {
             unsigned int dumpid = 0;
@@ -1824,23 +1826,25 @@ done:
                     break;
             }
             rc2 = run_pdf_hooks(pdf, PDF_PHASE_POSTDUMP, fout, dumpid);
-            if (rc2 == CL_VIRUS)
+            if (rc2 == CL_VIRUS) {
                 rc = rc2;
+                goto really_done;
+            }
         }
 
         if (((rc == CL_CLEAN) || (rc == CL_VIRUS)) && (obj->flags & (1 << OBJ_CONTENTS))) {
             lseek(fout, 0, SEEK_SET);
-            cli_dbgmsg("pdf_extract_obj: dumping contents %u %u\n", obj->id >> 8, obj->id & 0xff);
+            cli_dbgmsg("pdf_extract_obj: dumping contents from obj %u %u\n", obj->id >> 8, obj->id & 0xff);
 
             rc2 = pdf_scan_contents(fout, pdf);
-            if (rc2 == CL_VIRUS)
+            if (rc2 != CL_SUCCESS) {
                 rc = rc2;
-
-            noisy_msg(pdf, "pdf_extract_obj: extracted text from obj %u %u\n", obj->id >> 8, obj->id & 0xff);
+                goto really_done;
+            }
         }
     }
 
-err:
+really_done:
     close(fout);
 
     if (CL_EMEM != rc) {
