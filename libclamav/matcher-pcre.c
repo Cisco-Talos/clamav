@@ -580,9 +580,9 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
     unsigned int i, evalcnt = 0;
     uint64_t evalids = 0;
     uint32_t global, encompass, rolling;
-    int rc = 0, options = 0;
-    uint32_t offset       = 0;
-    uint8_t viruses_found = 0;
+    int rc          = 0;
+    int options     = 0;
+    uint32_t offset = 0;
 
     if ((root->pcre_metas == 0) || (!root->pcre_metatable) || (ctx && ctx->dconf && !(ctx->dconf->pcre & PCRE_CONF_SUPPORT)))
         return CL_SUCCESS;
@@ -731,15 +731,19 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
                         newres->offset     = adjbuffer + p_res.match[0];
                         *res               = newres;
                     } else {
-                        ret           = CL_CLEAN;
-                        viruses_found = 1;
-                        if (ctx)
-                            ret = cli_append_virus(ctx, "test");
-                        if (virname)
+                        ret = CL_VIRUS;
+
+                        if (virname) {
                             *virname = "test";
-                        if (!ctx || !SCAN_ALLMATCHES)
-                            if (ret != CL_CLEAN)
+                        }
+
+                        // ctx is not provided in the unit tests.
+                        if (ctx) {
+                            ret = cli_append_virus(ctx, "test");
+                            if (ret != CL_SUCCESS) {
                                 break;
+                            }
+                        }
                     }
                 }
             }
@@ -764,8 +768,6 @@ cl_error_t cli_pcre_scanbuf(const unsigned char *buffer, uint32_t length, const 
     /* free match results */
     cli_pcre_results_free(&p_res);
 
-    if (ret == CL_SUCCESS && viruses_found)
-        return CL_VIRUS;
     return ret;
 }
 
