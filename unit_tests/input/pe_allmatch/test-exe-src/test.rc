@@ -1,0 +1,24 @@
+id ICON "test.ico"
+1 VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "CompanyName", "Test CompanyName"
+      VALUE "FileDescription", "Test FileDescription"
+      VALUE "FileVersion", "Test FileVersion"
+      VALUE "InternalName", "Test InternalName"
+      VALUE "LegalCopyright", "Test LegalCopyright"
+      VALUE "OriginalFilename", "Test OriginalFilename"
+      VALUE "ProductName", "Test ProductName"
+      VALUE "ProductVersion", "Test ProductVersion"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
