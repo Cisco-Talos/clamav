@@ -578,14 +578,13 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
     int32_t idx, current_block, i, curindex;
     char *dirname;
     ole2_list_t node_list;
-    int ret, func_ret;
+    cl_error_t ret;
 #if HAVE_JSON
     char *name;
     int toval = 0;
 #endif
 
     ole2_listmsg("ole2_walk_property_tree() called\n");
-    func_ret = CL_SUCCESS;
     ole2_list_init(&node_list);
 
     ole2_listmsg("rec_level: %d\n", rec_level);
@@ -687,12 +686,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 if ((int)(prop_block[idx].child) != -1) {
                     ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                     if (ret != CL_SUCCESS) {
-                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
-                            func_ret = ret;
-                        } else {
-                            ole2_list_delete(&node_list);
-                            return ret;
-                        }
+                        ole2_list_delete(&node_list);
+                        return ret;
                     }
                 }
                 if ((int)(prop_block[idx].prev) != -1) {
@@ -722,13 +717,9 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                     ole2_listmsg("running file handler\n");
                     ret = handler(hdr, &prop_block[idx], dir, ctx);
                     if (ret != CL_SUCCESS) {
-                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
-                            func_ret = ret;
-                        } else {
-                            ole2_listmsg("file handler returned %d\n", ret);
-                            ole2_list_delete(&node_list);
-                            return ret;
-                        }
+                        ole2_listmsg("file handler returned %d\n", ret);
+                        ole2_list_delete(&node_list);
+                        return ret;
                     }
                 } else {
                     cli_dbgmsg("OLE2: filesize exceeded\n");
@@ -736,12 +727,8 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 if ((int)(prop_block[idx].child) != -1) {
                     ret = ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize);
                     if (ret != CL_SUCCESS) {
-                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
-                            func_ret = ret;
-                        } else {
-                            ole2_list_delete(&node_list);
-                            return ret;
-                        }
+                        ole2_list_delete(&node_list);
+                        return ret;
                     }
                 }
                 if ((int)(prop_block[idx].prev) != -1) {
@@ -792,14 +779,11 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
                 if ((int)(prop_block[idx].child) != -1) {
                     ret = ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level + 1, file_count, ctx, scansize);
                     if (ret != CL_SUCCESS) {
-                        if (SCAN_ALLMATCHES && (ret == CL_VIRUS)) {
-                            func_ret = ret;
-                        } else {
-                            ole2_list_delete(&node_list);
-                            if (dirname)
-                                free(dirname);
-                            return ret;
+                        ole2_list_delete(&node_list);
+                        if (dirname) {
+                            free(dirname);
                         }
+                        return ret;
                     }
                 }
                 if (dirname) {
@@ -826,7 +810,7 @@ static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t 
         ole2_listmsg("loop ended: %d %d\n", ole2_list_size(&node_list), ole2_list_is_empty(&node_list));
     }
     ole2_list_delete(&node_list);
-    return func_ret;
+    return CL_SUCCESS;
 }
 
 /* Write file Handler - write the contents of the entry to a file */
