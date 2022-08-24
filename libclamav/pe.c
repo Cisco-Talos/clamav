@@ -193,47 +193,46 @@
         free(tempfile);                                    \
         break;
 
-#define CLI_UNPRESULTS_(NAME, FSGSTUFF, EXPR, GOOD, FREEME)                                   \
-    switch (EXPR) {                                                                           \
-        case GOOD: /* Unpacked and rebuilt */                                                 \
-            if (ctx->engine->keeptmp)                                                         \
-                cli_dbgmsg(NAME ": Unpacked and rebuilt executable saved in %s\n", tempfile); \
-            else                                                                              \
-                cli_dbgmsg(NAME ": Unpacked and rebuilt executable\n");                       \
-            cli_multifree FREEME;                                                             \
-            cli_exe_info_destroy(peinfo);                                                     \
-            lseek(ndesc, 0, SEEK_SET);                                                        \
-            cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                             \
-            SHA_OFF;                                                                          \
-            if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {                \
-                close(ndesc);                                                                 \
-                SHA_RESET;                                                                    \
-                CLI_TMPUNLK();                                                                \
-                free(tempfile);                                                               \
-                return CL_VIRUS;                                                              \
-            }                                                                                 \
-            SHA_RESET;                                                                        \
-            close(ndesc);                                                                     \
-            CLI_TMPUNLK();                                                                    \
-            free(tempfile);                                                                   \
-            return CL_CLEAN;                                                                  \
-                                                                                              \
-            FSGSTUFF;                                                                         \
-                                                                                              \
-        default:                                                                              \
-            cli_dbgmsg(NAME ": Unpacking failed\n");                                          \
-            close(ndesc);                                                                     \
-            if (cli_unlink(tempfile)) {                                                       \
-                cli_exe_info_destroy(peinfo);                                                 \
-                free(tempfile);                                                               \
-                cli_multifree FREEME;                                                         \
-                return CL_EUNLINK;                                                            \
-            }                                                                                 \
-            cli_multifree FREEME;                                                             \
-            free(tempfile);                                                                   \
+#define CLI_UNPRESULTS_(NAME, FSGSTUFF, EXPR, GOOD, FREEME)                               \
+    switch (EXPR) {                                                                       \
+        case GOOD: /* Unpacked and rebuilt */                                             \
+            cli_dbgmsg(NAME ": Unpacked and rebuilt executable saved in %s\n", tempfile); \
+            cli_multifree FREEME;                                                         \
+            cli_exe_info_destroy(peinfo);                                                 \
+            lseek(ndesc, 0, SEEK_SET);                                                    \
+            cli_dbgmsg("***** Scanning rebuilt PE file *****\n");                         \
+            SHA_OFF;                                                                      \
+            if (CL_SUCCESS != (ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL))) {  \
+                close(ndesc);                                                             \
+                SHA_RESET;                                                                \
+                CLI_TMPUNLK();                                                            \
+                free(tempfile);                                                           \
+                return ret;                                                               \
+            }                                                                             \
+            SHA_RESET;                                                                    \
+            close(ndesc);                                                                 \
+            CLI_TMPUNLK();                                                                \
+            free(tempfile);                                                               \
+            return CL_CLEAN;                                                              \
+                                                                                          \
+            FSGSTUFF;                                                                     \
+                                                                                          \
+        default:                                                                          \
+            cli_dbgmsg(NAME ": Unpacking failed\n");                                      \
+            close(ndesc);                                                                 \
+            if (cli_unlink(tempfile)) {                                                   \
+                cli_exe_info_destroy(peinfo);                                             \
+                free(tempfile);                                                           \
+                cli_multifree FREEME;                                                     \
+                return CL_EUNLINK;                                                        \
+            }                                                                             \
+            cli_multifree FREEME;                                                         \
+            free(tempfile);                                                               \
     }
 
+// The GOOD parameter indicates what a successful unpacking should return.
 #define CLI_UNPRESULTS(NAME, EXPR, GOOD, FREEME) CLI_UNPRESULTS_(NAME, (void)0, EXPR, GOOD, FREEME)
+
 // TODO The second argument to FSGCASE below should match what gets freed as
 // indicated by FREEME, otherwise a memory leak can occur (as currently used,
 // it looks like dest can get leaked by these macros).
@@ -557,7 +556,7 @@ static unsigned int cli_hashsect(fmap_t *map, struct cli_exe_section *s, unsigne
 }
 
 /* check hash section sigs */
-static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
+static cl_error_t scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
 {
     struct cli_matcher *mdb_sect = ctx->engine->hm_mdb;
     unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
@@ -565,7 +564,7 @@ static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
     int foundsize[CLI_HASH_AVAIL_TYPES];
     int foundwild[CLI_HASH_AVAIL_TYPES];
     cli_hash_type_t type;
-    int ret            = CL_CLEAN;
+    cl_error_t ret     = CL_CLEAN;
     unsigned char *md5 = NULL;
 
     /* pick hashtypes to generate */
@@ -627,20 +626,14 @@ static int scan_pe_mdb(cli_ctx *ctx, struct cli_exe_section *exe_section)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         if (foundsize[type] && cli_hm_scan(hashset[type], exe_section->rsz, &virname, mdb_sect, type) == CL_VIRUS) {
             ret = cli_append_virus(ctx, virname);
-            if (ret != CL_CLEAN) {
-                if (ret != CL_VIRUS)
-                    break;
-                else if (!SCAN_ALLMATCHES)
-                    break;
+            if (ret != CL_SUCCESS) {
+                break;
             }
         }
         if (foundwild[type] && cli_hm_scan_wild(hashset[type], &virname, mdb_sect, type) == CL_VIRUS) {
             ret = cli_append_virus(ctx, virname);
-            if (ret != CL_CLEAN) {
-                if (ret != CL_VIRUS)
-                    break;
-                else if (!SCAN_ALLMATCHES)
-                    break;
+            if (ret != CL_SUCCESS) {
+                break;
             }
         }
     }
@@ -2565,7 +2558,7 @@ done:
     return status;
 }
 
-static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
+static cl_error_t scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     struct cli_matcher *imp = ctx->engine->hm_imp;
     unsigned char *hashset[CLI_HASH_AVAIL_TYPES];
@@ -2573,7 +2566,7 @@ static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     int genhash[CLI_HASH_AVAIL_TYPES];
     uint32_t impsz = 0;
     cli_hash_type_t type;
-    int ret = CL_CLEAN;
+    cl_error_t ret = CL_CLEAN;
 
     /* pick hashtypes to generate */
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
@@ -2639,20 +2632,14 @@ static int scan_pe_imp(cli_ctx *ctx, struct cli_exe_info *peinfo)
     for (type = CLI_HASH_MD5; type < CLI_HASH_AVAIL_TYPES; type++) {
         if (cli_hm_scan(hashset[type], impsz, &virname, imp, type) == CL_VIRUS) {
             ret = cli_append_virus(ctx, virname);
-            if (ret != CL_CLEAN) {
-                if (ret != CL_VIRUS)
-                    break;
-                else if (!SCAN_ALLMATCHES)
-                    break;
+            if (ret != CL_SUCCESS) {
+                break;
             }
         }
         if (cli_hm_scan_wild(hashset[type], &virname, imp, type) == CL_VIRUS) {
             cli_append_virus(ctx, virname);
-            if (ret != CL_CLEAN) {
-                if (ret != CL_VIRUS)
-                    break;
-                else if (!SCAN_ALLMATCHES)
-                    break;
+            if (ret != CL_SUCCESS) {
+                break;
             }
         }
     }
@@ -2786,7 +2773,10 @@ int cli_scanpe(cli_ctx *ctx)
     int (*upxfn)(const char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
     const char *src                                                                        = NULL;
     char *dest                                                                             = NULL;
-    int ndesc, ret = CL_CLEAN, upack = 0;
+    int ndesc;
+    cl_error_t ret = CL_SUCCESS;
+    cli_peheader_error_t peheader_ret;
+    int upack = 0;
     size_t fsize;
     struct cli_bc_ctx *bc_ctx;
     fmap_t *map;
@@ -2794,7 +2784,6 @@ int cli_scanpe(cli_ctx *ctx)
 #ifdef HAVE__INTERNAL__SHA_COLLECT
     int sha_collect = ctx->sha_collect;
 #endif
-    uint32_t viruses_found = 0;
 #if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
@@ -2834,7 +2823,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     cli_exe_info_init(peinfo, 0);
 
-    ret = cli_peheader(map, peinfo, opts, ctx);
+    peheader_ret = cli_peheader(map, peinfo, opts, ctx);
 
     // Warn the user if PE header parsing failed - if it's a binary that runs
     // successfully on Windows, we need to relax our PE parsing standards so
@@ -2842,25 +2831,24 @@ int cli_scanpe(cli_ctx *ctx)
 
 #define PE_HDR_PARSE_FAIL_CONSEQUENCE "won't attempt .mdb / .imp / PE-specific BC rule matching or exe unpacking\n"
 
-    if (CLI_PEHEADER_RET_BROKEN_PE == ret) {
+    if (CLI_PEHEADER_RET_BROKEN_PE == peheader_ret) {
+        ret = CL_SUCCESS;
         if (DETECT_BROKEN_PE) {
-            // TODO Handle allmatch
             ret = cli_append_potentially_unwanted(ctx, "Heuristics.Broken.Executable");
-            cli_exe_info_destroy(peinfo);
-            return ret;
         }
         cli_dbgmsg("cli_scanpe: PE header appears broken - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
         cli_exe_info_destroy(peinfo);
-        return CL_CLEAN;
+        return ret;
 
-    } else if (CLI_PEHEADER_RET_JSON_TIMEOUT == ret) {
+    } else if (CLI_PEHEADER_RET_JSON_TIMEOUT == peheader_ret) {
         cli_dbgmsg("cli_scanpe: JSON creation timed out - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
         cli_exe_info_destroy(peinfo);
         return CL_ETIMEOUT;
-    } else if (CLI_PEHEADER_RET_GENERIC_ERROR == ret) {
+
+    } else if (CLI_PEHEADER_RET_GENERIC_ERROR == peheader_ret) {
         cli_dbgmsg("cli_scanpe: An error occurred when parsing the PE header - " PE_HDR_PARSE_FAIL_CONSEQUENCE);
         cli_exe_info_destroy(peinfo);
-        return CL_CLEAN;
+        return CL_SUCCESS;
     }
 
     if (!peinfo->is_pe32plus) { /* PE */
@@ -2883,18 +2871,13 @@ int cli_scanpe(cli_ctx *ctx)
             /* check hash section sigs */
             if ((DCONF & PE_CONF_MD5SECT) && ctx->engine->hm_mdb) {
                 ret = scan_pe_mdb(ctx, &(peinfo->sections[i]));
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS && !SCAN_ALLMATCHES) {
-                        cli_dbgmsg("------------------------------------\n");
-                        cli_exe_info_destroy(peinfo);
-                        return ret;
-                    } else if (ret != CL_VIRUS) {
+                if (ret != CL_SUCCESS) {
+                    if (ret != CL_VIRUS) {
                         cli_errmsg("cli_scanpe: scan_pe_mdb failed: %s!\n", cl_strerror(ret));
-
-                        cli_dbgmsg("------------------------------------\n");
-                        cli_exe_info_destroy(peinfo);
-                        return ret;
                     }
+                    cli_dbgmsg("------------------------------------\n");
+                    cli_exe_info_destroy(peinfo);
+                    return ret;
                 }
             }
         }
@@ -2930,8 +2913,7 @@ int cli_scanpe(cli_ctx *ctx)
 
     if (peinfo->overlay_start && peinfo->overlay_size > 0) {
         ret = cli_scanishield(ctx, peinfo->overlay_start, peinfo->overlay_size);
-        if (ret != CL_CLEAN) {
-            // TODO Handle allmatch
+        if (ret != CL_SUCCESS) {
             cli_exe_info_destroy(peinfo);
             return ret;
         }
@@ -2970,10 +2952,11 @@ int cli_scanpe(cli_ctx *ctx)
             break;
         case CL_VIRUS:
         case CL_BREAK:
-            // TODO Handle allmatch
             cli_exe_info_destroy(peinfo);
             cli_bytecode_context_destroy(bc_ctx);
             return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
+        default:
+            break;
     }
     cli_bytecode_context_destroy(bc_ctx);
 
@@ -2992,9 +2975,6 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_warnmsg("cli_scanpe: NULL argument supplied\n");
                 break;
             case CL_VIRUS:
-                if (SCAN_ALLMATCHES)
-                    break;
-                /* intentional fall-through */
             case CL_BREAK:
                 cli_exe_info_destroy(peinfo);
                 return ret == CL_VIRUS ? CL_VIRUS : CL_CLEAN;
@@ -3012,17 +2992,9 @@ int cli_scanpe(cli_ctx *ctx)
             pt += 15;
             if ((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
                 ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Parite.B");
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS) {
-                        if (!SCAN_ALLMATCHES) {
-                            cli_exe_info_destroy(peinfo);
-                            return ret;
-                        } else
-                            viruses_found++;
-                    } else {
-                        cli_exe_info_destroy(peinfo);
-                        return ret;
-                    }
+                if (ret != CL_SUCCESS) {
+                    cli_exe_info_destroy(peinfo);
+                    return ret;
                 }
             }
         }
@@ -3148,17 +3120,9 @@ int cli_scanpe(cli_ctx *ctx)
                 case KZSLOOP:
                     if (op == kzdsize + 0x48 && *kzcode == 0x75 && kzlen - (int8_t)kzcode[1] - 3 <= kzinitlen && kzlen - (int8_t)kzcode[1] >= kzxorlen) {
                         ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Kriz");
-                        if (ret != CL_CLEAN) {
-                            if (ret == CL_VIRUS) {
-                                if (!SCAN_ALLMATCHES) {
-                                    cli_exe_info_destroy(peinfo);
-                                    return ret;
-                                } else
-                                    viruses_found++;
-                            } else {
-                                cli_exe_info_destroy(peinfo);
-                                return ret;
-                            }
+                        if (ret != CL_SUCCESS) {
+                            cli_exe_info_destroy(peinfo);
+                            return ret;
                         }
                     }
                     cli_dbgmsg("cli_scanpe: kriz: loop out of bounds, corrupted sample?\n");
@@ -3185,17 +3149,9 @@ int cli_scanpe(cli_ctx *ctx)
             if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
                 if (cli_memstr(tbuff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
                     ret = cli_append_potentially_unwanted(ctx, dam ? "Heuristics.W32.Magistr.A.dam" : "Heuristics.W32.Magistr.A");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                cli_exe_info_destroy(peinfo);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            cli_exe_info_destroy(peinfo);
-                            return ret;
-                        }
+                    if (ret != CL_SUCCESS) {
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
                     }
                 }
             }
@@ -3206,17 +3162,9 @@ int cli_scanpe(cli_ctx *ctx)
             if ((tbuff = fmap_need_off_once(map, peinfo->sections[peinfo->nsections - 1].raw + rsize - bw, 4096))) {
                 if (cli_memstr(tbuff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
                     ret = cli_append_potentially_unwanted(ctx, dam ? "Heuristics.W32.Magistr.B.dam" : "Heuristics.W32.Magistr.B");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                cli_exe_info_destroy(peinfo);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            cli_exe_info_destroy(peinfo);
-                            return ret;
-                        }
+                    if (ret != CL_SUCCESS) {
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
                     }
                 }
             }
@@ -3283,19 +3231,10 @@ int cli_scanpe(cli_ctx *ctx)
 
             if ((jump = cli_readint32(code)) == 0x60ec8b55 || (code[4] == 0x0ec && ((jump == 0x83ec8b55 && code[6] == 0x60) || (jump == 0x81ec8b55 && !code[7] && !code[8])))) {
                 ret = cli_append_potentially_unwanted(ctx, "Heuristics.W32.Polipos.A");
-                if (ret != CL_CLEAN) {
-                    if (ret == CL_VIRUS) {
-                        if (!SCAN_ALLMATCHES) {
-                            free(jumps);
-                            cli_exe_info_destroy(peinfo);
-                            return ret;
-                        } else
-                            viruses_found++;
-                    } else {
-                        free(jumps);
-                        cli_exe_info_destroy(peinfo);
-                        return ret;
-                    }
+                if (ret != CL_SUCCESS) {
+                    free(jumps);
+                    cli_exe_info_destroy(peinfo);
+                    return ret;
                 }
             }
         }
@@ -3318,19 +3257,10 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_parseres_special(EC32(peinfo->dirs[2].VirtualAddress), EC32(peinfo->dirs[2].VirtualAddress), map, peinfo, fsize, 0, 0, &m, stats);
                 if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
                     ret = cli_append_potentially_unwanted(ctx, "Heuristics.Trojan.Swizzor.Gen");
-                    if (ret != CL_CLEAN) {
-                        if (ret == CL_VIRUS) {
-                            if (!SCAN_ALLMATCHES) {
-                                free(stats);
-                                cli_exe_info_destroy(peinfo);
-                                return ret;
-                            } else
-                                viruses_found++;
-                        } else {
-                            free(stats);
-                            cli_exe_info_destroy(peinfo);
-                            return ret;
-                        }
+                    if (ret != CL_SUCCESS) {
+                        free(stats);
+                        cli_exe_info_destroy(peinfo);
+                        return ret;
                     }
                 }
             }
@@ -4028,12 +3958,13 @@ int cli_scanpe(cli_ctx *ctx)
 
         cli_dbgmsg("***** Scanning decompressed file *****\n");
         SHA_OFF;
-        if ((ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL)) == CL_VIRUS) {
+        ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL);
+        if (CL_SUCCESS != ret) {
             close(ndesc);
             SHA_RESET;
             CLI_TMPUNLK();
             free(tempfile);
-            return CL_VIRUS;
+            return ret;
         }
 
         SHA_RESET;
@@ -4187,6 +4118,7 @@ int cli_scanpe(cli_ctx *ctx)
             !memcmp(epbuff + 0x63 + offset, "\xaa\xe2\xcc", 3) &&
             (fsize >= peinfo->sections[peinfo->nsections - 1].raw + 0xC6 + ecx + offset)) {
 
+            size_t num_alerts;
             char *spinned;
 
             if ((spinned = (char *)cli_malloc(fsize)) == NULL) {
@@ -4207,20 +4139,23 @@ int cli_scanpe(cli_ctx *ctx)
                 cli_jsonstr(pe_json, "Packer", "yC");
 #endif
 
-            do {
-                size_t num_alerts = evidence_num_alerts(ctx->evidence);
+            // record number of alerts before unpacking and scanning
+            num_alerts = evidence_num_alerts(ctx->evidence);
 
-                cli_dbgmsg("%d,%d,%d,%d\n", peinfo->nsections - 1, peinfo->e_lfanew, ecx, offset);
-                CLI_UNPTEMP("cli_scanpe: yC", (spinned, 0));
-                CLI_UNPRESULTS("cli_scanpe: yC", (yc_decrypt(ctx, spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc, ecx, offset)), 0, (spinned, 0));
+            cli_dbgmsg("%d,%d,%d,%d\n", peinfo->nsections - 1, peinfo->e_lfanew, ecx, offset);
+            CLI_UNPTEMP("cli_scanpe: yC", (spinned, 0));
+            CLI_UNPRESULTS("cli_scanpe: yC", (yc_decrypt(ctx, spinned, fsize, peinfo->sections, peinfo->nsections - 1, peinfo->e_lfanew, ndesc, ecx, offset)), 0, (spinned, 0));
 
-                if (SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
-                    // In ALLMATCH-mode, CLI_UNPRESULTS() will not return CL_VIRUS when something is found.
-                    // We apparently want to return CL_VIRUS here if CLI_UNPRESULTS() found something (preserving previous behavior).
-                    cli_exe_info_destroy(peinfo);
-                    return CL_VIRUS;
-                }
-            } while (0);
+            // Unpacking may have added new alerts if the bounds-check failed.
+            // Compare number of alerts now with number of alerts before unpacking/scanning.
+            // If the number of alerts has increased, then bail.
+            //
+            // This preserves the intention of https://github.com/Cisco-Talos/clamav/commit/771c23099893f02f1316960fbe84f62b115a3556
+            // although that commit had it bailing if a match occured even in allmatch-mode, which we do not want to do.
+            if (!SCAN_ALLMATCHES && num_alerts != evidence_num_alerts(ctx->evidence)) {
+                cli_exe_info_destroy(peinfo);
+                return CL_VIRUS;
+            }
         }
     }
 
@@ -4470,7 +4405,6 @@ int cli_scanpe(cli_ctx *ctx)
         case CL_VIRUS:
             cli_exe_info_destroy(peinfo);
             cli_bytecode_context_destroy(bc_ctx);
-            // TODO Handle allmatch
             return CL_VIRUS;
         case CL_SUCCESS:
             ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
@@ -4491,13 +4425,10 @@ int cli_scanpe(cli_ctx *ctx)
         return CL_ETIMEOUT;
 #endif
 
-    if (SCAN_ALLMATCHES && viruses_found)
-        return CL_VIRUS;
-
-    return CL_CLEAN;
+    return CL_SUCCESS;
 }
 
-int cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
+cli_peheader_error_t cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
 {
     return cli_peheader(ctx->fmap, peinfo, CLI_PEHEADER_OPT_EXTRACT_VINFO, NULL);
 }
@@ -4560,7 +4491,7 @@ int cli_pe_targetinfo(cli_ctx *ctx, struct cli_exe_info *peinfo)
  *
  * TODO Same as above but with JSON creation
  */
-int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
+cli_peheader_error_t cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ctx *ctx)
 {
     uint16_t e_magic; /* DOS signature ("MZ") */
     const char *archtype = NULL, *subsystem = NULL;
@@ -4583,7 +4514,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo, uint32_t opts, cli_ct
     int native      = 0;
     size_t read;
 
-    int ret = CLI_PEHEADER_RET_GENERIC_ERROR;
+    cli_peheader_error_t ret = CLI_PEHEADER_RET_GENERIC_ERROR;
 #if HAVE_JSON
     int toval                   = 0;
     struct json_object *pe_json = NULL;
