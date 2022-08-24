@@ -221,7 +221,9 @@ void *cli_malloc(size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_errmsg("cli_malloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long int)size);
+        cli_warnmsg("cli_malloc(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
 
@@ -229,7 +231,7 @@ void *cli_malloc(size_t size)
 
     if (!alloc) {
         perror("malloc_problem");
-        cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)size);
+        cli_errmsg("cli_malloc(): Can't allocate memory (%zu bytes).\n", size);
         return NULL;
     } else
         return alloc;
@@ -240,7 +242,9 @@ void *cli_calloc(size_t nmemb, size_t size)
     void *alloc;
 
     if (!nmemb || !size || size > CLI_MAX_ALLOCATION || nmemb > CLI_MAX_ALLOCATION || (nmemb * size > CLI_MAX_ALLOCATION)) {
-        cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long int)nmemb * size);
+        cli_warnmsg("cli_calloc2(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
 
@@ -248,7 +252,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 
     if (!alloc) {
         perror("calloc_problem");
-        cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)(nmemb * size));
+        cli_errmsg("cli_calloc(): Can't allocate memory (%zu bytes).\n", (nmemb * size));
         return NULL;
     } else
         return alloc;
@@ -259,7 +263,9 @@ void *cli_realloc(void *ptr, size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_errmsg("cli_realloc(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long int)size);
+        cli_warnmsg("cli_realloc(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
 
@@ -267,7 +273,7 @@ void *cli_realloc(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
+        cli_errmsg("cli_realloc(): Can't re-allocate memory to %zu bytes.\n", size);
         return NULL;
     } else
         return alloc;
@@ -278,7 +284,9 @@ void *cli_realloc2(void *ptr, size_t size)
     void *alloc;
 
     if (!size || size > CLI_MAX_ALLOCATION) {
-        cli_errmsg("cli_realloc2(): Attempt to allocate %lu bytes. Please report to https://github.com/Cisco-Talos/clamav/issues\n", (unsigned long int)size);
+        cli_warnmsg("cli_realloc2(): File or section is too large to scan (%zu bytes). \
+                     For your safety, ClamAV limits how much memory an operation can allocate to %zu bytes\n",
+                     size, CLI_MAX_ALLOCATION);
         return NULL;
     }
 
@@ -286,7 +294,7 @@ void *cli_realloc2(void *ptr, size_t size)
 
     if (!alloc) {
         perror("realloc_problem");
-        cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int)size);
+        cli_errmsg("cli_realloc2(): Can't re-allocate memory to %zu bytes.\n", size);
         if (ptr)
             free(ptr);
         return NULL;
@@ -299,7 +307,7 @@ char *cli_strdup(const char *s)
     char *alloc;
 
     if (s == NULL) {
-        cli_errmsg("cli_strdup(): s == NULL. Please report to https://github.com/Cisco-Talos/clamav/issues\n");
+        cli_errmsg("cli_strdup(): passed reference is NULL, nothing to duplicate\n");
         return NULL;
     }
 

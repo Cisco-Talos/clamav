@@ -146,7 +146,7 @@ extern uint8_t cli_always_gen_section_hash;
      (size_t)(sb) + (size_t)(sb_size) <= (size_t)(bb_size) && \
      (size_t)(sb) <= (size_t)(bb_size))
 
-#define CLI_MAX_ALLOCATION (182 * 1024 * 1024)
+#define CLI_MAX_ALLOCATION (1024 * 1024 * 1024)
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h> /* for NAME_MAX */

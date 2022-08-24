@@ -99,7 +99,7 @@ int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t *data, int32_t size)
         API_MISUSE();
         return -1;
     }
-    if (size < 0 || size > CLI_MAX_ALLOCATION) {
+    if (size < 0) {
         cli_warnmsg("bytecode: negative read size: %d\n", size);
         API_MISUSE();
         return -1;
