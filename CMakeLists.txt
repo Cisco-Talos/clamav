@@ -383,8 +383,6 @@ elseif(APPLE)
         )
         if(${MARKDOWN_MODULE_EXIT_CODE} EQUAL 0)
             # The markdown module is installed, we can do the conversion.
-            set(PythonTest_COMMAND "${Python3_EXECUTABLE};-m;markdown;-v")
-
             execute_process(
                 COMMAND echo "<html><body>"
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/prefix.html)
