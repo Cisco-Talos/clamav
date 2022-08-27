@@ -516,13 +516,13 @@ int cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     return cli_scanmacho(ctx, fileinfo);
 }
 
-int cli_scanmacho_unibin(cli_ctx *ctx)
+cl_error_t cli_scanmacho_unibin(cli_ctx *ctx)
 {
     struct macho_fat_header fat_header;
     struct macho_fat_arch fat_arch;
     unsigned int conv, i, matcher = 0;
-    int ret     = CL_CLEAN;
-    fmap_t *map = ctx->fmap;
+    cl_error_t ret = CL_SUCCESS;
+    fmap_t *map    = ctx->fmap;
     ssize_t at;
 
     if (fmap_readn(map, &fat_header, 0, sizeof(fat_header)) != sizeof(fat_header)) {
@@ -570,59 +570,64 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
         }
 
         ret = cli_magic_scan_nested_fmap_type(map, fat_arch.offset, fat_arch.size, ctx, CL_TYPE_ANY, NULL);
-        if (ret == CL_VIRUS)
+        if (ret != CL_SUCCESS) {
             break;
+        }
     }
 
     return ret; /* result from the last binary */
 }
 
-int cli_unpackmacho(cli_ctx *ctx)
+cl_error_t cli_unpackmacho(cli_ctx *ctx)
 {
-    char *tempfile;
-    int ndesc;
+    cl_error_t ret = CL_SUCCESS;
+    char *tempfile = NULL;
+    int ndesc      = -1;
     struct cli_bc_ctx *bc_ctx;
-    int ret;
+    bool bc_ctx_set = false;
 
     /* Bytecode BC_MACHO_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {
-        cli_errmsg("cli_scanelf: can't allocate memory for bc_ctx\n");
-        return CL_EMEM;
+        cli_errmsg("cli_unpackmacho: can't allocate memory for bc_ctx\n");
+        ret = CL_EMEM;
+        goto done;
     }
 
     cli_bytecode_context_setctx(bc_ctx, ctx);
+    bc_ctx_set = true;
 
+    cli_dbgmsg("Running bytecode hook\n");
     ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_MACHO_UNPACKER, ctx->fmap);
-    switch (ret) {
-        case CL_VIRUS:
-            cli_bytecode_context_destroy(bc_ctx);
-            return CL_VIRUS;
-        case CL_SUCCESS:
-            ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
-            cli_bytecode_context_destroy(bc_ctx);
-            if (ndesc != -1 && tempfile) {
-                if (ctx->engine->keeptmp)
-                    cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable saved in %s\n", tempfile);
-                else
-                    cli_dbgmsg("cli_scanmacho: Unpacked and rebuilt executable\n");
-                lseek(ndesc, 0, SEEK_SET);
-                cli_dbgmsg("***** Scanning rebuilt Mach-O file *****\n");
-                if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {
-                    close(ndesc);
-                    CLI_TMPUNLK();
-                    free(tempfile);
-                    return CL_VIRUS;
-                }
-                close(ndesc);
-                CLI_TMPUNLK();
-                free(tempfile);
-                return CL_SUCCESS;
-            }
-            break;
-        default:
-            cli_bytecode_context_destroy(bc_ctx);
+    cli_dbgmsg("Finished running bytecode hook\n");
+    if (CL_SUCCESS == ret) {
+        // check for unpacked/rebuilt executable
+        ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+        if (ndesc != -1 && tempfile) {
+            cli_dbgmsg("cli_unpackmacho: Unpacked and rebuilt Mach-O executable saved in %s\n", tempfile);
+
+            lseek(ndesc, 0, SEEK_SET);
+
+            cli_dbgmsg("***** Scanning rebuilt Mach-O file *****\n");
+            ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL);
+        }
     }
 
-    return CL_CLEAN;
+done:
+    // cli_bytecode_context_getresult_file() gives up ownership of temp file, so we must clean it up.
+    if (-1 != ndesc) {
+        close(ndesc);
+    }
+    if (NULL != tempfile) {
+        if (!ctx->engine->keeptmp) {
+            (void)cli_unlink(tempfile);
+        }
+        free(tempfile);
+    }
+
+    if (bc_ctx_set) {
+        cli_bytecode_context_destroy(bc_ctx);
+    }
+
+    return ret;
 }

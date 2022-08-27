@@ -672,11 +672,11 @@ static void cli_elf_sectionlog(uint32_t sh_type, uint32_t sh_flags)
 }
 
 /* Scan function for ELF */
-int cli_scanelf(cli_ctx *ctx)
+cl_error_t cli_scanelf(cli_ctx *ctx)
 {
     union elf_file_hdr file_hdr;
     fmap_t *map = ctx->fmap;
-    int ret;
+    cl_error_t ret;
     uint8_t conv = 0, is64 = 0;
 
     cli_dbgmsg("in cli_scanelf\n");
@@ -836,55 +836,56 @@ int cli_elfheader(cli_ctx *ctx, struct cli_exe_info *elfinfo)
 /*
  * ELF file unpacking.
  */
-int cli_unpackelf(cli_ctx *ctx)
+cl_error_t cli_unpackelf(cli_ctx *ctx)
 {
-    char *tempfile;
-    int ndesc;
+    cl_error_t ret = CL_SUCCESS;
+    char *tempfile = NULL;
+    int ndesc      = -1;
     struct cli_bc_ctx *bc_ctx;
-    int ret;
-    fmap_t *map = ctx->fmap;
+    bool bc_ctx_set = false;
 
     /* Bytecode BC_ELF_UNPACKER hook */
     bc_ctx = cli_bytecode_context_alloc();
     if (!bc_ctx) {
         cli_errmsg("cli_scanelf: can't allocate memory for bc_ctx\n");
-        return CL_EMEM;
+        ret = CL_EMEM;
+        goto done;
     }
 
     cli_bytecode_context_setctx(bc_ctx, ctx);
+    bc_ctx_set = true;
 
     cli_dbgmsg("Running bytecode hook\n");
-    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_ELF_UNPACKER, map);
+    ret = cli_bytecode_runhook(ctx, ctx->engine, bc_ctx, BC_ELF_UNPACKER, ctx->fmap);
     cli_dbgmsg("Finished running bytecode hook\n");
-    switch (ret) {
-        case CL_VIRUS:
-            cli_bytecode_context_destroy(bc_ctx);
-            return CL_VIRUS;
-        case CL_SUCCESS:
-            ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
-            cli_bytecode_context_destroy(bc_ctx);
-            if (ndesc != -1 && tempfile) {
-                if (ctx->engine->keeptmp)
-                    cli_dbgmsg("cli_scanelf: Unpacked and rebuilt executable saved in %s\n", tempfile);
-                else
-                    cli_dbgmsg("cli_scanelf: Unpacked and rebuilt executable\n");
-                lseek(ndesc, 0, SEEK_SET);
-                cli_dbgmsg("***** Scanning rebuilt ELF file *****\n");
-                if (cli_magic_scan_desc(ndesc, tempfile, ctx, NULL) == CL_VIRUS) {
-                    close(ndesc);
-                    CLI_TMPUNLK();
-                    free(tempfile);
-                    return CL_VIRUS;
-                }
-                close(ndesc);
-                CLI_TMPUNLK();
-                free(tempfile);
-                return CL_CLEAN;
-            }
-            break;
-        default:
-            cli_bytecode_context_destroy(bc_ctx);
+    if (CL_SUCCESS == ret) {
+        // check for unpacked/rebuilt executable
+        ndesc = cli_bytecode_context_getresult_file(bc_ctx, &tempfile);
+        if (ndesc != -1 && tempfile) {
+            cli_dbgmsg("cli_scanelf: Unpacked and rebuilt ELF executable saved in %s\n", tempfile);
+
+            lseek(ndesc, 0, SEEK_SET);
+
+            cli_dbgmsg("***** Scanning rebuilt ELF file *****\n");
+            ret = cli_magic_scan_desc(ndesc, tempfile, ctx, NULL);
+        }
     }
 
-    return CL_CLEAN;
+done:
+    // cli_bytecode_context_getresult_file() gives up ownership of temp file, so we must clean it up.
+    if (-1 != ndesc) {
+        close(ndesc);
+    }
+    if (NULL != tempfile) {
+        if (!ctx->engine->keeptmp) {
+            (void)cli_unlink(tempfile);
+        }
+        free(tempfile);
+    }
+
+    if (bc_ctx_set) {
+        cli_bytecode_context_destroy(bc_ctx);
+    }
+
+    return ret;
 }

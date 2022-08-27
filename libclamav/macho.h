@@ -28,7 +28,7 @@
 
 int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo);
 int cli_machoheader(cli_ctx *ctx, struct cli_exe_info *fileinfo);
-int cli_scanmacho_unibin(cli_ctx *ctx);
-int cli_unpackmacho(cli_ctx *ctx);
+cl_error_t cli_scanmacho_unibin(cli_ctx *ctx);
+cl_error_t cli_unpackmacho(cli_ctx *ctx);
 
 #endif
