@@ -73,7 +73,7 @@ START_TEST(test_unescape_hex)
     free(str);
 
     str = cli_unescape("%00");
-    ck_assert_msg(str && !strcmp(str, "\x1"), "cli_unescape %00");
+    ck_assert_msg(str && !strcmp(str, "\x1"), "cli_unescape 00");
     free(str);
 }
 END_TEST

@@ -291,7 +291,7 @@ static cl_error_t scanzws(cli_ctx *ctx, struct swf_file_hdr *hdr)
     ret = cli_magic_scan_desc(fd, tmpname, ctx, NULL, LAYER_ATTRIBUTES_NONE);
 
     close(fd);
-    if (!(ctx->engine->keeptmp)) {
+    if (!ctx->engine->keeptmp) {
         if (cli_unlink(tmpname)) {
             free(tmpname);
             return CL_EUNLINK;
