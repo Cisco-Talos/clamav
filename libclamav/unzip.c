@@ -618,7 +618,6 @@ static unsigned int parse_local_file_header(
     char name[256];
     char *original_filename = NULL;
     uint32_t csize, usize;
-    int virus_found                          = 0;
     unsigned int size_of_fileheader_and_data = 0;
 
     if (!(local_header = fmap_need_off(map, loff, SIZEOF_LOCAL_HEADER))) {
@@ -666,9 +665,7 @@ static unsigned int parse_local_file_header(
     /* Scan file header metadata. */
     if (cli_matchmeta(ctx, name, LOCAL_HEADER_csize, LOCAL_HEADER_usize, (LOCAL_HEADER_flags & F_ENCR) != 0, file_count, LOCAL_HEADER_crc32, NULL) == CL_VIRUS) {
         *ret = CL_VIRUS;
-        if (!SCAN_ALLMATCHES)
-            goto done;
-        virus_found = 1;
+        goto done;
     }
 
     if (LOCAL_HEADER_flags & F_MSKED) {
@@ -682,12 +679,11 @@ static unsigned int parse_local_file_header(
         cl_error_t fp_check;
         cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
         fp_check = cli_append_potentially_unwanted(ctx, "Heuristics.Encrypted.Zip");
-        if ((fp_check == CL_VIRUS && !SCAN_ALLMATCHES) || fp_check != CL_CLEAN) {
+        if (fp_check != CL_SUCCESS) {
             *ret = fp_check;
             fmap_unneed_off(map, loff, SIZEOF_LOCAL_HEADER);
             goto done;
         }
-        virus_found = 1;
     }
 
     if (LOCAL_HEADER_flags & F_USEDD) {
@@ -777,9 +773,6 @@ done:
         free(original_filename);
     }
 
-    if ((NULL != ret) && (0 != virus_found))
-        *ret = CL_VIRUS;
-
     return size_of_fileheader_and_data;
 }
 
@@ -816,7 +809,6 @@ parse_central_directory_file_header(
     char name[256];
     int last                      = 0;
     const uint8_t *central_header = NULL;
-    int virus_found               = 0;
 
     *ret = CL_EPARSE;
 
@@ -854,12 +846,9 @@ parse_central_directory_file_header(
 
     /* requests do not supply a ctx; also prevent multiple scans */
     if (ctx && (CL_VIRUS == cli_matchmeta(ctx, name, CENTRAL_HEADER_csize, CENTRAL_HEADER_usize, (CENTRAL_HEADER_flags & F_ENCR) != 0, file_count, CENTRAL_HEADER_crc32, NULL))) {
-        virus_found = 1;
-
-        if (!SCAN_ALLMATCHES) {
-            last = 1;
-            goto done;
-        }
+        last = 1;
+        *ret = CL_VIRUS;
+        goto done;
     }
 
     if (zsize - coff <= CENTRAL_HEADER_extra_len && !last) {
@@ -911,9 +900,6 @@ parse_central_directory_file_header(
     }
 
 done:
-    if (virus_found == 1)
-        *ret = CL_VIRUS;
-
     if (NULL != central_header) {
         fmap_unneed_ptr(map, central_header, SIZEOF_CENTRAL_HEADER);
     }
@@ -986,7 +972,6 @@ cl_error_t index_the_central_directory(
     struct zip_record *curr_record   = NULL;
     struct zip_record *prev_record   = NULL;
     uint32_t num_overlapping_files   = 0;
-    int virus_found                  = 0;
     bool exceeded_max_files          = false;
 
     if (NULL == catalogue || NULL == num_records) {
@@ -1030,12 +1015,8 @@ cl_error_t index_the_central_directory(
         }
 
         if (ret == CL_VIRUS) {
-            if (SCAN_ALLMATCHES)
-                virus_found = 1;
-            else {
-                status = CL_VIRUS;
-                goto done;
-            }
+            status = CL_VIRUS;
+            goto done;
         }
 
         index++;
@@ -1083,12 +1064,8 @@ cl_error_t index_the_central_directory(
     } while (1);
 
     if (ret == CL_VIRUS) {
-        if (SCAN_ALLMATCHES)
-            virus_found = 1;
-        else {
-            status = CL_VIRUS;
-            goto done;
-        }
+        status = CL_VIRUS;
+        goto done;
     }
 
     if (records_count > 1) {
@@ -1171,12 +1148,11 @@ done:
             free(zip_catalogue);
             zip_catalogue = NULL;
         }
-    }
 
-    if (virus_found)
-        status = CL_VIRUS;
-    else if (exceeded_max_files)
-        status = CL_EMAXFILES;
+        if (exceeded_max_files) {
+            status = CL_EMAXFILES;
+        }
+    }
 
     return status;
 }
@@ -1189,7 +1165,6 @@ cl_error_t cli_unzip(cli_ctx *ctx)
     fmap_t *map = ctx->fmap;
     char *tmpd  = NULL;
     const char *ptr;
-    int virus_found = 0;
 #if HAVE_JSON
     int toval = 0;
 #endif
@@ -1235,11 +1210,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             &zip_catalogue,
             &records_count);
         if (CL_SUCCESS != ret) {
-            if (CL_VIRUS == ret && SCAN_ALLMATCHES)
-                virus_found = 1;
-            else {
-                goto done;
-            }
+            goto done;
         }
 
         /*
@@ -1303,6 +1274,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
             if (cli_checktimelimit(ctx) != CL_SUCCESS) {
                 cli_dbgmsg("cli_unzip: Time limit reached (max: %u)\n", ctx->engine->maxscantime);
                 ret = CL_ETIMEOUT;
+                goto done;
             }
 
 #if HAVE_JSON
@@ -1310,22 +1282,21 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                 ret = CL_ETIMEOUT;
             }
 #endif
-            if (ret != CL_CLEAN) {
-                if (ret == CL_VIRUS && SCAN_ALLMATCHES) {
-                    ret         = CL_CLEAN;
-                    virus_found = 1;
-                } else {
-                    break;
-                }
+            if (ret != CL_SUCCESS) {
+                break;
             }
         }
     } else {
         cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
     }
 
-    if (virus_found == 1) {
-        ret = CL_VIRUS;
+    if (CL_SUCCESS != ret) {
+        // goto done right away if there was a timeout, an alert, etc.
+        // This is slightly redundant since the while loop will only happen
+        // if ret == CL_SUCCESS but it's more explicit.
+        goto done;
     }
+
     if (0 < num_files_unzipped && num_files_unzipped <= (file_count / 4)) { /* FIXME: make up a sane ratio or remove the whole logic */
         file_count = 0;
         while ((ret == CL_CLEAN) &&
@@ -1344,10 +1315,7 @@ cl_error_t cli_unzip(cli_ctx *ctx)
                                                      NULL)))) {
             file_count++;
             lhoff += coff;
-            if (SCAN_ALLMATCHES && ret == CL_VIRUS) {
-                ret         = CL_CLEAN;
-                virus_found = 1;
-            }
+
             if (ctx->engine->maxfiles && num_files_unzipped >= ctx->engine->maxfiles) {
                 // Note: this check piggybacks on the MaxFiles setting, but is not actually
                 //   scanning these files or incrementing the ctx->scannedfiles count
@@ -1386,9 +1354,6 @@ done:
         }
         free(tmpd);
     }
-
-    if (ret == CL_CLEAN && virus_found)
-        ret = CL_VIRUS;
 
     return ret;
 }
