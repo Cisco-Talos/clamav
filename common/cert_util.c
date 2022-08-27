@@ -85,7 +85,7 @@ static cl_error_t _x509_to_pem(X509 *cert,
     ret = CL_SUCCESS;
 
 done:
-    return (0);
+    return ret;
 }
 
 /**
@@ -125,7 +125,7 @@ static cl_error_t _x509_to_pem_append(X509 *ca_cert,
 
     current_len = *total_buf_len;
 
-    if (_x509_to_pem(ca_cert, &pem_data, &pem_data_len) != 0) {
+    if (CL_SUCCESS != _x509_to_pem(ca_cert, &pem_data, &pem_data_len)) {
         mprintf(LOGG_ERROR, "Failed to convert x509 certificate to PEM\n");
         goto done;
     }
