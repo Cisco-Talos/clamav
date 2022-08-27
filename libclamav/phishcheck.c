@@ -798,7 +798,7 @@ cl_error_t phishingScan(cli_ctx* ctx, tag_arguments_t* hrefs)
                 status = cli_append_potentially_unwanted(ctx, "Heuristics.Phishing.Email.SpoofedDomain");
                 break;
         }
-        if (CL_CLEAN != status && !SCAN_ALLMATCHES) {
+        if (CL_SUCCESS != status) {
             goto done;
         }
     }
