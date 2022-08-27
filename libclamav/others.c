@@ -339,7 +339,7 @@ unsigned int cl_retflevel(void)
     return CL_FLEVEL;
 }
 
-const char *cl_strerror(int clerror)
+const char *cl_strerror(cl_error_t clerror)
 {
     switch (clerror) {
         /* libclamav specific codes */
