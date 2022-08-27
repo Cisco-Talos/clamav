@@ -4215,7 +4215,6 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
 {
     cl_error_t status = CL_EARG;
     cl_error_t ret;
-    bool virus_found = false;
 
     char *extracted_image_filepath = NULL;
     int extracted_image_tempfd     = -1;
@@ -4334,11 +4333,11 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
 
         if (ctx->engine->keeptmp) {
             /* Drop a temp file and scan that */
-            if ((ret = cli_gentempfd_with_prefix(
-                     ctx->sub_tmpdir,
-                     extracted_image_type,
-                     &extracted_image_filepath,
-                     &extracted_image_tempfd)) != CL_SUCCESS) {
+            if (CL_SUCCESS != (ret = cli_gentempfd_with_prefix(
+                                   ctx->sub_tmpdir,
+                                   extracted_image_type,
+                                   &extracted_image_filepath,
+                                   &extracted_image_tempfd))) {
                 cli_warnmsg("Failed to create temp file for extracted %s file\n", extracted_image_type);
                 status = CL_EOPEN;
                 goto done;
@@ -4355,12 +4354,9 @@ cl_error_t process_blip_record(struct OfficeArtRecordHeader_Unpacked *rh, const 
             /* Scan the buffer */
             ret = cli_magic_scan_buff(start_of_image, size_of_image, ctx, NULL);
         }
-        if (ret == CL_VIRUS) {
-            if (!SCAN_ALLMATCHES) {
-                status = CL_VIRUS;
-                goto done;
-            }
-            virus_found = true;
+        if (CL_SUCCESS != ret) {
+            status = ret;
+            goto done;
         }
     }
 
@@ -4381,9 +4377,6 @@ done:
         free(extracted_image_filepath);
     }
 
-    if (virus_found) {
-        status = CL_VIRUS;
-    }
     return status;
 }
 
@@ -4398,8 +4391,6 @@ done:
 cl_error_t process_blip_store_container(const unsigned char *blip_store_container, size_t blip_store_container_len, cli_ctx *ctx)
 {
     cl_error_t status = CL_EARG;
-    cl_error_t ret;
-    bool virus_found = false;
 
     struct OfficeArtRecordHeader_Unpacked rh;
     const unsigned char *index = blip_store_container;
@@ -4478,13 +4469,9 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
                         cli_dbgmsg("process_blip_store_container: Failed to get header\n");
                         goto done;
                     }
-                    ret = process_blip_record(&embeddedBlip_rh, embeddedBlip, embeddedBlip_size, ctx);
-                    if (ret == CL_VIRUS) {
-                        if (!SCAN_ALLMATCHES) {
-                            status = CL_VIRUS;
-                            goto done;
-                        }
-                        virus_found = true;
+                    status = process_blip_record(&embeddedBlip_rh, embeddedBlip, embeddedBlip_size, ctx);
+                    if (CL_SUCCESS != status) {
+                        goto done;
                     }
                 }
             }
@@ -4492,13 +4479,9 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
         } else if ((0xF018 <= rh.recType) && (0xF117 >= rh.recType)) {
             /* it's an OfficeArtBlip record */
             cli_dbgmsg("process_blip_store_container: Found a Blip record\n");
-            ret = process_blip_record(&rh, index, remaining, ctx);
-            if (ret == CL_VIRUS) {
-                if (!SCAN_ALLMATCHES) {
-                    status = CL_VIRUS;
-                    goto done;
-                }
-                virus_found = true;
+            status = process_blip_record(&rh, index, remaining, ctx);
+            if (CL_SUCCESS != status) {
+                goto done;
             }
 
         } else {
@@ -4518,17 +4501,12 @@ cl_error_t process_blip_store_container(const unsigned char *blip_store_containe
 
 done:
 
-    if (virus_found) {
-        status = CL_VIRUS;
-    }
     return status;
 }
 
 cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggroup, size_t drawinggroup_len, cli_ctx *ctx)
 {
     cl_error_t status = CL_EARG;
-    cl_error_t ret;
-    bool virus_found = false;
 
     struct OfficeArtRecordHeader_Unpacked rh;
     const unsigned char *index = drawinggroup;
@@ -4604,13 +4582,9 @@ cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggro
                 blip_store_container_len = rh.recLen;
             }
 
-            ret = process_blip_store_container(start_of_blip_store_container, blip_store_container_len, ctx);
-            if (ret == CL_VIRUS) {
-                if (!SCAN_ALLMATCHES) {
-                    status = CL_VIRUS;
-                    goto done;
-                }
-                virus_found = true;
+            status = process_blip_store_container(start_of_blip_store_container, blip_store_container_len, ctx);
+            if (CL_SUCCESS != status) {
+                goto done;
             }
         }
 
@@ -4625,9 +4599,7 @@ cl_error_t cli_extract_images_from_drawing_group(const unsigned char *drawinggro
     status = CL_SUCCESS;
 
 done:
-    if (virus_found) {
-        status = CL_VIRUS;
-    }
+
     return status;
 }
 
@@ -4994,8 +4966,8 @@ cl_error_t cli_extract_xlm_macros_and_images(const char *dir, cli_ctx *ctx, char
          * If we fail to extract images, that's fine.
          */
         ret = cli_extract_images_from_drawing_group(drawinggroup, drawinggroup_len, ctx);
-        if (ret == CL_VIRUS) {
-            status = CL_VIRUS;
+        if (CL_SUCCESS != ret) {
+            status = ret;
             goto done;
         }
     }
