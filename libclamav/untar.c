@@ -138,7 +138,6 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
     size_t pos      = 0;
     size_t currsize = 0;
     char zero[BLOCKSIZE];
-    unsigned int num_viruses = 0;
 
     cli_dbgmsg("In untar(%s)\n", dir);
     memset(zero, 0, sizeof(zero));
@@ -175,13 +174,13 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
                 lseek(fout, 0, SEEK_SET);
                 ret = cli_magic_scan_desc(fout, fullname, ctx, name);
                 close(fout);
-                if (!ctx->engine->keeptmp)
-                    if (cli_unlink(fullname)) return CL_EUNLINK;
-                if (ret == CL_VIRUS) {
-                    if (!SCAN_ALLMATCHES)
-                        return CL_VIRUS;
-                    else
-                        num_viruses++;
+                if (!ctx->engine->keeptmp) {
+                    if (cli_unlink(fullname)) {
+                        return CL_EUNLINK;
+                    }
+                }
+                if (ret != CL_SUCCESS) {
+                    return ret;
                 }
                 fout = -1;
             }
@@ -304,10 +303,7 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
             strncpy(name, block, 100);
             name[100] = '\0';
             if (cli_matchmeta(ctx, name, size, size, 0, files, 0, NULL) == CL_VIRUS) {
-                if (!SCAN_ALLMATCHES)
-                    return CL_VIRUS;
-                else
-                    num_viruses++;
+                return CL_VIRUS;
             }
 
             snprintf(fullname, sizeof(fullname) - 1, "%s" PATHSEP "tar%02u", dir, files);
@@ -371,12 +367,15 @@ cl_error_t cli_untar(const char *dir, unsigned int posix, cli_ctx *ctx)
         lseek(fout, 0, SEEK_SET);
         ret = cli_magic_scan_desc(fout, fullname, ctx, name);
         close(fout);
-        if (!ctx->engine->keeptmp)
-            if (cli_unlink(fullname)) return CL_EUNLINK;
-        if (ret == CL_VIRUS)
-            return CL_VIRUS;
+        if (!ctx->engine->keeptmp) {
+            if (cli_unlink(fullname)) {
+                return CL_EUNLINK;
+            }
+        }
+        if (ret != CL_SUCCESS) {
+            return ret;
+        }
     }
-    if (num_viruses)
-        return CL_VIRUS;
+
     return CL_CLEAN;
 }
