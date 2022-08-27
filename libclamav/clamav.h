@@ -1147,7 +1147,7 @@ extern const char *cl_retver(void);
 /* ----------------------------------------------------------------------------
  * Others.
  */
-extern const char *cl_strerror(int clerror);
+extern const char *cl_strerror(cl_error_t clerror);
 
 /* ----------------------------------------------------------------------------
  * Custom data scanning.
